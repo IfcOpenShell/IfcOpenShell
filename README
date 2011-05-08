@@ -1,0 +1,65 @@
+IfcOpenShell 
+============
+open source (LGPL) software library for working with the IFC file format
+
+
+http://IfcOpenShell.org
+
+
+Compiling on Windows
+====================
+Users are advised to use the Visual Studio .sln file in the win/ folder.
+For Windows users a prebuilt Open CASCADE version is available from the
+http://opencascade.org website. Download and install this version and
+provide the paths to the Open CASCADE header and library files to MS
+Visual Studio C++.
+
+For building the Autodesk 3ds Max plugin, the 3ds Max SDK needs to be
+installed as well as 3ds Max itself. Please provide the include and
+library paths to Visual Studio.
+
+For building the IfcPython wrapper, SWIG needs to be installed. Please
+download the latest swigwin version from http://www.swig.org/download.html.
+After extracting the .zip file, please add the extracted folder to the PATH
+environment variable. Python needs to be installed, please provide the
+include and library paths to Visual Studio.
+
+
+
+Compiling on *nix
+====================
+Users are advised to build IfcOpenShell using the cmake file provided in
+the cmake/ folder. There might be an Open CASCADE package in your operating
+system's software repository. If not, you will need to compile Open 
+CASCADE yourself. See http://opencascade.org.
+
+For building the IfcPython wrapper, SWIG and Python development are
+required.
+
+To build IfcOpenShell please take the following steps:
+$ cd /path/to/IfcOpenShell/cmake
+$ mkdir build
+$ cd build
+Optionally:
+  $ OCC_INCLUDE_PATH="/path/to/OpenCASCADE/include"
+  $ OCC_LIBRARY_PATH="/path/to/OpenCASCADE/lib"
+  $ export OCC_INCLUDE_PATH
+  $ export OCC_LIBRARY_PATH
+$ cmake ../
+$ make
+
+If all worked out correctly you can now use IfcOpenShell. For example:
+$ wget ftp://ftp.dds.no/pub/ifc/Munkerud/Munkerud_hus6_BE.zip
+$ unzip Munkerud_hus6_BE.zip
+$ ./IfcObj Munkerud_hus6_BE.ifc
+$ less Munkerud_hus6_BE.obj
+Or:
+$ wget ftp://ftp.dds.no/pub/ifc/Munkerud/Munkerud_hus6_BE.zip
+$ unzip Munkerud_hus6_BE.zip
+$ python
+>>> import IfcImport
+>>> IfcImport.Init('Munkerud_hus6_BE.ifc')
+>>> geom = IfcImport.Get()
+>>> geom.name
+>>> for v in geom.mesh.verts: v
+
