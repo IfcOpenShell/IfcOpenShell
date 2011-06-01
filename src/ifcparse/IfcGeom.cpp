@@ -177,13 +177,13 @@ bool IfcGeom::convert(IfcSchema::Face* IfcFace, TopoDS_Face& face) {
 	IfcEntity loop = bound->Loop();
 	TopoDS_Wire wire;
 	if ( ! IfcGeom::convert_wire(loop,wire) ) return false;
-	BRepBuilderAPI_MakeFace mf = BRepBuilderAPI_MakeFace(wire);
+	BRepBuilderAPI_MakeFace mf(wire, false);
 	BRepBuilderAPI_FaceError er = mf.Error();
 	if ( er == BRepBuilderAPI_NotPlanar ) {
 		std::cout << "[Notice] Trying to fix non-planar face" << std::endl;
 		ShapeFix_ShapeTolerance FTol;
 		FTol.SetTolerance(wire, 0.01, TopAbs_WIRE);
-		mf = BRepBuilderAPI_MakeFace(wire);
+		mf = BRepBuilderAPI_MakeFace(wire, false);
 		er = mf.Error();
 	}
 	if ( er != BRepBuilderAPI_FaceDone ) return false;
@@ -226,7 +226,7 @@ bool IfcGeom::convert(IfcSchema::ArbitraryClosedProfileDef* IfcArbitraryClosedPr
 bool IfcGeom::convert(IfcSchema::ArbitraryProfileDefWithVoids* IfcArbitraryProfileDefWithVoids, TopoDS_Face& face) {
 	TopoDS_Wire profile;
 	if ( ! IfcGeom::convert_wire(IfcArbitraryProfileDefWithVoids->Polyline(),profile) ) return false;
-	BRepBuilderAPI_MakeFace mf = BRepBuilderAPI_MakeFace(profile);
+	BRepBuilderAPI_MakeFace mf(profile, false); 
 	IfcEntities voids = IfcArbitraryProfileDefWithVoids->Voids();
 	for( IfcParse::Entities::it it = voids->begin(); it != voids->end(); ++ it ) {
 		TopoDS_Wire hole;
@@ -357,13 +357,13 @@ bool IfcGeom::convert_openings(const IfcSchema::BuildingElement* IfcBuildingElem
 	return true;
 }
 bool IfcGeom::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face) {
-	BRepBuilderAPI_MakeFace mf = BRepBuilderAPI_MakeFace(wire);
+	BRepBuilderAPI_MakeFace mf(wire, false);
 	BRepBuilderAPI_FaceError er = mf.Error();
 	if ( er == BRepBuilderAPI_NotPlanar ) {
 		std::cout << "[Notice] Trying to fix non-planar face" << std::endl;
 		ShapeFix_ShapeTolerance FTol;
 		FTol.SetTolerance(wire, 0.01, TopAbs_WIRE);
-		mf = BRepBuilderAPI_MakeFace(wire);
+		mf = BRepBuilderAPI_MakeFace(wire, false);
 		er = mf.Error();
 	}
 	if ( er != BRepBuilderAPI_FaceDone ) return false;
