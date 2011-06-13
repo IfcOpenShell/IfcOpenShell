@@ -71,6 +71,8 @@
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Solid.hxx>
 
+#include <BRepFilletAPI_MakeFillet2d.hxx>
+
 #include <TopLoc_Location.hxx>
 
 bool IfcGeom::convert(IfcSchema::ExtrudedAreaSolid* IfcExtrudedAreaSolid, TopoDS_Shape& shape) {
@@ -273,7 +275,7 @@ bool IfcGeom::convert(IfcSchema::ArbitraryProfileDefWithVoids* IfcArbitraryProfi
 	face = TopoDS::Face(sfs.Shape());
 	return true;
 }
-bool IfcGeom::convert(IfcSchema::RectangleProfileDef* IfcRectangleProfileDef,class TopoDS_Wire& wire) {
+bool IfcGeom::convert(IfcSchema::RectangleProfileDef* IfcRectangleProfileDef,class TopoDS_Face& face) {
 	const float x = IfcRectangleProfileDef->Width() / 2.0f * Ifc::LengthUnit;
 	const float y = IfcRectangleProfileDef->Height() / 2.0f  * Ifc::LengthUnit;
 
@@ -282,21 +284,90 @@ bool IfcGeom::convert(IfcSchema::RectangleProfileDef* IfcRectangleProfileDef,cla
 		return false;
 	}
 
-	gp_Trsf2d trsf;
-	IfcGeom::convert((IfcSchema::Axis2Placement2D*)IfcRectangleProfileDef->Placement().get(),trsf);
-	
-	gp_XY p1 (-x,-y);trsf.Transforms(p1);gp_Pnt P1(p1.X(),p1.Y(),0.0f);
-	gp_XY p2 ( x,-y);trsf.Transforms(p2);gp_Pnt P2(p2.X(),p2.Y(),0.0f);
-	gp_XY p3 ( x, y);trsf.Transforms(p3);gp_Pnt P3(p3.X(),p3.Y(),0.0f);
-	gp_XY p4 (-x, y);trsf.Transforms(p4);gp_Pnt P4(p4.X(),p4.Y(),0.0f);
-	
-	BRepBuilderAPI_MakeWire w;
-	w.Add(BRepBuilderAPI_MakeEdge(P1,P2));
-	w.Add(BRepBuilderAPI_MakeEdge(P2,P3));
-	w.Add(BRepBuilderAPI_MakeEdge(P3,P4));
-	w.Add(BRepBuilderAPI_MakeEdge(P4,P1));
-	wire = w.Wire();
-	return true;
+	gp_Trsf2d trsf2d;
+	IfcGeom::convert((IfcSchema::Axis2Placement2D*)IfcRectangleProfileDef->Placement().get(),trsf2d);
+	float coords[8] = {-x,-y,x,-y,x,y,-x,y};
+	return IfcGeom::profile_helper(4,coords,0,0,0,trsf2d,face);
+}
+bool IfcGeom::convert(IfcSchema::IShapeProfileDef* IfcIShapeProfileDef,class TopoDS_Face& face) {
+	const float x = IfcIShapeProfileDef->Width() / 2.0f * Ifc::LengthUnit;
+	const float y = IfcIShapeProfileDef->Depth() / 2.0f * Ifc::LengthUnit;
+	const float d1 = IfcIShapeProfileDef->WebThickness() / 2.0f  * Ifc::LengthUnit;
+	const float d2 = IfcIShapeProfileDef->FlangeThickness() * Ifc::LengthUnit;
+	bool doFillet = false;
+	float f;
+	try {
+		f = IfcIShapeProfileDef->FilletRadius() * Ifc::LengthUnit;
+		doFillet = true;
+	} catch ( IfcParse::IfcException& ) {}		
+
+	if ( x == 0.0f || y == 0.0f || d1 == 0.0f || d2 == 0.0f ) {
+		std::cout << "[Notice] Skipping zero sized profile:" << std::endl << IfcIShapeProfileDef->toString() << std::endl;
+		return false;
+	}
+
+	gp_Trsf2d trsf2d;
+	IfcGeom::convert((IfcSchema::Axis2Placement2D*)IfcIShapeProfileDef->Placement().get(),trsf2d);
+
+	float coords[24] = {-x,-y,x,-y,x,-y+d2,d1,-y+d2,d1,y-d2,x,y-d2,x,y,-x,y,-x,y-d2,-d1,y-d2,-d1,-y+d2,-x,-y+d2};
+	int fillets[4] = {3,4,9,10};
+	float radii[4] = {f,f,f,f};
+	return IfcGeom::profile_helper(12,coords,doFillet ? 4 : 0,fillets,radii,trsf2d,face);
+}
+bool IfcGeom::convert(IfcSchema::CShapeProfileDef* IfcCShapeProfileDef,class TopoDS_Face& face) {
+	const float x = IfcCShapeProfileDef->Depth() / 2.0f * Ifc::LengthUnit;
+	const float y = IfcCShapeProfileDef->Width() / 2.0f * Ifc::LengthUnit;
+	const float d1 = IfcCShapeProfileDef->WallThickness() * Ifc::LengthUnit;
+	const float d2 = IfcCShapeProfileDef->Girth() * Ifc::LengthUnit;
+	bool doFillet = false;
+	float f1,f2;
+	try {
+		f1 = IfcCShapeProfileDef->InternalFilletRadius() * Ifc::LengthUnit;
+		f2 = f1 + d1;
+		doFillet = true;
+	} catch ( IfcParse::IfcException& ) {}		
+
+	if ( x == 0.0f || y == 0.0f || d1 == 0.0f || d2 == 0.0f ) {
+		std::cout << "[Notice] Skipping zero sized profile:" << std::endl << IfcCShapeProfileDef->toString() << std::endl;
+		return false;
+	}
+
+	gp_Trsf2d trsf2d;
+	IfcGeom::convert((IfcSchema::Axis2Placement2D*)IfcCShapeProfileDef->Placement().get(),trsf2d);
+
+	float coords[24] = {-x,-y,x,-y,x,-y+d2,x-d1,-y+d2,x-d1,-y+d1,-x+d1,-y+d1,-x+d1,y-d1,x-d1,y-d1,x-d1,y-d2,x,y-d2,x,y,-x,y};
+	int fillets[8] = {0,1,4,5,6,7,10,11};
+	float radii[8] = {f2,f2,f1,f1,f1,f1,f2,f2};
+	return IfcGeom::profile_helper(12,coords,doFillet ? 8 : 0,fillets,radii,trsf2d,face);
+}
+bool IfcGeom::convert(IfcSchema::LShapeProfileDef* IfcLShapeProfileDef,class TopoDS_Face& face) {
+	const float y = IfcLShapeProfileDef->Depth() / 2.0f * Ifc::LengthUnit;
+	const float x = IfcLShapeProfileDef->Width() / 2.0f * Ifc::LengthUnit;
+	const float d = IfcLShapeProfileDef->Thickness() * Ifc::LengthUnit;
+	bool doFillet = false;
+	float f1 = 0.0f;
+	float f2 = 0.0f;
+	try {
+		f1 = IfcLShapeProfileDef->FilletRadius() * Ifc::LengthUnit;
+		doFillet = true;
+	} catch ( IfcParse::IfcException& ) {}		
+	try {
+		f2 = IfcLShapeProfileDef->EdgeRadius() * Ifc::LengthUnit;
+		doFillet = true;
+	} catch ( IfcParse::IfcException& ) {}
+
+	if ( x == 0.0f || y == 0.0f || d == 0.0f ) {
+		std::cout << "[Notice] Skipping zero sized profile:" << std::endl << IfcLShapeProfileDef->toString() << std::endl;
+		return false;
+	}
+
+	gp_Trsf2d trsf2d;
+	IfcGeom::convert((IfcSchema::Axis2Placement2D*)IfcLShapeProfileDef->Placement().get(),trsf2d);
+
+	float coords[12] = {-x,-y,x,-y,x,-y+d,-x+d,-y+d,-x+d,y,-x,y};
+	int fillets[3] = {2,3,4};
+	float radii[3] = {f2,f1,f2};
+	return IfcGeom::profile_helper(6,coords,doFillet ? 3 : 0,fillets,radii,trsf2d,face);
 }
 bool IfcGeom::convert(IfcSchema::CircleProfileDef* IfcCircleProfileDef,class TopoDS_Wire& wire) {
 	const float r = IfcCircleProfileDef->Radius() * Ifc::LengthUnit;
@@ -504,5 +575,34 @@ bool IfcGeom::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face) {
 	}
 	if ( er != BRepBuilderAPI_FaceDone ) return false;
 	face = mf.Face();
+	return true;
+}
+bool IfcGeom::profile_helper(int numVerts, float* verts, int numFillets, int* filletIndices, float* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face) {
+	TopoDS_Vertex* vertices = new TopoDS_Vertex[numVerts];
+	
+	for ( int i = 0; i < numVerts; i ++ ) {
+		gp_XY xy (verts[2*i],verts[2*i+1]);
+		trsf.Transforms(xy);
+		vertices[i] = BRepBuilderAPI_MakeVertex(gp_Pnt(xy.X(),xy.Y(),0.0f));
+	}
+
+	BRepBuilderAPI_MakeWire w;
+	for ( int i = 0; i < numVerts; i ++ )
+		w.Add(BRepBuilderAPI_MakeEdge(vertices[i],vertices[(i+1)%numVerts]));
+
+	IfcGeom::convert_wire_to_face(w.Wire(),face);
+
+	if ( numFillets ) {
+		BRepFilletAPI_MakeFillet2d fillet (face);
+		for ( int i = 0; i < numFillets; i ++ ) {
+			const float radius = filletRadii[i];
+			if ( radius < 1e-7 ) continue;
+			fillet.AddFillet(vertices[filletIndices[i]],radius);
+		}
+		fillet.Build();
+		face = TopoDS::Face(fillet.Shape());
+	}
+
+	delete[] vertices;
 	return true;
 }

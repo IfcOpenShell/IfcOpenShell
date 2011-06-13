@@ -156,7 +156,7 @@ namespace IfcParse {
 		std::map<int,EntitiesPtr> byref;
 		bool valid;
 
-		File(std::string fn, bool debug = false);
+		File(const std::string& fn, bool debug = false);
 		EntitiesPtr EntitiesByType(IfcSchema::Enum::IfcTypes t);
 		EntitiesPtr EntitiesByReference(int id);
 		EntityPtr EntityById(int id);
@@ -186,7 +186,7 @@ public:
 	static IfcEntities EntitiesByType(IfcSchema::Enum::IfcTypes t);
 	static IfcEntities EntitiesByReference(int id);
 	static IfcEntity EntityById(int id);
-	static bool Init(std::string fn);
+	static bool Init(const std::string& fn);
 	static void Dispose();
 	static float LengthUnit;
 	static float PlaneAngleUnit;

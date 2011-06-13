@@ -114,7 +114,7 @@ IFC_REF(ArbitraryProfileDefWithVoids,Polyline,2)
 IFC_REFS(ArbitraryProfileDefWithVoids,Voids,3)
 IFC_END_CLASS
 
-IFC_WIRE_CLASS(RectangleProfileDef)
+IFC_FACE_CLASS(RectangleProfileDef)
 IFC_REF(RectangleProfileDef,Placement,2)
 IFC_FLT(RectangleProfileDef,Width,3)
 IFC_FLT(RectangleProfileDef,Height,4)
@@ -129,6 +129,34 @@ IFC_FACE_CLASS(CircleHollowProfileDef)
 IFC_REF(CircleHollowProfileDef,Placement,2)
 IFC_FLT(CircleHollowProfileDef,Radius,3)
 IFC_FLT(CircleHollowProfileDef,WallThickness,4)
+IFC_END_CLASS
+
+IFC_FACE_CLASS(IShapeProfileDef)
+IFC_REF(IShapeProfileDef,Placement,2)
+IFC_FLT(IShapeProfileDef,Width,3)
+IFC_FLT(IShapeProfileDef,Depth,4)
+IFC_FLT(IShapeProfileDef,WebThickness,5)
+IFC_FLT(IShapeProfileDef,FlangeThickness,6)
+IFC_FLT(IShapeProfileDef,FilletRadius,7)
+IFC_END_CLASS
+
+IFC_FACE_CLASS(CShapeProfileDef)
+IFC_REF(CShapeProfileDef,Placement,2)
+IFC_FLT(CShapeProfileDef,Width,3)
+IFC_FLT(CShapeProfileDef,Depth,4)
+IFC_FLT(CShapeProfileDef,WallThickness,5)
+IFC_FLT(CShapeProfileDef,Girth,6)
+IFC_FLT(CShapeProfileDef,InternalFilletRadius,7)
+IFC_END_CLASS
+
+IFC_FACE_CLASS(LShapeProfileDef)
+IFC_REF(LShapeProfileDef,Placement,2)
+IFC_FLT(LShapeProfileDef,Depth,3)
+IFC_FLT(LShapeProfileDef,Width,4)
+IFC_FLT(LShapeProfileDef,Thickness,5)
+IFC_FLT(LShapeProfileDef,FilletRadius,6)
+IFC_FLT(LShapeProfileDef,EdgeRadius,7)
+IFC_FLT(LShapeProfileDef,LegSlope,8)
 IFC_END_CLASS
 
 IFC_CURVE_CLASS(Circle)

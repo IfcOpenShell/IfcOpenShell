@@ -179,7 +179,9 @@ Entity::Entity(std::istream* ss, std::vector<int>& refs, bool sub) {
 	std::string curvar;
 	curvar.reserve(64);
 	bool inStr = false;
+	bool inComment = false;
 	char c[1] = "";
+	char p[1] = "";
 	int state = -1;
 	int previousPos = -1;
 	args = 0;
@@ -187,8 +189,8 @@ Entity::Entity(std::istream* ss, std::vector<int>& refs, bool sub) {
 	id = -1;
 	do {
 		ss->read(c,1);
-		if ( !inStr && ((*c) == ' ' || (*c) == '\r' || (*c) == '\n' || (*c) == '\t') ) continue;
-		if ( curvar.size() && !inStr && ( term(*c) || term(*curvar.rbegin())) ) {
+		if ( !inComment && !inStr && ((*c) == ' ' || (*c) == '\r' || (*c) == '\n' || (*c) == '\t') ) continue;
+		if ( curvar.size() && !inComment && !inStr && ( term(*c) || term(*curvar.rbegin())) ) {
 			Argument* v = new Argument(curvar);
 			curvar.clear();
 			curvar.push_back(*c);
@@ -234,8 +236,12 @@ Entity::Entity(std::istream* ss, std::vector<int>& refs, bool sub) {
 			}
 			previousPos = ss->tellg();
 			delete v;
-		} else curvar.push_back(*c);
-		if ( *c == '\'' ) inStr = !inStr;
+		} 
+		else if ( ! inComment ) curvar.push_back(*c);
+		if ( !inComment && *c == '\'' ) inStr = !inStr;
+		else if ( !inStr && *p == '/' && *c == '*' ) { inComment = true; curvar.clear(); }
+		else if ( !inStr && *p == '*' && *c == '/' ) inComment = false;
+		p[0] = c[0];
 	} while ( !ss->eof() && (*c != ';' || inStr) );
 }
 Entity::~Entity() {
@@ -316,8 +322,7 @@ EntityPtr Entities::operator[] (int i) {
 Entities::Entities() {
 	size = 0;
 }
-
-File::File(std::string fn, bool debug) {
+File::File(const std::string& fn, bool debug) {
 	valid = false;
 	std::ifstream f(fn.c_str());
 	if ( ! f.is_open() ) return;
@@ -392,7 +397,7 @@ EntitiesPtr Ifc::EntitiesByReference(int t) {
 EntityPtr Ifc::EntityById(int id) {
 	return f->EntityById(id);
 }
-bool Ifc::Init(std::string fn) {
+bool Ifc::Init(const std::string& fn) {
 	f = new File(fn, false);
 	IfcEntity IfcUnitAssigment = *EntitiesByType(IfcSchema::Enum::IfcUnitAssignment)->begin();
 	IfcEntities units = ((IfcSchema::UnitAssignment*)IfcUnitAssigment.get())->Units();

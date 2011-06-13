@@ -46,6 +46,7 @@ namespace IfcGeom {
 	bool convert_curve(const IfcEntity L, Handle(Geom_Curve)& result);
 	bool convert_face(const IfcEntity L, TopoDS_Face& result);
 	bool convert_openings(const IfcSchema::BuildingElement* IfcBuildingElement, const IfcEntities openings, TopoDS_Shape& result, const gp_Trsf& trsf);
+	bool profile_helper(int numVerts, float* verts, int numFillets, int* filletIndices, float* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
 }
 
 #endif
