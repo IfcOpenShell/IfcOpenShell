@@ -120,6 +120,28 @@ IFC_FLT(RectangleProfileDef,Width,3)
 IFC_FLT(RectangleProfileDef,Height,4)
 IFC_END_CLASS
 
+IFC_WIRE_CLASS(CircleProfileDef)
+IFC_REF(CircleProfileDef,Placement,2)
+IFC_FLT(CircleProfileDef,Radius,3)
+IFC_END_CLASS
+
+IFC_FACE_CLASS(CircleHollowProfileDef)
+IFC_REF(CircleHollowProfileDef,Placement,2)
+IFC_FLT(CircleHollowProfileDef,Radius,3)
+IFC_FLT(CircleHollowProfileDef,WallThickness,4)
+IFC_END_CLASS
+
+IFC_CURVE_CLASS(Circle)
+IFC_REF(Circle,Placement,0)
+IFC_FLT(Circle,Radius,1)
+IFC_END_CLASS
+
+IFC_CURVE_CLASS(Ellipse)
+IFC_REF(Ellipse,Placement,0)
+IFC_FLT(Ellipse,Axis1,1)
+IFC_FLT(Ellipse,Axis2,2)
+IFC_END_CLASS
+
 IFC_CLASS(CartesianPoint,gp_Pnt)
 IFC_FLT_SUB(CartesianPoint,X,0,0)
 IFC_FLT_SUB(CartesianPoint,Y,0,1)
@@ -152,8 +174,21 @@ IFC_WIRE_CLASS(Polyline)
 IFC_REFS(Polyline,Points,0)
 IFC_END_CLASS
 
+IFC_WIRE_CLASS(CompositeCurve)
+IFC_REFS(CompositeCurve,Segments,0)
+IFC_BOOL(CompositeCurve,SelfIntersects,1)
+IFC_END_CLASS
+
 IFC_WIRE_CLASS(Polyloop)
 IFC_REFS(Polyloop,Points,0)
+IFC_END_CLASS
+
+IFC_WIRE_CLASS(TrimmedCurve)
+IFC_REF(TrimmedCurve,BasisCurve,0)
+IFC_REFS(TrimmedCurve,Trim1,1)
+IFC_REFS(TrimmedCurve,Trim2,2)
+IFC_BOOL(TrimmedCurve,SenseAgreement,3)
+IFC_STR(TrimmedCurve,MasterRepresentation,4)
 IFC_END_CLASS
 
 IFC_HELPER_CLASS(BuildingElement)
@@ -168,14 +203,42 @@ IFC_HELPER_CLASS(ShapeRepresentation)
 IFC_REFS(ShapeRepresentation,Shapes,3)
 IFC_END_CLASS
 
+IFC_HELPER_CLASS(CompositeCurveSegment)
+IFC_STR(CompositeCurveSegment,Transition,0)
+IFC_BOOL(CompositeCurveSegment,SameSense,1)
+IFC_REF(CompositeCurveSegment,ParentCurve,2)
+IFC_END_CLASS
+
 IFC_HELPER_CLASS(SIUnit)
-IFC_STR(SIUnit,Type,1)
-IFC_STR(SIUnit,Prefix,2)
+IFC_STR(SIUnit,UnitType,1)
+IFC_STR(SIUnit,UnitPrefix,2)
 IFC_STR(SIUnit,Name,3)
+IFC_END_CLASS
+IFC_HELPER_CLASS(ConversionBasedUnit)
+IFC_REF(ConversionBasedUnit,Dimensions,0)
+IFC_STR(ConversionBasedUnit,UnitType,1)
+IFC_STR(ConversionBasedUnit,Name,2)
+IFC_REF(ConversionBasedUnit,ConversionFactor,3)
+IFC_END_CLASS
+IFC_HELPER_CLASS(MeasureWithUnit)
+IFC_REF(MeasureWithUnit,Value,0)
+IFC_REF(MeasureWithUnit,Unit,1)
+IFC_END_CLASS
+IFC_HELPER_CLASS(UnitAssignment)
+IFC_REFS(UnitAssignment,Units,0)
+IFC_END_CLASS
+
+IFC_HELPER_CLASS(ParameterValue)
+IFC_FLT(ParameterValue,Value,0)
+IFC_END_CLASS
+IFC_HELPER_CLASS(RatioMeasure)
+IFC_FLT(RatioMeasure,Value,0)
 IFC_END_CLASS
 
 IFC_HELPER_CLASS(ProductDefinitionShape)
 IFC_REFS(ProductDefinitionShape,ShapeReps,2)
+IFC_END_CLASS
+IFC_HELPER_CLASS(ProductRepresentation) // 2x2 compatibility
 IFC_END_CLASS
 IFC_HELPER_CLASS(RepresentationMap)
 IFC_END_CLASS
@@ -194,3 +257,4 @@ IFC_SKIP_CLASS(RelDefinesByProperty)
 IFC_SKIP_CLASS(MaterialLayer)
 IFC_SKIP_CLASS(MaterialLayerSet)
 IFC_SKIP_CLASS(MaterialLayerSetUsage)
+IFC_SKIP_CLASS(PresentationLayerAssignment)

@@ -31,6 +31,7 @@
 #include <TColgp_Array1OfPnt.hxx>
 #include <TShort_Array1OfShortReal.hxx>
 #include <Poly_Array1OfTriangle.hxx>
+#include <StdFail_NotDone.hxx>
 
 #include "../ifcparse/IfcGeomObjects.h"
 #include "../ifcparse/IfcGeom.h"
@@ -58,8 +59,8 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, TopoDS_Shape s) {
 
 	// Triangulate the shape
 	try {
-	BRepTools::Clean(s);
-	BRepMesh::Mesh(s,0.001f);
+		BRepTools::Clean(s);
+		BRepMesh::Mesh(s,0.001f);
 	} catch(...) {
 		std::cout << "[Error] Failed to triangulate IFC Entity #" << i << std::endl;
 		return;
@@ -167,8 +168,11 @@ IfcGeomObjects::IfcGeomObject* _get() {
 #endif
 			// Find the IfcBuildingElements that refer to the current IfcShapeRepresentation
 			entities = shaperep->parents(IfcSchema::Enum::IfcProductDefinitionShape)->parents();
+			entities->pushs(shaperep->parents(IfcSchema::Enum::IfcProductRepresentation)->parents()); // 2x2 compatibility
 			entities->pushs(shaperep->parents(IfcSchema::Enum::IfcRepresentationMap)->parents(IfcSchema::Enum::IfcMappedItem)
 				->parents(IfcSchema::Enum::IfcShapeRepresentation,1,"Body")->parents(IfcSchema::Enum::IfcProductDefinitionShape)->parents());
+			entities->pushs(shaperep->parents(IfcSchema::Enum::IfcRepresentationMap)->parents(IfcSchema::Enum::IfcMappedItem)
+				->parents(IfcSchema::Enum::IfcShapeRepresentation,1,"Body")->parents(IfcSchema::Enum::IfcProductRepresentation)->parents());
 			if ( ! entities->size ) {
 				_nextShape();
 				continue;
@@ -223,6 +227,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			try {
 				if (openings && openings->size) IfcGeom::convert_openings(entity,openings,temp_shape,trsf);
 			} catch( IfcParse::IfcException& e ) {std::cout << "[Warning] " << e.what() << std::endl; }
+			catch(StdFail_NotDone&) { std::cout << "[Error] Unknown modelling processing openings for:" << std::endl << entity->toString() << std::endl; }
 			if ( use_world_coords ) {
 				shape = new IfcGeomObjects::IfcMesh(shaperep->id,temp_shape.Moved(trsf));
 				trsf = gp_Trsf();

@@ -49,6 +49,11 @@ class Ifc;
 
 namespace IfcParse {
 
+	class Entity;
+	class Entities;
+	typedef SHARED_PTR<Entity> EntityPtr;
+	typedef SHARED_PTR<Entities> EntitiesPtr;
+
 	class Argument {
 	private:
 		static std::vector<std::string> datatypes;
@@ -56,12 +61,14 @@ namespace IfcParse {
 		static std::vector<std::string> argstrings;
 
 		int _data;
-		float _number;	
+		float _number;
+		EntityPtr _entity;
 	public:
-		enum vartype { IDENTIFIER, STRING, NUMBER, OPERATOR, ENUMERATION, DATATYPE };
+		enum vartype { IDENTIFIER, STRING, NUMBER, OPERATOR, ENUMERATION, DATATYPE, SUB_ENTITY };
 		vartype type;
 
 		Argument(const std::string& s);
+		Argument(const EntityPtr e);
 
 		bool isOp(char op = 0) const;
 
@@ -69,6 +76,7 @@ namespace IfcParse {
 		int i() const;
 		std::string s() const;
 		bool b() const;
+		EntityPtr r() const;
 
 		std::string toString() const;
 
@@ -77,11 +85,6 @@ namespace IfcParse {
 		friend class ::Ifc;
 	};
 
-	class Entity;
-	class Entities;
-	typedef SHARED_PTR<Entity> EntityPtr;
-	typedef SHARED_PTR<Entities> EntitiesPtr;
-
 	class ArgumentList {
 	private:
 		std::vector<ArgumentList*> _levels;
@@ -89,7 +92,7 @@ namespace IfcParse {
 		ArgumentList* _current;
 		const Argument* _arg;
 		void _push();
-		void _pop();
+		bool _pop();
 		void _append(const Argument* v);
 	public:	
 		ArgumentList();
@@ -118,7 +121,7 @@ namespace IfcParse {
 		ArgumentList* args;
 		Argument* _dt;
 
-		Entity(std::istream* ss, std::vector<int>& refs);
+		Entity(std::istream* ss, std::vector<int>& refs, bool sub = false);
 		~Entity();
 
 		ArgumentList* arg(int i) const;
@@ -174,6 +177,8 @@ namespace IfcParse {
 typedef IfcParse::EntityPtr IfcEntity;
 typedef IfcParse::EntitiesPtr IfcEntities;
 
+float UnitPrefixToValue(const std::string& s);
+
 class Ifc {
 private:
 	static IfcParse::File* f;
@@ -183,7 +188,9 @@ public:
 	static IfcEntity EntityById(int id);
 	static bool Init(std::string fn);
 	static void Dispose();
-	static float Scale;
+	static float LengthUnit;
+	static float PlaneAngleUnit;
+	static int CircleSegments;
 };
 
 #endif

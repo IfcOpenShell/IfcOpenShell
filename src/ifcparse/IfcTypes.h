@@ -26,6 +26,7 @@
 #include <gp_Trsf2d.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
+#include <Geom_Curve.hxx>
 
 #include "../ifcparse/IfcParse.h"
 
@@ -42,6 +43,7 @@ namespace IfcGeom {
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
 	bool convert_shape(const IfcEntity L, TopoDS_Shape& result);
 	bool convert_wire(const IfcEntity L, TopoDS_Wire& result);
+	bool convert_curve(const IfcEntity L, Handle(Geom_Curve)& result);
 	bool convert_face(const IfcEntity L, TopoDS_Face& result);
 	bool convert_openings(const IfcSchema::BuildingElement* IfcBuildingElement, const IfcEntities openings, TopoDS_Shape& result, const gp_Trsf& trsf);
 }

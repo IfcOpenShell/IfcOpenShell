@@ -39,23 +39,27 @@
 #include <gp_Ax3.hxx>
 #include <gp_Ax2d.hxx>
 #include <gp_Pln.hxx>
+#include <gp_Circ.hxx>
 
 #include <TColgp_Array1OfPnt.hxx>
 #include <TColgp_Array1OfPnt2d.hxx>
 #include <TColStd_Array1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
-#include <Geom2d_BSplineCurve.hxx>
-#include <Geom_BSplineCurve.hxx>
+#include <Geom_Circle.hxx>
+#include <Geom_Ellipse.hxx>
+#include <Geom_TrimmedCurve.hxx>
 
 #include <BRepOffsetAPI_Sewing.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
 
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
+#include <TopExp_Explorer.hxx>
 
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepBuilderAPI_MakeShell.hxx>
@@ -72,7 +76,7 @@
 bool IfcGeom::convert(IfcSchema::ExtrudedAreaSolid* IfcExtrudedAreaSolid, TopoDS_Shape& shape) {
 	TopoDS_Face face;
 	if ( ! IfcGeom::convert_face(IfcExtrudedAreaSolid->Profile(),face) ) return false;
-	const float height = IfcExtrudedAreaSolid->Height() * Ifc::Scale;
+	const float height = IfcExtrudedAreaSolid->Height() * Ifc::LengthUnit;
 	gp_Trsf trsf;
 	convert((IfcSchema::Axis2Placement3D*) IfcExtrudedAreaSolid->Placement().get(),trsf);
 
@@ -98,7 +102,7 @@ bool IfcGeom::convert(IfcSchema::HalfSpaceSolid* IfcHalfSpaceSolid, TopoDS_Shape
 	gp_Pln pln;
 	IfcGeom::convert(IfcPlane,pln);
 	gp_Pnt pnt = pln.Location();
-	if ( !IfcHalfSpaceSolid->Flag() ^ (IfcHalfSpaceSolid->dt == IfcSchema::Enum::IfcPolygonalBoundedHalfSpace) ) pnt.Translate(pln.Axis().Direction());
+	if ( !IfcHalfSpaceSolid->Flag() != (IfcHalfSpaceSolid->dt == IfcSchema::Enum::IfcPolygonalBoundedHalfSpace) ) pnt.Translate(pln.Axis().Direction());
 	else pnt.Translate(-pln.Axis().Direction());
 	shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln),pnt).Solid();
 	return true;
@@ -142,17 +146,19 @@ bool IfcGeom::convert(IfcSchema::BooleanClippingResult* IfcBooleanClippingResult
 }
 bool IfcGeom::convert(IfcSchema::ClosedShell* IfcClosedShell, TopoDS_Shape& shape) {
 	if ( ! IfcGeom::convert((IfcSchema::OpenShell*) IfcClosedShell,shape) ) return false;
-	ShapeFix_Solid solid;
-	solid.LimitTolerance(0.001);
-	shape = solid.SolidFromShell(TopoDS::Shell(shape));
+	try {
+		ShapeFix_Solid solid;
+		solid.LimitTolerance(0.01);
+		shape = solid.SolidFromShell(TopoDS::Shell(shape));
+	} catch(...) {}
 	return true;
 }
 bool IfcGeom::convert(IfcSchema::ConnectedFaceSet* IfcConnectedFaceSet, TopoDS_Shape& shape) {
-	return IfcGeom::convert((IfcSchema::OpenShell*) IfcConnectedFaceSet,shape);
+	return IfcGeom::convert((IfcSchema::ClosedShell*) IfcConnectedFaceSet,shape);
 }
 bool IfcGeom::convert(IfcSchema::OpenShell* IfcOpenShell, TopoDS_Shape& shape) {
 	BRepOffsetAPI_Sewing builder;
-	builder.SetTolerance(0.001);
+	builder.SetTolerance(0.01);
 	IfcEntities faces = IfcOpenShell->Faces();
 	bool facesAdded = false;
 	for( IfcParse::Entities::it it = faces->begin(); it != faces->end(); ++ it ) {
@@ -180,7 +186,7 @@ bool IfcGeom::convert(IfcSchema::Face* IfcFace, TopoDS_Face& face) {
 	BRepBuilderAPI_MakeFace mf(wire, false);
 	BRepBuilderAPI_FaceError er = mf.Error();
 	if ( er == BRepBuilderAPI_NotPlanar ) {
-		std::cout << "[Notice] Trying to fix non-planar face" << std::endl;
+		std::cout << "[Notice] Trying to fix non-planar face:" << std::endl << IfcFace->toString() << std::endl;
 		ShapeFix_ShapeTolerance FTol;
 		FTol.SetTolerance(wire, 0.01, TopAbs_WIRE);
 		mf = BRepBuilderAPI_MakeFace(wire, false);
@@ -206,11 +212,39 @@ bool IfcGeom::convert(IfcSchema::Face* IfcFace, TopoDS_Face& face) {
 	face = TopoDS::Face(sfs.Shape());
 	return true;		
 }
+bool IfcGeom::convert(IfcSchema::CircleHollowProfileDef* IfcCircleHollowProfileDef, TopoDS_Face& face) {
+	const float r = IfcCircleHollowProfileDef->Radius() * Ifc::LengthUnit;
+	const float t = IfcCircleHollowProfileDef->WallThickness() * Ifc::LengthUnit;
+	
+	if ( r == 0.0f || t == 0.0f ) {
+		std::cout << "[Notice] Skipping zero sized profile:" << std::endl << IfcCircleHollowProfileDef->toString() << std::endl;
+		return false;
+	}
+	
+	gp_Trsf2d trsf;	
+	IfcGeom::convert((IfcSchema::Axis2Placement2D*)IfcCircleHollowProfileDef->Placement().get(),trsf);
+	gp_Ax2 ax = gp_Ax2().Transformed(trsf);
+
+	BRepBuilderAPI_MakeWire outer;	
+	Handle(Geom_Circle) outerCircle = new Geom_Circle(ax, r);
+	outer.Add(BRepBuilderAPI_MakeEdge(outerCircle));
+	BRepBuilderAPI_MakeFace mf(outer.Wire(), false);
+
+	BRepBuilderAPI_MakeWire inner;	
+	Handle(Geom_Circle) innerCirlce = new Geom_Circle(ax, r-t);
+	inner.Add(BRepBuilderAPI_MakeEdge(innerCirlce));
+	mf.Add(inner);
+
+	ShapeFix_Shape sfs(mf.Face());
+	sfs.Perform();
+	face = TopoDS::Face(sfs.Shape());	
+	return true;		
+}
 bool IfcGeom::convert(IfcSchema::CartesianPoint* IfcCartesianPoint, gp_Pnt& p) {
 	if ( IfcCartesianPoint->arg(0)->count() == 3 )
-		p = gp_Pnt(IfcCartesianPoint->X() * Ifc::Scale,IfcCartesianPoint->Y() * Ifc::Scale,IfcCartesianPoint->Z() * Ifc::Scale);
+		p = gp_Pnt(IfcCartesianPoint->X() * Ifc::LengthUnit,IfcCartesianPoint->Y() * Ifc::LengthUnit,IfcCartesianPoint->Z() * Ifc::LengthUnit);
 	else
-		p = gp_Pnt(IfcCartesianPoint->X() * Ifc::Scale,IfcCartesianPoint->Y() * Ifc::Scale,0.0f);
+		p = gp_Pnt(IfcCartesianPoint->X() * Ifc::LengthUnit,IfcCartesianPoint->Y() * Ifc::LengthUnit,0.0f);
 	return true;
 }
 bool IfcGeom::convert(IfcSchema::Direction* IfcDirection, gp_Vec& v) {
@@ -226,7 +260,7 @@ bool IfcGeom::convert(IfcSchema::ArbitraryClosedProfileDef* IfcArbitraryClosedPr
 bool IfcGeom::convert(IfcSchema::ArbitraryProfileDefWithVoids* IfcArbitraryProfileDefWithVoids, TopoDS_Face& face) {
 	TopoDS_Wire profile;
 	if ( ! IfcGeom::convert_wire(IfcArbitraryProfileDefWithVoids->Polyline(),profile) ) return false;
-	BRepBuilderAPI_MakeFace mf(profile, false); 
+	BRepBuilderAPI_MakeFace mf(profile, false);
 	IfcEntities voids = IfcArbitraryProfileDefWithVoids->Voids();
 	for( IfcParse::Entities::it it = voids->begin(); it != voids->end(); ++ it ) {
 		TopoDS_Wire hole;
@@ -240,14 +274,14 @@ bool IfcGeom::convert(IfcSchema::ArbitraryProfileDefWithVoids* IfcArbitraryProfi
 	return true;
 }
 bool IfcGeom::convert(IfcSchema::RectangleProfileDef* IfcRectangleProfileDef,class TopoDS_Wire& wire) {
-	const float x = IfcRectangleProfileDef->Width() / 2.0f * Ifc::Scale;
-	const float y = IfcRectangleProfileDef->Height() / 2.0f  * Ifc::Scale;
+	const float x = IfcRectangleProfileDef->Width() / 2.0f * Ifc::LengthUnit;
+	const float y = IfcRectangleProfileDef->Height() / 2.0f  * Ifc::LengthUnit;
 
 	if ( x == 0.0f || y == 0.0f ) {
-		std::cout << "[Notice] Skipping zero sized profile" << std::endl;
+		std::cout << "[Notice] Skipping zero sized profile:" << std::endl << IfcRectangleProfileDef->toString() << std::endl;
 		return false;
 	}
-	
+
 	gp_Trsf2d trsf;
 	IfcGeom::convert((IfcSchema::Axis2Placement2D*)IfcRectangleProfileDef->Placement().get(),trsf);
 	
@@ -264,6 +298,105 @@ bool IfcGeom::convert(IfcSchema::RectangleProfileDef* IfcRectangleProfileDef,cla
 	wire = w.Wire();
 	return true;
 }
+bool IfcGeom::convert(IfcSchema::CircleProfileDef* IfcCircleProfileDef,class TopoDS_Wire& wire) {
+	const float r = IfcCircleProfileDef->Radius() * Ifc::LengthUnit;
+	
+	if ( r == 0.0f ) {
+		std::cout << "[Notice] Skipping zero sized profile:" << std::endl << IfcCircleProfileDef->toString() << std::endl;
+		return false;
+	}
+	
+	gp_Trsf2d trsf;	
+	IfcGeom::convert((IfcSchema::Axis2Placement2D*)IfcCircleProfileDef->Placement().get(),trsf);
+
+	BRepBuilderAPI_MakeWire w;
+
+#ifdef SEGMENTED_CIRCLE
+	TopoDS_Vertex previous,current,first;
+	for ( int i = 0; i <= Ifc::CircleSegments; i ++ ) {
+		const float theta = (float) PI * i / Ifc::CircleSegments * 2;
+		current = i == Ifc::CircleSegments ? first : 
+			BRepBuilderAPI_MakeVertex (  gp_Pnt(r * sin(theta), r * cos(theta), 0.0f)  ).Vertex();
+		if ( i ) {
+			w.Add(BRepBuilderAPI_MakeEdge(previous,current));
+		} else {
+			first = current;
+		}
+		previous = current;
+	}
+#else
+	gp_Ax2 ax = gp_Ax2().Transformed(trsf);
+	Handle(Geom_Circle) circle = new Geom_Circle(ax, r);
+	TopoDS_Edge edge = BRepBuilderAPI_MakeEdge(circle);
+	w.Add(edge);
+#endif
+
+	wire = w.Wire();
+	return true;
+}
+bool IfcGeom::convert(IfcSchema::CompositeCurve* IfcCompositeCurve, class TopoDS_Wire& wire) {
+	IfcEntities segments = IfcCompositeCurve->Segments();
+	BRepBuilderAPI_MakeWire w;
+	for( IfcParse::Entities::it it = segments->begin(); it != segments->end(); ++ it ) {
+		IfcSchema::CompositeCurveSegment* segment = (IfcSchema::CompositeCurveSegment*)(*it).get();
+		TopoDS_Wire wire2;
+		if ( ! IfcGeom::convert_wire(segment->ParentCurve(),wire2) ) continue;
+		ShapeFix_ShapeTolerance FTol;
+		FTol.SetTolerance(wire2, 0.01, TopAbs_WIRE);
+		w.Add(wire2);
+		if ( w.Error() != BRepBuilderAPI_WireDone ) {
+			std::cout << "[Error] Failed to join curve segments:" << std::endl << IfcCompositeCurve->toString() << std::endl;
+			return false;
+		}
+	}
+	wire = w.Wire();
+	return true;
+}
+bool IfcGeom::convert(IfcSchema::TrimmedCurve* IfcTrimmedCurve, class TopoDS_Wire& wire) {
+	IfcEntity basis = IfcTrimmedCurve->BasisCurve();
+	IfcEntity trim1 = *IfcTrimmedCurve->Trim1()->begin();
+	IfcEntity trim2 = *IfcTrimmedCurve->Trim2()->begin();
+	Handle(Geom_Curve) curve;
+	if ( ! IfcGeom::convert_curve(basis,curve) ) return false;
+	if ( trim1->dt != trim2->dt ) return false;
+	BRepBuilderAPI_MakeWire w;
+	if ( trim1->dt == IfcSchema::Enum::IfcParameterValue ) {
+		const float p1 = ((IfcSchema::ParameterValue*)trim1.get())->Value() * Ifc::PlaneAngleUnit;
+		const float p2 = ((IfcSchema::ParameterValue*)trim2.get())->Value() * Ifc::PlaneAngleUnit;
+		BRepBuilderAPI_MakeEdge e (curve,p1,p2);
+		w.Add(e.Edge());
+	} else if ( trim1->dt == IfcSchema::Enum::IfcCartesianPoint ) {
+		gp_Pnt v1,v2;
+		IfcGeom::convert((IfcSchema::CartesianPoint*)trim1.get(),v1);
+		IfcGeom::convert((IfcSchema::CartesianPoint*)trim2.get(),v2);
+		BRepBuilderAPI_MakeEdge e (curve,v1,v2);
+		w.Add(e.Edge());
+	}
+	wire = w.Wire();
+	return true;
+}
+bool IfcGeom::convert(IfcSchema::Circle* IfcCircle, Handle(Geom_Curve)& curve) {
+	const float r = IfcCircle->Radius() * Ifc::LengthUnit;
+	if ( r == 0.0f ) { return false; }
+	IfcSchema::Axis2Placement2D* placement = (IfcSchema::Axis2Placement2D*) IfcCircle->Placement().get();
+	gp_Trsf2d trsf;
+	IfcGeom::convert(placement, trsf);
+	gp_Ax2 ax = gp_Ax2().Transformed(trsf);
+	curve = new Geom_Circle(ax, r);
+	return true;
+}
+bool IfcGeom::convert(IfcSchema::Ellipse* IfcEllipse, Handle(Geom_Curve)& curve) {
+	float x = IfcEllipse->Axis1() * Ifc::LengthUnit;
+	float y = IfcEllipse->Axis2() * Ifc::LengthUnit;
+	if ( x == 0.0f || y == 0.0f || y > x ) { return false; }
+	IfcSchema::Axis2Placement2D* placement = (IfcSchema::Axis2Placement2D*) IfcEllipse->Placement().get();
+	gp_Trsf2d trsf;
+	IfcGeom::convert(placement, trsf);
+	gp_Ax2 ax;
+	ax = gp_Ax2().Transformed(trsf);
+	curve = new Geom_Ellipse(ax, x, y);
+	return true;
+}
 bool IfcGeom::convert(IfcSchema::Polyline* IfcPolyline, TopoDS_Wire& result) {
 	IfcEntities points = IfcPolyline->Points();
 
@@ -272,7 +405,10 @@ bool IfcGeom::convert(IfcSchema::Polyline* IfcPolyline, TopoDS_Wire& result) {
 		gp_Pnt P1;gp_Pnt P2;
 		IfcGeom::convert((IfcSchema::CartesianPoint*)(*it).get(),P1);
 		IfcParse::Entities::it next = it + 1;
-		if ( next == points->end() ) next = points->begin();
+		if ( next == points->end() ) {
+			if ( IfcPolyline->dt == IfcSchema::Enum::IfcPolyloop ) next = points->begin();
+			else break;
+		}
 		IfcGeom::convert((IfcSchema::CartesianPoint*)(*next).get(),P2);
 		if ( P1.X() == P2.X() && P1.Y() == P2.Y() && P1.Z() == P2.Z() ) continue;
 		TopoDS_Edge e = BRepBuilderAPI_MakeEdge(P1,P2);
@@ -290,8 +426,8 @@ bool IfcGeom::convert(IfcSchema::Axis2Placement3D* IfcAxis2Placement3D, gp_Trsf&
 
 	IfcGeom::convert((IfcSchema::CartesianPoint*) IfcAxis2Placement3D->Origin().get(),o);
 	try {
-	IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement3D->Dir1().get(),z);
-	IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement3D->Dir2().get(),x);
+		IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement3D->Dir1().get(),z);
+		IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement3D->Dir2().get(),x);
 	} catch( IfcParse::IfcException& ) {}
 
 	gp_Ax3 axis(o,z,x);
@@ -311,13 +447,13 @@ bool IfcGeom::convert(IfcSchema::Plane* IfcPlane, gp_Pln& plane) {
 	plane = gp_Pln(axis);
 	return true;
 }
-bool IfcGeom::convert(IfcSchema::Axis2Placement2D* IfcAxis2Placement2D, gp_Trsf2d& trsf) {	
+bool IfcGeom::convert(IfcSchema::Axis2Placement2D* IfcAxis2Placement2D, gp_Trsf2d& trsf) {
 	gp_Pnt P; gp_Vec V;
 
 	IfcGeom::convert((IfcSchema::CartesianPoint*) IfcAxis2Placement2D->Origin().get(),P);
 	IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement2D->Dir1().get(),V);
 
-	gp_Ax2d axis (gp_Pnt2d(P.X(),P.Y()),gp_Vec2d(V.X(),V.Y()));
+	gp_Ax2d axis(gp_Pnt2d(P.X(),P.Y()),gp_Vec2d(V.X(),V.Y()));
 	trsf.SetTransformation(axis,gp_Ax2d());
 	return true;
 }
@@ -347,7 +483,7 @@ bool IfcGeom::convert_openings(const IfcSchema::BuildingElement* IfcBuildingElem
 			IfcEntities IfcShapes = IfcShapeRepresentation->Shapes();
 			for ( IfcParse::Entities::it shape = IfcShapes->begin(); shape != IfcShapes->end(); ++shape ) {
 				TopoDS_Shape s;
-				if ( ! IfcGeom::convert_shape(*shape,s) ) continue;
+				if ( ! IfcGeom::convert_shape(*shape,s)) continue;
 				s.Move(trsf);
 				s.Move(trsf3);
 				result = BRepAlgoAPI_Cut(result,s);

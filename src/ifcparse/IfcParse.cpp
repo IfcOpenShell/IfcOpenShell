@@ -57,6 +57,10 @@ Argument::Argument(const std::string& s) {
 		if ( _data == -1 ) { _data = datatypes.size(); datatypes.push_back(s); }
 	}
 }
+Argument::Argument(const EntityPtr e) {
+	type = SUB_ENTITY;
+	_entity = e;
+}
 std::string Argument::s() const {
 	if ( type == OPERATOR ) { std::string r; r.push_back((char)_data); return r; }
 	if ( type == DATATYPE ) return datatypes[_data];
@@ -76,6 +80,10 @@ bool Argument::b() const {
 	if ( type != ENUMERATION ) throw IfcException();
 	return s() == "T";
 }
+EntityPtr Argument::r() const {
+	if ( type != SUB_ENTITY ) throw IfcException();
+	return _entity;
+}
 bool Argument::isOp(char op) const {
 	return type == OPERATOR && ( op == 0 || op == ((char)_data) );
 }
@@ -87,6 +95,7 @@ std::string Argument::toString() const {
 	else if ( type == STRING ) ss << "'" << s() << "'";
 	else if ( type == ENUMERATION ) ss << "." << s() << ".";
 	else if ( type == IDENTIFIER ) ss << "#" << i();
+	else if ( type == SUB_ENTITY ) ss << _entity->toString();
 	return ss.str();
 }
 std::vector<std::string> Argument::datatypes;
@@ -104,10 +113,11 @@ void ArgumentList::_push() {
 	_args.push_back(a);
 	_current = a;
 }
-void ArgumentList::_pop() {
-	if ( _levels.empty() ) return;
-	_current = _levels.back();
+bool ArgumentList::_pop() {
 	_levels.pop_back();
+	if ( _levels.empty() ) return true;
+	_current = _levels.back();	
+	return _levels.empty();
 }
 void ArgumentList::_append(const Argument* v) {
 	ArgumentList* a = new ArgumentList();
@@ -120,7 +130,7 @@ std::string ArgumentList::toString() const {
 	std::stringstream ss; ss << "(";
 	std::vector<ArgumentList*>::const_iterator it;
 	for ( it = _args.begin() ; it != _args.end(); ++ it ) {
-		if ( it != _args.begin() ) ss << ",";
+		if ( it != _args.begin() ) ss << ",";	
 		ss << (*it)->toString();
 	}
 	ss << ")";
@@ -135,8 +145,11 @@ int ArgumentList::count() const { return _arg ? 1 : _args.size(); }
 ArgumentList* ArgumentList::arg(int i) const { return _args[i]; }
 
 EntityPtr ArgumentList::ref() const {
-	if ( _arg->isOp('$') ) throw IfcException();
-	return Ifc::EntityById(_arg->i());
+	if ( _arg->type == Argument::IDENTIFIER ) {
+		return Ifc::EntityById(_arg->i());
+	} else {
+		return _arg->r();
+	}
 }
 EntitiesPtr ArgumentList::refs() const {
 	EntitiesPtr l (new Entities());
@@ -145,6 +158,8 @@ EntitiesPtr ArgumentList::refs() const {
 		ArgumentList* a = *it;
 		if ( a->_arg && a->_arg->type == Argument::IDENTIFIER ) {
 			l->push(Ifc::EntityById(a->_arg->i()));
+		} else if ( a->_arg && a->_arg->type == Argument::SUB_ENTITY ) {
+			l->push(a->_arg->r());
 		}
 	}
 	return l;
@@ -160,12 +175,13 @@ ArgumentList::~ArgumentList() {
 inline bool Entity::term(char last) {
 	return last == '(' || last == ')' || last == '=' || last == ',' || last == ';';
 }
-Entity::Entity(std::istream* ss, std::vector<int>& refs) {
+Entity::Entity(std::istream* ss, std::vector<int>& refs, bool sub) {
 	std::string curvar;
 	curvar.reserve(64);
 	bool inStr = false;
 	char c[1] = "";
 	int state = -1;
+	int previousPos = -1;
 	args = 0;
 	_dt = 0;
 	id = -1;
@@ -177,31 +193,46 @@ Entity::Entity(std::istream* ss, std::vector<int>& refs) {
 			curvar.clear();
 			curvar.push_back(*c);
 			if ( state < 10 ) state ++;
-			if ( state == 0 ) {
+			if ( !sub && !state ) {
 				if ( v->type == Argument::IDENTIFIER ) {
 					id = v->i(); 
 				} else {
 					state = -1;
 				}
-			} else if ( state == 1 ) {
+			} else if ( ! sub && (state == 1) ) {
 				if ( ! v->isOp('=') ) state = -1;
-			} else if ( state == 2 ) {
+			} else if ( (sub && !state) || (!sub && state == 2) ) {
 				if ( v->type == Argument::DATATYPE ) {
 					dt = IfcSchema::Enum::FromString(v->s());
 					_dt = v;
 					continue;
 				}
 			} else if ( args ) {
-				if ( v->isOp('(') ) args->_push();
-				else if ( v->isOp(')') ) args->_pop();
-				else if ( ! v->isOp(',') && !v->isOp(';') ) {
-					args->_append(v);
-					if ( v->type == Argument::IDENTIFIER ) refs.push_back(v->i());
-					continue;
+				if ( v->isOp('(') ) 
+					args->_push();
+				else if ( v->isOp(')') ) {
+					bool closed = args->_pop();
+					if ( closed && sub ) {
+						delete v;
+						return;
+					}
+				} else if ( ! v->isOp(',') && !v->isOp(';') ) {
+					if ( v->type == Argument::DATATYPE ) {
+						ss->seekg(previousPos-1,std::ios_base::beg);
+						Argument* a = new Argument(EntityPtr(new Entity(ss,refs,true)));
+						ss->seekg(-1,std::ios_base::cur);
+						curvar.clear();
+						args->_append(a);
+					} else {
+						args->_append(v);
+						if ( v->type == Argument::IDENTIFIER ) refs.push_back(v->i());
+						continue;
+					}					
 				}
 			} else if ( v->isOp('(') ) {
 				args = new ArgumentList();
 			}
+			previousPos = ss->tellg();
 			delete v;
 		} else curvar.push_back(*c);
 		if ( *c == '\'' ) inStr = !inStr;
@@ -224,7 +255,8 @@ ArgumentList* Entity::arg(int i) const {
 std::string Entity::toString() const {
 	std::stringstream ss;
 	if ( isAssignment() ) {
-		ss << "#" << id << "=" << datatype() << args->toString();
+		if ( id > 0 ) ss << "#" << id << "=";
+		ss << datatype() << args->toString();
 	}
 	return ss.str();
 }
@@ -296,7 +328,7 @@ File::File(std::string fn, bool debug) {
 		EntityPtr il (new Entity(pf,refs));
 		if ( il->isAssignment() ) {
 			if ( debug )
-				std::cout << il->toString();
+				std::cout << il->toString() << std::endl;
 			if ( il->dt == IfcSchema::Enum::IfcDontCare ) {
 				continue;
 			}
@@ -362,28 +394,29 @@ EntityPtr Ifc::EntityById(int id) {
 }
 bool Ifc::Init(std::string fn) {
 	f = new File(fn, false);
-	IfcEntities units = EntitiesByType(IfcSchema::Enum::IfcSIUnit);
-	Ifc::Scale = 1.0f;
+	IfcEntity IfcUnitAssigment = *EntitiesByType(IfcSchema::Enum::IfcUnitAssignment)->begin();
+	IfcEntities units = ((IfcSchema::UnitAssignment*)IfcUnitAssigment.get())->Units();
+	Ifc::LengthUnit = 1.0f;
 	if ( units )
 	for ( IfcParse::Entities::it it = units->begin(); it != units->end(); it ++ ) {
-		IfcSchema::SIUnit* unit = (IfcSchema::SIUnit*)(*it).get();
-		if ( unit->Type() == "LENGTHUNIT" ) {
-			if      ( unit->Prefix() == "EXA"   ) Ifc::Scale = (float) 1e18;
-			else if ( unit->Prefix() == "PETA"  ) Ifc::Scale = (float) 1e15;
-			else if ( unit->Prefix() == "TERA"  ) Ifc::Scale = (float) 1e12;
-			else if ( unit->Prefix() == "GIGA"  ) Ifc::Scale = (float) 1e9;
-			else if ( unit->Prefix() == "MEGA"  ) Ifc::Scale = (float) 1e6;
-			else if ( unit->Prefix() == "KILO"  ) Ifc::Scale = (float) 1e3;
-			else if ( unit->Prefix() == "HECTO" ) Ifc::Scale = (float) 1e2;
-			else if ( unit->Prefix() == "DECA"  ) Ifc::Scale = (float) 1;
-			else if ( unit->Prefix() == "DECI"  ) Ifc::Scale = (float) 1e-1;
-			else if ( unit->Prefix() == "CENTI" ) Ifc::Scale = (float) 1e-2;
-			else if ( unit->Prefix() == "MILLI" ) Ifc::Scale = (float) 1e-3;
-			else if ( unit->Prefix() == "MICRO" ) Ifc::Scale = (float) 1e-6;
-			else if ( unit->Prefix() == "NANO"  ) Ifc::Scale = (float) 1e-9;
-			else if ( unit->Prefix() == "PICO"  ) Ifc::Scale = (float) 1e-12;
-			else if ( unit->Prefix() == "FEMTO" ) Ifc::Scale = (float) 1e-15;
-			else if ( unit->Prefix() == "ATTO"  ) Ifc::Scale = (float) 1e-18;
+		IfcEntity unit = *it;
+		float value = 1.0f;
+		std::string UnitType = "";
+		if ( unit->dt == IfcSchema::Enum::IfcConversionBasedUnit ) {
+			IfcSchema::ConversionBasedUnit* IfcConversionBasedUnit = (IfcSchema::ConversionBasedUnit*)(*it).get();
+			IfcSchema::MeasureWithUnit* IfcMeasureWithUnit = (IfcSchema::MeasureWithUnit*)IfcConversionBasedUnit->ConversionFactor().get();
+			unit = IfcMeasureWithUnit->Unit();
+			value = IfcMeasureWithUnit->Value()->arg(0)->f();
+		}
+		if ( unit->dt == IfcSchema::Enum::IfcSIUnit ) {
+			IfcSchema::SIUnit* IfcSIUnit = (IfcSchema::SIUnit*)(*it).get();
+			value *= UnitPrefixToValue(IfcSIUnit->UnitPrefix());
+			UnitType = IfcSIUnit->UnitType();
+		}
+		if ( UnitType == "LENGTHUNIT" ) {
+			Ifc::LengthUnit = value;
+		} else if ( UnitType == "PLANEANGLEUNIT" ) {
+			Ifc::PlaneAngleUnit = value;
 		}
 	}
 	return f->valid;
@@ -395,4 +428,26 @@ void Ifc::Dispose() {
 	Argument::enumstrings.clear();
 }
 File* Ifc::f = 0;
-float Ifc::Scale = 1.0f;
+float Ifc::LengthUnit = 1.0f;
+float Ifc::PlaneAngleUnit = 1.0f;
+int Ifc::CircleSegments = 32;
+
+float UnitPrefixToValue( const std::string& s ) {
+	     if ( s == "EXA"   ) return (float) 1e18;
+	else if ( s == "PETA"  ) return (float) 1e15;
+	else if ( s == "TERA"  ) return (float) 1e12;
+	else if ( s == "GIGA"  ) return (float) 1e9;
+	else if ( s == "MEGA"  ) return (float) 1e6;
+	else if ( s == "KILO"  ) return (float) 1e3;
+	else if ( s == "HECTO" ) return (float) 1e2;
+	else if ( s == "DECA"  ) return (float) 1;
+	else if ( s == "DECI"  ) return (float) 1e-1;
+	else if ( s == "CENTI" ) return (float) 1e-2;
+	else if ( s == "MILLI" ) return (float) 1e-3;
+	else if ( s == "MICRO" ) return (float) 1e-6;
+	else if ( s == "NANO"  ) return (float) 1e-9;
+	else if ( s == "PICO"  ) return (float) 1e-12;
+	else if ( s == "FEMTO" ) return (float) 1e-15;
+	else if ( s == "ATTO"  ) return (float) 1e-18;
+	else return 1.0f;
+}

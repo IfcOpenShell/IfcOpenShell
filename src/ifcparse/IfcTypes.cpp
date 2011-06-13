@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "StdFail_NotDone.hxx"
+#include <StdFail_NotDone.hxx>
 
 #include "../ifcparse/IfcTypes.h"
 #include "../ifcparse/IfcEnum.h"
@@ -42,6 +42,15 @@ bool IfcGeom::convert_wire(const IfcEntity L, TopoDS_Wire &result) {
 #define IFC_WIRE_SRC
 #include "../ifcparse/IfcSchema.h"
 #undef IFC_WIRE_SRC
+	std::cout << "[Error] Failed to interpret:" << std::endl << L->toString() << std::endl;
+	return false;
+}
+
+bool IfcGeom::convert_curve(const IfcEntity L, Handle(Geom_Curve) &result) {
+	if ( ! L ) return false;
+#define IFC_CURVE_SRC
+#include "../ifcparse/IfcSchema.h"
+#undef IFC_CURVE_SRC
 	std::cout << "[Error] Failed to interpret:" << std::endl << L->toString() << std::endl;
 	return false;
 }
