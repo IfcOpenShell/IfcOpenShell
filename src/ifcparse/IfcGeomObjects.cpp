@@ -193,7 +193,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 				const IfcEntity ifcshape = *it;
 				if ( ifcshape->dt == IfcSchema::Enum::IfcMappedItem ) continue;
 				TopoDS_Shape ss;
-				if ( IfcGeom::convert_shape(ifcshape,ss) ) {
+				if ( IfcGeom::convert_shape(ifcshape,ss) && ! ss.IsNull() ) {
 					builder.Add(shapes,ss);
 					hasShapes = true;
 #ifdef _DEBUG

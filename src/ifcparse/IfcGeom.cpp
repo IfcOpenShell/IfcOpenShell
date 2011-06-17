@@ -45,6 +45,7 @@
 #include <TColgp_Array1OfPnt2d.hxx>
 #include <TColStd_Array1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
+#include <Geom_Line.hxx>
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <Geom_TrimmedCurve.hxx>
@@ -256,6 +257,11 @@ bool IfcGeom::convert(IfcSchema::Direction* IfcDirection, gp_Vec& v) {
 		v = gp_Vec(IfcDirection->X(),IfcDirection->Y(),0.0f);
 	return true;
 }
+bool IfcGeom::convert(IfcSchema::Vector* IfcVector, gp_Vec& v) {
+	IfcGeom::convert((IfcSchema::Direction*)IfcVector->Orientation().get(),v);
+	v.Scale(IfcVector->Magnitude());
+	return true;
+}
 bool IfcGeom::convert(IfcSchema::ArbitraryClosedProfileDef* IfcArbitraryClosedProfileDef, TopoDS_Wire& wire) {
 	return IfcGeom::convert_wire(IfcArbitraryClosedProfileDef->Polyline(),wire);
 }
@@ -411,7 +417,10 @@ bool IfcGeom::convert(IfcSchema::CompositeCurve* IfcCompositeCurve, class TopoDS
 	for( IfcParse::Entities::it it = segments->begin(); it != segments->end(); ++ it ) {
 		IfcSchema::CompositeCurveSegment* segment = (IfcSchema::CompositeCurveSegment*)(*it).get();
 		TopoDS_Wire wire2;
-		if ( ! IfcGeom::convert_wire(segment->ParentCurve(),wire2) ) continue;
+		if ( ! IfcGeom::convert_wire(segment->ParentCurve(),wire2) ) {
+			std::cout << "[Warning] Failed to convert:" << std::endl << segment->ParentCurve()->toString() << std::endl;
+			continue;	
+		}
 		ShapeFix_ShapeTolerance FTol;
 		FTol.SetTolerance(wire2, 0.01, TopAbs_WIRE);
 		w.Add(wire2);
@@ -425,26 +434,45 @@ bool IfcGeom::convert(IfcSchema::CompositeCurve* IfcCompositeCurve, class TopoDS
 }
 bool IfcGeom::convert(IfcSchema::TrimmedCurve* IfcTrimmedCurve, class TopoDS_Wire& wire) {
 	IfcEntity basis = IfcTrimmedCurve->BasisCurve();
-	IfcEntity trim1 = *IfcTrimmedCurve->Trim1()->begin();
-	IfcEntity trim2 = *IfcTrimmedCurve->Trim2()->begin();
+	bool isConic = basis->dt == IfcSchema::Enum::IfcCircle || basis->dt == IfcSchema::Enum::IfcEllipse;
+	float parameterFactor = isConic ? Ifc::PlaneAngleUnit : Ifc::LengthUnit;
 	Handle(Geom_Curve) curve;
 	if ( ! IfcGeom::convert_curve(basis,curve) ) return false;
-	if ( trim1->dt != trim2->dt ) return false;
+	bool cartesian = IfcTrimmedCurve->MasterRepresentation() == "CARTESIAN";
+	IfcEntities trims1 = IfcTrimmedCurve->Trim1();
+	IfcEntities trims2 = IfcTrimmedCurve->Trim2();
+	bool trimmed1 = false;
+	bool trimmed2 = false;
+	float flt1;
+	gp_Pnt pnt1;
 	BRepBuilderAPI_MakeWire w;
-	if ( trim1->dt == IfcSchema::Enum::IfcParameterValue ) {
-		const float p1 = ((IfcSchema::ParameterValue*)trim1.get())->Value() * Ifc::PlaneAngleUnit;
-		const float p2 = ((IfcSchema::ParameterValue*)trim2.get())->Value() * Ifc::PlaneAngleUnit;
-		BRepBuilderAPI_MakeEdge e (curve,p1,p2);
-		w.Add(e.Edge());
-	} else if ( trim1->dt == IfcSchema::Enum::IfcCartesianPoint ) {
-		gp_Pnt v1,v2;
-		IfcGeom::convert((IfcSchema::CartesianPoint*)trim1.get(),v1);
-		IfcGeom::convert((IfcSchema::CartesianPoint*)trim2.get(),v2);
-		BRepBuilderAPI_MakeEdge e (curve,v1,v2);
-		w.Add(e.Edge());
+	for ( IfcParse::Entities::it it = trims1->begin(); it != trims1->end(); it ++ ) {
+		const IfcEntity i = *it;
+		if ( i->dt == IfcSchema::Enum::IfcCartesianPoint && cartesian ) {
+			IfcGeom::convert( (IfcSchema::CartesianPoint*) i.get(), pnt1 );
+			trimmed1 = true;
+		} else if ( i->dt == IfcSchema::Enum::IfcParameterValue ) {
+			flt1 = ((IfcSchema::ParameterValue*)i.get())->Value() * parameterFactor;
+			trimmed1 = true;
+		}
 	}
-	wire = w.Wire();
-	return true;
+	for ( IfcParse::Entities::it it = trims2->begin(); it != trims2->end(); it ++ ) {
+		const IfcEntity i = *it;
+		if ( i->dt == IfcSchema::Enum::IfcCartesianPoint && cartesian && trimmed1 ) {
+			gp_Pnt pnt2;
+			IfcGeom::convert( (IfcSchema::CartesianPoint*) i.get(), pnt2 );
+			BRepBuilderAPI_MakeEdge e (curve,pnt1,pnt2);
+			w.Add(e.Edge());			
+			trimmed2 = true;
+		} else if ( i->dt == IfcSchema::Enum::IfcParameterValue && trimmed1 ) {
+			float flt2 = ((IfcSchema::ParameterValue*)i.get())->Value() * parameterFactor;
+			BRepBuilderAPI_MakeEdge e (curve,flt1,flt2);
+			w.Add(e.Edge());
+			trimmed2 = true;
+		}
+	}
+	if ( trimmed2 ) wire = w.Wire();
+	return trimmed2;
 }
 bool IfcGeom::convert(IfcSchema::Circle* IfcCircle, Handle(Geom_Curve)& curve) {
 	const float r = IfcCircle->Radius() * Ifc::LengthUnit;
@@ -466,6 +494,13 @@ bool IfcGeom::convert(IfcSchema::Ellipse* IfcEllipse, Handle(Geom_Curve)& curve)
 	gp_Ax2 ax;
 	ax = gp_Ax2().Transformed(trsf);
 	curve = new Geom_Ellipse(ax, x, y);
+	return true;
+}
+bool IfcGeom::convert(IfcSchema::Line* IfcLine, Handle(Geom_Curve)& curve) {
+	gp_Pnt pnt;gp_Vec vec;
+	IfcGeom::convert((IfcSchema::CartesianPoint*)IfcLine->Pnt().get(),pnt);
+	IfcGeom::convert((IfcSchema::Vector*)IfcLine->Dir().get(),vec);	
+	curve = new Geom_Line(pnt,vec);
 	return true;
 }
 bool IfcGeom::convert(IfcSchema::Polyline* IfcPolyline, TopoDS_Wire& result) {
@@ -493,36 +528,47 @@ bool IfcGeom::convert(IfcSchema::Polyloop* IfcPolyloop, TopoDS_Wire& result) {
 	return IfcGeom::convert((IfcSchema::Polyline*)IfcPolyloop,result);
 }
 bool IfcGeom::convert(IfcSchema::Axis2Placement3D* IfcAxis2Placement3D, gp_Trsf& trsf) {
-	gp_Pnt o;gp_Vec x = gp_Vec(1,0,0);gp_Vec z = gp_Vec(0,0,1);
+	gp_Pnt o;gp_Vec axis = gp_Vec(0,0,1);gp_Vec refDirection; bool hasRef = false;
 
 	IfcGeom::convert((IfcSchema::CartesianPoint*) IfcAxis2Placement3D->Origin().get(),o);
 	try {
-		IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement3D->Dir1().get(),z);
-		IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement3D->Dir2().get(),x);
+		IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement3D->Axis().get(),axis);
+		IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement3D->RefDirection().get(),refDirection);
+		hasRef = true;
 	} catch( IfcParse::IfcException& ) {}
 
-	gp_Ax3 axis(o,z,x);
-	gp_Ax3 def(gp_Pnt(),gp_Dir(0,0,1),gp_Dir(1,0,0));
-	trsf.SetTransformation(axis,def);
+	gp_Ax3 ax3;
+	if ( hasRef ) ax3 = gp_Ax3(o,axis,refDirection);
+	else ax3 = gp_Ax3(o,axis);
+
+	trsf.SetTransformation(ax3, gp_Ax3(gp_Pnt(),gp_Dir(0,0,1),gp_Dir(1,0,0)));
 	return true;
 }
 bool IfcGeom::convert(IfcSchema::Plane* IfcPlane, gp_Pln& plane) {
 	IfcSchema::Axis2Placement3D* IfcAxis2Placement3D = (IfcSchema::Axis2Placement3D*) IfcPlane->Placement().get();
-	gp_Pnt o;gp_Vec x;gp_Vec z;
+	gp_Pnt o;gp_Vec axis = gp_Vec(0,0,1);gp_Vec refDirection; bool hasRef = false;
 
 	IfcGeom::convert((IfcSchema::CartesianPoint*) IfcAxis2Placement3D->Origin().get(),o);
-	IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement3D->Dir1().get(),z);
-	IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement3D->Dir2().get(),x);
+	try {
+		IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement3D->Axis().get(),axis);
+		IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement3D->RefDirection().get(),refDirection);
+		hasRef = true;
+	} catch( IfcParse::IfcException& ) {}
 
-	gp_Ax3 axis(o,z,x);
-	plane = gp_Pln(axis);
+	gp_Ax3 ax3;
+	if ( hasRef ) ax3 = gp_Ax3(o,axis,refDirection);
+	else ax3 = gp_Ax3(o,axis);
+
+	plane = gp_Pln(ax3);
 	return true;
 }
 bool IfcGeom::convert(IfcSchema::Axis2Placement2D* IfcAxis2Placement2D, gp_Trsf2d& trsf) {
-	gp_Pnt P; gp_Vec V;
+	gp_Pnt P; gp_Vec V (1,0,0);
 
 	IfcGeom::convert((IfcSchema::CartesianPoint*) IfcAxis2Placement2D->Origin().get(),P);
-	IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement2D->Dir1().get(),V);
+	try {
+		IfcGeom::convert((IfcSchema::Direction*) IfcAxis2Placement2D->Axis().get(),V);
+	} catch( IfcParse::IfcException& ) {}
 
 	gp_Ax2d axis(gp_Pnt2d(P.X(),P.Y()),gp_Vec2d(V.X(),V.Y()));
 	trsf.SetTransformation(axis,gp_Ax2d());

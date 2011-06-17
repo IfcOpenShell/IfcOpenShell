@@ -142,7 +142,13 @@ bool ArgumentList::b() const { return _arg->b(); }
 int ArgumentList::i() const { return _arg->i(); }
 std::string ArgumentList::s() const { return _arg->s(); }
 int ArgumentList::count() const { return _arg ? 1 : _args.size(); }
-ArgumentList* ArgumentList::arg(int i) const { return _args[i]; }
+ArgumentList* ArgumentList::arg(int i) const { 
+	if ( i >= count() ) {
+		throw IfcException();
+	} else {
+		return _args[i]; 
+	}
+}
 
 EntityPtr ArgumentList::ref() const {
 	if ( _arg->type == Argument::IDENTIFIER ) {
@@ -410,8 +416,10 @@ bool Ifc::Init(const std::string& fn) {
 		if ( unit->dt == IfcSchema::Enum::IfcConversionBasedUnit ) {
 			IfcSchema::ConversionBasedUnit* IfcConversionBasedUnit = (IfcSchema::ConversionBasedUnit*)(*it).get();
 			IfcSchema::MeasureWithUnit* IfcMeasureWithUnit = (IfcSchema::MeasureWithUnit*)IfcConversionBasedUnit->ConversionFactor().get();
-			unit = IfcMeasureWithUnit->Unit();
-			value = IfcMeasureWithUnit->Value()->arg(0)->f();
+			try {
+				unit = IfcMeasureWithUnit->Unit();
+				value = IfcMeasureWithUnit->Value()->arg(0)->f();
+			} catch (... ) {}
 		}
 		if ( unit->dt == IfcSchema::Enum::IfcSIUnit ) {
 			IfcSchema::SIUnit* IfcSIUnit = (IfcSchema::SIUnit*)(*it).get();

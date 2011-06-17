@@ -164,6 +164,11 @@ IFC_REF(Circle,Placement,0)
 IFC_FLT(Circle,Radius,1)
 IFC_END_CLASS
 
+IFC_CURVE_CLASS(Line)
+IFC_REF(Line,Pnt,0)
+IFC_REF(Line,Dir,1)
+IFC_END_CLASS
+
 IFC_CURVE_CLASS(Ellipse)
 IFC_REF(Ellipse,Placement,0)
 IFC_FLT(Ellipse,Axis1,1)
@@ -182,15 +187,20 @@ IFC_FLT_SUB(Direction,Y,0,1)
 IFC_FLT_SUB(Direction,Z,0,2)
 IFC_END_CLASS
 
+IFC_CLASS(Vector,gp_Vec)
+IFC_REF(Vector,Orientation,0)
+IFC_FLT(Vector,Magnitude,1)
+IFC_END_CLASS
+
 IFC_CLASS(Axis2Placement3D,gp_Trsf)
 IFC_REF(Axis2Placement3D,Origin,0)
-IFC_REF(Axis2Placement3D,Dir1,1)
-IFC_REF(Axis2Placement3D,Dir2,2)
+IFC_REF(Axis2Placement3D,Axis,1)
+IFC_REF(Axis2Placement3D,RefDirection,2)
 IFC_END_CLASS
 
 IFC_CLASS(Axis2Placement2D,gp_Trsf2d)
 IFC_REF(Axis2Placement2D,Origin,0)
-IFC_REF(Axis2Placement2D,Dir1,1)
+IFC_REF(Axis2Placement2D,Axis,1)
 IFC_END_CLASS
 
 IFC_CLASS(LocalPlacement,gp_Trsf)
