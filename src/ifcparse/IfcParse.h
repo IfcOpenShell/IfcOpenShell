@@ -17,6 +17,13 @@
 *                                                                              *
 ********************************************************************************/
 
+/********************************************************************************
+ *                                                                              *
+ * This file provides functions for loading an IFC file into memory and access  *
+ * its entities either by ID, by an IfcSchema::Enum::IfcType or by reference    * 
+ *                                                                              *
+ ********************************************************************************/
+
 #ifndef IFCPARSE_H
 #define IFCPARSE_H
 
@@ -31,21 +38,21 @@
 
 // Pick a shared pointer implementation
 #ifdef __GNUC__
-  #include <tr1/memory>
-  #define SHARED_PTR std::tr1::shared_ptr
+#include <tr1/memory>
+#define SHARED_PTR std::tr1::shared_ptr
 #else
-  #ifdef _MSC_VER
-    #include <memory>
-    #define SHARED_PTR std::tr1::shared_ptr
-  #else
-    #include <boost/shared_ptr.hpp>
-    #define SHARED_PTR boost::shared_ptr
-  #endif
+#ifdef _MSC_VER
+#include <memory>
+#define SHARED_PTR std::tr1::shared_ptr
+#else
+#include <boost/shared_ptr.hpp>
+#define SHARED_PTR boost::shared_ptr
+#endif
 #endif
 
 #include "../ifcparse/IfcEnum.h"
 
-class Ifc;
+const int BUF_SIZE = (32 * 1024 * 1024);
 
 namespace IfcParse {
 
@@ -54,135 +61,225 @@ namespace IfcParse {
 	typedef SHARED_PTR<Entity> EntityPtr;
 	typedef SHARED_PTR<Entities> EntitiesPtr;
 
-	class Argument {
+	//
+	// Reads a file in chunks of BUF_SIZE and provides 
+	// functions to randomly access its contents
+	//
+	class File {
 	private:
-		static std::vector<std::string> datatypes;
-		static std::vector<std::string> enumstrings;
-		static std::vector<std::string> argstrings;
-
-		int _data;
-		float _number;
-		EntityPtr _entity;
+		std::ifstream stream;
+		char* buffer;
+		unsigned int ptr;
+		unsigned int len;
+		unsigned int offset;
+		void ReadBuffer(bool inc=true);
 	public:
-		enum vartype { IDENTIFIER, STRING, NUMBER, OPERATOR, ENUMERATION, DATATYPE, SUB_ENTITY };
-		vartype type;
-
-		Argument(const std::string& s);
-		Argument(const EntityPtr e);
-
-		bool isOp(char op = 0) const;
-
-		float f() const;
-		int i() const;
-		std::string s() const;
-		bool b() const;
-		EntityPtr r() const;
-
-		std::string toString() const;
-
-		std::string typeString() const;
-
-		friend class ::Ifc;
+		bool eof;
+		unsigned int size;
+		File(const std::string& fn);
+		char Peek();
+		char Read(unsigned int offset);
+		void Inc();		
+		void Close();
+		void Seek(unsigned int offset);
+		unsigned int Tell();
 	};
 
-	class ArgumentList {
+	typedef unsigned int Token;
+
+	//
+	// Provides functions to convert Tokens to binary data
+	// Tokens are merely offsets to where they can be read in the file
+	//
+	class TokenFunc {
 	private:
-		std::vector<ArgumentList*> _levels;
-		std::vector<ArgumentList*> _args;
-		ArgumentList* _current;
-		const Argument* _arg;
-		void _push();
-		bool _pop();
-		void _append(const Argument* v);
-	public:	
-		ArgumentList();
-		~ArgumentList();
-
-		float f() const;
-		int i() const;
-		std::string s() const;
-		bool b() const;
-		EntityPtr ref() const;
-		EntitiesPtr refs() const;
-		ArgumentList* arg(int i) const;
-
-		int count() const;	
-		std::string toString() const;
-
-		friend class Entity;
+		static bool startsWith(Token t, char c);
+	public:
+		static unsigned int Offset(Token t);
+		static bool isString(Token t);
+		static bool isIdentifier(Token t);
+		static bool isOperator(Token t, char op = 0);
+		static bool isEnumeration(Token t);
+		static bool isDatatype(Token t);
+		static int asInt(Token t);
+		static bool asBool(Token t);
+		static float asFloat(Token t);
+		static std::string asString(Token t);
+		static std::string toString(Token t);
 	};
 
+	//
+	// Functions for creating Tokens from an arbitary file offset
+	// The first 4 bits are reserved for Tokens of type ()=,;$*
+	//
+	Token TokenPtr(unsigned int offset);
+	Token TokenPtr(char c);	
+	Token TokenPtr();
+
+	//
+	// Interprets a file as a sequential stream of Tokens
+	//
+	class Tokens {
+	private:
+		File* file;
+	public:
+		Tokens(File* f);
+		Token Next();
+		std::string TokenString(unsigned int offset);
+	};
+
+	class Argument;
+	typedef SHARED_PTR<Argument> ArgumentPtr;
+
+	//
+	// Base class of all kind of Arguments used in IFC entity defintions
+	//
+	class Argument {
+	protected:
+	public:
+		virtual operator int() const = 0;
+		virtual operator bool() const = 0;
+		virtual operator float() const = 0;
+		virtual operator std::string() const = 0;
+		virtual operator EntityPtr() const = 0;
+		virtual operator EntitiesPtr() const = 0;
+		virtual unsigned int Size() const = 0;
+		virtual ArgumentPtr operator [] (unsigned int i) const = 0;
+		virtual std::string toString() const = 0;
+	};
+
+	//
+	// Argument of type list, e.g.
+	// #1=IfcDirection((1.,0.,0.));
+	//                 ==========
+	//
+	class ArgumentList: public Argument {
+	private:
+		std::vector<ArgumentPtr> list;
+		void Push(ArgumentPtr l);
+	public:
+		ArgumentList(Tokens* t, std::vector<unsigned int>& ids);
+		operator int() const;
+		operator bool() const;
+		operator float() const;
+		operator std::string() const;
+		operator EntityPtr() const;
+		operator EntitiesPtr() const;
+		unsigned int Size() const;
+		ArgumentPtr operator [] (unsigned int i) const;
+		std::string toString() const;
+	};
+
+	//
+	// Argument of type scalar or string, e.g.
+	// #1=IfcVector(#2,1.0);
+	//              == ===
+	//
+	class TokenArgument : public Argument {
+	private:
+		Token token;
+	public: 
+		TokenArgument(Token t);
+		operator int() const;
+		operator bool() const;
+		operator float() const;
+		operator std::string() const;
+		operator EntityPtr() const;
+		operator EntitiesPtr() const;
+		unsigned int Size() const;
+		ArgumentPtr operator [] (unsigned int i) const;
+		std::string toString() const;
+	};
+
+	//
+	// Argument of an IFC type
+	// #1=IfcTrimmedCurve(#2,(IFCPARAMETERVALUE(0.)),(IFCPARAMETERVALUE(1.)),.T.,.PARAMETER.);
+	//                        =====================   =====================
+	//
+	class EntityArgument : public Argument {
+	private:		
+		EntityPtr entity;		
+	public:
+		EntityArgument(EntityPtr e);
+		operator int() const;
+		operator bool() const;
+		operator float() const;
+		operator std::string() const;
+		operator EntityPtr() const;
+		operator EntitiesPtr() const;
+		unsigned int Size() const;
+		ArgumentPtr operator [] (unsigned int i) const;
+		std::string toString() const;
+	};
+
+	//
+	// Entity defined in an IFC file, e.g.
+	// #1=IfcDirection((1.,0.,0.));
+	// ============================
+	//
 	class Entity {
 	private:
-		inline bool term(char last);
+		ArgumentPtr args;
+		void Load(std::vector<unsigned int>& ids, bool seek);
 	public:
-		int id;
-		IfcSchema::Enum::IfcTypes dt;
-		ArgumentList* args;
-		Argument* _dt;
-
-		Entity(std::istream* ss, std::vector<int>& refs, bool sub = false);
-		~Entity();
-
-		ArgumentList* arg(int i) const;
-		std::string toString() const;
-
+		unsigned int id;
+		unsigned int offset;
+		IfcSchema::Enum::IfcTypes type;
+		Entity(unsigned int i, Tokens* t, std::vector<unsigned int>& ids, bool parse = false);
+		Entity(unsigned int i, Tokens* t, unsigned int o);
 		EntitiesPtr parents(IfcSchema::Enum::IfcTypes c = IfcSchema::Enum::ALL);
 		EntitiesPtr parents(IfcSchema::Enum::IfcTypes c, int i, const std::string& a);
-		bool isAssignment() const;
-		std::string datatype() const;
+		ArgumentPtr operator[] (unsigned int i);
+		std::string toString();
+		std::string Datatype() const;
 	};
 
+	//
+	// A list of IFC entities
+	//
 	class Entities {
-	private:
 		std::vector<EntityPtr> ls;
 	public:
-		int size;
 		typedef std::vector<EntityPtr>::const_iterator it;
 		void push(EntityPtr l);
-		void pushs(EntitiesPtr l);
+		void push(EntitiesPtr l);
 		it begin();
 		it end();
 		EntitiesPtr parents(IfcSchema::Enum::IfcTypes c = IfcSchema::Enum::ALL);
 		EntitiesPtr parents(IfcSchema::Enum::IfcTypes c, int i, const std::string& a);
-		Entities();
 		EntityPtr operator[] (int i);
-	};
-
-	class File {
-	public:
-		std::map<IfcSchema::Enum::IfcTypes,EntitiesPtr> bytype;
-		std::map<int,EntityPtr> byid;
-		std::map<int,EntitiesPtr> byref;
-		bool valid;
-
-		File(const std::string& fn, bool debug = false);
-		EntitiesPtr EntitiesByType(IfcSchema::Enum::IfcTypes t);
-		EntitiesPtr EntitiesByReference(int id);
-		EntityPtr EntityById(int id);
+		int Size() const;
 	};
 
 	class IfcException : public std::exception {
 	private:
-		std::string w;
+		std::string error;
 	public:
-		IfcException(int id);
-		IfcException();
-		~IfcException() throw();
-		virtual const char* what() const throw();
+		IfcException(std::string e);
+		const char* what() const throw();
 	};
-
 }
 
 typedef IfcParse::EntityPtr IfcEntity;
 typedef IfcParse::EntitiesPtr IfcEntities;
+typedef std::map<IfcSchema::Enum::IfcTypes,IfcEntities> MapEntitiesByType;
+typedef std::map<unsigned int,IfcEntity> MapEntityById;
+typedef std::map<unsigned int,IfcEntities> MapEntitiesByRef;
+typedef std::map<unsigned int,unsigned int> MapOffsetById;
 
-float UnitPrefixToValue(const std::string& s);
-
+//
+// Several static convenience functions and variables
+//
 class Ifc {
 private:
-	static IfcParse::File* f;
+	static MapEntitiesByType bytype;
+	static MapEntityById byid;
+	static MapEntitiesByRef byref;
+	static MapOffsetById offsets;
+	static unsigned int lastId;
 public:
+	static IfcParse::File* file;
+	static IfcParse::Tokens* tokens;
 	static IfcEntities EntitiesByType(IfcSchema::Enum::IfcTypes t);
 	static IfcEntities EntitiesByReference(int id);
 	static IfcEntity EntityById(int id);
@@ -192,5 +289,7 @@ public:
 	static float PlaneAngleUnit;
 	static int CircleSegments;
 };
+
+float UnitPrefixToValue(const std::string& s);
 
 #endif

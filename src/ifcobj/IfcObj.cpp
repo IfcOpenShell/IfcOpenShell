@@ -27,6 +27,7 @@
 
 #include <fstream>
 #include <set>
+#include <time.h>
 
 #include "../ifcparse/IfcGeomObjects.h"
 #include "../ifcobj/ObjMaterials.h"
@@ -56,12 +57,15 @@ int main ( int argc, char** argv ) {
 	fObj << "mtllib " << fnMtl << std::endl;
 	std::set<std::string> materials;
 
+	time_t start,end;
+	time(&start);
+
 	// The functions IfcGeomObjects::Get() and IfcGeomObjects::Next() wrap an iterator of all geometrical entities in the Ifc file.
 	// IfcGeomObjects::Get() returns an IfcGeomObjects::IfcGeomObject (see IfcObjects.h for definition)
 	// IfcGeomObjects::Next() is used to poll whether more geometrical entities are available
 	do {
 		const IfcGeomObjects::IfcGeomObject* o = IfcGeomObjects::Get();
-		if ( o->type == "IFCSPACE" || o->type == "IFCOPENINGELEMENT" ) continue;
+		if ( o->type == "IfcSpace" || o->type == "IfcOpeningElement" ) continue;
 		fObj << "o " << o->name << std::endl;
 		fObj << "usemtl " << o->type << std::endl;
 		materials.insert(o->type);
@@ -85,4 +89,8 @@ int main ( int argc, char** argv ) {
 	for( std::set<std::string>::iterator it = materials.begin(); it != materials.end(); ++ it ) {
 		fMtl << GetMaterial(*it);
 	}
+
+	time(&end);
+	int dif = (int) difftime (end,start);	
+	printf ("Conversion took %d seconds\n", dif );
 }

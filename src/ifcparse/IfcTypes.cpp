@@ -28,22 +28,47 @@ using namespace IfcSchema;
 #include "../ifcparse/IfcSchema.h"
 #undef IFC_PARSE_SOURCE
 
+namespace IfcGeom {
+	namespace Cache {
+		std::map<int,TopoDS_Shape> Shape;
+		std::map<int,TopoDS_Face> Face;
+		std::map<int,TopoDS_Wire> Wire;
+		std::map<int,Handle(Geom_Curve)> Curve;
+		void PurgeShapeCache() {
+			Shape.clear();
+			Face.clear();
+			Wire.clear();
+			Curve.clear();
+		}
+	}
+}
+
 bool IfcGeom::convert_shape(const IfcEntity L, TopoDS_Shape &result) {
 	if ( ! L ) return false;
+	bool r = false;
+	std::map<int,TopoDS_Shape>::const_iterator it = Cache::Shape.find(L->id);
+	if ( it != Cache::Shape.end() ) { result = it->second; r = true; /*std::cout << "Read #" << L->id << " from cache" << std::endl;*/}
+	if ( false ) {}
 #define IFC_SHAPE_SRC
 #include "../ifcparse/IfcSchema.h"
 #undef IFC_SHAPE_SRC
-	std::cout << "[Error] Failed to interpret:" << std::endl << L->toString() << std::endl;
-	return false;
+	else std::cout << "[Error] Failed to interpret:" << std::endl << L->toString() << std::endl;
+	if ( r ) Cache::Shape[L->id] = result;
+	return r;
 }
 
 bool IfcGeom::convert_wire(const IfcEntity L, TopoDS_Wire &result) {
 	if ( ! L ) return false;
+	bool r = false;
+	std::map<int,TopoDS_Wire>::const_iterator it = Cache::Wire.find(L->id);
+	if ( it != Cache::Wire.end() ) { result = it->second; r = true; /*std::cout << "Read #" << L->id << " from cache" << std::endl;*/}
+	if ( false ) {}
 #define IFC_WIRE_SRC
 #include "../ifcparse/IfcSchema.h"
 #undef IFC_WIRE_SRC
-	std::cout << "[Error] Failed to interpret:" << std::endl << L->toString() << std::endl;
-	return false;
+	else std::cout << "[Error] Failed to interpret:" << std::endl << L->toString() << std::endl;
+	if ( r ) Cache::Wire[L->id] = result;
+	return r;
 }
 
 bool IfcGeom::convert_curve(const IfcEntity L, Handle(Geom_Curve) &result) {
@@ -57,10 +82,14 @@ bool IfcGeom::convert_curve(const IfcEntity L, Handle(Geom_Curve) &result) {
 
 bool IfcGeom::convert_face(const IfcEntity L, TopoDS_Face &result) {
 	if ( ! L ) return false;
-	TopoDS_Wire wire;
+	bool r = false;
+	std::map<int,TopoDS_Face>::const_iterator it = Cache::Face.find(L->id);
+	if ( it != Cache::Face.end() ) { result = it->second; r = true; /*std::cout << "Read #" << L->id << " from cache" << std::endl;*/}
+	if ( false ) {}
 #define IFC_FACE_SRC
 #include "../ifcparse/IfcSchema.h"
 #undef IFC_FACE_SRC
-	std::cout << "[Error] Failed to interpret:" << std::endl << L->toString() << std::endl;
-	return false;
+	else std::cout << "[Error] Failed to interpret:" << std::endl << L->toString() << std::endl;
+	if ( r ) Cache::Face[L->id] = result;
+	return r;
 }

@@ -42,6 +42,7 @@ namespace IfcSchema {
 		};
 		IfcTypes FromString(const std::string& a);
 		std::string ToString(IfcTypes t);
+		bool ShouldRender(IfcTypes t);
 	}
 }
 #endif

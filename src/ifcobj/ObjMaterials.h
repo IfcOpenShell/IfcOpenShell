@@ -50,14 +50,15 @@ public:
 };
 
 ObjMaterial GetMaterial(const std::string& s) {
-	if ( s == "IFCSITE" ) { return ObjMaterial("IFCSITE",0.75f,0.8f,0.65f); }
-	if ( s == "IFCSLAB" ) { return ObjMaterial("IFCSLAB",0.4f,0.4f,0.4f); }
-	if ( s == "IFCWALLSTANDARDCASE" ) { return ObjMaterial("IFCWALLSTANDARDCASE",0.9f,0.9f,0.9f); }
-	if ( s == "IFCWALL" ) { return ObjMaterial("IFCWALL",0.9f,0.9f,0.9f); }
-	if ( s == "IFCWINDOW" ) { return ObjMaterial("IFCWINDOW",0.75f,0.8f,0.75f,1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,500.0f,0.3f); }
-	if ( s == "IFCDOOR" ) { return ObjMaterial("IFCDOOR",0.55f,0.3f,0.15f); }
-	if ( s == "IFCBEAM" ) { return ObjMaterial("IFCBEAM",0.75f,0.7f,0.7f); }
-	if ( s == "IFCRAILING" ) { return ObjMaterial("IFCRAILING",0.75f,0.7f,0.7f); }
-	if ( s == "IFCMEMBER" ) { return ObjMaterial("IFCRAILING",0.75f,0.7f,0.7f); }
+	if ( s == "IfcSite" ) { return ObjMaterial("IfcSite",0.75f,0.8f,0.65f); }
+	if ( s == "IfcSlab" ) { return ObjMaterial("IfcSlab",0.4f,0.4f,0.4f); }
+	if ( s == "IfcWallStandardCase" ) { return ObjMaterial("IfcWallStandardCase",0.9f,0.9f,0.9f); }
+	if ( s == "IfcWall" ) { return ObjMaterial("IfcWall",0.9f,0.9f,0.9f); }
+	if ( s == "IfcWindow" ) { return ObjMaterial("IfcWindow",0.75f,0.8f,0.75f,1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,500.0f,0.3f); }
+	if ( s == "IfcDoor" ) { return ObjMaterial("IfcDoor",0.55f,0.3f,0.15f); }
+	if ( s == "IfcBeam" ) { return ObjMaterial("IfcBeam",0.75f,0.7f,0.7f); }
+	if ( s == "IfcRailing" ) { return ObjMaterial("IfcRailing",0.65f,0.6f,0.6f); }
+	if ( s == "IfcMember" ) { return ObjMaterial("IfcMember",0.65f,0.6f,0.6f); }
+	if ( s == "IfcPlate" ) { return ObjMaterial("IfcPlate",0.8f,0.8f,0.8f); }
 	return ObjMaterial(s);
 }

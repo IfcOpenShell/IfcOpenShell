@@ -40,17 +40,15 @@
 
 // Welds vertices that belong to different faces
 int IfcGeomObjects::IfcMesh::addvert(gp_Pnt p) {
-	int i = 0; const float X = (float)p.X();const float Y = (float)p.Y();const float Z = (float)p.Z();
-	for ( std::vector<float>::const_iterator it = verts.begin(); it != verts.end(); ) {
-		const float x = *it; ++it;
-		const float y = *it; ++it;
-		const float z = *it; ++it;
-		if ( X == x && Y == y && Z == z ) return i;
-		++i;
-	}
+	const float X = (float)p.X();const float Y = (float)p.Y();const float Z = (float)p.Z();
+	const VertKey key = VertKey(X,std::pair<float,float>(Y,Z));
+	VertKeyMap::const_iterator it = welds.find(key);
+	if ( it != welds.end() ) return it->second;
 	verts.push_back(X);
 	verts.push_back(Y);
 	verts.push_back(Z);
+	int i = welds.size();
+	welds[key] = i;
 	return i;
 }
 
@@ -159,7 +157,8 @@ IfcGeomObjects::IfcGeomObject* _get() {
 		}
 		shaperep = *outer;
 		if ( ! entities ) {
-			if ( shaperep->arg(1)->s() != "Body" ) {
+			const std::string arg1 = *(*shaperep)[1];
+			if ( arg1 != "Body" ) {
 				_nextShape();
 				continue;
 			}
@@ -168,12 +167,12 @@ IfcGeomObjects::IfcGeomObject* _get() {
 #endif
 			// Find the IfcBuildingElements that refer to the current IfcShapeRepresentation
 			entities = shaperep->parents(IfcSchema::Enum::IfcProductDefinitionShape)->parents();
-			entities->pushs(shaperep->parents(IfcSchema::Enum::IfcProductRepresentation)->parents()); // 2x2 compatibility
-			entities->pushs(shaperep->parents(IfcSchema::Enum::IfcRepresentationMap)->parents(IfcSchema::Enum::IfcMappedItem)
+			entities->push(shaperep->parents(IfcSchema::Enum::IfcProductRepresentation)->parents()); // 2x2 compatibility
+			entities->push(shaperep->parents(IfcSchema::Enum::IfcRepresentationMap)->parents(IfcSchema::Enum::IfcMappedItem)
 				->parents(IfcSchema::Enum::IfcShapeRepresentation,1,"Body")->parents(IfcSchema::Enum::IfcProductDefinitionShape)->parents());
-			entities->pushs(shaperep->parents(IfcSchema::Enum::IfcRepresentationMap)->parents(IfcSchema::Enum::IfcMappedItem)
+			entities->push(shaperep->parents(IfcSchema::Enum::IfcRepresentationMap)->parents(IfcSchema::Enum::IfcMappedItem)
 				->parents(IfcSchema::Enum::IfcShapeRepresentation,1,"Body")->parents(IfcSchema::Enum::IfcProductRepresentation)->parents());
-			if ( ! entities->size ) {
+			if ( ! entities->Size() ) {
 				_nextShape();
 				continue;
 			}
@@ -191,7 +190,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			IfcEntities l = ((IfcSchema::ShapeRepresentation*)shaperep.get())->Shapes();
 			for( IfcParse::Entities::it it = l->begin(); it != l->end(); ++ it ) {
 				const IfcEntity ifcshape = *it;
-				if ( ifcshape->dt == IfcSchema::Enum::IfcMappedItem ) continue;
+				if ( ifcshape->type == IfcSchema::Enum::IfcMappedItem ) continue;
 				TopoDS_Shape ss;
 				if ( IfcGeom::convert_shape(ifcshape,ss) && ! ss.IsNull() ) {
 					builder.Add(shapes,ss);
@@ -217,15 +216,15 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			IfcGeom::convert((IfcSchema::LocalPlacement*)(entity->Placement().get()),trsf);
 		} catch( IfcParse::IfcException& e ) {std::cout << "[Error] " << e.what() << std::endl; _nextShape(); }
 		IfcEntities openings = IfcEntities();
-		if ( entity->dt != IfcSchema::Enum::IfcOpeningElement ) {
+		if ( entity->type != IfcSchema::Enum::IfcOpeningElement ) {
 			openings = entity->parents(IfcSchema::Enum::IfcRelVoidsElement);
 		}
 
-		if ( (openings && openings->size) || use_world_coords ) {
+		if ( (openings && openings->Size()) || use_world_coords ) {
 			if ( shape ) delete shape;
 			TopoDS_Shape temp_shape (shapes);
 			try {
-				if (openings && openings->size) IfcGeom::convert_openings(entity,openings,temp_shape,trsf);
+				if (openings && openings->Size()) IfcGeom::convert_openings(entity,openings,temp_shape,trsf);
 			} catch( IfcParse::IfcException& e ) {std::cout << "[Warning] " << e.what() << std::endl; }
 			catch(StdFail_NotDone&) { std::cout << "[Error] Unknown modelling processing openings for:" << std::endl << entity->toString() << std::endl; }
 			if ( use_world_coords ) {
@@ -237,7 +236,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 		} else if ( ! shape ) {
 			shape = new IfcGeomObjects::IfcMesh(shaperep->id,shapes);
 		}
-		return new IfcGeomObjects::IfcGeomObject(guid, entity->datatype(), trsf, shape);		
+		return new IfcGeomObjects::IfcGeomObject(guid, entity->Datatype(), trsf, shape);		
 	}
 }
 
@@ -272,7 +271,7 @@ extern bool IfcGeomObjects::Init(char* fn, bool world_coords) {
 	if ( ! currentGeomObj ) return false;
 
 	done = 0;
-	total = shapereps->size;
+	total = shapereps->Size();
 	return 1;
 }
 extern int IfcGeomObjects::Progress() {

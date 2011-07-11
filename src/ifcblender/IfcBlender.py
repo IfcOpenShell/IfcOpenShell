@@ -23,11 +23,10 @@ bl_info = {
     "description": "Import files in the "\
         "Industry Foundation Classes (.ifc) file format",
     "author": "Thomas Krijnen, IfcOpenShell",
-    "blender": (2, 5, 6),
-    "api": 32738,
+    "blender": (2, 5, 8),
+    "api": 37702,
     "location": "File > Import",
-    "warning": "This addon requires several "\
-        "Open CASCADE libraries to be installed",
+    "warning": "",
     "wiki_url": "http://sourceforge.net/apps/"\
         "mediawiki/ifcopenshell/index.php",
     "tracker_url": "http://sourceforge.net/tracker/?group_id=543113",
@@ -37,8 +36,7 @@ bl_info = {
 import bpy
 import mathutils
 from bpy.props import *
-from io_utils import ImportHelper
-
+from bpy_extras.io_utils import ImportHelper
 
 class ImportIFC(bpy.types.Operator, ImportHelper):
     bl_idname = "import_scene.ifc"
@@ -54,7 +52,7 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         ids = {}
         while True:
             ob = IfcImport.Get()
-            if not ob.type in ['IFCSPACE', 'IFCOPENINGELEMENT']:
+            if not ob.type in ['IfcSpace', 'IfcOpeningElement']:
                 f = ob.mesh.faces
                 v = ob.mesh.verts
                 m = ob.matrix

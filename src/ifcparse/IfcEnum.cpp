@@ -38,5 +38,13 @@ std::string IfcSchema::Enum::ToString(IfcTypes t) {
 #include "../ifcparse/IfcSchema.h"
 #undef IFC_PARSE_ENUM_STR
 
-	return "";
+	return "IfcUnknown";
+}
+
+bool IfcSchema::Enum::ShouldRender(IfcTypes t) {
+	if ( t == IfcUnknown ) return false;
+#define IFC_PARSE_RENDER
+#include "../ifcparse/IfcSchema.h"
+#undef IFC_PARSE_RENDER
+	else return false;
 }

@@ -31,6 +31,7 @@
 #undef IFC_WIRE_CLASS
 #undef IFC_CURVE_CLASS
 #undef IFC_HELPER_CLASS
+#undef IFC_RENDER_CLASS
 #undef IFC_END_CLASS
 #undef IFC_REF
 #undef IFC_REFS
@@ -47,7 +48,7 @@
 #define IFC_WIRE_CLASS(N) IFC_CLASS(N,"")
 #define IFC_CURVE_CLASS(N) IFC_CLASS(N,"")
 #define IFC_HELPER_CLASS(N) IFC_CLASS(N,"")
-#define IFC_SKIP_CLASS(N)
+#define IFC_RENDER_CLASS(N) IFC_CLASS(N,"")
 #define IFC_END_CLASS };
 #define IFC_REF(C,N,I) IfcEntity N();
 #define IFC_REFS(C,N,I) IfcEntities N();
@@ -59,21 +60,13 @@
 #endif
 
 #ifdef IFC_PARSE_SOURCE
-#define IFC_CLASS(N,T)
-#define IFC_SHAPE_CLASS(N)
-#define IFC_FACE_CLASS(N)
-#define IFC_WIRE_CLASS(N)
-#define IFC_CURVE_CLASS(N)
-#define IFC_HELPER_CLASS(N)
-#define IFC_SKIP_CLASS(N)
-#define IFC_END_CLASS
-#define IFC_REF(C,N,I) IfcEntity C::N() { return this->arg(I)->ref(); }
-#define IFC_REFS(C,N,I) IfcEntities C::N() { return this->arg(I)->refs(); }
-#define IFC_FLT(C,N,I) float C::N() { return this->arg(I)->f(); }
-#define IFC_FLT_SUB(C,N,I,J) float C::N() { return this->arg(I)->arg(J)->f(); }
-#define IFC_INT(C,N,I) int C::N() { return this->arg(I)->i(); }
-#define IFC_STR(C,N,I) std::string C::N() { return this->arg(I)->s(); }
-#define IFC_BOOL(C,N,I) bool C::N() { return this->arg(I)->b(); }
+#define IFC_REF(C,N,I) IfcEntity C::N() { return *(*this)[I]; }
+#define IFC_REFS(C,N,I) IfcEntities C::N() { return *(*this)[I]; }
+#define IFC_FLT(C,N,I) float C::N() { return *(*this)[I]; }
+#define IFC_FLT_SUB(C,N,I,J) float C::N() { return *(*(*this)[I])[J]; }
+#define IFC_INT(C,N,I) int C::N() { return *(*this)[I]; }
+#define IFC_STR(C,N,I) std::string C::N() { return *(*this)[I]; }
+#define IFC_BOOL(C,N,I) bool C::N() { return *(*this)[I]; }
 #endif
 
 #ifdef IFC_PARSE_ENUM
@@ -83,15 +76,7 @@
 #define IFC_FACE_CLASS(N) Ifc##N,
 #define IFC_CLASS(N,T) Ifc##N,
 #define IFC_HELPER_CLASS(N) Ifc##N,
-#define IFC_SKIP_CLASS(N)
-#define IFC_END_CLASS
-#define IFC_REF(C,N,I)
-#define IFC_REFS(C,N,I)
-#define IFC_FLT(C,N,I)
-#define IFC_FLT_SUB(C,N,I,J)
-#define IFC_INT(C,N,I)
-#define IFC_STR(C,N,I)
-#define IFC_BOOL(C,N,I)
+#define IFC_RENDER_CLASS(N) Ifc##N,
 #endif
 
 #ifdef IFC_PARSE_STR_ENUM
@@ -101,15 +86,8 @@
 #define IFC_CURVE_CLASS(N) IFC_SHAPE_CLASS(N)
 #define IFC_HELPER_CLASS(N) IFC_SHAPE_CLASS(N)
 #define IFC_CLASS(N,T) IFC_SHAPE_CLASS(N)
+#define IFC_RENDER_CLASS(N) IFC_SHAPE_CLASS(N)
 #define IFC_SKIP_CLASS(N) if ( strcasecmp(a.c_str()+3,#N) == 0 ) { return IfcSchema::Enum::IfcDontCare; }
-#define IFC_END_CLASS
-#define IFC_REF(C,N,I)
-#define IFC_REFS(C,N,I)
-#define IFC_FLT(C,N,I)
-#define IFC_FLT_SUB(C,N,I,J)
-#define IFC_INT(C,N,I)
-#define IFC_STR(C,N,I)
-#define IFC_BOOL(C,N,I)
 #endif
 
 #ifdef IFC_PARSE_ENUM_STR
@@ -118,16 +96,12 @@
 #define IFC_WIRE_CLASS(N) IFC_SHAPE_CLASS(N)
 #define IFC_CURVE_CLASS(N) IFC_SHAPE_CLASS(N)
 #define IFC_HELPER_CLASS(N) IFC_SHAPE_CLASS(N)
+#define IFC_RENDER_CLASS(N) IFC_SHAPE_CLASS(N)
 #define IFC_CLASS(N,T) IFC_SHAPE_CLASS(N)
-#define IFC_SKIP_CLASS(N)
-#define IFC_END_CLASS
-#define IFC_REF(C,N,I)
-#define IFC_REFS(C,N,I)
-#define IFC_FLT(C,N,I)
-#define IFC_FLT_SUB(C,N,I,J)
-#define IFC_INT(C,N,I)
-#define IFC_STR(C,N,I)
-#define IFC_BOOL(C,N,I)
+#endif
+
+#ifdef IFC_PARSE_RENDER
+#define IFC_RENDER_CLASS(N) if ( t == IfcSchema::Enum::Ifc##N ) return true;
 #endif
 
 #ifdef IFC_GEOM_HEADER
@@ -135,87 +109,79 @@
 #define IFC_FACE_CLASS(N) bool convert(IfcSchema::N* Ifc##N,TopoDS_Face& result);
 #define IFC_WIRE_CLASS(N) bool convert(IfcSchema::N* Ifc##N,TopoDS_Wire& result);
 #define IFC_CURVE_CLASS(N) bool convert(IfcSchema::N* Ifc##N,Handle(Geom_Curve)& result);
-#define IFC_HELPER_CLASS(N)
 #define IFC_CLASS(N,T) bool convert(IfcSchema::N* Ifc##N,T& result);
-#define IFC_SKIP_CLASS(N)
-#define IFC_END_CLASS
-#define IFC_REF(C,N,I)
-#define IFC_REFS(C,N,I)
-#define IFC_FLT(C,N,I)
-#define IFC_FLT_SUB(C,N,I,J)
-#define IFC_INT(C,N,I)
-#define IFC_STR(C,N,I)
-#define IFC_BOOL(C,N,I)
 #endif
 
 #ifdef IFC_SHAPE_SRC
-#define IFC_SHAPE_CLASS(N) if ( L->dt == IfcSchema::Enum::Ifc##N ) { IfcSchema::N* x = (IfcSchema::N*) L.get(); bool b = false; try { b = IfcGeom::convert(x,result); } catch(IfcParse::IfcException& e) { std::cout << "[Error] " << e.what() << std::endl;} catch(StdFail_NotDone&) { std::cout << "[Error] Unknown modelling error" << std::endl; } if (!b) std::cout << "[Error] Failed to convert:" << std::endl << x->toString() << std::endl; return b; }
-#define IFC_FACE_CLASS(N)
-#define IFC_WIRE_CLASS(N)
-#define IFC_CURVE_CLASS(N)
-#define IFC_HELPER_CLASS(N)
-#define IFC_CLASS(N,T)
-#define IFC_SKIP_CLASS(N)
-#define IFC_END_CLASS
-#define IFC_REF(C,N,I)
-#define IFC_REFS(C,N,I)
-#define IFC_FLT(C,N,I)
-#define IFC_FLT_SUB(C,N,I,J)
-#define IFC_INT(C,N,I)
-#define IFC_STR(C,N,I)
-#define IFC_BOOL(C,N,I)
+#define IFC_SHAPE_CLASS(N) else if ( L->type == IfcSchema::Enum::Ifc##N ) { IfcSchema::N* x = (IfcSchema::N*) L.get(); try { r = IfcGeom::convert(x,result); } catch(IfcParse::IfcException& e) { std::cout << "[Error] " << e.what() << std::endl;} catch(StdFail_NotDone&) { std::cout << "[Error] Unknown modelling error" << std::endl; }  }
 #endif
 
 #ifdef IFC_WIRE_SRC
-#define IFC_SHAPE_CLASS(N)
-#define IFC_FACE_CLASS(N)
-#define IFC_WIRE_CLASS(N) if ( L->dt == IfcSchema::Enum::Ifc##N ) { IfcSchema::N* x = (IfcSchema::N*) L.get(); return IfcGeom::convert(x,result); }
-#define IFC_CURVE_CLASS(N)
-#define IFC_HELPER_CLASS(N)
-#define IFC_CLASS(N,T)
-#define IFC_SKIP_CLASS(N)
-#define IFC_END_CLASS
-#define IFC_REF(C,N,I)
-#define IFC_REFS(C,N,I)
-#define IFC_FLT(C,N,I)
-#define IFC_FLT_SUB(C,N,I,J)
-#define IFC_INT(C,N,I)
-#define IFC_STR(C,N,I)
-#define IFC_BOOL(C,N,I)
+#define IFC_WIRE_CLASS(N) else if ( L->type == IfcSchema::Enum::Ifc##N ) { IfcSchema::N* x = (IfcSchema::N*) L.get(); r = IfcGeom::convert(x,result); }
 #endif
 
 #ifdef IFC_FACE_SRC
-#define IFC_SHAPE_CLASS(N)
-#define IFC_FACE_CLASS(N)  if ( L->dt == IfcSchema::Enum::Ifc##N ) { IfcSchema::N* x = (IfcSchema::N*) L.get(); return IfcGeom::convert(x,result); }
-#define IFC_WIRE_CLASS(N) if ( L->dt == IfcSchema::Enum::Ifc##N ) { IfcSchema::N* x = (IfcSchema::N*) L.get(); if ( ! IfcGeom::convert(x,wire) ) return false; return IfcGeom::convert_wire_to_face(wire,result); }
-#define IFC_CURVE_CLASS(N)
-#define IFC_HELPER_CLASS(N)
-#define IFC_CLASS(N,T)
-#define IFC_SKIP_CLASS(N)
-#define IFC_END_CLASS
-#define IFC_REF(C,N,I)
-#define IFC_REFS(C,N,I)
-#define IFC_FLT(C,N,I)
-#define IFC_FLT_SUB(C,N,I,J)
-#define IFC_INT(C,N,I)
-#define IFC_STR(C,N,I)
-#define IFC_BOOL(C,N,I)
+#define IFC_FACE_CLASS(N) else if ( L->type == IfcSchema::Enum::Ifc##N ) { IfcSchema::N* x = (IfcSchema::N*) L.get(); r = IfcGeom::convert(x,result); }
+#define IFC_WIRE_CLASS(N) else if ( L->type == IfcSchema::Enum::Ifc##N ) { IfcSchema::N* x = (IfcSchema::N*) L.get(); TopoDS_Wire wire; if ( ! IfcGeom::convert(x,wire) ) r = false; r = IfcGeom::convert_wire_to_face(wire,result); }
 #endif
 
 #ifdef IFC_CURVE_SRC
-#define IFC_SHAPE_CLASS(N)
-#define IFC_FACE_CLASS(N)
-#define IFC_WIRE_CLASS(N)
-#define IFC_CURVE_CLASS(N) if ( L->dt == IfcSchema::Enum::Ifc##N ) { IfcSchema::N* x = (IfcSchema::N*) L.get(); return IfcGeom::convert(x,result); }
-#define IFC_HELPER_CLASS(N)
+#define IFC_CURVE_CLASS(N) if ( L->type == IfcSchema::Enum::Ifc##N ) { IfcSchema::N* x = (IfcSchema::N*) L.get(); return IfcGeom::convert(x,result); }
+#endif
+
+#ifdef IFC_GEOM_CACHE
+#define IFC_CLASS(N,T) std::map<int,T*> N;
+#endif
+
+#ifdef IFC_GEOM_CACHE_PURGE
+#define IFC_CLASS(N,T) for(std::map<int,T*>::const_iterator it = N.begin(); it != N.end(); it ++ ) delete it->second; N.clear();
+#endif
+
+#ifndef IFC_CLASS
 #define IFC_CLASS(N,T)
+#endif
+#ifndef IFC_SHAPE_CLASS
+#define IFC_SHAPE_CLASS(N)
+#endif
+#ifndef IFC_FACE_CLASS
+#define IFC_FACE_CLASS(N)
+#endif
+#ifndef IFC_SKIP_CLASS
 #define IFC_SKIP_CLASS(N)
+#endif
+#ifndef IFC_WIRE_CLASS
+#define IFC_WIRE_CLASS(N)
+#endif
+#ifndef IFC_CURVE_CLASS
+#define IFC_CURVE_CLASS(N)
+#endif
+#ifndef IFC_HELPER_CLASS
+#define IFC_HELPER_CLASS(N)
+#endif
+#ifndef IFC_RENDER_CLASS
+#define IFC_RENDER_CLASS(N)
+#endif
+#ifndef IFC_END_CLASS
 #define IFC_END_CLASS
+#endif
+#ifndef IFC_REF
 #define IFC_REF(C,N,I)
+#endif
+#ifndef IFC_REFS
 #define IFC_REFS(C,N,I)
+#endif
+#ifndef IFC_FLT
 #define IFC_FLT(C,N,I)
+#endif
+#ifndef IFC_FLT_SUB
 #define IFC_FLT_SUB(C,N,I,J)
+#endif
+#ifndef IFC_INT
 #define IFC_INT(C,N,I)
+#endif
+#ifndef IFC_STR
 #define IFC_STR(C,N,I)
+#endif
+#ifndef IFC_BOOL
 #define IFC_BOOL(C,N,I)
 #endif

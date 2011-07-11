@@ -33,20 +33,20 @@
  *                                                                              *
  * IfcGeomObject represents the actual IfcBuildingElements.                     *
  *   IfcGeomObject.name is the GUID of the element                              *
- *   IfcGeomObject.type is the datatype of the element e.g. IFCWINDOW           *
+ *   IfcGeomObject.type is the datatype of the element e.g. IfcWindow           *
  *   IfcGeomObject.mesh is a pointer to an IfcMesh                              *
  *   IfcGeomObject.matrix is a 4x3 matrix that defines the orientation and      *
  *     translation of the mesh in relation to the world origin                  *
  *                                                                              *
- * Init(char* fn, bool world_coords) parses the IFC file in fn, returns true
- *   on succes, world_coords = true will result in all IfcGeomObject.matrix
- *   being an identity matrix and IfcMesh.verts containing global positions
+ * Init(char* fn, bool world_coords) parses the IFC file in fn, returns true    *
+ *   on succes, world_coords = true will result in all IfcGeomObject.matrix     *
+ *   being an identity matrix and IfcMesh.verts containing global positions     *
  *                                                                              *
- * Get() returns a pointer to the current IfcGeomObject
+ * Get() returns a pointer to the current IfcGeomObject                         *
  *                                                                              * 
- * Next() returns true if there is an entity yet available 
+ * Next() returns true if there is an entity yet available                      *
  *                                                                              *
- * Progress() returns an int in [0..100] that indicates the overall progress
+ * Progress() returns an int in [0..100] that indicates the overall progress    *
  *                                                                              *
  ********************************************************************************/
 
@@ -55,6 +55,7 @@
 
 #include <map>
 #include <vector>
+#include <algorithm>
 
 #include <gp_Trsf.hxx>
 #include <gp_Pnt.hxx>
@@ -64,6 +65,9 @@ namespace IfcGeomObjects {
 
 	typedef std::vector<int>::const_iterator IntIt;
 	typedef std::vector<float>::const_iterator FltIt;
+	typedef std::pair< float,std::pair<float,float> > VertKey;
+	typedef std::map<VertKey,int> VertKeyMap;
+	typedef std::pair<int,int> Edge;
 
 	class IfcMesh {
 	public:
@@ -71,15 +75,16 @@ namespace IfcGeomObjects {
 		std::vector<float> verts;
 		std::vector<int> faces;
 		std::vector<int> edges;
+		VertKeyMap welds;
 		
 		IfcMesh(int i, TopoDS_Shape s);
 	private:
 		int addvert(gp_Pnt p);
 		inline void addedge(int n1, int n2, std::map<std::pair<int,int>,int>& edgecount, std::vector<std::pair<int,int> >& edges_temp) {
-			if ( edgecount.find(std::pair<int,int>((std::min)(n1,n2),(std::max)(n1,n2))) == edgecount.end() )
-				edgecount[std::pair<int,int>((std::min)(n1,n2),(std::max)(n1,n2))] = 0;
-			edgecount[std::pair<int,int>((std::min)(n1,n2),(std::max)(n1,n2))] ++;
-			edges_temp.push_back(std::pair<int,int>((std::min)(n1,n2),(std::max)(n1,n2)));
+			const Edge e = Edge( (std::min)(n1,n2),(std::max)(n1,n2) );
+			if ( edgecount.find(e) == edgecount.end() ) edgecount[e] = 1;
+			else edgecount[e] ++;
+			edges_temp.push_back(e);
 		}
 	};
 
