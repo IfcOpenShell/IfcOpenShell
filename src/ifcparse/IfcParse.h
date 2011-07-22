@@ -256,6 +256,7 @@ namespace IfcParse {
 		std::string error;
 	public:
 		IfcException(std::string e);
+		~IfcException () throw ();
 		const char* what() const throw();
 	};
 }

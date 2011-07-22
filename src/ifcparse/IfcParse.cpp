@@ -587,7 +587,8 @@ EntityPtr Ifc::EntityById(int id) {
 	return it->second;
 }
 IfcException::IfcException(std::string e) { error = e; }
-const char* IfcException::what() const { return error.c_str(); }
+IfcException::~IfcException() throw () {}
+const char* IfcException::what() const throw() { return error.c_str(); }
 void Ifc::Dispose() {
 	file->Close();
 	delete file;
