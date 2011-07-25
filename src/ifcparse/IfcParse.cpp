@@ -17,9 +17,11 @@
 *                                                                              *
 ********************************************************************************/
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "../ifcparse/IfcParse.h"
-#include "../ifcparse/IfcEnum.h"
-#include "../ifcparse/IfcTypes.h"
+#include "../ifcparse/IfcUtil.h"
 
 using namespace IfcParse;
 
@@ -30,7 +32,7 @@ File::File(const std::string& fn) {
 	eof = false;
 	stream.open(fn.c_str(),std::ios_base::binary);
 	stream.seekg(0,std::ios_base::end);
-	size = stream.tellg();
+	size = (unsigned int) stream.tellg();
 	stream.seekg(0,std::ios_base::beg);
 	buffer = new char[size < BUF_SIZE ? size : BUF_SIZE];
 	ptr = 0;
@@ -55,7 +57,7 @@ void File::ReadBuffer(bool inc) {
 	eof = stream.eof();
 	if ( eof ) return;
 	stream.read(buffer,size < BUF_SIZE ? size : BUF_SIZE);
-	len = stream.gcount();
+	len = (unsigned int) stream.gcount();
 	eof = len == 0;
 	ptr = 0;
 }
@@ -252,7 +254,7 @@ TokenArgument::TokenArgument(Token t) {
 	token = t;
 }
 
-EntityArgument::EntityArgument(EntityPtr e) {
+EntityArgument::EntityArgument(IfcUtil::IfcSchemaEntity e) {
 	entity = e;
 }
 
@@ -269,7 +271,9 @@ ArgumentList::ArgumentList(Tokens* t, std::vector<unsigned int>& ids) {
 			if ( TokenFunc::isIdentifier(next) ) ids.push_back(TokenFunc::asInt(next));
 			if ( TokenFunc::isDatatype(next) ) {
 				Ifc::file->Seek(TokenFunc::Offset(next));
-				EntityPtr entity = EntityPtr(new Entity(0,t,ids,true));
+				EntityPtr e = EntityPtr(new Entity(0,t));
+				e->Load(ids,true);
+				IfcUtil::IfcSchemaEntity entity = Ifc2x3::SchemaEntity(e);
 				Push ( ArgumentPtr(new EntityArgument(entity)) );
 			} else {
 				Push ( ArgumentPtr(new TokenArgument(next)) );
@@ -289,18 +293,43 @@ ArgumentList::operator int() const { throw IfcException("Argument is not an inte
 ArgumentList::operator bool() const { throw IfcException("Argument is not a boolean"); }
 ArgumentList::operator float() const { throw IfcException("Argument is not a number"); }
 ArgumentList::operator std::string() const { throw IfcException("Argument is not a string"); }
-ArgumentList::operator EntityPtr() const { throw IfcException("Argument is not an IFC type"); }
-ArgumentList::operator EntitiesPtr() const {
-	EntitiesPtr l (new Entities());
+ArgumentList::operator std::vector<float>() const {
+	std::vector<float> r;
+	std::vector<ArgumentPtr>::const_iterator it;
+	for ( it = list.begin(); it != list.end(); ++ it ) {
+		r.push_back(**it);
+	}
+	return r;
+}
+ArgumentList::operator std::vector<int>() const {
+	std::vector<int> r;
+	std::vector<ArgumentPtr>::const_iterator it;
+	for ( it = list.begin(); it != list.end(); ++ it ) {
+		r.push_back(**it);
+	}
+	return r;
+}
+ArgumentList::operator std::vector<std::string>() const {
+	std::vector<std::string> r;
+	std::vector<ArgumentPtr>::const_iterator it;
+	for ( it = list.begin(); it != list.end(); ++ it ) {
+		r.push_back(**it);
+	}
+	return r;
+}
+ArgumentList::operator IfcUtil::IfcSchemaEntity() const { throw IfcException("Argument is not an IFC type"); }
+ArgumentList::operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const { throw IfcException("Argument is not an IFC type"); }
+ArgumentList::operator IfcEntities() const {
+	IfcEntities l ( new IfcEntityList() );
 	std::vector<ArgumentPtr>::const_iterator it;
 	for ( it = list.begin(); it != list.end(); ++ it ) {
 		// FIXME: account for $
-		const EntityPtr entity = **it;
+		const IfcUtil::IfcSchemaEntity entity = **it;
 		l->push(entity);
 	}
 	return l;
 }
-unsigned int ArgumentList::Size() const { return list.size(); }
+unsigned int ArgumentList::Size() const { return (unsigned int) list.size(); }
 ArgumentPtr ArgumentList::operator [] (unsigned int i) const {
 	if ( i >= list.size() ) 
 		throw IfcException("Argument index out of range");
@@ -316,6 +345,7 @@ std::string ArgumentList::toString() const {
 	ss << ")";
 	return ss.str();
 }
+bool ArgumentList::isNull() const { return false; }
 
 //
 // Functions for casting the TokenArgument to other types
@@ -324,12 +354,16 @@ TokenArgument::operator int() const { return TokenFunc::asInt(token); }
 TokenArgument::operator bool() const { return TokenFunc::asBool(token); }
 TokenArgument::operator float() const { return TokenFunc::asFloat(token); }
 TokenArgument::operator std::string() const { return TokenFunc::asString(token); }
-TokenArgument::operator EntityPtr() const { return Ifc::EntityById(TokenFunc::asInt(token)); }
-TokenArgument::operator EntitiesPtr() const { throw IfcException("Argument is not a list of entities"); }
+TokenArgument::operator std::vector<float>() const { throw IfcException("Argument is not a list of floats"); }
+TokenArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
+TokenArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
+TokenArgument::operator IfcUtil::IfcSchemaEntity() const { return Ifc::EntityById(TokenFunc::asInt(token)); }
+TokenArgument::operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const { return SHARED_PTR<IfcUtil::IfcAbstractSelect>( new IfcUtil::IfcEntitySelect(*this) ); }
+TokenArgument::operator IfcEntities() const { throw IfcException("Argument is not a list of entities"); }
 unsigned int TokenArgument::Size() const { return 1; }
 ArgumentPtr TokenArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
 std::string TokenArgument::toString() const { return TokenFunc::asString(token); }
-
+bool TokenArgument::isNull() const { return TokenFunc::isOperator(token,'$'); }
 //
 // Functions for casting the EntityArgument to other types
 //
@@ -337,25 +371,27 @@ EntityArgument::operator int() const { throw IfcException("Argument is not an in
 EntityArgument::operator bool() const { throw IfcException("Argument is not a boolean"); }
 EntityArgument::operator float() const { throw IfcException("Argument is not a number"); }
 EntityArgument::operator std::string() const { throw IfcException("Argument is not a string"); }
-EntityArgument::operator EntityPtr() const { return entity; }
-EntityArgument::operator EntitiesPtr() const { throw IfcException("Argument is not a list of entities"); }
+EntityArgument::operator std::vector<float>() const { throw IfcException("Argument is not a list of floats"); }
+EntityArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
+EntityArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
+EntityArgument::operator IfcUtil::IfcSchemaEntity() const { return entity; }
+EntityArgument::operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const { return SHARED_PTR<IfcUtil::IfcAbstractSelect>( new IfcUtil::IfcArgumentSelect(entity->type(),entity->entity->getArgument(0)) ); }
+EntityArgument::operator IfcEntities() const { throw IfcException("Argument is not a list of entities"); }
 unsigned int  EntityArgument::Size() const { return 1; }
 ArgumentPtr EntityArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
-std::string EntityArgument::toString() const { return entity->toString(); }
+std::string EntityArgument::toString() const { return entity->entity->toString(); }
+bool EntityArgument::isNull() const { return false; }
 
 //
 // Reads an Entity from the list of Tokens
-// If the type of the Entity is not known, the ArgumentList is not loaded
 //
-Entity::Entity(unsigned int i, Tokens* t, std::vector<unsigned int>& ids, bool parse) {
+Entity::Entity(unsigned int i, Tokens* t) {
 	Token datatype = t->Next();
 	if ( ! TokenFunc::isDatatype(datatype)) throw IfcException("Unexpected token while parsing entity");
-	type = IfcSchema::Enum::FromString(TokenFunc::asString(datatype));
-	id = i;
+	_type = Ifc2x3::Type::FromString(TokenFunc::asString(datatype));
+	_id = i;
 	args = ArgumentPtr();
 	offset = TokenFunc::Offset(datatype);
-	if ( (type != IfcSchema::Enum::IfcDontCare && type != IfcSchema::Enum::IfcUnknown) || parse ) 
-		Load(ids, false);
 }
 
 //
@@ -363,7 +399,7 @@ Entity::Entity(unsigned int i, Tokens* t, std::vector<unsigned int>& ids, bool p
 //
 Entity::Entity(unsigned int i, Tokens* t, unsigned int o) {
 	std::vector<unsigned int> ids;
-	id = i;
+	_id = i;
 	offset = o;
 	Load(ids, true);
 }
@@ -371,7 +407,7 @@ Entity::Entity(unsigned int i, Tokens* t, unsigned int o) {
 //
 // Access the Nth argument from the ArgumentList
 //
-ArgumentPtr Entity::operator [] (unsigned int i) {
+ArgumentPtr Entity::getArgument(unsigned int i) {
 	if ( ! args ) {
 		std::vector<unsigned int> ids;
 		Load(ids, true);
@@ -386,8 +422,8 @@ void Entity::Load(std::vector<unsigned int>& ids, bool seek) {
 	if ( seek ) {
 		Ifc::file->Seek(offset);
 		Token datatype = Ifc::tokens->Next();
-		if ( ! TokenFunc::isDatatype(datatype) ) throw IfcException("Unexpected token while parsing entity");
-		type = IfcSchema::Enum::FromString(TokenFunc::asString(datatype));
+		if ( ! TokenFunc::isDatatype(datatype)) throw IfcException("Unexpected token while parsing entity");
+		_type = Ifc2x3::Type::FromString(TokenFunc::asString(datatype));
 	}
 	Token open = Ifc::tokens->Next();
 	args = ArgumentPtr(new ArgumentList(Ifc::tokens, ids));
@@ -396,11 +432,15 @@ void Entity::Load(std::vector<unsigned int>& ids, bool seek) {
 	if ( ! TokenFunc::isOperator(semilocon,';') ) Ifc::file->Seek(old_offset);
 }
 
+Ifc2x3::Type::Enum Entity::type() {
+	return _type;
+}
+
 //
-// Returns a CamelCase string representation of the datatype as it is defined in IfcSchema.h
+// Returns the CamelCase string representation of the datatype as it is defined in the schema
 //
-std::string Entity::Datatype() const {
-	return IfcSchema::Enum::ToString(type);
+std::string Entity::datatype() {
+	return Ifc2x3::Type::ToString(_type);
 }
 
 //
@@ -413,67 +453,37 @@ std::string Entity::toString() {
 		Load(ids, true);
 	}
 	std::stringstream ss;
-	ss << "#" << id << "=" << Datatype() << args->toString();
+	ss << "#" << _id << "=" << datatype() << args->toString();
 	return ss.str();
 }
 
 //
 // Returns the entities of type c that have this entity in their ArgumentList
 //
-EntitiesPtr Entity::parents(IfcSchema::Enum::IfcTypes c) {
-	EntitiesPtr l = EntitiesPtr(new Entities());
-	EntitiesPtr all = Ifc::EntitiesByReference(id);
+IfcEntities Entity::getInverse(Ifc2x3::Type::Enum c) {
+	IfcEntities l = IfcEntities(new IfcEntityList());
+	IfcEntities all = Ifc::EntitiesByReference(_id);
 	if ( ! all ) return l;
-	for( Entities::it it = all->begin(); it != all->end();++  it  ) {
-		if ( c == IfcSchema::Enum::ALL || (*it)->type == c ) {
+	for( IfcEntityList::it it = all->begin(); it != all->end();++  it  ) {
+		if ( c == Ifc2x3::Type::ALL || (*it)->is(c) ) {
 			l->push(*it);
 		}
 	}
 	return l;
 }
-EntitiesPtr Entity::parents(IfcSchema::Enum::IfcTypes c, int i, const std::string& a) {
-	EntitiesPtr l = EntitiesPtr(new Entities());
-	EntitiesPtr all = parents(c);
-	for( Entities::it it = all->begin(); it != all->end();++ it  ) {
-		const std::string s = *((**it)[i]);
+IfcEntities Entity::getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a) {
+	IfcEntities l = IfcEntities(new IfcEntityList());
+	IfcEntities all = getInverse(c);
+	for( IfcEntityList::it it = all->begin(); it != all->end();++ it  ) {
+		const std::string s = *(*it)->entity->getArgument(i);
 		if ( s == a ) {
 			l->push(*it);
 		}
 	}
 	return l;
 }
-void Entities::push(EntityPtr l) {
-	if ( l ) ls.push_back(l);
-}
-void Entities::push(EntitiesPtr l) {
-	for( it i = l->begin(); i != l->end(); ++i  ) {
-		if ( *i ) ls.push_back(*i);
-	}
-}
-int Entities::Size() const { return ls.size(); }
-Entities::it Entities::begin() { return ls.begin(); }
-Entities::it Entities::end() { return ls.end(); }
-
-//
-// Returns the entities of type c that have one of these entities in their ArgumentList
-//
-EntitiesPtr Entities::parents(IfcSchema::Enum::IfcTypes c) {
-	EntitiesPtr l = EntitiesPtr(new Entities());
-	for( it i = begin(); i != end(); ++i  ) {
-		l->push((*i)->parents(c));
-	}
-	return l;
-}
-EntitiesPtr Entities::parents(IfcSchema::Enum::IfcTypes c, int ar, const std::string& a) {
-	EntitiesPtr l = EntitiesPtr(new Entities());
-	for( it i = begin(); i != end(); ++i  ) {
-		l->push((*i)->parents(c,ar,a));
-	}
-	return l;
-}
-EntityPtr Entities::operator[] (int i) {
-	return ls[i];
-}
+bool Entity::is(Ifc2x3::Type::Enum v) {	return _type == v; }
+unsigned int Entity::id() { return _id; }
 
 //
 // Parses the IFC file in fn
@@ -488,33 +498,21 @@ bool Ifc::Init(const std::string& fn) {
 	unsigned int currentId = 0;
 	lastId = 0;
 	int x = 0;
-	EntityPtr entity;
-	std::cout << "Scanning file..." << std::endl;
+	EntityPtr e;
+	IfcUtil::IfcSchemaEntity entity; 
+	if ( log ) std::cout << "Scanning file..." << std::endl;
 	while ( true ) {
 		if ( currentId ) {
-			std::vector<unsigned int> ids;
-			entity = EntityPtr(new Entity(currentId,tokens,ids));
-			if ( !((++x)%1000) ) std::cout << "\r#" << currentId << "         ";
-			if ( entity->type != IfcSchema::Enum::IfcDontCare && entity->type != IfcSchema::Enum::IfcUnknown) {
-				byid[currentId] = entity;
-				EntitiesPtr L = EntitiesByType(entity->type);
-				if ( L == 0 ) {
-					L = EntitiesPtr(new Entities());
-					bytype[entity->type] = L;
-				}
-				L->push(entity);
-				for( std::vector<unsigned int>::const_iterator it = ids.begin(); it != ids.end(); ++it ) {
-					const int arg_id = *it;
-					EntitiesPtr L = EntitiesByReference(arg_id);
-					if ( L == 0 ) {
-						L = EntitiesPtr(new Entities());
-						byref[arg_id] = L;
-					}
-					L->push(entity);
-				}
-			} else {
-				offsets[currentId] = entity->offset;
+			e = EntityPtr(new Entity(currentId,tokens));
+			entity = Ifc2x3::SchemaEntity(e);
+			if ( log && !((++x)%1000) ) std::cout << "\r#" << currentId << "         " << std::flush;
+			IfcEntities L = EntitiesByType(entity->type());
+			if ( L == 0 ) {
+				L = IfcEntities(new IfcEntityList());
+				bytype[entity->type()] = L;
 			}
+			L->push(entity);
+			byid[currentId] = entity;
 			currentId = 0;
 		} else token = tokens->Next();
 		if ( ! token ) break;
@@ -523,9 +521,9 @@ bool Ifc::Init(const std::string& fn) {
 			if ( TokenFunc::isOperator(token,'=') ) {
 				currentId = id;
 			} else {				
-				EntitiesPtr L = EntitiesByReference(id);
+				IfcEntities L = EntitiesByReference(id);
 				if ( L == 0 ) {
-					L = EntitiesPtr(new Entities());
+					L = IfcEntities(new IfcEntityList());
 					byref[id] = L;
 				}
 				L->push(entity);
@@ -534,61 +532,71 @@ bool Ifc::Init(const std::string& fn) {
 		previous = token;
 	}
 
-	std::cout << "\rDone!                     " << std::endl;
+	if ( log ) std::cout << "\rDone scanning file   " << std::endl;
 
-	IfcEntity IfcUnitAssigment = *EntitiesByType(IfcSchema::Enum::IfcUnitAssignment)->begin();
-	IfcEntities units = ((IfcSchema::UnitAssignment*)IfcUnitAssigment.get())->Units();
-	Ifc::LengthUnit = 1.0f;
-	if ( units )
-		for ( IfcParse::Entities::it it = units->begin(); it != units->end(); it ++ ) {
-			IfcEntity unit = *it;
-			float value = 1.0f;
-			std::string UnitType = "";
-			if ( unit->type == IfcSchema::Enum::IfcConversionBasedUnit ) {
-				IfcSchema::ConversionBasedUnit* IfcConversionBasedUnit = (IfcSchema::ConversionBasedUnit*)(*it).get();
-				IfcSchema::MeasureWithUnit* IfcMeasureWithUnit = (IfcSchema::MeasureWithUnit*)IfcConversionBasedUnit->ConversionFactor().get();
-				try {
-					unit = IfcMeasureWithUnit->Unit();
-					value = *((*IfcMeasureWithUnit->Value())[0]);
-				} catch (...) {}
+	Ifc2x3::IfcUnitAssignment::ptr unit_assignment = *EntitiesByType<Ifc2x3::IfcUnitAssignment>()->begin();
+	IfcUtil::IfcAbstractSelect::list units = unit_assignment->Units();
+	for ( IfcUtil::IfcAbstractSelect::it it = units->begin(); it != units->end(); ++ it ) {
+		const IfcUtil::IfcAbstractSelect::ptr base = *it;
+		Ifc2x3::IfcSIUnit::ptr unit = Ifc2x3::IfcSIUnit::ptr();
+		float value = 1.0f;
+		if ( base->is(Ifc2x3::Type::IfcConversionBasedUnit) ) {
+			const Ifc2x3::IfcConversionBasedUnit::ptr u = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcConversionBasedUnit>(*it);
+			const Ifc2x3::IfcMeasureWithUnit::ptr u2 = u->ConversionFactor();
+			Ifc2x3::IfcUnit u3 = u2->UnitComponent();
+			if ( u3->is(Ifc2x3::Type::IfcSIUnit) ) {
+				unit = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcSIUnit>(u3);
 			}
-			if ( unit->type == IfcSchema::Enum::IfcSIUnit ) {
-				IfcSchema::SIUnit* IfcSIUnit = (IfcSchema::SIUnit*)(*it).get();
-				value *= UnitPrefixToValue(IfcSIUnit->UnitPrefix());
-				UnitType = IfcSIUnit->UnitType();
+			Ifc2x3::IfcValue v = u2->ValueComponent();
+			if ( v->isSimpleType() ) {
+				IfcUtil::IfcArgumentSelect::ptr v2 = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(v);
+				const float f = *v2->wrappedValue();
+				value *= f;
 			}
-			if ( UnitType == "LENGTHUNIT" ) {
+		} else if ( base->is(Ifc2x3::Type::IfcSIUnit) ) {
+			unit = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcSIUnit>(base);
+		}
+		if ( unit ) {
+			if ( unit->hasPrefix() ) {
+				value *= UnitPrefixToValue(unit->Prefix());
+			}
+			Ifc2x3::IfcUnitEnum::IfcUnitEnum type = unit->UnitType();
+			if ( type == Ifc2x3::IfcUnitEnum::LENGTHUNIT ) {
 				Ifc::LengthUnit = value;
-			} else if ( UnitType == "PLANEANGLEUNIT" ) {
+			} else if ( type == Ifc2x3::IfcUnitEnum::PLANEANGLEUNIT ) {
 				Ifc::PlaneAngleUnit = value;
 			}
 		}
-		return true;
+	}
+	return true;
 }
 
-EntitiesPtr Ifc::EntitiesByType(IfcSchema::Enum::IfcTypes t) {
+IfcEntities Ifc::EntitiesByType(Ifc2x3::Type::Enum t) {
 	MapEntitiesByType::const_iterator it = bytype.find(t);
-	return (it == bytype.end()) ? EntitiesPtr() : it->second;
+	return (it == bytype.end()) ? IfcEntities() : it->second;
 }
-EntitiesPtr Ifc::EntitiesByReference(int t) {
+IfcEntities Ifc::EntitiesByReference(int t) {
 	MapEntitiesByRef::const_iterator it = byref.find(t);
-	return (it == byref.end()) ? EntitiesPtr() : it->second;
+	return (it == byref.end()) ? IfcEntities() : it->second;
 }
-EntityPtr Ifc::EntityById(int id) {
+IfcUtil::IfcSchemaEntity Ifc::EntityById(int id) {
 	MapEntityById::const_iterator it = byid.find(id);
 	if ( it == byid.end() ) {
 		MapOffsetById::const_iterator it2 = offsets.find(id);
 		if ( it2 == offsets.end() ) throw IfcException("Entity not found");
 		const unsigned int offset = (*it2).second;
-		EntityPtr entity = EntityPtr(new Entity(id,Ifc::tokens,offset));
+		EntityPtr e = EntityPtr(new Entity(id,Ifc::tokens,offset));
+		IfcUtil::IfcSchemaEntity entity = Ifc2x3::SchemaEntity(e);
 		byid[id] = entity;
 		return entity;
 	}
 	return it->second;
 }
+
 IfcException::IfcException(std::string e) { error = e; }
 IfcException::~IfcException() throw () {}
 const char* IfcException::what() const throw() { return error.c_str(); }
+
 void Ifc::Dispose() {
 	file->Close();
 	delete file;
@@ -597,30 +605,37 @@ void Ifc::Dispose() {
 	bytype.clear();
 	byid.clear();
 	byref.clear();
-	IfcGeom::Cache::Purge();
 }
 
-float UnitPrefixToValue( const std::string& s ) {
-	     if ( s == "EXA"   ) return (float) 1e18;
-	else if ( s == "PETA"  ) return (float) 1e15;
-	else if ( s == "TERA"  ) return (float) 1e12;
-	else if ( s == "GIGA"  ) return (float) 1e9;
-	else if ( s == "MEGA"  ) return (float) 1e6;
-	else if ( s == "KILO"  ) return (float) 1e3;
-	else if ( s == "HECTO" ) return (float) 1e2;
-	else if ( s == "DECA"  ) return (float) 1;
-	else if ( s == "DECI"  ) return (float) 1e-1;
-	else if ( s == "CENTI" ) return (float) 1e-2;
-	else if ( s == "MILLI" ) return (float) 1e-3;
-	else if ( s == "MICRO" ) return (float) 1e-6;
-	else if ( s == "NANO"  ) return (float) 1e-9;
-	else if ( s == "PICO"  ) return (float) 1e-12;
-	else if ( s == "FEMTO" ) return (float) 1e-15;
-	else if ( s == "ATTO"  ) return (float) 1e-18;
+float UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v ) {
+	     if ( v == Ifc2x3::IfcSIPrefix::EXA   ) return (float) 1e18;
+	else if ( v == Ifc2x3::IfcSIPrefix::PETA  ) return (float) 1e15;
+	else if ( v == Ifc2x3::IfcSIPrefix::TERA  ) return (float) 1e12;
+	else if ( v == Ifc2x3::IfcSIPrefix::GIGA  ) return (float) 1e9;
+	else if ( v == Ifc2x3::IfcSIPrefix::MEGA  ) return (float) 1e6;
+	else if ( v == Ifc2x3::IfcSIPrefix::KILO  ) return (float) 1e3;
+	else if ( v == Ifc2x3::IfcSIPrefix::HECTO ) return (float) 1e2;
+	else if ( v == Ifc2x3::IfcSIPrefix::DECA  ) return (float) 1;
+	else if ( v == Ifc2x3::IfcSIPrefix::DECI  ) return (float) 1e-1;
+	else if ( v == Ifc2x3::IfcSIPrefix::CENTI ) return (float) 1e-2;
+	else if ( v == Ifc2x3::IfcSIPrefix::MILLI ) return (float) 1e-3;
+	else if ( v == Ifc2x3::IfcSIPrefix::MICRO ) return (float) 1e-6;
+	else if ( v == Ifc2x3::IfcSIPrefix::NANO  ) return (float) 1e-9;
+	else if ( v == Ifc2x3::IfcSIPrefix::PICO  ) return (float) 1e-12;
+	else if ( v == Ifc2x3::IfcSIPrefix::FEMTO ) return (float) 1e-15;
+	else if ( v == Ifc2x3::IfcSIPrefix::ATTO  ) return (float) 1e-18;
 	else return 1.0f;
+}
+void Ifc::SetOutput(std::ostream* l) { log = l; }
+void Ifc::LogMessage(const std::string& type, const std::string& message, const SHARED_PTR<IfcAbstractEntity>& entity) {
+	if ( log ) {
+		(*log) << "[" << type << "] " << message << std::endl;
+		if ( entity ) (*log) << entity->toString() << std::endl;
+	}
 }
 
 File* Ifc::file = 0;
+std::ostream* Ifc::log = 0;
 unsigned int Ifc::lastId = 0;
 Tokens* Ifc::tokens = 0;
 float Ifc::LengthUnit = 1.0f;

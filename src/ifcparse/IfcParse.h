@@ -20,7 +20,7 @@
 /********************************************************************************
  *                                                                              *
  * This file provides functions for loading an IFC file into memory and access  *
- * its entities either by ID, by an IfcSchema::Enum::IfcType or by reference    * 
+ * its entities either by ID, by an Ifc2x3::Type or by reference                * 
  *                                                                              *
  ********************************************************************************/
 
@@ -36,21 +36,9 @@
 #include <map>
 #include <exception>
 
-// Pick a shared pointer implementation
-#ifdef __GNUC__
-#include <tr1/memory>
-#define SHARED_PTR std::tr1::shared_ptr
-#else
-#ifdef _MSC_VER
-#include <memory>
-#define SHARED_PTR std::tr1::shared_ptr
-#else
-#include <boost/shared_ptr.hpp>
-#define SHARED_PTR boost::shared_ptr
-#endif
-#endif
-
-#include "../ifcparse/IfcEnum.h"
+#include "../ifcparse/SharedPointer.h"
+#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/Ifc2x3.h"
 
 const int BUF_SIZE = (32 * 1024 * 1024);
 
@@ -128,26 +116,6 @@ namespace IfcParse {
 		std::string TokenString(unsigned int offset);
 	};
 
-	class Argument;
-	typedef SHARED_PTR<Argument> ArgumentPtr;
-
-	//
-	// Base class of all kind of Arguments used in IFC entity defintions
-	//
-	class Argument {
-	protected:
-	public:
-		virtual operator int() const = 0;
-		virtual operator bool() const = 0;
-		virtual operator float() const = 0;
-		virtual operator std::string() const = 0;
-		virtual operator EntityPtr() const = 0;
-		virtual operator EntitiesPtr() const = 0;
-		virtual unsigned int Size() const = 0;
-		virtual ArgumentPtr operator [] (unsigned int i) const = 0;
-		virtual std::string toString() const = 0;
-	};
-
 	//
 	// Argument of type list, e.g.
 	// #1=IfcDirection((1.,0.,0.));
@@ -163,11 +131,16 @@ namespace IfcParse {
 		operator bool() const;
 		operator float() const;
 		operator std::string() const;
-		operator EntityPtr() const;
-		operator EntitiesPtr() const;
+		operator std::vector<float>() const;
+		operator std::vector<int>() const;
+		operator std::vector<std::string>() const;
+		operator IfcUtil::IfcSchemaEntity() const;
+		operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const;
+		operator IfcEntities() const;
 		unsigned int Size() const;
 		ArgumentPtr operator [] (unsigned int i) const;
 		std::string toString() const;
+		bool isNull() const;
 	};
 
 	//
@@ -184,11 +157,16 @@ namespace IfcParse {
 		operator bool() const;
 		operator float() const;
 		operator std::string() const;
-		operator EntityPtr() const;
-		operator EntitiesPtr() const;
+		operator std::vector<float>() const;
+		operator std::vector<int>() const;
+		operator std::vector<std::string>() const;
+		operator IfcUtil::IfcSchemaEntity() const;
+		operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const;
+		operator IfcEntities() const;
 		unsigned int Size() const;
 		ArgumentPtr operator [] (unsigned int i) const;
 		std::string toString() const;
+		bool isNull() const;
 	};
 
 	//
@@ -198,18 +176,23 @@ namespace IfcParse {
 	//
 	class EntityArgument : public Argument {
 	private:		
-		EntityPtr entity;		
+		IfcUtil::IfcSchemaEntity entity;		
 	public:
-		EntityArgument(EntityPtr e);
+		EntityArgument(IfcUtil::IfcSchemaEntity e);
 		operator int() const;
 		operator bool() const;
 		operator float() const;
 		operator std::string() const;
-		operator EntityPtr() const;
-		operator EntitiesPtr() const;
+		operator std::vector<float>() const;
+		operator std::vector<int>() const;
+		operator std::vector<std::string>() const;
+		operator IfcUtil::IfcSchemaEntity() const;
+		operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const;
+		operator IfcEntities() const;
 		unsigned int Size() const;
 		ArgumentPtr operator [] (unsigned int i) const;
 		std::string toString() const;
+		bool isNull() const;
 	};
 
 	//
@@ -217,38 +200,24 @@ namespace IfcParse {
 	// #1=IfcDirection((1.,0.,0.));
 	// ============================
 	//
-	class Entity {
+	class Entity : public IfcAbstractEntity {
 	private:
 		ArgumentPtr args;
-		void Load(std::vector<unsigned int>& ids, bool seek);
+		Ifc2x3::Type::Enum _type;
 	public:
-		unsigned int id;
-		unsigned int offset;
-		IfcSchema::Enum::IfcTypes type;
-		Entity(unsigned int i, Tokens* t, std::vector<unsigned int>& ids, bool parse = false);
+		unsigned int _id;
+		unsigned int offset;		
+		Entity(unsigned int i, Tokens* t);
 		Entity(unsigned int i, Tokens* t, unsigned int o);
-		EntitiesPtr parents(IfcSchema::Enum::IfcTypes c = IfcSchema::Enum::ALL);
-		EntitiesPtr parents(IfcSchema::Enum::IfcTypes c, int i, const std::string& a);
-		ArgumentPtr operator[] (unsigned int i);
+		IfcEntities getInverse(Ifc2x3::Type::Enum c = Ifc2x3::Type::ALL);
+		IfcEntities getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a);
+		void Load(std::vector<unsigned int>& ids, bool seek=false);
+		ArgumentPtr getArgument (unsigned int i);
 		std::string toString();
-		std::string Datatype() const;
-	};
-
-	//
-	// A list of IFC entities
-	//
-	class Entities {
-		std::vector<EntityPtr> ls;
-	public:
-		typedef std::vector<EntityPtr>::const_iterator it;
-		void push(EntityPtr l);
-		void push(EntitiesPtr l);
-		it begin();
-		it end();
-		EntitiesPtr parents(IfcSchema::Enum::IfcTypes c = IfcSchema::Enum::ALL);
-		EntitiesPtr parents(IfcSchema::Enum::IfcTypes c, int i, const std::string& a);
-		EntityPtr operator[] (int i);
-		int Size() const;
+		std::string datatype();
+		Ifc2x3::Type::Enum type();
+		bool is(Ifc2x3::Type::Enum v);
+		unsigned int id();
 	};
 
 	class IfcException : public std::exception {
@@ -261,9 +230,9 @@ namespace IfcParse {
 	};
 }
 
-typedef IfcParse::EntityPtr IfcEntity;
-typedef IfcParse::EntitiesPtr IfcEntities;
-typedef std::map<IfcSchema::Enum::IfcTypes,IfcEntities> MapEntitiesByType;
+typedef IfcUtil::IfcSchemaEntity IfcEntity;
+typedef IfcEntities IfcEntities;
+typedef std::map<Ifc2x3::Type::Enum,IfcEntities> MapEntitiesByType;
 typedef std::map<unsigned int,IfcEntity> MapEntityById;
 typedef std::map<unsigned int,IfcEntities> MapEntitiesByRef;
 typedef std::map<unsigned int,unsigned int> MapOffsetById;
@@ -278,10 +247,22 @@ private:
 	static MapEntitiesByRef byref;
 	static MapOffsetById offsets;
 	static unsigned int lastId;
+	static std::ostream* log;
 public:
+	static void SetOutput(std::ostream* l);
+	static void LogMessage(const std::string& type, const std::string& message, const SHARED_PTR<IfcAbstractEntity>& entity=SHARED_PTR<IfcAbstractEntity>());
 	static IfcParse::File* file;
 	static IfcParse::Tokens* tokens;
-	static IfcEntities EntitiesByType(IfcSchema::Enum::IfcTypes t);
+	template <class T>
+	static typename T::list EntitiesByType() {
+		IfcEntities e = EntitiesByType(T::Class());
+		typename T::list l ( new IfcTemplatedEntityList<T>() ); \
+		for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) { \
+			l->push(reinterpret_pointer_cast<IfcUtil::IfcBaseClass,T>(*it));\
+		}
+		return l;
+	}
+	static IfcEntities EntitiesByType(Ifc2x3::Type::Enum t);
 	static IfcEntities EntitiesByReference(int id);
 	static IfcEntity EntityById(int id);
 	static bool Init(const std::string& fn);
@@ -291,6 +272,6 @@ public:
 	static int CircleSegments;
 };
 
-float UnitPrefixToValue(const std::string& s);
+float UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v );
 
 #endif

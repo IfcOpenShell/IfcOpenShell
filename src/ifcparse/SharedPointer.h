@@ -17,34 +17,22 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCGEOM_H
-#define IFCGEOM_H
+/********************************************************************************
+ *                                                                              *
+ * This file defines the shared pointer implementation to use, shared pointers  *
+ * are used extensively in IfcOpenShell                                         *
+ *                                                                              *
+ ********************************************************************************/
 
-#include <gp_Pnt.hxx>
-#include <gp_Vec.hxx>
-#include <gp_Trsf.hxx>
-#include <gp_Trsf2d.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopoDS_Face.hxx>
-#include <Geom_Curve.hxx>
-#include <gp_Pln.hxx>
-
-#include "../ifcparse/IfcParse.h"
-#include "../ifcparse/IfcUtil.h"
-
-namespace IfcGeom {
-	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
-	bool convert_shape(const SHARED_PTR<IfcUtil::IfcBaseClass>& L, TopoDS_Shape& result);
-	bool convert_wire(const SHARED_PTR<IfcUtil::IfcBaseClass>& L, TopoDS_Wire& result);
-	bool convert_curve(const SHARED_PTR<IfcUtil::IfcBaseClass>& L, Handle(Geom_Curve)& result);
-	bool convert_face(const SHARED_PTR<IfcUtil::IfcBaseClass>& L, TopoDS_Face& result);
-	bool convert_openings(const Ifc2x3::IfcProduct::ptr& L, const Ifc2x3::IfcRelVoidsElement::list& openings, TopoDS_Shape& result, const gp_Trsf& trsf);
-	bool profile_helper(int numVerts, float* verts, int numFillets, int* filletIndices, float* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
-	namespace Cache {
-		void Purge();
-		void PurgeShapeCache();
-	}
-#include "IfcRegisterGeomHeader.h"
-}
+#ifdef __GNUC__
+#include <tr1/memory>
+#define SHARED_PTR std::tr1::shared_ptr
+#else
+#ifdef _MSC_VER
+#include <memory>
+#define SHARED_PTR std::tr1::shared_ptr
+#else
+#include <boost/shared_ptr.hpp>
+#define SHARED_PTR boost::shared_ptr
+#endif
 #endif

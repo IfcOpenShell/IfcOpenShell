@@ -35,8 +35,6 @@
 
 #include "../ifcparse/IfcGeomObjects.h"
 #include "../ifcparse/IfcGeom.h"
-#include "../ifcparse/IfcEnum.h"
-#include "../ifcparse/IfcTypes.h"
 
 // Welds vertices that belong to different faces
 int IfcGeomObjects::IfcMesh::addvert(gp_Pnt p) {
@@ -47,7 +45,7 @@ int IfcGeomObjects::IfcMesh::addvert(gp_Pnt p) {
 	verts.push_back(X);
 	verts.push_back(Y);
 	verts.push_back(Z);
-	int i = welds.size();
+	int i = (int) welds.size();
 	welds[key] = i;
 	return i;
 }
@@ -60,7 +58,7 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, TopoDS_Shape s) {
 		BRepTools::Clean(s);
 		BRepMesh::Mesh(s,0.001f);
 	} catch(...) {
-		std::cout << "[Error] Failed to triangulate IFC Entity #" << i << std::endl;
+		Ifc::LogMessage("Error","Failed to triangulate mesh");
 		return;
 	}
 	TopExp_Explorer exp;
@@ -117,21 +115,21 @@ IfcGeomObjects::IfcGeomObject::IfcGeomObject( const std::string& n, const std::s
 }
 
 // A container and iterator for IfcShapeRepresentations
-IfcEntities shapereps;
-IfcParse::Entities::it outer;
+Ifc2x3::IfcShapeRepresentation::list shapereps;
+Ifc2x3::IfcShapeRepresentation::it outer;
 
 // The triangulated shape is stored globally because it can be used by multiple IfcBuildingElements
 IfcGeomObjects::IfcMesh* shape;
 // The compound shape is stored globally because multiple IfcShapeRepresentations 
 // can have IfcBuildingElements with different IfcOpeningElements
-TopoDS_Compound shapes;
+TopoDS_Shape shapes;
 
 // The object is fetched beforehand to be positive an entity actually exists
 IfcGeomObjects::IfcGeomObject* currentGeomObj;
 
 // A container and iterator for IfcBuildingElements for the current IfcShapeRepresentation referenced by *outer
-IfcEntities entities;
-IfcParse::Entities::it inner;
+Ifc2x3::IfcProduct::list entities;
+Ifc2x3::IfcProduct::it inner;
 
 bool use_world_coords;
 int done;
@@ -150,74 +148,61 @@ void _nextShape() {
 // Returns the current IfcGeomObject*
 IfcGeomObjects::IfcGeomObject* _get() {
 	while ( true ) {
-		IfcEntity shaperep;
+		Ifc2x3::IfcShapeRepresentation::ptr shaperep;
+
+		// Have we reached the end of our list of representations?
 		if ( outer == shapereps->end() ) {
 			shapereps.reset();
 			return 0;
 		}
 		shaperep = *outer;
+
+		// Has the list of IfcProducts for this representation been initialized?
 		if ( ! entities ) {
-			const std::string arg1 = *(*shaperep)[1];
-			if ( arg1 != "Body" ) {
+			if ( shaperep->RepresentationIdentifier() != "Body" ) {
 				_nextShape();
 				continue;
 			}
-#ifdef _DEBUG
-			std::cout << shaperep->toString() << std::endl;
-#endif
-			// Find the IfcBuildingElements that refer to the current IfcShapeRepresentation
-			entities = shaperep->parents(IfcSchema::Enum::IfcProductDefinitionShape)->parents();
-			entities->push(shaperep->parents(IfcSchema::Enum::IfcProductRepresentation)->parents()); // 2x2 compatibility
-			entities->push(shaperep->parents(IfcSchema::Enum::IfcRepresentationMap)->parents(IfcSchema::Enum::IfcMappedItem)
-				->parents(IfcSchema::Enum::IfcShapeRepresentation,1,"Body")->parents(IfcSchema::Enum::IfcProductDefinitionShape)->parents());
-			entities->push(shaperep->parents(IfcSchema::Enum::IfcRepresentationMap)->parents(IfcSchema::Enum::IfcMappedItem)
-				->parents(IfcSchema::Enum::IfcShapeRepresentation,1,"Body")->parents(IfcSchema::Enum::IfcProductRepresentation)->parents());
+			Ifc2x3::IfcProductRepresentation::list prodreps = shaperep->OfProductRepresentation();
+			entities = Ifc2x3::IfcProduct::list( new IfcTemplatedEntityList<Ifc2x3::IfcProduct>() );
+			for ( Ifc2x3::IfcProductRepresentation::it it = prodreps->begin(); it != prodreps->end(); ++it ) {
+				if ( (*it)->is(Ifc2x3::Type::IfcProductDefinitionShape) ) {
+					Ifc2x3::IfcProductDefinitionShape::ptr pds = reinterpret_pointer_cast<Ifc2x3::IfcProductRepresentation,Ifc2x3::IfcProductDefinitionShape>(*it);
+					entities->push(pds->ShapeOfProduct());
+				}
+			}
+			// Does this representation have any IfcProducts?
 			if ( ! entities->Size() ) {
 				_nextShape();
 				continue;
 			}
 			inner = entities->begin();
 		}
+		// Have we reached the end of our list of IfcProducts?
 		if ( inner == entities->end() ) {
 			_nextShape();
 			continue;
 		}
+		// Has the TopoDS_Shape been created for this representation?
 		if ( shapes.IsNull() ) {
-			BRep_Builder builder;
-			builder.MakeCompound (shapes);
-
-			bool hasShapes = false;
-			IfcEntities l = ((IfcSchema::ShapeRepresentation*)shaperep.get())->Shapes();
-			for( IfcParse::Entities::it it = l->begin(); it != l->end(); ++ it ) {
-				const IfcEntity ifcshape = *it;
-				if ( ifcshape->type == IfcSchema::Enum::IfcMappedItem ) continue;
-				TopoDS_Shape ss;
-				if ( IfcGeom::convert_shape(ifcshape,ss) && ! ss.IsNull() ) {
-					builder.Add(shapes,ss);
-					hasShapes = true;
-#ifdef _DEBUG
-					std::cout << ifcshape->toString() << std::endl;
-#endif
-				}
-			}
-			if ( ! hasShapes || shapes.IsNull() ) {
+			if ( !IfcGeom::convert_shape(shaperep,shapes) ) {
 				_nextShape();
 				continue;
 			}
 		}
+		Ifc2x3::IfcProduct::ptr entity = *inner;
+		const std::string guid = entity->GlobalId();
 
-		IfcSchema::BuildingElement* entity = (IfcSchema::BuildingElement*)(*inner).get();
-#ifdef _DEBUG
-		std::cout << entity->toString() << std::endl;
-#endif
-		const std::string guid = entity->Guid();
 		gp_Trsf trsf;
 		try {
-			IfcGeom::convert((IfcSchema::LocalPlacement*)(entity->Placement().get()),trsf);
-		} catch( IfcParse::IfcException& e ) {std::cout << "[Error] " << e.what() << std::endl; _nextShape(); }
-		IfcEntities openings = IfcEntities();
-		if ( entity->type != IfcSchema::Enum::IfcOpeningElement ) {
-			openings = entity->parents(IfcSchema::Enum::IfcRelVoidsElement);
+			IfcGeom::convert(entity->ObjectPlacement(),trsf);
+		} catch (...) {}
+
+		// Does the IfcElement have any IfcOpenings?
+		Ifc2x3::IfcRelVoidsElement::list openings = Ifc2x3::IfcRelVoidsElement::list();
+		if ( entity->is(Ifc2x3::Type::IfcElement) ) {
+			Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcElement>(entity);
+			openings = element->HasOpenings();
 		}
 
 		if ( (openings && openings->Size()) || use_world_coords ) {
@@ -225,19 +210,21 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			TopoDS_Shape temp_shape (shapes);
 			try {
 				if (openings && openings->Size()) IfcGeom::convert_openings(entity,openings,temp_shape,trsf);
-			} catch( IfcParse::IfcException& e ) {std::cout << "[Warning] " << e.what() << std::endl; }
-			catch(StdFail_NotDone&) { std::cout << "[Error] Unknown modelling processing openings for:" << std::endl << entity->toString() << std::endl; }
+			} catch( IfcParse::IfcException& e ) {Ifc::LogMessage("Warning",e.what()); }
+			catch(...) { Ifc::LogMessage("Error","Error processing openings for:",entity->entity); }
 			if ( use_world_coords ) {
-				shape = new IfcGeomObjects::IfcMesh(shaperep->id,temp_shape.Moved(trsf));
+				shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),temp_shape.Moved(trsf));
 				trsf = gp_Trsf();
 			} else {
-				shape = new IfcGeomObjects::IfcMesh(shaperep->id,temp_shape);
+				shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),temp_shape);
 			}
 		} else if ( ! shape ) {
-			shape = new IfcGeomObjects::IfcMesh(shaperep->id,shapes);
+			shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),shapes);
 		}
-		return new IfcGeomObjects::IfcGeomObject(guid, entity->Datatype(), trsf, shape);		
+
+		return new IfcGeomObjects::IfcGeomObject(guid, Ifc2x3::Type::ToString(entity->type()), trsf, shape);		
 	}
+	
 }
 
 extern bool IfcGeomObjects::Next() {
@@ -249,6 +236,7 @@ extern bool IfcGeomObjects::Next() {
 	if ( ! currentGeomObj ) {
 		delete shape;
 		Ifc::Dispose();
+		IfcGeom::Cache::Purge();
 		return false;
 	} else {
 		return true;
@@ -257,11 +245,12 @@ extern bool IfcGeomObjects::Next() {
 extern const IfcGeomObjects::IfcGeomObject* IfcGeomObjects::Get() {
 	return currentGeomObj;
 }
-extern bool IfcGeomObjects::Init(char* fn, bool world_coords) {
+extern bool IfcGeomObjects::Init(char* fn, bool world_coords, std::ostream* log) {
+	if ( log ) Ifc::SetOutput(log);
 	use_world_coords = world_coords;
 	if ( !Ifc::Init(fn) ) return false;
 
-	shapereps = Ifc::EntitiesByType(IfcSchema::Enum::IfcShapeRepresentation);
+	shapereps = Ifc::EntitiesByType<Ifc2x3::IfcShapeRepresentation>();
 	if ( ! shapereps ) return false;
 	
 	outer = shapereps->begin();
@@ -272,7 +261,7 @@ extern bool IfcGeomObjects::Init(char* fn, bool world_coords) {
 
 	done = 0;
 	total = shapereps->Size();
-	return 1;
+	return true;
 }
 extern int IfcGeomObjects::Progress() {
 	return 100 * done / total;

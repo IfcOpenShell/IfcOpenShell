@@ -58,11 +58,23 @@ CHECK_ADD_OCE_OCC_DEF(iomanip.h)
 CHECK_ADD_OCE_OCC_DEF(iostream)  
 CHECK_ADD_OCE_OCC_DEF(iostream.h)
 
-ADD_DEFINITIONS(-O3)
+ADD_DEFINITIONS(-O2)
 ADD_DEFINITIONS(-fPIC)
 
 INCLUDE_DIRECTORIES(${OCC_INCLUDE_DIR})
-ADD_LIBRARY(IfcParse STATIC ../src/ifcparse/IfcEnum.cpp ../src/ifcparse/IfcTypes.cpp ../src/ifcparse/IfcParse.cpp ../src/ifcparse/IfcGeom.cpp ../src/ifcparse/IfcGeomObjects.cpp)
+ADD_LIBRARY(IfcParse STATIC 
+  ../src/ifcparse/IfcGeomWires.cpp
+  ../src/ifcparse/Ifc2x3.cpp
+  ../src/ifcparse/IfcGeomHelpers.cpp
+  ../src/ifcparse/IfcGeomFunctions.cpp
+  ../src/ifcparse/IfcGeomObjects.cpp
+  ../src/ifcparse/IfcGeomShapes.cpp
+  ../src/ifcparse/IfcGeomFaces.cpp
+  ../src/ifcparse/IfcRegister.cpp
+  ../src/ifcparse/IfcUtil.cpp
+  ../src/ifcparse/IfcGeomCurves.cpp
+  ../src/ifcparse/IfcParse.cpp
+)
 
 LINK_DIRECTORIES (${IfcOpenShell_BINARY_DIR} /usr/lib) 
 ADD_EXECUTABLE(IfcObj ../src/ifcobj/IfcObj.cpp)
