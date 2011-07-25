@@ -150,11 +150,31 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\src\ifcparse\IfcEnum.cpp"
+				RelativePath="..\src\ifcparse\Ifc2x3.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalOptions="/bigobj"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcGeomCurves.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcGeom.cpp"
+				RelativePath="..\src\ifcparse\IfcGeomFaces.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcGeomFunctions.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcGeomHelpers.cpp"
 				>
 			</File>
 			<File
@@ -162,11 +182,23 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\ifcparse\IfcGeomShapes.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcGeomWires.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ifcparse\IfcParse.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcTypes.cpp"
+				RelativePath="..\src\ifcparse\IfcRegister.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcUtil.cpp"
 				>
 			</File>
 		</Filter>
@@ -176,7 +208,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\src\ifcparse\IfcEnum.h"
+				RelativePath="..\src\ifcparse\Ifc2x3.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\Ifc2x3enum.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcGeom.h"
 				>
 			</File>
 			<File
@@ -184,11 +224,47 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcMacro.h"
+				RelativePath="..\src\ifcparse\IfcParse.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcParse.h"
+				RelativePath="..\src\ifcparse\IfcRegister.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcRegisterConvertCurve.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcRegisterConvertFace.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcRegisterConvertShape.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcRegisterConvertWire.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcRegisterCreateCache.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcRegisterDef.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcRegisterGeomHeader.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcRegisterPurgeCache.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcRegisterUndef.h"
 				>
 			</File>
 			<File
@@ -196,7 +272,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcTypes.h"
+				RelativePath="..\src\ifcparse\IfcUtil.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\SharedPointer.h"
 				>
 			</File>
 		</Filter>
