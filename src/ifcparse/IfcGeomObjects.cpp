@@ -204,6 +204,18 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcElement>(entity);
 			openings = element->HasOpenings();
 		}
+		// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
+		if ( entity->is(Ifc2x3::Type::IfcBuildingElementPart ) ) {
+			Ifc2x3::IfcBuildingElementPart::ptr part = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcBuildingElementPart>(entity);
+			Ifc2x3::IfcRelDecomposes::list decomposes = part->Decomposes();
+			for ( Ifc2x3::IfcRelDecomposes::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
+				Ifc2x3::IfcObjectDefinition::ptr obdef = (*it)->RelatingObject();
+				if ( obdef->is(Ifc2x3::Type::IfcElement) ) {
+					Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcObjectDefinition,Ifc2x3::IfcElement>(obdef);
+					openings->push(element->HasOpenings());
+				}
+			}
+		}
 
 		if ( (openings && openings->Size()) || use_world_coords ) {
 			if ( shape ) delete shape;
