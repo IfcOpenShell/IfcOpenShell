@@ -62,6 +62,7 @@ namespace IfcParse {
 		unsigned int offset;
 		void ReadBuffer(bool inc=true);
 	public:
+		bool valid;
 		bool eof;
 		unsigned int size;
 		File(const std::string& fn);
@@ -247,9 +248,10 @@ private:
 	static MapEntitiesByRef byref;
 	static MapOffsetById offsets;
 	static unsigned int lastId;
-	static std::ostream* log;
+	static std::ostream* log1;
+	static std::ostream* log2;
 public:
-	static void SetOutput(std::ostream* l);
+	static void SetOutput(std::ostream* l1, std::ostream* l2);
 	static void LogMessage(const std::string& type, const std::string& message, const SHARED_PTR<IfcAbstractEntity>& entity=SHARED_PTR<IfcAbstractEntity>());
 	static IfcParse::File* file;
 	static IfcParse::Tokens* tokens;

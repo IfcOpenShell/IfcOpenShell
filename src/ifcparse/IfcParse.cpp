@@ -31,6 +31,11 @@ using namespace IfcParse;
 File::File(const std::string& fn) {
 	eof = false;
 	stream.open(fn.c_str(),std::ios_base::binary);
+	if ( ! stream.good() ) {
+		valid = false;
+		return;
+	}
+	valid = true;
 	stream.seekg(0,std::ios_base::end);
 	size = (unsigned int) stream.tellg();
 	stream.seekg(0,std::ios_base::beg);
@@ -492,6 +497,7 @@ unsigned int Entity::id() { return _id; }
 //
 bool Ifc::Init(const std::string& fn) {
 	file = new File (fn);
+	if ( ! file->valid ) return false;
 	tokens = new Tokens (file);
 	Token token = 0;
 	Token previous = 0;
@@ -500,12 +506,12 @@ bool Ifc::Init(const std::string& fn) {
 	int x = 0;
 	EntityPtr e;
 	IfcUtil::IfcSchemaEntity entity; 
-	if ( log ) std::cout << "Scanning file..." << std::endl;
+	if ( log1 ) std::cout << "Scanning file..." << std::endl;
 	while ( true ) {
 		if ( currentId ) {
 			e = EntityPtr(new Entity(currentId,tokens));
 			entity = Ifc2x3::SchemaEntity(e);
-			if ( log && !((++x)%1000) ) std::cout << "\r#" << currentId << "         " << std::flush;
+			if ( log1 && !((++x)%1000) ) std::cout << "\r#" << currentId << "         " << std::flush;
 			IfcEntities L = EntitiesByType(entity->type());
 			if ( L == 0 ) {
 				L = IfcEntities(new IfcEntityList());
@@ -532,7 +538,7 @@ bool Ifc::Init(const std::string& fn) {
 		previous = token;
 	}
 
-	if ( log ) std::cout << "\rDone scanning file   " << std::endl;
+	if ( log1 ) std::cout << "\rDone scanning file   " << std::endl;
 
 	Ifc2x3::IfcUnitAssignment::ptr unit_assignment = *EntitiesByType<Ifc2x3::IfcUnitAssignment>()->begin();
 	IfcUtil::IfcAbstractSelect::list units = unit_assignment->Units();
@@ -626,16 +632,17 @@ float UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v ) {
 	else if ( v == Ifc2x3::IfcSIPrefix::ATTO  ) return (float) 1e-18;
 	else return 1.0f;
 }
-void Ifc::SetOutput(std::ostream* l) { log = l; }
+void Ifc::SetOutput(std::ostream* l1, std::ostream* l2) { log1 = l1; log2 = l2; }
 void Ifc::LogMessage(const std::string& type, const std::string& message, const SHARED_PTR<IfcAbstractEntity>& entity) {
-	if ( log ) {
-		(*log) << "[" << type << "] " << message << std::endl;
-		if ( entity ) (*log) << entity->toString() << std::endl;
+	if ( log2 ) {
+		(*log2) << "[" << type << "] " << message << std::endl;
+		if ( entity ) (*log2) << entity->toString() << std::endl;
 	}
 }
 
 File* Ifc::file = 0;
-std::ostream* Ifc::log = 0;
+std::ostream* Ifc::log1 = 0;
+std::ostream* Ifc::log2 = 0;
 unsigned int Ifc::lastId = 0;
 Tokens* Ifc::tokens = 0;
 float Ifc::LengthUnit = 1.0f;

@@ -78,7 +78,7 @@ ADD_LIBRARY(IfcParse STATIC
 
 LINK_DIRECTORIES (${IfcOpenShell_BINARY_DIR} /usr/lib) 
 ADD_EXECUTABLE(IfcObj ../src/ifcobj/IfcObj.cpp)
-TARGET_LINK_LIBRARIES (IfcObj IfcParse TKAdvTools TKMath TKernel TKBRep TKGeomBase TKGeomAlgo TKBool TKMesh TKShHealing TKFillet) 
+TARGET_LINK_LIBRARIES (IfcObj IfcParse TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet)
 
 # Build python wrapper using separate CMakeLists.txt
-ADD_SUBDIRECTORY(../src/ifcwrap .)
+ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)

@@ -23,6 +23,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#include <new>
+
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 #include <gp_Dir.hxx>
@@ -85,7 +87,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcFace::ptr& l, TopoDS_Face& face) {
 	if ( er == BRepBuilderAPI_NotPlanar ) {
 		ShapeFix_ShapeTolerance FTol;
 		FTol.SetTolerance(wire, 0.01, TopAbs_WIRE);
-		mf = BRepBuilderAPI_MakeFace(wire, false);
+		mf.~BRepBuilderAPI_MakeFace();
+		new (&mf) BRepBuilderAPI_MakeFace(wire);
 		er = mf.Error();
 	}
 	if ( er != BRepBuilderAPI_FaceDone ) return false;

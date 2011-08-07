@@ -257,8 +257,8 @@ extern bool IfcGeomObjects::Next() {
 extern const IfcGeomObjects::IfcGeomObject* IfcGeomObjects::Get() {
 	return currentGeomObj;
 }
-extern bool IfcGeomObjects::Init(char* fn, bool world_coords, std::ostream* log) {
-	if ( log ) Ifc::SetOutput(log);
+extern bool IfcGeomObjects::Init(const char* fn, bool world_coords, std::ostream* log1, std::ostream* log2) {
+	if ( log1 || log2 ) Ifc::SetOutput(log1,log2);
 	use_world_coords = world_coords;
 	if ( !Ifc::Init(fn) ) return false;
 
