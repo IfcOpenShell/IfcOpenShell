@@ -363,7 +363,9 @@ TokenArgument::operator std::vector<float>() const { throw IfcException("Argumen
 TokenArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
 TokenArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
 TokenArgument::operator IfcUtil::IfcSchemaEntity() const { return Ifc::EntityById(TokenFunc::asInt(token)); }
-TokenArgument::operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const { return SHARED_PTR<IfcUtil::IfcAbstractSelect>( new IfcUtil::IfcEntitySelect(*this) ); }
+TokenArgument::operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const { 
+	return SHARED_PTR<IfcUtil::IfcAbstractSelect>( new IfcUtil::IfcEntitySelect(*this) ); 
+}
 TokenArgument::operator IfcEntities() const { throw IfcException("Argument is not a list of entities"); }
 unsigned int TokenArgument::Size() const { return 1; }
 ArgumentPtr TokenArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
@@ -379,8 +381,12 @@ EntityArgument::operator std::string() const { throw IfcException("Argument is n
 EntityArgument::operator std::vector<float>() const { throw IfcException("Argument is not a list of floats"); }
 EntityArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
 EntityArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
-EntityArgument::operator IfcUtil::IfcSchemaEntity() const { return entity; }
-EntityArgument::operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const { return SHARED_PTR<IfcUtil::IfcAbstractSelect>( new IfcUtil::IfcArgumentSelect(entity->type(),entity->entity->getArgument(0)) ); }
+EntityArgument::operator IfcUtil::IfcSchemaEntity() const {
+	return SHARED_PTR<IfcUtil::IfcAbstractSelect>( new IfcUtil::IfcArgumentSelect(entity->type(),entity->entity->getArgument(0)) );
+}
+EntityArgument::operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const { 
+	return SHARED_PTR<IfcUtil::IfcAbstractSelect>( new IfcUtil::IfcArgumentSelect(entity->type(),entity->entity->getArgument(0)) ); 
+}
 EntityArgument::operator IfcEntities() const { throw IfcException("Argument is not a list of entities"); }
 unsigned int  EntityArgument::Size() const { return 1; }
 ArgumentPtr EntityArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }

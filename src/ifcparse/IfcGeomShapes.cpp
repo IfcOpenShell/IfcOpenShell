@@ -130,7 +130,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr& l, TopoDS
 	convert(l->Position(),trsf);
 	TopoDS_Shape extrusion = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,20000.0));
 	gp_Trsf down; down.SetTranslation(gp_Vec(0,0,-10000.0));
-	extrusion.Move(trsf*down);
+	extrusion.Move(down*trsf);
 	shape = BRepAlgoAPI_Cut(extrusion,halfspace);
 	return true;
 }
