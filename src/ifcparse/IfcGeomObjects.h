@@ -98,6 +98,7 @@ namespace IfcGeomObjects {
 	};
 
 	extern bool Init(const char* fn, bool world_coords = false, std::ostream* log1= 0, std::ostream* log2= 0);
+	extern bool Init(std::istream& f, int len, bool world_coords = false, std::ostream* log1= 0, std::ostream* log2= 0);
 	extern const IfcGeomObject* Get();
 	extern bool Next();	
 	extern int Progress();

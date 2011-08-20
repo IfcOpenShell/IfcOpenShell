@@ -275,6 +275,24 @@ extern bool IfcGeomObjects::Init(const char* fn, bool world_coords, std::ostream
 	total = shapereps->Size();
 	return true;
 }
+extern bool IfcGeomObjects::Init(std::istream& f, int len, bool world_coords, std::ostream* log1, std::ostream* log2) {
+	if ( log1 || log2 ) Ifc::SetOutput(log1,log2);
+	use_world_coords = world_coords;
+	if ( !Ifc::Init(f, len) ) return false;
+
+	shapereps = Ifc::EntitiesByType<Ifc2x3::IfcShapeRepresentation>();
+	if ( ! shapereps ) return false;
+	
+	outer = shapereps->begin();
+	entities.reset();
+	currentGeomObj = _get();
+	
+	if ( ! currentGeomObj ) return false;
+
+	done = 0;
+	total = shapereps->Size();
+	return true;
+}
 extern int IfcGeomObjects::Progress() {
 	return 100 * done / total;
 }

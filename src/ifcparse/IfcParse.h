@@ -61,11 +61,13 @@ namespace IfcParse {
 		unsigned int len;
 		unsigned int offset;
 		void ReadBuffer(bool inc=true);
+		bool paging;
 	public:
 		bool valid;
 		bool eof;
 		unsigned int size;
 		File(const std::string& fn);
+		File(std::istream& f, int len);
 		char Peek();
 		char Read(unsigned int offset);
 		void Inc();		
@@ -258,9 +260,10 @@ public:
 	template <class T>
 	static typename T::list EntitiesByType() {
 		IfcEntities e = EntitiesByType(T::Class());
-		typename T::list l ( new IfcTemplatedEntityList<T>() ); \
-		for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) { \
-			l->push(reinterpret_pointer_cast<IfcUtil::IfcBaseClass,T>(*it));\
+		typename T::list l ( new IfcTemplatedEntityList<T>() );
+		if ( e && e->Size() )
+		for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {
+			l->push(reinterpret_pointer_cast<IfcUtil::IfcBaseClass,T>(*it));
 		}
 		return l;
 	}
@@ -268,6 +271,8 @@ public:
 	static IfcEntities EntitiesByReference(int id);
 	static IfcEntity EntityById(int id);
 	static bool Init(const std::string& fn);
+	static bool Init(std::istream& fn, int len);
+	static bool Init(IfcParse::File* f);
 	static void Dispose();
 	static float LengthUnit;
 	static float PlaneAngleUnit;

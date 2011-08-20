@@ -39,11 +39,24 @@ File::File(const std::string& fn) {
 	stream.seekg(0,std::ios_base::end);
 	size = (unsigned int) stream.tellg();
 	stream.seekg(0,std::ios_base::beg);
+	paging = size > BUF_SIZE;
 	buffer = new char[size < BUF_SIZE ? size : BUF_SIZE];
 	ptr = 0;
 	len = 0;
 	offset = 0;
 	ReadBuffer(false);
+}
+
+File::File(std::istream& f, int l) {
+	eof = false;
+	size = l;
+	paging = false;
+	buffer = new char[size];
+	f.read(buffer,size);
+	valid = f.gcount() == size;
+	ptr = 0;
+	len = l;
+	offset = 0;
 }
 
 void File::Close() {
@@ -71,7 +84,10 @@ void File::ReadBuffer(bool inc) {
 // Seeks an arbitrary position in the file
 //
 void File::Seek(unsigned int o) {
-	if ( o >= offset && (o < (offset+len)) ) {
+	if ( !paging ) {
+		ptr = o;
+		eof = false;
+	} else if ( o >= offset && (o < (offset+len)) ) {
 		ptr = o - offset;
 	} else {
 		offset = o;
@@ -92,7 +108,9 @@ char File::Peek() {
 // Returns the character at specified offset
 //
 char File::Read(unsigned int o) {
-	if ( o >= offset && (o < (offset+len)) ) {
+	if ( ! paging ) {
+        	return buffer[o];
+	} else if ( o >= offset && (o < (offset+len)) ) {
 		return buffer[o-offset];
 	} else {
 		stream.clear();
@@ -112,7 +130,10 @@ unsigned int File::Tell() {
 // Increments cursor and reads new chunk if necessary
 //
 void File::Inc() {
-	if ( ++ptr == len ) { ReadBuffer(); }
+	if ( ++ptr == len ) { 
+		if ( paging ) ReadBuffer();
+		else eof = true;
+	}
 }
 
 Tokens::Tokens(IfcParse::File *f) {
@@ -433,6 +454,7 @@ void Entity::Load(std::vector<unsigned int>& ids, bool seek) {
 	if ( seek ) {
 		Ifc::file->Seek(offset);
 		Token datatype = Ifc::tokens->Next();
+		std::string dt = TokenFunc::toString(datatype);
 		if ( ! TokenFunc::isDatatype(datatype)) throw IfcException("Unexpected token while parsing entity");
 		_type = Ifc2x3::Type::FromString(TokenFunc::asString(datatype));
 	}
@@ -502,7 +524,13 @@ unsigned int Entity::id() { return _id; }
 // Gets the unit definitins from the file
 //
 bool Ifc::Init(const std::string& fn) {
-	file = new File (fn);
+  return Ifc::Init(new File(fn));
+}
+bool Ifc::Init(std::istream& f, int len) {
+  return Ifc::Init(new File(f,len));
+}
+bool Ifc::Init(IfcParse::File* f) {
+	file = f;
 	if ( ! file->valid ) return false;
 	tokens = new Tokens (file);
 	Token token = 0;
@@ -545,9 +573,14 @@ bool Ifc::Init(const std::string& fn) {
 	}
 
 	if ( log1 ) std::cout << "\rDone scanning file   " << std::endl;
-
-	Ifc2x3::IfcUnitAssignment::ptr unit_assignment = *EntitiesByType<Ifc2x3::IfcUnitAssignment>()->begin();
-	IfcUtil::IfcAbstractSelect::list units = unit_assignment->Units();
+	
+	Ifc2x3::IfcUnitAssignment::list unit_assignments = EntitiesByType<Ifc2x3::IfcUnitAssignment>();
+	IfcUtil::IfcAbstractSelect::list units = IfcUtil::IfcAbstractSelect::list();
+	if ( unit_assignments->Size() ) {
+ 	  Ifc2x3::IfcUnitAssignment::ptr unit_assignment = *unit_assignments->begin();
+ 	  IfcUtil::IfcAbstractSelect::list units = unit_assignment->Units();
+        }
+        if ( units )
 	for ( IfcUtil::IfcAbstractSelect::it it = units->begin(); it != units->end(); ++ it ) {
 		const IfcUtil::IfcAbstractSelect::ptr base = *it;
 		Ifc2x3::IfcSIUnit::ptr unit = Ifc2x3::IfcSIUnit::ptr();
