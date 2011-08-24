@@ -1,2 +1,2 @@
-ADD_EXECUTABLE(IfcParseExamples ../src/examples/IfcParseExamples.cpp)
+ADD_EXECUTABLE(IfcParseExamples IfcParseExamples.cpp)
 TARGET_LINK_LIBRARIES (IfcParseExamples IfcParse)

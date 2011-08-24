@@ -81,6 +81,8 @@ ADD_LIBRARY(IfcGeom STATIC
   ../src/ifcgeom/IfcRegister.cpp
 )
 
+TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
+
 LINK_DIRECTORIES (${IfcOpenShell_BINARY_DIR} /usr/lib) 
 ADD_EXECUTABLE(IfcObj ../src/ifcobj/IfcObj.cpp)
 TARGET_LINK_LIBRARIES (IfcObj IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet)
