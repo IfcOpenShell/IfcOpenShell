@@ -33,8 +33,8 @@
 #include <Poly_Array1OfTriangle.hxx>
 #include <StdFail_NotDone.hxx>
 
-#include "../ifcparse/IfcGeomObjects.h"
-#include "../ifcparse/IfcGeom.h"
+#include "../ifcgeom/IfcGeomObjects.h"
+#include "../ifcgeom/IfcGeom.h"
 
 // Welds vertices that belong to different faces
 int IfcGeomObjects::IfcMesh::addvert(gp_Pnt p) {

@@ -21,7 +21,6 @@
 			IntermediateDirectory="..\temp\obj\debug"
 			ConfigurationType="1"
 			CharacterSet="2"
-			BuildLogFile="$(IntDir)\BuildLog.htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -61,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="TKernel.lib PTKernel.lib TKMath.lib TKService.lib TKV3d.lib TKV2d.lib TKBRep.lib TKShapeSchema.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKXSBase.lib TKPShape.lib TKShHealing.lib TKHLR.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKCDF.lib TKBool.lib TKBO.lib TKFillet.lib TKOffset.lib"
+				AdditionalDependencies="TKerneld.lib TKMathd.lib TKBRepd.lib TKGeomBased.lib TKGeomAlgod.lib TKG3dd.lib TKG2dd.lib TKShHealingd.lib TKTopAlgod.lib TKMeshd.lib TKPrimd.lib TKBoold.lib TKBOd.lib TKFilletd.lib"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -131,7 +130,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="TKernel.lib PTKernel.lib TKMath.lib TKService.lib TKV3d.lib TKV2d.lib TKBRep.lib TKIGES.lib TKSTL.lib TKVRML.lib TKSTEP.lib TKSTEPAttr.lib TKSTEP209.lib TKSTEPBase.lib TKShapeSchema.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKXSBase.lib TKPShape.lib TKShHealing.lib TKHLR.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKCDF.lib TKBool.lib TKBO.lib TKFillet.lib TKOffset.lib"
+				AdditionalDependencies="TKernel.lib TKMath.lib TKBRep.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKShHealing.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKBool.lib TKBO.lib TKFillet.lib"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

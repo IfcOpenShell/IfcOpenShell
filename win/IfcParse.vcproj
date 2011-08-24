@@ -162,39 +162,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcGeomCurves.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcGeomFaces.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcGeomFunctions.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcGeomHelpers.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcGeomObjects.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcGeomShapes.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcGeomWires.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\src\ifcparse\IfcParse.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcRegister.cpp"
 				>
 			</File>
 			<File
@@ -216,55 +184,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcGeom.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcGeomObjects.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\ifcparse\IfcParse.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcRegister.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcRegisterConvertCurve.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcRegisterConvertFace.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcRegisterConvertShape.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcRegisterConvertWire.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcRegisterCreateCache.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcRegisterDef.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcRegisterGeomHeader.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcRegisterPurgeCache.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcRegisterUndef.h"
 				>
 			</File>
 			<File

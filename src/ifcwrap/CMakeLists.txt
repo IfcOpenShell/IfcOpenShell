@@ -10,4 +10,4 @@ SET(CMAKE_SWIG_FLAGS "")
 
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
 SWIG_ADD_MODULE(IfcImport python IfcPython.i)
-SWIG_LINK_LIBRARIES(IfcImport ${PYTHON_LIBRARIES} IfcParse TKAdvTools TKMath TKernel TKBRep TKGeomBase TKGeomAlgo TKBool TKMesh TKShHealing TKFillet)
+SWIG_LINK_LIBRARIES(IfcImport ${PYTHON_LIBRARIES} IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet)

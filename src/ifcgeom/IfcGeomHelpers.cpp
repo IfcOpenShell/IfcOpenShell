@@ -72,7 +72,7 @@
 
 #include <TopLoc_Location.hxx>
 
-#include "../ifcparse/IfcGeom.h"
+#include "../ifcgeom/IfcGeom.h"
 
 
 namespace IfcGeom {

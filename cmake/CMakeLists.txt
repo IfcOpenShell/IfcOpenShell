@@ -65,22 +65,28 @@ ADD_DEFINITIONS(-fPIC)
 
 INCLUDE_DIRECTORIES(${OCC_INCLUDE_DIR})
 ADD_LIBRARY(IfcParse STATIC 
-  ../src/ifcparse/IfcGeomWires.cpp
   ../src/ifcparse/Ifc2x3.cpp
-  ../src/ifcparse/IfcGeomHelpers.cpp
-  ../src/ifcparse/IfcGeomFunctions.cpp
-  ../src/ifcparse/IfcGeomObjects.cpp
-  ../src/ifcparse/IfcGeomShapes.cpp
-  ../src/ifcparse/IfcGeomFaces.cpp
-  ../src/ifcparse/IfcRegister.cpp
   ../src/ifcparse/IfcUtil.cpp
-  ../src/ifcparse/IfcGeomCurves.cpp
   ../src/ifcparse/IfcParse.cpp
+)
+
+ADD_LIBRARY(IfcGeom STATIC
+  ../src/ifcgeom/IfcGeomCurves.cpp
+  ../src/ifcgeom/IfcGeomFaces.cpp
+  ../src/ifcgeom/IfcGeomFunctions.cpp
+  ../src/ifcgeom/IfcGeomHelpers.cpp
+  ../src/ifcgeom/IfcGeomObjects.cpp
+  ../src/ifcgeom/IfcGeomShapes.cpp
+  ../src/ifcgeom/IfcGeomWires.cpp
+  ../src/ifcgeom/IfcRegister.cpp
 )
 
 LINK_DIRECTORIES (${IfcOpenShell_BINARY_DIR} /usr/lib) 
 ADD_EXECUTABLE(IfcObj ../src/ifcobj/IfcObj.cpp)
-TARGET_LINK_LIBRARIES (IfcObj IfcParse TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet)
+TARGET_LINK_LIBRARIES (IfcObj IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet)
 
 # Build python wrapper using separate CMakeLists.txt
 ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
+
+# Build IfcParseExamples using separate CMakeLists.txt
+ADD_SUBDIRECTORY(../src/examples examples)

@@ -15,6 +15,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IfcMax", "IfcMax.vcproj", "
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IfcObj", "IfcObj.vcproj", "{5B0BAAB3-9FC4-4C0C-9D38-8BF4B07F4A85}"
 	ProjectSection(ProjectDependencies) = postProject
+		{BA57AF0F-1D12-4FAC-BD40-7474D729CAE9} = {BA57AF0F-1D12-4FAC-BD40-7474D729CAE9}
+		{F7600775-3D48-426A-88E2-F3A4BF4408A2} = {F7600775-3D48-426A-88E2-F3A4BF4408A2}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IfcGeom", "IfcGeom.vcproj", "{BA57AF0F-1D12-4FAC-BD40-7474D729CAE9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IfcParseExamples", "IfcParseExamples.vcproj", "{4DA9E9D7-60A6-4031-BA78-A3741BD62CB9}"
+	ProjectSection(ProjectDependencies) = postProject
 		{F7600775-3D48-426A-88E2-F3A4BF4408A2} = {F7600775-3D48-426A-88E2-F3A4BF4408A2}
 	EndProjectSection
 EndProject
@@ -40,6 +48,14 @@ Global
 		{5B0BAAB3-9FC4-4C0C-9D38-8BF4B07F4A85}.Debug|Win32.Build.0 = Debug|Win32
 		{5B0BAAB3-9FC4-4C0C-9D38-8BF4B07F4A85}.Release|Win32.ActiveCfg = Release|Win32
 		{5B0BAAB3-9FC4-4C0C-9D38-8BF4B07F4A85}.Release|Win32.Build.0 = Release|Win32
+		{BA57AF0F-1D12-4FAC-BD40-7474D729CAE9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BA57AF0F-1D12-4FAC-BD40-7474D729CAE9}.Debug|Win32.Build.0 = Debug|Win32
+		{BA57AF0F-1D12-4FAC-BD40-7474D729CAE9}.Release|Win32.ActiveCfg = Release|Win32
+		{BA57AF0F-1D12-4FAC-BD40-7474D729CAE9}.Release|Win32.Build.0 = Release|Win32
+		{4DA9E9D7-60A6-4031-BA78-A3741BD62CB9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4DA9E9D7-60A6-4031-BA78-A3741BD62CB9}.Debug|Win32.Build.0 = Debug|Win32
+		{4DA9E9D7-60A6-4031-BA78-A3741BD62CB9}.Release|Win32.ActiveCfg = Release|Win32
+		{4DA9E9D7-60A6-4031-BA78-A3741BD62CB9}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

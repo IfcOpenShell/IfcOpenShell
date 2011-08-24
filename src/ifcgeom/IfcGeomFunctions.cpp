@@ -72,7 +72,7 @@
 
 #include <TopLoc_Location.hxx>
 
-#include "../ifcparse/IfcGeom.h"
+#include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr& entity, 
 							   const Ifc2x3::IfcRelVoidsElement::list& openings, TopoDS_Shape& result, const gp_Trsf& trsf2) {

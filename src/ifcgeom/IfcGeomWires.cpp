@@ -72,7 +72,7 @@
 
 #include <TopLoc_Location.hxx>
 
-#include "../ifcparse/IfcGeom.h"
+#include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr& l, TopoDS_Wire& wire) {
 	Ifc2x3::IfcCompositeCurveSegment::list segments = l->Segments();

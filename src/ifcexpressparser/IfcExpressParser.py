@@ -381,6 +381,7 @@ namespace Type {
     typedef enum {
         %(enum)s
 	} Enum;
+	Enum Parent(Enum v);
     Enum FromString(const std::string& s);
     std::string ToString(Enum v);
 }
@@ -448,6 +449,14 @@ maxlen = max([len(e) for e in all_enumerations])
 for e in all_enumerations:
 	print >>cpp_file, '    %s(s=="%s"%s) { return %s; }'%(elseif,e.upper()," "*(maxlen-len(e)),e)
 print >>cpp_file, "    throw;"
+print >>cpp_file, "}"
+
+print >>cpp_file, "Type::Enum Type::Parent(Enum v){"
+print >>cpp_file, "    if (v < 0 || v >= %d) return -1;"%len(all_enumerations)
+for e in entity_enumerations:
+	if e not in parent_relations: continue
+	print >>cpp_file, '    if(v==%s%s) { return %s; }'%(e," "*(maxlen-len(e)),parent_relations[e])
+print >>cpp_file, "    return -1;"
 print >>cpp_file, "}"
 
 for t in [T for T in types if isinstance(T.type,EnumType)]:

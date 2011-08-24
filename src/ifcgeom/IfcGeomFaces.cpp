@@ -74,7 +74,7 @@
 
 #include <TopLoc_Location.hxx>
 
-#include "../ifcparse/IfcGeom.h"
+#include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::convert(const Ifc2x3::IfcFace::ptr& l, TopoDS_Face& face) {
 	Ifc2x3::IfcFaceBound::list bounds = l->Bounds();

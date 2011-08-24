@@ -30,7 +30,7 @@
 #include <set>
 #include <time.h>
 
-#include "../ifcparse/IfcGeomObjects.h"
+#include "../ifcgeom/IfcGeomObjects.h"
 #include "../ifcobj/ObjMaterials.h"
 
 int main ( int argc, char** argv ) {
@@ -102,8 +102,11 @@ int main ( int argc, char** argv ) {
 		fMtl << GetMaterial(*it);
 	}
 
-	std::cout << std::endl << "Log:" << std::endl;
-	std::cout << ss.str();
+	std::string log = ss.str();
+	if ( log.size() ) {
+		std::cout << std::endl << "Log:" << std::endl;
+		std::cout << ss.str();
+	}
 
 	time(&end);
 	int dif = (int) difftime (end,start);	

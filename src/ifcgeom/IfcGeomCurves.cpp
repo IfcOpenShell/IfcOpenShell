@@ -72,7 +72,7 @@
 
 #include <TopLoc_Location.hxx>
 
-#include "../ifcparse/IfcGeom.h"
+#include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::convert(const Ifc2x3::IfcCircle::ptr& l, Handle(Geom_Curve)& curve) {
 	const float r = l->Radius() * Ifc::LengthUnit;

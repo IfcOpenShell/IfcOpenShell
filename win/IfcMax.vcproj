@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib zlibdll.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib flt.lib geom.lib gfx.lib gup.lib helpsys.lib imageViewers.lib ManipSys.lib maxnet.lib Maxscrpt.lib maxutil.lib MenuMan.lib menus.lib mesh.lib MNMath.lib Paramblk2.lib particle.lib Poly.lib RenderUtil.lib SpringSys.lib tessint.lib viewfile.lib acap.lib TKernel.lib PTKernel.lib TKMath.lib TKService.lib TKV3d.lib TKV2d.lib TKBRep.lib TKIGES.lib TKSTL.lib TKVRML.lib TKSTEP.lib TKSTEPAttr.lib TKSTEP209.lib TKSTEPBase.lib TKShapeSchema.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKXSBase.lib TKPShape.lib TKShHealing.lib TKHLR.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKCDF.lib TKBool.lib TKBO.lib TKFillet.lib TKOffset.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib zlibdll.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib flt.lib geom.lib gfx.lib gup.lib helpsys.lib imageViewers.lib ManipSys.lib maxnet.lib Maxscrpt.lib maxutil.lib MenuMan.lib menus.lib mesh.lib MNMath.lib Paramblk2.lib particle.lib Poly.lib RenderUtil.lib SpringSys.lib tessint.lib viewfile.lib acap.lib TKerneld.lib TKMathd.lib TKBRepd.lib TKGeomBased.lib TKGeomAlgod.lib TKG3dd.lib TKG2dd.lib TKShHealingd.lib TKTopAlgod.lib TKMeshd.lib TKPrimd.lib TKBoold.lib TKBOd.lib TKFilletd.lib"
 				OutputFile="$(OutDir)\$(ProjectName).dli"
 				ModuleDefinitionFile="..\src\ifcmax\ifcmax.def"
 				GenerateDebugInformation="true"
@@ -136,7 +136,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib zlibdll.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib flt.lib geom.lib gfx.lib gup.lib helpsys.lib imageViewers.lib ManipSys.lib maxnet.lib Maxscrpt.lib maxutil.lib MenuMan.lib menus.lib mesh.lib MNMath.lib Paramblk2.lib particle.lib Poly.lib RenderUtil.lib SpringSys.lib tessint.lib viewfile.lib acap.lib TKernel.lib PTKernel.lib TKMath.lib TKService.lib TKV3d.lib TKV2d.lib TKBRep.lib TKIGES.lib TKSTL.lib TKVRML.lib TKSTEP.lib TKSTEPAttr.lib TKSTEP209.lib TKSTEPBase.lib TKShapeSchema.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKXSBase.lib TKPShape.lib TKShHealing.lib TKHLR.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKCDF.lib TKBool.lib TKBO.lib TKFillet.lib TKOffset.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib zlibdll.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib flt.lib geom.lib gfx.lib gup.lib helpsys.lib imageViewers.lib ManipSys.lib maxnet.lib Maxscrpt.lib maxutil.lib MenuMan.lib menus.lib mesh.lib MNMath.lib Paramblk2.lib particle.lib Poly.lib RenderUtil.lib SpringSys.lib tessint.lib viewfile.lib acap.lib TKernel.lib TKMath.lib TKBRep.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKShHealing.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKBool.lib TKBO.lib TKFillet.lib"
 				OutputFile="$(OutDir)\$(ProjectName).dli"
 				ModuleDefinitionFile="..\src\ifcmax\ifcmax.def"
 				GenerateDebugInformation="true"

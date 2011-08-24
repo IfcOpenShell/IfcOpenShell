@@ -72,7 +72,7 @@
 
 #include <TopLoc_Location.hxx>
 
-#include "../ifcparse/IfcGeom.h"
+#include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::convert(const Ifc2x3::IfcExtrudedAreaSolid::ptr& l, TopoDS_Shape& shape) {
 	TopoDS_Face face;

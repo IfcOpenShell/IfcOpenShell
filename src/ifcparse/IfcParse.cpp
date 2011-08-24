@@ -272,7 +272,7 @@ std::string TokenFunc::asString(Token t) {
 }
 std::string TokenFunc::toString(Token t) {
 	if ( isOperator(t) ) return std::string ( (char*) &t, 1 );
-	else return asString(t);
+	else return Ifc::tokens->TokenString(t - 128);
 }
 
 
@@ -390,7 +390,7 @@ TokenArgument::operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const {
 TokenArgument::operator IfcEntities() const { throw IfcException("Argument is not a list of entities"); }
 unsigned int TokenArgument::Size() const { return 1; }
 ArgumentPtr TokenArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
-std::string TokenArgument::toString() const { return TokenFunc::asString(token); }
+std::string TokenArgument::toString() const { return TokenFunc::toString(token); }
 bool TokenArgument::isNull() const { return TokenFunc::isOperator(token,'$'); }
 //
 // Functions for casting the EntityArgument to other types
@@ -454,7 +454,6 @@ void Entity::Load(std::vector<unsigned int>& ids, bool seek) {
 	if ( seek ) {
 		Ifc::file->Seek(offset);
 		Token datatype = Ifc::tokens->Next();
-		std::string dt = TokenFunc::toString(datatype);
 		if ( ! TokenFunc::isDatatype(datatype)) throw IfcException("Unexpected token while parsing entity");
 		_type = Ifc2x3::Type::FromString(TokenFunc::asString(datatype));
 	}
@@ -546,12 +545,16 @@ bool Ifc::Init(IfcParse::File* f) {
 			e = EntityPtr(new Entity(currentId,tokens));
 			entity = Ifc2x3::SchemaEntity(e);
 			if ( log1 && !((++x)%1000) ) std::cout << "\r#" << currentId << "         " << std::flush;
-			IfcEntities L = EntitiesByType(entity->type());
-			if ( L == 0 ) {
-				L = IfcEntities(new IfcEntityList());
-				bytype[entity->type()] = L;
-			}
-			L->push(entity);
+			Ifc2x3::Type::Enum ty = entity->type();
+			do {
+				IfcEntities L = EntitiesByType(ty);
+				if ( L == 0 ) {
+					L = IfcEntities(new IfcEntityList());
+					bytype[ty] = L;
+				}
+				L->push(entity);
+				ty = Ifc2x3::Type::Parent(ty);
+			} while ( ty > -1 );
 			byid[currentId] = entity;
 			currentId = 0;
 		} else token = tokens->Next();
@@ -577,10 +580,10 @@ bool Ifc::Init(IfcParse::File* f) {
 	Ifc2x3::IfcUnitAssignment::list unit_assignments = EntitiesByType<Ifc2x3::IfcUnitAssignment>();
 	IfcUtil::IfcAbstractSelect::list units = IfcUtil::IfcAbstractSelect::list();
 	if ( unit_assignments->Size() ) {
- 	  Ifc2x3::IfcUnitAssignment::ptr unit_assignment = *unit_assignments->begin();
- 	  IfcUtil::IfcAbstractSelect::list units = unit_assignment->Units();
-        }
-        if ( units )
+		Ifc2x3::IfcUnitAssignment::ptr unit_assignment = *unit_assignments->begin();
+		units = unit_assignment->Units();
+    }
+	if ( ! units ) return true;
 	for ( IfcUtil::IfcAbstractSelect::it it = units->begin(); it != units->end(); ++ it ) {
 		const IfcUtil::IfcAbstractSelect::ptr base = *it;
 		Ifc2x3::IfcSIUnit::ptr unit = Ifc2x3::IfcSIUnit::ptr();
