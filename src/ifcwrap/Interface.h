@@ -36,6 +36,6 @@ namespace IfcGeomObjects {
 
 	extern bool Next();
 	extern const IfcGeomObject* Get();
-	extern bool Init(char* fn, bool world_coords = false);
+	extern bool Init(const char* fn, bool world_coords = false);
 	extern int Progress();
 };

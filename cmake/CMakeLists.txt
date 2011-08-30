@@ -11,7 +11,7 @@ ELSE()
 	MESSAGE(STATUS "Looking for opencascade include files in: ${OCC_INCLUDE_DIR}")
 ENDIF()
 
-FIND_FILE(gp_Pnt_hxx "gp_Pnt.hxx" ${OCC_INCLUDE_DIR})
+FIND_FILE(gp_Pnt_hxx "gp_Pnt.hxx" ${OCC_INCLUDE_DIR} /usr/inc /usr/local/inc)
 IF(gp_Pnt_hxx)
 	MESSAGE(STATUS "Header files found")
 ELSE()
@@ -29,7 +29,7 @@ ELSE()
 	MESSAGE(STATUS "Looking for opencascade library files in: ${OCC_LIBRARY_DIR}")
 ENDIF()
 
-FIND_LIBRARY(libTKernel "TKernel" ${OCC_LIBRARY_DIR})
+FIND_LIBRARY(libTKernel "TKernel" ${OCC_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
 IF(libTKernel)
 	MESSAGE(STATUS "Library files found")
 ELSE()
@@ -61,9 +61,9 @@ CHECK_ADD_OCE_OCC_DEF(iostream.h)
 IF(NOT CMAKE_BUILD_TYPE)
  	SET(CMAKE_BUILD_TYPE "Release")
 ENDIF(NOT CMAKE_BUILD_TYPE)
-ADD_DEFINITIONS(-fPIC)
+ADD_DEFINITIONS(-fPIC -Wno-non-virtual-dtor)
 
-INCLUDE_DIRECTORIES(${OCC_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${OCC_INCLUDE_DIR} /usr/inc /usr/local/inc)
 ADD_LIBRARY(IfcParse STATIC 
   ../src/ifcparse/Ifc2x3.cpp
   ../src/ifcparse/IfcUtil.cpp
@@ -83,7 +83,7 @@ ADD_LIBRARY(IfcGeom STATIC
 
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
-LINK_DIRECTORIES (${IfcOpenShell_BINARY_DIR} /usr/lib) 
+LINK_DIRECTORIES (${IfcOpenShell_BINARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64) 
 ADD_EXECUTABLE(IfcObj ../src/ifcobj/IfcObj.cpp)
 TARGET_LINK_LIBRARIES (IfcObj IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet)
 

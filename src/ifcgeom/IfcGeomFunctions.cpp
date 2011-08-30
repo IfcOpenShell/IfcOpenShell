@@ -104,7 +104,8 @@ bool IfcGeom::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face) {
 	if ( er == BRepBuilderAPI_NotPlanar ) {
 		ShapeFix_ShapeTolerance FTol;
 		FTol.SetTolerance(wire, 0.01, TopAbs_WIRE);
-		mf = BRepBuilderAPI_MakeFace(wire, false);
+		mf.~BRepBuilderAPI_MakeFace();
+		new (&mf) BRepBuilderAPI_MakeFace(wire);
 		er = mf.Error();
 	}
 	if ( er != BRepBuilderAPI_FaceDone ) return false;
