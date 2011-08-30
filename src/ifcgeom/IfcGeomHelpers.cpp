@@ -206,6 +206,6 @@ bool IfcGeom::convert(const Ifc2x3::IfcObjectPlacement::ptr& l, gp_Trsf& trsf) {
 	return true;
 }
 void IfcGeom::Cache::Purge() {
-#include "IfcRegisterCreateCache.h"
+#include "IfcRegisterPurgeCache.h"
 	IfcGeom::Cache::PurgeShapeCache();
 }
