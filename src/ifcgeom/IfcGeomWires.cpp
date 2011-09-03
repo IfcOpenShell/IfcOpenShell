@@ -74,7 +74,7 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
-bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr& l, TopoDS_Wire& wire) {
+bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire) {
 	Ifc2x3::IfcCompositeCurveSegment::list segments = l->Segments();
 	BRepBuilderAPI_MakeWire w;
 	for( Ifc2x3::IfcCompositeCurveSegment::it it = segments->begin(); it != segments->end(); ++ it ) {
@@ -92,7 +92,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr& l, TopoDS_Wire& wire
 	wire = w.Wire();
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr& l, TopoDS_Wire& wire) {
+bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 	Ifc2x3::IfcCurve::ptr basis_curve = l->BasisCurve();
 	bool isConic = basis_curve->is(Ifc2x3::Type::IfcConic);
 	float parameterFactor = isConic ? Ifc::PlaneAngleUnit : Ifc::LengthUnit;
@@ -136,7 +136,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr& l, TopoDS_Wire& wire) 
 	if ( trimmed2 ) wire = w.Wire();
 	return trimmed2;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcPolyline::ptr& l, TopoDS_Wire& result) {
+bool IfcGeom::convert(const Ifc2x3::IfcPolyline::ptr l, TopoDS_Wire& result) {
 	Ifc2x3::IfcCartesianPoint::list points = l->Points();
 
 	BRepBuilderAPI_MakeWire w;
@@ -151,7 +151,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolyline::ptr& l, TopoDS_Wire& result) {
 	result = w.Wire();
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcPolyLoop::ptr& l, TopoDS_Wire& result) {
+bool IfcGeom::convert(const Ifc2x3::IfcPolyLoop::ptr l, TopoDS_Wire& result) {
 	Ifc2x3::IfcCartesianPoint::list points = l->Polygon();
 
 	BRepBuilderAPI_MakeWire w;

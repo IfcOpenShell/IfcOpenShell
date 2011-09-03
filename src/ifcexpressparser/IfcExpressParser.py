@@ -145,7 +145,7 @@ class SelectType:
 	def __init__(self,l): 
 		for x in l: 
 			if x in simple_types: selectable_simple_types.add(x)
-	def __str__(self): return "SHARED_PTR<IfcAbstractSelect>"
+	def __str__(self): return "IfcSchemaEntity"
 class BinaryType:
 	def __init__(self,l): self.l = int(l)
 	def __str__(self): return "char[%s]"%self.l
@@ -209,7 +209,7 @@ class ArgumentList:
 			if ( str(a.type) in enumerations ):
 				return_type = "%(type)s::%(type)s"%a.__dict__
 			elif ( str(a.type) in entity_names ):
-				return_type = "SHARED_PTR<%(type)s>"%a.__dict__
+				return_type = "%(type)s*"%a.__dict__
 			s += "\n%s%s %s%s()%s"%(indent,return_type,class_name,a.name,function_body)
 			argv += 1
 		return s
@@ -237,20 +237,20 @@ class Classdef:
 				"IfcBaseClass" if self.parent_class is None else self.parent_class,
 				self.arguments,
 				self.inverse,
-				("\n    bool is(Type::Enum v);"+
-				"\n    Type::Enum type();"+
+				("\n    bool is(Type::Enum v) const;"+
+				"\n    Type::Enum type() const;"+
 				"\n    static Type::Enum Class();"+
 				"\n    %(class_name)s (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());"+
-				"\n    typedef SHARED_PTR<%(class_name)s> ptr;"+
+				"\n    typedef %(class_name)s* ptr;"+
 				"\n    typedef SHARED_PTR< IfcTemplatedEntityList<%(class_name)s> > list;"+
 				"\n    typedef IfcTemplatedEntityList<%(class_name)s>::it it;")%self.__dict__
 			)
 		elif generator_mode == 'SOURCE':
 			self.arguments.argstart = argument_start(self.class_name)
 			return (("\n// %(class_name)s"+str(self.arguments)+str(self.inverse)+
-			("\nbool %(class_name)s::is(Type::Enum v) { return v == Type::%(class_name)s; }" if self.parent_class is None else
-			"\nbool %(class_name)s::is(Type::Enum v) { return v == Type::%(class_name)s || %(parent_class)s::is(v); }")+
-			"\nType::Enum %(class_name)s::type() { return Type::%(class_name)s; }"+
+			("\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s; }" if self.parent_class is None else
+			"\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s || %(parent_class)s::is(v); }")+
+			"\nType::Enum %(class_name)s::type() const { return Type::%(class_name)s; }"+
 			"\nType::Enum %(class_name)s::Class() { return Type::%(class_name)s; }"+
 			"\n%(class_name)s::%(class_name)s(IfcAbstractEntityPtr e) { if (!is(Type::%(class_name)s)) throw; entity = e; }")%self.__dict__)%self.__dict__
 
@@ -340,6 +340,7 @@ print >>h_file, """#ifndef %(schema_upper)s_H
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/%(schema)senum.h"
@@ -417,8 +418,9 @@ while True:
 		if c.parent_class is None or c.parent_class in defined_classes:
 			defined_classes.add(c.class_name)
 			print >>h_file, c
-			
-print >>h_file, "IfcSchemaEntity SchemaEntity(IfcAbstractEntityPtr e = IfcAbstractEntityPtr());"
+
+print >>h_file, "void InitStringMap();"
+print >>h_file, "IfcSchemaEntity SchemaEntity(IfcAbstractEntityPtr e = 0);"
 
 print >>h_file, "}\n\n#endif"
 
@@ -428,14 +430,15 @@ print >>cpp_file, """#include "%(schema)s.h"
 
 using namespace %(schema)s;
 
-IfcSchemaEntity %(schema)s::SchemaEntity(IfcAbstractEntityPtr e) {"""%{'schema':schema_version}
+IfcSchemaEntity %(schema)s::SchemaEntity(IfcAbstractEntityPtr e) {
+    switch(e->type()){"""%{'schema':schema_version}
 
 for e in simple_enumerations:
-	print >>cpp_file, "    if ( e->is(Type::%s) ) return IfcSchemaEntity(new IfcEntitySelect(e));"%e
+	print >>cpp_file, "        case Type::%s: return new IfcEntitySelect(e); break;"%e
 for e in entity_enumerations:
-	print >>cpp_file, "    if ( e->is(Type::%s) ) return IfcSchemaEntity(new %s(e));"%(e,e)
-print >>cpp_file, "    throw; "
-print >>cpp_file, "}"
+	print >>cpp_file, "        case Type::%s: return new %s(e); break;"%(e,e)
+print >>cpp_file, "        default: throw; break; "
+print >>cpp_file, "    }\n}"
 print >>cpp_file
 print >>cpp_file, "std::string Type::ToString(Enum v) {"
 print >>cpp_file, "    if (v < 0 || v >= %d) throw;"%len(all_enumerations)
@@ -443,20 +446,31 @@ print >>cpp_file, '    const char* names[] = { "%s" };'%'","'.join(all_enumerati
 print >>cpp_file, '    return names[v];'
 print >>cpp_file, "}"
 print >>cpp_file
-print >>cpp_file, "Type::Enum Type::FromString(const std::string& s){"
-elseif = "if"
+#print >>cpp_file, "Type::Enum Type::FromStringOld(const std::string& s){"
+#elseif = "if"
+#maxlen = max([len(e) for e in all_enumerations])
+#for e in all_enumerations:
+#	print >>cpp_file, '    %s(s=="%s"%s) { return %s; }'%(elseif,e.upper()," "*(maxlen-len(e)),e)
+#print >>cpp_file, "    throw;"
+#print >>cpp_file, "}"
+print >>cpp_file, "std::map<std::string,Type::Enum> string_map;"
+print >>cpp_file, "void Ifc2x3::InitStringMap() {"
 maxlen = max([len(e) for e in all_enumerations])
 for e in all_enumerations:
-	print >>cpp_file, '    %s(s=="%s"%s) { return %s; }'%(elseif,e.upper()," "*(maxlen-len(e)),e)
-print >>cpp_file, "    throw;"
-print >>cpp_file, "}"
+	print >>cpp_file, '    string_map["%s"%s] = Type::%s;'%(e.upper()," "*(maxlen-len(e)),e)
+print >>cpp_file, """}
+Type::Enum Type::FromString(const std::string& s) {
+    std::map<std::string,Type::Enum>::const_iterator it = string_map.find(s);
+	if ( it == string_map.end() ) throw;
+	else return it->second;
+}"""
 
 print >>cpp_file, "Type::Enum Type::Parent(Enum v){"
-print >>cpp_file, "    if (v < 0 || v >= %d) return -1;"%len(all_enumerations)
+print >>cpp_file, "    if (v < 0 || v >= %d) return (Enum)-1;"%len(all_enumerations)
 for e in entity_enumerations:
-	if e not in parent_relations: continue
+	if e not in parent_relations or parent_relations[e] is None: continue
 	print >>cpp_file, '    if(v==%s%s) { return %s; }'%(e," "*(maxlen-len(e)),parent_relations[e])
-print >>cpp_file, "    return -1;"
+print >>cpp_file, "    return (Enum)-1;"
 print >>cpp_file, "}"
 
 for t in [T for T in types if isinstance(T.type,EnumType)]:

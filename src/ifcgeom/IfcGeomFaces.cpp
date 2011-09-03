@@ -76,7 +76,7 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
-bool IfcGeom::convert(const Ifc2x3::IfcFace::ptr& l, TopoDS_Face& face) {
+bool IfcGeom::convert(const Ifc2x3::IfcFace::ptr l, TopoDS_Face& face) {
 	Ifc2x3::IfcFaceBound::list bounds = l->Bounds();
 	Ifc2x3::IfcFaceBound::it it = bounds->begin();
 	Ifc2x3::IfcLoop::ptr loop = (*it)->Bound();
@@ -111,12 +111,12 @@ bool IfcGeom::convert(const Ifc2x3::IfcFace::ptr& l, TopoDS_Face& face) {
 		return false;
 	}
 }
-bool IfcGeom::convert(const Ifc2x3::IfcArbitraryClosedProfileDef::ptr& l, TopoDS_Face& face) {
+bool IfcGeom::convert(const Ifc2x3::IfcArbitraryClosedProfileDef::ptr l, TopoDS_Face& face) {
 	TopoDS_Wire wire;
 	if ( ! IfcGeom::convert_wire(l->OuterCurve(),wire) ) return false;
 	return IfcGeom::convert_wire_to_face(wire,face);
 }
-bool IfcGeom::convert(const Ifc2x3::IfcArbitraryProfileDefWithVoids::ptr& l, TopoDS_Face& face) {
+bool IfcGeom::convert(const Ifc2x3::IfcArbitraryProfileDefWithVoids::ptr l, TopoDS_Face& face) {
 	TopoDS_Wire profile;
 	if ( ! IfcGeom::convert_wire(l->OuterCurve(),profile) ) return false;
 	BRepBuilderAPI_MakeFace mf(profile);
@@ -132,7 +132,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcArbitraryProfileDefWithVoids::ptr& l, Top
 	face = TopoDS::Face(sfs.Shape());
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcRectangleProfileDef::ptr& l, TopoDS_Face& face) {
+bool IfcGeom::convert(const Ifc2x3::IfcRectangleProfileDef::ptr l, TopoDS_Face& face) {
 	const float x = l->XDim() / 2.0f * Ifc::LengthUnit;
 	const float y = l->YDim() / 2.0f  * Ifc::LengthUnit;
 
@@ -146,7 +146,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcRectangleProfileDef::ptr& l, TopoDS_Face&
 	float coords[8] = {-x,-y,x,-y,x,y,-x,y};
 	return IfcGeom::profile_helper(4,coords,0,0,0,trsf2d,face);
 }
-bool IfcGeom::convert(const Ifc2x3::IfcIShapeProfileDef::ptr& l, TopoDS_Face& face) {
+bool IfcGeom::convert(const Ifc2x3::IfcIShapeProfileDef::ptr l, TopoDS_Face& face) {
 	const float x = l->OverallWidth() / 2.0f * Ifc::LengthUnit;
 	const float y = l->OverallDepth() / 2.0f * Ifc::LengthUnit;
 	const float d1 = l->WebThickness() / 2.0f  * Ifc::LengthUnit;
@@ -170,7 +170,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcIShapeProfileDef::ptr& l, TopoDS_Face& fa
 	float radii[4] = {f,f,f,f};
 	return IfcGeom::profile_helper(12,coords,doFillet ? 4 : 0,fillets,radii,trsf2d,face);
 }
-bool IfcGeom::convert(const Ifc2x3::IfcCShapeProfileDef::ptr& l, TopoDS_Face& face) {
+bool IfcGeom::convert(const Ifc2x3::IfcCShapeProfileDef::ptr l, TopoDS_Face& face) {
 	const float x = l->Depth() / 2.0f * Ifc::LengthUnit;
 	const float y = l->Width() / 2.0f * Ifc::LengthUnit;
 	const float d1 = l->WallThickness() * Ifc::LengthUnit;
@@ -195,7 +195,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcCShapeProfileDef::ptr& l, TopoDS_Face& fa
 	float radii[8] = {f2,f2,f1,f1,f1,f1,f2,f2};
 	return IfcGeom::profile_helper(12,coords,doFillet ? 8 : 0,fillets,radii,trsf2d,face);
 }
-bool IfcGeom::convert(const Ifc2x3::IfcLShapeProfileDef::ptr& l, TopoDS_Face& face) {
+bool IfcGeom::convert(const Ifc2x3::IfcLShapeProfileDef::ptr l, TopoDS_Face& face) {
 	const float y = l->Depth() / 2.0f * Ifc::LengthUnit;
 	const float x = l->Width() / 2.0f * Ifc::LengthUnit;
 	const float d = l->Thickness() * Ifc::LengthUnit;
@@ -222,7 +222,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcLShapeProfileDef::ptr& l, TopoDS_Face& fa
 	float radii[3] = {f2,f1,f2};
 	return IfcGeom::profile_helper(6,coords,doFillet ? 3 : 0,fillets,radii,trsf2d,face);
 }
-bool IfcGeom::convert(const Ifc2x3::IfcCircleProfileDef::ptr& l, TopoDS_Face& face) {
+bool IfcGeom::convert(const Ifc2x3::IfcCircleProfileDef::ptr l, TopoDS_Face& face) {
 	const float r = l->Radius() * Ifc::LengthUnit;
 	if ( r == 0.0f ) {
 		Ifc::LogMessage("Notice","Skipping zero sized profile:",l->entity);
@@ -239,7 +239,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcCircleProfileDef::ptr& l, TopoDS_Face& fa
 	w.Add(edge);
 	return IfcGeom::convert_wire_to_face(w,face);
 }
-bool IfcGeom::convert(const Ifc2x3::IfcCircleHollowProfileDef::ptr& l, TopoDS_Face& face) {
+bool IfcGeom::convert(const Ifc2x3::IfcCircleHollowProfileDef::ptr l, TopoDS_Face& face) {
 	const float r = l->Radius() * Ifc::LengthUnit;
 	const float t = l->WallThickness() * Ifc::LengthUnit;
 	

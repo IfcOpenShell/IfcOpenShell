@@ -35,11 +35,11 @@
 
 namespace IfcGeom {
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
-	bool convert_shape(const SHARED_PTR<IfcUtil::IfcBaseClass>& L, TopoDS_Shape& result);
-	bool convert_wire(const SHARED_PTR<IfcUtil::IfcBaseClass>& L, TopoDS_Wire& result);
-	bool convert_curve(const SHARED_PTR<IfcUtil::IfcBaseClass>& L, Handle(Geom_Curve)& result);
-	bool convert_face(const SHARED_PTR<IfcUtil::IfcBaseClass>& L, TopoDS_Face& result);
-	bool convert_openings(const Ifc2x3::IfcProduct::ptr& L, const Ifc2x3::IfcRelVoidsElement::list& openings, TopoDS_Shape& result, const gp_Trsf& trsf);
+	bool convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
+	bool convert_wire(const IfcUtil::IfcBaseClass* L, TopoDS_Wire& result);
+	bool convert_curve(const IfcUtil::IfcBaseClass* L, Handle(Geom_Curve)& result);
+	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Face& result);
+	bool convert_openings(const Ifc2x3::IfcProduct::ptr L, const Ifc2x3::IfcRelVoidsElement::list& openings, TopoDS_Shape& result, const gp_Trsf& trsf);
 	bool profile_helper(int numVerts, float* verts, int numFillets, int* filletIndices, float* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
 	namespace Cache {
 		void Purge();

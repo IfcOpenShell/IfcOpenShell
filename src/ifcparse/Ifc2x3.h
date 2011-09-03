@@ -29,6 +29,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/Ifc2x3enum.h"
@@ -168,52 +169,52 @@ typedef float IfcVolumetricFlowRateMeasure;
 typedef float IfcWarpingConstantMeasure;
 typedef float IfcWarpingMomentMeasure;
 typedef int IfcYearNumber;
-typedef SHARED_PTR<IfcAbstractSelect> IfcActorSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcAppliedValueSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcAxis2Placement;
-typedef SHARED_PTR<IfcAbstractSelect> IfcBooleanOperand;
-typedef SHARED_PTR<IfcAbstractSelect> IfcCharacterStyleSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcClassificationNotationSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcColour;
-typedef SHARED_PTR<IfcAbstractSelect> IfcColourOrFactor;
-typedef SHARED_PTR<IfcAbstractSelect> IfcConditionCriterionSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcCsgSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcCurveFontOrScaledCurveFontSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcCurveOrEdgeCurve;
-typedef SHARED_PTR<IfcAbstractSelect> IfcCurveStyleFontSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcDateTimeSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcDefinedSymbolSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcDerivedMeasureValue;
-typedef SHARED_PTR<IfcAbstractSelect> IfcDocumentSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcDraughtingCalloutElement;
-typedef SHARED_PTR<IfcAbstractSelect> IfcFillAreaStyleTileShapeSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcFillStyleSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcGeometricSetSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcHatchLineDistanceSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcLayeredItem;
-typedef SHARED_PTR<IfcAbstractSelect> IfcLibrarySelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcLightDistributionDataSourceSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcMaterialSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcMeasureValue;
-typedef SHARED_PTR<IfcAbstractSelect> IfcMetricValueSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcObjectReferenceSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcOrientationSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcPointOrVertexPoint;
-typedef SHARED_PTR<IfcAbstractSelect> IfcPresentationStyleSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcShell;
-typedef SHARED_PTR<IfcAbstractSelect> IfcSimpleValue;
-typedef SHARED_PTR<IfcAbstractSelect> IfcSizeSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcSpecularHighlightSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcStructuralActivityAssignmentSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcSurfaceOrFaceSurface;
-typedef SHARED_PTR<IfcAbstractSelect> IfcSurfaceStyleElementSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcSymbolStyleSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcTextFontSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcTextStyleSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcTrimmingSelect;
-typedef SHARED_PTR<IfcAbstractSelect> IfcUnit;
-typedef SHARED_PTR<IfcAbstractSelect> IfcValue;
-typedef SHARED_PTR<IfcAbstractSelect> IfcVectorOrDirection;
+typedef IfcSchemaEntity IfcActorSelect;
+typedef IfcSchemaEntity IfcAppliedValueSelect;
+typedef IfcSchemaEntity IfcAxis2Placement;
+typedef IfcSchemaEntity IfcBooleanOperand;
+typedef IfcSchemaEntity IfcCharacterStyleSelect;
+typedef IfcSchemaEntity IfcClassificationNotationSelect;
+typedef IfcSchemaEntity IfcColour;
+typedef IfcSchemaEntity IfcColourOrFactor;
+typedef IfcSchemaEntity IfcConditionCriterionSelect;
+typedef IfcSchemaEntity IfcCsgSelect;
+typedef IfcSchemaEntity IfcCurveFontOrScaledCurveFontSelect;
+typedef IfcSchemaEntity IfcCurveOrEdgeCurve;
+typedef IfcSchemaEntity IfcCurveStyleFontSelect;
+typedef IfcSchemaEntity IfcDateTimeSelect;
+typedef IfcSchemaEntity IfcDefinedSymbolSelect;
+typedef IfcSchemaEntity IfcDerivedMeasureValue;
+typedef IfcSchemaEntity IfcDocumentSelect;
+typedef IfcSchemaEntity IfcDraughtingCalloutElement;
+typedef IfcSchemaEntity IfcFillAreaStyleTileShapeSelect;
+typedef IfcSchemaEntity IfcFillStyleSelect;
+typedef IfcSchemaEntity IfcGeometricSetSelect;
+typedef IfcSchemaEntity IfcHatchLineDistanceSelect;
+typedef IfcSchemaEntity IfcLayeredItem;
+typedef IfcSchemaEntity IfcLibrarySelect;
+typedef IfcSchemaEntity IfcLightDistributionDataSourceSelect;
+typedef IfcSchemaEntity IfcMaterialSelect;
+typedef IfcSchemaEntity IfcMeasureValue;
+typedef IfcSchemaEntity IfcMetricValueSelect;
+typedef IfcSchemaEntity IfcObjectReferenceSelect;
+typedef IfcSchemaEntity IfcOrientationSelect;
+typedef IfcSchemaEntity IfcPointOrVertexPoint;
+typedef IfcSchemaEntity IfcPresentationStyleSelect;
+typedef IfcSchemaEntity IfcShell;
+typedef IfcSchemaEntity IfcSimpleValue;
+typedef IfcSchemaEntity IfcSizeSelect;
+typedef IfcSchemaEntity IfcSpecularHighlightSelect;
+typedef IfcSchemaEntity IfcStructuralActivityAssignmentSelect;
+typedef IfcSchemaEntity IfcSurfaceOrFaceSurface;
+typedef IfcSchemaEntity IfcSurfaceStyleElementSelect;
+typedef IfcSchemaEntity IfcSymbolStyleSelect;
+typedef IfcSchemaEntity IfcTextFontSelect;
+typedef IfcSchemaEntity IfcTextStyleSelect;
+typedef IfcSchemaEntity IfcTrimmingSelect;
+typedef IfcSchemaEntity IfcUnit;
+typedef IfcSchemaEntity IfcValue;
+typedef IfcSchemaEntity IfcVectorOrDirection;
 typedef IfcLabel IfcBoxAlignment;
 typedef IfcRatioMeasure IfcNormalisedRatioMeasure;
 typedef IfcLengthMeasure IfcPositiveLengthMeasure;
@@ -721,11 +722,11 @@ public:
     IfcLabel UserDefinedRole();
     bool hasDescription();
     IfcText Description();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcActorRole (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcActorRole> ptr;
+    typedef IfcActorRole* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcActorRole> > list;
     typedef IfcTemplatedEntityList<IfcActorRole>::it it;
 };
@@ -739,25 +740,25 @@ public:
     IfcLabel UserDefinedPurpose();
     SHARED_PTR< IfcTemplatedEntityList<IfcPerson> > OfPerson(); // INVERSE IfcPerson::Addresses
     SHARED_PTR< IfcTemplatedEntityList<IfcOrganization> > OfOrganization(); // INVERSE IfcOrganization::Addresses
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAddress (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAddress> ptr;
+    typedef IfcAddress* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAddress> > list;
     typedef IfcTemplatedEntityList<IfcAddress>::it it;
 };
 class IfcApplication : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcOrganization> ApplicationDeveloper();
+    IfcOrganization* ApplicationDeveloper();
     IfcLabel Version();
     IfcLabel ApplicationFullName();
     IfcIdentifier ApplicationIdentifier();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcApplication (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcApplication> ptr;
+    typedef IfcApplication* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcApplication> > list;
     typedef IfcTemplatedEntityList<IfcApplication>::it it;
 };
@@ -770,7 +771,7 @@ public:
     bool hasAppliedValue();
     IfcAppliedValueSelect AppliedValue();
     bool hasUnitBasis();
-    SHARED_PTR<IfcMeasureWithUnit> UnitBasis();
+    IfcMeasureWithUnit* UnitBasis();
     bool hasApplicableDate();
     IfcDateTimeSelect ApplicableDate();
     bool hasFixedUntilDate();
@@ -778,28 +779,28 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcReferencesValueDocument> > ValuesReferenced(); // INVERSE IfcReferencesValueDocument::ReferencingValues
     SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValueRelationship> > ValueOfComponents(); // INVERSE IfcAppliedValueRelationship::ComponentOfTotal
     SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValueRelationship> > IsComponentIn(); // INVERSE IfcAppliedValueRelationship::Components
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAppliedValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAppliedValue> ptr;
+    typedef IfcAppliedValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValue> > list;
     typedef IfcTemplatedEntityList<IfcAppliedValue>::it it;
 };
 class IfcAppliedValueRelationship : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcAppliedValue> ComponentOfTotal();
+    IfcAppliedValue* ComponentOfTotal();
     SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValue> > Components();
     IfcArithmeticOperatorEnum::IfcArithmeticOperatorEnum ArithmeticOperator();
     bool hasName();
     IfcLabel Name();
     bool hasDescription();
     IfcText Description();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAppliedValueRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAppliedValueRelationship> ptr;
+    typedef IfcAppliedValueRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValueRelationship> > list;
     typedef IfcTemplatedEntityList<IfcAppliedValueRelationship>::it it;
 };
@@ -819,51 +820,51 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcApprovalActorRelationship> > Actors(); // INVERSE IfcApprovalActorRelationship::Approval
     SHARED_PTR< IfcTemplatedEntityList<IfcApprovalRelationship> > IsRelatedWith(); // INVERSE IfcApprovalRelationship::RelatedApproval
     SHARED_PTR< IfcTemplatedEntityList<IfcApprovalRelationship> > Relates(); // INVERSE IfcApprovalRelationship::RelatingApproval
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcApproval (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcApproval> ptr;
+    typedef IfcApproval* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcApproval> > list;
     typedef IfcTemplatedEntityList<IfcApproval>::it it;
 };
 class IfcApprovalActorRelationship : public IfcBaseClass {
 public:
     IfcActorSelect Actor();
-    SHARED_PTR<IfcApproval> Approval();
-    SHARED_PTR<IfcActorRole> Role();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcApproval* Approval();
+    IfcActorRole* Role();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcApprovalActorRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcApprovalActorRelationship> ptr;
+    typedef IfcApprovalActorRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcApprovalActorRelationship> > list;
     typedef IfcTemplatedEntityList<IfcApprovalActorRelationship>::it it;
 };
 class IfcApprovalPropertyRelationship : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > ApprovedProperties();
-    SHARED_PTR<IfcApproval> Approval();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcApproval* Approval();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcApprovalPropertyRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcApprovalPropertyRelationship> ptr;
+    typedef IfcApprovalPropertyRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcApprovalPropertyRelationship> > list;
     typedef IfcTemplatedEntityList<IfcApprovalPropertyRelationship>::it it;
 };
 class IfcApprovalRelationship : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcApproval> RelatedApproval();
-    SHARED_PTR<IfcApproval> RelatingApproval();
+    IfcApproval* RelatedApproval();
+    IfcApproval* RelatingApproval();
     bool hasDescription();
     IfcText Description();
     IfcLabel Name();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcApprovalRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcApprovalRelationship> ptr;
+    typedef IfcApprovalRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcApprovalRelationship> > list;
     typedef IfcTemplatedEntityList<IfcApprovalRelationship>::it it;
 };
@@ -871,11 +872,11 @@ class IfcBoundaryCondition : public IfcBaseClass {
 public:
     bool hasName();
     IfcLabel Name();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBoundaryCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBoundaryCondition> ptr;
+    typedef IfcBoundaryCondition* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundaryCondition> > list;
     typedef IfcTemplatedEntityList<IfcBoundaryCondition>::it it;
 };
@@ -893,11 +894,11 @@ public:
     IfcModulusOfRotationalSubgradeReactionMeasure RotationalStiffnessByLengthY();
     bool hasRotationalStiffnessByLengthZ();
     IfcModulusOfRotationalSubgradeReactionMeasure RotationalStiffnessByLengthZ();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBoundaryEdgeCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBoundaryEdgeCondition> ptr;
+    typedef IfcBoundaryEdgeCondition* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundaryEdgeCondition> > list;
     typedef IfcTemplatedEntityList<IfcBoundaryEdgeCondition>::it it;
 };
@@ -909,11 +910,11 @@ public:
     IfcModulusOfSubgradeReactionMeasure LinearStiffnessByAreaY();
     bool hasLinearStiffnessByAreaZ();
     IfcModulusOfSubgradeReactionMeasure LinearStiffnessByAreaZ();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBoundaryFaceCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBoundaryFaceCondition> ptr;
+    typedef IfcBoundaryFaceCondition* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundaryFaceCondition> > list;
     typedef IfcTemplatedEntityList<IfcBoundaryFaceCondition>::it it;
 };
@@ -931,11 +932,11 @@ public:
     IfcRotationalStiffnessMeasure RotationalStiffnessY();
     bool hasRotationalStiffnessZ();
     IfcRotationalStiffnessMeasure RotationalStiffnessZ();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBoundaryNodeCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBoundaryNodeCondition> ptr;
+    typedef IfcBoundaryNodeCondition* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundaryNodeCondition> > list;
     typedef IfcTemplatedEntityList<IfcBoundaryNodeCondition>::it it;
 };
@@ -943,11 +944,11 @@ class IfcBoundaryNodeConditionWarping : public IfcBoundaryNodeCondition {
 public:
     bool hasWarpingStiffness();
     IfcWarpingMomentMeasure WarpingStiffness();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBoundaryNodeConditionWarping (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBoundaryNodeConditionWarping> ptr;
+    typedef IfcBoundaryNodeConditionWarping* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundaryNodeConditionWarping> > list;
     typedef IfcTemplatedEntityList<IfcBoundaryNodeConditionWarping>::it it;
 };
@@ -956,11 +957,11 @@ public:
     IfcDayInMonthNumber DayComponent();
     IfcMonthInYearNumber MonthComponent();
     IfcYearNumber YearComponent();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCalendarDate (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCalendarDate> ptr;
+    typedef IfcCalendarDate* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCalendarDate> > list;
     typedef IfcTemplatedEntityList<IfcCalendarDate>::it it;
 };
@@ -969,64 +970,64 @@ public:
     IfcLabel Source();
     IfcLabel Edition();
     bool hasEditionDate();
-    SHARED_PTR<IfcCalendarDate> EditionDate();
+    IfcCalendarDate* EditionDate();
     IfcLabel Name();
     SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItem> > Contains(); // INVERSE IfcClassificationItem::ItemOf
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcClassification (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcClassification> ptr;
+    typedef IfcClassification* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcClassification> > list;
     typedef IfcTemplatedEntityList<IfcClassification>::it it;
 };
 class IfcClassificationItem : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcClassificationNotationFacet> Notation();
+    IfcClassificationNotationFacet* Notation();
     bool hasItemOf();
-    SHARED_PTR<IfcClassification> ItemOf();
+    IfcClassification* ItemOf();
     IfcLabel Title();
     SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItemRelationship> > IsClassifiedItemIn(); // INVERSE IfcClassificationItemRelationship::RelatedItems
     SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItemRelationship> > IsClassifyingItemIn(); // INVERSE IfcClassificationItemRelationship::RelatingItem
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcClassificationItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcClassificationItem> ptr;
+    typedef IfcClassificationItem* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItem> > list;
     typedef IfcTemplatedEntityList<IfcClassificationItem>::it it;
 };
 class IfcClassificationItemRelationship : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcClassificationItem> RelatingItem();
+    IfcClassificationItem* RelatingItem();
     SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItem> > RelatedItems();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcClassificationItemRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcClassificationItemRelationship> ptr;
+    typedef IfcClassificationItemRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItemRelationship> > list;
     typedef IfcTemplatedEntityList<IfcClassificationItemRelationship>::it it;
 };
 class IfcClassificationNotation : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcClassificationNotationFacet> > NotationFacets();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcClassificationNotation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcClassificationNotation> ptr;
+    typedef IfcClassificationNotation* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcClassificationNotation> > list;
     typedef IfcTemplatedEntityList<IfcClassificationNotation>::it it;
 };
 class IfcClassificationNotationFacet : public IfcBaseClass {
 public:
     IfcLabel NotationValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcClassificationNotationFacet (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcClassificationNotationFacet> ptr;
+    typedef IfcClassificationNotationFacet* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcClassificationNotationFacet> > list;
     typedef IfcTemplatedEntityList<IfcClassificationNotationFacet>::it it;
 };
@@ -1034,21 +1035,21 @@ class IfcColourSpecification : public IfcBaseClass {
 public:
     bool hasName();
     IfcLabel Name();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcColourSpecification (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcColourSpecification> ptr;
+    typedef IfcColourSpecification* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcColourSpecification> > list;
     typedef IfcTemplatedEntityList<IfcColourSpecification>::it it;
 };
 class IfcConnectionGeometry : public IfcBaseClass {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConnectionGeometry (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConnectionGeometry> ptr;
+    typedef IfcConnectionGeometry* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectionGeometry> > list;
     typedef IfcTemplatedEntityList<IfcConnectionGeometry>::it it;
 };
@@ -1057,11 +1058,11 @@ public:
     IfcPointOrVertexPoint PointOnRelatingElement();
     bool hasPointOnRelatedElement();
     IfcPointOrVertexPoint PointOnRelatedElement();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConnectionPointGeometry (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConnectionPointGeometry> ptr;
+    typedef IfcConnectionPointGeometry* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectionPointGeometry> > list;
     typedef IfcTemplatedEntityList<IfcConnectionPointGeometry>::it it;
 };
@@ -1070,12 +1071,12 @@ public:
     IfcAxis2Placement LocationAtRelatingElement();
     bool hasLocationAtRelatedElement();
     IfcAxis2Placement LocationAtRelatedElement();
-    SHARED_PTR<IfcProfileDef> ProfileOfPort();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcProfileDef* ProfileOfPort();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConnectionPortGeometry (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConnectionPortGeometry> ptr;
+    typedef IfcConnectionPortGeometry* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectionPortGeometry> > list;
     typedef IfcTemplatedEntityList<IfcConnectionPortGeometry>::it it;
 };
@@ -1084,11 +1085,11 @@ public:
     IfcSurfaceOrFaceSurface SurfaceOnRelatingElement();
     bool hasSurfaceOnRelatedElement();
     IfcSurfaceOrFaceSurface SurfaceOnRelatedElement();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConnectionSurfaceGeometry (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConnectionSurfaceGeometry> ptr;
+    typedef IfcConnectionSurfaceGeometry* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectionSurfaceGeometry> > list;
     typedef IfcTemplatedEntityList<IfcConnectionSurfaceGeometry>::it it;
 };
@@ -1112,11 +1113,11 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcPropertyConstraintRelationship> > PropertiesForConstraint(); // INVERSE IfcPropertyConstraintRelationship::RelatingConstraint
     SHARED_PTR< IfcTemplatedEntityList<IfcConstraintAggregationRelationship> > Aggregates(); // INVERSE IfcConstraintAggregationRelationship::RelatingConstraint
     SHARED_PTR< IfcTemplatedEntityList<IfcConstraintAggregationRelationship> > IsAggregatedIn(); // INVERSE IfcConstraintAggregationRelationship::RelatedConstraints
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConstraint (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConstraint> ptr;
+    typedef IfcConstraint* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstraint> > list;
     typedef IfcTemplatedEntityList<IfcConstraint>::it it;
 };
@@ -1126,26 +1127,26 @@ public:
     IfcLabel Name();
     bool hasDescription();
     IfcText Description();
-    SHARED_PTR<IfcConstraint> RelatingConstraint();
+    IfcConstraint* RelatingConstraint();
     SHARED_PTR< IfcTemplatedEntityList<IfcConstraint> > RelatedConstraints();
     IfcLogicalOperatorEnum::IfcLogicalOperatorEnum LogicalAggregator();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConstraintAggregationRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConstraintAggregationRelationship> ptr;
+    typedef IfcConstraintAggregationRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstraintAggregationRelationship> > list;
     typedef IfcTemplatedEntityList<IfcConstraintAggregationRelationship>::it it;
 };
 class IfcConstraintClassificationRelationship : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcConstraint> ClassifiedConstraint();
+    IfcConstraint* ClassifiedConstraint();
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > RelatedClassifications();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConstraintClassificationRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConstraintClassificationRelationship> ptr;
+    typedef IfcConstraintClassificationRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstraintClassificationRelationship> > list;
     typedef IfcTemplatedEntityList<IfcConstraintClassificationRelationship>::it it;
 };
@@ -1155,13 +1156,13 @@ public:
     IfcLabel Name();
     bool hasDescription();
     IfcText Description();
-    SHARED_PTR<IfcConstraint> RelatingConstraint();
+    IfcConstraint* RelatingConstraint();
     SHARED_PTR< IfcTemplatedEntityList<IfcConstraint> > RelatedConstraints();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConstraintRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConstraintRelationship> ptr;
+    typedef IfcConstraintRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstraintRelationship> > list;
     typedef IfcTemplatedEntityList<IfcConstraintRelationship>::it it;
 };
@@ -1171,11 +1172,11 @@ public:
     bool hasMinuteOffset();
     IfcMinuteInHour MinuteOffset();
     IfcAheadOrBehind::IfcAheadOrBehind Sense();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCoordinatedUniversalTimeOffset (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCoordinatedUniversalTimeOffset> ptr;
+    typedef IfcCoordinatedUniversalTimeOffset* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCoordinatedUniversalTimeOffset> > list;
     typedef IfcTemplatedEntityList<IfcCoordinatedUniversalTimeOffset>::it it;
 };
@@ -1184,27 +1185,27 @@ public:
     IfcLabel CostType();
     bool hasCondition();
     IfcText Condition();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCostValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCostValue> ptr;
+    typedef IfcCostValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCostValue> > list;
     typedef IfcTemplatedEntityList<IfcCostValue>::it it;
 };
 class IfcCurrencyRelationship : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcMonetaryUnit> RelatingMonetaryUnit();
-    SHARED_PTR<IfcMonetaryUnit> RelatedMonetaryUnit();
+    IfcMonetaryUnit* RelatingMonetaryUnit();
+    IfcMonetaryUnit* RelatedMonetaryUnit();
     IfcPositiveRatioMeasure ExchangeRate();
-    SHARED_PTR<IfcDateAndTime> RateDateTime();
+    IfcDateAndTime* RateDateTime();
     bool hasRateSource();
-    SHARED_PTR<IfcLibraryInformation> RateSource();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcLibraryInformation* RateSource();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCurrencyRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCurrencyRelationship> ptr;
+    typedef IfcCurrencyRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurrencyRelationship> > list;
     typedef IfcTemplatedEntityList<IfcCurrencyRelationship>::it it;
 };
@@ -1213,11 +1214,11 @@ public:
     bool hasName();
     IfcLabel Name();
     SHARED_PTR< IfcTemplatedEntityList<IfcCurveStyleFontPattern> > PatternList();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCurveStyleFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCurveStyleFont> ptr;
+    typedef IfcCurveStyleFont* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurveStyleFont> > list;
     typedef IfcTemplatedEntityList<IfcCurveStyleFont>::it it;
 };
@@ -1227,11 +1228,11 @@ public:
     IfcLabel Name();
     IfcCurveStyleFontSelect CurveFont();
     IfcPositiveRatioMeasure CurveFontScaling();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCurveStyleFontAndScaling (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCurveStyleFontAndScaling> ptr;
+    typedef IfcCurveStyleFontAndScaling* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurveStyleFontAndScaling> > list;
     typedef IfcTemplatedEntityList<IfcCurveStyleFontAndScaling>::it it;
 };
@@ -1239,23 +1240,23 @@ class IfcCurveStyleFontPattern : public IfcBaseClass {
 public:
     IfcLengthMeasure VisibleSegmentLength();
     IfcPositiveLengthMeasure InvisibleSegmentLength();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCurveStyleFontPattern (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCurveStyleFontPattern> ptr;
+    typedef IfcCurveStyleFontPattern* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurveStyleFontPattern> > list;
     typedef IfcTemplatedEntityList<IfcCurveStyleFontPattern>::it it;
 };
 class IfcDateAndTime : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcCalendarDate> DateComponent();
-    SHARED_PTR<IfcLocalTime> TimeComponent();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcCalendarDate* DateComponent();
+    IfcLocalTime* TimeComponent();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDateAndTime (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDateAndTime> ptr;
+    typedef IfcDateAndTime* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDateAndTime> > list;
     typedef IfcTemplatedEntityList<IfcDateAndTime>::it it;
 };
@@ -1265,23 +1266,23 @@ public:
     IfcDerivedUnitEnum::IfcDerivedUnitEnum UnitType();
     bool hasUserDefinedType();
     IfcLabel UserDefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDerivedUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDerivedUnit> ptr;
+    typedef IfcDerivedUnit* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDerivedUnit> > list;
     typedef IfcTemplatedEntityList<IfcDerivedUnit>::it it;
 };
 class IfcDerivedUnitElement : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcNamedUnit> Unit();
+    IfcNamedUnit* Unit();
     int Exponent();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDerivedUnitElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDerivedUnitElement> ptr;
+    typedef IfcDerivedUnitElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDerivedUnitElement> > list;
     typedef IfcTemplatedEntityList<IfcDerivedUnitElement>::it it;
 };
@@ -1294,11 +1295,11 @@ public:
     int ThermodynamicTemperatureExponent();
     int AmountOfSubstanceExponent();
     int LuminousIntensityExponent();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDimensionalExponents (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDimensionalExponents> ptr;
+    typedef IfcDimensionalExponents* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDimensionalExponents> > list;
     typedef IfcTemplatedEntityList<IfcDimensionalExponents>::it it;
 };
@@ -1310,11 +1311,11 @@ public:
     IfcLabel MimeContentType();
     bool hasMimeSubtype();
     IfcLabel MimeSubtype();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDocumentElectronicFormat (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDocumentElectronicFormat> ptr;
+    typedef IfcDocumentElectronicFormat* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDocumentElectronicFormat> > list;
     typedef IfcTemplatedEntityList<IfcDocumentElectronicFormat>::it it;
 };
@@ -1339,40 +1340,40 @@ public:
     bool hasEditors();
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Editors();
     bool hasCreationTime();
-    SHARED_PTR<IfcDateAndTime> CreationTime();
+    IfcDateAndTime* CreationTime();
     bool hasLastRevisionTime();
-    SHARED_PTR<IfcDateAndTime> LastRevisionTime();
+    IfcDateAndTime* LastRevisionTime();
     bool hasElectronicFormat();
-    SHARED_PTR<IfcDocumentElectronicFormat> ElectronicFormat();
+    IfcDocumentElectronicFormat* ElectronicFormat();
     bool hasValidFrom();
-    SHARED_PTR<IfcCalendarDate> ValidFrom();
+    IfcCalendarDate* ValidFrom();
     bool hasValidUntil();
-    SHARED_PTR<IfcCalendarDate> ValidUntil();
+    IfcCalendarDate* ValidUntil();
     bool hasConfidentiality();
     IfcDocumentConfidentialityEnum::IfcDocumentConfidentialityEnum Confidentiality();
     bool hasStatus();
     IfcDocumentStatusEnum::IfcDocumentStatusEnum Status();
     SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformationRelationship> > IsPointedTo(); // INVERSE IfcDocumentInformationRelationship::RelatedDocuments
     SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformationRelationship> > IsPointer(); // INVERSE IfcDocumentInformationRelationship::RelatingDocument
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDocumentInformation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDocumentInformation> ptr;
+    typedef IfcDocumentInformation* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformation> > list;
     typedef IfcTemplatedEntityList<IfcDocumentInformation>::it it;
 };
 class IfcDocumentInformationRelationship : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcDocumentInformation> RelatingDocument();
+    IfcDocumentInformation* RelatingDocument();
     SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformation> > RelatedDocuments();
     bool hasRelationshipType();
     IfcLabel RelationshipType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDocumentInformationRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDocumentInformationRelationship> ptr;
+    typedef IfcDocumentInformationRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformationRelationship> > list;
     typedef IfcTemplatedEntityList<IfcDocumentInformationRelationship>::it it;
 };
@@ -1382,13 +1383,13 @@ public:
     IfcLabel Name();
     bool hasDescription();
     IfcText Description();
-    SHARED_PTR<IfcDraughtingCallout> RelatingDraughtingCallout();
-    SHARED_PTR<IfcDraughtingCallout> RelatedDraughtingCallout();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcDraughtingCallout* RelatingDraughtingCallout();
+    IfcDraughtingCallout* RelatedDraughtingCallout();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDraughtingCalloutRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDraughtingCalloutRelationship> ptr;
+    typedef IfcDraughtingCalloutRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingCalloutRelationship> > list;
     typedef IfcTemplatedEntityList<IfcDraughtingCalloutRelationship>::it it;
 };
@@ -1398,11 +1399,11 @@ public:
     IfcEnvironmentalImpactCategoryEnum::IfcEnvironmentalImpactCategoryEnum Category();
     bool hasUserDefinedCategory();
     IfcLabel UserDefinedCategory();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEnvironmentalImpactValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEnvironmentalImpactValue> ptr;
+    typedef IfcEnvironmentalImpactValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEnvironmentalImpactValue> > list;
     typedef IfcTemplatedEntityList<IfcEnvironmentalImpactValue>::it it;
 };
@@ -1414,51 +1415,51 @@ public:
     IfcIdentifier ItemReference();
     bool hasName();
     IfcLabel Name();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcExternalReference (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcExternalReference> ptr;
+    typedef IfcExternalReference* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcExternalReference> > list;
     typedef IfcTemplatedEntityList<IfcExternalReference>::it it;
 };
 class IfcExternallyDefinedHatchStyle : public IfcExternalReference {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcExternallyDefinedHatchStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcExternallyDefinedHatchStyle> ptr;
+    typedef IfcExternallyDefinedHatchStyle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcExternallyDefinedHatchStyle> > list;
     typedef IfcTemplatedEntityList<IfcExternallyDefinedHatchStyle>::it it;
 };
 class IfcExternallyDefinedSurfaceStyle : public IfcExternalReference {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcExternallyDefinedSurfaceStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcExternallyDefinedSurfaceStyle> ptr;
+    typedef IfcExternallyDefinedSurfaceStyle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcExternallyDefinedSurfaceStyle> > list;
     typedef IfcTemplatedEntityList<IfcExternallyDefinedSurfaceStyle>::it it;
 };
 class IfcExternallyDefinedSymbol : public IfcExternalReference {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcExternallyDefinedSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcExternallyDefinedSymbol> ptr;
+    typedef IfcExternallyDefinedSymbol* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcExternallyDefinedSymbol> > list;
     typedef IfcTemplatedEntityList<IfcExternallyDefinedSymbol>::it it;
 };
 class IfcExternallyDefinedTextFont : public IfcExternalReference {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcExternallyDefinedTextFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcExternallyDefinedTextFont> ptr;
+    typedef IfcExternallyDefinedTextFont* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcExternallyDefinedTextFont> > list;
     typedef IfcTemplatedEntityList<IfcExternallyDefinedTextFont>::it it;
 };
@@ -1466,17 +1467,17 @@ class IfcGridAxis : public IfcBaseClass {
 public:
     bool hasAxisTag();
     IfcLabel AxisTag();
-    SHARED_PTR<IfcCurve> AxisCurve();
+    IfcCurve* AxisCurve();
     IfcBoolean SameSense();
     SHARED_PTR< IfcTemplatedEntityList<IfcGrid> > PartOfW(); // INVERSE IfcGrid::WAxes
     SHARED_PTR< IfcTemplatedEntityList<IfcGrid> > PartOfV(); // INVERSE IfcGrid::VAxes
     SHARED_PTR< IfcTemplatedEntityList<IfcGrid> > PartOfU(); // INVERSE IfcGrid::UAxes
     SHARED_PTR< IfcTemplatedEntityList<IfcVirtualGridIntersection> > HasIntersections(); // INVERSE IfcVirtualGridIntersection::IntersectingAxes
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcGridAxis (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcGridAxis> ptr;
+    typedef IfcGridAxis* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > list;
     typedef IfcTemplatedEntityList<IfcGridAxis>::it it;
 };
@@ -1484,11 +1485,11 @@ class IfcIrregularTimeSeriesValue : public IfcBaseClass {
 public:
     IfcDateTimeSelect TimeStamp();
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > ListValues();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcIrregularTimeSeriesValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcIrregularTimeSeriesValue> ptr;
+    typedef IfcIrregularTimeSeriesValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcIrregularTimeSeriesValue> > list;
     typedef IfcTemplatedEntityList<IfcIrregularTimeSeriesValue>::it it;
 };
@@ -1498,27 +1499,27 @@ public:
     bool hasVersion();
     IfcLabel Version();
     bool hasPublisher();
-    SHARED_PTR<IfcOrganization> Publisher();
+    IfcOrganization* Publisher();
     bool hasVersionDate();
-    SHARED_PTR<IfcCalendarDate> VersionDate();
+    IfcCalendarDate* VersionDate();
     bool hasLibraryReference();
     SHARED_PTR< IfcTemplatedEntityList<IfcLibraryReference> > LibraryReference();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLibraryInformation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLibraryInformation> ptr;
+    typedef IfcLibraryInformation* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLibraryInformation> > list;
     typedef IfcTemplatedEntityList<IfcLibraryInformation>::it it;
 };
 class IfcLibraryReference : public IfcExternalReference {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcLibraryInformation> > ReferenceIntoLibrary(); // INVERSE IfcLibraryInformation::LibraryReference
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLibraryReference (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLibraryReference> ptr;
+    typedef IfcLibraryReference* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLibraryReference> > list;
     typedef IfcTemplatedEntityList<IfcLibraryReference>::it it;
 };
@@ -1527,11 +1528,11 @@ public:
     IfcPlaneAngleMeasure MainPlaneAngle();
     std::vector<IfcPlaneAngleMeasure> /*[1:?]*/ SecondaryPlaneAngle();
     std::vector<IfcLuminousIntensityDistributionMeasure> /*[1:?]*/ LuminousIntensity();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLightDistributionData (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLightDistributionData> ptr;
+    typedef IfcLightDistributionData* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightDistributionData> > list;
     typedef IfcTemplatedEntityList<IfcLightDistributionData>::it it;
 };
@@ -1539,11 +1540,11 @@ class IfcLightIntensityDistribution : public IfcBaseClass {
 public:
     IfcLightDistributionCurveEnum::IfcLightDistributionCurveEnum LightDistributionCurve();
     SHARED_PTR< IfcTemplatedEntityList<IfcLightDistributionData> > DistributionData();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLightIntensityDistribution (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLightIntensityDistribution> ptr;
+    typedef IfcLightIntensityDistribution* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightIntensityDistribution> > list;
     typedef IfcTemplatedEntityList<IfcLightIntensityDistribution>::it it;
 };
@@ -1555,14 +1556,14 @@ public:
     bool hasSecondComponent();
     IfcSecondInMinute SecondComponent();
     bool hasZone();
-    SHARED_PTR<IfcCoordinatedUniversalTimeOffset> Zone();
+    IfcCoordinatedUniversalTimeOffset* Zone();
     bool hasDaylightSavingOffset();
     IfcDaylightSavingHour DaylightSavingOffset();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLocalTime (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLocalTime> ptr;
+    typedef IfcLocalTime* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLocalTime> > list;
     typedef IfcTemplatedEntityList<IfcLocalTime>::it it;
 };
@@ -1571,39 +1572,39 @@ public:
     IfcLabel Name();
     SHARED_PTR< IfcTemplatedEntityList<IfcMaterialDefinitionRepresentation> > HasRepresentation(); // INVERSE IfcMaterialDefinitionRepresentation::RepresentedMaterial
     SHARED_PTR< IfcTemplatedEntityList<IfcMaterialClassificationRelationship> > ClassifiedAs(); // INVERSE IfcMaterialClassificationRelationship::ClassifiedMaterial
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMaterial (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMaterial> ptr;
+    typedef IfcMaterial* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterial> > list;
     typedef IfcTemplatedEntityList<IfcMaterial>::it it;
 };
 class IfcMaterialClassificationRelationship : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > MaterialClassifications();
-    SHARED_PTR<IfcMaterial> ClassifiedMaterial();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcMaterial* ClassifiedMaterial();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMaterialClassificationRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMaterialClassificationRelationship> ptr;
+    typedef IfcMaterialClassificationRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialClassificationRelationship> > list;
     typedef IfcTemplatedEntityList<IfcMaterialClassificationRelationship>::it it;
 };
 class IfcMaterialLayer : public IfcBaseClass {
 public:
     bool hasMaterial();
-    SHARED_PTR<IfcMaterial> Material();
+    IfcMaterial* Material();
     IfcPositiveLengthMeasure LayerThickness();
     bool hasIsVentilated();
     IfcLogical IsVentilated();
     SHARED_PTR< IfcTemplatedEntityList<IfcMaterialLayerSet> > ToMaterialLayerSet(); // INVERSE IfcMaterialLayerSet::MaterialLayers
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMaterialLayer (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMaterialLayer> ptr;
+    typedef IfcMaterialLayer* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialLayer> > list;
     typedef IfcTemplatedEntityList<IfcMaterialLayer>::it it;
 };
@@ -1612,47 +1613,47 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcMaterialLayer> > MaterialLayers();
     bool hasLayerSetName();
     IfcLabel LayerSetName();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMaterialLayerSet (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMaterialLayerSet> ptr;
+    typedef IfcMaterialLayerSet* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialLayerSet> > list;
     typedef IfcTemplatedEntityList<IfcMaterialLayerSet>::it it;
 };
 class IfcMaterialLayerSetUsage : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcMaterialLayerSet> ForLayerSet();
+    IfcMaterialLayerSet* ForLayerSet();
     IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum LayerSetDirection();
     IfcDirectionSenseEnum::IfcDirectionSenseEnum DirectionSense();
     IfcLengthMeasure OffsetFromReferenceLine();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMaterialLayerSetUsage (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMaterialLayerSetUsage> ptr;
+    typedef IfcMaterialLayerSetUsage* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialLayerSetUsage> > list;
     typedef IfcTemplatedEntityList<IfcMaterialLayerSetUsage>::it it;
 };
 class IfcMaterialList : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcMaterial> > Materials();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMaterialList (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMaterialList> ptr;
+    typedef IfcMaterialList* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialList> > list;
     typedef IfcTemplatedEntityList<IfcMaterialList>::it it;
 };
 class IfcMaterialProperties : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcMaterial> Material();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcMaterial* Material();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMaterialProperties> ptr;
+    typedef IfcMaterialProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialProperties> > list;
     typedef IfcTemplatedEntityList<IfcMaterialProperties>::it it;
 };
@@ -1660,11 +1661,11 @@ class IfcMeasureWithUnit : public IfcBaseClass {
 public:
     IfcValue ValueComponent();
     IfcUnit UnitComponent();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMeasureWithUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMeasureWithUnit> ptr;
+    typedef IfcMeasureWithUnit* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMeasureWithUnit> > list;
     typedef IfcTemplatedEntityList<IfcMeasureWithUnit>::it it;
 };
@@ -1680,11 +1681,11 @@ public:
     IfcPositiveRatioMeasure PoissonRatio();
     bool hasThermalExpansionCoefficient();
     IfcThermalExpansionCoefficientMeasure ThermalExpansionCoefficient();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMechanicalMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMechanicalMaterialProperties> ptr;
+    typedef IfcMechanicalMaterialProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMechanicalMaterialProperties> > list;
     typedef IfcTemplatedEntityList<IfcMechanicalMaterialProperties>::it it;
 };
@@ -1704,11 +1705,11 @@ public:
     IfcPositiveRatioMeasure PlasticStrain();
     bool hasRelaxations();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelaxation> > Relaxations();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMechanicalSteelMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMechanicalSteelMaterialProperties> ptr;
+    typedef IfcMechanicalSteelMaterialProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMechanicalSteelMaterialProperties> > list;
     typedef IfcTemplatedEntityList<IfcMechanicalSteelMaterialProperties>::it it;
 };
@@ -1718,34 +1719,34 @@ public:
     bool hasValueSource();
     IfcLabel ValueSource();
     IfcMetricValueSelect DataValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMetric (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMetric> ptr;
+    typedef IfcMetric* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMetric> > list;
     typedef IfcTemplatedEntityList<IfcMetric>::it it;
 };
 class IfcMonetaryUnit : public IfcBaseClass {
 public:
     IfcCurrencyEnum::IfcCurrencyEnum Currency();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMonetaryUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMonetaryUnit> ptr;
+    typedef IfcMonetaryUnit* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMonetaryUnit> > list;
     typedef IfcTemplatedEntityList<IfcMonetaryUnit>::it it;
 };
 class IfcNamedUnit : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcDimensionalExponents> Dimensions();
+    IfcDimensionalExponents* Dimensions();
     IfcUnitEnum::IfcUnitEnum UnitType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcNamedUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcNamedUnit> ptr;
+    typedef IfcNamedUnit* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcNamedUnit> > list;
     typedef IfcTemplatedEntityList<IfcNamedUnit>::it it;
 };
@@ -1753,28 +1754,28 @@ class IfcObjectPlacement : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > PlacesObject(); // INVERSE IfcProduct::ObjectPlacement
     SHARED_PTR< IfcTemplatedEntityList<IfcLocalPlacement> > ReferencedByPlacements(); // INVERSE IfcLocalPlacement::PlacementRelTo
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcObjectPlacement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcObjectPlacement> ptr;
+    typedef IfcObjectPlacement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcObjectPlacement> > list;
     typedef IfcTemplatedEntityList<IfcObjectPlacement>::it it;
 };
 class IfcObjective : public IfcConstraint {
 public:
     bool hasBenchmarkValues();
-    SHARED_PTR<IfcMetric> BenchmarkValues();
+    IfcMetric* BenchmarkValues();
     bool hasResultValues();
-    SHARED_PTR<IfcMetric> ResultValues();
+    IfcMetric* ResultValues();
     IfcObjectiveEnum::IfcObjectiveEnum ObjectiveQualifier();
     bool hasUserDefinedQualifier();
     IfcLabel UserDefinedQualifier();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcObjective (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcObjective> ptr;
+    typedef IfcObjective* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcObjective> > list;
     typedef IfcTemplatedEntityList<IfcObjective>::it it;
 };
@@ -1798,11 +1799,11 @@ public:
     IfcPositiveRatioMeasure SolarReflectanceFront();
     bool hasSolarReflectanceBack();
     IfcPositiveRatioMeasure SolarReflectanceBack();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOpticalMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOpticalMaterialProperties> ptr;
+    typedef IfcOpticalMaterialProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOpticalMaterialProperties> > list;
     typedef IfcTemplatedEntityList<IfcOpticalMaterialProperties>::it it;
 };
@@ -1820,11 +1821,11 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcOrganizationRelationship> > IsRelatedBy(); // INVERSE IfcOrganizationRelationship::RelatedOrganizations
     SHARED_PTR< IfcTemplatedEntityList<IfcOrganizationRelationship> > Relates(); // INVERSE IfcOrganizationRelationship::RelatingOrganization
     SHARED_PTR< IfcTemplatedEntityList<IfcPersonAndOrganization> > Engages(); // INVERSE IfcPersonAndOrganization::TheOrganization
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOrganization (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOrganization> ptr;
+    typedef IfcOrganization* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOrganization> > list;
     typedef IfcTemplatedEntityList<IfcOrganization>::it it;
 };
@@ -1833,35 +1834,35 @@ public:
     IfcLabel Name();
     bool hasDescription();
     IfcText Description();
-    SHARED_PTR<IfcOrganization> RelatingOrganization();
+    IfcOrganization* RelatingOrganization();
     SHARED_PTR< IfcTemplatedEntityList<IfcOrganization> > RelatedOrganizations();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOrganizationRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOrganizationRelationship> ptr;
+    typedef IfcOrganizationRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOrganizationRelationship> > list;
     typedef IfcTemplatedEntityList<IfcOrganizationRelationship>::it it;
 };
 class IfcOwnerHistory : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcPersonAndOrganization> OwningUser();
-    SHARED_PTR<IfcApplication> OwningApplication();
+    IfcPersonAndOrganization* OwningUser();
+    IfcApplication* OwningApplication();
     bool hasState();
     IfcStateEnum::IfcStateEnum State();
     IfcChangeActionEnum::IfcChangeActionEnum ChangeAction();
     bool hasLastModifiedDate();
     IfcTimeStamp LastModifiedDate();
     bool hasLastModifyingUser();
-    SHARED_PTR<IfcPersonAndOrganization> LastModifyingUser();
+    IfcPersonAndOrganization* LastModifyingUser();
     bool hasLastModifyingApplication();
-    SHARED_PTR<IfcApplication> LastModifyingApplication();
+    IfcApplication* LastModifyingApplication();
     IfcTimeStamp CreationDate();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOwnerHistory (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOwnerHistory> ptr;
+    typedef IfcOwnerHistory* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOwnerHistory> > list;
     typedef IfcTemplatedEntityList<IfcOwnerHistory>::it it;
 };
@@ -1884,25 +1885,25 @@ public:
     bool hasAddresses();
     SHARED_PTR< IfcTemplatedEntityList<IfcAddress> > Addresses();
     SHARED_PTR< IfcTemplatedEntityList<IfcPersonAndOrganization> > EngagedIn(); // INVERSE IfcPersonAndOrganization::ThePerson
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPerson (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPerson> ptr;
+    typedef IfcPerson* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPerson> > list;
     typedef IfcTemplatedEntityList<IfcPerson>::it it;
 };
 class IfcPersonAndOrganization : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcPerson> ThePerson();
-    SHARED_PTR<IfcOrganization> TheOrganization();
+    IfcPerson* ThePerson();
+    IfcOrganization* TheOrganization();
     bool hasRoles();
     SHARED_PTR< IfcTemplatedEntityList<IfcActorRole> > Roles();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPersonAndOrganization (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPersonAndOrganization> ptr;
+    typedef IfcPersonAndOrganization* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPersonAndOrganization> > list;
     typedef IfcTemplatedEntityList<IfcPersonAndOrganization>::it it;
 };
@@ -1912,23 +1913,23 @@ public:
     bool hasDescription();
     IfcText Description();
     SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalComplexQuantity> > PartOfComplex(); // INVERSE IfcPhysicalComplexQuantity::HasQuantities
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPhysicalQuantity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPhysicalQuantity> ptr;
+    typedef IfcPhysicalQuantity* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalQuantity> > list;
     typedef IfcTemplatedEntityList<IfcPhysicalQuantity>::it it;
 };
 class IfcPhysicalSimpleQuantity : public IfcPhysicalQuantity {
 public:
     bool hasUnit();
-    SHARED_PTR<IfcNamedUnit> Unit();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcNamedUnit* Unit();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPhysicalSimpleQuantity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPhysicalSimpleQuantity> ptr;
+    typedef IfcPhysicalSimpleQuantity* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalSimpleQuantity> > list;
     typedef IfcTemplatedEntityList<IfcPhysicalSimpleQuantity>::it it;
 };
@@ -1948,52 +1949,52 @@ public:
     IfcLabel PostalCode();
     bool hasCountry();
     IfcLabel Country();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPostalAddress (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPostalAddress> ptr;
+    typedef IfcPostalAddress* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPostalAddress> > list;
     typedef IfcTemplatedEntityList<IfcPostalAddress>::it it;
 };
 class IfcPreDefinedItem : public IfcBaseClass {
 public:
     IfcLabel Name();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPreDefinedItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPreDefinedItem> ptr;
+    typedef IfcPreDefinedItem* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedItem> > list;
     typedef IfcTemplatedEntityList<IfcPreDefinedItem>::it it;
 };
 class IfcPreDefinedSymbol : public IfcPreDefinedItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPreDefinedSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPreDefinedSymbol> ptr;
+    typedef IfcPreDefinedSymbol* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedSymbol> > list;
     typedef IfcTemplatedEntityList<IfcPreDefinedSymbol>::it it;
 };
 class IfcPreDefinedTerminatorSymbol : public IfcPreDefinedSymbol {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPreDefinedTerminatorSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPreDefinedTerminatorSymbol> ptr;
+    typedef IfcPreDefinedTerminatorSymbol* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedTerminatorSymbol> > list;
     typedef IfcTemplatedEntityList<IfcPreDefinedTerminatorSymbol>::it it;
 };
 class IfcPreDefinedTextFont : public IfcPreDefinedItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPreDefinedTextFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPreDefinedTextFont> ptr;
+    typedef IfcPreDefinedTextFont* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedTextFont> > list;
     typedef IfcTemplatedEntityList<IfcPreDefinedTextFont>::it it;
 };
@@ -2005,11 +2006,11 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > AssignedItems();
     bool hasIdentifier();
     IfcIdentifier Identifier();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPresentationLayerAssignment (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPresentationLayerAssignment> ptr;
+    typedef IfcPresentationLayerAssignment* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPresentationLayerAssignment> > list;
     typedef IfcTemplatedEntityList<IfcPresentationLayerAssignment>::it it;
 };
@@ -2019,11 +2020,11 @@ public:
     bool LayerFrozen();
     bool LayerBlocked();
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > LayerStyles();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPresentationLayerWithStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPresentationLayerWithStyle> ptr;
+    typedef IfcPresentationLayerWithStyle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPresentationLayerWithStyle> > list;
     typedef IfcTemplatedEntityList<IfcPresentationLayerWithStyle>::it it;
 };
@@ -2031,22 +2032,22 @@ class IfcPresentationStyle : public IfcBaseClass {
 public:
     bool hasName();
     IfcLabel Name();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPresentationStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPresentationStyle> ptr;
+    typedef IfcPresentationStyle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPresentationStyle> > list;
     typedef IfcTemplatedEntityList<IfcPresentationStyle>::it it;
 };
 class IfcPresentationStyleAssignment : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Styles();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPresentationStyleAssignment (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPresentationStyleAssignment> ptr;
+    typedef IfcPresentationStyleAssignment* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPresentationStyleAssignment> > list;
     typedef IfcTemplatedEntityList<IfcPresentationStyleAssignment>::it it;
 };
@@ -2057,11 +2058,11 @@ public:
     bool hasDescription();
     IfcText Description();
     SHARED_PTR< IfcTemplatedEntityList<IfcRepresentation> > Representations();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProductRepresentation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProductRepresentation> ptr;
+    typedef IfcProductRepresentation* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProductRepresentation> > list;
     typedef IfcTemplatedEntityList<IfcProductRepresentation>::it it;
 };
@@ -2075,11 +2076,11 @@ public:
     IfcPositiveRatioMeasure COContent();
     bool hasCO2Content();
     IfcPositiveRatioMeasure CO2Content();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProductsOfCombustionProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProductsOfCombustionProperties> ptr;
+    typedef IfcProductsOfCombustionProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProductsOfCombustionProperties> > list;
     typedef IfcTemplatedEntityList<IfcProductsOfCombustionProperties>::it it;
 };
@@ -2088,11 +2089,11 @@ public:
     IfcProfileTypeEnum::IfcProfileTypeEnum ProfileType();
     bool hasProfileName();
     IfcLabel ProfileName();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProfileDef> ptr;
+    typedef IfcProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcProfileDef>::it it;
 };
@@ -2101,12 +2102,12 @@ public:
     bool hasProfileName();
     IfcLabel ProfileName();
     bool hasProfileDefinition();
-    SHARED_PTR<IfcProfileDef> ProfileDefinition();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcProfileDef* ProfileDefinition();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProfileProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProfileProperties> ptr;
+    typedef IfcProfileProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProfileProperties> > list;
     typedef IfcTemplatedEntityList<IfcProfileProperties>::it it;
 };
@@ -2118,45 +2119,45 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcPropertyDependencyRelationship> > PropertyForDependance(); // INVERSE IfcPropertyDependencyRelationship::DependingProperty
     SHARED_PTR< IfcTemplatedEntityList<IfcPropertyDependencyRelationship> > PropertyDependsOn(); // INVERSE IfcPropertyDependencyRelationship::DependantProperty
     SHARED_PTR< IfcTemplatedEntityList<IfcComplexProperty> > PartOfComplex(); // INVERSE IfcComplexProperty::HasProperties
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProperty (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProperty> ptr;
+    typedef IfcProperty* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > list;
     typedef IfcTemplatedEntityList<IfcProperty>::it it;
 };
 class IfcPropertyConstraintRelationship : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcConstraint> RelatingConstraint();
+    IfcConstraint* RelatingConstraint();
     SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > RelatedProperties();
     bool hasName();
     IfcLabel Name();
     bool hasDescription();
     IfcText Description();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertyConstraintRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPropertyConstraintRelationship> ptr;
+    typedef IfcPropertyConstraintRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyConstraintRelationship> > list;
     typedef IfcTemplatedEntityList<IfcPropertyConstraintRelationship>::it it;
 };
 class IfcPropertyDependencyRelationship : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcProperty> DependingProperty();
-    SHARED_PTR<IfcProperty> DependantProperty();
+    IfcProperty* DependingProperty();
+    IfcProperty* DependantProperty();
     bool hasName();
     IfcLabel Name();
     bool hasDescription();
     IfcText Description();
     bool hasExpression();
     IfcText Expression();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertyDependencyRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPropertyDependencyRelationship> ptr;
+    typedef IfcPropertyDependencyRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyDependencyRelationship> > list;
     typedef IfcTemplatedEntityList<IfcPropertyDependencyRelationship>::it it;
 };
@@ -2166,77 +2167,77 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > EnumerationValues();
     bool hasUnit();
     IfcUnit Unit();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertyEnumeration (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPropertyEnumeration> ptr;
+    typedef IfcPropertyEnumeration* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyEnumeration> > list;
     typedef IfcTemplatedEntityList<IfcPropertyEnumeration>::it it;
 };
 class IfcQuantityArea : public IfcPhysicalSimpleQuantity {
 public:
     IfcAreaMeasure AreaValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcQuantityArea (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcQuantityArea> ptr;
+    typedef IfcQuantityArea* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcQuantityArea> > list;
     typedef IfcTemplatedEntityList<IfcQuantityArea>::it it;
 };
 class IfcQuantityCount : public IfcPhysicalSimpleQuantity {
 public:
     IfcCountMeasure CountValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcQuantityCount (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcQuantityCount> ptr;
+    typedef IfcQuantityCount* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcQuantityCount> > list;
     typedef IfcTemplatedEntityList<IfcQuantityCount>::it it;
 };
 class IfcQuantityLength : public IfcPhysicalSimpleQuantity {
 public:
     IfcLengthMeasure LengthValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcQuantityLength (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcQuantityLength> ptr;
+    typedef IfcQuantityLength* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcQuantityLength> > list;
     typedef IfcTemplatedEntityList<IfcQuantityLength>::it it;
 };
 class IfcQuantityTime : public IfcPhysicalSimpleQuantity {
 public:
     IfcTimeMeasure TimeValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcQuantityTime (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcQuantityTime> ptr;
+    typedef IfcQuantityTime* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcQuantityTime> > list;
     typedef IfcTemplatedEntityList<IfcQuantityTime>::it it;
 };
 class IfcQuantityVolume : public IfcPhysicalSimpleQuantity {
 public:
     IfcVolumeMeasure VolumeValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcQuantityVolume (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcQuantityVolume> ptr;
+    typedef IfcQuantityVolume* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcQuantityVolume> > list;
     typedef IfcTemplatedEntityList<IfcQuantityVolume>::it it;
 };
 class IfcQuantityWeight : public IfcPhysicalSimpleQuantity {
 public:
     IfcMassMeasure WeightValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcQuantityWeight (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcQuantityWeight> ptr;
+    typedef IfcQuantityWeight* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcQuantityWeight> > list;
     typedef IfcTemplatedEntityList<IfcQuantityWeight>::it it;
 };
@@ -2248,11 +2249,11 @@ public:
     IfcLabel Name();
     bool hasDescription();
     IfcText Description();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcReferencesValueDocument (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcReferencesValueDocument> ptr;
+    typedef IfcReferencesValueDocument* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcReferencesValueDocument> > list;
     typedef IfcTemplatedEntityList<IfcReferencesValueDocument>::it it;
 };
@@ -2268,11 +2269,11 @@ public:
     IfcPositiveLengthMeasure NominalBarDiameter();
     bool hasBarCount();
     IfcCountMeasure BarCount();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcReinforcementBarProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcReinforcementBarProperties> ptr;
+    typedef IfcReinforcementBarProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcReinforcementBarProperties> > list;
     typedef IfcTemplatedEntityList<IfcReinforcementBarProperties>::it it;
 };
@@ -2280,17 +2281,17 @@ class IfcRelaxation : public IfcBaseClass {
 public:
     IfcNormalisedRatioMeasure RelaxationValue();
     IfcNormalisedRatioMeasure InitialStress();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelaxation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelaxation> ptr;
+    typedef IfcRelaxation* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelaxation> > list;
     typedef IfcTemplatedEntityList<IfcRelaxation>::it it;
 };
 class IfcRepresentation : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcRepresentationContext> ContextOfItems();
+    IfcRepresentationContext* ContextOfItems();
     bool hasRepresentationIdentifier();
     IfcLabel RepresentationIdentifier();
     bool hasRepresentationType();
@@ -2299,11 +2300,11 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationMap> > RepresentationMap(); // INVERSE IfcRepresentationMap::MappedRepresentation
     SHARED_PTR< IfcTemplatedEntityList<IfcPresentationLayerAssignment> > LayerAssignments(); // INVERSE IfcPresentationLayerAssignment::AssignedItems
     SHARED_PTR< IfcTemplatedEntityList<IfcProductRepresentation> > OfProductRepresentation(); // INVERSE IfcProductRepresentation::Representations
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRepresentation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRepresentation> ptr;
+    typedef IfcRepresentation* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRepresentation> > list;
     typedef IfcTemplatedEntityList<IfcRepresentation>::it it;
 };
@@ -2314,11 +2315,11 @@ public:
     bool hasContextType();
     IfcLabel ContextType();
     SHARED_PTR< IfcTemplatedEntityList<IfcRepresentation> > RepresentationsInContext(); // INVERSE IfcRepresentation::ContextOfItems
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRepresentationContext (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRepresentationContext> ptr;
+    typedef IfcRepresentationContext* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationContext> > list;
     typedef IfcTemplatedEntityList<IfcRepresentationContext>::it it;
 };
@@ -2326,24 +2327,24 @@ class IfcRepresentationItem : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcPresentationLayerAssignment> > LayerAssignments(); // INVERSE IfcPresentationLayerAssignment::AssignedItems
     SHARED_PTR< IfcTemplatedEntityList<IfcStyledItem> > StyledByItem(); // INVERSE IfcStyledItem::Item
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRepresentationItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRepresentationItem> ptr;
+    typedef IfcRepresentationItem* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationItem> > list;
     typedef IfcTemplatedEntityList<IfcRepresentationItem>::it it;
 };
 class IfcRepresentationMap : public IfcBaseClass {
 public:
     IfcAxis2Placement MappingOrigin();
-    SHARED_PTR<IfcRepresentation> MappedRepresentation();
+    IfcRepresentation* MappedRepresentation();
     SHARED_PTR< IfcTemplatedEntityList<IfcMappedItem> > MapUsage(); // INVERSE IfcMappedItem::MappingSource
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRepresentationMap (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRepresentationMap> ptr;
+    typedef IfcRepresentationMap* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationMap> > list;
     typedef IfcTemplatedEntityList<IfcRepresentationMap>::it it;
 };
@@ -2358,27 +2359,27 @@ public:
     bool hasRibSpacing();
     IfcPositiveLengthMeasure RibSpacing();
     IfcRibPlateDirectionEnum::IfcRibPlateDirectionEnum Direction();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRibPlateProfileProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRibPlateProfileProperties> ptr;
+    typedef IfcRibPlateProfileProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRibPlateProfileProperties> > list;
     typedef IfcTemplatedEntityList<IfcRibPlateProfileProperties>::it it;
 };
 class IfcRoot : public IfcBaseClass {
 public:
     IfcGloballyUniqueId GlobalId();
-    SHARED_PTR<IfcOwnerHistory> OwnerHistory();
+    IfcOwnerHistory* OwnerHistory();
     bool hasName();
     IfcLabel Name();
     bool hasDescription();
     IfcText Description();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRoot (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRoot> ptr;
+    typedef IfcRoot* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRoot> > list;
     typedef IfcTemplatedEntityList<IfcRoot>::it it;
 };
@@ -2387,25 +2388,25 @@ public:
     bool hasPrefix();
     IfcSIPrefix::IfcSIPrefix Prefix();
     IfcSIUnitName::IfcSIUnitName Name();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSIUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSIUnit> ptr;
+    typedef IfcSIUnit* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSIUnit> > list;
     typedef IfcTemplatedEntityList<IfcSIUnit>::it it;
 };
 class IfcSectionProperties : public IfcBaseClass {
 public:
     IfcSectionTypeEnum::IfcSectionTypeEnum SectionType();
-    SHARED_PTR<IfcProfileDef> StartProfile();
+    IfcProfileDef* StartProfile();
     bool hasEndProfile();
-    SHARED_PTR<IfcProfileDef> EndProfile();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcProfileDef* EndProfile();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSectionProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSectionProperties> ptr;
+    typedef IfcSectionProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSectionProperties> > list;
     typedef IfcTemplatedEntityList<IfcSectionProperties>::it it;
 };
@@ -2416,13 +2417,13 @@ public:
     bool hasTransversePosition();
     IfcLengthMeasure TransversePosition();
     IfcReinforcingBarRoleEnum::IfcReinforcingBarRoleEnum ReinforcementRole();
-    SHARED_PTR<IfcSectionProperties> SectionDefinition();
+    IfcSectionProperties* SectionDefinition();
     SHARED_PTR< IfcTemplatedEntityList<IfcReinforcementBarProperties> > CrossSectionReinforcementDefinitions();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSectionReinforcementProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSectionReinforcementProperties> ptr;
+    typedef IfcSectionReinforcementProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSectionReinforcementProperties> > list;
     typedef IfcTemplatedEntityList<IfcSectionReinforcementProperties>::it it;
 };
@@ -2434,43 +2435,43 @@ public:
     bool hasDescription();
     IfcText Description();
     bool ProductDefinitional();
-    SHARED_PTR<IfcProductDefinitionShape> PartOfProductDefinitionShape();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcProductDefinitionShape* PartOfProductDefinitionShape();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcShapeAspect (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcShapeAspect> ptr;
+    typedef IfcShapeAspect* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcShapeAspect> > list;
     typedef IfcTemplatedEntityList<IfcShapeAspect>::it it;
 };
 class IfcShapeModel : public IfcRepresentation {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcShapeAspect> > OfShapeAspect(); // INVERSE IfcShapeAspect::ShapeRepresentations
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcShapeModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcShapeModel> ptr;
+    typedef IfcShapeModel* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcShapeModel> > list;
     typedef IfcTemplatedEntityList<IfcShapeModel>::it it;
 };
 class IfcShapeRepresentation : public IfcShapeModel {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcShapeRepresentation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcShapeRepresentation> ptr;
+    typedef IfcShapeRepresentation* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcShapeRepresentation> > list;
     typedef IfcTemplatedEntityList<IfcShapeRepresentation>::it it;
 };
 class IfcSimpleProperty : public IfcProperty {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSimpleProperty (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSimpleProperty> ptr;
+    typedef IfcSimpleProperty* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSimpleProperty> > list;
     typedef IfcTemplatedEntityList<IfcSimpleProperty>::it it;
 };
@@ -2478,11 +2479,11 @@ class IfcStructuralConnectionCondition : public IfcBaseClass {
 public:
     bool hasName();
     IfcLabel Name();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralConnectionCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralConnectionCondition> ptr;
+    typedef IfcStructuralConnectionCondition* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralConnectionCondition> > list;
     typedef IfcTemplatedEntityList<IfcStructuralConnectionCondition>::it it;
 };
@@ -2490,21 +2491,21 @@ class IfcStructuralLoad : public IfcBaseClass {
 public:
     bool hasName();
     IfcLabel Name();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLoad (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralLoad> ptr;
+    typedef IfcStructuralLoad* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoad> > list;
     typedef IfcTemplatedEntityList<IfcStructuralLoad>::it it;
 };
 class IfcStructuralLoadStatic : public IfcStructuralLoad {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLoadStatic (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralLoadStatic> ptr;
+    typedef IfcStructuralLoadStatic* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadStatic> > list;
     typedef IfcTemplatedEntityList<IfcStructuralLoadStatic>::it it;
 };
@@ -2516,46 +2517,46 @@ public:
     IfcThermodynamicTemperatureMeasure DeltaT_Y();
     bool hasDeltaT_Z();
     IfcThermodynamicTemperatureMeasure DeltaT_Z();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLoadTemperature (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralLoadTemperature> ptr;
+    typedef IfcStructuralLoadTemperature* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadTemperature> > list;
     typedef IfcTemplatedEntityList<IfcStructuralLoadTemperature>::it it;
 };
 class IfcStyleModel : public IfcRepresentation {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStyleModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStyleModel> ptr;
+    typedef IfcStyleModel* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStyleModel> > list;
     typedef IfcTemplatedEntityList<IfcStyleModel>::it it;
 };
 class IfcStyledItem : public IfcRepresentationItem {
 public:
     bool hasItem();
-    SHARED_PTR<IfcRepresentationItem> Item();
+    IfcRepresentationItem* Item();
     SHARED_PTR< IfcTemplatedEntityList<IfcPresentationStyleAssignment> > Styles();
     bool hasName();
     IfcLabel Name();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStyledItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStyledItem> ptr;
+    typedef IfcStyledItem* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStyledItem> > list;
     typedef IfcTemplatedEntityList<IfcStyledItem>::it it;
 };
 class IfcStyledRepresentation : public IfcStyleModel {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStyledRepresentation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStyledRepresentation> ptr;
+    typedef IfcStyledRepresentation* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStyledRepresentation> > list;
     typedef IfcTemplatedEntityList<IfcStyledRepresentation>::it it;
 };
@@ -2563,25 +2564,25 @@ class IfcSurfaceStyle : public IfcPresentationStyle {
 public:
     IfcSurfaceSide::IfcSurfaceSide Side();
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Styles();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSurfaceStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSurfaceStyle> ptr;
+    typedef IfcSurfaceStyle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceStyle> > list;
     typedef IfcTemplatedEntityList<IfcSurfaceStyle>::it it;
 };
 class IfcSurfaceStyleLighting : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcColourRgb> DiffuseTransmissionColour();
-    SHARED_PTR<IfcColourRgb> DiffuseReflectionColour();
-    SHARED_PTR<IfcColourRgb> TransmissionColour();
-    SHARED_PTR<IfcColourRgb> ReflectanceColour();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcColourRgb* DiffuseTransmissionColour();
+    IfcColourRgb* DiffuseReflectionColour();
+    IfcColourRgb* TransmissionColour();
+    IfcColourRgb* ReflectanceColour();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSurfaceStyleLighting (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSurfaceStyleLighting> ptr;
+    typedef IfcSurfaceStyleLighting* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceStyleLighting> > list;
     typedef IfcTemplatedEntityList<IfcSurfaceStyleLighting>::it it;
 };
@@ -2591,33 +2592,33 @@ public:
     IfcReal RefractionIndex();
     bool hasDispersionFactor();
     IfcReal DispersionFactor();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSurfaceStyleRefraction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSurfaceStyleRefraction> ptr;
+    typedef IfcSurfaceStyleRefraction* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceStyleRefraction> > list;
     typedef IfcTemplatedEntityList<IfcSurfaceStyleRefraction>::it it;
 };
 class IfcSurfaceStyleShading : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcColourRgb> SurfaceColour();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcColourRgb* SurfaceColour();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSurfaceStyleShading (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSurfaceStyleShading> ptr;
+    typedef IfcSurfaceStyleShading* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceStyleShading> > list;
     typedef IfcTemplatedEntityList<IfcSurfaceStyleShading>::it it;
 };
 class IfcSurfaceStyleWithTextures : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceTexture> > Textures();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSurfaceStyleWithTextures (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSurfaceStyleWithTextures> ptr;
+    typedef IfcSurfaceStyleWithTextures* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceStyleWithTextures> > list;
     typedef IfcTemplatedEntityList<IfcSurfaceStyleWithTextures>::it it;
 };
@@ -2627,23 +2628,23 @@ public:
     bool RepeatT();
     IfcSurfaceTextureEnum::IfcSurfaceTextureEnum TextureType();
     bool hasTextureTransform();
-    SHARED_PTR<IfcCartesianTransformationOperator2D> TextureTransform();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcCartesianTransformationOperator2D* TextureTransform();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSurfaceTexture (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSurfaceTexture> ptr;
+    typedef IfcSurfaceTexture* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceTexture> > list;
     typedef IfcTemplatedEntityList<IfcSurfaceTexture>::it it;
 };
 class IfcSymbolStyle : public IfcPresentationStyle {
 public:
     IfcSymbolStyleSelect StyleOfSymbol();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSymbolStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSymbolStyle> ptr;
+    typedef IfcSymbolStyle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSymbolStyle> > list;
     typedef IfcTemplatedEntityList<IfcSymbolStyle>::it it;
 };
@@ -2651,11 +2652,11 @@ class IfcTable : public IfcBaseClass {
 public:
     std::string Name();
     SHARED_PTR< IfcTemplatedEntityList<IfcTableRow> > Rows();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTable (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTable> ptr;
+    typedef IfcTable* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTable> > list;
     typedef IfcTemplatedEntityList<IfcTable>::it it;
 };
@@ -2664,11 +2665,11 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > RowCells();
     bool IsHeading();
     SHARED_PTR< IfcTemplatedEntityList<IfcTable> > OfTable(); // INVERSE IfcTable::Rows
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTableRow (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTableRow> ptr;
+    typedef IfcTableRow* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTableRow> > list;
     typedef IfcTemplatedEntityList<IfcTableRow>::it it;
 };
@@ -2684,11 +2685,11 @@ public:
     std::vector<IfcLabel> /*[1:?]*/ ElectronicMailAddresses();
     bool hasWWWHomePageURL();
     IfcLabel WWWHomePageURL();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTelecomAddress (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTelecomAddress> ptr;
+    typedef IfcTelecomAddress* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTelecomAddress> > list;
     typedef IfcTemplatedEntityList<IfcTelecomAddress>::it it;
 };
@@ -2699,11 +2700,11 @@ public:
     bool hasTextStyle();
     IfcTextStyleSelect TextStyle();
     IfcTextFontSelect TextFontStyle();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTextStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTextStyle> ptr;
+    typedef IfcTextStyle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextStyle> > list;
     typedef IfcTemplatedEntityList<IfcTextStyle>::it it;
 };
@@ -2718,11 +2719,11 @@ public:
     bool hasFontWeight();
     IfcFontWeight FontWeight();
     IfcSizeSelect FontSize();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTextStyleFontModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTextStyleFontModel> ptr;
+    typedef IfcTextStyleFontModel* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextStyleFontModel> > list;
     typedef IfcTemplatedEntityList<IfcTextStyleFontModel>::it it;
 };
@@ -2731,11 +2732,11 @@ public:
     IfcColour Colour();
     bool hasBackgroundColour();
     IfcColour BackgroundColour();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTextStyleForDefinedFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTextStyleForDefinedFont> ptr;
+    typedef IfcTextStyleForDefinedFont* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextStyleForDefinedFont> > list;
     typedef IfcTemplatedEntityList<IfcTextStyleForDefinedFont>::it it;
 };
@@ -2755,11 +2756,11 @@ public:
     IfcTextTransformation TextTransform();
     bool hasLineHeight();
     IfcSizeSelect LineHeight();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTextStyleTextModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTextStyleTextModel> ptr;
+    typedef IfcTextStyleTextModel* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextStyleTextModel> > list;
     typedef IfcTemplatedEntityList<IfcTextStyleTextModel>::it it;
 };
@@ -2775,22 +2776,22 @@ public:
     IfcPlaneAngleMeasure BoxRotateAngle();
     bool hasCharacterSpacing();
     IfcSizeSelect CharacterSpacing();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTextStyleWithBoxCharacteristics (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTextStyleWithBoxCharacteristics> ptr;
+    typedef IfcTextStyleWithBoxCharacteristics* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextStyleWithBoxCharacteristics> > list;
     typedef IfcTemplatedEntityList<IfcTextStyleWithBoxCharacteristics>::it it;
 };
 class IfcTextureCoordinate : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationSurface> > AnnotatedSurface(); // INVERSE IfcAnnotationSurface::TextureCoordinates
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTextureCoordinate (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTextureCoordinate> ptr;
+    typedef IfcTextureCoordinate* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextureCoordinate> > list;
     typedef IfcTemplatedEntityList<IfcTextureCoordinate>::it it;
 };
@@ -2798,33 +2799,33 @@ class IfcTextureCoordinateGenerator : public IfcTextureCoordinate {
 public:
     IfcLabel Mode();
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Parameter();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTextureCoordinateGenerator (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTextureCoordinateGenerator> ptr;
+    typedef IfcTextureCoordinateGenerator* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextureCoordinateGenerator> > list;
     typedef IfcTemplatedEntityList<IfcTextureCoordinateGenerator>::it it;
 };
 class IfcTextureMap : public IfcTextureCoordinate {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcVertexBasedTextureMap> > TextureMaps();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTextureMap (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTextureMap> ptr;
+    typedef IfcTextureMap* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextureMap> > list;
     typedef IfcTemplatedEntityList<IfcTextureMap>::it it;
 };
 class IfcTextureVertex : public IfcBaseClass {
 public:
     std::vector<IfcParameterValue> /*[2:2]*/ Coordinates();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTextureVertex (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTextureVertex> ptr;
+    typedef IfcTextureVertex* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextureVertex> > list;
     typedef IfcTemplatedEntityList<IfcTextureVertex>::it it;
 };
@@ -2838,11 +2839,11 @@ public:
     IfcThermodynamicTemperatureMeasure FreezingPoint();
     bool hasThermalConductivity();
     IfcThermalConductivityMeasure ThermalConductivity();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcThermalMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcThermalMaterialProperties> ptr;
+    typedef IfcThermalMaterialProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcThermalMaterialProperties> > list;
     typedef IfcTemplatedEntityList<IfcThermalMaterialProperties>::it it;
 };
@@ -2860,75 +2861,75 @@ public:
     bool hasUnit();
     IfcUnit Unit();
     SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeriesReferenceRelationship> > DocumentedBy(); // INVERSE IfcTimeSeriesReferenceRelationship::ReferencedTimeSeries
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTimeSeries (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTimeSeries> ptr;
+    typedef IfcTimeSeries* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeries> > list;
     typedef IfcTemplatedEntityList<IfcTimeSeries>::it it;
 };
 class IfcTimeSeriesReferenceRelationship : public IfcBaseClass {
 public:
-    SHARED_PTR<IfcTimeSeries> ReferencedTimeSeries();
+    IfcTimeSeries* ReferencedTimeSeries();
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > TimeSeriesReferences();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTimeSeriesReferenceRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTimeSeriesReferenceRelationship> ptr;
+    typedef IfcTimeSeriesReferenceRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeriesReferenceRelationship> > list;
     typedef IfcTemplatedEntityList<IfcTimeSeriesReferenceRelationship>::it it;
 };
 class IfcTimeSeriesValue : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > ListValues();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTimeSeriesValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTimeSeriesValue> ptr;
+    typedef IfcTimeSeriesValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeriesValue> > list;
     typedef IfcTemplatedEntityList<IfcTimeSeriesValue>::it it;
 };
 class IfcTopologicalRepresentationItem : public IfcRepresentationItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTopologicalRepresentationItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTopologicalRepresentationItem> ptr;
+    typedef IfcTopologicalRepresentationItem* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTopologicalRepresentationItem> > list;
     typedef IfcTemplatedEntityList<IfcTopologicalRepresentationItem>::it it;
 };
 class IfcTopologyRepresentation : public IfcShapeModel {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTopologyRepresentation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTopologyRepresentation> ptr;
+    typedef IfcTopologyRepresentation* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTopologyRepresentation> > list;
     typedef IfcTemplatedEntityList<IfcTopologyRepresentation>::it it;
 };
 class IfcUnitAssignment : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Units();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcUnitAssignment (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcUnitAssignment> ptr;
+    typedef IfcUnitAssignment* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcUnitAssignment> > list;
     typedef IfcTemplatedEntityList<IfcUnitAssignment>::it it;
 };
 class IfcVertex : public IfcTopologicalRepresentationItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcVertex (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcVertex> ptr;
+    typedef IfcVertex* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcVertex> > list;
     typedef IfcTemplatedEntityList<IfcVertex>::it it;
 };
@@ -2936,22 +2937,22 @@ class IfcVertexBasedTextureMap : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcTextureVertex> > TextureVertices();
     SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > TexturePoints();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcVertexBasedTextureMap (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcVertexBasedTextureMap> ptr;
+    typedef IfcVertexBasedTextureMap* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcVertexBasedTextureMap> > list;
     typedef IfcTemplatedEntityList<IfcVertexBasedTextureMap>::it it;
 };
 class IfcVertexPoint : public IfcVertex {
 public:
-    SHARED_PTR<IfcPoint> VertexGeometry();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcPoint* VertexGeometry();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcVertexPoint (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcVertexPoint> ptr;
+    typedef IfcVertexPoint* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcVertexPoint> > list;
     typedef IfcTemplatedEntityList<IfcVertexPoint>::it it;
 };
@@ -2959,11 +2960,11 @@ class IfcVirtualGridIntersection : public IfcBaseClass {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > IntersectingAxes();
     std::vector<IfcLengthMeasure> /*[2:3]*/ OffsetDistances();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcVirtualGridIntersection (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcVirtualGridIntersection> ptr;
+    typedef IfcVirtualGridIntersection* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcVirtualGridIntersection> > list;
     typedef IfcTemplatedEntityList<IfcVirtualGridIntersection>::it it;
 };
@@ -2983,84 +2984,84 @@ public:
     IfcPHMeasure PHLevel();
     bool hasDissolvedSolidsContent();
     IfcNormalisedRatioMeasure DissolvedSolidsContent();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcWaterProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcWaterProperties> ptr;
+    typedef IfcWaterProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcWaterProperties> > list;
     typedef IfcTemplatedEntityList<IfcWaterProperties>::it it;
 };
 class IfcAnnotationOccurrence : public IfcStyledItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAnnotationOccurrence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAnnotationOccurrence> ptr;
+    typedef IfcAnnotationOccurrence* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationOccurrence> > list;
     typedef IfcTemplatedEntityList<IfcAnnotationOccurrence>::it it;
 };
 class IfcAnnotationSurfaceOccurrence : public IfcAnnotationOccurrence {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAnnotationSurfaceOccurrence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAnnotationSurfaceOccurrence> ptr;
+    typedef IfcAnnotationSurfaceOccurrence* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationSurfaceOccurrence> > list;
     typedef IfcTemplatedEntityList<IfcAnnotationSurfaceOccurrence>::it it;
 };
 class IfcAnnotationSymbolOccurrence : public IfcAnnotationOccurrence {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAnnotationSymbolOccurrence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAnnotationSymbolOccurrence> ptr;
+    typedef IfcAnnotationSymbolOccurrence* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationSymbolOccurrence> > list;
     typedef IfcTemplatedEntityList<IfcAnnotationSymbolOccurrence>::it it;
 };
 class IfcAnnotationTextOccurrence : public IfcAnnotationOccurrence {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAnnotationTextOccurrence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAnnotationTextOccurrence> ptr;
+    typedef IfcAnnotationTextOccurrence* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationTextOccurrence> > list;
     typedef IfcTemplatedEntityList<IfcAnnotationTextOccurrence>::it it;
 };
 class IfcArbitraryClosedProfileDef : public IfcProfileDef {
 public:
-    SHARED_PTR<IfcCurve> OuterCurve();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcCurve* OuterCurve();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcArbitraryClosedProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcArbitraryClosedProfileDef> ptr;
+    typedef IfcArbitraryClosedProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcArbitraryClosedProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcArbitraryClosedProfileDef>::it it;
 };
 class IfcArbitraryOpenProfileDef : public IfcProfileDef {
 public:
-    SHARED_PTR<IfcBoundedCurve> Curve();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcBoundedCurve* Curve();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcArbitraryOpenProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcArbitraryOpenProfileDef> ptr;
+    typedef IfcArbitraryOpenProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcArbitraryOpenProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcArbitraryOpenProfileDef>::it it;
 };
 class IfcArbitraryProfileDefWithVoids : public IfcArbitraryClosedProfileDef {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > InnerCurves();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcArbitraryProfileDefWithVoids (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcArbitraryProfileDefWithVoids> ptr;
+    typedef IfcArbitraryProfileDefWithVoids* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcArbitraryProfileDefWithVoids> > list;
     typedef IfcTemplatedEntityList<IfcArbitraryProfileDefWithVoids>::it it;
 };
@@ -3068,34 +3069,34 @@ class IfcBlobTexture : public IfcSurfaceTexture {
 public:
     IfcIdentifier RasterFormat();
     bool RasterCode();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBlobTexture (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBlobTexture> ptr;
+    typedef IfcBlobTexture* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBlobTexture> > list;
     typedef IfcTemplatedEntityList<IfcBlobTexture>::it it;
 };
 class IfcCenterLineProfileDef : public IfcArbitraryOpenProfileDef {
 public:
     IfcPositiveLengthMeasure Thickness();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCenterLineProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCenterLineProfileDef> ptr;
+    typedef IfcCenterLineProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCenterLineProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcCenterLineProfileDef>::it it;
 };
 class IfcClassificationReference : public IfcExternalReference {
 public:
     bool hasReferencedSource();
-    SHARED_PTR<IfcClassification> ReferencedSource();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcClassification* ReferencedSource();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcClassificationReference (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcClassificationReference> ptr;
+    typedef IfcClassificationReference* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcClassificationReference> > list;
     typedef IfcTemplatedEntityList<IfcClassificationReference>::it it;
 };
@@ -3104,11 +3105,11 @@ public:
     IfcNormalisedRatioMeasure Red();
     IfcNormalisedRatioMeasure Green();
     IfcNormalisedRatioMeasure Blue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcColourRgb (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcColourRgb> ptr;
+    typedef IfcColourRgb* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcColourRgb> > list;
     typedef IfcTemplatedEntityList<IfcColourRgb>::it it;
 };
@@ -3116,11 +3117,11 @@ class IfcComplexProperty : public IfcProperty {
 public:
     IfcIdentifier UsageName();
     SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > HasProperties();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcComplexProperty (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcComplexProperty> ptr;
+    typedef IfcComplexProperty* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcComplexProperty> > list;
     typedef IfcTemplatedEntityList<IfcComplexProperty>::it it;
 };
@@ -3129,22 +3130,22 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcProfileDef> > Profiles();
     bool hasLabel();
     IfcLabel Label();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCompositeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCompositeProfileDef> ptr;
+    typedef IfcCompositeProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCompositeProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcCompositeProfileDef>::it it;
 };
 class IfcConnectedFaceSet : public IfcTopologicalRepresentationItem {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcFace> > CfsFaces();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConnectedFaceSet (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConnectedFaceSet> ptr;
+    typedef IfcConnectedFaceSet* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectedFaceSet> > list;
     typedef IfcTemplatedEntityList<IfcConnectedFaceSet>::it it;
 };
@@ -3153,11 +3154,11 @@ public:
     IfcCurveOrEdgeCurve CurveOnRelatingElement();
     bool hasCurveOnRelatedElement();
     IfcCurveOrEdgeCurve CurveOnRelatedElement();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConnectionCurveGeometry (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConnectionCurveGeometry> ptr;
+    typedef IfcConnectionCurveGeometry* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectionCurveGeometry> > list;
     typedef IfcTemplatedEntityList<IfcConnectionCurveGeometry>::it it;
 };
@@ -3169,34 +3170,34 @@ public:
     IfcLengthMeasure EccentricityInY();
     bool hasEccentricityInZ();
     IfcLengthMeasure EccentricityInZ();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConnectionPointEccentricity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConnectionPointEccentricity> ptr;
+    typedef IfcConnectionPointEccentricity* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectionPointEccentricity> > list;
     typedef IfcTemplatedEntityList<IfcConnectionPointEccentricity>::it it;
 };
 class IfcContextDependentUnit : public IfcNamedUnit {
 public:
     IfcLabel Name();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcContextDependentUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcContextDependentUnit> ptr;
+    typedef IfcContextDependentUnit* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcContextDependentUnit> > list;
     typedef IfcTemplatedEntityList<IfcContextDependentUnit>::it it;
 };
 class IfcConversionBasedUnit : public IfcNamedUnit {
 public:
     IfcLabel Name();
-    SHARED_PTR<IfcMeasureWithUnit> ConversionFactor();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcMeasureWithUnit* ConversionFactor();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConversionBasedUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConversionBasedUnit> ptr;
+    typedef IfcConversionBasedUnit* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConversionBasedUnit> > list;
     typedef IfcTemplatedEntityList<IfcConversionBasedUnit>::it it;
 };
@@ -3208,90 +3209,90 @@ public:
     IfcSizeSelect CurveWidth();
     bool hasCurveColour();
     IfcColour CurveColour();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCurveStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCurveStyle> ptr;
+    typedef IfcCurveStyle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurveStyle> > list;
     typedef IfcTemplatedEntityList<IfcCurveStyle>::it it;
 };
 class IfcDerivedProfileDef : public IfcProfileDef {
 public:
-    SHARED_PTR<IfcProfileDef> ParentProfile();
-    SHARED_PTR<IfcCartesianTransformationOperator2D> Operator();
+    IfcProfileDef* ParentProfile();
+    IfcCartesianTransformationOperator2D* Operator();
     bool hasLabel();
     IfcLabel Label();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDerivedProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDerivedProfileDef> ptr;
+    typedef IfcDerivedProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDerivedProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcDerivedProfileDef>::it it;
 };
 class IfcDimensionCalloutRelationship : public IfcDraughtingCalloutRelationship {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDimensionCalloutRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDimensionCalloutRelationship> ptr;
+    typedef IfcDimensionCalloutRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDimensionCalloutRelationship> > list;
     typedef IfcTemplatedEntityList<IfcDimensionCalloutRelationship>::it it;
 };
 class IfcDimensionPair : public IfcDraughtingCalloutRelationship {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDimensionPair (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDimensionPair> ptr;
+    typedef IfcDimensionPair* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDimensionPair> > list;
     typedef IfcTemplatedEntityList<IfcDimensionPair>::it it;
 };
 class IfcDocumentReference : public IfcExternalReference {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformation> > ReferenceToDocument(); // INVERSE IfcDocumentInformation::DocumentReferences
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDocumentReference (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDocumentReference> ptr;
+    typedef IfcDocumentReference* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDocumentReference> > list;
     typedef IfcTemplatedEntityList<IfcDocumentReference>::it it;
 };
 class IfcDraughtingPreDefinedTextFont : public IfcPreDefinedTextFont {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDraughtingPreDefinedTextFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDraughtingPreDefinedTextFont> ptr;
+    typedef IfcDraughtingPreDefinedTextFont* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingPreDefinedTextFont> > list;
     typedef IfcTemplatedEntityList<IfcDraughtingPreDefinedTextFont>::it it;
 };
 class IfcEdge : public IfcTopologicalRepresentationItem {
 public:
-    SHARED_PTR<IfcVertex> EdgeStart();
-    SHARED_PTR<IfcVertex> EdgeEnd();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcVertex* EdgeStart();
+    IfcVertex* EdgeEnd();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEdge (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEdge> ptr;
+    typedef IfcEdge* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEdge> > list;
     typedef IfcTemplatedEntityList<IfcEdge>::it it;
 };
 class IfcEdgeCurve : public IfcEdge {
 public:
-    SHARED_PTR<IfcCurve> EdgeGeometry();
+    IfcCurve* EdgeGeometry();
     bool SameSense();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEdgeCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEdgeCurve> ptr;
+    typedef IfcEdgeCurve* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEdgeCurve> > list;
     typedef IfcTemplatedEntityList<IfcEdgeCurve>::it it;
 };
@@ -3301,56 +3302,56 @@ public:
     bool hasDescription();
     IfcText Description();
     IfcLabel Name();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcExtendedMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcExtendedMaterialProperties> ptr;
+    typedef IfcExtendedMaterialProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcExtendedMaterialProperties> > list;
     typedef IfcTemplatedEntityList<IfcExtendedMaterialProperties>::it it;
 };
 class IfcFace : public IfcTopologicalRepresentationItem {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcFaceBound> > Bounds();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFace (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFace> ptr;
+    typedef IfcFace* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFace> > list;
     typedef IfcTemplatedEntityList<IfcFace>::it it;
 };
 class IfcFaceBound : public IfcTopologicalRepresentationItem {
 public:
-    SHARED_PTR<IfcLoop> Bound();
+    IfcLoop* Bound();
     bool Orientation();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFaceBound (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFaceBound> ptr;
+    typedef IfcFaceBound* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFaceBound> > list;
     typedef IfcTemplatedEntityList<IfcFaceBound>::it it;
 };
 class IfcFaceOuterBound : public IfcFaceBound {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFaceOuterBound (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFaceOuterBound> ptr;
+    typedef IfcFaceOuterBound* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFaceOuterBound> > list;
     typedef IfcTemplatedEntityList<IfcFaceOuterBound>::it it;
 };
 class IfcFaceSurface : public IfcFace {
 public:
-    SHARED_PTR<IfcSurface> FaceSurface();
+    IfcSurface* FaceSurface();
     bool SameSense();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFaceSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFaceSurface> ptr;
+    typedef IfcFaceSurface* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFaceSurface> > list;
     typedef IfcTemplatedEntityList<IfcFaceSurface>::it it;
 };
@@ -3368,22 +3369,22 @@ public:
     IfcForceMeasure CompressionFailureY();
     bool hasCompressionFailureZ();
     IfcForceMeasure CompressionFailureZ();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFailureConnectionCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFailureConnectionCondition> ptr;
+    typedef IfcFailureConnectionCondition* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFailureConnectionCondition> > list;
     typedef IfcTemplatedEntityList<IfcFailureConnectionCondition>::it it;
 };
 class IfcFillAreaStyle : public IfcPresentationStyle {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > FillStyles();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFillAreaStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFillAreaStyle> ptr;
+    typedef IfcFillAreaStyle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFillAreaStyle> > list;
     typedef IfcTemplatedEntityList<IfcFillAreaStyle>::it it;
 };
@@ -3397,11 +3398,11 @@ public:
     IfcHeatingValueMeasure LowerHeatingValue();
     bool hasHigherHeatingValue();
     IfcHeatingValueMeasure HigherHeatingValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFuelProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFuelProperties> ptr;
+    typedef IfcFuelProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFuelProperties> > list;
     typedef IfcTemplatedEntityList<IfcFuelProperties>::it it;
 };
@@ -3413,11 +3414,11 @@ public:
     IfcNormalisedRatioMeasure Porosity();
     bool hasMassDensity();
     IfcMassDensityMeasure MassDensity();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcGeneralMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcGeneralMaterialProperties> ptr;
+    typedef IfcGeneralMaterialProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeneralMaterialProperties> > list;
     typedef IfcTemplatedEntityList<IfcGeneralMaterialProperties>::it it;
 };
@@ -3433,11 +3434,11 @@ public:
     IfcPositiveLengthMeasure MaximumPlateThickness();
     bool hasCrossSectionArea();
     IfcAreaMeasure CrossSectionArea();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcGeneralProfileProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcGeneralProfileProperties> ptr;
+    typedef IfcGeneralProfileProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeneralProfileProperties> > list;
     typedef IfcTemplatedEntityList<IfcGeneralProfileProperties>::it it;
 };
@@ -3448,75 +3449,75 @@ public:
     float Precision();
     IfcAxis2Placement WorldCoordinateSystem();
     bool hasTrueNorth();
-    SHARED_PTR<IfcDirection> TrueNorth();
+    IfcDirection* TrueNorth();
     SHARED_PTR< IfcTemplatedEntityList<IfcGeometricRepresentationSubContext> > HasSubContexts(); // INVERSE IfcGeometricRepresentationSubContext::ParentContext
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcGeometricRepresentationContext (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcGeometricRepresentationContext> ptr;
+    typedef IfcGeometricRepresentationContext* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeometricRepresentationContext> > list;
     typedef IfcTemplatedEntityList<IfcGeometricRepresentationContext>::it it;
 };
 class IfcGeometricRepresentationItem : public IfcRepresentationItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcGeometricRepresentationItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcGeometricRepresentationItem> ptr;
+    typedef IfcGeometricRepresentationItem* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeometricRepresentationItem> > list;
     typedef IfcTemplatedEntityList<IfcGeometricRepresentationItem>::it it;
 };
 class IfcGeometricRepresentationSubContext : public IfcGeometricRepresentationContext {
 public:
-    SHARED_PTR<IfcGeometricRepresentationContext> ParentContext();
+    IfcGeometricRepresentationContext* ParentContext();
     bool hasTargetScale();
     IfcPositiveRatioMeasure TargetScale();
     IfcGeometricProjectionEnum::IfcGeometricProjectionEnum TargetView();
     bool hasUserDefinedTargetView();
     IfcLabel UserDefinedTargetView();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcGeometricRepresentationSubContext (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcGeometricRepresentationSubContext> ptr;
+    typedef IfcGeometricRepresentationSubContext* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeometricRepresentationSubContext> > list;
     typedef IfcTemplatedEntityList<IfcGeometricRepresentationSubContext>::it it;
 };
 class IfcGeometricSet : public IfcGeometricRepresentationItem {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Elements();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcGeometricSet (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcGeometricSet> ptr;
+    typedef IfcGeometricSet* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeometricSet> > list;
     typedef IfcTemplatedEntityList<IfcGeometricSet>::it it;
 };
 class IfcGridPlacement : public IfcObjectPlacement {
 public:
-    SHARED_PTR<IfcVirtualGridIntersection> PlacementLocation();
+    IfcVirtualGridIntersection* PlacementLocation();
     bool hasPlacementRefDirection();
-    SHARED_PTR<IfcVirtualGridIntersection> PlacementRefDirection();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcVirtualGridIntersection* PlacementRefDirection();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcGridPlacement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcGridPlacement> ptr;
+    typedef IfcGridPlacement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcGridPlacement> > list;
     typedef IfcTemplatedEntityList<IfcGridPlacement>::it it;
 };
 class IfcHalfSpaceSolid : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR<IfcSurface> BaseSurface();
+    IfcSurface* BaseSurface();
     bool AgreementFlag();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcHalfSpaceSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcHalfSpaceSolid> ptr;
+    typedef IfcHalfSpaceSolid* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcHalfSpaceSolid> > list;
     typedef IfcTemplatedEntityList<IfcHalfSpaceSolid>::it it;
 };
@@ -3532,33 +3533,33 @@ public:
     IfcVaporPermeabilityMeasure VaporPermeability();
     bool hasMoistureDiffusivity();
     IfcMoistureDiffusivityMeasure MoistureDiffusivity();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcHygroscopicMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcHygroscopicMaterialProperties> ptr;
+    typedef IfcHygroscopicMaterialProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcHygroscopicMaterialProperties> > list;
     typedef IfcTemplatedEntityList<IfcHygroscopicMaterialProperties>::it it;
 };
 class IfcImageTexture : public IfcSurfaceTexture {
 public:
     IfcIdentifier UrlReference();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcImageTexture (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcImageTexture> ptr;
+    typedef IfcImageTexture* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcImageTexture> > list;
     typedef IfcTemplatedEntityList<IfcImageTexture>::it it;
 };
 class IfcIrregularTimeSeries : public IfcTimeSeries {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcIrregularTimeSeriesValue> > Values();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcIrregularTimeSeries (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcIrregularTimeSeries> ptr;
+    typedef IfcIrregularTimeSeries* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcIrregularTimeSeries> > list;
     typedef IfcTemplatedEntityList<IfcIrregularTimeSeries>::it it;
 };
@@ -3566,130 +3567,130 @@ class IfcLightSource : public IfcGeometricRepresentationItem {
 public:
     bool hasName();
     IfcLabel Name();
-    SHARED_PTR<IfcColourRgb> LightColour();
+    IfcColourRgb* LightColour();
     bool hasAmbientIntensity();
     IfcNormalisedRatioMeasure AmbientIntensity();
     bool hasIntensity();
     IfcNormalisedRatioMeasure Intensity();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLightSource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLightSource> ptr;
+    typedef IfcLightSource* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightSource> > list;
     typedef IfcTemplatedEntityList<IfcLightSource>::it it;
 };
 class IfcLightSourceAmbient : public IfcLightSource {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLightSourceAmbient (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLightSourceAmbient> ptr;
+    typedef IfcLightSourceAmbient* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightSourceAmbient> > list;
     typedef IfcTemplatedEntityList<IfcLightSourceAmbient>::it it;
 };
 class IfcLightSourceDirectional : public IfcLightSource {
 public:
-    SHARED_PTR<IfcDirection> Orientation();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcDirection* Orientation();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLightSourceDirectional (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLightSourceDirectional> ptr;
+    typedef IfcLightSourceDirectional* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightSourceDirectional> > list;
     typedef IfcTemplatedEntityList<IfcLightSourceDirectional>::it it;
 };
 class IfcLightSourceGoniometric : public IfcLightSource {
 public:
-    SHARED_PTR<IfcAxis2Placement3D> Position();
+    IfcAxis2Placement3D* Position();
     bool hasColourAppearance();
-    SHARED_PTR<IfcColourRgb> ColourAppearance();
+    IfcColourRgb* ColourAppearance();
     IfcThermodynamicTemperatureMeasure ColourTemperature();
     IfcLuminousFluxMeasure LuminousFlux();
     IfcLightEmissionSourceEnum::IfcLightEmissionSourceEnum LightEmissionSource();
     IfcLightDistributionDataSourceSelect LightDistributionDataSource();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLightSourceGoniometric (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLightSourceGoniometric> ptr;
+    typedef IfcLightSourceGoniometric* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightSourceGoniometric> > list;
     typedef IfcTemplatedEntityList<IfcLightSourceGoniometric>::it it;
 };
 class IfcLightSourcePositional : public IfcLightSource {
 public:
-    SHARED_PTR<IfcCartesianPoint> Position();
+    IfcCartesianPoint* Position();
     IfcPositiveLengthMeasure Radius();
     IfcReal ConstantAttenuation();
     IfcReal DistanceAttenuation();
     IfcReal QuadricAttenuation();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLightSourcePositional (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLightSourcePositional> ptr;
+    typedef IfcLightSourcePositional* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightSourcePositional> > list;
     typedef IfcTemplatedEntityList<IfcLightSourcePositional>::it it;
 };
 class IfcLightSourceSpot : public IfcLightSourcePositional {
 public:
-    SHARED_PTR<IfcDirection> Orientation();
+    IfcDirection* Orientation();
     bool hasConcentrationExponent();
     IfcReal ConcentrationExponent();
     IfcPositivePlaneAngleMeasure SpreadAngle();
     IfcPositivePlaneAngleMeasure BeamWidthAngle();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLightSourceSpot (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLightSourceSpot> ptr;
+    typedef IfcLightSourceSpot* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightSourceSpot> > list;
     typedef IfcTemplatedEntityList<IfcLightSourceSpot>::it it;
 };
 class IfcLocalPlacement : public IfcObjectPlacement {
 public:
     bool hasPlacementRelTo();
-    SHARED_PTR<IfcObjectPlacement> PlacementRelTo();
+    IfcObjectPlacement* PlacementRelTo();
     IfcAxis2Placement RelativePlacement();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLocalPlacement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLocalPlacement> ptr;
+    typedef IfcLocalPlacement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLocalPlacement> > list;
     typedef IfcTemplatedEntityList<IfcLocalPlacement>::it it;
 };
 class IfcLoop : public IfcTopologicalRepresentationItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLoop (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLoop> ptr;
+    typedef IfcLoop* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLoop> > list;
     typedef IfcTemplatedEntityList<IfcLoop>::it it;
 };
 class IfcMappedItem : public IfcRepresentationItem {
 public:
-    SHARED_PTR<IfcRepresentationMap> MappingSource();
-    SHARED_PTR<IfcCartesianTransformationOperator> MappingTarget();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcRepresentationMap* MappingSource();
+    IfcCartesianTransformationOperator* MappingTarget();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMappedItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMappedItem> ptr;
+    typedef IfcMappedItem* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMappedItem> > list;
     typedef IfcTemplatedEntityList<IfcMappedItem>::it it;
 };
 class IfcMaterialDefinitionRepresentation : public IfcProductRepresentation {
 public:
-    SHARED_PTR<IfcMaterial> RepresentedMaterial();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcMaterial* RepresentedMaterial();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMaterialDefinitionRepresentation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMaterialDefinitionRepresentation> ptr;
+    typedef IfcMaterialDefinitionRepresentation* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialDefinitionRepresentation> > list;
     typedef IfcTemplatedEntityList<IfcMaterialDefinitionRepresentation>::it it;
 };
@@ -3707,11 +3708,11 @@ public:
     IfcNormalisedRatioMeasure ProtectivePoreRatio();
     bool hasWaterImpermeability();
     IfcText WaterImpermeability();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMechanicalConcreteMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMechanicalConcreteMaterialProperties> ptr;
+    typedef IfcMechanicalConcreteMaterialProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMechanicalConcreteMaterialProperties> > list;
     typedef IfcTemplatedEntityList<IfcMechanicalConcreteMaterialProperties>::it it;
 };
@@ -3721,66 +3722,66 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelDecomposes> > IsDecomposedBy(); // INVERSE IfcRelDecomposes::RelatingObject
     SHARED_PTR< IfcTemplatedEntityList<IfcRelDecomposes> > Decomposes(); // INVERSE IfcRelDecomposes::RelatedObjects
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociates> > HasAssociations(); // INVERSE IfcRelAssociates::RelatedObjects
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcObjectDefinition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcObjectDefinition> ptr;
+    typedef IfcObjectDefinition* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcObjectDefinition> > list;
     typedef IfcTemplatedEntityList<IfcObjectDefinition>::it it;
 };
 class IfcOneDirectionRepeatFactor : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR<IfcVector> RepeatFactor();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcVector* RepeatFactor();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOneDirectionRepeatFactor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOneDirectionRepeatFactor> ptr;
+    typedef IfcOneDirectionRepeatFactor* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOneDirectionRepeatFactor> > list;
     typedef IfcTemplatedEntityList<IfcOneDirectionRepeatFactor>::it it;
 };
 class IfcOpenShell : public IfcConnectedFaceSet {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOpenShell (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOpenShell> ptr;
+    typedef IfcOpenShell* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOpenShell> > list;
     typedef IfcTemplatedEntityList<IfcOpenShell>::it it;
 };
 class IfcOrientedEdge : public IfcEdge {
 public:
-    SHARED_PTR<IfcEdge> EdgeElement();
+    IfcEdge* EdgeElement();
     bool Orientation();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOrientedEdge (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOrientedEdge> ptr;
+    typedef IfcOrientedEdge* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOrientedEdge> > list;
     typedef IfcTemplatedEntityList<IfcOrientedEdge>::it it;
 };
 class IfcParameterizedProfileDef : public IfcProfileDef {
 public:
-    SHARED_PTR<IfcAxis2Placement2D> Position();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcAxis2Placement2D* Position();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcParameterizedProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcParameterizedProfileDef> ptr;
+    typedef IfcParameterizedProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcParameterizedProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcParameterizedProfileDef>::it it;
 };
 class IfcPath : public IfcTopologicalRepresentationItem {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcOrientedEdge> > EdgeList();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPath (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPath> ptr;
+    typedef IfcPath* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPath> > list;
     typedef IfcTemplatedEntityList<IfcPath>::it it;
 };
@@ -3792,11 +3793,11 @@ public:
     IfcLabel Quality();
     bool hasUsage();
     IfcLabel Usage();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPhysicalComplexQuantity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPhysicalComplexQuantity> ptr;
+    typedef IfcPhysicalComplexQuantity* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalComplexQuantity> > list;
     typedef IfcTemplatedEntityList<IfcPhysicalComplexQuantity>::it it;
 };
@@ -3806,22 +3807,22 @@ public:
     IfcInteger Height();
     IfcInteger ColourComponents();
     std::vector<char[32]> /*[1:?]*/ Pixel();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPixelTexture (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPixelTexture> ptr;
+    typedef IfcPixelTexture* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPixelTexture> > list;
     typedef IfcTemplatedEntityList<IfcPixelTexture>::it it;
 };
 class IfcPlacement : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR<IfcCartesianPoint> Location();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcCartesianPoint* Location();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPlacement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPlacement> ptr;
+    typedef IfcPlacement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPlacement> > list;
     typedef IfcTemplatedEntityList<IfcPlacement>::it it;
 };
@@ -3829,109 +3830,109 @@ class IfcPlanarExtent : public IfcGeometricRepresentationItem {
 public:
     IfcLengthMeasure SizeInX();
     IfcLengthMeasure SizeInY();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPlanarExtent (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPlanarExtent> ptr;
+    typedef IfcPlanarExtent* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPlanarExtent> > list;
     typedef IfcTemplatedEntityList<IfcPlanarExtent>::it it;
 };
 class IfcPoint : public IfcGeometricRepresentationItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPoint (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPoint> ptr;
+    typedef IfcPoint* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPoint> > list;
     typedef IfcTemplatedEntityList<IfcPoint>::it it;
 };
 class IfcPointOnCurve : public IfcPoint {
 public:
-    SHARED_PTR<IfcCurve> BasisCurve();
+    IfcCurve* BasisCurve();
     IfcParameterValue PointParameter();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPointOnCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPointOnCurve> ptr;
+    typedef IfcPointOnCurve* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPointOnCurve> > list;
     typedef IfcTemplatedEntityList<IfcPointOnCurve>::it it;
 };
 class IfcPointOnSurface : public IfcPoint {
 public:
-    SHARED_PTR<IfcSurface> BasisSurface();
+    IfcSurface* BasisSurface();
     IfcParameterValue PointParameterU();
     IfcParameterValue PointParameterV();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPointOnSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPointOnSurface> ptr;
+    typedef IfcPointOnSurface* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPointOnSurface> > list;
     typedef IfcTemplatedEntityList<IfcPointOnSurface>::it it;
 };
 class IfcPolyLoop : public IfcLoop {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > Polygon();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPolyLoop (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPolyLoop> ptr;
+    typedef IfcPolyLoop* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPolyLoop> > list;
     typedef IfcTemplatedEntityList<IfcPolyLoop>::it it;
 };
 class IfcPolygonalBoundedHalfSpace : public IfcHalfSpaceSolid {
 public:
-    SHARED_PTR<IfcAxis2Placement3D> Position();
-    SHARED_PTR<IfcBoundedCurve> PolygonalBoundary();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcAxis2Placement3D* Position();
+    IfcBoundedCurve* PolygonalBoundary();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPolygonalBoundedHalfSpace (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPolygonalBoundedHalfSpace> ptr;
+    typedef IfcPolygonalBoundedHalfSpace* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPolygonalBoundedHalfSpace> > list;
     typedef IfcTemplatedEntityList<IfcPolygonalBoundedHalfSpace>::it it;
 };
 class IfcPreDefinedColour : public IfcPreDefinedItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPreDefinedColour (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPreDefinedColour> ptr;
+    typedef IfcPreDefinedColour* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedColour> > list;
     typedef IfcTemplatedEntityList<IfcPreDefinedColour>::it it;
 };
 class IfcPreDefinedCurveFont : public IfcPreDefinedItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPreDefinedCurveFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPreDefinedCurveFont> ptr;
+    typedef IfcPreDefinedCurveFont* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedCurveFont> > list;
     typedef IfcTemplatedEntityList<IfcPreDefinedCurveFont>::it it;
 };
 class IfcPreDefinedDimensionSymbol : public IfcPreDefinedSymbol {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPreDefinedDimensionSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPreDefinedDimensionSymbol> ptr;
+    typedef IfcPreDefinedDimensionSymbol* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedDimensionSymbol> > list;
     typedef IfcTemplatedEntityList<IfcPreDefinedDimensionSymbol>::it it;
 };
 class IfcPreDefinedPointMarkerSymbol : public IfcPreDefinedSymbol {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPreDefinedPointMarkerSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPreDefinedPointMarkerSymbol> ptr;
+    typedef IfcPreDefinedPointMarkerSymbol* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedPointMarkerSymbol> > list;
     typedef IfcTemplatedEntityList<IfcPreDefinedPointMarkerSymbol>::it it;
 };
@@ -3939,11 +3940,11 @@ class IfcProductDefinitionShape : public IfcProductRepresentation {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > ShapeOfProduct(); // INVERSE IfcProduct::Representation
     SHARED_PTR< IfcTemplatedEntityList<IfcShapeAspect> > HasShapeAspects(); // INVERSE IfcShapeAspect::PartOfProductDefinitionShape
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProductDefinitionShape (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProductDefinitionShape> ptr;
+    typedef IfcProductDefinitionShape* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProductDefinitionShape> > list;
     typedef IfcTemplatedEntityList<IfcProductDefinitionShape>::it it;
 };
@@ -3955,22 +3956,22 @@ public:
     IfcValue LowerBoundValue();
     bool hasUnit();
     IfcUnit Unit();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertyBoundedValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPropertyBoundedValue> ptr;
+    typedef IfcPropertyBoundedValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyBoundedValue> > list;
     typedef IfcTemplatedEntityList<IfcPropertyBoundedValue>::it it;
 };
 class IfcPropertyDefinition : public IfcRoot {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociates> > HasAssociations(); // INVERSE IfcRelAssociates::RelatedObjects
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertyDefinition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPropertyDefinition> ptr;
+    typedef IfcPropertyDefinition* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyDefinition> > list;
     typedef IfcTemplatedEntityList<IfcPropertyDefinition>::it it;
 };
@@ -3978,12 +3979,12 @@ class IfcPropertyEnumeratedValue : public IfcSimpleProperty {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > EnumerationValues();
     bool hasEnumerationReference();
-    SHARED_PTR<IfcPropertyEnumeration> EnumerationReference();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcPropertyEnumeration* EnumerationReference();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertyEnumeratedValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPropertyEnumeratedValue> ptr;
+    typedef IfcPropertyEnumeratedValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyEnumeratedValue> > list;
     typedef IfcTemplatedEntityList<IfcPropertyEnumeratedValue>::it it;
 };
@@ -3992,11 +3993,11 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > ListValues();
     bool hasUnit();
     IfcUnit Unit();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertyListValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPropertyListValue> ptr;
+    typedef IfcPropertyListValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyListValue> > list;
     typedef IfcTemplatedEntityList<IfcPropertyListValue>::it it;
 };
@@ -4005,11 +4006,11 @@ public:
     bool hasUsageName();
     IfcLabel UsageName();
     IfcObjectReferenceSelect PropertyReference();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertyReferenceValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPropertyReferenceValue> ptr;
+    typedef IfcPropertyReferenceValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyReferenceValue> > list;
     typedef IfcTemplatedEntityList<IfcPropertyReferenceValue>::it it;
 };
@@ -4017,11 +4018,11 @@ class IfcPropertySetDefinition : public IfcPropertyDefinition {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelDefinesByProperties> > PropertyDefinitionOf(); // INVERSE IfcRelDefinesByProperties::RelatingPropertyDefinition
     SHARED_PTR< IfcTemplatedEntityList<IfcTypeObject> > DefinesType(); // INVERSE IfcTypeObject::HasPropertySets
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertySetDefinition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPropertySetDefinition> ptr;
+    typedef IfcPropertySetDefinition* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertySetDefinition> > list;
     typedef IfcTemplatedEntityList<IfcPropertySetDefinition>::it it;
 };
@@ -4031,11 +4032,11 @@ public:
     IfcValue NominalValue();
     bool hasUnit();
     IfcUnit Unit();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertySingleValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPropertySingleValue> ptr;
+    typedef IfcPropertySingleValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertySingleValue> > list;
     typedef IfcTemplatedEntityList<IfcPropertySingleValue>::it it;
 };
@@ -4049,11 +4050,11 @@ public:
     IfcUnit DefiningUnit();
     bool hasDefinedUnit();
     IfcUnit DefinedUnit();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertyTableValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPropertyTableValue> ptr;
+    typedef IfcPropertyTableValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyTableValue> > list;
     typedef IfcTemplatedEntityList<IfcPropertyTableValue>::it it;
 };
@@ -4061,11 +4062,11 @@ class IfcRectangleProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcPositiveLengthMeasure XDim();
     IfcPositiveLengthMeasure YDim();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRectangleProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRectangleProfileDef> ptr;
+    typedef IfcRectangleProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRectangleProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcRectangleProfileDef>::it it;
 };
@@ -4073,11 +4074,11 @@ class IfcRegularTimeSeries : public IfcTimeSeries {
 public:
     IfcTimeMeasure TimeStep();
     SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeriesValue> > Values();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRegularTimeSeries (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRegularTimeSeries> ptr;
+    typedef IfcRegularTimeSeries* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRegularTimeSeries> > list;
     typedef IfcTemplatedEntityList<IfcRegularTimeSeries>::it it;
 };
@@ -4086,45 +4087,45 @@ public:
     bool hasDefinitionType();
     IfcLabel DefinitionType();
     SHARED_PTR< IfcTemplatedEntityList<IfcSectionReinforcementProperties> > ReinforcementSectionDefinitions();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcReinforcementDefinitionProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcReinforcementDefinitionProperties> ptr;
+    typedef IfcReinforcementDefinitionProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcReinforcementDefinitionProperties> > list;
     typedef IfcTemplatedEntityList<IfcReinforcementDefinitionProperties>::it it;
 };
 class IfcRelationship : public IfcRoot {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelationship> ptr;
+    typedef IfcRelationship* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelationship> > list;
     typedef IfcTemplatedEntityList<IfcRelationship>::it it;
 };
 class IfcRoundedRectangleProfileDef : public IfcRectangleProfileDef {
 public:
     IfcPositiveLengthMeasure RoundingRadius();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRoundedRectangleProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRoundedRectangleProfileDef> ptr;
+    typedef IfcRoundedRectangleProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRoundedRectangleProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcRoundedRectangleProfileDef>::it it;
 };
 class IfcSectionedSpine : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR<IfcCompositeCurve> SpineCurve();
+    IfcCompositeCurve* SpineCurve();
     SHARED_PTR< IfcTemplatedEntityList<IfcProfileDef> > CrossSections();
     SHARED_PTR< IfcTemplatedEntityList<IfcAxis2Placement3D> > CrossSectionPositions();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSectionedSpine (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSectionedSpine> ptr;
+    typedef IfcSectionedSpine* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSectionedSpine> > list;
     typedef IfcTemplatedEntityList<IfcSectionedSpine>::it it;
 };
@@ -4136,22 +4137,22 @@ public:
     IfcMeasureValue MostUsedValue();
     bool hasLowerValue();
     IfcMeasureValue LowerValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcServiceLifeFactor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcServiceLifeFactor> ptr;
+    typedef IfcServiceLifeFactor* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcServiceLifeFactor> > list;
     typedef IfcTemplatedEntityList<IfcServiceLifeFactor>::it it;
 };
 class IfcShellBasedSurfaceModel : public IfcGeometricRepresentationItem {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > SbsmBoundary();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcShellBasedSurfaceModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcShellBasedSurfaceModel> ptr;
+    typedef IfcShellBasedSurfaceModel* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcShellBasedSurfaceModel> > list;
     typedef IfcTemplatedEntityList<IfcShellBasedSurfaceModel>::it it;
 };
@@ -4163,21 +4164,21 @@ public:
     IfcLengthMeasure SlippageY();
     bool hasSlippageZ();
     IfcLengthMeasure SlippageZ();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSlippageConnectionCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSlippageConnectionCondition> ptr;
+    typedef IfcSlippageConnectionCondition* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSlippageConnectionCondition> > list;
     typedef IfcTemplatedEntityList<IfcSlippageConnectionCondition>::it it;
 };
 class IfcSolidModel : public IfcGeometricRepresentationItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSolidModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSolidModel> ptr;
+    typedef IfcSolidModel* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSolidModel> > list;
     typedef IfcTemplatedEntityList<IfcSolidModel>::it it;
 };
@@ -4187,26 +4188,26 @@ public:
     bool hasSoundScale();
     IfcSoundScaleEnum::IfcSoundScaleEnum SoundScale();
     SHARED_PTR< IfcTemplatedEntityList<IfcSoundValue> > SoundValues();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSoundProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSoundProperties> ptr;
+    typedef IfcSoundProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSoundProperties> > list;
     typedef IfcTemplatedEntityList<IfcSoundProperties>::it it;
 };
 class IfcSoundValue : public IfcPropertySetDefinition {
 public:
     bool hasSoundLevelTimeSeries();
-    SHARED_PTR<IfcTimeSeries> SoundLevelTimeSeries();
+    IfcTimeSeries* SoundLevelTimeSeries();
     IfcFrequencyMeasure Frequency();
     bool hasSoundLevelSingleValue();
     IfcDerivedMeasureValue SoundLevelSingleValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSoundValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSoundValue> ptr;
+    typedef IfcSoundValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSoundValue> > list;
     typedef IfcTemplatedEntityList<IfcSoundValue>::it it;
 };
@@ -4222,17 +4223,17 @@ public:
     bool hasMinimumValue();
     IfcPowerMeasure MinimumValue();
     bool hasThermalLoadTimeSeriesValues();
-    SHARED_PTR<IfcTimeSeries> ThermalLoadTimeSeriesValues();
+    IfcTimeSeries* ThermalLoadTimeSeriesValues();
     bool hasUserDefinedThermalLoadSource();
     IfcLabel UserDefinedThermalLoadSource();
     bool hasUserDefinedPropertySource();
     IfcLabel UserDefinedPropertySource();
     IfcThermalLoadTypeEnum::IfcThermalLoadTypeEnum ThermalLoadType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSpaceThermalLoadProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSpaceThermalLoadProperties> ptr;
+    typedef IfcSpaceThermalLoadProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpaceThermalLoadProperties> > list;
     typedef IfcTemplatedEntityList<IfcSpaceThermalLoadProperties>::it it;
 };
@@ -4250,11 +4251,11 @@ public:
     IfcLinearMomentMeasure LinearMomentY();
     bool hasLinearMomentZ();
     IfcLinearMomentMeasure LinearMomentZ();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLoadLinearForce (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralLoadLinearForce> ptr;
+    typedef IfcStructuralLoadLinearForce* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadLinearForce> > list;
     typedef IfcTemplatedEntityList<IfcStructuralLoadLinearForce>::it it;
 };
@@ -4266,11 +4267,11 @@ public:
     IfcPlanarForceMeasure PlanarForceY();
     bool hasPlanarForceZ();
     IfcPlanarForceMeasure PlanarForceZ();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLoadPlanarForce (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralLoadPlanarForce> ptr;
+    typedef IfcStructuralLoadPlanarForce* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadPlanarForce> > list;
     typedef IfcTemplatedEntityList<IfcStructuralLoadPlanarForce>::it it;
 };
@@ -4288,11 +4289,11 @@ public:
     IfcPlaneAngleMeasure RotationalDisplacementRY();
     bool hasRotationalDisplacementRZ();
     IfcPlaneAngleMeasure RotationalDisplacementRZ();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLoadSingleDisplacement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralLoadSingleDisplacement> ptr;
+    typedef IfcStructuralLoadSingleDisplacement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadSingleDisplacement> > list;
     typedef IfcTemplatedEntityList<IfcStructuralLoadSingleDisplacement>::it it;
 };
@@ -4300,11 +4301,11 @@ class IfcStructuralLoadSingleDisplacementDistortion : public IfcStructuralLoadSi
 public:
     bool hasDistortion();
     IfcCurvatureMeasure Distortion();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLoadSingleDisplacementDistortion (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralLoadSingleDisplacementDistortion> ptr;
+    typedef IfcStructuralLoadSingleDisplacementDistortion* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadSingleDisplacementDistortion> > list;
     typedef IfcTemplatedEntityList<IfcStructuralLoadSingleDisplacementDistortion>::it it;
 };
@@ -4322,11 +4323,11 @@ public:
     IfcTorqueMeasure MomentY();
     bool hasMomentZ();
     IfcTorqueMeasure MomentZ();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLoadSingleForce (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralLoadSingleForce> ptr;
+    typedef IfcStructuralLoadSingleForce* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadSingleForce> > list;
     typedef IfcTemplatedEntityList<IfcStructuralLoadSingleForce>::it it;
 };
@@ -4334,11 +4335,11 @@ class IfcStructuralLoadSingleForceWarping : public IfcStructuralLoadSingleForce 
 public:
     bool hasWarpingMoment();
     IfcWarpingMomentMeasure WarpingMoment();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLoadSingleForceWarping (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralLoadSingleForceWarping> ptr;
+    typedef IfcStructuralLoadSingleForceWarping* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadSingleForceWarping> > list;
     typedef IfcTemplatedEntityList<IfcStructuralLoadSingleForceWarping>::it it;
 };
@@ -4376,11 +4377,11 @@ public:
     IfcLengthMeasure CentreOfGravityInX();
     bool hasCentreOfGravityInY();
     IfcLengthMeasure CentreOfGravityInY();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralProfileProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralProfileProperties> ptr;
+    typedef IfcStructuralProfileProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralProfileProperties> > list;
     typedef IfcTemplatedEntityList<IfcStructuralProfileProperties>::it it;
 };
@@ -4394,32 +4395,32 @@ public:
     IfcPositiveRatioMeasure PlasticShapeFactorY();
     bool hasPlasticShapeFactorZ();
     IfcPositiveRatioMeasure PlasticShapeFactorZ();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralSteelProfileProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralSteelProfileProperties> ptr;
+    typedef IfcStructuralSteelProfileProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralSteelProfileProperties> > list;
     typedef IfcTemplatedEntityList<IfcStructuralSteelProfileProperties>::it it;
 };
 class IfcSubedge : public IfcEdge {
 public:
-    SHARED_PTR<IfcEdge> ParentEdge();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcEdge* ParentEdge();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSubedge (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSubedge> ptr;
+    typedef IfcSubedge* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSubedge> > list;
     typedef IfcTemplatedEntityList<IfcSubedge>::it it;
 };
 class IfcSurface : public IfcGeometricRepresentationItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSurface> ptr;
+    typedef IfcSurface* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurface> > list;
     typedef IfcTemplatedEntityList<IfcSurface>::it it;
 };
@@ -4440,51 +4441,51 @@ public:
     bool hasSpecularHighlight();
     IfcSpecularHighlightSelect SpecularHighlight();
     IfcReflectanceMethodEnum::IfcReflectanceMethodEnum ReflectanceMethod();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSurfaceStyleRendering (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSurfaceStyleRendering> ptr;
+    typedef IfcSurfaceStyleRendering* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceStyleRendering> > list;
     typedef IfcTemplatedEntityList<IfcSurfaceStyleRendering>::it it;
 };
 class IfcSweptAreaSolid : public IfcSolidModel {
 public:
-    SHARED_PTR<IfcProfileDef> SweptArea();
-    SHARED_PTR<IfcAxis2Placement3D> Position();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcProfileDef* SweptArea();
+    IfcAxis2Placement3D* Position();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSweptAreaSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSweptAreaSolid> ptr;
+    typedef IfcSweptAreaSolid* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSweptAreaSolid> > list;
     typedef IfcTemplatedEntityList<IfcSweptAreaSolid>::it it;
 };
 class IfcSweptDiskSolid : public IfcSolidModel {
 public:
-    SHARED_PTR<IfcCurve> Directrix();
+    IfcCurve* Directrix();
     IfcPositiveLengthMeasure Radius();
     bool hasInnerRadius();
     IfcPositiveLengthMeasure InnerRadius();
     IfcParameterValue StartParam();
     IfcParameterValue EndParam();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSweptDiskSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSweptDiskSolid> ptr;
+    typedef IfcSweptDiskSolid* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSweptDiskSolid> > list;
     typedef IfcTemplatedEntityList<IfcSweptDiskSolid>::it it;
 };
 class IfcSweptSurface : public IfcSurface {
 public:
-    SHARED_PTR<IfcProfileDef> SweptCurve();
-    SHARED_PTR<IfcAxis2Placement3D> Position();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcProfileDef* SweptCurve();
+    IfcAxis2Placement3D* Position();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSweptSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSweptSurface> ptr;
+    typedef IfcSweptSurface* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSweptSurface> > list;
     typedef IfcTemplatedEntityList<IfcSweptSurface>::it it;
 };
@@ -4506,22 +4507,22 @@ public:
     IfcPlaneAngleMeasure FlangeSlope();
     bool hasCentreOfGravityInY();
     IfcPositiveLengthMeasure CentreOfGravityInY();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTShapeProfileDef> ptr;
+    typedef IfcTShapeProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTShapeProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcTShapeProfileDef>::it it;
 };
 class IfcTerminatorSymbol : public IfcAnnotationSymbolOccurrence {
 public:
-    SHARED_PTR<IfcAnnotationCurveOccurrence> AnnotatedCurve();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcAnnotationCurveOccurrence* AnnotatedCurve();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTerminatorSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTerminatorSymbol> ptr;
+    typedef IfcTerminatorSymbol* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTerminatorSymbol> > list;
     typedef IfcTemplatedEntityList<IfcTerminatorSymbol>::it it;
 };
@@ -4530,23 +4531,23 @@ public:
     IfcPresentableText Literal();
     IfcAxis2Placement Placement();
     IfcTextPath::IfcTextPath Path();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTextLiteral (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTextLiteral> ptr;
+    typedef IfcTextLiteral* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextLiteral> > list;
     typedef IfcTemplatedEntityList<IfcTextLiteral>::it it;
 };
 class IfcTextLiteralWithExtent : public IfcTextLiteral {
 public:
-    SHARED_PTR<IfcPlanarExtent> Extent();
+    IfcPlanarExtent* Extent();
     IfcBoxAlignment BoxAlignment();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTextLiteralWithExtent (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTextLiteralWithExtent> ptr;
+    typedef IfcTextLiteralWithExtent* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextLiteralWithExtent> > list;
     typedef IfcTemplatedEntityList<IfcTextLiteralWithExtent>::it it;
 };
@@ -4556,22 +4557,22 @@ public:
     IfcPositiveLengthMeasure TopXDim();
     IfcPositiveLengthMeasure YDim();
     IfcLengthMeasure TopXOffset();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTrapeziumProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTrapeziumProfileDef> ptr;
+    typedef IfcTrapeziumProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTrapeziumProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcTrapeziumProfileDef>::it it;
 };
 class IfcTwoDirectionRepeatFactor : public IfcOneDirectionRepeatFactor {
 public:
-    SHARED_PTR<IfcVector> SecondRepeatFactor();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcVector* SecondRepeatFactor();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTwoDirectionRepeatFactor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTwoDirectionRepeatFactor> ptr;
+    typedef IfcTwoDirectionRepeatFactor* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTwoDirectionRepeatFactor> > list;
     typedef IfcTemplatedEntityList<IfcTwoDirectionRepeatFactor>::it it;
 };
@@ -4582,11 +4583,11 @@ public:
     bool hasHasPropertySets();
     SHARED_PTR< IfcTemplatedEntityList<IfcPropertySetDefinition> > HasPropertySets();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelDefinesByType> > ObjectTypeOf(); // INVERSE IfcRelDefinesByType::RelatingType
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTypeObject (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTypeObject> ptr;
+    typedef IfcTypeObject* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTypeObject> > list;
     typedef IfcTemplatedEntityList<IfcTypeObject>::it it;
 };
@@ -4596,11 +4597,11 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationMap> > RepresentationMaps();
     bool hasTag();
     IfcLabel Tag();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTypeProduct (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTypeProduct> ptr;
+    typedef IfcTypeProduct* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTypeProduct> > list;
     typedef IfcTemplatedEntityList<IfcTypeProduct>::it it;
 };
@@ -4618,34 +4619,34 @@ public:
     IfcPlaneAngleMeasure FlangeSlope();
     bool hasCentreOfGravityInX();
     IfcPositiveLengthMeasure CentreOfGravityInX();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcUShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcUShapeProfileDef> ptr;
+    typedef IfcUShapeProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcUShapeProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcUShapeProfileDef>::it it;
 };
 class IfcVector : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR<IfcDirection> Orientation();
+    IfcDirection* Orientation();
     IfcLengthMeasure Magnitude();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcVector (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcVector> ptr;
+    typedef IfcVector* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcVector> > list;
     typedef IfcTemplatedEntityList<IfcVector>::it it;
 };
 class IfcVertexLoop : public IfcLoop {
 public:
-    SHARED_PTR<IfcVertex> LoopVertex();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcVertex* LoopVertex();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcVertexLoop (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcVertexLoop> ptr;
+    typedef IfcVertexLoop* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcVertexLoop> > list;
     typedef IfcTemplatedEntityList<IfcVertexLoop>::it it;
 };
@@ -4668,12 +4669,12 @@ public:
     bool hasSecondMullionOffset();
     IfcNormalisedRatioMeasure SecondMullionOffset();
     bool hasShapeAspectStyle();
-    SHARED_PTR<IfcShapeAspect> ShapeAspectStyle();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcShapeAspect* ShapeAspectStyle();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcWindowLiningProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcWindowLiningProperties> ptr;
+    typedef IfcWindowLiningProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcWindowLiningProperties> > list;
     typedef IfcTemplatedEntityList<IfcWindowLiningProperties>::it it;
 };
@@ -4686,12 +4687,12 @@ public:
     bool hasFrameThickness();
     IfcPositiveLengthMeasure FrameThickness();
     bool hasShapeAspectStyle();
-    SHARED_PTR<IfcShapeAspect> ShapeAspectStyle();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcShapeAspect* ShapeAspectStyle();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcWindowPanelProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcWindowPanelProperties> ptr;
+    typedef IfcWindowPanelProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcWindowPanelProperties> > list;
     typedef IfcTemplatedEntityList<IfcWindowPanelProperties>::it it;
 };
@@ -4701,11 +4702,11 @@ public:
     IfcWindowStyleOperationEnum::IfcWindowStyleOperationEnum OperationType();
     bool ParameterTakesPrecedence();
     bool Sizeable();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcWindowStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcWindowStyle> ptr;
+    typedef IfcWindowStyle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcWindowStyle> > list;
     typedef IfcTemplatedEntityList<IfcWindowStyle>::it it;
 };
@@ -4719,99 +4720,99 @@ public:
     IfcPositiveLengthMeasure FilletRadius();
     bool hasEdgeRadius();
     IfcPositiveLengthMeasure EdgeRadius();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcZShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcZShapeProfileDef> ptr;
+    typedef IfcZShapeProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcZShapeProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcZShapeProfileDef>::it it;
 };
 class IfcAnnotationCurveOccurrence : public IfcAnnotationOccurrence {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAnnotationCurveOccurrence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAnnotationCurveOccurrence> ptr;
+    typedef IfcAnnotationCurveOccurrence* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationCurveOccurrence> > list;
     typedef IfcTemplatedEntityList<IfcAnnotationCurveOccurrence>::it it;
 };
 class IfcAnnotationFillArea : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR<IfcCurve> OuterBoundary();
+    IfcCurve* OuterBoundary();
     bool hasInnerBoundaries();
     SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > InnerBoundaries();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAnnotationFillArea (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAnnotationFillArea> ptr;
+    typedef IfcAnnotationFillArea* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationFillArea> > list;
     typedef IfcTemplatedEntityList<IfcAnnotationFillArea>::it it;
 };
 class IfcAnnotationFillAreaOccurrence : public IfcAnnotationOccurrence {
 public:
     bool hasFillStyleTarget();
-    SHARED_PTR<IfcPoint> FillStyleTarget();
+    IfcPoint* FillStyleTarget();
     bool hasGlobalOrLocal();
     IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum GlobalOrLocal();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAnnotationFillAreaOccurrence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAnnotationFillAreaOccurrence> ptr;
+    typedef IfcAnnotationFillAreaOccurrence* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationFillAreaOccurrence> > list;
     typedef IfcTemplatedEntityList<IfcAnnotationFillAreaOccurrence>::it it;
 };
 class IfcAnnotationSurface : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR<IfcGeometricRepresentationItem> Item();
+    IfcGeometricRepresentationItem* Item();
     bool hasTextureCoordinates();
-    SHARED_PTR<IfcTextureCoordinate> TextureCoordinates();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcTextureCoordinate* TextureCoordinates();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAnnotationSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAnnotationSurface> ptr;
+    typedef IfcAnnotationSurface* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationSurface> > list;
     typedef IfcTemplatedEntityList<IfcAnnotationSurface>::it it;
 };
 class IfcAxis1Placement : public IfcPlacement {
 public:
     bool hasAxis();
-    SHARED_PTR<IfcDirection> Axis();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcDirection* Axis();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAxis1Placement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAxis1Placement> ptr;
+    typedef IfcAxis1Placement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAxis1Placement> > list;
     typedef IfcTemplatedEntityList<IfcAxis1Placement>::it it;
 };
 class IfcAxis2Placement2D : public IfcPlacement {
 public:
     bool hasRefDirection();
-    SHARED_PTR<IfcDirection> RefDirection();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcDirection* RefDirection();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAxis2Placement2D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAxis2Placement2D> ptr;
+    typedef IfcAxis2Placement2D* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAxis2Placement2D> > list;
     typedef IfcTemplatedEntityList<IfcAxis2Placement2D>::it it;
 };
 class IfcAxis2Placement3D : public IfcPlacement {
 public:
     bool hasAxis();
-    SHARED_PTR<IfcDirection> Axis();
+    IfcDirection* Axis();
     bool hasRefDirection();
-    SHARED_PTR<IfcDirection> RefDirection();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcDirection* RefDirection();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAxis2Placement3D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAxis2Placement3D> ptr;
+    typedef IfcAxis2Placement3D* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAxis2Placement3D> > list;
     typedef IfcTemplatedEntityList<IfcAxis2Placement3D>::it it;
 };
@@ -4820,46 +4821,46 @@ public:
     IfcBooleanOperator::IfcBooleanOperator Operator();
     IfcBooleanOperand FirstOperand();
     IfcBooleanOperand SecondOperand();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBooleanResult (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBooleanResult> ptr;
+    typedef IfcBooleanResult* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBooleanResult> > list;
     typedef IfcTemplatedEntityList<IfcBooleanResult>::it it;
 };
 class IfcBoundedSurface : public IfcSurface {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBoundedSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBoundedSurface> ptr;
+    typedef IfcBoundedSurface* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundedSurface> > list;
     typedef IfcTemplatedEntityList<IfcBoundedSurface>::it it;
 };
 class IfcBoundingBox : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR<IfcCartesianPoint> Corner();
+    IfcCartesianPoint* Corner();
     IfcPositiveLengthMeasure XDim();
     IfcPositiveLengthMeasure YDim();
     IfcPositiveLengthMeasure ZDim();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBoundingBox (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBoundingBox> ptr;
+    typedef IfcBoundingBox* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundingBox> > list;
     typedef IfcTemplatedEntityList<IfcBoundingBox>::it it;
 };
 class IfcBoxedHalfSpace : public IfcHalfSpaceSolid {
 public:
-    SHARED_PTR<IfcBoundingBox> Enclosure();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcBoundingBox* Enclosure();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBoxedHalfSpace (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBoxedHalfSpace> ptr;
+    typedef IfcBoxedHalfSpace* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoxedHalfSpace> > list;
     typedef IfcTemplatedEntityList<IfcBoxedHalfSpace>::it it;
 };
@@ -4873,49 +4874,49 @@ public:
     IfcPositiveLengthMeasure InternalFilletRadius();
     bool hasCentreOfGravityInX();
     IfcPositiveLengthMeasure CentreOfGravityInX();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCShapeProfileDef> ptr;
+    typedef IfcCShapeProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCShapeProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcCShapeProfileDef>::it it;
 };
 class IfcCartesianPoint : public IfcPoint {
 public:
     std::vector<IfcLengthMeasure> /*[1:3]*/ Coordinates();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCartesianPoint (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCartesianPoint> ptr;
+    typedef IfcCartesianPoint* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > list;
     typedef IfcTemplatedEntityList<IfcCartesianPoint>::it it;
 };
 class IfcCartesianTransformationOperator : public IfcGeometricRepresentationItem {
 public:
     bool hasAxis1();
-    SHARED_PTR<IfcDirection> Axis1();
+    IfcDirection* Axis1();
     bool hasAxis2();
-    SHARED_PTR<IfcDirection> Axis2();
-    SHARED_PTR<IfcCartesianPoint> LocalOrigin();
+    IfcDirection* Axis2();
+    IfcCartesianPoint* LocalOrigin();
     bool hasScale();
     float Scale();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCartesianTransformationOperator (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCartesianTransformationOperator> ptr;
+    typedef IfcCartesianTransformationOperator* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCartesianTransformationOperator> > list;
     typedef IfcTemplatedEntityList<IfcCartesianTransformationOperator>::it it;
 };
 class IfcCartesianTransformationOperator2D : public IfcCartesianTransformationOperator {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCartesianTransformationOperator2D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCartesianTransformationOperator2D> ptr;
+    typedef IfcCartesianTransformationOperator2D* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCartesianTransformationOperator2D> > list;
     typedef IfcTemplatedEntityList<IfcCartesianTransformationOperator2D>::it it;
 };
@@ -4923,23 +4924,23 @@ class IfcCartesianTransformationOperator2DnonUniform : public IfcCartesianTransf
 public:
     bool hasScale2();
     float Scale2();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCartesianTransformationOperator2DnonUniform (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCartesianTransformationOperator2DnonUniform> ptr;
+    typedef IfcCartesianTransformationOperator2DnonUniform* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCartesianTransformationOperator2DnonUniform> > list;
     typedef IfcTemplatedEntityList<IfcCartesianTransformationOperator2DnonUniform>::it it;
 };
 class IfcCartesianTransformationOperator3D : public IfcCartesianTransformationOperator {
 public:
     bool hasAxis3();
-    SHARED_PTR<IfcDirection> Axis3();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcDirection* Axis3();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCartesianTransformationOperator3D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCartesianTransformationOperator3D> ptr;
+    typedef IfcCartesianTransformationOperator3D* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCartesianTransformationOperator3D> > list;
     typedef IfcTemplatedEntityList<IfcCartesianTransformationOperator3D>::it it;
 };
@@ -4949,32 +4950,32 @@ public:
     float Scale2();
     bool hasScale3();
     float Scale3();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCartesianTransformationOperator3DnonUniform (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCartesianTransformationOperator3DnonUniform> ptr;
+    typedef IfcCartesianTransformationOperator3DnonUniform* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCartesianTransformationOperator3DnonUniform> > list;
     typedef IfcTemplatedEntityList<IfcCartesianTransformationOperator3DnonUniform>::it it;
 };
 class IfcCircleProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcPositiveLengthMeasure Radius();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCircleProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCircleProfileDef> ptr;
+    typedef IfcCircleProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCircleProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcCircleProfileDef>::it it;
 };
 class IfcClosedShell : public IfcConnectedFaceSet {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcClosedShell (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcClosedShell> ptr;
+    typedef IfcClosedShell* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcClosedShell> > list;
     typedef IfcTemplatedEntityList<IfcClosedShell>::it it;
 };
@@ -4982,13 +4983,13 @@ class IfcCompositeCurveSegment : public IfcGeometricRepresentationItem {
 public:
     IfcTransitionCode::IfcTransitionCode Transition();
     bool SameSense();
-    SHARED_PTR<IfcCurve> ParentCurve();
+    IfcCurve* ParentCurve();
     SHARED_PTR< IfcTemplatedEntityList<IfcCompositeCurve> > UsingCurves(); // INVERSE IfcCompositeCurve::Segments
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCompositeCurveSegment (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCompositeCurveSegment> ptr;
+    typedef IfcCompositeCurveSegment* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCompositeCurveSegment> > list;
     typedef IfcTemplatedEntityList<IfcCompositeCurveSegment>::it it;
 };
@@ -5008,11 +5009,11 @@ public:
     IfcPositiveLengthMeasure BaseDepth3();
     bool hasCentreOfGravityInY();
     IfcPositiveLengthMeasure CentreOfGravityInY();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCraneRailAShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCraneRailAShapeProfileDef> ptr;
+    typedef IfcCraneRailAShapeProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCraneRailAShapeProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcCraneRailAShapeProfileDef>::it it;
 };
@@ -5029,101 +5030,101 @@ public:
     IfcPositiveLengthMeasure BaseDepth2();
     bool hasCentreOfGravityInY();
     IfcPositiveLengthMeasure CentreOfGravityInY();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCraneRailFShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCraneRailFShapeProfileDef> ptr;
+    typedef IfcCraneRailFShapeProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCraneRailFShapeProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcCraneRailFShapeProfileDef>::it it;
 };
 class IfcCsgPrimitive3D : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR<IfcAxis2Placement3D> Position();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcAxis2Placement3D* Position();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCsgPrimitive3D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCsgPrimitive3D> ptr;
+    typedef IfcCsgPrimitive3D* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCsgPrimitive3D> > list;
     typedef IfcTemplatedEntityList<IfcCsgPrimitive3D>::it it;
 };
 class IfcCsgSolid : public IfcSolidModel {
 public:
     IfcCsgSelect TreeRootExpression();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCsgSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCsgSolid> ptr;
+    typedef IfcCsgSolid* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCsgSolid> > list;
     typedef IfcTemplatedEntityList<IfcCsgSolid>::it it;
 };
 class IfcCurve : public IfcGeometricRepresentationItem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCurve> ptr;
+    typedef IfcCurve* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > list;
     typedef IfcTemplatedEntityList<IfcCurve>::it it;
 };
 class IfcCurveBoundedPlane : public IfcBoundedSurface {
 public:
-    SHARED_PTR<IfcPlane> BasisSurface();
-    SHARED_PTR<IfcCurve> OuterBoundary();
+    IfcPlane* BasisSurface();
+    IfcCurve* OuterBoundary();
     SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > InnerBoundaries();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCurveBoundedPlane (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCurveBoundedPlane> ptr;
+    typedef IfcCurveBoundedPlane* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurveBoundedPlane> > list;
     typedef IfcTemplatedEntityList<IfcCurveBoundedPlane>::it it;
 };
 class IfcDefinedSymbol : public IfcGeometricRepresentationItem {
 public:
     IfcDefinedSymbolSelect Definition();
-    SHARED_PTR<IfcCartesianTransformationOperator2D> Target();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcCartesianTransformationOperator2D* Target();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDefinedSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDefinedSymbol> ptr;
+    typedef IfcDefinedSymbol* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDefinedSymbol> > list;
     typedef IfcTemplatedEntityList<IfcDefinedSymbol>::it it;
 };
 class IfcDimensionCurve : public IfcAnnotationCurveOccurrence {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcTerminatorSymbol> > AnnotatedBySymbols(); // INVERSE IfcTerminatorSymbol::AnnotatedCurve
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDimensionCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDimensionCurve> ptr;
+    typedef IfcDimensionCurve* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDimensionCurve> > list;
     typedef IfcTemplatedEntityList<IfcDimensionCurve>::it it;
 };
 class IfcDimensionCurveTerminator : public IfcTerminatorSymbol {
 public:
     IfcDimensionExtentUsage::IfcDimensionExtentUsage Role();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDimensionCurveTerminator (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDimensionCurveTerminator> ptr;
+    typedef IfcDimensionCurveTerminator* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDimensionCurveTerminator> > list;
     typedef IfcTemplatedEntityList<IfcDimensionCurveTerminator>::it it;
 };
 class IfcDirection : public IfcGeometricRepresentationItem {
 public:
     std::vector<float> /*[2:3]*/ DirectionRatios();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDirection (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDirection> ptr;
+    typedef IfcDirection* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDirection> > list;
     typedef IfcTemplatedEntityList<IfcDirection>::it it;
 };
@@ -5150,12 +5151,12 @@ public:
     bool hasCasingDepth();
     IfcPositiveLengthMeasure CasingDepth();
     bool hasShapeAspectStyle();
-    SHARED_PTR<IfcShapeAspect> ShapeAspectStyle();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcShapeAspect* ShapeAspectStyle();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDoorLiningProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDoorLiningProperties> ptr;
+    typedef IfcDoorLiningProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDoorLiningProperties> > list;
     typedef IfcTemplatedEntityList<IfcDoorLiningProperties>::it it;
 };
@@ -5168,12 +5169,12 @@ public:
     IfcNormalisedRatioMeasure PanelWidth();
     IfcDoorPanelPositionEnum::IfcDoorPanelPositionEnum PanelPosition();
     bool hasShapeAspectStyle();
-    SHARED_PTR<IfcShapeAspect> ShapeAspectStyle();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcShapeAspect* ShapeAspectStyle();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDoorPanelProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDoorPanelProperties> ptr;
+    typedef IfcDoorPanelProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDoorPanelProperties> > list;
     typedef IfcTemplatedEntityList<IfcDoorPanelProperties>::it it;
 };
@@ -5183,11 +5184,11 @@ public:
     IfcDoorStyleConstructionEnum::IfcDoorStyleConstructionEnum ConstructionType();
     bool ParameterTakesPrecedence();
     bool Sizeable();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDoorStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDoorStyle> ptr;
+    typedef IfcDoorStyle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDoorStyle> > list;
     typedef IfcTemplatedEntityList<IfcDoorStyle>::it it;
 };
@@ -5196,42 +5197,42 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Contents();
     SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingCalloutRelationship> > IsRelatedFromCallout(); // INVERSE IfcDraughtingCalloutRelationship::RelatedDraughtingCallout
     SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingCalloutRelationship> > IsRelatedToCallout(); // INVERSE IfcDraughtingCalloutRelationship::RelatingDraughtingCallout
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDraughtingCallout (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDraughtingCallout> ptr;
+    typedef IfcDraughtingCallout* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingCallout> > list;
     typedef IfcTemplatedEntityList<IfcDraughtingCallout>::it it;
 };
 class IfcDraughtingPreDefinedColour : public IfcPreDefinedColour {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDraughtingPreDefinedColour (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDraughtingPreDefinedColour> ptr;
+    typedef IfcDraughtingPreDefinedColour* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingPreDefinedColour> > list;
     typedef IfcTemplatedEntityList<IfcDraughtingPreDefinedColour>::it it;
 };
 class IfcDraughtingPreDefinedCurveFont : public IfcPreDefinedCurveFont {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDraughtingPreDefinedCurveFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDraughtingPreDefinedCurveFont> ptr;
+    typedef IfcDraughtingPreDefinedCurveFont* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingPreDefinedCurveFont> > list;
     typedef IfcTemplatedEntityList<IfcDraughtingPreDefinedCurveFont>::it it;
 };
 class IfcEdgeLoop : public IfcLoop {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcOrientedEdge> > EdgeList();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEdgeLoop (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEdgeLoop> ptr;
+    typedef IfcEdgeLoop* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEdgeLoop> > list;
     typedef IfcTemplatedEntityList<IfcEdgeLoop>::it it;
 };
@@ -5240,11 +5241,11 @@ public:
     bool hasMethodOfMeasurement();
     IfcLabel MethodOfMeasurement();
     SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalQuantity> > Quantities();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElementQuantity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElementQuantity> ptr;
+    typedef IfcElementQuantity* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElementQuantity> > list;
     typedef IfcTemplatedEntityList<IfcElementQuantity>::it it;
 };
@@ -5252,22 +5253,22 @@ class IfcElementType : public IfcTypeProduct {
 public:
     bool hasElementType();
     IfcLabel ElementType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElementType> ptr;
+    typedef IfcElementType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElementType> > list;
     typedef IfcTemplatedEntityList<IfcElementType>::it it;
 };
 class IfcElementarySurface : public IfcSurface {
 public:
-    SHARED_PTR<IfcAxis2Placement3D> Position();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcAxis2Placement3D* Position();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElementarySurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElementarySurface> ptr;
+    typedef IfcElementarySurface* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElementarySurface> > list;
     typedef IfcTemplatedEntityList<IfcElementarySurface>::it it;
 };
@@ -5275,11 +5276,11 @@ class IfcEllipseProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcPositiveLengthMeasure SemiAxis1();
     IfcPositiveLengthMeasure SemiAxis2();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEllipseProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEllipseProfileDef> ptr;
+    typedef IfcEllipseProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEllipseProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcEllipseProfileDef>::it it;
 };
@@ -5289,75 +5290,75 @@ public:
     IfcEnergySequenceEnum::IfcEnergySequenceEnum EnergySequence();
     bool hasUserDefinedEnergySequence();
     IfcLabel UserDefinedEnergySequence();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEnergyProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEnergyProperties> ptr;
+    typedef IfcEnergyProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEnergyProperties> > list;
     typedef IfcTemplatedEntityList<IfcEnergyProperties>::it it;
 };
 class IfcExtrudedAreaSolid : public IfcSweptAreaSolid {
 public:
-    SHARED_PTR<IfcDirection> ExtrudedDirection();
+    IfcDirection* ExtrudedDirection();
     IfcPositiveLengthMeasure Depth();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcExtrudedAreaSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcExtrudedAreaSolid> ptr;
+    typedef IfcExtrudedAreaSolid* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcExtrudedAreaSolid> > list;
     typedef IfcTemplatedEntityList<IfcExtrudedAreaSolid>::it it;
 };
 class IfcFaceBasedSurfaceModel : public IfcGeometricRepresentationItem {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcConnectedFaceSet> > FbsmFaces();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFaceBasedSurfaceModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFaceBasedSurfaceModel> ptr;
+    typedef IfcFaceBasedSurfaceModel* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFaceBasedSurfaceModel> > list;
     typedef IfcTemplatedEntityList<IfcFaceBasedSurfaceModel>::it it;
 };
 class IfcFillAreaStyleHatching : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR<IfcCurveStyle> HatchLineAppearance();
+    IfcCurveStyle* HatchLineAppearance();
     IfcHatchLineDistanceSelect StartOfNextHatchLine();
     bool hasPointOfReferenceHatchLine();
-    SHARED_PTR<IfcCartesianPoint> PointOfReferenceHatchLine();
+    IfcCartesianPoint* PointOfReferenceHatchLine();
     bool hasPatternStart();
-    SHARED_PTR<IfcCartesianPoint> PatternStart();
+    IfcCartesianPoint* PatternStart();
     IfcPlaneAngleMeasure HatchLineAngle();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFillAreaStyleHatching (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFillAreaStyleHatching> ptr;
+    typedef IfcFillAreaStyleHatching* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFillAreaStyleHatching> > list;
     typedef IfcTemplatedEntityList<IfcFillAreaStyleHatching>::it it;
 };
 class IfcFillAreaStyleTileSymbolWithStyle : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR<IfcAnnotationSymbolOccurrence> Symbol();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcAnnotationSymbolOccurrence* Symbol();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFillAreaStyleTileSymbolWithStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFillAreaStyleTileSymbolWithStyle> ptr;
+    typedef IfcFillAreaStyleTileSymbolWithStyle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFillAreaStyleTileSymbolWithStyle> > list;
     typedef IfcTemplatedEntityList<IfcFillAreaStyleTileSymbolWithStyle>::it it;
 };
 class IfcFillAreaStyleTiles : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR<IfcOneDirectionRepeatFactor> TilingPattern();
+    IfcOneDirectionRepeatFactor* TilingPattern();
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Tiles();
     IfcPositiveRatioMeasure TilingScale();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFillAreaStyleTiles (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFillAreaStyleTiles> ptr;
+    typedef IfcFillAreaStyleTiles* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFillAreaStyleTiles> > list;
     typedef IfcTemplatedEntityList<IfcFillAreaStyleTiles>::it it;
 };
@@ -5365,14 +5366,14 @@ class IfcFluidFlowProperties : public IfcPropertySetDefinition {
 public:
     IfcPropertySourceEnum::IfcPropertySourceEnum PropertySource();
     bool hasFlowConditionTimeSeries();
-    SHARED_PTR<IfcTimeSeries> FlowConditionTimeSeries();
+    IfcTimeSeries* FlowConditionTimeSeries();
     bool hasVelocityTimeSeries();
-    SHARED_PTR<IfcTimeSeries> VelocityTimeSeries();
+    IfcTimeSeries* VelocityTimeSeries();
     bool hasFlowrateTimeSeries();
-    SHARED_PTR<IfcTimeSeries> FlowrateTimeSeries();
-    SHARED_PTR<IfcMaterial> Fluid();
+    IfcTimeSeries* FlowrateTimeSeries();
+    IfcMaterial* Fluid();
     bool hasPressureTimeSeries();
-    SHARED_PTR<IfcTimeSeries> PressureTimeSeries();
+    IfcTimeSeries* PressureTimeSeries();
     bool hasUserDefinedPropertySource();
     IfcLabel UserDefinedPropertySource();
     bool hasTemperatureSingleValue();
@@ -5380,9 +5381,9 @@ public:
     bool hasWetBulbTemperatureSingleValue();
     IfcThermodynamicTemperatureMeasure WetBulbTemperatureSingleValue();
     bool hasWetBulbTemperatureTimeSeries();
-    SHARED_PTR<IfcTimeSeries> WetBulbTemperatureTimeSeries();
+    IfcTimeSeries* WetBulbTemperatureTimeSeries();
     bool hasTemperatureTimeSeries();
-    SHARED_PTR<IfcTimeSeries> TemperatureTimeSeries();
+    IfcTimeSeries* TemperatureTimeSeries();
     bool hasFlowrateSingleValue();
     IfcDerivedMeasureValue FlowrateSingleValue();
     bool hasFlowConditionSingleValue();
@@ -5391,42 +5392,42 @@ public:
     IfcLinearVelocityMeasure VelocitySingleValue();
     bool hasPressureSingleValue();
     IfcPressureMeasure PressureSingleValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFluidFlowProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFluidFlowProperties> ptr;
+    typedef IfcFluidFlowProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFluidFlowProperties> > list;
     typedef IfcTemplatedEntityList<IfcFluidFlowProperties>::it it;
 };
 class IfcFurnishingElementType : public IfcElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFurnishingElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFurnishingElementType> ptr;
+    typedef IfcFurnishingElementType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFurnishingElementType> > list;
     typedef IfcTemplatedEntityList<IfcFurnishingElementType>::it it;
 };
 class IfcFurnitureType : public IfcFurnishingElementType {
 public:
     IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum AssemblyPlace();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFurnitureType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFurnitureType> ptr;
+    typedef IfcFurnitureType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFurnitureType> > list;
     typedef IfcTemplatedEntityList<IfcFurnitureType>::it it;
 };
 class IfcGeometricCurveSet : public IfcGeometricSet {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcGeometricCurveSet (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcGeometricCurveSet> ptr;
+    typedef IfcGeometricCurveSet* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeometricCurveSet> > list;
     typedef IfcTemplatedEntityList<IfcGeometricCurveSet>::it it;
 };
@@ -5438,11 +5439,11 @@ public:
     IfcPositiveLengthMeasure FlangeThickness();
     bool hasFilletRadius();
     IfcPositiveLengthMeasure FilletRadius();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcIShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcIShapeProfileDef> ptr;
+    typedef IfcIShapeProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcIShapeProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcIShapeProfileDef>::it it;
 };
@@ -5462,34 +5463,34 @@ public:
     IfcPositiveLengthMeasure CentreOfGravityInX();
     bool hasCentreOfGravityInY();
     IfcPositiveLengthMeasure CentreOfGravityInY();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLShapeProfileDef> ptr;
+    typedef IfcLShapeProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLShapeProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcLShapeProfileDef>::it it;
 };
 class IfcLine : public IfcCurve {
 public:
-    SHARED_PTR<IfcCartesianPoint> Pnt();
-    SHARED_PTR<IfcVector> Dir();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcCartesianPoint* Pnt();
+    IfcVector* Dir();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLine (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLine> ptr;
+    typedef IfcLine* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLine> > list;
     typedef IfcTemplatedEntityList<IfcLine>::it it;
 };
 class IfcManifoldSolidBrep : public IfcSolidModel {
 public:
-    SHARED_PTR<IfcClosedShell> Outer();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcClosedShell* Outer();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcManifoldSolidBrep (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcManifoldSolidBrep> ptr;
+    typedef IfcManifoldSolidBrep* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcManifoldSolidBrep> > list;
     typedef IfcTemplatedEntityList<IfcManifoldSolidBrep>::it it;
 };
@@ -5498,38 +5499,38 @@ public:
     bool hasObjectType();
     IfcLabel ObjectType();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelDefines> > IsDefinedBy(); // INVERSE IfcRelDefines::RelatedObjects
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcObject (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcObject> ptr;
+    typedef IfcObject* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcObject> > list;
     typedef IfcTemplatedEntityList<IfcObject>::it it;
 };
 class IfcOffsetCurve2D : public IfcCurve {
 public:
-    SHARED_PTR<IfcCurve> BasisCurve();
+    IfcCurve* BasisCurve();
     IfcLengthMeasure Distance();
     bool SelfIntersect();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOffsetCurve2D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOffsetCurve2D> ptr;
+    typedef IfcOffsetCurve2D* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOffsetCurve2D> > list;
     typedef IfcTemplatedEntityList<IfcOffsetCurve2D>::it it;
 };
 class IfcOffsetCurve3D : public IfcCurve {
 public:
-    SHARED_PTR<IfcCurve> BasisCurve();
+    IfcCurve* BasisCurve();
     IfcLengthMeasure Distance();
     bool SelfIntersect();
-    SHARED_PTR<IfcDirection> RefDirection();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcDirection* RefDirection();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOffsetCurve3D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOffsetCurve3D> ptr;
+    typedef IfcOffsetCurve3D* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOffsetCurve3D> > list;
     typedef IfcTemplatedEntityList<IfcOffsetCurve3D>::it it;
 };
@@ -5542,33 +5543,33 @@ public:
     bool hasFrameThickness();
     IfcPositiveLengthMeasure FrameThickness();
     bool hasShapeAspectStyle();
-    SHARED_PTR<IfcShapeAspect> ShapeAspectStyle();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcShapeAspect* ShapeAspectStyle();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPermeableCoveringProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPermeableCoveringProperties> ptr;
+    typedef IfcPermeableCoveringProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPermeableCoveringProperties> > list;
     typedef IfcTemplatedEntityList<IfcPermeableCoveringProperties>::it it;
 };
 class IfcPlanarBox : public IfcPlanarExtent {
 public:
     IfcAxis2Placement Placement();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPlanarBox (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPlanarBox> ptr;
+    typedef IfcPlanarBox* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPlanarBox> > list;
     typedef IfcTemplatedEntityList<IfcPlanarBox>::it it;
 };
 class IfcPlane : public IfcElementarySurface {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPlane (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPlane> ptr;
+    typedef IfcPlane* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPlane> > list;
     typedef IfcTemplatedEntityList<IfcPlane>::it it;
 };
@@ -5577,26 +5578,26 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProcess> > OperatesOn(); // INVERSE IfcRelAssignsToProcess::RelatingProcess
     SHARED_PTR< IfcTemplatedEntityList<IfcRelSequence> > IsSuccessorFrom(); // INVERSE IfcRelSequence::RelatedProcess
     SHARED_PTR< IfcTemplatedEntityList<IfcRelSequence> > IsPredecessorTo(); // INVERSE IfcRelSequence::RelatingProcess
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProcess (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProcess> ptr;
+    typedef IfcProcess* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProcess> > list;
     typedef IfcTemplatedEntityList<IfcProcess>::it it;
 };
 class IfcProduct : public IfcObject {
 public:
     bool hasObjectPlacement();
-    SHARED_PTR<IfcObjectPlacement> ObjectPlacement();
+    IfcObjectPlacement* ObjectPlacement();
     bool hasRepresentation();
-    SHARED_PTR<IfcProductRepresentation> Representation();
+    IfcProductRepresentation* Representation();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProduct> > ReferencedBy(); // INVERSE IfcRelAssignsToProduct::RelatingProduct
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProduct (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProduct> ptr;
+    typedef IfcProduct* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > list;
     typedef IfcTemplatedEntityList<IfcProduct>::it it;
 };
@@ -5607,33 +5608,33 @@ public:
     bool hasPhase();
     IfcLabel Phase();
     SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationContext> > RepresentationContexts();
-    SHARED_PTR<IfcUnitAssignment> UnitsInContext();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcUnitAssignment* UnitsInContext();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProject (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProject> ptr;
+    typedef IfcProject* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProject> > list;
     typedef IfcTemplatedEntityList<IfcProject>::it it;
 };
 class IfcProjectionCurve : public IfcAnnotationCurveOccurrence {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProjectionCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProjectionCurve> ptr;
+    typedef IfcProjectionCurve* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProjectionCurve> > list;
     typedef IfcTemplatedEntityList<IfcProjectionCurve>::it it;
 };
 class IfcPropertySet : public IfcPropertySetDefinition {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > HasProperties();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertySet (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPropertySet> ptr;
+    typedef IfcPropertySet* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertySet> > list;
     typedef IfcTemplatedEntityList<IfcPropertySet>::it it;
 };
@@ -5642,11 +5643,11 @@ public:
     IfcObjectTypeEnum::IfcObjectTypeEnum ProxyType();
     bool hasTag();
     IfcLabel Tag();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProxy (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProxy> ptr;
+    typedef IfcProxy* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProxy> > list;
     typedef IfcTemplatedEntityList<IfcProxy>::it it;
 };
@@ -5657,11 +5658,11 @@ public:
     IfcPositiveLengthMeasure InnerFilletRadius();
     bool hasOuterFilletRadius();
     IfcPositiveLengthMeasure OuterFilletRadius();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRectangleHollowProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRectangleHollowProfileDef> ptr;
+    typedef IfcRectangleHollowProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRectangleHollowProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcRectangleHollowProfileDef>::it it;
 };
@@ -5670,28 +5671,28 @@ public:
     IfcPositiveLengthMeasure XLength();
     IfcPositiveLengthMeasure YLength();
     IfcPositiveLengthMeasure Height();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRectangularPyramid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRectangularPyramid> ptr;
+    typedef IfcRectangularPyramid* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRectangularPyramid> > list;
     typedef IfcTemplatedEntityList<IfcRectangularPyramid>::it it;
 };
 class IfcRectangularTrimmedSurface : public IfcBoundedSurface {
 public:
-    SHARED_PTR<IfcSurface> BasisSurface();
+    IfcSurface* BasisSurface();
     IfcParameterValue U1();
     IfcParameterValue V1();
     IfcParameterValue U2();
     IfcParameterValue V2();
     bool Usense();
     bool Vsense();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRectangularTrimmedSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRectangularTrimmedSurface> ptr;
+    typedef IfcRectangularTrimmedSurface* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRectangularTrimmedSurface> > list;
     typedef IfcTemplatedEntityList<IfcRectangularTrimmedSurface>::it it;
 };
@@ -5700,219 +5701,219 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcObjectDefinition> > RelatedObjects();
     bool hasRelatedObjectsType();
     IfcObjectTypeEnum::IfcObjectTypeEnum RelatedObjectsType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssigns (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssigns> ptr;
+    typedef IfcRelAssigns* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssigns> > list;
     typedef IfcTemplatedEntityList<IfcRelAssigns>::it it;
 };
 class IfcRelAssignsToActor : public IfcRelAssigns {
 public:
-    SHARED_PTR<IfcActor> RelatingActor();
+    IfcActor* RelatingActor();
     bool hasActingRole();
-    SHARED_PTR<IfcActorRole> ActingRole();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcActorRole* ActingRole();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssignsToActor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssignsToActor> ptr;
+    typedef IfcRelAssignsToActor* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToActor> > list;
     typedef IfcTemplatedEntityList<IfcRelAssignsToActor>::it it;
 };
 class IfcRelAssignsToControl : public IfcRelAssigns {
 public:
-    SHARED_PTR<IfcControl> RelatingControl();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcControl* RelatingControl();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssignsToControl (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssignsToControl> ptr;
+    typedef IfcRelAssignsToControl* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToControl> > list;
     typedef IfcTemplatedEntityList<IfcRelAssignsToControl>::it it;
 };
 class IfcRelAssignsToGroup : public IfcRelAssigns {
 public:
-    SHARED_PTR<IfcGroup> RelatingGroup();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcGroup* RelatingGroup();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssignsToGroup (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssignsToGroup> ptr;
+    typedef IfcRelAssignsToGroup* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToGroup> > list;
     typedef IfcTemplatedEntityList<IfcRelAssignsToGroup>::it it;
 };
 class IfcRelAssignsToProcess : public IfcRelAssigns {
 public:
-    SHARED_PTR<IfcProcess> RelatingProcess();
+    IfcProcess* RelatingProcess();
     bool hasQuantityInProcess();
-    SHARED_PTR<IfcMeasureWithUnit> QuantityInProcess();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcMeasureWithUnit* QuantityInProcess();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssignsToProcess (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssignsToProcess> ptr;
+    typedef IfcRelAssignsToProcess* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProcess> > list;
     typedef IfcTemplatedEntityList<IfcRelAssignsToProcess>::it it;
 };
 class IfcRelAssignsToProduct : public IfcRelAssigns {
 public:
-    SHARED_PTR<IfcProduct> RelatingProduct();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcProduct* RelatingProduct();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssignsToProduct (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssignsToProduct> ptr;
+    typedef IfcRelAssignsToProduct* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProduct> > list;
     typedef IfcTemplatedEntityList<IfcRelAssignsToProduct>::it it;
 };
 class IfcRelAssignsToProjectOrder : public IfcRelAssignsToControl {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssignsToProjectOrder (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssignsToProjectOrder> ptr;
+    typedef IfcRelAssignsToProjectOrder* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProjectOrder> > list;
     typedef IfcTemplatedEntityList<IfcRelAssignsToProjectOrder>::it it;
 };
 class IfcRelAssignsToResource : public IfcRelAssigns {
 public:
-    SHARED_PTR<IfcResource> RelatingResource();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcResource* RelatingResource();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssignsToResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssignsToResource> ptr;
+    typedef IfcRelAssignsToResource* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToResource> > list;
     typedef IfcTemplatedEntityList<IfcRelAssignsToResource>::it it;
 };
 class IfcRelAssociates : public IfcRelationship {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRoot> > RelatedObjects();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssociates (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssociates> ptr;
+    typedef IfcRelAssociates* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociates> > list;
     typedef IfcTemplatedEntityList<IfcRelAssociates>::it it;
 };
 class IfcRelAssociatesAppliedValue : public IfcRelAssociates {
 public:
-    SHARED_PTR<IfcAppliedValue> RelatingAppliedValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcAppliedValue* RelatingAppliedValue();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssociatesAppliedValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssociatesAppliedValue> ptr;
+    typedef IfcRelAssociatesAppliedValue* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesAppliedValue> > list;
     typedef IfcTemplatedEntityList<IfcRelAssociatesAppliedValue>::it it;
 };
 class IfcRelAssociatesApproval : public IfcRelAssociates {
 public:
-    SHARED_PTR<IfcApproval> RelatingApproval();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcApproval* RelatingApproval();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssociatesApproval (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssociatesApproval> ptr;
+    typedef IfcRelAssociatesApproval* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesApproval> > list;
     typedef IfcTemplatedEntityList<IfcRelAssociatesApproval>::it it;
 };
 class IfcRelAssociatesClassification : public IfcRelAssociates {
 public:
     IfcClassificationNotationSelect RelatingClassification();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssociatesClassification (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssociatesClassification> ptr;
+    typedef IfcRelAssociatesClassification* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesClassification> > list;
     typedef IfcTemplatedEntityList<IfcRelAssociatesClassification>::it it;
 };
 class IfcRelAssociatesConstraint : public IfcRelAssociates {
 public:
     IfcLabel Intent();
-    SHARED_PTR<IfcConstraint> RelatingConstraint();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcConstraint* RelatingConstraint();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssociatesConstraint (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssociatesConstraint> ptr;
+    typedef IfcRelAssociatesConstraint* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesConstraint> > list;
     typedef IfcTemplatedEntityList<IfcRelAssociatesConstraint>::it it;
 };
 class IfcRelAssociatesDocument : public IfcRelAssociates {
 public:
     IfcDocumentSelect RelatingDocument();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssociatesDocument (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssociatesDocument> ptr;
+    typedef IfcRelAssociatesDocument* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesDocument> > list;
     typedef IfcTemplatedEntityList<IfcRelAssociatesDocument>::it it;
 };
 class IfcRelAssociatesLibrary : public IfcRelAssociates {
 public:
     IfcLibrarySelect RelatingLibrary();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssociatesLibrary (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssociatesLibrary> ptr;
+    typedef IfcRelAssociatesLibrary* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesLibrary> > list;
     typedef IfcTemplatedEntityList<IfcRelAssociatesLibrary>::it it;
 };
 class IfcRelAssociatesMaterial : public IfcRelAssociates {
 public:
     IfcMaterialSelect RelatingMaterial();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssociatesMaterial (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssociatesMaterial> ptr;
+    typedef IfcRelAssociatesMaterial* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesMaterial> > list;
     typedef IfcTemplatedEntityList<IfcRelAssociatesMaterial>::it it;
 };
 class IfcRelAssociatesProfileProperties : public IfcRelAssociates {
 public:
-    SHARED_PTR<IfcProfileProperties> RelatingProfileProperties();
+    IfcProfileProperties* RelatingProfileProperties();
     bool hasProfileSectionLocation();
-    SHARED_PTR<IfcShapeAspect> ProfileSectionLocation();
+    IfcShapeAspect* ProfileSectionLocation();
     bool hasProfileOrientation();
     IfcOrientationSelect ProfileOrientation();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssociatesProfileProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssociatesProfileProperties> ptr;
+    typedef IfcRelAssociatesProfileProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesProfileProperties> > list;
     typedef IfcTemplatedEntityList<IfcRelAssociatesProfileProperties>::it it;
 };
 class IfcRelConnects : public IfcRelationship {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelConnects (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelConnects> ptr;
+    typedef IfcRelConnects* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnects> > list;
     typedef IfcTemplatedEntityList<IfcRelConnects>::it it;
 };
 class IfcRelConnectsElements : public IfcRelConnects {
 public:
     bool hasConnectionGeometry();
-    SHARED_PTR<IfcConnectionGeometry> ConnectionGeometry();
-    SHARED_PTR<IfcElement> RelatingElement();
-    SHARED_PTR<IfcElement> RelatedElement();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcConnectionGeometry* ConnectionGeometry();
+    IfcElement* RelatingElement();
+    IfcElement* RelatedElement();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelConnectsElements (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelConnectsElements> ptr;
+    typedef IfcRelConnectsElements* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsElements> > list;
     typedef IfcTemplatedEntityList<IfcRelConnectsElements>::it it;
 };
@@ -5922,92 +5923,92 @@ public:
     std::vector<int> /*[0:?]*/ RelatedPriorities();
     IfcConnectionTypeEnum::IfcConnectionTypeEnum RelatedConnectionType();
     IfcConnectionTypeEnum::IfcConnectionTypeEnum RelatingConnectionType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelConnectsPathElements (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelConnectsPathElements> ptr;
+    typedef IfcRelConnectsPathElements* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPathElements> > list;
     typedef IfcTemplatedEntityList<IfcRelConnectsPathElements>::it it;
 };
 class IfcRelConnectsPortToElement : public IfcRelConnects {
 public:
-    SHARED_PTR<IfcPort> RelatingPort();
-    SHARED_PTR<IfcElement> RelatedElement();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcPort* RelatingPort();
+    IfcElement* RelatedElement();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelConnectsPortToElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelConnectsPortToElement> ptr;
+    typedef IfcRelConnectsPortToElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPortToElement> > list;
     typedef IfcTemplatedEntityList<IfcRelConnectsPortToElement>::it it;
 };
 class IfcRelConnectsPorts : public IfcRelConnects {
 public:
-    SHARED_PTR<IfcPort> RelatingPort();
-    SHARED_PTR<IfcPort> RelatedPort();
+    IfcPort* RelatingPort();
+    IfcPort* RelatedPort();
     bool hasRealizingElement();
-    SHARED_PTR<IfcElement> RealizingElement();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcElement* RealizingElement();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelConnectsPorts (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelConnectsPorts> ptr;
+    typedef IfcRelConnectsPorts* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPorts> > list;
     typedef IfcTemplatedEntityList<IfcRelConnectsPorts>::it it;
 };
 class IfcRelConnectsStructuralActivity : public IfcRelConnects {
 public:
     IfcStructuralActivityAssignmentSelect RelatingElement();
-    SHARED_PTR<IfcStructuralActivity> RelatedStructuralActivity();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcStructuralActivity* RelatedStructuralActivity();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelConnectsStructuralActivity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelConnectsStructuralActivity> ptr;
+    typedef IfcRelConnectsStructuralActivity* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralActivity> > list;
     typedef IfcTemplatedEntityList<IfcRelConnectsStructuralActivity>::it it;
 };
 class IfcRelConnectsStructuralElement : public IfcRelConnects {
 public:
-    SHARED_PTR<IfcElement> RelatingElement();
-    SHARED_PTR<IfcStructuralMember> RelatedStructuralMember();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcElement* RelatingElement();
+    IfcStructuralMember* RelatedStructuralMember();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelConnectsStructuralElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelConnectsStructuralElement> ptr;
+    typedef IfcRelConnectsStructuralElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralElement> > list;
     typedef IfcTemplatedEntityList<IfcRelConnectsStructuralElement>::it it;
 };
 class IfcRelConnectsStructuralMember : public IfcRelConnects {
 public:
-    SHARED_PTR<IfcStructuralMember> RelatingStructuralMember();
-    SHARED_PTR<IfcStructuralConnection> RelatedStructuralConnection();
+    IfcStructuralMember* RelatingStructuralMember();
+    IfcStructuralConnection* RelatedStructuralConnection();
     bool hasAppliedCondition();
-    SHARED_PTR<IfcBoundaryCondition> AppliedCondition();
+    IfcBoundaryCondition* AppliedCondition();
     bool hasAdditionalConditions();
-    SHARED_PTR<IfcStructuralConnectionCondition> AdditionalConditions();
+    IfcStructuralConnectionCondition* AdditionalConditions();
     bool hasSupportedLength();
     IfcLengthMeasure SupportedLength();
     bool hasConditionCoordinateSystem();
-    SHARED_PTR<IfcAxis2Placement3D> ConditionCoordinateSystem();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcAxis2Placement3D* ConditionCoordinateSystem();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelConnectsStructuralMember (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelConnectsStructuralMember> ptr;
+    typedef IfcRelConnectsStructuralMember* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralMember> > list;
     typedef IfcTemplatedEntityList<IfcRelConnectsStructuralMember>::it it;
 };
 class IfcRelConnectsWithEccentricity : public IfcRelConnectsStructuralMember {
 public:
-    SHARED_PTR<IfcConnectionGeometry> ConnectionConstraint();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcConnectionGeometry* ConnectionConstraint();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelConnectsWithEccentricity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelConnectsWithEccentricity> ptr;
+    typedef IfcRelConnectsWithEccentricity* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsWithEccentricity> > list;
     typedef IfcTemplatedEntityList<IfcRelConnectsWithEccentricity>::it it;
 };
@@ -6016,116 +6017,116 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcElement> > RealizingElements();
     bool hasConnectionType();
     IfcLabel ConnectionType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelConnectsWithRealizingElements (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelConnectsWithRealizingElements> ptr;
+    typedef IfcRelConnectsWithRealizingElements* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsWithRealizingElements> > list;
     typedef IfcTemplatedEntityList<IfcRelConnectsWithRealizingElements>::it it;
 };
 class IfcRelContainedInSpatialStructure : public IfcRelConnects {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > RelatedElements();
-    SHARED_PTR<IfcSpatialStructureElement> RelatingStructure();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcSpatialStructureElement* RelatingStructure();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelContainedInSpatialStructure (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelContainedInSpatialStructure> ptr;
+    typedef IfcRelContainedInSpatialStructure* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelContainedInSpatialStructure> > list;
     typedef IfcTemplatedEntityList<IfcRelContainedInSpatialStructure>::it it;
 };
 class IfcRelCoversBldgElements : public IfcRelConnects {
 public:
-    SHARED_PTR<IfcElement> RelatingBuildingElement();
+    IfcElement* RelatingBuildingElement();
     SHARED_PTR< IfcTemplatedEntityList<IfcCovering> > RelatedCoverings();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelCoversBldgElements (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelCoversBldgElements> ptr;
+    typedef IfcRelCoversBldgElements* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelCoversBldgElements> > list;
     typedef IfcTemplatedEntityList<IfcRelCoversBldgElements>::it it;
 };
 class IfcRelCoversSpaces : public IfcRelConnects {
 public:
-    SHARED_PTR<IfcSpace> RelatedSpace();
+    IfcSpace* RelatedSpace();
     SHARED_PTR< IfcTemplatedEntityList<IfcCovering> > RelatedCoverings();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelCoversSpaces (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelCoversSpaces> ptr;
+    typedef IfcRelCoversSpaces* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelCoversSpaces> > list;
     typedef IfcTemplatedEntityList<IfcRelCoversSpaces>::it it;
 };
 class IfcRelDecomposes : public IfcRelationship {
 public:
-    SHARED_PTR<IfcObjectDefinition> RelatingObject();
+    IfcObjectDefinition* RelatingObject();
     SHARED_PTR< IfcTemplatedEntityList<IfcObjectDefinition> > RelatedObjects();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelDecomposes (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelDecomposes> ptr;
+    typedef IfcRelDecomposes* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelDecomposes> > list;
     typedef IfcTemplatedEntityList<IfcRelDecomposes>::it it;
 };
 class IfcRelDefines : public IfcRelationship {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcObject> > RelatedObjects();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelDefines (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelDefines> ptr;
+    typedef IfcRelDefines* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelDefines> > list;
     typedef IfcTemplatedEntityList<IfcRelDefines>::it it;
 };
 class IfcRelDefinesByProperties : public IfcRelDefines {
 public:
-    SHARED_PTR<IfcPropertySetDefinition> RelatingPropertyDefinition();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcPropertySetDefinition* RelatingPropertyDefinition();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelDefinesByProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelDefinesByProperties> ptr;
+    typedef IfcRelDefinesByProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelDefinesByProperties> > list;
     typedef IfcTemplatedEntityList<IfcRelDefinesByProperties>::it it;
 };
 class IfcRelDefinesByType : public IfcRelDefines {
 public:
-    SHARED_PTR<IfcTypeObject> RelatingType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcTypeObject* RelatingType();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelDefinesByType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelDefinesByType> ptr;
+    typedef IfcRelDefinesByType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelDefinesByType> > list;
     typedef IfcTemplatedEntityList<IfcRelDefinesByType>::it it;
 };
 class IfcRelFillsElement : public IfcRelConnects {
 public:
-    SHARED_PTR<IfcOpeningElement> RelatingOpeningElement();
-    SHARED_PTR<IfcElement> RelatedBuildingElement();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcOpeningElement* RelatingOpeningElement();
+    IfcElement* RelatedBuildingElement();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelFillsElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelFillsElement> ptr;
+    typedef IfcRelFillsElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelFillsElement> > list;
     typedef IfcTemplatedEntityList<IfcRelFillsElement>::it it;
 };
 class IfcRelFlowControlElements : public IfcRelConnects {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcDistributionControlElement> > RelatedControlElements();
-    SHARED_PTR<IfcDistributionFlowElement> RelatingFlowElement();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcDistributionFlowElement* RelatingFlowElement();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelFlowControlElements (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelFlowControlElements> ptr;
+    typedef IfcRelFlowControlElements* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelFlowControlElements> > list;
     typedef IfcTemplatedEntityList<IfcRelFlowControlElements>::it it;
 };
@@ -6136,157 +6137,157 @@ public:
     bool hasImportanceRating();
     IfcNormalisedRatioMeasure ImportanceRating();
     bool hasLocationOfInteraction();
-    SHARED_PTR<IfcSpatialStructureElement> LocationOfInteraction();
-    SHARED_PTR<IfcSpaceProgram> RelatedSpaceProgram();
-    SHARED_PTR<IfcSpaceProgram> RelatingSpaceProgram();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcSpatialStructureElement* LocationOfInteraction();
+    IfcSpaceProgram* RelatedSpaceProgram();
+    IfcSpaceProgram* RelatingSpaceProgram();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelInteractionRequirements (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelInteractionRequirements> ptr;
+    typedef IfcRelInteractionRequirements* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelInteractionRequirements> > list;
     typedef IfcTemplatedEntityList<IfcRelInteractionRequirements>::it it;
 };
 class IfcRelNests : public IfcRelDecomposes {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelNests (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelNests> ptr;
+    typedef IfcRelNests* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelNests> > list;
     typedef IfcTemplatedEntityList<IfcRelNests>::it it;
 };
 class IfcRelOccupiesSpaces : public IfcRelAssignsToActor {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelOccupiesSpaces (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelOccupiesSpaces> ptr;
+    typedef IfcRelOccupiesSpaces* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelOccupiesSpaces> > list;
     typedef IfcTemplatedEntityList<IfcRelOccupiesSpaces>::it it;
 };
 class IfcRelOverridesProperties : public IfcRelDefinesByProperties {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > OverridingProperties();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelOverridesProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelOverridesProperties> ptr;
+    typedef IfcRelOverridesProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelOverridesProperties> > list;
     typedef IfcTemplatedEntityList<IfcRelOverridesProperties>::it it;
 };
 class IfcRelProjectsElement : public IfcRelConnects {
 public:
-    SHARED_PTR<IfcElement> RelatingElement();
-    SHARED_PTR<IfcFeatureElementAddition> RelatedFeatureElement();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcElement* RelatingElement();
+    IfcFeatureElementAddition* RelatedFeatureElement();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelProjectsElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelProjectsElement> ptr;
+    typedef IfcRelProjectsElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelProjectsElement> > list;
     typedef IfcTemplatedEntityList<IfcRelProjectsElement>::it it;
 };
 class IfcRelReferencedInSpatialStructure : public IfcRelConnects {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > RelatedElements();
-    SHARED_PTR<IfcSpatialStructureElement> RelatingStructure();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcSpatialStructureElement* RelatingStructure();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelReferencedInSpatialStructure (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelReferencedInSpatialStructure> ptr;
+    typedef IfcRelReferencedInSpatialStructure* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelReferencedInSpatialStructure> > list;
     typedef IfcTemplatedEntityList<IfcRelReferencedInSpatialStructure>::it it;
 };
 class IfcRelSchedulesCostItems : public IfcRelAssignsToControl {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelSchedulesCostItems (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelSchedulesCostItems> ptr;
+    typedef IfcRelSchedulesCostItems* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelSchedulesCostItems> > list;
     typedef IfcTemplatedEntityList<IfcRelSchedulesCostItems>::it it;
 };
 class IfcRelSequence : public IfcRelConnects {
 public:
-    SHARED_PTR<IfcProcess> RelatingProcess();
-    SHARED_PTR<IfcProcess> RelatedProcess();
+    IfcProcess* RelatingProcess();
+    IfcProcess* RelatedProcess();
     IfcTimeMeasure TimeLag();
     IfcSequenceEnum::IfcSequenceEnum SequenceType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelSequence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelSequence> ptr;
+    typedef IfcRelSequence* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelSequence> > list;
     typedef IfcTemplatedEntityList<IfcRelSequence>::it it;
 };
 class IfcRelServicesBuildings : public IfcRelConnects {
 public:
-    SHARED_PTR<IfcSystem> RelatingSystem();
+    IfcSystem* RelatingSystem();
     SHARED_PTR< IfcTemplatedEntityList<IfcSpatialStructureElement> > RelatedBuildings();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelServicesBuildings (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelServicesBuildings> ptr;
+    typedef IfcRelServicesBuildings* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelServicesBuildings> > list;
     typedef IfcTemplatedEntityList<IfcRelServicesBuildings>::it it;
 };
 class IfcRelSpaceBoundary : public IfcRelConnects {
 public:
-    SHARED_PTR<IfcSpace> RelatingSpace();
+    IfcSpace* RelatingSpace();
     bool hasRelatedBuildingElement();
-    SHARED_PTR<IfcElement> RelatedBuildingElement();
+    IfcElement* RelatedBuildingElement();
     bool hasConnectionGeometry();
-    SHARED_PTR<IfcConnectionGeometry> ConnectionGeometry();
+    IfcConnectionGeometry* ConnectionGeometry();
     IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtualEnum PhysicalOrVirtualBoundary();
     IfcInternalOrExternalEnum::IfcInternalOrExternalEnum InternalOrExternalBoundary();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelSpaceBoundary (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelSpaceBoundary> ptr;
+    typedef IfcRelSpaceBoundary* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelSpaceBoundary> > list;
     typedef IfcTemplatedEntityList<IfcRelSpaceBoundary>::it it;
 };
 class IfcRelVoidsElement : public IfcRelConnects {
 public:
-    SHARED_PTR<IfcElement> RelatingBuildingElement();
-    SHARED_PTR<IfcFeatureElementSubtraction> RelatedOpeningElement();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcElement* RelatingBuildingElement();
+    IfcFeatureElementSubtraction* RelatedOpeningElement();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelVoidsElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelVoidsElement> ptr;
+    typedef IfcRelVoidsElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelVoidsElement> > list;
     typedef IfcTemplatedEntityList<IfcRelVoidsElement>::it it;
 };
 class IfcResource : public IfcObject {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToResource> > ResourceOf(); // INVERSE IfcRelAssignsToResource::RelatingResource
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcResource> ptr;
+    typedef IfcResource* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcResource> > list;
     typedef IfcTemplatedEntityList<IfcResource>::it it;
 };
 class IfcRevolvedAreaSolid : public IfcSweptAreaSolid {
 public:
-    SHARED_PTR<IfcAxis1Placement> Axis();
+    IfcAxis1Placement* Axis();
     IfcPlaneAngleMeasure Angle();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRevolvedAreaSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRevolvedAreaSolid> ptr;
+    typedef IfcRevolvedAreaSolid* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRevolvedAreaSolid> > list;
     typedef IfcTemplatedEntityList<IfcRevolvedAreaSolid>::it it;
 };
@@ -6294,11 +6295,11 @@ class IfcRightCircularCone : public IfcCsgPrimitive3D {
 public:
     IfcPositiveLengthMeasure Height();
     IfcPositiveLengthMeasure BottomRadius();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRightCircularCone (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRightCircularCone> ptr;
+    typedef IfcRightCircularCone* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRightCircularCone> > list;
     typedef IfcTemplatedEntityList<IfcRightCircularCone>::it it;
 };
@@ -6306,11 +6307,11 @@ class IfcRightCircularCylinder : public IfcCsgPrimitive3D {
 public:
     IfcPositiveLengthMeasure Height();
     IfcPositiveLengthMeasure Radius();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRightCircularCylinder (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRightCircularCylinder> ptr;
+    typedef IfcRightCircularCylinder* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRightCircularCylinder> > list;
     typedef IfcTemplatedEntityList<IfcRightCircularCylinder>::it it;
 };
@@ -6322,56 +6323,56 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelReferencedInSpatialStructure> > ReferencesElements(); // INVERSE IfcRelReferencedInSpatialStructure::RelatingStructure
     SHARED_PTR< IfcTemplatedEntityList<IfcRelServicesBuildings> > ServicedBySystems(); // INVERSE IfcRelServicesBuildings::RelatedBuildings
     SHARED_PTR< IfcTemplatedEntityList<IfcRelContainedInSpatialStructure> > ContainsElements(); // INVERSE IfcRelContainedInSpatialStructure::RelatingStructure
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSpatialStructureElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSpatialStructureElement> ptr;
+    typedef IfcSpatialStructureElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpatialStructureElement> > list;
     typedef IfcTemplatedEntityList<IfcSpatialStructureElement>::it it;
 };
 class IfcSpatialStructureElementType : public IfcElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSpatialStructureElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSpatialStructureElementType> ptr;
+    typedef IfcSpatialStructureElementType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpatialStructureElementType> > list;
     typedef IfcTemplatedEntityList<IfcSpatialStructureElementType>::it it;
 };
 class IfcSphere : public IfcCsgPrimitive3D {
 public:
     IfcPositiveLengthMeasure Radius();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSphere (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSphere> ptr;
+    typedef IfcSphere* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSphere> > list;
     typedef IfcTemplatedEntityList<IfcSphere>::it it;
 };
 class IfcStructuralActivity : public IfcProduct {
 public:
-    SHARED_PTR<IfcStructuralLoad> AppliedLoad();
+    IfcStructuralLoad* AppliedLoad();
     IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum GlobalOrLocal();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralActivity> > AssignedToStructuralItem(); // INVERSE IfcRelConnectsStructuralActivity::RelatedStructuralActivity
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralActivity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralActivity> ptr;
+    typedef IfcStructuralActivity* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralActivity> > list;
     typedef IfcTemplatedEntityList<IfcStructuralActivity>::it it;
 };
 class IfcStructuralItem : public IfcProduct {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralActivity> > AssignedStructuralActivity(); // INVERSE IfcRelConnectsStructuralActivity::RelatingElement
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralItem> ptr;
+    typedef IfcStructuralItem* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralItem> > list;
     typedef IfcTemplatedEntityList<IfcStructuralItem>::it it;
 };
@@ -6379,22 +6380,22 @@ class IfcStructuralMember : public IfcStructuralItem {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralElement> > ReferencesElement(); // INVERSE IfcRelConnectsStructuralElement::RelatedStructuralMember
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralMember> > ConnectedBy(); // INVERSE IfcRelConnectsStructuralMember::RelatingStructuralMember
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralMember (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralMember> ptr;
+    typedef IfcStructuralMember* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralMember> > list;
     typedef IfcTemplatedEntityList<IfcStructuralMember>::it it;
 };
 class IfcStructuralReaction : public IfcStructuralActivity {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcStructuralAction> > Causes(); // INVERSE IfcStructuralAction::CausedBy
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralReaction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralReaction> ptr;
+    typedef IfcStructuralReaction* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralReaction> > list;
     typedef IfcTemplatedEntityList<IfcStructuralReaction>::it it;
 };
@@ -6403,80 +6404,80 @@ public:
     IfcStructuralSurfaceTypeEnum::IfcStructuralSurfaceTypeEnum PredefinedType();
     bool hasThickness();
     IfcPositiveLengthMeasure Thickness();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralSurfaceMember (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralSurfaceMember> ptr;
+    typedef IfcStructuralSurfaceMember* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralSurfaceMember> > list;
     typedef IfcTemplatedEntityList<IfcStructuralSurfaceMember>::it it;
 };
 class IfcStructuralSurfaceMemberVarying : public IfcStructuralSurfaceMember {
 public:
     std::vector<IfcPositiveLengthMeasure> /*[2:?]*/ SubsequentThickness();
-    SHARED_PTR<IfcShapeAspect> VaryingThicknessLocation();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcShapeAspect* VaryingThicknessLocation();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralSurfaceMemberVarying (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralSurfaceMemberVarying> ptr;
+    typedef IfcStructuralSurfaceMemberVarying* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralSurfaceMemberVarying> > list;
     typedef IfcTemplatedEntityList<IfcStructuralSurfaceMemberVarying>::it it;
 };
 class IfcStructuredDimensionCallout : public IfcDraughtingCallout {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuredDimensionCallout (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuredDimensionCallout> ptr;
+    typedef IfcStructuredDimensionCallout* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuredDimensionCallout> > list;
     typedef IfcTemplatedEntityList<IfcStructuredDimensionCallout>::it it;
 };
 class IfcSurfaceCurveSweptAreaSolid : public IfcSweptAreaSolid {
 public:
-    SHARED_PTR<IfcCurve> Directrix();
+    IfcCurve* Directrix();
     IfcParameterValue StartParam();
     IfcParameterValue EndParam();
-    SHARED_PTR<IfcSurface> ReferenceSurface();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcSurface* ReferenceSurface();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSurfaceCurveSweptAreaSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSurfaceCurveSweptAreaSolid> ptr;
+    typedef IfcSurfaceCurveSweptAreaSolid* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceCurveSweptAreaSolid> > list;
     typedef IfcTemplatedEntityList<IfcSurfaceCurveSweptAreaSolid>::it it;
 };
 class IfcSurfaceOfLinearExtrusion : public IfcSweptSurface {
 public:
-    SHARED_PTR<IfcDirection> ExtrudedDirection();
+    IfcDirection* ExtrudedDirection();
     IfcLengthMeasure Depth();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSurfaceOfLinearExtrusion (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSurfaceOfLinearExtrusion> ptr;
+    typedef IfcSurfaceOfLinearExtrusion* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceOfLinearExtrusion> > list;
     typedef IfcTemplatedEntityList<IfcSurfaceOfLinearExtrusion>::it it;
 };
 class IfcSurfaceOfRevolution : public IfcSweptSurface {
 public:
-    SHARED_PTR<IfcAxis1Placement> AxisPosition();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcAxis1Placement* AxisPosition();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSurfaceOfRevolution (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSurfaceOfRevolution> ptr;
+    typedef IfcSurfaceOfRevolution* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceOfRevolution> > list;
     typedef IfcTemplatedEntityList<IfcSurfaceOfRevolution>::it it;
 };
 class IfcSystemFurnitureElementType : public IfcFurnishingElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSystemFurnitureElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSystemFurnitureElementType> ptr;
+    typedef IfcSystemFurnitureElementType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSystemFurnitureElementType> > list;
     typedef IfcTemplatedEntityList<IfcSystemFurnitureElementType>::it it;
 };
@@ -6490,22 +6491,22 @@ public:
     bool IsMilestone();
     bool hasPriority();
     int Priority();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTask (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTask> ptr;
+    typedef IfcTask* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTask> > list;
     typedef IfcTemplatedEntityList<IfcTask>::it it;
 };
 class IfcTransportElementType : public IfcElementType {
 public:
     IfcTransportElementTypeEnum::IfcTransportElementTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTransportElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTransportElementType> ptr;
+    typedef IfcTransportElementType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTransportElementType> > list;
     typedef IfcTemplatedEntityList<IfcTransportElementType>::it it;
 };
@@ -6513,22 +6514,22 @@ class IfcActor : public IfcObject {
 public:
     IfcActorSelect TheActor();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToActor> > IsActingUpon(); // INVERSE IfcRelAssignsToActor::RelatingActor
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcActor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcActor> ptr;
+    typedef IfcActor* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcActor> > list;
     typedef IfcTemplatedEntityList<IfcActor>::it it;
 };
 class IfcAnnotation : public IfcProduct {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelContainedInSpatialStructure> > ContainedInStructure(); // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAnnotation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAnnotation> ptr;
+    typedef IfcAnnotation* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotation> > list;
     typedef IfcTemplatedEntityList<IfcAnnotation>::it it;
 };
@@ -6541,11 +6542,11 @@ public:
     IfcPositiveLengthMeasure TopFlangeFilletRadius();
     bool hasCentreOfGravityInY();
     IfcPositiveLengthMeasure CentreOfGravityInY();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAsymmetricIShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAsymmetricIShapeProfileDef> ptr;
+    typedef IfcAsymmetricIShapeProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAsymmetricIShapeProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcAsymmetricIShapeProfileDef>::it it;
 };
@@ -6554,31 +6555,31 @@ public:
     IfcPositiveLengthMeasure XLength();
     IfcPositiveLengthMeasure YLength();
     IfcPositiveLengthMeasure ZLength();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBlock (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBlock> ptr;
+    typedef IfcBlock* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBlock> > list;
     typedef IfcTemplatedEntityList<IfcBlock>::it it;
 };
 class IfcBooleanClippingResult : public IfcBooleanResult {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBooleanClippingResult (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBooleanClippingResult> ptr;
+    typedef IfcBooleanClippingResult* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBooleanClippingResult> > list;
     typedef IfcTemplatedEntityList<IfcBooleanClippingResult>::it it;
 };
 class IfcBoundedCurve : public IfcCurve {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBoundedCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBoundedCurve> ptr;
+    typedef IfcBoundedCurve* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundedCurve> > list;
     typedef IfcTemplatedEntityList<IfcBoundedCurve>::it it;
 };
@@ -6589,22 +6590,22 @@ public:
     bool hasElevationOfTerrain();
     IfcLengthMeasure ElevationOfTerrain();
     bool hasBuildingAddress();
-    SHARED_PTR<IfcPostalAddress> BuildingAddress();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcPostalAddress* BuildingAddress();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBuilding (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBuilding> ptr;
+    typedef IfcBuilding* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuilding> > list;
     typedef IfcTemplatedEntityList<IfcBuilding>::it it;
 };
 class IfcBuildingElementType : public IfcElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBuildingElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBuildingElementType> ptr;
+    typedef IfcBuildingElementType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingElementType> > list;
     typedef IfcTemplatedEntityList<IfcBuildingElementType>::it it;
 };
@@ -6612,33 +6613,33 @@ class IfcBuildingStorey : public IfcSpatialStructureElement {
 public:
     bool hasElevation();
     IfcLengthMeasure Elevation();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBuildingStorey (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBuildingStorey> ptr;
+    typedef IfcBuildingStorey* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingStorey> > list;
     typedef IfcTemplatedEntityList<IfcBuildingStorey>::it it;
 };
 class IfcCircleHollowProfileDef : public IfcCircleProfileDef {
 public:
     IfcPositiveLengthMeasure WallThickness();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCircleHollowProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCircleHollowProfileDef> ptr;
+    typedef IfcCircleHollowProfileDef* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCircleHollowProfileDef> > list;
     typedef IfcTemplatedEntityList<IfcCircleHollowProfileDef>::it it;
 };
 class IfcColumnType : public IfcBuildingElementType {
 public:
     IfcColumnTypeEnum::IfcColumnTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcColumnType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcColumnType> ptr;
+    typedef IfcColumnType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcColumnType> > list;
     typedef IfcTemplatedEntityList<IfcColumnType>::it it;
 };
@@ -6646,22 +6647,22 @@ class IfcCompositeCurve : public IfcBoundedCurve {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcCompositeCurveSegment> > Segments();
     bool SelfIntersect();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCompositeCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCompositeCurve> ptr;
+    typedef IfcCompositeCurve* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCompositeCurve> > list;
     typedef IfcTemplatedEntityList<IfcCompositeCurve>::it it;
 };
 class IfcConic : public IfcCurve {
 public:
     IfcAxis2Placement Position();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConic (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConic> ptr;
+    typedef IfcConic* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConic> > list;
     typedef IfcTemplatedEntityList<IfcConic>::it it;
 };
@@ -6674,33 +6675,33 @@ public:
     bool hasResourceConsumption();
     IfcResourceConsumptionEnum::IfcResourceConsumptionEnum ResourceConsumption();
     bool hasBaseQuantity();
-    SHARED_PTR<IfcMeasureWithUnit> BaseQuantity();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcMeasureWithUnit* BaseQuantity();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConstructionResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConstructionResource> ptr;
+    typedef IfcConstructionResource* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstructionResource> > list;
     typedef IfcTemplatedEntityList<IfcConstructionResource>::it it;
 };
 class IfcControl : public IfcObject {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToControl> > Controls(); // INVERSE IfcRelAssignsToControl::RelatingControl
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcControl (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcControl> ptr;
+    typedef IfcControl* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcControl> > list;
     typedef IfcTemplatedEntityList<IfcControl>::it it;
 };
 class IfcCostItem : public IfcControl {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCostItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCostItem> ptr;
+    typedef IfcCostItem* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCostItem> > list;
     typedef IfcTemplatedEntityList<IfcCostItem>::it it;
 };
@@ -6720,73 +6721,73 @@ public:
     IfcDateTimeSelect UpdateDate();
     IfcIdentifier ID();
     IfcCostScheduleTypeEnum::IfcCostScheduleTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCostSchedule (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCostSchedule> ptr;
+    typedef IfcCostSchedule* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCostSchedule> > list;
     typedef IfcTemplatedEntityList<IfcCostSchedule>::it it;
 };
 class IfcCoveringType : public IfcBuildingElementType {
 public:
     IfcCoveringTypeEnum::IfcCoveringTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCoveringType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCoveringType> ptr;
+    typedef IfcCoveringType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCoveringType> > list;
     typedef IfcTemplatedEntityList<IfcCoveringType>::it it;
 };
 class IfcCrewResource : public IfcConstructionResource {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCrewResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCrewResource> ptr;
+    typedef IfcCrewResource* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCrewResource> > list;
     typedef IfcTemplatedEntityList<IfcCrewResource>::it it;
 };
 class IfcCurtainWallType : public IfcBuildingElementType {
 public:
     IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCurtainWallType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCurtainWallType> ptr;
+    typedef IfcCurtainWallType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurtainWallType> > list;
     typedef IfcTemplatedEntityList<IfcCurtainWallType>::it it;
 };
 class IfcDimensionCurveDirectedCallout : public IfcDraughtingCallout {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDimensionCurveDirectedCallout (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDimensionCurveDirectedCallout> ptr;
+    typedef IfcDimensionCurveDirectedCallout* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDimensionCurveDirectedCallout> > list;
     typedef IfcTemplatedEntityList<IfcDimensionCurveDirectedCallout>::it it;
 };
 class IfcDistributionElementType : public IfcElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDistributionElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDistributionElementType> ptr;
+    typedef IfcDistributionElementType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionElementType> > list;
     typedef IfcTemplatedEntityList<IfcDistributionElementType>::it it;
 };
 class IfcDistributionFlowElementType : public IfcDistributionElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDistributionFlowElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDistributionFlowElementType> ptr;
+    typedef IfcDistributionFlowElementType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionFlowElementType> > list;
     typedef IfcTemplatedEntityList<IfcDistributionFlowElementType>::it it;
 };
@@ -6805,11 +6806,11 @@ public:
     bool hasRatedPowerInput();
     IfcPowerMeasure RatedPowerInput();
     int InputPhase();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElectricalBaseProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElectricalBaseProperties> ptr;
+    typedef IfcElectricalBaseProperties* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricalBaseProperties> > list;
     typedef IfcTemplatedEntityList<IfcElectricalBaseProperties>::it it;
 };
@@ -6829,11 +6830,11 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelSpaceBoundary> > ProvidesBoundaries(); // INVERSE IfcRelSpaceBoundary::RelatedBuildingElement
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsElements> > ConnectedFrom(); // INVERSE IfcRelConnectsElements::RelatedElement
     SHARED_PTR< IfcTemplatedEntityList<IfcRelContainedInSpatialStructure> > ContainedInStructure(); // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElement> ptr;
+    typedef IfcElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElement> > list;
     typedef IfcTemplatedEntityList<IfcElement>::it it;
 };
@@ -6842,31 +6843,31 @@ public:
     bool hasAssemblyPlace();
     IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum AssemblyPlace();
     IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElementAssembly (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElementAssembly> ptr;
+    typedef IfcElementAssembly* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElementAssembly> > list;
     typedef IfcTemplatedEntityList<IfcElementAssembly>::it it;
 };
 class IfcElementComponent : public IfcElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElementComponent (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElementComponent> ptr;
+    typedef IfcElementComponent* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElementComponent> > list;
     typedef IfcTemplatedEntityList<IfcElementComponent>::it it;
 };
 class IfcElementComponentType : public IfcElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElementComponentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElementComponentType> ptr;
+    typedef IfcElementComponentType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElementComponentType> > list;
     typedef IfcTemplatedEntityList<IfcElementComponentType>::it it;
 };
@@ -6874,248 +6875,248 @@ class IfcEllipse : public IfcConic {
 public:
     IfcPositiveLengthMeasure SemiAxis1();
     IfcPositiveLengthMeasure SemiAxis2();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEllipse (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEllipse> ptr;
+    typedef IfcEllipse* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEllipse> > list;
     typedef IfcTemplatedEntityList<IfcEllipse>::it it;
 };
 class IfcEnergyConversionDeviceType : public IfcDistributionFlowElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEnergyConversionDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEnergyConversionDeviceType> ptr;
+    typedef IfcEnergyConversionDeviceType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEnergyConversionDeviceType> > list;
     typedef IfcTemplatedEntityList<IfcEnergyConversionDeviceType>::it it;
 };
 class IfcEquipmentElement : public IfcElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEquipmentElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEquipmentElement> ptr;
+    typedef IfcEquipmentElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEquipmentElement> > list;
     typedef IfcTemplatedEntityList<IfcEquipmentElement>::it it;
 };
 class IfcEquipmentStandard : public IfcControl {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEquipmentStandard (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEquipmentStandard> ptr;
+    typedef IfcEquipmentStandard* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEquipmentStandard> > list;
     typedef IfcTemplatedEntityList<IfcEquipmentStandard>::it it;
 };
 class IfcEvaporativeCoolerType : public IfcEnergyConversionDeviceType {
 public:
     IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEvaporativeCoolerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEvaporativeCoolerType> ptr;
+    typedef IfcEvaporativeCoolerType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEvaporativeCoolerType> > list;
     typedef IfcTemplatedEntityList<IfcEvaporativeCoolerType>::it it;
 };
 class IfcEvaporatorType : public IfcEnergyConversionDeviceType {
 public:
     IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEvaporatorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEvaporatorType> ptr;
+    typedef IfcEvaporatorType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEvaporatorType> > list;
     typedef IfcTemplatedEntityList<IfcEvaporatorType>::it it;
 };
 class IfcFacetedBrep : public IfcManifoldSolidBrep {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFacetedBrep (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFacetedBrep> ptr;
+    typedef IfcFacetedBrep* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFacetedBrep> > list;
     typedef IfcTemplatedEntityList<IfcFacetedBrep>::it it;
 };
 class IfcFacetedBrepWithVoids : public IfcManifoldSolidBrep {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcClosedShell> > Voids();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFacetedBrepWithVoids (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFacetedBrepWithVoids> ptr;
+    typedef IfcFacetedBrepWithVoids* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFacetedBrepWithVoids> > list;
     typedef IfcTemplatedEntityList<IfcFacetedBrepWithVoids>::it it;
 };
 class IfcFastener : public IfcElementComponent {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFastener (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFastener> ptr;
+    typedef IfcFastener* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFastener> > list;
     typedef IfcTemplatedEntityList<IfcFastener>::it it;
 };
 class IfcFastenerType : public IfcElementComponentType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFastenerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFastenerType> ptr;
+    typedef IfcFastenerType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFastenerType> > list;
     typedef IfcTemplatedEntityList<IfcFastenerType>::it it;
 };
 class IfcFeatureElement : public IfcElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFeatureElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFeatureElement> ptr;
+    typedef IfcFeatureElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFeatureElement> > list;
     typedef IfcTemplatedEntityList<IfcFeatureElement>::it it;
 };
 class IfcFeatureElementAddition : public IfcFeatureElement {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelProjectsElement> > ProjectsElements(); // INVERSE IfcRelProjectsElement::RelatedFeatureElement
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFeatureElementAddition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFeatureElementAddition> ptr;
+    typedef IfcFeatureElementAddition* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFeatureElementAddition> > list;
     typedef IfcTemplatedEntityList<IfcFeatureElementAddition>::it it;
 };
 class IfcFeatureElementSubtraction : public IfcFeatureElement {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelVoidsElement> > VoidsElements(); // INVERSE IfcRelVoidsElement::RelatedOpeningElement
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFeatureElementSubtraction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFeatureElementSubtraction> ptr;
+    typedef IfcFeatureElementSubtraction* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFeatureElementSubtraction> > list;
     typedef IfcTemplatedEntityList<IfcFeatureElementSubtraction>::it it;
 };
 class IfcFlowControllerType : public IfcDistributionFlowElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowControllerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowControllerType> ptr;
+    typedef IfcFlowControllerType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowControllerType> > list;
     typedef IfcTemplatedEntityList<IfcFlowControllerType>::it it;
 };
 class IfcFlowFittingType : public IfcDistributionFlowElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowFittingType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowFittingType> ptr;
+    typedef IfcFlowFittingType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowFittingType> > list;
     typedef IfcTemplatedEntityList<IfcFlowFittingType>::it it;
 };
 class IfcFlowMeterType : public IfcFlowControllerType {
 public:
     IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowMeterType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowMeterType> ptr;
+    typedef IfcFlowMeterType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowMeterType> > list;
     typedef IfcTemplatedEntityList<IfcFlowMeterType>::it it;
 };
 class IfcFlowMovingDeviceType : public IfcDistributionFlowElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowMovingDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowMovingDeviceType> ptr;
+    typedef IfcFlowMovingDeviceType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowMovingDeviceType> > list;
     typedef IfcTemplatedEntityList<IfcFlowMovingDeviceType>::it it;
 };
 class IfcFlowSegmentType : public IfcDistributionFlowElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowSegmentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowSegmentType> ptr;
+    typedef IfcFlowSegmentType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowSegmentType> > list;
     typedef IfcTemplatedEntityList<IfcFlowSegmentType>::it it;
 };
 class IfcFlowStorageDeviceType : public IfcDistributionFlowElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowStorageDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowStorageDeviceType> ptr;
+    typedef IfcFlowStorageDeviceType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowStorageDeviceType> > list;
     typedef IfcTemplatedEntityList<IfcFlowStorageDeviceType>::it it;
 };
 class IfcFlowTerminalType : public IfcDistributionFlowElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowTerminalType> ptr;
+    typedef IfcFlowTerminalType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowTerminalType> > list;
     typedef IfcTemplatedEntityList<IfcFlowTerminalType>::it it;
 };
 class IfcFlowTreatmentDeviceType : public IfcDistributionFlowElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowTreatmentDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowTreatmentDeviceType> ptr;
+    typedef IfcFlowTreatmentDeviceType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowTreatmentDeviceType> > list;
     typedef IfcTemplatedEntityList<IfcFlowTreatmentDeviceType>::it it;
 };
 class IfcFurnishingElement : public IfcElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFurnishingElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFurnishingElement> ptr;
+    typedef IfcFurnishingElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFurnishingElement> > list;
     typedef IfcTemplatedEntityList<IfcFurnishingElement>::it it;
 };
 class IfcFurnitureStandard : public IfcControl {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFurnitureStandard (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFurnitureStandard> ptr;
+    typedef IfcFurnitureStandard* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFurnitureStandard> > list;
     typedef IfcTemplatedEntityList<IfcFurnitureStandard>::it it;
 };
 class IfcGasTerminalType : public IfcFlowTerminalType {
 public:
     IfcGasTerminalTypeEnum::IfcGasTerminalTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcGasTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcGasTerminalType> ptr;
+    typedef IfcGasTerminalType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcGasTerminalType> > list;
     typedef IfcTemplatedEntityList<IfcGasTerminalType>::it it;
 };
@@ -7126,44 +7127,44 @@ public:
     bool hasWAxes();
     SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > WAxes();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelContainedInSpatialStructure> > ContainedInStructure(); // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcGrid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcGrid> ptr;
+    typedef IfcGrid* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcGrid> > list;
     typedef IfcTemplatedEntityList<IfcGrid>::it it;
 };
 class IfcGroup : public IfcObject {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToGroup> > IsGroupedBy(); // INVERSE IfcRelAssignsToGroup::RelatingGroup
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcGroup (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcGroup> ptr;
+    typedef IfcGroup* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcGroup> > list;
     typedef IfcTemplatedEntityList<IfcGroup>::it it;
 };
 class IfcHeatExchangerType : public IfcEnergyConversionDeviceType {
 public:
     IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcHeatExchangerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcHeatExchangerType> ptr;
+    typedef IfcHeatExchangerType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcHeatExchangerType> > list;
     typedef IfcTemplatedEntityList<IfcHeatExchangerType>::it it;
 };
 class IfcHumidifierType : public IfcEnergyConversionDeviceType {
 public:
     IfcHumidifierTypeEnum::IfcHumidifierTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcHumidifierType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcHumidifierType> ptr;
+    typedef IfcHumidifierType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcHumidifierType> > list;
     typedef IfcTemplatedEntityList<IfcHumidifierType>::it it;
 };
@@ -7172,27 +7173,27 @@ public:
     IfcInventoryTypeEnum::IfcInventoryTypeEnum InventoryType();
     IfcActorSelect Jurisdiction();
     SHARED_PTR< IfcTemplatedEntityList<IfcPerson> > ResponsiblePersons();
-    SHARED_PTR<IfcCalendarDate> LastUpdateDate();
+    IfcCalendarDate* LastUpdateDate();
     bool hasCurrentValue();
-    SHARED_PTR<IfcCostValue> CurrentValue();
+    IfcCostValue* CurrentValue();
     bool hasOriginalValue();
-    SHARED_PTR<IfcCostValue> OriginalValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcCostValue* OriginalValue();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcInventory (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcInventory> ptr;
+    typedef IfcInventory* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcInventory> > list;
     typedef IfcTemplatedEntityList<IfcInventory>::it it;
 };
 class IfcJunctionBoxType : public IfcFlowFittingType {
 public:
     IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcJunctionBoxType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcJunctionBoxType> ptr;
+    typedef IfcJunctionBoxType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcJunctionBoxType> > list;
     typedef IfcTemplatedEntityList<IfcJunctionBoxType>::it it;
 };
@@ -7200,43 +7201,43 @@ class IfcLaborResource : public IfcConstructionResource {
 public:
     bool hasSkillSet();
     IfcText SkillSet();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLaborResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLaborResource> ptr;
+    typedef IfcLaborResource* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLaborResource> > list;
     typedef IfcTemplatedEntityList<IfcLaborResource>::it it;
 };
 class IfcLampType : public IfcFlowTerminalType {
 public:
     IfcLampTypeEnum::IfcLampTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLampType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLampType> ptr;
+    typedef IfcLampType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLampType> > list;
     typedef IfcTemplatedEntityList<IfcLampType>::it it;
 };
 class IfcLightFixtureType : public IfcFlowTerminalType {
 public:
     IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLightFixtureType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLightFixtureType> ptr;
+    typedef IfcLightFixtureType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightFixtureType> > list;
     typedef IfcTemplatedEntityList<IfcLightFixtureType>::it it;
 };
 class IfcLinearDimension : public IfcDimensionCurveDirectedCallout {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcLinearDimension (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcLinearDimension> ptr;
+    typedef IfcLinearDimension* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcLinearDimension> > list;
     typedef IfcTemplatedEntityList<IfcLinearDimension>::it it;
 };
@@ -7246,167 +7247,167 @@ public:
     IfcPositiveLengthMeasure NominalDiameter();
     bool hasNominalLength();
     IfcPositiveLengthMeasure NominalLength();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMechanicalFastener (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMechanicalFastener> ptr;
+    typedef IfcMechanicalFastener* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMechanicalFastener> > list;
     typedef IfcTemplatedEntityList<IfcMechanicalFastener>::it it;
 };
 class IfcMechanicalFastenerType : public IfcFastenerType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMechanicalFastenerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMechanicalFastenerType> ptr;
+    typedef IfcMechanicalFastenerType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMechanicalFastenerType> > list;
     typedef IfcTemplatedEntityList<IfcMechanicalFastenerType>::it it;
 };
 class IfcMemberType : public IfcBuildingElementType {
 public:
     IfcMemberTypeEnum::IfcMemberTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMemberType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMemberType> ptr;
+    typedef IfcMemberType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMemberType> > list;
     typedef IfcTemplatedEntityList<IfcMemberType>::it it;
 };
 class IfcMotorConnectionType : public IfcEnergyConversionDeviceType {
 public:
     IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMotorConnectionType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMotorConnectionType> ptr;
+    typedef IfcMotorConnectionType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMotorConnectionType> > list;
     typedef IfcTemplatedEntityList<IfcMotorConnectionType>::it it;
 };
 class IfcMove : public IfcTask {
 public:
-    SHARED_PTR<IfcSpatialStructureElement> MoveFrom();
-    SHARED_PTR<IfcSpatialStructureElement> MoveTo();
+    IfcSpatialStructureElement* MoveFrom();
+    IfcSpatialStructureElement* MoveTo();
     bool hasPunchList();
     std::vector<IfcText> /*[1:?]*/ PunchList();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMove (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMove> ptr;
+    typedef IfcMove* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMove> > list;
     typedef IfcTemplatedEntityList<IfcMove>::it it;
 };
 class IfcOccupant : public IfcActor {
 public:
     IfcOccupantTypeEnum::IfcOccupantTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOccupant (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOccupant> ptr;
+    typedef IfcOccupant* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOccupant> > list;
     typedef IfcTemplatedEntityList<IfcOccupant>::it it;
 };
 class IfcOpeningElement : public IfcFeatureElementSubtraction {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelFillsElement> > HasFillings(); // INVERSE IfcRelFillsElement::RelatingOpeningElement
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOpeningElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOpeningElement> ptr;
+    typedef IfcOpeningElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOpeningElement> > list;
     typedef IfcTemplatedEntityList<IfcOpeningElement>::it it;
 };
 class IfcOrderAction : public IfcTask {
 public:
     IfcIdentifier ActionID();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOrderAction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOrderAction> ptr;
+    typedef IfcOrderAction* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOrderAction> > list;
     typedef IfcTemplatedEntityList<IfcOrderAction>::it it;
 };
 class IfcOutletType : public IfcFlowTerminalType {
 public:
     IfcOutletTypeEnum::IfcOutletTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcOutletType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcOutletType> ptr;
+    typedef IfcOutletType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcOutletType> > list;
     typedef IfcTemplatedEntityList<IfcOutletType>::it it;
 };
 class IfcPerformanceHistory : public IfcControl {
 public:
     IfcLabel LifeCyclePhase();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPerformanceHistory (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPerformanceHistory> ptr;
+    typedef IfcPerformanceHistory* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPerformanceHistory> > list;
     typedef IfcTemplatedEntityList<IfcPerformanceHistory>::it it;
 };
 class IfcPermit : public IfcControl {
 public:
     IfcIdentifier PermitID();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPermit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPermit> ptr;
+    typedef IfcPermit* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPermit> > list;
     typedef IfcTemplatedEntityList<IfcPermit>::it it;
 };
 class IfcPipeFittingType : public IfcFlowFittingType {
 public:
     IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPipeFittingType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPipeFittingType> ptr;
+    typedef IfcPipeFittingType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPipeFittingType> > list;
     typedef IfcTemplatedEntityList<IfcPipeFittingType>::it it;
 };
 class IfcPipeSegmentType : public IfcFlowSegmentType {
 public:
     IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPipeSegmentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPipeSegmentType> ptr;
+    typedef IfcPipeSegmentType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPipeSegmentType> > list;
     typedef IfcTemplatedEntityList<IfcPipeSegmentType>::it it;
 };
 class IfcPlateType : public IfcBuildingElementType {
 public:
     IfcPlateTypeEnum::IfcPlateTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPlateType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPlateType> ptr;
+    typedef IfcPlateType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPlateType> > list;
     typedef IfcTemplatedEntityList<IfcPlateType>::it it;
 };
 class IfcPolyline : public IfcBoundedCurve {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > Points();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPolyline (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPolyline> ptr;
+    typedef IfcPolyline* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPolyline> > list;
     typedef IfcTemplatedEntityList<IfcPolyline>::it it;
 };
@@ -7415,11 +7416,11 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPortToElement> > ContainedIn(); // INVERSE IfcRelConnectsPortToElement::RelatingPort
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPorts> > ConnectedFrom(); // INVERSE IfcRelConnectsPorts::RelatedPort
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPorts> > ConnectedTo(); // INVERSE IfcRelConnectsPorts::RelatingPort
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPort (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPort> ptr;
+    typedef IfcPort* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPort> > list;
     typedef IfcTemplatedEntityList<IfcPort>::it it;
 };
@@ -7429,11 +7430,11 @@ public:
     IfcProcedureTypeEnum::IfcProcedureTypeEnum ProcedureType();
     bool hasUserDefinedProcedureType();
     IfcLabel UserDefinedProcedureType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProcedure (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProcedure> ptr;
+    typedef IfcProcedure* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProcedure> > list;
     typedef IfcTemplatedEntityList<IfcProcedure>::it it;
 };
@@ -7443,11 +7444,11 @@ public:
     IfcProjectOrderTypeEnum::IfcProjectOrderTypeEnum PredefinedType();
     bool hasStatus();
     IfcLabel Status();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProjectOrder (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProjectOrder> ptr;
+    typedef IfcProjectOrder* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProjectOrder> > list;
     typedef IfcTemplatedEntityList<IfcProjectOrder>::it it;
 };
@@ -7455,108 +7456,108 @@ class IfcProjectOrderRecord : public IfcControl {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProjectOrder> > Records();
     IfcProjectOrderRecordTypeEnum::IfcProjectOrderRecordTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProjectOrderRecord (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProjectOrderRecord> ptr;
+    typedef IfcProjectOrderRecord* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProjectOrderRecord> > list;
     typedef IfcTemplatedEntityList<IfcProjectOrderRecord>::it it;
 };
 class IfcProjectionElement : public IfcFeatureElementAddition {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProjectionElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProjectionElement> ptr;
+    typedef IfcProjectionElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProjectionElement> > list;
     typedef IfcTemplatedEntityList<IfcProjectionElement>::it it;
 };
 class IfcProtectiveDeviceType : public IfcFlowControllerType {
 public:
     IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcProtectiveDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcProtectiveDeviceType> ptr;
+    typedef IfcProtectiveDeviceType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcProtectiveDeviceType> > list;
     typedef IfcTemplatedEntityList<IfcProtectiveDeviceType>::it it;
 };
 class IfcPumpType : public IfcFlowMovingDeviceType {
 public:
     IfcPumpTypeEnum::IfcPumpTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPumpType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPumpType> ptr;
+    typedef IfcPumpType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPumpType> > list;
     typedef IfcTemplatedEntityList<IfcPumpType>::it it;
 };
 class IfcRadiusDimension : public IfcDimensionCurveDirectedCallout {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRadiusDimension (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRadiusDimension> ptr;
+    typedef IfcRadiusDimension* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRadiusDimension> > list;
     typedef IfcTemplatedEntityList<IfcRadiusDimension>::it it;
 };
 class IfcRailingType : public IfcBuildingElementType {
 public:
     IfcRailingTypeEnum::IfcRailingTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRailingType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRailingType> ptr;
+    typedef IfcRailingType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRailingType> > list;
     typedef IfcTemplatedEntityList<IfcRailingType>::it it;
 };
 class IfcRampFlightType : public IfcBuildingElementType {
 public:
     IfcRampFlightTypeEnum::IfcRampFlightTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRampFlightType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRampFlightType> ptr;
+    typedef IfcRampFlightType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRampFlightType> > list;
     typedef IfcTemplatedEntityList<IfcRampFlightType>::it it;
 };
 class IfcRelAggregates : public IfcRelDecomposes {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAggregates (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAggregates> ptr;
+    typedef IfcRelAggregates* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAggregates> > list;
     typedef IfcTemplatedEntityList<IfcRelAggregates>::it it;
 };
 class IfcRelAssignsTasks : public IfcRelAssignsToControl {
 public:
     bool hasTimeForTask();
-    SHARED_PTR<IfcScheduleTimeControl> TimeForTask();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcScheduleTimeControl* TimeForTask();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRelAssignsTasks (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRelAssignsTasks> ptr;
+    typedef IfcRelAssignsTasks* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsTasks> > list;
     typedef IfcTemplatedEntityList<IfcRelAssignsTasks>::it it;
 };
 class IfcSanitaryTerminalType : public IfcFlowTerminalType {
 public:
     IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSanitaryTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSanitaryTerminalType> ptr;
+    typedef IfcSanitaryTerminalType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSanitaryTerminalType> > list;
     typedef IfcTemplatedEntityList<IfcSanitaryTerminalType>::it it;
 };
@@ -7599,11 +7600,11 @@ public:
     bool hasCompletion();
     IfcPositiveRatioMeasure Completion();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsTasks> > ScheduleTimeControlAssigned(); // INVERSE IfcRelAssignsTasks::TimeForTask
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcScheduleTimeControl (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcScheduleTimeControl> ptr;
+    typedef IfcScheduleTimeControl* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcScheduleTimeControl> > list;
     typedef IfcTemplatedEntityList<IfcScheduleTimeControl>::it it;
 };
@@ -7611,11 +7612,11 @@ class IfcServiceLife : public IfcControl {
 public:
     IfcServiceLifeTypeEnum::IfcServiceLifeTypeEnum ServiceLifeType();
     IfcTimeMeasure ServiceLifeDuration();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcServiceLife (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcServiceLife> ptr;
+    typedef IfcServiceLife* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcServiceLife> > list;
     typedef IfcTemplatedEntityList<IfcServiceLife>::it it;
 };
@@ -7630,23 +7631,23 @@ public:
     bool hasLandTitleNumber();
     IfcLabel LandTitleNumber();
     bool hasSiteAddress();
-    SHARED_PTR<IfcPostalAddress> SiteAddress();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcPostalAddress* SiteAddress();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSite (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSite> ptr;
+    typedef IfcSite* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSite> > list;
     typedef IfcTemplatedEntityList<IfcSite>::it it;
 };
 class IfcSlabType : public IfcBuildingElementType {
 public:
     IfcSlabTypeEnum::IfcSlabTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSlabType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSlabType> ptr;
+    typedef IfcSlabType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSlabType> > list;
     typedef IfcTemplatedEntityList<IfcSlabType>::it it;
 };
@@ -7657,22 +7658,22 @@ public:
     IfcLengthMeasure ElevationWithFlooring();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelCoversSpaces> > HasCoverings(); // INVERSE IfcRelCoversSpaces::RelatedSpace
     SHARED_PTR< IfcTemplatedEntityList<IfcRelSpaceBoundary> > BoundedBy(); // INVERSE IfcRelSpaceBoundary::RelatingSpace
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSpace (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSpace> ptr;
+    typedef IfcSpace* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpace> > list;
     typedef IfcTemplatedEntityList<IfcSpace>::it it;
 };
 class IfcSpaceHeaterType : public IfcEnergyConversionDeviceType {
 public:
     IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSpaceHeaterType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSpaceHeaterType> ptr;
+    typedef IfcSpaceHeaterType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpaceHeaterType> > list;
     typedef IfcTemplatedEntityList<IfcSpaceHeaterType>::it it;
 };
@@ -7684,48 +7685,48 @@ public:
     bool hasMinRequiredArea();
     IfcAreaMeasure MinRequiredArea();
     bool hasRequestedLocation();
-    SHARED_PTR<IfcSpatialStructureElement> RequestedLocation();
+    IfcSpatialStructureElement* RequestedLocation();
     IfcAreaMeasure StandardRequiredArea();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelInteractionRequirements> > HasInteractionReqsFrom(); // INVERSE IfcRelInteractionRequirements::RelatedSpaceProgram
     SHARED_PTR< IfcTemplatedEntityList<IfcRelInteractionRequirements> > HasInteractionReqsTo(); // INVERSE IfcRelInteractionRequirements::RelatingSpaceProgram
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSpaceProgram (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSpaceProgram> ptr;
+    typedef IfcSpaceProgram* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpaceProgram> > list;
     typedef IfcTemplatedEntityList<IfcSpaceProgram>::it it;
 };
 class IfcSpaceType : public IfcSpatialStructureElementType {
 public:
     IfcSpaceTypeEnum::IfcSpaceTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSpaceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSpaceType> ptr;
+    typedef IfcSpaceType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpaceType> > list;
     typedef IfcTemplatedEntityList<IfcSpaceType>::it it;
 };
 class IfcStackTerminalType : public IfcFlowTerminalType {
 public:
     IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStackTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStackTerminalType> ptr;
+    typedef IfcStackTerminalType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStackTerminalType> > list;
     typedef IfcTemplatedEntityList<IfcStackTerminalType>::it it;
 };
 class IfcStairFlightType : public IfcBuildingElementType {
 public:
     IfcStairFlightTypeEnum::IfcStairFlightTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStairFlightType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStairFlightType> ptr;
+    typedef IfcStairFlightType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStairFlightType> > list;
     typedef IfcTemplatedEntityList<IfcStairFlightType>::it it;
 };
@@ -7733,79 +7734,79 @@ class IfcStructuralAction : public IfcStructuralActivity {
 public:
     bool DestabilizingLoad();
     bool hasCausedBy();
-    SHARED_PTR<IfcStructuralReaction> CausedBy();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcStructuralReaction* CausedBy();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralAction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralAction> ptr;
+    typedef IfcStructuralAction* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralAction> > list;
     typedef IfcTemplatedEntityList<IfcStructuralAction>::it it;
 };
 class IfcStructuralConnection : public IfcStructuralItem {
 public:
     bool hasAppliedCondition();
-    SHARED_PTR<IfcBoundaryCondition> AppliedCondition();
+    IfcBoundaryCondition* AppliedCondition();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralMember> > ConnectsStructuralMembers(); // INVERSE IfcRelConnectsStructuralMember::RelatedStructuralConnection
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralConnection (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralConnection> ptr;
+    typedef IfcStructuralConnection* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralConnection> > list;
     typedef IfcTemplatedEntityList<IfcStructuralConnection>::it it;
 };
 class IfcStructuralCurveConnection : public IfcStructuralConnection {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralCurveConnection (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralCurveConnection> ptr;
+    typedef IfcStructuralCurveConnection* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralCurveConnection> > list;
     typedef IfcTemplatedEntityList<IfcStructuralCurveConnection>::it it;
 };
 class IfcStructuralCurveMember : public IfcStructuralMember {
 public:
     IfcStructuralCurveTypeEnum::IfcStructuralCurveTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralCurveMember (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralCurveMember> ptr;
+    typedef IfcStructuralCurveMember* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralCurveMember> > list;
     typedef IfcTemplatedEntityList<IfcStructuralCurveMember>::it it;
 };
 class IfcStructuralCurveMemberVarying : public IfcStructuralCurveMember {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralCurveMemberVarying (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralCurveMemberVarying> ptr;
+    typedef IfcStructuralCurveMemberVarying* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralCurveMemberVarying> > list;
     typedef IfcTemplatedEntityList<IfcStructuralCurveMemberVarying>::it it;
 };
 class IfcStructuralLinearAction : public IfcStructuralAction {
 public:
     IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum ProjectedOrTrue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLinearAction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralLinearAction> ptr;
+    typedef IfcStructuralLinearAction* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLinearAction> > list;
     typedef IfcTemplatedEntityList<IfcStructuralLinearAction>::it it;
 };
 class IfcStructuralLinearActionVarying : public IfcStructuralLinearAction {
 public:
-    SHARED_PTR<IfcShapeAspect> VaryingAppliedLoadLocation();
+    IfcShapeAspect* VaryingAppliedLoadLocation();
     SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoad> > SubsequentAppliedLoads();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLinearActionVarying (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralLinearActionVarying> ptr;
+    typedef IfcStructuralLinearActionVarying* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLinearActionVarying> > list;
     typedef IfcTemplatedEntityList<IfcStructuralLinearActionVarying>::it it;
 };
@@ -7820,64 +7821,64 @@ public:
     IfcLabel Purpose();
     SHARED_PTR< IfcTemplatedEntityList<IfcStructuralResultGroup> > SourceOfResultGroup(); // INVERSE IfcStructuralResultGroup::ResultForLoadGroup
     SHARED_PTR< IfcTemplatedEntityList<IfcStructuralAnalysisModel> > LoadGroupFor(); // INVERSE IfcStructuralAnalysisModel::LoadedBy
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLoadGroup (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralLoadGroup> ptr;
+    typedef IfcStructuralLoadGroup* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadGroup> > list;
     typedef IfcTemplatedEntityList<IfcStructuralLoadGroup>::it it;
 };
 class IfcStructuralPlanarAction : public IfcStructuralAction {
 public:
     IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum ProjectedOrTrue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralPlanarAction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralPlanarAction> ptr;
+    typedef IfcStructuralPlanarAction* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralPlanarAction> > list;
     typedef IfcTemplatedEntityList<IfcStructuralPlanarAction>::it it;
 };
 class IfcStructuralPlanarActionVarying : public IfcStructuralPlanarAction {
 public:
-    SHARED_PTR<IfcShapeAspect> VaryingAppliedLoadLocation();
+    IfcShapeAspect* VaryingAppliedLoadLocation();
     SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoad> > SubsequentAppliedLoads();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralPlanarActionVarying (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralPlanarActionVarying> ptr;
+    typedef IfcStructuralPlanarActionVarying* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralPlanarActionVarying> > list;
     typedef IfcTemplatedEntityList<IfcStructuralPlanarActionVarying>::it it;
 };
 class IfcStructuralPointAction : public IfcStructuralAction {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralPointAction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralPointAction> ptr;
+    typedef IfcStructuralPointAction* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralPointAction> > list;
     typedef IfcTemplatedEntityList<IfcStructuralPointAction>::it it;
 };
 class IfcStructuralPointConnection : public IfcStructuralConnection {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralPointConnection (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralPointConnection> ptr;
+    typedef IfcStructuralPointConnection* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralPointConnection> > list;
     typedef IfcTemplatedEntityList<IfcStructuralPointConnection>::it it;
 };
 class IfcStructuralPointReaction : public IfcStructuralReaction {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralPointReaction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralPointReaction> ptr;
+    typedef IfcStructuralPointReaction* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralPointReaction> > list;
     typedef IfcTemplatedEntityList<IfcStructuralPointReaction>::it it;
 };
@@ -7885,24 +7886,24 @@ class IfcStructuralResultGroup : public IfcGroup {
 public:
     IfcAnalysisTheoryTypeEnum::IfcAnalysisTheoryTypeEnum TheoryType();
     bool hasResultForLoadGroup();
-    SHARED_PTR<IfcStructuralLoadGroup> ResultForLoadGroup();
+    IfcStructuralLoadGroup* ResultForLoadGroup();
     bool IsLinear();
     SHARED_PTR< IfcTemplatedEntityList<IfcStructuralAnalysisModel> > ResultGroupFor(); // INVERSE IfcStructuralAnalysisModel::HasResults
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralResultGroup (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralResultGroup> ptr;
+    typedef IfcStructuralResultGroup* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralResultGroup> > list;
     typedef IfcTemplatedEntityList<IfcStructuralResultGroup>::it it;
 };
 class IfcStructuralSurfaceConnection : public IfcStructuralConnection {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralSurfaceConnection (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralSurfaceConnection> ptr;
+    typedef IfcStructuralSurfaceConnection* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralSurfaceConnection> > list;
     typedef IfcTemplatedEntityList<IfcStructuralSurfaceConnection>::it it;
 };
@@ -7912,44 +7913,44 @@ public:
     IfcActorSelect SubContractor();
     bool hasJobDescription();
     IfcText JobDescription();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSubContractResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSubContractResource> ptr;
+    typedef IfcSubContractResource* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSubContractResource> > list;
     typedef IfcTemplatedEntityList<IfcSubContractResource>::it it;
 };
 class IfcSwitchingDeviceType : public IfcFlowControllerType {
 public:
     IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSwitchingDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSwitchingDeviceType> ptr;
+    typedef IfcSwitchingDeviceType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSwitchingDeviceType> > list;
     typedef IfcTemplatedEntityList<IfcSwitchingDeviceType>::it it;
 };
 class IfcSystem : public IfcGroup {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelServicesBuildings> > ServicesBuildings(); // INVERSE IfcRelServicesBuildings::RelatingSystem
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSystem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSystem> ptr;
+    typedef IfcSystem* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSystem> > list;
     typedef IfcTemplatedEntityList<IfcSystem>::it it;
 };
 class IfcTankType : public IfcFlowStorageDeviceType {
 public:
     IfcTankTypeEnum::IfcTankTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTankType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTankType> ptr;
+    typedef IfcTankType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTankType> > list;
     typedef IfcTemplatedEntityList<IfcTankType>::it it;
 };
@@ -7958,23 +7959,23 @@ public:
     bool hasApplicableDates();
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > ApplicableDates();
     IfcTimeSeriesScheduleTypeEnum::IfcTimeSeriesScheduleTypeEnum TimeSeriesScheduleType();
-    SHARED_PTR<IfcTimeSeries> TimeSeries();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcTimeSeries* TimeSeries();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTimeSeriesSchedule (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTimeSeriesSchedule> ptr;
+    typedef IfcTimeSeriesSchedule* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeriesSchedule> > list;
     typedef IfcTemplatedEntityList<IfcTimeSeriesSchedule>::it it;
 };
 class IfcTransformerType : public IfcEnergyConversionDeviceType {
 public:
     IfcTransformerTypeEnum::IfcTransformerTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTransformerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTransformerType> ptr;
+    typedef IfcTransformerType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTransformerType> > list;
     typedef IfcTemplatedEntityList<IfcTransformerType>::it it;
 };
@@ -7986,91 +7987,91 @@ public:
     IfcMassMeasure CapacityByWeight();
     bool hasCapacityByNumber();
     IfcCountMeasure CapacityByNumber();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTransportElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTransportElement> ptr;
+    typedef IfcTransportElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTransportElement> > list;
     typedef IfcTemplatedEntityList<IfcTransportElement>::it it;
 };
 class IfcTrimmedCurve : public IfcBoundedCurve {
 public:
-    SHARED_PTR<IfcCurve> BasisCurve();
+    IfcCurve* BasisCurve();
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Trim1();
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Trim2();
     bool SenseAgreement();
     IfcTrimmingPreference::IfcTrimmingPreference MasterRepresentation();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTrimmedCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTrimmedCurve> ptr;
+    typedef IfcTrimmedCurve* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTrimmedCurve> > list;
     typedef IfcTemplatedEntityList<IfcTrimmedCurve>::it it;
 };
 class IfcTubeBundleType : public IfcEnergyConversionDeviceType {
 public:
     IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTubeBundleType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTubeBundleType> ptr;
+    typedef IfcTubeBundleType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTubeBundleType> > list;
     typedef IfcTemplatedEntityList<IfcTubeBundleType>::it it;
 };
 class IfcUnitaryEquipmentType : public IfcEnergyConversionDeviceType {
 public:
     IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcUnitaryEquipmentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcUnitaryEquipmentType> ptr;
+    typedef IfcUnitaryEquipmentType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcUnitaryEquipmentType> > list;
     typedef IfcTemplatedEntityList<IfcUnitaryEquipmentType>::it it;
 };
 class IfcValveType : public IfcFlowControllerType {
 public:
     IfcValveTypeEnum::IfcValveTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcValveType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcValveType> ptr;
+    typedef IfcValveType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcValveType> > list;
     typedef IfcTemplatedEntityList<IfcValveType>::it it;
 };
 class IfcVirtualElement : public IfcElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcVirtualElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcVirtualElement> ptr;
+    typedef IfcVirtualElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcVirtualElement> > list;
     typedef IfcTemplatedEntityList<IfcVirtualElement>::it it;
 };
 class IfcWallType : public IfcBuildingElementType {
 public:
     IfcWallTypeEnum::IfcWallTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcWallType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcWallType> ptr;
+    typedef IfcWallType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcWallType> > list;
     typedef IfcTemplatedEntityList<IfcWallType>::it it;
 };
 class IfcWasteTerminalType : public IfcFlowTerminalType {
 public:
     IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcWasteTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcWasteTerminalType> ptr;
+    typedef IfcWasteTerminalType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcWasteTerminalType> > list;
     typedef IfcTemplatedEntityList<IfcWasteTerminalType>::it it;
 };
@@ -8093,124 +8094,124 @@ public:
     IfcWorkControlTypeEnum::IfcWorkControlTypeEnum WorkControlType();
     bool hasUserDefinedControlType();
     IfcLabel UserDefinedControlType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcWorkControl (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcWorkControl> ptr;
+    typedef IfcWorkControl* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcWorkControl> > list;
     typedef IfcTemplatedEntityList<IfcWorkControl>::it it;
 };
 class IfcWorkPlan : public IfcWorkControl {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcWorkPlan (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcWorkPlan> ptr;
+    typedef IfcWorkPlan* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcWorkPlan> > list;
     typedef IfcTemplatedEntityList<IfcWorkPlan>::it it;
 };
 class IfcWorkSchedule : public IfcWorkControl {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcWorkSchedule (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcWorkSchedule> ptr;
+    typedef IfcWorkSchedule* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcWorkSchedule> > list;
     typedef IfcTemplatedEntityList<IfcWorkSchedule>::it it;
 };
 class IfcZone : public IfcGroup {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcZone (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcZone> ptr;
+    typedef IfcZone* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcZone> > list;
     typedef IfcTemplatedEntityList<IfcZone>::it it;
 };
 class Ifc2DCompositeCurve : public IfcCompositeCurve {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     Ifc2DCompositeCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<Ifc2DCompositeCurve> ptr;
+    typedef Ifc2DCompositeCurve* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<Ifc2DCompositeCurve> > list;
     typedef IfcTemplatedEntityList<Ifc2DCompositeCurve>::it it;
 };
 class IfcActionRequest : public IfcControl {
 public:
     IfcIdentifier RequestID();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcActionRequest (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcActionRequest> ptr;
+    typedef IfcActionRequest* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcActionRequest> > list;
     typedef IfcTemplatedEntityList<IfcActionRequest>::it it;
 };
 class IfcAirTerminalBoxType : public IfcFlowControllerType {
 public:
     IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAirTerminalBoxType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAirTerminalBoxType> ptr;
+    typedef IfcAirTerminalBoxType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAirTerminalBoxType> > list;
     typedef IfcTemplatedEntityList<IfcAirTerminalBoxType>::it it;
 };
 class IfcAirTerminalType : public IfcFlowTerminalType {
 public:
     IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAirTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAirTerminalType> ptr;
+    typedef IfcAirTerminalType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAirTerminalType> > list;
     typedef IfcTemplatedEntityList<IfcAirTerminalType>::it it;
 };
 class IfcAirToAirHeatRecoveryType : public IfcEnergyConversionDeviceType {
 public:
     IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAirToAirHeatRecoveryType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAirToAirHeatRecoveryType> ptr;
+    typedef IfcAirToAirHeatRecoveryType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAirToAirHeatRecoveryType> > list;
     typedef IfcTemplatedEntityList<IfcAirToAirHeatRecoveryType>::it it;
 };
 class IfcAngularDimension : public IfcDimensionCurveDirectedCallout {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAngularDimension (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAngularDimension> ptr;
+    typedef IfcAngularDimension* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAngularDimension> > list;
     typedef IfcTemplatedEntityList<IfcAngularDimension>::it it;
 };
 class IfcAsset : public IfcGroup {
 public:
     IfcIdentifier AssetID();
-    SHARED_PTR<IfcCostValue> OriginalValue();
-    SHARED_PTR<IfcCostValue> CurrentValue();
-    SHARED_PTR<IfcCostValue> TotalReplacementCost();
+    IfcCostValue* OriginalValue();
+    IfcCostValue* CurrentValue();
+    IfcCostValue* TotalReplacementCost();
     IfcActorSelect Owner();
     IfcActorSelect User();
-    SHARED_PTR<IfcPerson> ResponsiblePerson();
-    SHARED_PTR<IfcCalendarDate> IncorporationDate();
-    SHARED_PTR<IfcCostValue> DepreciatedValue();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    IfcPerson* ResponsiblePerson();
+    IfcCalendarDate* IncorporationDate();
+    IfcCostValue* DepreciatedValue();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAsset (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAsset> ptr;
+    typedef IfcAsset* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAsset> > list;
     typedef IfcTemplatedEntityList<IfcAsset>::it it;
 };
@@ -8221,73 +8222,73 @@ public:
     IfcBSplineCurveForm::IfcBSplineCurveForm CurveForm();
     bool ClosedCurve();
     bool SelfIntersect();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBSplineCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBSplineCurve> ptr;
+    typedef IfcBSplineCurve* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBSplineCurve> > list;
     typedef IfcTemplatedEntityList<IfcBSplineCurve>::it it;
 };
 class IfcBeamType : public IfcBuildingElementType {
 public:
     IfcBeamTypeEnum::IfcBeamTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBeamType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBeamType> ptr;
+    typedef IfcBeamType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBeamType> > list;
     typedef IfcTemplatedEntityList<IfcBeamType>::it it;
 };
 class IfcBezierCurve : public IfcBSplineCurve {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBezierCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBezierCurve> ptr;
+    typedef IfcBezierCurve* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBezierCurve> > list;
     typedef IfcTemplatedEntityList<IfcBezierCurve>::it it;
 };
 class IfcBoilerType : public IfcEnergyConversionDeviceType {
 public:
     IfcBoilerTypeEnum::IfcBoilerTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBoilerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBoilerType> ptr;
+    typedef IfcBoilerType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoilerType> > list;
     typedef IfcTemplatedEntityList<IfcBoilerType>::it it;
 };
 class IfcBuildingElement : public IfcElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBuildingElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBuildingElement> ptr;
+    typedef IfcBuildingElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingElement> > list;
     typedef IfcTemplatedEntityList<IfcBuildingElement>::it it;
 };
 class IfcBuildingElementComponent : public IfcBuildingElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBuildingElementComponent (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBuildingElementComponent> ptr;
+    typedef IfcBuildingElementComponent* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingElementComponent> > list;
     typedef IfcTemplatedEntityList<IfcBuildingElementComponent>::it it;
 };
 class IfcBuildingElementPart : public IfcBuildingElementComponent {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBuildingElementPart (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBuildingElementPart> ptr;
+    typedef IfcBuildingElementPart* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingElementPart> > list;
     typedef IfcTemplatedEntityList<IfcBuildingElementPart>::it it;
 };
@@ -8295,130 +8296,130 @@ class IfcBuildingElementProxy : public IfcBuildingElement {
 public:
     bool hasCompositionType();
     IfcElementCompositionEnum::IfcElementCompositionEnum CompositionType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBuildingElementProxy (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBuildingElementProxy> ptr;
+    typedef IfcBuildingElementProxy* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingElementProxy> > list;
     typedef IfcTemplatedEntityList<IfcBuildingElementProxy>::it it;
 };
 class IfcBuildingElementProxyType : public IfcBuildingElementType {
 public:
     IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBuildingElementProxyType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBuildingElementProxyType> ptr;
+    typedef IfcBuildingElementProxyType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingElementProxyType> > list;
     typedef IfcTemplatedEntityList<IfcBuildingElementProxyType>::it it;
 };
 class IfcCableCarrierFittingType : public IfcFlowFittingType {
 public:
     IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCableCarrierFittingType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCableCarrierFittingType> ptr;
+    typedef IfcCableCarrierFittingType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCableCarrierFittingType> > list;
     typedef IfcTemplatedEntityList<IfcCableCarrierFittingType>::it it;
 };
 class IfcCableCarrierSegmentType : public IfcFlowSegmentType {
 public:
     IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCableCarrierSegmentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCableCarrierSegmentType> ptr;
+    typedef IfcCableCarrierSegmentType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCableCarrierSegmentType> > list;
     typedef IfcTemplatedEntityList<IfcCableCarrierSegmentType>::it it;
 };
 class IfcCableSegmentType : public IfcFlowSegmentType {
 public:
     IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCableSegmentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCableSegmentType> ptr;
+    typedef IfcCableSegmentType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCableSegmentType> > list;
     typedef IfcTemplatedEntityList<IfcCableSegmentType>::it it;
 };
 class IfcChillerType : public IfcEnergyConversionDeviceType {
 public:
     IfcChillerTypeEnum::IfcChillerTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcChillerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcChillerType> ptr;
+    typedef IfcChillerType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcChillerType> > list;
     typedef IfcTemplatedEntityList<IfcChillerType>::it it;
 };
 class IfcCircle : public IfcConic {
 public:
     IfcPositiveLengthMeasure Radius();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCircle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCircle> ptr;
+    typedef IfcCircle* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCircle> > list;
     typedef IfcTemplatedEntityList<IfcCircle>::it it;
 };
 class IfcCoilType : public IfcEnergyConversionDeviceType {
 public:
     IfcCoilTypeEnum::IfcCoilTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCoilType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCoilType> ptr;
+    typedef IfcCoilType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCoilType> > list;
     typedef IfcTemplatedEntityList<IfcCoilType>::it it;
 };
 class IfcColumn : public IfcBuildingElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcColumn (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcColumn> ptr;
+    typedef IfcColumn* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcColumn> > list;
     typedef IfcTemplatedEntityList<IfcColumn>::it it;
 };
 class IfcCompressorType : public IfcFlowMovingDeviceType {
 public:
     IfcCompressorTypeEnum::IfcCompressorTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCompressorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCompressorType> ptr;
+    typedef IfcCompressorType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCompressorType> > list;
     typedef IfcTemplatedEntityList<IfcCompressorType>::it it;
 };
 class IfcCondenserType : public IfcEnergyConversionDeviceType {
 public:
     IfcCondenserTypeEnum::IfcCondenserTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCondenserType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCondenserType> ptr;
+    typedef IfcCondenserType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCondenserType> > list;
     typedef IfcTemplatedEntityList<IfcCondenserType>::it it;
 };
 class IfcCondition : public IfcGroup {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCondition> ptr;
+    typedef IfcCondition* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCondition> > list;
     typedef IfcTemplatedEntityList<IfcCondition>::it it;
 };
@@ -8426,21 +8427,21 @@ class IfcConditionCriterion : public IfcControl {
 public:
     IfcConditionCriterionSelect Criterion();
     IfcDateTimeSelect CriterionDateTime();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConditionCriterion (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConditionCriterion> ptr;
+    typedef IfcConditionCriterion* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConditionCriterion> > list;
     typedef IfcTemplatedEntityList<IfcConditionCriterion>::it it;
 };
 class IfcConstructionEquipmentResource : public IfcConstructionResource {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConstructionEquipmentResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConstructionEquipmentResource> ptr;
+    typedef IfcConstructionEquipmentResource* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstructionEquipmentResource> > list;
     typedef IfcTemplatedEntityList<IfcConstructionEquipmentResource>::it it;
 };
@@ -8450,43 +8451,43 @@ public:
     SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Suppliers();
     bool hasUsageRatio();
     IfcRatioMeasure UsageRatio();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConstructionMaterialResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConstructionMaterialResource> ptr;
+    typedef IfcConstructionMaterialResource* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstructionMaterialResource> > list;
     typedef IfcTemplatedEntityList<IfcConstructionMaterialResource>::it it;
 };
 class IfcConstructionProductResource : public IfcConstructionResource {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcConstructionProductResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcConstructionProductResource> ptr;
+    typedef IfcConstructionProductResource* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstructionProductResource> > list;
     typedef IfcTemplatedEntityList<IfcConstructionProductResource>::it it;
 };
 class IfcCooledBeamType : public IfcEnergyConversionDeviceType {
 public:
     IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCooledBeamType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCooledBeamType> ptr;
+    typedef IfcCooledBeamType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCooledBeamType> > list;
     typedef IfcTemplatedEntityList<IfcCooledBeamType>::it it;
 };
 class IfcCoolingTowerType : public IfcEnergyConversionDeviceType {
 public:
     IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCoolingTowerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCoolingTowerType> ptr;
+    typedef IfcCoolingTowerType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCoolingTowerType> > list;
     typedef IfcTemplatedEntityList<IfcCoolingTowerType>::it it;
 };
@@ -8496,104 +8497,104 @@ public:
     IfcCoveringTypeEnum::IfcCoveringTypeEnum PredefinedType();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelCoversSpaces> > CoversSpaces(); // INVERSE IfcRelCoversSpaces::RelatedCoverings
     SHARED_PTR< IfcTemplatedEntityList<IfcRelCoversBldgElements> > Covers(); // INVERSE IfcRelCoversBldgElements::RelatedCoverings
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCovering (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCovering> ptr;
+    typedef IfcCovering* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCovering> > list;
     typedef IfcTemplatedEntityList<IfcCovering>::it it;
 };
 class IfcCurtainWall : public IfcBuildingElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcCurtainWall (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcCurtainWall> ptr;
+    typedef IfcCurtainWall* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurtainWall> > list;
     typedef IfcTemplatedEntityList<IfcCurtainWall>::it it;
 };
 class IfcDamperType : public IfcFlowControllerType {
 public:
     IfcDamperTypeEnum::IfcDamperTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDamperType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDamperType> ptr;
+    typedef IfcDamperType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDamperType> > list;
     typedef IfcTemplatedEntityList<IfcDamperType>::it it;
 };
 class IfcDiameterDimension : public IfcDimensionCurveDirectedCallout {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDiameterDimension (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDiameterDimension> ptr;
+    typedef IfcDiameterDimension* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDiameterDimension> > list;
     typedef IfcTemplatedEntityList<IfcDiameterDimension>::it it;
 };
 class IfcDiscreteAccessory : public IfcElementComponent {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDiscreteAccessory (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDiscreteAccessory> ptr;
+    typedef IfcDiscreteAccessory* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDiscreteAccessory> > list;
     typedef IfcTemplatedEntityList<IfcDiscreteAccessory>::it it;
 };
 class IfcDiscreteAccessoryType : public IfcElementComponentType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDiscreteAccessoryType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDiscreteAccessoryType> ptr;
+    typedef IfcDiscreteAccessoryType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDiscreteAccessoryType> > list;
     typedef IfcTemplatedEntityList<IfcDiscreteAccessoryType>::it it;
 };
 class IfcDistributionChamberElementType : public IfcDistributionFlowElementType {
 public:
     IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDistributionChamberElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDistributionChamberElementType> ptr;
+    typedef IfcDistributionChamberElementType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionChamberElementType> > list;
     typedef IfcTemplatedEntityList<IfcDistributionChamberElementType>::it it;
 };
 class IfcDistributionControlElementType : public IfcDistributionElementType {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDistributionControlElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDistributionControlElementType> ptr;
+    typedef IfcDistributionControlElementType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionControlElementType> > list;
     typedef IfcTemplatedEntityList<IfcDistributionControlElementType>::it it;
 };
 class IfcDistributionElement : public IfcElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDistributionElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDistributionElement> ptr;
+    typedef IfcDistributionElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionElement> > list;
     typedef IfcTemplatedEntityList<IfcDistributionElement>::it it;
 };
 class IfcDistributionFlowElement : public IfcDistributionElement {
 public:
     SHARED_PTR< IfcTemplatedEntityList<IfcRelFlowControlElements> > HasControlElements(); // INVERSE IfcRelFlowControlElements::RelatingFlowElement
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDistributionFlowElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDistributionFlowElement> ptr;
+    typedef IfcDistributionFlowElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionFlowElement> > list;
     typedef IfcTemplatedEntityList<IfcDistributionFlowElement>::it it;
 };
@@ -8601,11 +8602,11 @@ class IfcDistributionPort : public IfcPort {
 public:
     bool hasFlowDirection();
     IfcFlowDirectionEnum::IfcFlowDirectionEnum FlowDirection();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDistributionPort (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDistributionPort> ptr;
+    typedef IfcDistributionPort* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionPort> > list;
     typedef IfcTemplatedEntityList<IfcDistributionPort>::it it;
 };
@@ -8615,44 +8616,44 @@ public:
     IfcPositiveLengthMeasure OverallHeight();
     bool hasOverallWidth();
     IfcPositiveLengthMeasure OverallWidth();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDoor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDoor> ptr;
+    typedef IfcDoor* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDoor> > list;
     typedef IfcTemplatedEntityList<IfcDoor>::it it;
 };
 class IfcDuctFittingType : public IfcFlowFittingType {
 public:
     IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDuctFittingType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDuctFittingType> ptr;
+    typedef IfcDuctFittingType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDuctFittingType> > list;
     typedef IfcTemplatedEntityList<IfcDuctFittingType>::it it;
 };
 class IfcDuctSegmentType : public IfcFlowSegmentType {
 public:
     IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDuctSegmentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDuctSegmentType> ptr;
+    typedef IfcDuctSegmentType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDuctSegmentType> > list;
     typedef IfcTemplatedEntityList<IfcDuctSegmentType>::it it;
 };
 class IfcDuctSilencerType : public IfcFlowTreatmentDeviceType {
 public:
     IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDuctSilencerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDuctSilencerType> ptr;
+    typedef IfcDuctSilencerType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDuctSilencerType> > list;
     typedef IfcTemplatedEntityList<IfcDuctSilencerType>::it it;
 };
@@ -8660,242 +8661,242 @@ class IfcEdgeFeature : public IfcFeatureElementSubtraction {
 public:
     bool hasFeatureLength();
     IfcPositiveLengthMeasure FeatureLength();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEdgeFeature (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEdgeFeature> ptr;
+    typedef IfcEdgeFeature* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEdgeFeature> > list;
     typedef IfcTemplatedEntityList<IfcEdgeFeature>::it it;
 };
 class IfcElectricApplianceType : public IfcFlowTerminalType {
 public:
     IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElectricApplianceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElectricApplianceType> ptr;
+    typedef IfcElectricApplianceType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricApplianceType> > list;
     typedef IfcTemplatedEntityList<IfcElectricApplianceType>::it it;
 };
 class IfcElectricFlowStorageDeviceType : public IfcFlowStorageDeviceType {
 public:
     IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElectricFlowStorageDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElectricFlowStorageDeviceType> ptr;
+    typedef IfcElectricFlowStorageDeviceType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricFlowStorageDeviceType> > list;
     typedef IfcTemplatedEntityList<IfcElectricFlowStorageDeviceType>::it it;
 };
 class IfcElectricGeneratorType : public IfcEnergyConversionDeviceType {
 public:
     IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElectricGeneratorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElectricGeneratorType> ptr;
+    typedef IfcElectricGeneratorType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricGeneratorType> > list;
     typedef IfcTemplatedEntityList<IfcElectricGeneratorType>::it it;
 };
 class IfcElectricHeaterType : public IfcFlowTerminalType {
 public:
     IfcElectricHeaterTypeEnum::IfcElectricHeaterTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElectricHeaterType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElectricHeaterType> ptr;
+    typedef IfcElectricHeaterType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricHeaterType> > list;
     typedef IfcTemplatedEntityList<IfcElectricHeaterType>::it it;
 };
 class IfcElectricMotorType : public IfcEnergyConversionDeviceType {
 public:
     IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElectricMotorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElectricMotorType> ptr;
+    typedef IfcElectricMotorType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricMotorType> > list;
     typedef IfcTemplatedEntityList<IfcElectricMotorType>::it it;
 };
 class IfcElectricTimeControlType : public IfcFlowControllerType {
 public:
     IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElectricTimeControlType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElectricTimeControlType> ptr;
+    typedef IfcElectricTimeControlType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricTimeControlType> > list;
     typedef IfcTemplatedEntityList<IfcElectricTimeControlType>::it it;
 };
 class IfcElectricalCircuit : public IfcSystem {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElectricalCircuit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElectricalCircuit> ptr;
+    typedef IfcElectricalCircuit* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricalCircuit> > list;
     typedef IfcTemplatedEntityList<IfcElectricalCircuit>::it it;
 };
 class IfcElectricalElement : public IfcElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElectricalElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElectricalElement> ptr;
+    typedef IfcElectricalElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricalElement> > list;
     typedef IfcTemplatedEntityList<IfcElectricalElement>::it it;
 };
 class IfcEnergyConversionDevice : public IfcDistributionFlowElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcEnergyConversionDevice (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcEnergyConversionDevice> ptr;
+    typedef IfcEnergyConversionDevice* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcEnergyConversionDevice> > list;
     typedef IfcTemplatedEntityList<IfcEnergyConversionDevice>::it it;
 };
 class IfcFanType : public IfcFlowMovingDeviceType {
 public:
     IfcFanTypeEnum::IfcFanTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFanType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFanType> ptr;
+    typedef IfcFanType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFanType> > list;
     typedef IfcTemplatedEntityList<IfcFanType>::it it;
 };
 class IfcFilterType : public IfcFlowTreatmentDeviceType {
 public:
     IfcFilterTypeEnum::IfcFilterTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFilterType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFilterType> ptr;
+    typedef IfcFilterType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFilterType> > list;
     typedef IfcTemplatedEntityList<IfcFilterType>::it it;
 };
 class IfcFireSuppressionTerminalType : public IfcFlowTerminalType {
 public:
     IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFireSuppressionTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFireSuppressionTerminalType> ptr;
+    typedef IfcFireSuppressionTerminalType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFireSuppressionTerminalType> > list;
     typedef IfcTemplatedEntityList<IfcFireSuppressionTerminalType>::it it;
 };
 class IfcFlowController : public IfcDistributionFlowElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowController (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowController> ptr;
+    typedef IfcFlowController* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowController> > list;
     typedef IfcTemplatedEntityList<IfcFlowController>::it it;
 };
 class IfcFlowFitting : public IfcDistributionFlowElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowFitting (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowFitting> ptr;
+    typedef IfcFlowFitting* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowFitting> > list;
     typedef IfcTemplatedEntityList<IfcFlowFitting>::it it;
 };
 class IfcFlowInstrumentType : public IfcDistributionControlElementType {
 public:
     IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowInstrumentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowInstrumentType> ptr;
+    typedef IfcFlowInstrumentType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowInstrumentType> > list;
     typedef IfcTemplatedEntityList<IfcFlowInstrumentType>::it it;
 };
 class IfcFlowMovingDevice : public IfcDistributionFlowElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowMovingDevice (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowMovingDevice> ptr;
+    typedef IfcFlowMovingDevice* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowMovingDevice> > list;
     typedef IfcTemplatedEntityList<IfcFlowMovingDevice>::it it;
 };
 class IfcFlowSegment : public IfcDistributionFlowElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowSegment (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowSegment> ptr;
+    typedef IfcFlowSegment* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowSegment> > list;
     typedef IfcTemplatedEntityList<IfcFlowSegment>::it it;
 };
 class IfcFlowStorageDevice : public IfcDistributionFlowElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowStorageDevice (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowStorageDevice> ptr;
+    typedef IfcFlowStorageDevice* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowStorageDevice> > list;
     typedef IfcTemplatedEntityList<IfcFlowStorageDevice>::it it;
 };
 class IfcFlowTerminal : public IfcDistributionFlowElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowTerminal (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowTerminal> ptr;
+    typedef IfcFlowTerminal* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowTerminal> > list;
     typedef IfcTemplatedEntityList<IfcFlowTerminal>::it it;
 };
 class IfcFlowTreatmentDevice : public IfcDistributionFlowElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFlowTreatmentDevice (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFlowTreatmentDevice> ptr;
+    typedef IfcFlowTreatmentDevice* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowTreatmentDevice> > list;
     typedef IfcTemplatedEntityList<IfcFlowTreatmentDevice>::it it;
 };
 class IfcFooting : public IfcBuildingElement {
 public:
     IfcFootingTypeEnum::IfcFootingTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcFooting (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcFooting> ptr;
+    typedef IfcFooting* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcFooting> > list;
     typedef IfcTemplatedEntityList<IfcFooting>::it it;
 };
 class IfcMember : public IfcBuildingElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcMember (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcMember> ptr;
+    typedef IfcMember* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcMember> > list;
     typedef IfcTemplatedEntityList<IfcMember>::it it;
 };
@@ -8904,21 +8905,21 @@ public:
     IfcPileTypeEnum::IfcPileTypeEnum PredefinedType();
     bool hasConstructionType();
     IfcPileConstructionEnum::IfcPileConstructionEnum ConstructionType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPile (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPile> ptr;
+    typedef IfcPile* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPile> > list;
     typedef IfcTemplatedEntityList<IfcPile>::it it;
 };
 class IfcPlate : public IfcBuildingElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcPlate (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcPlate> ptr;
+    typedef IfcPlate* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcPlate> > list;
     typedef IfcTemplatedEntityList<IfcPlate>::it it;
 };
@@ -8926,43 +8927,43 @@ class IfcRailing : public IfcBuildingElement {
 public:
     bool hasPredefinedType();
     IfcRailingTypeEnum::IfcRailingTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRailing (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRailing> ptr;
+    typedef IfcRailing* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRailing> > list;
     typedef IfcTemplatedEntityList<IfcRailing>::it it;
 };
 class IfcRamp : public IfcBuildingElement {
 public:
     IfcRampTypeEnum::IfcRampTypeEnum ShapeType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRamp (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRamp> ptr;
+    typedef IfcRamp* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRamp> > list;
     typedef IfcTemplatedEntityList<IfcRamp>::it it;
 };
 class IfcRampFlight : public IfcBuildingElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRampFlight (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRampFlight> ptr;
+    typedef IfcRampFlight* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRampFlight> > list;
     typedef IfcTemplatedEntityList<IfcRampFlight>::it it;
 };
 class IfcRationalBezierCurve : public IfcBezierCurve {
 public:
     std::vector<float> /*[2:?]*/ WeightsData();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRationalBezierCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRationalBezierCurve> ptr;
+    typedef IfcRationalBezierCurve* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRationalBezierCurve> > list;
     typedef IfcTemplatedEntityList<IfcRationalBezierCurve>::it it;
 };
@@ -8970,11 +8971,11 @@ class IfcReinforcingElement : public IfcBuildingElementComponent {
 public:
     bool hasSteelGrade();
     IfcLabel SteelGrade();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcReinforcingElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcReinforcingElement> ptr;
+    typedef IfcReinforcingElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcReinforcingElement> > list;
     typedef IfcTemplatedEntityList<IfcReinforcingElement>::it it;
 };
@@ -8990,22 +8991,22 @@ public:
     IfcAreaMeasure TransverseBarCrossSectionArea();
     IfcPositiveLengthMeasure LongitudinalBarSpacing();
     IfcPositiveLengthMeasure TransverseBarSpacing();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcReinforcingMesh (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcReinforcingMesh> ptr;
+    typedef IfcReinforcingMesh* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcReinforcingMesh> > list;
     typedef IfcTemplatedEntityList<IfcReinforcingMesh>::it it;
 };
 class IfcRoof : public IfcBuildingElement {
 public:
     IfcRoofTypeEnum::IfcRoofTypeEnum ShapeType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRoof (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRoof> ptr;
+    typedef IfcRoof* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRoof> > list;
     typedef IfcTemplatedEntityList<IfcRoof>::it it;
 };
@@ -9013,22 +9014,22 @@ class IfcRoundedEdgeFeature : public IfcEdgeFeature {
 public:
     bool hasRadius();
     IfcPositiveLengthMeasure Radius();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcRoundedEdgeFeature (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcRoundedEdgeFeature> ptr;
+    typedef IfcRoundedEdgeFeature* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcRoundedEdgeFeature> > list;
     typedef IfcTemplatedEntityList<IfcRoundedEdgeFeature>::it it;
 };
 class IfcSensorType : public IfcDistributionControlElementType {
 public:
     IfcSensorTypeEnum::IfcSensorTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSensorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSensorType> ptr;
+    typedef IfcSensorType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSensorType> > list;
     typedef IfcTemplatedEntityList<IfcSensorType>::it it;
 };
@@ -9036,22 +9037,22 @@ class IfcSlab : public IfcBuildingElement {
 public:
     bool hasPredefinedType();
     IfcSlabTypeEnum::IfcSlabTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcSlab (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcSlab> ptr;
+    typedef IfcSlab* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcSlab> > list;
     typedef IfcTemplatedEntityList<IfcSlab>::it it;
 };
 class IfcStair : public IfcBuildingElement {
 public:
     IfcStairTypeEnum::IfcStairTypeEnum ShapeType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStair (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStair> ptr;
+    typedef IfcStair* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStair> > list;
     typedef IfcTemplatedEntityList<IfcStair>::it it;
 };
@@ -9065,11 +9066,11 @@ public:
     IfcPositiveLengthMeasure RiserHeight();
     bool hasTreadLength();
     IfcPositiveLengthMeasure TreadLength();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStairFlight (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStairFlight> ptr;
+    typedef IfcStairFlight* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStairFlight> > list;
     typedef IfcTemplatedEntityList<IfcStairFlight>::it it;
 };
@@ -9077,16 +9078,16 @@ class IfcStructuralAnalysisModel : public IfcSystem {
 public:
     IfcAnalysisModelTypeEnum::IfcAnalysisModelTypeEnum PredefinedType();
     bool hasOrientationOf2DPlane();
-    SHARED_PTR<IfcAxis2Placement3D> OrientationOf2DPlane();
+    IfcAxis2Placement3D* OrientationOf2DPlane();
     bool hasLoadedBy();
     SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadGroup> > LoadedBy();
     bool hasHasResults();
     SHARED_PTR< IfcTemplatedEntityList<IfcStructuralResultGroup> > HasResults();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralAnalysisModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcStructuralAnalysisModel> ptr;
+    typedef IfcStructuralAnalysisModel* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralAnalysisModel> > list;
     typedef IfcTemplatedEntityList<IfcStructuralAnalysisModel>::it it;
 };
@@ -9105,52 +9106,52 @@ public:
     IfcPositiveLengthMeasure AnchorageSlip();
     bool hasMinCurvatureRadius();
     IfcPositiveLengthMeasure MinCurvatureRadius();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTendon (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTendon> ptr;
+    typedef IfcTendon* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTendon> > list;
     typedef IfcTemplatedEntityList<IfcTendon>::it it;
 };
 class IfcTendonAnchor : public IfcReinforcingElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcTendonAnchor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcTendonAnchor> ptr;
+    typedef IfcTendonAnchor* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcTendonAnchor> > list;
     typedef IfcTemplatedEntityList<IfcTendonAnchor>::it it;
 };
 class IfcVibrationIsolatorType : public IfcDiscreteAccessoryType {
 public:
     IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcVibrationIsolatorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcVibrationIsolatorType> ptr;
+    typedef IfcVibrationIsolatorType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcVibrationIsolatorType> > list;
     typedef IfcTemplatedEntityList<IfcVibrationIsolatorType>::it it;
 };
 class IfcWall : public IfcBuildingElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcWall (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcWall> ptr;
+    typedef IfcWall* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcWall> > list;
     typedef IfcTemplatedEntityList<IfcWall>::it it;
 };
 class IfcWallStandardCase : public IfcWall {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcWallStandardCase (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcWallStandardCase> ptr;
+    typedef IfcWallStandardCase* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcWallStandardCase> > list;
     typedef IfcTemplatedEntityList<IfcWallStandardCase>::it it;
 };
@@ -9160,43 +9161,43 @@ public:
     IfcPositiveLengthMeasure OverallHeight();
     bool hasOverallWidth();
     IfcPositiveLengthMeasure OverallWidth();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcWindow (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcWindow> ptr;
+    typedef IfcWindow* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcWindow> > list;
     typedef IfcTemplatedEntityList<IfcWindow>::it it;
 };
 class IfcActuatorType : public IfcDistributionControlElementType {
 public:
     IfcActuatorTypeEnum::IfcActuatorTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcActuatorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcActuatorType> ptr;
+    typedef IfcActuatorType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcActuatorType> > list;
     typedef IfcTemplatedEntityList<IfcActuatorType>::it it;
 };
 class IfcAlarmType : public IfcDistributionControlElementType {
 public:
     IfcAlarmTypeEnum::IfcAlarmTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcAlarmType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcAlarmType> ptr;
+    typedef IfcAlarmType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcAlarmType> > list;
     typedef IfcTemplatedEntityList<IfcAlarmType>::it it;
 };
 class IfcBeam : public IfcBuildingElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcBeam (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcBeam> ptr;
+    typedef IfcBeam* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcBeam> > list;
     typedef IfcTemplatedEntityList<IfcBeam>::it it;
 };
@@ -9206,32 +9207,32 @@ public:
     IfcPositiveLengthMeasure Width();
     bool hasHeight();
     IfcPositiveLengthMeasure Height();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcChamferEdgeFeature (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcChamferEdgeFeature> ptr;
+    typedef IfcChamferEdgeFeature* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcChamferEdgeFeature> > list;
     typedef IfcTemplatedEntityList<IfcChamferEdgeFeature>::it it;
 };
 class IfcControllerType : public IfcDistributionControlElementType {
 public:
     IfcControllerTypeEnum::IfcControllerTypeEnum PredefinedType();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcControllerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcControllerType> ptr;
+    typedef IfcControllerType* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcControllerType> > list;
     typedef IfcTemplatedEntityList<IfcControllerType>::it it;
 };
 class IfcDistributionChamberElement : public IfcDistributionFlowElement {
 public:
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDistributionChamberElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDistributionChamberElement> ptr;
+    typedef IfcDistributionChamberElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionChamberElement> > list;
     typedef IfcTemplatedEntityList<IfcDistributionChamberElement>::it it;
 };
@@ -9240,11 +9241,11 @@ public:
     bool hasControlElementId();
     IfcIdentifier ControlElementId();
     SHARED_PTR< IfcTemplatedEntityList<IfcRelFlowControlElements> > AssignedToFlowElement(); // INVERSE IfcRelFlowControlElements::RelatedControlElements
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcDistributionControlElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcDistributionControlElement> ptr;
+    typedef IfcDistributionControlElement* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionControlElement> > list;
     typedef IfcTemplatedEntityList<IfcDistributionControlElement>::it it;
 };
@@ -9253,11 +9254,11 @@ public:
     IfcElectricDistributionPointFunctionEnum::IfcElectricDistributionPointFunctionEnum DistributionPointFunction();
     bool hasUserDefinedFunction();
     IfcLabel UserDefinedFunction();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcElectricDistributionPoint (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcElectricDistributionPoint> ptr;
+    typedef IfcElectricDistributionPoint* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricDistributionPoint> > list;
     typedef IfcTemplatedEntityList<IfcElectricDistributionPoint>::it it;
 };
@@ -9270,15 +9271,16 @@ public:
     IfcReinforcingBarRoleEnum::IfcReinforcingBarRoleEnum BarRole();
     bool hasBarSurface();
     IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum BarSurface();
-    bool is(Type::Enum v);
-    Type::Enum type();
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
     static Type::Enum Class();
     IfcReinforcingBar (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    typedef SHARED_PTR<IfcReinforcingBar> ptr;
+    typedef IfcReinforcingBar* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList<IfcReinforcingBar> > list;
     typedef IfcTemplatedEntityList<IfcReinforcingBar>::it it;
 };
-IfcSchemaEntity SchemaEntity(IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
+void InitStringMap();
+IfcSchemaEntity SchemaEntity(IfcAbstractEntityPtr e = 0);
 }
 
 #endif

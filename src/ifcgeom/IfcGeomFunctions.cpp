@@ -74,7 +74,7 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
-bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr& entity, 
+bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, 
 							   const Ifc2x3::IfcRelVoidsElement::list& openings, TopoDS_Shape& result, const gp_Trsf& trsf2) {
 	for ( Ifc2x3::IfcRelVoidsElement::it it = openings->begin(); it != openings->end(); ++ it ) {
 		Ifc2x3::IfcRelVoidsElement::ptr v = *it;

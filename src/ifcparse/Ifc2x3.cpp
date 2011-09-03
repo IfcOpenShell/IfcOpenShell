@@ -29,765 +29,767 @@
 using namespace Ifc2x3;
 
 IfcSchemaEntity Ifc2x3::SchemaEntity(IfcAbstractEntityPtr e) {
-    if ( e->is(Type::IfcAbsorbedDoseMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcAccelerationMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcAmountOfSubstanceMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcAngularVelocityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcAreaMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcBoolean) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcColour) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcComplexNumber) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcCompoundPlaneAngleMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcContextDependentMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcCountMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcCurvatureMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcDateTimeSelect) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcDerivedMeasureValue) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcDescriptiveMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcDoseEquivalentMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcDynamicViscosityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcElectricCapacitanceMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcElectricChargeMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcElectricConductanceMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcElectricCurrentMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcElectricResistanceMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcElectricVoltageMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcEnergyMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcForceMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcFrequencyMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcHeatFluxDensityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcHeatingValueMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcIdentifier) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcIlluminanceMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcInductanceMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcInteger) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcIntegerCountRateMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcIonConcentrationMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcIsothermalMoistureCapacityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcKinematicViscosityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcLabel) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcLengthMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcLinearForceMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcLinearMomentMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcLinearStiffnessMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcLinearVelocityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcLogical) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcLuminousFluxMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcLuminousIntensityDistributionMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcLuminousIntensityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcMagneticFluxDensityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcMagneticFluxMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcMassDensityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcMassFlowRateMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcMassMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcMassPerLengthMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcMeasureValue) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcModulusOfElasticityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcModulusOfLinearSubgradeReactionMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcModulusOfRotationalSubgradeReactionMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcModulusOfSubgradeReactionMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcMoistureDiffusivityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcMolecularWeightMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcMomentOfInertiaMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcMonetaryMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcNormalisedRatioMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcNullStyle) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcNumericMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcPHMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcParameterValue) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcPlanarForceMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcPlaneAngleMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcPositiveLengthMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcPositivePlaneAngleMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcPositiveRatioMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcPowerMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcPressureMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcRadioActivityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcRatioMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcReal) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcRotationalFrequencyMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcRotationalMassMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcRotationalStiffnessMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcSectionModulusMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcSectionalAreaIntegralMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcShearModulusMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcSimpleValue) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcSolidAngleMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcSoundPowerMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcSoundPressureMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcSpecificHeatCapacityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcSpecularExponent) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcSpecularRoughness) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcTemperatureGradientMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcText) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcThermalAdmittanceMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcThermalConductivityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcThermalExpansionCoefficientMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcThermalResistanceMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcThermalTransmittanceMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcThermodynamicTemperatureMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcTimeMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcTimeStamp) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcTorqueMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcVaporPermeabilityMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcVolumeMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcVolumetricFlowRateMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcWarpingConstantMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::IfcWarpingMomentMeasure) ) return IfcSchemaEntity(new IfcEntitySelect(e));
-    if ( e->is(Type::Ifc2DCompositeCurve) ) return IfcSchemaEntity(new Ifc2DCompositeCurve(e));
-    if ( e->is(Type::IfcActionRequest) ) return IfcSchemaEntity(new IfcActionRequest(e));
-    if ( e->is(Type::IfcActor) ) return IfcSchemaEntity(new IfcActor(e));
-    if ( e->is(Type::IfcActorRole) ) return IfcSchemaEntity(new IfcActorRole(e));
-    if ( e->is(Type::IfcActuatorType) ) return IfcSchemaEntity(new IfcActuatorType(e));
-    if ( e->is(Type::IfcAddress) ) return IfcSchemaEntity(new IfcAddress(e));
-    if ( e->is(Type::IfcAirTerminalBoxType) ) return IfcSchemaEntity(new IfcAirTerminalBoxType(e));
-    if ( e->is(Type::IfcAirTerminalType) ) return IfcSchemaEntity(new IfcAirTerminalType(e));
-    if ( e->is(Type::IfcAirToAirHeatRecoveryType) ) return IfcSchemaEntity(new IfcAirToAirHeatRecoveryType(e));
-    if ( e->is(Type::IfcAlarmType) ) return IfcSchemaEntity(new IfcAlarmType(e));
-    if ( e->is(Type::IfcAngularDimension) ) return IfcSchemaEntity(new IfcAngularDimension(e));
-    if ( e->is(Type::IfcAnnotation) ) return IfcSchemaEntity(new IfcAnnotation(e));
-    if ( e->is(Type::IfcAnnotationCurveOccurrence) ) return IfcSchemaEntity(new IfcAnnotationCurveOccurrence(e));
-    if ( e->is(Type::IfcAnnotationFillArea) ) return IfcSchemaEntity(new IfcAnnotationFillArea(e));
-    if ( e->is(Type::IfcAnnotationFillAreaOccurrence) ) return IfcSchemaEntity(new IfcAnnotationFillAreaOccurrence(e));
-    if ( e->is(Type::IfcAnnotationOccurrence) ) return IfcSchemaEntity(new IfcAnnotationOccurrence(e));
-    if ( e->is(Type::IfcAnnotationSurface) ) return IfcSchemaEntity(new IfcAnnotationSurface(e));
-    if ( e->is(Type::IfcAnnotationSurfaceOccurrence) ) return IfcSchemaEntity(new IfcAnnotationSurfaceOccurrence(e));
-    if ( e->is(Type::IfcAnnotationSymbolOccurrence) ) return IfcSchemaEntity(new IfcAnnotationSymbolOccurrence(e));
-    if ( e->is(Type::IfcAnnotationTextOccurrence) ) return IfcSchemaEntity(new IfcAnnotationTextOccurrence(e));
-    if ( e->is(Type::IfcApplication) ) return IfcSchemaEntity(new IfcApplication(e));
-    if ( e->is(Type::IfcAppliedValue) ) return IfcSchemaEntity(new IfcAppliedValue(e));
-    if ( e->is(Type::IfcAppliedValueRelationship) ) return IfcSchemaEntity(new IfcAppliedValueRelationship(e));
-    if ( e->is(Type::IfcApproval) ) return IfcSchemaEntity(new IfcApproval(e));
-    if ( e->is(Type::IfcApprovalActorRelationship) ) return IfcSchemaEntity(new IfcApprovalActorRelationship(e));
-    if ( e->is(Type::IfcApprovalPropertyRelationship) ) return IfcSchemaEntity(new IfcApprovalPropertyRelationship(e));
-    if ( e->is(Type::IfcApprovalRelationship) ) return IfcSchemaEntity(new IfcApprovalRelationship(e));
-    if ( e->is(Type::IfcArbitraryClosedProfileDef) ) return IfcSchemaEntity(new IfcArbitraryClosedProfileDef(e));
-    if ( e->is(Type::IfcArbitraryOpenProfileDef) ) return IfcSchemaEntity(new IfcArbitraryOpenProfileDef(e));
-    if ( e->is(Type::IfcArbitraryProfileDefWithVoids) ) return IfcSchemaEntity(new IfcArbitraryProfileDefWithVoids(e));
-    if ( e->is(Type::IfcAsset) ) return IfcSchemaEntity(new IfcAsset(e));
-    if ( e->is(Type::IfcAsymmetricIShapeProfileDef) ) return IfcSchemaEntity(new IfcAsymmetricIShapeProfileDef(e));
-    if ( e->is(Type::IfcAxis1Placement) ) return IfcSchemaEntity(new IfcAxis1Placement(e));
-    if ( e->is(Type::IfcAxis2Placement2D) ) return IfcSchemaEntity(new IfcAxis2Placement2D(e));
-    if ( e->is(Type::IfcAxis2Placement3D) ) return IfcSchemaEntity(new IfcAxis2Placement3D(e));
-    if ( e->is(Type::IfcBSplineCurve) ) return IfcSchemaEntity(new IfcBSplineCurve(e));
-    if ( e->is(Type::IfcBeam) ) return IfcSchemaEntity(new IfcBeam(e));
-    if ( e->is(Type::IfcBeamType) ) return IfcSchemaEntity(new IfcBeamType(e));
-    if ( e->is(Type::IfcBezierCurve) ) return IfcSchemaEntity(new IfcBezierCurve(e));
-    if ( e->is(Type::IfcBlobTexture) ) return IfcSchemaEntity(new IfcBlobTexture(e));
-    if ( e->is(Type::IfcBlock) ) return IfcSchemaEntity(new IfcBlock(e));
-    if ( e->is(Type::IfcBoilerType) ) return IfcSchemaEntity(new IfcBoilerType(e));
-    if ( e->is(Type::IfcBooleanClippingResult) ) return IfcSchemaEntity(new IfcBooleanClippingResult(e));
-    if ( e->is(Type::IfcBooleanResult) ) return IfcSchemaEntity(new IfcBooleanResult(e));
-    if ( e->is(Type::IfcBoundaryCondition) ) return IfcSchemaEntity(new IfcBoundaryCondition(e));
-    if ( e->is(Type::IfcBoundaryEdgeCondition) ) return IfcSchemaEntity(new IfcBoundaryEdgeCondition(e));
-    if ( e->is(Type::IfcBoundaryFaceCondition) ) return IfcSchemaEntity(new IfcBoundaryFaceCondition(e));
-    if ( e->is(Type::IfcBoundaryNodeCondition) ) return IfcSchemaEntity(new IfcBoundaryNodeCondition(e));
-    if ( e->is(Type::IfcBoundaryNodeConditionWarping) ) return IfcSchemaEntity(new IfcBoundaryNodeConditionWarping(e));
-    if ( e->is(Type::IfcBoundedCurve) ) return IfcSchemaEntity(new IfcBoundedCurve(e));
-    if ( e->is(Type::IfcBoundedSurface) ) return IfcSchemaEntity(new IfcBoundedSurface(e));
-    if ( e->is(Type::IfcBoundingBox) ) return IfcSchemaEntity(new IfcBoundingBox(e));
-    if ( e->is(Type::IfcBoxedHalfSpace) ) return IfcSchemaEntity(new IfcBoxedHalfSpace(e));
-    if ( e->is(Type::IfcBuilding) ) return IfcSchemaEntity(new IfcBuilding(e));
-    if ( e->is(Type::IfcBuildingElement) ) return IfcSchemaEntity(new IfcBuildingElement(e));
-    if ( e->is(Type::IfcBuildingElementComponent) ) return IfcSchemaEntity(new IfcBuildingElementComponent(e));
-    if ( e->is(Type::IfcBuildingElementPart) ) return IfcSchemaEntity(new IfcBuildingElementPart(e));
-    if ( e->is(Type::IfcBuildingElementProxy) ) return IfcSchemaEntity(new IfcBuildingElementProxy(e));
-    if ( e->is(Type::IfcBuildingElementProxyType) ) return IfcSchemaEntity(new IfcBuildingElementProxyType(e));
-    if ( e->is(Type::IfcBuildingElementType) ) return IfcSchemaEntity(new IfcBuildingElementType(e));
-    if ( e->is(Type::IfcBuildingStorey) ) return IfcSchemaEntity(new IfcBuildingStorey(e));
-    if ( e->is(Type::IfcCShapeProfileDef) ) return IfcSchemaEntity(new IfcCShapeProfileDef(e));
-    if ( e->is(Type::IfcCableCarrierFittingType) ) return IfcSchemaEntity(new IfcCableCarrierFittingType(e));
-    if ( e->is(Type::IfcCableCarrierSegmentType) ) return IfcSchemaEntity(new IfcCableCarrierSegmentType(e));
-    if ( e->is(Type::IfcCableSegmentType) ) return IfcSchemaEntity(new IfcCableSegmentType(e));
-    if ( e->is(Type::IfcCalendarDate) ) return IfcSchemaEntity(new IfcCalendarDate(e));
-    if ( e->is(Type::IfcCartesianPoint) ) return IfcSchemaEntity(new IfcCartesianPoint(e));
-    if ( e->is(Type::IfcCartesianTransformationOperator) ) return IfcSchemaEntity(new IfcCartesianTransformationOperator(e));
-    if ( e->is(Type::IfcCartesianTransformationOperator2D) ) return IfcSchemaEntity(new IfcCartesianTransformationOperator2D(e));
-    if ( e->is(Type::IfcCartesianTransformationOperator2DnonUniform) ) return IfcSchemaEntity(new IfcCartesianTransformationOperator2DnonUniform(e));
-    if ( e->is(Type::IfcCartesianTransformationOperator3D) ) return IfcSchemaEntity(new IfcCartesianTransformationOperator3D(e));
-    if ( e->is(Type::IfcCartesianTransformationOperator3DnonUniform) ) return IfcSchemaEntity(new IfcCartesianTransformationOperator3DnonUniform(e));
-    if ( e->is(Type::IfcCenterLineProfileDef) ) return IfcSchemaEntity(new IfcCenterLineProfileDef(e));
-    if ( e->is(Type::IfcChamferEdgeFeature) ) return IfcSchemaEntity(new IfcChamferEdgeFeature(e));
-    if ( e->is(Type::IfcChillerType) ) return IfcSchemaEntity(new IfcChillerType(e));
-    if ( e->is(Type::IfcCircle) ) return IfcSchemaEntity(new IfcCircle(e));
-    if ( e->is(Type::IfcCircleHollowProfileDef) ) return IfcSchemaEntity(new IfcCircleHollowProfileDef(e));
-    if ( e->is(Type::IfcCircleProfileDef) ) return IfcSchemaEntity(new IfcCircleProfileDef(e));
-    if ( e->is(Type::IfcClassification) ) return IfcSchemaEntity(new IfcClassification(e));
-    if ( e->is(Type::IfcClassificationItem) ) return IfcSchemaEntity(new IfcClassificationItem(e));
-    if ( e->is(Type::IfcClassificationItemRelationship) ) return IfcSchemaEntity(new IfcClassificationItemRelationship(e));
-    if ( e->is(Type::IfcClassificationNotation) ) return IfcSchemaEntity(new IfcClassificationNotation(e));
-    if ( e->is(Type::IfcClassificationNotationFacet) ) return IfcSchemaEntity(new IfcClassificationNotationFacet(e));
-    if ( e->is(Type::IfcClassificationReference) ) return IfcSchemaEntity(new IfcClassificationReference(e));
-    if ( e->is(Type::IfcClosedShell) ) return IfcSchemaEntity(new IfcClosedShell(e));
-    if ( e->is(Type::IfcCoilType) ) return IfcSchemaEntity(new IfcCoilType(e));
-    if ( e->is(Type::IfcColourRgb) ) return IfcSchemaEntity(new IfcColourRgb(e));
-    if ( e->is(Type::IfcColourSpecification) ) return IfcSchemaEntity(new IfcColourSpecification(e));
-    if ( e->is(Type::IfcColumn) ) return IfcSchemaEntity(new IfcColumn(e));
-    if ( e->is(Type::IfcColumnType) ) return IfcSchemaEntity(new IfcColumnType(e));
-    if ( e->is(Type::IfcComplexProperty) ) return IfcSchemaEntity(new IfcComplexProperty(e));
-    if ( e->is(Type::IfcCompositeCurve) ) return IfcSchemaEntity(new IfcCompositeCurve(e));
-    if ( e->is(Type::IfcCompositeCurveSegment) ) return IfcSchemaEntity(new IfcCompositeCurveSegment(e));
-    if ( e->is(Type::IfcCompositeProfileDef) ) return IfcSchemaEntity(new IfcCompositeProfileDef(e));
-    if ( e->is(Type::IfcCompressorType) ) return IfcSchemaEntity(new IfcCompressorType(e));
-    if ( e->is(Type::IfcCondenserType) ) return IfcSchemaEntity(new IfcCondenserType(e));
-    if ( e->is(Type::IfcCondition) ) return IfcSchemaEntity(new IfcCondition(e));
-    if ( e->is(Type::IfcConditionCriterion) ) return IfcSchemaEntity(new IfcConditionCriterion(e));
-    if ( e->is(Type::IfcConic) ) return IfcSchemaEntity(new IfcConic(e));
-    if ( e->is(Type::IfcConnectedFaceSet) ) return IfcSchemaEntity(new IfcConnectedFaceSet(e));
-    if ( e->is(Type::IfcConnectionCurveGeometry) ) return IfcSchemaEntity(new IfcConnectionCurveGeometry(e));
-    if ( e->is(Type::IfcConnectionGeometry) ) return IfcSchemaEntity(new IfcConnectionGeometry(e));
-    if ( e->is(Type::IfcConnectionPointEccentricity) ) return IfcSchemaEntity(new IfcConnectionPointEccentricity(e));
-    if ( e->is(Type::IfcConnectionPointGeometry) ) return IfcSchemaEntity(new IfcConnectionPointGeometry(e));
-    if ( e->is(Type::IfcConnectionPortGeometry) ) return IfcSchemaEntity(new IfcConnectionPortGeometry(e));
-    if ( e->is(Type::IfcConnectionSurfaceGeometry) ) return IfcSchemaEntity(new IfcConnectionSurfaceGeometry(e));
-    if ( e->is(Type::IfcConstraint) ) return IfcSchemaEntity(new IfcConstraint(e));
-    if ( e->is(Type::IfcConstraintAggregationRelationship) ) return IfcSchemaEntity(new IfcConstraintAggregationRelationship(e));
-    if ( e->is(Type::IfcConstraintClassificationRelationship) ) return IfcSchemaEntity(new IfcConstraintClassificationRelationship(e));
-    if ( e->is(Type::IfcConstraintRelationship) ) return IfcSchemaEntity(new IfcConstraintRelationship(e));
-    if ( e->is(Type::IfcConstructionEquipmentResource) ) return IfcSchemaEntity(new IfcConstructionEquipmentResource(e));
-    if ( e->is(Type::IfcConstructionMaterialResource) ) return IfcSchemaEntity(new IfcConstructionMaterialResource(e));
-    if ( e->is(Type::IfcConstructionProductResource) ) return IfcSchemaEntity(new IfcConstructionProductResource(e));
-    if ( e->is(Type::IfcConstructionResource) ) return IfcSchemaEntity(new IfcConstructionResource(e));
-    if ( e->is(Type::IfcContextDependentUnit) ) return IfcSchemaEntity(new IfcContextDependentUnit(e));
-    if ( e->is(Type::IfcControl) ) return IfcSchemaEntity(new IfcControl(e));
-    if ( e->is(Type::IfcControllerType) ) return IfcSchemaEntity(new IfcControllerType(e));
-    if ( e->is(Type::IfcConversionBasedUnit) ) return IfcSchemaEntity(new IfcConversionBasedUnit(e));
-    if ( e->is(Type::IfcCooledBeamType) ) return IfcSchemaEntity(new IfcCooledBeamType(e));
-    if ( e->is(Type::IfcCoolingTowerType) ) return IfcSchemaEntity(new IfcCoolingTowerType(e));
-    if ( e->is(Type::IfcCoordinatedUniversalTimeOffset) ) return IfcSchemaEntity(new IfcCoordinatedUniversalTimeOffset(e));
-    if ( e->is(Type::IfcCostItem) ) return IfcSchemaEntity(new IfcCostItem(e));
-    if ( e->is(Type::IfcCostSchedule) ) return IfcSchemaEntity(new IfcCostSchedule(e));
-    if ( e->is(Type::IfcCostValue) ) return IfcSchemaEntity(new IfcCostValue(e));
-    if ( e->is(Type::IfcCovering) ) return IfcSchemaEntity(new IfcCovering(e));
-    if ( e->is(Type::IfcCoveringType) ) return IfcSchemaEntity(new IfcCoveringType(e));
-    if ( e->is(Type::IfcCraneRailAShapeProfileDef) ) return IfcSchemaEntity(new IfcCraneRailAShapeProfileDef(e));
-    if ( e->is(Type::IfcCraneRailFShapeProfileDef) ) return IfcSchemaEntity(new IfcCraneRailFShapeProfileDef(e));
-    if ( e->is(Type::IfcCrewResource) ) return IfcSchemaEntity(new IfcCrewResource(e));
-    if ( e->is(Type::IfcCsgPrimitive3D) ) return IfcSchemaEntity(new IfcCsgPrimitive3D(e));
-    if ( e->is(Type::IfcCsgSolid) ) return IfcSchemaEntity(new IfcCsgSolid(e));
-    if ( e->is(Type::IfcCurrencyRelationship) ) return IfcSchemaEntity(new IfcCurrencyRelationship(e));
-    if ( e->is(Type::IfcCurtainWall) ) return IfcSchemaEntity(new IfcCurtainWall(e));
-    if ( e->is(Type::IfcCurtainWallType) ) return IfcSchemaEntity(new IfcCurtainWallType(e));
-    if ( e->is(Type::IfcCurve) ) return IfcSchemaEntity(new IfcCurve(e));
-    if ( e->is(Type::IfcCurveBoundedPlane) ) return IfcSchemaEntity(new IfcCurveBoundedPlane(e));
-    if ( e->is(Type::IfcCurveStyle) ) return IfcSchemaEntity(new IfcCurveStyle(e));
-    if ( e->is(Type::IfcCurveStyleFont) ) return IfcSchemaEntity(new IfcCurveStyleFont(e));
-    if ( e->is(Type::IfcCurveStyleFontAndScaling) ) return IfcSchemaEntity(new IfcCurveStyleFontAndScaling(e));
-    if ( e->is(Type::IfcCurveStyleFontPattern) ) return IfcSchemaEntity(new IfcCurveStyleFontPattern(e));
-    if ( e->is(Type::IfcDamperType) ) return IfcSchemaEntity(new IfcDamperType(e));
-    if ( e->is(Type::IfcDateAndTime) ) return IfcSchemaEntity(new IfcDateAndTime(e));
-    if ( e->is(Type::IfcDefinedSymbol) ) return IfcSchemaEntity(new IfcDefinedSymbol(e));
-    if ( e->is(Type::IfcDerivedProfileDef) ) return IfcSchemaEntity(new IfcDerivedProfileDef(e));
-    if ( e->is(Type::IfcDerivedUnit) ) return IfcSchemaEntity(new IfcDerivedUnit(e));
-    if ( e->is(Type::IfcDerivedUnitElement) ) return IfcSchemaEntity(new IfcDerivedUnitElement(e));
-    if ( e->is(Type::IfcDiameterDimension) ) return IfcSchemaEntity(new IfcDiameterDimension(e));
-    if ( e->is(Type::IfcDimensionCalloutRelationship) ) return IfcSchemaEntity(new IfcDimensionCalloutRelationship(e));
-    if ( e->is(Type::IfcDimensionCurve) ) return IfcSchemaEntity(new IfcDimensionCurve(e));
-    if ( e->is(Type::IfcDimensionCurveDirectedCallout) ) return IfcSchemaEntity(new IfcDimensionCurveDirectedCallout(e));
-    if ( e->is(Type::IfcDimensionCurveTerminator) ) return IfcSchemaEntity(new IfcDimensionCurveTerminator(e));
-    if ( e->is(Type::IfcDimensionPair) ) return IfcSchemaEntity(new IfcDimensionPair(e));
-    if ( e->is(Type::IfcDimensionalExponents) ) return IfcSchemaEntity(new IfcDimensionalExponents(e));
-    if ( e->is(Type::IfcDirection) ) return IfcSchemaEntity(new IfcDirection(e));
-    if ( e->is(Type::IfcDiscreteAccessory) ) return IfcSchemaEntity(new IfcDiscreteAccessory(e));
-    if ( e->is(Type::IfcDiscreteAccessoryType) ) return IfcSchemaEntity(new IfcDiscreteAccessoryType(e));
-    if ( e->is(Type::IfcDistributionChamberElement) ) return IfcSchemaEntity(new IfcDistributionChamberElement(e));
-    if ( e->is(Type::IfcDistributionChamberElementType) ) return IfcSchemaEntity(new IfcDistributionChamberElementType(e));
-    if ( e->is(Type::IfcDistributionControlElement) ) return IfcSchemaEntity(new IfcDistributionControlElement(e));
-    if ( e->is(Type::IfcDistributionControlElementType) ) return IfcSchemaEntity(new IfcDistributionControlElementType(e));
-    if ( e->is(Type::IfcDistributionElement) ) return IfcSchemaEntity(new IfcDistributionElement(e));
-    if ( e->is(Type::IfcDistributionElementType) ) return IfcSchemaEntity(new IfcDistributionElementType(e));
-    if ( e->is(Type::IfcDistributionFlowElement) ) return IfcSchemaEntity(new IfcDistributionFlowElement(e));
-    if ( e->is(Type::IfcDistributionFlowElementType) ) return IfcSchemaEntity(new IfcDistributionFlowElementType(e));
-    if ( e->is(Type::IfcDistributionPort) ) return IfcSchemaEntity(new IfcDistributionPort(e));
-    if ( e->is(Type::IfcDocumentElectronicFormat) ) return IfcSchemaEntity(new IfcDocumentElectronicFormat(e));
-    if ( e->is(Type::IfcDocumentInformation) ) return IfcSchemaEntity(new IfcDocumentInformation(e));
-    if ( e->is(Type::IfcDocumentInformationRelationship) ) return IfcSchemaEntity(new IfcDocumentInformationRelationship(e));
-    if ( e->is(Type::IfcDocumentReference) ) return IfcSchemaEntity(new IfcDocumentReference(e));
-    if ( e->is(Type::IfcDoor) ) return IfcSchemaEntity(new IfcDoor(e));
-    if ( e->is(Type::IfcDoorLiningProperties) ) return IfcSchemaEntity(new IfcDoorLiningProperties(e));
-    if ( e->is(Type::IfcDoorPanelProperties) ) return IfcSchemaEntity(new IfcDoorPanelProperties(e));
-    if ( e->is(Type::IfcDoorStyle) ) return IfcSchemaEntity(new IfcDoorStyle(e));
-    if ( e->is(Type::IfcDraughtingCallout) ) return IfcSchemaEntity(new IfcDraughtingCallout(e));
-    if ( e->is(Type::IfcDraughtingCalloutRelationship) ) return IfcSchemaEntity(new IfcDraughtingCalloutRelationship(e));
-    if ( e->is(Type::IfcDraughtingPreDefinedColour) ) return IfcSchemaEntity(new IfcDraughtingPreDefinedColour(e));
-    if ( e->is(Type::IfcDraughtingPreDefinedCurveFont) ) return IfcSchemaEntity(new IfcDraughtingPreDefinedCurveFont(e));
-    if ( e->is(Type::IfcDraughtingPreDefinedTextFont) ) return IfcSchemaEntity(new IfcDraughtingPreDefinedTextFont(e));
-    if ( e->is(Type::IfcDuctFittingType) ) return IfcSchemaEntity(new IfcDuctFittingType(e));
-    if ( e->is(Type::IfcDuctSegmentType) ) return IfcSchemaEntity(new IfcDuctSegmentType(e));
-    if ( e->is(Type::IfcDuctSilencerType) ) return IfcSchemaEntity(new IfcDuctSilencerType(e));
-    if ( e->is(Type::IfcEdge) ) return IfcSchemaEntity(new IfcEdge(e));
-    if ( e->is(Type::IfcEdgeCurve) ) return IfcSchemaEntity(new IfcEdgeCurve(e));
-    if ( e->is(Type::IfcEdgeFeature) ) return IfcSchemaEntity(new IfcEdgeFeature(e));
-    if ( e->is(Type::IfcEdgeLoop) ) return IfcSchemaEntity(new IfcEdgeLoop(e));
-    if ( e->is(Type::IfcElectricApplianceType) ) return IfcSchemaEntity(new IfcElectricApplianceType(e));
-    if ( e->is(Type::IfcElectricDistributionPoint) ) return IfcSchemaEntity(new IfcElectricDistributionPoint(e));
-    if ( e->is(Type::IfcElectricFlowStorageDeviceType) ) return IfcSchemaEntity(new IfcElectricFlowStorageDeviceType(e));
-    if ( e->is(Type::IfcElectricGeneratorType) ) return IfcSchemaEntity(new IfcElectricGeneratorType(e));
-    if ( e->is(Type::IfcElectricHeaterType) ) return IfcSchemaEntity(new IfcElectricHeaterType(e));
-    if ( e->is(Type::IfcElectricMotorType) ) return IfcSchemaEntity(new IfcElectricMotorType(e));
-    if ( e->is(Type::IfcElectricTimeControlType) ) return IfcSchemaEntity(new IfcElectricTimeControlType(e));
-    if ( e->is(Type::IfcElectricalBaseProperties) ) return IfcSchemaEntity(new IfcElectricalBaseProperties(e));
-    if ( e->is(Type::IfcElectricalCircuit) ) return IfcSchemaEntity(new IfcElectricalCircuit(e));
-    if ( e->is(Type::IfcElectricalElement) ) return IfcSchemaEntity(new IfcElectricalElement(e));
-    if ( e->is(Type::IfcElement) ) return IfcSchemaEntity(new IfcElement(e));
-    if ( e->is(Type::IfcElementAssembly) ) return IfcSchemaEntity(new IfcElementAssembly(e));
-    if ( e->is(Type::IfcElementComponent) ) return IfcSchemaEntity(new IfcElementComponent(e));
-    if ( e->is(Type::IfcElementComponentType) ) return IfcSchemaEntity(new IfcElementComponentType(e));
-    if ( e->is(Type::IfcElementQuantity) ) return IfcSchemaEntity(new IfcElementQuantity(e));
-    if ( e->is(Type::IfcElementType) ) return IfcSchemaEntity(new IfcElementType(e));
-    if ( e->is(Type::IfcElementarySurface) ) return IfcSchemaEntity(new IfcElementarySurface(e));
-    if ( e->is(Type::IfcEllipse) ) return IfcSchemaEntity(new IfcEllipse(e));
-    if ( e->is(Type::IfcEllipseProfileDef) ) return IfcSchemaEntity(new IfcEllipseProfileDef(e));
-    if ( e->is(Type::IfcEnergyConversionDevice) ) return IfcSchemaEntity(new IfcEnergyConversionDevice(e));
-    if ( e->is(Type::IfcEnergyConversionDeviceType) ) return IfcSchemaEntity(new IfcEnergyConversionDeviceType(e));
-    if ( e->is(Type::IfcEnergyProperties) ) return IfcSchemaEntity(new IfcEnergyProperties(e));
-    if ( e->is(Type::IfcEnvironmentalImpactValue) ) return IfcSchemaEntity(new IfcEnvironmentalImpactValue(e));
-    if ( e->is(Type::IfcEquipmentElement) ) return IfcSchemaEntity(new IfcEquipmentElement(e));
-    if ( e->is(Type::IfcEquipmentStandard) ) return IfcSchemaEntity(new IfcEquipmentStandard(e));
-    if ( e->is(Type::IfcEvaporativeCoolerType) ) return IfcSchemaEntity(new IfcEvaporativeCoolerType(e));
-    if ( e->is(Type::IfcEvaporatorType) ) return IfcSchemaEntity(new IfcEvaporatorType(e));
-    if ( e->is(Type::IfcExtendedMaterialProperties) ) return IfcSchemaEntity(new IfcExtendedMaterialProperties(e));
-    if ( e->is(Type::IfcExternalReference) ) return IfcSchemaEntity(new IfcExternalReference(e));
-    if ( e->is(Type::IfcExternallyDefinedHatchStyle) ) return IfcSchemaEntity(new IfcExternallyDefinedHatchStyle(e));
-    if ( e->is(Type::IfcExternallyDefinedSurfaceStyle) ) return IfcSchemaEntity(new IfcExternallyDefinedSurfaceStyle(e));
-    if ( e->is(Type::IfcExternallyDefinedSymbol) ) return IfcSchemaEntity(new IfcExternallyDefinedSymbol(e));
-    if ( e->is(Type::IfcExternallyDefinedTextFont) ) return IfcSchemaEntity(new IfcExternallyDefinedTextFont(e));
-    if ( e->is(Type::IfcExtrudedAreaSolid) ) return IfcSchemaEntity(new IfcExtrudedAreaSolid(e));
-    if ( e->is(Type::IfcFace) ) return IfcSchemaEntity(new IfcFace(e));
-    if ( e->is(Type::IfcFaceBasedSurfaceModel) ) return IfcSchemaEntity(new IfcFaceBasedSurfaceModel(e));
-    if ( e->is(Type::IfcFaceBound) ) return IfcSchemaEntity(new IfcFaceBound(e));
-    if ( e->is(Type::IfcFaceOuterBound) ) return IfcSchemaEntity(new IfcFaceOuterBound(e));
-    if ( e->is(Type::IfcFaceSurface) ) return IfcSchemaEntity(new IfcFaceSurface(e));
-    if ( e->is(Type::IfcFacetedBrep) ) return IfcSchemaEntity(new IfcFacetedBrep(e));
-    if ( e->is(Type::IfcFacetedBrepWithVoids) ) return IfcSchemaEntity(new IfcFacetedBrepWithVoids(e));
-    if ( e->is(Type::IfcFailureConnectionCondition) ) return IfcSchemaEntity(new IfcFailureConnectionCondition(e));
-    if ( e->is(Type::IfcFanType) ) return IfcSchemaEntity(new IfcFanType(e));
-    if ( e->is(Type::IfcFastener) ) return IfcSchemaEntity(new IfcFastener(e));
-    if ( e->is(Type::IfcFastenerType) ) return IfcSchemaEntity(new IfcFastenerType(e));
-    if ( e->is(Type::IfcFeatureElement) ) return IfcSchemaEntity(new IfcFeatureElement(e));
-    if ( e->is(Type::IfcFeatureElementAddition) ) return IfcSchemaEntity(new IfcFeatureElementAddition(e));
-    if ( e->is(Type::IfcFeatureElementSubtraction) ) return IfcSchemaEntity(new IfcFeatureElementSubtraction(e));
-    if ( e->is(Type::IfcFillAreaStyle) ) return IfcSchemaEntity(new IfcFillAreaStyle(e));
-    if ( e->is(Type::IfcFillAreaStyleHatching) ) return IfcSchemaEntity(new IfcFillAreaStyleHatching(e));
-    if ( e->is(Type::IfcFillAreaStyleTileSymbolWithStyle) ) return IfcSchemaEntity(new IfcFillAreaStyleTileSymbolWithStyle(e));
-    if ( e->is(Type::IfcFillAreaStyleTiles) ) return IfcSchemaEntity(new IfcFillAreaStyleTiles(e));
-    if ( e->is(Type::IfcFilterType) ) return IfcSchemaEntity(new IfcFilterType(e));
-    if ( e->is(Type::IfcFireSuppressionTerminalType) ) return IfcSchemaEntity(new IfcFireSuppressionTerminalType(e));
-    if ( e->is(Type::IfcFlowController) ) return IfcSchemaEntity(new IfcFlowController(e));
-    if ( e->is(Type::IfcFlowControllerType) ) return IfcSchemaEntity(new IfcFlowControllerType(e));
-    if ( e->is(Type::IfcFlowFitting) ) return IfcSchemaEntity(new IfcFlowFitting(e));
-    if ( e->is(Type::IfcFlowFittingType) ) return IfcSchemaEntity(new IfcFlowFittingType(e));
-    if ( e->is(Type::IfcFlowInstrumentType) ) return IfcSchemaEntity(new IfcFlowInstrumentType(e));
-    if ( e->is(Type::IfcFlowMeterType) ) return IfcSchemaEntity(new IfcFlowMeterType(e));
-    if ( e->is(Type::IfcFlowMovingDevice) ) return IfcSchemaEntity(new IfcFlowMovingDevice(e));
-    if ( e->is(Type::IfcFlowMovingDeviceType) ) return IfcSchemaEntity(new IfcFlowMovingDeviceType(e));
-    if ( e->is(Type::IfcFlowSegment) ) return IfcSchemaEntity(new IfcFlowSegment(e));
-    if ( e->is(Type::IfcFlowSegmentType) ) return IfcSchemaEntity(new IfcFlowSegmentType(e));
-    if ( e->is(Type::IfcFlowStorageDevice) ) return IfcSchemaEntity(new IfcFlowStorageDevice(e));
-    if ( e->is(Type::IfcFlowStorageDeviceType) ) return IfcSchemaEntity(new IfcFlowStorageDeviceType(e));
-    if ( e->is(Type::IfcFlowTerminal) ) return IfcSchemaEntity(new IfcFlowTerminal(e));
-    if ( e->is(Type::IfcFlowTerminalType) ) return IfcSchemaEntity(new IfcFlowTerminalType(e));
-    if ( e->is(Type::IfcFlowTreatmentDevice) ) return IfcSchemaEntity(new IfcFlowTreatmentDevice(e));
-    if ( e->is(Type::IfcFlowTreatmentDeviceType) ) return IfcSchemaEntity(new IfcFlowTreatmentDeviceType(e));
-    if ( e->is(Type::IfcFluidFlowProperties) ) return IfcSchemaEntity(new IfcFluidFlowProperties(e));
-    if ( e->is(Type::IfcFooting) ) return IfcSchemaEntity(new IfcFooting(e));
-    if ( e->is(Type::IfcFuelProperties) ) return IfcSchemaEntity(new IfcFuelProperties(e));
-    if ( e->is(Type::IfcFurnishingElement) ) return IfcSchemaEntity(new IfcFurnishingElement(e));
-    if ( e->is(Type::IfcFurnishingElementType) ) return IfcSchemaEntity(new IfcFurnishingElementType(e));
-    if ( e->is(Type::IfcFurnitureStandard) ) return IfcSchemaEntity(new IfcFurnitureStandard(e));
-    if ( e->is(Type::IfcFurnitureType) ) return IfcSchemaEntity(new IfcFurnitureType(e));
-    if ( e->is(Type::IfcGasTerminalType) ) return IfcSchemaEntity(new IfcGasTerminalType(e));
-    if ( e->is(Type::IfcGeneralMaterialProperties) ) return IfcSchemaEntity(new IfcGeneralMaterialProperties(e));
-    if ( e->is(Type::IfcGeneralProfileProperties) ) return IfcSchemaEntity(new IfcGeneralProfileProperties(e));
-    if ( e->is(Type::IfcGeometricCurveSet) ) return IfcSchemaEntity(new IfcGeometricCurveSet(e));
-    if ( e->is(Type::IfcGeometricRepresentationContext) ) return IfcSchemaEntity(new IfcGeometricRepresentationContext(e));
-    if ( e->is(Type::IfcGeometricRepresentationItem) ) return IfcSchemaEntity(new IfcGeometricRepresentationItem(e));
-    if ( e->is(Type::IfcGeometricRepresentationSubContext) ) return IfcSchemaEntity(new IfcGeometricRepresentationSubContext(e));
-    if ( e->is(Type::IfcGeometricSet) ) return IfcSchemaEntity(new IfcGeometricSet(e));
-    if ( e->is(Type::IfcGrid) ) return IfcSchemaEntity(new IfcGrid(e));
-    if ( e->is(Type::IfcGridAxis) ) return IfcSchemaEntity(new IfcGridAxis(e));
-    if ( e->is(Type::IfcGridPlacement) ) return IfcSchemaEntity(new IfcGridPlacement(e));
-    if ( e->is(Type::IfcGroup) ) return IfcSchemaEntity(new IfcGroup(e));
-    if ( e->is(Type::IfcHalfSpaceSolid) ) return IfcSchemaEntity(new IfcHalfSpaceSolid(e));
-    if ( e->is(Type::IfcHeatExchangerType) ) return IfcSchemaEntity(new IfcHeatExchangerType(e));
-    if ( e->is(Type::IfcHumidifierType) ) return IfcSchemaEntity(new IfcHumidifierType(e));
-    if ( e->is(Type::IfcHygroscopicMaterialProperties) ) return IfcSchemaEntity(new IfcHygroscopicMaterialProperties(e));
-    if ( e->is(Type::IfcIShapeProfileDef) ) return IfcSchemaEntity(new IfcIShapeProfileDef(e));
-    if ( e->is(Type::IfcImageTexture) ) return IfcSchemaEntity(new IfcImageTexture(e));
-    if ( e->is(Type::IfcInventory) ) return IfcSchemaEntity(new IfcInventory(e));
-    if ( e->is(Type::IfcIrregularTimeSeries) ) return IfcSchemaEntity(new IfcIrregularTimeSeries(e));
-    if ( e->is(Type::IfcIrregularTimeSeriesValue) ) return IfcSchemaEntity(new IfcIrregularTimeSeriesValue(e));
-    if ( e->is(Type::IfcJunctionBoxType) ) return IfcSchemaEntity(new IfcJunctionBoxType(e));
-    if ( e->is(Type::IfcLShapeProfileDef) ) return IfcSchemaEntity(new IfcLShapeProfileDef(e));
-    if ( e->is(Type::IfcLaborResource) ) return IfcSchemaEntity(new IfcLaborResource(e));
-    if ( e->is(Type::IfcLampType) ) return IfcSchemaEntity(new IfcLampType(e));
-    if ( e->is(Type::IfcLibraryInformation) ) return IfcSchemaEntity(new IfcLibraryInformation(e));
-    if ( e->is(Type::IfcLibraryReference) ) return IfcSchemaEntity(new IfcLibraryReference(e));
-    if ( e->is(Type::IfcLightDistributionData) ) return IfcSchemaEntity(new IfcLightDistributionData(e));
-    if ( e->is(Type::IfcLightFixtureType) ) return IfcSchemaEntity(new IfcLightFixtureType(e));
-    if ( e->is(Type::IfcLightIntensityDistribution) ) return IfcSchemaEntity(new IfcLightIntensityDistribution(e));
-    if ( e->is(Type::IfcLightSource) ) return IfcSchemaEntity(new IfcLightSource(e));
-    if ( e->is(Type::IfcLightSourceAmbient) ) return IfcSchemaEntity(new IfcLightSourceAmbient(e));
-    if ( e->is(Type::IfcLightSourceDirectional) ) return IfcSchemaEntity(new IfcLightSourceDirectional(e));
-    if ( e->is(Type::IfcLightSourceGoniometric) ) return IfcSchemaEntity(new IfcLightSourceGoniometric(e));
-    if ( e->is(Type::IfcLightSourcePositional) ) return IfcSchemaEntity(new IfcLightSourcePositional(e));
-    if ( e->is(Type::IfcLightSourceSpot) ) return IfcSchemaEntity(new IfcLightSourceSpot(e));
-    if ( e->is(Type::IfcLine) ) return IfcSchemaEntity(new IfcLine(e));
-    if ( e->is(Type::IfcLinearDimension) ) return IfcSchemaEntity(new IfcLinearDimension(e));
-    if ( e->is(Type::IfcLocalPlacement) ) return IfcSchemaEntity(new IfcLocalPlacement(e));
-    if ( e->is(Type::IfcLocalTime) ) return IfcSchemaEntity(new IfcLocalTime(e));
-    if ( e->is(Type::IfcLoop) ) return IfcSchemaEntity(new IfcLoop(e));
-    if ( e->is(Type::IfcManifoldSolidBrep) ) return IfcSchemaEntity(new IfcManifoldSolidBrep(e));
-    if ( e->is(Type::IfcMappedItem) ) return IfcSchemaEntity(new IfcMappedItem(e));
-    if ( e->is(Type::IfcMaterial) ) return IfcSchemaEntity(new IfcMaterial(e));
-    if ( e->is(Type::IfcMaterialClassificationRelationship) ) return IfcSchemaEntity(new IfcMaterialClassificationRelationship(e));
-    if ( e->is(Type::IfcMaterialDefinitionRepresentation) ) return IfcSchemaEntity(new IfcMaterialDefinitionRepresentation(e));
-    if ( e->is(Type::IfcMaterialLayer) ) return IfcSchemaEntity(new IfcMaterialLayer(e));
-    if ( e->is(Type::IfcMaterialLayerSet) ) return IfcSchemaEntity(new IfcMaterialLayerSet(e));
-    if ( e->is(Type::IfcMaterialLayerSetUsage) ) return IfcSchemaEntity(new IfcMaterialLayerSetUsage(e));
-    if ( e->is(Type::IfcMaterialList) ) return IfcSchemaEntity(new IfcMaterialList(e));
-    if ( e->is(Type::IfcMaterialProperties) ) return IfcSchemaEntity(new IfcMaterialProperties(e));
-    if ( e->is(Type::IfcMeasureWithUnit) ) return IfcSchemaEntity(new IfcMeasureWithUnit(e));
-    if ( e->is(Type::IfcMechanicalConcreteMaterialProperties) ) return IfcSchemaEntity(new IfcMechanicalConcreteMaterialProperties(e));
-    if ( e->is(Type::IfcMechanicalFastener) ) return IfcSchemaEntity(new IfcMechanicalFastener(e));
-    if ( e->is(Type::IfcMechanicalFastenerType) ) return IfcSchemaEntity(new IfcMechanicalFastenerType(e));
-    if ( e->is(Type::IfcMechanicalMaterialProperties) ) return IfcSchemaEntity(new IfcMechanicalMaterialProperties(e));
-    if ( e->is(Type::IfcMechanicalSteelMaterialProperties) ) return IfcSchemaEntity(new IfcMechanicalSteelMaterialProperties(e));
-    if ( e->is(Type::IfcMember) ) return IfcSchemaEntity(new IfcMember(e));
-    if ( e->is(Type::IfcMemberType) ) return IfcSchemaEntity(new IfcMemberType(e));
-    if ( e->is(Type::IfcMetric) ) return IfcSchemaEntity(new IfcMetric(e));
-    if ( e->is(Type::IfcMonetaryUnit) ) return IfcSchemaEntity(new IfcMonetaryUnit(e));
-    if ( e->is(Type::IfcMotorConnectionType) ) return IfcSchemaEntity(new IfcMotorConnectionType(e));
-    if ( e->is(Type::IfcMove) ) return IfcSchemaEntity(new IfcMove(e));
-    if ( e->is(Type::IfcNamedUnit) ) return IfcSchemaEntity(new IfcNamedUnit(e));
-    if ( e->is(Type::IfcObject) ) return IfcSchemaEntity(new IfcObject(e));
-    if ( e->is(Type::IfcObjectDefinition) ) return IfcSchemaEntity(new IfcObjectDefinition(e));
-    if ( e->is(Type::IfcObjectPlacement) ) return IfcSchemaEntity(new IfcObjectPlacement(e));
-    if ( e->is(Type::IfcObjective) ) return IfcSchemaEntity(new IfcObjective(e));
-    if ( e->is(Type::IfcOccupant) ) return IfcSchemaEntity(new IfcOccupant(e));
-    if ( e->is(Type::IfcOffsetCurve2D) ) return IfcSchemaEntity(new IfcOffsetCurve2D(e));
-    if ( e->is(Type::IfcOffsetCurve3D) ) return IfcSchemaEntity(new IfcOffsetCurve3D(e));
-    if ( e->is(Type::IfcOneDirectionRepeatFactor) ) return IfcSchemaEntity(new IfcOneDirectionRepeatFactor(e));
-    if ( e->is(Type::IfcOpenShell) ) return IfcSchemaEntity(new IfcOpenShell(e));
-    if ( e->is(Type::IfcOpeningElement) ) return IfcSchemaEntity(new IfcOpeningElement(e));
-    if ( e->is(Type::IfcOpticalMaterialProperties) ) return IfcSchemaEntity(new IfcOpticalMaterialProperties(e));
-    if ( e->is(Type::IfcOrderAction) ) return IfcSchemaEntity(new IfcOrderAction(e));
-    if ( e->is(Type::IfcOrganization) ) return IfcSchemaEntity(new IfcOrganization(e));
-    if ( e->is(Type::IfcOrganizationRelationship) ) return IfcSchemaEntity(new IfcOrganizationRelationship(e));
-    if ( e->is(Type::IfcOrientedEdge) ) return IfcSchemaEntity(new IfcOrientedEdge(e));
-    if ( e->is(Type::IfcOutletType) ) return IfcSchemaEntity(new IfcOutletType(e));
-    if ( e->is(Type::IfcOwnerHistory) ) return IfcSchemaEntity(new IfcOwnerHistory(e));
-    if ( e->is(Type::IfcParameterizedProfileDef) ) return IfcSchemaEntity(new IfcParameterizedProfileDef(e));
-    if ( e->is(Type::IfcPath) ) return IfcSchemaEntity(new IfcPath(e));
-    if ( e->is(Type::IfcPerformanceHistory) ) return IfcSchemaEntity(new IfcPerformanceHistory(e));
-    if ( e->is(Type::IfcPermeableCoveringProperties) ) return IfcSchemaEntity(new IfcPermeableCoveringProperties(e));
-    if ( e->is(Type::IfcPermit) ) return IfcSchemaEntity(new IfcPermit(e));
-    if ( e->is(Type::IfcPerson) ) return IfcSchemaEntity(new IfcPerson(e));
-    if ( e->is(Type::IfcPersonAndOrganization) ) return IfcSchemaEntity(new IfcPersonAndOrganization(e));
-    if ( e->is(Type::IfcPhysicalComplexQuantity) ) return IfcSchemaEntity(new IfcPhysicalComplexQuantity(e));
-    if ( e->is(Type::IfcPhysicalQuantity) ) return IfcSchemaEntity(new IfcPhysicalQuantity(e));
-    if ( e->is(Type::IfcPhysicalSimpleQuantity) ) return IfcSchemaEntity(new IfcPhysicalSimpleQuantity(e));
-    if ( e->is(Type::IfcPile) ) return IfcSchemaEntity(new IfcPile(e));
-    if ( e->is(Type::IfcPipeFittingType) ) return IfcSchemaEntity(new IfcPipeFittingType(e));
-    if ( e->is(Type::IfcPipeSegmentType) ) return IfcSchemaEntity(new IfcPipeSegmentType(e));
-    if ( e->is(Type::IfcPixelTexture) ) return IfcSchemaEntity(new IfcPixelTexture(e));
-    if ( e->is(Type::IfcPlacement) ) return IfcSchemaEntity(new IfcPlacement(e));
-    if ( e->is(Type::IfcPlanarBox) ) return IfcSchemaEntity(new IfcPlanarBox(e));
-    if ( e->is(Type::IfcPlanarExtent) ) return IfcSchemaEntity(new IfcPlanarExtent(e));
-    if ( e->is(Type::IfcPlane) ) return IfcSchemaEntity(new IfcPlane(e));
-    if ( e->is(Type::IfcPlate) ) return IfcSchemaEntity(new IfcPlate(e));
-    if ( e->is(Type::IfcPlateType) ) return IfcSchemaEntity(new IfcPlateType(e));
-    if ( e->is(Type::IfcPoint) ) return IfcSchemaEntity(new IfcPoint(e));
-    if ( e->is(Type::IfcPointOnCurve) ) return IfcSchemaEntity(new IfcPointOnCurve(e));
-    if ( e->is(Type::IfcPointOnSurface) ) return IfcSchemaEntity(new IfcPointOnSurface(e));
-    if ( e->is(Type::IfcPolyLoop) ) return IfcSchemaEntity(new IfcPolyLoop(e));
-    if ( e->is(Type::IfcPolygonalBoundedHalfSpace) ) return IfcSchemaEntity(new IfcPolygonalBoundedHalfSpace(e));
-    if ( e->is(Type::IfcPolyline) ) return IfcSchemaEntity(new IfcPolyline(e));
-    if ( e->is(Type::IfcPort) ) return IfcSchemaEntity(new IfcPort(e));
-    if ( e->is(Type::IfcPostalAddress) ) return IfcSchemaEntity(new IfcPostalAddress(e));
-    if ( e->is(Type::IfcPreDefinedColour) ) return IfcSchemaEntity(new IfcPreDefinedColour(e));
-    if ( e->is(Type::IfcPreDefinedCurveFont) ) return IfcSchemaEntity(new IfcPreDefinedCurveFont(e));
-    if ( e->is(Type::IfcPreDefinedDimensionSymbol) ) return IfcSchemaEntity(new IfcPreDefinedDimensionSymbol(e));
-    if ( e->is(Type::IfcPreDefinedItem) ) return IfcSchemaEntity(new IfcPreDefinedItem(e));
-    if ( e->is(Type::IfcPreDefinedPointMarkerSymbol) ) return IfcSchemaEntity(new IfcPreDefinedPointMarkerSymbol(e));
-    if ( e->is(Type::IfcPreDefinedSymbol) ) return IfcSchemaEntity(new IfcPreDefinedSymbol(e));
-    if ( e->is(Type::IfcPreDefinedTerminatorSymbol) ) return IfcSchemaEntity(new IfcPreDefinedTerminatorSymbol(e));
-    if ( e->is(Type::IfcPreDefinedTextFont) ) return IfcSchemaEntity(new IfcPreDefinedTextFont(e));
-    if ( e->is(Type::IfcPresentationLayerAssignment) ) return IfcSchemaEntity(new IfcPresentationLayerAssignment(e));
-    if ( e->is(Type::IfcPresentationLayerWithStyle) ) return IfcSchemaEntity(new IfcPresentationLayerWithStyle(e));
-    if ( e->is(Type::IfcPresentationStyle) ) return IfcSchemaEntity(new IfcPresentationStyle(e));
-    if ( e->is(Type::IfcPresentationStyleAssignment) ) return IfcSchemaEntity(new IfcPresentationStyleAssignment(e));
-    if ( e->is(Type::IfcProcedure) ) return IfcSchemaEntity(new IfcProcedure(e));
-    if ( e->is(Type::IfcProcess) ) return IfcSchemaEntity(new IfcProcess(e));
-    if ( e->is(Type::IfcProduct) ) return IfcSchemaEntity(new IfcProduct(e));
-    if ( e->is(Type::IfcProductDefinitionShape) ) return IfcSchemaEntity(new IfcProductDefinitionShape(e));
-    if ( e->is(Type::IfcProductRepresentation) ) return IfcSchemaEntity(new IfcProductRepresentation(e));
-    if ( e->is(Type::IfcProductsOfCombustionProperties) ) return IfcSchemaEntity(new IfcProductsOfCombustionProperties(e));
-    if ( e->is(Type::IfcProfileDef) ) return IfcSchemaEntity(new IfcProfileDef(e));
-    if ( e->is(Type::IfcProfileProperties) ) return IfcSchemaEntity(new IfcProfileProperties(e));
-    if ( e->is(Type::IfcProject) ) return IfcSchemaEntity(new IfcProject(e));
-    if ( e->is(Type::IfcProjectOrder) ) return IfcSchemaEntity(new IfcProjectOrder(e));
-    if ( e->is(Type::IfcProjectOrderRecord) ) return IfcSchemaEntity(new IfcProjectOrderRecord(e));
-    if ( e->is(Type::IfcProjectionCurve) ) return IfcSchemaEntity(new IfcProjectionCurve(e));
-    if ( e->is(Type::IfcProjectionElement) ) return IfcSchemaEntity(new IfcProjectionElement(e));
-    if ( e->is(Type::IfcProperty) ) return IfcSchemaEntity(new IfcProperty(e));
-    if ( e->is(Type::IfcPropertyBoundedValue) ) return IfcSchemaEntity(new IfcPropertyBoundedValue(e));
-    if ( e->is(Type::IfcPropertyConstraintRelationship) ) return IfcSchemaEntity(new IfcPropertyConstraintRelationship(e));
-    if ( e->is(Type::IfcPropertyDefinition) ) return IfcSchemaEntity(new IfcPropertyDefinition(e));
-    if ( e->is(Type::IfcPropertyDependencyRelationship) ) return IfcSchemaEntity(new IfcPropertyDependencyRelationship(e));
-    if ( e->is(Type::IfcPropertyEnumeratedValue) ) return IfcSchemaEntity(new IfcPropertyEnumeratedValue(e));
-    if ( e->is(Type::IfcPropertyEnumeration) ) return IfcSchemaEntity(new IfcPropertyEnumeration(e));
-    if ( e->is(Type::IfcPropertyListValue) ) return IfcSchemaEntity(new IfcPropertyListValue(e));
-    if ( e->is(Type::IfcPropertyReferenceValue) ) return IfcSchemaEntity(new IfcPropertyReferenceValue(e));
-    if ( e->is(Type::IfcPropertySet) ) return IfcSchemaEntity(new IfcPropertySet(e));
-    if ( e->is(Type::IfcPropertySetDefinition) ) return IfcSchemaEntity(new IfcPropertySetDefinition(e));
-    if ( e->is(Type::IfcPropertySingleValue) ) return IfcSchemaEntity(new IfcPropertySingleValue(e));
-    if ( e->is(Type::IfcPropertyTableValue) ) return IfcSchemaEntity(new IfcPropertyTableValue(e));
-    if ( e->is(Type::IfcProtectiveDeviceType) ) return IfcSchemaEntity(new IfcProtectiveDeviceType(e));
-    if ( e->is(Type::IfcProxy) ) return IfcSchemaEntity(new IfcProxy(e));
-    if ( e->is(Type::IfcPumpType) ) return IfcSchemaEntity(new IfcPumpType(e));
-    if ( e->is(Type::IfcQuantityArea) ) return IfcSchemaEntity(new IfcQuantityArea(e));
-    if ( e->is(Type::IfcQuantityCount) ) return IfcSchemaEntity(new IfcQuantityCount(e));
-    if ( e->is(Type::IfcQuantityLength) ) return IfcSchemaEntity(new IfcQuantityLength(e));
-    if ( e->is(Type::IfcQuantityTime) ) return IfcSchemaEntity(new IfcQuantityTime(e));
-    if ( e->is(Type::IfcQuantityVolume) ) return IfcSchemaEntity(new IfcQuantityVolume(e));
-    if ( e->is(Type::IfcQuantityWeight) ) return IfcSchemaEntity(new IfcQuantityWeight(e));
-    if ( e->is(Type::IfcRadiusDimension) ) return IfcSchemaEntity(new IfcRadiusDimension(e));
-    if ( e->is(Type::IfcRailing) ) return IfcSchemaEntity(new IfcRailing(e));
-    if ( e->is(Type::IfcRailingType) ) return IfcSchemaEntity(new IfcRailingType(e));
-    if ( e->is(Type::IfcRamp) ) return IfcSchemaEntity(new IfcRamp(e));
-    if ( e->is(Type::IfcRampFlight) ) return IfcSchemaEntity(new IfcRampFlight(e));
-    if ( e->is(Type::IfcRampFlightType) ) return IfcSchemaEntity(new IfcRampFlightType(e));
-    if ( e->is(Type::IfcRationalBezierCurve) ) return IfcSchemaEntity(new IfcRationalBezierCurve(e));
-    if ( e->is(Type::IfcRectangleHollowProfileDef) ) return IfcSchemaEntity(new IfcRectangleHollowProfileDef(e));
-    if ( e->is(Type::IfcRectangleProfileDef) ) return IfcSchemaEntity(new IfcRectangleProfileDef(e));
-    if ( e->is(Type::IfcRectangularPyramid) ) return IfcSchemaEntity(new IfcRectangularPyramid(e));
-    if ( e->is(Type::IfcRectangularTrimmedSurface) ) return IfcSchemaEntity(new IfcRectangularTrimmedSurface(e));
-    if ( e->is(Type::IfcReferencesValueDocument) ) return IfcSchemaEntity(new IfcReferencesValueDocument(e));
-    if ( e->is(Type::IfcRegularTimeSeries) ) return IfcSchemaEntity(new IfcRegularTimeSeries(e));
-    if ( e->is(Type::IfcReinforcementBarProperties) ) return IfcSchemaEntity(new IfcReinforcementBarProperties(e));
-    if ( e->is(Type::IfcReinforcementDefinitionProperties) ) return IfcSchemaEntity(new IfcReinforcementDefinitionProperties(e));
-    if ( e->is(Type::IfcReinforcingBar) ) return IfcSchemaEntity(new IfcReinforcingBar(e));
-    if ( e->is(Type::IfcReinforcingElement) ) return IfcSchemaEntity(new IfcReinforcingElement(e));
-    if ( e->is(Type::IfcReinforcingMesh) ) return IfcSchemaEntity(new IfcReinforcingMesh(e));
-    if ( e->is(Type::IfcRelAggregates) ) return IfcSchemaEntity(new IfcRelAggregates(e));
-    if ( e->is(Type::IfcRelAssigns) ) return IfcSchemaEntity(new IfcRelAssigns(e));
-    if ( e->is(Type::IfcRelAssignsTasks) ) return IfcSchemaEntity(new IfcRelAssignsTasks(e));
-    if ( e->is(Type::IfcRelAssignsToActor) ) return IfcSchemaEntity(new IfcRelAssignsToActor(e));
-    if ( e->is(Type::IfcRelAssignsToControl) ) return IfcSchemaEntity(new IfcRelAssignsToControl(e));
-    if ( e->is(Type::IfcRelAssignsToGroup) ) return IfcSchemaEntity(new IfcRelAssignsToGroup(e));
-    if ( e->is(Type::IfcRelAssignsToProcess) ) return IfcSchemaEntity(new IfcRelAssignsToProcess(e));
-    if ( e->is(Type::IfcRelAssignsToProduct) ) return IfcSchemaEntity(new IfcRelAssignsToProduct(e));
-    if ( e->is(Type::IfcRelAssignsToProjectOrder) ) return IfcSchemaEntity(new IfcRelAssignsToProjectOrder(e));
-    if ( e->is(Type::IfcRelAssignsToResource) ) return IfcSchemaEntity(new IfcRelAssignsToResource(e));
-    if ( e->is(Type::IfcRelAssociates) ) return IfcSchemaEntity(new IfcRelAssociates(e));
-    if ( e->is(Type::IfcRelAssociatesAppliedValue) ) return IfcSchemaEntity(new IfcRelAssociatesAppliedValue(e));
-    if ( e->is(Type::IfcRelAssociatesApproval) ) return IfcSchemaEntity(new IfcRelAssociatesApproval(e));
-    if ( e->is(Type::IfcRelAssociatesClassification) ) return IfcSchemaEntity(new IfcRelAssociatesClassification(e));
-    if ( e->is(Type::IfcRelAssociatesConstraint) ) return IfcSchemaEntity(new IfcRelAssociatesConstraint(e));
-    if ( e->is(Type::IfcRelAssociatesDocument) ) return IfcSchemaEntity(new IfcRelAssociatesDocument(e));
-    if ( e->is(Type::IfcRelAssociatesLibrary) ) return IfcSchemaEntity(new IfcRelAssociatesLibrary(e));
-    if ( e->is(Type::IfcRelAssociatesMaterial) ) return IfcSchemaEntity(new IfcRelAssociatesMaterial(e));
-    if ( e->is(Type::IfcRelAssociatesProfileProperties) ) return IfcSchemaEntity(new IfcRelAssociatesProfileProperties(e));
-    if ( e->is(Type::IfcRelConnects) ) return IfcSchemaEntity(new IfcRelConnects(e));
-    if ( e->is(Type::IfcRelConnectsElements) ) return IfcSchemaEntity(new IfcRelConnectsElements(e));
-    if ( e->is(Type::IfcRelConnectsPathElements) ) return IfcSchemaEntity(new IfcRelConnectsPathElements(e));
-    if ( e->is(Type::IfcRelConnectsPortToElement) ) return IfcSchemaEntity(new IfcRelConnectsPortToElement(e));
-    if ( e->is(Type::IfcRelConnectsPorts) ) return IfcSchemaEntity(new IfcRelConnectsPorts(e));
-    if ( e->is(Type::IfcRelConnectsStructuralActivity) ) return IfcSchemaEntity(new IfcRelConnectsStructuralActivity(e));
-    if ( e->is(Type::IfcRelConnectsStructuralElement) ) return IfcSchemaEntity(new IfcRelConnectsStructuralElement(e));
-    if ( e->is(Type::IfcRelConnectsStructuralMember) ) return IfcSchemaEntity(new IfcRelConnectsStructuralMember(e));
-    if ( e->is(Type::IfcRelConnectsWithEccentricity) ) return IfcSchemaEntity(new IfcRelConnectsWithEccentricity(e));
-    if ( e->is(Type::IfcRelConnectsWithRealizingElements) ) return IfcSchemaEntity(new IfcRelConnectsWithRealizingElements(e));
-    if ( e->is(Type::IfcRelContainedInSpatialStructure) ) return IfcSchemaEntity(new IfcRelContainedInSpatialStructure(e));
-    if ( e->is(Type::IfcRelCoversBldgElements) ) return IfcSchemaEntity(new IfcRelCoversBldgElements(e));
-    if ( e->is(Type::IfcRelCoversSpaces) ) return IfcSchemaEntity(new IfcRelCoversSpaces(e));
-    if ( e->is(Type::IfcRelDecomposes) ) return IfcSchemaEntity(new IfcRelDecomposes(e));
-    if ( e->is(Type::IfcRelDefines) ) return IfcSchemaEntity(new IfcRelDefines(e));
-    if ( e->is(Type::IfcRelDefinesByProperties) ) return IfcSchemaEntity(new IfcRelDefinesByProperties(e));
-    if ( e->is(Type::IfcRelDefinesByType) ) return IfcSchemaEntity(new IfcRelDefinesByType(e));
-    if ( e->is(Type::IfcRelFillsElement) ) return IfcSchemaEntity(new IfcRelFillsElement(e));
-    if ( e->is(Type::IfcRelFlowControlElements) ) return IfcSchemaEntity(new IfcRelFlowControlElements(e));
-    if ( e->is(Type::IfcRelInteractionRequirements) ) return IfcSchemaEntity(new IfcRelInteractionRequirements(e));
-    if ( e->is(Type::IfcRelNests) ) return IfcSchemaEntity(new IfcRelNests(e));
-    if ( e->is(Type::IfcRelOccupiesSpaces) ) return IfcSchemaEntity(new IfcRelOccupiesSpaces(e));
-    if ( e->is(Type::IfcRelOverridesProperties) ) return IfcSchemaEntity(new IfcRelOverridesProperties(e));
-    if ( e->is(Type::IfcRelProjectsElement) ) return IfcSchemaEntity(new IfcRelProjectsElement(e));
-    if ( e->is(Type::IfcRelReferencedInSpatialStructure) ) return IfcSchemaEntity(new IfcRelReferencedInSpatialStructure(e));
-    if ( e->is(Type::IfcRelSchedulesCostItems) ) return IfcSchemaEntity(new IfcRelSchedulesCostItems(e));
-    if ( e->is(Type::IfcRelSequence) ) return IfcSchemaEntity(new IfcRelSequence(e));
-    if ( e->is(Type::IfcRelServicesBuildings) ) return IfcSchemaEntity(new IfcRelServicesBuildings(e));
-    if ( e->is(Type::IfcRelSpaceBoundary) ) return IfcSchemaEntity(new IfcRelSpaceBoundary(e));
-    if ( e->is(Type::IfcRelVoidsElement) ) return IfcSchemaEntity(new IfcRelVoidsElement(e));
-    if ( e->is(Type::IfcRelationship) ) return IfcSchemaEntity(new IfcRelationship(e));
-    if ( e->is(Type::IfcRelaxation) ) return IfcSchemaEntity(new IfcRelaxation(e));
-    if ( e->is(Type::IfcRepresentation) ) return IfcSchemaEntity(new IfcRepresentation(e));
-    if ( e->is(Type::IfcRepresentationContext) ) return IfcSchemaEntity(new IfcRepresentationContext(e));
-    if ( e->is(Type::IfcRepresentationItem) ) return IfcSchemaEntity(new IfcRepresentationItem(e));
-    if ( e->is(Type::IfcRepresentationMap) ) return IfcSchemaEntity(new IfcRepresentationMap(e));
-    if ( e->is(Type::IfcResource) ) return IfcSchemaEntity(new IfcResource(e));
-    if ( e->is(Type::IfcRevolvedAreaSolid) ) return IfcSchemaEntity(new IfcRevolvedAreaSolid(e));
-    if ( e->is(Type::IfcRibPlateProfileProperties) ) return IfcSchemaEntity(new IfcRibPlateProfileProperties(e));
-    if ( e->is(Type::IfcRightCircularCone) ) return IfcSchemaEntity(new IfcRightCircularCone(e));
-    if ( e->is(Type::IfcRightCircularCylinder) ) return IfcSchemaEntity(new IfcRightCircularCylinder(e));
-    if ( e->is(Type::IfcRoof) ) return IfcSchemaEntity(new IfcRoof(e));
-    if ( e->is(Type::IfcRoot) ) return IfcSchemaEntity(new IfcRoot(e));
-    if ( e->is(Type::IfcRoundedEdgeFeature) ) return IfcSchemaEntity(new IfcRoundedEdgeFeature(e));
-    if ( e->is(Type::IfcRoundedRectangleProfileDef) ) return IfcSchemaEntity(new IfcRoundedRectangleProfileDef(e));
-    if ( e->is(Type::IfcSIUnit) ) return IfcSchemaEntity(new IfcSIUnit(e));
-    if ( e->is(Type::IfcSanitaryTerminalType) ) return IfcSchemaEntity(new IfcSanitaryTerminalType(e));
-    if ( e->is(Type::IfcScheduleTimeControl) ) return IfcSchemaEntity(new IfcScheduleTimeControl(e));
-    if ( e->is(Type::IfcSectionProperties) ) return IfcSchemaEntity(new IfcSectionProperties(e));
-    if ( e->is(Type::IfcSectionReinforcementProperties) ) return IfcSchemaEntity(new IfcSectionReinforcementProperties(e));
-    if ( e->is(Type::IfcSectionedSpine) ) return IfcSchemaEntity(new IfcSectionedSpine(e));
-    if ( e->is(Type::IfcSensorType) ) return IfcSchemaEntity(new IfcSensorType(e));
-    if ( e->is(Type::IfcServiceLife) ) return IfcSchemaEntity(new IfcServiceLife(e));
-    if ( e->is(Type::IfcServiceLifeFactor) ) return IfcSchemaEntity(new IfcServiceLifeFactor(e));
-    if ( e->is(Type::IfcShapeAspect) ) return IfcSchemaEntity(new IfcShapeAspect(e));
-    if ( e->is(Type::IfcShapeModel) ) return IfcSchemaEntity(new IfcShapeModel(e));
-    if ( e->is(Type::IfcShapeRepresentation) ) return IfcSchemaEntity(new IfcShapeRepresentation(e));
-    if ( e->is(Type::IfcShellBasedSurfaceModel) ) return IfcSchemaEntity(new IfcShellBasedSurfaceModel(e));
-    if ( e->is(Type::IfcSimpleProperty) ) return IfcSchemaEntity(new IfcSimpleProperty(e));
-    if ( e->is(Type::IfcSite) ) return IfcSchemaEntity(new IfcSite(e));
-    if ( e->is(Type::IfcSlab) ) return IfcSchemaEntity(new IfcSlab(e));
-    if ( e->is(Type::IfcSlabType) ) return IfcSchemaEntity(new IfcSlabType(e));
-    if ( e->is(Type::IfcSlippageConnectionCondition) ) return IfcSchemaEntity(new IfcSlippageConnectionCondition(e));
-    if ( e->is(Type::IfcSolidModel) ) return IfcSchemaEntity(new IfcSolidModel(e));
-    if ( e->is(Type::IfcSoundProperties) ) return IfcSchemaEntity(new IfcSoundProperties(e));
-    if ( e->is(Type::IfcSoundValue) ) return IfcSchemaEntity(new IfcSoundValue(e));
-    if ( e->is(Type::IfcSpace) ) return IfcSchemaEntity(new IfcSpace(e));
-    if ( e->is(Type::IfcSpaceHeaterType) ) return IfcSchemaEntity(new IfcSpaceHeaterType(e));
-    if ( e->is(Type::IfcSpaceProgram) ) return IfcSchemaEntity(new IfcSpaceProgram(e));
-    if ( e->is(Type::IfcSpaceThermalLoadProperties) ) return IfcSchemaEntity(new IfcSpaceThermalLoadProperties(e));
-    if ( e->is(Type::IfcSpaceType) ) return IfcSchemaEntity(new IfcSpaceType(e));
-    if ( e->is(Type::IfcSpatialStructureElement) ) return IfcSchemaEntity(new IfcSpatialStructureElement(e));
-    if ( e->is(Type::IfcSpatialStructureElementType) ) return IfcSchemaEntity(new IfcSpatialStructureElementType(e));
-    if ( e->is(Type::IfcSphere) ) return IfcSchemaEntity(new IfcSphere(e));
-    if ( e->is(Type::IfcStackTerminalType) ) return IfcSchemaEntity(new IfcStackTerminalType(e));
-    if ( e->is(Type::IfcStair) ) return IfcSchemaEntity(new IfcStair(e));
-    if ( e->is(Type::IfcStairFlight) ) return IfcSchemaEntity(new IfcStairFlight(e));
-    if ( e->is(Type::IfcStairFlightType) ) return IfcSchemaEntity(new IfcStairFlightType(e));
-    if ( e->is(Type::IfcStructuralAction) ) return IfcSchemaEntity(new IfcStructuralAction(e));
-    if ( e->is(Type::IfcStructuralActivity) ) return IfcSchemaEntity(new IfcStructuralActivity(e));
-    if ( e->is(Type::IfcStructuralAnalysisModel) ) return IfcSchemaEntity(new IfcStructuralAnalysisModel(e));
-    if ( e->is(Type::IfcStructuralConnection) ) return IfcSchemaEntity(new IfcStructuralConnection(e));
-    if ( e->is(Type::IfcStructuralConnectionCondition) ) return IfcSchemaEntity(new IfcStructuralConnectionCondition(e));
-    if ( e->is(Type::IfcStructuralCurveConnection) ) return IfcSchemaEntity(new IfcStructuralCurveConnection(e));
-    if ( e->is(Type::IfcStructuralCurveMember) ) return IfcSchemaEntity(new IfcStructuralCurveMember(e));
-    if ( e->is(Type::IfcStructuralCurveMemberVarying) ) return IfcSchemaEntity(new IfcStructuralCurveMemberVarying(e));
-    if ( e->is(Type::IfcStructuralItem) ) return IfcSchemaEntity(new IfcStructuralItem(e));
-    if ( e->is(Type::IfcStructuralLinearAction) ) return IfcSchemaEntity(new IfcStructuralLinearAction(e));
-    if ( e->is(Type::IfcStructuralLinearActionVarying) ) return IfcSchemaEntity(new IfcStructuralLinearActionVarying(e));
-    if ( e->is(Type::IfcStructuralLoad) ) return IfcSchemaEntity(new IfcStructuralLoad(e));
-    if ( e->is(Type::IfcStructuralLoadGroup) ) return IfcSchemaEntity(new IfcStructuralLoadGroup(e));
-    if ( e->is(Type::IfcStructuralLoadLinearForce) ) return IfcSchemaEntity(new IfcStructuralLoadLinearForce(e));
-    if ( e->is(Type::IfcStructuralLoadPlanarForce) ) return IfcSchemaEntity(new IfcStructuralLoadPlanarForce(e));
-    if ( e->is(Type::IfcStructuralLoadSingleDisplacement) ) return IfcSchemaEntity(new IfcStructuralLoadSingleDisplacement(e));
-    if ( e->is(Type::IfcStructuralLoadSingleDisplacementDistortion) ) return IfcSchemaEntity(new IfcStructuralLoadSingleDisplacementDistortion(e));
-    if ( e->is(Type::IfcStructuralLoadSingleForce) ) return IfcSchemaEntity(new IfcStructuralLoadSingleForce(e));
-    if ( e->is(Type::IfcStructuralLoadSingleForceWarping) ) return IfcSchemaEntity(new IfcStructuralLoadSingleForceWarping(e));
-    if ( e->is(Type::IfcStructuralLoadStatic) ) return IfcSchemaEntity(new IfcStructuralLoadStatic(e));
-    if ( e->is(Type::IfcStructuralLoadTemperature) ) return IfcSchemaEntity(new IfcStructuralLoadTemperature(e));
-    if ( e->is(Type::IfcStructuralMember) ) return IfcSchemaEntity(new IfcStructuralMember(e));
-    if ( e->is(Type::IfcStructuralPlanarAction) ) return IfcSchemaEntity(new IfcStructuralPlanarAction(e));
-    if ( e->is(Type::IfcStructuralPlanarActionVarying) ) return IfcSchemaEntity(new IfcStructuralPlanarActionVarying(e));
-    if ( e->is(Type::IfcStructuralPointAction) ) return IfcSchemaEntity(new IfcStructuralPointAction(e));
-    if ( e->is(Type::IfcStructuralPointConnection) ) return IfcSchemaEntity(new IfcStructuralPointConnection(e));
-    if ( e->is(Type::IfcStructuralPointReaction) ) return IfcSchemaEntity(new IfcStructuralPointReaction(e));
-    if ( e->is(Type::IfcStructuralProfileProperties) ) return IfcSchemaEntity(new IfcStructuralProfileProperties(e));
-    if ( e->is(Type::IfcStructuralReaction) ) return IfcSchemaEntity(new IfcStructuralReaction(e));
-    if ( e->is(Type::IfcStructuralResultGroup) ) return IfcSchemaEntity(new IfcStructuralResultGroup(e));
-    if ( e->is(Type::IfcStructuralSteelProfileProperties) ) return IfcSchemaEntity(new IfcStructuralSteelProfileProperties(e));
-    if ( e->is(Type::IfcStructuralSurfaceConnection) ) return IfcSchemaEntity(new IfcStructuralSurfaceConnection(e));
-    if ( e->is(Type::IfcStructuralSurfaceMember) ) return IfcSchemaEntity(new IfcStructuralSurfaceMember(e));
-    if ( e->is(Type::IfcStructuralSurfaceMemberVarying) ) return IfcSchemaEntity(new IfcStructuralSurfaceMemberVarying(e));
-    if ( e->is(Type::IfcStructuredDimensionCallout) ) return IfcSchemaEntity(new IfcStructuredDimensionCallout(e));
-    if ( e->is(Type::IfcStyleModel) ) return IfcSchemaEntity(new IfcStyleModel(e));
-    if ( e->is(Type::IfcStyledItem) ) return IfcSchemaEntity(new IfcStyledItem(e));
-    if ( e->is(Type::IfcStyledRepresentation) ) return IfcSchemaEntity(new IfcStyledRepresentation(e));
-    if ( e->is(Type::IfcSubContractResource) ) return IfcSchemaEntity(new IfcSubContractResource(e));
-    if ( e->is(Type::IfcSubedge) ) return IfcSchemaEntity(new IfcSubedge(e));
-    if ( e->is(Type::IfcSurface) ) return IfcSchemaEntity(new IfcSurface(e));
-    if ( e->is(Type::IfcSurfaceCurveSweptAreaSolid) ) return IfcSchemaEntity(new IfcSurfaceCurveSweptAreaSolid(e));
-    if ( e->is(Type::IfcSurfaceOfLinearExtrusion) ) return IfcSchemaEntity(new IfcSurfaceOfLinearExtrusion(e));
-    if ( e->is(Type::IfcSurfaceOfRevolution) ) return IfcSchemaEntity(new IfcSurfaceOfRevolution(e));
-    if ( e->is(Type::IfcSurfaceStyle) ) return IfcSchemaEntity(new IfcSurfaceStyle(e));
-    if ( e->is(Type::IfcSurfaceStyleLighting) ) return IfcSchemaEntity(new IfcSurfaceStyleLighting(e));
-    if ( e->is(Type::IfcSurfaceStyleRefraction) ) return IfcSchemaEntity(new IfcSurfaceStyleRefraction(e));
-    if ( e->is(Type::IfcSurfaceStyleRendering) ) return IfcSchemaEntity(new IfcSurfaceStyleRendering(e));
-    if ( e->is(Type::IfcSurfaceStyleShading) ) return IfcSchemaEntity(new IfcSurfaceStyleShading(e));
-    if ( e->is(Type::IfcSurfaceStyleWithTextures) ) return IfcSchemaEntity(new IfcSurfaceStyleWithTextures(e));
-    if ( e->is(Type::IfcSurfaceTexture) ) return IfcSchemaEntity(new IfcSurfaceTexture(e));
-    if ( e->is(Type::IfcSweptAreaSolid) ) return IfcSchemaEntity(new IfcSweptAreaSolid(e));
-    if ( e->is(Type::IfcSweptDiskSolid) ) return IfcSchemaEntity(new IfcSweptDiskSolid(e));
-    if ( e->is(Type::IfcSweptSurface) ) return IfcSchemaEntity(new IfcSweptSurface(e));
-    if ( e->is(Type::IfcSwitchingDeviceType) ) return IfcSchemaEntity(new IfcSwitchingDeviceType(e));
-    if ( e->is(Type::IfcSymbolStyle) ) return IfcSchemaEntity(new IfcSymbolStyle(e));
-    if ( e->is(Type::IfcSystem) ) return IfcSchemaEntity(new IfcSystem(e));
-    if ( e->is(Type::IfcSystemFurnitureElementType) ) return IfcSchemaEntity(new IfcSystemFurnitureElementType(e));
-    if ( e->is(Type::IfcTShapeProfileDef) ) return IfcSchemaEntity(new IfcTShapeProfileDef(e));
-    if ( e->is(Type::IfcTable) ) return IfcSchemaEntity(new IfcTable(e));
-    if ( e->is(Type::IfcTableRow) ) return IfcSchemaEntity(new IfcTableRow(e));
-    if ( e->is(Type::IfcTankType) ) return IfcSchemaEntity(new IfcTankType(e));
-    if ( e->is(Type::IfcTask) ) return IfcSchemaEntity(new IfcTask(e));
-    if ( e->is(Type::IfcTelecomAddress) ) return IfcSchemaEntity(new IfcTelecomAddress(e));
-    if ( e->is(Type::IfcTendon) ) return IfcSchemaEntity(new IfcTendon(e));
-    if ( e->is(Type::IfcTendonAnchor) ) return IfcSchemaEntity(new IfcTendonAnchor(e));
-    if ( e->is(Type::IfcTerminatorSymbol) ) return IfcSchemaEntity(new IfcTerminatorSymbol(e));
-    if ( e->is(Type::IfcTextLiteral) ) return IfcSchemaEntity(new IfcTextLiteral(e));
-    if ( e->is(Type::IfcTextLiteralWithExtent) ) return IfcSchemaEntity(new IfcTextLiteralWithExtent(e));
-    if ( e->is(Type::IfcTextStyle) ) return IfcSchemaEntity(new IfcTextStyle(e));
-    if ( e->is(Type::IfcTextStyleFontModel) ) return IfcSchemaEntity(new IfcTextStyleFontModel(e));
-    if ( e->is(Type::IfcTextStyleForDefinedFont) ) return IfcSchemaEntity(new IfcTextStyleForDefinedFont(e));
-    if ( e->is(Type::IfcTextStyleTextModel) ) return IfcSchemaEntity(new IfcTextStyleTextModel(e));
-    if ( e->is(Type::IfcTextStyleWithBoxCharacteristics) ) return IfcSchemaEntity(new IfcTextStyleWithBoxCharacteristics(e));
-    if ( e->is(Type::IfcTextureCoordinate) ) return IfcSchemaEntity(new IfcTextureCoordinate(e));
-    if ( e->is(Type::IfcTextureCoordinateGenerator) ) return IfcSchemaEntity(new IfcTextureCoordinateGenerator(e));
-    if ( e->is(Type::IfcTextureMap) ) return IfcSchemaEntity(new IfcTextureMap(e));
-    if ( e->is(Type::IfcTextureVertex) ) return IfcSchemaEntity(new IfcTextureVertex(e));
-    if ( e->is(Type::IfcThermalMaterialProperties) ) return IfcSchemaEntity(new IfcThermalMaterialProperties(e));
-    if ( e->is(Type::IfcTimeSeries) ) return IfcSchemaEntity(new IfcTimeSeries(e));
-    if ( e->is(Type::IfcTimeSeriesReferenceRelationship) ) return IfcSchemaEntity(new IfcTimeSeriesReferenceRelationship(e));
-    if ( e->is(Type::IfcTimeSeriesSchedule) ) return IfcSchemaEntity(new IfcTimeSeriesSchedule(e));
-    if ( e->is(Type::IfcTimeSeriesValue) ) return IfcSchemaEntity(new IfcTimeSeriesValue(e));
-    if ( e->is(Type::IfcTopologicalRepresentationItem) ) return IfcSchemaEntity(new IfcTopologicalRepresentationItem(e));
-    if ( e->is(Type::IfcTopologyRepresentation) ) return IfcSchemaEntity(new IfcTopologyRepresentation(e));
-    if ( e->is(Type::IfcTransformerType) ) return IfcSchemaEntity(new IfcTransformerType(e));
-    if ( e->is(Type::IfcTransportElement) ) return IfcSchemaEntity(new IfcTransportElement(e));
-    if ( e->is(Type::IfcTransportElementType) ) return IfcSchemaEntity(new IfcTransportElementType(e));
-    if ( e->is(Type::IfcTrapeziumProfileDef) ) return IfcSchemaEntity(new IfcTrapeziumProfileDef(e));
-    if ( e->is(Type::IfcTrimmedCurve) ) return IfcSchemaEntity(new IfcTrimmedCurve(e));
-    if ( e->is(Type::IfcTubeBundleType) ) return IfcSchemaEntity(new IfcTubeBundleType(e));
-    if ( e->is(Type::IfcTwoDirectionRepeatFactor) ) return IfcSchemaEntity(new IfcTwoDirectionRepeatFactor(e));
-    if ( e->is(Type::IfcTypeObject) ) return IfcSchemaEntity(new IfcTypeObject(e));
-    if ( e->is(Type::IfcTypeProduct) ) return IfcSchemaEntity(new IfcTypeProduct(e));
-    if ( e->is(Type::IfcUShapeProfileDef) ) return IfcSchemaEntity(new IfcUShapeProfileDef(e));
-    if ( e->is(Type::IfcUnitAssignment) ) return IfcSchemaEntity(new IfcUnitAssignment(e));
-    if ( e->is(Type::IfcUnitaryEquipmentType) ) return IfcSchemaEntity(new IfcUnitaryEquipmentType(e));
-    if ( e->is(Type::IfcValveType) ) return IfcSchemaEntity(new IfcValveType(e));
-    if ( e->is(Type::IfcVector) ) return IfcSchemaEntity(new IfcVector(e));
-    if ( e->is(Type::IfcVertex) ) return IfcSchemaEntity(new IfcVertex(e));
-    if ( e->is(Type::IfcVertexBasedTextureMap) ) return IfcSchemaEntity(new IfcVertexBasedTextureMap(e));
-    if ( e->is(Type::IfcVertexLoop) ) return IfcSchemaEntity(new IfcVertexLoop(e));
-    if ( e->is(Type::IfcVertexPoint) ) return IfcSchemaEntity(new IfcVertexPoint(e));
-    if ( e->is(Type::IfcVibrationIsolatorType) ) return IfcSchemaEntity(new IfcVibrationIsolatorType(e));
-    if ( e->is(Type::IfcVirtualElement) ) return IfcSchemaEntity(new IfcVirtualElement(e));
-    if ( e->is(Type::IfcVirtualGridIntersection) ) return IfcSchemaEntity(new IfcVirtualGridIntersection(e));
-    if ( e->is(Type::IfcWall) ) return IfcSchemaEntity(new IfcWall(e));
-    if ( e->is(Type::IfcWallStandardCase) ) return IfcSchemaEntity(new IfcWallStandardCase(e));
-    if ( e->is(Type::IfcWallType) ) return IfcSchemaEntity(new IfcWallType(e));
-    if ( e->is(Type::IfcWasteTerminalType) ) return IfcSchemaEntity(new IfcWasteTerminalType(e));
-    if ( e->is(Type::IfcWaterProperties) ) return IfcSchemaEntity(new IfcWaterProperties(e));
-    if ( e->is(Type::IfcWindow) ) return IfcSchemaEntity(new IfcWindow(e));
-    if ( e->is(Type::IfcWindowLiningProperties) ) return IfcSchemaEntity(new IfcWindowLiningProperties(e));
-    if ( e->is(Type::IfcWindowPanelProperties) ) return IfcSchemaEntity(new IfcWindowPanelProperties(e));
-    if ( e->is(Type::IfcWindowStyle) ) return IfcSchemaEntity(new IfcWindowStyle(e));
-    if ( e->is(Type::IfcWorkControl) ) return IfcSchemaEntity(new IfcWorkControl(e));
-    if ( e->is(Type::IfcWorkPlan) ) return IfcSchemaEntity(new IfcWorkPlan(e));
-    if ( e->is(Type::IfcWorkSchedule) ) return IfcSchemaEntity(new IfcWorkSchedule(e));
-    if ( e->is(Type::IfcZShapeProfileDef) ) return IfcSchemaEntity(new IfcZShapeProfileDef(e));
-    if ( e->is(Type::IfcZone) ) return IfcSchemaEntity(new IfcZone(e));
-    throw; 
+    switch(e->type()){
+        case Type::IfcAbsorbedDoseMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcAccelerationMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcAmountOfSubstanceMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcAngularVelocityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcAreaMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcBoolean: return new IfcEntitySelect(e); break;
+        case Type::IfcColour: return new IfcEntitySelect(e); break;
+        case Type::IfcComplexNumber: return new IfcEntitySelect(e); break;
+        case Type::IfcCompoundPlaneAngleMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcContextDependentMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcCountMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcCurvatureMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcDateTimeSelect: return new IfcEntitySelect(e); break;
+        case Type::IfcDerivedMeasureValue: return new IfcEntitySelect(e); break;
+        case Type::IfcDescriptiveMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcDoseEquivalentMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcDynamicViscosityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcElectricCapacitanceMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcElectricChargeMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcElectricConductanceMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcElectricCurrentMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcElectricResistanceMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcElectricVoltageMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcEnergyMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcForceMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcFrequencyMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcHeatFluxDensityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcHeatingValueMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcIdentifier: return new IfcEntitySelect(e); break;
+        case Type::IfcIlluminanceMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcInductanceMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcInteger: return new IfcEntitySelect(e); break;
+        case Type::IfcIntegerCountRateMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcIonConcentrationMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcIsothermalMoistureCapacityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcKinematicViscosityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcLabel: return new IfcEntitySelect(e); break;
+        case Type::IfcLengthMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcLinearForceMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcLinearMomentMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcLinearStiffnessMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcLinearVelocityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcLogical: return new IfcEntitySelect(e); break;
+        case Type::IfcLuminousFluxMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcLuminousIntensityDistributionMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcLuminousIntensityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcMagneticFluxDensityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcMagneticFluxMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcMassDensityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcMassFlowRateMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcMassMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcMassPerLengthMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcMeasureValue: return new IfcEntitySelect(e); break;
+        case Type::IfcModulusOfElasticityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcModulusOfLinearSubgradeReactionMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcModulusOfRotationalSubgradeReactionMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcModulusOfSubgradeReactionMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcMoistureDiffusivityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcMolecularWeightMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcMomentOfInertiaMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcMonetaryMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcNormalisedRatioMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcNullStyle: return new IfcEntitySelect(e); break;
+        case Type::IfcNumericMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcPHMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcParameterValue: return new IfcEntitySelect(e); break;
+        case Type::IfcPlanarForceMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcPlaneAngleMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcPositiveLengthMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcPositivePlaneAngleMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcPositiveRatioMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcPowerMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcPressureMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcRadioActivityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcRatioMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcReal: return new IfcEntitySelect(e); break;
+        case Type::IfcRotationalFrequencyMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcRotationalMassMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcRotationalStiffnessMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcSectionModulusMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcSectionalAreaIntegralMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcShearModulusMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcSimpleValue: return new IfcEntitySelect(e); break;
+        case Type::IfcSolidAngleMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcSoundPowerMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcSoundPressureMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcSpecificHeatCapacityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcSpecularExponent: return new IfcEntitySelect(e); break;
+        case Type::IfcSpecularRoughness: return new IfcEntitySelect(e); break;
+        case Type::IfcTemperatureGradientMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcText: return new IfcEntitySelect(e); break;
+        case Type::IfcThermalAdmittanceMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcThermalConductivityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcThermalExpansionCoefficientMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcThermalResistanceMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcThermalTransmittanceMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcThermodynamicTemperatureMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcTimeMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcTimeStamp: return new IfcEntitySelect(e); break;
+        case Type::IfcTorqueMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcVaporPermeabilityMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcVolumeMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcVolumetricFlowRateMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcWarpingConstantMeasure: return new IfcEntitySelect(e); break;
+        case Type::IfcWarpingMomentMeasure: return new IfcEntitySelect(e); break;
+        case Type::Ifc2DCompositeCurve: return new Ifc2DCompositeCurve(e); break;
+        case Type::IfcActionRequest: return new IfcActionRequest(e); break;
+        case Type::IfcActor: return new IfcActor(e); break;
+        case Type::IfcActorRole: return new IfcActorRole(e); break;
+        case Type::IfcActuatorType: return new IfcActuatorType(e); break;
+        case Type::IfcAddress: return new IfcAddress(e); break;
+        case Type::IfcAirTerminalBoxType: return new IfcAirTerminalBoxType(e); break;
+        case Type::IfcAirTerminalType: return new IfcAirTerminalType(e); break;
+        case Type::IfcAirToAirHeatRecoveryType: return new IfcAirToAirHeatRecoveryType(e); break;
+        case Type::IfcAlarmType: return new IfcAlarmType(e); break;
+        case Type::IfcAngularDimension: return new IfcAngularDimension(e); break;
+        case Type::IfcAnnotation: return new IfcAnnotation(e); break;
+        case Type::IfcAnnotationCurveOccurrence: return new IfcAnnotationCurveOccurrence(e); break;
+        case Type::IfcAnnotationFillArea: return new IfcAnnotationFillArea(e); break;
+        case Type::IfcAnnotationFillAreaOccurrence: return new IfcAnnotationFillAreaOccurrence(e); break;
+        case Type::IfcAnnotationOccurrence: return new IfcAnnotationOccurrence(e); break;
+        case Type::IfcAnnotationSurface: return new IfcAnnotationSurface(e); break;
+        case Type::IfcAnnotationSurfaceOccurrence: return new IfcAnnotationSurfaceOccurrence(e); break;
+        case Type::IfcAnnotationSymbolOccurrence: return new IfcAnnotationSymbolOccurrence(e); break;
+        case Type::IfcAnnotationTextOccurrence: return new IfcAnnotationTextOccurrence(e); break;
+        case Type::IfcApplication: return new IfcApplication(e); break;
+        case Type::IfcAppliedValue: return new IfcAppliedValue(e); break;
+        case Type::IfcAppliedValueRelationship: return new IfcAppliedValueRelationship(e); break;
+        case Type::IfcApproval: return new IfcApproval(e); break;
+        case Type::IfcApprovalActorRelationship: return new IfcApprovalActorRelationship(e); break;
+        case Type::IfcApprovalPropertyRelationship: return new IfcApprovalPropertyRelationship(e); break;
+        case Type::IfcApprovalRelationship: return new IfcApprovalRelationship(e); break;
+        case Type::IfcArbitraryClosedProfileDef: return new IfcArbitraryClosedProfileDef(e); break;
+        case Type::IfcArbitraryOpenProfileDef: return new IfcArbitraryOpenProfileDef(e); break;
+        case Type::IfcArbitraryProfileDefWithVoids: return new IfcArbitraryProfileDefWithVoids(e); break;
+        case Type::IfcAsset: return new IfcAsset(e); break;
+        case Type::IfcAsymmetricIShapeProfileDef: return new IfcAsymmetricIShapeProfileDef(e); break;
+        case Type::IfcAxis1Placement: return new IfcAxis1Placement(e); break;
+        case Type::IfcAxis2Placement2D: return new IfcAxis2Placement2D(e); break;
+        case Type::IfcAxis2Placement3D: return new IfcAxis2Placement3D(e); break;
+        case Type::IfcBSplineCurve: return new IfcBSplineCurve(e); break;
+        case Type::IfcBeam: return new IfcBeam(e); break;
+        case Type::IfcBeamType: return new IfcBeamType(e); break;
+        case Type::IfcBezierCurve: return new IfcBezierCurve(e); break;
+        case Type::IfcBlobTexture: return new IfcBlobTexture(e); break;
+        case Type::IfcBlock: return new IfcBlock(e); break;
+        case Type::IfcBoilerType: return new IfcBoilerType(e); break;
+        case Type::IfcBooleanClippingResult: return new IfcBooleanClippingResult(e); break;
+        case Type::IfcBooleanResult: return new IfcBooleanResult(e); break;
+        case Type::IfcBoundaryCondition: return new IfcBoundaryCondition(e); break;
+        case Type::IfcBoundaryEdgeCondition: return new IfcBoundaryEdgeCondition(e); break;
+        case Type::IfcBoundaryFaceCondition: return new IfcBoundaryFaceCondition(e); break;
+        case Type::IfcBoundaryNodeCondition: return new IfcBoundaryNodeCondition(e); break;
+        case Type::IfcBoundaryNodeConditionWarping: return new IfcBoundaryNodeConditionWarping(e); break;
+        case Type::IfcBoundedCurve: return new IfcBoundedCurve(e); break;
+        case Type::IfcBoundedSurface: return new IfcBoundedSurface(e); break;
+        case Type::IfcBoundingBox: return new IfcBoundingBox(e); break;
+        case Type::IfcBoxedHalfSpace: return new IfcBoxedHalfSpace(e); break;
+        case Type::IfcBuilding: return new IfcBuilding(e); break;
+        case Type::IfcBuildingElement: return new IfcBuildingElement(e); break;
+        case Type::IfcBuildingElementComponent: return new IfcBuildingElementComponent(e); break;
+        case Type::IfcBuildingElementPart: return new IfcBuildingElementPart(e); break;
+        case Type::IfcBuildingElementProxy: return new IfcBuildingElementProxy(e); break;
+        case Type::IfcBuildingElementProxyType: return new IfcBuildingElementProxyType(e); break;
+        case Type::IfcBuildingElementType: return new IfcBuildingElementType(e); break;
+        case Type::IfcBuildingStorey: return new IfcBuildingStorey(e); break;
+        case Type::IfcCShapeProfileDef: return new IfcCShapeProfileDef(e); break;
+        case Type::IfcCableCarrierFittingType: return new IfcCableCarrierFittingType(e); break;
+        case Type::IfcCableCarrierSegmentType: return new IfcCableCarrierSegmentType(e); break;
+        case Type::IfcCableSegmentType: return new IfcCableSegmentType(e); break;
+        case Type::IfcCalendarDate: return new IfcCalendarDate(e); break;
+        case Type::IfcCartesianPoint: return new IfcCartesianPoint(e); break;
+        case Type::IfcCartesianTransformationOperator: return new IfcCartesianTransformationOperator(e); break;
+        case Type::IfcCartesianTransformationOperator2D: return new IfcCartesianTransformationOperator2D(e); break;
+        case Type::IfcCartesianTransformationOperator2DnonUniform: return new IfcCartesianTransformationOperator2DnonUniform(e); break;
+        case Type::IfcCartesianTransformationOperator3D: return new IfcCartesianTransformationOperator3D(e); break;
+        case Type::IfcCartesianTransformationOperator3DnonUniform: return new IfcCartesianTransformationOperator3DnonUniform(e); break;
+        case Type::IfcCenterLineProfileDef: return new IfcCenterLineProfileDef(e); break;
+        case Type::IfcChamferEdgeFeature: return new IfcChamferEdgeFeature(e); break;
+        case Type::IfcChillerType: return new IfcChillerType(e); break;
+        case Type::IfcCircle: return new IfcCircle(e); break;
+        case Type::IfcCircleHollowProfileDef: return new IfcCircleHollowProfileDef(e); break;
+        case Type::IfcCircleProfileDef: return new IfcCircleProfileDef(e); break;
+        case Type::IfcClassification: return new IfcClassification(e); break;
+        case Type::IfcClassificationItem: return new IfcClassificationItem(e); break;
+        case Type::IfcClassificationItemRelationship: return new IfcClassificationItemRelationship(e); break;
+        case Type::IfcClassificationNotation: return new IfcClassificationNotation(e); break;
+        case Type::IfcClassificationNotationFacet: return new IfcClassificationNotationFacet(e); break;
+        case Type::IfcClassificationReference: return new IfcClassificationReference(e); break;
+        case Type::IfcClosedShell: return new IfcClosedShell(e); break;
+        case Type::IfcCoilType: return new IfcCoilType(e); break;
+        case Type::IfcColourRgb: return new IfcColourRgb(e); break;
+        case Type::IfcColourSpecification: return new IfcColourSpecification(e); break;
+        case Type::IfcColumn: return new IfcColumn(e); break;
+        case Type::IfcColumnType: return new IfcColumnType(e); break;
+        case Type::IfcComplexProperty: return new IfcComplexProperty(e); break;
+        case Type::IfcCompositeCurve: return new IfcCompositeCurve(e); break;
+        case Type::IfcCompositeCurveSegment: return new IfcCompositeCurveSegment(e); break;
+        case Type::IfcCompositeProfileDef: return new IfcCompositeProfileDef(e); break;
+        case Type::IfcCompressorType: return new IfcCompressorType(e); break;
+        case Type::IfcCondenserType: return new IfcCondenserType(e); break;
+        case Type::IfcCondition: return new IfcCondition(e); break;
+        case Type::IfcConditionCriterion: return new IfcConditionCriterion(e); break;
+        case Type::IfcConic: return new IfcConic(e); break;
+        case Type::IfcConnectedFaceSet: return new IfcConnectedFaceSet(e); break;
+        case Type::IfcConnectionCurveGeometry: return new IfcConnectionCurveGeometry(e); break;
+        case Type::IfcConnectionGeometry: return new IfcConnectionGeometry(e); break;
+        case Type::IfcConnectionPointEccentricity: return new IfcConnectionPointEccentricity(e); break;
+        case Type::IfcConnectionPointGeometry: return new IfcConnectionPointGeometry(e); break;
+        case Type::IfcConnectionPortGeometry: return new IfcConnectionPortGeometry(e); break;
+        case Type::IfcConnectionSurfaceGeometry: return new IfcConnectionSurfaceGeometry(e); break;
+        case Type::IfcConstraint: return new IfcConstraint(e); break;
+        case Type::IfcConstraintAggregationRelationship: return new IfcConstraintAggregationRelationship(e); break;
+        case Type::IfcConstraintClassificationRelationship: return new IfcConstraintClassificationRelationship(e); break;
+        case Type::IfcConstraintRelationship: return new IfcConstraintRelationship(e); break;
+        case Type::IfcConstructionEquipmentResource: return new IfcConstructionEquipmentResource(e); break;
+        case Type::IfcConstructionMaterialResource: return new IfcConstructionMaterialResource(e); break;
+        case Type::IfcConstructionProductResource: return new IfcConstructionProductResource(e); break;
+        case Type::IfcConstructionResource: return new IfcConstructionResource(e); break;
+        case Type::IfcContextDependentUnit: return new IfcContextDependentUnit(e); break;
+        case Type::IfcControl: return new IfcControl(e); break;
+        case Type::IfcControllerType: return new IfcControllerType(e); break;
+        case Type::IfcConversionBasedUnit: return new IfcConversionBasedUnit(e); break;
+        case Type::IfcCooledBeamType: return new IfcCooledBeamType(e); break;
+        case Type::IfcCoolingTowerType: return new IfcCoolingTowerType(e); break;
+        case Type::IfcCoordinatedUniversalTimeOffset: return new IfcCoordinatedUniversalTimeOffset(e); break;
+        case Type::IfcCostItem: return new IfcCostItem(e); break;
+        case Type::IfcCostSchedule: return new IfcCostSchedule(e); break;
+        case Type::IfcCostValue: return new IfcCostValue(e); break;
+        case Type::IfcCovering: return new IfcCovering(e); break;
+        case Type::IfcCoveringType: return new IfcCoveringType(e); break;
+        case Type::IfcCraneRailAShapeProfileDef: return new IfcCraneRailAShapeProfileDef(e); break;
+        case Type::IfcCraneRailFShapeProfileDef: return new IfcCraneRailFShapeProfileDef(e); break;
+        case Type::IfcCrewResource: return new IfcCrewResource(e); break;
+        case Type::IfcCsgPrimitive3D: return new IfcCsgPrimitive3D(e); break;
+        case Type::IfcCsgSolid: return new IfcCsgSolid(e); break;
+        case Type::IfcCurrencyRelationship: return new IfcCurrencyRelationship(e); break;
+        case Type::IfcCurtainWall: return new IfcCurtainWall(e); break;
+        case Type::IfcCurtainWallType: return new IfcCurtainWallType(e); break;
+        case Type::IfcCurve: return new IfcCurve(e); break;
+        case Type::IfcCurveBoundedPlane: return new IfcCurveBoundedPlane(e); break;
+        case Type::IfcCurveStyle: return new IfcCurveStyle(e); break;
+        case Type::IfcCurveStyleFont: return new IfcCurveStyleFont(e); break;
+        case Type::IfcCurveStyleFontAndScaling: return new IfcCurveStyleFontAndScaling(e); break;
+        case Type::IfcCurveStyleFontPattern: return new IfcCurveStyleFontPattern(e); break;
+        case Type::IfcDamperType: return new IfcDamperType(e); break;
+        case Type::IfcDateAndTime: return new IfcDateAndTime(e); break;
+        case Type::IfcDefinedSymbol: return new IfcDefinedSymbol(e); break;
+        case Type::IfcDerivedProfileDef: return new IfcDerivedProfileDef(e); break;
+        case Type::IfcDerivedUnit: return new IfcDerivedUnit(e); break;
+        case Type::IfcDerivedUnitElement: return new IfcDerivedUnitElement(e); break;
+        case Type::IfcDiameterDimension: return new IfcDiameterDimension(e); break;
+        case Type::IfcDimensionCalloutRelationship: return new IfcDimensionCalloutRelationship(e); break;
+        case Type::IfcDimensionCurve: return new IfcDimensionCurve(e); break;
+        case Type::IfcDimensionCurveDirectedCallout: return new IfcDimensionCurveDirectedCallout(e); break;
+        case Type::IfcDimensionCurveTerminator: return new IfcDimensionCurveTerminator(e); break;
+        case Type::IfcDimensionPair: return new IfcDimensionPair(e); break;
+        case Type::IfcDimensionalExponents: return new IfcDimensionalExponents(e); break;
+        case Type::IfcDirection: return new IfcDirection(e); break;
+        case Type::IfcDiscreteAccessory: return new IfcDiscreteAccessory(e); break;
+        case Type::IfcDiscreteAccessoryType: return new IfcDiscreteAccessoryType(e); break;
+        case Type::IfcDistributionChamberElement: return new IfcDistributionChamberElement(e); break;
+        case Type::IfcDistributionChamberElementType: return new IfcDistributionChamberElementType(e); break;
+        case Type::IfcDistributionControlElement: return new IfcDistributionControlElement(e); break;
+        case Type::IfcDistributionControlElementType: return new IfcDistributionControlElementType(e); break;
+        case Type::IfcDistributionElement: return new IfcDistributionElement(e); break;
+        case Type::IfcDistributionElementType: return new IfcDistributionElementType(e); break;
+        case Type::IfcDistributionFlowElement: return new IfcDistributionFlowElement(e); break;
+        case Type::IfcDistributionFlowElementType: return new IfcDistributionFlowElementType(e); break;
+        case Type::IfcDistributionPort: return new IfcDistributionPort(e); break;
+        case Type::IfcDocumentElectronicFormat: return new IfcDocumentElectronicFormat(e); break;
+        case Type::IfcDocumentInformation: return new IfcDocumentInformation(e); break;
+        case Type::IfcDocumentInformationRelationship: return new IfcDocumentInformationRelationship(e); break;
+        case Type::IfcDocumentReference: return new IfcDocumentReference(e); break;
+        case Type::IfcDoor: return new IfcDoor(e); break;
+        case Type::IfcDoorLiningProperties: return new IfcDoorLiningProperties(e); break;
+        case Type::IfcDoorPanelProperties: return new IfcDoorPanelProperties(e); break;
+        case Type::IfcDoorStyle: return new IfcDoorStyle(e); break;
+        case Type::IfcDraughtingCallout: return new IfcDraughtingCallout(e); break;
+        case Type::IfcDraughtingCalloutRelationship: return new IfcDraughtingCalloutRelationship(e); break;
+        case Type::IfcDraughtingPreDefinedColour: return new IfcDraughtingPreDefinedColour(e); break;
+        case Type::IfcDraughtingPreDefinedCurveFont: return new IfcDraughtingPreDefinedCurveFont(e); break;
+        case Type::IfcDraughtingPreDefinedTextFont: return new IfcDraughtingPreDefinedTextFont(e); break;
+        case Type::IfcDuctFittingType: return new IfcDuctFittingType(e); break;
+        case Type::IfcDuctSegmentType: return new IfcDuctSegmentType(e); break;
+        case Type::IfcDuctSilencerType: return new IfcDuctSilencerType(e); break;
+        case Type::IfcEdge: return new IfcEdge(e); break;
+        case Type::IfcEdgeCurve: return new IfcEdgeCurve(e); break;
+        case Type::IfcEdgeFeature: return new IfcEdgeFeature(e); break;
+        case Type::IfcEdgeLoop: return new IfcEdgeLoop(e); break;
+        case Type::IfcElectricApplianceType: return new IfcElectricApplianceType(e); break;
+        case Type::IfcElectricDistributionPoint: return new IfcElectricDistributionPoint(e); break;
+        case Type::IfcElectricFlowStorageDeviceType: return new IfcElectricFlowStorageDeviceType(e); break;
+        case Type::IfcElectricGeneratorType: return new IfcElectricGeneratorType(e); break;
+        case Type::IfcElectricHeaterType: return new IfcElectricHeaterType(e); break;
+        case Type::IfcElectricMotorType: return new IfcElectricMotorType(e); break;
+        case Type::IfcElectricTimeControlType: return new IfcElectricTimeControlType(e); break;
+        case Type::IfcElectricalBaseProperties: return new IfcElectricalBaseProperties(e); break;
+        case Type::IfcElectricalCircuit: return new IfcElectricalCircuit(e); break;
+        case Type::IfcElectricalElement: return new IfcElectricalElement(e); break;
+        case Type::IfcElement: return new IfcElement(e); break;
+        case Type::IfcElementAssembly: return new IfcElementAssembly(e); break;
+        case Type::IfcElementComponent: return new IfcElementComponent(e); break;
+        case Type::IfcElementComponentType: return new IfcElementComponentType(e); break;
+        case Type::IfcElementQuantity: return new IfcElementQuantity(e); break;
+        case Type::IfcElementType: return new IfcElementType(e); break;
+        case Type::IfcElementarySurface: return new IfcElementarySurface(e); break;
+        case Type::IfcEllipse: return new IfcEllipse(e); break;
+        case Type::IfcEllipseProfileDef: return new IfcEllipseProfileDef(e); break;
+        case Type::IfcEnergyConversionDevice: return new IfcEnergyConversionDevice(e); break;
+        case Type::IfcEnergyConversionDeviceType: return new IfcEnergyConversionDeviceType(e); break;
+        case Type::IfcEnergyProperties: return new IfcEnergyProperties(e); break;
+        case Type::IfcEnvironmentalImpactValue: return new IfcEnvironmentalImpactValue(e); break;
+        case Type::IfcEquipmentElement: return new IfcEquipmentElement(e); break;
+        case Type::IfcEquipmentStandard: return new IfcEquipmentStandard(e); break;
+        case Type::IfcEvaporativeCoolerType: return new IfcEvaporativeCoolerType(e); break;
+        case Type::IfcEvaporatorType: return new IfcEvaporatorType(e); break;
+        case Type::IfcExtendedMaterialProperties: return new IfcExtendedMaterialProperties(e); break;
+        case Type::IfcExternalReference: return new IfcExternalReference(e); break;
+        case Type::IfcExternallyDefinedHatchStyle: return new IfcExternallyDefinedHatchStyle(e); break;
+        case Type::IfcExternallyDefinedSurfaceStyle: return new IfcExternallyDefinedSurfaceStyle(e); break;
+        case Type::IfcExternallyDefinedSymbol: return new IfcExternallyDefinedSymbol(e); break;
+        case Type::IfcExternallyDefinedTextFont: return new IfcExternallyDefinedTextFont(e); break;
+        case Type::IfcExtrudedAreaSolid: return new IfcExtrudedAreaSolid(e); break;
+        case Type::IfcFace: return new IfcFace(e); break;
+        case Type::IfcFaceBasedSurfaceModel: return new IfcFaceBasedSurfaceModel(e); break;
+        case Type::IfcFaceBound: return new IfcFaceBound(e); break;
+        case Type::IfcFaceOuterBound: return new IfcFaceOuterBound(e); break;
+        case Type::IfcFaceSurface: return new IfcFaceSurface(e); break;
+        case Type::IfcFacetedBrep: return new IfcFacetedBrep(e); break;
+        case Type::IfcFacetedBrepWithVoids: return new IfcFacetedBrepWithVoids(e); break;
+        case Type::IfcFailureConnectionCondition: return new IfcFailureConnectionCondition(e); break;
+        case Type::IfcFanType: return new IfcFanType(e); break;
+        case Type::IfcFastener: return new IfcFastener(e); break;
+        case Type::IfcFastenerType: return new IfcFastenerType(e); break;
+        case Type::IfcFeatureElement: return new IfcFeatureElement(e); break;
+        case Type::IfcFeatureElementAddition: return new IfcFeatureElementAddition(e); break;
+        case Type::IfcFeatureElementSubtraction: return new IfcFeatureElementSubtraction(e); break;
+        case Type::IfcFillAreaStyle: return new IfcFillAreaStyle(e); break;
+        case Type::IfcFillAreaStyleHatching: return new IfcFillAreaStyleHatching(e); break;
+        case Type::IfcFillAreaStyleTileSymbolWithStyle: return new IfcFillAreaStyleTileSymbolWithStyle(e); break;
+        case Type::IfcFillAreaStyleTiles: return new IfcFillAreaStyleTiles(e); break;
+        case Type::IfcFilterType: return new IfcFilterType(e); break;
+        case Type::IfcFireSuppressionTerminalType: return new IfcFireSuppressionTerminalType(e); break;
+        case Type::IfcFlowController: return new IfcFlowController(e); break;
+        case Type::IfcFlowControllerType: return new IfcFlowControllerType(e); break;
+        case Type::IfcFlowFitting: return new IfcFlowFitting(e); break;
+        case Type::IfcFlowFittingType: return new IfcFlowFittingType(e); break;
+        case Type::IfcFlowInstrumentType: return new IfcFlowInstrumentType(e); break;
+        case Type::IfcFlowMeterType: return new IfcFlowMeterType(e); break;
+        case Type::IfcFlowMovingDevice: return new IfcFlowMovingDevice(e); break;
+        case Type::IfcFlowMovingDeviceType: return new IfcFlowMovingDeviceType(e); break;
+        case Type::IfcFlowSegment: return new IfcFlowSegment(e); break;
+        case Type::IfcFlowSegmentType: return new IfcFlowSegmentType(e); break;
+        case Type::IfcFlowStorageDevice: return new IfcFlowStorageDevice(e); break;
+        case Type::IfcFlowStorageDeviceType: return new IfcFlowStorageDeviceType(e); break;
+        case Type::IfcFlowTerminal: return new IfcFlowTerminal(e); break;
+        case Type::IfcFlowTerminalType: return new IfcFlowTerminalType(e); break;
+        case Type::IfcFlowTreatmentDevice: return new IfcFlowTreatmentDevice(e); break;
+        case Type::IfcFlowTreatmentDeviceType: return new IfcFlowTreatmentDeviceType(e); break;
+        case Type::IfcFluidFlowProperties: return new IfcFluidFlowProperties(e); break;
+        case Type::IfcFooting: return new IfcFooting(e); break;
+        case Type::IfcFuelProperties: return new IfcFuelProperties(e); break;
+        case Type::IfcFurnishingElement: return new IfcFurnishingElement(e); break;
+        case Type::IfcFurnishingElementType: return new IfcFurnishingElementType(e); break;
+        case Type::IfcFurnitureStandard: return new IfcFurnitureStandard(e); break;
+        case Type::IfcFurnitureType: return new IfcFurnitureType(e); break;
+        case Type::IfcGasTerminalType: return new IfcGasTerminalType(e); break;
+        case Type::IfcGeneralMaterialProperties: return new IfcGeneralMaterialProperties(e); break;
+        case Type::IfcGeneralProfileProperties: return new IfcGeneralProfileProperties(e); break;
+        case Type::IfcGeometricCurveSet: return new IfcGeometricCurveSet(e); break;
+        case Type::IfcGeometricRepresentationContext: return new IfcGeometricRepresentationContext(e); break;
+        case Type::IfcGeometricRepresentationItem: return new IfcGeometricRepresentationItem(e); break;
+        case Type::IfcGeometricRepresentationSubContext: return new IfcGeometricRepresentationSubContext(e); break;
+        case Type::IfcGeometricSet: return new IfcGeometricSet(e); break;
+        case Type::IfcGrid: return new IfcGrid(e); break;
+        case Type::IfcGridAxis: return new IfcGridAxis(e); break;
+        case Type::IfcGridPlacement: return new IfcGridPlacement(e); break;
+        case Type::IfcGroup: return new IfcGroup(e); break;
+        case Type::IfcHalfSpaceSolid: return new IfcHalfSpaceSolid(e); break;
+        case Type::IfcHeatExchangerType: return new IfcHeatExchangerType(e); break;
+        case Type::IfcHumidifierType: return new IfcHumidifierType(e); break;
+        case Type::IfcHygroscopicMaterialProperties: return new IfcHygroscopicMaterialProperties(e); break;
+        case Type::IfcIShapeProfileDef: return new IfcIShapeProfileDef(e); break;
+        case Type::IfcImageTexture: return new IfcImageTexture(e); break;
+        case Type::IfcInventory: return new IfcInventory(e); break;
+        case Type::IfcIrregularTimeSeries: return new IfcIrregularTimeSeries(e); break;
+        case Type::IfcIrregularTimeSeriesValue: return new IfcIrregularTimeSeriesValue(e); break;
+        case Type::IfcJunctionBoxType: return new IfcJunctionBoxType(e); break;
+        case Type::IfcLShapeProfileDef: return new IfcLShapeProfileDef(e); break;
+        case Type::IfcLaborResource: return new IfcLaborResource(e); break;
+        case Type::IfcLampType: return new IfcLampType(e); break;
+        case Type::IfcLibraryInformation: return new IfcLibraryInformation(e); break;
+        case Type::IfcLibraryReference: return new IfcLibraryReference(e); break;
+        case Type::IfcLightDistributionData: return new IfcLightDistributionData(e); break;
+        case Type::IfcLightFixtureType: return new IfcLightFixtureType(e); break;
+        case Type::IfcLightIntensityDistribution: return new IfcLightIntensityDistribution(e); break;
+        case Type::IfcLightSource: return new IfcLightSource(e); break;
+        case Type::IfcLightSourceAmbient: return new IfcLightSourceAmbient(e); break;
+        case Type::IfcLightSourceDirectional: return new IfcLightSourceDirectional(e); break;
+        case Type::IfcLightSourceGoniometric: return new IfcLightSourceGoniometric(e); break;
+        case Type::IfcLightSourcePositional: return new IfcLightSourcePositional(e); break;
+        case Type::IfcLightSourceSpot: return new IfcLightSourceSpot(e); break;
+        case Type::IfcLine: return new IfcLine(e); break;
+        case Type::IfcLinearDimension: return new IfcLinearDimension(e); break;
+        case Type::IfcLocalPlacement: return new IfcLocalPlacement(e); break;
+        case Type::IfcLocalTime: return new IfcLocalTime(e); break;
+        case Type::IfcLoop: return new IfcLoop(e); break;
+        case Type::IfcManifoldSolidBrep: return new IfcManifoldSolidBrep(e); break;
+        case Type::IfcMappedItem: return new IfcMappedItem(e); break;
+        case Type::IfcMaterial: return new IfcMaterial(e); break;
+        case Type::IfcMaterialClassificationRelationship: return new IfcMaterialClassificationRelationship(e); break;
+        case Type::IfcMaterialDefinitionRepresentation: return new IfcMaterialDefinitionRepresentation(e); break;
+        case Type::IfcMaterialLayer: return new IfcMaterialLayer(e); break;
+        case Type::IfcMaterialLayerSet: return new IfcMaterialLayerSet(e); break;
+        case Type::IfcMaterialLayerSetUsage: return new IfcMaterialLayerSetUsage(e); break;
+        case Type::IfcMaterialList: return new IfcMaterialList(e); break;
+        case Type::IfcMaterialProperties: return new IfcMaterialProperties(e); break;
+        case Type::IfcMeasureWithUnit: return new IfcMeasureWithUnit(e); break;
+        case Type::IfcMechanicalConcreteMaterialProperties: return new IfcMechanicalConcreteMaterialProperties(e); break;
+        case Type::IfcMechanicalFastener: return new IfcMechanicalFastener(e); break;
+        case Type::IfcMechanicalFastenerType: return new IfcMechanicalFastenerType(e); break;
+        case Type::IfcMechanicalMaterialProperties: return new IfcMechanicalMaterialProperties(e); break;
+        case Type::IfcMechanicalSteelMaterialProperties: return new IfcMechanicalSteelMaterialProperties(e); break;
+        case Type::IfcMember: return new IfcMember(e); break;
+        case Type::IfcMemberType: return new IfcMemberType(e); break;
+        case Type::IfcMetric: return new IfcMetric(e); break;
+        case Type::IfcMonetaryUnit: return new IfcMonetaryUnit(e); break;
+        case Type::IfcMotorConnectionType: return new IfcMotorConnectionType(e); break;
+        case Type::IfcMove: return new IfcMove(e); break;
+        case Type::IfcNamedUnit: return new IfcNamedUnit(e); break;
+        case Type::IfcObject: return new IfcObject(e); break;
+        case Type::IfcObjectDefinition: return new IfcObjectDefinition(e); break;
+        case Type::IfcObjectPlacement: return new IfcObjectPlacement(e); break;
+        case Type::IfcObjective: return new IfcObjective(e); break;
+        case Type::IfcOccupant: return new IfcOccupant(e); break;
+        case Type::IfcOffsetCurve2D: return new IfcOffsetCurve2D(e); break;
+        case Type::IfcOffsetCurve3D: return new IfcOffsetCurve3D(e); break;
+        case Type::IfcOneDirectionRepeatFactor: return new IfcOneDirectionRepeatFactor(e); break;
+        case Type::IfcOpenShell: return new IfcOpenShell(e); break;
+        case Type::IfcOpeningElement: return new IfcOpeningElement(e); break;
+        case Type::IfcOpticalMaterialProperties: return new IfcOpticalMaterialProperties(e); break;
+        case Type::IfcOrderAction: return new IfcOrderAction(e); break;
+        case Type::IfcOrganization: return new IfcOrganization(e); break;
+        case Type::IfcOrganizationRelationship: return new IfcOrganizationRelationship(e); break;
+        case Type::IfcOrientedEdge: return new IfcOrientedEdge(e); break;
+        case Type::IfcOutletType: return new IfcOutletType(e); break;
+        case Type::IfcOwnerHistory: return new IfcOwnerHistory(e); break;
+        case Type::IfcParameterizedProfileDef: return new IfcParameterizedProfileDef(e); break;
+        case Type::IfcPath: return new IfcPath(e); break;
+        case Type::IfcPerformanceHistory: return new IfcPerformanceHistory(e); break;
+        case Type::IfcPermeableCoveringProperties: return new IfcPermeableCoveringProperties(e); break;
+        case Type::IfcPermit: return new IfcPermit(e); break;
+        case Type::IfcPerson: return new IfcPerson(e); break;
+        case Type::IfcPersonAndOrganization: return new IfcPersonAndOrganization(e); break;
+        case Type::IfcPhysicalComplexQuantity: return new IfcPhysicalComplexQuantity(e); break;
+        case Type::IfcPhysicalQuantity: return new IfcPhysicalQuantity(e); break;
+        case Type::IfcPhysicalSimpleQuantity: return new IfcPhysicalSimpleQuantity(e); break;
+        case Type::IfcPile: return new IfcPile(e); break;
+        case Type::IfcPipeFittingType: return new IfcPipeFittingType(e); break;
+        case Type::IfcPipeSegmentType: return new IfcPipeSegmentType(e); break;
+        case Type::IfcPixelTexture: return new IfcPixelTexture(e); break;
+        case Type::IfcPlacement: return new IfcPlacement(e); break;
+        case Type::IfcPlanarBox: return new IfcPlanarBox(e); break;
+        case Type::IfcPlanarExtent: return new IfcPlanarExtent(e); break;
+        case Type::IfcPlane: return new IfcPlane(e); break;
+        case Type::IfcPlate: return new IfcPlate(e); break;
+        case Type::IfcPlateType: return new IfcPlateType(e); break;
+        case Type::IfcPoint: return new IfcPoint(e); break;
+        case Type::IfcPointOnCurve: return new IfcPointOnCurve(e); break;
+        case Type::IfcPointOnSurface: return new IfcPointOnSurface(e); break;
+        case Type::IfcPolyLoop: return new IfcPolyLoop(e); break;
+        case Type::IfcPolygonalBoundedHalfSpace: return new IfcPolygonalBoundedHalfSpace(e); break;
+        case Type::IfcPolyline: return new IfcPolyline(e); break;
+        case Type::IfcPort: return new IfcPort(e); break;
+        case Type::IfcPostalAddress: return new IfcPostalAddress(e); break;
+        case Type::IfcPreDefinedColour: return new IfcPreDefinedColour(e); break;
+        case Type::IfcPreDefinedCurveFont: return new IfcPreDefinedCurveFont(e); break;
+        case Type::IfcPreDefinedDimensionSymbol: return new IfcPreDefinedDimensionSymbol(e); break;
+        case Type::IfcPreDefinedItem: return new IfcPreDefinedItem(e); break;
+        case Type::IfcPreDefinedPointMarkerSymbol: return new IfcPreDefinedPointMarkerSymbol(e); break;
+        case Type::IfcPreDefinedSymbol: return new IfcPreDefinedSymbol(e); break;
+        case Type::IfcPreDefinedTerminatorSymbol: return new IfcPreDefinedTerminatorSymbol(e); break;
+        case Type::IfcPreDefinedTextFont: return new IfcPreDefinedTextFont(e); break;
+        case Type::IfcPresentationLayerAssignment: return new IfcPresentationLayerAssignment(e); break;
+        case Type::IfcPresentationLayerWithStyle: return new IfcPresentationLayerWithStyle(e); break;
+        case Type::IfcPresentationStyle: return new IfcPresentationStyle(e); break;
+        case Type::IfcPresentationStyleAssignment: return new IfcPresentationStyleAssignment(e); break;
+        case Type::IfcProcedure: return new IfcProcedure(e); break;
+        case Type::IfcProcess: return new IfcProcess(e); break;
+        case Type::IfcProduct: return new IfcProduct(e); break;
+        case Type::IfcProductDefinitionShape: return new IfcProductDefinitionShape(e); break;
+        case Type::IfcProductRepresentation: return new IfcProductRepresentation(e); break;
+        case Type::IfcProductsOfCombustionProperties: return new IfcProductsOfCombustionProperties(e); break;
+        case Type::IfcProfileDef: return new IfcProfileDef(e); break;
+        case Type::IfcProfileProperties: return new IfcProfileProperties(e); break;
+        case Type::IfcProject: return new IfcProject(e); break;
+        case Type::IfcProjectOrder: return new IfcProjectOrder(e); break;
+        case Type::IfcProjectOrderRecord: return new IfcProjectOrderRecord(e); break;
+        case Type::IfcProjectionCurve: return new IfcProjectionCurve(e); break;
+        case Type::IfcProjectionElement: return new IfcProjectionElement(e); break;
+        case Type::IfcProperty: return new IfcProperty(e); break;
+        case Type::IfcPropertyBoundedValue: return new IfcPropertyBoundedValue(e); break;
+        case Type::IfcPropertyConstraintRelationship: return new IfcPropertyConstraintRelationship(e); break;
+        case Type::IfcPropertyDefinition: return new IfcPropertyDefinition(e); break;
+        case Type::IfcPropertyDependencyRelationship: return new IfcPropertyDependencyRelationship(e); break;
+        case Type::IfcPropertyEnumeratedValue: return new IfcPropertyEnumeratedValue(e); break;
+        case Type::IfcPropertyEnumeration: return new IfcPropertyEnumeration(e); break;
+        case Type::IfcPropertyListValue: return new IfcPropertyListValue(e); break;
+        case Type::IfcPropertyReferenceValue: return new IfcPropertyReferenceValue(e); break;
+        case Type::IfcPropertySet: return new IfcPropertySet(e); break;
+        case Type::IfcPropertySetDefinition: return new IfcPropertySetDefinition(e); break;
+        case Type::IfcPropertySingleValue: return new IfcPropertySingleValue(e); break;
+        case Type::IfcPropertyTableValue: return new IfcPropertyTableValue(e); break;
+        case Type::IfcProtectiveDeviceType: return new IfcProtectiveDeviceType(e); break;
+        case Type::IfcProxy: return new IfcProxy(e); break;
+        case Type::IfcPumpType: return new IfcPumpType(e); break;
+        case Type::IfcQuantityArea: return new IfcQuantityArea(e); break;
+        case Type::IfcQuantityCount: return new IfcQuantityCount(e); break;
+        case Type::IfcQuantityLength: return new IfcQuantityLength(e); break;
+        case Type::IfcQuantityTime: return new IfcQuantityTime(e); break;
+        case Type::IfcQuantityVolume: return new IfcQuantityVolume(e); break;
+        case Type::IfcQuantityWeight: return new IfcQuantityWeight(e); break;
+        case Type::IfcRadiusDimension: return new IfcRadiusDimension(e); break;
+        case Type::IfcRailing: return new IfcRailing(e); break;
+        case Type::IfcRailingType: return new IfcRailingType(e); break;
+        case Type::IfcRamp: return new IfcRamp(e); break;
+        case Type::IfcRampFlight: return new IfcRampFlight(e); break;
+        case Type::IfcRampFlightType: return new IfcRampFlightType(e); break;
+        case Type::IfcRationalBezierCurve: return new IfcRationalBezierCurve(e); break;
+        case Type::IfcRectangleHollowProfileDef: return new IfcRectangleHollowProfileDef(e); break;
+        case Type::IfcRectangleProfileDef: return new IfcRectangleProfileDef(e); break;
+        case Type::IfcRectangularPyramid: return new IfcRectangularPyramid(e); break;
+        case Type::IfcRectangularTrimmedSurface: return new IfcRectangularTrimmedSurface(e); break;
+        case Type::IfcReferencesValueDocument: return new IfcReferencesValueDocument(e); break;
+        case Type::IfcRegularTimeSeries: return new IfcRegularTimeSeries(e); break;
+        case Type::IfcReinforcementBarProperties: return new IfcReinforcementBarProperties(e); break;
+        case Type::IfcReinforcementDefinitionProperties: return new IfcReinforcementDefinitionProperties(e); break;
+        case Type::IfcReinforcingBar: return new IfcReinforcingBar(e); break;
+        case Type::IfcReinforcingElement: return new IfcReinforcingElement(e); break;
+        case Type::IfcReinforcingMesh: return new IfcReinforcingMesh(e); break;
+        case Type::IfcRelAggregates: return new IfcRelAggregates(e); break;
+        case Type::IfcRelAssigns: return new IfcRelAssigns(e); break;
+        case Type::IfcRelAssignsTasks: return new IfcRelAssignsTasks(e); break;
+        case Type::IfcRelAssignsToActor: return new IfcRelAssignsToActor(e); break;
+        case Type::IfcRelAssignsToControl: return new IfcRelAssignsToControl(e); break;
+        case Type::IfcRelAssignsToGroup: return new IfcRelAssignsToGroup(e); break;
+        case Type::IfcRelAssignsToProcess: return new IfcRelAssignsToProcess(e); break;
+        case Type::IfcRelAssignsToProduct: return new IfcRelAssignsToProduct(e); break;
+        case Type::IfcRelAssignsToProjectOrder: return new IfcRelAssignsToProjectOrder(e); break;
+        case Type::IfcRelAssignsToResource: return new IfcRelAssignsToResource(e); break;
+        case Type::IfcRelAssociates: return new IfcRelAssociates(e); break;
+        case Type::IfcRelAssociatesAppliedValue: return new IfcRelAssociatesAppliedValue(e); break;
+        case Type::IfcRelAssociatesApproval: return new IfcRelAssociatesApproval(e); break;
+        case Type::IfcRelAssociatesClassification: return new IfcRelAssociatesClassification(e); break;
+        case Type::IfcRelAssociatesConstraint: return new IfcRelAssociatesConstraint(e); break;
+        case Type::IfcRelAssociatesDocument: return new IfcRelAssociatesDocument(e); break;
+        case Type::IfcRelAssociatesLibrary: return new IfcRelAssociatesLibrary(e); break;
+        case Type::IfcRelAssociatesMaterial: return new IfcRelAssociatesMaterial(e); break;
+        case Type::IfcRelAssociatesProfileProperties: return new IfcRelAssociatesProfileProperties(e); break;
+        case Type::IfcRelConnects: return new IfcRelConnects(e); break;
+        case Type::IfcRelConnectsElements: return new IfcRelConnectsElements(e); break;
+        case Type::IfcRelConnectsPathElements: return new IfcRelConnectsPathElements(e); break;
+        case Type::IfcRelConnectsPortToElement: return new IfcRelConnectsPortToElement(e); break;
+        case Type::IfcRelConnectsPorts: return new IfcRelConnectsPorts(e); break;
+        case Type::IfcRelConnectsStructuralActivity: return new IfcRelConnectsStructuralActivity(e); break;
+        case Type::IfcRelConnectsStructuralElement: return new IfcRelConnectsStructuralElement(e); break;
+        case Type::IfcRelConnectsStructuralMember: return new IfcRelConnectsStructuralMember(e); break;
+        case Type::IfcRelConnectsWithEccentricity: return new IfcRelConnectsWithEccentricity(e); break;
+        case Type::IfcRelConnectsWithRealizingElements: return new IfcRelConnectsWithRealizingElements(e); break;
+        case Type::IfcRelContainedInSpatialStructure: return new IfcRelContainedInSpatialStructure(e); break;
+        case Type::IfcRelCoversBldgElements: return new IfcRelCoversBldgElements(e); break;
+        case Type::IfcRelCoversSpaces: return new IfcRelCoversSpaces(e); break;
+        case Type::IfcRelDecomposes: return new IfcRelDecomposes(e); break;
+        case Type::IfcRelDefines: return new IfcRelDefines(e); break;
+        case Type::IfcRelDefinesByProperties: return new IfcRelDefinesByProperties(e); break;
+        case Type::IfcRelDefinesByType: return new IfcRelDefinesByType(e); break;
+        case Type::IfcRelFillsElement: return new IfcRelFillsElement(e); break;
+        case Type::IfcRelFlowControlElements: return new IfcRelFlowControlElements(e); break;
+        case Type::IfcRelInteractionRequirements: return new IfcRelInteractionRequirements(e); break;
+        case Type::IfcRelNests: return new IfcRelNests(e); break;
+        case Type::IfcRelOccupiesSpaces: return new IfcRelOccupiesSpaces(e); break;
+        case Type::IfcRelOverridesProperties: return new IfcRelOverridesProperties(e); break;
+        case Type::IfcRelProjectsElement: return new IfcRelProjectsElement(e); break;
+        case Type::IfcRelReferencedInSpatialStructure: return new IfcRelReferencedInSpatialStructure(e); break;
+        case Type::IfcRelSchedulesCostItems: return new IfcRelSchedulesCostItems(e); break;
+        case Type::IfcRelSequence: return new IfcRelSequence(e); break;
+        case Type::IfcRelServicesBuildings: return new IfcRelServicesBuildings(e); break;
+        case Type::IfcRelSpaceBoundary: return new IfcRelSpaceBoundary(e); break;
+        case Type::IfcRelVoidsElement: return new IfcRelVoidsElement(e); break;
+        case Type::IfcRelationship: return new IfcRelationship(e); break;
+        case Type::IfcRelaxation: return new IfcRelaxation(e); break;
+        case Type::IfcRepresentation: return new IfcRepresentation(e); break;
+        case Type::IfcRepresentationContext: return new IfcRepresentationContext(e); break;
+        case Type::IfcRepresentationItem: return new IfcRepresentationItem(e); break;
+        case Type::IfcRepresentationMap: return new IfcRepresentationMap(e); break;
+        case Type::IfcResource: return new IfcResource(e); break;
+        case Type::IfcRevolvedAreaSolid: return new IfcRevolvedAreaSolid(e); break;
+        case Type::IfcRibPlateProfileProperties: return new IfcRibPlateProfileProperties(e); break;
+        case Type::IfcRightCircularCone: return new IfcRightCircularCone(e); break;
+        case Type::IfcRightCircularCylinder: return new IfcRightCircularCylinder(e); break;
+        case Type::IfcRoof: return new IfcRoof(e); break;
+        case Type::IfcRoot: return new IfcRoot(e); break;
+        case Type::IfcRoundedEdgeFeature: return new IfcRoundedEdgeFeature(e); break;
+        case Type::IfcRoundedRectangleProfileDef: return new IfcRoundedRectangleProfileDef(e); break;
+        case Type::IfcSIUnit: return new IfcSIUnit(e); break;
+        case Type::IfcSanitaryTerminalType: return new IfcSanitaryTerminalType(e); break;
+        case Type::IfcScheduleTimeControl: return new IfcScheduleTimeControl(e); break;
+        case Type::IfcSectionProperties: return new IfcSectionProperties(e); break;
+        case Type::IfcSectionReinforcementProperties: return new IfcSectionReinforcementProperties(e); break;
+        case Type::IfcSectionedSpine: return new IfcSectionedSpine(e); break;
+        case Type::IfcSensorType: return new IfcSensorType(e); break;
+        case Type::IfcServiceLife: return new IfcServiceLife(e); break;
+        case Type::IfcServiceLifeFactor: return new IfcServiceLifeFactor(e); break;
+        case Type::IfcShapeAspect: return new IfcShapeAspect(e); break;
+        case Type::IfcShapeModel: return new IfcShapeModel(e); break;
+        case Type::IfcShapeRepresentation: return new IfcShapeRepresentation(e); break;
+        case Type::IfcShellBasedSurfaceModel: return new IfcShellBasedSurfaceModel(e); break;
+        case Type::IfcSimpleProperty: return new IfcSimpleProperty(e); break;
+        case Type::IfcSite: return new IfcSite(e); break;
+        case Type::IfcSlab: return new IfcSlab(e); break;
+        case Type::IfcSlabType: return new IfcSlabType(e); break;
+        case Type::IfcSlippageConnectionCondition: return new IfcSlippageConnectionCondition(e); break;
+        case Type::IfcSolidModel: return new IfcSolidModel(e); break;
+        case Type::IfcSoundProperties: return new IfcSoundProperties(e); break;
+        case Type::IfcSoundValue: return new IfcSoundValue(e); break;
+        case Type::IfcSpace: return new IfcSpace(e); break;
+        case Type::IfcSpaceHeaterType: return new IfcSpaceHeaterType(e); break;
+        case Type::IfcSpaceProgram: return new IfcSpaceProgram(e); break;
+        case Type::IfcSpaceThermalLoadProperties: return new IfcSpaceThermalLoadProperties(e); break;
+        case Type::IfcSpaceType: return new IfcSpaceType(e); break;
+        case Type::IfcSpatialStructureElement: return new IfcSpatialStructureElement(e); break;
+        case Type::IfcSpatialStructureElementType: return new IfcSpatialStructureElementType(e); break;
+        case Type::IfcSphere: return new IfcSphere(e); break;
+        case Type::IfcStackTerminalType: return new IfcStackTerminalType(e); break;
+        case Type::IfcStair: return new IfcStair(e); break;
+        case Type::IfcStairFlight: return new IfcStairFlight(e); break;
+        case Type::IfcStairFlightType: return new IfcStairFlightType(e); break;
+        case Type::IfcStructuralAction: return new IfcStructuralAction(e); break;
+        case Type::IfcStructuralActivity: return new IfcStructuralActivity(e); break;
+        case Type::IfcStructuralAnalysisModel: return new IfcStructuralAnalysisModel(e); break;
+        case Type::IfcStructuralConnection: return new IfcStructuralConnection(e); break;
+        case Type::IfcStructuralConnectionCondition: return new IfcStructuralConnectionCondition(e); break;
+        case Type::IfcStructuralCurveConnection: return new IfcStructuralCurveConnection(e); break;
+        case Type::IfcStructuralCurveMember: return new IfcStructuralCurveMember(e); break;
+        case Type::IfcStructuralCurveMemberVarying: return new IfcStructuralCurveMemberVarying(e); break;
+        case Type::IfcStructuralItem: return new IfcStructuralItem(e); break;
+        case Type::IfcStructuralLinearAction: return new IfcStructuralLinearAction(e); break;
+        case Type::IfcStructuralLinearActionVarying: return new IfcStructuralLinearActionVarying(e); break;
+        case Type::IfcStructuralLoad: return new IfcStructuralLoad(e); break;
+        case Type::IfcStructuralLoadGroup: return new IfcStructuralLoadGroup(e); break;
+        case Type::IfcStructuralLoadLinearForce: return new IfcStructuralLoadLinearForce(e); break;
+        case Type::IfcStructuralLoadPlanarForce: return new IfcStructuralLoadPlanarForce(e); break;
+        case Type::IfcStructuralLoadSingleDisplacement: return new IfcStructuralLoadSingleDisplacement(e); break;
+        case Type::IfcStructuralLoadSingleDisplacementDistortion: return new IfcStructuralLoadSingleDisplacementDistortion(e); break;
+        case Type::IfcStructuralLoadSingleForce: return new IfcStructuralLoadSingleForce(e); break;
+        case Type::IfcStructuralLoadSingleForceWarping: return new IfcStructuralLoadSingleForceWarping(e); break;
+        case Type::IfcStructuralLoadStatic: return new IfcStructuralLoadStatic(e); break;
+        case Type::IfcStructuralLoadTemperature: return new IfcStructuralLoadTemperature(e); break;
+        case Type::IfcStructuralMember: return new IfcStructuralMember(e); break;
+        case Type::IfcStructuralPlanarAction: return new IfcStructuralPlanarAction(e); break;
+        case Type::IfcStructuralPlanarActionVarying: return new IfcStructuralPlanarActionVarying(e); break;
+        case Type::IfcStructuralPointAction: return new IfcStructuralPointAction(e); break;
+        case Type::IfcStructuralPointConnection: return new IfcStructuralPointConnection(e); break;
+        case Type::IfcStructuralPointReaction: return new IfcStructuralPointReaction(e); break;
+        case Type::IfcStructuralProfileProperties: return new IfcStructuralProfileProperties(e); break;
+        case Type::IfcStructuralReaction: return new IfcStructuralReaction(e); break;
+        case Type::IfcStructuralResultGroup: return new IfcStructuralResultGroup(e); break;
+        case Type::IfcStructuralSteelProfileProperties: return new IfcStructuralSteelProfileProperties(e); break;
+        case Type::IfcStructuralSurfaceConnection: return new IfcStructuralSurfaceConnection(e); break;
+        case Type::IfcStructuralSurfaceMember: return new IfcStructuralSurfaceMember(e); break;
+        case Type::IfcStructuralSurfaceMemberVarying: return new IfcStructuralSurfaceMemberVarying(e); break;
+        case Type::IfcStructuredDimensionCallout: return new IfcStructuredDimensionCallout(e); break;
+        case Type::IfcStyleModel: return new IfcStyleModel(e); break;
+        case Type::IfcStyledItem: return new IfcStyledItem(e); break;
+        case Type::IfcStyledRepresentation: return new IfcStyledRepresentation(e); break;
+        case Type::IfcSubContractResource: return new IfcSubContractResource(e); break;
+        case Type::IfcSubedge: return new IfcSubedge(e); break;
+        case Type::IfcSurface: return new IfcSurface(e); break;
+        case Type::IfcSurfaceCurveSweptAreaSolid: return new IfcSurfaceCurveSweptAreaSolid(e); break;
+        case Type::IfcSurfaceOfLinearExtrusion: return new IfcSurfaceOfLinearExtrusion(e); break;
+        case Type::IfcSurfaceOfRevolution: return new IfcSurfaceOfRevolution(e); break;
+        case Type::IfcSurfaceStyle: return new IfcSurfaceStyle(e); break;
+        case Type::IfcSurfaceStyleLighting: return new IfcSurfaceStyleLighting(e); break;
+        case Type::IfcSurfaceStyleRefraction: return new IfcSurfaceStyleRefraction(e); break;
+        case Type::IfcSurfaceStyleRendering: return new IfcSurfaceStyleRendering(e); break;
+        case Type::IfcSurfaceStyleShading: return new IfcSurfaceStyleShading(e); break;
+        case Type::IfcSurfaceStyleWithTextures: return new IfcSurfaceStyleWithTextures(e); break;
+        case Type::IfcSurfaceTexture: return new IfcSurfaceTexture(e); break;
+        case Type::IfcSweptAreaSolid: return new IfcSweptAreaSolid(e); break;
+        case Type::IfcSweptDiskSolid: return new IfcSweptDiskSolid(e); break;
+        case Type::IfcSweptSurface: return new IfcSweptSurface(e); break;
+        case Type::IfcSwitchingDeviceType: return new IfcSwitchingDeviceType(e); break;
+        case Type::IfcSymbolStyle: return new IfcSymbolStyle(e); break;
+        case Type::IfcSystem: return new IfcSystem(e); break;
+        case Type::IfcSystemFurnitureElementType: return new IfcSystemFurnitureElementType(e); break;
+        case Type::IfcTShapeProfileDef: return new IfcTShapeProfileDef(e); break;
+        case Type::IfcTable: return new IfcTable(e); break;
+        case Type::IfcTableRow: return new IfcTableRow(e); break;
+        case Type::IfcTankType: return new IfcTankType(e); break;
+        case Type::IfcTask: return new IfcTask(e); break;
+        case Type::IfcTelecomAddress: return new IfcTelecomAddress(e); break;
+        case Type::IfcTendon: return new IfcTendon(e); break;
+        case Type::IfcTendonAnchor: return new IfcTendonAnchor(e); break;
+        case Type::IfcTerminatorSymbol: return new IfcTerminatorSymbol(e); break;
+        case Type::IfcTextLiteral: return new IfcTextLiteral(e); break;
+        case Type::IfcTextLiteralWithExtent: return new IfcTextLiteralWithExtent(e); break;
+        case Type::IfcTextStyle: return new IfcTextStyle(e); break;
+        case Type::IfcTextStyleFontModel: return new IfcTextStyleFontModel(e); break;
+        case Type::IfcTextStyleForDefinedFont: return new IfcTextStyleForDefinedFont(e); break;
+        case Type::IfcTextStyleTextModel: return new IfcTextStyleTextModel(e); break;
+        case Type::IfcTextStyleWithBoxCharacteristics: return new IfcTextStyleWithBoxCharacteristics(e); break;
+        case Type::IfcTextureCoordinate: return new IfcTextureCoordinate(e); break;
+        case Type::IfcTextureCoordinateGenerator: return new IfcTextureCoordinateGenerator(e); break;
+        case Type::IfcTextureMap: return new IfcTextureMap(e); break;
+        case Type::IfcTextureVertex: return new IfcTextureVertex(e); break;
+        case Type::IfcThermalMaterialProperties: return new IfcThermalMaterialProperties(e); break;
+        case Type::IfcTimeSeries: return new IfcTimeSeries(e); break;
+        case Type::IfcTimeSeriesReferenceRelationship: return new IfcTimeSeriesReferenceRelationship(e); break;
+        case Type::IfcTimeSeriesSchedule: return new IfcTimeSeriesSchedule(e); break;
+        case Type::IfcTimeSeriesValue: return new IfcTimeSeriesValue(e); break;
+        case Type::IfcTopologicalRepresentationItem: return new IfcTopologicalRepresentationItem(e); break;
+        case Type::IfcTopologyRepresentation: return new IfcTopologyRepresentation(e); break;
+        case Type::IfcTransformerType: return new IfcTransformerType(e); break;
+        case Type::IfcTransportElement: return new IfcTransportElement(e); break;
+        case Type::IfcTransportElementType: return new IfcTransportElementType(e); break;
+        case Type::IfcTrapeziumProfileDef: return new IfcTrapeziumProfileDef(e); break;
+        case Type::IfcTrimmedCurve: return new IfcTrimmedCurve(e); break;
+        case Type::IfcTubeBundleType: return new IfcTubeBundleType(e); break;
+        case Type::IfcTwoDirectionRepeatFactor: return new IfcTwoDirectionRepeatFactor(e); break;
+        case Type::IfcTypeObject: return new IfcTypeObject(e); break;
+        case Type::IfcTypeProduct: return new IfcTypeProduct(e); break;
+        case Type::IfcUShapeProfileDef: return new IfcUShapeProfileDef(e); break;
+        case Type::IfcUnitAssignment: return new IfcUnitAssignment(e); break;
+        case Type::IfcUnitaryEquipmentType: return new IfcUnitaryEquipmentType(e); break;
+        case Type::IfcValveType: return new IfcValveType(e); break;
+        case Type::IfcVector: return new IfcVector(e); break;
+        case Type::IfcVertex: return new IfcVertex(e); break;
+        case Type::IfcVertexBasedTextureMap: return new IfcVertexBasedTextureMap(e); break;
+        case Type::IfcVertexLoop: return new IfcVertexLoop(e); break;
+        case Type::IfcVertexPoint: return new IfcVertexPoint(e); break;
+        case Type::IfcVibrationIsolatorType: return new IfcVibrationIsolatorType(e); break;
+        case Type::IfcVirtualElement: return new IfcVirtualElement(e); break;
+        case Type::IfcVirtualGridIntersection: return new IfcVirtualGridIntersection(e); break;
+        case Type::IfcWall: return new IfcWall(e); break;
+        case Type::IfcWallStandardCase: return new IfcWallStandardCase(e); break;
+        case Type::IfcWallType: return new IfcWallType(e); break;
+        case Type::IfcWasteTerminalType: return new IfcWasteTerminalType(e); break;
+        case Type::IfcWaterProperties: return new IfcWaterProperties(e); break;
+        case Type::IfcWindow: return new IfcWindow(e); break;
+        case Type::IfcWindowLiningProperties: return new IfcWindowLiningProperties(e); break;
+        case Type::IfcWindowPanelProperties: return new IfcWindowPanelProperties(e); break;
+        case Type::IfcWindowStyle: return new IfcWindowStyle(e); break;
+        case Type::IfcWorkControl: return new IfcWorkControl(e); break;
+        case Type::IfcWorkPlan: return new IfcWorkPlan(e); break;
+        case Type::IfcWorkSchedule: return new IfcWorkSchedule(e); break;
+        case Type::IfcZShapeProfileDef: return new IfcZShapeProfileDef(e); break;
+        case Type::IfcZone: return new IfcZone(e); break;
+        default: throw; break; 
+    }
 }
 
 std::string Type::ToString(Enum v) {
@@ -796,769 +798,774 @@ std::string Type::ToString(Enum v) {
     return names[v];
 }
 
-Type::Enum Type::FromString(const std::string& s){
-    if(s=="IFCABSORBEDDOSEMEASURE"                        ) { return IfcAbsorbedDoseMeasure; }
-    if(s=="IFCACCELERATIONMEASURE"                        ) { return IfcAccelerationMeasure; }
-    if(s=="IFCAMOUNTOFSUBSTANCEMEASURE"                   ) { return IfcAmountOfSubstanceMeasure; }
-    if(s=="IFCANGULARVELOCITYMEASURE"                     ) { return IfcAngularVelocityMeasure; }
-    if(s=="IFCAREAMEASURE"                                ) { return IfcAreaMeasure; }
-    if(s=="IFCBOOLEAN"                                    ) { return IfcBoolean; }
-    if(s=="IFCCOLOUR"                                     ) { return IfcColour; }
-    if(s=="IFCCOMPLEXNUMBER"                              ) { return IfcComplexNumber; }
-    if(s=="IFCCOMPOUNDPLANEANGLEMEASURE"                  ) { return IfcCompoundPlaneAngleMeasure; }
-    if(s=="IFCCONTEXTDEPENDENTMEASURE"                    ) { return IfcContextDependentMeasure; }
-    if(s=="IFCCOUNTMEASURE"                               ) { return IfcCountMeasure; }
-    if(s=="IFCCURVATUREMEASURE"                           ) { return IfcCurvatureMeasure; }
-    if(s=="IFCDATETIMESELECT"                             ) { return IfcDateTimeSelect; }
-    if(s=="IFCDERIVEDMEASUREVALUE"                        ) { return IfcDerivedMeasureValue; }
-    if(s=="IFCDESCRIPTIVEMEASURE"                         ) { return IfcDescriptiveMeasure; }
-    if(s=="IFCDOSEEQUIVALENTMEASURE"                      ) { return IfcDoseEquivalentMeasure; }
-    if(s=="IFCDYNAMICVISCOSITYMEASURE"                    ) { return IfcDynamicViscosityMeasure; }
-    if(s=="IFCELECTRICCAPACITANCEMEASURE"                 ) { return IfcElectricCapacitanceMeasure; }
-    if(s=="IFCELECTRICCHARGEMEASURE"                      ) { return IfcElectricChargeMeasure; }
-    if(s=="IFCELECTRICCONDUCTANCEMEASURE"                 ) { return IfcElectricConductanceMeasure; }
-    if(s=="IFCELECTRICCURRENTMEASURE"                     ) { return IfcElectricCurrentMeasure; }
-    if(s=="IFCELECTRICRESISTANCEMEASURE"                  ) { return IfcElectricResistanceMeasure; }
-    if(s=="IFCELECTRICVOLTAGEMEASURE"                     ) { return IfcElectricVoltageMeasure; }
-    if(s=="IFCENERGYMEASURE"                              ) { return IfcEnergyMeasure; }
-    if(s=="IFCFORCEMEASURE"                               ) { return IfcForceMeasure; }
-    if(s=="IFCFREQUENCYMEASURE"                           ) { return IfcFrequencyMeasure; }
-    if(s=="IFCHEATFLUXDENSITYMEASURE"                     ) { return IfcHeatFluxDensityMeasure; }
-    if(s=="IFCHEATINGVALUEMEASURE"                        ) { return IfcHeatingValueMeasure; }
-    if(s=="IFCIDENTIFIER"                                 ) { return IfcIdentifier; }
-    if(s=="IFCILLUMINANCEMEASURE"                         ) { return IfcIlluminanceMeasure; }
-    if(s=="IFCINDUCTANCEMEASURE"                          ) { return IfcInductanceMeasure; }
-    if(s=="IFCINTEGER"                                    ) { return IfcInteger; }
-    if(s=="IFCINTEGERCOUNTRATEMEASURE"                    ) { return IfcIntegerCountRateMeasure; }
-    if(s=="IFCIONCONCENTRATIONMEASURE"                    ) { return IfcIonConcentrationMeasure; }
-    if(s=="IFCISOTHERMALMOISTURECAPACITYMEASURE"          ) { return IfcIsothermalMoistureCapacityMeasure; }
-    if(s=="IFCKINEMATICVISCOSITYMEASURE"                  ) { return IfcKinematicViscosityMeasure; }
-    if(s=="IFCLABEL"                                      ) { return IfcLabel; }
-    if(s=="IFCLENGTHMEASURE"                              ) { return IfcLengthMeasure; }
-    if(s=="IFCLINEARFORCEMEASURE"                         ) { return IfcLinearForceMeasure; }
-    if(s=="IFCLINEARMOMENTMEASURE"                        ) { return IfcLinearMomentMeasure; }
-    if(s=="IFCLINEARSTIFFNESSMEASURE"                     ) { return IfcLinearStiffnessMeasure; }
-    if(s=="IFCLINEARVELOCITYMEASURE"                      ) { return IfcLinearVelocityMeasure; }
-    if(s=="IFCLOGICAL"                                    ) { return IfcLogical; }
-    if(s=="IFCLUMINOUSFLUXMEASURE"                        ) { return IfcLuminousFluxMeasure; }
-    if(s=="IFCLUMINOUSINTENSITYDISTRIBUTIONMEASURE"       ) { return IfcLuminousIntensityDistributionMeasure; }
-    if(s=="IFCLUMINOUSINTENSITYMEASURE"                   ) { return IfcLuminousIntensityMeasure; }
-    if(s=="IFCMAGNETICFLUXDENSITYMEASURE"                 ) { return IfcMagneticFluxDensityMeasure; }
-    if(s=="IFCMAGNETICFLUXMEASURE"                        ) { return IfcMagneticFluxMeasure; }
-    if(s=="IFCMASSDENSITYMEASURE"                         ) { return IfcMassDensityMeasure; }
-    if(s=="IFCMASSFLOWRATEMEASURE"                        ) { return IfcMassFlowRateMeasure; }
-    if(s=="IFCMASSMEASURE"                                ) { return IfcMassMeasure; }
-    if(s=="IFCMASSPERLENGTHMEASURE"                       ) { return IfcMassPerLengthMeasure; }
-    if(s=="IFCMEASUREVALUE"                               ) { return IfcMeasureValue; }
-    if(s=="IFCMODULUSOFELASTICITYMEASURE"                 ) { return IfcModulusOfElasticityMeasure; }
-    if(s=="IFCMODULUSOFLINEARSUBGRADEREACTIONMEASURE"     ) { return IfcModulusOfLinearSubgradeReactionMeasure; }
-    if(s=="IFCMODULUSOFROTATIONALSUBGRADEREACTIONMEASURE" ) { return IfcModulusOfRotationalSubgradeReactionMeasure; }
-    if(s=="IFCMODULUSOFSUBGRADEREACTIONMEASURE"           ) { return IfcModulusOfSubgradeReactionMeasure; }
-    if(s=="IFCMOISTUREDIFFUSIVITYMEASURE"                 ) { return IfcMoistureDiffusivityMeasure; }
-    if(s=="IFCMOLECULARWEIGHTMEASURE"                     ) { return IfcMolecularWeightMeasure; }
-    if(s=="IFCMOMENTOFINERTIAMEASURE"                     ) { return IfcMomentOfInertiaMeasure; }
-    if(s=="IFCMONETARYMEASURE"                            ) { return IfcMonetaryMeasure; }
-    if(s=="IFCNORMALISEDRATIOMEASURE"                     ) { return IfcNormalisedRatioMeasure; }
-    if(s=="IFCNULLSTYLE"                                  ) { return IfcNullStyle; }
-    if(s=="IFCNUMERICMEASURE"                             ) { return IfcNumericMeasure; }
-    if(s=="IFCPHMEASURE"                                  ) { return IfcPHMeasure; }
-    if(s=="IFCPARAMETERVALUE"                             ) { return IfcParameterValue; }
-    if(s=="IFCPLANARFORCEMEASURE"                         ) { return IfcPlanarForceMeasure; }
-    if(s=="IFCPLANEANGLEMEASURE"                          ) { return IfcPlaneAngleMeasure; }
-    if(s=="IFCPOSITIVELENGTHMEASURE"                      ) { return IfcPositiveLengthMeasure; }
-    if(s=="IFCPOSITIVEPLANEANGLEMEASURE"                  ) { return IfcPositivePlaneAngleMeasure; }
-    if(s=="IFCPOSITIVERATIOMEASURE"                       ) { return IfcPositiveRatioMeasure; }
-    if(s=="IFCPOWERMEASURE"                               ) { return IfcPowerMeasure; }
-    if(s=="IFCPRESSUREMEASURE"                            ) { return IfcPressureMeasure; }
-    if(s=="IFCRADIOACTIVITYMEASURE"                       ) { return IfcRadioActivityMeasure; }
-    if(s=="IFCRATIOMEASURE"                               ) { return IfcRatioMeasure; }
-    if(s=="IFCREAL"                                       ) { return IfcReal; }
-    if(s=="IFCROTATIONALFREQUENCYMEASURE"                 ) { return IfcRotationalFrequencyMeasure; }
-    if(s=="IFCROTATIONALMASSMEASURE"                      ) { return IfcRotationalMassMeasure; }
-    if(s=="IFCROTATIONALSTIFFNESSMEASURE"                 ) { return IfcRotationalStiffnessMeasure; }
-    if(s=="IFCSECTIONMODULUSMEASURE"                      ) { return IfcSectionModulusMeasure; }
-    if(s=="IFCSECTIONALAREAINTEGRALMEASURE"               ) { return IfcSectionalAreaIntegralMeasure; }
-    if(s=="IFCSHEARMODULUSMEASURE"                        ) { return IfcShearModulusMeasure; }
-    if(s=="IFCSIMPLEVALUE"                                ) { return IfcSimpleValue; }
-    if(s=="IFCSOLIDANGLEMEASURE"                          ) { return IfcSolidAngleMeasure; }
-    if(s=="IFCSOUNDPOWERMEASURE"                          ) { return IfcSoundPowerMeasure; }
-    if(s=="IFCSOUNDPRESSUREMEASURE"                       ) { return IfcSoundPressureMeasure; }
-    if(s=="IFCSPECIFICHEATCAPACITYMEASURE"                ) { return IfcSpecificHeatCapacityMeasure; }
-    if(s=="IFCSPECULAREXPONENT"                           ) { return IfcSpecularExponent; }
-    if(s=="IFCSPECULARROUGHNESS"                          ) { return IfcSpecularRoughness; }
-    if(s=="IFCTEMPERATUREGRADIENTMEASURE"                 ) { return IfcTemperatureGradientMeasure; }
-    if(s=="IFCTEXT"                                       ) { return IfcText; }
-    if(s=="IFCTHERMALADMITTANCEMEASURE"                   ) { return IfcThermalAdmittanceMeasure; }
-    if(s=="IFCTHERMALCONDUCTIVITYMEASURE"                 ) { return IfcThermalConductivityMeasure; }
-    if(s=="IFCTHERMALEXPANSIONCOEFFICIENTMEASURE"         ) { return IfcThermalExpansionCoefficientMeasure; }
-    if(s=="IFCTHERMALRESISTANCEMEASURE"                   ) { return IfcThermalResistanceMeasure; }
-    if(s=="IFCTHERMALTRANSMITTANCEMEASURE"                ) { return IfcThermalTransmittanceMeasure; }
-    if(s=="IFCTHERMODYNAMICTEMPERATUREMEASURE"            ) { return IfcThermodynamicTemperatureMeasure; }
-    if(s=="IFCTIMEMEASURE"                                ) { return IfcTimeMeasure; }
-    if(s=="IFCTIMESTAMP"                                  ) { return IfcTimeStamp; }
-    if(s=="IFCTORQUEMEASURE"                              ) { return IfcTorqueMeasure; }
-    if(s=="IFCVAPORPERMEABILITYMEASURE"                   ) { return IfcVaporPermeabilityMeasure; }
-    if(s=="IFCVOLUMEMEASURE"                              ) { return IfcVolumeMeasure; }
-    if(s=="IFCVOLUMETRICFLOWRATEMEASURE"                  ) { return IfcVolumetricFlowRateMeasure; }
-    if(s=="IFCWARPINGCONSTANTMEASURE"                     ) { return IfcWarpingConstantMeasure; }
-    if(s=="IFCWARPINGMOMENTMEASURE"                       ) { return IfcWarpingMomentMeasure; }
-    if(s=="IFC2DCOMPOSITECURVE"                           ) { return Ifc2DCompositeCurve; }
-    if(s=="IFCACTIONREQUEST"                              ) { return IfcActionRequest; }
-    if(s=="IFCACTOR"                                      ) { return IfcActor; }
-    if(s=="IFCACTORROLE"                                  ) { return IfcActorRole; }
-    if(s=="IFCACTUATORTYPE"                               ) { return IfcActuatorType; }
-    if(s=="IFCADDRESS"                                    ) { return IfcAddress; }
-    if(s=="IFCAIRTERMINALBOXTYPE"                         ) { return IfcAirTerminalBoxType; }
-    if(s=="IFCAIRTERMINALTYPE"                            ) { return IfcAirTerminalType; }
-    if(s=="IFCAIRTOAIRHEATRECOVERYTYPE"                   ) { return IfcAirToAirHeatRecoveryType; }
-    if(s=="IFCALARMTYPE"                                  ) { return IfcAlarmType; }
-    if(s=="IFCANGULARDIMENSION"                           ) { return IfcAngularDimension; }
-    if(s=="IFCANNOTATION"                                 ) { return IfcAnnotation; }
-    if(s=="IFCANNOTATIONCURVEOCCURRENCE"                  ) { return IfcAnnotationCurveOccurrence; }
-    if(s=="IFCANNOTATIONFILLAREA"                         ) { return IfcAnnotationFillArea; }
-    if(s=="IFCANNOTATIONFILLAREAOCCURRENCE"               ) { return IfcAnnotationFillAreaOccurrence; }
-    if(s=="IFCANNOTATIONOCCURRENCE"                       ) { return IfcAnnotationOccurrence; }
-    if(s=="IFCANNOTATIONSURFACE"                          ) { return IfcAnnotationSurface; }
-    if(s=="IFCANNOTATIONSURFACEOCCURRENCE"                ) { return IfcAnnotationSurfaceOccurrence; }
-    if(s=="IFCANNOTATIONSYMBOLOCCURRENCE"                 ) { return IfcAnnotationSymbolOccurrence; }
-    if(s=="IFCANNOTATIONTEXTOCCURRENCE"                   ) { return IfcAnnotationTextOccurrence; }
-    if(s=="IFCAPPLICATION"                                ) { return IfcApplication; }
-    if(s=="IFCAPPLIEDVALUE"                               ) { return IfcAppliedValue; }
-    if(s=="IFCAPPLIEDVALUERELATIONSHIP"                   ) { return IfcAppliedValueRelationship; }
-    if(s=="IFCAPPROVAL"                                   ) { return IfcApproval; }
-    if(s=="IFCAPPROVALACTORRELATIONSHIP"                  ) { return IfcApprovalActorRelationship; }
-    if(s=="IFCAPPROVALPROPERTYRELATIONSHIP"               ) { return IfcApprovalPropertyRelationship; }
-    if(s=="IFCAPPROVALRELATIONSHIP"                       ) { return IfcApprovalRelationship; }
-    if(s=="IFCARBITRARYCLOSEDPROFILEDEF"                  ) { return IfcArbitraryClosedProfileDef; }
-    if(s=="IFCARBITRARYOPENPROFILEDEF"                    ) { return IfcArbitraryOpenProfileDef; }
-    if(s=="IFCARBITRARYPROFILEDEFWITHVOIDS"               ) { return IfcArbitraryProfileDefWithVoids; }
-    if(s=="IFCASSET"                                      ) { return IfcAsset; }
-    if(s=="IFCASYMMETRICISHAPEPROFILEDEF"                 ) { return IfcAsymmetricIShapeProfileDef; }
-    if(s=="IFCAXIS1PLACEMENT"                             ) { return IfcAxis1Placement; }
-    if(s=="IFCAXIS2PLACEMENT2D"                           ) { return IfcAxis2Placement2D; }
-    if(s=="IFCAXIS2PLACEMENT3D"                           ) { return IfcAxis2Placement3D; }
-    if(s=="IFCBSPLINECURVE"                               ) { return IfcBSplineCurve; }
-    if(s=="IFCBEAM"                                       ) { return IfcBeam; }
-    if(s=="IFCBEAMTYPE"                                   ) { return IfcBeamType; }
-    if(s=="IFCBEZIERCURVE"                                ) { return IfcBezierCurve; }
-    if(s=="IFCBLOBTEXTURE"                                ) { return IfcBlobTexture; }
-    if(s=="IFCBLOCK"                                      ) { return IfcBlock; }
-    if(s=="IFCBOILERTYPE"                                 ) { return IfcBoilerType; }
-    if(s=="IFCBOOLEANCLIPPINGRESULT"                      ) { return IfcBooleanClippingResult; }
-    if(s=="IFCBOOLEANRESULT"                              ) { return IfcBooleanResult; }
-    if(s=="IFCBOUNDARYCONDITION"                          ) { return IfcBoundaryCondition; }
-    if(s=="IFCBOUNDARYEDGECONDITION"                      ) { return IfcBoundaryEdgeCondition; }
-    if(s=="IFCBOUNDARYFACECONDITION"                      ) { return IfcBoundaryFaceCondition; }
-    if(s=="IFCBOUNDARYNODECONDITION"                      ) { return IfcBoundaryNodeCondition; }
-    if(s=="IFCBOUNDARYNODECONDITIONWARPING"               ) { return IfcBoundaryNodeConditionWarping; }
-    if(s=="IFCBOUNDEDCURVE"                               ) { return IfcBoundedCurve; }
-    if(s=="IFCBOUNDEDSURFACE"                             ) { return IfcBoundedSurface; }
-    if(s=="IFCBOUNDINGBOX"                                ) { return IfcBoundingBox; }
-    if(s=="IFCBOXEDHALFSPACE"                             ) { return IfcBoxedHalfSpace; }
-    if(s=="IFCBUILDING"                                   ) { return IfcBuilding; }
-    if(s=="IFCBUILDINGELEMENT"                            ) { return IfcBuildingElement; }
-    if(s=="IFCBUILDINGELEMENTCOMPONENT"                   ) { return IfcBuildingElementComponent; }
-    if(s=="IFCBUILDINGELEMENTPART"                        ) { return IfcBuildingElementPart; }
-    if(s=="IFCBUILDINGELEMENTPROXY"                       ) { return IfcBuildingElementProxy; }
-    if(s=="IFCBUILDINGELEMENTPROXYTYPE"                   ) { return IfcBuildingElementProxyType; }
-    if(s=="IFCBUILDINGELEMENTTYPE"                        ) { return IfcBuildingElementType; }
-    if(s=="IFCBUILDINGSTOREY"                             ) { return IfcBuildingStorey; }
-    if(s=="IFCCSHAPEPROFILEDEF"                           ) { return IfcCShapeProfileDef; }
-    if(s=="IFCCABLECARRIERFITTINGTYPE"                    ) { return IfcCableCarrierFittingType; }
-    if(s=="IFCCABLECARRIERSEGMENTTYPE"                    ) { return IfcCableCarrierSegmentType; }
-    if(s=="IFCCABLESEGMENTTYPE"                           ) { return IfcCableSegmentType; }
-    if(s=="IFCCALENDARDATE"                               ) { return IfcCalendarDate; }
-    if(s=="IFCCARTESIANPOINT"                             ) { return IfcCartesianPoint; }
-    if(s=="IFCCARTESIANTRANSFORMATIONOPERATOR"            ) { return IfcCartesianTransformationOperator; }
-    if(s=="IFCCARTESIANTRANSFORMATIONOPERATOR2D"          ) { return IfcCartesianTransformationOperator2D; }
-    if(s=="IFCCARTESIANTRANSFORMATIONOPERATOR2DNONUNIFORM") { return IfcCartesianTransformationOperator2DnonUniform; }
-    if(s=="IFCCARTESIANTRANSFORMATIONOPERATOR3D"          ) { return IfcCartesianTransformationOperator3D; }
-    if(s=="IFCCARTESIANTRANSFORMATIONOPERATOR3DNONUNIFORM") { return IfcCartesianTransformationOperator3DnonUniform; }
-    if(s=="IFCCENTERLINEPROFILEDEF"                       ) { return IfcCenterLineProfileDef; }
-    if(s=="IFCCHAMFEREDGEFEATURE"                         ) { return IfcChamferEdgeFeature; }
-    if(s=="IFCCHILLERTYPE"                                ) { return IfcChillerType; }
-    if(s=="IFCCIRCLE"                                     ) { return IfcCircle; }
-    if(s=="IFCCIRCLEHOLLOWPROFILEDEF"                     ) { return IfcCircleHollowProfileDef; }
-    if(s=="IFCCIRCLEPROFILEDEF"                           ) { return IfcCircleProfileDef; }
-    if(s=="IFCCLASSIFICATION"                             ) { return IfcClassification; }
-    if(s=="IFCCLASSIFICATIONITEM"                         ) { return IfcClassificationItem; }
-    if(s=="IFCCLASSIFICATIONITEMRELATIONSHIP"             ) { return IfcClassificationItemRelationship; }
-    if(s=="IFCCLASSIFICATIONNOTATION"                     ) { return IfcClassificationNotation; }
-    if(s=="IFCCLASSIFICATIONNOTATIONFACET"                ) { return IfcClassificationNotationFacet; }
-    if(s=="IFCCLASSIFICATIONREFERENCE"                    ) { return IfcClassificationReference; }
-    if(s=="IFCCLOSEDSHELL"                                ) { return IfcClosedShell; }
-    if(s=="IFCCOILTYPE"                                   ) { return IfcCoilType; }
-    if(s=="IFCCOLOURRGB"                                  ) { return IfcColourRgb; }
-    if(s=="IFCCOLOURSPECIFICATION"                        ) { return IfcColourSpecification; }
-    if(s=="IFCCOLUMN"                                     ) { return IfcColumn; }
-    if(s=="IFCCOLUMNTYPE"                                 ) { return IfcColumnType; }
-    if(s=="IFCCOMPLEXPROPERTY"                            ) { return IfcComplexProperty; }
-    if(s=="IFCCOMPOSITECURVE"                             ) { return IfcCompositeCurve; }
-    if(s=="IFCCOMPOSITECURVESEGMENT"                      ) { return IfcCompositeCurveSegment; }
-    if(s=="IFCCOMPOSITEPROFILEDEF"                        ) { return IfcCompositeProfileDef; }
-    if(s=="IFCCOMPRESSORTYPE"                             ) { return IfcCompressorType; }
-    if(s=="IFCCONDENSERTYPE"                              ) { return IfcCondenserType; }
-    if(s=="IFCCONDITION"                                  ) { return IfcCondition; }
-    if(s=="IFCCONDITIONCRITERION"                         ) { return IfcConditionCriterion; }
-    if(s=="IFCCONIC"                                      ) { return IfcConic; }
-    if(s=="IFCCONNECTEDFACESET"                           ) { return IfcConnectedFaceSet; }
-    if(s=="IFCCONNECTIONCURVEGEOMETRY"                    ) { return IfcConnectionCurveGeometry; }
-    if(s=="IFCCONNECTIONGEOMETRY"                         ) { return IfcConnectionGeometry; }
-    if(s=="IFCCONNECTIONPOINTECCENTRICITY"                ) { return IfcConnectionPointEccentricity; }
-    if(s=="IFCCONNECTIONPOINTGEOMETRY"                    ) { return IfcConnectionPointGeometry; }
-    if(s=="IFCCONNECTIONPORTGEOMETRY"                     ) { return IfcConnectionPortGeometry; }
-    if(s=="IFCCONNECTIONSURFACEGEOMETRY"                  ) { return IfcConnectionSurfaceGeometry; }
-    if(s=="IFCCONSTRAINT"                                 ) { return IfcConstraint; }
-    if(s=="IFCCONSTRAINTAGGREGATIONRELATIONSHIP"          ) { return IfcConstraintAggregationRelationship; }
-    if(s=="IFCCONSTRAINTCLASSIFICATIONRELATIONSHIP"       ) { return IfcConstraintClassificationRelationship; }
-    if(s=="IFCCONSTRAINTRELATIONSHIP"                     ) { return IfcConstraintRelationship; }
-    if(s=="IFCCONSTRUCTIONEQUIPMENTRESOURCE"              ) { return IfcConstructionEquipmentResource; }
-    if(s=="IFCCONSTRUCTIONMATERIALRESOURCE"               ) { return IfcConstructionMaterialResource; }
-    if(s=="IFCCONSTRUCTIONPRODUCTRESOURCE"                ) { return IfcConstructionProductResource; }
-    if(s=="IFCCONSTRUCTIONRESOURCE"                       ) { return IfcConstructionResource; }
-    if(s=="IFCCONTEXTDEPENDENTUNIT"                       ) { return IfcContextDependentUnit; }
-    if(s=="IFCCONTROL"                                    ) { return IfcControl; }
-    if(s=="IFCCONTROLLERTYPE"                             ) { return IfcControllerType; }
-    if(s=="IFCCONVERSIONBASEDUNIT"                        ) { return IfcConversionBasedUnit; }
-    if(s=="IFCCOOLEDBEAMTYPE"                             ) { return IfcCooledBeamType; }
-    if(s=="IFCCOOLINGTOWERTYPE"                           ) { return IfcCoolingTowerType; }
-    if(s=="IFCCOORDINATEDUNIVERSALTIMEOFFSET"             ) { return IfcCoordinatedUniversalTimeOffset; }
-    if(s=="IFCCOSTITEM"                                   ) { return IfcCostItem; }
-    if(s=="IFCCOSTSCHEDULE"                               ) { return IfcCostSchedule; }
-    if(s=="IFCCOSTVALUE"                                  ) { return IfcCostValue; }
-    if(s=="IFCCOVERING"                                   ) { return IfcCovering; }
-    if(s=="IFCCOVERINGTYPE"                               ) { return IfcCoveringType; }
-    if(s=="IFCCRANERAILASHAPEPROFILEDEF"                  ) { return IfcCraneRailAShapeProfileDef; }
-    if(s=="IFCCRANERAILFSHAPEPROFILEDEF"                  ) { return IfcCraneRailFShapeProfileDef; }
-    if(s=="IFCCREWRESOURCE"                               ) { return IfcCrewResource; }
-    if(s=="IFCCSGPRIMITIVE3D"                             ) { return IfcCsgPrimitive3D; }
-    if(s=="IFCCSGSOLID"                                   ) { return IfcCsgSolid; }
-    if(s=="IFCCURRENCYRELATIONSHIP"                       ) { return IfcCurrencyRelationship; }
-    if(s=="IFCCURTAINWALL"                                ) { return IfcCurtainWall; }
-    if(s=="IFCCURTAINWALLTYPE"                            ) { return IfcCurtainWallType; }
-    if(s=="IFCCURVE"                                      ) { return IfcCurve; }
-    if(s=="IFCCURVEBOUNDEDPLANE"                          ) { return IfcCurveBoundedPlane; }
-    if(s=="IFCCURVESTYLE"                                 ) { return IfcCurveStyle; }
-    if(s=="IFCCURVESTYLEFONT"                             ) { return IfcCurveStyleFont; }
-    if(s=="IFCCURVESTYLEFONTANDSCALING"                   ) { return IfcCurveStyleFontAndScaling; }
-    if(s=="IFCCURVESTYLEFONTPATTERN"                      ) { return IfcCurveStyleFontPattern; }
-    if(s=="IFCDAMPERTYPE"                                 ) { return IfcDamperType; }
-    if(s=="IFCDATEANDTIME"                                ) { return IfcDateAndTime; }
-    if(s=="IFCDEFINEDSYMBOL"                              ) { return IfcDefinedSymbol; }
-    if(s=="IFCDERIVEDPROFILEDEF"                          ) { return IfcDerivedProfileDef; }
-    if(s=="IFCDERIVEDUNIT"                                ) { return IfcDerivedUnit; }
-    if(s=="IFCDERIVEDUNITELEMENT"                         ) { return IfcDerivedUnitElement; }
-    if(s=="IFCDIAMETERDIMENSION"                          ) { return IfcDiameterDimension; }
-    if(s=="IFCDIMENSIONCALLOUTRELATIONSHIP"               ) { return IfcDimensionCalloutRelationship; }
-    if(s=="IFCDIMENSIONCURVE"                             ) { return IfcDimensionCurve; }
-    if(s=="IFCDIMENSIONCURVEDIRECTEDCALLOUT"              ) { return IfcDimensionCurveDirectedCallout; }
-    if(s=="IFCDIMENSIONCURVETERMINATOR"                   ) { return IfcDimensionCurveTerminator; }
-    if(s=="IFCDIMENSIONPAIR"                              ) { return IfcDimensionPair; }
-    if(s=="IFCDIMENSIONALEXPONENTS"                       ) { return IfcDimensionalExponents; }
-    if(s=="IFCDIRECTION"                                  ) { return IfcDirection; }
-    if(s=="IFCDISCRETEACCESSORY"                          ) { return IfcDiscreteAccessory; }
-    if(s=="IFCDISCRETEACCESSORYTYPE"                      ) { return IfcDiscreteAccessoryType; }
-    if(s=="IFCDISTRIBUTIONCHAMBERELEMENT"                 ) { return IfcDistributionChamberElement; }
-    if(s=="IFCDISTRIBUTIONCHAMBERELEMENTTYPE"             ) { return IfcDistributionChamberElementType; }
-    if(s=="IFCDISTRIBUTIONCONTROLELEMENT"                 ) { return IfcDistributionControlElement; }
-    if(s=="IFCDISTRIBUTIONCONTROLELEMENTTYPE"             ) { return IfcDistributionControlElementType; }
-    if(s=="IFCDISTRIBUTIONELEMENT"                        ) { return IfcDistributionElement; }
-    if(s=="IFCDISTRIBUTIONELEMENTTYPE"                    ) { return IfcDistributionElementType; }
-    if(s=="IFCDISTRIBUTIONFLOWELEMENT"                    ) { return IfcDistributionFlowElement; }
-    if(s=="IFCDISTRIBUTIONFLOWELEMENTTYPE"                ) { return IfcDistributionFlowElementType; }
-    if(s=="IFCDISTRIBUTIONPORT"                           ) { return IfcDistributionPort; }
-    if(s=="IFCDOCUMENTELECTRONICFORMAT"                   ) { return IfcDocumentElectronicFormat; }
-    if(s=="IFCDOCUMENTINFORMATION"                        ) { return IfcDocumentInformation; }
-    if(s=="IFCDOCUMENTINFORMATIONRELATIONSHIP"            ) { return IfcDocumentInformationRelationship; }
-    if(s=="IFCDOCUMENTREFERENCE"                          ) { return IfcDocumentReference; }
-    if(s=="IFCDOOR"                                       ) { return IfcDoor; }
-    if(s=="IFCDOORLININGPROPERTIES"                       ) { return IfcDoorLiningProperties; }
-    if(s=="IFCDOORPANELPROPERTIES"                        ) { return IfcDoorPanelProperties; }
-    if(s=="IFCDOORSTYLE"                                  ) { return IfcDoorStyle; }
-    if(s=="IFCDRAUGHTINGCALLOUT"                          ) { return IfcDraughtingCallout; }
-    if(s=="IFCDRAUGHTINGCALLOUTRELATIONSHIP"              ) { return IfcDraughtingCalloutRelationship; }
-    if(s=="IFCDRAUGHTINGPREDEFINEDCOLOUR"                 ) { return IfcDraughtingPreDefinedColour; }
-    if(s=="IFCDRAUGHTINGPREDEFINEDCURVEFONT"              ) { return IfcDraughtingPreDefinedCurveFont; }
-    if(s=="IFCDRAUGHTINGPREDEFINEDTEXTFONT"               ) { return IfcDraughtingPreDefinedTextFont; }
-    if(s=="IFCDUCTFITTINGTYPE"                            ) { return IfcDuctFittingType; }
-    if(s=="IFCDUCTSEGMENTTYPE"                            ) { return IfcDuctSegmentType; }
-    if(s=="IFCDUCTSILENCERTYPE"                           ) { return IfcDuctSilencerType; }
-    if(s=="IFCEDGE"                                       ) { return IfcEdge; }
-    if(s=="IFCEDGECURVE"                                  ) { return IfcEdgeCurve; }
-    if(s=="IFCEDGEFEATURE"                                ) { return IfcEdgeFeature; }
-    if(s=="IFCEDGELOOP"                                   ) { return IfcEdgeLoop; }
-    if(s=="IFCELECTRICAPPLIANCETYPE"                      ) { return IfcElectricApplianceType; }
-    if(s=="IFCELECTRICDISTRIBUTIONPOINT"                  ) { return IfcElectricDistributionPoint; }
-    if(s=="IFCELECTRICFLOWSTORAGEDEVICETYPE"              ) { return IfcElectricFlowStorageDeviceType; }
-    if(s=="IFCELECTRICGENERATORTYPE"                      ) { return IfcElectricGeneratorType; }
-    if(s=="IFCELECTRICHEATERTYPE"                         ) { return IfcElectricHeaterType; }
-    if(s=="IFCELECTRICMOTORTYPE"                          ) { return IfcElectricMotorType; }
-    if(s=="IFCELECTRICTIMECONTROLTYPE"                    ) { return IfcElectricTimeControlType; }
-    if(s=="IFCELECTRICALBASEPROPERTIES"                   ) { return IfcElectricalBaseProperties; }
-    if(s=="IFCELECTRICALCIRCUIT"                          ) { return IfcElectricalCircuit; }
-    if(s=="IFCELECTRICALELEMENT"                          ) { return IfcElectricalElement; }
-    if(s=="IFCELEMENT"                                    ) { return IfcElement; }
-    if(s=="IFCELEMENTASSEMBLY"                            ) { return IfcElementAssembly; }
-    if(s=="IFCELEMENTCOMPONENT"                           ) { return IfcElementComponent; }
-    if(s=="IFCELEMENTCOMPONENTTYPE"                       ) { return IfcElementComponentType; }
-    if(s=="IFCELEMENTQUANTITY"                            ) { return IfcElementQuantity; }
-    if(s=="IFCELEMENTTYPE"                                ) { return IfcElementType; }
-    if(s=="IFCELEMENTARYSURFACE"                          ) { return IfcElementarySurface; }
-    if(s=="IFCELLIPSE"                                    ) { return IfcEllipse; }
-    if(s=="IFCELLIPSEPROFILEDEF"                          ) { return IfcEllipseProfileDef; }
-    if(s=="IFCENERGYCONVERSIONDEVICE"                     ) { return IfcEnergyConversionDevice; }
-    if(s=="IFCENERGYCONVERSIONDEVICETYPE"                 ) { return IfcEnergyConversionDeviceType; }
-    if(s=="IFCENERGYPROPERTIES"                           ) { return IfcEnergyProperties; }
-    if(s=="IFCENVIRONMENTALIMPACTVALUE"                   ) { return IfcEnvironmentalImpactValue; }
-    if(s=="IFCEQUIPMENTELEMENT"                           ) { return IfcEquipmentElement; }
-    if(s=="IFCEQUIPMENTSTANDARD"                          ) { return IfcEquipmentStandard; }
-    if(s=="IFCEVAPORATIVECOOLERTYPE"                      ) { return IfcEvaporativeCoolerType; }
-    if(s=="IFCEVAPORATORTYPE"                             ) { return IfcEvaporatorType; }
-    if(s=="IFCEXTENDEDMATERIALPROPERTIES"                 ) { return IfcExtendedMaterialProperties; }
-    if(s=="IFCEXTERNALREFERENCE"                          ) { return IfcExternalReference; }
-    if(s=="IFCEXTERNALLYDEFINEDHATCHSTYLE"                ) { return IfcExternallyDefinedHatchStyle; }
-    if(s=="IFCEXTERNALLYDEFINEDSURFACESTYLE"              ) { return IfcExternallyDefinedSurfaceStyle; }
-    if(s=="IFCEXTERNALLYDEFINEDSYMBOL"                    ) { return IfcExternallyDefinedSymbol; }
-    if(s=="IFCEXTERNALLYDEFINEDTEXTFONT"                  ) { return IfcExternallyDefinedTextFont; }
-    if(s=="IFCEXTRUDEDAREASOLID"                          ) { return IfcExtrudedAreaSolid; }
-    if(s=="IFCFACE"                                       ) { return IfcFace; }
-    if(s=="IFCFACEBASEDSURFACEMODEL"                      ) { return IfcFaceBasedSurfaceModel; }
-    if(s=="IFCFACEBOUND"                                  ) { return IfcFaceBound; }
-    if(s=="IFCFACEOUTERBOUND"                             ) { return IfcFaceOuterBound; }
-    if(s=="IFCFACESURFACE"                                ) { return IfcFaceSurface; }
-    if(s=="IFCFACETEDBREP"                                ) { return IfcFacetedBrep; }
-    if(s=="IFCFACETEDBREPWITHVOIDS"                       ) { return IfcFacetedBrepWithVoids; }
-    if(s=="IFCFAILURECONNECTIONCONDITION"                 ) { return IfcFailureConnectionCondition; }
-    if(s=="IFCFANTYPE"                                    ) { return IfcFanType; }
-    if(s=="IFCFASTENER"                                   ) { return IfcFastener; }
-    if(s=="IFCFASTENERTYPE"                               ) { return IfcFastenerType; }
-    if(s=="IFCFEATUREELEMENT"                             ) { return IfcFeatureElement; }
-    if(s=="IFCFEATUREELEMENTADDITION"                     ) { return IfcFeatureElementAddition; }
-    if(s=="IFCFEATUREELEMENTSUBTRACTION"                  ) { return IfcFeatureElementSubtraction; }
-    if(s=="IFCFILLAREASTYLE"                              ) { return IfcFillAreaStyle; }
-    if(s=="IFCFILLAREASTYLEHATCHING"                      ) { return IfcFillAreaStyleHatching; }
-    if(s=="IFCFILLAREASTYLETILESYMBOLWITHSTYLE"           ) { return IfcFillAreaStyleTileSymbolWithStyle; }
-    if(s=="IFCFILLAREASTYLETILES"                         ) { return IfcFillAreaStyleTiles; }
-    if(s=="IFCFILTERTYPE"                                 ) { return IfcFilterType; }
-    if(s=="IFCFIRESUPPRESSIONTERMINALTYPE"                ) { return IfcFireSuppressionTerminalType; }
-    if(s=="IFCFLOWCONTROLLER"                             ) { return IfcFlowController; }
-    if(s=="IFCFLOWCONTROLLERTYPE"                         ) { return IfcFlowControllerType; }
-    if(s=="IFCFLOWFITTING"                                ) { return IfcFlowFitting; }
-    if(s=="IFCFLOWFITTINGTYPE"                            ) { return IfcFlowFittingType; }
-    if(s=="IFCFLOWINSTRUMENTTYPE"                         ) { return IfcFlowInstrumentType; }
-    if(s=="IFCFLOWMETERTYPE"                              ) { return IfcFlowMeterType; }
-    if(s=="IFCFLOWMOVINGDEVICE"                           ) { return IfcFlowMovingDevice; }
-    if(s=="IFCFLOWMOVINGDEVICETYPE"                       ) { return IfcFlowMovingDeviceType; }
-    if(s=="IFCFLOWSEGMENT"                                ) { return IfcFlowSegment; }
-    if(s=="IFCFLOWSEGMENTTYPE"                            ) { return IfcFlowSegmentType; }
-    if(s=="IFCFLOWSTORAGEDEVICE"                          ) { return IfcFlowStorageDevice; }
-    if(s=="IFCFLOWSTORAGEDEVICETYPE"                      ) { return IfcFlowStorageDeviceType; }
-    if(s=="IFCFLOWTERMINAL"                               ) { return IfcFlowTerminal; }
-    if(s=="IFCFLOWTERMINALTYPE"                           ) { return IfcFlowTerminalType; }
-    if(s=="IFCFLOWTREATMENTDEVICE"                        ) { return IfcFlowTreatmentDevice; }
-    if(s=="IFCFLOWTREATMENTDEVICETYPE"                    ) { return IfcFlowTreatmentDeviceType; }
-    if(s=="IFCFLUIDFLOWPROPERTIES"                        ) { return IfcFluidFlowProperties; }
-    if(s=="IFCFOOTING"                                    ) { return IfcFooting; }
-    if(s=="IFCFUELPROPERTIES"                             ) { return IfcFuelProperties; }
-    if(s=="IFCFURNISHINGELEMENT"                          ) { return IfcFurnishingElement; }
-    if(s=="IFCFURNISHINGELEMENTTYPE"                      ) { return IfcFurnishingElementType; }
-    if(s=="IFCFURNITURESTANDARD"                          ) { return IfcFurnitureStandard; }
-    if(s=="IFCFURNITURETYPE"                              ) { return IfcFurnitureType; }
-    if(s=="IFCGASTERMINALTYPE"                            ) { return IfcGasTerminalType; }
-    if(s=="IFCGENERALMATERIALPROPERTIES"                  ) { return IfcGeneralMaterialProperties; }
-    if(s=="IFCGENERALPROFILEPROPERTIES"                   ) { return IfcGeneralProfileProperties; }
-    if(s=="IFCGEOMETRICCURVESET"                          ) { return IfcGeometricCurveSet; }
-    if(s=="IFCGEOMETRICREPRESENTATIONCONTEXT"             ) { return IfcGeometricRepresentationContext; }
-    if(s=="IFCGEOMETRICREPRESENTATIONITEM"                ) { return IfcGeometricRepresentationItem; }
-    if(s=="IFCGEOMETRICREPRESENTATIONSUBCONTEXT"          ) { return IfcGeometricRepresentationSubContext; }
-    if(s=="IFCGEOMETRICSET"                               ) { return IfcGeometricSet; }
-    if(s=="IFCGRID"                                       ) { return IfcGrid; }
-    if(s=="IFCGRIDAXIS"                                   ) { return IfcGridAxis; }
-    if(s=="IFCGRIDPLACEMENT"                              ) { return IfcGridPlacement; }
-    if(s=="IFCGROUP"                                      ) { return IfcGroup; }
-    if(s=="IFCHALFSPACESOLID"                             ) { return IfcHalfSpaceSolid; }
-    if(s=="IFCHEATEXCHANGERTYPE"                          ) { return IfcHeatExchangerType; }
-    if(s=="IFCHUMIDIFIERTYPE"                             ) { return IfcHumidifierType; }
-    if(s=="IFCHYGROSCOPICMATERIALPROPERTIES"              ) { return IfcHygroscopicMaterialProperties; }
-    if(s=="IFCISHAPEPROFILEDEF"                           ) { return IfcIShapeProfileDef; }
-    if(s=="IFCIMAGETEXTURE"                               ) { return IfcImageTexture; }
-    if(s=="IFCINVENTORY"                                  ) { return IfcInventory; }
-    if(s=="IFCIRREGULARTIMESERIES"                        ) { return IfcIrregularTimeSeries; }
-    if(s=="IFCIRREGULARTIMESERIESVALUE"                   ) { return IfcIrregularTimeSeriesValue; }
-    if(s=="IFCJUNCTIONBOXTYPE"                            ) { return IfcJunctionBoxType; }
-    if(s=="IFCLSHAPEPROFILEDEF"                           ) { return IfcLShapeProfileDef; }
-    if(s=="IFCLABORRESOURCE"                              ) { return IfcLaborResource; }
-    if(s=="IFCLAMPTYPE"                                   ) { return IfcLampType; }
-    if(s=="IFCLIBRARYINFORMATION"                         ) { return IfcLibraryInformation; }
-    if(s=="IFCLIBRARYREFERENCE"                           ) { return IfcLibraryReference; }
-    if(s=="IFCLIGHTDISTRIBUTIONDATA"                      ) { return IfcLightDistributionData; }
-    if(s=="IFCLIGHTFIXTURETYPE"                           ) { return IfcLightFixtureType; }
-    if(s=="IFCLIGHTINTENSITYDISTRIBUTION"                 ) { return IfcLightIntensityDistribution; }
-    if(s=="IFCLIGHTSOURCE"                                ) { return IfcLightSource; }
-    if(s=="IFCLIGHTSOURCEAMBIENT"                         ) { return IfcLightSourceAmbient; }
-    if(s=="IFCLIGHTSOURCEDIRECTIONAL"                     ) { return IfcLightSourceDirectional; }
-    if(s=="IFCLIGHTSOURCEGONIOMETRIC"                     ) { return IfcLightSourceGoniometric; }
-    if(s=="IFCLIGHTSOURCEPOSITIONAL"                      ) { return IfcLightSourcePositional; }
-    if(s=="IFCLIGHTSOURCESPOT"                            ) { return IfcLightSourceSpot; }
-    if(s=="IFCLINE"                                       ) { return IfcLine; }
-    if(s=="IFCLINEARDIMENSION"                            ) { return IfcLinearDimension; }
-    if(s=="IFCLOCALPLACEMENT"                             ) { return IfcLocalPlacement; }
-    if(s=="IFCLOCALTIME"                                  ) { return IfcLocalTime; }
-    if(s=="IFCLOOP"                                       ) { return IfcLoop; }
-    if(s=="IFCMANIFOLDSOLIDBREP"                          ) { return IfcManifoldSolidBrep; }
-    if(s=="IFCMAPPEDITEM"                                 ) { return IfcMappedItem; }
-    if(s=="IFCMATERIAL"                                   ) { return IfcMaterial; }
-    if(s=="IFCMATERIALCLASSIFICATIONRELATIONSHIP"         ) { return IfcMaterialClassificationRelationship; }
-    if(s=="IFCMATERIALDEFINITIONREPRESENTATION"           ) { return IfcMaterialDefinitionRepresentation; }
-    if(s=="IFCMATERIALLAYER"                              ) { return IfcMaterialLayer; }
-    if(s=="IFCMATERIALLAYERSET"                           ) { return IfcMaterialLayerSet; }
-    if(s=="IFCMATERIALLAYERSETUSAGE"                      ) { return IfcMaterialLayerSetUsage; }
-    if(s=="IFCMATERIALLIST"                               ) { return IfcMaterialList; }
-    if(s=="IFCMATERIALPROPERTIES"                         ) { return IfcMaterialProperties; }
-    if(s=="IFCMEASUREWITHUNIT"                            ) { return IfcMeasureWithUnit; }
-    if(s=="IFCMECHANICALCONCRETEMATERIALPROPERTIES"       ) { return IfcMechanicalConcreteMaterialProperties; }
-    if(s=="IFCMECHANICALFASTENER"                         ) { return IfcMechanicalFastener; }
-    if(s=="IFCMECHANICALFASTENERTYPE"                     ) { return IfcMechanicalFastenerType; }
-    if(s=="IFCMECHANICALMATERIALPROPERTIES"               ) { return IfcMechanicalMaterialProperties; }
-    if(s=="IFCMECHANICALSTEELMATERIALPROPERTIES"          ) { return IfcMechanicalSteelMaterialProperties; }
-    if(s=="IFCMEMBER"                                     ) { return IfcMember; }
-    if(s=="IFCMEMBERTYPE"                                 ) { return IfcMemberType; }
-    if(s=="IFCMETRIC"                                     ) { return IfcMetric; }
-    if(s=="IFCMONETARYUNIT"                               ) { return IfcMonetaryUnit; }
-    if(s=="IFCMOTORCONNECTIONTYPE"                        ) { return IfcMotorConnectionType; }
-    if(s=="IFCMOVE"                                       ) { return IfcMove; }
-    if(s=="IFCNAMEDUNIT"                                  ) { return IfcNamedUnit; }
-    if(s=="IFCOBJECT"                                     ) { return IfcObject; }
-    if(s=="IFCOBJECTDEFINITION"                           ) { return IfcObjectDefinition; }
-    if(s=="IFCOBJECTPLACEMENT"                            ) { return IfcObjectPlacement; }
-    if(s=="IFCOBJECTIVE"                                  ) { return IfcObjective; }
-    if(s=="IFCOCCUPANT"                                   ) { return IfcOccupant; }
-    if(s=="IFCOFFSETCURVE2D"                              ) { return IfcOffsetCurve2D; }
-    if(s=="IFCOFFSETCURVE3D"                              ) { return IfcOffsetCurve3D; }
-    if(s=="IFCONEDIRECTIONREPEATFACTOR"                   ) { return IfcOneDirectionRepeatFactor; }
-    if(s=="IFCOPENSHELL"                                  ) { return IfcOpenShell; }
-    if(s=="IFCOPENINGELEMENT"                             ) { return IfcOpeningElement; }
-    if(s=="IFCOPTICALMATERIALPROPERTIES"                  ) { return IfcOpticalMaterialProperties; }
-    if(s=="IFCORDERACTION"                                ) { return IfcOrderAction; }
-    if(s=="IFCORGANIZATION"                               ) { return IfcOrganization; }
-    if(s=="IFCORGANIZATIONRELATIONSHIP"                   ) { return IfcOrganizationRelationship; }
-    if(s=="IFCORIENTEDEDGE"                               ) { return IfcOrientedEdge; }
-    if(s=="IFCOUTLETTYPE"                                 ) { return IfcOutletType; }
-    if(s=="IFCOWNERHISTORY"                               ) { return IfcOwnerHistory; }
-    if(s=="IFCPARAMETERIZEDPROFILEDEF"                    ) { return IfcParameterizedProfileDef; }
-    if(s=="IFCPATH"                                       ) { return IfcPath; }
-    if(s=="IFCPERFORMANCEHISTORY"                         ) { return IfcPerformanceHistory; }
-    if(s=="IFCPERMEABLECOVERINGPROPERTIES"                ) { return IfcPermeableCoveringProperties; }
-    if(s=="IFCPERMIT"                                     ) { return IfcPermit; }
-    if(s=="IFCPERSON"                                     ) { return IfcPerson; }
-    if(s=="IFCPERSONANDORGANIZATION"                      ) { return IfcPersonAndOrganization; }
-    if(s=="IFCPHYSICALCOMPLEXQUANTITY"                    ) { return IfcPhysicalComplexQuantity; }
-    if(s=="IFCPHYSICALQUANTITY"                           ) { return IfcPhysicalQuantity; }
-    if(s=="IFCPHYSICALSIMPLEQUANTITY"                     ) { return IfcPhysicalSimpleQuantity; }
-    if(s=="IFCPILE"                                       ) { return IfcPile; }
-    if(s=="IFCPIPEFITTINGTYPE"                            ) { return IfcPipeFittingType; }
-    if(s=="IFCPIPESEGMENTTYPE"                            ) { return IfcPipeSegmentType; }
-    if(s=="IFCPIXELTEXTURE"                               ) { return IfcPixelTexture; }
-    if(s=="IFCPLACEMENT"                                  ) { return IfcPlacement; }
-    if(s=="IFCPLANARBOX"                                  ) { return IfcPlanarBox; }
-    if(s=="IFCPLANAREXTENT"                               ) { return IfcPlanarExtent; }
-    if(s=="IFCPLANE"                                      ) { return IfcPlane; }
-    if(s=="IFCPLATE"                                      ) { return IfcPlate; }
-    if(s=="IFCPLATETYPE"                                  ) { return IfcPlateType; }
-    if(s=="IFCPOINT"                                      ) { return IfcPoint; }
-    if(s=="IFCPOINTONCURVE"                               ) { return IfcPointOnCurve; }
-    if(s=="IFCPOINTONSURFACE"                             ) { return IfcPointOnSurface; }
-    if(s=="IFCPOLYLOOP"                                   ) { return IfcPolyLoop; }
-    if(s=="IFCPOLYGONALBOUNDEDHALFSPACE"                  ) { return IfcPolygonalBoundedHalfSpace; }
-    if(s=="IFCPOLYLINE"                                   ) { return IfcPolyline; }
-    if(s=="IFCPORT"                                       ) { return IfcPort; }
-    if(s=="IFCPOSTALADDRESS"                              ) { return IfcPostalAddress; }
-    if(s=="IFCPREDEFINEDCOLOUR"                           ) { return IfcPreDefinedColour; }
-    if(s=="IFCPREDEFINEDCURVEFONT"                        ) { return IfcPreDefinedCurveFont; }
-    if(s=="IFCPREDEFINEDDIMENSIONSYMBOL"                  ) { return IfcPreDefinedDimensionSymbol; }
-    if(s=="IFCPREDEFINEDITEM"                             ) { return IfcPreDefinedItem; }
-    if(s=="IFCPREDEFINEDPOINTMARKERSYMBOL"                ) { return IfcPreDefinedPointMarkerSymbol; }
-    if(s=="IFCPREDEFINEDSYMBOL"                           ) { return IfcPreDefinedSymbol; }
-    if(s=="IFCPREDEFINEDTERMINATORSYMBOL"                 ) { return IfcPreDefinedTerminatorSymbol; }
-    if(s=="IFCPREDEFINEDTEXTFONT"                         ) { return IfcPreDefinedTextFont; }
-    if(s=="IFCPRESENTATIONLAYERASSIGNMENT"                ) { return IfcPresentationLayerAssignment; }
-    if(s=="IFCPRESENTATIONLAYERWITHSTYLE"                 ) { return IfcPresentationLayerWithStyle; }
-    if(s=="IFCPRESENTATIONSTYLE"                          ) { return IfcPresentationStyle; }
-    if(s=="IFCPRESENTATIONSTYLEASSIGNMENT"                ) { return IfcPresentationStyleAssignment; }
-    if(s=="IFCPROCEDURE"                                  ) { return IfcProcedure; }
-    if(s=="IFCPROCESS"                                    ) { return IfcProcess; }
-    if(s=="IFCPRODUCT"                                    ) { return IfcProduct; }
-    if(s=="IFCPRODUCTDEFINITIONSHAPE"                     ) { return IfcProductDefinitionShape; }
-    if(s=="IFCPRODUCTREPRESENTATION"                      ) { return IfcProductRepresentation; }
-    if(s=="IFCPRODUCTSOFCOMBUSTIONPROPERTIES"             ) { return IfcProductsOfCombustionProperties; }
-    if(s=="IFCPROFILEDEF"                                 ) { return IfcProfileDef; }
-    if(s=="IFCPROFILEPROPERTIES"                          ) { return IfcProfileProperties; }
-    if(s=="IFCPROJECT"                                    ) { return IfcProject; }
-    if(s=="IFCPROJECTORDER"                               ) { return IfcProjectOrder; }
-    if(s=="IFCPROJECTORDERRECORD"                         ) { return IfcProjectOrderRecord; }
-    if(s=="IFCPROJECTIONCURVE"                            ) { return IfcProjectionCurve; }
-    if(s=="IFCPROJECTIONELEMENT"                          ) { return IfcProjectionElement; }
-    if(s=="IFCPROPERTY"                                   ) { return IfcProperty; }
-    if(s=="IFCPROPERTYBOUNDEDVALUE"                       ) { return IfcPropertyBoundedValue; }
-    if(s=="IFCPROPERTYCONSTRAINTRELATIONSHIP"             ) { return IfcPropertyConstraintRelationship; }
-    if(s=="IFCPROPERTYDEFINITION"                         ) { return IfcPropertyDefinition; }
-    if(s=="IFCPROPERTYDEPENDENCYRELATIONSHIP"             ) { return IfcPropertyDependencyRelationship; }
-    if(s=="IFCPROPERTYENUMERATEDVALUE"                    ) { return IfcPropertyEnumeratedValue; }
-    if(s=="IFCPROPERTYENUMERATION"                        ) { return IfcPropertyEnumeration; }
-    if(s=="IFCPROPERTYLISTVALUE"                          ) { return IfcPropertyListValue; }
-    if(s=="IFCPROPERTYREFERENCEVALUE"                     ) { return IfcPropertyReferenceValue; }
-    if(s=="IFCPROPERTYSET"                                ) { return IfcPropertySet; }
-    if(s=="IFCPROPERTYSETDEFINITION"                      ) { return IfcPropertySetDefinition; }
-    if(s=="IFCPROPERTYSINGLEVALUE"                        ) { return IfcPropertySingleValue; }
-    if(s=="IFCPROPERTYTABLEVALUE"                         ) { return IfcPropertyTableValue; }
-    if(s=="IFCPROTECTIVEDEVICETYPE"                       ) { return IfcProtectiveDeviceType; }
-    if(s=="IFCPROXY"                                      ) { return IfcProxy; }
-    if(s=="IFCPUMPTYPE"                                   ) { return IfcPumpType; }
-    if(s=="IFCQUANTITYAREA"                               ) { return IfcQuantityArea; }
-    if(s=="IFCQUANTITYCOUNT"                              ) { return IfcQuantityCount; }
-    if(s=="IFCQUANTITYLENGTH"                             ) { return IfcQuantityLength; }
-    if(s=="IFCQUANTITYTIME"                               ) { return IfcQuantityTime; }
-    if(s=="IFCQUANTITYVOLUME"                             ) { return IfcQuantityVolume; }
-    if(s=="IFCQUANTITYWEIGHT"                             ) { return IfcQuantityWeight; }
-    if(s=="IFCRADIUSDIMENSION"                            ) { return IfcRadiusDimension; }
-    if(s=="IFCRAILING"                                    ) { return IfcRailing; }
-    if(s=="IFCRAILINGTYPE"                                ) { return IfcRailingType; }
-    if(s=="IFCRAMP"                                       ) { return IfcRamp; }
-    if(s=="IFCRAMPFLIGHT"                                 ) { return IfcRampFlight; }
-    if(s=="IFCRAMPFLIGHTTYPE"                             ) { return IfcRampFlightType; }
-    if(s=="IFCRATIONALBEZIERCURVE"                        ) { return IfcRationalBezierCurve; }
-    if(s=="IFCRECTANGLEHOLLOWPROFILEDEF"                  ) { return IfcRectangleHollowProfileDef; }
-    if(s=="IFCRECTANGLEPROFILEDEF"                        ) { return IfcRectangleProfileDef; }
-    if(s=="IFCRECTANGULARPYRAMID"                         ) { return IfcRectangularPyramid; }
-    if(s=="IFCRECTANGULARTRIMMEDSURFACE"                  ) { return IfcRectangularTrimmedSurface; }
-    if(s=="IFCREFERENCESVALUEDOCUMENT"                    ) { return IfcReferencesValueDocument; }
-    if(s=="IFCREGULARTIMESERIES"                          ) { return IfcRegularTimeSeries; }
-    if(s=="IFCREINFORCEMENTBARPROPERTIES"                 ) { return IfcReinforcementBarProperties; }
-    if(s=="IFCREINFORCEMENTDEFINITIONPROPERTIES"          ) { return IfcReinforcementDefinitionProperties; }
-    if(s=="IFCREINFORCINGBAR"                             ) { return IfcReinforcingBar; }
-    if(s=="IFCREINFORCINGELEMENT"                         ) { return IfcReinforcingElement; }
-    if(s=="IFCREINFORCINGMESH"                            ) { return IfcReinforcingMesh; }
-    if(s=="IFCRELAGGREGATES"                              ) { return IfcRelAggregates; }
-    if(s=="IFCRELASSIGNS"                                 ) { return IfcRelAssigns; }
-    if(s=="IFCRELASSIGNSTASKS"                            ) { return IfcRelAssignsTasks; }
-    if(s=="IFCRELASSIGNSTOACTOR"                          ) { return IfcRelAssignsToActor; }
-    if(s=="IFCRELASSIGNSTOCONTROL"                        ) { return IfcRelAssignsToControl; }
-    if(s=="IFCRELASSIGNSTOGROUP"                          ) { return IfcRelAssignsToGroup; }
-    if(s=="IFCRELASSIGNSTOPROCESS"                        ) { return IfcRelAssignsToProcess; }
-    if(s=="IFCRELASSIGNSTOPRODUCT"                        ) { return IfcRelAssignsToProduct; }
-    if(s=="IFCRELASSIGNSTOPROJECTORDER"                   ) { return IfcRelAssignsToProjectOrder; }
-    if(s=="IFCRELASSIGNSTORESOURCE"                       ) { return IfcRelAssignsToResource; }
-    if(s=="IFCRELASSOCIATES"                              ) { return IfcRelAssociates; }
-    if(s=="IFCRELASSOCIATESAPPLIEDVALUE"                  ) { return IfcRelAssociatesAppliedValue; }
-    if(s=="IFCRELASSOCIATESAPPROVAL"                      ) { return IfcRelAssociatesApproval; }
-    if(s=="IFCRELASSOCIATESCLASSIFICATION"                ) { return IfcRelAssociatesClassification; }
-    if(s=="IFCRELASSOCIATESCONSTRAINT"                    ) { return IfcRelAssociatesConstraint; }
-    if(s=="IFCRELASSOCIATESDOCUMENT"                      ) { return IfcRelAssociatesDocument; }
-    if(s=="IFCRELASSOCIATESLIBRARY"                       ) { return IfcRelAssociatesLibrary; }
-    if(s=="IFCRELASSOCIATESMATERIAL"                      ) { return IfcRelAssociatesMaterial; }
-    if(s=="IFCRELASSOCIATESPROFILEPROPERTIES"             ) { return IfcRelAssociatesProfileProperties; }
-    if(s=="IFCRELCONNECTS"                                ) { return IfcRelConnects; }
-    if(s=="IFCRELCONNECTSELEMENTS"                        ) { return IfcRelConnectsElements; }
-    if(s=="IFCRELCONNECTSPATHELEMENTS"                    ) { return IfcRelConnectsPathElements; }
-    if(s=="IFCRELCONNECTSPORTTOELEMENT"                   ) { return IfcRelConnectsPortToElement; }
-    if(s=="IFCRELCONNECTSPORTS"                           ) { return IfcRelConnectsPorts; }
-    if(s=="IFCRELCONNECTSSTRUCTURALACTIVITY"              ) { return IfcRelConnectsStructuralActivity; }
-    if(s=="IFCRELCONNECTSSTRUCTURALELEMENT"               ) { return IfcRelConnectsStructuralElement; }
-    if(s=="IFCRELCONNECTSSTRUCTURALMEMBER"                ) { return IfcRelConnectsStructuralMember; }
-    if(s=="IFCRELCONNECTSWITHECCENTRICITY"                ) { return IfcRelConnectsWithEccentricity; }
-    if(s=="IFCRELCONNECTSWITHREALIZINGELEMENTS"           ) { return IfcRelConnectsWithRealizingElements; }
-    if(s=="IFCRELCONTAINEDINSPATIALSTRUCTURE"             ) { return IfcRelContainedInSpatialStructure; }
-    if(s=="IFCRELCOVERSBLDGELEMENTS"                      ) { return IfcRelCoversBldgElements; }
-    if(s=="IFCRELCOVERSSPACES"                            ) { return IfcRelCoversSpaces; }
-    if(s=="IFCRELDECOMPOSES"                              ) { return IfcRelDecomposes; }
-    if(s=="IFCRELDEFINES"                                 ) { return IfcRelDefines; }
-    if(s=="IFCRELDEFINESBYPROPERTIES"                     ) { return IfcRelDefinesByProperties; }
-    if(s=="IFCRELDEFINESBYTYPE"                           ) { return IfcRelDefinesByType; }
-    if(s=="IFCRELFILLSELEMENT"                            ) { return IfcRelFillsElement; }
-    if(s=="IFCRELFLOWCONTROLELEMENTS"                     ) { return IfcRelFlowControlElements; }
-    if(s=="IFCRELINTERACTIONREQUIREMENTS"                 ) { return IfcRelInteractionRequirements; }
-    if(s=="IFCRELNESTS"                                   ) { return IfcRelNests; }
-    if(s=="IFCRELOCCUPIESSPACES"                          ) { return IfcRelOccupiesSpaces; }
-    if(s=="IFCRELOVERRIDESPROPERTIES"                     ) { return IfcRelOverridesProperties; }
-    if(s=="IFCRELPROJECTSELEMENT"                         ) { return IfcRelProjectsElement; }
-    if(s=="IFCRELREFERENCEDINSPATIALSTRUCTURE"            ) { return IfcRelReferencedInSpatialStructure; }
-    if(s=="IFCRELSCHEDULESCOSTITEMS"                      ) { return IfcRelSchedulesCostItems; }
-    if(s=="IFCRELSEQUENCE"                                ) { return IfcRelSequence; }
-    if(s=="IFCRELSERVICESBUILDINGS"                       ) { return IfcRelServicesBuildings; }
-    if(s=="IFCRELSPACEBOUNDARY"                           ) { return IfcRelSpaceBoundary; }
-    if(s=="IFCRELVOIDSELEMENT"                            ) { return IfcRelVoidsElement; }
-    if(s=="IFCRELATIONSHIP"                               ) { return IfcRelationship; }
-    if(s=="IFCRELAXATION"                                 ) { return IfcRelaxation; }
-    if(s=="IFCREPRESENTATION"                             ) { return IfcRepresentation; }
-    if(s=="IFCREPRESENTATIONCONTEXT"                      ) { return IfcRepresentationContext; }
-    if(s=="IFCREPRESENTATIONITEM"                         ) { return IfcRepresentationItem; }
-    if(s=="IFCREPRESENTATIONMAP"                          ) { return IfcRepresentationMap; }
-    if(s=="IFCRESOURCE"                                   ) { return IfcResource; }
-    if(s=="IFCREVOLVEDAREASOLID"                          ) { return IfcRevolvedAreaSolid; }
-    if(s=="IFCRIBPLATEPROFILEPROPERTIES"                  ) { return IfcRibPlateProfileProperties; }
-    if(s=="IFCRIGHTCIRCULARCONE"                          ) { return IfcRightCircularCone; }
-    if(s=="IFCRIGHTCIRCULARCYLINDER"                      ) { return IfcRightCircularCylinder; }
-    if(s=="IFCROOF"                                       ) { return IfcRoof; }
-    if(s=="IFCROOT"                                       ) { return IfcRoot; }
-    if(s=="IFCROUNDEDEDGEFEATURE"                         ) { return IfcRoundedEdgeFeature; }
-    if(s=="IFCROUNDEDRECTANGLEPROFILEDEF"                 ) { return IfcRoundedRectangleProfileDef; }
-    if(s=="IFCSIUNIT"                                     ) { return IfcSIUnit; }
-    if(s=="IFCSANITARYTERMINALTYPE"                       ) { return IfcSanitaryTerminalType; }
-    if(s=="IFCSCHEDULETIMECONTROL"                        ) { return IfcScheduleTimeControl; }
-    if(s=="IFCSECTIONPROPERTIES"                          ) { return IfcSectionProperties; }
-    if(s=="IFCSECTIONREINFORCEMENTPROPERTIES"             ) { return IfcSectionReinforcementProperties; }
-    if(s=="IFCSECTIONEDSPINE"                             ) { return IfcSectionedSpine; }
-    if(s=="IFCSENSORTYPE"                                 ) { return IfcSensorType; }
-    if(s=="IFCSERVICELIFE"                                ) { return IfcServiceLife; }
-    if(s=="IFCSERVICELIFEFACTOR"                          ) { return IfcServiceLifeFactor; }
-    if(s=="IFCSHAPEASPECT"                                ) { return IfcShapeAspect; }
-    if(s=="IFCSHAPEMODEL"                                 ) { return IfcShapeModel; }
-    if(s=="IFCSHAPEREPRESENTATION"                        ) { return IfcShapeRepresentation; }
-    if(s=="IFCSHELLBASEDSURFACEMODEL"                     ) { return IfcShellBasedSurfaceModel; }
-    if(s=="IFCSIMPLEPROPERTY"                             ) { return IfcSimpleProperty; }
-    if(s=="IFCSITE"                                       ) { return IfcSite; }
-    if(s=="IFCSLAB"                                       ) { return IfcSlab; }
-    if(s=="IFCSLABTYPE"                                   ) { return IfcSlabType; }
-    if(s=="IFCSLIPPAGECONNECTIONCONDITION"                ) { return IfcSlippageConnectionCondition; }
-    if(s=="IFCSOLIDMODEL"                                 ) { return IfcSolidModel; }
-    if(s=="IFCSOUNDPROPERTIES"                            ) { return IfcSoundProperties; }
-    if(s=="IFCSOUNDVALUE"                                 ) { return IfcSoundValue; }
-    if(s=="IFCSPACE"                                      ) { return IfcSpace; }
-    if(s=="IFCSPACEHEATERTYPE"                            ) { return IfcSpaceHeaterType; }
-    if(s=="IFCSPACEPROGRAM"                               ) { return IfcSpaceProgram; }
-    if(s=="IFCSPACETHERMALLOADPROPERTIES"                 ) { return IfcSpaceThermalLoadProperties; }
-    if(s=="IFCSPACETYPE"                                  ) { return IfcSpaceType; }
-    if(s=="IFCSPATIALSTRUCTUREELEMENT"                    ) { return IfcSpatialStructureElement; }
-    if(s=="IFCSPATIALSTRUCTUREELEMENTTYPE"                ) { return IfcSpatialStructureElementType; }
-    if(s=="IFCSPHERE"                                     ) { return IfcSphere; }
-    if(s=="IFCSTACKTERMINALTYPE"                          ) { return IfcStackTerminalType; }
-    if(s=="IFCSTAIR"                                      ) { return IfcStair; }
-    if(s=="IFCSTAIRFLIGHT"                                ) { return IfcStairFlight; }
-    if(s=="IFCSTAIRFLIGHTTYPE"                            ) { return IfcStairFlightType; }
-    if(s=="IFCSTRUCTURALACTION"                           ) { return IfcStructuralAction; }
-    if(s=="IFCSTRUCTURALACTIVITY"                         ) { return IfcStructuralActivity; }
-    if(s=="IFCSTRUCTURALANALYSISMODEL"                    ) { return IfcStructuralAnalysisModel; }
-    if(s=="IFCSTRUCTURALCONNECTION"                       ) { return IfcStructuralConnection; }
-    if(s=="IFCSTRUCTURALCONNECTIONCONDITION"              ) { return IfcStructuralConnectionCondition; }
-    if(s=="IFCSTRUCTURALCURVECONNECTION"                  ) { return IfcStructuralCurveConnection; }
-    if(s=="IFCSTRUCTURALCURVEMEMBER"                      ) { return IfcStructuralCurveMember; }
-    if(s=="IFCSTRUCTURALCURVEMEMBERVARYING"               ) { return IfcStructuralCurveMemberVarying; }
-    if(s=="IFCSTRUCTURALITEM"                             ) { return IfcStructuralItem; }
-    if(s=="IFCSTRUCTURALLINEARACTION"                     ) { return IfcStructuralLinearAction; }
-    if(s=="IFCSTRUCTURALLINEARACTIONVARYING"              ) { return IfcStructuralLinearActionVarying; }
-    if(s=="IFCSTRUCTURALLOAD"                             ) { return IfcStructuralLoad; }
-    if(s=="IFCSTRUCTURALLOADGROUP"                        ) { return IfcStructuralLoadGroup; }
-    if(s=="IFCSTRUCTURALLOADLINEARFORCE"                  ) { return IfcStructuralLoadLinearForce; }
-    if(s=="IFCSTRUCTURALLOADPLANARFORCE"                  ) { return IfcStructuralLoadPlanarForce; }
-    if(s=="IFCSTRUCTURALLOADSINGLEDISPLACEMENT"           ) { return IfcStructuralLoadSingleDisplacement; }
-    if(s=="IFCSTRUCTURALLOADSINGLEDISPLACEMENTDISTORTION" ) { return IfcStructuralLoadSingleDisplacementDistortion; }
-    if(s=="IFCSTRUCTURALLOADSINGLEFORCE"                  ) { return IfcStructuralLoadSingleForce; }
-    if(s=="IFCSTRUCTURALLOADSINGLEFORCEWARPING"           ) { return IfcStructuralLoadSingleForceWarping; }
-    if(s=="IFCSTRUCTURALLOADSTATIC"                       ) { return IfcStructuralLoadStatic; }
-    if(s=="IFCSTRUCTURALLOADTEMPERATURE"                  ) { return IfcStructuralLoadTemperature; }
-    if(s=="IFCSTRUCTURALMEMBER"                           ) { return IfcStructuralMember; }
-    if(s=="IFCSTRUCTURALPLANARACTION"                     ) { return IfcStructuralPlanarAction; }
-    if(s=="IFCSTRUCTURALPLANARACTIONVARYING"              ) { return IfcStructuralPlanarActionVarying; }
-    if(s=="IFCSTRUCTURALPOINTACTION"                      ) { return IfcStructuralPointAction; }
-    if(s=="IFCSTRUCTURALPOINTCONNECTION"                  ) { return IfcStructuralPointConnection; }
-    if(s=="IFCSTRUCTURALPOINTREACTION"                    ) { return IfcStructuralPointReaction; }
-    if(s=="IFCSTRUCTURALPROFILEPROPERTIES"                ) { return IfcStructuralProfileProperties; }
-    if(s=="IFCSTRUCTURALREACTION"                         ) { return IfcStructuralReaction; }
-    if(s=="IFCSTRUCTURALRESULTGROUP"                      ) { return IfcStructuralResultGroup; }
-    if(s=="IFCSTRUCTURALSTEELPROFILEPROPERTIES"           ) { return IfcStructuralSteelProfileProperties; }
-    if(s=="IFCSTRUCTURALSURFACECONNECTION"                ) { return IfcStructuralSurfaceConnection; }
-    if(s=="IFCSTRUCTURALSURFACEMEMBER"                    ) { return IfcStructuralSurfaceMember; }
-    if(s=="IFCSTRUCTURALSURFACEMEMBERVARYING"             ) { return IfcStructuralSurfaceMemberVarying; }
-    if(s=="IFCSTRUCTUREDDIMENSIONCALLOUT"                 ) { return IfcStructuredDimensionCallout; }
-    if(s=="IFCSTYLEMODEL"                                 ) { return IfcStyleModel; }
-    if(s=="IFCSTYLEDITEM"                                 ) { return IfcStyledItem; }
-    if(s=="IFCSTYLEDREPRESENTATION"                       ) { return IfcStyledRepresentation; }
-    if(s=="IFCSUBCONTRACTRESOURCE"                        ) { return IfcSubContractResource; }
-    if(s=="IFCSUBEDGE"                                    ) { return IfcSubedge; }
-    if(s=="IFCSURFACE"                                    ) { return IfcSurface; }
-    if(s=="IFCSURFACECURVESWEPTAREASOLID"                 ) { return IfcSurfaceCurveSweptAreaSolid; }
-    if(s=="IFCSURFACEOFLINEAREXTRUSION"                   ) { return IfcSurfaceOfLinearExtrusion; }
-    if(s=="IFCSURFACEOFREVOLUTION"                        ) { return IfcSurfaceOfRevolution; }
-    if(s=="IFCSURFACESTYLE"                               ) { return IfcSurfaceStyle; }
-    if(s=="IFCSURFACESTYLELIGHTING"                       ) { return IfcSurfaceStyleLighting; }
-    if(s=="IFCSURFACESTYLEREFRACTION"                     ) { return IfcSurfaceStyleRefraction; }
-    if(s=="IFCSURFACESTYLERENDERING"                      ) { return IfcSurfaceStyleRendering; }
-    if(s=="IFCSURFACESTYLESHADING"                        ) { return IfcSurfaceStyleShading; }
-    if(s=="IFCSURFACESTYLEWITHTEXTURES"                   ) { return IfcSurfaceStyleWithTextures; }
-    if(s=="IFCSURFACETEXTURE"                             ) { return IfcSurfaceTexture; }
-    if(s=="IFCSWEPTAREASOLID"                             ) { return IfcSweptAreaSolid; }
-    if(s=="IFCSWEPTDISKSOLID"                             ) { return IfcSweptDiskSolid; }
-    if(s=="IFCSWEPTSURFACE"                               ) { return IfcSweptSurface; }
-    if(s=="IFCSWITCHINGDEVICETYPE"                        ) { return IfcSwitchingDeviceType; }
-    if(s=="IFCSYMBOLSTYLE"                                ) { return IfcSymbolStyle; }
-    if(s=="IFCSYSTEM"                                     ) { return IfcSystem; }
-    if(s=="IFCSYSTEMFURNITUREELEMENTTYPE"                 ) { return IfcSystemFurnitureElementType; }
-    if(s=="IFCTSHAPEPROFILEDEF"                           ) { return IfcTShapeProfileDef; }
-    if(s=="IFCTABLE"                                      ) { return IfcTable; }
-    if(s=="IFCTABLEROW"                                   ) { return IfcTableRow; }
-    if(s=="IFCTANKTYPE"                                   ) { return IfcTankType; }
-    if(s=="IFCTASK"                                       ) { return IfcTask; }
-    if(s=="IFCTELECOMADDRESS"                             ) { return IfcTelecomAddress; }
-    if(s=="IFCTENDON"                                     ) { return IfcTendon; }
-    if(s=="IFCTENDONANCHOR"                               ) { return IfcTendonAnchor; }
-    if(s=="IFCTERMINATORSYMBOL"                           ) { return IfcTerminatorSymbol; }
-    if(s=="IFCTEXTLITERAL"                                ) { return IfcTextLiteral; }
-    if(s=="IFCTEXTLITERALWITHEXTENT"                      ) { return IfcTextLiteralWithExtent; }
-    if(s=="IFCTEXTSTYLE"                                  ) { return IfcTextStyle; }
-    if(s=="IFCTEXTSTYLEFONTMODEL"                         ) { return IfcTextStyleFontModel; }
-    if(s=="IFCTEXTSTYLEFORDEFINEDFONT"                    ) { return IfcTextStyleForDefinedFont; }
-    if(s=="IFCTEXTSTYLETEXTMODEL"                         ) { return IfcTextStyleTextModel; }
-    if(s=="IFCTEXTSTYLEWITHBOXCHARACTERISTICS"            ) { return IfcTextStyleWithBoxCharacteristics; }
-    if(s=="IFCTEXTURECOORDINATE"                          ) { return IfcTextureCoordinate; }
-    if(s=="IFCTEXTURECOORDINATEGENERATOR"                 ) { return IfcTextureCoordinateGenerator; }
-    if(s=="IFCTEXTUREMAP"                                 ) { return IfcTextureMap; }
-    if(s=="IFCTEXTUREVERTEX"                              ) { return IfcTextureVertex; }
-    if(s=="IFCTHERMALMATERIALPROPERTIES"                  ) { return IfcThermalMaterialProperties; }
-    if(s=="IFCTIMESERIES"                                 ) { return IfcTimeSeries; }
-    if(s=="IFCTIMESERIESREFERENCERELATIONSHIP"            ) { return IfcTimeSeriesReferenceRelationship; }
-    if(s=="IFCTIMESERIESSCHEDULE"                         ) { return IfcTimeSeriesSchedule; }
-    if(s=="IFCTIMESERIESVALUE"                            ) { return IfcTimeSeriesValue; }
-    if(s=="IFCTOPOLOGICALREPRESENTATIONITEM"              ) { return IfcTopologicalRepresentationItem; }
-    if(s=="IFCTOPOLOGYREPRESENTATION"                     ) { return IfcTopologyRepresentation; }
-    if(s=="IFCTRANSFORMERTYPE"                            ) { return IfcTransformerType; }
-    if(s=="IFCTRANSPORTELEMENT"                           ) { return IfcTransportElement; }
-    if(s=="IFCTRANSPORTELEMENTTYPE"                       ) { return IfcTransportElementType; }
-    if(s=="IFCTRAPEZIUMPROFILEDEF"                        ) { return IfcTrapeziumProfileDef; }
-    if(s=="IFCTRIMMEDCURVE"                               ) { return IfcTrimmedCurve; }
-    if(s=="IFCTUBEBUNDLETYPE"                             ) { return IfcTubeBundleType; }
-    if(s=="IFCTWODIRECTIONREPEATFACTOR"                   ) { return IfcTwoDirectionRepeatFactor; }
-    if(s=="IFCTYPEOBJECT"                                 ) { return IfcTypeObject; }
-    if(s=="IFCTYPEPRODUCT"                                ) { return IfcTypeProduct; }
-    if(s=="IFCUSHAPEPROFILEDEF"                           ) { return IfcUShapeProfileDef; }
-    if(s=="IFCUNITASSIGNMENT"                             ) { return IfcUnitAssignment; }
-    if(s=="IFCUNITARYEQUIPMENTTYPE"                       ) { return IfcUnitaryEquipmentType; }
-    if(s=="IFCVALVETYPE"                                  ) { return IfcValveType; }
-    if(s=="IFCVECTOR"                                     ) { return IfcVector; }
-    if(s=="IFCVERTEX"                                     ) { return IfcVertex; }
-    if(s=="IFCVERTEXBASEDTEXTUREMAP"                      ) { return IfcVertexBasedTextureMap; }
-    if(s=="IFCVERTEXLOOP"                                 ) { return IfcVertexLoop; }
-    if(s=="IFCVERTEXPOINT"                                ) { return IfcVertexPoint; }
-    if(s=="IFCVIBRATIONISOLATORTYPE"                      ) { return IfcVibrationIsolatorType; }
-    if(s=="IFCVIRTUALELEMENT"                             ) { return IfcVirtualElement; }
-    if(s=="IFCVIRTUALGRIDINTERSECTION"                    ) { return IfcVirtualGridIntersection; }
-    if(s=="IFCWALL"                                       ) { return IfcWall; }
-    if(s=="IFCWALLSTANDARDCASE"                           ) { return IfcWallStandardCase; }
-    if(s=="IFCWALLTYPE"                                   ) { return IfcWallType; }
-    if(s=="IFCWASTETERMINALTYPE"                          ) { return IfcWasteTerminalType; }
-    if(s=="IFCWATERPROPERTIES"                            ) { return IfcWaterProperties; }
-    if(s=="IFCWINDOW"                                     ) { return IfcWindow; }
-    if(s=="IFCWINDOWLININGPROPERTIES"                     ) { return IfcWindowLiningProperties; }
-    if(s=="IFCWINDOWPANELPROPERTIES"                      ) { return IfcWindowPanelProperties; }
-    if(s=="IFCWINDOWSTYLE"                                ) { return IfcWindowStyle; }
-    if(s=="IFCWORKCONTROL"                                ) { return IfcWorkControl; }
-    if(s=="IFCWORKPLAN"                                   ) { return IfcWorkPlan; }
-    if(s=="IFCWORKSCHEDULE"                               ) { return IfcWorkSchedule; }
-    if(s=="IFCZSHAPEPROFILEDEF"                           ) { return IfcZShapeProfileDef; }
-    if(s=="IFCZONE"                                       ) { return IfcZone; }
-    throw;
+std::map<std::string,Type::Enum> string_map;
+void Ifc2x3::InitStringMap() {
+    string_map["IFCABSORBEDDOSEMEASURE"                        ] = Type::IfcAbsorbedDoseMeasure;
+    string_map["IFCACCELERATIONMEASURE"                        ] = Type::IfcAccelerationMeasure;
+    string_map["IFCAMOUNTOFSUBSTANCEMEASURE"                   ] = Type::IfcAmountOfSubstanceMeasure;
+    string_map["IFCANGULARVELOCITYMEASURE"                     ] = Type::IfcAngularVelocityMeasure;
+    string_map["IFCAREAMEASURE"                                ] = Type::IfcAreaMeasure;
+    string_map["IFCBOOLEAN"                                    ] = Type::IfcBoolean;
+    string_map["IFCCOLOUR"                                     ] = Type::IfcColour;
+    string_map["IFCCOMPLEXNUMBER"                              ] = Type::IfcComplexNumber;
+    string_map["IFCCOMPOUNDPLANEANGLEMEASURE"                  ] = Type::IfcCompoundPlaneAngleMeasure;
+    string_map["IFCCONTEXTDEPENDENTMEASURE"                    ] = Type::IfcContextDependentMeasure;
+    string_map["IFCCOUNTMEASURE"                               ] = Type::IfcCountMeasure;
+    string_map["IFCCURVATUREMEASURE"                           ] = Type::IfcCurvatureMeasure;
+    string_map["IFCDATETIMESELECT"                             ] = Type::IfcDateTimeSelect;
+    string_map["IFCDERIVEDMEASUREVALUE"                        ] = Type::IfcDerivedMeasureValue;
+    string_map["IFCDESCRIPTIVEMEASURE"                         ] = Type::IfcDescriptiveMeasure;
+    string_map["IFCDOSEEQUIVALENTMEASURE"                      ] = Type::IfcDoseEquivalentMeasure;
+    string_map["IFCDYNAMICVISCOSITYMEASURE"                    ] = Type::IfcDynamicViscosityMeasure;
+    string_map["IFCELECTRICCAPACITANCEMEASURE"                 ] = Type::IfcElectricCapacitanceMeasure;
+    string_map["IFCELECTRICCHARGEMEASURE"                      ] = Type::IfcElectricChargeMeasure;
+    string_map["IFCELECTRICCONDUCTANCEMEASURE"                 ] = Type::IfcElectricConductanceMeasure;
+    string_map["IFCELECTRICCURRENTMEASURE"                     ] = Type::IfcElectricCurrentMeasure;
+    string_map["IFCELECTRICRESISTANCEMEASURE"                  ] = Type::IfcElectricResistanceMeasure;
+    string_map["IFCELECTRICVOLTAGEMEASURE"                     ] = Type::IfcElectricVoltageMeasure;
+    string_map["IFCENERGYMEASURE"                              ] = Type::IfcEnergyMeasure;
+    string_map["IFCFORCEMEASURE"                               ] = Type::IfcForceMeasure;
+    string_map["IFCFREQUENCYMEASURE"                           ] = Type::IfcFrequencyMeasure;
+    string_map["IFCHEATFLUXDENSITYMEASURE"                     ] = Type::IfcHeatFluxDensityMeasure;
+    string_map["IFCHEATINGVALUEMEASURE"                        ] = Type::IfcHeatingValueMeasure;
+    string_map["IFCIDENTIFIER"                                 ] = Type::IfcIdentifier;
+    string_map["IFCILLUMINANCEMEASURE"                         ] = Type::IfcIlluminanceMeasure;
+    string_map["IFCINDUCTANCEMEASURE"                          ] = Type::IfcInductanceMeasure;
+    string_map["IFCINTEGER"                                    ] = Type::IfcInteger;
+    string_map["IFCINTEGERCOUNTRATEMEASURE"                    ] = Type::IfcIntegerCountRateMeasure;
+    string_map["IFCIONCONCENTRATIONMEASURE"                    ] = Type::IfcIonConcentrationMeasure;
+    string_map["IFCISOTHERMALMOISTURECAPACITYMEASURE"          ] = Type::IfcIsothermalMoistureCapacityMeasure;
+    string_map["IFCKINEMATICVISCOSITYMEASURE"                  ] = Type::IfcKinematicViscosityMeasure;
+    string_map["IFCLABEL"                                      ] = Type::IfcLabel;
+    string_map["IFCLENGTHMEASURE"                              ] = Type::IfcLengthMeasure;
+    string_map["IFCLINEARFORCEMEASURE"                         ] = Type::IfcLinearForceMeasure;
+    string_map["IFCLINEARMOMENTMEASURE"                        ] = Type::IfcLinearMomentMeasure;
+    string_map["IFCLINEARSTIFFNESSMEASURE"                     ] = Type::IfcLinearStiffnessMeasure;
+    string_map["IFCLINEARVELOCITYMEASURE"                      ] = Type::IfcLinearVelocityMeasure;
+    string_map["IFCLOGICAL"                                    ] = Type::IfcLogical;
+    string_map["IFCLUMINOUSFLUXMEASURE"                        ] = Type::IfcLuminousFluxMeasure;
+    string_map["IFCLUMINOUSINTENSITYDISTRIBUTIONMEASURE"       ] = Type::IfcLuminousIntensityDistributionMeasure;
+    string_map["IFCLUMINOUSINTENSITYMEASURE"                   ] = Type::IfcLuminousIntensityMeasure;
+    string_map["IFCMAGNETICFLUXDENSITYMEASURE"                 ] = Type::IfcMagneticFluxDensityMeasure;
+    string_map["IFCMAGNETICFLUXMEASURE"                        ] = Type::IfcMagneticFluxMeasure;
+    string_map["IFCMASSDENSITYMEASURE"                         ] = Type::IfcMassDensityMeasure;
+    string_map["IFCMASSFLOWRATEMEASURE"                        ] = Type::IfcMassFlowRateMeasure;
+    string_map["IFCMASSMEASURE"                                ] = Type::IfcMassMeasure;
+    string_map["IFCMASSPERLENGTHMEASURE"                       ] = Type::IfcMassPerLengthMeasure;
+    string_map["IFCMEASUREVALUE"                               ] = Type::IfcMeasureValue;
+    string_map["IFCMODULUSOFELASTICITYMEASURE"                 ] = Type::IfcModulusOfElasticityMeasure;
+    string_map["IFCMODULUSOFLINEARSUBGRADEREACTIONMEASURE"     ] = Type::IfcModulusOfLinearSubgradeReactionMeasure;
+    string_map["IFCMODULUSOFROTATIONALSUBGRADEREACTIONMEASURE" ] = Type::IfcModulusOfRotationalSubgradeReactionMeasure;
+    string_map["IFCMODULUSOFSUBGRADEREACTIONMEASURE"           ] = Type::IfcModulusOfSubgradeReactionMeasure;
+    string_map["IFCMOISTUREDIFFUSIVITYMEASURE"                 ] = Type::IfcMoistureDiffusivityMeasure;
+    string_map["IFCMOLECULARWEIGHTMEASURE"                     ] = Type::IfcMolecularWeightMeasure;
+    string_map["IFCMOMENTOFINERTIAMEASURE"                     ] = Type::IfcMomentOfInertiaMeasure;
+    string_map["IFCMONETARYMEASURE"                            ] = Type::IfcMonetaryMeasure;
+    string_map["IFCNORMALISEDRATIOMEASURE"                     ] = Type::IfcNormalisedRatioMeasure;
+    string_map["IFCNULLSTYLE"                                  ] = Type::IfcNullStyle;
+    string_map["IFCNUMERICMEASURE"                             ] = Type::IfcNumericMeasure;
+    string_map["IFCPHMEASURE"                                  ] = Type::IfcPHMeasure;
+    string_map["IFCPARAMETERVALUE"                             ] = Type::IfcParameterValue;
+    string_map["IFCPLANARFORCEMEASURE"                         ] = Type::IfcPlanarForceMeasure;
+    string_map["IFCPLANEANGLEMEASURE"                          ] = Type::IfcPlaneAngleMeasure;
+    string_map["IFCPOSITIVELENGTHMEASURE"                      ] = Type::IfcPositiveLengthMeasure;
+    string_map["IFCPOSITIVEPLANEANGLEMEASURE"                  ] = Type::IfcPositivePlaneAngleMeasure;
+    string_map["IFCPOSITIVERATIOMEASURE"                       ] = Type::IfcPositiveRatioMeasure;
+    string_map["IFCPOWERMEASURE"                               ] = Type::IfcPowerMeasure;
+    string_map["IFCPRESSUREMEASURE"                            ] = Type::IfcPressureMeasure;
+    string_map["IFCRADIOACTIVITYMEASURE"                       ] = Type::IfcRadioActivityMeasure;
+    string_map["IFCRATIOMEASURE"                               ] = Type::IfcRatioMeasure;
+    string_map["IFCREAL"                                       ] = Type::IfcReal;
+    string_map["IFCROTATIONALFREQUENCYMEASURE"                 ] = Type::IfcRotationalFrequencyMeasure;
+    string_map["IFCROTATIONALMASSMEASURE"                      ] = Type::IfcRotationalMassMeasure;
+    string_map["IFCROTATIONALSTIFFNESSMEASURE"                 ] = Type::IfcRotationalStiffnessMeasure;
+    string_map["IFCSECTIONMODULUSMEASURE"                      ] = Type::IfcSectionModulusMeasure;
+    string_map["IFCSECTIONALAREAINTEGRALMEASURE"               ] = Type::IfcSectionalAreaIntegralMeasure;
+    string_map["IFCSHEARMODULUSMEASURE"                        ] = Type::IfcShearModulusMeasure;
+    string_map["IFCSIMPLEVALUE"                                ] = Type::IfcSimpleValue;
+    string_map["IFCSOLIDANGLEMEASURE"                          ] = Type::IfcSolidAngleMeasure;
+    string_map["IFCSOUNDPOWERMEASURE"                          ] = Type::IfcSoundPowerMeasure;
+    string_map["IFCSOUNDPRESSUREMEASURE"                       ] = Type::IfcSoundPressureMeasure;
+    string_map["IFCSPECIFICHEATCAPACITYMEASURE"                ] = Type::IfcSpecificHeatCapacityMeasure;
+    string_map["IFCSPECULAREXPONENT"                           ] = Type::IfcSpecularExponent;
+    string_map["IFCSPECULARROUGHNESS"                          ] = Type::IfcSpecularRoughness;
+    string_map["IFCTEMPERATUREGRADIENTMEASURE"                 ] = Type::IfcTemperatureGradientMeasure;
+    string_map["IFCTEXT"                                       ] = Type::IfcText;
+    string_map["IFCTHERMALADMITTANCEMEASURE"                   ] = Type::IfcThermalAdmittanceMeasure;
+    string_map["IFCTHERMALCONDUCTIVITYMEASURE"                 ] = Type::IfcThermalConductivityMeasure;
+    string_map["IFCTHERMALEXPANSIONCOEFFICIENTMEASURE"         ] = Type::IfcThermalExpansionCoefficientMeasure;
+    string_map["IFCTHERMALRESISTANCEMEASURE"                   ] = Type::IfcThermalResistanceMeasure;
+    string_map["IFCTHERMALTRANSMITTANCEMEASURE"                ] = Type::IfcThermalTransmittanceMeasure;
+    string_map["IFCTHERMODYNAMICTEMPERATUREMEASURE"            ] = Type::IfcThermodynamicTemperatureMeasure;
+    string_map["IFCTIMEMEASURE"                                ] = Type::IfcTimeMeasure;
+    string_map["IFCTIMESTAMP"                                  ] = Type::IfcTimeStamp;
+    string_map["IFCTORQUEMEASURE"                              ] = Type::IfcTorqueMeasure;
+    string_map["IFCVAPORPERMEABILITYMEASURE"                   ] = Type::IfcVaporPermeabilityMeasure;
+    string_map["IFCVOLUMEMEASURE"                              ] = Type::IfcVolumeMeasure;
+    string_map["IFCVOLUMETRICFLOWRATEMEASURE"                  ] = Type::IfcVolumetricFlowRateMeasure;
+    string_map["IFCWARPINGCONSTANTMEASURE"                     ] = Type::IfcWarpingConstantMeasure;
+    string_map["IFCWARPINGMOMENTMEASURE"                       ] = Type::IfcWarpingMomentMeasure;
+    string_map["IFC2DCOMPOSITECURVE"                           ] = Type::Ifc2DCompositeCurve;
+    string_map["IFCACTIONREQUEST"                              ] = Type::IfcActionRequest;
+    string_map["IFCACTOR"                                      ] = Type::IfcActor;
+    string_map["IFCACTORROLE"                                  ] = Type::IfcActorRole;
+    string_map["IFCACTUATORTYPE"                               ] = Type::IfcActuatorType;
+    string_map["IFCADDRESS"                                    ] = Type::IfcAddress;
+    string_map["IFCAIRTERMINALBOXTYPE"                         ] = Type::IfcAirTerminalBoxType;
+    string_map["IFCAIRTERMINALTYPE"                            ] = Type::IfcAirTerminalType;
+    string_map["IFCAIRTOAIRHEATRECOVERYTYPE"                   ] = Type::IfcAirToAirHeatRecoveryType;
+    string_map["IFCALARMTYPE"                                  ] = Type::IfcAlarmType;
+    string_map["IFCANGULARDIMENSION"                           ] = Type::IfcAngularDimension;
+    string_map["IFCANNOTATION"                                 ] = Type::IfcAnnotation;
+    string_map["IFCANNOTATIONCURVEOCCURRENCE"                  ] = Type::IfcAnnotationCurveOccurrence;
+    string_map["IFCANNOTATIONFILLAREA"                         ] = Type::IfcAnnotationFillArea;
+    string_map["IFCANNOTATIONFILLAREAOCCURRENCE"               ] = Type::IfcAnnotationFillAreaOccurrence;
+    string_map["IFCANNOTATIONOCCURRENCE"                       ] = Type::IfcAnnotationOccurrence;
+    string_map["IFCANNOTATIONSURFACE"                          ] = Type::IfcAnnotationSurface;
+    string_map["IFCANNOTATIONSURFACEOCCURRENCE"                ] = Type::IfcAnnotationSurfaceOccurrence;
+    string_map["IFCANNOTATIONSYMBOLOCCURRENCE"                 ] = Type::IfcAnnotationSymbolOccurrence;
+    string_map["IFCANNOTATIONTEXTOCCURRENCE"                   ] = Type::IfcAnnotationTextOccurrence;
+    string_map["IFCAPPLICATION"                                ] = Type::IfcApplication;
+    string_map["IFCAPPLIEDVALUE"                               ] = Type::IfcAppliedValue;
+    string_map["IFCAPPLIEDVALUERELATIONSHIP"                   ] = Type::IfcAppliedValueRelationship;
+    string_map["IFCAPPROVAL"                                   ] = Type::IfcApproval;
+    string_map["IFCAPPROVALACTORRELATIONSHIP"                  ] = Type::IfcApprovalActorRelationship;
+    string_map["IFCAPPROVALPROPERTYRELATIONSHIP"               ] = Type::IfcApprovalPropertyRelationship;
+    string_map["IFCAPPROVALRELATIONSHIP"                       ] = Type::IfcApprovalRelationship;
+    string_map["IFCARBITRARYCLOSEDPROFILEDEF"                  ] = Type::IfcArbitraryClosedProfileDef;
+    string_map["IFCARBITRARYOPENPROFILEDEF"                    ] = Type::IfcArbitraryOpenProfileDef;
+    string_map["IFCARBITRARYPROFILEDEFWITHVOIDS"               ] = Type::IfcArbitraryProfileDefWithVoids;
+    string_map["IFCASSET"                                      ] = Type::IfcAsset;
+    string_map["IFCASYMMETRICISHAPEPROFILEDEF"                 ] = Type::IfcAsymmetricIShapeProfileDef;
+    string_map["IFCAXIS1PLACEMENT"                             ] = Type::IfcAxis1Placement;
+    string_map["IFCAXIS2PLACEMENT2D"                           ] = Type::IfcAxis2Placement2D;
+    string_map["IFCAXIS2PLACEMENT3D"                           ] = Type::IfcAxis2Placement3D;
+    string_map["IFCBSPLINECURVE"                               ] = Type::IfcBSplineCurve;
+    string_map["IFCBEAM"                                       ] = Type::IfcBeam;
+    string_map["IFCBEAMTYPE"                                   ] = Type::IfcBeamType;
+    string_map["IFCBEZIERCURVE"                                ] = Type::IfcBezierCurve;
+    string_map["IFCBLOBTEXTURE"                                ] = Type::IfcBlobTexture;
+    string_map["IFCBLOCK"                                      ] = Type::IfcBlock;
+    string_map["IFCBOILERTYPE"                                 ] = Type::IfcBoilerType;
+    string_map["IFCBOOLEANCLIPPINGRESULT"                      ] = Type::IfcBooleanClippingResult;
+    string_map["IFCBOOLEANRESULT"                              ] = Type::IfcBooleanResult;
+    string_map["IFCBOUNDARYCONDITION"                          ] = Type::IfcBoundaryCondition;
+    string_map["IFCBOUNDARYEDGECONDITION"                      ] = Type::IfcBoundaryEdgeCondition;
+    string_map["IFCBOUNDARYFACECONDITION"                      ] = Type::IfcBoundaryFaceCondition;
+    string_map["IFCBOUNDARYNODECONDITION"                      ] = Type::IfcBoundaryNodeCondition;
+    string_map["IFCBOUNDARYNODECONDITIONWARPING"               ] = Type::IfcBoundaryNodeConditionWarping;
+    string_map["IFCBOUNDEDCURVE"                               ] = Type::IfcBoundedCurve;
+    string_map["IFCBOUNDEDSURFACE"                             ] = Type::IfcBoundedSurface;
+    string_map["IFCBOUNDINGBOX"                                ] = Type::IfcBoundingBox;
+    string_map["IFCBOXEDHALFSPACE"                             ] = Type::IfcBoxedHalfSpace;
+    string_map["IFCBUILDING"                                   ] = Type::IfcBuilding;
+    string_map["IFCBUILDINGELEMENT"                            ] = Type::IfcBuildingElement;
+    string_map["IFCBUILDINGELEMENTCOMPONENT"                   ] = Type::IfcBuildingElementComponent;
+    string_map["IFCBUILDINGELEMENTPART"                        ] = Type::IfcBuildingElementPart;
+    string_map["IFCBUILDINGELEMENTPROXY"                       ] = Type::IfcBuildingElementProxy;
+    string_map["IFCBUILDINGELEMENTPROXYTYPE"                   ] = Type::IfcBuildingElementProxyType;
+    string_map["IFCBUILDINGELEMENTTYPE"                        ] = Type::IfcBuildingElementType;
+    string_map["IFCBUILDINGSTOREY"                             ] = Type::IfcBuildingStorey;
+    string_map["IFCCSHAPEPROFILEDEF"                           ] = Type::IfcCShapeProfileDef;
+    string_map["IFCCABLECARRIERFITTINGTYPE"                    ] = Type::IfcCableCarrierFittingType;
+    string_map["IFCCABLECARRIERSEGMENTTYPE"                    ] = Type::IfcCableCarrierSegmentType;
+    string_map["IFCCABLESEGMENTTYPE"                           ] = Type::IfcCableSegmentType;
+    string_map["IFCCALENDARDATE"                               ] = Type::IfcCalendarDate;
+    string_map["IFCCARTESIANPOINT"                             ] = Type::IfcCartesianPoint;
+    string_map["IFCCARTESIANTRANSFORMATIONOPERATOR"            ] = Type::IfcCartesianTransformationOperator;
+    string_map["IFCCARTESIANTRANSFORMATIONOPERATOR2D"          ] = Type::IfcCartesianTransformationOperator2D;
+    string_map["IFCCARTESIANTRANSFORMATIONOPERATOR2DNONUNIFORM"] = Type::IfcCartesianTransformationOperator2DnonUniform;
+    string_map["IFCCARTESIANTRANSFORMATIONOPERATOR3D"          ] = Type::IfcCartesianTransformationOperator3D;
+    string_map["IFCCARTESIANTRANSFORMATIONOPERATOR3DNONUNIFORM"] = Type::IfcCartesianTransformationOperator3DnonUniform;
+    string_map["IFCCENTERLINEPROFILEDEF"                       ] = Type::IfcCenterLineProfileDef;
+    string_map["IFCCHAMFEREDGEFEATURE"                         ] = Type::IfcChamferEdgeFeature;
+    string_map["IFCCHILLERTYPE"                                ] = Type::IfcChillerType;
+    string_map["IFCCIRCLE"                                     ] = Type::IfcCircle;
+    string_map["IFCCIRCLEHOLLOWPROFILEDEF"                     ] = Type::IfcCircleHollowProfileDef;
+    string_map["IFCCIRCLEPROFILEDEF"                           ] = Type::IfcCircleProfileDef;
+    string_map["IFCCLASSIFICATION"                             ] = Type::IfcClassification;
+    string_map["IFCCLASSIFICATIONITEM"                         ] = Type::IfcClassificationItem;
+    string_map["IFCCLASSIFICATIONITEMRELATIONSHIP"             ] = Type::IfcClassificationItemRelationship;
+    string_map["IFCCLASSIFICATIONNOTATION"                     ] = Type::IfcClassificationNotation;
+    string_map["IFCCLASSIFICATIONNOTATIONFACET"                ] = Type::IfcClassificationNotationFacet;
+    string_map["IFCCLASSIFICATIONREFERENCE"                    ] = Type::IfcClassificationReference;
+    string_map["IFCCLOSEDSHELL"                                ] = Type::IfcClosedShell;
+    string_map["IFCCOILTYPE"                                   ] = Type::IfcCoilType;
+    string_map["IFCCOLOURRGB"                                  ] = Type::IfcColourRgb;
+    string_map["IFCCOLOURSPECIFICATION"                        ] = Type::IfcColourSpecification;
+    string_map["IFCCOLUMN"                                     ] = Type::IfcColumn;
+    string_map["IFCCOLUMNTYPE"                                 ] = Type::IfcColumnType;
+    string_map["IFCCOMPLEXPROPERTY"                            ] = Type::IfcComplexProperty;
+    string_map["IFCCOMPOSITECURVE"                             ] = Type::IfcCompositeCurve;
+    string_map["IFCCOMPOSITECURVESEGMENT"                      ] = Type::IfcCompositeCurveSegment;
+    string_map["IFCCOMPOSITEPROFILEDEF"                        ] = Type::IfcCompositeProfileDef;
+    string_map["IFCCOMPRESSORTYPE"                             ] = Type::IfcCompressorType;
+    string_map["IFCCONDENSERTYPE"                              ] = Type::IfcCondenserType;
+    string_map["IFCCONDITION"                                  ] = Type::IfcCondition;
+    string_map["IFCCONDITIONCRITERION"                         ] = Type::IfcConditionCriterion;
+    string_map["IFCCONIC"                                      ] = Type::IfcConic;
+    string_map["IFCCONNECTEDFACESET"                           ] = Type::IfcConnectedFaceSet;
+    string_map["IFCCONNECTIONCURVEGEOMETRY"                    ] = Type::IfcConnectionCurveGeometry;
+    string_map["IFCCONNECTIONGEOMETRY"                         ] = Type::IfcConnectionGeometry;
+    string_map["IFCCONNECTIONPOINTECCENTRICITY"                ] = Type::IfcConnectionPointEccentricity;
+    string_map["IFCCONNECTIONPOINTGEOMETRY"                    ] = Type::IfcConnectionPointGeometry;
+    string_map["IFCCONNECTIONPORTGEOMETRY"                     ] = Type::IfcConnectionPortGeometry;
+    string_map["IFCCONNECTIONSURFACEGEOMETRY"                  ] = Type::IfcConnectionSurfaceGeometry;
+    string_map["IFCCONSTRAINT"                                 ] = Type::IfcConstraint;
+    string_map["IFCCONSTRAINTAGGREGATIONRELATIONSHIP"          ] = Type::IfcConstraintAggregationRelationship;
+    string_map["IFCCONSTRAINTCLASSIFICATIONRELATIONSHIP"       ] = Type::IfcConstraintClassificationRelationship;
+    string_map["IFCCONSTRAINTRELATIONSHIP"                     ] = Type::IfcConstraintRelationship;
+    string_map["IFCCONSTRUCTIONEQUIPMENTRESOURCE"              ] = Type::IfcConstructionEquipmentResource;
+    string_map["IFCCONSTRUCTIONMATERIALRESOURCE"               ] = Type::IfcConstructionMaterialResource;
+    string_map["IFCCONSTRUCTIONPRODUCTRESOURCE"                ] = Type::IfcConstructionProductResource;
+    string_map["IFCCONSTRUCTIONRESOURCE"                       ] = Type::IfcConstructionResource;
+    string_map["IFCCONTEXTDEPENDENTUNIT"                       ] = Type::IfcContextDependentUnit;
+    string_map["IFCCONTROL"                                    ] = Type::IfcControl;
+    string_map["IFCCONTROLLERTYPE"                             ] = Type::IfcControllerType;
+    string_map["IFCCONVERSIONBASEDUNIT"                        ] = Type::IfcConversionBasedUnit;
+    string_map["IFCCOOLEDBEAMTYPE"                             ] = Type::IfcCooledBeamType;
+    string_map["IFCCOOLINGTOWERTYPE"                           ] = Type::IfcCoolingTowerType;
+    string_map["IFCCOORDINATEDUNIVERSALTIMEOFFSET"             ] = Type::IfcCoordinatedUniversalTimeOffset;
+    string_map["IFCCOSTITEM"                                   ] = Type::IfcCostItem;
+    string_map["IFCCOSTSCHEDULE"                               ] = Type::IfcCostSchedule;
+    string_map["IFCCOSTVALUE"                                  ] = Type::IfcCostValue;
+    string_map["IFCCOVERING"                                   ] = Type::IfcCovering;
+    string_map["IFCCOVERINGTYPE"                               ] = Type::IfcCoveringType;
+    string_map["IFCCRANERAILASHAPEPROFILEDEF"                  ] = Type::IfcCraneRailAShapeProfileDef;
+    string_map["IFCCRANERAILFSHAPEPROFILEDEF"                  ] = Type::IfcCraneRailFShapeProfileDef;
+    string_map["IFCCREWRESOURCE"                               ] = Type::IfcCrewResource;
+    string_map["IFCCSGPRIMITIVE3D"                             ] = Type::IfcCsgPrimitive3D;
+    string_map["IFCCSGSOLID"                                   ] = Type::IfcCsgSolid;
+    string_map["IFCCURRENCYRELATIONSHIP"                       ] = Type::IfcCurrencyRelationship;
+    string_map["IFCCURTAINWALL"                                ] = Type::IfcCurtainWall;
+    string_map["IFCCURTAINWALLTYPE"                            ] = Type::IfcCurtainWallType;
+    string_map["IFCCURVE"                                      ] = Type::IfcCurve;
+    string_map["IFCCURVEBOUNDEDPLANE"                          ] = Type::IfcCurveBoundedPlane;
+    string_map["IFCCURVESTYLE"                                 ] = Type::IfcCurveStyle;
+    string_map["IFCCURVESTYLEFONT"                             ] = Type::IfcCurveStyleFont;
+    string_map["IFCCURVESTYLEFONTANDSCALING"                   ] = Type::IfcCurveStyleFontAndScaling;
+    string_map["IFCCURVESTYLEFONTPATTERN"                      ] = Type::IfcCurveStyleFontPattern;
+    string_map["IFCDAMPERTYPE"                                 ] = Type::IfcDamperType;
+    string_map["IFCDATEANDTIME"                                ] = Type::IfcDateAndTime;
+    string_map["IFCDEFINEDSYMBOL"                              ] = Type::IfcDefinedSymbol;
+    string_map["IFCDERIVEDPROFILEDEF"                          ] = Type::IfcDerivedProfileDef;
+    string_map["IFCDERIVEDUNIT"                                ] = Type::IfcDerivedUnit;
+    string_map["IFCDERIVEDUNITELEMENT"                         ] = Type::IfcDerivedUnitElement;
+    string_map["IFCDIAMETERDIMENSION"                          ] = Type::IfcDiameterDimension;
+    string_map["IFCDIMENSIONCALLOUTRELATIONSHIP"               ] = Type::IfcDimensionCalloutRelationship;
+    string_map["IFCDIMENSIONCURVE"                             ] = Type::IfcDimensionCurve;
+    string_map["IFCDIMENSIONCURVEDIRECTEDCALLOUT"              ] = Type::IfcDimensionCurveDirectedCallout;
+    string_map["IFCDIMENSIONCURVETERMINATOR"                   ] = Type::IfcDimensionCurveTerminator;
+    string_map["IFCDIMENSIONPAIR"                              ] = Type::IfcDimensionPair;
+    string_map["IFCDIMENSIONALEXPONENTS"                       ] = Type::IfcDimensionalExponents;
+    string_map["IFCDIRECTION"                                  ] = Type::IfcDirection;
+    string_map["IFCDISCRETEACCESSORY"                          ] = Type::IfcDiscreteAccessory;
+    string_map["IFCDISCRETEACCESSORYTYPE"                      ] = Type::IfcDiscreteAccessoryType;
+    string_map["IFCDISTRIBUTIONCHAMBERELEMENT"                 ] = Type::IfcDistributionChamberElement;
+    string_map["IFCDISTRIBUTIONCHAMBERELEMENTTYPE"             ] = Type::IfcDistributionChamberElementType;
+    string_map["IFCDISTRIBUTIONCONTROLELEMENT"                 ] = Type::IfcDistributionControlElement;
+    string_map["IFCDISTRIBUTIONCONTROLELEMENTTYPE"             ] = Type::IfcDistributionControlElementType;
+    string_map["IFCDISTRIBUTIONELEMENT"                        ] = Type::IfcDistributionElement;
+    string_map["IFCDISTRIBUTIONELEMENTTYPE"                    ] = Type::IfcDistributionElementType;
+    string_map["IFCDISTRIBUTIONFLOWELEMENT"                    ] = Type::IfcDistributionFlowElement;
+    string_map["IFCDISTRIBUTIONFLOWELEMENTTYPE"                ] = Type::IfcDistributionFlowElementType;
+    string_map["IFCDISTRIBUTIONPORT"                           ] = Type::IfcDistributionPort;
+    string_map["IFCDOCUMENTELECTRONICFORMAT"                   ] = Type::IfcDocumentElectronicFormat;
+    string_map["IFCDOCUMENTINFORMATION"                        ] = Type::IfcDocumentInformation;
+    string_map["IFCDOCUMENTINFORMATIONRELATIONSHIP"            ] = Type::IfcDocumentInformationRelationship;
+    string_map["IFCDOCUMENTREFERENCE"                          ] = Type::IfcDocumentReference;
+    string_map["IFCDOOR"                                       ] = Type::IfcDoor;
+    string_map["IFCDOORLININGPROPERTIES"                       ] = Type::IfcDoorLiningProperties;
+    string_map["IFCDOORPANELPROPERTIES"                        ] = Type::IfcDoorPanelProperties;
+    string_map["IFCDOORSTYLE"                                  ] = Type::IfcDoorStyle;
+    string_map["IFCDRAUGHTINGCALLOUT"                          ] = Type::IfcDraughtingCallout;
+    string_map["IFCDRAUGHTINGCALLOUTRELATIONSHIP"              ] = Type::IfcDraughtingCalloutRelationship;
+    string_map["IFCDRAUGHTINGPREDEFINEDCOLOUR"                 ] = Type::IfcDraughtingPreDefinedColour;
+    string_map["IFCDRAUGHTINGPREDEFINEDCURVEFONT"              ] = Type::IfcDraughtingPreDefinedCurveFont;
+    string_map["IFCDRAUGHTINGPREDEFINEDTEXTFONT"               ] = Type::IfcDraughtingPreDefinedTextFont;
+    string_map["IFCDUCTFITTINGTYPE"                            ] = Type::IfcDuctFittingType;
+    string_map["IFCDUCTSEGMENTTYPE"                            ] = Type::IfcDuctSegmentType;
+    string_map["IFCDUCTSILENCERTYPE"                           ] = Type::IfcDuctSilencerType;
+    string_map["IFCEDGE"                                       ] = Type::IfcEdge;
+    string_map["IFCEDGECURVE"                                  ] = Type::IfcEdgeCurve;
+    string_map["IFCEDGEFEATURE"                                ] = Type::IfcEdgeFeature;
+    string_map["IFCEDGELOOP"                                   ] = Type::IfcEdgeLoop;
+    string_map["IFCELECTRICAPPLIANCETYPE"                      ] = Type::IfcElectricApplianceType;
+    string_map["IFCELECTRICDISTRIBUTIONPOINT"                  ] = Type::IfcElectricDistributionPoint;
+    string_map["IFCELECTRICFLOWSTORAGEDEVICETYPE"              ] = Type::IfcElectricFlowStorageDeviceType;
+    string_map["IFCELECTRICGENERATORTYPE"                      ] = Type::IfcElectricGeneratorType;
+    string_map["IFCELECTRICHEATERTYPE"                         ] = Type::IfcElectricHeaterType;
+    string_map["IFCELECTRICMOTORTYPE"                          ] = Type::IfcElectricMotorType;
+    string_map["IFCELECTRICTIMECONTROLTYPE"                    ] = Type::IfcElectricTimeControlType;
+    string_map["IFCELECTRICALBASEPROPERTIES"                   ] = Type::IfcElectricalBaseProperties;
+    string_map["IFCELECTRICALCIRCUIT"                          ] = Type::IfcElectricalCircuit;
+    string_map["IFCELECTRICALELEMENT"                          ] = Type::IfcElectricalElement;
+    string_map["IFCELEMENT"                                    ] = Type::IfcElement;
+    string_map["IFCELEMENTASSEMBLY"                            ] = Type::IfcElementAssembly;
+    string_map["IFCELEMENTCOMPONENT"                           ] = Type::IfcElementComponent;
+    string_map["IFCELEMENTCOMPONENTTYPE"                       ] = Type::IfcElementComponentType;
+    string_map["IFCELEMENTQUANTITY"                            ] = Type::IfcElementQuantity;
+    string_map["IFCELEMENTTYPE"                                ] = Type::IfcElementType;
+    string_map["IFCELEMENTARYSURFACE"                          ] = Type::IfcElementarySurface;
+    string_map["IFCELLIPSE"                                    ] = Type::IfcEllipse;
+    string_map["IFCELLIPSEPROFILEDEF"                          ] = Type::IfcEllipseProfileDef;
+    string_map["IFCENERGYCONVERSIONDEVICE"                     ] = Type::IfcEnergyConversionDevice;
+    string_map["IFCENERGYCONVERSIONDEVICETYPE"                 ] = Type::IfcEnergyConversionDeviceType;
+    string_map["IFCENERGYPROPERTIES"                           ] = Type::IfcEnergyProperties;
+    string_map["IFCENVIRONMENTALIMPACTVALUE"                   ] = Type::IfcEnvironmentalImpactValue;
+    string_map["IFCEQUIPMENTELEMENT"                           ] = Type::IfcEquipmentElement;
+    string_map["IFCEQUIPMENTSTANDARD"                          ] = Type::IfcEquipmentStandard;
+    string_map["IFCEVAPORATIVECOOLERTYPE"                      ] = Type::IfcEvaporativeCoolerType;
+    string_map["IFCEVAPORATORTYPE"                             ] = Type::IfcEvaporatorType;
+    string_map["IFCEXTENDEDMATERIALPROPERTIES"                 ] = Type::IfcExtendedMaterialProperties;
+    string_map["IFCEXTERNALREFERENCE"                          ] = Type::IfcExternalReference;
+    string_map["IFCEXTERNALLYDEFINEDHATCHSTYLE"                ] = Type::IfcExternallyDefinedHatchStyle;
+    string_map["IFCEXTERNALLYDEFINEDSURFACESTYLE"              ] = Type::IfcExternallyDefinedSurfaceStyle;
+    string_map["IFCEXTERNALLYDEFINEDSYMBOL"                    ] = Type::IfcExternallyDefinedSymbol;
+    string_map["IFCEXTERNALLYDEFINEDTEXTFONT"                  ] = Type::IfcExternallyDefinedTextFont;
+    string_map["IFCEXTRUDEDAREASOLID"                          ] = Type::IfcExtrudedAreaSolid;
+    string_map["IFCFACE"                                       ] = Type::IfcFace;
+    string_map["IFCFACEBASEDSURFACEMODEL"                      ] = Type::IfcFaceBasedSurfaceModel;
+    string_map["IFCFACEBOUND"                                  ] = Type::IfcFaceBound;
+    string_map["IFCFACEOUTERBOUND"                             ] = Type::IfcFaceOuterBound;
+    string_map["IFCFACESURFACE"                                ] = Type::IfcFaceSurface;
+    string_map["IFCFACETEDBREP"                                ] = Type::IfcFacetedBrep;
+    string_map["IFCFACETEDBREPWITHVOIDS"                       ] = Type::IfcFacetedBrepWithVoids;
+    string_map["IFCFAILURECONNECTIONCONDITION"                 ] = Type::IfcFailureConnectionCondition;
+    string_map["IFCFANTYPE"                                    ] = Type::IfcFanType;
+    string_map["IFCFASTENER"                                   ] = Type::IfcFastener;
+    string_map["IFCFASTENERTYPE"                               ] = Type::IfcFastenerType;
+    string_map["IFCFEATUREELEMENT"                             ] = Type::IfcFeatureElement;
+    string_map["IFCFEATUREELEMENTADDITION"                     ] = Type::IfcFeatureElementAddition;
+    string_map["IFCFEATUREELEMENTSUBTRACTION"                  ] = Type::IfcFeatureElementSubtraction;
+    string_map["IFCFILLAREASTYLE"                              ] = Type::IfcFillAreaStyle;
+    string_map["IFCFILLAREASTYLEHATCHING"                      ] = Type::IfcFillAreaStyleHatching;
+    string_map["IFCFILLAREASTYLETILESYMBOLWITHSTYLE"           ] = Type::IfcFillAreaStyleTileSymbolWithStyle;
+    string_map["IFCFILLAREASTYLETILES"                         ] = Type::IfcFillAreaStyleTiles;
+    string_map["IFCFILTERTYPE"                                 ] = Type::IfcFilterType;
+    string_map["IFCFIRESUPPRESSIONTERMINALTYPE"                ] = Type::IfcFireSuppressionTerminalType;
+    string_map["IFCFLOWCONTROLLER"                             ] = Type::IfcFlowController;
+    string_map["IFCFLOWCONTROLLERTYPE"                         ] = Type::IfcFlowControllerType;
+    string_map["IFCFLOWFITTING"                                ] = Type::IfcFlowFitting;
+    string_map["IFCFLOWFITTINGTYPE"                            ] = Type::IfcFlowFittingType;
+    string_map["IFCFLOWINSTRUMENTTYPE"                         ] = Type::IfcFlowInstrumentType;
+    string_map["IFCFLOWMETERTYPE"                              ] = Type::IfcFlowMeterType;
+    string_map["IFCFLOWMOVINGDEVICE"                           ] = Type::IfcFlowMovingDevice;
+    string_map["IFCFLOWMOVINGDEVICETYPE"                       ] = Type::IfcFlowMovingDeviceType;
+    string_map["IFCFLOWSEGMENT"                                ] = Type::IfcFlowSegment;
+    string_map["IFCFLOWSEGMENTTYPE"                            ] = Type::IfcFlowSegmentType;
+    string_map["IFCFLOWSTORAGEDEVICE"                          ] = Type::IfcFlowStorageDevice;
+    string_map["IFCFLOWSTORAGEDEVICETYPE"                      ] = Type::IfcFlowStorageDeviceType;
+    string_map["IFCFLOWTERMINAL"                               ] = Type::IfcFlowTerminal;
+    string_map["IFCFLOWTERMINALTYPE"                           ] = Type::IfcFlowTerminalType;
+    string_map["IFCFLOWTREATMENTDEVICE"                        ] = Type::IfcFlowTreatmentDevice;
+    string_map["IFCFLOWTREATMENTDEVICETYPE"                    ] = Type::IfcFlowTreatmentDeviceType;
+    string_map["IFCFLUIDFLOWPROPERTIES"                        ] = Type::IfcFluidFlowProperties;
+    string_map["IFCFOOTING"                                    ] = Type::IfcFooting;
+    string_map["IFCFUELPROPERTIES"                             ] = Type::IfcFuelProperties;
+    string_map["IFCFURNISHINGELEMENT"                          ] = Type::IfcFurnishingElement;
+    string_map["IFCFURNISHINGELEMENTTYPE"                      ] = Type::IfcFurnishingElementType;
+    string_map["IFCFURNITURESTANDARD"                          ] = Type::IfcFurnitureStandard;
+    string_map["IFCFURNITURETYPE"                              ] = Type::IfcFurnitureType;
+    string_map["IFCGASTERMINALTYPE"                            ] = Type::IfcGasTerminalType;
+    string_map["IFCGENERALMATERIALPROPERTIES"                  ] = Type::IfcGeneralMaterialProperties;
+    string_map["IFCGENERALPROFILEPROPERTIES"                   ] = Type::IfcGeneralProfileProperties;
+    string_map["IFCGEOMETRICCURVESET"                          ] = Type::IfcGeometricCurveSet;
+    string_map["IFCGEOMETRICREPRESENTATIONCONTEXT"             ] = Type::IfcGeometricRepresentationContext;
+    string_map["IFCGEOMETRICREPRESENTATIONITEM"                ] = Type::IfcGeometricRepresentationItem;
+    string_map["IFCGEOMETRICREPRESENTATIONSUBCONTEXT"          ] = Type::IfcGeometricRepresentationSubContext;
+    string_map["IFCGEOMETRICSET"                               ] = Type::IfcGeometricSet;
+    string_map["IFCGRID"                                       ] = Type::IfcGrid;
+    string_map["IFCGRIDAXIS"                                   ] = Type::IfcGridAxis;
+    string_map["IFCGRIDPLACEMENT"                              ] = Type::IfcGridPlacement;
+    string_map["IFCGROUP"                                      ] = Type::IfcGroup;
+    string_map["IFCHALFSPACESOLID"                             ] = Type::IfcHalfSpaceSolid;
+    string_map["IFCHEATEXCHANGERTYPE"                          ] = Type::IfcHeatExchangerType;
+    string_map["IFCHUMIDIFIERTYPE"                             ] = Type::IfcHumidifierType;
+    string_map["IFCHYGROSCOPICMATERIALPROPERTIES"              ] = Type::IfcHygroscopicMaterialProperties;
+    string_map["IFCISHAPEPROFILEDEF"                           ] = Type::IfcIShapeProfileDef;
+    string_map["IFCIMAGETEXTURE"                               ] = Type::IfcImageTexture;
+    string_map["IFCINVENTORY"                                  ] = Type::IfcInventory;
+    string_map["IFCIRREGULARTIMESERIES"                        ] = Type::IfcIrregularTimeSeries;
+    string_map["IFCIRREGULARTIMESERIESVALUE"                   ] = Type::IfcIrregularTimeSeriesValue;
+    string_map["IFCJUNCTIONBOXTYPE"                            ] = Type::IfcJunctionBoxType;
+    string_map["IFCLSHAPEPROFILEDEF"                           ] = Type::IfcLShapeProfileDef;
+    string_map["IFCLABORRESOURCE"                              ] = Type::IfcLaborResource;
+    string_map["IFCLAMPTYPE"                                   ] = Type::IfcLampType;
+    string_map["IFCLIBRARYINFORMATION"                         ] = Type::IfcLibraryInformation;
+    string_map["IFCLIBRARYREFERENCE"                           ] = Type::IfcLibraryReference;
+    string_map["IFCLIGHTDISTRIBUTIONDATA"                      ] = Type::IfcLightDistributionData;
+    string_map["IFCLIGHTFIXTURETYPE"                           ] = Type::IfcLightFixtureType;
+    string_map["IFCLIGHTINTENSITYDISTRIBUTION"                 ] = Type::IfcLightIntensityDistribution;
+    string_map["IFCLIGHTSOURCE"                                ] = Type::IfcLightSource;
+    string_map["IFCLIGHTSOURCEAMBIENT"                         ] = Type::IfcLightSourceAmbient;
+    string_map["IFCLIGHTSOURCEDIRECTIONAL"                     ] = Type::IfcLightSourceDirectional;
+    string_map["IFCLIGHTSOURCEGONIOMETRIC"                     ] = Type::IfcLightSourceGoniometric;
+    string_map["IFCLIGHTSOURCEPOSITIONAL"                      ] = Type::IfcLightSourcePositional;
+    string_map["IFCLIGHTSOURCESPOT"                            ] = Type::IfcLightSourceSpot;
+    string_map["IFCLINE"                                       ] = Type::IfcLine;
+    string_map["IFCLINEARDIMENSION"                            ] = Type::IfcLinearDimension;
+    string_map["IFCLOCALPLACEMENT"                             ] = Type::IfcLocalPlacement;
+    string_map["IFCLOCALTIME"                                  ] = Type::IfcLocalTime;
+    string_map["IFCLOOP"                                       ] = Type::IfcLoop;
+    string_map["IFCMANIFOLDSOLIDBREP"                          ] = Type::IfcManifoldSolidBrep;
+    string_map["IFCMAPPEDITEM"                                 ] = Type::IfcMappedItem;
+    string_map["IFCMATERIAL"                                   ] = Type::IfcMaterial;
+    string_map["IFCMATERIALCLASSIFICATIONRELATIONSHIP"         ] = Type::IfcMaterialClassificationRelationship;
+    string_map["IFCMATERIALDEFINITIONREPRESENTATION"           ] = Type::IfcMaterialDefinitionRepresentation;
+    string_map["IFCMATERIALLAYER"                              ] = Type::IfcMaterialLayer;
+    string_map["IFCMATERIALLAYERSET"                           ] = Type::IfcMaterialLayerSet;
+    string_map["IFCMATERIALLAYERSETUSAGE"                      ] = Type::IfcMaterialLayerSetUsage;
+    string_map["IFCMATERIALLIST"                               ] = Type::IfcMaterialList;
+    string_map["IFCMATERIALPROPERTIES"                         ] = Type::IfcMaterialProperties;
+    string_map["IFCMEASUREWITHUNIT"                            ] = Type::IfcMeasureWithUnit;
+    string_map["IFCMECHANICALCONCRETEMATERIALPROPERTIES"       ] = Type::IfcMechanicalConcreteMaterialProperties;
+    string_map["IFCMECHANICALFASTENER"                         ] = Type::IfcMechanicalFastener;
+    string_map["IFCMECHANICALFASTENERTYPE"                     ] = Type::IfcMechanicalFastenerType;
+    string_map["IFCMECHANICALMATERIALPROPERTIES"               ] = Type::IfcMechanicalMaterialProperties;
+    string_map["IFCMECHANICALSTEELMATERIALPROPERTIES"          ] = Type::IfcMechanicalSteelMaterialProperties;
+    string_map["IFCMEMBER"                                     ] = Type::IfcMember;
+    string_map["IFCMEMBERTYPE"                                 ] = Type::IfcMemberType;
+    string_map["IFCMETRIC"                                     ] = Type::IfcMetric;
+    string_map["IFCMONETARYUNIT"                               ] = Type::IfcMonetaryUnit;
+    string_map["IFCMOTORCONNECTIONTYPE"                        ] = Type::IfcMotorConnectionType;
+    string_map["IFCMOVE"                                       ] = Type::IfcMove;
+    string_map["IFCNAMEDUNIT"                                  ] = Type::IfcNamedUnit;
+    string_map["IFCOBJECT"                                     ] = Type::IfcObject;
+    string_map["IFCOBJECTDEFINITION"                           ] = Type::IfcObjectDefinition;
+    string_map["IFCOBJECTPLACEMENT"                            ] = Type::IfcObjectPlacement;
+    string_map["IFCOBJECTIVE"                                  ] = Type::IfcObjective;
+    string_map["IFCOCCUPANT"                                   ] = Type::IfcOccupant;
+    string_map["IFCOFFSETCURVE2D"                              ] = Type::IfcOffsetCurve2D;
+    string_map["IFCOFFSETCURVE3D"                              ] = Type::IfcOffsetCurve3D;
+    string_map["IFCONEDIRECTIONREPEATFACTOR"                   ] = Type::IfcOneDirectionRepeatFactor;
+    string_map["IFCOPENSHELL"                                  ] = Type::IfcOpenShell;
+    string_map["IFCOPENINGELEMENT"                             ] = Type::IfcOpeningElement;
+    string_map["IFCOPTICALMATERIALPROPERTIES"                  ] = Type::IfcOpticalMaterialProperties;
+    string_map["IFCORDERACTION"                                ] = Type::IfcOrderAction;
+    string_map["IFCORGANIZATION"                               ] = Type::IfcOrganization;
+    string_map["IFCORGANIZATIONRELATIONSHIP"                   ] = Type::IfcOrganizationRelationship;
+    string_map["IFCORIENTEDEDGE"                               ] = Type::IfcOrientedEdge;
+    string_map["IFCOUTLETTYPE"                                 ] = Type::IfcOutletType;
+    string_map["IFCOWNERHISTORY"                               ] = Type::IfcOwnerHistory;
+    string_map["IFCPARAMETERIZEDPROFILEDEF"                    ] = Type::IfcParameterizedProfileDef;
+    string_map["IFCPATH"                                       ] = Type::IfcPath;
+    string_map["IFCPERFORMANCEHISTORY"                         ] = Type::IfcPerformanceHistory;
+    string_map["IFCPERMEABLECOVERINGPROPERTIES"                ] = Type::IfcPermeableCoveringProperties;
+    string_map["IFCPERMIT"                                     ] = Type::IfcPermit;
+    string_map["IFCPERSON"                                     ] = Type::IfcPerson;
+    string_map["IFCPERSONANDORGANIZATION"                      ] = Type::IfcPersonAndOrganization;
+    string_map["IFCPHYSICALCOMPLEXQUANTITY"                    ] = Type::IfcPhysicalComplexQuantity;
+    string_map["IFCPHYSICALQUANTITY"                           ] = Type::IfcPhysicalQuantity;
+    string_map["IFCPHYSICALSIMPLEQUANTITY"                     ] = Type::IfcPhysicalSimpleQuantity;
+    string_map["IFCPILE"                                       ] = Type::IfcPile;
+    string_map["IFCPIPEFITTINGTYPE"                            ] = Type::IfcPipeFittingType;
+    string_map["IFCPIPESEGMENTTYPE"                            ] = Type::IfcPipeSegmentType;
+    string_map["IFCPIXELTEXTURE"                               ] = Type::IfcPixelTexture;
+    string_map["IFCPLACEMENT"                                  ] = Type::IfcPlacement;
+    string_map["IFCPLANARBOX"                                  ] = Type::IfcPlanarBox;
+    string_map["IFCPLANAREXTENT"                               ] = Type::IfcPlanarExtent;
+    string_map["IFCPLANE"                                      ] = Type::IfcPlane;
+    string_map["IFCPLATE"                                      ] = Type::IfcPlate;
+    string_map["IFCPLATETYPE"                                  ] = Type::IfcPlateType;
+    string_map["IFCPOINT"                                      ] = Type::IfcPoint;
+    string_map["IFCPOINTONCURVE"                               ] = Type::IfcPointOnCurve;
+    string_map["IFCPOINTONSURFACE"                             ] = Type::IfcPointOnSurface;
+    string_map["IFCPOLYLOOP"                                   ] = Type::IfcPolyLoop;
+    string_map["IFCPOLYGONALBOUNDEDHALFSPACE"                  ] = Type::IfcPolygonalBoundedHalfSpace;
+    string_map["IFCPOLYLINE"                                   ] = Type::IfcPolyline;
+    string_map["IFCPORT"                                       ] = Type::IfcPort;
+    string_map["IFCPOSTALADDRESS"                              ] = Type::IfcPostalAddress;
+    string_map["IFCPREDEFINEDCOLOUR"                           ] = Type::IfcPreDefinedColour;
+    string_map["IFCPREDEFINEDCURVEFONT"                        ] = Type::IfcPreDefinedCurveFont;
+    string_map["IFCPREDEFINEDDIMENSIONSYMBOL"                  ] = Type::IfcPreDefinedDimensionSymbol;
+    string_map["IFCPREDEFINEDITEM"                             ] = Type::IfcPreDefinedItem;
+    string_map["IFCPREDEFINEDPOINTMARKERSYMBOL"                ] = Type::IfcPreDefinedPointMarkerSymbol;
+    string_map["IFCPREDEFINEDSYMBOL"                           ] = Type::IfcPreDefinedSymbol;
+    string_map["IFCPREDEFINEDTERMINATORSYMBOL"                 ] = Type::IfcPreDefinedTerminatorSymbol;
+    string_map["IFCPREDEFINEDTEXTFONT"                         ] = Type::IfcPreDefinedTextFont;
+    string_map["IFCPRESENTATIONLAYERASSIGNMENT"                ] = Type::IfcPresentationLayerAssignment;
+    string_map["IFCPRESENTATIONLAYERWITHSTYLE"                 ] = Type::IfcPresentationLayerWithStyle;
+    string_map["IFCPRESENTATIONSTYLE"                          ] = Type::IfcPresentationStyle;
+    string_map["IFCPRESENTATIONSTYLEASSIGNMENT"                ] = Type::IfcPresentationStyleAssignment;
+    string_map["IFCPROCEDURE"                                  ] = Type::IfcProcedure;
+    string_map["IFCPROCESS"                                    ] = Type::IfcProcess;
+    string_map["IFCPRODUCT"                                    ] = Type::IfcProduct;
+    string_map["IFCPRODUCTDEFINITIONSHAPE"                     ] = Type::IfcProductDefinitionShape;
+    string_map["IFCPRODUCTREPRESENTATION"                      ] = Type::IfcProductRepresentation;
+    string_map["IFCPRODUCTSOFCOMBUSTIONPROPERTIES"             ] = Type::IfcProductsOfCombustionProperties;
+    string_map["IFCPROFILEDEF"                                 ] = Type::IfcProfileDef;
+    string_map["IFCPROFILEPROPERTIES"                          ] = Type::IfcProfileProperties;
+    string_map["IFCPROJECT"                                    ] = Type::IfcProject;
+    string_map["IFCPROJECTORDER"                               ] = Type::IfcProjectOrder;
+    string_map["IFCPROJECTORDERRECORD"                         ] = Type::IfcProjectOrderRecord;
+    string_map["IFCPROJECTIONCURVE"                            ] = Type::IfcProjectionCurve;
+    string_map["IFCPROJECTIONELEMENT"                          ] = Type::IfcProjectionElement;
+    string_map["IFCPROPERTY"                                   ] = Type::IfcProperty;
+    string_map["IFCPROPERTYBOUNDEDVALUE"                       ] = Type::IfcPropertyBoundedValue;
+    string_map["IFCPROPERTYCONSTRAINTRELATIONSHIP"             ] = Type::IfcPropertyConstraintRelationship;
+    string_map["IFCPROPERTYDEFINITION"                         ] = Type::IfcPropertyDefinition;
+    string_map["IFCPROPERTYDEPENDENCYRELATIONSHIP"             ] = Type::IfcPropertyDependencyRelationship;
+    string_map["IFCPROPERTYENUMERATEDVALUE"                    ] = Type::IfcPropertyEnumeratedValue;
+    string_map["IFCPROPERTYENUMERATION"                        ] = Type::IfcPropertyEnumeration;
+    string_map["IFCPROPERTYLISTVALUE"                          ] = Type::IfcPropertyListValue;
+    string_map["IFCPROPERTYREFERENCEVALUE"                     ] = Type::IfcPropertyReferenceValue;
+    string_map["IFCPROPERTYSET"                                ] = Type::IfcPropertySet;
+    string_map["IFCPROPERTYSETDEFINITION"                      ] = Type::IfcPropertySetDefinition;
+    string_map["IFCPROPERTYSINGLEVALUE"                        ] = Type::IfcPropertySingleValue;
+    string_map["IFCPROPERTYTABLEVALUE"                         ] = Type::IfcPropertyTableValue;
+    string_map["IFCPROTECTIVEDEVICETYPE"                       ] = Type::IfcProtectiveDeviceType;
+    string_map["IFCPROXY"                                      ] = Type::IfcProxy;
+    string_map["IFCPUMPTYPE"                                   ] = Type::IfcPumpType;
+    string_map["IFCQUANTITYAREA"                               ] = Type::IfcQuantityArea;
+    string_map["IFCQUANTITYCOUNT"                              ] = Type::IfcQuantityCount;
+    string_map["IFCQUANTITYLENGTH"                             ] = Type::IfcQuantityLength;
+    string_map["IFCQUANTITYTIME"                               ] = Type::IfcQuantityTime;
+    string_map["IFCQUANTITYVOLUME"                             ] = Type::IfcQuantityVolume;
+    string_map["IFCQUANTITYWEIGHT"                             ] = Type::IfcQuantityWeight;
+    string_map["IFCRADIUSDIMENSION"                            ] = Type::IfcRadiusDimension;
+    string_map["IFCRAILING"                                    ] = Type::IfcRailing;
+    string_map["IFCRAILINGTYPE"                                ] = Type::IfcRailingType;
+    string_map["IFCRAMP"                                       ] = Type::IfcRamp;
+    string_map["IFCRAMPFLIGHT"                                 ] = Type::IfcRampFlight;
+    string_map["IFCRAMPFLIGHTTYPE"                             ] = Type::IfcRampFlightType;
+    string_map["IFCRATIONALBEZIERCURVE"                        ] = Type::IfcRationalBezierCurve;
+    string_map["IFCRECTANGLEHOLLOWPROFILEDEF"                  ] = Type::IfcRectangleHollowProfileDef;
+    string_map["IFCRECTANGLEPROFILEDEF"                        ] = Type::IfcRectangleProfileDef;
+    string_map["IFCRECTANGULARPYRAMID"                         ] = Type::IfcRectangularPyramid;
+    string_map["IFCRECTANGULARTRIMMEDSURFACE"                  ] = Type::IfcRectangularTrimmedSurface;
+    string_map["IFCREFERENCESVALUEDOCUMENT"                    ] = Type::IfcReferencesValueDocument;
+    string_map["IFCREGULARTIMESERIES"                          ] = Type::IfcRegularTimeSeries;
+    string_map["IFCREINFORCEMENTBARPROPERTIES"                 ] = Type::IfcReinforcementBarProperties;
+    string_map["IFCREINFORCEMENTDEFINITIONPROPERTIES"          ] = Type::IfcReinforcementDefinitionProperties;
+    string_map["IFCREINFORCINGBAR"                             ] = Type::IfcReinforcingBar;
+    string_map["IFCREINFORCINGELEMENT"                         ] = Type::IfcReinforcingElement;
+    string_map["IFCREINFORCINGMESH"                            ] = Type::IfcReinforcingMesh;
+    string_map["IFCRELAGGREGATES"                              ] = Type::IfcRelAggregates;
+    string_map["IFCRELASSIGNS"                                 ] = Type::IfcRelAssigns;
+    string_map["IFCRELASSIGNSTASKS"                            ] = Type::IfcRelAssignsTasks;
+    string_map["IFCRELASSIGNSTOACTOR"                          ] = Type::IfcRelAssignsToActor;
+    string_map["IFCRELASSIGNSTOCONTROL"                        ] = Type::IfcRelAssignsToControl;
+    string_map["IFCRELASSIGNSTOGROUP"                          ] = Type::IfcRelAssignsToGroup;
+    string_map["IFCRELASSIGNSTOPROCESS"                        ] = Type::IfcRelAssignsToProcess;
+    string_map["IFCRELASSIGNSTOPRODUCT"                        ] = Type::IfcRelAssignsToProduct;
+    string_map["IFCRELASSIGNSTOPROJECTORDER"                   ] = Type::IfcRelAssignsToProjectOrder;
+    string_map["IFCRELASSIGNSTORESOURCE"                       ] = Type::IfcRelAssignsToResource;
+    string_map["IFCRELASSOCIATES"                              ] = Type::IfcRelAssociates;
+    string_map["IFCRELASSOCIATESAPPLIEDVALUE"                  ] = Type::IfcRelAssociatesAppliedValue;
+    string_map["IFCRELASSOCIATESAPPROVAL"                      ] = Type::IfcRelAssociatesApproval;
+    string_map["IFCRELASSOCIATESCLASSIFICATION"                ] = Type::IfcRelAssociatesClassification;
+    string_map["IFCRELASSOCIATESCONSTRAINT"                    ] = Type::IfcRelAssociatesConstraint;
+    string_map["IFCRELASSOCIATESDOCUMENT"                      ] = Type::IfcRelAssociatesDocument;
+    string_map["IFCRELASSOCIATESLIBRARY"                       ] = Type::IfcRelAssociatesLibrary;
+    string_map["IFCRELASSOCIATESMATERIAL"                      ] = Type::IfcRelAssociatesMaterial;
+    string_map["IFCRELASSOCIATESPROFILEPROPERTIES"             ] = Type::IfcRelAssociatesProfileProperties;
+    string_map["IFCRELCONNECTS"                                ] = Type::IfcRelConnects;
+    string_map["IFCRELCONNECTSELEMENTS"                        ] = Type::IfcRelConnectsElements;
+    string_map["IFCRELCONNECTSPATHELEMENTS"                    ] = Type::IfcRelConnectsPathElements;
+    string_map["IFCRELCONNECTSPORTTOELEMENT"                   ] = Type::IfcRelConnectsPortToElement;
+    string_map["IFCRELCONNECTSPORTS"                           ] = Type::IfcRelConnectsPorts;
+    string_map["IFCRELCONNECTSSTRUCTURALACTIVITY"              ] = Type::IfcRelConnectsStructuralActivity;
+    string_map["IFCRELCONNECTSSTRUCTURALELEMENT"               ] = Type::IfcRelConnectsStructuralElement;
+    string_map["IFCRELCONNECTSSTRUCTURALMEMBER"                ] = Type::IfcRelConnectsStructuralMember;
+    string_map["IFCRELCONNECTSWITHECCENTRICITY"                ] = Type::IfcRelConnectsWithEccentricity;
+    string_map["IFCRELCONNECTSWITHREALIZINGELEMENTS"           ] = Type::IfcRelConnectsWithRealizingElements;
+    string_map["IFCRELCONTAINEDINSPATIALSTRUCTURE"             ] = Type::IfcRelContainedInSpatialStructure;
+    string_map["IFCRELCOVERSBLDGELEMENTS"                      ] = Type::IfcRelCoversBldgElements;
+    string_map["IFCRELCOVERSSPACES"                            ] = Type::IfcRelCoversSpaces;
+    string_map["IFCRELDECOMPOSES"                              ] = Type::IfcRelDecomposes;
+    string_map["IFCRELDEFINES"                                 ] = Type::IfcRelDefines;
+    string_map["IFCRELDEFINESBYPROPERTIES"                     ] = Type::IfcRelDefinesByProperties;
+    string_map["IFCRELDEFINESBYTYPE"                           ] = Type::IfcRelDefinesByType;
+    string_map["IFCRELFILLSELEMENT"                            ] = Type::IfcRelFillsElement;
+    string_map["IFCRELFLOWCONTROLELEMENTS"                     ] = Type::IfcRelFlowControlElements;
+    string_map["IFCRELINTERACTIONREQUIREMENTS"                 ] = Type::IfcRelInteractionRequirements;
+    string_map["IFCRELNESTS"                                   ] = Type::IfcRelNests;
+    string_map["IFCRELOCCUPIESSPACES"                          ] = Type::IfcRelOccupiesSpaces;
+    string_map["IFCRELOVERRIDESPROPERTIES"                     ] = Type::IfcRelOverridesProperties;
+    string_map["IFCRELPROJECTSELEMENT"                         ] = Type::IfcRelProjectsElement;
+    string_map["IFCRELREFERENCEDINSPATIALSTRUCTURE"            ] = Type::IfcRelReferencedInSpatialStructure;
+    string_map["IFCRELSCHEDULESCOSTITEMS"                      ] = Type::IfcRelSchedulesCostItems;
+    string_map["IFCRELSEQUENCE"                                ] = Type::IfcRelSequence;
+    string_map["IFCRELSERVICESBUILDINGS"                       ] = Type::IfcRelServicesBuildings;
+    string_map["IFCRELSPACEBOUNDARY"                           ] = Type::IfcRelSpaceBoundary;
+    string_map["IFCRELVOIDSELEMENT"                            ] = Type::IfcRelVoidsElement;
+    string_map["IFCRELATIONSHIP"                               ] = Type::IfcRelationship;
+    string_map["IFCRELAXATION"                                 ] = Type::IfcRelaxation;
+    string_map["IFCREPRESENTATION"                             ] = Type::IfcRepresentation;
+    string_map["IFCREPRESENTATIONCONTEXT"                      ] = Type::IfcRepresentationContext;
+    string_map["IFCREPRESENTATIONITEM"                         ] = Type::IfcRepresentationItem;
+    string_map["IFCREPRESENTATIONMAP"                          ] = Type::IfcRepresentationMap;
+    string_map["IFCRESOURCE"                                   ] = Type::IfcResource;
+    string_map["IFCREVOLVEDAREASOLID"                          ] = Type::IfcRevolvedAreaSolid;
+    string_map["IFCRIBPLATEPROFILEPROPERTIES"                  ] = Type::IfcRibPlateProfileProperties;
+    string_map["IFCRIGHTCIRCULARCONE"                          ] = Type::IfcRightCircularCone;
+    string_map["IFCRIGHTCIRCULARCYLINDER"                      ] = Type::IfcRightCircularCylinder;
+    string_map["IFCROOF"                                       ] = Type::IfcRoof;
+    string_map["IFCROOT"                                       ] = Type::IfcRoot;
+    string_map["IFCROUNDEDEDGEFEATURE"                         ] = Type::IfcRoundedEdgeFeature;
+    string_map["IFCROUNDEDRECTANGLEPROFILEDEF"                 ] = Type::IfcRoundedRectangleProfileDef;
+    string_map["IFCSIUNIT"                                     ] = Type::IfcSIUnit;
+    string_map["IFCSANITARYTERMINALTYPE"                       ] = Type::IfcSanitaryTerminalType;
+    string_map["IFCSCHEDULETIMECONTROL"                        ] = Type::IfcScheduleTimeControl;
+    string_map["IFCSECTIONPROPERTIES"                          ] = Type::IfcSectionProperties;
+    string_map["IFCSECTIONREINFORCEMENTPROPERTIES"             ] = Type::IfcSectionReinforcementProperties;
+    string_map["IFCSECTIONEDSPINE"                             ] = Type::IfcSectionedSpine;
+    string_map["IFCSENSORTYPE"                                 ] = Type::IfcSensorType;
+    string_map["IFCSERVICELIFE"                                ] = Type::IfcServiceLife;
+    string_map["IFCSERVICELIFEFACTOR"                          ] = Type::IfcServiceLifeFactor;
+    string_map["IFCSHAPEASPECT"                                ] = Type::IfcShapeAspect;
+    string_map["IFCSHAPEMODEL"                                 ] = Type::IfcShapeModel;
+    string_map["IFCSHAPEREPRESENTATION"                        ] = Type::IfcShapeRepresentation;
+    string_map["IFCSHELLBASEDSURFACEMODEL"                     ] = Type::IfcShellBasedSurfaceModel;
+    string_map["IFCSIMPLEPROPERTY"                             ] = Type::IfcSimpleProperty;
+    string_map["IFCSITE"                                       ] = Type::IfcSite;
+    string_map["IFCSLAB"                                       ] = Type::IfcSlab;
+    string_map["IFCSLABTYPE"                                   ] = Type::IfcSlabType;
+    string_map["IFCSLIPPAGECONNECTIONCONDITION"                ] = Type::IfcSlippageConnectionCondition;
+    string_map["IFCSOLIDMODEL"                                 ] = Type::IfcSolidModel;
+    string_map["IFCSOUNDPROPERTIES"                            ] = Type::IfcSoundProperties;
+    string_map["IFCSOUNDVALUE"                                 ] = Type::IfcSoundValue;
+    string_map["IFCSPACE"                                      ] = Type::IfcSpace;
+    string_map["IFCSPACEHEATERTYPE"                            ] = Type::IfcSpaceHeaterType;
+    string_map["IFCSPACEPROGRAM"                               ] = Type::IfcSpaceProgram;
+    string_map["IFCSPACETHERMALLOADPROPERTIES"                 ] = Type::IfcSpaceThermalLoadProperties;
+    string_map["IFCSPACETYPE"                                  ] = Type::IfcSpaceType;
+    string_map["IFCSPATIALSTRUCTUREELEMENT"                    ] = Type::IfcSpatialStructureElement;
+    string_map["IFCSPATIALSTRUCTUREELEMENTTYPE"                ] = Type::IfcSpatialStructureElementType;
+    string_map["IFCSPHERE"                                     ] = Type::IfcSphere;
+    string_map["IFCSTACKTERMINALTYPE"                          ] = Type::IfcStackTerminalType;
+    string_map["IFCSTAIR"                                      ] = Type::IfcStair;
+    string_map["IFCSTAIRFLIGHT"                                ] = Type::IfcStairFlight;
+    string_map["IFCSTAIRFLIGHTTYPE"                            ] = Type::IfcStairFlightType;
+    string_map["IFCSTRUCTURALACTION"                           ] = Type::IfcStructuralAction;
+    string_map["IFCSTRUCTURALACTIVITY"                         ] = Type::IfcStructuralActivity;
+    string_map["IFCSTRUCTURALANALYSISMODEL"                    ] = Type::IfcStructuralAnalysisModel;
+    string_map["IFCSTRUCTURALCONNECTION"                       ] = Type::IfcStructuralConnection;
+    string_map["IFCSTRUCTURALCONNECTIONCONDITION"              ] = Type::IfcStructuralConnectionCondition;
+    string_map["IFCSTRUCTURALCURVECONNECTION"                  ] = Type::IfcStructuralCurveConnection;
+    string_map["IFCSTRUCTURALCURVEMEMBER"                      ] = Type::IfcStructuralCurveMember;
+    string_map["IFCSTRUCTURALCURVEMEMBERVARYING"               ] = Type::IfcStructuralCurveMemberVarying;
+    string_map["IFCSTRUCTURALITEM"                             ] = Type::IfcStructuralItem;
+    string_map["IFCSTRUCTURALLINEARACTION"                     ] = Type::IfcStructuralLinearAction;
+    string_map["IFCSTRUCTURALLINEARACTIONVARYING"              ] = Type::IfcStructuralLinearActionVarying;
+    string_map["IFCSTRUCTURALLOAD"                             ] = Type::IfcStructuralLoad;
+    string_map["IFCSTRUCTURALLOADGROUP"                        ] = Type::IfcStructuralLoadGroup;
+    string_map["IFCSTRUCTURALLOADLINEARFORCE"                  ] = Type::IfcStructuralLoadLinearForce;
+    string_map["IFCSTRUCTURALLOADPLANARFORCE"                  ] = Type::IfcStructuralLoadPlanarForce;
+    string_map["IFCSTRUCTURALLOADSINGLEDISPLACEMENT"           ] = Type::IfcStructuralLoadSingleDisplacement;
+    string_map["IFCSTRUCTURALLOADSINGLEDISPLACEMENTDISTORTION" ] = Type::IfcStructuralLoadSingleDisplacementDistortion;
+    string_map["IFCSTRUCTURALLOADSINGLEFORCE"                  ] = Type::IfcStructuralLoadSingleForce;
+    string_map["IFCSTRUCTURALLOADSINGLEFORCEWARPING"           ] = Type::IfcStructuralLoadSingleForceWarping;
+    string_map["IFCSTRUCTURALLOADSTATIC"                       ] = Type::IfcStructuralLoadStatic;
+    string_map["IFCSTRUCTURALLOADTEMPERATURE"                  ] = Type::IfcStructuralLoadTemperature;
+    string_map["IFCSTRUCTURALMEMBER"                           ] = Type::IfcStructuralMember;
+    string_map["IFCSTRUCTURALPLANARACTION"                     ] = Type::IfcStructuralPlanarAction;
+    string_map["IFCSTRUCTURALPLANARACTIONVARYING"              ] = Type::IfcStructuralPlanarActionVarying;
+    string_map["IFCSTRUCTURALPOINTACTION"                      ] = Type::IfcStructuralPointAction;
+    string_map["IFCSTRUCTURALPOINTCONNECTION"                  ] = Type::IfcStructuralPointConnection;
+    string_map["IFCSTRUCTURALPOINTREACTION"                    ] = Type::IfcStructuralPointReaction;
+    string_map["IFCSTRUCTURALPROFILEPROPERTIES"                ] = Type::IfcStructuralProfileProperties;
+    string_map["IFCSTRUCTURALREACTION"                         ] = Type::IfcStructuralReaction;
+    string_map["IFCSTRUCTURALRESULTGROUP"                      ] = Type::IfcStructuralResultGroup;
+    string_map["IFCSTRUCTURALSTEELPROFILEPROPERTIES"           ] = Type::IfcStructuralSteelProfileProperties;
+    string_map["IFCSTRUCTURALSURFACECONNECTION"                ] = Type::IfcStructuralSurfaceConnection;
+    string_map["IFCSTRUCTURALSURFACEMEMBER"                    ] = Type::IfcStructuralSurfaceMember;
+    string_map["IFCSTRUCTURALSURFACEMEMBERVARYING"             ] = Type::IfcStructuralSurfaceMemberVarying;
+    string_map["IFCSTRUCTUREDDIMENSIONCALLOUT"                 ] = Type::IfcStructuredDimensionCallout;
+    string_map["IFCSTYLEMODEL"                                 ] = Type::IfcStyleModel;
+    string_map["IFCSTYLEDITEM"                                 ] = Type::IfcStyledItem;
+    string_map["IFCSTYLEDREPRESENTATION"                       ] = Type::IfcStyledRepresentation;
+    string_map["IFCSUBCONTRACTRESOURCE"                        ] = Type::IfcSubContractResource;
+    string_map["IFCSUBEDGE"                                    ] = Type::IfcSubedge;
+    string_map["IFCSURFACE"                                    ] = Type::IfcSurface;
+    string_map["IFCSURFACECURVESWEPTAREASOLID"                 ] = Type::IfcSurfaceCurveSweptAreaSolid;
+    string_map["IFCSURFACEOFLINEAREXTRUSION"                   ] = Type::IfcSurfaceOfLinearExtrusion;
+    string_map["IFCSURFACEOFREVOLUTION"                        ] = Type::IfcSurfaceOfRevolution;
+    string_map["IFCSURFACESTYLE"                               ] = Type::IfcSurfaceStyle;
+    string_map["IFCSURFACESTYLELIGHTING"                       ] = Type::IfcSurfaceStyleLighting;
+    string_map["IFCSURFACESTYLEREFRACTION"                     ] = Type::IfcSurfaceStyleRefraction;
+    string_map["IFCSURFACESTYLERENDERING"                      ] = Type::IfcSurfaceStyleRendering;
+    string_map["IFCSURFACESTYLESHADING"                        ] = Type::IfcSurfaceStyleShading;
+    string_map["IFCSURFACESTYLEWITHTEXTURES"                   ] = Type::IfcSurfaceStyleWithTextures;
+    string_map["IFCSURFACETEXTURE"                             ] = Type::IfcSurfaceTexture;
+    string_map["IFCSWEPTAREASOLID"                             ] = Type::IfcSweptAreaSolid;
+    string_map["IFCSWEPTDISKSOLID"                             ] = Type::IfcSweptDiskSolid;
+    string_map["IFCSWEPTSURFACE"                               ] = Type::IfcSweptSurface;
+    string_map["IFCSWITCHINGDEVICETYPE"                        ] = Type::IfcSwitchingDeviceType;
+    string_map["IFCSYMBOLSTYLE"                                ] = Type::IfcSymbolStyle;
+    string_map["IFCSYSTEM"                                     ] = Type::IfcSystem;
+    string_map["IFCSYSTEMFURNITUREELEMENTTYPE"                 ] = Type::IfcSystemFurnitureElementType;
+    string_map["IFCTSHAPEPROFILEDEF"                           ] = Type::IfcTShapeProfileDef;
+    string_map["IFCTABLE"                                      ] = Type::IfcTable;
+    string_map["IFCTABLEROW"                                   ] = Type::IfcTableRow;
+    string_map["IFCTANKTYPE"                                   ] = Type::IfcTankType;
+    string_map["IFCTASK"                                       ] = Type::IfcTask;
+    string_map["IFCTELECOMADDRESS"                             ] = Type::IfcTelecomAddress;
+    string_map["IFCTENDON"                                     ] = Type::IfcTendon;
+    string_map["IFCTENDONANCHOR"                               ] = Type::IfcTendonAnchor;
+    string_map["IFCTERMINATORSYMBOL"                           ] = Type::IfcTerminatorSymbol;
+    string_map["IFCTEXTLITERAL"                                ] = Type::IfcTextLiteral;
+    string_map["IFCTEXTLITERALWITHEXTENT"                      ] = Type::IfcTextLiteralWithExtent;
+    string_map["IFCTEXTSTYLE"                                  ] = Type::IfcTextStyle;
+    string_map["IFCTEXTSTYLEFONTMODEL"                         ] = Type::IfcTextStyleFontModel;
+    string_map["IFCTEXTSTYLEFORDEFINEDFONT"                    ] = Type::IfcTextStyleForDefinedFont;
+    string_map["IFCTEXTSTYLETEXTMODEL"                         ] = Type::IfcTextStyleTextModel;
+    string_map["IFCTEXTSTYLEWITHBOXCHARACTERISTICS"            ] = Type::IfcTextStyleWithBoxCharacteristics;
+    string_map["IFCTEXTURECOORDINATE"                          ] = Type::IfcTextureCoordinate;
+    string_map["IFCTEXTURECOORDINATEGENERATOR"                 ] = Type::IfcTextureCoordinateGenerator;
+    string_map["IFCTEXTUREMAP"                                 ] = Type::IfcTextureMap;
+    string_map["IFCTEXTUREVERTEX"                              ] = Type::IfcTextureVertex;
+    string_map["IFCTHERMALMATERIALPROPERTIES"                  ] = Type::IfcThermalMaterialProperties;
+    string_map["IFCTIMESERIES"                                 ] = Type::IfcTimeSeries;
+    string_map["IFCTIMESERIESREFERENCERELATIONSHIP"            ] = Type::IfcTimeSeriesReferenceRelationship;
+    string_map["IFCTIMESERIESSCHEDULE"                         ] = Type::IfcTimeSeriesSchedule;
+    string_map["IFCTIMESERIESVALUE"                            ] = Type::IfcTimeSeriesValue;
+    string_map["IFCTOPOLOGICALREPRESENTATIONITEM"              ] = Type::IfcTopologicalRepresentationItem;
+    string_map["IFCTOPOLOGYREPRESENTATION"                     ] = Type::IfcTopologyRepresentation;
+    string_map["IFCTRANSFORMERTYPE"                            ] = Type::IfcTransformerType;
+    string_map["IFCTRANSPORTELEMENT"                           ] = Type::IfcTransportElement;
+    string_map["IFCTRANSPORTELEMENTTYPE"                       ] = Type::IfcTransportElementType;
+    string_map["IFCTRAPEZIUMPROFILEDEF"                        ] = Type::IfcTrapeziumProfileDef;
+    string_map["IFCTRIMMEDCURVE"                               ] = Type::IfcTrimmedCurve;
+    string_map["IFCTUBEBUNDLETYPE"                             ] = Type::IfcTubeBundleType;
+    string_map["IFCTWODIRECTIONREPEATFACTOR"                   ] = Type::IfcTwoDirectionRepeatFactor;
+    string_map["IFCTYPEOBJECT"                                 ] = Type::IfcTypeObject;
+    string_map["IFCTYPEPRODUCT"                                ] = Type::IfcTypeProduct;
+    string_map["IFCUSHAPEPROFILEDEF"                           ] = Type::IfcUShapeProfileDef;
+    string_map["IFCUNITASSIGNMENT"                             ] = Type::IfcUnitAssignment;
+    string_map["IFCUNITARYEQUIPMENTTYPE"                       ] = Type::IfcUnitaryEquipmentType;
+    string_map["IFCVALVETYPE"                                  ] = Type::IfcValveType;
+    string_map["IFCVECTOR"                                     ] = Type::IfcVector;
+    string_map["IFCVERTEX"                                     ] = Type::IfcVertex;
+    string_map["IFCVERTEXBASEDTEXTUREMAP"                      ] = Type::IfcVertexBasedTextureMap;
+    string_map["IFCVERTEXLOOP"                                 ] = Type::IfcVertexLoop;
+    string_map["IFCVERTEXPOINT"                                ] = Type::IfcVertexPoint;
+    string_map["IFCVIBRATIONISOLATORTYPE"                      ] = Type::IfcVibrationIsolatorType;
+    string_map["IFCVIRTUALELEMENT"                             ] = Type::IfcVirtualElement;
+    string_map["IFCVIRTUALGRIDINTERSECTION"                    ] = Type::IfcVirtualGridIntersection;
+    string_map["IFCWALL"                                       ] = Type::IfcWall;
+    string_map["IFCWALLSTANDARDCASE"                           ] = Type::IfcWallStandardCase;
+    string_map["IFCWALLTYPE"                                   ] = Type::IfcWallType;
+    string_map["IFCWASTETERMINALTYPE"                          ] = Type::IfcWasteTerminalType;
+    string_map["IFCWATERPROPERTIES"                            ] = Type::IfcWaterProperties;
+    string_map["IFCWINDOW"                                     ] = Type::IfcWindow;
+    string_map["IFCWINDOWLININGPROPERTIES"                     ] = Type::IfcWindowLiningProperties;
+    string_map["IFCWINDOWPANELPROPERTIES"                      ] = Type::IfcWindowPanelProperties;
+    string_map["IFCWINDOWSTYLE"                                ] = Type::IfcWindowStyle;
+    string_map["IFCWORKCONTROL"                                ] = Type::IfcWorkControl;
+    string_map["IFCWORKPLAN"                                   ] = Type::IfcWorkPlan;
+    string_map["IFCWORKSCHEDULE"                               ] = Type::IfcWorkSchedule;
+    string_map["IFCZSHAPEPROFILEDEF"                           ] = Type::IfcZShapeProfileDef;
+    string_map["IFCZONE"                                       ] = Type::IfcZone;
+}
+Type::Enum Type::FromString(const std::string& s) {
+    std::map<std::string,Type::Enum>::const_iterator it = string_map.find(s);
+	if ( it == string_map.end() ) throw;
+	else return it->second;
 }
 Type::Enum Type::Parent(Enum v){
-    if (v < 0 || v >= 758) return (Enum) -1;
+    if (v < 0 || v >= 758) return (Enum)-1;
     if(v==Ifc2DCompositeCurve                           ) { return IfcCompositeCurve; }
     if(v==IfcActionRequest                              ) { return IfcControl; }
     if(v==IfcActor                                      ) { return IfcObject; }
@@ -2111,7 +2118,7 @@ Type::Enum Type::Parent(Enum v){
     if(v==IfcWorkSchedule                               ) { return IfcWorkControl; }
     if(v==IfcZShapeProfileDef                           ) { return IfcParameterizedProfileDef; }
     if(v==IfcZone                                       ) { return IfcGroup; }
-    return (Enum) -1;
+    return (Enum)-1;
 }
 std::string IfcActionSourceTypeEnum::ToString(IfcActionSourceTypeEnum v) {
     if ( v < 0 || v >= 27 ) throw;
@@ -4737,21 +4744,21 @@ IfcWorkControlTypeEnum::IfcWorkControlTypeEnum IfcWorkControlTypeEnum::FromStrin
 }
 
 // Ifc2DCompositeCurve
-bool Ifc2DCompositeCurve::is(Type::Enum v) { return v == Type::Ifc2DCompositeCurve || IfcCompositeCurve::is(v); }
-Type::Enum Ifc2DCompositeCurve::type() { return Type::Ifc2DCompositeCurve; }
+bool Ifc2DCompositeCurve::is(Type::Enum v) const { return v == Type::Ifc2DCompositeCurve || IfcCompositeCurve::is(v); }
+Type::Enum Ifc2DCompositeCurve::type() const { return Type::Ifc2DCompositeCurve; }
 Type::Enum Ifc2DCompositeCurve::Class() { return Type::Ifc2DCompositeCurve; }
 Ifc2DCompositeCurve::Ifc2DCompositeCurve(IfcAbstractEntityPtr e) { if (!is(Type::Ifc2DCompositeCurve)) throw; entity = e; } 
 // IfcActionRequest
 IfcIdentifier IfcActionRequest::RequestID() { return *entity->getArgument(5); }
-bool IfcActionRequest::is(Type::Enum v) { return v == Type::IfcActionRequest || IfcControl::is(v); }
-Type::Enum IfcActionRequest::type() { return Type::IfcActionRequest; }
+bool IfcActionRequest::is(Type::Enum v) const { return v == Type::IfcActionRequest || IfcControl::is(v); }
+Type::Enum IfcActionRequest::type() const { return Type::IfcActionRequest; }
 Type::Enum IfcActionRequest::Class() { return Type::IfcActionRequest; }
 IfcActionRequest::IfcActionRequest(IfcAbstractEntityPtr e) { if (!is(Type::IfcActionRequest)) throw; entity = e; } 
 // IfcActor
 IfcActorSelect IfcActor::TheActor() { return *entity->getArgument(5); }
 IfcRelAssignsToActor::list IfcActor::IsActingUpon() { RETURN_INVERSE(IfcRelAssignsToActor) }
-bool IfcActor::is(Type::Enum v) { return v == Type::IfcActor || IfcObject::is(v); }
-Type::Enum IfcActor::type() { return Type::IfcActor; }
+bool IfcActor::is(Type::Enum v) const { return v == Type::IfcActor || IfcObject::is(v); }
+Type::Enum IfcActor::type() const { return Type::IfcActor; }
 Type::Enum IfcActor::Class() { return Type::IfcActor; }
 IfcActor::IfcActor(IfcAbstractEntityPtr e) { if (!is(Type::IfcActor)) throw; entity = e; } 
 // IfcActorRole
@@ -4760,14 +4767,14 @@ bool IfcActorRole::hasUserDefinedRole() { return !entity->getArgument(1)->isNull
 IfcLabel IfcActorRole::UserDefinedRole() { return *entity->getArgument(1); }
 bool IfcActorRole::hasDescription() { return !entity->getArgument(2)->isNull(); }
 IfcText IfcActorRole::Description() { return *entity->getArgument(2); }
-bool IfcActorRole::is(Type::Enum v) { return v == Type::IfcActorRole; }
-Type::Enum IfcActorRole::type() { return Type::IfcActorRole; }
+bool IfcActorRole::is(Type::Enum v) const { return v == Type::IfcActorRole; }
+Type::Enum IfcActorRole::type() const { return Type::IfcActorRole; }
 Type::Enum IfcActorRole::Class() { return Type::IfcActorRole; }
 IfcActorRole::IfcActorRole(IfcAbstractEntityPtr e) { if (!is(Type::IfcActorRole)) throw; entity = e; } 
 // IfcActuatorType
 IfcActuatorTypeEnum::IfcActuatorTypeEnum IfcActuatorType::PredefinedType() { return IfcActuatorTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcActuatorType::is(Type::Enum v) { return v == Type::IfcActuatorType || IfcDistributionControlElementType::is(v); }
-Type::Enum IfcActuatorType::type() { return Type::IfcActuatorType; }
+bool IfcActuatorType::is(Type::Enum v) const { return v == Type::IfcActuatorType || IfcDistributionControlElementType::is(v); }
+Type::Enum IfcActuatorType::type() const { return Type::IfcActuatorType; }
 Type::Enum IfcActuatorType::Class() { return Type::IfcActuatorType; }
 IfcActuatorType::IfcActuatorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcActuatorType)) throw; entity = e; } 
 // IfcAddress
@@ -4779,102 +4786,102 @@ bool IfcAddress::hasUserDefinedPurpose() { return !entity->getArgument(2)->isNul
 IfcLabel IfcAddress::UserDefinedPurpose() { return *entity->getArgument(2); }
 IfcPerson::list IfcAddress::OfPerson() { RETURN_INVERSE(IfcPerson) }
 IfcOrganization::list IfcAddress::OfOrganization() { RETURN_INVERSE(IfcOrganization) }
-bool IfcAddress::is(Type::Enum v) { return v == Type::IfcAddress; }
-Type::Enum IfcAddress::type() { return Type::IfcAddress; }
+bool IfcAddress::is(Type::Enum v) const { return v == Type::IfcAddress; }
+Type::Enum IfcAddress::type() const { return Type::IfcAddress; }
 Type::Enum IfcAddress::Class() { return Type::IfcAddress; }
 IfcAddress::IfcAddress(IfcAbstractEntityPtr e) { if (!is(Type::IfcAddress)) throw; entity = e; } 
 // IfcAirTerminalBoxType
 IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum IfcAirTerminalBoxType::PredefinedType() { return IfcAirTerminalBoxTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcAirTerminalBoxType::is(Type::Enum v) { return v == Type::IfcAirTerminalBoxType || IfcFlowControllerType::is(v); }
-Type::Enum IfcAirTerminalBoxType::type() { return Type::IfcAirTerminalBoxType; }
+bool IfcAirTerminalBoxType::is(Type::Enum v) const { return v == Type::IfcAirTerminalBoxType || IfcFlowControllerType::is(v); }
+Type::Enum IfcAirTerminalBoxType::type() const { return Type::IfcAirTerminalBoxType; }
 Type::Enum IfcAirTerminalBoxType::Class() { return Type::IfcAirTerminalBoxType; }
 IfcAirTerminalBoxType::IfcAirTerminalBoxType(IfcAbstractEntityPtr e) { if (!is(Type::IfcAirTerminalBoxType)) throw; entity = e; } 
 // IfcAirTerminalType
 IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum IfcAirTerminalType::PredefinedType() { return IfcAirTerminalTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcAirTerminalType::is(Type::Enum v) { return v == Type::IfcAirTerminalType || IfcFlowTerminalType::is(v); }
-Type::Enum IfcAirTerminalType::type() { return Type::IfcAirTerminalType; }
+bool IfcAirTerminalType::is(Type::Enum v) const { return v == Type::IfcAirTerminalType || IfcFlowTerminalType::is(v); }
+Type::Enum IfcAirTerminalType::type() const { return Type::IfcAirTerminalType; }
 Type::Enum IfcAirTerminalType::Class() { return Type::IfcAirTerminalType; }
 IfcAirTerminalType::IfcAirTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcAirTerminalType)) throw; entity = e; } 
 // IfcAirToAirHeatRecoveryType
 IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum IfcAirToAirHeatRecoveryType::PredefinedType() { return IfcAirToAirHeatRecoveryTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcAirToAirHeatRecoveryType::is(Type::Enum v) { return v == Type::IfcAirToAirHeatRecoveryType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcAirToAirHeatRecoveryType::type() { return Type::IfcAirToAirHeatRecoveryType; }
+bool IfcAirToAirHeatRecoveryType::is(Type::Enum v) const { return v == Type::IfcAirToAirHeatRecoveryType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcAirToAirHeatRecoveryType::type() const { return Type::IfcAirToAirHeatRecoveryType; }
 Type::Enum IfcAirToAirHeatRecoveryType::Class() { return Type::IfcAirToAirHeatRecoveryType; }
 IfcAirToAirHeatRecoveryType::IfcAirToAirHeatRecoveryType(IfcAbstractEntityPtr e) { if (!is(Type::IfcAirToAirHeatRecoveryType)) throw; entity = e; } 
 // IfcAlarmType
 IfcAlarmTypeEnum::IfcAlarmTypeEnum IfcAlarmType::PredefinedType() { return IfcAlarmTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcAlarmType::is(Type::Enum v) { return v == Type::IfcAlarmType || IfcDistributionControlElementType::is(v); }
-Type::Enum IfcAlarmType::type() { return Type::IfcAlarmType; }
+bool IfcAlarmType::is(Type::Enum v) const { return v == Type::IfcAlarmType || IfcDistributionControlElementType::is(v); }
+Type::Enum IfcAlarmType::type() const { return Type::IfcAlarmType; }
 Type::Enum IfcAlarmType::Class() { return Type::IfcAlarmType; }
 IfcAlarmType::IfcAlarmType(IfcAbstractEntityPtr e) { if (!is(Type::IfcAlarmType)) throw; entity = e; } 
 // IfcAngularDimension
-bool IfcAngularDimension::is(Type::Enum v) { return v == Type::IfcAngularDimension || IfcDimensionCurveDirectedCallout::is(v); }
-Type::Enum IfcAngularDimension::type() { return Type::IfcAngularDimension; }
+bool IfcAngularDimension::is(Type::Enum v) const { return v == Type::IfcAngularDimension || IfcDimensionCurveDirectedCallout::is(v); }
+Type::Enum IfcAngularDimension::type() const { return Type::IfcAngularDimension; }
 Type::Enum IfcAngularDimension::Class() { return Type::IfcAngularDimension; }
 IfcAngularDimension::IfcAngularDimension(IfcAbstractEntityPtr e) { if (!is(Type::IfcAngularDimension)) throw; entity = e; } 
 // IfcAnnotation
 IfcRelContainedInSpatialStructure::list IfcAnnotation::ContainedInStructure() { RETURN_INVERSE(IfcRelContainedInSpatialStructure) }
-bool IfcAnnotation::is(Type::Enum v) { return v == Type::IfcAnnotation || IfcProduct::is(v); }
-Type::Enum IfcAnnotation::type() { return Type::IfcAnnotation; }
+bool IfcAnnotation::is(Type::Enum v) const { return v == Type::IfcAnnotation || IfcProduct::is(v); }
+Type::Enum IfcAnnotation::type() const { return Type::IfcAnnotation; }
 Type::Enum IfcAnnotation::Class() { return Type::IfcAnnotation; }
 IfcAnnotation::IfcAnnotation(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotation)) throw; entity = e; } 
 // IfcAnnotationCurveOccurrence
-bool IfcAnnotationCurveOccurrence::is(Type::Enum v) { return v == Type::IfcAnnotationCurveOccurrence || IfcAnnotationOccurrence::is(v); }
-Type::Enum IfcAnnotationCurveOccurrence::type() { return Type::IfcAnnotationCurveOccurrence; }
+bool IfcAnnotationCurveOccurrence::is(Type::Enum v) const { return v == Type::IfcAnnotationCurveOccurrence || IfcAnnotationOccurrence::is(v); }
+Type::Enum IfcAnnotationCurveOccurrence::type() const { return Type::IfcAnnotationCurveOccurrence; }
 Type::Enum IfcAnnotationCurveOccurrence::Class() { return Type::IfcAnnotationCurveOccurrence; }
 IfcAnnotationCurveOccurrence::IfcAnnotationCurveOccurrence(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationCurveOccurrence)) throw; entity = e; } 
 // IfcAnnotationFillArea
-SHARED_PTR<IfcCurve> IfcAnnotationFillArea::OuterBoundary() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
+IfcCurve* IfcAnnotationFillArea::OuterBoundary() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
 bool IfcAnnotationFillArea::hasInnerBoundaries() { return !entity->getArgument(1)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > IfcAnnotationFillArea::InnerBoundaries() { RETURN_AS_LIST(IfcCurve,1) }
-bool IfcAnnotationFillArea::is(Type::Enum v) { return v == Type::IfcAnnotationFillArea || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcAnnotationFillArea::type() { return Type::IfcAnnotationFillArea; }
+bool IfcAnnotationFillArea::is(Type::Enum v) const { return v == Type::IfcAnnotationFillArea || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcAnnotationFillArea::type() const { return Type::IfcAnnotationFillArea; }
 Type::Enum IfcAnnotationFillArea::Class() { return Type::IfcAnnotationFillArea; }
 IfcAnnotationFillArea::IfcAnnotationFillArea(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationFillArea)) throw; entity = e; } 
 // IfcAnnotationFillAreaOccurrence
 bool IfcAnnotationFillAreaOccurrence::hasFillStyleTarget() { return !entity->getArgument(3)->isNull(); }
-SHARED_PTR<IfcPoint> IfcAnnotationFillAreaOccurrence::FillStyleTarget() { return reinterpret_pointer_cast<IfcBaseClass,IfcPoint>(*entity->getArgument(3)); }
+IfcPoint* IfcAnnotationFillAreaOccurrence::FillStyleTarget() { return reinterpret_pointer_cast<IfcBaseClass,IfcPoint>(*entity->getArgument(3)); }
 bool IfcAnnotationFillAreaOccurrence::hasGlobalOrLocal() { return !entity->getArgument(4)->isNull(); }
 IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum IfcAnnotationFillAreaOccurrence::GlobalOrLocal() { return IfcGlobalOrLocalEnum::FromString(*entity->getArgument(4)); }
-bool IfcAnnotationFillAreaOccurrence::is(Type::Enum v) { return v == Type::IfcAnnotationFillAreaOccurrence || IfcAnnotationOccurrence::is(v); }
-Type::Enum IfcAnnotationFillAreaOccurrence::type() { return Type::IfcAnnotationFillAreaOccurrence; }
+bool IfcAnnotationFillAreaOccurrence::is(Type::Enum v) const { return v == Type::IfcAnnotationFillAreaOccurrence || IfcAnnotationOccurrence::is(v); }
+Type::Enum IfcAnnotationFillAreaOccurrence::type() const { return Type::IfcAnnotationFillAreaOccurrence; }
 Type::Enum IfcAnnotationFillAreaOccurrence::Class() { return Type::IfcAnnotationFillAreaOccurrence; }
 IfcAnnotationFillAreaOccurrence::IfcAnnotationFillAreaOccurrence(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationFillAreaOccurrence)) throw; entity = e; } 
 // IfcAnnotationOccurrence
-bool IfcAnnotationOccurrence::is(Type::Enum v) { return v == Type::IfcAnnotationOccurrence || IfcStyledItem::is(v); }
-Type::Enum IfcAnnotationOccurrence::type() { return Type::IfcAnnotationOccurrence; }
+bool IfcAnnotationOccurrence::is(Type::Enum v) const { return v == Type::IfcAnnotationOccurrence || IfcStyledItem::is(v); }
+Type::Enum IfcAnnotationOccurrence::type() const { return Type::IfcAnnotationOccurrence; }
 Type::Enum IfcAnnotationOccurrence::Class() { return Type::IfcAnnotationOccurrence; }
 IfcAnnotationOccurrence::IfcAnnotationOccurrence(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationOccurrence)) throw; entity = e; } 
 // IfcAnnotationSurface
-SHARED_PTR<IfcGeometricRepresentationItem> IfcAnnotationSurface::Item() { return reinterpret_pointer_cast<IfcBaseClass,IfcGeometricRepresentationItem>(*entity->getArgument(0)); }
+IfcGeometricRepresentationItem* IfcAnnotationSurface::Item() { return reinterpret_pointer_cast<IfcBaseClass,IfcGeometricRepresentationItem>(*entity->getArgument(0)); }
 bool IfcAnnotationSurface::hasTextureCoordinates() { return !entity->getArgument(1)->isNull(); }
-SHARED_PTR<IfcTextureCoordinate> IfcAnnotationSurface::TextureCoordinates() { return reinterpret_pointer_cast<IfcBaseClass,IfcTextureCoordinate>(*entity->getArgument(1)); }
-bool IfcAnnotationSurface::is(Type::Enum v) { return v == Type::IfcAnnotationSurface || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcAnnotationSurface::type() { return Type::IfcAnnotationSurface; }
+IfcTextureCoordinate* IfcAnnotationSurface::TextureCoordinates() { return reinterpret_pointer_cast<IfcBaseClass,IfcTextureCoordinate>(*entity->getArgument(1)); }
+bool IfcAnnotationSurface::is(Type::Enum v) const { return v == Type::IfcAnnotationSurface || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcAnnotationSurface::type() const { return Type::IfcAnnotationSurface; }
 Type::Enum IfcAnnotationSurface::Class() { return Type::IfcAnnotationSurface; }
 IfcAnnotationSurface::IfcAnnotationSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationSurface)) throw; entity = e; } 
 // IfcAnnotationSurfaceOccurrence
-bool IfcAnnotationSurfaceOccurrence::is(Type::Enum v) { return v == Type::IfcAnnotationSurfaceOccurrence || IfcAnnotationOccurrence::is(v); }
-Type::Enum IfcAnnotationSurfaceOccurrence::type() { return Type::IfcAnnotationSurfaceOccurrence; }
+bool IfcAnnotationSurfaceOccurrence::is(Type::Enum v) const { return v == Type::IfcAnnotationSurfaceOccurrence || IfcAnnotationOccurrence::is(v); }
+Type::Enum IfcAnnotationSurfaceOccurrence::type() const { return Type::IfcAnnotationSurfaceOccurrence; }
 Type::Enum IfcAnnotationSurfaceOccurrence::Class() { return Type::IfcAnnotationSurfaceOccurrence; }
 IfcAnnotationSurfaceOccurrence::IfcAnnotationSurfaceOccurrence(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationSurfaceOccurrence)) throw; entity = e; } 
 // IfcAnnotationSymbolOccurrence
-bool IfcAnnotationSymbolOccurrence::is(Type::Enum v) { return v == Type::IfcAnnotationSymbolOccurrence || IfcAnnotationOccurrence::is(v); }
-Type::Enum IfcAnnotationSymbolOccurrence::type() { return Type::IfcAnnotationSymbolOccurrence; }
+bool IfcAnnotationSymbolOccurrence::is(Type::Enum v) const { return v == Type::IfcAnnotationSymbolOccurrence || IfcAnnotationOccurrence::is(v); }
+Type::Enum IfcAnnotationSymbolOccurrence::type() const { return Type::IfcAnnotationSymbolOccurrence; }
 Type::Enum IfcAnnotationSymbolOccurrence::Class() { return Type::IfcAnnotationSymbolOccurrence; }
 IfcAnnotationSymbolOccurrence::IfcAnnotationSymbolOccurrence(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationSymbolOccurrence)) throw; entity = e; } 
 // IfcAnnotationTextOccurrence
-bool IfcAnnotationTextOccurrence::is(Type::Enum v) { return v == Type::IfcAnnotationTextOccurrence || IfcAnnotationOccurrence::is(v); }
-Type::Enum IfcAnnotationTextOccurrence::type() { return Type::IfcAnnotationTextOccurrence; }
+bool IfcAnnotationTextOccurrence::is(Type::Enum v) const { return v == Type::IfcAnnotationTextOccurrence || IfcAnnotationOccurrence::is(v); }
+Type::Enum IfcAnnotationTextOccurrence::type() const { return Type::IfcAnnotationTextOccurrence; }
 Type::Enum IfcAnnotationTextOccurrence::Class() { return Type::IfcAnnotationTextOccurrence; }
 IfcAnnotationTextOccurrence::IfcAnnotationTextOccurrence(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationTextOccurrence)) throw; entity = e; } 
 // IfcApplication
-SHARED_PTR<IfcOrganization> IfcApplication::ApplicationDeveloper() { return reinterpret_pointer_cast<IfcBaseClass,IfcOrganization>(*entity->getArgument(0)); }
+IfcOrganization* IfcApplication::ApplicationDeveloper() { return reinterpret_pointer_cast<IfcBaseClass,IfcOrganization>(*entity->getArgument(0)); }
 IfcLabel IfcApplication::Version() { return *entity->getArgument(1); }
 IfcLabel IfcApplication::ApplicationFullName() { return *entity->getArgument(2); }
 IfcIdentifier IfcApplication::ApplicationIdentifier() { return *entity->getArgument(3); }
-bool IfcApplication::is(Type::Enum v) { return v == Type::IfcApplication; }
-Type::Enum IfcApplication::type() { return Type::IfcApplication; }
+bool IfcApplication::is(Type::Enum v) const { return v == Type::IfcApplication; }
+Type::Enum IfcApplication::type() const { return Type::IfcApplication; }
 Type::Enum IfcApplication::Class() { return Type::IfcApplication; }
 IfcApplication::IfcApplication(IfcAbstractEntityPtr e) { if (!is(Type::IfcApplication)) throw; entity = e; } 
 // IfcAppliedValue
@@ -4885,7 +4892,7 @@ IfcText IfcAppliedValue::Description() { return *entity->getArgument(1); }
 bool IfcAppliedValue::hasAppliedValue() { return !entity->getArgument(2)->isNull(); }
 IfcAppliedValueSelect IfcAppliedValue::AppliedValue() { return *entity->getArgument(2); }
 bool IfcAppliedValue::hasUnitBasis() { return !entity->getArgument(3)->isNull(); }
-SHARED_PTR<IfcMeasureWithUnit> IfcAppliedValue::UnitBasis() { return reinterpret_pointer_cast<IfcBaseClass,IfcMeasureWithUnit>(*entity->getArgument(3)); }
+IfcMeasureWithUnit* IfcAppliedValue::UnitBasis() { return reinterpret_pointer_cast<IfcBaseClass,IfcMeasureWithUnit>(*entity->getArgument(3)); }
 bool IfcAppliedValue::hasApplicableDate() { return !entity->getArgument(4)->isNull(); }
 IfcDateTimeSelect IfcAppliedValue::ApplicableDate() { return *entity->getArgument(4); }
 bool IfcAppliedValue::hasFixedUntilDate() { return !entity->getArgument(5)->isNull(); }
@@ -4893,20 +4900,20 @@ IfcDateTimeSelect IfcAppliedValue::FixedUntilDate() { return *entity->getArgumen
 IfcReferencesValueDocument::list IfcAppliedValue::ValuesReferenced() { RETURN_INVERSE(IfcReferencesValueDocument) }
 IfcAppliedValueRelationship::list IfcAppliedValue::ValueOfComponents() { RETURN_INVERSE(IfcAppliedValueRelationship) }
 IfcAppliedValueRelationship::list IfcAppliedValue::IsComponentIn() { RETURN_INVERSE(IfcAppliedValueRelationship) }
-bool IfcAppliedValue::is(Type::Enum v) { return v == Type::IfcAppliedValue; }
-Type::Enum IfcAppliedValue::type() { return Type::IfcAppliedValue; }
+bool IfcAppliedValue::is(Type::Enum v) const { return v == Type::IfcAppliedValue; }
+Type::Enum IfcAppliedValue::type() const { return Type::IfcAppliedValue; }
 Type::Enum IfcAppliedValue::Class() { return Type::IfcAppliedValue; }
 IfcAppliedValue::IfcAppliedValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcAppliedValue)) throw; entity = e; } 
 // IfcAppliedValueRelationship
-SHARED_PTR<IfcAppliedValue> IfcAppliedValueRelationship::ComponentOfTotal() { return reinterpret_pointer_cast<IfcBaseClass,IfcAppliedValue>(*entity->getArgument(0)); }
+IfcAppliedValue* IfcAppliedValueRelationship::ComponentOfTotal() { return reinterpret_pointer_cast<IfcBaseClass,IfcAppliedValue>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValue> > IfcAppliedValueRelationship::Components() { RETURN_AS_LIST(IfcAppliedValue,1) }
 IfcArithmeticOperatorEnum::IfcArithmeticOperatorEnum IfcAppliedValueRelationship::ArithmeticOperator() { return IfcArithmeticOperatorEnum::FromString(*entity->getArgument(2)); }
 bool IfcAppliedValueRelationship::hasName() { return !entity->getArgument(3)->isNull(); }
 IfcLabel IfcAppliedValueRelationship::Name() { return *entity->getArgument(3); }
 bool IfcAppliedValueRelationship::hasDescription() { return !entity->getArgument(4)->isNull(); }
 IfcText IfcAppliedValueRelationship::Description() { return *entity->getArgument(4); }
-bool IfcAppliedValueRelationship::is(Type::Enum v) { return v == Type::IfcAppliedValueRelationship; }
-Type::Enum IfcAppliedValueRelationship::type() { return Type::IfcAppliedValueRelationship; }
+bool IfcAppliedValueRelationship::is(Type::Enum v) const { return v == Type::IfcAppliedValueRelationship; }
+Type::Enum IfcAppliedValueRelationship::type() const { return Type::IfcAppliedValueRelationship; }
 Type::Enum IfcAppliedValueRelationship::Class() { return Type::IfcAppliedValueRelationship; }
 IfcAppliedValueRelationship::IfcAppliedValueRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcAppliedValueRelationship)) throw; entity = e; } 
 // IfcApproval
@@ -4924,65 +4931,65 @@ IfcIdentifier IfcApproval::Identifier() { return *entity->getArgument(6); }
 IfcApprovalActorRelationship::list IfcApproval::Actors() { RETURN_INVERSE(IfcApprovalActorRelationship) }
 IfcApprovalRelationship::list IfcApproval::IsRelatedWith() { RETURN_INVERSE(IfcApprovalRelationship) }
 IfcApprovalRelationship::list IfcApproval::Relates() { RETURN_INVERSE(IfcApprovalRelationship) }
-bool IfcApproval::is(Type::Enum v) { return v == Type::IfcApproval; }
-Type::Enum IfcApproval::type() { return Type::IfcApproval; }
+bool IfcApproval::is(Type::Enum v) const { return v == Type::IfcApproval; }
+Type::Enum IfcApproval::type() const { return Type::IfcApproval; }
 Type::Enum IfcApproval::Class() { return Type::IfcApproval; }
 IfcApproval::IfcApproval(IfcAbstractEntityPtr e) { if (!is(Type::IfcApproval)) throw; entity = e; } 
 // IfcApprovalActorRelationship
 IfcActorSelect IfcApprovalActorRelationship::Actor() { return *entity->getArgument(0); }
-SHARED_PTR<IfcApproval> IfcApprovalActorRelationship::Approval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(1)); }
-SHARED_PTR<IfcActorRole> IfcApprovalActorRelationship::Role() { return reinterpret_pointer_cast<IfcBaseClass,IfcActorRole>(*entity->getArgument(2)); }
-bool IfcApprovalActorRelationship::is(Type::Enum v) { return v == Type::IfcApprovalActorRelationship; }
-Type::Enum IfcApprovalActorRelationship::type() { return Type::IfcApprovalActorRelationship; }
+IfcApproval* IfcApprovalActorRelationship::Approval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(1)); }
+IfcActorRole* IfcApprovalActorRelationship::Role() { return reinterpret_pointer_cast<IfcBaseClass,IfcActorRole>(*entity->getArgument(2)); }
+bool IfcApprovalActorRelationship::is(Type::Enum v) const { return v == Type::IfcApprovalActorRelationship; }
+Type::Enum IfcApprovalActorRelationship::type() const { return Type::IfcApprovalActorRelationship; }
 Type::Enum IfcApprovalActorRelationship::Class() { return Type::IfcApprovalActorRelationship; }
 IfcApprovalActorRelationship::IfcApprovalActorRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcApprovalActorRelationship)) throw; entity = e; } 
 // IfcApprovalPropertyRelationship
 SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > IfcApprovalPropertyRelationship::ApprovedProperties() { RETURN_AS_LIST(IfcProperty,0) }
-SHARED_PTR<IfcApproval> IfcApprovalPropertyRelationship::Approval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(1)); }
-bool IfcApprovalPropertyRelationship::is(Type::Enum v) { return v == Type::IfcApprovalPropertyRelationship; }
-Type::Enum IfcApprovalPropertyRelationship::type() { return Type::IfcApprovalPropertyRelationship; }
+IfcApproval* IfcApprovalPropertyRelationship::Approval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(1)); }
+bool IfcApprovalPropertyRelationship::is(Type::Enum v) const { return v == Type::IfcApprovalPropertyRelationship; }
+Type::Enum IfcApprovalPropertyRelationship::type() const { return Type::IfcApprovalPropertyRelationship; }
 Type::Enum IfcApprovalPropertyRelationship::Class() { return Type::IfcApprovalPropertyRelationship; }
 IfcApprovalPropertyRelationship::IfcApprovalPropertyRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcApprovalPropertyRelationship)) throw; entity = e; } 
 // IfcApprovalRelationship
-SHARED_PTR<IfcApproval> IfcApprovalRelationship::RelatedApproval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(0)); }
-SHARED_PTR<IfcApproval> IfcApprovalRelationship::RelatingApproval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(1)); }
+IfcApproval* IfcApprovalRelationship::RelatedApproval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(0)); }
+IfcApproval* IfcApprovalRelationship::RelatingApproval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(1)); }
 bool IfcApprovalRelationship::hasDescription() { return !entity->getArgument(2)->isNull(); }
 IfcText IfcApprovalRelationship::Description() { return *entity->getArgument(2); }
 IfcLabel IfcApprovalRelationship::Name() { return *entity->getArgument(3); }
-bool IfcApprovalRelationship::is(Type::Enum v) { return v == Type::IfcApprovalRelationship; }
-Type::Enum IfcApprovalRelationship::type() { return Type::IfcApprovalRelationship; }
+bool IfcApprovalRelationship::is(Type::Enum v) const { return v == Type::IfcApprovalRelationship; }
+Type::Enum IfcApprovalRelationship::type() const { return Type::IfcApprovalRelationship; }
 Type::Enum IfcApprovalRelationship::Class() { return Type::IfcApprovalRelationship; }
 IfcApprovalRelationship::IfcApprovalRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcApprovalRelationship)) throw; entity = e; } 
 // IfcArbitraryClosedProfileDef
-SHARED_PTR<IfcCurve> IfcArbitraryClosedProfileDef::OuterCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(2)); }
-bool IfcArbitraryClosedProfileDef::is(Type::Enum v) { return v == Type::IfcArbitraryClosedProfileDef || IfcProfileDef::is(v); }
-Type::Enum IfcArbitraryClosedProfileDef::type() { return Type::IfcArbitraryClosedProfileDef; }
+IfcCurve* IfcArbitraryClosedProfileDef::OuterCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(2)); }
+bool IfcArbitraryClosedProfileDef::is(Type::Enum v) const { return v == Type::IfcArbitraryClosedProfileDef || IfcProfileDef::is(v); }
+Type::Enum IfcArbitraryClosedProfileDef::type() const { return Type::IfcArbitraryClosedProfileDef; }
 Type::Enum IfcArbitraryClosedProfileDef::Class() { return Type::IfcArbitraryClosedProfileDef; }
 IfcArbitraryClosedProfileDef::IfcArbitraryClosedProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcArbitraryClosedProfileDef)) throw; entity = e; } 
 // IfcArbitraryOpenProfileDef
-SHARED_PTR<IfcBoundedCurve> IfcArbitraryOpenProfileDef::Curve() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundedCurve>(*entity->getArgument(2)); }
-bool IfcArbitraryOpenProfileDef::is(Type::Enum v) { return v == Type::IfcArbitraryOpenProfileDef || IfcProfileDef::is(v); }
-Type::Enum IfcArbitraryOpenProfileDef::type() { return Type::IfcArbitraryOpenProfileDef; }
+IfcBoundedCurve* IfcArbitraryOpenProfileDef::Curve() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundedCurve>(*entity->getArgument(2)); }
+bool IfcArbitraryOpenProfileDef::is(Type::Enum v) const { return v == Type::IfcArbitraryOpenProfileDef || IfcProfileDef::is(v); }
+Type::Enum IfcArbitraryOpenProfileDef::type() const { return Type::IfcArbitraryOpenProfileDef; }
 Type::Enum IfcArbitraryOpenProfileDef::Class() { return Type::IfcArbitraryOpenProfileDef; }
 IfcArbitraryOpenProfileDef::IfcArbitraryOpenProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcArbitraryOpenProfileDef)) throw; entity = e; } 
 // IfcArbitraryProfileDefWithVoids
 SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > IfcArbitraryProfileDefWithVoids::InnerCurves() { RETURN_AS_LIST(IfcCurve,3) }
-bool IfcArbitraryProfileDefWithVoids::is(Type::Enum v) { return v == Type::IfcArbitraryProfileDefWithVoids || IfcArbitraryClosedProfileDef::is(v); }
-Type::Enum IfcArbitraryProfileDefWithVoids::type() { return Type::IfcArbitraryProfileDefWithVoids; }
+bool IfcArbitraryProfileDefWithVoids::is(Type::Enum v) const { return v == Type::IfcArbitraryProfileDefWithVoids || IfcArbitraryClosedProfileDef::is(v); }
+Type::Enum IfcArbitraryProfileDefWithVoids::type() const { return Type::IfcArbitraryProfileDefWithVoids; }
 Type::Enum IfcArbitraryProfileDefWithVoids::Class() { return Type::IfcArbitraryProfileDefWithVoids; }
 IfcArbitraryProfileDefWithVoids::IfcArbitraryProfileDefWithVoids(IfcAbstractEntityPtr e) { if (!is(Type::IfcArbitraryProfileDefWithVoids)) throw; entity = e; } 
 // IfcAsset
 IfcIdentifier IfcAsset::AssetID() { return *entity->getArgument(5); }
-SHARED_PTR<IfcCostValue> IfcAsset::OriginalValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(6)); }
-SHARED_PTR<IfcCostValue> IfcAsset::CurrentValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(7)); }
-SHARED_PTR<IfcCostValue> IfcAsset::TotalReplacementCost() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(8)); }
+IfcCostValue* IfcAsset::OriginalValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(6)); }
+IfcCostValue* IfcAsset::CurrentValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(7)); }
+IfcCostValue* IfcAsset::TotalReplacementCost() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(8)); }
 IfcActorSelect IfcAsset::Owner() { return *entity->getArgument(9); }
 IfcActorSelect IfcAsset::User() { return *entity->getArgument(10); }
-SHARED_PTR<IfcPerson> IfcAsset::ResponsiblePerson() { return reinterpret_pointer_cast<IfcBaseClass,IfcPerson>(*entity->getArgument(11)); }
-SHARED_PTR<IfcCalendarDate> IfcAsset::IncorporationDate() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(12)); }
-SHARED_PTR<IfcCostValue> IfcAsset::DepreciatedValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(13)); }
-bool IfcAsset::is(Type::Enum v) { return v == Type::IfcAsset || IfcGroup::is(v); }
-Type::Enum IfcAsset::type() { return Type::IfcAsset; }
+IfcPerson* IfcAsset::ResponsiblePerson() { return reinterpret_pointer_cast<IfcBaseClass,IfcPerson>(*entity->getArgument(11)); }
+IfcCalendarDate* IfcAsset::IncorporationDate() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(12)); }
+IfcCostValue* IfcAsset::DepreciatedValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(13)); }
+bool IfcAsset::is(Type::Enum v) const { return v == Type::IfcAsset || IfcGroup::is(v); }
+Type::Enum IfcAsset::type() const { return Type::IfcAsset; }
 Type::Enum IfcAsset::Class() { return Type::IfcAsset; }
 IfcAsset::IfcAsset(IfcAbstractEntityPtr e) { if (!is(Type::IfcAsset)) throw; entity = e; } 
 // IfcAsymmetricIShapeProfileDef
@@ -4993,31 +5000,31 @@ bool IfcAsymmetricIShapeProfileDef::hasTopFlangeFilletRadius() { return !entity-
 IfcPositiveLengthMeasure IfcAsymmetricIShapeProfileDef::TopFlangeFilletRadius() { return *entity->getArgument(10); }
 bool IfcAsymmetricIShapeProfileDef::hasCentreOfGravityInY() { return !entity->getArgument(11)->isNull(); }
 IfcPositiveLengthMeasure IfcAsymmetricIShapeProfileDef::CentreOfGravityInY() { return *entity->getArgument(11); }
-bool IfcAsymmetricIShapeProfileDef::is(Type::Enum v) { return v == Type::IfcAsymmetricIShapeProfileDef || IfcIShapeProfileDef::is(v); }
-Type::Enum IfcAsymmetricIShapeProfileDef::type() { return Type::IfcAsymmetricIShapeProfileDef; }
+bool IfcAsymmetricIShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcAsymmetricIShapeProfileDef || IfcIShapeProfileDef::is(v); }
+Type::Enum IfcAsymmetricIShapeProfileDef::type() const { return Type::IfcAsymmetricIShapeProfileDef; }
 Type::Enum IfcAsymmetricIShapeProfileDef::Class() { return Type::IfcAsymmetricIShapeProfileDef; }
 IfcAsymmetricIShapeProfileDef::IfcAsymmetricIShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcAsymmetricIShapeProfileDef)) throw; entity = e; } 
 // IfcAxis1Placement
 bool IfcAxis1Placement::hasAxis() { return !entity->getArgument(1)->isNull(); }
-SHARED_PTR<IfcDirection> IfcAxis1Placement::Axis() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(1)); }
-bool IfcAxis1Placement::is(Type::Enum v) { return v == Type::IfcAxis1Placement || IfcPlacement::is(v); }
-Type::Enum IfcAxis1Placement::type() { return Type::IfcAxis1Placement; }
+IfcDirection* IfcAxis1Placement::Axis() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(1)); }
+bool IfcAxis1Placement::is(Type::Enum v) const { return v == Type::IfcAxis1Placement || IfcPlacement::is(v); }
+Type::Enum IfcAxis1Placement::type() const { return Type::IfcAxis1Placement; }
 Type::Enum IfcAxis1Placement::Class() { return Type::IfcAxis1Placement; }
 IfcAxis1Placement::IfcAxis1Placement(IfcAbstractEntityPtr e) { if (!is(Type::IfcAxis1Placement)) throw; entity = e; } 
 // IfcAxis2Placement2D
 bool IfcAxis2Placement2D::hasRefDirection() { return !entity->getArgument(1)->isNull(); }
-SHARED_PTR<IfcDirection> IfcAxis2Placement2D::RefDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(1)); }
-bool IfcAxis2Placement2D::is(Type::Enum v) { return v == Type::IfcAxis2Placement2D || IfcPlacement::is(v); }
-Type::Enum IfcAxis2Placement2D::type() { return Type::IfcAxis2Placement2D; }
+IfcDirection* IfcAxis2Placement2D::RefDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(1)); }
+bool IfcAxis2Placement2D::is(Type::Enum v) const { return v == Type::IfcAxis2Placement2D || IfcPlacement::is(v); }
+Type::Enum IfcAxis2Placement2D::type() const { return Type::IfcAxis2Placement2D; }
 Type::Enum IfcAxis2Placement2D::Class() { return Type::IfcAxis2Placement2D; }
 IfcAxis2Placement2D::IfcAxis2Placement2D(IfcAbstractEntityPtr e) { if (!is(Type::IfcAxis2Placement2D)) throw; entity = e; } 
 // IfcAxis2Placement3D
 bool IfcAxis2Placement3D::hasAxis() { return !entity->getArgument(1)->isNull(); }
-SHARED_PTR<IfcDirection> IfcAxis2Placement3D::Axis() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(1)); }
+IfcDirection* IfcAxis2Placement3D::Axis() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(1)); }
 bool IfcAxis2Placement3D::hasRefDirection() { return !entity->getArgument(2)->isNull(); }
-SHARED_PTR<IfcDirection> IfcAxis2Placement3D::RefDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(2)); }
-bool IfcAxis2Placement3D::is(Type::Enum v) { return v == Type::IfcAxis2Placement3D || IfcPlacement::is(v); }
-Type::Enum IfcAxis2Placement3D::type() { return Type::IfcAxis2Placement3D; }
+IfcDirection* IfcAxis2Placement3D::RefDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(2)); }
+bool IfcAxis2Placement3D::is(Type::Enum v) const { return v == Type::IfcAxis2Placement3D || IfcPlacement::is(v); }
+Type::Enum IfcAxis2Placement3D::type() const { return Type::IfcAxis2Placement3D; }
 Type::Enum IfcAxis2Placement3D::Class() { return Type::IfcAxis2Placement3D; }
 IfcAxis2Placement3D::IfcAxis2Placement3D(IfcAbstractEntityPtr e) { if (!is(Type::IfcAxis2Placement3D)) throw; entity = e; } 
 // IfcBSplineCurve
@@ -5026,65 +5033,65 @@ SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > IfcBSplineCurve::Control
 IfcBSplineCurveForm::IfcBSplineCurveForm IfcBSplineCurve::CurveForm() { return IfcBSplineCurveForm::FromString(*entity->getArgument(2)); }
 bool IfcBSplineCurve::ClosedCurve() { return *entity->getArgument(3); }
 bool IfcBSplineCurve::SelfIntersect() { return *entity->getArgument(4); }
-bool IfcBSplineCurve::is(Type::Enum v) { return v == Type::IfcBSplineCurve || IfcBoundedCurve::is(v); }
-Type::Enum IfcBSplineCurve::type() { return Type::IfcBSplineCurve; }
+bool IfcBSplineCurve::is(Type::Enum v) const { return v == Type::IfcBSplineCurve || IfcBoundedCurve::is(v); }
+Type::Enum IfcBSplineCurve::type() const { return Type::IfcBSplineCurve; }
 Type::Enum IfcBSplineCurve::Class() { return Type::IfcBSplineCurve; }
 IfcBSplineCurve::IfcBSplineCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcBSplineCurve)) throw; entity = e; } 
 // IfcBeam
-bool IfcBeam::is(Type::Enum v) { return v == Type::IfcBeam || IfcBuildingElement::is(v); }
-Type::Enum IfcBeam::type() { return Type::IfcBeam; }
+bool IfcBeam::is(Type::Enum v) const { return v == Type::IfcBeam || IfcBuildingElement::is(v); }
+Type::Enum IfcBeam::type() const { return Type::IfcBeam; }
 Type::Enum IfcBeam::Class() { return Type::IfcBeam; }
 IfcBeam::IfcBeam(IfcAbstractEntityPtr e) { if (!is(Type::IfcBeam)) throw; entity = e; } 
 // IfcBeamType
 IfcBeamTypeEnum::IfcBeamTypeEnum IfcBeamType::PredefinedType() { return IfcBeamTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcBeamType::is(Type::Enum v) { return v == Type::IfcBeamType || IfcBuildingElementType::is(v); }
-Type::Enum IfcBeamType::type() { return Type::IfcBeamType; }
+bool IfcBeamType::is(Type::Enum v) const { return v == Type::IfcBeamType || IfcBuildingElementType::is(v); }
+Type::Enum IfcBeamType::type() const { return Type::IfcBeamType; }
 Type::Enum IfcBeamType::Class() { return Type::IfcBeamType; }
 IfcBeamType::IfcBeamType(IfcAbstractEntityPtr e) { if (!is(Type::IfcBeamType)) throw; entity = e; } 
 // IfcBezierCurve
-bool IfcBezierCurve::is(Type::Enum v) { return v == Type::IfcBezierCurve || IfcBSplineCurve::is(v); }
-Type::Enum IfcBezierCurve::type() { return Type::IfcBezierCurve; }
+bool IfcBezierCurve::is(Type::Enum v) const { return v == Type::IfcBezierCurve || IfcBSplineCurve::is(v); }
+Type::Enum IfcBezierCurve::type() const { return Type::IfcBezierCurve; }
 Type::Enum IfcBezierCurve::Class() { return Type::IfcBezierCurve; }
 IfcBezierCurve::IfcBezierCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcBezierCurve)) throw; entity = e; } 
 // IfcBlobTexture
 IfcIdentifier IfcBlobTexture::RasterFormat() { return *entity->getArgument(4); }
 bool IfcBlobTexture::RasterCode() { return *entity->getArgument(5); }
-bool IfcBlobTexture::is(Type::Enum v) { return v == Type::IfcBlobTexture || IfcSurfaceTexture::is(v); }
-Type::Enum IfcBlobTexture::type() { return Type::IfcBlobTexture; }
+bool IfcBlobTexture::is(Type::Enum v) const { return v == Type::IfcBlobTexture || IfcSurfaceTexture::is(v); }
+Type::Enum IfcBlobTexture::type() const { return Type::IfcBlobTexture; }
 Type::Enum IfcBlobTexture::Class() { return Type::IfcBlobTexture; }
 IfcBlobTexture::IfcBlobTexture(IfcAbstractEntityPtr e) { if (!is(Type::IfcBlobTexture)) throw; entity = e; } 
 // IfcBlock
 IfcPositiveLengthMeasure IfcBlock::XLength() { return *entity->getArgument(1); }
 IfcPositiveLengthMeasure IfcBlock::YLength() { return *entity->getArgument(2); }
 IfcPositiveLengthMeasure IfcBlock::ZLength() { return *entity->getArgument(3); }
-bool IfcBlock::is(Type::Enum v) { return v == Type::IfcBlock || IfcCsgPrimitive3D::is(v); }
-Type::Enum IfcBlock::type() { return Type::IfcBlock; }
+bool IfcBlock::is(Type::Enum v) const { return v == Type::IfcBlock || IfcCsgPrimitive3D::is(v); }
+Type::Enum IfcBlock::type() const { return Type::IfcBlock; }
 Type::Enum IfcBlock::Class() { return Type::IfcBlock; }
 IfcBlock::IfcBlock(IfcAbstractEntityPtr e) { if (!is(Type::IfcBlock)) throw; entity = e; } 
 // IfcBoilerType
 IfcBoilerTypeEnum::IfcBoilerTypeEnum IfcBoilerType::PredefinedType() { return IfcBoilerTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcBoilerType::is(Type::Enum v) { return v == Type::IfcBoilerType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcBoilerType::type() { return Type::IfcBoilerType; }
+bool IfcBoilerType::is(Type::Enum v) const { return v == Type::IfcBoilerType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcBoilerType::type() const { return Type::IfcBoilerType; }
 Type::Enum IfcBoilerType::Class() { return Type::IfcBoilerType; }
 IfcBoilerType::IfcBoilerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoilerType)) throw; entity = e; } 
 // IfcBooleanClippingResult
-bool IfcBooleanClippingResult::is(Type::Enum v) { return v == Type::IfcBooleanClippingResult || IfcBooleanResult::is(v); }
-Type::Enum IfcBooleanClippingResult::type() { return Type::IfcBooleanClippingResult; }
+bool IfcBooleanClippingResult::is(Type::Enum v) const { return v == Type::IfcBooleanClippingResult || IfcBooleanResult::is(v); }
+Type::Enum IfcBooleanClippingResult::type() const { return Type::IfcBooleanClippingResult; }
 Type::Enum IfcBooleanClippingResult::Class() { return Type::IfcBooleanClippingResult; }
 IfcBooleanClippingResult::IfcBooleanClippingResult(IfcAbstractEntityPtr e) { if (!is(Type::IfcBooleanClippingResult)) throw; entity = e; } 
 // IfcBooleanResult
 IfcBooleanOperator::IfcBooleanOperator IfcBooleanResult::Operator() { return IfcBooleanOperator::FromString(*entity->getArgument(0)); }
 IfcBooleanOperand IfcBooleanResult::FirstOperand() { return *entity->getArgument(1); }
 IfcBooleanOperand IfcBooleanResult::SecondOperand() { return *entity->getArgument(2); }
-bool IfcBooleanResult::is(Type::Enum v) { return v == Type::IfcBooleanResult || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcBooleanResult::type() { return Type::IfcBooleanResult; }
+bool IfcBooleanResult::is(Type::Enum v) const { return v == Type::IfcBooleanResult || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcBooleanResult::type() const { return Type::IfcBooleanResult; }
 Type::Enum IfcBooleanResult::Class() { return Type::IfcBooleanResult; }
 IfcBooleanResult::IfcBooleanResult(IfcAbstractEntityPtr e) { if (!is(Type::IfcBooleanResult)) throw; entity = e; } 
 // IfcBoundaryCondition
 bool IfcBoundaryCondition::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcBoundaryCondition::Name() { return *entity->getArgument(0); }
-bool IfcBoundaryCondition::is(Type::Enum v) { return v == Type::IfcBoundaryCondition; }
-Type::Enum IfcBoundaryCondition::type() { return Type::IfcBoundaryCondition; }
+bool IfcBoundaryCondition::is(Type::Enum v) const { return v == Type::IfcBoundaryCondition; }
+Type::Enum IfcBoundaryCondition::type() const { return Type::IfcBoundaryCondition; }
 Type::Enum IfcBoundaryCondition::Class() { return Type::IfcBoundaryCondition; }
 IfcBoundaryCondition::IfcBoundaryCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundaryCondition)) throw; entity = e; } 
 // IfcBoundaryEdgeCondition
@@ -5100,8 +5107,8 @@ bool IfcBoundaryEdgeCondition::hasRotationalStiffnessByLengthY() { return !entit
 IfcModulusOfRotationalSubgradeReactionMeasure IfcBoundaryEdgeCondition::RotationalStiffnessByLengthY() { return *entity->getArgument(5); }
 bool IfcBoundaryEdgeCondition::hasRotationalStiffnessByLengthZ() { return !entity->getArgument(6)->isNull(); }
 IfcModulusOfRotationalSubgradeReactionMeasure IfcBoundaryEdgeCondition::RotationalStiffnessByLengthZ() { return *entity->getArgument(6); }
-bool IfcBoundaryEdgeCondition::is(Type::Enum v) { return v == Type::IfcBoundaryEdgeCondition || IfcBoundaryCondition::is(v); }
-Type::Enum IfcBoundaryEdgeCondition::type() { return Type::IfcBoundaryEdgeCondition; }
+bool IfcBoundaryEdgeCondition::is(Type::Enum v) const { return v == Type::IfcBoundaryEdgeCondition || IfcBoundaryCondition::is(v); }
+Type::Enum IfcBoundaryEdgeCondition::type() const { return Type::IfcBoundaryEdgeCondition; }
 Type::Enum IfcBoundaryEdgeCondition::Class() { return Type::IfcBoundaryEdgeCondition; }
 IfcBoundaryEdgeCondition::IfcBoundaryEdgeCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundaryEdgeCondition)) throw; entity = e; } 
 // IfcBoundaryFaceCondition
@@ -5111,8 +5118,8 @@ bool IfcBoundaryFaceCondition::hasLinearStiffnessByAreaY() { return !entity->get
 IfcModulusOfSubgradeReactionMeasure IfcBoundaryFaceCondition::LinearStiffnessByAreaY() { return *entity->getArgument(2); }
 bool IfcBoundaryFaceCondition::hasLinearStiffnessByAreaZ() { return !entity->getArgument(3)->isNull(); }
 IfcModulusOfSubgradeReactionMeasure IfcBoundaryFaceCondition::LinearStiffnessByAreaZ() { return *entity->getArgument(3); }
-bool IfcBoundaryFaceCondition::is(Type::Enum v) { return v == Type::IfcBoundaryFaceCondition || IfcBoundaryCondition::is(v); }
-Type::Enum IfcBoundaryFaceCondition::type() { return Type::IfcBoundaryFaceCondition; }
+bool IfcBoundaryFaceCondition::is(Type::Enum v) const { return v == Type::IfcBoundaryFaceCondition || IfcBoundaryCondition::is(v); }
+Type::Enum IfcBoundaryFaceCondition::type() const { return Type::IfcBoundaryFaceCondition; }
 Type::Enum IfcBoundaryFaceCondition::Class() { return Type::IfcBoundaryFaceCondition; }
 IfcBoundaryFaceCondition::IfcBoundaryFaceCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundaryFaceCondition)) throw; entity = e; } 
 // IfcBoundaryNodeCondition
@@ -5128,40 +5135,40 @@ bool IfcBoundaryNodeCondition::hasRotationalStiffnessY() { return !entity->getAr
 IfcRotationalStiffnessMeasure IfcBoundaryNodeCondition::RotationalStiffnessY() { return *entity->getArgument(5); }
 bool IfcBoundaryNodeCondition::hasRotationalStiffnessZ() { return !entity->getArgument(6)->isNull(); }
 IfcRotationalStiffnessMeasure IfcBoundaryNodeCondition::RotationalStiffnessZ() { return *entity->getArgument(6); }
-bool IfcBoundaryNodeCondition::is(Type::Enum v) { return v == Type::IfcBoundaryNodeCondition || IfcBoundaryCondition::is(v); }
-Type::Enum IfcBoundaryNodeCondition::type() { return Type::IfcBoundaryNodeCondition; }
+bool IfcBoundaryNodeCondition::is(Type::Enum v) const { return v == Type::IfcBoundaryNodeCondition || IfcBoundaryCondition::is(v); }
+Type::Enum IfcBoundaryNodeCondition::type() const { return Type::IfcBoundaryNodeCondition; }
 Type::Enum IfcBoundaryNodeCondition::Class() { return Type::IfcBoundaryNodeCondition; }
 IfcBoundaryNodeCondition::IfcBoundaryNodeCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundaryNodeCondition)) throw; entity = e; } 
 // IfcBoundaryNodeConditionWarping
 bool IfcBoundaryNodeConditionWarping::hasWarpingStiffness() { return !entity->getArgument(7)->isNull(); }
 IfcWarpingMomentMeasure IfcBoundaryNodeConditionWarping::WarpingStiffness() { return *entity->getArgument(7); }
-bool IfcBoundaryNodeConditionWarping::is(Type::Enum v) { return v == Type::IfcBoundaryNodeConditionWarping || IfcBoundaryNodeCondition::is(v); }
-Type::Enum IfcBoundaryNodeConditionWarping::type() { return Type::IfcBoundaryNodeConditionWarping; }
+bool IfcBoundaryNodeConditionWarping::is(Type::Enum v) const { return v == Type::IfcBoundaryNodeConditionWarping || IfcBoundaryNodeCondition::is(v); }
+Type::Enum IfcBoundaryNodeConditionWarping::type() const { return Type::IfcBoundaryNodeConditionWarping; }
 Type::Enum IfcBoundaryNodeConditionWarping::Class() { return Type::IfcBoundaryNodeConditionWarping; }
 IfcBoundaryNodeConditionWarping::IfcBoundaryNodeConditionWarping(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundaryNodeConditionWarping)) throw; entity = e; } 
 // IfcBoundedCurve
-bool IfcBoundedCurve::is(Type::Enum v) { return v == Type::IfcBoundedCurve || IfcCurve::is(v); }
-Type::Enum IfcBoundedCurve::type() { return Type::IfcBoundedCurve; }
+bool IfcBoundedCurve::is(Type::Enum v) const { return v == Type::IfcBoundedCurve || IfcCurve::is(v); }
+Type::Enum IfcBoundedCurve::type() const { return Type::IfcBoundedCurve; }
 Type::Enum IfcBoundedCurve::Class() { return Type::IfcBoundedCurve; }
 IfcBoundedCurve::IfcBoundedCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundedCurve)) throw; entity = e; } 
 // IfcBoundedSurface
-bool IfcBoundedSurface::is(Type::Enum v) { return v == Type::IfcBoundedSurface || IfcSurface::is(v); }
-Type::Enum IfcBoundedSurface::type() { return Type::IfcBoundedSurface; }
+bool IfcBoundedSurface::is(Type::Enum v) const { return v == Type::IfcBoundedSurface || IfcSurface::is(v); }
+Type::Enum IfcBoundedSurface::type() const { return Type::IfcBoundedSurface; }
 Type::Enum IfcBoundedSurface::Class() { return Type::IfcBoundedSurface; }
 IfcBoundedSurface::IfcBoundedSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundedSurface)) throw; entity = e; } 
 // IfcBoundingBox
-SHARED_PTR<IfcCartesianPoint> IfcBoundingBox::Corner() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(0)); }
+IfcCartesianPoint* IfcBoundingBox::Corner() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(0)); }
 IfcPositiveLengthMeasure IfcBoundingBox::XDim() { return *entity->getArgument(1); }
 IfcPositiveLengthMeasure IfcBoundingBox::YDim() { return *entity->getArgument(2); }
 IfcPositiveLengthMeasure IfcBoundingBox::ZDim() { return *entity->getArgument(3); }
-bool IfcBoundingBox::is(Type::Enum v) { return v == Type::IfcBoundingBox || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcBoundingBox::type() { return Type::IfcBoundingBox; }
+bool IfcBoundingBox::is(Type::Enum v) const { return v == Type::IfcBoundingBox || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcBoundingBox::type() const { return Type::IfcBoundingBox; }
 Type::Enum IfcBoundingBox::Class() { return Type::IfcBoundingBox; }
 IfcBoundingBox::IfcBoundingBox(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundingBox)) throw; entity = e; } 
 // IfcBoxedHalfSpace
-SHARED_PTR<IfcBoundingBox> IfcBoxedHalfSpace::Enclosure() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundingBox>(*entity->getArgument(2)); }
-bool IfcBoxedHalfSpace::is(Type::Enum v) { return v == Type::IfcBoxedHalfSpace || IfcHalfSpaceSolid::is(v); }
-Type::Enum IfcBoxedHalfSpace::type() { return Type::IfcBoxedHalfSpace; }
+IfcBoundingBox* IfcBoxedHalfSpace::Enclosure() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundingBox>(*entity->getArgument(2)); }
+bool IfcBoxedHalfSpace::is(Type::Enum v) const { return v == Type::IfcBoxedHalfSpace || IfcHalfSpaceSolid::is(v); }
+Type::Enum IfcBoxedHalfSpace::type() const { return Type::IfcBoxedHalfSpace; }
 Type::Enum IfcBoxedHalfSpace::Class() { return Type::IfcBoxedHalfSpace; }
 IfcBoxedHalfSpace::IfcBoxedHalfSpace(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoxedHalfSpace)) throw; entity = e; } 
 // IfcBuilding
@@ -5170,49 +5177,49 @@ IfcLengthMeasure IfcBuilding::ElevationOfRefHeight() { return *entity->getArgume
 bool IfcBuilding::hasElevationOfTerrain() { return !entity->getArgument(10)->isNull(); }
 IfcLengthMeasure IfcBuilding::ElevationOfTerrain() { return *entity->getArgument(10); }
 bool IfcBuilding::hasBuildingAddress() { return !entity->getArgument(11)->isNull(); }
-SHARED_PTR<IfcPostalAddress> IfcBuilding::BuildingAddress() { return reinterpret_pointer_cast<IfcBaseClass,IfcPostalAddress>(*entity->getArgument(11)); }
-bool IfcBuilding::is(Type::Enum v) { return v == Type::IfcBuilding || IfcSpatialStructureElement::is(v); }
-Type::Enum IfcBuilding::type() { return Type::IfcBuilding; }
+IfcPostalAddress* IfcBuilding::BuildingAddress() { return reinterpret_pointer_cast<IfcBaseClass,IfcPostalAddress>(*entity->getArgument(11)); }
+bool IfcBuilding::is(Type::Enum v) const { return v == Type::IfcBuilding || IfcSpatialStructureElement::is(v); }
+Type::Enum IfcBuilding::type() const { return Type::IfcBuilding; }
 Type::Enum IfcBuilding::Class() { return Type::IfcBuilding; }
 IfcBuilding::IfcBuilding(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuilding)) throw; entity = e; } 
 // IfcBuildingElement
-bool IfcBuildingElement::is(Type::Enum v) { return v == Type::IfcBuildingElement || IfcElement::is(v); }
-Type::Enum IfcBuildingElement::type() { return Type::IfcBuildingElement; }
+bool IfcBuildingElement::is(Type::Enum v) const { return v == Type::IfcBuildingElement || IfcElement::is(v); }
+Type::Enum IfcBuildingElement::type() const { return Type::IfcBuildingElement; }
 Type::Enum IfcBuildingElement::Class() { return Type::IfcBuildingElement; }
 IfcBuildingElement::IfcBuildingElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingElement)) throw; entity = e; } 
 // IfcBuildingElementComponent
-bool IfcBuildingElementComponent::is(Type::Enum v) { return v == Type::IfcBuildingElementComponent || IfcBuildingElement::is(v); }
-Type::Enum IfcBuildingElementComponent::type() { return Type::IfcBuildingElementComponent; }
+bool IfcBuildingElementComponent::is(Type::Enum v) const { return v == Type::IfcBuildingElementComponent || IfcBuildingElement::is(v); }
+Type::Enum IfcBuildingElementComponent::type() const { return Type::IfcBuildingElementComponent; }
 Type::Enum IfcBuildingElementComponent::Class() { return Type::IfcBuildingElementComponent; }
 IfcBuildingElementComponent::IfcBuildingElementComponent(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingElementComponent)) throw; entity = e; } 
 // IfcBuildingElementPart
-bool IfcBuildingElementPart::is(Type::Enum v) { return v == Type::IfcBuildingElementPart || IfcBuildingElementComponent::is(v); }
-Type::Enum IfcBuildingElementPart::type() { return Type::IfcBuildingElementPart; }
+bool IfcBuildingElementPart::is(Type::Enum v) const { return v == Type::IfcBuildingElementPart || IfcBuildingElementComponent::is(v); }
+Type::Enum IfcBuildingElementPart::type() const { return Type::IfcBuildingElementPart; }
 Type::Enum IfcBuildingElementPart::Class() { return Type::IfcBuildingElementPart; }
 IfcBuildingElementPart::IfcBuildingElementPart(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingElementPart)) throw; entity = e; } 
 // IfcBuildingElementProxy
 bool IfcBuildingElementProxy::hasCompositionType() { return !entity->getArgument(8)->isNull(); }
 IfcElementCompositionEnum::IfcElementCompositionEnum IfcBuildingElementProxy::CompositionType() { return IfcElementCompositionEnum::FromString(*entity->getArgument(8)); }
-bool IfcBuildingElementProxy::is(Type::Enum v) { return v == Type::IfcBuildingElementProxy || IfcBuildingElement::is(v); }
-Type::Enum IfcBuildingElementProxy::type() { return Type::IfcBuildingElementProxy; }
+bool IfcBuildingElementProxy::is(Type::Enum v) const { return v == Type::IfcBuildingElementProxy || IfcBuildingElement::is(v); }
+Type::Enum IfcBuildingElementProxy::type() const { return Type::IfcBuildingElementProxy; }
 Type::Enum IfcBuildingElementProxy::Class() { return Type::IfcBuildingElementProxy; }
 IfcBuildingElementProxy::IfcBuildingElementProxy(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingElementProxy)) throw; entity = e; } 
 // IfcBuildingElementProxyType
 IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum IfcBuildingElementProxyType::PredefinedType() { return IfcBuildingElementProxyTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcBuildingElementProxyType::is(Type::Enum v) { return v == Type::IfcBuildingElementProxyType || IfcBuildingElementType::is(v); }
-Type::Enum IfcBuildingElementProxyType::type() { return Type::IfcBuildingElementProxyType; }
+bool IfcBuildingElementProxyType::is(Type::Enum v) const { return v == Type::IfcBuildingElementProxyType || IfcBuildingElementType::is(v); }
+Type::Enum IfcBuildingElementProxyType::type() const { return Type::IfcBuildingElementProxyType; }
 Type::Enum IfcBuildingElementProxyType::Class() { return Type::IfcBuildingElementProxyType; }
 IfcBuildingElementProxyType::IfcBuildingElementProxyType(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingElementProxyType)) throw; entity = e; } 
 // IfcBuildingElementType
-bool IfcBuildingElementType::is(Type::Enum v) { return v == Type::IfcBuildingElementType || IfcElementType::is(v); }
-Type::Enum IfcBuildingElementType::type() { return Type::IfcBuildingElementType; }
+bool IfcBuildingElementType::is(Type::Enum v) const { return v == Type::IfcBuildingElementType || IfcElementType::is(v); }
+Type::Enum IfcBuildingElementType::type() const { return Type::IfcBuildingElementType; }
 Type::Enum IfcBuildingElementType::Class() { return Type::IfcBuildingElementType; }
 IfcBuildingElementType::IfcBuildingElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingElementType)) throw; entity = e; } 
 // IfcBuildingStorey
 bool IfcBuildingStorey::hasElevation() { return !entity->getArgument(9)->isNull(); }
 IfcLengthMeasure IfcBuildingStorey::Elevation() { return *entity->getArgument(9); }
-bool IfcBuildingStorey::is(Type::Enum v) { return v == Type::IfcBuildingStorey || IfcSpatialStructureElement::is(v); }
-Type::Enum IfcBuildingStorey::type() { return Type::IfcBuildingStorey; }
+bool IfcBuildingStorey::is(Type::Enum v) const { return v == Type::IfcBuildingStorey || IfcSpatialStructureElement::is(v); }
+Type::Enum IfcBuildingStorey::type() const { return Type::IfcBuildingStorey; }
 Type::Enum IfcBuildingStorey::Class() { return Type::IfcBuildingStorey; }
 IfcBuildingStorey::IfcBuildingStorey(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingStorey)) throw; entity = e; } 
 // IfcCShapeProfileDef
@@ -5224,71 +5231,71 @@ bool IfcCShapeProfileDef::hasInternalFilletRadius() { return !entity->getArgumen
 IfcPositiveLengthMeasure IfcCShapeProfileDef::InternalFilletRadius() { return *entity->getArgument(7); }
 bool IfcCShapeProfileDef::hasCentreOfGravityInX() { return !entity->getArgument(8)->isNull(); }
 IfcPositiveLengthMeasure IfcCShapeProfileDef::CentreOfGravityInX() { return *entity->getArgument(8); }
-bool IfcCShapeProfileDef::is(Type::Enum v) { return v == Type::IfcCShapeProfileDef || IfcParameterizedProfileDef::is(v); }
-Type::Enum IfcCShapeProfileDef::type() { return Type::IfcCShapeProfileDef; }
+bool IfcCShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcCShapeProfileDef || IfcParameterizedProfileDef::is(v); }
+Type::Enum IfcCShapeProfileDef::type() const { return Type::IfcCShapeProfileDef; }
 Type::Enum IfcCShapeProfileDef::Class() { return Type::IfcCShapeProfileDef; }
 IfcCShapeProfileDef::IfcCShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCShapeProfileDef)) throw; entity = e; } 
 // IfcCableCarrierFittingType
 IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum IfcCableCarrierFittingType::PredefinedType() { return IfcCableCarrierFittingTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcCableCarrierFittingType::is(Type::Enum v) { return v == Type::IfcCableCarrierFittingType || IfcFlowFittingType::is(v); }
-Type::Enum IfcCableCarrierFittingType::type() { return Type::IfcCableCarrierFittingType; }
+bool IfcCableCarrierFittingType::is(Type::Enum v) const { return v == Type::IfcCableCarrierFittingType || IfcFlowFittingType::is(v); }
+Type::Enum IfcCableCarrierFittingType::type() const { return Type::IfcCableCarrierFittingType; }
 Type::Enum IfcCableCarrierFittingType::Class() { return Type::IfcCableCarrierFittingType; }
 IfcCableCarrierFittingType::IfcCableCarrierFittingType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCableCarrierFittingType)) throw; entity = e; } 
 // IfcCableCarrierSegmentType
 IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum IfcCableCarrierSegmentType::PredefinedType() { return IfcCableCarrierSegmentTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcCableCarrierSegmentType::is(Type::Enum v) { return v == Type::IfcCableCarrierSegmentType || IfcFlowSegmentType::is(v); }
-Type::Enum IfcCableCarrierSegmentType::type() { return Type::IfcCableCarrierSegmentType; }
+bool IfcCableCarrierSegmentType::is(Type::Enum v) const { return v == Type::IfcCableCarrierSegmentType || IfcFlowSegmentType::is(v); }
+Type::Enum IfcCableCarrierSegmentType::type() const { return Type::IfcCableCarrierSegmentType; }
 Type::Enum IfcCableCarrierSegmentType::Class() { return Type::IfcCableCarrierSegmentType; }
 IfcCableCarrierSegmentType::IfcCableCarrierSegmentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCableCarrierSegmentType)) throw; entity = e; } 
 // IfcCableSegmentType
 IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum IfcCableSegmentType::PredefinedType() { return IfcCableSegmentTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcCableSegmentType::is(Type::Enum v) { return v == Type::IfcCableSegmentType || IfcFlowSegmentType::is(v); }
-Type::Enum IfcCableSegmentType::type() { return Type::IfcCableSegmentType; }
+bool IfcCableSegmentType::is(Type::Enum v) const { return v == Type::IfcCableSegmentType || IfcFlowSegmentType::is(v); }
+Type::Enum IfcCableSegmentType::type() const { return Type::IfcCableSegmentType; }
 Type::Enum IfcCableSegmentType::Class() { return Type::IfcCableSegmentType; }
 IfcCableSegmentType::IfcCableSegmentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCableSegmentType)) throw; entity = e; } 
 // IfcCalendarDate
 IfcDayInMonthNumber IfcCalendarDate::DayComponent() { return *entity->getArgument(0); }
 IfcMonthInYearNumber IfcCalendarDate::MonthComponent() { return *entity->getArgument(1); }
 IfcYearNumber IfcCalendarDate::YearComponent() { return *entity->getArgument(2); }
-bool IfcCalendarDate::is(Type::Enum v) { return v == Type::IfcCalendarDate; }
-Type::Enum IfcCalendarDate::type() { return Type::IfcCalendarDate; }
+bool IfcCalendarDate::is(Type::Enum v) const { return v == Type::IfcCalendarDate; }
+Type::Enum IfcCalendarDate::type() const { return Type::IfcCalendarDate; }
 Type::Enum IfcCalendarDate::Class() { return Type::IfcCalendarDate; }
 IfcCalendarDate::IfcCalendarDate(IfcAbstractEntityPtr e) { if (!is(Type::IfcCalendarDate)) throw; entity = e; } 
 // IfcCartesianPoint
 std::vector<IfcLengthMeasure> /*[1:3]*/ IfcCartesianPoint::Coordinates() { return *entity->getArgument(0); }
-bool IfcCartesianPoint::is(Type::Enum v) { return v == Type::IfcCartesianPoint || IfcPoint::is(v); }
-Type::Enum IfcCartesianPoint::type() { return Type::IfcCartesianPoint; }
+bool IfcCartesianPoint::is(Type::Enum v) const { return v == Type::IfcCartesianPoint || IfcPoint::is(v); }
+Type::Enum IfcCartesianPoint::type() const { return Type::IfcCartesianPoint; }
 Type::Enum IfcCartesianPoint::Class() { return Type::IfcCartesianPoint; }
 IfcCartesianPoint::IfcCartesianPoint(IfcAbstractEntityPtr e) { if (!is(Type::IfcCartesianPoint)) throw; entity = e; } 
 // IfcCartesianTransformationOperator
 bool IfcCartesianTransformationOperator::hasAxis1() { return !entity->getArgument(0)->isNull(); }
-SHARED_PTR<IfcDirection> IfcCartesianTransformationOperator::Axis1() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(0)); }
+IfcDirection* IfcCartesianTransformationOperator::Axis1() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(0)); }
 bool IfcCartesianTransformationOperator::hasAxis2() { return !entity->getArgument(1)->isNull(); }
-SHARED_PTR<IfcDirection> IfcCartesianTransformationOperator::Axis2() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(1)); }
-SHARED_PTR<IfcCartesianPoint> IfcCartesianTransformationOperator::LocalOrigin() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(2)); }
+IfcDirection* IfcCartesianTransformationOperator::Axis2() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(1)); }
+IfcCartesianPoint* IfcCartesianTransformationOperator::LocalOrigin() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(2)); }
 bool IfcCartesianTransformationOperator::hasScale() { return !entity->getArgument(3)->isNull(); }
 float IfcCartesianTransformationOperator::Scale() { return *entity->getArgument(3); }
-bool IfcCartesianTransformationOperator::is(Type::Enum v) { return v == Type::IfcCartesianTransformationOperator || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcCartesianTransformationOperator::type() { return Type::IfcCartesianTransformationOperator; }
+bool IfcCartesianTransformationOperator::is(Type::Enum v) const { return v == Type::IfcCartesianTransformationOperator || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcCartesianTransformationOperator::type() const { return Type::IfcCartesianTransformationOperator; }
 Type::Enum IfcCartesianTransformationOperator::Class() { return Type::IfcCartesianTransformationOperator; }
 IfcCartesianTransformationOperator::IfcCartesianTransformationOperator(IfcAbstractEntityPtr e) { if (!is(Type::IfcCartesianTransformationOperator)) throw; entity = e; } 
 // IfcCartesianTransformationOperator2D
-bool IfcCartesianTransformationOperator2D::is(Type::Enum v) { return v == Type::IfcCartesianTransformationOperator2D || IfcCartesianTransformationOperator::is(v); }
-Type::Enum IfcCartesianTransformationOperator2D::type() { return Type::IfcCartesianTransformationOperator2D; }
+bool IfcCartesianTransformationOperator2D::is(Type::Enum v) const { return v == Type::IfcCartesianTransformationOperator2D || IfcCartesianTransformationOperator::is(v); }
+Type::Enum IfcCartesianTransformationOperator2D::type() const { return Type::IfcCartesianTransformationOperator2D; }
 Type::Enum IfcCartesianTransformationOperator2D::Class() { return Type::IfcCartesianTransformationOperator2D; }
 IfcCartesianTransformationOperator2D::IfcCartesianTransformationOperator2D(IfcAbstractEntityPtr e) { if (!is(Type::IfcCartesianTransformationOperator2D)) throw; entity = e; } 
 // IfcCartesianTransformationOperator2DnonUniform
 bool IfcCartesianTransformationOperator2DnonUniform::hasScale2() { return !entity->getArgument(4)->isNull(); }
 float IfcCartesianTransformationOperator2DnonUniform::Scale2() { return *entity->getArgument(4); }
-bool IfcCartesianTransformationOperator2DnonUniform::is(Type::Enum v) { return v == Type::IfcCartesianTransformationOperator2DnonUniform || IfcCartesianTransformationOperator2D::is(v); }
-Type::Enum IfcCartesianTransformationOperator2DnonUniform::type() { return Type::IfcCartesianTransformationOperator2DnonUniform; }
+bool IfcCartesianTransformationOperator2DnonUniform::is(Type::Enum v) const { return v == Type::IfcCartesianTransformationOperator2DnonUniform || IfcCartesianTransformationOperator2D::is(v); }
+Type::Enum IfcCartesianTransformationOperator2DnonUniform::type() const { return Type::IfcCartesianTransformationOperator2DnonUniform; }
 Type::Enum IfcCartesianTransformationOperator2DnonUniform::Class() { return Type::IfcCartesianTransformationOperator2DnonUniform; }
 IfcCartesianTransformationOperator2DnonUniform::IfcCartesianTransformationOperator2DnonUniform(IfcAbstractEntityPtr e) { if (!is(Type::IfcCartesianTransformationOperator2DnonUniform)) throw; entity = e; } 
 // IfcCartesianTransformationOperator3D
 bool IfcCartesianTransformationOperator3D::hasAxis3() { return !entity->getArgument(4)->isNull(); }
-SHARED_PTR<IfcDirection> IfcCartesianTransformationOperator3D::Axis3() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(4)); }
-bool IfcCartesianTransformationOperator3D::is(Type::Enum v) { return v == Type::IfcCartesianTransformationOperator3D || IfcCartesianTransformationOperator::is(v); }
-Type::Enum IfcCartesianTransformationOperator3D::type() { return Type::IfcCartesianTransformationOperator3D; }
+IfcDirection* IfcCartesianTransformationOperator3D::Axis3() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(4)); }
+bool IfcCartesianTransformationOperator3D::is(Type::Enum v) const { return v == Type::IfcCartesianTransformationOperator3D || IfcCartesianTransformationOperator::is(v); }
+Type::Enum IfcCartesianTransformationOperator3D::type() const { return Type::IfcCartesianTransformationOperator3D; }
 Type::Enum IfcCartesianTransformationOperator3D::Class() { return Type::IfcCartesianTransformationOperator3D; }
 IfcCartesianTransformationOperator3D::IfcCartesianTransformationOperator3D(IfcAbstractEntityPtr e) { if (!is(Type::IfcCartesianTransformationOperator3D)) throw; entity = e; } 
 // IfcCartesianTransformationOperator3DnonUniform
@@ -5296,14 +5303,14 @@ bool IfcCartesianTransformationOperator3DnonUniform::hasScale2() { return !entit
 float IfcCartesianTransformationOperator3DnonUniform::Scale2() { return *entity->getArgument(5); }
 bool IfcCartesianTransformationOperator3DnonUniform::hasScale3() { return !entity->getArgument(6)->isNull(); }
 float IfcCartesianTransformationOperator3DnonUniform::Scale3() { return *entity->getArgument(6); }
-bool IfcCartesianTransformationOperator3DnonUniform::is(Type::Enum v) { return v == Type::IfcCartesianTransformationOperator3DnonUniform || IfcCartesianTransformationOperator3D::is(v); }
-Type::Enum IfcCartesianTransformationOperator3DnonUniform::type() { return Type::IfcCartesianTransformationOperator3DnonUniform; }
+bool IfcCartesianTransformationOperator3DnonUniform::is(Type::Enum v) const { return v == Type::IfcCartesianTransformationOperator3DnonUniform || IfcCartesianTransformationOperator3D::is(v); }
+Type::Enum IfcCartesianTransformationOperator3DnonUniform::type() const { return Type::IfcCartesianTransformationOperator3DnonUniform; }
 Type::Enum IfcCartesianTransformationOperator3DnonUniform::Class() { return Type::IfcCartesianTransformationOperator3DnonUniform; }
 IfcCartesianTransformationOperator3DnonUniform::IfcCartesianTransformationOperator3DnonUniform(IfcAbstractEntityPtr e) { if (!is(Type::IfcCartesianTransformationOperator3DnonUniform)) throw; entity = e; } 
 // IfcCenterLineProfileDef
 IfcPositiveLengthMeasure IfcCenterLineProfileDef::Thickness() { return *entity->getArgument(3); }
-bool IfcCenterLineProfileDef::is(Type::Enum v) { return v == Type::IfcCenterLineProfileDef || IfcArbitraryOpenProfileDef::is(v); }
-Type::Enum IfcCenterLineProfileDef::type() { return Type::IfcCenterLineProfileDef; }
+bool IfcCenterLineProfileDef::is(Type::Enum v) const { return v == Type::IfcCenterLineProfileDef || IfcArbitraryOpenProfileDef::is(v); }
+Type::Enum IfcCenterLineProfileDef::type() const { return Type::IfcCenterLineProfileDef; }
 Type::Enum IfcCenterLineProfileDef::Class() { return Type::IfcCenterLineProfileDef; }
 IfcCenterLineProfileDef::IfcCenterLineProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCenterLineProfileDef)) throw; entity = e; } 
 // IfcChamferEdgeFeature
@@ -5311,197 +5318,197 @@ bool IfcChamferEdgeFeature::hasWidth() { return !entity->getArgument(9)->isNull(
 IfcPositiveLengthMeasure IfcChamferEdgeFeature::Width() { return *entity->getArgument(9); }
 bool IfcChamferEdgeFeature::hasHeight() { return !entity->getArgument(10)->isNull(); }
 IfcPositiveLengthMeasure IfcChamferEdgeFeature::Height() { return *entity->getArgument(10); }
-bool IfcChamferEdgeFeature::is(Type::Enum v) { return v == Type::IfcChamferEdgeFeature || IfcEdgeFeature::is(v); }
-Type::Enum IfcChamferEdgeFeature::type() { return Type::IfcChamferEdgeFeature; }
+bool IfcChamferEdgeFeature::is(Type::Enum v) const { return v == Type::IfcChamferEdgeFeature || IfcEdgeFeature::is(v); }
+Type::Enum IfcChamferEdgeFeature::type() const { return Type::IfcChamferEdgeFeature; }
 Type::Enum IfcChamferEdgeFeature::Class() { return Type::IfcChamferEdgeFeature; }
 IfcChamferEdgeFeature::IfcChamferEdgeFeature(IfcAbstractEntityPtr e) { if (!is(Type::IfcChamferEdgeFeature)) throw; entity = e; } 
 // IfcChillerType
 IfcChillerTypeEnum::IfcChillerTypeEnum IfcChillerType::PredefinedType() { return IfcChillerTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcChillerType::is(Type::Enum v) { return v == Type::IfcChillerType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcChillerType::type() { return Type::IfcChillerType; }
+bool IfcChillerType::is(Type::Enum v) const { return v == Type::IfcChillerType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcChillerType::type() const { return Type::IfcChillerType; }
 Type::Enum IfcChillerType::Class() { return Type::IfcChillerType; }
 IfcChillerType::IfcChillerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcChillerType)) throw; entity = e; } 
 // IfcCircle
 IfcPositiveLengthMeasure IfcCircle::Radius() { return *entity->getArgument(1); }
-bool IfcCircle::is(Type::Enum v) { return v == Type::IfcCircle || IfcConic::is(v); }
-Type::Enum IfcCircle::type() { return Type::IfcCircle; }
+bool IfcCircle::is(Type::Enum v) const { return v == Type::IfcCircle || IfcConic::is(v); }
+Type::Enum IfcCircle::type() const { return Type::IfcCircle; }
 Type::Enum IfcCircle::Class() { return Type::IfcCircle; }
 IfcCircle::IfcCircle(IfcAbstractEntityPtr e) { if (!is(Type::IfcCircle)) throw; entity = e; } 
 // IfcCircleHollowProfileDef
 IfcPositiveLengthMeasure IfcCircleHollowProfileDef::WallThickness() { return *entity->getArgument(4); }
-bool IfcCircleHollowProfileDef::is(Type::Enum v) { return v == Type::IfcCircleHollowProfileDef || IfcCircleProfileDef::is(v); }
-Type::Enum IfcCircleHollowProfileDef::type() { return Type::IfcCircleHollowProfileDef; }
+bool IfcCircleHollowProfileDef::is(Type::Enum v) const { return v == Type::IfcCircleHollowProfileDef || IfcCircleProfileDef::is(v); }
+Type::Enum IfcCircleHollowProfileDef::type() const { return Type::IfcCircleHollowProfileDef; }
 Type::Enum IfcCircleHollowProfileDef::Class() { return Type::IfcCircleHollowProfileDef; }
 IfcCircleHollowProfileDef::IfcCircleHollowProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCircleHollowProfileDef)) throw; entity = e; } 
 // IfcCircleProfileDef
 IfcPositiveLengthMeasure IfcCircleProfileDef::Radius() { return *entity->getArgument(3); }
-bool IfcCircleProfileDef::is(Type::Enum v) { return v == Type::IfcCircleProfileDef || IfcParameterizedProfileDef::is(v); }
-Type::Enum IfcCircleProfileDef::type() { return Type::IfcCircleProfileDef; }
+bool IfcCircleProfileDef::is(Type::Enum v) const { return v == Type::IfcCircleProfileDef || IfcParameterizedProfileDef::is(v); }
+Type::Enum IfcCircleProfileDef::type() const { return Type::IfcCircleProfileDef; }
 Type::Enum IfcCircleProfileDef::Class() { return Type::IfcCircleProfileDef; }
 IfcCircleProfileDef::IfcCircleProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCircleProfileDef)) throw; entity = e; } 
 // IfcClassification
 IfcLabel IfcClassification::Source() { return *entity->getArgument(0); }
 IfcLabel IfcClassification::Edition() { return *entity->getArgument(1); }
 bool IfcClassification::hasEditionDate() { return !entity->getArgument(2)->isNull(); }
-SHARED_PTR<IfcCalendarDate> IfcClassification::EditionDate() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(2)); }
+IfcCalendarDate* IfcClassification::EditionDate() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(2)); }
 IfcLabel IfcClassification::Name() { return *entity->getArgument(3); }
 IfcClassificationItem::list IfcClassification::Contains() { RETURN_INVERSE(IfcClassificationItem) }
-bool IfcClassification::is(Type::Enum v) { return v == Type::IfcClassification; }
-Type::Enum IfcClassification::type() { return Type::IfcClassification; }
+bool IfcClassification::is(Type::Enum v) const { return v == Type::IfcClassification; }
+Type::Enum IfcClassification::type() const { return Type::IfcClassification; }
 Type::Enum IfcClassification::Class() { return Type::IfcClassification; }
 IfcClassification::IfcClassification(IfcAbstractEntityPtr e) { if (!is(Type::IfcClassification)) throw; entity = e; } 
 // IfcClassificationItem
-SHARED_PTR<IfcClassificationNotationFacet> IfcClassificationItem::Notation() { return reinterpret_pointer_cast<IfcBaseClass,IfcClassificationNotationFacet>(*entity->getArgument(0)); }
+IfcClassificationNotationFacet* IfcClassificationItem::Notation() { return reinterpret_pointer_cast<IfcBaseClass,IfcClassificationNotationFacet>(*entity->getArgument(0)); }
 bool IfcClassificationItem::hasItemOf() { return !entity->getArgument(1)->isNull(); }
-SHARED_PTR<IfcClassification> IfcClassificationItem::ItemOf() { return reinterpret_pointer_cast<IfcBaseClass,IfcClassification>(*entity->getArgument(1)); }
+IfcClassification* IfcClassificationItem::ItemOf() { return reinterpret_pointer_cast<IfcBaseClass,IfcClassification>(*entity->getArgument(1)); }
 IfcLabel IfcClassificationItem::Title() { return *entity->getArgument(2); }
 IfcClassificationItemRelationship::list IfcClassificationItem::IsClassifiedItemIn() { RETURN_INVERSE(IfcClassificationItemRelationship) }
 IfcClassificationItemRelationship::list IfcClassificationItem::IsClassifyingItemIn() { RETURN_INVERSE(IfcClassificationItemRelationship) }
-bool IfcClassificationItem::is(Type::Enum v) { return v == Type::IfcClassificationItem; }
-Type::Enum IfcClassificationItem::type() { return Type::IfcClassificationItem; }
+bool IfcClassificationItem::is(Type::Enum v) const { return v == Type::IfcClassificationItem; }
+Type::Enum IfcClassificationItem::type() const { return Type::IfcClassificationItem; }
 Type::Enum IfcClassificationItem::Class() { return Type::IfcClassificationItem; }
 IfcClassificationItem::IfcClassificationItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcClassificationItem)) throw; entity = e; } 
 // IfcClassificationItemRelationship
-SHARED_PTR<IfcClassificationItem> IfcClassificationItemRelationship::RelatingItem() { return reinterpret_pointer_cast<IfcBaseClass,IfcClassificationItem>(*entity->getArgument(0)); }
+IfcClassificationItem* IfcClassificationItemRelationship::RelatingItem() { return reinterpret_pointer_cast<IfcBaseClass,IfcClassificationItem>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItem> > IfcClassificationItemRelationship::RelatedItems() { RETURN_AS_LIST(IfcClassificationItem,1) }
-bool IfcClassificationItemRelationship::is(Type::Enum v) { return v == Type::IfcClassificationItemRelationship; }
-Type::Enum IfcClassificationItemRelationship::type() { return Type::IfcClassificationItemRelationship; }
+bool IfcClassificationItemRelationship::is(Type::Enum v) const { return v == Type::IfcClassificationItemRelationship; }
+Type::Enum IfcClassificationItemRelationship::type() const { return Type::IfcClassificationItemRelationship; }
 Type::Enum IfcClassificationItemRelationship::Class() { return Type::IfcClassificationItemRelationship; }
 IfcClassificationItemRelationship::IfcClassificationItemRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcClassificationItemRelationship)) throw; entity = e; } 
 // IfcClassificationNotation
 SHARED_PTR< IfcTemplatedEntityList<IfcClassificationNotationFacet> > IfcClassificationNotation::NotationFacets() { RETURN_AS_LIST(IfcClassificationNotationFacet,0) }
-bool IfcClassificationNotation::is(Type::Enum v) { return v == Type::IfcClassificationNotation; }
-Type::Enum IfcClassificationNotation::type() { return Type::IfcClassificationNotation; }
+bool IfcClassificationNotation::is(Type::Enum v) const { return v == Type::IfcClassificationNotation; }
+Type::Enum IfcClassificationNotation::type() const { return Type::IfcClassificationNotation; }
 Type::Enum IfcClassificationNotation::Class() { return Type::IfcClassificationNotation; }
 IfcClassificationNotation::IfcClassificationNotation(IfcAbstractEntityPtr e) { if (!is(Type::IfcClassificationNotation)) throw; entity = e; } 
 // IfcClassificationNotationFacet
 IfcLabel IfcClassificationNotationFacet::NotationValue() { return *entity->getArgument(0); }
-bool IfcClassificationNotationFacet::is(Type::Enum v) { return v == Type::IfcClassificationNotationFacet; }
-Type::Enum IfcClassificationNotationFacet::type() { return Type::IfcClassificationNotationFacet; }
+bool IfcClassificationNotationFacet::is(Type::Enum v) const { return v == Type::IfcClassificationNotationFacet; }
+Type::Enum IfcClassificationNotationFacet::type() const { return Type::IfcClassificationNotationFacet; }
 Type::Enum IfcClassificationNotationFacet::Class() { return Type::IfcClassificationNotationFacet; }
 IfcClassificationNotationFacet::IfcClassificationNotationFacet(IfcAbstractEntityPtr e) { if (!is(Type::IfcClassificationNotationFacet)) throw; entity = e; } 
 // IfcClassificationReference
 bool IfcClassificationReference::hasReferencedSource() { return !entity->getArgument(3)->isNull(); }
-SHARED_PTR<IfcClassification> IfcClassificationReference::ReferencedSource() { return reinterpret_pointer_cast<IfcBaseClass,IfcClassification>(*entity->getArgument(3)); }
-bool IfcClassificationReference::is(Type::Enum v) { return v == Type::IfcClassificationReference || IfcExternalReference::is(v); }
-Type::Enum IfcClassificationReference::type() { return Type::IfcClassificationReference; }
+IfcClassification* IfcClassificationReference::ReferencedSource() { return reinterpret_pointer_cast<IfcBaseClass,IfcClassification>(*entity->getArgument(3)); }
+bool IfcClassificationReference::is(Type::Enum v) const { return v == Type::IfcClassificationReference || IfcExternalReference::is(v); }
+Type::Enum IfcClassificationReference::type() const { return Type::IfcClassificationReference; }
 Type::Enum IfcClassificationReference::Class() { return Type::IfcClassificationReference; }
 IfcClassificationReference::IfcClassificationReference(IfcAbstractEntityPtr e) { if (!is(Type::IfcClassificationReference)) throw; entity = e; } 
 // IfcClosedShell
-bool IfcClosedShell::is(Type::Enum v) { return v == Type::IfcClosedShell || IfcConnectedFaceSet::is(v); }
-Type::Enum IfcClosedShell::type() { return Type::IfcClosedShell; }
+bool IfcClosedShell::is(Type::Enum v) const { return v == Type::IfcClosedShell || IfcConnectedFaceSet::is(v); }
+Type::Enum IfcClosedShell::type() const { return Type::IfcClosedShell; }
 Type::Enum IfcClosedShell::Class() { return Type::IfcClosedShell; }
 IfcClosedShell::IfcClosedShell(IfcAbstractEntityPtr e) { if (!is(Type::IfcClosedShell)) throw; entity = e; } 
 // IfcCoilType
 IfcCoilTypeEnum::IfcCoilTypeEnum IfcCoilType::PredefinedType() { return IfcCoilTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcCoilType::is(Type::Enum v) { return v == Type::IfcCoilType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcCoilType::type() { return Type::IfcCoilType; }
+bool IfcCoilType::is(Type::Enum v) const { return v == Type::IfcCoilType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcCoilType::type() const { return Type::IfcCoilType; }
 Type::Enum IfcCoilType::Class() { return Type::IfcCoilType; }
 IfcCoilType::IfcCoilType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCoilType)) throw; entity = e; } 
 // IfcColourRgb
 IfcNormalisedRatioMeasure IfcColourRgb::Red() { return *entity->getArgument(1); }
 IfcNormalisedRatioMeasure IfcColourRgb::Green() { return *entity->getArgument(2); }
 IfcNormalisedRatioMeasure IfcColourRgb::Blue() { return *entity->getArgument(3); }
-bool IfcColourRgb::is(Type::Enum v) { return v == Type::IfcColourRgb || IfcColourSpecification::is(v); }
-Type::Enum IfcColourRgb::type() { return Type::IfcColourRgb; }
+bool IfcColourRgb::is(Type::Enum v) const { return v == Type::IfcColourRgb || IfcColourSpecification::is(v); }
+Type::Enum IfcColourRgb::type() const { return Type::IfcColourRgb; }
 Type::Enum IfcColourRgb::Class() { return Type::IfcColourRgb; }
 IfcColourRgb::IfcColourRgb(IfcAbstractEntityPtr e) { if (!is(Type::IfcColourRgb)) throw; entity = e; } 
 // IfcColourSpecification
 bool IfcColourSpecification::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcColourSpecification::Name() { return *entity->getArgument(0); }
-bool IfcColourSpecification::is(Type::Enum v) { return v == Type::IfcColourSpecification; }
-Type::Enum IfcColourSpecification::type() { return Type::IfcColourSpecification; }
+bool IfcColourSpecification::is(Type::Enum v) const { return v == Type::IfcColourSpecification; }
+Type::Enum IfcColourSpecification::type() const { return Type::IfcColourSpecification; }
 Type::Enum IfcColourSpecification::Class() { return Type::IfcColourSpecification; }
 IfcColourSpecification::IfcColourSpecification(IfcAbstractEntityPtr e) { if (!is(Type::IfcColourSpecification)) throw; entity = e; } 
 // IfcColumn
-bool IfcColumn::is(Type::Enum v) { return v == Type::IfcColumn || IfcBuildingElement::is(v); }
-Type::Enum IfcColumn::type() { return Type::IfcColumn; }
+bool IfcColumn::is(Type::Enum v) const { return v == Type::IfcColumn || IfcBuildingElement::is(v); }
+Type::Enum IfcColumn::type() const { return Type::IfcColumn; }
 Type::Enum IfcColumn::Class() { return Type::IfcColumn; }
 IfcColumn::IfcColumn(IfcAbstractEntityPtr e) { if (!is(Type::IfcColumn)) throw; entity = e; } 
 // IfcColumnType
 IfcColumnTypeEnum::IfcColumnTypeEnum IfcColumnType::PredefinedType() { return IfcColumnTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcColumnType::is(Type::Enum v) { return v == Type::IfcColumnType || IfcBuildingElementType::is(v); }
-Type::Enum IfcColumnType::type() { return Type::IfcColumnType; }
+bool IfcColumnType::is(Type::Enum v) const { return v == Type::IfcColumnType || IfcBuildingElementType::is(v); }
+Type::Enum IfcColumnType::type() const { return Type::IfcColumnType; }
 Type::Enum IfcColumnType::Class() { return Type::IfcColumnType; }
 IfcColumnType::IfcColumnType(IfcAbstractEntityPtr e) { if (!is(Type::IfcColumnType)) throw; entity = e; } 
 // IfcComplexProperty
 IfcIdentifier IfcComplexProperty::UsageName() { return *entity->getArgument(2); }
 SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > IfcComplexProperty::HasProperties() { RETURN_AS_LIST(IfcProperty,3) }
-bool IfcComplexProperty::is(Type::Enum v) { return v == Type::IfcComplexProperty || IfcProperty::is(v); }
-Type::Enum IfcComplexProperty::type() { return Type::IfcComplexProperty; }
+bool IfcComplexProperty::is(Type::Enum v) const { return v == Type::IfcComplexProperty || IfcProperty::is(v); }
+Type::Enum IfcComplexProperty::type() const { return Type::IfcComplexProperty; }
 Type::Enum IfcComplexProperty::Class() { return Type::IfcComplexProperty; }
 IfcComplexProperty::IfcComplexProperty(IfcAbstractEntityPtr e) { if (!is(Type::IfcComplexProperty)) throw; entity = e; } 
 // IfcCompositeCurve
 SHARED_PTR< IfcTemplatedEntityList<IfcCompositeCurveSegment> > IfcCompositeCurve::Segments() { RETURN_AS_LIST(IfcCompositeCurveSegment,0) }
 bool IfcCompositeCurve::SelfIntersect() { return *entity->getArgument(1); }
-bool IfcCompositeCurve::is(Type::Enum v) { return v == Type::IfcCompositeCurve || IfcBoundedCurve::is(v); }
-Type::Enum IfcCompositeCurve::type() { return Type::IfcCompositeCurve; }
+bool IfcCompositeCurve::is(Type::Enum v) const { return v == Type::IfcCompositeCurve || IfcBoundedCurve::is(v); }
+Type::Enum IfcCompositeCurve::type() const { return Type::IfcCompositeCurve; }
 Type::Enum IfcCompositeCurve::Class() { return Type::IfcCompositeCurve; }
 IfcCompositeCurve::IfcCompositeCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcCompositeCurve)) throw; entity = e; } 
 // IfcCompositeCurveSegment
 IfcTransitionCode::IfcTransitionCode IfcCompositeCurveSegment::Transition() { return IfcTransitionCode::FromString(*entity->getArgument(0)); }
 bool IfcCompositeCurveSegment::SameSense() { return *entity->getArgument(1); }
-SHARED_PTR<IfcCurve> IfcCompositeCurveSegment::ParentCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(2)); }
+IfcCurve* IfcCompositeCurveSegment::ParentCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(2)); }
 IfcCompositeCurve::list IfcCompositeCurveSegment::UsingCurves() { RETURN_INVERSE(IfcCompositeCurve) }
-bool IfcCompositeCurveSegment::is(Type::Enum v) { return v == Type::IfcCompositeCurveSegment || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcCompositeCurveSegment::type() { return Type::IfcCompositeCurveSegment; }
+bool IfcCompositeCurveSegment::is(Type::Enum v) const { return v == Type::IfcCompositeCurveSegment || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcCompositeCurveSegment::type() const { return Type::IfcCompositeCurveSegment; }
 Type::Enum IfcCompositeCurveSegment::Class() { return Type::IfcCompositeCurveSegment; }
 IfcCompositeCurveSegment::IfcCompositeCurveSegment(IfcAbstractEntityPtr e) { if (!is(Type::IfcCompositeCurveSegment)) throw; entity = e; } 
 // IfcCompositeProfileDef
 SHARED_PTR< IfcTemplatedEntityList<IfcProfileDef> > IfcCompositeProfileDef::Profiles() { RETURN_AS_LIST(IfcProfileDef,2) }
 bool IfcCompositeProfileDef::hasLabel() { return !entity->getArgument(3)->isNull(); }
 IfcLabel IfcCompositeProfileDef::Label() { return *entity->getArgument(3); }
-bool IfcCompositeProfileDef::is(Type::Enum v) { return v == Type::IfcCompositeProfileDef || IfcProfileDef::is(v); }
-Type::Enum IfcCompositeProfileDef::type() { return Type::IfcCompositeProfileDef; }
+bool IfcCompositeProfileDef::is(Type::Enum v) const { return v == Type::IfcCompositeProfileDef || IfcProfileDef::is(v); }
+Type::Enum IfcCompositeProfileDef::type() const { return Type::IfcCompositeProfileDef; }
 Type::Enum IfcCompositeProfileDef::Class() { return Type::IfcCompositeProfileDef; }
 IfcCompositeProfileDef::IfcCompositeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCompositeProfileDef)) throw; entity = e; } 
 // IfcCompressorType
 IfcCompressorTypeEnum::IfcCompressorTypeEnum IfcCompressorType::PredefinedType() { return IfcCompressorTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcCompressorType::is(Type::Enum v) { return v == Type::IfcCompressorType || IfcFlowMovingDeviceType::is(v); }
-Type::Enum IfcCompressorType::type() { return Type::IfcCompressorType; }
+bool IfcCompressorType::is(Type::Enum v) const { return v == Type::IfcCompressorType || IfcFlowMovingDeviceType::is(v); }
+Type::Enum IfcCompressorType::type() const { return Type::IfcCompressorType; }
 Type::Enum IfcCompressorType::Class() { return Type::IfcCompressorType; }
 IfcCompressorType::IfcCompressorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCompressorType)) throw; entity = e; } 
 // IfcCondenserType
 IfcCondenserTypeEnum::IfcCondenserTypeEnum IfcCondenserType::PredefinedType() { return IfcCondenserTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcCondenserType::is(Type::Enum v) { return v == Type::IfcCondenserType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcCondenserType::type() { return Type::IfcCondenserType; }
+bool IfcCondenserType::is(Type::Enum v) const { return v == Type::IfcCondenserType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcCondenserType::type() const { return Type::IfcCondenserType; }
 Type::Enum IfcCondenserType::Class() { return Type::IfcCondenserType; }
 IfcCondenserType::IfcCondenserType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCondenserType)) throw; entity = e; } 
 // IfcCondition
-bool IfcCondition::is(Type::Enum v) { return v == Type::IfcCondition || IfcGroup::is(v); }
-Type::Enum IfcCondition::type() { return Type::IfcCondition; }
+bool IfcCondition::is(Type::Enum v) const { return v == Type::IfcCondition || IfcGroup::is(v); }
+Type::Enum IfcCondition::type() const { return Type::IfcCondition; }
 Type::Enum IfcCondition::Class() { return Type::IfcCondition; }
 IfcCondition::IfcCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcCondition)) throw; entity = e; } 
 // IfcConditionCriterion
 IfcConditionCriterionSelect IfcConditionCriterion::Criterion() { return *entity->getArgument(5); }
 IfcDateTimeSelect IfcConditionCriterion::CriterionDateTime() { return *entity->getArgument(6); }
-bool IfcConditionCriterion::is(Type::Enum v) { return v == Type::IfcConditionCriterion || IfcControl::is(v); }
-Type::Enum IfcConditionCriterion::type() { return Type::IfcConditionCriterion; }
+bool IfcConditionCriterion::is(Type::Enum v) const { return v == Type::IfcConditionCriterion || IfcControl::is(v); }
+Type::Enum IfcConditionCriterion::type() const { return Type::IfcConditionCriterion; }
 Type::Enum IfcConditionCriterion::Class() { return Type::IfcConditionCriterion; }
 IfcConditionCriterion::IfcConditionCriterion(IfcAbstractEntityPtr e) { if (!is(Type::IfcConditionCriterion)) throw; entity = e; } 
 // IfcConic
 IfcAxis2Placement IfcConic::Position() { return *entity->getArgument(0); }
-bool IfcConic::is(Type::Enum v) { return v == Type::IfcConic || IfcCurve::is(v); }
-Type::Enum IfcConic::type() { return Type::IfcConic; }
+bool IfcConic::is(Type::Enum v) const { return v == Type::IfcConic || IfcCurve::is(v); }
+Type::Enum IfcConic::type() const { return Type::IfcConic; }
 Type::Enum IfcConic::Class() { return Type::IfcConic; }
 IfcConic::IfcConic(IfcAbstractEntityPtr e) { if (!is(Type::IfcConic)) throw; entity = e; } 
 // IfcConnectedFaceSet
 SHARED_PTR< IfcTemplatedEntityList<IfcFace> > IfcConnectedFaceSet::CfsFaces() { RETURN_AS_LIST(IfcFace,0) }
-bool IfcConnectedFaceSet::is(Type::Enum v) { return v == Type::IfcConnectedFaceSet || IfcTopologicalRepresentationItem::is(v); }
-Type::Enum IfcConnectedFaceSet::type() { return Type::IfcConnectedFaceSet; }
+bool IfcConnectedFaceSet::is(Type::Enum v) const { return v == Type::IfcConnectedFaceSet || IfcTopologicalRepresentationItem::is(v); }
+Type::Enum IfcConnectedFaceSet::type() const { return Type::IfcConnectedFaceSet; }
 Type::Enum IfcConnectedFaceSet::Class() { return Type::IfcConnectedFaceSet; }
 IfcConnectedFaceSet::IfcConnectedFaceSet(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectedFaceSet)) throw; entity = e; } 
 // IfcConnectionCurveGeometry
 IfcCurveOrEdgeCurve IfcConnectionCurveGeometry::CurveOnRelatingElement() { return *entity->getArgument(0); }
 bool IfcConnectionCurveGeometry::hasCurveOnRelatedElement() { return !entity->getArgument(1)->isNull(); }
 IfcCurveOrEdgeCurve IfcConnectionCurveGeometry::CurveOnRelatedElement() { return *entity->getArgument(1); }
-bool IfcConnectionCurveGeometry::is(Type::Enum v) { return v == Type::IfcConnectionCurveGeometry || IfcConnectionGeometry::is(v); }
-Type::Enum IfcConnectionCurveGeometry::type() { return Type::IfcConnectionCurveGeometry; }
+bool IfcConnectionCurveGeometry::is(Type::Enum v) const { return v == Type::IfcConnectionCurveGeometry || IfcConnectionGeometry::is(v); }
+Type::Enum IfcConnectionCurveGeometry::type() const { return Type::IfcConnectionCurveGeometry; }
 Type::Enum IfcConnectionCurveGeometry::Class() { return Type::IfcConnectionCurveGeometry; }
 IfcConnectionCurveGeometry::IfcConnectionCurveGeometry(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectionCurveGeometry)) throw; entity = e; } 
 // IfcConnectionGeometry
-bool IfcConnectionGeometry::is(Type::Enum v) { return v == Type::IfcConnectionGeometry; }
-Type::Enum IfcConnectionGeometry::type() { return Type::IfcConnectionGeometry; }
+bool IfcConnectionGeometry::is(Type::Enum v) const { return v == Type::IfcConnectionGeometry; }
+Type::Enum IfcConnectionGeometry::type() const { return Type::IfcConnectionGeometry; }
 Type::Enum IfcConnectionGeometry::Class() { return Type::IfcConnectionGeometry; }
 IfcConnectionGeometry::IfcConnectionGeometry(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectionGeometry)) throw; entity = e; } 
 // IfcConnectionPointEccentricity
@@ -5511,33 +5518,33 @@ bool IfcConnectionPointEccentricity::hasEccentricityInY() { return !entity->getA
 IfcLengthMeasure IfcConnectionPointEccentricity::EccentricityInY() { return *entity->getArgument(3); }
 bool IfcConnectionPointEccentricity::hasEccentricityInZ() { return !entity->getArgument(4)->isNull(); }
 IfcLengthMeasure IfcConnectionPointEccentricity::EccentricityInZ() { return *entity->getArgument(4); }
-bool IfcConnectionPointEccentricity::is(Type::Enum v) { return v == Type::IfcConnectionPointEccentricity || IfcConnectionPointGeometry::is(v); }
-Type::Enum IfcConnectionPointEccentricity::type() { return Type::IfcConnectionPointEccentricity; }
+bool IfcConnectionPointEccentricity::is(Type::Enum v) const { return v == Type::IfcConnectionPointEccentricity || IfcConnectionPointGeometry::is(v); }
+Type::Enum IfcConnectionPointEccentricity::type() const { return Type::IfcConnectionPointEccentricity; }
 Type::Enum IfcConnectionPointEccentricity::Class() { return Type::IfcConnectionPointEccentricity; }
 IfcConnectionPointEccentricity::IfcConnectionPointEccentricity(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectionPointEccentricity)) throw; entity = e; } 
 // IfcConnectionPointGeometry
 IfcPointOrVertexPoint IfcConnectionPointGeometry::PointOnRelatingElement() { return *entity->getArgument(0); }
 bool IfcConnectionPointGeometry::hasPointOnRelatedElement() { return !entity->getArgument(1)->isNull(); }
 IfcPointOrVertexPoint IfcConnectionPointGeometry::PointOnRelatedElement() { return *entity->getArgument(1); }
-bool IfcConnectionPointGeometry::is(Type::Enum v) { return v == Type::IfcConnectionPointGeometry || IfcConnectionGeometry::is(v); }
-Type::Enum IfcConnectionPointGeometry::type() { return Type::IfcConnectionPointGeometry; }
+bool IfcConnectionPointGeometry::is(Type::Enum v) const { return v == Type::IfcConnectionPointGeometry || IfcConnectionGeometry::is(v); }
+Type::Enum IfcConnectionPointGeometry::type() const { return Type::IfcConnectionPointGeometry; }
 Type::Enum IfcConnectionPointGeometry::Class() { return Type::IfcConnectionPointGeometry; }
 IfcConnectionPointGeometry::IfcConnectionPointGeometry(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectionPointGeometry)) throw; entity = e; } 
 // IfcConnectionPortGeometry
 IfcAxis2Placement IfcConnectionPortGeometry::LocationAtRelatingElement() { return *entity->getArgument(0); }
 bool IfcConnectionPortGeometry::hasLocationAtRelatedElement() { return !entity->getArgument(1)->isNull(); }
 IfcAxis2Placement IfcConnectionPortGeometry::LocationAtRelatedElement() { return *entity->getArgument(1); }
-SHARED_PTR<IfcProfileDef> IfcConnectionPortGeometry::ProfileOfPort() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(2)); }
-bool IfcConnectionPortGeometry::is(Type::Enum v) { return v == Type::IfcConnectionPortGeometry || IfcConnectionGeometry::is(v); }
-Type::Enum IfcConnectionPortGeometry::type() { return Type::IfcConnectionPortGeometry; }
+IfcProfileDef* IfcConnectionPortGeometry::ProfileOfPort() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(2)); }
+bool IfcConnectionPortGeometry::is(Type::Enum v) const { return v == Type::IfcConnectionPortGeometry || IfcConnectionGeometry::is(v); }
+Type::Enum IfcConnectionPortGeometry::type() const { return Type::IfcConnectionPortGeometry; }
 Type::Enum IfcConnectionPortGeometry::Class() { return Type::IfcConnectionPortGeometry; }
 IfcConnectionPortGeometry::IfcConnectionPortGeometry(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectionPortGeometry)) throw; entity = e; } 
 // IfcConnectionSurfaceGeometry
 IfcSurfaceOrFaceSurface IfcConnectionSurfaceGeometry::SurfaceOnRelatingElement() { return *entity->getArgument(0); }
 bool IfcConnectionSurfaceGeometry::hasSurfaceOnRelatedElement() { return !entity->getArgument(1)->isNull(); }
 IfcSurfaceOrFaceSurface IfcConnectionSurfaceGeometry::SurfaceOnRelatedElement() { return *entity->getArgument(1); }
-bool IfcConnectionSurfaceGeometry::is(Type::Enum v) { return v == Type::IfcConnectionSurfaceGeometry || IfcConnectionGeometry::is(v); }
-Type::Enum IfcConnectionSurfaceGeometry::type() { return Type::IfcConnectionSurfaceGeometry; }
+bool IfcConnectionSurfaceGeometry::is(Type::Enum v) const { return v == Type::IfcConnectionSurfaceGeometry || IfcConnectionGeometry::is(v); }
+Type::Enum IfcConnectionSurfaceGeometry::type() const { return Type::IfcConnectionSurfaceGeometry; }
 Type::Enum IfcConnectionSurfaceGeometry::Class() { return Type::IfcConnectionSurfaceGeometry; }
 IfcConnectionSurfaceGeometry::IfcConnectionSurfaceGeometry(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectionSurfaceGeometry)) throw; entity = e; } 
 // IfcConstraint
@@ -5559,8 +5566,8 @@ IfcConstraintRelationship::list IfcConstraint::IsRelatedWith() { RETURN_INVERSE(
 IfcPropertyConstraintRelationship::list IfcConstraint::PropertiesForConstraint() { RETURN_INVERSE(IfcPropertyConstraintRelationship) }
 IfcConstraintAggregationRelationship::list IfcConstraint::Aggregates() { RETURN_INVERSE(IfcConstraintAggregationRelationship) }
 IfcConstraintAggregationRelationship::list IfcConstraint::IsAggregatedIn() { RETURN_INVERSE(IfcConstraintAggregationRelationship) }
-bool IfcConstraint::is(Type::Enum v) { return v == Type::IfcConstraint; }
-Type::Enum IfcConstraint::type() { return Type::IfcConstraint; }
+bool IfcConstraint::is(Type::Enum v) const { return v == Type::IfcConstraint; }
+Type::Enum IfcConstraint::type() const { return Type::IfcConstraint; }
 Type::Enum IfcConstraint::Class() { return Type::IfcConstraint; }
 IfcConstraint::IfcConstraint(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstraint)) throw; entity = e; } 
 // IfcConstraintAggregationRelationship
@@ -5568,18 +5575,18 @@ bool IfcConstraintAggregationRelationship::hasName() { return !entity->getArgume
 IfcLabel IfcConstraintAggregationRelationship::Name() { return *entity->getArgument(0); }
 bool IfcConstraintAggregationRelationship::hasDescription() { return !entity->getArgument(1)->isNull(); }
 IfcText IfcConstraintAggregationRelationship::Description() { return *entity->getArgument(1); }
-SHARED_PTR<IfcConstraint> IfcConstraintAggregationRelationship::RelatingConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(2)); }
+IfcConstraint* IfcConstraintAggregationRelationship::RelatingConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(2)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcConstraint> > IfcConstraintAggregationRelationship::RelatedConstraints() { RETURN_AS_LIST(IfcConstraint,3) }
 IfcLogicalOperatorEnum::IfcLogicalOperatorEnum IfcConstraintAggregationRelationship::LogicalAggregator() { return IfcLogicalOperatorEnum::FromString(*entity->getArgument(4)); }
-bool IfcConstraintAggregationRelationship::is(Type::Enum v) { return v == Type::IfcConstraintAggregationRelationship; }
-Type::Enum IfcConstraintAggregationRelationship::type() { return Type::IfcConstraintAggregationRelationship; }
+bool IfcConstraintAggregationRelationship::is(Type::Enum v) const { return v == Type::IfcConstraintAggregationRelationship; }
+Type::Enum IfcConstraintAggregationRelationship::type() const { return Type::IfcConstraintAggregationRelationship; }
 Type::Enum IfcConstraintAggregationRelationship::Class() { return Type::IfcConstraintAggregationRelationship; }
 IfcConstraintAggregationRelationship::IfcConstraintAggregationRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstraintAggregationRelationship)) throw; entity = e; } 
 // IfcConstraintClassificationRelationship
-SHARED_PTR<IfcConstraint> IfcConstraintClassificationRelationship::ClassifiedConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(0)); }
+IfcConstraint* IfcConstraintClassificationRelationship::ClassifiedConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcConstraintClassificationRelationship::RelatedClassifications() { RETURN_AS_LIST(IfcAbstractSelect,1) }
-bool IfcConstraintClassificationRelationship::is(Type::Enum v) { return v == Type::IfcConstraintClassificationRelationship; }
-Type::Enum IfcConstraintClassificationRelationship::type() { return Type::IfcConstraintClassificationRelationship; }
+bool IfcConstraintClassificationRelationship::is(Type::Enum v) const { return v == Type::IfcConstraintClassificationRelationship; }
+Type::Enum IfcConstraintClassificationRelationship::type() const { return Type::IfcConstraintClassificationRelationship; }
 Type::Enum IfcConstraintClassificationRelationship::Class() { return Type::IfcConstraintClassificationRelationship; }
 IfcConstraintClassificationRelationship::IfcConstraintClassificationRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstraintClassificationRelationship)) throw; entity = e; } 
 // IfcConstraintRelationship
@@ -5587,15 +5594,15 @@ bool IfcConstraintRelationship::hasName() { return !entity->getArgument(0)->isNu
 IfcLabel IfcConstraintRelationship::Name() { return *entity->getArgument(0); }
 bool IfcConstraintRelationship::hasDescription() { return !entity->getArgument(1)->isNull(); }
 IfcText IfcConstraintRelationship::Description() { return *entity->getArgument(1); }
-SHARED_PTR<IfcConstraint> IfcConstraintRelationship::RelatingConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(2)); }
+IfcConstraint* IfcConstraintRelationship::RelatingConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(2)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcConstraint> > IfcConstraintRelationship::RelatedConstraints() { RETURN_AS_LIST(IfcConstraint,3) }
-bool IfcConstraintRelationship::is(Type::Enum v) { return v == Type::IfcConstraintRelationship; }
-Type::Enum IfcConstraintRelationship::type() { return Type::IfcConstraintRelationship; }
+bool IfcConstraintRelationship::is(Type::Enum v) const { return v == Type::IfcConstraintRelationship; }
+Type::Enum IfcConstraintRelationship::type() const { return Type::IfcConstraintRelationship; }
 Type::Enum IfcConstraintRelationship::Class() { return Type::IfcConstraintRelationship; }
 IfcConstraintRelationship::IfcConstraintRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstraintRelationship)) throw; entity = e; } 
 // IfcConstructionEquipmentResource
-bool IfcConstructionEquipmentResource::is(Type::Enum v) { return v == Type::IfcConstructionEquipmentResource || IfcConstructionResource::is(v); }
-Type::Enum IfcConstructionEquipmentResource::type() { return Type::IfcConstructionEquipmentResource; }
+bool IfcConstructionEquipmentResource::is(Type::Enum v) const { return v == Type::IfcConstructionEquipmentResource || IfcConstructionResource::is(v); }
+Type::Enum IfcConstructionEquipmentResource::type() const { return Type::IfcConstructionEquipmentResource; }
 Type::Enum IfcConstructionEquipmentResource::Class() { return Type::IfcConstructionEquipmentResource; }
 IfcConstructionEquipmentResource::IfcConstructionEquipmentResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstructionEquipmentResource)) throw; entity = e; } 
 // IfcConstructionMaterialResource
@@ -5603,13 +5610,13 @@ bool IfcConstructionMaterialResource::hasSuppliers() { return !entity->getArgume
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcConstructionMaterialResource::Suppliers() { RETURN_AS_LIST(IfcAbstractSelect,9) }
 bool IfcConstructionMaterialResource::hasUsageRatio() { return !entity->getArgument(10)->isNull(); }
 IfcRatioMeasure IfcConstructionMaterialResource::UsageRatio() { return *entity->getArgument(10); }
-bool IfcConstructionMaterialResource::is(Type::Enum v) { return v == Type::IfcConstructionMaterialResource || IfcConstructionResource::is(v); }
-Type::Enum IfcConstructionMaterialResource::type() { return Type::IfcConstructionMaterialResource; }
+bool IfcConstructionMaterialResource::is(Type::Enum v) const { return v == Type::IfcConstructionMaterialResource || IfcConstructionResource::is(v); }
+Type::Enum IfcConstructionMaterialResource::type() const { return Type::IfcConstructionMaterialResource; }
 Type::Enum IfcConstructionMaterialResource::Class() { return Type::IfcConstructionMaterialResource; }
 IfcConstructionMaterialResource::IfcConstructionMaterialResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstructionMaterialResource)) throw; entity = e; } 
 // IfcConstructionProductResource
-bool IfcConstructionProductResource::is(Type::Enum v) { return v == Type::IfcConstructionProductResource || IfcConstructionResource::is(v); }
-Type::Enum IfcConstructionProductResource::type() { return Type::IfcConstructionProductResource; }
+bool IfcConstructionProductResource::is(Type::Enum v) const { return v == Type::IfcConstructionProductResource || IfcConstructionResource::is(v); }
+Type::Enum IfcConstructionProductResource::type() const { return Type::IfcConstructionProductResource; }
 Type::Enum IfcConstructionProductResource::Class() { return Type::IfcConstructionProductResource; }
 IfcConstructionProductResource::IfcConstructionProductResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstructionProductResource)) throw; entity = e; } 
 // IfcConstructionResource
@@ -5620,46 +5627,46 @@ IfcLabel IfcConstructionResource::ResourceGroup() { return *entity->getArgument(
 bool IfcConstructionResource::hasResourceConsumption() { return !entity->getArgument(7)->isNull(); }
 IfcResourceConsumptionEnum::IfcResourceConsumptionEnum IfcConstructionResource::ResourceConsumption() { return IfcResourceConsumptionEnum::FromString(*entity->getArgument(7)); }
 bool IfcConstructionResource::hasBaseQuantity() { return !entity->getArgument(8)->isNull(); }
-SHARED_PTR<IfcMeasureWithUnit> IfcConstructionResource::BaseQuantity() { return reinterpret_pointer_cast<IfcBaseClass,IfcMeasureWithUnit>(*entity->getArgument(8)); }
-bool IfcConstructionResource::is(Type::Enum v) { return v == Type::IfcConstructionResource || IfcResource::is(v); }
-Type::Enum IfcConstructionResource::type() { return Type::IfcConstructionResource; }
+IfcMeasureWithUnit* IfcConstructionResource::BaseQuantity() { return reinterpret_pointer_cast<IfcBaseClass,IfcMeasureWithUnit>(*entity->getArgument(8)); }
+bool IfcConstructionResource::is(Type::Enum v) const { return v == Type::IfcConstructionResource || IfcResource::is(v); }
+Type::Enum IfcConstructionResource::type() const { return Type::IfcConstructionResource; }
 Type::Enum IfcConstructionResource::Class() { return Type::IfcConstructionResource; }
 IfcConstructionResource::IfcConstructionResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstructionResource)) throw; entity = e; } 
 // IfcContextDependentUnit
 IfcLabel IfcContextDependentUnit::Name() { return *entity->getArgument(2); }
-bool IfcContextDependentUnit::is(Type::Enum v) { return v == Type::IfcContextDependentUnit || IfcNamedUnit::is(v); }
-Type::Enum IfcContextDependentUnit::type() { return Type::IfcContextDependentUnit; }
+bool IfcContextDependentUnit::is(Type::Enum v) const { return v == Type::IfcContextDependentUnit || IfcNamedUnit::is(v); }
+Type::Enum IfcContextDependentUnit::type() const { return Type::IfcContextDependentUnit; }
 Type::Enum IfcContextDependentUnit::Class() { return Type::IfcContextDependentUnit; }
 IfcContextDependentUnit::IfcContextDependentUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcContextDependentUnit)) throw; entity = e; } 
 // IfcControl
 IfcRelAssignsToControl::list IfcControl::Controls() { RETURN_INVERSE(IfcRelAssignsToControl) }
-bool IfcControl::is(Type::Enum v) { return v == Type::IfcControl || IfcObject::is(v); }
-Type::Enum IfcControl::type() { return Type::IfcControl; }
+bool IfcControl::is(Type::Enum v) const { return v == Type::IfcControl || IfcObject::is(v); }
+Type::Enum IfcControl::type() const { return Type::IfcControl; }
 Type::Enum IfcControl::Class() { return Type::IfcControl; }
 IfcControl::IfcControl(IfcAbstractEntityPtr e) { if (!is(Type::IfcControl)) throw; entity = e; } 
 // IfcControllerType
 IfcControllerTypeEnum::IfcControllerTypeEnum IfcControllerType::PredefinedType() { return IfcControllerTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcControllerType::is(Type::Enum v) { return v == Type::IfcControllerType || IfcDistributionControlElementType::is(v); }
-Type::Enum IfcControllerType::type() { return Type::IfcControllerType; }
+bool IfcControllerType::is(Type::Enum v) const { return v == Type::IfcControllerType || IfcDistributionControlElementType::is(v); }
+Type::Enum IfcControllerType::type() const { return Type::IfcControllerType; }
 Type::Enum IfcControllerType::Class() { return Type::IfcControllerType; }
 IfcControllerType::IfcControllerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcControllerType)) throw; entity = e; } 
 // IfcConversionBasedUnit
 IfcLabel IfcConversionBasedUnit::Name() { return *entity->getArgument(2); }
-SHARED_PTR<IfcMeasureWithUnit> IfcConversionBasedUnit::ConversionFactor() { return reinterpret_pointer_cast<IfcBaseClass,IfcMeasureWithUnit>(*entity->getArgument(3)); }
-bool IfcConversionBasedUnit::is(Type::Enum v) { return v == Type::IfcConversionBasedUnit || IfcNamedUnit::is(v); }
-Type::Enum IfcConversionBasedUnit::type() { return Type::IfcConversionBasedUnit; }
+IfcMeasureWithUnit* IfcConversionBasedUnit::ConversionFactor() { return reinterpret_pointer_cast<IfcBaseClass,IfcMeasureWithUnit>(*entity->getArgument(3)); }
+bool IfcConversionBasedUnit::is(Type::Enum v) const { return v == Type::IfcConversionBasedUnit || IfcNamedUnit::is(v); }
+Type::Enum IfcConversionBasedUnit::type() const { return Type::IfcConversionBasedUnit; }
 Type::Enum IfcConversionBasedUnit::Class() { return Type::IfcConversionBasedUnit; }
 IfcConversionBasedUnit::IfcConversionBasedUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcConversionBasedUnit)) throw; entity = e; } 
 // IfcCooledBeamType
 IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum IfcCooledBeamType::PredefinedType() { return IfcCooledBeamTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcCooledBeamType::is(Type::Enum v) { return v == Type::IfcCooledBeamType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcCooledBeamType::type() { return Type::IfcCooledBeamType; }
+bool IfcCooledBeamType::is(Type::Enum v) const { return v == Type::IfcCooledBeamType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcCooledBeamType::type() const { return Type::IfcCooledBeamType; }
 Type::Enum IfcCooledBeamType::Class() { return Type::IfcCooledBeamType; }
 IfcCooledBeamType::IfcCooledBeamType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCooledBeamType)) throw; entity = e; } 
 // IfcCoolingTowerType
 IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum IfcCoolingTowerType::PredefinedType() { return IfcCoolingTowerTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcCoolingTowerType::is(Type::Enum v) { return v == Type::IfcCoolingTowerType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcCoolingTowerType::type() { return Type::IfcCoolingTowerType; }
+bool IfcCoolingTowerType::is(Type::Enum v) const { return v == Type::IfcCoolingTowerType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcCoolingTowerType::type() const { return Type::IfcCoolingTowerType; }
 Type::Enum IfcCoolingTowerType::Class() { return Type::IfcCoolingTowerType; }
 IfcCoolingTowerType::IfcCoolingTowerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCoolingTowerType)) throw; entity = e; } 
 // IfcCoordinatedUniversalTimeOffset
@@ -5667,13 +5674,13 @@ IfcHourInDay IfcCoordinatedUniversalTimeOffset::HourOffset() { return *entity->g
 bool IfcCoordinatedUniversalTimeOffset::hasMinuteOffset() { return !entity->getArgument(1)->isNull(); }
 IfcMinuteInHour IfcCoordinatedUniversalTimeOffset::MinuteOffset() { return *entity->getArgument(1); }
 IfcAheadOrBehind::IfcAheadOrBehind IfcCoordinatedUniversalTimeOffset::Sense() { return IfcAheadOrBehind::FromString(*entity->getArgument(2)); }
-bool IfcCoordinatedUniversalTimeOffset::is(Type::Enum v) { return v == Type::IfcCoordinatedUniversalTimeOffset; }
-Type::Enum IfcCoordinatedUniversalTimeOffset::type() { return Type::IfcCoordinatedUniversalTimeOffset; }
+bool IfcCoordinatedUniversalTimeOffset::is(Type::Enum v) const { return v == Type::IfcCoordinatedUniversalTimeOffset; }
+Type::Enum IfcCoordinatedUniversalTimeOffset::type() const { return Type::IfcCoordinatedUniversalTimeOffset; }
 Type::Enum IfcCoordinatedUniversalTimeOffset::Class() { return Type::IfcCoordinatedUniversalTimeOffset; }
 IfcCoordinatedUniversalTimeOffset::IfcCoordinatedUniversalTimeOffset(IfcAbstractEntityPtr e) { if (!is(Type::IfcCoordinatedUniversalTimeOffset)) throw; entity = e; } 
 // IfcCostItem
-bool IfcCostItem::is(Type::Enum v) { return v == Type::IfcCostItem || IfcControl::is(v); }
-Type::Enum IfcCostItem::type() { return Type::IfcCostItem; }
+bool IfcCostItem::is(Type::Enum v) const { return v == Type::IfcCostItem || IfcControl::is(v); }
+Type::Enum IfcCostItem::type() const { return Type::IfcCostItem; }
 Type::Enum IfcCostItem::Class() { return Type::IfcCostItem; }
 IfcCostItem::IfcCostItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcCostItem)) throw; entity = e; } 
 // IfcCostSchedule
@@ -5691,16 +5698,16 @@ bool IfcCostSchedule::hasUpdateDate() { return !entity->getArgument(10)->isNull(
 IfcDateTimeSelect IfcCostSchedule::UpdateDate() { return *entity->getArgument(10); }
 IfcIdentifier IfcCostSchedule::ID() { return *entity->getArgument(11); }
 IfcCostScheduleTypeEnum::IfcCostScheduleTypeEnum IfcCostSchedule::PredefinedType() { return IfcCostScheduleTypeEnum::FromString(*entity->getArgument(12)); }
-bool IfcCostSchedule::is(Type::Enum v) { return v == Type::IfcCostSchedule || IfcControl::is(v); }
-Type::Enum IfcCostSchedule::type() { return Type::IfcCostSchedule; }
+bool IfcCostSchedule::is(Type::Enum v) const { return v == Type::IfcCostSchedule || IfcControl::is(v); }
+Type::Enum IfcCostSchedule::type() const { return Type::IfcCostSchedule; }
 Type::Enum IfcCostSchedule::Class() { return Type::IfcCostSchedule; }
 IfcCostSchedule::IfcCostSchedule(IfcAbstractEntityPtr e) { if (!is(Type::IfcCostSchedule)) throw; entity = e; } 
 // IfcCostValue
 IfcLabel IfcCostValue::CostType() { return *entity->getArgument(6); }
 bool IfcCostValue::hasCondition() { return !entity->getArgument(7)->isNull(); }
 IfcText IfcCostValue::Condition() { return *entity->getArgument(7); }
-bool IfcCostValue::is(Type::Enum v) { return v == Type::IfcCostValue || IfcAppliedValue::is(v); }
-Type::Enum IfcCostValue::type() { return Type::IfcCostValue; }
+bool IfcCostValue::is(Type::Enum v) const { return v == Type::IfcCostValue || IfcAppliedValue::is(v); }
+Type::Enum IfcCostValue::type() const { return Type::IfcCostValue; }
 Type::Enum IfcCostValue::Class() { return Type::IfcCostValue; }
 IfcCostValue::IfcCostValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcCostValue)) throw; entity = e; } 
 // IfcCovering
@@ -5708,14 +5715,14 @@ bool IfcCovering::hasPredefinedType() { return !entity->getArgument(8)->isNull()
 IfcCoveringTypeEnum::IfcCoveringTypeEnum IfcCovering::PredefinedType() { return IfcCoveringTypeEnum::FromString(*entity->getArgument(8)); }
 IfcRelCoversSpaces::list IfcCovering::CoversSpaces() { RETURN_INVERSE(IfcRelCoversSpaces) }
 IfcRelCoversBldgElements::list IfcCovering::Covers() { RETURN_INVERSE(IfcRelCoversBldgElements) }
-bool IfcCovering::is(Type::Enum v) { return v == Type::IfcCovering || IfcBuildingElement::is(v); }
-Type::Enum IfcCovering::type() { return Type::IfcCovering; }
+bool IfcCovering::is(Type::Enum v) const { return v == Type::IfcCovering || IfcBuildingElement::is(v); }
+Type::Enum IfcCovering::type() const { return Type::IfcCovering; }
 Type::Enum IfcCovering::Class() { return Type::IfcCovering; }
 IfcCovering::IfcCovering(IfcAbstractEntityPtr e) { if (!is(Type::IfcCovering)) throw; entity = e; } 
 // IfcCoveringType
 IfcCoveringTypeEnum::IfcCoveringTypeEnum IfcCoveringType::PredefinedType() { return IfcCoveringTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcCoveringType::is(Type::Enum v) { return v == Type::IfcCoveringType || IfcBuildingElementType::is(v); }
-Type::Enum IfcCoveringType::type() { return Type::IfcCoveringType; }
+bool IfcCoveringType::is(Type::Enum v) const { return v == Type::IfcCoveringType || IfcBuildingElementType::is(v); }
+Type::Enum IfcCoveringType::type() const { return Type::IfcCoveringType; }
 Type::Enum IfcCoveringType::Class() { return Type::IfcCoveringType; }
 IfcCoveringType::IfcCoveringType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCoveringType)) throw; entity = e; } 
 // IfcCraneRailAShapeProfileDef
@@ -5733,8 +5740,8 @@ IfcPositiveLengthMeasure IfcCraneRailAShapeProfileDef::BaseDepth2() { return *en
 IfcPositiveLengthMeasure IfcCraneRailAShapeProfileDef::BaseDepth3() { return *entity->getArgument(13); }
 bool IfcCraneRailAShapeProfileDef::hasCentreOfGravityInY() { return !entity->getArgument(14)->isNull(); }
 IfcPositiveLengthMeasure IfcCraneRailAShapeProfileDef::CentreOfGravityInY() { return *entity->getArgument(14); }
-bool IfcCraneRailAShapeProfileDef::is(Type::Enum v) { return v == Type::IfcCraneRailAShapeProfileDef || IfcParameterizedProfileDef::is(v); }
-Type::Enum IfcCraneRailAShapeProfileDef::type() { return Type::IfcCraneRailAShapeProfileDef; }
+bool IfcCraneRailAShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcCraneRailAShapeProfileDef || IfcParameterizedProfileDef::is(v); }
+Type::Enum IfcCraneRailAShapeProfileDef::type() const { return Type::IfcCraneRailAShapeProfileDef; }
 Type::Enum IfcCraneRailAShapeProfileDef::Class() { return Type::IfcCraneRailAShapeProfileDef; }
 IfcCraneRailAShapeProfileDef::IfcCraneRailAShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCraneRailAShapeProfileDef)) throw; entity = e; } 
 // IfcCraneRailFShapeProfileDef
@@ -5749,60 +5756,60 @@ IfcPositiveLengthMeasure IfcCraneRailFShapeProfileDef::BaseDepth1() { return *en
 IfcPositiveLengthMeasure IfcCraneRailFShapeProfileDef::BaseDepth2() { return *entity->getArgument(10); }
 bool IfcCraneRailFShapeProfileDef::hasCentreOfGravityInY() { return !entity->getArgument(11)->isNull(); }
 IfcPositiveLengthMeasure IfcCraneRailFShapeProfileDef::CentreOfGravityInY() { return *entity->getArgument(11); }
-bool IfcCraneRailFShapeProfileDef::is(Type::Enum v) { return v == Type::IfcCraneRailFShapeProfileDef || IfcParameterizedProfileDef::is(v); }
-Type::Enum IfcCraneRailFShapeProfileDef::type() { return Type::IfcCraneRailFShapeProfileDef; }
+bool IfcCraneRailFShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcCraneRailFShapeProfileDef || IfcParameterizedProfileDef::is(v); }
+Type::Enum IfcCraneRailFShapeProfileDef::type() const { return Type::IfcCraneRailFShapeProfileDef; }
 Type::Enum IfcCraneRailFShapeProfileDef::Class() { return Type::IfcCraneRailFShapeProfileDef; }
 IfcCraneRailFShapeProfileDef::IfcCraneRailFShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCraneRailFShapeProfileDef)) throw; entity = e; } 
 // IfcCrewResource
-bool IfcCrewResource::is(Type::Enum v) { return v == Type::IfcCrewResource || IfcConstructionResource::is(v); }
-Type::Enum IfcCrewResource::type() { return Type::IfcCrewResource; }
+bool IfcCrewResource::is(Type::Enum v) const { return v == Type::IfcCrewResource || IfcConstructionResource::is(v); }
+Type::Enum IfcCrewResource::type() const { return Type::IfcCrewResource; }
 Type::Enum IfcCrewResource::Class() { return Type::IfcCrewResource; }
 IfcCrewResource::IfcCrewResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcCrewResource)) throw; entity = e; } 
 // IfcCsgPrimitive3D
-SHARED_PTR<IfcAxis2Placement3D> IfcCsgPrimitive3D::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(0)); }
-bool IfcCsgPrimitive3D::is(Type::Enum v) { return v == Type::IfcCsgPrimitive3D || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcCsgPrimitive3D::type() { return Type::IfcCsgPrimitive3D; }
+IfcAxis2Placement3D* IfcCsgPrimitive3D::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(0)); }
+bool IfcCsgPrimitive3D::is(Type::Enum v) const { return v == Type::IfcCsgPrimitive3D || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcCsgPrimitive3D::type() const { return Type::IfcCsgPrimitive3D; }
 Type::Enum IfcCsgPrimitive3D::Class() { return Type::IfcCsgPrimitive3D; }
 IfcCsgPrimitive3D::IfcCsgPrimitive3D(IfcAbstractEntityPtr e) { if (!is(Type::IfcCsgPrimitive3D)) throw; entity = e; } 
 // IfcCsgSolid
 IfcCsgSelect IfcCsgSolid::TreeRootExpression() { return *entity->getArgument(0); }
-bool IfcCsgSolid::is(Type::Enum v) { return v == Type::IfcCsgSolid || IfcSolidModel::is(v); }
-Type::Enum IfcCsgSolid::type() { return Type::IfcCsgSolid; }
+bool IfcCsgSolid::is(Type::Enum v) const { return v == Type::IfcCsgSolid || IfcSolidModel::is(v); }
+Type::Enum IfcCsgSolid::type() const { return Type::IfcCsgSolid; }
 Type::Enum IfcCsgSolid::Class() { return Type::IfcCsgSolid; }
 IfcCsgSolid::IfcCsgSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcCsgSolid)) throw; entity = e; } 
 // IfcCurrencyRelationship
-SHARED_PTR<IfcMonetaryUnit> IfcCurrencyRelationship::RelatingMonetaryUnit() { return reinterpret_pointer_cast<IfcBaseClass,IfcMonetaryUnit>(*entity->getArgument(0)); }
-SHARED_PTR<IfcMonetaryUnit> IfcCurrencyRelationship::RelatedMonetaryUnit() { return reinterpret_pointer_cast<IfcBaseClass,IfcMonetaryUnit>(*entity->getArgument(1)); }
+IfcMonetaryUnit* IfcCurrencyRelationship::RelatingMonetaryUnit() { return reinterpret_pointer_cast<IfcBaseClass,IfcMonetaryUnit>(*entity->getArgument(0)); }
+IfcMonetaryUnit* IfcCurrencyRelationship::RelatedMonetaryUnit() { return reinterpret_pointer_cast<IfcBaseClass,IfcMonetaryUnit>(*entity->getArgument(1)); }
 IfcPositiveRatioMeasure IfcCurrencyRelationship::ExchangeRate() { return *entity->getArgument(2); }
-SHARED_PTR<IfcDateAndTime> IfcCurrencyRelationship::RateDateTime() { return reinterpret_pointer_cast<IfcBaseClass,IfcDateAndTime>(*entity->getArgument(3)); }
+IfcDateAndTime* IfcCurrencyRelationship::RateDateTime() { return reinterpret_pointer_cast<IfcBaseClass,IfcDateAndTime>(*entity->getArgument(3)); }
 bool IfcCurrencyRelationship::hasRateSource() { return !entity->getArgument(4)->isNull(); }
-SHARED_PTR<IfcLibraryInformation> IfcCurrencyRelationship::RateSource() { return reinterpret_pointer_cast<IfcBaseClass,IfcLibraryInformation>(*entity->getArgument(4)); }
-bool IfcCurrencyRelationship::is(Type::Enum v) { return v == Type::IfcCurrencyRelationship; }
-Type::Enum IfcCurrencyRelationship::type() { return Type::IfcCurrencyRelationship; }
+IfcLibraryInformation* IfcCurrencyRelationship::RateSource() { return reinterpret_pointer_cast<IfcBaseClass,IfcLibraryInformation>(*entity->getArgument(4)); }
+bool IfcCurrencyRelationship::is(Type::Enum v) const { return v == Type::IfcCurrencyRelationship; }
+Type::Enum IfcCurrencyRelationship::type() const { return Type::IfcCurrencyRelationship; }
 Type::Enum IfcCurrencyRelationship::Class() { return Type::IfcCurrencyRelationship; }
 IfcCurrencyRelationship::IfcCurrencyRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurrencyRelationship)) throw; entity = e; } 
 // IfcCurtainWall
-bool IfcCurtainWall::is(Type::Enum v) { return v == Type::IfcCurtainWall || IfcBuildingElement::is(v); }
-Type::Enum IfcCurtainWall::type() { return Type::IfcCurtainWall; }
+bool IfcCurtainWall::is(Type::Enum v) const { return v == Type::IfcCurtainWall || IfcBuildingElement::is(v); }
+Type::Enum IfcCurtainWall::type() const { return Type::IfcCurtainWall; }
 Type::Enum IfcCurtainWall::Class() { return Type::IfcCurtainWall; }
 IfcCurtainWall::IfcCurtainWall(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurtainWall)) throw; entity = e; } 
 // IfcCurtainWallType
 IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum IfcCurtainWallType::PredefinedType() { return IfcCurtainWallTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcCurtainWallType::is(Type::Enum v) { return v == Type::IfcCurtainWallType || IfcBuildingElementType::is(v); }
-Type::Enum IfcCurtainWallType::type() { return Type::IfcCurtainWallType; }
+bool IfcCurtainWallType::is(Type::Enum v) const { return v == Type::IfcCurtainWallType || IfcBuildingElementType::is(v); }
+Type::Enum IfcCurtainWallType::type() const { return Type::IfcCurtainWallType; }
 Type::Enum IfcCurtainWallType::Class() { return Type::IfcCurtainWallType; }
 IfcCurtainWallType::IfcCurtainWallType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurtainWallType)) throw; entity = e; } 
 // IfcCurve
-bool IfcCurve::is(Type::Enum v) { return v == Type::IfcCurve || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcCurve::type() { return Type::IfcCurve; }
+bool IfcCurve::is(Type::Enum v) const { return v == Type::IfcCurve || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcCurve::type() const { return Type::IfcCurve; }
 Type::Enum IfcCurve::Class() { return Type::IfcCurve; }
 IfcCurve::IfcCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurve)) throw; entity = e; } 
 // IfcCurveBoundedPlane
-SHARED_PTR<IfcPlane> IfcCurveBoundedPlane::BasisSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcPlane>(*entity->getArgument(0)); }
-SHARED_PTR<IfcCurve> IfcCurveBoundedPlane::OuterBoundary() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(1)); }
+IfcPlane* IfcCurveBoundedPlane::BasisSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcPlane>(*entity->getArgument(0)); }
+IfcCurve* IfcCurveBoundedPlane::OuterBoundary() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(1)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > IfcCurveBoundedPlane::InnerBoundaries() { RETURN_AS_LIST(IfcCurve,2) }
-bool IfcCurveBoundedPlane::is(Type::Enum v) { return v == Type::IfcCurveBoundedPlane || IfcBoundedSurface::is(v); }
-Type::Enum IfcCurveBoundedPlane::type() { return Type::IfcCurveBoundedPlane; }
+bool IfcCurveBoundedPlane::is(Type::Enum v) const { return v == Type::IfcCurveBoundedPlane || IfcBoundedSurface::is(v); }
+Type::Enum IfcCurveBoundedPlane::type() const { return Type::IfcCurveBoundedPlane; }
 Type::Enum IfcCurveBoundedPlane::Class() { return Type::IfcCurveBoundedPlane; }
 IfcCurveBoundedPlane::IfcCurveBoundedPlane(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurveBoundedPlane)) throw; entity = e; } 
 // IfcCurveStyle
@@ -5812,16 +5819,16 @@ bool IfcCurveStyle::hasCurveWidth() { return !entity->getArgument(2)->isNull(); 
 IfcSizeSelect IfcCurveStyle::CurveWidth() { return *entity->getArgument(2); }
 bool IfcCurveStyle::hasCurveColour() { return !entity->getArgument(3)->isNull(); }
 IfcColour IfcCurveStyle::CurveColour() { return *entity->getArgument(3); }
-bool IfcCurveStyle::is(Type::Enum v) { return v == Type::IfcCurveStyle || IfcPresentationStyle::is(v); }
-Type::Enum IfcCurveStyle::type() { return Type::IfcCurveStyle; }
+bool IfcCurveStyle::is(Type::Enum v) const { return v == Type::IfcCurveStyle || IfcPresentationStyle::is(v); }
+Type::Enum IfcCurveStyle::type() const { return Type::IfcCurveStyle; }
 Type::Enum IfcCurveStyle::Class() { return Type::IfcCurveStyle; }
 IfcCurveStyle::IfcCurveStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurveStyle)) throw; entity = e; } 
 // IfcCurveStyleFont
 bool IfcCurveStyleFont::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcCurveStyleFont::Name() { return *entity->getArgument(0); }
 SHARED_PTR< IfcTemplatedEntityList<IfcCurveStyleFontPattern> > IfcCurveStyleFont::PatternList() { RETURN_AS_LIST(IfcCurveStyleFontPattern,1) }
-bool IfcCurveStyleFont::is(Type::Enum v) { return v == Type::IfcCurveStyleFont; }
-Type::Enum IfcCurveStyleFont::type() { return Type::IfcCurveStyleFont; }
+bool IfcCurveStyleFont::is(Type::Enum v) const { return v == Type::IfcCurveStyleFont; }
+Type::Enum IfcCurveStyleFont::type() const { return Type::IfcCurveStyleFont; }
 Type::Enum IfcCurveStyleFont::Class() { return Type::IfcCurveStyleFont; }
 IfcCurveStyleFont::IfcCurveStyleFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurveStyleFont)) throw; entity = e; } 
 // IfcCurveStyleFontAndScaling
@@ -5829,44 +5836,44 @@ bool IfcCurveStyleFontAndScaling::hasName() { return !entity->getArgument(0)->is
 IfcLabel IfcCurveStyleFontAndScaling::Name() { return *entity->getArgument(0); }
 IfcCurveStyleFontSelect IfcCurveStyleFontAndScaling::CurveFont() { return *entity->getArgument(1); }
 IfcPositiveRatioMeasure IfcCurveStyleFontAndScaling::CurveFontScaling() { return *entity->getArgument(2); }
-bool IfcCurveStyleFontAndScaling::is(Type::Enum v) { return v == Type::IfcCurveStyleFontAndScaling; }
-Type::Enum IfcCurveStyleFontAndScaling::type() { return Type::IfcCurveStyleFontAndScaling; }
+bool IfcCurveStyleFontAndScaling::is(Type::Enum v) const { return v == Type::IfcCurveStyleFontAndScaling; }
+Type::Enum IfcCurveStyleFontAndScaling::type() const { return Type::IfcCurveStyleFontAndScaling; }
 Type::Enum IfcCurveStyleFontAndScaling::Class() { return Type::IfcCurveStyleFontAndScaling; }
 IfcCurveStyleFontAndScaling::IfcCurveStyleFontAndScaling(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurveStyleFontAndScaling)) throw; entity = e; } 
 // IfcCurveStyleFontPattern
 IfcLengthMeasure IfcCurveStyleFontPattern::VisibleSegmentLength() { return *entity->getArgument(0); }
 IfcPositiveLengthMeasure IfcCurveStyleFontPattern::InvisibleSegmentLength() { return *entity->getArgument(1); }
-bool IfcCurveStyleFontPattern::is(Type::Enum v) { return v == Type::IfcCurveStyleFontPattern; }
-Type::Enum IfcCurveStyleFontPattern::type() { return Type::IfcCurveStyleFontPattern; }
+bool IfcCurveStyleFontPattern::is(Type::Enum v) const { return v == Type::IfcCurveStyleFontPattern; }
+Type::Enum IfcCurveStyleFontPattern::type() const { return Type::IfcCurveStyleFontPattern; }
 Type::Enum IfcCurveStyleFontPattern::Class() { return Type::IfcCurveStyleFontPattern; }
 IfcCurveStyleFontPattern::IfcCurveStyleFontPattern(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurveStyleFontPattern)) throw; entity = e; } 
 // IfcDamperType
 IfcDamperTypeEnum::IfcDamperTypeEnum IfcDamperType::PredefinedType() { return IfcDamperTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcDamperType::is(Type::Enum v) { return v == Type::IfcDamperType || IfcFlowControllerType::is(v); }
-Type::Enum IfcDamperType::type() { return Type::IfcDamperType; }
+bool IfcDamperType::is(Type::Enum v) const { return v == Type::IfcDamperType || IfcFlowControllerType::is(v); }
+Type::Enum IfcDamperType::type() const { return Type::IfcDamperType; }
 Type::Enum IfcDamperType::Class() { return Type::IfcDamperType; }
 IfcDamperType::IfcDamperType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDamperType)) throw; entity = e; } 
 // IfcDateAndTime
-SHARED_PTR<IfcCalendarDate> IfcDateAndTime::DateComponent() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(0)); }
-SHARED_PTR<IfcLocalTime> IfcDateAndTime::TimeComponent() { return reinterpret_pointer_cast<IfcBaseClass,IfcLocalTime>(*entity->getArgument(1)); }
-bool IfcDateAndTime::is(Type::Enum v) { return v == Type::IfcDateAndTime; }
-Type::Enum IfcDateAndTime::type() { return Type::IfcDateAndTime; }
+IfcCalendarDate* IfcDateAndTime::DateComponent() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(0)); }
+IfcLocalTime* IfcDateAndTime::TimeComponent() { return reinterpret_pointer_cast<IfcBaseClass,IfcLocalTime>(*entity->getArgument(1)); }
+bool IfcDateAndTime::is(Type::Enum v) const { return v == Type::IfcDateAndTime; }
+Type::Enum IfcDateAndTime::type() const { return Type::IfcDateAndTime; }
 Type::Enum IfcDateAndTime::Class() { return Type::IfcDateAndTime; }
 IfcDateAndTime::IfcDateAndTime(IfcAbstractEntityPtr e) { if (!is(Type::IfcDateAndTime)) throw; entity = e; } 
 // IfcDefinedSymbol
 IfcDefinedSymbolSelect IfcDefinedSymbol::Definition() { return *entity->getArgument(0); }
-SHARED_PTR<IfcCartesianTransformationOperator2D> IfcDefinedSymbol::Target() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianTransformationOperator2D>(*entity->getArgument(1)); }
-bool IfcDefinedSymbol::is(Type::Enum v) { return v == Type::IfcDefinedSymbol || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcDefinedSymbol::type() { return Type::IfcDefinedSymbol; }
+IfcCartesianTransformationOperator2D* IfcDefinedSymbol::Target() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianTransformationOperator2D>(*entity->getArgument(1)); }
+bool IfcDefinedSymbol::is(Type::Enum v) const { return v == Type::IfcDefinedSymbol || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcDefinedSymbol::type() const { return Type::IfcDefinedSymbol; }
 Type::Enum IfcDefinedSymbol::Class() { return Type::IfcDefinedSymbol; }
 IfcDefinedSymbol::IfcDefinedSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcDefinedSymbol)) throw; entity = e; } 
 // IfcDerivedProfileDef
-SHARED_PTR<IfcProfileDef> IfcDerivedProfileDef::ParentProfile() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(2)); }
-SHARED_PTR<IfcCartesianTransformationOperator2D> IfcDerivedProfileDef::Operator() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianTransformationOperator2D>(*entity->getArgument(3)); }
+IfcProfileDef* IfcDerivedProfileDef::ParentProfile() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(2)); }
+IfcCartesianTransformationOperator2D* IfcDerivedProfileDef::Operator() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianTransformationOperator2D>(*entity->getArgument(3)); }
 bool IfcDerivedProfileDef::hasLabel() { return !entity->getArgument(4)->isNull(); }
 IfcLabel IfcDerivedProfileDef::Label() { return *entity->getArgument(4); }
-bool IfcDerivedProfileDef::is(Type::Enum v) { return v == Type::IfcDerivedProfileDef || IfcProfileDef::is(v); }
-Type::Enum IfcDerivedProfileDef::type() { return Type::IfcDerivedProfileDef; }
+bool IfcDerivedProfileDef::is(Type::Enum v) const { return v == Type::IfcDerivedProfileDef || IfcProfileDef::is(v); }
+Type::Enum IfcDerivedProfileDef::type() const { return Type::IfcDerivedProfileDef; }
 Type::Enum IfcDerivedProfileDef::Class() { return Type::IfcDerivedProfileDef; }
 IfcDerivedProfileDef::IfcDerivedProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcDerivedProfileDef)) throw; entity = e; } 
 // IfcDerivedUnit
@@ -5874,47 +5881,47 @@ SHARED_PTR< IfcTemplatedEntityList<IfcDerivedUnitElement> > IfcDerivedUnit::Elem
 IfcDerivedUnitEnum::IfcDerivedUnitEnum IfcDerivedUnit::UnitType() { return IfcDerivedUnitEnum::FromString(*entity->getArgument(1)); }
 bool IfcDerivedUnit::hasUserDefinedType() { return !entity->getArgument(2)->isNull(); }
 IfcLabel IfcDerivedUnit::UserDefinedType() { return *entity->getArgument(2); }
-bool IfcDerivedUnit::is(Type::Enum v) { return v == Type::IfcDerivedUnit; }
-Type::Enum IfcDerivedUnit::type() { return Type::IfcDerivedUnit; }
+bool IfcDerivedUnit::is(Type::Enum v) const { return v == Type::IfcDerivedUnit; }
+Type::Enum IfcDerivedUnit::type() const { return Type::IfcDerivedUnit; }
 Type::Enum IfcDerivedUnit::Class() { return Type::IfcDerivedUnit; }
 IfcDerivedUnit::IfcDerivedUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcDerivedUnit)) throw; entity = e; } 
 // IfcDerivedUnitElement
-SHARED_PTR<IfcNamedUnit> IfcDerivedUnitElement::Unit() { return reinterpret_pointer_cast<IfcBaseClass,IfcNamedUnit>(*entity->getArgument(0)); }
+IfcNamedUnit* IfcDerivedUnitElement::Unit() { return reinterpret_pointer_cast<IfcBaseClass,IfcNamedUnit>(*entity->getArgument(0)); }
 int IfcDerivedUnitElement::Exponent() { return *entity->getArgument(1); }
-bool IfcDerivedUnitElement::is(Type::Enum v) { return v == Type::IfcDerivedUnitElement; }
-Type::Enum IfcDerivedUnitElement::type() { return Type::IfcDerivedUnitElement; }
+bool IfcDerivedUnitElement::is(Type::Enum v) const { return v == Type::IfcDerivedUnitElement; }
+Type::Enum IfcDerivedUnitElement::type() const { return Type::IfcDerivedUnitElement; }
 Type::Enum IfcDerivedUnitElement::Class() { return Type::IfcDerivedUnitElement; }
 IfcDerivedUnitElement::IfcDerivedUnitElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcDerivedUnitElement)) throw; entity = e; } 
 // IfcDiameterDimension
-bool IfcDiameterDimension::is(Type::Enum v) { return v == Type::IfcDiameterDimension || IfcDimensionCurveDirectedCallout::is(v); }
-Type::Enum IfcDiameterDimension::type() { return Type::IfcDiameterDimension; }
+bool IfcDiameterDimension::is(Type::Enum v) const { return v == Type::IfcDiameterDimension || IfcDimensionCurveDirectedCallout::is(v); }
+Type::Enum IfcDiameterDimension::type() const { return Type::IfcDiameterDimension; }
 Type::Enum IfcDiameterDimension::Class() { return Type::IfcDiameterDimension; }
 IfcDiameterDimension::IfcDiameterDimension(IfcAbstractEntityPtr e) { if (!is(Type::IfcDiameterDimension)) throw; entity = e; } 
 // IfcDimensionCalloutRelationship
-bool IfcDimensionCalloutRelationship::is(Type::Enum v) { return v == Type::IfcDimensionCalloutRelationship || IfcDraughtingCalloutRelationship::is(v); }
-Type::Enum IfcDimensionCalloutRelationship::type() { return Type::IfcDimensionCalloutRelationship; }
+bool IfcDimensionCalloutRelationship::is(Type::Enum v) const { return v == Type::IfcDimensionCalloutRelationship || IfcDraughtingCalloutRelationship::is(v); }
+Type::Enum IfcDimensionCalloutRelationship::type() const { return Type::IfcDimensionCalloutRelationship; }
 Type::Enum IfcDimensionCalloutRelationship::Class() { return Type::IfcDimensionCalloutRelationship; }
 IfcDimensionCalloutRelationship::IfcDimensionCalloutRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcDimensionCalloutRelationship)) throw; entity = e; } 
 // IfcDimensionCurve
 IfcTerminatorSymbol::list IfcDimensionCurve::AnnotatedBySymbols() { RETURN_INVERSE(IfcTerminatorSymbol) }
-bool IfcDimensionCurve::is(Type::Enum v) { return v == Type::IfcDimensionCurve || IfcAnnotationCurveOccurrence::is(v); }
-Type::Enum IfcDimensionCurve::type() { return Type::IfcDimensionCurve; }
+bool IfcDimensionCurve::is(Type::Enum v) const { return v == Type::IfcDimensionCurve || IfcAnnotationCurveOccurrence::is(v); }
+Type::Enum IfcDimensionCurve::type() const { return Type::IfcDimensionCurve; }
 Type::Enum IfcDimensionCurve::Class() { return Type::IfcDimensionCurve; }
 IfcDimensionCurve::IfcDimensionCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcDimensionCurve)) throw; entity = e; } 
 // IfcDimensionCurveDirectedCallout
-bool IfcDimensionCurveDirectedCallout::is(Type::Enum v) { return v == Type::IfcDimensionCurveDirectedCallout || IfcDraughtingCallout::is(v); }
-Type::Enum IfcDimensionCurveDirectedCallout::type() { return Type::IfcDimensionCurveDirectedCallout; }
+bool IfcDimensionCurveDirectedCallout::is(Type::Enum v) const { return v == Type::IfcDimensionCurveDirectedCallout || IfcDraughtingCallout::is(v); }
+Type::Enum IfcDimensionCurveDirectedCallout::type() const { return Type::IfcDimensionCurveDirectedCallout; }
 Type::Enum IfcDimensionCurveDirectedCallout::Class() { return Type::IfcDimensionCurveDirectedCallout; }
 IfcDimensionCurveDirectedCallout::IfcDimensionCurveDirectedCallout(IfcAbstractEntityPtr e) { if (!is(Type::IfcDimensionCurveDirectedCallout)) throw; entity = e; } 
 // IfcDimensionCurveTerminator
 IfcDimensionExtentUsage::IfcDimensionExtentUsage IfcDimensionCurveTerminator::Role() { return IfcDimensionExtentUsage::FromString(*entity->getArgument(4)); }
-bool IfcDimensionCurveTerminator::is(Type::Enum v) { return v == Type::IfcDimensionCurveTerminator || IfcTerminatorSymbol::is(v); }
-Type::Enum IfcDimensionCurveTerminator::type() { return Type::IfcDimensionCurveTerminator; }
+bool IfcDimensionCurveTerminator::is(Type::Enum v) const { return v == Type::IfcDimensionCurveTerminator || IfcTerminatorSymbol::is(v); }
+Type::Enum IfcDimensionCurveTerminator::type() const { return Type::IfcDimensionCurveTerminator; }
 Type::Enum IfcDimensionCurveTerminator::Class() { return Type::IfcDimensionCurveTerminator; }
 IfcDimensionCurveTerminator::IfcDimensionCurveTerminator(IfcAbstractEntityPtr e) { if (!is(Type::IfcDimensionCurveTerminator)) throw; entity = e; } 
 // IfcDimensionPair
-bool IfcDimensionPair::is(Type::Enum v) { return v == Type::IfcDimensionPair || IfcDraughtingCalloutRelationship::is(v); }
-Type::Enum IfcDimensionPair::type() { return Type::IfcDimensionPair; }
+bool IfcDimensionPair::is(Type::Enum v) const { return v == Type::IfcDimensionPair || IfcDraughtingCalloutRelationship::is(v); }
+Type::Enum IfcDimensionPair::type() const { return Type::IfcDimensionPair; }
 Type::Enum IfcDimensionPair::Class() { return Type::IfcDimensionPair; }
 IfcDimensionPair::IfcDimensionPair(IfcAbstractEntityPtr e) { if (!is(Type::IfcDimensionPair)) throw; entity = e; } 
 // IfcDimensionalExponents
@@ -5925,76 +5932,76 @@ int IfcDimensionalExponents::ElectricCurrentExponent() { return *entity->getArgu
 int IfcDimensionalExponents::ThermodynamicTemperatureExponent() { return *entity->getArgument(4); }
 int IfcDimensionalExponents::AmountOfSubstanceExponent() { return *entity->getArgument(5); }
 int IfcDimensionalExponents::LuminousIntensityExponent() { return *entity->getArgument(6); }
-bool IfcDimensionalExponents::is(Type::Enum v) { return v == Type::IfcDimensionalExponents; }
-Type::Enum IfcDimensionalExponents::type() { return Type::IfcDimensionalExponents; }
+bool IfcDimensionalExponents::is(Type::Enum v) const { return v == Type::IfcDimensionalExponents; }
+Type::Enum IfcDimensionalExponents::type() const { return Type::IfcDimensionalExponents; }
 Type::Enum IfcDimensionalExponents::Class() { return Type::IfcDimensionalExponents; }
 IfcDimensionalExponents::IfcDimensionalExponents(IfcAbstractEntityPtr e) { if (!is(Type::IfcDimensionalExponents)) throw; entity = e; } 
 // IfcDirection
 std::vector<float> /*[2:3]*/ IfcDirection::DirectionRatios() { return *entity->getArgument(0); }
-bool IfcDirection::is(Type::Enum v) { return v == Type::IfcDirection || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcDirection::type() { return Type::IfcDirection; }
+bool IfcDirection::is(Type::Enum v) const { return v == Type::IfcDirection || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcDirection::type() const { return Type::IfcDirection; }
 Type::Enum IfcDirection::Class() { return Type::IfcDirection; }
 IfcDirection::IfcDirection(IfcAbstractEntityPtr e) { if (!is(Type::IfcDirection)) throw; entity = e; } 
 // IfcDiscreteAccessory
-bool IfcDiscreteAccessory::is(Type::Enum v) { return v == Type::IfcDiscreteAccessory || IfcElementComponent::is(v); }
-Type::Enum IfcDiscreteAccessory::type() { return Type::IfcDiscreteAccessory; }
+bool IfcDiscreteAccessory::is(Type::Enum v) const { return v == Type::IfcDiscreteAccessory || IfcElementComponent::is(v); }
+Type::Enum IfcDiscreteAccessory::type() const { return Type::IfcDiscreteAccessory; }
 Type::Enum IfcDiscreteAccessory::Class() { return Type::IfcDiscreteAccessory; }
 IfcDiscreteAccessory::IfcDiscreteAccessory(IfcAbstractEntityPtr e) { if (!is(Type::IfcDiscreteAccessory)) throw; entity = e; } 
 // IfcDiscreteAccessoryType
-bool IfcDiscreteAccessoryType::is(Type::Enum v) { return v == Type::IfcDiscreteAccessoryType || IfcElementComponentType::is(v); }
-Type::Enum IfcDiscreteAccessoryType::type() { return Type::IfcDiscreteAccessoryType; }
+bool IfcDiscreteAccessoryType::is(Type::Enum v) const { return v == Type::IfcDiscreteAccessoryType || IfcElementComponentType::is(v); }
+Type::Enum IfcDiscreteAccessoryType::type() const { return Type::IfcDiscreteAccessoryType; }
 Type::Enum IfcDiscreteAccessoryType::Class() { return Type::IfcDiscreteAccessoryType; }
 IfcDiscreteAccessoryType::IfcDiscreteAccessoryType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDiscreteAccessoryType)) throw; entity = e; } 
 // IfcDistributionChamberElement
-bool IfcDistributionChamberElement::is(Type::Enum v) { return v == Type::IfcDistributionChamberElement || IfcDistributionFlowElement::is(v); }
-Type::Enum IfcDistributionChamberElement::type() { return Type::IfcDistributionChamberElement; }
+bool IfcDistributionChamberElement::is(Type::Enum v) const { return v == Type::IfcDistributionChamberElement || IfcDistributionFlowElement::is(v); }
+Type::Enum IfcDistributionChamberElement::type() const { return Type::IfcDistributionChamberElement; }
 Type::Enum IfcDistributionChamberElement::Class() { return Type::IfcDistributionChamberElement; }
 IfcDistributionChamberElement::IfcDistributionChamberElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionChamberElement)) throw; entity = e; } 
 // IfcDistributionChamberElementType
 IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum IfcDistributionChamberElementType::PredefinedType() { return IfcDistributionChamberElementTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcDistributionChamberElementType::is(Type::Enum v) { return v == Type::IfcDistributionChamberElementType || IfcDistributionFlowElementType::is(v); }
-Type::Enum IfcDistributionChamberElementType::type() { return Type::IfcDistributionChamberElementType; }
+bool IfcDistributionChamberElementType::is(Type::Enum v) const { return v == Type::IfcDistributionChamberElementType || IfcDistributionFlowElementType::is(v); }
+Type::Enum IfcDistributionChamberElementType::type() const { return Type::IfcDistributionChamberElementType; }
 Type::Enum IfcDistributionChamberElementType::Class() { return Type::IfcDistributionChamberElementType; }
 IfcDistributionChamberElementType::IfcDistributionChamberElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionChamberElementType)) throw; entity = e; } 
 // IfcDistributionControlElement
 bool IfcDistributionControlElement::hasControlElementId() { return !entity->getArgument(8)->isNull(); }
 IfcIdentifier IfcDistributionControlElement::ControlElementId() { return *entity->getArgument(8); }
 IfcRelFlowControlElements::list IfcDistributionControlElement::AssignedToFlowElement() { RETURN_INVERSE(IfcRelFlowControlElements) }
-bool IfcDistributionControlElement::is(Type::Enum v) { return v == Type::IfcDistributionControlElement || IfcDistributionElement::is(v); }
-Type::Enum IfcDistributionControlElement::type() { return Type::IfcDistributionControlElement; }
+bool IfcDistributionControlElement::is(Type::Enum v) const { return v == Type::IfcDistributionControlElement || IfcDistributionElement::is(v); }
+Type::Enum IfcDistributionControlElement::type() const { return Type::IfcDistributionControlElement; }
 Type::Enum IfcDistributionControlElement::Class() { return Type::IfcDistributionControlElement; }
 IfcDistributionControlElement::IfcDistributionControlElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionControlElement)) throw; entity = e; } 
 // IfcDistributionControlElementType
-bool IfcDistributionControlElementType::is(Type::Enum v) { return v == Type::IfcDistributionControlElementType || IfcDistributionElementType::is(v); }
-Type::Enum IfcDistributionControlElementType::type() { return Type::IfcDistributionControlElementType; }
+bool IfcDistributionControlElementType::is(Type::Enum v) const { return v == Type::IfcDistributionControlElementType || IfcDistributionElementType::is(v); }
+Type::Enum IfcDistributionControlElementType::type() const { return Type::IfcDistributionControlElementType; }
 Type::Enum IfcDistributionControlElementType::Class() { return Type::IfcDistributionControlElementType; }
 IfcDistributionControlElementType::IfcDistributionControlElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionControlElementType)) throw; entity = e; } 
 // IfcDistributionElement
-bool IfcDistributionElement::is(Type::Enum v) { return v == Type::IfcDistributionElement || IfcElement::is(v); }
-Type::Enum IfcDistributionElement::type() { return Type::IfcDistributionElement; }
+bool IfcDistributionElement::is(Type::Enum v) const { return v == Type::IfcDistributionElement || IfcElement::is(v); }
+Type::Enum IfcDistributionElement::type() const { return Type::IfcDistributionElement; }
 Type::Enum IfcDistributionElement::Class() { return Type::IfcDistributionElement; }
 IfcDistributionElement::IfcDistributionElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionElement)) throw; entity = e; } 
 // IfcDistributionElementType
-bool IfcDistributionElementType::is(Type::Enum v) { return v == Type::IfcDistributionElementType || IfcElementType::is(v); }
-Type::Enum IfcDistributionElementType::type() { return Type::IfcDistributionElementType; }
+bool IfcDistributionElementType::is(Type::Enum v) const { return v == Type::IfcDistributionElementType || IfcElementType::is(v); }
+Type::Enum IfcDistributionElementType::type() const { return Type::IfcDistributionElementType; }
 Type::Enum IfcDistributionElementType::Class() { return Type::IfcDistributionElementType; }
 IfcDistributionElementType::IfcDistributionElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionElementType)) throw; entity = e; } 
 // IfcDistributionFlowElement
 IfcRelFlowControlElements::list IfcDistributionFlowElement::HasControlElements() { RETURN_INVERSE(IfcRelFlowControlElements) }
-bool IfcDistributionFlowElement::is(Type::Enum v) { return v == Type::IfcDistributionFlowElement || IfcDistributionElement::is(v); }
-Type::Enum IfcDistributionFlowElement::type() { return Type::IfcDistributionFlowElement; }
+bool IfcDistributionFlowElement::is(Type::Enum v) const { return v == Type::IfcDistributionFlowElement || IfcDistributionElement::is(v); }
+Type::Enum IfcDistributionFlowElement::type() const { return Type::IfcDistributionFlowElement; }
 Type::Enum IfcDistributionFlowElement::Class() { return Type::IfcDistributionFlowElement; }
 IfcDistributionFlowElement::IfcDistributionFlowElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionFlowElement)) throw; entity = e; } 
 // IfcDistributionFlowElementType
-bool IfcDistributionFlowElementType::is(Type::Enum v) { return v == Type::IfcDistributionFlowElementType || IfcDistributionElementType::is(v); }
-Type::Enum IfcDistributionFlowElementType::type() { return Type::IfcDistributionFlowElementType; }
+bool IfcDistributionFlowElementType::is(Type::Enum v) const { return v == Type::IfcDistributionFlowElementType || IfcDistributionElementType::is(v); }
+Type::Enum IfcDistributionFlowElementType::type() const { return Type::IfcDistributionFlowElementType; }
 Type::Enum IfcDistributionFlowElementType::Class() { return Type::IfcDistributionFlowElementType; }
 IfcDistributionFlowElementType::IfcDistributionFlowElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionFlowElementType)) throw; entity = e; } 
 // IfcDistributionPort
 bool IfcDistributionPort::hasFlowDirection() { return !entity->getArgument(7)->isNull(); }
 IfcFlowDirectionEnum::IfcFlowDirectionEnum IfcDistributionPort::FlowDirection() { return IfcFlowDirectionEnum::FromString(*entity->getArgument(7)); }
-bool IfcDistributionPort::is(Type::Enum v) { return v == Type::IfcDistributionPort || IfcPort::is(v); }
-Type::Enum IfcDistributionPort::type() { return Type::IfcDistributionPort; }
+bool IfcDistributionPort::is(Type::Enum v) const { return v == Type::IfcDistributionPort || IfcPort::is(v); }
+Type::Enum IfcDistributionPort::type() const { return Type::IfcDistributionPort; }
 Type::Enum IfcDistributionPort::Class() { return Type::IfcDistributionPort; }
 IfcDistributionPort::IfcDistributionPort(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionPort)) throw; entity = e; } 
 // IfcDocumentElectronicFormat
@@ -6004,8 +6011,8 @@ bool IfcDocumentElectronicFormat::hasMimeContentType() { return !entity->getArgu
 IfcLabel IfcDocumentElectronicFormat::MimeContentType() { return *entity->getArgument(1); }
 bool IfcDocumentElectronicFormat::hasMimeSubtype() { return !entity->getArgument(2)->isNull(); }
 IfcLabel IfcDocumentElectronicFormat::MimeSubtype() { return *entity->getArgument(2); }
-bool IfcDocumentElectronicFormat::is(Type::Enum v) { return v == Type::IfcDocumentElectronicFormat; }
-Type::Enum IfcDocumentElectronicFormat::type() { return Type::IfcDocumentElectronicFormat; }
+bool IfcDocumentElectronicFormat::is(Type::Enum v) const { return v == Type::IfcDocumentElectronicFormat; }
+Type::Enum IfcDocumentElectronicFormat::type() const { return Type::IfcDocumentElectronicFormat; }
 Type::Enum IfcDocumentElectronicFormat::Class() { return Type::IfcDocumentElectronicFormat; }
 IfcDocumentElectronicFormat::IfcDocumentElectronicFormat(IfcAbstractEntityPtr e) { if (!is(Type::IfcDocumentElectronicFormat)) throw; entity = e; } 
 // IfcDocumentInformation
@@ -6028,38 +6035,38 @@ IfcActorSelect IfcDocumentInformation::DocumentOwner() { return *entity->getArgu
 bool IfcDocumentInformation::hasEditors() { return !entity->getArgument(9)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcDocumentInformation::Editors() { RETURN_AS_LIST(IfcAbstractSelect,9) }
 bool IfcDocumentInformation::hasCreationTime() { return !entity->getArgument(10)->isNull(); }
-SHARED_PTR<IfcDateAndTime> IfcDocumentInformation::CreationTime() { return reinterpret_pointer_cast<IfcBaseClass,IfcDateAndTime>(*entity->getArgument(10)); }
+IfcDateAndTime* IfcDocumentInformation::CreationTime() { return reinterpret_pointer_cast<IfcBaseClass,IfcDateAndTime>(*entity->getArgument(10)); }
 bool IfcDocumentInformation::hasLastRevisionTime() { return !entity->getArgument(11)->isNull(); }
-SHARED_PTR<IfcDateAndTime> IfcDocumentInformation::LastRevisionTime() { return reinterpret_pointer_cast<IfcBaseClass,IfcDateAndTime>(*entity->getArgument(11)); }
+IfcDateAndTime* IfcDocumentInformation::LastRevisionTime() { return reinterpret_pointer_cast<IfcBaseClass,IfcDateAndTime>(*entity->getArgument(11)); }
 bool IfcDocumentInformation::hasElectronicFormat() { return !entity->getArgument(12)->isNull(); }
-SHARED_PTR<IfcDocumentElectronicFormat> IfcDocumentInformation::ElectronicFormat() { return reinterpret_pointer_cast<IfcBaseClass,IfcDocumentElectronicFormat>(*entity->getArgument(12)); }
+IfcDocumentElectronicFormat* IfcDocumentInformation::ElectronicFormat() { return reinterpret_pointer_cast<IfcBaseClass,IfcDocumentElectronicFormat>(*entity->getArgument(12)); }
 bool IfcDocumentInformation::hasValidFrom() { return !entity->getArgument(13)->isNull(); }
-SHARED_PTR<IfcCalendarDate> IfcDocumentInformation::ValidFrom() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(13)); }
+IfcCalendarDate* IfcDocumentInformation::ValidFrom() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(13)); }
 bool IfcDocumentInformation::hasValidUntil() { return !entity->getArgument(14)->isNull(); }
-SHARED_PTR<IfcCalendarDate> IfcDocumentInformation::ValidUntil() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(14)); }
+IfcCalendarDate* IfcDocumentInformation::ValidUntil() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(14)); }
 bool IfcDocumentInformation::hasConfidentiality() { return !entity->getArgument(15)->isNull(); }
 IfcDocumentConfidentialityEnum::IfcDocumentConfidentialityEnum IfcDocumentInformation::Confidentiality() { return IfcDocumentConfidentialityEnum::FromString(*entity->getArgument(15)); }
 bool IfcDocumentInformation::hasStatus() { return !entity->getArgument(16)->isNull(); }
 IfcDocumentStatusEnum::IfcDocumentStatusEnum IfcDocumentInformation::Status() { return IfcDocumentStatusEnum::FromString(*entity->getArgument(16)); }
 IfcDocumentInformationRelationship::list IfcDocumentInformation::IsPointedTo() { RETURN_INVERSE(IfcDocumentInformationRelationship) }
 IfcDocumentInformationRelationship::list IfcDocumentInformation::IsPointer() { RETURN_INVERSE(IfcDocumentInformationRelationship) }
-bool IfcDocumentInformation::is(Type::Enum v) { return v == Type::IfcDocumentInformation; }
-Type::Enum IfcDocumentInformation::type() { return Type::IfcDocumentInformation; }
+bool IfcDocumentInformation::is(Type::Enum v) const { return v == Type::IfcDocumentInformation; }
+Type::Enum IfcDocumentInformation::type() const { return Type::IfcDocumentInformation; }
 Type::Enum IfcDocumentInformation::Class() { return Type::IfcDocumentInformation; }
 IfcDocumentInformation::IfcDocumentInformation(IfcAbstractEntityPtr e) { if (!is(Type::IfcDocumentInformation)) throw; entity = e; } 
 // IfcDocumentInformationRelationship
-SHARED_PTR<IfcDocumentInformation> IfcDocumentInformationRelationship::RelatingDocument() { return reinterpret_pointer_cast<IfcBaseClass,IfcDocumentInformation>(*entity->getArgument(0)); }
+IfcDocumentInformation* IfcDocumentInformationRelationship::RelatingDocument() { return reinterpret_pointer_cast<IfcBaseClass,IfcDocumentInformation>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformation> > IfcDocumentInformationRelationship::RelatedDocuments() { RETURN_AS_LIST(IfcDocumentInformation,1) }
 bool IfcDocumentInformationRelationship::hasRelationshipType() { return !entity->getArgument(2)->isNull(); }
 IfcLabel IfcDocumentInformationRelationship::RelationshipType() { return *entity->getArgument(2); }
-bool IfcDocumentInformationRelationship::is(Type::Enum v) { return v == Type::IfcDocumentInformationRelationship; }
-Type::Enum IfcDocumentInformationRelationship::type() { return Type::IfcDocumentInformationRelationship; }
+bool IfcDocumentInformationRelationship::is(Type::Enum v) const { return v == Type::IfcDocumentInformationRelationship; }
+Type::Enum IfcDocumentInformationRelationship::type() const { return Type::IfcDocumentInformationRelationship; }
 Type::Enum IfcDocumentInformationRelationship::Class() { return Type::IfcDocumentInformationRelationship; }
 IfcDocumentInformationRelationship::IfcDocumentInformationRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcDocumentInformationRelationship)) throw; entity = e; } 
 // IfcDocumentReference
 IfcDocumentInformation::list IfcDocumentReference::ReferenceToDocument() { RETURN_INVERSE(IfcDocumentInformation) }
-bool IfcDocumentReference::is(Type::Enum v) { return v == Type::IfcDocumentReference || IfcExternalReference::is(v); }
-Type::Enum IfcDocumentReference::type() { return Type::IfcDocumentReference; }
+bool IfcDocumentReference::is(Type::Enum v) const { return v == Type::IfcDocumentReference || IfcExternalReference::is(v); }
+Type::Enum IfcDocumentReference::type() const { return Type::IfcDocumentReference; }
 Type::Enum IfcDocumentReference::Class() { return Type::IfcDocumentReference; }
 IfcDocumentReference::IfcDocumentReference(IfcAbstractEntityPtr e) { if (!is(Type::IfcDocumentReference)) throw; entity = e; } 
 // IfcDoor
@@ -6067,8 +6074,8 @@ bool IfcDoor::hasOverallHeight() { return !entity->getArgument(8)->isNull(); }
 IfcPositiveLengthMeasure IfcDoor::OverallHeight() { return *entity->getArgument(8); }
 bool IfcDoor::hasOverallWidth() { return !entity->getArgument(9)->isNull(); }
 IfcPositiveLengthMeasure IfcDoor::OverallWidth() { return *entity->getArgument(9); }
-bool IfcDoor::is(Type::Enum v) { return v == Type::IfcDoor || IfcBuildingElement::is(v); }
-Type::Enum IfcDoor::type() { return Type::IfcDoor; }
+bool IfcDoor::is(Type::Enum v) const { return v == Type::IfcDoor || IfcBuildingElement::is(v); }
+Type::Enum IfcDoor::type() const { return Type::IfcDoor; }
 Type::Enum IfcDoor::Class() { return Type::IfcDoor; }
 IfcDoor::IfcDoor(IfcAbstractEntityPtr e) { if (!is(Type::IfcDoor)) throw; entity = e; } 
 // IfcDoorLiningProperties
@@ -6093,9 +6100,9 @@ IfcPositiveLengthMeasure IfcDoorLiningProperties::CasingThickness() { return *en
 bool IfcDoorLiningProperties::hasCasingDepth() { return !entity->getArgument(13)->isNull(); }
 IfcPositiveLengthMeasure IfcDoorLiningProperties::CasingDepth() { return *entity->getArgument(13); }
 bool IfcDoorLiningProperties::hasShapeAspectStyle() { return !entity->getArgument(14)->isNull(); }
-SHARED_PTR<IfcShapeAspect> IfcDoorLiningProperties::ShapeAspectStyle() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(14)); }
-bool IfcDoorLiningProperties::is(Type::Enum v) { return v == Type::IfcDoorLiningProperties || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcDoorLiningProperties::type() { return Type::IfcDoorLiningProperties; }
+IfcShapeAspect* IfcDoorLiningProperties::ShapeAspectStyle() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(14)); }
+bool IfcDoorLiningProperties::is(Type::Enum v) const { return v == Type::IfcDoorLiningProperties || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcDoorLiningProperties::type() const { return Type::IfcDoorLiningProperties; }
 Type::Enum IfcDoorLiningProperties::Class() { return Type::IfcDoorLiningProperties; }
 IfcDoorLiningProperties::IfcDoorLiningProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcDoorLiningProperties)) throw; entity = e; } 
 // IfcDoorPanelProperties
@@ -6106,9 +6113,9 @@ bool IfcDoorPanelProperties::hasPanelWidth() { return !entity->getArgument(6)->i
 IfcNormalisedRatioMeasure IfcDoorPanelProperties::PanelWidth() { return *entity->getArgument(6); }
 IfcDoorPanelPositionEnum::IfcDoorPanelPositionEnum IfcDoorPanelProperties::PanelPosition() { return IfcDoorPanelPositionEnum::FromString(*entity->getArgument(7)); }
 bool IfcDoorPanelProperties::hasShapeAspectStyle() { return !entity->getArgument(8)->isNull(); }
-SHARED_PTR<IfcShapeAspect> IfcDoorPanelProperties::ShapeAspectStyle() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(8)); }
-bool IfcDoorPanelProperties::is(Type::Enum v) { return v == Type::IfcDoorPanelProperties || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcDoorPanelProperties::type() { return Type::IfcDoorPanelProperties; }
+IfcShapeAspect* IfcDoorPanelProperties::ShapeAspectStyle() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(8)); }
+bool IfcDoorPanelProperties::is(Type::Enum v) const { return v == Type::IfcDoorPanelProperties || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcDoorPanelProperties::type() const { return Type::IfcDoorPanelProperties; }
 Type::Enum IfcDoorPanelProperties::Class() { return Type::IfcDoorPanelProperties; }
 IfcDoorPanelProperties::IfcDoorPanelProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcDoorPanelProperties)) throw; entity = e; } 
 // IfcDoorStyle
@@ -6116,16 +6123,16 @@ IfcDoorStyleOperationEnum::IfcDoorStyleOperationEnum IfcDoorStyle::OperationType
 IfcDoorStyleConstructionEnum::IfcDoorStyleConstructionEnum IfcDoorStyle::ConstructionType() { return IfcDoorStyleConstructionEnum::FromString(*entity->getArgument(9)); }
 bool IfcDoorStyle::ParameterTakesPrecedence() { return *entity->getArgument(10); }
 bool IfcDoorStyle::Sizeable() { return *entity->getArgument(11); }
-bool IfcDoorStyle::is(Type::Enum v) { return v == Type::IfcDoorStyle || IfcTypeProduct::is(v); }
-Type::Enum IfcDoorStyle::type() { return Type::IfcDoorStyle; }
+bool IfcDoorStyle::is(Type::Enum v) const { return v == Type::IfcDoorStyle || IfcTypeProduct::is(v); }
+Type::Enum IfcDoorStyle::type() const { return Type::IfcDoorStyle; }
 Type::Enum IfcDoorStyle::Class() { return Type::IfcDoorStyle; }
 IfcDoorStyle::IfcDoorStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcDoorStyle)) throw; entity = e; } 
 // IfcDraughtingCallout
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcDraughtingCallout::Contents() { RETURN_AS_LIST(IfcAbstractSelect,0) }
 IfcDraughtingCalloutRelationship::list IfcDraughtingCallout::IsRelatedFromCallout() { RETURN_INVERSE(IfcDraughtingCalloutRelationship) }
 IfcDraughtingCalloutRelationship::list IfcDraughtingCallout::IsRelatedToCallout() { RETURN_INVERSE(IfcDraughtingCalloutRelationship) }
-bool IfcDraughtingCallout::is(Type::Enum v) { return v == Type::IfcDraughtingCallout || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcDraughtingCallout::type() { return Type::IfcDraughtingCallout; }
+bool IfcDraughtingCallout::is(Type::Enum v) const { return v == Type::IfcDraughtingCallout || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcDraughtingCallout::type() const { return Type::IfcDraughtingCallout; }
 Type::Enum IfcDraughtingCallout::Class() { return Type::IfcDraughtingCallout; }
 IfcDraughtingCallout::IfcDraughtingCallout(IfcAbstractEntityPtr e) { if (!is(Type::IfcDraughtingCallout)) throw; entity = e; } 
 // IfcDraughtingCalloutRelationship
@@ -6133,114 +6140,114 @@ bool IfcDraughtingCalloutRelationship::hasName() { return !entity->getArgument(0
 IfcLabel IfcDraughtingCalloutRelationship::Name() { return *entity->getArgument(0); }
 bool IfcDraughtingCalloutRelationship::hasDescription() { return !entity->getArgument(1)->isNull(); }
 IfcText IfcDraughtingCalloutRelationship::Description() { return *entity->getArgument(1); }
-SHARED_PTR<IfcDraughtingCallout> IfcDraughtingCalloutRelationship::RelatingDraughtingCallout() { return reinterpret_pointer_cast<IfcBaseClass,IfcDraughtingCallout>(*entity->getArgument(2)); }
-SHARED_PTR<IfcDraughtingCallout> IfcDraughtingCalloutRelationship::RelatedDraughtingCallout() { return reinterpret_pointer_cast<IfcBaseClass,IfcDraughtingCallout>(*entity->getArgument(3)); }
-bool IfcDraughtingCalloutRelationship::is(Type::Enum v) { return v == Type::IfcDraughtingCalloutRelationship; }
-Type::Enum IfcDraughtingCalloutRelationship::type() { return Type::IfcDraughtingCalloutRelationship; }
+IfcDraughtingCallout* IfcDraughtingCalloutRelationship::RelatingDraughtingCallout() { return reinterpret_pointer_cast<IfcBaseClass,IfcDraughtingCallout>(*entity->getArgument(2)); }
+IfcDraughtingCallout* IfcDraughtingCalloutRelationship::RelatedDraughtingCallout() { return reinterpret_pointer_cast<IfcBaseClass,IfcDraughtingCallout>(*entity->getArgument(3)); }
+bool IfcDraughtingCalloutRelationship::is(Type::Enum v) const { return v == Type::IfcDraughtingCalloutRelationship; }
+Type::Enum IfcDraughtingCalloutRelationship::type() const { return Type::IfcDraughtingCalloutRelationship; }
 Type::Enum IfcDraughtingCalloutRelationship::Class() { return Type::IfcDraughtingCalloutRelationship; }
 IfcDraughtingCalloutRelationship::IfcDraughtingCalloutRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcDraughtingCalloutRelationship)) throw; entity = e; } 
 // IfcDraughtingPreDefinedColour
-bool IfcDraughtingPreDefinedColour::is(Type::Enum v) { return v == Type::IfcDraughtingPreDefinedColour || IfcPreDefinedColour::is(v); }
-Type::Enum IfcDraughtingPreDefinedColour::type() { return Type::IfcDraughtingPreDefinedColour; }
+bool IfcDraughtingPreDefinedColour::is(Type::Enum v) const { return v == Type::IfcDraughtingPreDefinedColour || IfcPreDefinedColour::is(v); }
+Type::Enum IfcDraughtingPreDefinedColour::type() const { return Type::IfcDraughtingPreDefinedColour; }
 Type::Enum IfcDraughtingPreDefinedColour::Class() { return Type::IfcDraughtingPreDefinedColour; }
 IfcDraughtingPreDefinedColour::IfcDraughtingPreDefinedColour(IfcAbstractEntityPtr e) { if (!is(Type::IfcDraughtingPreDefinedColour)) throw; entity = e; } 
 // IfcDraughtingPreDefinedCurveFont
-bool IfcDraughtingPreDefinedCurveFont::is(Type::Enum v) { return v == Type::IfcDraughtingPreDefinedCurveFont || IfcPreDefinedCurveFont::is(v); }
-Type::Enum IfcDraughtingPreDefinedCurveFont::type() { return Type::IfcDraughtingPreDefinedCurveFont; }
+bool IfcDraughtingPreDefinedCurveFont::is(Type::Enum v) const { return v == Type::IfcDraughtingPreDefinedCurveFont || IfcPreDefinedCurveFont::is(v); }
+Type::Enum IfcDraughtingPreDefinedCurveFont::type() const { return Type::IfcDraughtingPreDefinedCurveFont; }
 Type::Enum IfcDraughtingPreDefinedCurveFont::Class() { return Type::IfcDraughtingPreDefinedCurveFont; }
 IfcDraughtingPreDefinedCurveFont::IfcDraughtingPreDefinedCurveFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcDraughtingPreDefinedCurveFont)) throw; entity = e; } 
 // IfcDraughtingPreDefinedTextFont
-bool IfcDraughtingPreDefinedTextFont::is(Type::Enum v) { return v == Type::IfcDraughtingPreDefinedTextFont || IfcPreDefinedTextFont::is(v); }
-Type::Enum IfcDraughtingPreDefinedTextFont::type() { return Type::IfcDraughtingPreDefinedTextFont; }
+bool IfcDraughtingPreDefinedTextFont::is(Type::Enum v) const { return v == Type::IfcDraughtingPreDefinedTextFont || IfcPreDefinedTextFont::is(v); }
+Type::Enum IfcDraughtingPreDefinedTextFont::type() const { return Type::IfcDraughtingPreDefinedTextFont; }
 Type::Enum IfcDraughtingPreDefinedTextFont::Class() { return Type::IfcDraughtingPreDefinedTextFont; }
 IfcDraughtingPreDefinedTextFont::IfcDraughtingPreDefinedTextFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcDraughtingPreDefinedTextFont)) throw; entity = e; } 
 // IfcDuctFittingType
 IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum IfcDuctFittingType::PredefinedType() { return IfcDuctFittingTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcDuctFittingType::is(Type::Enum v) { return v == Type::IfcDuctFittingType || IfcFlowFittingType::is(v); }
-Type::Enum IfcDuctFittingType::type() { return Type::IfcDuctFittingType; }
+bool IfcDuctFittingType::is(Type::Enum v) const { return v == Type::IfcDuctFittingType || IfcFlowFittingType::is(v); }
+Type::Enum IfcDuctFittingType::type() const { return Type::IfcDuctFittingType; }
 Type::Enum IfcDuctFittingType::Class() { return Type::IfcDuctFittingType; }
 IfcDuctFittingType::IfcDuctFittingType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDuctFittingType)) throw; entity = e; } 
 // IfcDuctSegmentType
 IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum IfcDuctSegmentType::PredefinedType() { return IfcDuctSegmentTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcDuctSegmentType::is(Type::Enum v) { return v == Type::IfcDuctSegmentType || IfcFlowSegmentType::is(v); }
-Type::Enum IfcDuctSegmentType::type() { return Type::IfcDuctSegmentType; }
+bool IfcDuctSegmentType::is(Type::Enum v) const { return v == Type::IfcDuctSegmentType || IfcFlowSegmentType::is(v); }
+Type::Enum IfcDuctSegmentType::type() const { return Type::IfcDuctSegmentType; }
 Type::Enum IfcDuctSegmentType::Class() { return Type::IfcDuctSegmentType; }
 IfcDuctSegmentType::IfcDuctSegmentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDuctSegmentType)) throw; entity = e; } 
 // IfcDuctSilencerType
 IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum IfcDuctSilencerType::PredefinedType() { return IfcDuctSilencerTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcDuctSilencerType::is(Type::Enum v) { return v == Type::IfcDuctSilencerType || IfcFlowTreatmentDeviceType::is(v); }
-Type::Enum IfcDuctSilencerType::type() { return Type::IfcDuctSilencerType; }
+bool IfcDuctSilencerType::is(Type::Enum v) const { return v == Type::IfcDuctSilencerType || IfcFlowTreatmentDeviceType::is(v); }
+Type::Enum IfcDuctSilencerType::type() const { return Type::IfcDuctSilencerType; }
 Type::Enum IfcDuctSilencerType::Class() { return Type::IfcDuctSilencerType; }
 IfcDuctSilencerType::IfcDuctSilencerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDuctSilencerType)) throw; entity = e; } 
 // IfcEdge
-SHARED_PTR<IfcVertex> IfcEdge::EdgeStart() { return reinterpret_pointer_cast<IfcBaseClass,IfcVertex>(*entity->getArgument(0)); }
-SHARED_PTR<IfcVertex> IfcEdge::EdgeEnd() { return reinterpret_pointer_cast<IfcBaseClass,IfcVertex>(*entity->getArgument(1)); }
-bool IfcEdge::is(Type::Enum v) { return v == Type::IfcEdge || IfcTopologicalRepresentationItem::is(v); }
-Type::Enum IfcEdge::type() { return Type::IfcEdge; }
+IfcVertex* IfcEdge::EdgeStart() { return reinterpret_pointer_cast<IfcBaseClass,IfcVertex>(*entity->getArgument(0)); }
+IfcVertex* IfcEdge::EdgeEnd() { return reinterpret_pointer_cast<IfcBaseClass,IfcVertex>(*entity->getArgument(1)); }
+bool IfcEdge::is(Type::Enum v) const { return v == Type::IfcEdge || IfcTopologicalRepresentationItem::is(v); }
+Type::Enum IfcEdge::type() const { return Type::IfcEdge; }
 Type::Enum IfcEdge::Class() { return Type::IfcEdge; }
 IfcEdge::IfcEdge(IfcAbstractEntityPtr e) { if (!is(Type::IfcEdge)) throw; entity = e; } 
 // IfcEdgeCurve
-SHARED_PTR<IfcCurve> IfcEdgeCurve::EdgeGeometry() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(2)); }
+IfcCurve* IfcEdgeCurve::EdgeGeometry() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(2)); }
 bool IfcEdgeCurve::SameSense() { return *entity->getArgument(3); }
-bool IfcEdgeCurve::is(Type::Enum v) { return v == Type::IfcEdgeCurve || IfcEdge::is(v); }
-Type::Enum IfcEdgeCurve::type() { return Type::IfcEdgeCurve; }
+bool IfcEdgeCurve::is(Type::Enum v) const { return v == Type::IfcEdgeCurve || IfcEdge::is(v); }
+Type::Enum IfcEdgeCurve::type() const { return Type::IfcEdgeCurve; }
 Type::Enum IfcEdgeCurve::Class() { return Type::IfcEdgeCurve; }
 IfcEdgeCurve::IfcEdgeCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcEdgeCurve)) throw; entity = e; } 
 // IfcEdgeFeature
 bool IfcEdgeFeature::hasFeatureLength() { return !entity->getArgument(8)->isNull(); }
 IfcPositiveLengthMeasure IfcEdgeFeature::FeatureLength() { return *entity->getArgument(8); }
-bool IfcEdgeFeature::is(Type::Enum v) { return v == Type::IfcEdgeFeature || IfcFeatureElementSubtraction::is(v); }
-Type::Enum IfcEdgeFeature::type() { return Type::IfcEdgeFeature; }
+bool IfcEdgeFeature::is(Type::Enum v) const { return v == Type::IfcEdgeFeature || IfcFeatureElementSubtraction::is(v); }
+Type::Enum IfcEdgeFeature::type() const { return Type::IfcEdgeFeature; }
 Type::Enum IfcEdgeFeature::Class() { return Type::IfcEdgeFeature; }
 IfcEdgeFeature::IfcEdgeFeature(IfcAbstractEntityPtr e) { if (!is(Type::IfcEdgeFeature)) throw; entity = e; } 
 // IfcEdgeLoop
 SHARED_PTR< IfcTemplatedEntityList<IfcOrientedEdge> > IfcEdgeLoop::EdgeList() { RETURN_AS_LIST(IfcOrientedEdge,0) }
-bool IfcEdgeLoop::is(Type::Enum v) { return v == Type::IfcEdgeLoop || IfcLoop::is(v); }
-Type::Enum IfcEdgeLoop::type() { return Type::IfcEdgeLoop; }
+bool IfcEdgeLoop::is(Type::Enum v) const { return v == Type::IfcEdgeLoop || IfcLoop::is(v); }
+Type::Enum IfcEdgeLoop::type() const { return Type::IfcEdgeLoop; }
 Type::Enum IfcEdgeLoop::Class() { return Type::IfcEdgeLoop; }
 IfcEdgeLoop::IfcEdgeLoop(IfcAbstractEntityPtr e) { if (!is(Type::IfcEdgeLoop)) throw; entity = e; } 
 // IfcElectricApplianceType
 IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum IfcElectricApplianceType::PredefinedType() { return IfcElectricApplianceTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcElectricApplianceType::is(Type::Enum v) { return v == Type::IfcElectricApplianceType || IfcFlowTerminalType::is(v); }
-Type::Enum IfcElectricApplianceType::type() { return Type::IfcElectricApplianceType; }
+bool IfcElectricApplianceType::is(Type::Enum v) const { return v == Type::IfcElectricApplianceType || IfcFlowTerminalType::is(v); }
+Type::Enum IfcElectricApplianceType::type() const { return Type::IfcElectricApplianceType; }
 Type::Enum IfcElectricApplianceType::Class() { return Type::IfcElectricApplianceType; }
 IfcElectricApplianceType::IfcElectricApplianceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricApplianceType)) throw; entity = e; } 
 // IfcElectricDistributionPoint
 IfcElectricDistributionPointFunctionEnum::IfcElectricDistributionPointFunctionEnum IfcElectricDistributionPoint::DistributionPointFunction() { return IfcElectricDistributionPointFunctionEnum::FromString(*entity->getArgument(8)); }
 bool IfcElectricDistributionPoint::hasUserDefinedFunction() { return !entity->getArgument(9)->isNull(); }
 IfcLabel IfcElectricDistributionPoint::UserDefinedFunction() { return *entity->getArgument(9); }
-bool IfcElectricDistributionPoint::is(Type::Enum v) { return v == Type::IfcElectricDistributionPoint || IfcFlowController::is(v); }
-Type::Enum IfcElectricDistributionPoint::type() { return Type::IfcElectricDistributionPoint; }
+bool IfcElectricDistributionPoint::is(Type::Enum v) const { return v == Type::IfcElectricDistributionPoint || IfcFlowController::is(v); }
+Type::Enum IfcElectricDistributionPoint::type() const { return Type::IfcElectricDistributionPoint; }
 Type::Enum IfcElectricDistributionPoint::Class() { return Type::IfcElectricDistributionPoint; }
 IfcElectricDistributionPoint::IfcElectricDistributionPoint(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricDistributionPoint)) throw; entity = e; } 
 // IfcElectricFlowStorageDeviceType
 IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum IfcElectricFlowStorageDeviceType::PredefinedType() { return IfcElectricFlowStorageDeviceTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcElectricFlowStorageDeviceType::is(Type::Enum v) { return v == Type::IfcElectricFlowStorageDeviceType || IfcFlowStorageDeviceType::is(v); }
-Type::Enum IfcElectricFlowStorageDeviceType::type() { return Type::IfcElectricFlowStorageDeviceType; }
+bool IfcElectricFlowStorageDeviceType::is(Type::Enum v) const { return v == Type::IfcElectricFlowStorageDeviceType || IfcFlowStorageDeviceType::is(v); }
+Type::Enum IfcElectricFlowStorageDeviceType::type() const { return Type::IfcElectricFlowStorageDeviceType; }
 Type::Enum IfcElectricFlowStorageDeviceType::Class() { return Type::IfcElectricFlowStorageDeviceType; }
 IfcElectricFlowStorageDeviceType::IfcElectricFlowStorageDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricFlowStorageDeviceType)) throw; entity = e; } 
 // IfcElectricGeneratorType
 IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum IfcElectricGeneratorType::PredefinedType() { return IfcElectricGeneratorTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcElectricGeneratorType::is(Type::Enum v) { return v == Type::IfcElectricGeneratorType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcElectricGeneratorType::type() { return Type::IfcElectricGeneratorType; }
+bool IfcElectricGeneratorType::is(Type::Enum v) const { return v == Type::IfcElectricGeneratorType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcElectricGeneratorType::type() const { return Type::IfcElectricGeneratorType; }
 Type::Enum IfcElectricGeneratorType::Class() { return Type::IfcElectricGeneratorType; }
 IfcElectricGeneratorType::IfcElectricGeneratorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricGeneratorType)) throw; entity = e; } 
 // IfcElectricHeaterType
 IfcElectricHeaterTypeEnum::IfcElectricHeaterTypeEnum IfcElectricHeaterType::PredefinedType() { return IfcElectricHeaterTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcElectricHeaterType::is(Type::Enum v) { return v == Type::IfcElectricHeaterType || IfcFlowTerminalType::is(v); }
-Type::Enum IfcElectricHeaterType::type() { return Type::IfcElectricHeaterType; }
+bool IfcElectricHeaterType::is(Type::Enum v) const { return v == Type::IfcElectricHeaterType || IfcFlowTerminalType::is(v); }
+Type::Enum IfcElectricHeaterType::type() const { return Type::IfcElectricHeaterType; }
 Type::Enum IfcElectricHeaterType::Class() { return Type::IfcElectricHeaterType; }
 IfcElectricHeaterType::IfcElectricHeaterType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricHeaterType)) throw; entity = e; } 
 // IfcElectricMotorType
 IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum IfcElectricMotorType::PredefinedType() { return IfcElectricMotorTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcElectricMotorType::is(Type::Enum v) { return v == Type::IfcElectricMotorType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcElectricMotorType::type() { return Type::IfcElectricMotorType; }
+bool IfcElectricMotorType::is(Type::Enum v) const { return v == Type::IfcElectricMotorType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcElectricMotorType::type() const { return Type::IfcElectricMotorType; }
 Type::Enum IfcElectricMotorType::Class() { return Type::IfcElectricMotorType; }
 IfcElectricMotorType::IfcElectricMotorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricMotorType)) throw; entity = e; } 
 // IfcElectricTimeControlType
 IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum IfcElectricTimeControlType::PredefinedType() { return IfcElectricTimeControlTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcElectricTimeControlType::is(Type::Enum v) { return v == Type::IfcElectricTimeControlType || IfcFlowControllerType::is(v); }
-Type::Enum IfcElectricTimeControlType::type() { return Type::IfcElectricTimeControlType; }
+bool IfcElectricTimeControlType::is(Type::Enum v) const { return v == Type::IfcElectricTimeControlType || IfcFlowControllerType::is(v); }
+Type::Enum IfcElectricTimeControlType::type() const { return Type::IfcElectricTimeControlType; }
 Type::Enum IfcElectricTimeControlType::Class() { return Type::IfcElectricTimeControlType; }
 IfcElectricTimeControlType::IfcElectricTimeControlType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricTimeControlType)) throw; entity = e; } 
 // IfcElectricalBaseProperties
@@ -6257,18 +6264,18 @@ IfcPowerMeasure IfcElectricalBaseProperties::MaximumPowerInput() { return *entit
 bool IfcElectricalBaseProperties::hasRatedPowerInput() { return !entity->getArgument(12)->isNull(); }
 IfcPowerMeasure IfcElectricalBaseProperties::RatedPowerInput() { return *entity->getArgument(12); }
 int IfcElectricalBaseProperties::InputPhase() { return *entity->getArgument(13); }
-bool IfcElectricalBaseProperties::is(Type::Enum v) { return v == Type::IfcElectricalBaseProperties || IfcEnergyProperties::is(v); }
-Type::Enum IfcElectricalBaseProperties::type() { return Type::IfcElectricalBaseProperties; }
+bool IfcElectricalBaseProperties::is(Type::Enum v) const { return v == Type::IfcElectricalBaseProperties || IfcEnergyProperties::is(v); }
+Type::Enum IfcElectricalBaseProperties::type() const { return Type::IfcElectricalBaseProperties; }
 Type::Enum IfcElectricalBaseProperties::Class() { return Type::IfcElectricalBaseProperties; }
 IfcElectricalBaseProperties::IfcElectricalBaseProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricalBaseProperties)) throw; entity = e; } 
 // IfcElectricalCircuit
-bool IfcElectricalCircuit::is(Type::Enum v) { return v == Type::IfcElectricalCircuit || IfcSystem::is(v); }
-Type::Enum IfcElectricalCircuit::type() { return Type::IfcElectricalCircuit; }
+bool IfcElectricalCircuit::is(Type::Enum v) const { return v == Type::IfcElectricalCircuit || IfcSystem::is(v); }
+Type::Enum IfcElectricalCircuit::type() const { return Type::IfcElectricalCircuit; }
 Type::Enum IfcElectricalCircuit::Class() { return Type::IfcElectricalCircuit; }
 IfcElectricalCircuit::IfcElectricalCircuit(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricalCircuit)) throw; entity = e; } 
 // IfcElectricalElement
-bool IfcElectricalElement::is(Type::Enum v) { return v == Type::IfcElectricalElement || IfcElement::is(v); }
-Type::Enum IfcElectricalElement::type() { return Type::IfcElectricalElement; }
+bool IfcElectricalElement::is(Type::Enum v) const { return v == Type::IfcElectricalElement || IfcElement::is(v); }
+Type::Enum IfcElectricalElement::type() const { return Type::IfcElectricalElement; }
 Type::Enum IfcElectricalElement::Class() { return Type::IfcElectricalElement; }
 IfcElectricalElement::IfcElectricalElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricalElement)) throw; entity = e; } 
 // IfcElement
@@ -6286,71 +6293,71 @@ IfcRelConnectsWithRealizingElements::list IfcElement::IsConnectionRealization() 
 IfcRelSpaceBoundary::list IfcElement::ProvidesBoundaries() { RETURN_INVERSE(IfcRelSpaceBoundary) }
 IfcRelConnectsElements::list IfcElement::ConnectedFrom() { RETURN_INVERSE(IfcRelConnectsElements) }
 IfcRelContainedInSpatialStructure::list IfcElement::ContainedInStructure() { RETURN_INVERSE(IfcRelContainedInSpatialStructure) }
-bool IfcElement::is(Type::Enum v) { return v == Type::IfcElement || IfcProduct::is(v); }
-Type::Enum IfcElement::type() { return Type::IfcElement; }
+bool IfcElement::is(Type::Enum v) const { return v == Type::IfcElement || IfcProduct::is(v); }
+Type::Enum IfcElement::type() const { return Type::IfcElement; }
 Type::Enum IfcElement::Class() { return Type::IfcElement; }
 IfcElement::IfcElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcElement)) throw; entity = e; } 
 // IfcElementAssembly
 bool IfcElementAssembly::hasAssemblyPlace() { return !entity->getArgument(8)->isNull(); }
 IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum IfcElementAssembly::AssemblyPlace() { return IfcAssemblyPlaceEnum::FromString(*entity->getArgument(8)); }
 IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum IfcElementAssembly::PredefinedType() { return IfcElementAssemblyTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcElementAssembly::is(Type::Enum v) { return v == Type::IfcElementAssembly || IfcElement::is(v); }
-Type::Enum IfcElementAssembly::type() { return Type::IfcElementAssembly; }
+bool IfcElementAssembly::is(Type::Enum v) const { return v == Type::IfcElementAssembly || IfcElement::is(v); }
+Type::Enum IfcElementAssembly::type() const { return Type::IfcElementAssembly; }
 Type::Enum IfcElementAssembly::Class() { return Type::IfcElementAssembly; }
 IfcElementAssembly::IfcElementAssembly(IfcAbstractEntityPtr e) { if (!is(Type::IfcElementAssembly)) throw; entity = e; } 
 // IfcElementComponent
-bool IfcElementComponent::is(Type::Enum v) { return v == Type::IfcElementComponent || IfcElement::is(v); }
-Type::Enum IfcElementComponent::type() { return Type::IfcElementComponent; }
+bool IfcElementComponent::is(Type::Enum v) const { return v == Type::IfcElementComponent || IfcElement::is(v); }
+Type::Enum IfcElementComponent::type() const { return Type::IfcElementComponent; }
 Type::Enum IfcElementComponent::Class() { return Type::IfcElementComponent; }
 IfcElementComponent::IfcElementComponent(IfcAbstractEntityPtr e) { if (!is(Type::IfcElementComponent)) throw; entity = e; } 
 // IfcElementComponentType
-bool IfcElementComponentType::is(Type::Enum v) { return v == Type::IfcElementComponentType || IfcElementType::is(v); }
-Type::Enum IfcElementComponentType::type() { return Type::IfcElementComponentType; }
+bool IfcElementComponentType::is(Type::Enum v) const { return v == Type::IfcElementComponentType || IfcElementType::is(v); }
+Type::Enum IfcElementComponentType::type() const { return Type::IfcElementComponentType; }
 Type::Enum IfcElementComponentType::Class() { return Type::IfcElementComponentType; }
 IfcElementComponentType::IfcElementComponentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElementComponentType)) throw; entity = e; } 
 // IfcElementQuantity
 bool IfcElementQuantity::hasMethodOfMeasurement() { return !entity->getArgument(4)->isNull(); }
 IfcLabel IfcElementQuantity::MethodOfMeasurement() { return *entity->getArgument(4); }
 SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalQuantity> > IfcElementQuantity::Quantities() { RETURN_AS_LIST(IfcPhysicalQuantity,5) }
-bool IfcElementQuantity::is(Type::Enum v) { return v == Type::IfcElementQuantity || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcElementQuantity::type() { return Type::IfcElementQuantity; }
+bool IfcElementQuantity::is(Type::Enum v) const { return v == Type::IfcElementQuantity || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcElementQuantity::type() const { return Type::IfcElementQuantity; }
 Type::Enum IfcElementQuantity::Class() { return Type::IfcElementQuantity; }
 IfcElementQuantity::IfcElementQuantity(IfcAbstractEntityPtr e) { if (!is(Type::IfcElementQuantity)) throw; entity = e; } 
 // IfcElementType
 bool IfcElementType::hasElementType() { return !entity->getArgument(8)->isNull(); }
 IfcLabel IfcElementType::ElementType() { return *entity->getArgument(8); }
-bool IfcElementType::is(Type::Enum v) { return v == Type::IfcElementType || IfcTypeProduct::is(v); }
-Type::Enum IfcElementType::type() { return Type::IfcElementType; }
+bool IfcElementType::is(Type::Enum v) const { return v == Type::IfcElementType || IfcTypeProduct::is(v); }
+Type::Enum IfcElementType::type() const { return Type::IfcElementType; }
 Type::Enum IfcElementType::Class() { return Type::IfcElementType; }
 IfcElementType::IfcElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElementType)) throw; entity = e; } 
 // IfcElementarySurface
-SHARED_PTR<IfcAxis2Placement3D> IfcElementarySurface::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(0)); }
-bool IfcElementarySurface::is(Type::Enum v) { return v == Type::IfcElementarySurface || IfcSurface::is(v); }
-Type::Enum IfcElementarySurface::type() { return Type::IfcElementarySurface; }
+IfcAxis2Placement3D* IfcElementarySurface::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(0)); }
+bool IfcElementarySurface::is(Type::Enum v) const { return v == Type::IfcElementarySurface || IfcSurface::is(v); }
+Type::Enum IfcElementarySurface::type() const { return Type::IfcElementarySurface; }
 Type::Enum IfcElementarySurface::Class() { return Type::IfcElementarySurface; }
 IfcElementarySurface::IfcElementarySurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcElementarySurface)) throw; entity = e; } 
 // IfcEllipse
 IfcPositiveLengthMeasure IfcEllipse::SemiAxis1() { return *entity->getArgument(1); }
 IfcPositiveLengthMeasure IfcEllipse::SemiAxis2() { return *entity->getArgument(2); }
-bool IfcEllipse::is(Type::Enum v) { return v == Type::IfcEllipse || IfcConic::is(v); }
-Type::Enum IfcEllipse::type() { return Type::IfcEllipse; }
+bool IfcEllipse::is(Type::Enum v) const { return v == Type::IfcEllipse || IfcConic::is(v); }
+Type::Enum IfcEllipse::type() const { return Type::IfcEllipse; }
 Type::Enum IfcEllipse::Class() { return Type::IfcEllipse; }
 IfcEllipse::IfcEllipse(IfcAbstractEntityPtr e) { if (!is(Type::IfcEllipse)) throw; entity = e; } 
 // IfcEllipseProfileDef
 IfcPositiveLengthMeasure IfcEllipseProfileDef::SemiAxis1() { return *entity->getArgument(3); }
 IfcPositiveLengthMeasure IfcEllipseProfileDef::SemiAxis2() { return *entity->getArgument(4); }
-bool IfcEllipseProfileDef::is(Type::Enum v) { return v == Type::IfcEllipseProfileDef || IfcParameterizedProfileDef::is(v); }
-Type::Enum IfcEllipseProfileDef::type() { return Type::IfcEllipseProfileDef; }
+bool IfcEllipseProfileDef::is(Type::Enum v) const { return v == Type::IfcEllipseProfileDef || IfcParameterizedProfileDef::is(v); }
+Type::Enum IfcEllipseProfileDef::type() const { return Type::IfcEllipseProfileDef; }
 Type::Enum IfcEllipseProfileDef::Class() { return Type::IfcEllipseProfileDef; }
 IfcEllipseProfileDef::IfcEllipseProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcEllipseProfileDef)) throw; entity = e; } 
 // IfcEnergyConversionDevice
-bool IfcEnergyConversionDevice::is(Type::Enum v) { return v == Type::IfcEnergyConversionDevice || IfcDistributionFlowElement::is(v); }
-Type::Enum IfcEnergyConversionDevice::type() { return Type::IfcEnergyConversionDevice; }
+bool IfcEnergyConversionDevice::is(Type::Enum v) const { return v == Type::IfcEnergyConversionDevice || IfcDistributionFlowElement::is(v); }
+Type::Enum IfcEnergyConversionDevice::type() const { return Type::IfcEnergyConversionDevice; }
 Type::Enum IfcEnergyConversionDevice::Class() { return Type::IfcEnergyConversionDevice; }
 IfcEnergyConversionDevice::IfcEnergyConversionDevice(IfcAbstractEntityPtr e) { if (!is(Type::IfcEnergyConversionDevice)) throw; entity = e; } 
 // IfcEnergyConversionDeviceType
-bool IfcEnergyConversionDeviceType::is(Type::Enum v) { return v == Type::IfcEnergyConversionDeviceType || IfcDistributionFlowElementType::is(v); }
-Type::Enum IfcEnergyConversionDeviceType::type() { return Type::IfcEnergyConversionDeviceType; }
+bool IfcEnergyConversionDeviceType::is(Type::Enum v) const { return v == Type::IfcEnergyConversionDeviceType || IfcDistributionFlowElementType::is(v); }
+Type::Enum IfcEnergyConversionDeviceType::type() const { return Type::IfcEnergyConversionDeviceType; }
 Type::Enum IfcEnergyConversionDeviceType::Class() { return Type::IfcEnergyConversionDeviceType; }
 IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcEnergyConversionDeviceType)) throw; entity = e; } 
 // IfcEnergyProperties
@@ -6358,8 +6365,8 @@ bool IfcEnergyProperties::hasEnergySequence() { return !entity->getArgument(4)->
 IfcEnergySequenceEnum::IfcEnergySequenceEnum IfcEnergyProperties::EnergySequence() { return IfcEnergySequenceEnum::FromString(*entity->getArgument(4)); }
 bool IfcEnergyProperties::hasUserDefinedEnergySequence() { return !entity->getArgument(5)->isNull(); }
 IfcLabel IfcEnergyProperties::UserDefinedEnergySequence() { return *entity->getArgument(5); }
-bool IfcEnergyProperties::is(Type::Enum v) { return v == Type::IfcEnergyProperties || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcEnergyProperties::type() { return Type::IfcEnergyProperties; }
+bool IfcEnergyProperties::is(Type::Enum v) const { return v == Type::IfcEnergyProperties || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcEnergyProperties::type() const { return Type::IfcEnergyProperties; }
 Type::Enum IfcEnergyProperties::Class() { return Type::IfcEnergyProperties; }
 IfcEnergyProperties::IfcEnergyProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcEnergyProperties)) throw; entity = e; } 
 // IfcEnvironmentalImpactValue
@@ -6367,30 +6374,30 @@ IfcLabel IfcEnvironmentalImpactValue::ImpactType() { return *entity->getArgument
 IfcEnvironmentalImpactCategoryEnum::IfcEnvironmentalImpactCategoryEnum IfcEnvironmentalImpactValue::Category() { return IfcEnvironmentalImpactCategoryEnum::FromString(*entity->getArgument(7)); }
 bool IfcEnvironmentalImpactValue::hasUserDefinedCategory() { return !entity->getArgument(8)->isNull(); }
 IfcLabel IfcEnvironmentalImpactValue::UserDefinedCategory() { return *entity->getArgument(8); }
-bool IfcEnvironmentalImpactValue::is(Type::Enum v) { return v == Type::IfcEnvironmentalImpactValue || IfcAppliedValue::is(v); }
-Type::Enum IfcEnvironmentalImpactValue::type() { return Type::IfcEnvironmentalImpactValue; }
+bool IfcEnvironmentalImpactValue::is(Type::Enum v) const { return v == Type::IfcEnvironmentalImpactValue || IfcAppliedValue::is(v); }
+Type::Enum IfcEnvironmentalImpactValue::type() const { return Type::IfcEnvironmentalImpactValue; }
 Type::Enum IfcEnvironmentalImpactValue::Class() { return Type::IfcEnvironmentalImpactValue; }
 IfcEnvironmentalImpactValue::IfcEnvironmentalImpactValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcEnvironmentalImpactValue)) throw; entity = e; } 
 // IfcEquipmentElement
-bool IfcEquipmentElement::is(Type::Enum v) { return v == Type::IfcEquipmentElement || IfcElement::is(v); }
-Type::Enum IfcEquipmentElement::type() { return Type::IfcEquipmentElement; }
+bool IfcEquipmentElement::is(Type::Enum v) const { return v == Type::IfcEquipmentElement || IfcElement::is(v); }
+Type::Enum IfcEquipmentElement::type() const { return Type::IfcEquipmentElement; }
 Type::Enum IfcEquipmentElement::Class() { return Type::IfcEquipmentElement; }
 IfcEquipmentElement::IfcEquipmentElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcEquipmentElement)) throw; entity = e; } 
 // IfcEquipmentStandard
-bool IfcEquipmentStandard::is(Type::Enum v) { return v == Type::IfcEquipmentStandard || IfcControl::is(v); }
-Type::Enum IfcEquipmentStandard::type() { return Type::IfcEquipmentStandard; }
+bool IfcEquipmentStandard::is(Type::Enum v) const { return v == Type::IfcEquipmentStandard || IfcControl::is(v); }
+Type::Enum IfcEquipmentStandard::type() const { return Type::IfcEquipmentStandard; }
 Type::Enum IfcEquipmentStandard::Class() { return Type::IfcEquipmentStandard; }
 IfcEquipmentStandard::IfcEquipmentStandard(IfcAbstractEntityPtr e) { if (!is(Type::IfcEquipmentStandard)) throw; entity = e; } 
 // IfcEvaporativeCoolerType
 IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum IfcEvaporativeCoolerType::PredefinedType() { return IfcEvaporativeCoolerTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcEvaporativeCoolerType::is(Type::Enum v) { return v == Type::IfcEvaporativeCoolerType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcEvaporativeCoolerType::type() { return Type::IfcEvaporativeCoolerType; }
+bool IfcEvaporativeCoolerType::is(Type::Enum v) const { return v == Type::IfcEvaporativeCoolerType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcEvaporativeCoolerType::type() const { return Type::IfcEvaporativeCoolerType; }
 Type::Enum IfcEvaporativeCoolerType::Class() { return Type::IfcEvaporativeCoolerType; }
 IfcEvaporativeCoolerType::IfcEvaporativeCoolerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcEvaporativeCoolerType)) throw; entity = e; } 
 // IfcEvaporatorType
 IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum IfcEvaporatorType::PredefinedType() { return IfcEvaporatorTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcEvaporatorType::is(Type::Enum v) { return v == Type::IfcEvaporatorType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcEvaporatorType::type() { return Type::IfcEvaporatorType; }
+bool IfcEvaporatorType::is(Type::Enum v) const { return v == Type::IfcEvaporatorType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcEvaporatorType::type() const { return Type::IfcEvaporatorType; }
 Type::Enum IfcEvaporatorType::Class() { return Type::IfcEvaporatorType; }
 IfcEvaporatorType::IfcEvaporatorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcEvaporatorType)) throw; entity = e; } 
 // IfcExtendedMaterialProperties
@@ -6398,8 +6405,8 @@ SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > IfcExtendedMaterialProperties:
 bool IfcExtendedMaterialProperties::hasDescription() { return !entity->getArgument(2)->isNull(); }
 IfcText IfcExtendedMaterialProperties::Description() { return *entity->getArgument(2); }
 IfcLabel IfcExtendedMaterialProperties::Name() { return *entity->getArgument(3); }
-bool IfcExtendedMaterialProperties::is(Type::Enum v) { return v == Type::IfcExtendedMaterialProperties || IfcMaterialProperties::is(v); }
-Type::Enum IfcExtendedMaterialProperties::type() { return Type::IfcExtendedMaterialProperties; }
+bool IfcExtendedMaterialProperties::is(Type::Enum v) const { return v == Type::IfcExtendedMaterialProperties || IfcMaterialProperties::is(v); }
+Type::Enum IfcExtendedMaterialProperties::type() const { return Type::IfcExtendedMaterialProperties; }
 Type::Enum IfcExtendedMaterialProperties::Class() { return Type::IfcExtendedMaterialProperties; }
 IfcExtendedMaterialProperties::IfcExtendedMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcExtendedMaterialProperties)) throw; entity = e; } 
 // IfcExternalReference
@@ -6409,77 +6416,77 @@ bool IfcExternalReference::hasItemReference() { return !entity->getArgument(1)->
 IfcIdentifier IfcExternalReference::ItemReference() { return *entity->getArgument(1); }
 bool IfcExternalReference::hasName() { return !entity->getArgument(2)->isNull(); }
 IfcLabel IfcExternalReference::Name() { return *entity->getArgument(2); }
-bool IfcExternalReference::is(Type::Enum v) { return v == Type::IfcExternalReference; }
-Type::Enum IfcExternalReference::type() { return Type::IfcExternalReference; }
+bool IfcExternalReference::is(Type::Enum v) const { return v == Type::IfcExternalReference; }
+Type::Enum IfcExternalReference::type() const { return Type::IfcExternalReference; }
 Type::Enum IfcExternalReference::Class() { return Type::IfcExternalReference; }
 IfcExternalReference::IfcExternalReference(IfcAbstractEntityPtr e) { if (!is(Type::IfcExternalReference)) throw; entity = e; } 
 // IfcExternallyDefinedHatchStyle
-bool IfcExternallyDefinedHatchStyle::is(Type::Enum v) { return v == Type::IfcExternallyDefinedHatchStyle || IfcExternalReference::is(v); }
-Type::Enum IfcExternallyDefinedHatchStyle::type() { return Type::IfcExternallyDefinedHatchStyle; }
+bool IfcExternallyDefinedHatchStyle::is(Type::Enum v) const { return v == Type::IfcExternallyDefinedHatchStyle || IfcExternalReference::is(v); }
+Type::Enum IfcExternallyDefinedHatchStyle::type() const { return Type::IfcExternallyDefinedHatchStyle; }
 Type::Enum IfcExternallyDefinedHatchStyle::Class() { return Type::IfcExternallyDefinedHatchStyle; }
 IfcExternallyDefinedHatchStyle::IfcExternallyDefinedHatchStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcExternallyDefinedHatchStyle)) throw; entity = e; } 
 // IfcExternallyDefinedSurfaceStyle
-bool IfcExternallyDefinedSurfaceStyle::is(Type::Enum v) { return v == Type::IfcExternallyDefinedSurfaceStyle || IfcExternalReference::is(v); }
-Type::Enum IfcExternallyDefinedSurfaceStyle::type() { return Type::IfcExternallyDefinedSurfaceStyle; }
+bool IfcExternallyDefinedSurfaceStyle::is(Type::Enum v) const { return v == Type::IfcExternallyDefinedSurfaceStyle || IfcExternalReference::is(v); }
+Type::Enum IfcExternallyDefinedSurfaceStyle::type() const { return Type::IfcExternallyDefinedSurfaceStyle; }
 Type::Enum IfcExternallyDefinedSurfaceStyle::Class() { return Type::IfcExternallyDefinedSurfaceStyle; }
 IfcExternallyDefinedSurfaceStyle::IfcExternallyDefinedSurfaceStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcExternallyDefinedSurfaceStyle)) throw; entity = e; } 
 // IfcExternallyDefinedSymbol
-bool IfcExternallyDefinedSymbol::is(Type::Enum v) { return v == Type::IfcExternallyDefinedSymbol || IfcExternalReference::is(v); }
-Type::Enum IfcExternallyDefinedSymbol::type() { return Type::IfcExternallyDefinedSymbol; }
+bool IfcExternallyDefinedSymbol::is(Type::Enum v) const { return v == Type::IfcExternallyDefinedSymbol || IfcExternalReference::is(v); }
+Type::Enum IfcExternallyDefinedSymbol::type() const { return Type::IfcExternallyDefinedSymbol; }
 Type::Enum IfcExternallyDefinedSymbol::Class() { return Type::IfcExternallyDefinedSymbol; }
 IfcExternallyDefinedSymbol::IfcExternallyDefinedSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcExternallyDefinedSymbol)) throw; entity = e; } 
 // IfcExternallyDefinedTextFont
-bool IfcExternallyDefinedTextFont::is(Type::Enum v) { return v == Type::IfcExternallyDefinedTextFont || IfcExternalReference::is(v); }
-Type::Enum IfcExternallyDefinedTextFont::type() { return Type::IfcExternallyDefinedTextFont; }
+bool IfcExternallyDefinedTextFont::is(Type::Enum v) const { return v == Type::IfcExternallyDefinedTextFont || IfcExternalReference::is(v); }
+Type::Enum IfcExternallyDefinedTextFont::type() const { return Type::IfcExternallyDefinedTextFont; }
 Type::Enum IfcExternallyDefinedTextFont::Class() { return Type::IfcExternallyDefinedTextFont; }
 IfcExternallyDefinedTextFont::IfcExternallyDefinedTextFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcExternallyDefinedTextFont)) throw; entity = e; } 
 // IfcExtrudedAreaSolid
-SHARED_PTR<IfcDirection> IfcExtrudedAreaSolid::ExtrudedDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(2)); }
+IfcDirection* IfcExtrudedAreaSolid::ExtrudedDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(2)); }
 IfcPositiveLengthMeasure IfcExtrudedAreaSolid::Depth() { return *entity->getArgument(3); }
-bool IfcExtrudedAreaSolid::is(Type::Enum v) { return v == Type::IfcExtrudedAreaSolid || IfcSweptAreaSolid::is(v); }
-Type::Enum IfcExtrudedAreaSolid::type() { return Type::IfcExtrudedAreaSolid; }
+bool IfcExtrudedAreaSolid::is(Type::Enum v) const { return v == Type::IfcExtrudedAreaSolid || IfcSweptAreaSolid::is(v); }
+Type::Enum IfcExtrudedAreaSolid::type() const { return Type::IfcExtrudedAreaSolid; }
 Type::Enum IfcExtrudedAreaSolid::Class() { return Type::IfcExtrudedAreaSolid; }
 IfcExtrudedAreaSolid::IfcExtrudedAreaSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcExtrudedAreaSolid)) throw; entity = e; } 
 // IfcFace
 SHARED_PTR< IfcTemplatedEntityList<IfcFaceBound> > IfcFace::Bounds() { RETURN_AS_LIST(IfcFaceBound,0) }
-bool IfcFace::is(Type::Enum v) { return v == Type::IfcFace || IfcTopologicalRepresentationItem::is(v); }
-Type::Enum IfcFace::type() { return Type::IfcFace; }
+bool IfcFace::is(Type::Enum v) const { return v == Type::IfcFace || IfcTopologicalRepresentationItem::is(v); }
+Type::Enum IfcFace::type() const { return Type::IfcFace; }
 Type::Enum IfcFace::Class() { return Type::IfcFace; }
 IfcFace::IfcFace(IfcAbstractEntityPtr e) { if (!is(Type::IfcFace)) throw; entity = e; } 
 // IfcFaceBasedSurfaceModel
 SHARED_PTR< IfcTemplatedEntityList<IfcConnectedFaceSet> > IfcFaceBasedSurfaceModel::FbsmFaces() { RETURN_AS_LIST(IfcConnectedFaceSet,0) }
-bool IfcFaceBasedSurfaceModel::is(Type::Enum v) { return v == Type::IfcFaceBasedSurfaceModel || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcFaceBasedSurfaceModel::type() { return Type::IfcFaceBasedSurfaceModel; }
+bool IfcFaceBasedSurfaceModel::is(Type::Enum v) const { return v == Type::IfcFaceBasedSurfaceModel || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcFaceBasedSurfaceModel::type() const { return Type::IfcFaceBasedSurfaceModel; }
 Type::Enum IfcFaceBasedSurfaceModel::Class() { return Type::IfcFaceBasedSurfaceModel; }
 IfcFaceBasedSurfaceModel::IfcFaceBasedSurfaceModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcFaceBasedSurfaceModel)) throw; entity = e; } 
 // IfcFaceBound
-SHARED_PTR<IfcLoop> IfcFaceBound::Bound() { return reinterpret_pointer_cast<IfcBaseClass,IfcLoop>(*entity->getArgument(0)); }
+IfcLoop* IfcFaceBound::Bound() { return reinterpret_pointer_cast<IfcBaseClass,IfcLoop>(*entity->getArgument(0)); }
 bool IfcFaceBound::Orientation() { return *entity->getArgument(1); }
-bool IfcFaceBound::is(Type::Enum v) { return v == Type::IfcFaceBound || IfcTopologicalRepresentationItem::is(v); }
-Type::Enum IfcFaceBound::type() { return Type::IfcFaceBound; }
+bool IfcFaceBound::is(Type::Enum v) const { return v == Type::IfcFaceBound || IfcTopologicalRepresentationItem::is(v); }
+Type::Enum IfcFaceBound::type() const { return Type::IfcFaceBound; }
 Type::Enum IfcFaceBound::Class() { return Type::IfcFaceBound; }
 IfcFaceBound::IfcFaceBound(IfcAbstractEntityPtr e) { if (!is(Type::IfcFaceBound)) throw; entity = e; } 
 // IfcFaceOuterBound
-bool IfcFaceOuterBound::is(Type::Enum v) { return v == Type::IfcFaceOuterBound || IfcFaceBound::is(v); }
-Type::Enum IfcFaceOuterBound::type() { return Type::IfcFaceOuterBound; }
+bool IfcFaceOuterBound::is(Type::Enum v) const { return v == Type::IfcFaceOuterBound || IfcFaceBound::is(v); }
+Type::Enum IfcFaceOuterBound::type() const { return Type::IfcFaceOuterBound; }
 Type::Enum IfcFaceOuterBound::Class() { return Type::IfcFaceOuterBound; }
 IfcFaceOuterBound::IfcFaceOuterBound(IfcAbstractEntityPtr e) { if (!is(Type::IfcFaceOuterBound)) throw; entity = e; } 
 // IfcFaceSurface
-SHARED_PTR<IfcSurface> IfcFaceSurface::FaceSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(1)); }
+IfcSurface* IfcFaceSurface::FaceSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(1)); }
 bool IfcFaceSurface::SameSense() { return *entity->getArgument(2); }
-bool IfcFaceSurface::is(Type::Enum v) { return v == Type::IfcFaceSurface || IfcFace::is(v); }
-Type::Enum IfcFaceSurface::type() { return Type::IfcFaceSurface; }
+bool IfcFaceSurface::is(Type::Enum v) const { return v == Type::IfcFaceSurface || IfcFace::is(v); }
+Type::Enum IfcFaceSurface::type() const { return Type::IfcFaceSurface; }
 Type::Enum IfcFaceSurface::Class() { return Type::IfcFaceSurface; }
 IfcFaceSurface::IfcFaceSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcFaceSurface)) throw; entity = e; } 
 // IfcFacetedBrep
-bool IfcFacetedBrep::is(Type::Enum v) { return v == Type::IfcFacetedBrep || IfcManifoldSolidBrep::is(v); }
-Type::Enum IfcFacetedBrep::type() { return Type::IfcFacetedBrep; }
+bool IfcFacetedBrep::is(Type::Enum v) const { return v == Type::IfcFacetedBrep || IfcManifoldSolidBrep::is(v); }
+Type::Enum IfcFacetedBrep::type() const { return Type::IfcFacetedBrep; }
 Type::Enum IfcFacetedBrep::Class() { return Type::IfcFacetedBrep; }
 IfcFacetedBrep::IfcFacetedBrep(IfcAbstractEntityPtr e) { if (!is(Type::IfcFacetedBrep)) throw; entity = e; } 
 // IfcFacetedBrepWithVoids
 SHARED_PTR< IfcTemplatedEntityList<IfcClosedShell> > IfcFacetedBrepWithVoids::Voids() { RETURN_AS_LIST(IfcClosedShell,1) }
-bool IfcFacetedBrepWithVoids::is(Type::Enum v) { return v == Type::IfcFacetedBrepWithVoids || IfcManifoldSolidBrep::is(v); }
-Type::Enum IfcFacetedBrepWithVoids::type() { return Type::IfcFacetedBrepWithVoids; }
+bool IfcFacetedBrepWithVoids::is(Type::Enum v) const { return v == Type::IfcFacetedBrepWithVoids || IfcManifoldSolidBrep::is(v); }
+Type::Enum IfcFacetedBrepWithVoids::type() const { return Type::IfcFacetedBrepWithVoids; }
 Type::Enum IfcFacetedBrepWithVoids::Class() { return Type::IfcFacetedBrepWithVoids; }
 IfcFacetedBrepWithVoids::IfcFacetedBrepWithVoids(IfcAbstractEntityPtr e) { if (!is(Type::IfcFacetedBrepWithVoids)) throw; entity = e; } 
 // IfcFailureConnectionCondition
@@ -6495,180 +6502,180 @@ bool IfcFailureConnectionCondition::hasCompressionFailureY() { return !entity->g
 IfcForceMeasure IfcFailureConnectionCondition::CompressionFailureY() { return *entity->getArgument(5); }
 bool IfcFailureConnectionCondition::hasCompressionFailureZ() { return !entity->getArgument(6)->isNull(); }
 IfcForceMeasure IfcFailureConnectionCondition::CompressionFailureZ() { return *entity->getArgument(6); }
-bool IfcFailureConnectionCondition::is(Type::Enum v) { return v == Type::IfcFailureConnectionCondition || IfcStructuralConnectionCondition::is(v); }
-Type::Enum IfcFailureConnectionCondition::type() { return Type::IfcFailureConnectionCondition; }
+bool IfcFailureConnectionCondition::is(Type::Enum v) const { return v == Type::IfcFailureConnectionCondition || IfcStructuralConnectionCondition::is(v); }
+Type::Enum IfcFailureConnectionCondition::type() const { return Type::IfcFailureConnectionCondition; }
 Type::Enum IfcFailureConnectionCondition::Class() { return Type::IfcFailureConnectionCondition; }
 IfcFailureConnectionCondition::IfcFailureConnectionCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcFailureConnectionCondition)) throw; entity = e; } 
 // IfcFanType
 IfcFanTypeEnum::IfcFanTypeEnum IfcFanType::PredefinedType() { return IfcFanTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcFanType::is(Type::Enum v) { return v == Type::IfcFanType || IfcFlowMovingDeviceType::is(v); }
-Type::Enum IfcFanType::type() { return Type::IfcFanType; }
+bool IfcFanType::is(Type::Enum v) const { return v == Type::IfcFanType || IfcFlowMovingDeviceType::is(v); }
+Type::Enum IfcFanType::type() const { return Type::IfcFanType; }
 Type::Enum IfcFanType::Class() { return Type::IfcFanType; }
 IfcFanType::IfcFanType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFanType)) throw; entity = e; } 
 // IfcFastener
-bool IfcFastener::is(Type::Enum v) { return v == Type::IfcFastener || IfcElementComponent::is(v); }
-Type::Enum IfcFastener::type() { return Type::IfcFastener; }
+bool IfcFastener::is(Type::Enum v) const { return v == Type::IfcFastener || IfcElementComponent::is(v); }
+Type::Enum IfcFastener::type() const { return Type::IfcFastener; }
 Type::Enum IfcFastener::Class() { return Type::IfcFastener; }
 IfcFastener::IfcFastener(IfcAbstractEntityPtr e) { if (!is(Type::IfcFastener)) throw; entity = e; } 
 // IfcFastenerType
-bool IfcFastenerType::is(Type::Enum v) { return v == Type::IfcFastenerType || IfcElementComponentType::is(v); }
-Type::Enum IfcFastenerType::type() { return Type::IfcFastenerType; }
+bool IfcFastenerType::is(Type::Enum v) const { return v == Type::IfcFastenerType || IfcElementComponentType::is(v); }
+Type::Enum IfcFastenerType::type() const { return Type::IfcFastenerType; }
 Type::Enum IfcFastenerType::Class() { return Type::IfcFastenerType; }
 IfcFastenerType::IfcFastenerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFastenerType)) throw; entity = e; } 
 // IfcFeatureElement
-bool IfcFeatureElement::is(Type::Enum v) { return v == Type::IfcFeatureElement || IfcElement::is(v); }
-Type::Enum IfcFeatureElement::type() { return Type::IfcFeatureElement; }
+bool IfcFeatureElement::is(Type::Enum v) const { return v == Type::IfcFeatureElement || IfcElement::is(v); }
+Type::Enum IfcFeatureElement::type() const { return Type::IfcFeatureElement; }
 Type::Enum IfcFeatureElement::Class() { return Type::IfcFeatureElement; }
 IfcFeatureElement::IfcFeatureElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcFeatureElement)) throw; entity = e; } 
 // IfcFeatureElementAddition
 IfcRelProjectsElement::list IfcFeatureElementAddition::ProjectsElements() { RETURN_INVERSE(IfcRelProjectsElement) }
-bool IfcFeatureElementAddition::is(Type::Enum v) { return v == Type::IfcFeatureElementAddition || IfcFeatureElement::is(v); }
-Type::Enum IfcFeatureElementAddition::type() { return Type::IfcFeatureElementAddition; }
+bool IfcFeatureElementAddition::is(Type::Enum v) const { return v == Type::IfcFeatureElementAddition || IfcFeatureElement::is(v); }
+Type::Enum IfcFeatureElementAddition::type() const { return Type::IfcFeatureElementAddition; }
 Type::Enum IfcFeatureElementAddition::Class() { return Type::IfcFeatureElementAddition; }
 IfcFeatureElementAddition::IfcFeatureElementAddition(IfcAbstractEntityPtr e) { if (!is(Type::IfcFeatureElementAddition)) throw; entity = e; } 
 // IfcFeatureElementSubtraction
 IfcRelVoidsElement::list IfcFeatureElementSubtraction::VoidsElements() { RETURN_INVERSE(IfcRelVoidsElement) }
-bool IfcFeatureElementSubtraction::is(Type::Enum v) { return v == Type::IfcFeatureElementSubtraction || IfcFeatureElement::is(v); }
-Type::Enum IfcFeatureElementSubtraction::type() { return Type::IfcFeatureElementSubtraction; }
+bool IfcFeatureElementSubtraction::is(Type::Enum v) const { return v == Type::IfcFeatureElementSubtraction || IfcFeatureElement::is(v); }
+Type::Enum IfcFeatureElementSubtraction::type() const { return Type::IfcFeatureElementSubtraction; }
 Type::Enum IfcFeatureElementSubtraction::Class() { return Type::IfcFeatureElementSubtraction; }
 IfcFeatureElementSubtraction::IfcFeatureElementSubtraction(IfcAbstractEntityPtr e) { if (!is(Type::IfcFeatureElementSubtraction)) throw; entity = e; } 
 // IfcFillAreaStyle
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcFillAreaStyle::FillStyles() { RETURN_AS_LIST(IfcAbstractSelect,1) }
-bool IfcFillAreaStyle::is(Type::Enum v) { return v == Type::IfcFillAreaStyle || IfcPresentationStyle::is(v); }
-Type::Enum IfcFillAreaStyle::type() { return Type::IfcFillAreaStyle; }
+bool IfcFillAreaStyle::is(Type::Enum v) const { return v == Type::IfcFillAreaStyle || IfcPresentationStyle::is(v); }
+Type::Enum IfcFillAreaStyle::type() const { return Type::IfcFillAreaStyle; }
 Type::Enum IfcFillAreaStyle::Class() { return Type::IfcFillAreaStyle; }
 IfcFillAreaStyle::IfcFillAreaStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcFillAreaStyle)) throw; entity = e; } 
 // IfcFillAreaStyleHatching
-SHARED_PTR<IfcCurveStyle> IfcFillAreaStyleHatching::HatchLineAppearance() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurveStyle>(*entity->getArgument(0)); }
+IfcCurveStyle* IfcFillAreaStyleHatching::HatchLineAppearance() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurveStyle>(*entity->getArgument(0)); }
 IfcHatchLineDistanceSelect IfcFillAreaStyleHatching::StartOfNextHatchLine() { return *entity->getArgument(1); }
 bool IfcFillAreaStyleHatching::hasPointOfReferenceHatchLine() { return !entity->getArgument(2)->isNull(); }
-SHARED_PTR<IfcCartesianPoint> IfcFillAreaStyleHatching::PointOfReferenceHatchLine() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(2)); }
+IfcCartesianPoint* IfcFillAreaStyleHatching::PointOfReferenceHatchLine() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(2)); }
 bool IfcFillAreaStyleHatching::hasPatternStart() { return !entity->getArgument(3)->isNull(); }
-SHARED_PTR<IfcCartesianPoint> IfcFillAreaStyleHatching::PatternStart() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(3)); }
+IfcCartesianPoint* IfcFillAreaStyleHatching::PatternStart() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(3)); }
 IfcPlaneAngleMeasure IfcFillAreaStyleHatching::HatchLineAngle() { return *entity->getArgument(4); }
-bool IfcFillAreaStyleHatching::is(Type::Enum v) { return v == Type::IfcFillAreaStyleHatching || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcFillAreaStyleHatching::type() { return Type::IfcFillAreaStyleHatching; }
+bool IfcFillAreaStyleHatching::is(Type::Enum v) const { return v == Type::IfcFillAreaStyleHatching || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcFillAreaStyleHatching::type() const { return Type::IfcFillAreaStyleHatching; }
 Type::Enum IfcFillAreaStyleHatching::Class() { return Type::IfcFillAreaStyleHatching; }
 IfcFillAreaStyleHatching::IfcFillAreaStyleHatching(IfcAbstractEntityPtr e) { if (!is(Type::IfcFillAreaStyleHatching)) throw; entity = e; } 
 // IfcFillAreaStyleTileSymbolWithStyle
-SHARED_PTR<IfcAnnotationSymbolOccurrence> IfcFillAreaStyleTileSymbolWithStyle::Symbol() { return reinterpret_pointer_cast<IfcBaseClass,IfcAnnotationSymbolOccurrence>(*entity->getArgument(0)); }
-bool IfcFillAreaStyleTileSymbolWithStyle::is(Type::Enum v) { return v == Type::IfcFillAreaStyleTileSymbolWithStyle || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcFillAreaStyleTileSymbolWithStyle::type() { return Type::IfcFillAreaStyleTileSymbolWithStyle; }
+IfcAnnotationSymbolOccurrence* IfcFillAreaStyleTileSymbolWithStyle::Symbol() { return reinterpret_pointer_cast<IfcBaseClass,IfcAnnotationSymbolOccurrence>(*entity->getArgument(0)); }
+bool IfcFillAreaStyleTileSymbolWithStyle::is(Type::Enum v) const { return v == Type::IfcFillAreaStyleTileSymbolWithStyle || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcFillAreaStyleTileSymbolWithStyle::type() const { return Type::IfcFillAreaStyleTileSymbolWithStyle; }
 Type::Enum IfcFillAreaStyleTileSymbolWithStyle::Class() { return Type::IfcFillAreaStyleTileSymbolWithStyle; }
 IfcFillAreaStyleTileSymbolWithStyle::IfcFillAreaStyleTileSymbolWithStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcFillAreaStyleTileSymbolWithStyle)) throw; entity = e; } 
 // IfcFillAreaStyleTiles
-SHARED_PTR<IfcOneDirectionRepeatFactor> IfcFillAreaStyleTiles::TilingPattern() { return reinterpret_pointer_cast<IfcBaseClass,IfcOneDirectionRepeatFactor>(*entity->getArgument(0)); }
+IfcOneDirectionRepeatFactor* IfcFillAreaStyleTiles::TilingPattern() { return reinterpret_pointer_cast<IfcBaseClass,IfcOneDirectionRepeatFactor>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcFillAreaStyleTiles::Tiles() { RETURN_AS_LIST(IfcAbstractSelect,1) }
 IfcPositiveRatioMeasure IfcFillAreaStyleTiles::TilingScale() { return *entity->getArgument(2); }
-bool IfcFillAreaStyleTiles::is(Type::Enum v) { return v == Type::IfcFillAreaStyleTiles || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcFillAreaStyleTiles::type() { return Type::IfcFillAreaStyleTiles; }
+bool IfcFillAreaStyleTiles::is(Type::Enum v) const { return v == Type::IfcFillAreaStyleTiles || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcFillAreaStyleTiles::type() const { return Type::IfcFillAreaStyleTiles; }
 Type::Enum IfcFillAreaStyleTiles::Class() { return Type::IfcFillAreaStyleTiles; }
 IfcFillAreaStyleTiles::IfcFillAreaStyleTiles(IfcAbstractEntityPtr e) { if (!is(Type::IfcFillAreaStyleTiles)) throw; entity = e; } 
 // IfcFilterType
 IfcFilterTypeEnum::IfcFilterTypeEnum IfcFilterType::PredefinedType() { return IfcFilterTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcFilterType::is(Type::Enum v) { return v == Type::IfcFilterType || IfcFlowTreatmentDeviceType::is(v); }
-Type::Enum IfcFilterType::type() { return Type::IfcFilterType; }
+bool IfcFilterType::is(Type::Enum v) const { return v == Type::IfcFilterType || IfcFlowTreatmentDeviceType::is(v); }
+Type::Enum IfcFilterType::type() const { return Type::IfcFilterType; }
 Type::Enum IfcFilterType::Class() { return Type::IfcFilterType; }
 IfcFilterType::IfcFilterType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFilterType)) throw; entity = e; } 
 // IfcFireSuppressionTerminalType
 IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum IfcFireSuppressionTerminalType::PredefinedType() { return IfcFireSuppressionTerminalTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcFireSuppressionTerminalType::is(Type::Enum v) { return v == Type::IfcFireSuppressionTerminalType || IfcFlowTerminalType::is(v); }
-Type::Enum IfcFireSuppressionTerminalType::type() { return Type::IfcFireSuppressionTerminalType; }
+bool IfcFireSuppressionTerminalType::is(Type::Enum v) const { return v == Type::IfcFireSuppressionTerminalType || IfcFlowTerminalType::is(v); }
+Type::Enum IfcFireSuppressionTerminalType::type() const { return Type::IfcFireSuppressionTerminalType; }
 Type::Enum IfcFireSuppressionTerminalType::Class() { return Type::IfcFireSuppressionTerminalType; }
 IfcFireSuppressionTerminalType::IfcFireSuppressionTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFireSuppressionTerminalType)) throw; entity = e; } 
 // IfcFlowController
-bool IfcFlowController::is(Type::Enum v) { return v == Type::IfcFlowController || IfcDistributionFlowElement::is(v); }
-Type::Enum IfcFlowController::type() { return Type::IfcFlowController; }
+bool IfcFlowController::is(Type::Enum v) const { return v == Type::IfcFlowController || IfcDistributionFlowElement::is(v); }
+Type::Enum IfcFlowController::type() const { return Type::IfcFlowController; }
 Type::Enum IfcFlowController::Class() { return Type::IfcFlowController; }
 IfcFlowController::IfcFlowController(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowController)) throw; entity = e; } 
 // IfcFlowControllerType
-bool IfcFlowControllerType::is(Type::Enum v) { return v == Type::IfcFlowControllerType || IfcDistributionFlowElementType::is(v); }
-Type::Enum IfcFlowControllerType::type() { return Type::IfcFlowControllerType; }
+bool IfcFlowControllerType::is(Type::Enum v) const { return v == Type::IfcFlowControllerType || IfcDistributionFlowElementType::is(v); }
+Type::Enum IfcFlowControllerType::type() const { return Type::IfcFlowControllerType; }
 Type::Enum IfcFlowControllerType::Class() { return Type::IfcFlowControllerType; }
 IfcFlowControllerType::IfcFlowControllerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowControllerType)) throw; entity = e; } 
 // IfcFlowFitting
-bool IfcFlowFitting::is(Type::Enum v) { return v == Type::IfcFlowFitting || IfcDistributionFlowElement::is(v); }
-Type::Enum IfcFlowFitting::type() { return Type::IfcFlowFitting; }
+bool IfcFlowFitting::is(Type::Enum v) const { return v == Type::IfcFlowFitting || IfcDistributionFlowElement::is(v); }
+Type::Enum IfcFlowFitting::type() const { return Type::IfcFlowFitting; }
 Type::Enum IfcFlowFitting::Class() { return Type::IfcFlowFitting; }
 IfcFlowFitting::IfcFlowFitting(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowFitting)) throw; entity = e; } 
 // IfcFlowFittingType
-bool IfcFlowFittingType::is(Type::Enum v) { return v == Type::IfcFlowFittingType || IfcDistributionFlowElementType::is(v); }
-Type::Enum IfcFlowFittingType::type() { return Type::IfcFlowFittingType; }
+bool IfcFlowFittingType::is(Type::Enum v) const { return v == Type::IfcFlowFittingType || IfcDistributionFlowElementType::is(v); }
+Type::Enum IfcFlowFittingType::type() const { return Type::IfcFlowFittingType; }
 Type::Enum IfcFlowFittingType::Class() { return Type::IfcFlowFittingType; }
 IfcFlowFittingType::IfcFlowFittingType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowFittingType)) throw; entity = e; } 
 // IfcFlowInstrumentType
 IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum IfcFlowInstrumentType::PredefinedType() { return IfcFlowInstrumentTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcFlowInstrumentType::is(Type::Enum v) { return v == Type::IfcFlowInstrumentType || IfcDistributionControlElementType::is(v); }
-Type::Enum IfcFlowInstrumentType::type() { return Type::IfcFlowInstrumentType; }
+bool IfcFlowInstrumentType::is(Type::Enum v) const { return v == Type::IfcFlowInstrumentType || IfcDistributionControlElementType::is(v); }
+Type::Enum IfcFlowInstrumentType::type() const { return Type::IfcFlowInstrumentType; }
 Type::Enum IfcFlowInstrumentType::Class() { return Type::IfcFlowInstrumentType; }
 IfcFlowInstrumentType::IfcFlowInstrumentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowInstrumentType)) throw; entity = e; } 
 // IfcFlowMeterType
 IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum IfcFlowMeterType::PredefinedType() { return IfcFlowMeterTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcFlowMeterType::is(Type::Enum v) { return v == Type::IfcFlowMeterType || IfcFlowControllerType::is(v); }
-Type::Enum IfcFlowMeterType::type() { return Type::IfcFlowMeterType; }
+bool IfcFlowMeterType::is(Type::Enum v) const { return v == Type::IfcFlowMeterType || IfcFlowControllerType::is(v); }
+Type::Enum IfcFlowMeterType::type() const { return Type::IfcFlowMeterType; }
 Type::Enum IfcFlowMeterType::Class() { return Type::IfcFlowMeterType; }
 IfcFlowMeterType::IfcFlowMeterType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowMeterType)) throw; entity = e; } 
 // IfcFlowMovingDevice
-bool IfcFlowMovingDevice::is(Type::Enum v) { return v == Type::IfcFlowMovingDevice || IfcDistributionFlowElement::is(v); }
-Type::Enum IfcFlowMovingDevice::type() { return Type::IfcFlowMovingDevice; }
+bool IfcFlowMovingDevice::is(Type::Enum v) const { return v == Type::IfcFlowMovingDevice || IfcDistributionFlowElement::is(v); }
+Type::Enum IfcFlowMovingDevice::type() const { return Type::IfcFlowMovingDevice; }
 Type::Enum IfcFlowMovingDevice::Class() { return Type::IfcFlowMovingDevice; }
 IfcFlowMovingDevice::IfcFlowMovingDevice(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowMovingDevice)) throw; entity = e; } 
 // IfcFlowMovingDeviceType
-bool IfcFlowMovingDeviceType::is(Type::Enum v) { return v == Type::IfcFlowMovingDeviceType || IfcDistributionFlowElementType::is(v); }
-Type::Enum IfcFlowMovingDeviceType::type() { return Type::IfcFlowMovingDeviceType; }
+bool IfcFlowMovingDeviceType::is(Type::Enum v) const { return v == Type::IfcFlowMovingDeviceType || IfcDistributionFlowElementType::is(v); }
+Type::Enum IfcFlowMovingDeviceType::type() const { return Type::IfcFlowMovingDeviceType; }
 Type::Enum IfcFlowMovingDeviceType::Class() { return Type::IfcFlowMovingDeviceType; }
 IfcFlowMovingDeviceType::IfcFlowMovingDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowMovingDeviceType)) throw; entity = e; } 
 // IfcFlowSegment
-bool IfcFlowSegment::is(Type::Enum v) { return v == Type::IfcFlowSegment || IfcDistributionFlowElement::is(v); }
-Type::Enum IfcFlowSegment::type() { return Type::IfcFlowSegment; }
+bool IfcFlowSegment::is(Type::Enum v) const { return v == Type::IfcFlowSegment || IfcDistributionFlowElement::is(v); }
+Type::Enum IfcFlowSegment::type() const { return Type::IfcFlowSegment; }
 Type::Enum IfcFlowSegment::Class() { return Type::IfcFlowSegment; }
 IfcFlowSegment::IfcFlowSegment(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowSegment)) throw; entity = e; } 
 // IfcFlowSegmentType
-bool IfcFlowSegmentType::is(Type::Enum v) { return v == Type::IfcFlowSegmentType || IfcDistributionFlowElementType::is(v); }
-Type::Enum IfcFlowSegmentType::type() { return Type::IfcFlowSegmentType; }
+bool IfcFlowSegmentType::is(Type::Enum v) const { return v == Type::IfcFlowSegmentType || IfcDistributionFlowElementType::is(v); }
+Type::Enum IfcFlowSegmentType::type() const { return Type::IfcFlowSegmentType; }
 Type::Enum IfcFlowSegmentType::Class() { return Type::IfcFlowSegmentType; }
 IfcFlowSegmentType::IfcFlowSegmentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowSegmentType)) throw; entity = e; } 
 // IfcFlowStorageDevice
-bool IfcFlowStorageDevice::is(Type::Enum v) { return v == Type::IfcFlowStorageDevice || IfcDistributionFlowElement::is(v); }
-Type::Enum IfcFlowStorageDevice::type() { return Type::IfcFlowStorageDevice; }
+bool IfcFlowStorageDevice::is(Type::Enum v) const { return v == Type::IfcFlowStorageDevice || IfcDistributionFlowElement::is(v); }
+Type::Enum IfcFlowStorageDevice::type() const { return Type::IfcFlowStorageDevice; }
 Type::Enum IfcFlowStorageDevice::Class() { return Type::IfcFlowStorageDevice; }
 IfcFlowStorageDevice::IfcFlowStorageDevice(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowStorageDevice)) throw; entity = e; } 
 // IfcFlowStorageDeviceType
-bool IfcFlowStorageDeviceType::is(Type::Enum v) { return v == Type::IfcFlowStorageDeviceType || IfcDistributionFlowElementType::is(v); }
-Type::Enum IfcFlowStorageDeviceType::type() { return Type::IfcFlowStorageDeviceType; }
+bool IfcFlowStorageDeviceType::is(Type::Enum v) const { return v == Type::IfcFlowStorageDeviceType || IfcDistributionFlowElementType::is(v); }
+Type::Enum IfcFlowStorageDeviceType::type() const { return Type::IfcFlowStorageDeviceType; }
 Type::Enum IfcFlowStorageDeviceType::Class() { return Type::IfcFlowStorageDeviceType; }
 IfcFlowStorageDeviceType::IfcFlowStorageDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowStorageDeviceType)) throw; entity = e; } 
 // IfcFlowTerminal
-bool IfcFlowTerminal::is(Type::Enum v) { return v == Type::IfcFlowTerminal || IfcDistributionFlowElement::is(v); }
-Type::Enum IfcFlowTerminal::type() { return Type::IfcFlowTerminal; }
+bool IfcFlowTerminal::is(Type::Enum v) const { return v == Type::IfcFlowTerminal || IfcDistributionFlowElement::is(v); }
+Type::Enum IfcFlowTerminal::type() const { return Type::IfcFlowTerminal; }
 Type::Enum IfcFlowTerminal::Class() { return Type::IfcFlowTerminal; }
 IfcFlowTerminal::IfcFlowTerminal(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowTerminal)) throw; entity = e; } 
 // IfcFlowTerminalType
-bool IfcFlowTerminalType::is(Type::Enum v) { return v == Type::IfcFlowTerminalType || IfcDistributionFlowElementType::is(v); }
-Type::Enum IfcFlowTerminalType::type() { return Type::IfcFlowTerminalType; }
+bool IfcFlowTerminalType::is(Type::Enum v) const { return v == Type::IfcFlowTerminalType || IfcDistributionFlowElementType::is(v); }
+Type::Enum IfcFlowTerminalType::type() const { return Type::IfcFlowTerminalType; }
 Type::Enum IfcFlowTerminalType::Class() { return Type::IfcFlowTerminalType; }
 IfcFlowTerminalType::IfcFlowTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowTerminalType)) throw; entity = e; } 
 // IfcFlowTreatmentDevice
-bool IfcFlowTreatmentDevice::is(Type::Enum v) { return v == Type::IfcFlowTreatmentDevice || IfcDistributionFlowElement::is(v); }
-Type::Enum IfcFlowTreatmentDevice::type() { return Type::IfcFlowTreatmentDevice; }
+bool IfcFlowTreatmentDevice::is(Type::Enum v) const { return v == Type::IfcFlowTreatmentDevice || IfcDistributionFlowElement::is(v); }
+Type::Enum IfcFlowTreatmentDevice::type() const { return Type::IfcFlowTreatmentDevice; }
 Type::Enum IfcFlowTreatmentDevice::Class() { return Type::IfcFlowTreatmentDevice; }
 IfcFlowTreatmentDevice::IfcFlowTreatmentDevice(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowTreatmentDevice)) throw; entity = e; } 
 // IfcFlowTreatmentDeviceType
-bool IfcFlowTreatmentDeviceType::is(Type::Enum v) { return v == Type::IfcFlowTreatmentDeviceType || IfcDistributionFlowElementType::is(v); }
-Type::Enum IfcFlowTreatmentDeviceType::type() { return Type::IfcFlowTreatmentDeviceType; }
+bool IfcFlowTreatmentDeviceType::is(Type::Enum v) const { return v == Type::IfcFlowTreatmentDeviceType || IfcDistributionFlowElementType::is(v); }
+Type::Enum IfcFlowTreatmentDeviceType::type() const { return Type::IfcFlowTreatmentDeviceType; }
 Type::Enum IfcFlowTreatmentDeviceType::Class() { return Type::IfcFlowTreatmentDeviceType; }
 IfcFlowTreatmentDeviceType::IfcFlowTreatmentDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowTreatmentDeviceType)) throw; entity = e; } 
 // IfcFluidFlowProperties
 IfcPropertySourceEnum::IfcPropertySourceEnum IfcFluidFlowProperties::PropertySource() { return IfcPropertySourceEnum::FromString(*entity->getArgument(4)); }
 bool IfcFluidFlowProperties::hasFlowConditionTimeSeries() { return !entity->getArgument(5)->isNull(); }
-SHARED_PTR<IfcTimeSeries> IfcFluidFlowProperties::FlowConditionTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(5)); }
+IfcTimeSeries* IfcFluidFlowProperties::FlowConditionTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(5)); }
 bool IfcFluidFlowProperties::hasVelocityTimeSeries() { return !entity->getArgument(6)->isNull(); }
-SHARED_PTR<IfcTimeSeries> IfcFluidFlowProperties::VelocityTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(6)); }
+IfcTimeSeries* IfcFluidFlowProperties::VelocityTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(6)); }
 bool IfcFluidFlowProperties::hasFlowrateTimeSeries() { return !entity->getArgument(7)->isNull(); }
-SHARED_PTR<IfcTimeSeries> IfcFluidFlowProperties::FlowrateTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(7)); }
-SHARED_PTR<IfcMaterial> IfcFluidFlowProperties::Fluid() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(8)); }
+IfcTimeSeries* IfcFluidFlowProperties::FlowrateTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(7)); }
+IfcMaterial* IfcFluidFlowProperties::Fluid() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(8)); }
 bool IfcFluidFlowProperties::hasPressureTimeSeries() { return !entity->getArgument(9)->isNull(); }
-SHARED_PTR<IfcTimeSeries> IfcFluidFlowProperties::PressureTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(9)); }
+IfcTimeSeries* IfcFluidFlowProperties::PressureTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(9)); }
 bool IfcFluidFlowProperties::hasUserDefinedPropertySource() { return !entity->getArgument(10)->isNull(); }
 IfcLabel IfcFluidFlowProperties::UserDefinedPropertySource() { return *entity->getArgument(10); }
 bool IfcFluidFlowProperties::hasTemperatureSingleValue() { return !entity->getArgument(11)->isNull(); }
@@ -6676,9 +6683,9 @@ IfcThermodynamicTemperatureMeasure IfcFluidFlowProperties::TemperatureSingleValu
 bool IfcFluidFlowProperties::hasWetBulbTemperatureSingleValue() { return !entity->getArgument(12)->isNull(); }
 IfcThermodynamicTemperatureMeasure IfcFluidFlowProperties::WetBulbTemperatureSingleValue() { return *entity->getArgument(12); }
 bool IfcFluidFlowProperties::hasWetBulbTemperatureTimeSeries() { return !entity->getArgument(13)->isNull(); }
-SHARED_PTR<IfcTimeSeries> IfcFluidFlowProperties::WetBulbTemperatureTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(13)); }
+IfcTimeSeries* IfcFluidFlowProperties::WetBulbTemperatureTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(13)); }
 bool IfcFluidFlowProperties::hasTemperatureTimeSeries() { return !entity->getArgument(14)->isNull(); }
-SHARED_PTR<IfcTimeSeries> IfcFluidFlowProperties::TemperatureTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(14)); }
+IfcTimeSeries* IfcFluidFlowProperties::TemperatureTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(14)); }
 bool IfcFluidFlowProperties::hasFlowrateSingleValue() { return !entity->getArgument(15)->isNull(); }
 IfcDerivedMeasureValue IfcFluidFlowProperties::FlowrateSingleValue() { return *entity->getArgument(15); }
 bool IfcFluidFlowProperties::hasFlowConditionSingleValue() { return !entity->getArgument(16)->isNull(); }
@@ -6687,14 +6694,14 @@ bool IfcFluidFlowProperties::hasVelocitySingleValue() { return !entity->getArgum
 IfcLinearVelocityMeasure IfcFluidFlowProperties::VelocitySingleValue() { return *entity->getArgument(17); }
 bool IfcFluidFlowProperties::hasPressureSingleValue() { return !entity->getArgument(18)->isNull(); }
 IfcPressureMeasure IfcFluidFlowProperties::PressureSingleValue() { return *entity->getArgument(18); }
-bool IfcFluidFlowProperties::is(Type::Enum v) { return v == Type::IfcFluidFlowProperties || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcFluidFlowProperties::type() { return Type::IfcFluidFlowProperties; }
+bool IfcFluidFlowProperties::is(Type::Enum v) const { return v == Type::IfcFluidFlowProperties || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcFluidFlowProperties::type() const { return Type::IfcFluidFlowProperties; }
 Type::Enum IfcFluidFlowProperties::Class() { return Type::IfcFluidFlowProperties; }
 IfcFluidFlowProperties::IfcFluidFlowProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcFluidFlowProperties)) throw; entity = e; } 
 // IfcFooting
 IfcFootingTypeEnum::IfcFootingTypeEnum IfcFooting::PredefinedType() { return IfcFootingTypeEnum::FromString(*entity->getArgument(8)); }
-bool IfcFooting::is(Type::Enum v) { return v == Type::IfcFooting || IfcBuildingElement::is(v); }
-Type::Enum IfcFooting::type() { return Type::IfcFooting; }
+bool IfcFooting::is(Type::Enum v) const { return v == Type::IfcFooting || IfcBuildingElement::is(v); }
+Type::Enum IfcFooting::type() const { return Type::IfcFooting; }
 Type::Enum IfcFooting::Class() { return Type::IfcFooting; }
 IfcFooting::IfcFooting(IfcAbstractEntityPtr e) { if (!is(Type::IfcFooting)) throw; entity = e; } 
 // IfcFuelProperties
@@ -6706,35 +6713,35 @@ bool IfcFuelProperties::hasLowerHeatingValue() { return !entity->getArgument(3)-
 IfcHeatingValueMeasure IfcFuelProperties::LowerHeatingValue() { return *entity->getArgument(3); }
 bool IfcFuelProperties::hasHigherHeatingValue() { return !entity->getArgument(4)->isNull(); }
 IfcHeatingValueMeasure IfcFuelProperties::HigherHeatingValue() { return *entity->getArgument(4); }
-bool IfcFuelProperties::is(Type::Enum v) { return v == Type::IfcFuelProperties || IfcMaterialProperties::is(v); }
-Type::Enum IfcFuelProperties::type() { return Type::IfcFuelProperties; }
+bool IfcFuelProperties::is(Type::Enum v) const { return v == Type::IfcFuelProperties || IfcMaterialProperties::is(v); }
+Type::Enum IfcFuelProperties::type() const { return Type::IfcFuelProperties; }
 Type::Enum IfcFuelProperties::Class() { return Type::IfcFuelProperties; }
 IfcFuelProperties::IfcFuelProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcFuelProperties)) throw; entity = e; } 
 // IfcFurnishingElement
-bool IfcFurnishingElement::is(Type::Enum v) { return v == Type::IfcFurnishingElement || IfcElement::is(v); }
-Type::Enum IfcFurnishingElement::type() { return Type::IfcFurnishingElement; }
+bool IfcFurnishingElement::is(Type::Enum v) const { return v == Type::IfcFurnishingElement || IfcElement::is(v); }
+Type::Enum IfcFurnishingElement::type() const { return Type::IfcFurnishingElement; }
 Type::Enum IfcFurnishingElement::Class() { return Type::IfcFurnishingElement; }
 IfcFurnishingElement::IfcFurnishingElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcFurnishingElement)) throw; entity = e; } 
 // IfcFurnishingElementType
-bool IfcFurnishingElementType::is(Type::Enum v) { return v == Type::IfcFurnishingElementType || IfcElementType::is(v); }
-Type::Enum IfcFurnishingElementType::type() { return Type::IfcFurnishingElementType; }
+bool IfcFurnishingElementType::is(Type::Enum v) const { return v == Type::IfcFurnishingElementType || IfcElementType::is(v); }
+Type::Enum IfcFurnishingElementType::type() const { return Type::IfcFurnishingElementType; }
 Type::Enum IfcFurnishingElementType::Class() { return Type::IfcFurnishingElementType; }
 IfcFurnishingElementType::IfcFurnishingElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFurnishingElementType)) throw; entity = e; } 
 // IfcFurnitureStandard
-bool IfcFurnitureStandard::is(Type::Enum v) { return v == Type::IfcFurnitureStandard || IfcControl::is(v); }
-Type::Enum IfcFurnitureStandard::type() { return Type::IfcFurnitureStandard; }
+bool IfcFurnitureStandard::is(Type::Enum v) const { return v == Type::IfcFurnitureStandard || IfcControl::is(v); }
+Type::Enum IfcFurnitureStandard::type() const { return Type::IfcFurnitureStandard; }
 Type::Enum IfcFurnitureStandard::Class() { return Type::IfcFurnitureStandard; }
 IfcFurnitureStandard::IfcFurnitureStandard(IfcAbstractEntityPtr e) { if (!is(Type::IfcFurnitureStandard)) throw; entity = e; } 
 // IfcFurnitureType
 IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum IfcFurnitureType::AssemblyPlace() { return IfcAssemblyPlaceEnum::FromString(*entity->getArgument(9)); }
-bool IfcFurnitureType::is(Type::Enum v) { return v == Type::IfcFurnitureType || IfcFurnishingElementType::is(v); }
-Type::Enum IfcFurnitureType::type() { return Type::IfcFurnitureType; }
+bool IfcFurnitureType::is(Type::Enum v) const { return v == Type::IfcFurnitureType || IfcFurnishingElementType::is(v); }
+Type::Enum IfcFurnitureType::type() const { return Type::IfcFurnitureType; }
 Type::Enum IfcFurnitureType::Class() { return Type::IfcFurnitureType; }
 IfcFurnitureType::IfcFurnitureType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFurnitureType)) throw; entity = e; } 
 // IfcGasTerminalType
 IfcGasTerminalTypeEnum::IfcGasTerminalTypeEnum IfcGasTerminalType::PredefinedType() { return IfcGasTerminalTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcGasTerminalType::is(Type::Enum v) { return v == Type::IfcGasTerminalType || IfcFlowTerminalType::is(v); }
-Type::Enum IfcGasTerminalType::type() { return Type::IfcGasTerminalType; }
+bool IfcGasTerminalType::is(Type::Enum v) const { return v == Type::IfcGasTerminalType || IfcFlowTerminalType::is(v); }
+Type::Enum IfcGasTerminalType::type() const { return Type::IfcGasTerminalType; }
 Type::Enum IfcGasTerminalType::Class() { return Type::IfcGasTerminalType; }
 IfcGasTerminalType::IfcGasTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcGasTerminalType)) throw; entity = e; } 
 // IfcGeneralMaterialProperties
@@ -6744,8 +6751,8 @@ bool IfcGeneralMaterialProperties::hasPorosity() { return !entity->getArgument(2
 IfcNormalisedRatioMeasure IfcGeneralMaterialProperties::Porosity() { return *entity->getArgument(2); }
 bool IfcGeneralMaterialProperties::hasMassDensity() { return !entity->getArgument(3)->isNull(); }
 IfcMassDensityMeasure IfcGeneralMaterialProperties::MassDensity() { return *entity->getArgument(3); }
-bool IfcGeneralMaterialProperties::is(Type::Enum v) { return v == Type::IfcGeneralMaterialProperties || IfcMaterialProperties::is(v); }
-Type::Enum IfcGeneralMaterialProperties::type() { return Type::IfcGeneralMaterialProperties; }
+bool IfcGeneralMaterialProperties::is(Type::Enum v) const { return v == Type::IfcGeneralMaterialProperties || IfcMaterialProperties::is(v); }
+Type::Enum IfcGeneralMaterialProperties::type() const { return Type::IfcGeneralMaterialProperties; }
 Type::Enum IfcGeneralMaterialProperties::Class() { return Type::IfcGeneralMaterialProperties; }
 IfcGeneralMaterialProperties::IfcGeneralMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeneralMaterialProperties)) throw; entity = e; } 
 // IfcGeneralProfileProperties
@@ -6759,13 +6766,13 @@ bool IfcGeneralProfileProperties::hasMaximumPlateThickness() { return !entity->g
 IfcPositiveLengthMeasure IfcGeneralProfileProperties::MaximumPlateThickness() { return *entity->getArgument(5); }
 bool IfcGeneralProfileProperties::hasCrossSectionArea() { return !entity->getArgument(6)->isNull(); }
 IfcAreaMeasure IfcGeneralProfileProperties::CrossSectionArea() { return *entity->getArgument(6); }
-bool IfcGeneralProfileProperties::is(Type::Enum v) { return v == Type::IfcGeneralProfileProperties || IfcProfileProperties::is(v); }
-Type::Enum IfcGeneralProfileProperties::type() { return Type::IfcGeneralProfileProperties; }
+bool IfcGeneralProfileProperties::is(Type::Enum v) const { return v == Type::IfcGeneralProfileProperties || IfcProfileProperties::is(v); }
+Type::Enum IfcGeneralProfileProperties::type() const { return Type::IfcGeneralProfileProperties; }
 Type::Enum IfcGeneralProfileProperties::Class() { return Type::IfcGeneralProfileProperties; }
 IfcGeneralProfileProperties::IfcGeneralProfileProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeneralProfileProperties)) throw; entity = e; } 
 // IfcGeometricCurveSet
-bool IfcGeometricCurveSet::is(Type::Enum v) { return v == Type::IfcGeometricCurveSet || IfcGeometricSet::is(v); }
-Type::Enum IfcGeometricCurveSet::type() { return Type::IfcGeometricCurveSet; }
+bool IfcGeometricCurveSet::is(Type::Enum v) const { return v == Type::IfcGeometricCurveSet || IfcGeometricSet::is(v); }
+Type::Enum IfcGeometricCurveSet::type() const { return Type::IfcGeometricCurveSet; }
 Type::Enum IfcGeometricCurveSet::Class() { return Type::IfcGeometricCurveSet; }
 IfcGeometricCurveSet::IfcGeometricCurveSet(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeometricCurveSet)) throw; entity = e; } 
 // IfcGeometricRepresentationContext
@@ -6774,32 +6781,32 @@ bool IfcGeometricRepresentationContext::hasPrecision() { return !entity->getArgu
 float IfcGeometricRepresentationContext::Precision() { return *entity->getArgument(3); }
 IfcAxis2Placement IfcGeometricRepresentationContext::WorldCoordinateSystem() { return *entity->getArgument(4); }
 bool IfcGeometricRepresentationContext::hasTrueNorth() { return !entity->getArgument(5)->isNull(); }
-SHARED_PTR<IfcDirection> IfcGeometricRepresentationContext::TrueNorth() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(5)); }
+IfcDirection* IfcGeometricRepresentationContext::TrueNorth() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(5)); }
 IfcGeometricRepresentationSubContext::list IfcGeometricRepresentationContext::HasSubContexts() { RETURN_INVERSE(IfcGeometricRepresentationSubContext) }
-bool IfcGeometricRepresentationContext::is(Type::Enum v) { return v == Type::IfcGeometricRepresentationContext || IfcRepresentationContext::is(v); }
-Type::Enum IfcGeometricRepresentationContext::type() { return Type::IfcGeometricRepresentationContext; }
+bool IfcGeometricRepresentationContext::is(Type::Enum v) const { return v == Type::IfcGeometricRepresentationContext || IfcRepresentationContext::is(v); }
+Type::Enum IfcGeometricRepresentationContext::type() const { return Type::IfcGeometricRepresentationContext; }
 Type::Enum IfcGeometricRepresentationContext::Class() { return Type::IfcGeometricRepresentationContext; }
 IfcGeometricRepresentationContext::IfcGeometricRepresentationContext(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeometricRepresentationContext)) throw; entity = e; } 
 // IfcGeometricRepresentationItem
-bool IfcGeometricRepresentationItem::is(Type::Enum v) { return v == Type::IfcGeometricRepresentationItem || IfcRepresentationItem::is(v); }
-Type::Enum IfcGeometricRepresentationItem::type() { return Type::IfcGeometricRepresentationItem; }
+bool IfcGeometricRepresentationItem::is(Type::Enum v) const { return v == Type::IfcGeometricRepresentationItem || IfcRepresentationItem::is(v); }
+Type::Enum IfcGeometricRepresentationItem::type() const { return Type::IfcGeometricRepresentationItem; }
 Type::Enum IfcGeometricRepresentationItem::Class() { return Type::IfcGeometricRepresentationItem; }
 IfcGeometricRepresentationItem::IfcGeometricRepresentationItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeometricRepresentationItem)) throw; entity = e; } 
 // IfcGeometricRepresentationSubContext
-SHARED_PTR<IfcGeometricRepresentationContext> IfcGeometricRepresentationSubContext::ParentContext() { return reinterpret_pointer_cast<IfcBaseClass,IfcGeometricRepresentationContext>(*entity->getArgument(6)); }
+IfcGeometricRepresentationContext* IfcGeometricRepresentationSubContext::ParentContext() { return reinterpret_pointer_cast<IfcBaseClass,IfcGeometricRepresentationContext>(*entity->getArgument(6)); }
 bool IfcGeometricRepresentationSubContext::hasTargetScale() { return !entity->getArgument(7)->isNull(); }
 IfcPositiveRatioMeasure IfcGeometricRepresentationSubContext::TargetScale() { return *entity->getArgument(7); }
 IfcGeometricProjectionEnum::IfcGeometricProjectionEnum IfcGeometricRepresentationSubContext::TargetView() { return IfcGeometricProjectionEnum::FromString(*entity->getArgument(8)); }
 bool IfcGeometricRepresentationSubContext::hasUserDefinedTargetView() { return !entity->getArgument(9)->isNull(); }
 IfcLabel IfcGeometricRepresentationSubContext::UserDefinedTargetView() { return *entity->getArgument(9); }
-bool IfcGeometricRepresentationSubContext::is(Type::Enum v) { return v == Type::IfcGeometricRepresentationSubContext || IfcGeometricRepresentationContext::is(v); }
-Type::Enum IfcGeometricRepresentationSubContext::type() { return Type::IfcGeometricRepresentationSubContext; }
+bool IfcGeometricRepresentationSubContext::is(Type::Enum v) const { return v == Type::IfcGeometricRepresentationSubContext || IfcGeometricRepresentationContext::is(v); }
+Type::Enum IfcGeometricRepresentationSubContext::type() const { return Type::IfcGeometricRepresentationSubContext; }
 Type::Enum IfcGeometricRepresentationSubContext::Class() { return Type::IfcGeometricRepresentationSubContext; }
 IfcGeometricRepresentationSubContext::IfcGeometricRepresentationSubContext(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeometricRepresentationSubContext)) throw; entity = e; } 
 // IfcGeometricSet
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcGeometricSet::Elements() { RETURN_AS_LIST(IfcAbstractSelect,0) }
-bool IfcGeometricSet::is(Type::Enum v) { return v == Type::IfcGeometricSet || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcGeometricSet::type() { return Type::IfcGeometricSet; }
+bool IfcGeometricSet::is(Type::Enum v) const { return v == Type::IfcGeometricSet || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcGeometricSet::type() const { return Type::IfcGeometricSet; }
 Type::Enum IfcGeometricSet::Class() { return Type::IfcGeometricSet; }
 IfcGeometricSet::IfcGeometricSet(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeometricSet)) throw; entity = e; } 
 // IfcGrid
@@ -6808,54 +6815,54 @@ SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > IfcGrid::VAxes() { RETURN_AS_L
 bool IfcGrid::hasWAxes() { return !entity->getArgument(9)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > IfcGrid::WAxes() { RETURN_AS_LIST(IfcGridAxis,9) }
 IfcRelContainedInSpatialStructure::list IfcGrid::ContainedInStructure() { RETURN_INVERSE(IfcRelContainedInSpatialStructure) }
-bool IfcGrid::is(Type::Enum v) { return v == Type::IfcGrid || IfcProduct::is(v); }
-Type::Enum IfcGrid::type() { return Type::IfcGrid; }
+bool IfcGrid::is(Type::Enum v) const { return v == Type::IfcGrid || IfcProduct::is(v); }
+Type::Enum IfcGrid::type() const { return Type::IfcGrid; }
 Type::Enum IfcGrid::Class() { return Type::IfcGrid; }
 IfcGrid::IfcGrid(IfcAbstractEntityPtr e) { if (!is(Type::IfcGrid)) throw; entity = e; } 
 // IfcGridAxis
 bool IfcGridAxis::hasAxisTag() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcGridAxis::AxisTag() { return *entity->getArgument(0); }
-SHARED_PTR<IfcCurve> IfcGridAxis::AxisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(1)); }
+IfcCurve* IfcGridAxis::AxisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(1)); }
 IfcBoolean IfcGridAxis::SameSense() { return *entity->getArgument(2); }
 IfcGrid::list IfcGridAxis::PartOfW() { RETURN_INVERSE(IfcGrid) }
 IfcGrid::list IfcGridAxis::PartOfV() { RETURN_INVERSE(IfcGrid) }
 IfcGrid::list IfcGridAxis::PartOfU() { RETURN_INVERSE(IfcGrid) }
 IfcVirtualGridIntersection::list IfcGridAxis::HasIntersections() { RETURN_INVERSE(IfcVirtualGridIntersection) }
-bool IfcGridAxis::is(Type::Enum v) { return v == Type::IfcGridAxis; }
-Type::Enum IfcGridAxis::type() { return Type::IfcGridAxis; }
+bool IfcGridAxis::is(Type::Enum v) const { return v == Type::IfcGridAxis; }
+Type::Enum IfcGridAxis::type() const { return Type::IfcGridAxis; }
 Type::Enum IfcGridAxis::Class() { return Type::IfcGridAxis; }
 IfcGridAxis::IfcGridAxis(IfcAbstractEntityPtr e) { if (!is(Type::IfcGridAxis)) throw; entity = e; } 
 // IfcGridPlacement
-SHARED_PTR<IfcVirtualGridIntersection> IfcGridPlacement::PlacementLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcVirtualGridIntersection>(*entity->getArgument(0)); }
+IfcVirtualGridIntersection* IfcGridPlacement::PlacementLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcVirtualGridIntersection>(*entity->getArgument(0)); }
 bool IfcGridPlacement::hasPlacementRefDirection() { return !entity->getArgument(1)->isNull(); }
-SHARED_PTR<IfcVirtualGridIntersection> IfcGridPlacement::PlacementRefDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcVirtualGridIntersection>(*entity->getArgument(1)); }
-bool IfcGridPlacement::is(Type::Enum v) { return v == Type::IfcGridPlacement || IfcObjectPlacement::is(v); }
-Type::Enum IfcGridPlacement::type() { return Type::IfcGridPlacement; }
+IfcVirtualGridIntersection* IfcGridPlacement::PlacementRefDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcVirtualGridIntersection>(*entity->getArgument(1)); }
+bool IfcGridPlacement::is(Type::Enum v) const { return v == Type::IfcGridPlacement || IfcObjectPlacement::is(v); }
+Type::Enum IfcGridPlacement::type() const { return Type::IfcGridPlacement; }
 Type::Enum IfcGridPlacement::Class() { return Type::IfcGridPlacement; }
 IfcGridPlacement::IfcGridPlacement(IfcAbstractEntityPtr e) { if (!is(Type::IfcGridPlacement)) throw; entity = e; } 
 // IfcGroup
 IfcRelAssignsToGroup::list IfcGroup::IsGroupedBy() { RETURN_INVERSE(IfcRelAssignsToGroup) }
-bool IfcGroup::is(Type::Enum v) { return v == Type::IfcGroup || IfcObject::is(v); }
-Type::Enum IfcGroup::type() { return Type::IfcGroup; }
+bool IfcGroup::is(Type::Enum v) const { return v == Type::IfcGroup || IfcObject::is(v); }
+Type::Enum IfcGroup::type() const { return Type::IfcGroup; }
 Type::Enum IfcGroup::Class() { return Type::IfcGroup; }
 IfcGroup::IfcGroup(IfcAbstractEntityPtr e) { if (!is(Type::IfcGroup)) throw; entity = e; } 
 // IfcHalfSpaceSolid
-SHARED_PTR<IfcSurface> IfcHalfSpaceSolid::BaseSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(0)); }
+IfcSurface* IfcHalfSpaceSolid::BaseSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(0)); }
 bool IfcHalfSpaceSolid::AgreementFlag() { return *entity->getArgument(1); }
-bool IfcHalfSpaceSolid::is(Type::Enum v) { return v == Type::IfcHalfSpaceSolid || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcHalfSpaceSolid::type() { return Type::IfcHalfSpaceSolid; }
+bool IfcHalfSpaceSolid::is(Type::Enum v) const { return v == Type::IfcHalfSpaceSolid || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcHalfSpaceSolid::type() const { return Type::IfcHalfSpaceSolid; }
 Type::Enum IfcHalfSpaceSolid::Class() { return Type::IfcHalfSpaceSolid; }
 IfcHalfSpaceSolid::IfcHalfSpaceSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcHalfSpaceSolid)) throw; entity = e; } 
 // IfcHeatExchangerType
 IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum IfcHeatExchangerType::PredefinedType() { return IfcHeatExchangerTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcHeatExchangerType::is(Type::Enum v) { return v == Type::IfcHeatExchangerType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcHeatExchangerType::type() { return Type::IfcHeatExchangerType; }
+bool IfcHeatExchangerType::is(Type::Enum v) const { return v == Type::IfcHeatExchangerType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcHeatExchangerType::type() const { return Type::IfcHeatExchangerType; }
 Type::Enum IfcHeatExchangerType::Class() { return Type::IfcHeatExchangerType; }
 IfcHeatExchangerType::IfcHeatExchangerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcHeatExchangerType)) throw; entity = e; } 
 // IfcHumidifierType
 IfcHumidifierTypeEnum::IfcHumidifierTypeEnum IfcHumidifierType::PredefinedType() { return IfcHumidifierTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcHumidifierType::is(Type::Enum v) { return v == Type::IfcHumidifierType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcHumidifierType::type() { return Type::IfcHumidifierType; }
+bool IfcHumidifierType::is(Type::Enum v) const { return v == Type::IfcHumidifierType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcHumidifierType::type() const { return Type::IfcHumidifierType; }
 Type::Enum IfcHumidifierType::Class() { return Type::IfcHumidifierType; }
 IfcHumidifierType::IfcHumidifierType(IfcAbstractEntityPtr e) { if (!is(Type::IfcHumidifierType)) throw; entity = e; } 
 // IfcHygroscopicMaterialProperties
@@ -6869,8 +6876,8 @@ bool IfcHygroscopicMaterialProperties::hasVaporPermeability() { return !entity->
 IfcVaporPermeabilityMeasure IfcHygroscopicMaterialProperties::VaporPermeability() { return *entity->getArgument(4); }
 bool IfcHygroscopicMaterialProperties::hasMoistureDiffusivity() { return !entity->getArgument(5)->isNull(); }
 IfcMoistureDiffusivityMeasure IfcHygroscopicMaterialProperties::MoistureDiffusivity() { return *entity->getArgument(5); }
-bool IfcHygroscopicMaterialProperties::is(Type::Enum v) { return v == Type::IfcHygroscopicMaterialProperties || IfcMaterialProperties::is(v); }
-Type::Enum IfcHygroscopicMaterialProperties::type() { return Type::IfcHygroscopicMaterialProperties; }
+bool IfcHygroscopicMaterialProperties::is(Type::Enum v) const { return v == Type::IfcHygroscopicMaterialProperties || IfcMaterialProperties::is(v); }
+Type::Enum IfcHygroscopicMaterialProperties::type() const { return Type::IfcHygroscopicMaterialProperties; }
 Type::Enum IfcHygroscopicMaterialProperties::Class() { return Type::IfcHygroscopicMaterialProperties; }
 IfcHygroscopicMaterialProperties::IfcHygroscopicMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcHygroscopicMaterialProperties)) throw; entity = e; } 
 // IfcIShapeProfileDef
@@ -6880,46 +6887,46 @@ IfcPositiveLengthMeasure IfcIShapeProfileDef::WebThickness() { return *entity->g
 IfcPositiveLengthMeasure IfcIShapeProfileDef::FlangeThickness() { return *entity->getArgument(6); }
 bool IfcIShapeProfileDef::hasFilletRadius() { return !entity->getArgument(7)->isNull(); }
 IfcPositiveLengthMeasure IfcIShapeProfileDef::FilletRadius() { return *entity->getArgument(7); }
-bool IfcIShapeProfileDef::is(Type::Enum v) { return v == Type::IfcIShapeProfileDef || IfcParameterizedProfileDef::is(v); }
-Type::Enum IfcIShapeProfileDef::type() { return Type::IfcIShapeProfileDef; }
+bool IfcIShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcIShapeProfileDef || IfcParameterizedProfileDef::is(v); }
+Type::Enum IfcIShapeProfileDef::type() const { return Type::IfcIShapeProfileDef; }
 Type::Enum IfcIShapeProfileDef::Class() { return Type::IfcIShapeProfileDef; }
 IfcIShapeProfileDef::IfcIShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcIShapeProfileDef)) throw; entity = e; } 
 // IfcImageTexture
 IfcIdentifier IfcImageTexture::UrlReference() { return *entity->getArgument(4); }
-bool IfcImageTexture::is(Type::Enum v) { return v == Type::IfcImageTexture || IfcSurfaceTexture::is(v); }
-Type::Enum IfcImageTexture::type() { return Type::IfcImageTexture; }
+bool IfcImageTexture::is(Type::Enum v) const { return v == Type::IfcImageTexture || IfcSurfaceTexture::is(v); }
+Type::Enum IfcImageTexture::type() const { return Type::IfcImageTexture; }
 Type::Enum IfcImageTexture::Class() { return Type::IfcImageTexture; }
 IfcImageTexture::IfcImageTexture(IfcAbstractEntityPtr e) { if (!is(Type::IfcImageTexture)) throw; entity = e; } 
 // IfcInventory
 IfcInventoryTypeEnum::IfcInventoryTypeEnum IfcInventory::InventoryType() { return IfcInventoryTypeEnum::FromString(*entity->getArgument(5)); }
 IfcActorSelect IfcInventory::Jurisdiction() { return *entity->getArgument(6); }
 SHARED_PTR< IfcTemplatedEntityList<IfcPerson> > IfcInventory::ResponsiblePersons() { RETURN_AS_LIST(IfcPerson,7) }
-SHARED_PTR<IfcCalendarDate> IfcInventory::LastUpdateDate() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(8)); }
+IfcCalendarDate* IfcInventory::LastUpdateDate() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(8)); }
 bool IfcInventory::hasCurrentValue() { return !entity->getArgument(9)->isNull(); }
-SHARED_PTR<IfcCostValue> IfcInventory::CurrentValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(9)); }
+IfcCostValue* IfcInventory::CurrentValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(9)); }
 bool IfcInventory::hasOriginalValue() { return !entity->getArgument(10)->isNull(); }
-SHARED_PTR<IfcCostValue> IfcInventory::OriginalValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(10)); }
-bool IfcInventory::is(Type::Enum v) { return v == Type::IfcInventory || IfcGroup::is(v); }
-Type::Enum IfcInventory::type() { return Type::IfcInventory; }
+IfcCostValue* IfcInventory::OriginalValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(10)); }
+bool IfcInventory::is(Type::Enum v) const { return v == Type::IfcInventory || IfcGroup::is(v); }
+Type::Enum IfcInventory::type() const { return Type::IfcInventory; }
 Type::Enum IfcInventory::Class() { return Type::IfcInventory; }
 IfcInventory::IfcInventory(IfcAbstractEntityPtr e) { if (!is(Type::IfcInventory)) throw; entity = e; } 
 // IfcIrregularTimeSeries
 SHARED_PTR< IfcTemplatedEntityList<IfcIrregularTimeSeriesValue> > IfcIrregularTimeSeries::Values() { RETURN_AS_LIST(IfcIrregularTimeSeriesValue,8) }
-bool IfcIrregularTimeSeries::is(Type::Enum v) { return v == Type::IfcIrregularTimeSeries || IfcTimeSeries::is(v); }
-Type::Enum IfcIrregularTimeSeries::type() { return Type::IfcIrregularTimeSeries; }
+bool IfcIrregularTimeSeries::is(Type::Enum v) const { return v == Type::IfcIrregularTimeSeries || IfcTimeSeries::is(v); }
+Type::Enum IfcIrregularTimeSeries::type() const { return Type::IfcIrregularTimeSeries; }
 Type::Enum IfcIrregularTimeSeries::Class() { return Type::IfcIrregularTimeSeries; }
 IfcIrregularTimeSeries::IfcIrregularTimeSeries(IfcAbstractEntityPtr e) { if (!is(Type::IfcIrregularTimeSeries)) throw; entity = e; } 
 // IfcIrregularTimeSeriesValue
 IfcDateTimeSelect IfcIrregularTimeSeriesValue::TimeStamp() { return *entity->getArgument(0); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcIrregularTimeSeriesValue::ListValues() { RETURN_AS_LIST(IfcAbstractSelect,1) }
-bool IfcIrregularTimeSeriesValue::is(Type::Enum v) { return v == Type::IfcIrregularTimeSeriesValue; }
-Type::Enum IfcIrregularTimeSeriesValue::type() { return Type::IfcIrregularTimeSeriesValue; }
+bool IfcIrregularTimeSeriesValue::is(Type::Enum v) const { return v == Type::IfcIrregularTimeSeriesValue; }
+Type::Enum IfcIrregularTimeSeriesValue::type() const { return Type::IfcIrregularTimeSeriesValue; }
 Type::Enum IfcIrregularTimeSeriesValue::Class() { return Type::IfcIrregularTimeSeriesValue; }
 IfcIrregularTimeSeriesValue::IfcIrregularTimeSeriesValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcIrregularTimeSeriesValue)) throw; entity = e; } 
 // IfcJunctionBoxType
 IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum IfcJunctionBoxType::PredefinedType() { return IfcJunctionBoxTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcJunctionBoxType::is(Type::Enum v) { return v == Type::IfcJunctionBoxType || IfcFlowFittingType::is(v); }
-Type::Enum IfcJunctionBoxType::type() { return Type::IfcJunctionBoxType; }
+bool IfcJunctionBoxType::is(Type::Enum v) const { return v == Type::IfcJunctionBoxType || IfcFlowFittingType::is(v); }
+Type::Enum IfcJunctionBoxType::type() const { return Type::IfcJunctionBoxType; }
 Type::Enum IfcJunctionBoxType::Class() { return Type::IfcJunctionBoxType; }
 IfcJunctionBoxType::IfcJunctionBoxType(IfcAbstractEntityPtr e) { if (!is(Type::IfcJunctionBoxType)) throw; entity = e; } 
 // IfcLShapeProfileDef
@@ -6937,21 +6944,21 @@ bool IfcLShapeProfileDef::hasCentreOfGravityInX() { return !entity->getArgument(
 IfcPositiveLengthMeasure IfcLShapeProfileDef::CentreOfGravityInX() { return *entity->getArgument(9); }
 bool IfcLShapeProfileDef::hasCentreOfGravityInY() { return !entity->getArgument(10)->isNull(); }
 IfcPositiveLengthMeasure IfcLShapeProfileDef::CentreOfGravityInY() { return *entity->getArgument(10); }
-bool IfcLShapeProfileDef::is(Type::Enum v) { return v == Type::IfcLShapeProfileDef || IfcParameterizedProfileDef::is(v); }
-Type::Enum IfcLShapeProfileDef::type() { return Type::IfcLShapeProfileDef; }
+bool IfcLShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcLShapeProfileDef || IfcParameterizedProfileDef::is(v); }
+Type::Enum IfcLShapeProfileDef::type() const { return Type::IfcLShapeProfileDef; }
 Type::Enum IfcLShapeProfileDef::Class() { return Type::IfcLShapeProfileDef; }
 IfcLShapeProfileDef::IfcLShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcLShapeProfileDef)) throw; entity = e; } 
 // IfcLaborResource
 bool IfcLaborResource::hasSkillSet() { return !entity->getArgument(9)->isNull(); }
 IfcText IfcLaborResource::SkillSet() { return *entity->getArgument(9); }
-bool IfcLaborResource::is(Type::Enum v) { return v == Type::IfcLaborResource || IfcConstructionResource::is(v); }
-Type::Enum IfcLaborResource::type() { return Type::IfcLaborResource; }
+bool IfcLaborResource::is(Type::Enum v) const { return v == Type::IfcLaborResource || IfcConstructionResource::is(v); }
+Type::Enum IfcLaborResource::type() const { return Type::IfcLaborResource; }
 Type::Enum IfcLaborResource::Class() { return Type::IfcLaborResource; }
 IfcLaborResource::IfcLaborResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcLaborResource)) throw; entity = e; } 
 // IfcLampType
 IfcLampTypeEnum::IfcLampTypeEnum IfcLampType::PredefinedType() { return IfcLampTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcLampType::is(Type::Enum v) { return v == Type::IfcLampType || IfcFlowTerminalType::is(v); }
-Type::Enum IfcLampType::type() { return Type::IfcLampType; }
+bool IfcLampType::is(Type::Enum v) const { return v == Type::IfcLampType || IfcFlowTerminalType::is(v); }
+Type::Enum IfcLampType::type() const { return Type::IfcLampType; }
 Type::Enum IfcLampType::Class() { return Type::IfcLampType; }
 IfcLampType::IfcLampType(IfcAbstractEntityPtr e) { if (!is(Type::IfcLampType)) throw; entity = e; } 
 // IfcLibraryInformation
@@ -6959,115 +6966,115 @@ IfcLabel IfcLibraryInformation::Name() { return *entity->getArgument(0); }
 bool IfcLibraryInformation::hasVersion() { return !entity->getArgument(1)->isNull(); }
 IfcLabel IfcLibraryInformation::Version() { return *entity->getArgument(1); }
 bool IfcLibraryInformation::hasPublisher() { return !entity->getArgument(2)->isNull(); }
-SHARED_PTR<IfcOrganization> IfcLibraryInformation::Publisher() { return reinterpret_pointer_cast<IfcBaseClass,IfcOrganization>(*entity->getArgument(2)); }
+IfcOrganization* IfcLibraryInformation::Publisher() { return reinterpret_pointer_cast<IfcBaseClass,IfcOrganization>(*entity->getArgument(2)); }
 bool IfcLibraryInformation::hasVersionDate() { return !entity->getArgument(3)->isNull(); }
-SHARED_PTR<IfcCalendarDate> IfcLibraryInformation::VersionDate() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(3)); }
+IfcCalendarDate* IfcLibraryInformation::VersionDate() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(3)); }
 bool IfcLibraryInformation::hasLibraryReference() { return !entity->getArgument(4)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcLibraryReference> > IfcLibraryInformation::LibraryReference() { RETURN_AS_LIST(IfcLibraryReference,4) }
-bool IfcLibraryInformation::is(Type::Enum v) { return v == Type::IfcLibraryInformation; }
-Type::Enum IfcLibraryInformation::type() { return Type::IfcLibraryInformation; }
+bool IfcLibraryInformation::is(Type::Enum v) const { return v == Type::IfcLibraryInformation; }
+Type::Enum IfcLibraryInformation::type() const { return Type::IfcLibraryInformation; }
 Type::Enum IfcLibraryInformation::Class() { return Type::IfcLibraryInformation; }
 IfcLibraryInformation::IfcLibraryInformation(IfcAbstractEntityPtr e) { if (!is(Type::IfcLibraryInformation)) throw; entity = e; } 
 // IfcLibraryReference
 IfcLibraryInformation::list IfcLibraryReference::ReferenceIntoLibrary() { RETURN_INVERSE(IfcLibraryInformation) }
-bool IfcLibraryReference::is(Type::Enum v) { return v == Type::IfcLibraryReference || IfcExternalReference::is(v); }
-Type::Enum IfcLibraryReference::type() { return Type::IfcLibraryReference; }
+bool IfcLibraryReference::is(Type::Enum v) const { return v == Type::IfcLibraryReference || IfcExternalReference::is(v); }
+Type::Enum IfcLibraryReference::type() const { return Type::IfcLibraryReference; }
 Type::Enum IfcLibraryReference::Class() { return Type::IfcLibraryReference; }
 IfcLibraryReference::IfcLibraryReference(IfcAbstractEntityPtr e) { if (!is(Type::IfcLibraryReference)) throw; entity = e; } 
 // IfcLightDistributionData
 IfcPlaneAngleMeasure IfcLightDistributionData::MainPlaneAngle() { return *entity->getArgument(0); }
 std::vector<IfcPlaneAngleMeasure> /*[1:?]*/ IfcLightDistributionData::SecondaryPlaneAngle() { return *entity->getArgument(1); }
 std::vector<IfcLuminousIntensityDistributionMeasure> /*[1:?]*/ IfcLightDistributionData::LuminousIntensity() { return *entity->getArgument(2); }
-bool IfcLightDistributionData::is(Type::Enum v) { return v == Type::IfcLightDistributionData; }
-Type::Enum IfcLightDistributionData::type() { return Type::IfcLightDistributionData; }
+bool IfcLightDistributionData::is(Type::Enum v) const { return v == Type::IfcLightDistributionData; }
+Type::Enum IfcLightDistributionData::type() const { return Type::IfcLightDistributionData; }
 Type::Enum IfcLightDistributionData::Class() { return Type::IfcLightDistributionData; }
 IfcLightDistributionData::IfcLightDistributionData(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightDistributionData)) throw; entity = e; } 
 // IfcLightFixtureType
 IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum IfcLightFixtureType::PredefinedType() { return IfcLightFixtureTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcLightFixtureType::is(Type::Enum v) { return v == Type::IfcLightFixtureType || IfcFlowTerminalType::is(v); }
-Type::Enum IfcLightFixtureType::type() { return Type::IfcLightFixtureType; }
+bool IfcLightFixtureType::is(Type::Enum v) const { return v == Type::IfcLightFixtureType || IfcFlowTerminalType::is(v); }
+Type::Enum IfcLightFixtureType::type() const { return Type::IfcLightFixtureType; }
 Type::Enum IfcLightFixtureType::Class() { return Type::IfcLightFixtureType; }
 IfcLightFixtureType::IfcLightFixtureType(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightFixtureType)) throw; entity = e; } 
 // IfcLightIntensityDistribution
 IfcLightDistributionCurveEnum::IfcLightDistributionCurveEnum IfcLightIntensityDistribution::LightDistributionCurve() { return IfcLightDistributionCurveEnum::FromString(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcLightDistributionData> > IfcLightIntensityDistribution::DistributionData() { RETURN_AS_LIST(IfcLightDistributionData,1) }
-bool IfcLightIntensityDistribution::is(Type::Enum v) { return v == Type::IfcLightIntensityDistribution; }
-Type::Enum IfcLightIntensityDistribution::type() { return Type::IfcLightIntensityDistribution; }
+bool IfcLightIntensityDistribution::is(Type::Enum v) const { return v == Type::IfcLightIntensityDistribution; }
+Type::Enum IfcLightIntensityDistribution::type() const { return Type::IfcLightIntensityDistribution; }
 Type::Enum IfcLightIntensityDistribution::Class() { return Type::IfcLightIntensityDistribution; }
 IfcLightIntensityDistribution::IfcLightIntensityDistribution(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightIntensityDistribution)) throw; entity = e; } 
 // IfcLightSource
 bool IfcLightSource::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcLightSource::Name() { return *entity->getArgument(0); }
-SHARED_PTR<IfcColourRgb> IfcLightSource::LightColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(1)); }
+IfcColourRgb* IfcLightSource::LightColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(1)); }
 bool IfcLightSource::hasAmbientIntensity() { return !entity->getArgument(2)->isNull(); }
 IfcNormalisedRatioMeasure IfcLightSource::AmbientIntensity() { return *entity->getArgument(2); }
 bool IfcLightSource::hasIntensity() { return !entity->getArgument(3)->isNull(); }
 IfcNormalisedRatioMeasure IfcLightSource::Intensity() { return *entity->getArgument(3); }
-bool IfcLightSource::is(Type::Enum v) { return v == Type::IfcLightSource || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcLightSource::type() { return Type::IfcLightSource; }
+bool IfcLightSource::is(Type::Enum v) const { return v == Type::IfcLightSource || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcLightSource::type() const { return Type::IfcLightSource; }
 Type::Enum IfcLightSource::Class() { return Type::IfcLightSource; }
 IfcLightSource::IfcLightSource(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightSource)) throw; entity = e; } 
 // IfcLightSourceAmbient
-bool IfcLightSourceAmbient::is(Type::Enum v) { return v == Type::IfcLightSourceAmbient || IfcLightSource::is(v); }
-Type::Enum IfcLightSourceAmbient::type() { return Type::IfcLightSourceAmbient; }
+bool IfcLightSourceAmbient::is(Type::Enum v) const { return v == Type::IfcLightSourceAmbient || IfcLightSource::is(v); }
+Type::Enum IfcLightSourceAmbient::type() const { return Type::IfcLightSourceAmbient; }
 Type::Enum IfcLightSourceAmbient::Class() { return Type::IfcLightSourceAmbient; }
 IfcLightSourceAmbient::IfcLightSourceAmbient(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightSourceAmbient)) throw; entity = e; } 
 // IfcLightSourceDirectional
-SHARED_PTR<IfcDirection> IfcLightSourceDirectional::Orientation() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(4)); }
-bool IfcLightSourceDirectional::is(Type::Enum v) { return v == Type::IfcLightSourceDirectional || IfcLightSource::is(v); }
-Type::Enum IfcLightSourceDirectional::type() { return Type::IfcLightSourceDirectional; }
+IfcDirection* IfcLightSourceDirectional::Orientation() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(4)); }
+bool IfcLightSourceDirectional::is(Type::Enum v) const { return v == Type::IfcLightSourceDirectional || IfcLightSource::is(v); }
+Type::Enum IfcLightSourceDirectional::type() const { return Type::IfcLightSourceDirectional; }
 Type::Enum IfcLightSourceDirectional::Class() { return Type::IfcLightSourceDirectional; }
 IfcLightSourceDirectional::IfcLightSourceDirectional(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightSourceDirectional)) throw; entity = e; } 
 // IfcLightSourceGoniometric
-SHARED_PTR<IfcAxis2Placement3D> IfcLightSourceGoniometric::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(4)); }
+IfcAxis2Placement3D* IfcLightSourceGoniometric::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(4)); }
 bool IfcLightSourceGoniometric::hasColourAppearance() { return !entity->getArgument(5)->isNull(); }
-SHARED_PTR<IfcColourRgb> IfcLightSourceGoniometric::ColourAppearance() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(5)); }
+IfcColourRgb* IfcLightSourceGoniometric::ColourAppearance() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(5)); }
 IfcThermodynamicTemperatureMeasure IfcLightSourceGoniometric::ColourTemperature() { return *entity->getArgument(6); }
 IfcLuminousFluxMeasure IfcLightSourceGoniometric::LuminousFlux() { return *entity->getArgument(7); }
 IfcLightEmissionSourceEnum::IfcLightEmissionSourceEnum IfcLightSourceGoniometric::LightEmissionSource() { return IfcLightEmissionSourceEnum::FromString(*entity->getArgument(8)); }
 IfcLightDistributionDataSourceSelect IfcLightSourceGoniometric::LightDistributionDataSource() { return *entity->getArgument(9); }
-bool IfcLightSourceGoniometric::is(Type::Enum v) { return v == Type::IfcLightSourceGoniometric || IfcLightSource::is(v); }
-Type::Enum IfcLightSourceGoniometric::type() { return Type::IfcLightSourceGoniometric; }
+bool IfcLightSourceGoniometric::is(Type::Enum v) const { return v == Type::IfcLightSourceGoniometric || IfcLightSource::is(v); }
+Type::Enum IfcLightSourceGoniometric::type() const { return Type::IfcLightSourceGoniometric; }
 Type::Enum IfcLightSourceGoniometric::Class() { return Type::IfcLightSourceGoniometric; }
 IfcLightSourceGoniometric::IfcLightSourceGoniometric(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightSourceGoniometric)) throw; entity = e; } 
 // IfcLightSourcePositional
-SHARED_PTR<IfcCartesianPoint> IfcLightSourcePositional::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(4)); }
+IfcCartesianPoint* IfcLightSourcePositional::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(4)); }
 IfcPositiveLengthMeasure IfcLightSourcePositional::Radius() { return *entity->getArgument(5); }
 IfcReal IfcLightSourcePositional::ConstantAttenuation() { return *entity->getArgument(6); }
 IfcReal IfcLightSourcePositional::DistanceAttenuation() { return *entity->getArgument(7); }
 IfcReal IfcLightSourcePositional::QuadricAttenuation() { return *entity->getArgument(8); }
-bool IfcLightSourcePositional::is(Type::Enum v) { return v == Type::IfcLightSourcePositional || IfcLightSource::is(v); }
-Type::Enum IfcLightSourcePositional::type() { return Type::IfcLightSourcePositional; }
+bool IfcLightSourcePositional::is(Type::Enum v) const { return v == Type::IfcLightSourcePositional || IfcLightSource::is(v); }
+Type::Enum IfcLightSourcePositional::type() const { return Type::IfcLightSourcePositional; }
 Type::Enum IfcLightSourcePositional::Class() { return Type::IfcLightSourcePositional; }
 IfcLightSourcePositional::IfcLightSourcePositional(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightSourcePositional)) throw; entity = e; } 
 // IfcLightSourceSpot
-SHARED_PTR<IfcDirection> IfcLightSourceSpot::Orientation() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(9)); }
+IfcDirection* IfcLightSourceSpot::Orientation() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(9)); }
 bool IfcLightSourceSpot::hasConcentrationExponent() { return !entity->getArgument(10)->isNull(); }
 IfcReal IfcLightSourceSpot::ConcentrationExponent() { return *entity->getArgument(10); }
 IfcPositivePlaneAngleMeasure IfcLightSourceSpot::SpreadAngle() { return *entity->getArgument(11); }
 IfcPositivePlaneAngleMeasure IfcLightSourceSpot::BeamWidthAngle() { return *entity->getArgument(12); }
-bool IfcLightSourceSpot::is(Type::Enum v) { return v == Type::IfcLightSourceSpot || IfcLightSourcePositional::is(v); }
-Type::Enum IfcLightSourceSpot::type() { return Type::IfcLightSourceSpot; }
+bool IfcLightSourceSpot::is(Type::Enum v) const { return v == Type::IfcLightSourceSpot || IfcLightSourcePositional::is(v); }
+Type::Enum IfcLightSourceSpot::type() const { return Type::IfcLightSourceSpot; }
 Type::Enum IfcLightSourceSpot::Class() { return Type::IfcLightSourceSpot; }
 IfcLightSourceSpot::IfcLightSourceSpot(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightSourceSpot)) throw; entity = e; } 
 // IfcLine
-SHARED_PTR<IfcCartesianPoint> IfcLine::Pnt() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(0)); }
-SHARED_PTR<IfcVector> IfcLine::Dir() { return reinterpret_pointer_cast<IfcBaseClass,IfcVector>(*entity->getArgument(1)); }
-bool IfcLine::is(Type::Enum v) { return v == Type::IfcLine || IfcCurve::is(v); }
-Type::Enum IfcLine::type() { return Type::IfcLine; }
+IfcCartesianPoint* IfcLine::Pnt() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(0)); }
+IfcVector* IfcLine::Dir() { return reinterpret_pointer_cast<IfcBaseClass,IfcVector>(*entity->getArgument(1)); }
+bool IfcLine::is(Type::Enum v) const { return v == Type::IfcLine || IfcCurve::is(v); }
+Type::Enum IfcLine::type() const { return Type::IfcLine; }
 Type::Enum IfcLine::Class() { return Type::IfcLine; }
 IfcLine::IfcLine(IfcAbstractEntityPtr e) { if (!is(Type::IfcLine)) throw; entity = e; } 
 // IfcLinearDimension
-bool IfcLinearDimension::is(Type::Enum v) { return v == Type::IfcLinearDimension || IfcDimensionCurveDirectedCallout::is(v); }
-Type::Enum IfcLinearDimension::type() { return Type::IfcLinearDimension; }
+bool IfcLinearDimension::is(Type::Enum v) const { return v == Type::IfcLinearDimension || IfcDimensionCurveDirectedCallout::is(v); }
+Type::Enum IfcLinearDimension::type() const { return Type::IfcLinearDimension; }
 Type::Enum IfcLinearDimension::Class() { return Type::IfcLinearDimension; }
 IfcLinearDimension::IfcLinearDimension(IfcAbstractEntityPtr e) { if (!is(Type::IfcLinearDimension)) throw; entity = e; } 
 // IfcLocalPlacement
 bool IfcLocalPlacement::hasPlacementRelTo() { return !entity->getArgument(0)->isNull(); }
-SHARED_PTR<IfcObjectPlacement> IfcLocalPlacement::PlacementRelTo() { return reinterpret_pointer_cast<IfcBaseClass,IfcObjectPlacement>(*entity->getArgument(0)); }
+IfcObjectPlacement* IfcLocalPlacement::PlacementRelTo() { return reinterpret_pointer_cast<IfcBaseClass,IfcObjectPlacement>(*entity->getArgument(0)); }
 IfcAxis2Placement IfcLocalPlacement::RelativePlacement() { return *entity->getArgument(1); }
-bool IfcLocalPlacement::is(Type::Enum v) { return v == Type::IfcLocalPlacement || IfcObjectPlacement::is(v); }
-Type::Enum IfcLocalPlacement::type() { return Type::IfcLocalPlacement; }
+bool IfcLocalPlacement::is(Type::Enum v) const { return v == Type::IfcLocalPlacement || IfcObjectPlacement::is(v); }
+Type::Enum IfcLocalPlacement::type() const { return Type::IfcLocalPlacement; }
 Type::Enum IfcLocalPlacement::Class() { return Type::IfcLocalPlacement; }
 IfcLocalPlacement::IfcLocalPlacement(IfcAbstractEntityPtr e) { if (!is(Type::IfcLocalPlacement)) throw; entity = e; } 
 // IfcLocalTime
@@ -7077,97 +7084,97 @@ IfcMinuteInHour IfcLocalTime::MinuteComponent() { return *entity->getArgument(1)
 bool IfcLocalTime::hasSecondComponent() { return !entity->getArgument(2)->isNull(); }
 IfcSecondInMinute IfcLocalTime::SecondComponent() { return *entity->getArgument(2); }
 bool IfcLocalTime::hasZone() { return !entity->getArgument(3)->isNull(); }
-SHARED_PTR<IfcCoordinatedUniversalTimeOffset> IfcLocalTime::Zone() { return reinterpret_pointer_cast<IfcBaseClass,IfcCoordinatedUniversalTimeOffset>(*entity->getArgument(3)); }
+IfcCoordinatedUniversalTimeOffset* IfcLocalTime::Zone() { return reinterpret_pointer_cast<IfcBaseClass,IfcCoordinatedUniversalTimeOffset>(*entity->getArgument(3)); }
 bool IfcLocalTime::hasDaylightSavingOffset() { return !entity->getArgument(4)->isNull(); }
 IfcDaylightSavingHour IfcLocalTime::DaylightSavingOffset() { return *entity->getArgument(4); }
-bool IfcLocalTime::is(Type::Enum v) { return v == Type::IfcLocalTime; }
-Type::Enum IfcLocalTime::type() { return Type::IfcLocalTime; }
+bool IfcLocalTime::is(Type::Enum v) const { return v == Type::IfcLocalTime; }
+Type::Enum IfcLocalTime::type() const { return Type::IfcLocalTime; }
 Type::Enum IfcLocalTime::Class() { return Type::IfcLocalTime; }
 IfcLocalTime::IfcLocalTime(IfcAbstractEntityPtr e) { if (!is(Type::IfcLocalTime)) throw; entity = e; } 
 // IfcLoop
-bool IfcLoop::is(Type::Enum v) { return v == Type::IfcLoop || IfcTopologicalRepresentationItem::is(v); }
-Type::Enum IfcLoop::type() { return Type::IfcLoop; }
+bool IfcLoop::is(Type::Enum v) const { return v == Type::IfcLoop || IfcTopologicalRepresentationItem::is(v); }
+Type::Enum IfcLoop::type() const { return Type::IfcLoop; }
 Type::Enum IfcLoop::Class() { return Type::IfcLoop; }
 IfcLoop::IfcLoop(IfcAbstractEntityPtr e) { if (!is(Type::IfcLoop)) throw; entity = e; } 
 // IfcManifoldSolidBrep
-SHARED_PTR<IfcClosedShell> IfcManifoldSolidBrep::Outer() { return reinterpret_pointer_cast<IfcBaseClass,IfcClosedShell>(*entity->getArgument(0)); }
-bool IfcManifoldSolidBrep::is(Type::Enum v) { return v == Type::IfcManifoldSolidBrep || IfcSolidModel::is(v); }
-Type::Enum IfcManifoldSolidBrep::type() { return Type::IfcManifoldSolidBrep; }
+IfcClosedShell* IfcManifoldSolidBrep::Outer() { return reinterpret_pointer_cast<IfcBaseClass,IfcClosedShell>(*entity->getArgument(0)); }
+bool IfcManifoldSolidBrep::is(Type::Enum v) const { return v == Type::IfcManifoldSolidBrep || IfcSolidModel::is(v); }
+Type::Enum IfcManifoldSolidBrep::type() const { return Type::IfcManifoldSolidBrep; }
 Type::Enum IfcManifoldSolidBrep::Class() { return Type::IfcManifoldSolidBrep; }
 IfcManifoldSolidBrep::IfcManifoldSolidBrep(IfcAbstractEntityPtr e) { if (!is(Type::IfcManifoldSolidBrep)) throw; entity = e; } 
 // IfcMappedItem
-SHARED_PTR<IfcRepresentationMap> IfcMappedItem::MappingSource() { return reinterpret_pointer_cast<IfcBaseClass,IfcRepresentationMap>(*entity->getArgument(0)); }
-SHARED_PTR<IfcCartesianTransformationOperator> IfcMappedItem::MappingTarget() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianTransformationOperator>(*entity->getArgument(1)); }
-bool IfcMappedItem::is(Type::Enum v) { return v == Type::IfcMappedItem || IfcRepresentationItem::is(v); }
-Type::Enum IfcMappedItem::type() { return Type::IfcMappedItem; }
+IfcRepresentationMap* IfcMappedItem::MappingSource() { return reinterpret_pointer_cast<IfcBaseClass,IfcRepresentationMap>(*entity->getArgument(0)); }
+IfcCartesianTransformationOperator* IfcMappedItem::MappingTarget() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianTransformationOperator>(*entity->getArgument(1)); }
+bool IfcMappedItem::is(Type::Enum v) const { return v == Type::IfcMappedItem || IfcRepresentationItem::is(v); }
+Type::Enum IfcMappedItem::type() const { return Type::IfcMappedItem; }
 Type::Enum IfcMappedItem::Class() { return Type::IfcMappedItem; }
 IfcMappedItem::IfcMappedItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcMappedItem)) throw; entity = e; } 
 // IfcMaterial
 IfcLabel IfcMaterial::Name() { return *entity->getArgument(0); }
 IfcMaterialDefinitionRepresentation::list IfcMaterial::HasRepresentation() { RETURN_INVERSE(IfcMaterialDefinitionRepresentation) }
 IfcMaterialClassificationRelationship::list IfcMaterial::ClassifiedAs() { RETURN_INVERSE(IfcMaterialClassificationRelationship) }
-bool IfcMaterial::is(Type::Enum v) { return v == Type::IfcMaterial; }
-Type::Enum IfcMaterial::type() { return Type::IfcMaterial; }
+bool IfcMaterial::is(Type::Enum v) const { return v == Type::IfcMaterial; }
+Type::Enum IfcMaterial::type() const { return Type::IfcMaterial; }
 Type::Enum IfcMaterial::Class() { return Type::IfcMaterial; }
 IfcMaterial::IfcMaterial(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterial)) throw; entity = e; } 
 // IfcMaterialClassificationRelationship
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcMaterialClassificationRelationship::MaterialClassifications() { RETURN_AS_LIST(IfcAbstractSelect,0) }
-SHARED_PTR<IfcMaterial> IfcMaterialClassificationRelationship::ClassifiedMaterial() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(1)); }
-bool IfcMaterialClassificationRelationship::is(Type::Enum v) { return v == Type::IfcMaterialClassificationRelationship; }
-Type::Enum IfcMaterialClassificationRelationship::type() { return Type::IfcMaterialClassificationRelationship; }
+IfcMaterial* IfcMaterialClassificationRelationship::ClassifiedMaterial() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(1)); }
+bool IfcMaterialClassificationRelationship::is(Type::Enum v) const { return v == Type::IfcMaterialClassificationRelationship; }
+Type::Enum IfcMaterialClassificationRelationship::type() const { return Type::IfcMaterialClassificationRelationship; }
 Type::Enum IfcMaterialClassificationRelationship::Class() { return Type::IfcMaterialClassificationRelationship; }
 IfcMaterialClassificationRelationship::IfcMaterialClassificationRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialClassificationRelationship)) throw; entity = e; } 
 // IfcMaterialDefinitionRepresentation
-SHARED_PTR<IfcMaterial> IfcMaterialDefinitionRepresentation::RepresentedMaterial() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(3)); }
-bool IfcMaterialDefinitionRepresentation::is(Type::Enum v) { return v == Type::IfcMaterialDefinitionRepresentation || IfcProductRepresentation::is(v); }
-Type::Enum IfcMaterialDefinitionRepresentation::type() { return Type::IfcMaterialDefinitionRepresentation; }
+IfcMaterial* IfcMaterialDefinitionRepresentation::RepresentedMaterial() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(3)); }
+bool IfcMaterialDefinitionRepresentation::is(Type::Enum v) const { return v == Type::IfcMaterialDefinitionRepresentation || IfcProductRepresentation::is(v); }
+Type::Enum IfcMaterialDefinitionRepresentation::type() const { return Type::IfcMaterialDefinitionRepresentation; }
 Type::Enum IfcMaterialDefinitionRepresentation::Class() { return Type::IfcMaterialDefinitionRepresentation; }
 IfcMaterialDefinitionRepresentation::IfcMaterialDefinitionRepresentation(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialDefinitionRepresentation)) throw; entity = e; } 
 // IfcMaterialLayer
 bool IfcMaterialLayer::hasMaterial() { return !entity->getArgument(0)->isNull(); }
-SHARED_PTR<IfcMaterial> IfcMaterialLayer::Material() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(0)); }
+IfcMaterial* IfcMaterialLayer::Material() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(0)); }
 IfcPositiveLengthMeasure IfcMaterialLayer::LayerThickness() { return *entity->getArgument(1); }
 bool IfcMaterialLayer::hasIsVentilated() { return !entity->getArgument(2)->isNull(); }
 IfcLogical IfcMaterialLayer::IsVentilated() { return *entity->getArgument(2); }
 IfcMaterialLayerSet::list IfcMaterialLayer::ToMaterialLayerSet() { RETURN_INVERSE(IfcMaterialLayerSet) }
-bool IfcMaterialLayer::is(Type::Enum v) { return v == Type::IfcMaterialLayer; }
-Type::Enum IfcMaterialLayer::type() { return Type::IfcMaterialLayer; }
+bool IfcMaterialLayer::is(Type::Enum v) const { return v == Type::IfcMaterialLayer; }
+Type::Enum IfcMaterialLayer::type() const { return Type::IfcMaterialLayer; }
 Type::Enum IfcMaterialLayer::Class() { return Type::IfcMaterialLayer; }
 IfcMaterialLayer::IfcMaterialLayer(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialLayer)) throw; entity = e; } 
 // IfcMaterialLayerSet
 SHARED_PTR< IfcTemplatedEntityList<IfcMaterialLayer> > IfcMaterialLayerSet::MaterialLayers() { RETURN_AS_LIST(IfcMaterialLayer,0) }
 bool IfcMaterialLayerSet::hasLayerSetName() { return !entity->getArgument(1)->isNull(); }
 IfcLabel IfcMaterialLayerSet::LayerSetName() { return *entity->getArgument(1); }
-bool IfcMaterialLayerSet::is(Type::Enum v) { return v == Type::IfcMaterialLayerSet; }
-Type::Enum IfcMaterialLayerSet::type() { return Type::IfcMaterialLayerSet; }
+bool IfcMaterialLayerSet::is(Type::Enum v) const { return v == Type::IfcMaterialLayerSet; }
+Type::Enum IfcMaterialLayerSet::type() const { return Type::IfcMaterialLayerSet; }
 Type::Enum IfcMaterialLayerSet::Class() { return Type::IfcMaterialLayerSet; }
 IfcMaterialLayerSet::IfcMaterialLayerSet(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialLayerSet)) throw; entity = e; } 
 // IfcMaterialLayerSetUsage
-SHARED_PTR<IfcMaterialLayerSet> IfcMaterialLayerSetUsage::ForLayerSet() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterialLayerSet>(*entity->getArgument(0)); }
+IfcMaterialLayerSet* IfcMaterialLayerSetUsage::ForLayerSet() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterialLayerSet>(*entity->getArgument(0)); }
 IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum IfcMaterialLayerSetUsage::LayerSetDirection() { return IfcLayerSetDirectionEnum::FromString(*entity->getArgument(1)); }
 IfcDirectionSenseEnum::IfcDirectionSenseEnum IfcMaterialLayerSetUsage::DirectionSense() { return IfcDirectionSenseEnum::FromString(*entity->getArgument(2)); }
 IfcLengthMeasure IfcMaterialLayerSetUsage::OffsetFromReferenceLine() { return *entity->getArgument(3); }
-bool IfcMaterialLayerSetUsage::is(Type::Enum v) { return v == Type::IfcMaterialLayerSetUsage; }
-Type::Enum IfcMaterialLayerSetUsage::type() { return Type::IfcMaterialLayerSetUsage; }
+bool IfcMaterialLayerSetUsage::is(Type::Enum v) const { return v == Type::IfcMaterialLayerSetUsage; }
+Type::Enum IfcMaterialLayerSetUsage::type() const { return Type::IfcMaterialLayerSetUsage; }
 Type::Enum IfcMaterialLayerSetUsage::Class() { return Type::IfcMaterialLayerSetUsage; }
 IfcMaterialLayerSetUsage::IfcMaterialLayerSetUsage(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialLayerSetUsage)) throw; entity = e; } 
 // IfcMaterialList
 SHARED_PTR< IfcTemplatedEntityList<IfcMaterial> > IfcMaterialList::Materials() { RETURN_AS_LIST(IfcMaterial,0) }
-bool IfcMaterialList::is(Type::Enum v) { return v == Type::IfcMaterialList; }
-Type::Enum IfcMaterialList::type() { return Type::IfcMaterialList; }
+bool IfcMaterialList::is(Type::Enum v) const { return v == Type::IfcMaterialList; }
+Type::Enum IfcMaterialList::type() const { return Type::IfcMaterialList; }
 Type::Enum IfcMaterialList::Class() { return Type::IfcMaterialList; }
 IfcMaterialList::IfcMaterialList(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialList)) throw; entity = e; } 
 // IfcMaterialProperties
-SHARED_PTR<IfcMaterial> IfcMaterialProperties::Material() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(0)); }
-bool IfcMaterialProperties::is(Type::Enum v) { return v == Type::IfcMaterialProperties; }
-Type::Enum IfcMaterialProperties::type() { return Type::IfcMaterialProperties; }
+IfcMaterial* IfcMaterialProperties::Material() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(0)); }
+bool IfcMaterialProperties::is(Type::Enum v) const { return v == Type::IfcMaterialProperties; }
+Type::Enum IfcMaterialProperties::type() const { return Type::IfcMaterialProperties; }
 Type::Enum IfcMaterialProperties::Class() { return Type::IfcMaterialProperties; }
 IfcMaterialProperties::IfcMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialProperties)) throw; entity = e; } 
 // IfcMeasureWithUnit
 IfcValue IfcMeasureWithUnit::ValueComponent() { return *entity->getArgument(0); }
 IfcUnit IfcMeasureWithUnit::UnitComponent() { return *entity->getArgument(1); }
-bool IfcMeasureWithUnit::is(Type::Enum v) { return v == Type::IfcMeasureWithUnit; }
-Type::Enum IfcMeasureWithUnit::type() { return Type::IfcMeasureWithUnit; }
+bool IfcMeasureWithUnit::is(Type::Enum v) const { return v == Type::IfcMeasureWithUnit; }
+Type::Enum IfcMeasureWithUnit::type() const { return Type::IfcMeasureWithUnit; }
 Type::Enum IfcMeasureWithUnit::Class() { return Type::IfcMeasureWithUnit; }
 IfcMeasureWithUnit::IfcMeasureWithUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcMeasureWithUnit)) throw; entity = e; } 
 // IfcMechanicalConcreteMaterialProperties
@@ -7183,8 +7190,8 @@ bool IfcMechanicalConcreteMaterialProperties::hasProtectivePoreRatio() { return 
 IfcNormalisedRatioMeasure IfcMechanicalConcreteMaterialProperties::ProtectivePoreRatio() { return *entity->getArgument(10); }
 bool IfcMechanicalConcreteMaterialProperties::hasWaterImpermeability() { return !entity->getArgument(11)->isNull(); }
 IfcText IfcMechanicalConcreteMaterialProperties::WaterImpermeability() { return *entity->getArgument(11); }
-bool IfcMechanicalConcreteMaterialProperties::is(Type::Enum v) { return v == Type::IfcMechanicalConcreteMaterialProperties || IfcMechanicalMaterialProperties::is(v); }
-Type::Enum IfcMechanicalConcreteMaterialProperties::type() { return Type::IfcMechanicalConcreteMaterialProperties; }
+bool IfcMechanicalConcreteMaterialProperties::is(Type::Enum v) const { return v == Type::IfcMechanicalConcreteMaterialProperties || IfcMechanicalMaterialProperties::is(v); }
+Type::Enum IfcMechanicalConcreteMaterialProperties::type() const { return Type::IfcMechanicalConcreteMaterialProperties; }
 Type::Enum IfcMechanicalConcreteMaterialProperties::Class() { return Type::IfcMechanicalConcreteMaterialProperties; }
 IfcMechanicalConcreteMaterialProperties::IfcMechanicalConcreteMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcMechanicalConcreteMaterialProperties)) throw; entity = e; } 
 // IfcMechanicalFastener
@@ -7192,13 +7199,13 @@ bool IfcMechanicalFastener::hasNominalDiameter() { return !entity->getArgument(8
 IfcPositiveLengthMeasure IfcMechanicalFastener::NominalDiameter() { return *entity->getArgument(8); }
 bool IfcMechanicalFastener::hasNominalLength() { return !entity->getArgument(9)->isNull(); }
 IfcPositiveLengthMeasure IfcMechanicalFastener::NominalLength() { return *entity->getArgument(9); }
-bool IfcMechanicalFastener::is(Type::Enum v) { return v == Type::IfcMechanicalFastener || IfcFastener::is(v); }
-Type::Enum IfcMechanicalFastener::type() { return Type::IfcMechanicalFastener; }
+bool IfcMechanicalFastener::is(Type::Enum v) const { return v == Type::IfcMechanicalFastener || IfcFastener::is(v); }
+Type::Enum IfcMechanicalFastener::type() const { return Type::IfcMechanicalFastener; }
 Type::Enum IfcMechanicalFastener::Class() { return Type::IfcMechanicalFastener; }
 IfcMechanicalFastener::IfcMechanicalFastener(IfcAbstractEntityPtr e) { if (!is(Type::IfcMechanicalFastener)) throw; entity = e; } 
 // IfcMechanicalFastenerType
-bool IfcMechanicalFastenerType::is(Type::Enum v) { return v == Type::IfcMechanicalFastenerType || IfcFastenerType::is(v); }
-Type::Enum IfcMechanicalFastenerType::type() { return Type::IfcMechanicalFastenerType; }
+bool IfcMechanicalFastenerType::is(Type::Enum v) const { return v == Type::IfcMechanicalFastenerType || IfcFastenerType::is(v); }
+Type::Enum IfcMechanicalFastenerType::type() const { return Type::IfcMechanicalFastenerType; }
 Type::Enum IfcMechanicalFastenerType::Class() { return Type::IfcMechanicalFastenerType; }
 IfcMechanicalFastenerType::IfcMechanicalFastenerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcMechanicalFastenerType)) throw; entity = e; } 
 // IfcMechanicalMaterialProperties
@@ -7212,8 +7219,8 @@ bool IfcMechanicalMaterialProperties::hasPoissonRatio() { return !entity->getArg
 IfcPositiveRatioMeasure IfcMechanicalMaterialProperties::PoissonRatio() { return *entity->getArgument(4); }
 bool IfcMechanicalMaterialProperties::hasThermalExpansionCoefficient() { return !entity->getArgument(5)->isNull(); }
 IfcThermalExpansionCoefficientMeasure IfcMechanicalMaterialProperties::ThermalExpansionCoefficient() { return *entity->getArgument(5); }
-bool IfcMechanicalMaterialProperties::is(Type::Enum v) { return v == Type::IfcMechanicalMaterialProperties || IfcMaterialProperties::is(v); }
-Type::Enum IfcMechanicalMaterialProperties::type() { return Type::IfcMechanicalMaterialProperties; }
+bool IfcMechanicalMaterialProperties::is(Type::Enum v) const { return v == Type::IfcMechanicalMaterialProperties || IfcMaterialProperties::is(v); }
+Type::Enum IfcMechanicalMaterialProperties::type() const { return Type::IfcMechanicalMaterialProperties; }
 Type::Enum IfcMechanicalMaterialProperties::Class() { return Type::IfcMechanicalMaterialProperties; }
 IfcMechanicalMaterialProperties::IfcMechanicalMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcMechanicalMaterialProperties)) throw; entity = e; } 
 // IfcMechanicalSteelMaterialProperties
@@ -7231,19 +7238,19 @@ bool IfcMechanicalSteelMaterialProperties::hasPlasticStrain() { return !entity->
 IfcPositiveRatioMeasure IfcMechanicalSteelMaterialProperties::PlasticStrain() { return *entity->getArgument(11); }
 bool IfcMechanicalSteelMaterialProperties::hasRelaxations() { return !entity->getArgument(12)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcRelaxation> > IfcMechanicalSteelMaterialProperties::Relaxations() { RETURN_AS_LIST(IfcRelaxation,12) }
-bool IfcMechanicalSteelMaterialProperties::is(Type::Enum v) { return v == Type::IfcMechanicalSteelMaterialProperties || IfcMechanicalMaterialProperties::is(v); }
-Type::Enum IfcMechanicalSteelMaterialProperties::type() { return Type::IfcMechanicalSteelMaterialProperties; }
+bool IfcMechanicalSteelMaterialProperties::is(Type::Enum v) const { return v == Type::IfcMechanicalSteelMaterialProperties || IfcMechanicalMaterialProperties::is(v); }
+Type::Enum IfcMechanicalSteelMaterialProperties::type() const { return Type::IfcMechanicalSteelMaterialProperties; }
 Type::Enum IfcMechanicalSteelMaterialProperties::Class() { return Type::IfcMechanicalSteelMaterialProperties; }
 IfcMechanicalSteelMaterialProperties::IfcMechanicalSteelMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcMechanicalSteelMaterialProperties)) throw; entity = e; } 
 // IfcMember
-bool IfcMember::is(Type::Enum v) { return v == Type::IfcMember || IfcBuildingElement::is(v); }
-Type::Enum IfcMember::type() { return Type::IfcMember; }
+bool IfcMember::is(Type::Enum v) const { return v == Type::IfcMember || IfcBuildingElement::is(v); }
+Type::Enum IfcMember::type() const { return Type::IfcMember; }
 Type::Enum IfcMember::Class() { return Type::IfcMember; }
 IfcMember::IfcMember(IfcAbstractEntityPtr e) { if (!is(Type::IfcMember)) throw; entity = e; } 
 // IfcMemberType
 IfcMemberTypeEnum::IfcMemberTypeEnum IfcMemberType::PredefinedType() { return IfcMemberTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcMemberType::is(Type::Enum v) { return v == Type::IfcMemberType || IfcBuildingElementType::is(v); }
-Type::Enum IfcMemberType::type() { return Type::IfcMemberType; }
+bool IfcMemberType::is(Type::Enum v) const { return v == Type::IfcMemberType || IfcBuildingElementType::is(v); }
+Type::Enum IfcMemberType::type() const { return Type::IfcMemberType; }
 Type::Enum IfcMemberType::Class() { return Type::IfcMemberType; }
 IfcMemberType::IfcMemberType(IfcAbstractEntityPtr e) { if (!is(Type::IfcMemberType)) throw; entity = e; } 
 // IfcMetric
@@ -7251,44 +7258,44 @@ IfcBenchmarkEnum::IfcBenchmarkEnum IfcMetric::Benchmark() { return IfcBenchmarkE
 bool IfcMetric::hasValueSource() { return !entity->getArgument(8)->isNull(); }
 IfcLabel IfcMetric::ValueSource() { return *entity->getArgument(8); }
 IfcMetricValueSelect IfcMetric::DataValue() { return *entity->getArgument(9); }
-bool IfcMetric::is(Type::Enum v) { return v == Type::IfcMetric || IfcConstraint::is(v); }
-Type::Enum IfcMetric::type() { return Type::IfcMetric; }
+bool IfcMetric::is(Type::Enum v) const { return v == Type::IfcMetric || IfcConstraint::is(v); }
+Type::Enum IfcMetric::type() const { return Type::IfcMetric; }
 Type::Enum IfcMetric::Class() { return Type::IfcMetric; }
 IfcMetric::IfcMetric(IfcAbstractEntityPtr e) { if (!is(Type::IfcMetric)) throw; entity = e; } 
 // IfcMonetaryUnit
 IfcCurrencyEnum::IfcCurrencyEnum IfcMonetaryUnit::Currency() { return IfcCurrencyEnum::FromString(*entity->getArgument(0)); }
-bool IfcMonetaryUnit::is(Type::Enum v) { return v == Type::IfcMonetaryUnit; }
-Type::Enum IfcMonetaryUnit::type() { return Type::IfcMonetaryUnit; }
+bool IfcMonetaryUnit::is(Type::Enum v) const { return v == Type::IfcMonetaryUnit; }
+Type::Enum IfcMonetaryUnit::type() const { return Type::IfcMonetaryUnit; }
 Type::Enum IfcMonetaryUnit::Class() { return Type::IfcMonetaryUnit; }
 IfcMonetaryUnit::IfcMonetaryUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcMonetaryUnit)) throw; entity = e; } 
 // IfcMotorConnectionType
 IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum IfcMotorConnectionType::PredefinedType() { return IfcMotorConnectionTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcMotorConnectionType::is(Type::Enum v) { return v == Type::IfcMotorConnectionType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcMotorConnectionType::type() { return Type::IfcMotorConnectionType; }
+bool IfcMotorConnectionType::is(Type::Enum v) const { return v == Type::IfcMotorConnectionType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcMotorConnectionType::type() const { return Type::IfcMotorConnectionType; }
 Type::Enum IfcMotorConnectionType::Class() { return Type::IfcMotorConnectionType; }
 IfcMotorConnectionType::IfcMotorConnectionType(IfcAbstractEntityPtr e) { if (!is(Type::IfcMotorConnectionType)) throw; entity = e; } 
 // IfcMove
-SHARED_PTR<IfcSpatialStructureElement> IfcMove::MoveFrom() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(10)); }
-SHARED_PTR<IfcSpatialStructureElement> IfcMove::MoveTo() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(11)); }
+IfcSpatialStructureElement* IfcMove::MoveFrom() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(10)); }
+IfcSpatialStructureElement* IfcMove::MoveTo() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(11)); }
 bool IfcMove::hasPunchList() { return !entity->getArgument(12)->isNull(); }
 std::vector<IfcText> /*[1:?]*/ IfcMove::PunchList() { return *entity->getArgument(12); }
-bool IfcMove::is(Type::Enum v) { return v == Type::IfcMove || IfcTask::is(v); }
-Type::Enum IfcMove::type() { return Type::IfcMove; }
+bool IfcMove::is(Type::Enum v) const { return v == Type::IfcMove || IfcTask::is(v); }
+Type::Enum IfcMove::type() const { return Type::IfcMove; }
 Type::Enum IfcMove::Class() { return Type::IfcMove; }
 IfcMove::IfcMove(IfcAbstractEntityPtr e) { if (!is(Type::IfcMove)) throw; entity = e; } 
 // IfcNamedUnit
-SHARED_PTR<IfcDimensionalExponents> IfcNamedUnit::Dimensions() { return reinterpret_pointer_cast<IfcBaseClass,IfcDimensionalExponents>(*entity->getArgument(0)); }
+IfcDimensionalExponents* IfcNamedUnit::Dimensions() { return reinterpret_pointer_cast<IfcBaseClass,IfcDimensionalExponents>(*entity->getArgument(0)); }
 IfcUnitEnum::IfcUnitEnum IfcNamedUnit::UnitType() { return IfcUnitEnum::FromString(*entity->getArgument(1)); }
-bool IfcNamedUnit::is(Type::Enum v) { return v == Type::IfcNamedUnit; }
-Type::Enum IfcNamedUnit::type() { return Type::IfcNamedUnit; }
+bool IfcNamedUnit::is(Type::Enum v) const { return v == Type::IfcNamedUnit; }
+Type::Enum IfcNamedUnit::type() const { return Type::IfcNamedUnit; }
 Type::Enum IfcNamedUnit::Class() { return Type::IfcNamedUnit; }
 IfcNamedUnit::IfcNamedUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcNamedUnit)) throw; entity = e; } 
 // IfcObject
 bool IfcObject::hasObjectType() { return !entity->getArgument(4)->isNull(); }
 IfcLabel IfcObject::ObjectType() { return *entity->getArgument(4); }
 IfcRelDefines::list IfcObject::IsDefinedBy() { RETURN_INVERSE(IfcRelDefines) }
-bool IfcObject::is(Type::Enum v) { return v == Type::IfcObject || IfcObjectDefinition::is(v); }
-Type::Enum IfcObject::type() { return Type::IfcObject; }
+bool IfcObject::is(Type::Enum v) const { return v == Type::IfcObject || IfcObjectDefinition::is(v); }
+Type::Enum IfcObject::type() const { return Type::IfcObject; }
 Type::Enum IfcObject::Class() { return Type::IfcObject; }
 IfcObject::IfcObject(IfcAbstractEntityPtr e) { if (!is(Type::IfcObject)) throw; entity = e; } 
 // IfcObjectDefinition
@@ -7296,67 +7303,67 @@ IfcRelAssigns::list IfcObjectDefinition::HasAssignments() { RETURN_INVERSE(IfcRe
 IfcRelDecomposes::list IfcObjectDefinition::IsDecomposedBy() { RETURN_INVERSE(IfcRelDecomposes) }
 IfcRelDecomposes::list IfcObjectDefinition::Decomposes() { RETURN_INVERSE(IfcRelDecomposes) }
 IfcRelAssociates::list IfcObjectDefinition::HasAssociations() { RETURN_INVERSE(IfcRelAssociates) }
-bool IfcObjectDefinition::is(Type::Enum v) { return v == Type::IfcObjectDefinition || IfcRoot::is(v); }
-Type::Enum IfcObjectDefinition::type() { return Type::IfcObjectDefinition; }
+bool IfcObjectDefinition::is(Type::Enum v) const { return v == Type::IfcObjectDefinition || IfcRoot::is(v); }
+Type::Enum IfcObjectDefinition::type() const { return Type::IfcObjectDefinition; }
 Type::Enum IfcObjectDefinition::Class() { return Type::IfcObjectDefinition; }
 IfcObjectDefinition::IfcObjectDefinition(IfcAbstractEntityPtr e) { if (!is(Type::IfcObjectDefinition)) throw; entity = e; } 
 // IfcObjectPlacement
 IfcProduct::list IfcObjectPlacement::PlacesObject() { RETURN_INVERSE(IfcProduct) }
 IfcLocalPlacement::list IfcObjectPlacement::ReferencedByPlacements() { RETURN_INVERSE(IfcLocalPlacement) }
-bool IfcObjectPlacement::is(Type::Enum v) { return v == Type::IfcObjectPlacement; }
-Type::Enum IfcObjectPlacement::type() { return Type::IfcObjectPlacement; }
+bool IfcObjectPlacement::is(Type::Enum v) const { return v == Type::IfcObjectPlacement; }
+Type::Enum IfcObjectPlacement::type() const { return Type::IfcObjectPlacement; }
 Type::Enum IfcObjectPlacement::Class() { return Type::IfcObjectPlacement; }
 IfcObjectPlacement::IfcObjectPlacement(IfcAbstractEntityPtr e) { if (!is(Type::IfcObjectPlacement)) throw; entity = e; } 
 // IfcObjective
 bool IfcObjective::hasBenchmarkValues() { return !entity->getArgument(7)->isNull(); }
-SHARED_PTR<IfcMetric> IfcObjective::BenchmarkValues() { return reinterpret_pointer_cast<IfcBaseClass,IfcMetric>(*entity->getArgument(7)); }
+IfcMetric* IfcObjective::BenchmarkValues() { return reinterpret_pointer_cast<IfcBaseClass,IfcMetric>(*entity->getArgument(7)); }
 bool IfcObjective::hasResultValues() { return !entity->getArgument(8)->isNull(); }
-SHARED_PTR<IfcMetric> IfcObjective::ResultValues() { return reinterpret_pointer_cast<IfcBaseClass,IfcMetric>(*entity->getArgument(8)); }
+IfcMetric* IfcObjective::ResultValues() { return reinterpret_pointer_cast<IfcBaseClass,IfcMetric>(*entity->getArgument(8)); }
 IfcObjectiveEnum::IfcObjectiveEnum IfcObjective::ObjectiveQualifier() { return IfcObjectiveEnum::FromString(*entity->getArgument(9)); }
 bool IfcObjective::hasUserDefinedQualifier() { return !entity->getArgument(10)->isNull(); }
 IfcLabel IfcObjective::UserDefinedQualifier() { return *entity->getArgument(10); }
-bool IfcObjective::is(Type::Enum v) { return v == Type::IfcObjective || IfcConstraint::is(v); }
-Type::Enum IfcObjective::type() { return Type::IfcObjective; }
+bool IfcObjective::is(Type::Enum v) const { return v == Type::IfcObjective || IfcConstraint::is(v); }
+Type::Enum IfcObjective::type() const { return Type::IfcObjective; }
 Type::Enum IfcObjective::Class() { return Type::IfcObjective; }
 IfcObjective::IfcObjective(IfcAbstractEntityPtr e) { if (!is(Type::IfcObjective)) throw; entity = e; } 
 // IfcOccupant
 IfcOccupantTypeEnum::IfcOccupantTypeEnum IfcOccupant::PredefinedType() { return IfcOccupantTypeEnum::FromString(*entity->getArgument(6)); }
-bool IfcOccupant::is(Type::Enum v) { return v == Type::IfcOccupant || IfcActor::is(v); }
-Type::Enum IfcOccupant::type() { return Type::IfcOccupant; }
+bool IfcOccupant::is(Type::Enum v) const { return v == Type::IfcOccupant || IfcActor::is(v); }
+Type::Enum IfcOccupant::type() const { return Type::IfcOccupant; }
 Type::Enum IfcOccupant::Class() { return Type::IfcOccupant; }
 IfcOccupant::IfcOccupant(IfcAbstractEntityPtr e) { if (!is(Type::IfcOccupant)) throw; entity = e; } 
 // IfcOffsetCurve2D
-SHARED_PTR<IfcCurve> IfcOffsetCurve2D::BasisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
+IfcCurve* IfcOffsetCurve2D::BasisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
 IfcLengthMeasure IfcOffsetCurve2D::Distance() { return *entity->getArgument(1); }
 bool IfcOffsetCurve2D::SelfIntersect() { return *entity->getArgument(2); }
-bool IfcOffsetCurve2D::is(Type::Enum v) { return v == Type::IfcOffsetCurve2D || IfcCurve::is(v); }
-Type::Enum IfcOffsetCurve2D::type() { return Type::IfcOffsetCurve2D; }
+bool IfcOffsetCurve2D::is(Type::Enum v) const { return v == Type::IfcOffsetCurve2D || IfcCurve::is(v); }
+Type::Enum IfcOffsetCurve2D::type() const { return Type::IfcOffsetCurve2D; }
 Type::Enum IfcOffsetCurve2D::Class() { return Type::IfcOffsetCurve2D; }
 IfcOffsetCurve2D::IfcOffsetCurve2D(IfcAbstractEntityPtr e) { if (!is(Type::IfcOffsetCurve2D)) throw; entity = e; } 
 // IfcOffsetCurve3D
-SHARED_PTR<IfcCurve> IfcOffsetCurve3D::BasisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
+IfcCurve* IfcOffsetCurve3D::BasisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
 IfcLengthMeasure IfcOffsetCurve3D::Distance() { return *entity->getArgument(1); }
 bool IfcOffsetCurve3D::SelfIntersect() { return *entity->getArgument(2); }
-SHARED_PTR<IfcDirection> IfcOffsetCurve3D::RefDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(3)); }
-bool IfcOffsetCurve3D::is(Type::Enum v) { return v == Type::IfcOffsetCurve3D || IfcCurve::is(v); }
-Type::Enum IfcOffsetCurve3D::type() { return Type::IfcOffsetCurve3D; }
+IfcDirection* IfcOffsetCurve3D::RefDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(3)); }
+bool IfcOffsetCurve3D::is(Type::Enum v) const { return v == Type::IfcOffsetCurve3D || IfcCurve::is(v); }
+Type::Enum IfcOffsetCurve3D::type() const { return Type::IfcOffsetCurve3D; }
 Type::Enum IfcOffsetCurve3D::Class() { return Type::IfcOffsetCurve3D; }
 IfcOffsetCurve3D::IfcOffsetCurve3D(IfcAbstractEntityPtr e) { if (!is(Type::IfcOffsetCurve3D)) throw; entity = e; } 
 // IfcOneDirectionRepeatFactor
-SHARED_PTR<IfcVector> IfcOneDirectionRepeatFactor::RepeatFactor() { return reinterpret_pointer_cast<IfcBaseClass,IfcVector>(*entity->getArgument(0)); }
-bool IfcOneDirectionRepeatFactor::is(Type::Enum v) { return v == Type::IfcOneDirectionRepeatFactor || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcOneDirectionRepeatFactor::type() { return Type::IfcOneDirectionRepeatFactor; }
+IfcVector* IfcOneDirectionRepeatFactor::RepeatFactor() { return reinterpret_pointer_cast<IfcBaseClass,IfcVector>(*entity->getArgument(0)); }
+bool IfcOneDirectionRepeatFactor::is(Type::Enum v) const { return v == Type::IfcOneDirectionRepeatFactor || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcOneDirectionRepeatFactor::type() const { return Type::IfcOneDirectionRepeatFactor; }
 Type::Enum IfcOneDirectionRepeatFactor::Class() { return Type::IfcOneDirectionRepeatFactor; }
 IfcOneDirectionRepeatFactor::IfcOneDirectionRepeatFactor(IfcAbstractEntityPtr e) { if (!is(Type::IfcOneDirectionRepeatFactor)) throw; entity = e; } 
 // IfcOpenShell
-bool IfcOpenShell::is(Type::Enum v) { return v == Type::IfcOpenShell || IfcConnectedFaceSet::is(v); }
-Type::Enum IfcOpenShell::type() { return Type::IfcOpenShell; }
+bool IfcOpenShell::is(Type::Enum v) const { return v == Type::IfcOpenShell || IfcConnectedFaceSet::is(v); }
+Type::Enum IfcOpenShell::type() const { return Type::IfcOpenShell; }
 Type::Enum IfcOpenShell::Class() { return Type::IfcOpenShell; }
 IfcOpenShell::IfcOpenShell(IfcAbstractEntityPtr e) { if (!is(Type::IfcOpenShell)) throw; entity = e; } 
 // IfcOpeningElement
 IfcRelFillsElement::list IfcOpeningElement::HasFillings() { RETURN_INVERSE(IfcRelFillsElement) }
-bool IfcOpeningElement::is(Type::Enum v) { return v == Type::IfcOpeningElement || IfcFeatureElementSubtraction::is(v); }
-Type::Enum IfcOpeningElement::type() { return Type::IfcOpeningElement; }
+bool IfcOpeningElement::is(Type::Enum v) const { return v == Type::IfcOpeningElement || IfcFeatureElementSubtraction::is(v); }
+Type::Enum IfcOpeningElement::type() const { return Type::IfcOpeningElement; }
 Type::Enum IfcOpeningElement::Class() { return Type::IfcOpeningElement; }
 IfcOpeningElement::IfcOpeningElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcOpeningElement)) throw; entity = e; } 
 // IfcOpticalMaterialProperties
@@ -7378,14 +7385,14 @@ bool IfcOpticalMaterialProperties::hasSolarReflectanceFront() { return !entity->
 IfcPositiveRatioMeasure IfcOpticalMaterialProperties::SolarReflectanceFront() { return *entity->getArgument(8); }
 bool IfcOpticalMaterialProperties::hasSolarReflectanceBack() { return !entity->getArgument(9)->isNull(); }
 IfcPositiveRatioMeasure IfcOpticalMaterialProperties::SolarReflectanceBack() { return *entity->getArgument(9); }
-bool IfcOpticalMaterialProperties::is(Type::Enum v) { return v == Type::IfcOpticalMaterialProperties || IfcMaterialProperties::is(v); }
-Type::Enum IfcOpticalMaterialProperties::type() { return Type::IfcOpticalMaterialProperties; }
+bool IfcOpticalMaterialProperties::is(Type::Enum v) const { return v == Type::IfcOpticalMaterialProperties || IfcMaterialProperties::is(v); }
+Type::Enum IfcOpticalMaterialProperties::type() const { return Type::IfcOpticalMaterialProperties; }
 Type::Enum IfcOpticalMaterialProperties::Class() { return Type::IfcOpticalMaterialProperties; }
 IfcOpticalMaterialProperties::IfcOpticalMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcOpticalMaterialProperties)) throw; entity = e; } 
 // IfcOrderAction
 IfcIdentifier IfcOrderAction::ActionID() { return *entity->getArgument(10); }
-bool IfcOrderAction::is(Type::Enum v) { return v == Type::IfcOrderAction || IfcTask::is(v); }
-Type::Enum IfcOrderAction::type() { return Type::IfcOrderAction; }
+bool IfcOrderAction::is(Type::Enum v) const { return v == Type::IfcOrderAction || IfcTask::is(v); }
+Type::Enum IfcOrderAction::type() const { return Type::IfcOrderAction; }
 Type::Enum IfcOrderAction::Class() { return Type::IfcOrderAction; }
 IfcOrderAction::IfcOrderAction(IfcAbstractEntityPtr e) { if (!is(Type::IfcOrderAction)) throw; entity = e; } 
 // IfcOrganization
@@ -7401,66 +7408,66 @@ SHARED_PTR< IfcTemplatedEntityList<IfcAddress> > IfcOrganization::Addresses() { 
 IfcOrganizationRelationship::list IfcOrganization::IsRelatedBy() { RETURN_INVERSE(IfcOrganizationRelationship) }
 IfcOrganizationRelationship::list IfcOrganization::Relates() { RETURN_INVERSE(IfcOrganizationRelationship) }
 IfcPersonAndOrganization::list IfcOrganization::Engages() { RETURN_INVERSE(IfcPersonAndOrganization) }
-bool IfcOrganization::is(Type::Enum v) { return v == Type::IfcOrganization; }
-Type::Enum IfcOrganization::type() { return Type::IfcOrganization; }
+bool IfcOrganization::is(Type::Enum v) const { return v == Type::IfcOrganization; }
+Type::Enum IfcOrganization::type() const { return Type::IfcOrganization; }
 Type::Enum IfcOrganization::Class() { return Type::IfcOrganization; }
 IfcOrganization::IfcOrganization(IfcAbstractEntityPtr e) { if (!is(Type::IfcOrganization)) throw; entity = e; } 
 // IfcOrganizationRelationship
 IfcLabel IfcOrganizationRelationship::Name() { return *entity->getArgument(0); }
 bool IfcOrganizationRelationship::hasDescription() { return !entity->getArgument(1)->isNull(); }
 IfcText IfcOrganizationRelationship::Description() { return *entity->getArgument(1); }
-SHARED_PTR<IfcOrganization> IfcOrganizationRelationship::RelatingOrganization() { return reinterpret_pointer_cast<IfcBaseClass,IfcOrganization>(*entity->getArgument(2)); }
+IfcOrganization* IfcOrganizationRelationship::RelatingOrganization() { return reinterpret_pointer_cast<IfcBaseClass,IfcOrganization>(*entity->getArgument(2)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcOrganization> > IfcOrganizationRelationship::RelatedOrganizations() { RETURN_AS_LIST(IfcOrganization,3) }
-bool IfcOrganizationRelationship::is(Type::Enum v) { return v == Type::IfcOrganizationRelationship; }
-Type::Enum IfcOrganizationRelationship::type() { return Type::IfcOrganizationRelationship; }
+bool IfcOrganizationRelationship::is(Type::Enum v) const { return v == Type::IfcOrganizationRelationship; }
+Type::Enum IfcOrganizationRelationship::type() const { return Type::IfcOrganizationRelationship; }
 Type::Enum IfcOrganizationRelationship::Class() { return Type::IfcOrganizationRelationship; }
 IfcOrganizationRelationship::IfcOrganizationRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcOrganizationRelationship)) throw; entity = e; } 
 // IfcOrientedEdge
-SHARED_PTR<IfcEdge> IfcOrientedEdge::EdgeElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcEdge>(*entity->getArgument(2)); }
+IfcEdge* IfcOrientedEdge::EdgeElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcEdge>(*entity->getArgument(2)); }
 bool IfcOrientedEdge::Orientation() { return *entity->getArgument(3); }
-bool IfcOrientedEdge::is(Type::Enum v) { return v == Type::IfcOrientedEdge || IfcEdge::is(v); }
-Type::Enum IfcOrientedEdge::type() { return Type::IfcOrientedEdge; }
+bool IfcOrientedEdge::is(Type::Enum v) const { return v == Type::IfcOrientedEdge || IfcEdge::is(v); }
+Type::Enum IfcOrientedEdge::type() const { return Type::IfcOrientedEdge; }
 Type::Enum IfcOrientedEdge::Class() { return Type::IfcOrientedEdge; }
 IfcOrientedEdge::IfcOrientedEdge(IfcAbstractEntityPtr e) { if (!is(Type::IfcOrientedEdge)) throw; entity = e; } 
 // IfcOutletType
 IfcOutletTypeEnum::IfcOutletTypeEnum IfcOutletType::PredefinedType() { return IfcOutletTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcOutletType::is(Type::Enum v) { return v == Type::IfcOutletType || IfcFlowTerminalType::is(v); }
-Type::Enum IfcOutletType::type() { return Type::IfcOutletType; }
+bool IfcOutletType::is(Type::Enum v) const { return v == Type::IfcOutletType || IfcFlowTerminalType::is(v); }
+Type::Enum IfcOutletType::type() const { return Type::IfcOutletType; }
 Type::Enum IfcOutletType::Class() { return Type::IfcOutletType; }
 IfcOutletType::IfcOutletType(IfcAbstractEntityPtr e) { if (!is(Type::IfcOutletType)) throw; entity = e; } 
 // IfcOwnerHistory
-SHARED_PTR<IfcPersonAndOrganization> IfcOwnerHistory::OwningUser() { return reinterpret_pointer_cast<IfcBaseClass,IfcPersonAndOrganization>(*entity->getArgument(0)); }
-SHARED_PTR<IfcApplication> IfcOwnerHistory::OwningApplication() { return reinterpret_pointer_cast<IfcBaseClass,IfcApplication>(*entity->getArgument(1)); }
+IfcPersonAndOrganization* IfcOwnerHistory::OwningUser() { return reinterpret_pointer_cast<IfcBaseClass,IfcPersonAndOrganization>(*entity->getArgument(0)); }
+IfcApplication* IfcOwnerHistory::OwningApplication() { return reinterpret_pointer_cast<IfcBaseClass,IfcApplication>(*entity->getArgument(1)); }
 bool IfcOwnerHistory::hasState() { return !entity->getArgument(2)->isNull(); }
 IfcStateEnum::IfcStateEnum IfcOwnerHistory::State() { return IfcStateEnum::FromString(*entity->getArgument(2)); }
 IfcChangeActionEnum::IfcChangeActionEnum IfcOwnerHistory::ChangeAction() { return IfcChangeActionEnum::FromString(*entity->getArgument(3)); }
 bool IfcOwnerHistory::hasLastModifiedDate() { return !entity->getArgument(4)->isNull(); }
 IfcTimeStamp IfcOwnerHistory::LastModifiedDate() { return *entity->getArgument(4); }
 bool IfcOwnerHistory::hasLastModifyingUser() { return !entity->getArgument(5)->isNull(); }
-SHARED_PTR<IfcPersonAndOrganization> IfcOwnerHistory::LastModifyingUser() { return reinterpret_pointer_cast<IfcBaseClass,IfcPersonAndOrganization>(*entity->getArgument(5)); }
+IfcPersonAndOrganization* IfcOwnerHistory::LastModifyingUser() { return reinterpret_pointer_cast<IfcBaseClass,IfcPersonAndOrganization>(*entity->getArgument(5)); }
 bool IfcOwnerHistory::hasLastModifyingApplication() { return !entity->getArgument(6)->isNull(); }
-SHARED_PTR<IfcApplication> IfcOwnerHistory::LastModifyingApplication() { return reinterpret_pointer_cast<IfcBaseClass,IfcApplication>(*entity->getArgument(6)); }
+IfcApplication* IfcOwnerHistory::LastModifyingApplication() { return reinterpret_pointer_cast<IfcBaseClass,IfcApplication>(*entity->getArgument(6)); }
 IfcTimeStamp IfcOwnerHistory::CreationDate() { return *entity->getArgument(7); }
-bool IfcOwnerHistory::is(Type::Enum v) { return v == Type::IfcOwnerHistory; }
-Type::Enum IfcOwnerHistory::type() { return Type::IfcOwnerHistory; }
+bool IfcOwnerHistory::is(Type::Enum v) const { return v == Type::IfcOwnerHistory; }
+Type::Enum IfcOwnerHistory::type() const { return Type::IfcOwnerHistory; }
 Type::Enum IfcOwnerHistory::Class() { return Type::IfcOwnerHistory; }
 IfcOwnerHistory::IfcOwnerHistory(IfcAbstractEntityPtr e) { if (!is(Type::IfcOwnerHistory)) throw; entity = e; } 
 // IfcParameterizedProfileDef
-SHARED_PTR<IfcAxis2Placement2D> IfcParameterizedProfileDef::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement2D>(*entity->getArgument(2)); }
-bool IfcParameterizedProfileDef::is(Type::Enum v) { return v == Type::IfcParameterizedProfileDef || IfcProfileDef::is(v); }
-Type::Enum IfcParameterizedProfileDef::type() { return Type::IfcParameterizedProfileDef; }
+IfcAxis2Placement2D* IfcParameterizedProfileDef::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement2D>(*entity->getArgument(2)); }
+bool IfcParameterizedProfileDef::is(Type::Enum v) const { return v == Type::IfcParameterizedProfileDef || IfcProfileDef::is(v); }
+Type::Enum IfcParameterizedProfileDef::type() const { return Type::IfcParameterizedProfileDef; }
 Type::Enum IfcParameterizedProfileDef::Class() { return Type::IfcParameterizedProfileDef; }
 IfcParameterizedProfileDef::IfcParameterizedProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcParameterizedProfileDef)) throw; entity = e; } 
 // IfcPath
 SHARED_PTR< IfcTemplatedEntityList<IfcOrientedEdge> > IfcPath::EdgeList() { RETURN_AS_LIST(IfcOrientedEdge,0) }
-bool IfcPath::is(Type::Enum v) { return v == Type::IfcPath || IfcTopologicalRepresentationItem::is(v); }
-Type::Enum IfcPath::type() { return Type::IfcPath; }
+bool IfcPath::is(Type::Enum v) const { return v == Type::IfcPath || IfcTopologicalRepresentationItem::is(v); }
+Type::Enum IfcPath::type() const { return Type::IfcPath; }
 Type::Enum IfcPath::Class() { return Type::IfcPath; }
 IfcPath::IfcPath(IfcAbstractEntityPtr e) { if (!is(Type::IfcPath)) throw; entity = e; } 
 // IfcPerformanceHistory
 IfcLabel IfcPerformanceHistory::LifeCyclePhase() { return *entity->getArgument(5); }
-bool IfcPerformanceHistory::is(Type::Enum v) { return v == Type::IfcPerformanceHistory || IfcControl::is(v); }
-Type::Enum IfcPerformanceHistory::type() { return Type::IfcPerformanceHistory; }
+bool IfcPerformanceHistory::is(Type::Enum v) const { return v == Type::IfcPerformanceHistory || IfcControl::is(v); }
+Type::Enum IfcPerformanceHistory::type() const { return Type::IfcPerformanceHistory; }
 Type::Enum IfcPerformanceHistory::Class() { return Type::IfcPerformanceHistory; }
 IfcPerformanceHistory::IfcPerformanceHistory(IfcAbstractEntityPtr e) { if (!is(Type::IfcPerformanceHistory)) throw; entity = e; } 
 // IfcPermeableCoveringProperties
@@ -7471,15 +7478,15 @@ IfcPositiveLengthMeasure IfcPermeableCoveringProperties::FrameDepth() { return *
 bool IfcPermeableCoveringProperties::hasFrameThickness() { return !entity->getArgument(7)->isNull(); }
 IfcPositiveLengthMeasure IfcPermeableCoveringProperties::FrameThickness() { return *entity->getArgument(7); }
 bool IfcPermeableCoveringProperties::hasShapeAspectStyle() { return !entity->getArgument(8)->isNull(); }
-SHARED_PTR<IfcShapeAspect> IfcPermeableCoveringProperties::ShapeAspectStyle() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(8)); }
-bool IfcPermeableCoveringProperties::is(Type::Enum v) { return v == Type::IfcPermeableCoveringProperties || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcPermeableCoveringProperties::type() { return Type::IfcPermeableCoveringProperties; }
+IfcShapeAspect* IfcPermeableCoveringProperties::ShapeAspectStyle() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(8)); }
+bool IfcPermeableCoveringProperties::is(Type::Enum v) const { return v == Type::IfcPermeableCoveringProperties || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcPermeableCoveringProperties::type() const { return Type::IfcPermeableCoveringProperties; }
 Type::Enum IfcPermeableCoveringProperties::Class() { return Type::IfcPermeableCoveringProperties; }
 IfcPermeableCoveringProperties::IfcPermeableCoveringProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcPermeableCoveringProperties)) throw; entity = e; } 
 // IfcPermit
 IfcIdentifier IfcPermit::PermitID() { return *entity->getArgument(5); }
-bool IfcPermit::is(Type::Enum v) { return v == Type::IfcPermit || IfcControl::is(v); }
-Type::Enum IfcPermit::type() { return Type::IfcPermit; }
+bool IfcPermit::is(Type::Enum v) const { return v == Type::IfcPermit || IfcControl::is(v); }
+Type::Enum IfcPermit::type() const { return Type::IfcPermit; }
 Type::Enum IfcPermit::Class() { return Type::IfcPermit; }
 IfcPermit::IfcPermit(IfcAbstractEntityPtr e) { if (!is(Type::IfcPermit)) throw; entity = e; } 
 // IfcPerson
@@ -7500,17 +7507,17 @@ SHARED_PTR< IfcTemplatedEntityList<IfcActorRole> > IfcPerson::Roles() { RETURN_A
 bool IfcPerson::hasAddresses() { return !entity->getArgument(7)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAddress> > IfcPerson::Addresses() { RETURN_AS_LIST(IfcAddress,7) }
 IfcPersonAndOrganization::list IfcPerson::EngagedIn() { RETURN_INVERSE(IfcPersonAndOrganization) }
-bool IfcPerson::is(Type::Enum v) { return v == Type::IfcPerson; }
-Type::Enum IfcPerson::type() { return Type::IfcPerson; }
+bool IfcPerson::is(Type::Enum v) const { return v == Type::IfcPerson; }
+Type::Enum IfcPerson::type() const { return Type::IfcPerson; }
 Type::Enum IfcPerson::Class() { return Type::IfcPerson; }
 IfcPerson::IfcPerson(IfcAbstractEntityPtr e) { if (!is(Type::IfcPerson)) throw; entity = e; } 
 // IfcPersonAndOrganization
-SHARED_PTR<IfcPerson> IfcPersonAndOrganization::ThePerson() { return reinterpret_pointer_cast<IfcBaseClass,IfcPerson>(*entity->getArgument(0)); }
-SHARED_PTR<IfcOrganization> IfcPersonAndOrganization::TheOrganization() { return reinterpret_pointer_cast<IfcBaseClass,IfcOrganization>(*entity->getArgument(1)); }
+IfcPerson* IfcPersonAndOrganization::ThePerson() { return reinterpret_pointer_cast<IfcBaseClass,IfcPerson>(*entity->getArgument(0)); }
+IfcOrganization* IfcPersonAndOrganization::TheOrganization() { return reinterpret_pointer_cast<IfcBaseClass,IfcOrganization>(*entity->getArgument(1)); }
 bool IfcPersonAndOrganization::hasRoles() { return !entity->getArgument(2)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcActorRole> > IfcPersonAndOrganization::Roles() { RETURN_AS_LIST(IfcActorRole,2) }
-bool IfcPersonAndOrganization::is(Type::Enum v) { return v == Type::IfcPersonAndOrganization; }
-Type::Enum IfcPersonAndOrganization::type() { return Type::IfcPersonAndOrganization; }
+bool IfcPersonAndOrganization::is(Type::Enum v) const { return v == Type::IfcPersonAndOrganization; }
+Type::Enum IfcPersonAndOrganization::type() const { return Type::IfcPersonAndOrganization; }
 Type::Enum IfcPersonAndOrganization::Class() { return Type::IfcPersonAndOrganization; }
 IfcPersonAndOrganization::IfcPersonAndOrganization(IfcAbstractEntityPtr e) { if (!is(Type::IfcPersonAndOrganization)) throw; entity = e; } 
 // IfcPhysicalComplexQuantity
@@ -7520,8 +7527,8 @@ bool IfcPhysicalComplexQuantity::hasQuality() { return !entity->getArgument(4)->
 IfcLabel IfcPhysicalComplexQuantity::Quality() { return *entity->getArgument(4); }
 bool IfcPhysicalComplexQuantity::hasUsage() { return !entity->getArgument(5)->isNull(); }
 IfcLabel IfcPhysicalComplexQuantity::Usage() { return *entity->getArgument(5); }
-bool IfcPhysicalComplexQuantity::is(Type::Enum v) { return v == Type::IfcPhysicalComplexQuantity || IfcPhysicalQuantity::is(v); }
-Type::Enum IfcPhysicalComplexQuantity::type() { return Type::IfcPhysicalComplexQuantity; }
+bool IfcPhysicalComplexQuantity::is(Type::Enum v) const { return v == Type::IfcPhysicalComplexQuantity || IfcPhysicalQuantity::is(v); }
+Type::Enum IfcPhysicalComplexQuantity::type() const { return Type::IfcPhysicalComplexQuantity; }
 Type::Enum IfcPhysicalComplexQuantity::Class() { return Type::IfcPhysicalComplexQuantity; }
 IfcPhysicalComplexQuantity::IfcPhysicalComplexQuantity(IfcAbstractEntityPtr e) { if (!is(Type::IfcPhysicalComplexQuantity)) throw; entity = e; } 
 // IfcPhysicalQuantity
@@ -7529,35 +7536,35 @@ IfcLabel IfcPhysicalQuantity::Name() { return *entity->getArgument(0); }
 bool IfcPhysicalQuantity::hasDescription() { return !entity->getArgument(1)->isNull(); }
 IfcText IfcPhysicalQuantity::Description() { return *entity->getArgument(1); }
 IfcPhysicalComplexQuantity::list IfcPhysicalQuantity::PartOfComplex() { RETURN_INVERSE(IfcPhysicalComplexQuantity) }
-bool IfcPhysicalQuantity::is(Type::Enum v) { return v == Type::IfcPhysicalQuantity; }
-Type::Enum IfcPhysicalQuantity::type() { return Type::IfcPhysicalQuantity; }
+bool IfcPhysicalQuantity::is(Type::Enum v) const { return v == Type::IfcPhysicalQuantity; }
+Type::Enum IfcPhysicalQuantity::type() const { return Type::IfcPhysicalQuantity; }
 Type::Enum IfcPhysicalQuantity::Class() { return Type::IfcPhysicalQuantity; }
 IfcPhysicalQuantity::IfcPhysicalQuantity(IfcAbstractEntityPtr e) { if (!is(Type::IfcPhysicalQuantity)) throw; entity = e; } 
 // IfcPhysicalSimpleQuantity
 bool IfcPhysicalSimpleQuantity::hasUnit() { return !entity->getArgument(2)->isNull(); }
-SHARED_PTR<IfcNamedUnit> IfcPhysicalSimpleQuantity::Unit() { return reinterpret_pointer_cast<IfcBaseClass,IfcNamedUnit>(*entity->getArgument(2)); }
-bool IfcPhysicalSimpleQuantity::is(Type::Enum v) { return v == Type::IfcPhysicalSimpleQuantity || IfcPhysicalQuantity::is(v); }
-Type::Enum IfcPhysicalSimpleQuantity::type() { return Type::IfcPhysicalSimpleQuantity; }
+IfcNamedUnit* IfcPhysicalSimpleQuantity::Unit() { return reinterpret_pointer_cast<IfcBaseClass,IfcNamedUnit>(*entity->getArgument(2)); }
+bool IfcPhysicalSimpleQuantity::is(Type::Enum v) const { return v == Type::IfcPhysicalSimpleQuantity || IfcPhysicalQuantity::is(v); }
+Type::Enum IfcPhysicalSimpleQuantity::type() const { return Type::IfcPhysicalSimpleQuantity; }
 Type::Enum IfcPhysicalSimpleQuantity::Class() { return Type::IfcPhysicalSimpleQuantity; }
 IfcPhysicalSimpleQuantity::IfcPhysicalSimpleQuantity(IfcAbstractEntityPtr e) { if (!is(Type::IfcPhysicalSimpleQuantity)) throw; entity = e; } 
 // IfcPile
 IfcPileTypeEnum::IfcPileTypeEnum IfcPile::PredefinedType() { return IfcPileTypeEnum::FromString(*entity->getArgument(8)); }
 bool IfcPile::hasConstructionType() { return !entity->getArgument(9)->isNull(); }
 IfcPileConstructionEnum::IfcPileConstructionEnum IfcPile::ConstructionType() { return IfcPileConstructionEnum::FromString(*entity->getArgument(9)); }
-bool IfcPile::is(Type::Enum v) { return v == Type::IfcPile || IfcBuildingElement::is(v); }
-Type::Enum IfcPile::type() { return Type::IfcPile; }
+bool IfcPile::is(Type::Enum v) const { return v == Type::IfcPile || IfcBuildingElement::is(v); }
+Type::Enum IfcPile::type() const { return Type::IfcPile; }
 Type::Enum IfcPile::Class() { return Type::IfcPile; }
 IfcPile::IfcPile(IfcAbstractEntityPtr e) { if (!is(Type::IfcPile)) throw; entity = e; } 
 // IfcPipeFittingType
 IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum IfcPipeFittingType::PredefinedType() { return IfcPipeFittingTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcPipeFittingType::is(Type::Enum v) { return v == Type::IfcPipeFittingType || IfcFlowFittingType::is(v); }
-Type::Enum IfcPipeFittingType::type() { return Type::IfcPipeFittingType; }
+bool IfcPipeFittingType::is(Type::Enum v) const { return v == Type::IfcPipeFittingType || IfcFlowFittingType::is(v); }
+Type::Enum IfcPipeFittingType::type() const { return Type::IfcPipeFittingType; }
 Type::Enum IfcPipeFittingType::Class() { return Type::IfcPipeFittingType; }
 IfcPipeFittingType::IfcPipeFittingType(IfcAbstractEntityPtr e) { if (!is(Type::IfcPipeFittingType)) throw; entity = e; } 
 // IfcPipeSegmentType
 IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum IfcPipeSegmentType::PredefinedType() { return IfcPipeSegmentTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcPipeSegmentType::is(Type::Enum v) { return v == Type::IfcPipeSegmentType || IfcFlowSegmentType::is(v); }
-Type::Enum IfcPipeSegmentType::type() { return Type::IfcPipeSegmentType; }
+bool IfcPipeSegmentType::is(Type::Enum v) const { return v == Type::IfcPipeSegmentType || IfcFlowSegmentType::is(v); }
+Type::Enum IfcPipeSegmentType::type() const { return Type::IfcPipeSegmentType; }
 Type::Enum IfcPipeSegmentType::Class() { return Type::IfcPipeSegmentType; }
 IfcPipeSegmentType::IfcPipeSegmentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcPipeSegmentType)) throw; entity = e; } 
 // IfcPixelTexture
@@ -7565,90 +7572,90 @@ IfcInteger IfcPixelTexture::Width() { return *entity->getArgument(4); }
 IfcInteger IfcPixelTexture::Height() { return *entity->getArgument(5); }
 IfcInteger IfcPixelTexture::ColourComponents() { return *entity->getArgument(6); }
 std::vector<char[32]> /*[1:?]*/ IfcPixelTexture::Pixel() { throw; /* Not implemented argument 7 */ }
-bool IfcPixelTexture::is(Type::Enum v) { return v == Type::IfcPixelTexture || IfcSurfaceTexture::is(v); }
-Type::Enum IfcPixelTexture::type() { return Type::IfcPixelTexture; }
+bool IfcPixelTexture::is(Type::Enum v) const { return v == Type::IfcPixelTexture || IfcSurfaceTexture::is(v); }
+Type::Enum IfcPixelTexture::type() const { return Type::IfcPixelTexture; }
 Type::Enum IfcPixelTexture::Class() { return Type::IfcPixelTexture; }
 IfcPixelTexture::IfcPixelTexture(IfcAbstractEntityPtr e) { if (!is(Type::IfcPixelTexture)) throw; entity = e; } 
 // IfcPlacement
-SHARED_PTR<IfcCartesianPoint> IfcPlacement::Location() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(0)); }
-bool IfcPlacement::is(Type::Enum v) { return v == Type::IfcPlacement || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcPlacement::type() { return Type::IfcPlacement; }
+IfcCartesianPoint* IfcPlacement::Location() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(0)); }
+bool IfcPlacement::is(Type::Enum v) const { return v == Type::IfcPlacement || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcPlacement::type() const { return Type::IfcPlacement; }
 Type::Enum IfcPlacement::Class() { return Type::IfcPlacement; }
 IfcPlacement::IfcPlacement(IfcAbstractEntityPtr e) { if (!is(Type::IfcPlacement)) throw; entity = e; } 
 // IfcPlanarBox
 IfcAxis2Placement IfcPlanarBox::Placement() { return *entity->getArgument(2); }
-bool IfcPlanarBox::is(Type::Enum v) { return v == Type::IfcPlanarBox || IfcPlanarExtent::is(v); }
-Type::Enum IfcPlanarBox::type() { return Type::IfcPlanarBox; }
+bool IfcPlanarBox::is(Type::Enum v) const { return v == Type::IfcPlanarBox || IfcPlanarExtent::is(v); }
+Type::Enum IfcPlanarBox::type() const { return Type::IfcPlanarBox; }
 Type::Enum IfcPlanarBox::Class() { return Type::IfcPlanarBox; }
 IfcPlanarBox::IfcPlanarBox(IfcAbstractEntityPtr e) { if (!is(Type::IfcPlanarBox)) throw; entity = e; } 
 // IfcPlanarExtent
 IfcLengthMeasure IfcPlanarExtent::SizeInX() { return *entity->getArgument(0); }
 IfcLengthMeasure IfcPlanarExtent::SizeInY() { return *entity->getArgument(1); }
-bool IfcPlanarExtent::is(Type::Enum v) { return v == Type::IfcPlanarExtent || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcPlanarExtent::type() { return Type::IfcPlanarExtent; }
+bool IfcPlanarExtent::is(Type::Enum v) const { return v == Type::IfcPlanarExtent || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcPlanarExtent::type() const { return Type::IfcPlanarExtent; }
 Type::Enum IfcPlanarExtent::Class() { return Type::IfcPlanarExtent; }
 IfcPlanarExtent::IfcPlanarExtent(IfcAbstractEntityPtr e) { if (!is(Type::IfcPlanarExtent)) throw; entity = e; } 
 // IfcPlane
-bool IfcPlane::is(Type::Enum v) { return v == Type::IfcPlane || IfcElementarySurface::is(v); }
-Type::Enum IfcPlane::type() { return Type::IfcPlane; }
+bool IfcPlane::is(Type::Enum v) const { return v == Type::IfcPlane || IfcElementarySurface::is(v); }
+Type::Enum IfcPlane::type() const { return Type::IfcPlane; }
 Type::Enum IfcPlane::Class() { return Type::IfcPlane; }
 IfcPlane::IfcPlane(IfcAbstractEntityPtr e) { if (!is(Type::IfcPlane)) throw; entity = e; } 
 // IfcPlate
-bool IfcPlate::is(Type::Enum v) { return v == Type::IfcPlate || IfcBuildingElement::is(v); }
-Type::Enum IfcPlate::type() { return Type::IfcPlate; }
+bool IfcPlate::is(Type::Enum v) const { return v == Type::IfcPlate || IfcBuildingElement::is(v); }
+Type::Enum IfcPlate::type() const { return Type::IfcPlate; }
 Type::Enum IfcPlate::Class() { return Type::IfcPlate; }
 IfcPlate::IfcPlate(IfcAbstractEntityPtr e) { if (!is(Type::IfcPlate)) throw; entity = e; } 
 // IfcPlateType
 IfcPlateTypeEnum::IfcPlateTypeEnum IfcPlateType::PredefinedType() { return IfcPlateTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcPlateType::is(Type::Enum v) { return v == Type::IfcPlateType || IfcBuildingElementType::is(v); }
-Type::Enum IfcPlateType::type() { return Type::IfcPlateType; }
+bool IfcPlateType::is(Type::Enum v) const { return v == Type::IfcPlateType || IfcBuildingElementType::is(v); }
+Type::Enum IfcPlateType::type() const { return Type::IfcPlateType; }
 Type::Enum IfcPlateType::Class() { return Type::IfcPlateType; }
 IfcPlateType::IfcPlateType(IfcAbstractEntityPtr e) { if (!is(Type::IfcPlateType)) throw; entity = e; } 
 // IfcPoint
-bool IfcPoint::is(Type::Enum v) { return v == Type::IfcPoint || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcPoint::type() { return Type::IfcPoint; }
+bool IfcPoint::is(Type::Enum v) const { return v == Type::IfcPoint || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcPoint::type() const { return Type::IfcPoint; }
 Type::Enum IfcPoint::Class() { return Type::IfcPoint; }
 IfcPoint::IfcPoint(IfcAbstractEntityPtr e) { if (!is(Type::IfcPoint)) throw; entity = e; } 
 // IfcPointOnCurve
-SHARED_PTR<IfcCurve> IfcPointOnCurve::BasisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
+IfcCurve* IfcPointOnCurve::BasisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
 IfcParameterValue IfcPointOnCurve::PointParameter() { return *entity->getArgument(1); }
-bool IfcPointOnCurve::is(Type::Enum v) { return v == Type::IfcPointOnCurve || IfcPoint::is(v); }
-Type::Enum IfcPointOnCurve::type() { return Type::IfcPointOnCurve; }
+bool IfcPointOnCurve::is(Type::Enum v) const { return v == Type::IfcPointOnCurve || IfcPoint::is(v); }
+Type::Enum IfcPointOnCurve::type() const { return Type::IfcPointOnCurve; }
 Type::Enum IfcPointOnCurve::Class() { return Type::IfcPointOnCurve; }
 IfcPointOnCurve::IfcPointOnCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcPointOnCurve)) throw; entity = e; } 
 // IfcPointOnSurface
-SHARED_PTR<IfcSurface> IfcPointOnSurface::BasisSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(0)); }
+IfcSurface* IfcPointOnSurface::BasisSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(0)); }
 IfcParameterValue IfcPointOnSurface::PointParameterU() { return *entity->getArgument(1); }
 IfcParameterValue IfcPointOnSurface::PointParameterV() { return *entity->getArgument(2); }
-bool IfcPointOnSurface::is(Type::Enum v) { return v == Type::IfcPointOnSurface || IfcPoint::is(v); }
-Type::Enum IfcPointOnSurface::type() { return Type::IfcPointOnSurface; }
+bool IfcPointOnSurface::is(Type::Enum v) const { return v == Type::IfcPointOnSurface || IfcPoint::is(v); }
+Type::Enum IfcPointOnSurface::type() const { return Type::IfcPointOnSurface; }
 Type::Enum IfcPointOnSurface::Class() { return Type::IfcPointOnSurface; }
 IfcPointOnSurface::IfcPointOnSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcPointOnSurface)) throw; entity = e; } 
 // IfcPolyLoop
 SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > IfcPolyLoop::Polygon() { RETURN_AS_LIST(IfcCartesianPoint,0) }
-bool IfcPolyLoop::is(Type::Enum v) { return v == Type::IfcPolyLoop || IfcLoop::is(v); }
-Type::Enum IfcPolyLoop::type() { return Type::IfcPolyLoop; }
+bool IfcPolyLoop::is(Type::Enum v) const { return v == Type::IfcPolyLoop || IfcLoop::is(v); }
+Type::Enum IfcPolyLoop::type() const { return Type::IfcPolyLoop; }
 Type::Enum IfcPolyLoop::Class() { return Type::IfcPolyLoop; }
 IfcPolyLoop::IfcPolyLoop(IfcAbstractEntityPtr e) { if (!is(Type::IfcPolyLoop)) throw; entity = e; } 
 // IfcPolygonalBoundedHalfSpace
-SHARED_PTR<IfcAxis2Placement3D> IfcPolygonalBoundedHalfSpace::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(2)); }
-SHARED_PTR<IfcBoundedCurve> IfcPolygonalBoundedHalfSpace::PolygonalBoundary() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundedCurve>(*entity->getArgument(3)); }
-bool IfcPolygonalBoundedHalfSpace::is(Type::Enum v) { return v == Type::IfcPolygonalBoundedHalfSpace || IfcHalfSpaceSolid::is(v); }
-Type::Enum IfcPolygonalBoundedHalfSpace::type() { return Type::IfcPolygonalBoundedHalfSpace; }
+IfcAxis2Placement3D* IfcPolygonalBoundedHalfSpace::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(2)); }
+IfcBoundedCurve* IfcPolygonalBoundedHalfSpace::PolygonalBoundary() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundedCurve>(*entity->getArgument(3)); }
+bool IfcPolygonalBoundedHalfSpace::is(Type::Enum v) const { return v == Type::IfcPolygonalBoundedHalfSpace || IfcHalfSpaceSolid::is(v); }
+Type::Enum IfcPolygonalBoundedHalfSpace::type() const { return Type::IfcPolygonalBoundedHalfSpace; }
 Type::Enum IfcPolygonalBoundedHalfSpace::Class() { return Type::IfcPolygonalBoundedHalfSpace; }
 IfcPolygonalBoundedHalfSpace::IfcPolygonalBoundedHalfSpace(IfcAbstractEntityPtr e) { if (!is(Type::IfcPolygonalBoundedHalfSpace)) throw; entity = e; } 
 // IfcPolyline
 SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > IfcPolyline::Points() { RETURN_AS_LIST(IfcCartesianPoint,0) }
-bool IfcPolyline::is(Type::Enum v) { return v == Type::IfcPolyline || IfcBoundedCurve::is(v); }
-Type::Enum IfcPolyline::type() { return Type::IfcPolyline; }
+bool IfcPolyline::is(Type::Enum v) const { return v == Type::IfcPolyline || IfcBoundedCurve::is(v); }
+Type::Enum IfcPolyline::type() const { return Type::IfcPolyline; }
 Type::Enum IfcPolyline::Class() { return Type::IfcPolyline; }
 IfcPolyline::IfcPolyline(IfcAbstractEntityPtr e) { if (!is(Type::IfcPolyline)) throw; entity = e; } 
 // IfcPort
 IfcRelConnectsPortToElement::list IfcPort::ContainedIn() { RETURN_INVERSE(IfcRelConnectsPortToElement) }
 IfcRelConnectsPorts::list IfcPort::ConnectedFrom() { RETURN_INVERSE(IfcRelConnectsPorts) }
 IfcRelConnectsPorts::list IfcPort::ConnectedTo() { RETURN_INVERSE(IfcRelConnectsPorts) }
-bool IfcPort::is(Type::Enum v) { return v == Type::IfcPort || IfcProduct::is(v); }
-Type::Enum IfcPort::type() { return Type::IfcPort; }
+bool IfcPort::is(Type::Enum v) const { return v == Type::IfcPort || IfcProduct::is(v); }
+Type::Enum IfcPort::type() const { return Type::IfcPort; }
 Type::Enum IfcPort::Class() { return Type::IfcPort; }
 IfcPort::IfcPort(IfcAbstractEntityPtr e) { if (!is(Type::IfcPort)) throw; entity = e; } 
 // IfcPostalAddress
@@ -7666,49 +7673,49 @@ bool IfcPostalAddress::hasPostalCode() { return !entity->getArgument(8)->isNull(
 IfcLabel IfcPostalAddress::PostalCode() { return *entity->getArgument(8); }
 bool IfcPostalAddress::hasCountry() { return !entity->getArgument(9)->isNull(); }
 IfcLabel IfcPostalAddress::Country() { return *entity->getArgument(9); }
-bool IfcPostalAddress::is(Type::Enum v) { return v == Type::IfcPostalAddress || IfcAddress::is(v); }
-Type::Enum IfcPostalAddress::type() { return Type::IfcPostalAddress; }
+bool IfcPostalAddress::is(Type::Enum v) const { return v == Type::IfcPostalAddress || IfcAddress::is(v); }
+Type::Enum IfcPostalAddress::type() const { return Type::IfcPostalAddress; }
 Type::Enum IfcPostalAddress::Class() { return Type::IfcPostalAddress; }
 IfcPostalAddress::IfcPostalAddress(IfcAbstractEntityPtr e) { if (!is(Type::IfcPostalAddress)) throw; entity = e; } 
 // IfcPreDefinedColour
-bool IfcPreDefinedColour::is(Type::Enum v) { return v == Type::IfcPreDefinedColour || IfcPreDefinedItem::is(v); }
-Type::Enum IfcPreDefinedColour::type() { return Type::IfcPreDefinedColour; }
+bool IfcPreDefinedColour::is(Type::Enum v) const { return v == Type::IfcPreDefinedColour || IfcPreDefinedItem::is(v); }
+Type::Enum IfcPreDefinedColour::type() const { return Type::IfcPreDefinedColour; }
 Type::Enum IfcPreDefinedColour::Class() { return Type::IfcPreDefinedColour; }
 IfcPreDefinedColour::IfcPreDefinedColour(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedColour)) throw; entity = e; } 
 // IfcPreDefinedCurveFont
-bool IfcPreDefinedCurveFont::is(Type::Enum v) { return v == Type::IfcPreDefinedCurveFont || IfcPreDefinedItem::is(v); }
-Type::Enum IfcPreDefinedCurveFont::type() { return Type::IfcPreDefinedCurveFont; }
+bool IfcPreDefinedCurveFont::is(Type::Enum v) const { return v == Type::IfcPreDefinedCurveFont || IfcPreDefinedItem::is(v); }
+Type::Enum IfcPreDefinedCurveFont::type() const { return Type::IfcPreDefinedCurveFont; }
 Type::Enum IfcPreDefinedCurveFont::Class() { return Type::IfcPreDefinedCurveFont; }
 IfcPreDefinedCurveFont::IfcPreDefinedCurveFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedCurveFont)) throw; entity = e; } 
 // IfcPreDefinedDimensionSymbol
-bool IfcPreDefinedDimensionSymbol::is(Type::Enum v) { return v == Type::IfcPreDefinedDimensionSymbol || IfcPreDefinedSymbol::is(v); }
-Type::Enum IfcPreDefinedDimensionSymbol::type() { return Type::IfcPreDefinedDimensionSymbol; }
+bool IfcPreDefinedDimensionSymbol::is(Type::Enum v) const { return v == Type::IfcPreDefinedDimensionSymbol || IfcPreDefinedSymbol::is(v); }
+Type::Enum IfcPreDefinedDimensionSymbol::type() const { return Type::IfcPreDefinedDimensionSymbol; }
 Type::Enum IfcPreDefinedDimensionSymbol::Class() { return Type::IfcPreDefinedDimensionSymbol; }
 IfcPreDefinedDimensionSymbol::IfcPreDefinedDimensionSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedDimensionSymbol)) throw; entity = e; } 
 // IfcPreDefinedItem
 IfcLabel IfcPreDefinedItem::Name() { return *entity->getArgument(0); }
-bool IfcPreDefinedItem::is(Type::Enum v) { return v == Type::IfcPreDefinedItem; }
-Type::Enum IfcPreDefinedItem::type() { return Type::IfcPreDefinedItem; }
+bool IfcPreDefinedItem::is(Type::Enum v) const { return v == Type::IfcPreDefinedItem; }
+Type::Enum IfcPreDefinedItem::type() const { return Type::IfcPreDefinedItem; }
 Type::Enum IfcPreDefinedItem::Class() { return Type::IfcPreDefinedItem; }
 IfcPreDefinedItem::IfcPreDefinedItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedItem)) throw; entity = e; } 
 // IfcPreDefinedPointMarkerSymbol
-bool IfcPreDefinedPointMarkerSymbol::is(Type::Enum v) { return v == Type::IfcPreDefinedPointMarkerSymbol || IfcPreDefinedSymbol::is(v); }
-Type::Enum IfcPreDefinedPointMarkerSymbol::type() { return Type::IfcPreDefinedPointMarkerSymbol; }
+bool IfcPreDefinedPointMarkerSymbol::is(Type::Enum v) const { return v == Type::IfcPreDefinedPointMarkerSymbol || IfcPreDefinedSymbol::is(v); }
+Type::Enum IfcPreDefinedPointMarkerSymbol::type() const { return Type::IfcPreDefinedPointMarkerSymbol; }
 Type::Enum IfcPreDefinedPointMarkerSymbol::Class() { return Type::IfcPreDefinedPointMarkerSymbol; }
 IfcPreDefinedPointMarkerSymbol::IfcPreDefinedPointMarkerSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedPointMarkerSymbol)) throw; entity = e; } 
 // IfcPreDefinedSymbol
-bool IfcPreDefinedSymbol::is(Type::Enum v) { return v == Type::IfcPreDefinedSymbol || IfcPreDefinedItem::is(v); }
-Type::Enum IfcPreDefinedSymbol::type() { return Type::IfcPreDefinedSymbol; }
+bool IfcPreDefinedSymbol::is(Type::Enum v) const { return v == Type::IfcPreDefinedSymbol || IfcPreDefinedItem::is(v); }
+Type::Enum IfcPreDefinedSymbol::type() const { return Type::IfcPreDefinedSymbol; }
 Type::Enum IfcPreDefinedSymbol::Class() { return Type::IfcPreDefinedSymbol; }
 IfcPreDefinedSymbol::IfcPreDefinedSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedSymbol)) throw; entity = e; } 
 // IfcPreDefinedTerminatorSymbol
-bool IfcPreDefinedTerminatorSymbol::is(Type::Enum v) { return v == Type::IfcPreDefinedTerminatorSymbol || IfcPreDefinedSymbol::is(v); }
-Type::Enum IfcPreDefinedTerminatorSymbol::type() { return Type::IfcPreDefinedTerminatorSymbol; }
+bool IfcPreDefinedTerminatorSymbol::is(Type::Enum v) const { return v == Type::IfcPreDefinedTerminatorSymbol || IfcPreDefinedSymbol::is(v); }
+Type::Enum IfcPreDefinedTerminatorSymbol::type() const { return Type::IfcPreDefinedTerminatorSymbol; }
 Type::Enum IfcPreDefinedTerminatorSymbol::Class() { return Type::IfcPreDefinedTerminatorSymbol; }
 IfcPreDefinedTerminatorSymbol::IfcPreDefinedTerminatorSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedTerminatorSymbol)) throw; entity = e; } 
 // IfcPreDefinedTextFont
-bool IfcPreDefinedTextFont::is(Type::Enum v) { return v == Type::IfcPreDefinedTextFont || IfcPreDefinedItem::is(v); }
-Type::Enum IfcPreDefinedTextFont::type() { return Type::IfcPreDefinedTextFont; }
+bool IfcPreDefinedTextFont::is(Type::Enum v) const { return v == Type::IfcPreDefinedTextFont || IfcPreDefinedItem::is(v); }
+Type::Enum IfcPreDefinedTextFont::type() const { return Type::IfcPreDefinedTextFont; }
 Type::Enum IfcPreDefinedTextFont::Class() { return Type::IfcPreDefinedTextFont; }
 IfcPreDefinedTextFont::IfcPreDefinedTextFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedTextFont)) throw; entity = e; } 
 // IfcPresentationLayerAssignment
@@ -7718,8 +7725,8 @@ IfcText IfcPresentationLayerAssignment::Description() { return *entity->getArgum
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcPresentationLayerAssignment::AssignedItems() { RETURN_AS_LIST(IfcAbstractSelect,2) }
 bool IfcPresentationLayerAssignment::hasIdentifier() { return !entity->getArgument(3)->isNull(); }
 IfcIdentifier IfcPresentationLayerAssignment::Identifier() { return *entity->getArgument(3); }
-bool IfcPresentationLayerAssignment::is(Type::Enum v) { return v == Type::IfcPresentationLayerAssignment; }
-Type::Enum IfcPresentationLayerAssignment::type() { return Type::IfcPresentationLayerAssignment; }
+bool IfcPresentationLayerAssignment::is(Type::Enum v) const { return v == Type::IfcPresentationLayerAssignment; }
+Type::Enum IfcPresentationLayerAssignment::type() const { return Type::IfcPresentationLayerAssignment; }
 Type::Enum IfcPresentationLayerAssignment::Class() { return Type::IfcPresentationLayerAssignment; }
 IfcPresentationLayerAssignment::IfcPresentationLayerAssignment(IfcAbstractEntityPtr e) { if (!is(Type::IfcPresentationLayerAssignment)) throw; entity = e; } 
 // IfcPresentationLayerWithStyle
@@ -7727,21 +7734,21 @@ bool IfcPresentationLayerWithStyle::LayerOn() { return *entity->getArgument(4); 
 bool IfcPresentationLayerWithStyle::LayerFrozen() { return *entity->getArgument(5); }
 bool IfcPresentationLayerWithStyle::LayerBlocked() { return *entity->getArgument(6); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcPresentationLayerWithStyle::LayerStyles() { RETURN_AS_LIST(IfcAbstractSelect,7) }
-bool IfcPresentationLayerWithStyle::is(Type::Enum v) { return v == Type::IfcPresentationLayerWithStyle || IfcPresentationLayerAssignment::is(v); }
-Type::Enum IfcPresentationLayerWithStyle::type() { return Type::IfcPresentationLayerWithStyle; }
+bool IfcPresentationLayerWithStyle::is(Type::Enum v) const { return v == Type::IfcPresentationLayerWithStyle || IfcPresentationLayerAssignment::is(v); }
+Type::Enum IfcPresentationLayerWithStyle::type() const { return Type::IfcPresentationLayerWithStyle; }
 Type::Enum IfcPresentationLayerWithStyle::Class() { return Type::IfcPresentationLayerWithStyle; }
 IfcPresentationLayerWithStyle::IfcPresentationLayerWithStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcPresentationLayerWithStyle)) throw; entity = e; } 
 // IfcPresentationStyle
 bool IfcPresentationStyle::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcPresentationStyle::Name() { return *entity->getArgument(0); }
-bool IfcPresentationStyle::is(Type::Enum v) { return v == Type::IfcPresentationStyle; }
-Type::Enum IfcPresentationStyle::type() { return Type::IfcPresentationStyle; }
+bool IfcPresentationStyle::is(Type::Enum v) const { return v == Type::IfcPresentationStyle; }
+Type::Enum IfcPresentationStyle::type() const { return Type::IfcPresentationStyle; }
 Type::Enum IfcPresentationStyle::Class() { return Type::IfcPresentationStyle; }
 IfcPresentationStyle::IfcPresentationStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcPresentationStyle)) throw; entity = e; } 
 // IfcPresentationStyleAssignment
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcPresentationStyleAssignment::Styles() { RETURN_AS_LIST(IfcAbstractSelect,0) }
-bool IfcPresentationStyleAssignment::is(Type::Enum v) { return v == Type::IfcPresentationStyleAssignment; }
-Type::Enum IfcPresentationStyleAssignment::type() { return Type::IfcPresentationStyleAssignment; }
+bool IfcPresentationStyleAssignment::is(Type::Enum v) const { return v == Type::IfcPresentationStyleAssignment; }
+Type::Enum IfcPresentationStyleAssignment::type() const { return Type::IfcPresentationStyleAssignment; }
 Type::Enum IfcPresentationStyleAssignment::Class() { return Type::IfcPresentationStyleAssignment; }
 IfcPresentationStyleAssignment::IfcPresentationStyleAssignment(IfcAbstractEntityPtr e) { if (!is(Type::IfcPresentationStyleAssignment)) throw; entity = e; } 
 // IfcProcedure
@@ -7749,33 +7756,33 @@ IfcIdentifier IfcProcedure::ProcedureID() { return *entity->getArgument(5); }
 IfcProcedureTypeEnum::IfcProcedureTypeEnum IfcProcedure::ProcedureType() { return IfcProcedureTypeEnum::FromString(*entity->getArgument(6)); }
 bool IfcProcedure::hasUserDefinedProcedureType() { return !entity->getArgument(7)->isNull(); }
 IfcLabel IfcProcedure::UserDefinedProcedureType() { return *entity->getArgument(7); }
-bool IfcProcedure::is(Type::Enum v) { return v == Type::IfcProcedure || IfcProcess::is(v); }
-Type::Enum IfcProcedure::type() { return Type::IfcProcedure; }
+bool IfcProcedure::is(Type::Enum v) const { return v == Type::IfcProcedure || IfcProcess::is(v); }
+Type::Enum IfcProcedure::type() const { return Type::IfcProcedure; }
 Type::Enum IfcProcedure::Class() { return Type::IfcProcedure; }
 IfcProcedure::IfcProcedure(IfcAbstractEntityPtr e) { if (!is(Type::IfcProcedure)) throw; entity = e; } 
 // IfcProcess
 IfcRelAssignsToProcess::list IfcProcess::OperatesOn() { RETURN_INVERSE(IfcRelAssignsToProcess) }
 IfcRelSequence::list IfcProcess::IsSuccessorFrom() { RETURN_INVERSE(IfcRelSequence) }
 IfcRelSequence::list IfcProcess::IsPredecessorTo() { RETURN_INVERSE(IfcRelSequence) }
-bool IfcProcess::is(Type::Enum v) { return v == Type::IfcProcess || IfcObject::is(v); }
-Type::Enum IfcProcess::type() { return Type::IfcProcess; }
+bool IfcProcess::is(Type::Enum v) const { return v == Type::IfcProcess || IfcObject::is(v); }
+Type::Enum IfcProcess::type() const { return Type::IfcProcess; }
 Type::Enum IfcProcess::Class() { return Type::IfcProcess; }
 IfcProcess::IfcProcess(IfcAbstractEntityPtr e) { if (!is(Type::IfcProcess)) throw; entity = e; } 
 // IfcProduct
 bool IfcProduct::hasObjectPlacement() { return !entity->getArgument(5)->isNull(); }
-SHARED_PTR<IfcObjectPlacement> IfcProduct::ObjectPlacement() { return reinterpret_pointer_cast<IfcBaseClass,IfcObjectPlacement>(*entity->getArgument(5)); }
+IfcObjectPlacement* IfcProduct::ObjectPlacement() { return reinterpret_pointer_cast<IfcBaseClass,IfcObjectPlacement>(*entity->getArgument(5)); }
 bool IfcProduct::hasRepresentation() { return !entity->getArgument(6)->isNull(); }
-SHARED_PTR<IfcProductRepresentation> IfcProduct::Representation() { return reinterpret_pointer_cast<IfcBaseClass,IfcProductRepresentation>(*entity->getArgument(6)); }
+IfcProductRepresentation* IfcProduct::Representation() { return reinterpret_pointer_cast<IfcBaseClass,IfcProductRepresentation>(*entity->getArgument(6)); }
 IfcRelAssignsToProduct::list IfcProduct::ReferencedBy() { RETURN_INVERSE(IfcRelAssignsToProduct) }
-bool IfcProduct::is(Type::Enum v) { return v == Type::IfcProduct || IfcObject::is(v); }
-Type::Enum IfcProduct::type() { return Type::IfcProduct; }
+bool IfcProduct::is(Type::Enum v) const { return v == Type::IfcProduct || IfcObject::is(v); }
+Type::Enum IfcProduct::type() const { return Type::IfcProduct; }
 Type::Enum IfcProduct::Class() { return Type::IfcProduct; }
 IfcProduct::IfcProduct(IfcAbstractEntityPtr e) { if (!is(Type::IfcProduct)) throw; entity = e; } 
 // IfcProductDefinitionShape
 IfcProduct::list IfcProductDefinitionShape::ShapeOfProduct() { RETURN_INVERSE(IfcProduct) }
 IfcShapeAspect::list IfcProductDefinitionShape::HasShapeAspects() { RETURN_INVERSE(IfcShapeAspect) }
-bool IfcProductDefinitionShape::is(Type::Enum v) { return v == Type::IfcProductDefinitionShape || IfcProductRepresentation::is(v); }
-Type::Enum IfcProductDefinitionShape::type() { return Type::IfcProductDefinitionShape; }
+bool IfcProductDefinitionShape::is(Type::Enum v) const { return v == Type::IfcProductDefinitionShape || IfcProductRepresentation::is(v); }
+Type::Enum IfcProductDefinitionShape::type() const { return Type::IfcProductDefinitionShape; }
 Type::Enum IfcProductDefinitionShape::Class() { return Type::IfcProductDefinitionShape; }
 IfcProductDefinitionShape::IfcProductDefinitionShape(IfcAbstractEntityPtr e) { if (!is(Type::IfcProductDefinitionShape)) throw; entity = e; } 
 // IfcProductRepresentation
@@ -7784,8 +7791,8 @@ IfcLabel IfcProductRepresentation::Name() { return *entity->getArgument(0); }
 bool IfcProductRepresentation::hasDescription() { return !entity->getArgument(1)->isNull(); }
 IfcText IfcProductRepresentation::Description() { return *entity->getArgument(1); }
 SHARED_PTR< IfcTemplatedEntityList<IfcRepresentation> > IfcProductRepresentation::Representations() { RETURN_AS_LIST(IfcRepresentation,2) }
-bool IfcProductRepresentation::is(Type::Enum v) { return v == Type::IfcProductRepresentation; }
-Type::Enum IfcProductRepresentation::type() { return Type::IfcProductRepresentation; }
+bool IfcProductRepresentation::is(Type::Enum v) const { return v == Type::IfcProductRepresentation; }
+Type::Enum IfcProductRepresentation::type() const { return Type::IfcProductRepresentation; }
 Type::Enum IfcProductRepresentation::Class() { return Type::IfcProductRepresentation; }
 IfcProductRepresentation::IfcProductRepresentation(IfcAbstractEntityPtr e) { if (!is(Type::IfcProductRepresentation)) throw; entity = e; } 
 // IfcProductsOfCombustionProperties
@@ -7797,25 +7804,25 @@ bool IfcProductsOfCombustionProperties::hasCOContent() { return !entity->getArgu
 IfcPositiveRatioMeasure IfcProductsOfCombustionProperties::COContent() { return *entity->getArgument(3); }
 bool IfcProductsOfCombustionProperties::hasCO2Content() { return !entity->getArgument(4)->isNull(); }
 IfcPositiveRatioMeasure IfcProductsOfCombustionProperties::CO2Content() { return *entity->getArgument(4); }
-bool IfcProductsOfCombustionProperties::is(Type::Enum v) { return v == Type::IfcProductsOfCombustionProperties || IfcMaterialProperties::is(v); }
-Type::Enum IfcProductsOfCombustionProperties::type() { return Type::IfcProductsOfCombustionProperties; }
+bool IfcProductsOfCombustionProperties::is(Type::Enum v) const { return v == Type::IfcProductsOfCombustionProperties || IfcMaterialProperties::is(v); }
+Type::Enum IfcProductsOfCombustionProperties::type() const { return Type::IfcProductsOfCombustionProperties; }
 Type::Enum IfcProductsOfCombustionProperties::Class() { return Type::IfcProductsOfCombustionProperties; }
 IfcProductsOfCombustionProperties::IfcProductsOfCombustionProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcProductsOfCombustionProperties)) throw; entity = e; } 
 // IfcProfileDef
 IfcProfileTypeEnum::IfcProfileTypeEnum IfcProfileDef::ProfileType() { return IfcProfileTypeEnum::FromString(*entity->getArgument(0)); }
 bool IfcProfileDef::hasProfileName() { return !entity->getArgument(1)->isNull(); }
 IfcLabel IfcProfileDef::ProfileName() { return *entity->getArgument(1); }
-bool IfcProfileDef::is(Type::Enum v) { return v == Type::IfcProfileDef; }
-Type::Enum IfcProfileDef::type() { return Type::IfcProfileDef; }
+bool IfcProfileDef::is(Type::Enum v) const { return v == Type::IfcProfileDef; }
+Type::Enum IfcProfileDef::type() const { return Type::IfcProfileDef; }
 Type::Enum IfcProfileDef::Class() { return Type::IfcProfileDef; }
 IfcProfileDef::IfcProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcProfileDef)) throw; entity = e; } 
 // IfcProfileProperties
 bool IfcProfileProperties::hasProfileName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcProfileProperties::ProfileName() { return *entity->getArgument(0); }
 bool IfcProfileProperties::hasProfileDefinition() { return !entity->getArgument(1)->isNull(); }
-SHARED_PTR<IfcProfileDef> IfcProfileProperties::ProfileDefinition() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(1)); }
-bool IfcProfileProperties::is(Type::Enum v) { return v == Type::IfcProfileProperties; }
-Type::Enum IfcProfileProperties::type() { return Type::IfcProfileProperties; }
+IfcProfileDef* IfcProfileProperties::ProfileDefinition() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(1)); }
+bool IfcProfileProperties::is(Type::Enum v) const { return v == Type::IfcProfileProperties; }
+Type::Enum IfcProfileProperties::type() const { return Type::IfcProfileProperties; }
 Type::Enum IfcProfileProperties::Class() { return Type::IfcProfileProperties; }
 IfcProfileProperties::IfcProfileProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcProfileProperties)) throw; entity = e; } 
 // IfcProject
@@ -7824,9 +7831,9 @@ IfcLabel IfcProject::LongName() { return *entity->getArgument(5); }
 bool IfcProject::hasPhase() { return !entity->getArgument(6)->isNull(); }
 IfcLabel IfcProject::Phase() { return *entity->getArgument(6); }
 SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationContext> > IfcProject::RepresentationContexts() { RETURN_AS_LIST(IfcRepresentationContext,7) }
-SHARED_PTR<IfcUnitAssignment> IfcProject::UnitsInContext() { return reinterpret_pointer_cast<IfcBaseClass,IfcUnitAssignment>(*entity->getArgument(8)); }
-bool IfcProject::is(Type::Enum v) { return v == Type::IfcProject || IfcObject::is(v); }
-Type::Enum IfcProject::type() { return Type::IfcProject; }
+IfcUnitAssignment* IfcProject::UnitsInContext() { return reinterpret_pointer_cast<IfcBaseClass,IfcUnitAssignment>(*entity->getArgument(8)); }
+bool IfcProject::is(Type::Enum v) const { return v == Type::IfcProject || IfcObject::is(v); }
+Type::Enum IfcProject::type() const { return Type::IfcProject; }
 Type::Enum IfcProject::Class() { return Type::IfcProject; }
 IfcProject::IfcProject(IfcAbstractEntityPtr e) { if (!is(Type::IfcProject)) throw; entity = e; } 
 // IfcProjectOrder
@@ -7834,25 +7841,25 @@ IfcIdentifier IfcProjectOrder::ID() { return *entity->getArgument(5); }
 IfcProjectOrderTypeEnum::IfcProjectOrderTypeEnum IfcProjectOrder::PredefinedType() { return IfcProjectOrderTypeEnum::FromString(*entity->getArgument(6)); }
 bool IfcProjectOrder::hasStatus() { return !entity->getArgument(7)->isNull(); }
 IfcLabel IfcProjectOrder::Status() { return *entity->getArgument(7); }
-bool IfcProjectOrder::is(Type::Enum v) { return v == Type::IfcProjectOrder || IfcControl::is(v); }
-Type::Enum IfcProjectOrder::type() { return Type::IfcProjectOrder; }
+bool IfcProjectOrder::is(Type::Enum v) const { return v == Type::IfcProjectOrder || IfcControl::is(v); }
+Type::Enum IfcProjectOrder::type() const { return Type::IfcProjectOrder; }
 Type::Enum IfcProjectOrder::Class() { return Type::IfcProjectOrder; }
 IfcProjectOrder::IfcProjectOrder(IfcAbstractEntityPtr e) { if (!is(Type::IfcProjectOrder)) throw; entity = e; } 
 // IfcProjectOrderRecord
 SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProjectOrder> > IfcProjectOrderRecord::Records() { RETURN_AS_LIST(IfcRelAssignsToProjectOrder,5) }
 IfcProjectOrderRecordTypeEnum::IfcProjectOrderRecordTypeEnum IfcProjectOrderRecord::PredefinedType() { return IfcProjectOrderRecordTypeEnum::FromString(*entity->getArgument(6)); }
-bool IfcProjectOrderRecord::is(Type::Enum v) { return v == Type::IfcProjectOrderRecord || IfcControl::is(v); }
-Type::Enum IfcProjectOrderRecord::type() { return Type::IfcProjectOrderRecord; }
+bool IfcProjectOrderRecord::is(Type::Enum v) const { return v == Type::IfcProjectOrderRecord || IfcControl::is(v); }
+Type::Enum IfcProjectOrderRecord::type() const { return Type::IfcProjectOrderRecord; }
 Type::Enum IfcProjectOrderRecord::Class() { return Type::IfcProjectOrderRecord; }
 IfcProjectOrderRecord::IfcProjectOrderRecord(IfcAbstractEntityPtr e) { if (!is(Type::IfcProjectOrderRecord)) throw; entity = e; } 
 // IfcProjectionCurve
-bool IfcProjectionCurve::is(Type::Enum v) { return v == Type::IfcProjectionCurve || IfcAnnotationCurveOccurrence::is(v); }
-Type::Enum IfcProjectionCurve::type() { return Type::IfcProjectionCurve; }
+bool IfcProjectionCurve::is(Type::Enum v) const { return v == Type::IfcProjectionCurve || IfcAnnotationCurveOccurrence::is(v); }
+Type::Enum IfcProjectionCurve::type() const { return Type::IfcProjectionCurve; }
 Type::Enum IfcProjectionCurve::Class() { return Type::IfcProjectionCurve; }
 IfcProjectionCurve::IfcProjectionCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcProjectionCurve)) throw; entity = e; } 
 // IfcProjectionElement
-bool IfcProjectionElement::is(Type::Enum v) { return v == Type::IfcProjectionElement || IfcFeatureElementAddition::is(v); }
-Type::Enum IfcProjectionElement::type() { return Type::IfcProjectionElement; }
+bool IfcProjectionElement::is(Type::Enum v) const { return v == Type::IfcProjectionElement || IfcFeatureElementAddition::is(v); }
+Type::Enum IfcProjectionElement::type() const { return Type::IfcProjectionElement; }
 Type::Enum IfcProjectionElement::Class() { return Type::IfcProjectionElement; }
 IfcProjectionElement::IfcProjectionElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcProjectionElement)) throw; entity = e; } 
 // IfcProperty
@@ -7862,8 +7869,8 @@ IfcText IfcProperty::Description() { return *entity->getArgument(1); }
 IfcPropertyDependencyRelationship::list IfcProperty::PropertyForDependance() { RETURN_INVERSE(IfcPropertyDependencyRelationship) }
 IfcPropertyDependencyRelationship::list IfcProperty::PropertyDependsOn() { RETURN_INVERSE(IfcPropertyDependencyRelationship) }
 IfcComplexProperty::list IfcProperty::PartOfComplex() { RETURN_INVERSE(IfcComplexProperty) }
-bool IfcProperty::is(Type::Enum v) { return v == Type::IfcProperty; }
-Type::Enum IfcProperty::type() { return Type::IfcProperty; }
+bool IfcProperty::is(Type::Enum v) const { return v == Type::IfcProperty; }
+Type::Enum IfcProperty::type() const { return Type::IfcProperty; }
 Type::Enum IfcProperty::Class() { return Type::IfcProperty; }
 IfcProperty::IfcProperty(IfcAbstractEntityPtr e) { if (!is(Type::IfcProperty)) throw; entity = e; } 
 // IfcPropertyBoundedValue
@@ -7873,46 +7880,46 @@ bool IfcPropertyBoundedValue::hasLowerBoundValue() { return !entity->getArgument
 IfcValue IfcPropertyBoundedValue::LowerBoundValue() { return *entity->getArgument(3); }
 bool IfcPropertyBoundedValue::hasUnit() { return !entity->getArgument(4)->isNull(); }
 IfcUnit IfcPropertyBoundedValue::Unit() { return *entity->getArgument(4); }
-bool IfcPropertyBoundedValue::is(Type::Enum v) { return v == Type::IfcPropertyBoundedValue || IfcSimpleProperty::is(v); }
-Type::Enum IfcPropertyBoundedValue::type() { return Type::IfcPropertyBoundedValue; }
+bool IfcPropertyBoundedValue::is(Type::Enum v) const { return v == Type::IfcPropertyBoundedValue || IfcSimpleProperty::is(v); }
+Type::Enum IfcPropertyBoundedValue::type() const { return Type::IfcPropertyBoundedValue; }
 Type::Enum IfcPropertyBoundedValue::Class() { return Type::IfcPropertyBoundedValue; }
 IfcPropertyBoundedValue::IfcPropertyBoundedValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyBoundedValue)) throw; entity = e; } 
 // IfcPropertyConstraintRelationship
-SHARED_PTR<IfcConstraint> IfcPropertyConstraintRelationship::RelatingConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(0)); }
+IfcConstraint* IfcPropertyConstraintRelationship::RelatingConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > IfcPropertyConstraintRelationship::RelatedProperties() { RETURN_AS_LIST(IfcProperty,1) }
 bool IfcPropertyConstraintRelationship::hasName() { return !entity->getArgument(2)->isNull(); }
 IfcLabel IfcPropertyConstraintRelationship::Name() { return *entity->getArgument(2); }
 bool IfcPropertyConstraintRelationship::hasDescription() { return !entity->getArgument(3)->isNull(); }
 IfcText IfcPropertyConstraintRelationship::Description() { return *entity->getArgument(3); }
-bool IfcPropertyConstraintRelationship::is(Type::Enum v) { return v == Type::IfcPropertyConstraintRelationship; }
-Type::Enum IfcPropertyConstraintRelationship::type() { return Type::IfcPropertyConstraintRelationship; }
+bool IfcPropertyConstraintRelationship::is(Type::Enum v) const { return v == Type::IfcPropertyConstraintRelationship; }
+Type::Enum IfcPropertyConstraintRelationship::type() const { return Type::IfcPropertyConstraintRelationship; }
 Type::Enum IfcPropertyConstraintRelationship::Class() { return Type::IfcPropertyConstraintRelationship; }
 IfcPropertyConstraintRelationship::IfcPropertyConstraintRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyConstraintRelationship)) throw; entity = e; } 
 // IfcPropertyDefinition
 IfcRelAssociates::list IfcPropertyDefinition::HasAssociations() { RETURN_INVERSE(IfcRelAssociates) }
-bool IfcPropertyDefinition::is(Type::Enum v) { return v == Type::IfcPropertyDefinition || IfcRoot::is(v); }
-Type::Enum IfcPropertyDefinition::type() { return Type::IfcPropertyDefinition; }
+bool IfcPropertyDefinition::is(Type::Enum v) const { return v == Type::IfcPropertyDefinition || IfcRoot::is(v); }
+Type::Enum IfcPropertyDefinition::type() const { return Type::IfcPropertyDefinition; }
 Type::Enum IfcPropertyDefinition::Class() { return Type::IfcPropertyDefinition; }
 IfcPropertyDefinition::IfcPropertyDefinition(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyDefinition)) throw; entity = e; } 
 // IfcPropertyDependencyRelationship
-SHARED_PTR<IfcProperty> IfcPropertyDependencyRelationship::DependingProperty() { return reinterpret_pointer_cast<IfcBaseClass,IfcProperty>(*entity->getArgument(0)); }
-SHARED_PTR<IfcProperty> IfcPropertyDependencyRelationship::DependantProperty() { return reinterpret_pointer_cast<IfcBaseClass,IfcProperty>(*entity->getArgument(1)); }
+IfcProperty* IfcPropertyDependencyRelationship::DependingProperty() { return reinterpret_pointer_cast<IfcBaseClass,IfcProperty>(*entity->getArgument(0)); }
+IfcProperty* IfcPropertyDependencyRelationship::DependantProperty() { return reinterpret_pointer_cast<IfcBaseClass,IfcProperty>(*entity->getArgument(1)); }
 bool IfcPropertyDependencyRelationship::hasName() { return !entity->getArgument(2)->isNull(); }
 IfcLabel IfcPropertyDependencyRelationship::Name() { return *entity->getArgument(2); }
 bool IfcPropertyDependencyRelationship::hasDescription() { return !entity->getArgument(3)->isNull(); }
 IfcText IfcPropertyDependencyRelationship::Description() { return *entity->getArgument(3); }
 bool IfcPropertyDependencyRelationship::hasExpression() { return !entity->getArgument(4)->isNull(); }
 IfcText IfcPropertyDependencyRelationship::Expression() { return *entity->getArgument(4); }
-bool IfcPropertyDependencyRelationship::is(Type::Enum v) { return v == Type::IfcPropertyDependencyRelationship; }
-Type::Enum IfcPropertyDependencyRelationship::type() { return Type::IfcPropertyDependencyRelationship; }
+bool IfcPropertyDependencyRelationship::is(Type::Enum v) const { return v == Type::IfcPropertyDependencyRelationship; }
+Type::Enum IfcPropertyDependencyRelationship::type() const { return Type::IfcPropertyDependencyRelationship; }
 Type::Enum IfcPropertyDependencyRelationship::Class() { return Type::IfcPropertyDependencyRelationship; }
 IfcPropertyDependencyRelationship::IfcPropertyDependencyRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyDependencyRelationship)) throw; entity = e; } 
 // IfcPropertyEnumeratedValue
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcPropertyEnumeratedValue::EnumerationValues() { RETURN_AS_LIST(IfcAbstractSelect,2) }
 bool IfcPropertyEnumeratedValue::hasEnumerationReference() { return !entity->getArgument(3)->isNull(); }
-SHARED_PTR<IfcPropertyEnumeration> IfcPropertyEnumeratedValue::EnumerationReference() { return reinterpret_pointer_cast<IfcBaseClass,IfcPropertyEnumeration>(*entity->getArgument(3)); }
-bool IfcPropertyEnumeratedValue::is(Type::Enum v) { return v == Type::IfcPropertyEnumeratedValue || IfcSimpleProperty::is(v); }
-Type::Enum IfcPropertyEnumeratedValue::type() { return Type::IfcPropertyEnumeratedValue; }
+IfcPropertyEnumeration* IfcPropertyEnumeratedValue::EnumerationReference() { return reinterpret_pointer_cast<IfcBaseClass,IfcPropertyEnumeration>(*entity->getArgument(3)); }
+bool IfcPropertyEnumeratedValue::is(Type::Enum v) const { return v == Type::IfcPropertyEnumeratedValue || IfcSimpleProperty::is(v); }
+Type::Enum IfcPropertyEnumeratedValue::type() const { return Type::IfcPropertyEnumeratedValue; }
 Type::Enum IfcPropertyEnumeratedValue::Class() { return Type::IfcPropertyEnumeratedValue; }
 IfcPropertyEnumeratedValue::IfcPropertyEnumeratedValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyEnumeratedValue)) throw; entity = e; } 
 // IfcPropertyEnumeration
@@ -7920,37 +7927,37 @@ IfcLabel IfcPropertyEnumeration::Name() { return *entity->getArgument(0); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcPropertyEnumeration::EnumerationValues() { RETURN_AS_LIST(IfcAbstractSelect,1) }
 bool IfcPropertyEnumeration::hasUnit() { return !entity->getArgument(2)->isNull(); }
 IfcUnit IfcPropertyEnumeration::Unit() { return *entity->getArgument(2); }
-bool IfcPropertyEnumeration::is(Type::Enum v) { return v == Type::IfcPropertyEnumeration; }
-Type::Enum IfcPropertyEnumeration::type() { return Type::IfcPropertyEnumeration; }
+bool IfcPropertyEnumeration::is(Type::Enum v) const { return v == Type::IfcPropertyEnumeration; }
+Type::Enum IfcPropertyEnumeration::type() const { return Type::IfcPropertyEnumeration; }
 Type::Enum IfcPropertyEnumeration::Class() { return Type::IfcPropertyEnumeration; }
 IfcPropertyEnumeration::IfcPropertyEnumeration(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyEnumeration)) throw; entity = e; } 
 // IfcPropertyListValue
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcPropertyListValue::ListValues() { RETURN_AS_LIST(IfcAbstractSelect,2) }
 bool IfcPropertyListValue::hasUnit() { return !entity->getArgument(3)->isNull(); }
 IfcUnit IfcPropertyListValue::Unit() { return *entity->getArgument(3); }
-bool IfcPropertyListValue::is(Type::Enum v) { return v == Type::IfcPropertyListValue || IfcSimpleProperty::is(v); }
-Type::Enum IfcPropertyListValue::type() { return Type::IfcPropertyListValue; }
+bool IfcPropertyListValue::is(Type::Enum v) const { return v == Type::IfcPropertyListValue || IfcSimpleProperty::is(v); }
+Type::Enum IfcPropertyListValue::type() const { return Type::IfcPropertyListValue; }
 Type::Enum IfcPropertyListValue::Class() { return Type::IfcPropertyListValue; }
 IfcPropertyListValue::IfcPropertyListValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyListValue)) throw; entity = e; } 
 // IfcPropertyReferenceValue
 bool IfcPropertyReferenceValue::hasUsageName() { return !entity->getArgument(2)->isNull(); }
 IfcLabel IfcPropertyReferenceValue::UsageName() { return *entity->getArgument(2); }
 IfcObjectReferenceSelect IfcPropertyReferenceValue::PropertyReference() { return *entity->getArgument(3); }
-bool IfcPropertyReferenceValue::is(Type::Enum v) { return v == Type::IfcPropertyReferenceValue || IfcSimpleProperty::is(v); }
-Type::Enum IfcPropertyReferenceValue::type() { return Type::IfcPropertyReferenceValue; }
+bool IfcPropertyReferenceValue::is(Type::Enum v) const { return v == Type::IfcPropertyReferenceValue || IfcSimpleProperty::is(v); }
+Type::Enum IfcPropertyReferenceValue::type() const { return Type::IfcPropertyReferenceValue; }
 Type::Enum IfcPropertyReferenceValue::Class() { return Type::IfcPropertyReferenceValue; }
 IfcPropertyReferenceValue::IfcPropertyReferenceValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyReferenceValue)) throw; entity = e; } 
 // IfcPropertySet
 SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > IfcPropertySet::HasProperties() { RETURN_AS_LIST(IfcProperty,4) }
-bool IfcPropertySet::is(Type::Enum v) { return v == Type::IfcPropertySet || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcPropertySet::type() { return Type::IfcPropertySet; }
+bool IfcPropertySet::is(Type::Enum v) const { return v == Type::IfcPropertySet || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcPropertySet::type() const { return Type::IfcPropertySet; }
 Type::Enum IfcPropertySet::Class() { return Type::IfcPropertySet; }
 IfcPropertySet::IfcPropertySet(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertySet)) throw; entity = e; } 
 // IfcPropertySetDefinition
 IfcRelDefinesByProperties::list IfcPropertySetDefinition::PropertyDefinitionOf() { RETURN_INVERSE(IfcRelDefinesByProperties) }
 IfcTypeObject::list IfcPropertySetDefinition::DefinesType() { RETURN_INVERSE(IfcTypeObject) }
-bool IfcPropertySetDefinition::is(Type::Enum v) { return v == Type::IfcPropertySetDefinition || IfcPropertyDefinition::is(v); }
-Type::Enum IfcPropertySetDefinition::type() { return Type::IfcPropertySetDefinition; }
+bool IfcPropertySetDefinition::is(Type::Enum v) const { return v == Type::IfcPropertySetDefinition || IfcPropertyDefinition::is(v); }
+Type::Enum IfcPropertySetDefinition::type() const { return Type::IfcPropertySetDefinition; }
 Type::Enum IfcPropertySetDefinition::Class() { return Type::IfcPropertySetDefinition; }
 IfcPropertySetDefinition::IfcPropertySetDefinition(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertySetDefinition)) throw; entity = e; } 
 // IfcPropertySingleValue
@@ -7958,8 +7965,8 @@ bool IfcPropertySingleValue::hasNominalValue() { return !entity->getArgument(2)-
 IfcValue IfcPropertySingleValue::NominalValue() { return *entity->getArgument(2); }
 bool IfcPropertySingleValue::hasUnit() { return !entity->getArgument(3)->isNull(); }
 IfcUnit IfcPropertySingleValue::Unit() { return *entity->getArgument(3); }
-bool IfcPropertySingleValue::is(Type::Enum v) { return v == Type::IfcPropertySingleValue || IfcSimpleProperty::is(v); }
-Type::Enum IfcPropertySingleValue::type() { return Type::IfcPropertySingleValue; }
+bool IfcPropertySingleValue::is(Type::Enum v) const { return v == Type::IfcPropertySingleValue || IfcSimpleProperty::is(v); }
+Type::Enum IfcPropertySingleValue::type() const { return Type::IfcPropertySingleValue; }
 Type::Enum IfcPropertySingleValue::Class() { return Type::IfcPropertySingleValue; }
 IfcPropertySingleValue::IfcPropertySingleValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertySingleValue)) throw; entity = e; } 
 // IfcPropertyTableValue
@@ -7971,105 +7978,105 @@ bool IfcPropertyTableValue::hasDefiningUnit() { return !entity->getArgument(5)->
 IfcUnit IfcPropertyTableValue::DefiningUnit() { return *entity->getArgument(5); }
 bool IfcPropertyTableValue::hasDefinedUnit() { return !entity->getArgument(6)->isNull(); }
 IfcUnit IfcPropertyTableValue::DefinedUnit() { return *entity->getArgument(6); }
-bool IfcPropertyTableValue::is(Type::Enum v) { return v == Type::IfcPropertyTableValue || IfcSimpleProperty::is(v); }
-Type::Enum IfcPropertyTableValue::type() { return Type::IfcPropertyTableValue; }
+bool IfcPropertyTableValue::is(Type::Enum v) const { return v == Type::IfcPropertyTableValue || IfcSimpleProperty::is(v); }
+Type::Enum IfcPropertyTableValue::type() const { return Type::IfcPropertyTableValue; }
 Type::Enum IfcPropertyTableValue::Class() { return Type::IfcPropertyTableValue; }
 IfcPropertyTableValue::IfcPropertyTableValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyTableValue)) throw; entity = e; } 
 // IfcProtectiveDeviceType
 IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum IfcProtectiveDeviceType::PredefinedType() { return IfcProtectiveDeviceTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcProtectiveDeviceType::is(Type::Enum v) { return v == Type::IfcProtectiveDeviceType || IfcFlowControllerType::is(v); }
-Type::Enum IfcProtectiveDeviceType::type() { return Type::IfcProtectiveDeviceType; }
+bool IfcProtectiveDeviceType::is(Type::Enum v) const { return v == Type::IfcProtectiveDeviceType || IfcFlowControllerType::is(v); }
+Type::Enum IfcProtectiveDeviceType::type() const { return Type::IfcProtectiveDeviceType; }
 Type::Enum IfcProtectiveDeviceType::Class() { return Type::IfcProtectiveDeviceType; }
 IfcProtectiveDeviceType::IfcProtectiveDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcProtectiveDeviceType)) throw; entity = e; } 
 // IfcProxy
 IfcObjectTypeEnum::IfcObjectTypeEnum IfcProxy::ProxyType() { return IfcObjectTypeEnum::FromString(*entity->getArgument(7)); }
 bool IfcProxy::hasTag() { return !entity->getArgument(8)->isNull(); }
 IfcLabel IfcProxy::Tag() { return *entity->getArgument(8); }
-bool IfcProxy::is(Type::Enum v) { return v == Type::IfcProxy || IfcProduct::is(v); }
-Type::Enum IfcProxy::type() { return Type::IfcProxy; }
+bool IfcProxy::is(Type::Enum v) const { return v == Type::IfcProxy || IfcProduct::is(v); }
+Type::Enum IfcProxy::type() const { return Type::IfcProxy; }
 Type::Enum IfcProxy::Class() { return Type::IfcProxy; }
 IfcProxy::IfcProxy(IfcAbstractEntityPtr e) { if (!is(Type::IfcProxy)) throw; entity = e; } 
 // IfcPumpType
 IfcPumpTypeEnum::IfcPumpTypeEnum IfcPumpType::PredefinedType() { return IfcPumpTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcPumpType::is(Type::Enum v) { return v == Type::IfcPumpType || IfcFlowMovingDeviceType::is(v); }
-Type::Enum IfcPumpType::type() { return Type::IfcPumpType; }
+bool IfcPumpType::is(Type::Enum v) const { return v == Type::IfcPumpType || IfcFlowMovingDeviceType::is(v); }
+Type::Enum IfcPumpType::type() const { return Type::IfcPumpType; }
 Type::Enum IfcPumpType::Class() { return Type::IfcPumpType; }
 IfcPumpType::IfcPumpType(IfcAbstractEntityPtr e) { if (!is(Type::IfcPumpType)) throw; entity = e; } 
 // IfcQuantityArea
 IfcAreaMeasure IfcQuantityArea::AreaValue() { return *entity->getArgument(3); }
-bool IfcQuantityArea::is(Type::Enum v) { return v == Type::IfcQuantityArea || IfcPhysicalSimpleQuantity::is(v); }
-Type::Enum IfcQuantityArea::type() { return Type::IfcQuantityArea; }
+bool IfcQuantityArea::is(Type::Enum v) const { return v == Type::IfcQuantityArea || IfcPhysicalSimpleQuantity::is(v); }
+Type::Enum IfcQuantityArea::type() const { return Type::IfcQuantityArea; }
 Type::Enum IfcQuantityArea::Class() { return Type::IfcQuantityArea; }
 IfcQuantityArea::IfcQuantityArea(IfcAbstractEntityPtr e) { if (!is(Type::IfcQuantityArea)) throw; entity = e; } 
 // IfcQuantityCount
 IfcCountMeasure IfcQuantityCount::CountValue() { return *entity->getArgument(3); }
-bool IfcQuantityCount::is(Type::Enum v) { return v == Type::IfcQuantityCount || IfcPhysicalSimpleQuantity::is(v); }
-Type::Enum IfcQuantityCount::type() { return Type::IfcQuantityCount; }
+bool IfcQuantityCount::is(Type::Enum v) const { return v == Type::IfcQuantityCount || IfcPhysicalSimpleQuantity::is(v); }
+Type::Enum IfcQuantityCount::type() const { return Type::IfcQuantityCount; }
 Type::Enum IfcQuantityCount::Class() { return Type::IfcQuantityCount; }
 IfcQuantityCount::IfcQuantityCount(IfcAbstractEntityPtr e) { if (!is(Type::IfcQuantityCount)) throw; entity = e; } 
 // IfcQuantityLength
 IfcLengthMeasure IfcQuantityLength::LengthValue() { return *entity->getArgument(3); }
-bool IfcQuantityLength::is(Type::Enum v) { return v == Type::IfcQuantityLength || IfcPhysicalSimpleQuantity::is(v); }
-Type::Enum IfcQuantityLength::type() { return Type::IfcQuantityLength; }
+bool IfcQuantityLength::is(Type::Enum v) const { return v == Type::IfcQuantityLength || IfcPhysicalSimpleQuantity::is(v); }
+Type::Enum IfcQuantityLength::type() const { return Type::IfcQuantityLength; }
 Type::Enum IfcQuantityLength::Class() { return Type::IfcQuantityLength; }
 IfcQuantityLength::IfcQuantityLength(IfcAbstractEntityPtr e) { if (!is(Type::IfcQuantityLength)) throw; entity = e; } 
 // IfcQuantityTime
 IfcTimeMeasure IfcQuantityTime::TimeValue() { return *entity->getArgument(3); }
-bool IfcQuantityTime::is(Type::Enum v) { return v == Type::IfcQuantityTime || IfcPhysicalSimpleQuantity::is(v); }
-Type::Enum IfcQuantityTime::type() { return Type::IfcQuantityTime; }
+bool IfcQuantityTime::is(Type::Enum v) const { return v == Type::IfcQuantityTime || IfcPhysicalSimpleQuantity::is(v); }
+Type::Enum IfcQuantityTime::type() const { return Type::IfcQuantityTime; }
 Type::Enum IfcQuantityTime::Class() { return Type::IfcQuantityTime; }
 IfcQuantityTime::IfcQuantityTime(IfcAbstractEntityPtr e) { if (!is(Type::IfcQuantityTime)) throw; entity = e; } 
 // IfcQuantityVolume
 IfcVolumeMeasure IfcQuantityVolume::VolumeValue() { return *entity->getArgument(3); }
-bool IfcQuantityVolume::is(Type::Enum v) { return v == Type::IfcQuantityVolume || IfcPhysicalSimpleQuantity::is(v); }
-Type::Enum IfcQuantityVolume::type() { return Type::IfcQuantityVolume; }
+bool IfcQuantityVolume::is(Type::Enum v) const { return v == Type::IfcQuantityVolume || IfcPhysicalSimpleQuantity::is(v); }
+Type::Enum IfcQuantityVolume::type() const { return Type::IfcQuantityVolume; }
 Type::Enum IfcQuantityVolume::Class() { return Type::IfcQuantityVolume; }
 IfcQuantityVolume::IfcQuantityVolume(IfcAbstractEntityPtr e) { if (!is(Type::IfcQuantityVolume)) throw; entity = e; } 
 // IfcQuantityWeight
 IfcMassMeasure IfcQuantityWeight::WeightValue() { return *entity->getArgument(3); }
-bool IfcQuantityWeight::is(Type::Enum v) { return v == Type::IfcQuantityWeight || IfcPhysicalSimpleQuantity::is(v); }
-Type::Enum IfcQuantityWeight::type() { return Type::IfcQuantityWeight; }
+bool IfcQuantityWeight::is(Type::Enum v) const { return v == Type::IfcQuantityWeight || IfcPhysicalSimpleQuantity::is(v); }
+Type::Enum IfcQuantityWeight::type() const { return Type::IfcQuantityWeight; }
 Type::Enum IfcQuantityWeight::Class() { return Type::IfcQuantityWeight; }
 IfcQuantityWeight::IfcQuantityWeight(IfcAbstractEntityPtr e) { if (!is(Type::IfcQuantityWeight)) throw; entity = e; } 
 // IfcRadiusDimension
-bool IfcRadiusDimension::is(Type::Enum v) { return v == Type::IfcRadiusDimension || IfcDimensionCurveDirectedCallout::is(v); }
-Type::Enum IfcRadiusDimension::type() { return Type::IfcRadiusDimension; }
+bool IfcRadiusDimension::is(Type::Enum v) const { return v == Type::IfcRadiusDimension || IfcDimensionCurveDirectedCallout::is(v); }
+Type::Enum IfcRadiusDimension::type() const { return Type::IfcRadiusDimension; }
 Type::Enum IfcRadiusDimension::Class() { return Type::IfcRadiusDimension; }
 IfcRadiusDimension::IfcRadiusDimension(IfcAbstractEntityPtr e) { if (!is(Type::IfcRadiusDimension)) throw; entity = e; } 
 // IfcRailing
 bool IfcRailing::hasPredefinedType() { return !entity->getArgument(8)->isNull(); }
 IfcRailingTypeEnum::IfcRailingTypeEnum IfcRailing::PredefinedType() { return IfcRailingTypeEnum::FromString(*entity->getArgument(8)); }
-bool IfcRailing::is(Type::Enum v) { return v == Type::IfcRailing || IfcBuildingElement::is(v); }
-Type::Enum IfcRailing::type() { return Type::IfcRailing; }
+bool IfcRailing::is(Type::Enum v) const { return v == Type::IfcRailing || IfcBuildingElement::is(v); }
+Type::Enum IfcRailing::type() const { return Type::IfcRailing; }
 Type::Enum IfcRailing::Class() { return Type::IfcRailing; }
 IfcRailing::IfcRailing(IfcAbstractEntityPtr e) { if (!is(Type::IfcRailing)) throw; entity = e; } 
 // IfcRailingType
 IfcRailingTypeEnum::IfcRailingTypeEnum IfcRailingType::PredefinedType() { return IfcRailingTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcRailingType::is(Type::Enum v) { return v == Type::IfcRailingType || IfcBuildingElementType::is(v); }
-Type::Enum IfcRailingType::type() { return Type::IfcRailingType; }
+bool IfcRailingType::is(Type::Enum v) const { return v == Type::IfcRailingType || IfcBuildingElementType::is(v); }
+Type::Enum IfcRailingType::type() const { return Type::IfcRailingType; }
 Type::Enum IfcRailingType::Class() { return Type::IfcRailingType; }
 IfcRailingType::IfcRailingType(IfcAbstractEntityPtr e) { if (!is(Type::IfcRailingType)) throw; entity = e; } 
 // IfcRamp
 IfcRampTypeEnum::IfcRampTypeEnum IfcRamp::ShapeType() { return IfcRampTypeEnum::FromString(*entity->getArgument(8)); }
-bool IfcRamp::is(Type::Enum v) { return v == Type::IfcRamp || IfcBuildingElement::is(v); }
-Type::Enum IfcRamp::type() { return Type::IfcRamp; }
+bool IfcRamp::is(Type::Enum v) const { return v == Type::IfcRamp || IfcBuildingElement::is(v); }
+Type::Enum IfcRamp::type() const { return Type::IfcRamp; }
 Type::Enum IfcRamp::Class() { return Type::IfcRamp; }
 IfcRamp::IfcRamp(IfcAbstractEntityPtr e) { if (!is(Type::IfcRamp)) throw; entity = e; } 
 // IfcRampFlight
-bool IfcRampFlight::is(Type::Enum v) { return v == Type::IfcRampFlight || IfcBuildingElement::is(v); }
-Type::Enum IfcRampFlight::type() { return Type::IfcRampFlight; }
+bool IfcRampFlight::is(Type::Enum v) const { return v == Type::IfcRampFlight || IfcBuildingElement::is(v); }
+Type::Enum IfcRampFlight::type() const { return Type::IfcRampFlight; }
 Type::Enum IfcRampFlight::Class() { return Type::IfcRampFlight; }
 IfcRampFlight::IfcRampFlight(IfcAbstractEntityPtr e) { if (!is(Type::IfcRampFlight)) throw; entity = e; } 
 // IfcRampFlightType
 IfcRampFlightTypeEnum::IfcRampFlightTypeEnum IfcRampFlightType::PredefinedType() { return IfcRampFlightTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcRampFlightType::is(Type::Enum v) { return v == Type::IfcRampFlightType || IfcBuildingElementType::is(v); }
-Type::Enum IfcRampFlightType::type() { return Type::IfcRampFlightType; }
+bool IfcRampFlightType::is(Type::Enum v) const { return v == Type::IfcRampFlightType || IfcBuildingElementType::is(v); }
+Type::Enum IfcRampFlightType::type() const { return Type::IfcRampFlightType; }
 Type::Enum IfcRampFlightType::Class() { return Type::IfcRampFlightType; }
 IfcRampFlightType::IfcRampFlightType(IfcAbstractEntityPtr e) { if (!is(Type::IfcRampFlightType)) throw; entity = e; } 
 // IfcRationalBezierCurve
 std::vector<float> /*[2:?]*/ IfcRationalBezierCurve::WeightsData() { return *entity->getArgument(5); }
-bool IfcRationalBezierCurve::is(Type::Enum v) { return v == Type::IfcRationalBezierCurve || IfcBezierCurve::is(v); }
-Type::Enum IfcRationalBezierCurve::type() { return Type::IfcRationalBezierCurve; }
+bool IfcRationalBezierCurve::is(Type::Enum v) const { return v == Type::IfcRationalBezierCurve || IfcBezierCurve::is(v); }
+Type::Enum IfcRationalBezierCurve::type() const { return Type::IfcRationalBezierCurve; }
 Type::Enum IfcRationalBezierCurve::Class() { return Type::IfcRationalBezierCurve; }
 IfcRationalBezierCurve::IfcRationalBezierCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcRationalBezierCurve)) throw; entity = e; } 
 // IfcRectangleHollowProfileDef
@@ -8078,35 +8085,35 @@ bool IfcRectangleHollowProfileDef::hasInnerFilletRadius() { return !entity->getA
 IfcPositiveLengthMeasure IfcRectangleHollowProfileDef::InnerFilletRadius() { return *entity->getArgument(6); }
 bool IfcRectangleHollowProfileDef::hasOuterFilletRadius() { return !entity->getArgument(7)->isNull(); }
 IfcPositiveLengthMeasure IfcRectangleHollowProfileDef::OuterFilletRadius() { return *entity->getArgument(7); }
-bool IfcRectangleHollowProfileDef::is(Type::Enum v) { return v == Type::IfcRectangleHollowProfileDef || IfcRectangleProfileDef::is(v); }
-Type::Enum IfcRectangleHollowProfileDef::type() { return Type::IfcRectangleHollowProfileDef; }
+bool IfcRectangleHollowProfileDef::is(Type::Enum v) const { return v == Type::IfcRectangleHollowProfileDef || IfcRectangleProfileDef::is(v); }
+Type::Enum IfcRectangleHollowProfileDef::type() const { return Type::IfcRectangleHollowProfileDef; }
 Type::Enum IfcRectangleHollowProfileDef::Class() { return Type::IfcRectangleHollowProfileDef; }
 IfcRectangleHollowProfileDef::IfcRectangleHollowProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcRectangleHollowProfileDef)) throw; entity = e; } 
 // IfcRectangleProfileDef
 IfcPositiveLengthMeasure IfcRectangleProfileDef::XDim() { return *entity->getArgument(3); }
 IfcPositiveLengthMeasure IfcRectangleProfileDef::YDim() { return *entity->getArgument(4); }
-bool IfcRectangleProfileDef::is(Type::Enum v) { return v == Type::IfcRectangleProfileDef || IfcParameterizedProfileDef::is(v); }
-Type::Enum IfcRectangleProfileDef::type() { return Type::IfcRectangleProfileDef; }
+bool IfcRectangleProfileDef::is(Type::Enum v) const { return v == Type::IfcRectangleProfileDef || IfcParameterizedProfileDef::is(v); }
+Type::Enum IfcRectangleProfileDef::type() const { return Type::IfcRectangleProfileDef; }
 Type::Enum IfcRectangleProfileDef::Class() { return Type::IfcRectangleProfileDef; }
 IfcRectangleProfileDef::IfcRectangleProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcRectangleProfileDef)) throw; entity = e; } 
 // IfcRectangularPyramid
 IfcPositiveLengthMeasure IfcRectangularPyramid::XLength() { return *entity->getArgument(1); }
 IfcPositiveLengthMeasure IfcRectangularPyramid::YLength() { return *entity->getArgument(2); }
 IfcPositiveLengthMeasure IfcRectangularPyramid::Height() { return *entity->getArgument(3); }
-bool IfcRectangularPyramid::is(Type::Enum v) { return v == Type::IfcRectangularPyramid || IfcCsgPrimitive3D::is(v); }
-Type::Enum IfcRectangularPyramid::type() { return Type::IfcRectangularPyramid; }
+bool IfcRectangularPyramid::is(Type::Enum v) const { return v == Type::IfcRectangularPyramid || IfcCsgPrimitive3D::is(v); }
+Type::Enum IfcRectangularPyramid::type() const { return Type::IfcRectangularPyramid; }
 Type::Enum IfcRectangularPyramid::Class() { return Type::IfcRectangularPyramid; }
 IfcRectangularPyramid::IfcRectangularPyramid(IfcAbstractEntityPtr e) { if (!is(Type::IfcRectangularPyramid)) throw; entity = e; } 
 // IfcRectangularTrimmedSurface
-SHARED_PTR<IfcSurface> IfcRectangularTrimmedSurface::BasisSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(0)); }
+IfcSurface* IfcRectangularTrimmedSurface::BasisSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(0)); }
 IfcParameterValue IfcRectangularTrimmedSurface::U1() { return *entity->getArgument(1); }
 IfcParameterValue IfcRectangularTrimmedSurface::V1() { return *entity->getArgument(2); }
 IfcParameterValue IfcRectangularTrimmedSurface::U2() { return *entity->getArgument(3); }
 IfcParameterValue IfcRectangularTrimmedSurface::V2() { return *entity->getArgument(4); }
 bool IfcRectangularTrimmedSurface::Usense() { return *entity->getArgument(5); }
 bool IfcRectangularTrimmedSurface::Vsense() { return *entity->getArgument(6); }
-bool IfcRectangularTrimmedSurface::is(Type::Enum v) { return v == Type::IfcRectangularTrimmedSurface || IfcBoundedSurface::is(v); }
-Type::Enum IfcRectangularTrimmedSurface::type() { return Type::IfcRectangularTrimmedSurface; }
+bool IfcRectangularTrimmedSurface::is(Type::Enum v) const { return v == Type::IfcRectangularTrimmedSurface || IfcBoundedSurface::is(v); }
+Type::Enum IfcRectangularTrimmedSurface::type() const { return Type::IfcRectangularTrimmedSurface; }
 Type::Enum IfcRectangularTrimmedSurface::Class() { return Type::IfcRectangularTrimmedSurface; }
 IfcRectangularTrimmedSurface::IfcRectangularTrimmedSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcRectangularTrimmedSurface)) throw; entity = e; } 
 // IfcReferencesValueDocument
@@ -8116,15 +8123,15 @@ bool IfcReferencesValueDocument::hasName() { return !entity->getArgument(2)->isN
 IfcLabel IfcReferencesValueDocument::Name() { return *entity->getArgument(2); }
 bool IfcReferencesValueDocument::hasDescription() { return !entity->getArgument(3)->isNull(); }
 IfcText IfcReferencesValueDocument::Description() { return *entity->getArgument(3); }
-bool IfcReferencesValueDocument::is(Type::Enum v) { return v == Type::IfcReferencesValueDocument; }
-Type::Enum IfcReferencesValueDocument::type() { return Type::IfcReferencesValueDocument; }
+bool IfcReferencesValueDocument::is(Type::Enum v) const { return v == Type::IfcReferencesValueDocument; }
+Type::Enum IfcReferencesValueDocument::type() const { return Type::IfcReferencesValueDocument; }
 Type::Enum IfcReferencesValueDocument::Class() { return Type::IfcReferencesValueDocument; }
 IfcReferencesValueDocument::IfcReferencesValueDocument(IfcAbstractEntityPtr e) { if (!is(Type::IfcReferencesValueDocument)) throw; entity = e; } 
 // IfcRegularTimeSeries
 IfcTimeMeasure IfcRegularTimeSeries::TimeStep() { return *entity->getArgument(8); }
 SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeriesValue> > IfcRegularTimeSeries::Values() { RETURN_AS_LIST(IfcTimeSeriesValue,9) }
-bool IfcRegularTimeSeries::is(Type::Enum v) { return v == Type::IfcRegularTimeSeries || IfcTimeSeries::is(v); }
-Type::Enum IfcRegularTimeSeries::type() { return Type::IfcRegularTimeSeries; }
+bool IfcRegularTimeSeries::is(Type::Enum v) const { return v == Type::IfcRegularTimeSeries || IfcTimeSeries::is(v); }
+Type::Enum IfcRegularTimeSeries::type() const { return Type::IfcRegularTimeSeries; }
 Type::Enum IfcRegularTimeSeries::Class() { return Type::IfcRegularTimeSeries; }
 IfcRegularTimeSeries::IfcRegularTimeSeries(IfcAbstractEntityPtr e) { if (!is(Type::IfcRegularTimeSeries)) throw; entity = e; } 
 // IfcReinforcementBarProperties
@@ -8138,16 +8145,16 @@ bool IfcReinforcementBarProperties::hasNominalBarDiameter() { return !entity->ge
 IfcPositiveLengthMeasure IfcReinforcementBarProperties::NominalBarDiameter() { return *entity->getArgument(4); }
 bool IfcReinforcementBarProperties::hasBarCount() { return !entity->getArgument(5)->isNull(); }
 IfcCountMeasure IfcReinforcementBarProperties::BarCount() { return *entity->getArgument(5); }
-bool IfcReinforcementBarProperties::is(Type::Enum v) { return v == Type::IfcReinforcementBarProperties; }
-Type::Enum IfcReinforcementBarProperties::type() { return Type::IfcReinforcementBarProperties; }
+bool IfcReinforcementBarProperties::is(Type::Enum v) const { return v == Type::IfcReinforcementBarProperties; }
+Type::Enum IfcReinforcementBarProperties::type() const { return Type::IfcReinforcementBarProperties; }
 Type::Enum IfcReinforcementBarProperties::Class() { return Type::IfcReinforcementBarProperties; }
 IfcReinforcementBarProperties::IfcReinforcementBarProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcReinforcementBarProperties)) throw; entity = e; } 
 // IfcReinforcementDefinitionProperties
 bool IfcReinforcementDefinitionProperties::hasDefinitionType() { return !entity->getArgument(4)->isNull(); }
 IfcLabel IfcReinforcementDefinitionProperties::DefinitionType() { return *entity->getArgument(4); }
 SHARED_PTR< IfcTemplatedEntityList<IfcSectionReinforcementProperties> > IfcReinforcementDefinitionProperties::ReinforcementSectionDefinitions() { RETURN_AS_LIST(IfcSectionReinforcementProperties,5) }
-bool IfcReinforcementDefinitionProperties::is(Type::Enum v) { return v == Type::IfcReinforcementDefinitionProperties || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcReinforcementDefinitionProperties::type() { return Type::IfcReinforcementDefinitionProperties; }
+bool IfcReinforcementDefinitionProperties::is(Type::Enum v) const { return v == Type::IfcReinforcementDefinitionProperties || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcReinforcementDefinitionProperties::type() const { return Type::IfcReinforcementDefinitionProperties; }
 Type::Enum IfcReinforcementDefinitionProperties::Class() { return Type::IfcReinforcementDefinitionProperties; }
 IfcReinforcementDefinitionProperties::IfcReinforcementDefinitionProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcReinforcementDefinitionProperties)) throw; entity = e; } 
 // IfcReinforcingBar
@@ -8158,15 +8165,15 @@ IfcPositiveLengthMeasure IfcReinforcingBar::BarLength() { return *entity->getArg
 IfcReinforcingBarRoleEnum::IfcReinforcingBarRoleEnum IfcReinforcingBar::BarRole() { return IfcReinforcingBarRoleEnum::FromString(*entity->getArgument(12)); }
 bool IfcReinforcingBar::hasBarSurface() { return !entity->getArgument(13)->isNull(); }
 IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum IfcReinforcingBar::BarSurface() { return IfcReinforcingBarSurfaceEnum::FromString(*entity->getArgument(13)); }
-bool IfcReinforcingBar::is(Type::Enum v) { return v == Type::IfcReinforcingBar || IfcReinforcingElement::is(v); }
-Type::Enum IfcReinforcingBar::type() { return Type::IfcReinforcingBar; }
+bool IfcReinforcingBar::is(Type::Enum v) const { return v == Type::IfcReinforcingBar || IfcReinforcingElement::is(v); }
+Type::Enum IfcReinforcingBar::type() const { return Type::IfcReinforcingBar; }
 Type::Enum IfcReinforcingBar::Class() { return Type::IfcReinforcingBar; }
 IfcReinforcingBar::IfcReinforcingBar(IfcAbstractEntityPtr e) { if (!is(Type::IfcReinforcingBar)) throw; entity = e; } 
 // IfcReinforcingElement
 bool IfcReinforcingElement::hasSteelGrade() { return !entity->getArgument(8)->isNull(); }
 IfcLabel IfcReinforcingElement::SteelGrade() { return *entity->getArgument(8); }
-bool IfcReinforcingElement::is(Type::Enum v) { return v == Type::IfcReinforcingElement || IfcBuildingElementComponent::is(v); }
-Type::Enum IfcReinforcingElement::type() { return Type::IfcReinforcingElement; }
+bool IfcReinforcingElement::is(Type::Enum v) const { return v == Type::IfcReinforcingElement || IfcBuildingElementComponent::is(v); }
+Type::Enum IfcReinforcingElement::type() const { return Type::IfcReinforcingElement; }
 Type::Enum IfcReinforcingElement::Class() { return Type::IfcReinforcingElement; }
 IfcReinforcingElement::IfcReinforcingElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcReinforcingElement)) throw; entity = e; } 
 // IfcReinforcingMesh
@@ -8180,146 +8187,146 @@ IfcAreaMeasure IfcReinforcingMesh::LongitudinalBarCrossSectionArea() { return *e
 IfcAreaMeasure IfcReinforcingMesh::TransverseBarCrossSectionArea() { return *entity->getArgument(14); }
 IfcPositiveLengthMeasure IfcReinforcingMesh::LongitudinalBarSpacing() { return *entity->getArgument(15); }
 IfcPositiveLengthMeasure IfcReinforcingMesh::TransverseBarSpacing() { return *entity->getArgument(16); }
-bool IfcReinforcingMesh::is(Type::Enum v) { return v == Type::IfcReinforcingMesh || IfcReinforcingElement::is(v); }
-Type::Enum IfcReinforcingMesh::type() { return Type::IfcReinforcingMesh; }
+bool IfcReinforcingMesh::is(Type::Enum v) const { return v == Type::IfcReinforcingMesh || IfcReinforcingElement::is(v); }
+Type::Enum IfcReinforcingMesh::type() const { return Type::IfcReinforcingMesh; }
 Type::Enum IfcReinforcingMesh::Class() { return Type::IfcReinforcingMesh; }
 IfcReinforcingMesh::IfcReinforcingMesh(IfcAbstractEntityPtr e) { if (!is(Type::IfcReinforcingMesh)) throw; entity = e; } 
 // IfcRelAggregates
-bool IfcRelAggregates::is(Type::Enum v) { return v == Type::IfcRelAggregates || IfcRelDecomposes::is(v); }
-Type::Enum IfcRelAggregates::type() { return Type::IfcRelAggregates; }
+bool IfcRelAggregates::is(Type::Enum v) const { return v == Type::IfcRelAggregates || IfcRelDecomposes::is(v); }
+Type::Enum IfcRelAggregates::type() const { return Type::IfcRelAggregates; }
 Type::Enum IfcRelAggregates::Class() { return Type::IfcRelAggregates; }
 IfcRelAggregates::IfcRelAggregates(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAggregates)) throw; entity = e; } 
 // IfcRelAssigns
 SHARED_PTR< IfcTemplatedEntityList<IfcObjectDefinition> > IfcRelAssigns::RelatedObjects() { RETURN_AS_LIST(IfcObjectDefinition,4) }
 bool IfcRelAssigns::hasRelatedObjectsType() { return !entity->getArgument(5)->isNull(); }
 IfcObjectTypeEnum::IfcObjectTypeEnum IfcRelAssigns::RelatedObjectsType() { return IfcObjectTypeEnum::FromString(*entity->getArgument(5)); }
-bool IfcRelAssigns::is(Type::Enum v) { return v == Type::IfcRelAssigns || IfcRelationship::is(v); }
-Type::Enum IfcRelAssigns::type() { return Type::IfcRelAssigns; }
+bool IfcRelAssigns::is(Type::Enum v) const { return v == Type::IfcRelAssigns || IfcRelationship::is(v); }
+Type::Enum IfcRelAssigns::type() const { return Type::IfcRelAssigns; }
 Type::Enum IfcRelAssigns::Class() { return Type::IfcRelAssigns; }
 IfcRelAssigns::IfcRelAssigns(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssigns)) throw; entity = e; } 
 // IfcRelAssignsTasks
 bool IfcRelAssignsTasks::hasTimeForTask() { return !entity->getArgument(7)->isNull(); }
-SHARED_PTR<IfcScheduleTimeControl> IfcRelAssignsTasks::TimeForTask() { return reinterpret_pointer_cast<IfcBaseClass,IfcScheduleTimeControl>(*entity->getArgument(7)); }
-bool IfcRelAssignsTasks::is(Type::Enum v) { return v == Type::IfcRelAssignsTasks || IfcRelAssignsToControl::is(v); }
-Type::Enum IfcRelAssignsTasks::type() { return Type::IfcRelAssignsTasks; }
+IfcScheduleTimeControl* IfcRelAssignsTasks::TimeForTask() { return reinterpret_pointer_cast<IfcBaseClass,IfcScheduleTimeControl>(*entity->getArgument(7)); }
+bool IfcRelAssignsTasks::is(Type::Enum v) const { return v == Type::IfcRelAssignsTasks || IfcRelAssignsToControl::is(v); }
+Type::Enum IfcRelAssignsTasks::type() const { return Type::IfcRelAssignsTasks; }
 Type::Enum IfcRelAssignsTasks::Class() { return Type::IfcRelAssignsTasks; }
 IfcRelAssignsTasks::IfcRelAssignsTasks(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsTasks)) throw; entity = e; } 
 // IfcRelAssignsToActor
-SHARED_PTR<IfcActor> IfcRelAssignsToActor::RelatingActor() { return reinterpret_pointer_cast<IfcBaseClass,IfcActor>(*entity->getArgument(6)); }
+IfcActor* IfcRelAssignsToActor::RelatingActor() { return reinterpret_pointer_cast<IfcBaseClass,IfcActor>(*entity->getArgument(6)); }
 bool IfcRelAssignsToActor::hasActingRole() { return !entity->getArgument(7)->isNull(); }
-SHARED_PTR<IfcActorRole> IfcRelAssignsToActor::ActingRole() { return reinterpret_pointer_cast<IfcBaseClass,IfcActorRole>(*entity->getArgument(7)); }
-bool IfcRelAssignsToActor::is(Type::Enum v) { return v == Type::IfcRelAssignsToActor || IfcRelAssigns::is(v); }
-Type::Enum IfcRelAssignsToActor::type() { return Type::IfcRelAssignsToActor; }
+IfcActorRole* IfcRelAssignsToActor::ActingRole() { return reinterpret_pointer_cast<IfcBaseClass,IfcActorRole>(*entity->getArgument(7)); }
+bool IfcRelAssignsToActor::is(Type::Enum v) const { return v == Type::IfcRelAssignsToActor || IfcRelAssigns::is(v); }
+Type::Enum IfcRelAssignsToActor::type() const { return Type::IfcRelAssignsToActor; }
 Type::Enum IfcRelAssignsToActor::Class() { return Type::IfcRelAssignsToActor; }
 IfcRelAssignsToActor::IfcRelAssignsToActor(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToActor)) throw; entity = e; } 
 // IfcRelAssignsToControl
-SHARED_PTR<IfcControl> IfcRelAssignsToControl::RelatingControl() { return reinterpret_pointer_cast<IfcBaseClass,IfcControl>(*entity->getArgument(6)); }
-bool IfcRelAssignsToControl::is(Type::Enum v) { return v == Type::IfcRelAssignsToControl || IfcRelAssigns::is(v); }
-Type::Enum IfcRelAssignsToControl::type() { return Type::IfcRelAssignsToControl; }
+IfcControl* IfcRelAssignsToControl::RelatingControl() { return reinterpret_pointer_cast<IfcBaseClass,IfcControl>(*entity->getArgument(6)); }
+bool IfcRelAssignsToControl::is(Type::Enum v) const { return v == Type::IfcRelAssignsToControl || IfcRelAssigns::is(v); }
+Type::Enum IfcRelAssignsToControl::type() const { return Type::IfcRelAssignsToControl; }
 Type::Enum IfcRelAssignsToControl::Class() { return Type::IfcRelAssignsToControl; }
 IfcRelAssignsToControl::IfcRelAssignsToControl(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToControl)) throw; entity = e; } 
 // IfcRelAssignsToGroup
-SHARED_PTR<IfcGroup> IfcRelAssignsToGroup::RelatingGroup() { return reinterpret_pointer_cast<IfcBaseClass,IfcGroup>(*entity->getArgument(6)); }
-bool IfcRelAssignsToGroup::is(Type::Enum v) { return v == Type::IfcRelAssignsToGroup || IfcRelAssigns::is(v); }
-Type::Enum IfcRelAssignsToGroup::type() { return Type::IfcRelAssignsToGroup; }
+IfcGroup* IfcRelAssignsToGroup::RelatingGroup() { return reinterpret_pointer_cast<IfcBaseClass,IfcGroup>(*entity->getArgument(6)); }
+bool IfcRelAssignsToGroup::is(Type::Enum v) const { return v == Type::IfcRelAssignsToGroup || IfcRelAssigns::is(v); }
+Type::Enum IfcRelAssignsToGroup::type() const { return Type::IfcRelAssignsToGroup; }
 Type::Enum IfcRelAssignsToGroup::Class() { return Type::IfcRelAssignsToGroup; }
 IfcRelAssignsToGroup::IfcRelAssignsToGroup(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToGroup)) throw; entity = e; } 
 // IfcRelAssignsToProcess
-SHARED_PTR<IfcProcess> IfcRelAssignsToProcess::RelatingProcess() { return reinterpret_pointer_cast<IfcBaseClass,IfcProcess>(*entity->getArgument(6)); }
+IfcProcess* IfcRelAssignsToProcess::RelatingProcess() { return reinterpret_pointer_cast<IfcBaseClass,IfcProcess>(*entity->getArgument(6)); }
 bool IfcRelAssignsToProcess::hasQuantityInProcess() { return !entity->getArgument(7)->isNull(); }
-SHARED_PTR<IfcMeasureWithUnit> IfcRelAssignsToProcess::QuantityInProcess() { return reinterpret_pointer_cast<IfcBaseClass,IfcMeasureWithUnit>(*entity->getArgument(7)); }
-bool IfcRelAssignsToProcess::is(Type::Enum v) { return v == Type::IfcRelAssignsToProcess || IfcRelAssigns::is(v); }
-Type::Enum IfcRelAssignsToProcess::type() { return Type::IfcRelAssignsToProcess; }
+IfcMeasureWithUnit* IfcRelAssignsToProcess::QuantityInProcess() { return reinterpret_pointer_cast<IfcBaseClass,IfcMeasureWithUnit>(*entity->getArgument(7)); }
+bool IfcRelAssignsToProcess::is(Type::Enum v) const { return v == Type::IfcRelAssignsToProcess || IfcRelAssigns::is(v); }
+Type::Enum IfcRelAssignsToProcess::type() const { return Type::IfcRelAssignsToProcess; }
 Type::Enum IfcRelAssignsToProcess::Class() { return Type::IfcRelAssignsToProcess; }
 IfcRelAssignsToProcess::IfcRelAssignsToProcess(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToProcess)) throw; entity = e; } 
 // IfcRelAssignsToProduct
-SHARED_PTR<IfcProduct> IfcRelAssignsToProduct::RelatingProduct() { return reinterpret_pointer_cast<IfcBaseClass,IfcProduct>(*entity->getArgument(6)); }
-bool IfcRelAssignsToProduct::is(Type::Enum v) { return v == Type::IfcRelAssignsToProduct || IfcRelAssigns::is(v); }
-Type::Enum IfcRelAssignsToProduct::type() { return Type::IfcRelAssignsToProduct; }
+IfcProduct* IfcRelAssignsToProduct::RelatingProduct() { return reinterpret_pointer_cast<IfcBaseClass,IfcProduct>(*entity->getArgument(6)); }
+bool IfcRelAssignsToProduct::is(Type::Enum v) const { return v == Type::IfcRelAssignsToProduct || IfcRelAssigns::is(v); }
+Type::Enum IfcRelAssignsToProduct::type() const { return Type::IfcRelAssignsToProduct; }
 Type::Enum IfcRelAssignsToProduct::Class() { return Type::IfcRelAssignsToProduct; }
 IfcRelAssignsToProduct::IfcRelAssignsToProduct(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToProduct)) throw; entity = e; } 
 // IfcRelAssignsToProjectOrder
-bool IfcRelAssignsToProjectOrder::is(Type::Enum v) { return v == Type::IfcRelAssignsToProjectOrder || IfcRelAssignsToControl::is(v); }
-Type::Enum IfcRelAssignsToProjectOrder::type() { return Type::IfcRelAssignsToProjectOrder; }
+bool IfcRelAssignsToProjectOrder::is(Type::Enum v) const { return v == Type::IfcRelAssignsToProjectOrder || IfcRelAssignsToControl::is(v); }
+Type::Enum IfcRelAssignsToProjectOrder::type() const { return Type::IfcRelAssignsToProjectOrder; }
 Type::Enum IfcRelAssignsToProjectOrder::Class() { return Type::IfcRelAssignsToProjectOrder; }
 IfcRelAssignsToProjectOrder::IfcRelAssignsToProjectOrder(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToProjectOrder)) throw; entity = e; } 
 // IfcRelAssignsToResource
-SHARED_PTR<IfcResource> IfcRelAssignsToResource::RelatingResource() { return reinterpret_pointer_cast<IfcBaseClass,IfcResource>(*entity->getArgument(6)); }
-bool IfcRelAssignsToResource::is(Type::Enum v) { return v == Type::IfcRelAssignsToResource || IfcRelAssigns::is(v); }
-Type::Enum IfcRelAssignsToResource::type() { return Type::IfcRelAssignsToResource; }
+IfcResource* IfcRelAssignsToResource::RelatingResource() { return reinterpret_pointer_cast<IfcBaseClass,IfcResource>(*entity->getArgument(6)); }
+bool IfcRelAssignsToResource::is(Type::Enum v) const { return v == Type::IfcRelAssignsToResource || IfcRelAssigns::is(v); }
+Type::Enum IfcRelAssignsToResource::type() const { return Type::IfcRelAssignsToResource; }
 Type::Enum IfcRelAssignsToResource::Class() { return Type::IfcRelAssignsToResource; }
 IfcRelAssignsToResource::IfcRelAssignsToResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToResource)) throw; entity = e; } 
 // IfcRelAssociates
 SHARED_PTR< IfcTemplatedEntityList<IfcRoot> > IfcRelAssociates::RelatedObjects() { RETURN_AS_LIST(IfcRoot,4) }
-bool IfcRelAssociates::is(Type::Enum v) { return v == Type::IfcRelAssociates || IfcRelationship::is(v); }
-Type::Enum IfcRelAssociates::type() { return Type::IfcRelAssociates; }
+bool IfcRelAssociates::is(Type::Enum v) const { return v == Type::IfcRelAssociates || IfcRelationship::is(v); }
+Type::Enum IfcRelAssociates::type() const { return Type::IfcRelAssociates; }
 Type::Enum IfcRelAssociates::Class() { return Type::IfcRelAssociates; }
 IfcRelAssociates::IfcRelAssociates(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociates)) throw; entity = e; } 
 // IfcRelAssociatesAppliedValue
-SHARED_PTR<IfcAppliedValue> IfcRelAssociatesAppliedValue::RelatingAppliedValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcAppliedValue>(*entity->getArgument(5)); }
-bool IfcRelAssociatesAppliedValue::is(Type::Enum v) { return v == Type::IfcRelAssociatesAppliedValue || IfcRelAssociates::is(v); }
-Type::Enum IfcRelAssociatesAppliedValue::type() { return Type::IfcRelAssociatesAppliedValue; }
+IfcAppliedValue* IfcRelAssociatesAppliedValue::RelatingAppliedValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcAppliedValue>(*entity->getArgument(5)); }
+bool IfcRelAssociatesAppliedValue::is(Type::Enum v) const { return v == Type::IfcRelAssociatesAppliedValue || IfcRelAssociates::is(v); }
+Type::Enum IfcRelAssociatesAppliedValue::type() const { return Type::IfcRelAssociatesAppliedValue; }
 Type::Enum IfcRelAssociatesAppliedValue::Class() { return Type::IfcRelAssociatesAppliedValue; }
 IfcRelAssociatesAppliedValue::IfcRelAssociatesAppliedValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesAppliedValue)) throw; entity = e; } 
 // IfcRelAssociatesApproval
-SHARED_PTR<IfcApproval> IfcRelAssociatesApproval::RelatingApproval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(5)); }
-bool IfcRelAssociatesApproval::is(Type::Enum v) { return v == Type::IfcRelAssociatesApproval || IfcRelAssociates::is(v); }
-Type::Enum IfcRelAssociatesApproval::type() { return Type::IfcRelAssociatesApproval; }
+IfcApproval* IfcRelAssociatesApproval::RelatingApproval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(5)); }
+bool IfcRelAssociatesApproval::is(Type::Enum v) const { return v == Type::IfcRelAssociatesApproval || IfcRelAssociates::is(v); }
+Type::Enum IfcRelAssociatesApproval::type() const { return Type::IfcRelAssociatesApproval; }
 Type::Enum IfcRelAssociatesApproval::Class() { return Type::IfcRelAssociatesApproval; }
 IfcRelAssociatesApproval::IfcRelAssociatesApproval(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesApproval)) throw; entity = e; } 
 // IfcRelAssociatesClassification
 IfcClassificationNotationSelect IfcRelAssociatesClassification::RelatingClassification() { return *entity->getArgument(5); }
-bool IfcRelAssociatesClassification::is(Type::Enum v) { return v == Type::IfcRelAssociatesClassification || IfcRelAssociates::is(v); }
-Type::Enum IfcRelAssociatesClassification::type() { return Type::IfcRelAssociatesClassification; }
+bool IfcRelAssociatesClassification::is(Type::Enum v) const { return v == Type::IfcRelAssociatesClassification || IfcRelAssociates::is(v); }
+Type::Enum IfcRelAssociatesClassification::type() const { return Type::IfcRelAssociatesClassification; }
 Type::Enum IfcRelAssociatesClassification::Class() { return Type::IfcRelAssociatesClassification; }
 IfcRelAssociatesClassification::IfcRelAssociatesClassification(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesClassification)) throw; entity = e; } 
 // IfcRelAssociatesConstraint
 IfcLabel IfcRelAssociatesConstraint::Intent() { return *entity->getArgument(5); }
-SHARED_PTR<IfcConstraint> IfcRelAssociatesConstraint::RelatingConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(6)); }
-bool IfcRelAssociatesConstraint::is(Type::Enum v) { return v == Type::IfcRelAssociatesConstraint || IfcRelAssociates::is(v); }
-Type::Enum IfcRelAssociatesConstraint::type() { return Type::IfcRelAssociatesConstraint; }
+IfcConstraint* IfcRelAssociatesConstraint::RelatingConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(6)); }
+bool IfcRelAssociatesConstraint::is(Type::Enum v) const { return v == Type::IfcRelAssociatesConstraint || IfcRelAssociates::is(v); }
+Type::Enum IfcRelAssociatesConstraint::type() const { return Type::IfcRelAssociatesConstraint; }
 Type::Enum IfcRelAssociatesConstraint::Class() { return Type::IfcRelAssociatesConstraint; }
 IfcRelAssociatesConstraint::IfcRelAssociatesConstraint(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesConstraint)) throw; entity = e; } 
 // IfcRelAssociatesDocument
 IfcDocumentSelect IfcRelAssociatesDocument::RelatingDocument() { return *entity->getArgument(5); }
-bool IfcRelAssociatesDocument::is(Type::Enum v) { return v == Type::IfcRelAssociatesDocument || IfcRelAssociates::is(v); }
-Type::Enum IfcRelAssociatesDocument::type() { return Type::IfcRelAssociatesDocument; }
+bool IfcRelAssociatesDocument::is(Type::Enum v) const { return v == Type::IfcRelAssociatesDocument || IfcRelAssociates::is(v); }
+Type::Enum IfcRelAssociatesDocument::type() const { return Type::IfcRelAssociatesDocument; }
 Type::Enum IfcRelAssociatesDocument::Class() { return Type::IfcRelAssociatesDocument; }
 IfcRelAssociatesDocument::IfcRelAssociatesDocument(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesDocument)) throw; entity = e; } 
 // IfcRelAssociatesLibrary
 IfcLibrarySelect IfcRelAssociatesLibrary::RelatingLibrary() { return *entity->getArgument(5); }
-bool IfcRelAssociatesLibrary::is(Type::Enum v) { return v == Type::IfcRelAssociatesLibrary || IfcRelAssociates::is(v); }
-Type::Enum IfcRelAssociatesLibrary::type() { return Type::IfcRelAssociatesLibrary; }
+bool IfcRelAssociatesLibrary::is(Type::Enum v) const { return v == Type::IfcRelAssociatesLibrary || IfcRelAssociates::is(v); }
+Type::Enum IfcRelAssociatesLibrary::type() const { return Type::IfcRelAssociatesLibrary; }
 Type::Enum IfcRelAssociatesLibrary::Class() { return Type::IfcRelAssociatesLibrary; }
 IfcRelAssociatesLibrary::IfcRelAssociatesLibrary(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesLibrary)) throw; entity = e; } 
 // IfcRelAssociatesMaterial
 IfcMaterialSelect IfcRelAssociatesMaterial::RelatingMaterial() { return *entity->getArgument(5); }
-bool IfcRelAssociatesMaterial::is(Type::Enum v) { return v == Type::IfcRelAssociatesMaterial || IfcRelAssociates::is(v); }
-Type::Enum IfcRelAssociatesMaterial::type() { return Type::IfcRelAssociatesMaterial; }
+bool IfcRelAssociatesMaterial::is(Type::Enum v) const { return v == Type::IfcRelAssociatesMaterial || IfcRelAssociates::is(v); }
+Type::Enum IfcRelAssociatesMaterial::type() const { return Type::IfcRelAssociatesMaterial; }
 Type::Enum IfcRelAssociatesMaterial::Class() { return Type::IfcRelAssociatesMaterial; }
 IfcRelAssociatesMaterial::IfcRelAssociatesMaterial(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesMaterial)) throw; entity = e; } 
 // IfcRelAssociatesProfileProperties
-SHARED_PTR<IfcProfileProperties> IfcRelAssociatesProfileProperties::RelatingProfileProperties() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileProperties>(*entity->getArgument(5)); }
+IfcProfileProperties* IfcRelAssociatesProfileProperties::RelatingProfileProperties() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileProperties>(*entity->getArgument(5)); }
 bool IfcRelAssociatesProfileProperties::hasProfileSectionLocation() { return !entity->getArgument(6)->isNull(); }
-SHARED_PTR<IfcShapeAspect> IfcRelAssociatesProfileProperties::ProfileSectionLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(6)); }
+IfcShapeAspect* IfcRelAssociatesProfileProperties::ProfileSectionLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(6)); }
 bool IfcRelAssociatesProfileProperties::hasProfileOrientation() { return !entity->getArgument(7)->isNull(); }
 IfcOrientationSelect IfcRelAssociatesProfileProperties::ProfileOrientation() { return *entity->getArgument(7); }
-bool IfcRelAssociatesProfileProperties::is(Type::Enum v) { return v == Type::IfcRelAssociatesProfileProperties || IfcRelAssociates::is(v); }
-Type::Enum IfcRelAssociatesProfileProperties::type() { return Type::IfcRelAssociatesProfileProperties; }
+bool IfcRelAssociatesProfileProperties::is(Type::Enum v) const { return v == Type::IfcRelAssociatesProfileProperties || IfcRelAssociates::is(v); }
+Type::Enum IfcRelAssociatesProfileProperties::type() const { return Type::IfcRelAssociatesProfileProperties; }
 Type::Enum IfcRelAssociatesProfileProperties::Class() { return Type::IfcRelAssociatesProfileProperties; }
 IfcRelAssociatesProfileProperties::IfcRelAssociatesProfileProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesProfileProperties)) throw; entity = e; } 
 // IfcRelConnects
-bool IfcRelConnects::is(Type::Enum v) { return v == Type::IfcRelConnects || IfcRelationship::is(v); }
-Type::Enum IfcRelConnects::type() { return Type::IfcRelConnects; }
+bool IfcRelConnects::is(Type::Enum v) const { return v == Type::IfcRelConnects || IfcRelationship::is(v); }
+Type::Enum IfcRelConnects::type() const { return Type::IfcRelConnects; }
 Type::Enum IfcRelConnects::Class() { return Type::IfcRelConnects; }
 IfcRelConnects::IfcRelConnects(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnects)) throw; entity = e; } 
 // IfcRelConnectsElements
 bool IfcRelConnectsElements::hasConnectionGeometry() { return !entity->getArgument(4)->isNull(); }
-SHARED_PTR<IfcConnectionGeometry> IfcRelConnectsElements::ConnectionGeometry() { return reinterpret_pointer_cast<IfcBaseClass,IfcConnectionGeometry>(*entity->getArgument(4)); }
-SHARED_PTR<IfcElement> IfcRelConnectsElements::RelatingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(5)); }
-SHARED_PTR<IfcElement> IfcRelConnectsElements::RelatedElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(6)); }
-bool IfcRelConnectsElements::is(Type::Enum v) { return v == Type::IfcRelConnectsElements || IfcRelConnects::is(v); }
-Type::Enum IfcRelConnectsElements::type() { return Type::IfcRelConnectsElements; }
+IfcConnectionGeometry* IfcRelConnectsElements::ConnectionGeometry() { return reinterpret_pointer_cast<IfcBaseClass,IfcConnectionGeometry>(*entity->getArgument(4)); }
+IfcElement* IfcRelConnectsElements::RelatingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(5)); }
+IfcElement* IfcRelConnectsElements::RelatedElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(6)); }
+bool IfcRelConnectsElements::is(Type::Enum v) const { return v == Type::IfcRelConnectsElements || IfcRelConnects::is(v); }
+Type::Enum IfcRelConnectsElements::type() const { return Type::IfcRelConnectsElements; }
 Type::Enum IfcRelConnectsElements::Class() { return Type::IfcRelConnectsElements; }
 IfcRelConnectsElements::IfcRelConnectsElements(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsElements)) throw; entity = e; } 
 // IfcRelConnectsPathElements
@@ -8327,127 +8334,127 @@ std::vector<int> /*[0:?]*/ IfcRelConnectsPathElements::RelatingPriorities() { re
 std::vector<int> /*[0:?]*/ IfcRelConnectsPathElements::RelatedPriorities() { return *entity->getArgument(8); }
 IfcConnectionTypeEnum::IfcConnectionTypeEnum IfcRelConnectsPathElements::RelatedConnectionType() { return IfcConnectionTypeEnum::FromString(*entity->getArgument(9)); }
 IfcConnectionTypeEnum::IfcConnectionTypeEnum IfcRelConnectsPathElements::RelatingConnectionType() { return IfcConnectionTypeEnum::FromString(*entity->getArgument(10)); }
-bool IfcRelConnectsPathElements::is(Type::Enum v) { return v == Type::IfcRelConnectsPathElements || IfcRelConnectsElements::is(v); }
-Type::Enum IfcRelConnectsPathElements::type() { return Type::IfcRelConnectsPathElements; }
+bool IfcRelConnectsPathElements::is(Type::Enum v) const { return v == Type::IfcRelConnectsPathElements || IfcRelConnectsElements::is(v); }
+Type::Enum IfcRelConnectsPathElements::type() const { return Type::IfcRelConnectsPathElements; }
 Type::Enum IfcRelConnectsPathElements::Class() { return Type::IfcRelConnectsPathElements; }
 IfcRelConnectsPathElements::IfcRelConnectsPathElements(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsPathElements)) throw; entity = e; } 
 // IfcRelConnectsPortToElement
-SHARED_PTR<IfcPort> IfcRelConnectsPortToElement::RelatingPort() { return reinterpret_pointer_cast<IfcBaseClass,IfcPort>(*entity->getArgument(4)); }
-SHARED_PTR<IfcElement> IfcRelConnectsPortToElement::RelatedElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(5)); }
-bool IfcRelConnectsPortToElement::is(Type::Enum v) { return v == Type::IfcRelConnectsPortToElement || IfcRelConnects::is(v); }
-Type::Enum IfcRelConnectsPortToElement::type() { return Type::IfcRelConnectsPortToElement; }
+IfcPort* IfcRelConnectsPortToElement::RelatingPort() { return reinterpret_pointer_cast<IfcBaseClass,IfcPort>(*entity->getArgument(4)); }
+IfcElement* IfcRelConnectsPortToElement::RelatedElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(5)); }
+bool IfcRelConnectsPortToElement::is(Type::Enum v) const { return v == Type::IfcRelConnectsPortToElement || IfcRelConnects::is(v); }
+Type::Enum IfcRelConnectsPortToElement::type() const { return Type::IfcRelConnectsPortToElement; }
 Type::Enum IfcRelConnectsPortToElement::Class() { return Type::IfcRelConnectsPortToElement; }
 IfcRelConnectsPortToElement::IfcRelConnectsPortToElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsPortToElement)) throw; entity = e; } 
 // IfcRelConnectsPorts
-SHARED_PTR<IfcPort> IfcRelConnectsPorts::RelatingPort() { return reinterpret_pointer_cast<IfcBaseClass,IfcPort>(*entity->getArgument(4)); }
-SHARED_PTR<IfcPort> IfcRelConnectsPorts::RelatedPort() { return reinterpret_pointer_cast<IfcBaseClass,IfcPort>(*entity->getArgument(5)); }
+IfcPort* IfcRelConnectsPorts::RelatingPort() { return reinterpret_pointer_cast<IfcBaseClass,IfcPort>(*entity->getArgument(4)); }
+IfcPort* IfcRelConnectsPorts::RelatedPort() { return reinterpret_pointer_cast<IfcBaseClass,IfcPort>(*entity->getArgument(5)); }
 bool IfcRelConnectsPorts::hasRealizingElement() { return !entity->getArgument(6)->isNull(); }
-SHARED_PTR<IfcElement> IfcRelConnectsPorts::RealizingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(6)); }
-bool IfcRelConnectsPorts::is(Type::Enum v) { return v == Type::IfcRelConnectsPorts || IfcRelConnects::is(v); }
-Type::Enum IfcRelConnectsPorts::type() { return Type::IfcRelConnectsPorts; }
+IfcElement* IfcRelConnectsPorts::RealizingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(6)); }
+bool IfcRelConnectsPorts::is(Type::Enum v) const { return v == Type::IfcRelConnectsPorts || IfcRelConnects::is(v); }
+Type::Enum IfcRelConnectsPorts::type() const { return Type::IfcRelConnectsPorts; }
 Type::Enum IfcRelConnectsPorts::Class() { return Type::IfcRelConnectsPorts; }
 IfcRelConnectsPorts::IfcRelConnectsPorts(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsPorts)) throw; entity = e; } 
 // IfcRelConnectsStructuralActivity
 IfcStructuralActivityAssignmentSelect IfcRelConnectsStructuralActivity::RelatingElement() { return *entity->getArgument(4); }
-SHARED_PTR<IfcStructuralActivity> IfcRelConnectsStructuralActivity::RelatedStructuralActivity() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralActivity>(*entity->getArgument(5)); }
-bool IfcRelConnectsStructuralActivity::is(Type::Enum v) { return v == Type::IfcRelConnectsStructuralActivity || IfcRelConnects::is(v); }
-Type::Enum IfcRelConnectsStructuralActivity::type() { return Type::IfcRelConnectsStructuralActivity; }
+IfcStructuralActivity* IfcRelConnectsStructuralActivity::RelatedStructuralActivity() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralActivity>(*entity->getArgument(5)); }
+bool IfcRelConnectsStructuralActivity::is(Type::Enum v) const { return v == Type::IfcRelConnectsStructuralActivity || IfcRelConnects::is(v); }
+Type::Enum IfcRelConnectsStructuralActivity::type() const { return Type::IfcRelConnectsStructuralActivity; }
 Type::Enum IfcRelConnectsStructuralActivity::Class() { return Type::IfcRelConnectsStructuralActivity; }
 IfcRelConnectsStructuralActivity::IfcRelConnectsStructuralActivity(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsStructuralActivity)) throw; entity = e; } 
 // IfcRelConnectsStructuralElement
-SHARED_PTR<IfcElement> IfcRelConnectsStructuralElement::RelatingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(4)); }
-SHARED_PTR<IfcStructuralMember> IfcRelConnectsStructuralElement::RelatedStructuralMember() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralMember>(*entity->getArgument(5)); }
-bool IfcRelConnectsStructuralElement::is(Type::Enum v) { return v == Type::IfcRelConnectsStructuralElement || IfcRelConnects::is(v); }
-Type::Enum IfcRelConnectsStructuralElement::type() { return Type::IfcRelConnectsStructuralElement; }
+IfcElement* IfcRelConnectsStructuralElement::RelatingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(4)); }
+IfcStructuralMember* IfcRelConnectsStructuralElement::RelatedStructuralMember() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralMember>(*entity->getArgument(5)); }
+bool IfcRelConnectsStructuralElement::is(Type::Enum v) const { return v == Type::IfcRelConnectsStructuralElement || IfcRelConnects::is(v); }
+Type::Enum IfcRelConnectsStructuralElement::type() const { return Type::IfcRelConnectsStructuralElement; }
 Type::Enum IfcRelConnectsStructuralElement::Class() { return Type::IfcRelConnectsStructuralElement; }
 IfcRelConnectsStructuralElement::IfcRelConnectsStructuralElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsStructuralElement)) throw; entity = e; } 
 // IfcRelConnectsStructuralMember
-SHARED_PTR<IfcStructuralMember> IfcRelConnectsStructuralMember::RelatingStructuralMember() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralMember>(*entity->getArgument(4)); }
-SHARED_PTR<IfcStructuralConnection> IfcRelConnectsStructuralMember::RelatedStructuralConnection() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralConnection>(*entity->getArgument(5)); }
+IfcStructuralMember* IfcRelConnectsStructuralMember::RelatingStructuralMember() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralMember>(*entity->getArgument(4)); }
+IfcStructuralConnection* IfcRelConnectsStructuralMember::RelatedStructuralConnection() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralConnection>(*entity->getArgument(5)); }
 bool IfcRelConnectsStructuralMember::hasAppliedCondition() { return !entity->getArgument(6)->isNull(); }
-SHARED_PTR<IfcBoundaryCondition> IfcRelConnectsStructuralMember::AppliedCondition() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundaryCondition>(*entity->getArgument(6)); }
+IfcBoundaryCondition* IfcRelConnectsStructuralMember::AppliedCondition() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundaryCondition>(*entity->getArgument(6)); }
 bool IfcRelConnectsStructuralMember::hasAdditionalConditions() { return !entity->getArgument(7)->isNull(); }
-SHARED_PTR<IfcStructuralConnectionCondition> IfcRelConnectsStructuralMember::AdditionalConditions() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralConnectionCondition>(*entity->getArgument(7)); }
+IfcStructuralConnectionCondition* IfcRelConnectsStructuralMember::AdditionalConditions() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralConnectionCondition>(*entity->getArgument(7)); }
 bool IfcRelConnectsStructuralMember::hasSupportedLength() { return !entity->getArgument(8)->isNull(); }
 IfcLengthMeasure IfcRelConnectsStructuralMember::SupportedLength() { return *entity->getArgument(8); }
 bool IfcRelConnectsStructuralMember::hasConditionCoordinateSystem() { return !entity->getArgument(9)->isNull(); }
-SHARED_PTR<IfcAxis2Placement3D> IfcRelConnectsStructuralMember::ConditionCoordinateSystem() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(9)); }
-bool IfcRelConnectsStructuralMember::is(Type::Enum v) { return v == Type::IfcRelConnectsStructuralMember || IfcRelConnects::is(v); }
-Type::Enum IfcRelConnectsStructuralMember::type() { return Type::IfcRelConnectsStructuralMember; }
+IfcAxis2Placement3D* IfcRelConnectsStructuralMember::ConditionCoordinateSystem() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(9)); }
+bool IfcRelConnectsStructuralMember::is(Type::Enum v) const { return v == Type::IfcRelConnectsStructuralMember || IfcRelConnects::is(v); }
+Type::Enum IfcRelConnectsStructuralMember::type() const { return Type::IfcRelConnectsStructuralMember; }
 Type::Enum IfcRelConnectsStructuralMember::Class() { return Type::IfcRelConnectsStructuralMember; }
 IfcRelConnectsStructuralMember::IfcRelConnectsStructuralMember(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsStructuralMember)) throw; entity = e; } 
 // IfcRelConnectsWithEccentricity
-SHARED_PTR<IfcConnectionGeometry> IfcRelConnectsWithEccentricity::ConnectionConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConnectionGeometry>(*entity->getArgument(10)); }
-bool IfcRelConnectsWithEccentricity::is(Type::Enum v) { return v == Type::IfcRelConnectsWithEccentricity || IfcRelConnectsStructuralMember::is(v); }
-Type::Enum IfcRelConnectsWithEccentricity::type() { return Type::IfcRelConnectsWithEccentricity; }
+IfcConnectionGeometry* IfcRelConnectsWithEccentricity::ConnectionConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConnectionGeometry>(*entity->getArgument(10)); }
+bool IfcRelConnectsWithEccentricity::is(Type::Enum v) const { return v == Type::IfcRelConnectsWithEccentricity || IfcRelConnectsStructuralMember::is(v); }
+Type::Enum IfcRelConnectsWithEccentricity::type() const { return Type::IfcRelConnectsWithEccentricity; }
 Type::Enum IfcRelConnectsWithEccentricity::Class() { return Type::IfcRelConnectsWithEccentricity; }
 IfcRelConnectsWithEccentricity::IfcRelConnectsWithEccentricity(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsWithEccentricity)) throw; entity = e; } 
 // IfcRelConnectsWithRealizingElements
 SHARED_PTR< IfcTemplatedEntityList<IfcElement> > IfcRelConnectsWithRealizingElements::RealizingElements() { RETURN_AS_LIST(IfcElement,7) }
 bool IfcRelConnectsWithRealizingElements::hasConnectionType() { return !entity->getArgument(8)->isNull(); }
 IfcLabel IfcRelConnectsWithRealizingElements::ConnectionType() { return *entity->getArgument(8); }
-bool IfcRelConnectsWithRealizingElements::is(Type::Enum v) { return v == Type::IfcRelConnectsWithRealizingElements || IfcRelConnectsElements::is(v); }
-Type::Enum IfcRelConnectsWithRealizingElements::type() { return Type::IfcRelConnectsWithRealizingElements; }
+bool IfcRelConnectsWithRealizingElements::is(Type::Enum v) const { return v == Type::IfcRelConnectsWithRealizingElements || IfcRelConnectsElements::is(v); }
+Type::Enum IfcRelConnectsWithRealizingElements::type() const { return Type::IfcRelConnectsWithRealizingElements; }
 Type::Enum IfcRelConnectsWithRealizingElements::Class() { return Type::IfcRelConnectsWithRealizingElements; }
 IfcRelConnectsWithRealizingElements::IfcRelConnectsWithRealizingElements(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsWithRealizingElements)) throw; entity = e; } 
 // IfcRelContainedInSpatialStructure
 SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > IfcRelContainedInSpatialStructure::RelatedElements() { RETURN_AS_LIST(IfcProduct,4) }
-SHARED_PTR<IfcSpatialStructureElement> IfcRelContainedInSpatialStructure::RelatingStructure() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(5)); }
-bool IfcRelContainedInSpatialStructure::is(Type::Enum v) { return v == Type::IfcRelContainedInSpatialStructure || IfcRelConnects::is(v); }
-Type::Enum IfcRelContainedInSpatialStructure::type() { return Type::IfcRelContainedInSpatialStructure; }
+IfcSpatialStructureElement* IfcRelContainedInSpatialStructure::RelatingStructure() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(5)); }
+bool IfcRelContainedInSpatialStructure::is(Type::Enum v) const { return v == Type::IfcRelContainedInSpatialStructure || IfcRelConnects::is(v); }
+Type::Enum IfcRelContainedInSpatialStructure::type() const { return Type::IfcRelContainedInSpatialStructure; }
 Type::Enum IfcRelContainedInSpatialStructure::Class() { return Type::IfcRelContainedInSpatialStructure; }
 IfcRelContainedInSpatialStructure::IfcRelContainedInSpatialStructure(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelContainedInSpatialStructure)) throw; entity = e; } 
 // IfcRelCoversBldgElements
-SHARED_PTR<IfcElement> IfcRelCoversBldgElements::RelatingBuildingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(4)); }
+IfcElement* IfcRelCoversBldgElements::RelatingBuildingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(4)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcCovering> > IfcRelCoversBldgElements::RelatedCoverings() { RETURN_AS_LIST(IfcCovering,5) }
-bool IfcRelCoversBldgElements::is(Type::Enum v) { return v == Type::IfcRelCoversBldgElements || IfcRelConnects::is(v); }
-Type::Enum IfcRelCoversBldgElements::type() { return Type::IfcRelCoversBldgElements; }
+bool IfcRelCoversBldgElements::is(Type::Enum v) const { return v == Type::IfcRelCoversBldgElements || IfcRelConnects::is(v); }
+Type::Enum IfcRelCoversBldgElements::type() const { return Type::IfcRelCoversBldgElements; }
 Type::Enum IfcRelCoversBldgElements::Class() { return Type::IfcRelCoversBldgElements; }
 IfcRelCoversBldgElements::IfcRelCoversBldgElements(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelCoversBldgElements)) throw; entity = e; } 
 // IfcRelCoversSpaces
-SHARED_PTR<IfcSpace> IfcRelCoversSpaces::RelatedSpace() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpace>(*entity->getArgument(4)); }
+IfcSpace* IfcRelCoversSpaces::RelatedSpace() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpace>(*entity->getArgument(4)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcCovering> > IfcRelCoversSpaces::RelatedCoverings() { RETURN_AS_LIST(IfcCovering,5) }
-bool IfcRelCoversSpaces::is(Type::Enum v) { return v == Type::IfcRelCoversSpaces || IfcRelConnects::is(v); }
-Type::Enum IfcRelCoversSpaces::type() { return Type::IfcRelCoversSpaces; }
+bool IfcRelCoversSpaces::is(Type::Enum v) const { return v == Type::IfcRelCoversSpaces || IfcRelConnects::is(v); }
+Type::Enum IfcRelCoversSpaces::type() const { return Type::IfcRelCoversSpaces; }
 Type::Enum IfcRelCoversSpaces::Class() { return Type::IfcRelCoversSpaces; }
 IfcRelCoversSpaces::IfcRelCoversSpaces(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelCoversSpaces)) throw; entity = e; } 
 // IfcRelDecomposes
-SHARED_PTR<IfcObjectDefinition> IfcRelDecomposes::RelatingObject() { return reinterpret_pointer_cast<IfcBaseClass,IfcObjectDefinition>(*entity->getArgument(4)); }
+IfcObjectDefinition* IfcRelDecomposes::RelatingObject() { return reinterpret_pointer_cast<IfcBaseClass,IfcObjectDefinition>(*entity->getArgument(4)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcObjectDefinition> > IfcRelDecomposes::RelatedObjects() { RETURN_AS_LIST(IfcObjectDefinition,5) }
-bool IfcRelDecomposes::is(Type::Enum v) { return v == Type::IfcRelDecomposes || IfcRelationship::is(v); }
-Type::Enum IfcRelDecomposes::type() { return Type::IfcRelDecomposes; }
+bool IfcRelDecomposes::is(Type::Enum v) const { return v == Type::IfcRelDecomposes || IfcRelationship::is(v); }
+Type::Enum IfcRelDecomposes::type() const { return Type::IfcRelDecomposes; }
 Type::Enum IfcRelDecomposes::Class() { return Type::IfcRelDecomposes; }
 IfcRelDecomposes::IfcRelDecomposes(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelDecomposes)) throw; entity = e; } 
 // IfcRelDefines
 SHARED_PTR< IfcTemplatedEntityList<IfcObject> > IfcRelDefines::RelatedObjects() { RETURN_AS_LIST(IfcObject,4) }
-bool IfcRelDefines::is(Type::Enum v) { return v == Type::IfcRelDefines || IfcRelationship::is(v); }
-Type::Enum IfcRelDefines::type() { return Type::IfcRelDefines; }
+bool IfcRelDefines::is(Type::Enum v) const { return v == Type::IfcRelDefines || IfcRelationship::is(v); }
+Type::Enum IfcRelDefines::type() const { return Type::IfcRelDefines; }
 Type::Enum IfcRelDefines::Class() { return Type::IfcRelDefines; }
 IfcRelDefines::IfcRelDefines(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelDefines)) throw; entity = e; } 
 // IfcRelDefinesByProperties
-SHARED_PTR<IfcPropertySetDefinition> IfcRelDefinesByProperties::RelatingPropertyDefinition() { return reinterpret_pointer_cast<IfcBaseClass,IfcPropertySetDefinition>(*entity->getArgument(5)); }
-bool IfcRelDefinesByProperties::is(Type::Enum v) { return v == Type::IfcRelDefinesByProperties || IfcRelDefines::is(v); }
-Type::Enum IfcRelDefinesByProperties::type() { return Type::IfcRelDefinesByProperties; }
+IfcPropertySetDefinition* IfcRelDefinesByProperties::RelatingPropertyDefinition() { return reinterpret_pointer_cast<IfcBaseClass,IfcPropertySetDefinition>(*entity->getArgument(5)); }
+bool IfcRelDefinesByProperties::is(Type::Enum v) const { return v == Type::IfcRelDefinesByProperties || IfcRelDefines::is(v); }
+Type::Enum IfcRelDefinesByProperties::type() const { return Type::IfcRelDefinesByProperties; }
 Type::Enum IfcRelDefinesByProperties::Class() { return Type::IfcRelDefinesByProperties; }
 IfcRelDefinesByProperties::IfcRelDefinesByProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelDefinesByProperties)) throw; entity = e; } 
 // IfcRelDefinesByType
-SHARED_PTR<IfcTypeObject> IfcRelDefinesByType::RelatingType() { return reinterpret_pointer_cast<IfcBaseClass,IfcTypeObject>(*entity->getArgument(5)); }
-bool IfcRelDefinesByType::is(Type::Enum v) { return v == Type::IfcRelDefinesByType || IfcRelDefines::is(v); }
-Type::Enum IfcRelDefinesByType::type() { return Type::IfcRelDefinesByType; }
+IfcTypeObject* IfcRelDefinesByType::RelatingType() { return reinterpret_pointer_cast<IfcBaseClass,IfcTypeObject>(*entity->getArgument(5)); }
+bool IfcRelDefinesByType::is(Type::Enum v) const { return v == Type::IfcRelDefinesByType || IfcRelDefines::is(v); }
+Type::Enum IfcRelDefinesByType::type() const { return Type::IfcRelDefinesByType; }
 Type::Enum IfcRelDefinesByType::Class() { return Type::IfcRelDefinesByType; }
 IfcRelDefinesByType::IfcRelDefinesByType(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelDefinesByType)) throw; entity = e; } 
 // IfcRelFillsElement
-SHARED_PTR<IfcOpeningElement> IfcRelFillsElement::RelatingOpeningElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcOpeningElement>(*entity->getArgument(4)); }
-SHARED_PTR<IfcElement> IfcRelFillsElement::RelatedBuildingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(5)); }
-bool IfcRelFillsElement::is(Type::Enum v) { return v == Type::IfcRelFillsElement || IfcRelConnects::is(v); }
-Type::Enum IfcRelFillsElement::type() { return Type::IfcRelFillsElement; }
+IfcOpeningElement* IfcRelFillsElement::RelatingOpeningElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcOpeningElement>(*entity->getArgument(4)); }
+IfcElement* IfcRelFillsElement::RelatedBuildingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(5)); }
+bool IfcRelFillsElement::is(Type::Enum v) const { return v == Type::IfcRelFillsElement || IfcRelConnects::is(v); }
+Type::Enum IfcRelFillsElement::type() const { return Type::IfcRelFillsElement; }
 Type::Enum IfcRelFillsElement::Class() { return Type::IfcRelFillsElement; }
 IfcRelFillsElement::IfcRelFillsElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelFillsElement)) throw; entity = e; } 
 // IfcRelFlowControlElements
 SHARED_PTR< IfcTemplatedEntityList<IfcDistributionControlElement> > IfcRelFlowControlElements::RelatedControlElements() { RETURN_AS_LIST(IfcDistributionControlElement,4) }
-SHARED_PTR<IfcDistributionFlowElement> IfcRelFlowControlElements::RelatingFlowElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcDistributionFlowElement>(*entity->getArgument(5)); }
-bool IfcRelFlowControlElements::is(Type::Enum v) { return v == Type::IfcRelFlowControlElements || IfcRelConnects::is(v); }
-Type::Enum IfcRelFlowControlElements::type() { return Type::IfcRelFlowControlElements; }
+IfcDistributionFlowElement* IfcRelFlowControlElements::RelatingFlowElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcDistributionFlowElement>(*entity->getArgument(5)); }
+bool IfcRelFlowControlElements::is(Type::Enum v) const { return v == Type::IfcRelFlowControlElements || IfcRelConnects::is(v); }
+Type::Enum IfcRelFlowControlElements::type() const { return Type::IfcRelFlowControlElements; }
 Type::Enum IfcRelFlowControlElements::Class() { return Type::IfcRelFlowControlElements; }
 IfcRelFlowControlElements::IfcRelFlowControlElements(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelFlowControlElements)) throw; entity = e; } 
 // IfcRelInteractionRequirements
@@ -8456,97 +8463,97 @@ IfcCountMeasure IfcRelInteractionRequirements::DailyInteraction() { return *enti
 bool IfcRelInteractionRequirements::hasImportanceRating() { return !entity->getArgument(5)->isNull(); }
 IfcNormalisedRatioMeasure IfcRelInteractionRequirements::ImportanceRating() { return *entity->getArgument(5); }
 bool IfcRelInteractionRequirements::hasLocationOfInteraction() { return !entity->getArgument(6)->isNull(); }
-SHARED_PTR<IfcSpatialStructureElement> IfcRelInteractionRequirements::LocationOfInteraction() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(6)); }
-SHARED_PTR<IfcSpaceProgram> IfcRelInteractionRequirements::RelatedSpaceProgram() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpaceProgram>(*entity->getArgument(7)); }
-SHARED_PTR<IfcSpaceProgram> IfcRelInteractionRequirements::RelatingSpaceProgram() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpaceProgram>(*entity->getArgument(8)); }
-bool IfcRelInteractionRequirements::is(Type::Enum v) { return v == Type::IfcRelInteractionRequirements || IfcRelConnects::is(v); }
-Type::Enum IfcRelInteractionRequirements::type() { return Type::IfcRelInteractionRequirements; }
+IfcSpatialStructureElement* IfcRelInteractionRequirements::LocationOfInteraction() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(6)); }
+IfcSpaceProgram* IfcRelInteractionRequirements::RelatedSpaceProgram() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpaceProgram>(*entity->getArgument(7)); }
+IfcSpaceProgram* IfcRelInteractionRequirements::RelatingSpaceProgram() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpaceProgram>(*entity->getArgument(8)); }
+bool IfcRelInteractionRequirements::is(Type::Enum v) const { return v == Type::IfcRelInteractionRequirements || IfcRelConnects::is(v); }
+Type::Enum IfcRelInteractionRequirements::type() const { return Type::IfcRelInteractionRequirements; }
 Type::Enum IfcRelInteractionRequirements::Class() { return Type::IfcRelInteractionRequirements; }
 IfcRelInteractionRequirements::IfcRelInteractionRequirements(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelInteractionRequirements)) throw; entity = e; } 
 // IfcRelNests
-bool IfcRelNests::is(Type::Enum v) { return v == Type::IfcRelNests || IfcRelDecomposes::is(v); }
-Type::Enum IfcRelNests::type() { return Type::IfcRelNests; }
+bool IfcRelNests::is(Type::Enum v) const { return v == Type::IfcRelNests || IfcRelDecomposes::is(v); }
+Type::Enum IfcRelNests::type() const { return Type::IfcRelNests; }
 Type::Enum IfcRelNests::Class() { return Type::IfcRelNests; }
 IfcRelNests::IfcRelNests(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelNests)) throw; entity = e; } 
 // IfcRelOccupiesSpaces
-bool IfcRelOccupiesSpaces::is(Type::Enum v) { return v == Type::IfcRelOccupiesSpaces || IfcRelAssignsToActor::is(v); }
-Type::Enum IfcRelOccupiesSpaces::type() { return Type::IfcRelOccupiesSpaces; }
+bool IfcRelOccupiesSpaces::is(Type::Enum v) const { return v == Type::IfcRelOccupiesSpaces || IfcRelAssignsToActor::is(v); }
+Type::Enum IfcRelOccupiesSpaces::type() const { return Type::IfcRelOccupiesSpaces; }
 Type::Enum IfcRelOccupiesSpaces::Class() { return Type::IfcRelOccupiesSpaces; }
 IfcRelOccupiesSpaces::IfcRelOccupiesSpaces(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelOccupiesSpaces)) throw; entity = e; } 
 // IfcRelOverridesProperties
 SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > IfcRelOverridesProperties::OverridingProperties() { RETURN_AS_LIST(IfcProperty,6) }
-bool IfcRelOverridesProperties::is(Type::Enum v) { return v == Type::IfcRelOverridesProperties || IfcRelDefinesByProperties::is(v); }
-Type::Enum IfcRelOverridesProperties::type() { return Type::IfcRelOverridesProperties; }
+bool IfcRelOverridesProperties::is(Type::Enum v) const { return v == Type::IfcRelOverridesProperties || IfcRelDefinesByProperties::is(v); }
+Type::Enum IfcRelOverridesProperties::type() const { return Type::IfcRelOverridesProperties; }
 Type::Enum IfcRelOverridesProperties::Class() { return Type::IfcRelOverridesProperties; }
 IfcRelOverridesProperties::IfcRelOverridesProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelOverridesProperties)) throw; entity = e; } 
 // IfcRelProjectsElement
-SHARED_PTR<IfcElement> IfcRelProjectsElement::RelatingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(4)); }
-SHARED_PTR<IfcFeatureElementAddition> IfcRelProjectsElement::RelatedFeatureElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcFeatureElementAddition>(*entity->getArgument(5)); }
-bool IfcRelProjectsElement::is(Type::Enum v) { return v == Type::IfcRelProjectsElement || IfcRelConnects::is(v); }
-Type::Enum IfcRelProjectsElement::type() { return Type::IfcRelProjectsElement; }
+IfcElement* IfcRelProjectsElement::RelatingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(4)); }
+IfcFeatureElementAddition* IfcRelProjectsElement::RelatedFeatureElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcFeatureElementAddition>(*entity->getArgument(5)); }
+bool IfcRelProjectsElement::is(Type::Enum v) const { return v == Type::IfcRelProjectsElement || IfcRelConnects::is(v); }
+Type::Enum IfcRelProjectsElement::type() const { return Type::IfcRelProjectsElement; }
 Type::Enum IfcRelProjectsElement::Class() { return Type::IfcRelProjectsElement; }
 IfcRelProjectsElement::IfcRelProjectsElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelProjectsElement)) throw; entity = e; } 
 // IfcRelReferencedInSpatialStructure
 SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > IfcRelReferencedInSpatialStructure::RelatedElements() { RETURN_AS_LIST(IfcProduct,4) }
-SHARED_PTR<IfcSpatialStructureElement> IfcRelReferencedInSpatialStructure::RelatingStructure() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(5)); }
-bool IfcRelReferencedInSpatialStructure::is(Type::Enum v) { return v == Type::IfcRelReferencedInSpatialStructure || IfcRelConnects::is(v); }
-Type::Enum IfcRelReferencedInSpatialStructure::type() { return Type::IfcRelReferencedInSpatialStructure; }
+IfcSpatialStructureElement* IfcRelReferencedInSpatialStructure::RelatingStructure() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(5)); }
+bool IfcRelReferencedInSpatialStructure::is(Type::Enum v) const { return v == Type::IfcRelReferencedInSpatialStructure || IfcRelConnects::is(v); }
+Type::Enum IfcRelReferencedInSpatialStructure::type() const { return Type::IfcRelReferencedInSpatialStructure; }
 Type::Enum IfcRelReferencedInSpatialStructure::Class() { return Type::IfcRelReferencedInSpatialStructure; }
 IfcRelReferencedInSpatialStructure::IfcRelReferencedInSpatialStructure(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelReferencedInSpatialStructure)) throw; entity = e; } 
 // IfcRelSchedulesCostItems
-bool IfcRelSchedulesCostItems::is(Type::Enum v) { return v == Type::IfcRelSchedulesCostItems || IfcRelAssignsToControl::is(v); }
-Type::Enum IfcRelSchedulesCostItems::type() { return Type::IfcRelSchedulesCostItems; }
+bool IfcRelSchedulesCostItems::is(Type::Enum v) const { return v == Type::IfcRelSchedulesCostItems || IfcRelAssignsToControl::is(v); }
+Type::Enum IfcRelSchedulesCostItems::type() const { return Type::IfcRelSchedulesCostItems; }
 Type::Enum IfcRelSchedulesCostItems::Class() { return Type::IfcRelSchedulesCostItems; }
 IfcRelSchedulesCostItems::IfcRelSchedulesCostItems(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelSchedulesCostItems)) throw; entity = e; } 
 // IfcRelSequence
-SHARED_PTR<IfcProcess> IfcRelSequence::RelatingProcess() { return reinterpret_pointer_cast<IfcBaseClass,IfcProcess>(*entity->getArgument(4)); }
-SHARED_PTR<IfcProcess> IfcRelSequence::RelatedProcess() { return reinterpret_pointer_cast<IfcBaseClass,IfcProcess>(*entity->getArgument(5)); }
+IfcProcess* IfcRelSequence::RelatingProcess() { return reinterpret_pointer_cast<IfcBaseClass,IfcProcess>(*entity->getArgument(4)); }
+IfcProcess* IfcRelSequence::RelatedProcess() { return reinterpret_pointer_cast<IfcBaseClass,IfcProcess>(*entity->getArgument(5)); }
 IfcTimeMeasure IfcRelSequence::TimeLag() { return *entity->getArgument(6); }
 IfcSequenceEnum::IfcSequenceEnum IfcRelSequence::SequenceType() { return IfcSequenceEnum::FromString(*entity->getArgument(7)); }
-bool IfcRelSequence::is(Type::Enum v) { return v == Type::IfcRelSequence || IfcRelConnects::is(v); }
-Type::Enum IfcRelSequence::type() { return Type::IfcRelSequence; }
+bool IfcRelSequence::is(Type::Enum v) const { return v == Type::IfcRelSequence || IfcRelConnects::is(v); }
+Type::Enum IfcRelSequence::type() const { return Type::IfcRelSequence; }
 Type::Enum IfcRelSequence::Class() { return Type::IfcRelSequence; }
 IfcRelSequence::IfcRelSequence(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelSequence)) throw; entity = e; } 
 // IfcRelServicesBuildings
-SHARED_PTR<IfcSystem> IfcRelServicesBuildings::RelatingSystem() { return reinterpret_pointer_cast<IfcBaseClass,IfcSystem>(*entity->getArgument(4)); }
+IfcSystem* IfcRelServicesBuildings::RelatingSystem() { return reinterpret_pointer_cast<IfcBaseClass,IfcSystem>(*entity->getArgument(4)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcSpatialStructureElement> > IfcRelServicesBuildings::RelatedBuildings() { RETURN_AS_LIST(IfcSpatialStructureElement,5) }
-bool IfcRelServicesBuildings::is(Type::Enum v) { return v == Type::IfcRelServicesBuildings || IfcRelConnects::is(v); }
-Type::Enum IfcRelServicesBuildings::type() { return Type::IfcRelServicesBuildings; }
+bool IfcRelServicesBuildings::is(Type::Enum v) const { return v == Type::IfcRelServicesBuildings || IfcRelConnects::is(v); }
+Type::Enum IfcRelServicesBuildings::type() const { return Type::IfcRelServicesBuildings; }
 Type::Enum IfcRelServicesBuildings::Class() { return Type::IfcRelServicesBuildings; }
 IfcRelServicesBuildings::IfcRelServicesBuildings(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelServicesBuildings)) throw; entity = e; } 
 // IfcRelSpaceBoundary
-SHARED_PTR<IfcSpace> IfcRelSpaceBoundary::RelatingSpace() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpace>(*entity->getArgument(4)); }
+IfcSpace* IfcRelSpaceBoundary::RelatingSpace() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpace>(*entity->getArgument(4)); }
 bool IfcRelSpaceBoundary::hasRelatedBuildingElement() { return !entity->getArgument(5)->isNull(); }
-SHARED_PTR<IfcElement> IfcRelSpaceBoundary::RelatedBuildingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(5)); }
+IfcElement* IfcRelSpaceBoundary::RelatedBuildingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(5)); }
 bool IfcRelSpaceBoundary::hasConnectionGeometry() { return !entity->getArgument(6)->isNull(); }
-SHARED_PTR<IfcConnectionGeometry> IfcRelSpaceBoundary::ConnectionGeometry() { return reinterpret_pointer_cast<IfcBaseClass,IfcConnectionGeometry>(*entity->getArgument(6)); }
+IfcConnectionGeometry* IfcRelSpaceBoundary::ConnectionGeometry() { return reinterpret_pointer_cast<IfcBaseClass,IfcConnectionGeometry>(*entity->getArgument(6)); }
 IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtualEnum IfcRelSpaceBoundary::PhysicalOrVirtualBoundary() { return IfcPhysicalOrVirtualEnum::FromString(*entity->getArgument(7)); }
 IfcInternalOrExternalEnum::IfcInternalOrExternalEnum IfcRelSpaceBoundary::InternalOrExternalBoundary() { return IfcInternalOrExternalEnum::FromString(*entity->getArgument(8)); }
-bool IfcRelSpaceBoundary::is(Type::Enum v) { return v == Type::IfcRelSpaceBoundary || IfcRelConnects::is(v); }
-Type::Enum IfcRelSpaceBoundary::type() { return Type::IfcRelSpaceBoundary; }
+bool IfcRelSpaceBoundary::is(Type::Enum v) const { return v == Type::IfcRelSpaceBoundary || IfcRelConnects::is(v); }
+Type::Enum IfcRelSpaceBoundary::type() const { return Type::IfcRelSpaceBoundary; }
 Type::Enum IfcRelSpaceBoundary::Class() { return Type::IfcRelSpaceBoundary; }
 IfcRelSpaceBoundary::IfcRelSpaceBoundary(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelSpaceBoundary)) throw; entity = e; } 
 // IfcRelVoidsElement
-SHARED_PTR<IfcElement> IfcRelVoidsElement::RelatingBuildingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(4)); }
-SHARED_PTR<IfcFeatureElementSubtraction> IfcRelVoidsElement::RelatedOpeningElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcFeatureElementSubtraction>(*entity->getArgument(5)); }
-bool IfcRelVoidsElement::is(Type::Enum v) { return v == Type::IfcRelVoidsElement || IfcRelConnects::is(v); }
-Type::Enum IfcRelVoidsElement::type() { return Type::IfcRelVoidsElement; }
+IfcElement* IfcRelVoidsElement::RelatingBuildingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(4)); }
+IfcFeatureElementSubtraction* IfcRelVoidsElement::RelatedOpeningElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcFeatureElementSubtraction>(*entity->getArgument(5)); }
+bool IfcRelVoidsElement::is(Type::Enum v) const { return v == Type::IfcRelVoidsElement || IfcRelConnects::is(v); }
+Type::Enum IfcRelVoidsElement::type() const { return Type::IfcRelVoidsElement; }
 Type::Enum IfcRelVoidsElement::Class() { return Type::IfcRelVoidsElement; }
 IfcRelVoidsElement::IfcRelVoidsElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelVoidsElement)) throw; entity = e; } 
 // IfcRelationship
-bool IfcRelationship::is(Type::Enum v) { return v == Type::IfcRelationship || IfcRoot::is(v); }
-Type::Enum IfcRelationship::type() { return Type::IfcRelationship; }
+bool IfcRelationship::is(Type::Enum v) const { return v == Type::IfcRelationship || IfcRoot::is(v); }
+Type::Enum IfcRelationship::type() const { return Type::IfcRelationship; }
 Type::Enum IfcRelationship::Class() { return Type::IfcRelationship; }
 IfcRelationship::IfcRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelationship)) throw; entity = e; } 
 // IfcRelaxation
 IfcNormalisedRatioMeasure IfcRelaxation::RelaxationValue() { return *entity->getArgument(0); }
 IfcNormalisedRatioMeasure IfcRelaxation::InitialStress() { return *entity->getArgument(1); }
-bool IfcRelaxation::is(Type::Enum v) { return v == Type::IfcRelaxation; }
-Type::Enum IfcRelaxation::type() { return Type::IfcRelaxation; }
+bool IfcRelaxation::is(Type::Enum v) const { return v == Type::IfcRelaxation; }
+Type::Enum IfcRelaxation::type() const { return Type::IfcRelaxation; }
 Type::Enum IfcRelaxation::Class() { return Type::IfcRelaxation; }
 IfcRelaxation::IfcRelaxation(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelaxation)) throw; entity = e; } 
 // IfcRepresentation
-SHARED_PTR<IfcRepresentationContext> IfcRepresentation::ContextOfItems() { return reinterpret_pointer_cast<IfcBaseClass,IfcRepresentationContext>(*entity->getArgument(0)); }
+IfcRepresentationContext* IfcRepresentation::ContextOfItems() { return reinterpret_pointer_cast<IfcBaseClass,IfcRepresentationContext>(*entity->getArgument(0)); }
 bool IfcRepresentation::hasRepresentationIdentifier() { return !entity->getArgument(1)->isNull(); }
 IfcLabel IfcRepresentation::RepresentationIdentifier() { return *entity->getArgument(1); }
 bool IfcRepresentation::hasRepresentationType() { return !entity->getArgument(2)->isNull(); }
@@ -8555,8 +8562,8 @@ SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationItem> > IfcRepresentation::I
 IfcRepresentationMap::list IfcRepresentation::RepresentationMap() { RETURN_INVERSE(IfcRepresentationMap) }
 IfcPresentationLayerAssignment::list IfcRepresentation::LayerAssignments() { RETURN_INVERSE(IfcPresentationLayerAssignment) }
 IfcProductRepresentation::list IfcRepresentation::OfProductRepresentation() { RETURN_INVERSE(IfcProductRepresentation) }
-bool IfcRepresentation::is(Type::Enum v) { return v == Type::IfcRepresentation; }
-Type::Enum IfcRepresentation::type() { return Type::IfcRepresentation; }
+bool IfcRepresentation::is(Type::Enum v) const { return v == Type::IfcRepresentation; }
+Type::Enum IfcRepresentation::type() const { return Type::IfcRepresentation; }
 Type::Enum IfcRepresentation::Class() { return Type::IfcRepresentation; }
 IfcRepresentation::IfcRepresentation(IfcAbstractEntityPtr e) { if (!is(Type::IfcRepresentation)) throw; entity = e; } 
 // IfcRepresentationContext
@@ -8565,36 +8572,36 @@ IfcLabel IfcRepresentationContext::ContextIdentifier() { return *entity->getArgu
 bool IfcRepresentationContext::hasContextType() { return !entity->getArgument(1)->isNull(); }
 IfcLabel IfcRepresentationContext::ContextType() { return *entity->getArgument(1); }
 IfcRepresentation::list IfcRepresentationContext::RepresentationsInContext() { RETURN_INVERSE(IfcRepresentation) }
-bool IfcRepresentationContext::is(Type::Enum v) { return v == Type::IfcRepresentationContext; }
-Type::Enum IfcRepresentationContext::type() { return Type::IfcRepresentationContext; }
+bool IfcRepresentationContext::is(Type::Enum v) const { return v == Type::IfcRepresentationContext; }
+Type::Enum IfcRepresentationContext::type() const { return Type::IfcRepresentationContext; }
 Type::Enum IfcRepresentationContext::Class() { return Type::IfcRepresentationContext; }
 IfcRepresentationContext::IfcRepresentationContext(IfcAbstractEntityPtr e) { if (!is(Type::IfcRepresentationContext)) throw; entity = e; } 
 // IfcRepresentationItem
 IfcPresentationLayerAssignment::list IfcRepresentationItem::LayerAssignments() { RETURN_INVERSE(IfcPresentationLayerAssignment) }
 IfcStyledItem::list IfcRepresentationItem::StyledByItem() { RETURN_INVERSE(IfcStyledItem) }
-bool IfcRepresentationItem::is(Type::Enum v) { return v == Type::IfcRepresentationItem; }
-Type::Enum IfcRepresentationItem::type() { return Type::IfcRepresentationItem; }
+bool IfcRepresentationItem::is(Type::Enum v) const { return v == Type::IfcRepresentationItem; }
+Type::Enum IfcRepresentationItem::type() const { return Type::IfcRepresentationItem; }
 Type::Enum IfcRepresentationItem::Class() { return Type::IfcRepresentationItem; }
 IfcRepresentationItem::IfcRepresentationItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcRepresentationItem)) throw; entity = e; } 
 // IfcRepresentationMap
 IfcAxis2Placement IfcRepresentationMap::MappingOrigin() { return *entity->getArgument(0); }
-SHARED_PTR<IfcRepresentation> IfcRepresentationMap::MappedRepresentation() { return reinterpret_pointer_cast<IfcBaseClass,IfcRepresentation>(*entity->getArgument(1)); }
+IfcRepresentation* IfcRepresentationMap::MappedRepresentation() { return reinterpret_pointer_cast<IfcBaseClass,IfcRepresentation>(*entity->getArgument(1)); }
 IfcMappedItem::list IfcRepresentationMap::MapUsage() { RETURN_INVERSE(IfcMappedItem) }
-bool IfcRepresentationMap::is(Type::Enum v) { return v == Type::IfcRepresentationMap; }
-Type::Enum IfcRepresentationMap::type() { return Type::IfcRepresentationMap; }
+bool IfcRepresentationMap::is(Type::Enum v) const { return v == Type::IfcRepresentationMap; }
+Type::Enum IfcRepresentationMap::type() const { return Type::IfcRepresentationMap; }
 Type::Enum IfcRepresentationMap::Class() { return Type::IfcRepresentationMap; }
 IfcRepresentationMap::IfcRepresentationMap(IfcAbstractEntityPtr e) { if (!is(Type::IfcRepresentationMap)) throw; entity = e; } 
 // IfcResource
 IfcRelAssignsToResource::list IfcResource::ResourceOf() { RETURN_INVERSE(IfcRelAssignsToResource) }
-bool IfcResource::is(Type::Enum v) { return v == Type::IfcResource || IfcObject::is(v); }
-Type::Enum IfcResource::type() { return Type::IfcResource; }
+bool IfcResource::is(Type::Enum v) const { return v == Type::IfcResource || IfcObject::is(v); }
+Type::Enum IfcResource::type() const { return Type::IfcResource; }
 Type::Enum IfcResource::Class() { return Type::IfcResource; }
 IfcResource::IfcResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcResource)) throw; entity = e; } 
 // IfcRevolvedAreaSolid
-SHARED_PTR<IfcAxis1Placement> IfcRevolvedAreaSolid::Axis() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis1Placement>(*entity->getArgument(2)); }
+IfcAxis1Placement* IfcRevolvedAreaSolid::Axis() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis1Placement>(*entity->getArgument(2)); }
 IfcPlaneAngleMeasure IfcRevolvedAreaSolid::Angle() { return *entity->getArgument(3); }
-bool IfcRevolvedAreaSolid::is(Type::Enum v) { return v == Type::IfcRevolvedAreaSolid || IfcSweptAreaSolid::is(v); }
-Type::Enum IfcRevolvedAreaSolid::type() { return Type::IfcRevolvedAreaSolid; }
+bool IfcRevolvedAreaSolid::is(Type::Enum v) const { return v == Type::IfcRevolvedAreaSolid || IfcSweptAreaSolid::is(v); }
+Type::Enum IfcRevolvedAreaSolid::type() const { return Type::IfcRevolvedAreaSolid; }
 Type::Enum IfcRevolvedAreaSolid::Class() { return Type::IfcRevolvedAreaSolid; }
 IfcRevolvedAreaSolid::IfcRevolvedAreaSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcRevolvedAreaSolid)) throw; entity = e; } 
 // IfcRibPlateProfileProperties
@@ -8607,66 +8614,66 @@ IfcPositiveLengthMeasure IfcRibPlateProfileProperties::RibWidth() { return *enti
 bool IfcRibPlateProfileProperties::hasRibSpacing() { return !entity->getArgument(5)->isNull(); }
 IfcPositiveLengthMeasure IfcRibPlateProfileProperties::RibSpacing() { return *entity->getArgument(5); }
 IfcRibPlateDirectionEnum::IfcRibPlateDirectionEnum IfcRibPlateProfileProperties::Direction() { return IfcRibPlateDirectionEnum::FromString(*entity->getArgument(6)); }
-bool IfcRibPlateProfileProperties::is(Type::Enum v) { return v == Type::IfcRibPlateProfileProperties || IfcProfileProperties::is(v); }
-Type::Enum IfcRibPlateProfileProperties::type() { return Type::IfcRibPlateProfileProperties; }
+bool IfcRibPlateProfileProperties::is(Type::Enum v) const { return v == Type::IfcRibPlateProfileProperties || IfcProfileProperties::is(v); }
+Type::Enum IfcRibPlateProfileProperties::type() const { return Type::IfcRibPlateProfileProperties; }
 Type::Enum IfcRibPlateProfileProperties::Class() { return Type::IfcRibPlateProfileProperties; }
 IfcRibPlateProfileProperties::IfcRibPlateProfileProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcRibPlateProfileProperties)) throw; entity = e; } 
 // IfcRightCircularCone
 IfcPositiveLengthMeasure IfcRightCircularCone::Height() { return *entity->getArgument(1); }
 IfcPositiveLengthMeasure IfcRightCircularCone::BottomRadius() { return *entity->getArgument(2); }
-bool IfcRightCircularCone::is(Type::Enum v) { return v == Type::IfcRightCircularCone || IfcCsgPrimitive3D::is(v); }
-Type::Enum IfcRightCircularCone::type() { return Type::IfcRightCircularCone; }
+bool IfcRightCircularCone::is(Type::Enum v) const { return v == Type::IfcRightCircularCone || IfcCsgPrimitive3D::is(v); }
+Type::Enum IfcRightCircularCone::type() const { return Type::IfcRightCircularCone; }
 Type::Enum IfcRightCircularCone::Class() { return Type::IfcRightCircularCone; }
 IfcRightCircularCone::IfcRightCircularCone(IfcAbstractEntityPtr e) { if (!is(Type::IfcRightCircularCone)) throw; entity = e; } 
 // IfcRightCircularCylinder
 IfcPositiveLengthMeasure IfcRightCircularCylinder::Height() { return *entity->getArgument(1); }
 IfcPositiveLengthMeasure IfcRightCircularCylinder::Radius() { return *entity->getArgument(2); }
-bool IfcRightCircularCylinder::is(Type::Enum v) { return v == Type::IfcRightCircularCylinder || IfcCsgPrimitive3D::is(v); }
-Type::Enum IfcRightCircularCylinder::type() { return Type::IfcRightCircularCylinder; }
+bool IfcRightCircularCylinder::is(Type::Enum v) const { return v == Type::IfcRightCircularCylinder || IfcCsgPrimitive3D::is(v); }
+Type::Enum IfcRightCircularCylinder::type() const { return Type::IfcRightCircularCylinder; }
 Type::Enum IfcRightCircularCylinder::Class() { return Type::IfcRightCircularCylinder; }
 IfcRightCircularCylinder::IfcRightCircularCylinder(IfcAbstractEntityPtr e) { if (!is(Type::IfcRightCircularCylinder)) throw; entity = e; } 
 // IfcRoof
 IfcRoofTypeEnum::IfcRoofTypeEnum IfcRoof::ShapeType() { return IfcRoofTypeEnum::FromString(*entity->getArgument(8)); }
-bool IfcRoof::is(Type::Enum v) { return v == Type::IfcRoof || IfcBuildingElement::is(v); }
-Type::Enum IfcRoof::type() { return Type::IfcRoof; }
+bool IfcRoof::is(Type::Enum v) const { return v == Type::IfcRoof || IfcBuildingElement::is(v); }
+Type::Enum IfcRoof::type() const { return Type::IfcRoof; }
 Type::Enum IfcRoof::Class() { return Type::IfcRoof; }
 IfcRoof::IfcRoof(IfcAbstractEntityPtr e) { if (!is(Type::IfcRoof)) throw; entity = e; } 
 // IfcRoot
 IfcGloballyUniqueId IfcRoot::GlobalId() { return *entity->getArgument(0); }
-SHARED_PTR<IfcOwnerHistory> IfcRoot::OwnerHistory() { return reinterpret_pointer_cast<IfcBaseClass,IfcOwnerHistory>(*entity->getArgument(1)); }
+IfcOwnerHistory* IfcRoot::OwnerHistory() { return reinterpret_pointer_cast<IfcBaseClass,IfcOwnerHistory>(*entity->getArgument(1)); }
 bool IfcRoot::hasName() { return !entity->getArgument(2)->isNull(); }
 IfcLabel IfcRoot::Name() { return *entity->getArgument(2); }
 bool IfcRoot::hasDescription() { return !entity->getArgument(3)->isNull(); }
 IfcText IfcRoot::Description() { return *entity->getArgument(3); }
-bool IfcRoot::is(Type::Enum v) { return v == Type::IfcRoot; }
-Type::Enum IfcRoot::type() { return Type::IfcRoot; }
+bool IfcRoot::is(Type::Enum v) const { return v == Type::IfcRoot; }
+Type::Enum IfcRoot::type() const { return Type::IfcRoot; }
 Type::Enum IfcRoot::Class() { return Type::IfcRoot; }
 IfcRoot::IfcRoot(IfcAbstractEntityPtr e) { if (!is(Type::IfcRoot)) throw; entity = e; } 
 // IfcRoundedEdgeFeature
 bool IfcRoundedEdgeFeature::hasRadius() { return !entity->getArgument(9)->isNull(); }
 IfcPositiveLengthMeasure IfcRoundedEdgeFeature::Radius() { return *entity->getArgument(9); }
-bool IfcRoundedEdgeFeature::is(Type::Enum v) { return v == Type::IfcRoundedEdgeFeature || IfcEdgeFeature::is(v); }
-Type::Enum IfcRoundedEdgeFeature::type() { return Type::IfcRoundedEdgeFeature; }
+bool IfcRoundedEdgeFeature::is(Type::Enum v) const { return v == Type::IfcRoundedEdgeFeature || IfcEdgeFeature::is(v); }
+Type::Enum IfcRoundedEdgeFeature::type() const { return Type::IfcRoundedEdgeFeature; }
 Type::Enum IfcRoundedEdgeFeature::Class() { return Type::IfcRoundedEdgeFeature; }
 IfcRoundedEdgeFeature::IfcRoundedEdgeFeature(IfcAbstractEntityPtr e) { if (!is(Type::IfcRoundedEdgeFeature)) throw; entity = e; } 
 // IfcRoundedRectangleProfileDef
 IfcPositiveLengthMeasure IfcRoundedRectangleProfileDef::RoundingRadius() { return *entity->getArgument(5); }
-bool IfcRoundedRectangleProfileDef::is(Type::Enum v) { return v == Type::IfcRoundedRectangleProfileDef || IfcRectangleProfileDef::is(v); }
-Type::Enum IfcRoundedRectangleProfileDef::type() { return Type::IfcRoundedRectangleProfileDef; }
+bool IfcRoundedRectangleProfileDef::is(Type::Enum v) const { return v == Type::IfcRoundedRectangleProfileDef || IfcRectangleProfileDef::is(v); }
+Type::Enum IfcRoundedRectangleProfileDef::type() const { return Type::IfcRoundedRectangleProfileDef; }
 Type::Enum IfcRoundedRectangleProfileDef::Class() { return Type::IfcRoundedRectangleProfileDef; }
 IfcRoundedRectangleProfileDef::IfcRoundedRectangleProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcRoundedRectangleProfileDef)) throw; entity = e; } 
 // IfcSIUnit
 bool IfcSIUnit::hasPrefix() { return !entity->getArgument(2)->isNull(); }
 IfcSIPrefix::IfcSIPrefix IfcSIUnit::Prefix() { return IfcSIPrefix::FromString(*entity->getArgument(2)); }
 IfcSIUnitName::IfcSIUnitName IfcSIUnit::Name() { return IfcSIUnitName::FromString(*entity->getArgument(3)); }
-bool IfcSIUnit::is(Type::Enum v) { return v == Type::IfcSIUnit || IfcNamedUnit::is(v); }
-Type::Enum IfcSIUnit::type() { return Type::IfcSIUnit; }
+bool IfcSIUnit::is(Type::Enum v) const { return v == Type::IfcSIUnit || IfcNamedUnit::is(v); }
+Type::Enum IfcSIUnit::type() const { return Type::IfcSIUnit; }
 Type::Enum IfcSIUnit::Class() { return Type::IfcSIUnit; }
 IfcSIUnit::IfcSIUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcSIUnit)) throw; entity = e; } 
 // IfcSanitaryTerminalType
 IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum IfcSanitaryTerminalType::PredefinedType() { return IfcSanitaryTerminalTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcSanitaryTerminalType::is(Type::Enum v) { return v == Type::IfcSanitaryTerminalType || IfcFlowTerminalType::is(v); }
-Type::Enum IfcSanitaryTerminalType::type() { return Type::IfcSanitaryTerminalType; }
+bool IfcSanitaryTerminalType::is(Type::Enum v) const { return v == Type::IfcSanitaryTerminalType || IfcFlowTerminalType::is(v); }
+Type::Enum IfcSanitaryTerminalType::type() const { return Type::IfcSanitaryTerminalType; }
 Type::Enum IfcSanitaryTerminalType::Class() { return Type::IfcSanitaryTerminalType; }
 IfcSanitaryTerminalType::IfcSanitaryTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSanitaryTerminalType)) throw; entity = e; } 
 // IfcScheduleTimeControl
@@ -8707,17 +8714,17 @@ IfcTimeMeasure IfcScheduleTimeControl::FinishFloat() { return *entity->getArgume
 bool IfcScheduleTimeControl::hasCompletion() { return !entity->getArgument(22)->isNull(); }
 IfcPositiveRatioMeasure IfcScheduleTimeControl::Completion() { return *entity->getArgument(22); }
 IfcRelAssignsTasks::list IfcScheduleTimeControl::ScheduleTimeControlAssigned() { RETURN_INVERSE(IfcRelAssignsTasks) }
-bool IfcScheduleTimeControl::is(Type::Enum v) { return v == Type::IfcScheduleTimeControl || IfcControl::is(v); }
-Type::Enum IfcScheduleTimeControl::type() { return Type::IfcScheduleTimeControl; }
+bool IfcScheduleTimeControl::is(Type::Enum v) const { return v == Type::IfcScheduleTimeControl || IfcControl::is(v); }
+Type::Enum IfcScheduleTimeControl::type() const { return Type::IfcScheduleTimeControl; }
 Type::Enum IfcScheduleTimeControl::Class() { return Type::IfcScheduleTimeControl; }
 IfcScheduleTimeControl::IfcScheduleTimeControl(IfcAbstractEntityPtr e) { if (!is(Type::IfcScheduleTimeControl)) throw; entity = e; } 
 // IfcSectionProperties
 IfcSectionTypeEnum::IfcSectionTypeEnum IfcSectionProperties::SectionType() { return IfcSectionTypeEnum::FromString(*entity->getArgument(0)); }
-SHARED_PTR<IfcProfileDef> IfcSectionProperties::StartProfile() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(1)); }
+IfcProfileDef* IfcSectionProperties::StartProfile() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(1)); }
 bool IfcSectionProperties::hasEndProfile() { return !entity->getArgument(2)->isNull(); }
-SHARED_PTR<IfcProfileDef> IfcSectionProperties::EndProfile() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(2)); }
-bool IfcSectionProperties::is(Type::Enum v) { return v == Type::IfcSectionProperties; }
-Type::Enum IfcSectionProperties::type() { return Type::IfcSectionProperties; }
+IfcProfileDef* IfcSectionProperties::EndProfile() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(2)); }
+bool IfcSectionProperties::is(Type::Enum v) const { return v == Type::IfcSectionProperties; }
+Type::Enum IfcSectionProperties::type() const { return Type::IfcSectionProperties; }
 Type::Enum IfcSectionProperties::Class() { return Type::IfcSectionProperties; }
 IfcSectionProperties::IfcSectionProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcSectionProperties)) throw; entity = e; } 
 // IfcSectionReinforcementProperties
@@ -8726,31 +8733,31 @@ IfcLengthMeasure IfcSectionReinforcementProperties::LongitudinalEndPosition() { 
 bool IfcSectionReinforcementProperties::hasTransversePosition() { return !entity->getArgument(2)->isNull(); }
 IfcLengthMeasure IfcSectionReinforcementProperties::TransversePosition() { return *entity->getArgument(2); }
 IfcReinforcingBarRoleEnum::IfcReinforcingBarRoleEnum IfcSectionReinforcementProperties::ReinforcementRole() { return IfcReinforcingBarRoleEnum::FromString(*entity->getArgument(3)); }
-SHARED_PTR<IfcSectionProperties> IfcSectionReinforcementProperties::SectionDefinition() { return reinterpret_pointer_cast<IfcBaseClass,IfcSectionProperties>(*entity->getArgument(4)); }
+IfcSectionProperties* IfcSectionReinforcementProperties::SectionDefinition() { return reinterpret_pointer_cast<IfcBaseClass,IfcSectionProperties>(*entity->getArgument(4)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcReinforcementBarProperties> > IfcSectionReinforcementProperties::CrossSectionReinforcementDefinitions() { RETURN_AS_LIST(IfcReinforcementBarProperties,5) }
-bool IfcSectionReinforcementProperties::is(Type::Enum v) { return v == Type::IfcSectionReinforcementProperties; }
-Type::Enum IfcSectionReinforcementProperties::type() { return Type::IfcSectionReinforcementProperties; }
+bool IfcSectionReinforcementProperties::is(Type::Enum v) const { return v == Type::IfcSectionReinforcementProperties; }
+Type::Enum IfcSectionReinforcementProperties::type() const { return Type::IfcSectionReinforcementProperties; }
 Type::Enum IfcSectionReinforcementProperties::Class() { return Type::IfcSectionReinforcementProperties; }
 IfcSectionReinforcementProperties::IfcSectionReinforcementProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcSectionReinforcementProperties)) throw; entity = e; } 
 // IfcSectionedSpine
-SHARED_PTR<IfcCompositeCurve> IfcSectionedSpine::SpineCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCompositeCurve>(*entity->getArgument(0)); }
+IfcCompositeCurve* IfcSectionedSpine::SpineCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCompositeCurve>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcProfileDef> > IfcSectionedSpine::CrossSections() { RETURN_AS_LIST(IfcProfileDef,1) }
 SHARED_PTR< IfcTemplatedEntityList<IfcAxis2Placement3D> > IfcSectionedSpine::CrossSectionPositions() { RETURN_AS_LIST(IfcAxis2Placement3D,2) }
-bool IfcSectionedSpine::is(Type::Enum v) { return v == Type::IfcSectionedSpine || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcSectionedSpine::type() { return Type::IfcSectionedSpine; }
+bool IfcSectionedSpine::is(Type::Enum v) const { return v == Type::IfcSectionedSpine || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcSectionedSpine::type() const { return Type::IfcSectionedSpine; }
 Type::Enum IfcSectionedSpine::Class() { return Type::IfcSectionedSpine; }
 IfcSectionedSpine::IfcSectionedSpine(IfcAbstractEntityPtr e) { if (!is(Type::IfcSectionedSpine)) throw; entity = e; } 
 // IfcSensorType
 IfcSensorTypeEnum::IfcSensorTypeEnum IfcSensorType::PredefinedType() { return IfcSensorTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcSensorType::is(Type::Enum v) { return v == Type::IfcSensorType || IfcDistributionControlElementType::is(v); }
-Type::Enum IfcSensorType::type() { return Type::IfcSensorType; }
+bool IfcSensorType::is(Type::Enum v) const { return v == Type::IfcSensorType || IfcDistributionControlElementType::is(v); }
+Type::Enum IfcSensorType::type() const { return Type::IfcSensorType; }
 Type::Enum IfcSensorType::Class() { return Type::IfcSensorType; }
 IfcSensorType::IfcSensorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSensorType)) throw; entity = e; } 
 // IfcServiceLife
 IfcServiceLifeTypeEnum::IfcServiceLifeTypeEnum IfcServiceLife::ServiceLifeType() { return IfcServiceLifeTypeEnum::FromString(*entity->getArgument(5)); }
 IfcTimeMeasure IfcServiceLife::ServiceLifeDuration() { return *entity->getArgument(6); }
-bool IfcServiceLife::is(Type::Enum v) { return v == Type::IfcServiceLife || IfcControl::is(v); }
-Type::Enum IfcServiceLife::type() { return Type::IfcServiceLife; }
+bool IfcServiceLife::is(Type::Enum v) const { return v == Type::IfcServiceLife || IfcControl::is(v); }
+Type::Enum IfcServiceLife::type() const { return Type::IfcServiceLife; }
 Type::Enum IfcServiceLife::Class() { return Type::IfcServiceLife; }
 IfcServiceLife::IfcServiceLife(IfcAbstractEntityPtr e) { if (!is(Type::IfcServiceLife)) throw; entity = e; } 
 // IfcServiceLifeFactor
@@ -8760,8 +8767,8 @@ IfcMeasureValue IfcServiceLifeFactor::UpperValue() { return *entity->getArgument
 IfcMeasureValue IfcServiceLifeFactor::MostUsedValue() { return *entity->getArgument(6); }
 bool IfcServiceLifeFactor::hasLowerValue() { return !entity->getArgument(7)->isNull(); }
 IfcMeasureValue IfcServiceLifeFactor::LowerValue() { return *entity->getArgument(7); }
-bool IfcServiceLifeFactor::is(Type::Enum v) { return v == Type::IfcServiceLifeFactor || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcServiceLifeFactor::type() { return Type::IfcServiceLifeFactor; }
+bool IfcServiceLifeFactor::is(Type::Enum v) const { return v == Type::IfcServiceLifeFactor || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcServiceLifeFactor::type() const { return Type::IfcServiceLifeFactor; }
 Type::Enum IfcServiceLifeFactor::Class() { return Type::IfcServiceLifeFactor; }
 IfcServiceLifeFactor::IfcServiceLifeFactor(IfcAbstractEntityPtr e) { if (!is(Type::IfcServiceLifeFactor)) throw; entity = e; } 
 // IfcShapeAspect
@@ -8771,31 +8778,31 @@ IfcLabel IfcShapeAspect::Name() { return *entity->getArgument(1); }
 bool IfcShapeAspect::hasDescription() { return !entity->getArgument(2)->isNull(); }
 IfcText IfcShapeAspect::Description() { return *entity->getArgument(2); }
 bool IfcShapeAspect::ProductDefinitional() { return *entity->getArgument(3); }
-SHARED_PTR<IfcProductDefinitionShape> IfcShapeAspect::PartOfProductDefinitionShape() { return reinterpret_pointer_cast<IfcBaseClass,IfcProductDefinitionShape>(*entity->getArgument(4)); }
-bool IfcShapeAspect::is(Type::Enum v) { return v == Type::IfcShapeAspect; }
-Type::Enum IfcShapeAspect::type() { return Type::IfcShapeAspect; }
+IfcProductDefinitionShape* IfcShapeAspect::PartOfProductDefinitionShape() { return reinterpret_pointer_cast<IfcBaseClass,IfcProductDefinitionShape>(*entity->getArgument(4)); }
+bool IfcShapeAspect::is(Type::Enum v) const { return v == Type::IfcShapeAspect; }
+Type::Enum IfcShapeAspect::type() const { return Type::IfcShapeAspect; }
 Type::Enum IfcShapeAspect::Class() { return Type::IfcShapeAspect; }
 IfcShapeAspect::IfcShapeAspect(IfcAbstractEntityPtr e) { if (!is(Type::IfcShapeAspect)) throw; entity = e; } 
 // IfcShapeModel
 IfcShapeAspect::list IfcShapeModel::OfShapeAspect() { RETURN_INVERSE(IfcShapeAspect) }
-bool IfcShapeModel::is(Type::Enum v) { return v == Type::IfcShapeModel || IfcRepresentation::is(v); }
-Type::Enum IfcShapeModel::type() { return Type::IfcShapeModel; }
+bool IfcShapeModel::is(Type::Enum v) const { return v == Type::IfcShapeModel || IfcRepresentation::is(v); }
+Type::Enum IfcShapeModel::type() const { return Type::IfcShapeModel; }
 Type::Enum IfcShapeModel::Class() { return Type::IfcShapeModel; }
 IfcShapeModel::IfcShapeModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcShapeModel)) throw; entity = e; } 
 // IfcShapeRepresentation
-bool IfcShapeRepresentation::is(Type::Enum v) { return v == Type::IfcShapeRepresentation || IfcShapeModel::is(v); }
-Type::Enum IfcShapeRepresentation::type() { return Type::IfcShapeRepresentation; }
+bool IfcShapeRepresentation::is(Type::Enum v) const { return v == Type::IfcShapeRepresentation || IfcShapeModel::is(v); }
+Type::Enum IfcShapeRepresentation::type() const { return Type::IfcShapeRepresentation; }
 Type::Enum IfcShapeRepresentation::Class() { return Type::IfcShapeRepresentation; }
 IfcShapeRepresentation::IfcShapeRepresentation(IfcAbstractEntityPtr e) { if (!is(Type::IfcShapeRepresentation)) throw; entity = e; } 
 // IfcShellBasedSurfaceModel
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcShellBasedSurfaceModel::SbsmBoundary() { RETURN_AS_LIST(IfcAbstractSelect,0) }
-bool IfcShellBasedSurfaceModel::is(Type::Enum v) { return v == Type::IfcShellBasedSurfaceModel || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcShellBasedSurfaceModel::type() { return Type::IfcShellBasedSurfaceModel; }
+bool IfcShellBasedSurfaceModel::is(Type::Enum v) const { return v == Type::IfcShellBasedSurfaceModel || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcShellBasedSurfaceModel::type() const { return Type::IfcShellBasedSurfaceModel; }
 Type::Enum IfcShellBasedSurfaceModel::Class() { return Type::IfcShellBasedSurfaceModel; }
 IfcShellBasedSurfaceModel::IfcShellBasedSurfaceModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcShellBasedSurfaceModel)) throw; entity = e; } 
 // IfcSimpleProperty
-bool IfcSimpleProperty::is(Type::Enum v) { return v == Type::IfcSimpleProperty || IfcProperty::is(v); }
-Type::Enum IfcSimpleProperty::type() { return Type::IfcSimpleProperty; }
+bool IfcSimpleProperty::is(Type::Enum v) const { return v == Type::IfcSimpleProperty || IfcProperty::is(v); }
+Type::Enum IfcSimpleProperty::type() const { return Type::IfcSimpleProperty; }
 Type::Enum IfcSimpleProperty::Class() { return Type::IfcSimpleProperty; }
 IfcSimpleProperty::IfcSimpleProperty(IfcAbstractEntityPtr e) { if (!is(Type::IfcSimpleProperty)) throw; entity = e; } 
 // IfcSite
@@ -8808,22 +8815,22 @@ IfcLengthMeasure IfcSite::RefElevation() { return *entity->getArgument(11); }
 bool IfcSite::hasLandTitleNumber() { return !entity->getArgument(12)->isNull(); }
 IfcLabel IfcSite::LandTitleNumber() { return *entity->getArgument(12); }
 bool IfcSite::hasSiteAddress() { return !entity->getArgument(13)->isNull(); }
-SHARED_PTR<IfcPostalAddress> IfcSite::SiteAddress() { return reinterpret_pointer_cast<IfcBaseClass,IfcPostalAddress>(*entity->getArgument(13)); }
-bool IfcSite::is(Type::Enum v) { return v == Type::IfcSite || IfcSpatialStructureElement::is(v); }
-Type::Enum IfcSite::type() { return Type::IfcSite; }
+IfcPostalAddress* IfcSite::SiteAddress() { return reinterpret_pointer_cast<IfcBaseClass,IfcPostalAddress>(*entity->getArgument(13)); }
+bool IfcSite::is(Type::Enum v) const { return v == Type::IfcSite || IfcSpatialStructureElement::is(v); }
+Type::Enum IfcSite::type() const { return Type::IfcSite; }
 Type::Enum IfcSite::Class() { return Type::IfcSite; }
 IfcSite::IfcSite(IfcAbstractEntityPtr e) { if (!is(Type::IfcSite)) throw; entity = e; } 
 // IfcSlab
 bool IfcSlab::hasPredefinedType() { return !entity->getArgument(8)->isNull(); }
 IfcSlabTypeEnum::IfcSlabTypeEnum IfcSlab::PredefinedType() { return IfcSlabTypeEnum::FromString(*entity->getArgument(8)); }
-bool IfcSlab::is(Type::Enum v) { return v == Type::IfcSlab || IfcBuildingElement::is(v); }
-Type::Enum IfcSlab::type() { return Type::IfcSlab; }
+bool IfcSlab::is(Type::Enum v) const { return v == Type::IfcSlab || IfcBuildingElement::is(v); }
+Type::Enum IfcSlab::type() const { return Type::IfcSlab; }
 Type::Enum IfcSlab::Class() { return Type::IfcSlab; }
 IfcSlab::IfcSlab(IfcAbstractEntityPtr e) { if (!is(Type::IfcSlab)) throw; entity = e; } 
 // IfcSlabType
 IfcSlabTypeEnum::IfcSlabTypeEnum IfcSlabType::PredefinedType() { return IfcSlabTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcSlabType::is(Type::Enum v) { return v == Type::IfcSlabType || IfcBuildingElementType::is(v); }
-Type::Enum IfcSlabType::type() { return Type::IfcSlabType; }
+bool IfcSlabType::is(Type::Enum v) const { return v == Type::IfcSlabType || IfcBuildingElementType::is(v); }
+Type::Enum IfcSlabType::type() const { return Type::IfcSlabType; }
 Type::Enum IfcSlabType::Class() { return Type::IfcSlabType; }
 IfcSlabType::IfcSlabType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSlabType)) throw; entity = e; } 
 // IfcSlippageConnectionCondition
@@ -8833,13 +8840,13 @@ bool IfcSlippageConnectionCondition::hasSlippageY() { return !entity->getArgumen
 IfcLengthMeasure IfcSlippageConnectionCondition::SlippageY() { return *entity->getArgument(2); }
 bool IfcSlippageConnectionCondition::hasSlippageZ() { return !entity->getArgument(3)->isNull(); }
 IfcLengthMeasure IfcSlippageConnectionCondition::SlippageZ() { return *entity->getArgument(3); }
-bool IfcSlippageConnectionCondition::is(Type::Enum v) { return v == Type::IfcSlippageConnectionCondition || IfcStructuralConnectionCondition::is(v); }
-Type::Enum IfcSlippageConnectionCondition::type() { return Type::IfcSlippageConnectionCondition; }
+bool IfcSlippageConnectionCondition::is(Type::Enum v) const { return v == Type::IfcSlippageConnectionCondition || IfcStructuralConnectionCondition::is(v); }
+Type::Enum IfcSlippageConnectionCondition::type() const { return Type::IfcSlippageConnectionCondition; }
 Type::Enum IfcSlippageConnectionCondition::Class() { return Type::IfcSlippageConnectionCondition; }
 IfcSlippageConnectionCondition::IfcSlippageConnectionCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcSlippageConnectionCondition)) throw; entity = e; } 
 // IfcSolidModel
-bool IfcSolidModel::is(Type::Enum v) { return v == Type::IfcSolidModel || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcSolidModel::type() { return Type::IfcSolidModel; }
+bool IfcSolidModel::is(Type::Enum v) const { return v == Type::IfcSolidModel || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcSolidModel::type() const { return Type::IfcSolidModel; }
 Type::Enum IfcSolidModel::Class() { return Type::IfcSolidModel; }
 IfcSolidModel::IfcSolidModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcSolidModel)) throw; entity = e; } 
 // IfcSoundProperties
@@ -8847,18 +8854,18 @@ IfcBoolean IfcSoundProperties::IsAttenuating() { return *entity->getArgument(4);
 bool IfcSoundProperties::hasSoundScale() { return !entity->getArgument(5)->isNull(); }
 IfcSoundScaleEnum::IfcSoundScaleEnum IfcSoundProperties::SoundScale() { return IfcSoundScaleEnum::FromString(*entity->getArgument(5)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcSoundValue> > IfcSoundProperties::SoundValues() { RETURN_AS_LIST(IfcSoundValue,6) }
-bool IfcSoundProperties::is(Type::Enum v) { return v == Type::IfcSoundProperties || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcSoundProperties::type() { return Type::IfcSoundProperties; }
+bool IfcSoundProperties::is(Type::Enum v) const { return v == Type::IfcSoundProperties || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcSoundProperties::type() const { return Type::IfcSoundProperties; }
 Type::Enum IfcSoundProperties::Class() { return Type::IfcSoundProperties; }
 IfcSoundProperties::IfcSoundProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcSoundProperties)) throw; entity = e; } 
 // IfcSoundValue
 bool IfcSoundValue::hasSoundLevelTimeSeries() { return !entity->getArgument(4)->isNull(); }
-SHARED_PTR<IfcTimeSeries> IfcSoundValue::SoundLevelTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(4)); }
+IfcTimeSeries* IfcSoundValue::SoundLevelTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(4)); }
 IfcFrequencyMeasure IfcSoundValue::Frequency() { return *entity->getArgument(5); }
 bool IfcSoundValue::hasSoundLevelSingleValue() { return !entity->getArgument(6)->isNull(); }
 IfcDerivedMeasureValue IfcSoundValue::SoundLevelSingleValue() { return *entity->getArgument(6); }
-bool IfcSoundValue::is(Type::Enum v) { return v == Type::IfcSoundValue || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcSoundValue::type() { return Type::IfcSoundValue; }
+bool IfcSoundValue::is(Type::Enum v) const { return v == Type::IfcSoundValue || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcSoundValue::type() const { return Type::IfcSoundValue; }
 Type::Enum IfcSoundValue::Class() { return Type::IfcSoundValue; }
 IfcSoundValue::IfcSoundValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcSoundValue)) throw; entity = e; } 
 // IfcSpace
@@ -8867,14 +8874,14 @@ bool IfcSpace::hasElevationWithFlooring() { return !entity->getArgument(10)->isN
 IfcLengthMeasure IfcSpace::ElevationWithFlooring() { return *entity->getArgument(10); }
 IfcRelCoversSpaces::list IfcSpace::HasCoverings() { RETURN_INVERSE(IfcRelCoversSpaces) }
 IfcRelSpaceBoundary::list IfcSpace::BoundedBy() { RETURN_INVERSE(IfcRelSpaceBoundary) }
-bool IfcSpace::is(Type::Enum v) { return v == Type::IfcSpace || IfcSpatialStructureElement::is(v); }
-Type::Enum IfcSpace::type() { return Type::IfcSpace; }
+bool IfcSpace::is(Type::Enum v) const { return v == Type::IfcSpace || IfcSpatialStructureElement::is(v); }
+Type::Enum IfcSpace::type() const { return Type::IfcSpace; }
 Type::Enum IfcSpace::Class() { return Type::IfcSpace; }
 IfcSpace::IfcSpace(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpace)) throw; entity = e; } 
 // IfcSpaceHeaterType
 IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum IfcSpaceHeaterType::PredefinedType() { return IfcSpaceHeaterTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcSpaceHeaterType::is(Type::Enum v) { return v == Type::IfcSpaceHeaterType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcSpaceHeaterType::type() { return Type::IfcSpaceHeaterType; }
+bool IfcSpaceHeaterType::is(Type::Enum v) const { return v == Type::IfcSpaceHeaterType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcSpaceHeaterType::type() const { return Type::IfcSpaceHeaterType; }
 Type::Enum IfcSpaceHeaterType::Class() { return Type::IfcSpaceHeaterType; }
 IfcSpaceHeaterType::IfcSpaceHeaterType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpaceHeaterType)) throw; entity = e; } 
 // IfcSpaceProgram
@@ -8884,12 +8891,12 @@ IfcAreaMeasure IfcSpaceProgram::MaxRequiredArea() { return *entity->getArgument(
 bool IfcSpaceProgram::hasMinRequiredArea() { return !entity->getArgument(7)->isNull(); }
 IfcAreaMeasure IfcSpaceProgram::MinRequiredArea() { return *entity->getArgument(7); }
 bool IfcSpaceProgram::hasRequestedLocation() { return !entity->getArgument(8)->isNull(); }
-SHARED_PTR<IfcSpatialStructureElement> IfcSpaceProgram::RequestedLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(8)); }
+IfcSpatialStructureElement* IfcSpaceProgram::RequestedLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(8)); }
 IfcAreaMeasure IfcSpaceProgram::StandardRequiredArea() { return *entity->getArgument(9); }
 IfcRelInteractionRequirements::list IfcSpaceProgram::HasInteractionReqsFrom() { RETURN_INVERSE(IfcRelInteractionRequirements) }
 IfcRelInteractionRequirements::list IfcSpaceProgram::HasInteractionReqsTo() { RETURN_INVERSE(IfcRelInteractionRequirements) }
-bool IfcSpaceProgram::is(Type::Enum v) { return v == Type::IfcSpaceProgram || IfcControl::is(v); }
-Type::Enum IfcSpaceProgram::type() { return Type::IfcSpaceProgram; }
+bool IfcSpaceProgram::is(Type::Enum v) const { return v == Type::IfcSpaceProgram || IfcControl::is(v); }
+Type::Enum IfcSpaceProgram::type() const { return Type::IfcSpaceProgram; }
 Type::Enum IfcSpaceProgram::Class() { return Type::IfcSpaceProgram; }
 IfcSpaceProgram::IfcSpaceProgram(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpaceProgram)) throw; entity = e; } 
 // IfcSpaceThermalLoadProperties
@@ -8903,20 +8910,20 @@ IfcPowerMeasure IfcSpaceThermalLoadProperties::MaximumValue() { return *entity->
 bool IfcSpaceThermalLoadProperties::hasMinimumValue() { return !entity->getArgument(9)->isNull(); }
 IfcPowerMeasure IfcSpaceThermalLoadProperties::MinimumValue() { return *entity->getArgument(9); }
 bool IfcSpaceThermalLoadProperties::hasThermalLoadTimeSeriesValues() { return !entity->getArgument(10)->isNull(); }
-SHARED_PTR<IfcTimeSeries> IfcSpaceThermalLoadProperties::ThermalLoadTimeSeriesValues() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(10)); }
+IfcTimeSeries* IfcSpaceThermalLoadProperties::ThermalLoadTimeSeriesValues() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(10)); }
 bool IfcSpaceThermalLoadProperties::hasUserDefinedThermalLoadSource() { return !entity->getArgument(11)->isNull(); }
 IfcLabel IfcSpaceThermalLoadProperties::UserDefinedThermalLoadSource() { return *entity->getArgument(11); }
 bool IfcSpaceThermalLoadProperties::hasUserDefinedPropertySource() { return !entity->getArgument(12)->isNull(); }
 IfcLabel IfcSpaceThermalLoadProperties::UserDefinedPropertySource() { return *entity->getArgument(12); }
 IfcThermalLoadTypeEnum::IfcThermalLoadTypeEnum IfcSpaceThermalLoadProperties::ThermalLoadType() { return IfcThermalLoadTypeEnum::FromString(*entity->getArgument(13)); }
-bool IfcSpaceThermalLoadProperties::is(Type::Enum v) { return v == Type::IfcSpaceThermalLoadProperties || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcSpaceThermalLoadProperties::type() { return Type::IfcSpaceThermalLoadProperties; }
+bool IfcSpaceThermalLoadProperties::is(Type::Enum v) const { return v == Type::IfcSpaceThermalLoadProperties || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcSpaceThermalLoadProperties::type() const { return Type::IfcSpaceThermalLoadProperties; }
 Type::Enum IfcSpaceThermalLoadProperties::Class() { return Type::IfcSpaceThermalLoadProperties; }
 IfcSpaceThermalLoadProperties::IfcSpaceThermalLoadProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpaceThermalLoadProperties)) throw; entity = e; } 
 // IfcSpaceType
 IfcSpaceTypeEnum::IfcSpaceTypeEnum IfcSpaceType::PredefinedType() { return IfcSpaceTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcSpaceType::is(Type::Enum v) { return v == Type::IfcSpaceType || IfcSpatialStructureElementType::is(v); }
-Type::Enum IfcSpaceType::type() { return Type::IfcSpaceType; }
+bool IfcSpaceType::is(Type::Enum v) const { return v == Type::IfcSpaceType || IfcSpatialStructureElementType::is(v); }
+Type::Enum IfcSpaceType::type() const { return Type::IfcSpaceType; }
 Type::Enum IfcSpaceType::Class() { return Type::IfcSpaceType; }
 IfcSpaceType::IfcSpaceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpaceType)) throw; entity = e; } 
 // IfcSpatialStructureElement
@@ -8926,31 +8933,31 @@ IfcElementCompositionEnum::IfcElementCompositionEnum IfcSpatialStructureElement:
 IfcRelReferencedInSpatialStructure::list IfcSpatialStructureElement::ReferencesElements() { RETURN_INVERSE(IfcRelReferencedInSpatialStructure) }
 IfcRelServicesBuildings::list IfcSpatialStructureElement::ServicedBySystems() { RETURN_INVERSE(IfcRelServicesBuildings) }
 IfcRelContainedInSpatialStructure::list IfcSpatialStructureElement::ContainsElements() { RETURN_INVERSE(IfcRelContainedInSpatialStructure) }
-bool IfcSpatialStructureElement::is(Type::Enum v) { return v == Type::IfcSpatialStructureElement || IfcProduct::is(v); }
-Type::Enum IfcSpatialStructureElement::type() { return Type::IfcSpatialStructureElement; }
+bool IfcSpatialStructureElement::is(Type::Enum v) const { return v == Type::IfcSpatialStructureElement || IfcProduct::is(v); }
+Type::Enum IfcSpatialStructureElement::type() const { return Type::IfcSpatialStructureElement; }
 Type::Enum IfcSpatialStructureElement::Class() { return Type::IfcSpatialStructureElement; }
 IfcSpatialStructureElement::IfcSpatialStructureElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpatialStructureElement)) throw; entity = e; } 
 // IfcSpatialStructureElementType
-bool IfcSpatialStructureElementType::is(Type::Enum v) { return v == Type::IfcSpatialStructureElementType || IfcElementType::is(v); }
-Type::Enum IfcSpatialStructureElementType::type() { return Type::IfcSpatialStructureElementType; }
+bool IfcSpatialStructureElementType::is(Type::Enum v) const { return v == Type::IfcSpatialStructureElementType || IfcElementType::is(v); }
+Type::Enum IfcSpatialStructureElementType::type() const { return Type::IfcSpatialStructureElementType; }
 Type::Enum IfcSpatialStructureElementType::Class() { return Type::IfcSpatialStructureElementType; }
 IfcSpatialStructureElementType::IfcSpatialStructureElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpatialStructureElementType)) throw; entity = e; } 
 // IfcSphere
 IfcPositiveLengthMeasure IfcSphere::Radius() { return *entity->getArgument(1); }
-bool IfcSphere::is(Type::Enum v) { return v == Type::IfcSphere || IfcCsgPrimitive3D::is(v); }
-Type::Enum IfcSphere::type() { return Type::IfcSphere; }
+bool IfcSphere::is(Type::Enum v) const { return v == Type::IfcSphere || IfcCsgPrimitive3D::is(v); }
+Type::Enum IfcSphere::type() const { return Type::IfcSphere; }
 Type::Enum IfcSphere::Class() { return Type::IfcSphere; }
 IfcSphere::IfcSphere(IfcAbstractEntityPtr e) { if (!is(Type::IfcSphere)) throw; entity = e; } 
 // IfcStackTerminalType
 IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum IfcStackTerminalType::PredefinedType() { return IfcStackTerminalTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcStackTerminalType::is(Type::Enum v) { return v == Type::IfcStackTerminalType || IfcFlowTerminalType::is(v); }
-Type::Enum IfcStackTerminalType::type() { return Type::IfcStackTerminalType; }
+bool IfcStackTerminalType::is(Type::Enum v) const { return v == Type::IfcStackTerminalType || IfcFlowTerminalType::is(v); }
+Type::Enum IfcStackTerminalType::type() const { return Type::IfcStackTerminalType; }
 Type::Enum IfcStackTerminalType::Class() { return Type::IfcStackTerminalType; }
 IfcStackTerminalType::IfcStackTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcStackTerminalType)) throw; entity = e; } 
 // IfcStair
 IfcStairTypeEnum::IfcStairTypeEnum IfcStair::ShapeType() { return IfcStairTypeEnum::FromString(*entity->getArgument(8)); }
-bool IfcStair::is(Type::Enum v) { return v == Type::IfcStair || IfcBuildingElement::is(v); }
-Type::Enum IfcStair::type() { return Type::IfcStair; }
+bool IfcStair::is(Type::Enum v) const { return v == Type::IfcStair || IfcBuildingElement::is(v); }
+Type::Enum IfcStair::type() const { return Type::IfcStair; }
 Type::Enum IfcStair::Class() { return Type::IfcStair; }
 IfcStair::IfcStair(IfcAbstractEntityPtr e) { if (!is(Type::IfcStair)) throw; entity = e; } 
 // IfcStairFlight
@@ -8962,99 +8969,99 @@ bool IfcStairFlight::hasRiserHeight() { return !entity->getArgument(10)->isNull(
 IfcPositiveLengthMeasure IfcStairFlight::RiserHeight() { return *entity->getArgument(10); }
 bool IfcStairFlight::hasTreadLength() { return !entity->getArgument(11)->isNull(); }
 IfcPositiveLengthMeasure IfcStairFlight::TreadLength() { return *entity->getArgument(11); }
-bool IfcStairFlight::is(Type::Enum v) { return v == Type::IfcStairFlight || IfcBuildingElement::is(v); }
-Type::Enum IfcStairFlight::type() { return Type::IfcStairFlight; }
+bool IfcStairFlight::is(Type::Enum v) const { return v == Type::IfcStairFlight || IfcBuildingElement::is(v); }
+Type::Enum IfcStairFlight::type() const { return Type::IfcStairFlight; }
 Type::Enum IfcStairFlight::Class() { return Type::IfcStairFlight; }
 IfcStairFlight::IfcStairFlight(IfcAbstractEntityPtr e) { if (!is(Type::IfcStairFlight)) throw; entity = e; } 
 // IfcStairFlightType
 IfcStairFlightTypeEnum::IfcStairFlightTypeEnum IfcStairFlightType::PredefinedType() { return IfcStairFlightTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcStairFlightType::is(Type::Enum v) { return v == Type::IfcStairFlightType || IfcBuildingElementType::is(v); }
-Type::Enum IfcStairFlightType::type() { return Type::IfcStairFlightType; }
+bool IfcStairFlightType::is(Type::Enum v) const { return v == Type::IfcStairFlightType || IfcBuildingElementType::is(v); }
+Type::Enum IfcStairFlightType::type() const { return Type::IfcStairFlightType; }
 Type::Enum IfcStairFlightType::Class() { return Type::IfcStairFlightType; }
 IfcStairFlightType::IfcStairFlightType(IfcAbstractEntityPtr e) { if (!is(Type::IfcStairFlightType)) throw; entity = e; } 
 // IfcStructuralAction
 bool IfcStructuralAction::DestabilizingLoad() { return *entity->getArgument(9); }
 bool IfcStructuralAction::hasCausedBy() { return !entity->getArgument(10)->isNull(); }
-SHARED_PTR<IfcStructuralReaction> IfcStructuralAction::CausedBy() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralReaction>(*entity->getArgument(10)); }
-bool IfcStructuralAction::is(Type::Enum v) { return v == Type::IfcStructuralAction || IfcStructuralActivity::is(v); }
-Type::Enum IfcStructuralAction::type() { return Type::IfcStructuralAction; }
+IfcStructuralReaction* IfcStructuralAction::CausedBy() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralReaction>(*entity->getArgument(10)); }
+bool IfcStructuralAction::is(Type::Enum v) const { return v == Type::IfcStructuralAction || IfcStructuralActivity::is(v); }
+Type::Enum IfcStructuralAction::type() const { return Type::IfcStructuralAction; }
 Type::Enum IfcStructuralAction::Class() { return Type::IfcStructuralAction; }
 IfcStructuralAction::IfcStructuralAction(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralAction)) throw; entity = e; } 
 // IfcStructuralActivity
-SHARED_PTR<IfcStructuralLoad> IfcStructuralActivity::AppliedLoad() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralLoad>(*entity->getArgument(7)); }
+IfcStructuralLoad* IfcStructuralActivity::AppliedLoad() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralLoad>(*entity->getArgument(7)); }
 IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum IfcStructuralActivity::GlobalOrLocal() { return IfcGlobalOrLocalEnum::FromString(*entity->getArgument(8)); }
 IfcRelConnectsStructuralActivity::list IfcStructuralActivity::AssignedToStructuralItem() { RETURN_INVERSE(IfcRelConnectsStructuralActivity) }
-bool IfcStructuralActivity::is(Type::Enum v) { return v == Type::IfcStructuralActivity || IfcProduct::is(v); }
-Type::Enum IfcStructuralActivity::type() { return Type::IfcStructuralActivity; }
+bool IfcStructuralActivity::is(Type::Enum v) const { return v == Type::IfcStructuralActivity || IfcProduct::is(v); }
+Type::Enum IfcStructuralActivity::type() const { return Type::IfcStructuralActivity; }
 Type::Enum IfcStructuralActivity::Class() { return Type::IfcStructuralActivity; }
 IfcStructuralActivity::IfcStructuralActivity(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralActivity)) throw; entity = e; } 
 // IfcStructuralAnalysisModel
 IfcAnalysisModelTypeEnum::IfcAnalysisModelTypeEnum IfcStructuralAnalysisModel::PredefinedType() { return IfcAnalysisModelTypeEnum::FromString(*entity->getArgument(5)); }
 bool IfcStructuralAnalysisModel::hasOrientationOf2DPlane() { return !entity->getArgument(6)->isNull(); }
-SHARED_PTR<IfcAxis2Placement3D> IfcStructuralAnalysisModel::OrientationOf2DPlane() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(6)); }
+IfcAxis2Placement3D* IfcStructuralAnalysisModel::OrientationOf2DPlane() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(6)); }
 bool IfcStructuralAnalysisModel::hasLoadedBy() { return !entity->getArgument(7)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadGroup> > IfcStructuralAnalysisModel::LoadedBy() { RETURN_AS_LIST(IfcStructuralLoadGroup,7) }
 bool IfcStructuralAnalysisModel::hasHasResults() { return !entity->getArgument(8)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcStructuralResultGroup> > IfcStructuralAnalysisModel::HasResults() { RETURN_AS_LIST(IfcStructuralResultGroup,8) }
-bool IfcStructuralAnalysisModel::is(Type::Enum v) { return v == Type::IfcStructuralAnalysisModel || IfcSystem::is(v); }
-Type::Enum IfcStructuralAnalysisModel::type() { return Type::IfcStructuralAnalysisModel; }
+bool IfcStructuralAnalysisModel::is(Type::Enum v) const { return v == Type::IfcStructuralAnalysisModel || IfcSystem::is(v); }
+Type::Enum IfcStructuralAnalysisModel::type() const { return Type::IfcStructuralAnalysisModel; }
 Type::Enum IfcStructuralAnalysisModel::Class() { return Type::IfcStructuralAnalysisModel; }
 IfcStructuralAnalysisModel::IfcStructuralAnalysisModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralAnalysisModel)) throw; entity = e; } 
 // IfcStructuralConnection
 bool IfcStructuralConnection::hasAppliedCondition() { return !entity->getArgument(7)->isNull(); }
-SHARED_PTR<IfcBoundaryCondition> IfcStructuralConnection::AppliedCondition() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundaryCondition>(*entity->getArgument(7)); }
+IfcBoundaryCondition* IfcStructuralConnection::AppliedCondition() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundaryCondition>(*entity->getArgument(7)); }
 IfcRelConnectsStructuralMember::list IfcStructuralConnection::ConnectsStructuralMembers() { RETURN_INVERSE(IfcRelConnectsStructuralMember) }
-bool IfcStructuralConnection::is(Type::Enum v) { return v == Type::IfcStructuralConnection || IfcStructuralItem::is(v); }
-Type::Enum IfcStructuralConnection::type() { return Type::IfcStructuralConnection; }
+bool IfcStructuralConnection::is(Type::Enum v) const { return v == Type::IfcStructuralConnection || IfcStructuralItem::is(v); }
+Type::Enum IfcStructuralConnection::type() const { return Type::IfcStructuralConnection; }
 Type::Enum IfcStructuralConnection::Class() { return Type::IfcStructuralConnection; }
 IfcStructuralConnection::IfcStructuralConnection(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralConnection)) throw; entity = e; } 
 // IfcStructuralConnectionCondition
 bool IfcStructuralConnectionCondition::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcStructuralConnectionCondition::Name() { return *entity->getArgument(0); }
-bool IfcStructuralConnectionCondition::is(Type::Enum v) { return v == Type::IfcStructuralConnectionCondition; }
-Type::Enum IfcStructuralConnectionCondition::type() { return Type::IfcStructuralConnectionCondition; }
+bool IfcStructuralConnectionCondition::is(Type::Enum v) const { return v == Type::IfcStructuralConnectionCondition; }
+Type::Enum IfcStructuralConnectionCondition::type() const { return Type::IfcStructuralConnectionCondition; }
 Type::Enum IfcStructuralConnectionCondition::Class() { return Type::IfcStructuralConnectionCondition; }
 IfcStructuralConnectionCondition::IfcStructuralConnectionCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralConnectionCondition)) throw; entity = e; } 
 // IfcStructuralCurveConnection
-bool IfcStructuralCurveConnection::is(Type::Enum v) { return v == Type::IfcStructuralCurveConnection || IfcStructuralConnection::is(v); }
-Type::Enum IfcStructuralCurveConnection::type() { return Type::IfcStructuralCurveConnection; }
+bool IfcStructuralCurveConnection::is(Type::Enum v) const { return v == Type::IfcStructuralCurveConnection || IfcStructuralConnection::is(v); }
+Type::Enum IfcStructuralCurveConnection::type() const { return Type::IfcStructuralCurveConnection; }
 Type::Enum IfcStructuralCurveConnection::Class() { return Type::IfcStructuralCurveConnection; }
 IfcStructuralCurveConnection::IfcStructuralCurveConnection(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralCurveConnection)) throw; entity = e; } 
 // IfcStructuralCurveMember
 IfcStructuralCurveTypeEnum::IfcStructuralCurveTypeEnum IfcStructuralCurveMember::PredefinedType() { return IfcStructuralCurveTypeEnum::FromString(*entity->getArgument(7)); }
-bool IfcStructuralCurveMember::is(Type::Enum v) { return v == Type::IfcStructuralCurveMember || IfcStructuralMember::is(v); }
-Type::Enum IfcStructuralCurveMember::type() { return Type::IfcStructuralCurveMember; }
+bool IfcStructuralCurveMember::is(Type::Enum v) const { return v == Type::IfcStructuralCurveMember || IfcStructuralMember::is(v); }
+Type::Enum IfcStructuralCurveMember::type() const { return Type::IfcStructuralCurveMember; }
 Type::Enum IfcStructuralCurveMember::Class() { return Type::IfcStructuralCurveMember; }
 IfcStructuralCurveMember::IfcStructuralCurveMember(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralCurveMember)) throw; entity = e; } 
 // IfcStructuralCurveMemberVarying
-bool IfcStructuralCurveMemberVarying::is(Type::Enum v) { return v == Type::IfcStructuralCurveMemberVarying || IfcStructuralCurveMember::is(v); }
-Type::Enum IfcStructuralCurveMemberVarying::type() { return Type::IfcStructuralCurveMemberVarying; }
+bool IfcStructuralCurveMemberVarying::is(Type::Enum v) const { return v == Type::IfcStructuralCurveMemberVarying || IfcStructuralCurveMember::is(v); }
+Type::Enum IfcStructuralCurveMemberVarying::type() const { return Type::IfcStructuralCurveMemberVarying; }
 Type::Enum IfcStructuralCurveMemberVarying::Class() { return Type::IfcStructuralCurveMemberVarying; }
 IfcStructuralCurveMemberVarying::IfcStructuralCurveMemberVarying(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralCurveMemberVarying)) throw; entity = e; } 
 // IfcStructuralItem
 IfcRelConnectsStructuralActivity::list IfcStructuralItem::AssignedStructuralActivity() { RETURN_INVERSE(IfcRelConnectsStructuralActivity) }
-bool IfcStructuralItem::is(Type::Enum v) { return v == Type::IfcStructuralItem || IfcProduct::is(v); }
-Type::Enum IfcStructuralItem::type() { return Type::IfcStructuralItem; }
+bool IfcStructuralItem::is(Type::Enum v) const { return v == Type::IfcStructuralItem || IfcProduct::is(v); }
+Type::Enum IfcStructuralItem::type() const { return Type::IfcStructuralItem; }
 Type::Enum IfcStructuralItem::Class() { return Type::IfcStructuralItem; }
 IfcStructuralItem::IfcStructuralItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralItem)) throw; entity = e; } 
 // IfcStructuralLinearAction
 IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum IfcStructuralLinearAction::ProjectedOrTrue() { return IfcProjectedOrTrueLengthEnum::FromString(*entity->getArgument(11)); }
-bool IfcStructuralLinearAction::is(Type::Enum v) { return v == Type::IfcStructuralLinearAction || IfcStructuralAction::is(v); }
-Type::Enum IfcStructuralLinearAction::type() { return Type::IfcStructuralLinearAction; }
+bool IfcStructuralLinearAction::is(Type::Enum v) const { return v == Type::IfcStructuralLinearAction || IfcStructuralAction::is(v); }
+Type::Enum IfcStructuralLinearAction::type() const { return Type::IfcStructuralLinearAction; }
 Type::Enum IfcStructuralLinearAction::Class() { return Type::IfcStructuralLinearAction; }
 IfcStructuralLinearAction::IfcStructuralLinearAction(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLinearAction)) throw; entity = e; } 
 // IfcStructuralLinearActionVarying
-SHARED_PTR<IfcShapeAspect> IfcStructuralLinearActionVarying::VaryingAppliedLoadLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(12)); }
+IfcShapeAspect* IfcStructuralLinearActionVarying::VaryingAppliedLoadLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(12)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoad> > IfcStructuralLinearActionVarying::SubsequentAppliedLoads() { RETURN_AS_LIST(IfcStructuralLoad,13) }
-bool IfcStructuralLinearActionVarying::is(Type::Enum v) { return v == Type::IfcStructuralLinearActionVarying || IfcStructuralLinearAction::is(v); }
-Type::Enum IfcStructuralLinearActionVarying::type() { return Type::IfcStructuralLinearActionVarying; }
+bool IfcStructuralLinearActionVarying::is(Type::Enum v) const { return v == Type::IfcStructuralLinearActionVarying || IfcStructuralLinearAction::is(v); }
+Type::Enum IfcStructuralLinearActionVarying::type() const { return Type::IfcStructuralLinearActionVarying; }
 Type::Enum IfcStructuralLinearActionVarying::Class() { return Type::IfcStructuralLinearActionVarying; }
 IfcStructuralLinearActionVarying::IfcStructuralLinearActionVarying(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLinearActionVarying)) throw; entity = e; } 
 // IfcStructuralLoad
 bool IfcStructuralLoad::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcStructuralLoad::Name() { return *entity->getArgument(0); }
-bool IfcStructuralLoad::is(Type::Enum v) { return v == Type::IfcStructuralLoad; }
-Type::Enum IfcStructuralLoad::type() { return Type::IfcStructuralLoad; }
+bool IfcStructuralLoad::is(Type::Enum v) const { return v == Type::IfcStructuralLoad; }
+Type::Enum IfcStructuralLoad::type() const { return Type::IfcStructuralLoad; }
 Type::Enum IfcStructuralLoad::Class() { return Type::IfcStructuralLoad; }
 IfcStructuralLoad::IfcStructuralLoad(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoad)) throw; entity = e; } 
 // IfcStructuralLoadGroup
@@ -9067,8 +9074,8 @@ bool IfcStructuralLoadGroup::hasPurpose() { return !entity->getArgument(9)->isNu
 IfcLabel IfcStructuralLoadGroup::Purpose() { return *entity->getArgument(9); }
 IfcStructuralResultGroup::list IfcStructuralLoadGroup::SourceOfResultGroup() { RETURN_INVERSE(IfcStructuralResultGroup) }
 IfcStructuralAnalysisModel::list IfcStructuralLoadGroup::LoadGroupFor() { RETURN_INVERSE(IfcStructuralAnalysisModel) }
-bool IfcStructuralLoadGroup::is(Type::Enum v) { return v == Type::IfcStructuralLoadGroup || IfcGroup::is(v); }
-Type::Enum IfcStructuralLoadGroup::type() { return Type::IfcStructuralLoadGroup; }
+bool IfcStructuralLoadGroup::is(Type::Enum v) const { return v == Type::IfcStructuralLoadGroup || IfcGroup::is(v); }
+Type::Enum IfcStructuralLoadGroup::type() const { return Type::IfcStructuralLoadGroup; }
 Type::Enum IfcStructuralLoadGroup::Class() { return Type::IfcStructuralLoadGroup; }
 IfcStructuralLoadGroup::IfcStructuralLoadGroup(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadGroup)) throw; entity = e; } 
 // IfcStructuralLoadLinearForce
@@ -9084,8 +9091,8 @@ bool IfcStructuralLoadLinearForce::hasLinearMomentY() { return !entity->getArgum
 IfcLinearMomentMeasure IfcStructuralLoadLinearForce::LinearMomentY() { return *entity->getArgument(5); }
 bool IfcStructuralLoadLinearForce::hasLinearMomentZ() { return !entity->getArgument(6)->isNull(); }
 IfcLinearMomentMeasure IfcStructuralLoadLinearForce::LinearMomentZ() { return *entity->getArgument(6); }
-bool IfcStructuralLoadLinearForce::is(Type::Enum v) { return v == Type::IfcStructuralLoadLinearForce || IfcStructuralLoadStatic::is(v); }
-Type::Enum IfcStructuralLoadLinearForce::type() { return Type::IfcStructuralLoadLinearForce; }
+bool IfcStructuralLoadLinearForce::is(Type::Enum v) const { return v == Type::IfcStructuralLoadLinearForce || IfcStructuralLoadStatic::is(v); }
+Type::Enum IfcStructuralLoadLinearForce::type() const { return Type::IfcStructuralLoadLinearForce; }
 Type::Enum IfcStructuralLoadLinearForce::Class() { return Type::IfcStructuralLoadLinearForce; }
 IfcStructuralLoadLinearForce::IfcStructuralLoadLinearForce(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadLinearForce)) throw; entity = e; } 
 // IfcStructuralLoadPlanarForce
@@ -9095,8 +9102,8 @@ bool IfcStructuralLoadPlanarForce::hasPlanarForceY() { return !entity->getArgume
 IfcPlanarForceMeasure IfcStructuralLoadPlanarForce::PlanarForceY() { return *entity->getArgument(2); }
 bool IfcStructuralLoadPlanarForce::hasPlanarForceZ() { return !entity->getArgument(3)->isNull(); }
 IfcPlanarForceMeasure IfcStructuralLoadPlanarForce::PlanarForceZ() { return *entity->getArgument(3); }
-bool IfcStructuralLoadPlanarForce::is(Type::Enum v) { return v == Type::IfcStructuralLoadPlanarForce || IfcStructuralLoadStatic::is(v); }
-Type::Enum IfcStructuralLoadPlanarForce::type() { return Type::IfcStructuralLoadPlanarForce; }
+bool IfcStructuralLoadPlanarForce::is(Type::Enum v) const { return v == Type::IfcStructuralLoadPlanarForce || IfcStructuralLoadStatic::is(v); }
+Type::Enum IfcStructuralLoadPlanarForce::type() const { return Type::IfcStructuralLoadPlanarForce; }
 Type::Enum IfcStructuralLoadPlanarForce::Class() { return Type::IfcStructuralLoadPlanarForce; }
 IfcStructuralLoadPlanarForce::IfcStructuralLoadPlanarForce(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadPlanarForce)) throw; entity = e; } 
 // IfcStructuralLoadSingleDisplacement
@@ -9112,15 +9119,15 @@ bool IfcStructuralLoadSingleDisplacement::hasRotationalDisplacementRY() { return
 IfcPlaneAngleMeasure IfcStructuralLoadSingleDisplacement::RotationalDisplacementRY() { return *entity->getArgument(5); }
 bool IfcStructuralLoadSingleDisplacement::hasRotationalDisplacementRZ() { return !entity->getArgument(6)->isNull(); }
 IfcPlaneAngleMeasure IfcStructuralLoadSingleDisplacement::RotationalDisplacementRZ() { return *entity->getArgument(6); }
-bool IfcStructuralLoadSingleDisplacement::is(Type::Enum v) { return v == Type::IfcStructuralLoadSingleDisplacement || IfcStructuralLoadStatic::is(v); }
-Type::Enum IfcStructuralLoadSingleDisplacement::type() { return Type::IfcStructuralLoadSingleDisplacement; }
+bool IfcStructuralLoadSingleDisplacement::is(Type::Enum v) const { return v == Type::IfcStructuralLoadSingleDisplacement || IfcStructuralLoadStatic::is(v); }
+Type::Enum IfcStructuralLoadSingleDisplacement::type() const { return Type::IfcStructuralLoadSingleDisplacement; }
 Type::Enum IfcStructuralLoadSingleDisplacement::Class() { return Type::IfcStructuralLoadSingleDisplacement; }
 IfcStructuralLoadSingleDisplacement::IfcStructuralLoadSingleDisplacement(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadSingleDisplacement)) throw; entity = e; } 
 // IfcStructuralLoadSingleDisplacementDistortion
 bool IfcStructuralLoadSingleDisplacementDistortion::hasDistortion() { return !entity->getArgument(7)->isNull(); }
 IfcCurvatureMeasure IfcStructuralLoadSingleDisplacementDistortion::Distortion() { return *entity->getArgument(7); }
-bool IfcStructuralLoadSingleDisplacementDistortion::is(Type::Enum v) { return v == Type::IfcStructuralLoadSingleDisplacementDistortion || IfcStructuralLoadSingleDisplacement::is(v); }
-Type::Enum IfcStructuralLoadSingleDisplacementDistortion::type() { return Type::IfcStructuralLoadSingleDisplacementDistortion; }
+bool IfcStructuralLoadSingleDisplacementDistortion::is(Type::Enum v) const { return v == Type::IfcStructuralLoadSingleDisplacementDistortion || IfcStructuralLoadSingleDisplacement::is(v); }
+Type::Enum IfcStructuralLoadSingleDisplacementDistortion::type() const { return Type::IfcStructuralLoadSingleDisplacementDistortion; }
 Type::Enum IfcStructuralLoadSingleDisplacementDistortion::Class() { return Type::IfcStructuralLoadSingleDisplacementDistortion; }
 IfcStructuralLoadSingleDisplacementDistortion::IfcStructuralLoadSingleDisplacementDistortion(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadSingleDisplacementDistortion)) throw; entity = e; } 
 // IfcStructuralLoadSingleForce
@@ -9136,20 +9143,20 @@ bool IfcStructuralLoadSingleForce::hasMomentY() { return !entity->getArgument(5)
 IfcTorqueMeasure IfcStructuralLoadSingleForce::MomentY() { return *entity->getArgument(5); }
 bool IfcStructuralLoadSingleForce::hasMomentZ() { return !entity->getArgument(6)->isNull(); }
 IfcTorqueMeasure IfcStructuralLoadSingleForce::MomentZ() { return *entity->getArgument(6); }
-bool IfcStructuralLoadSingleForce::is(Type::Enum v) { return v == Type::IfcStructuralLoadSingleForce || IfcStructuralLoadStatic::is(v); }
-Type::Enum IfcStructuralLoadSingleForce::type() { return Type::IfcStructuralLoadSingleForce; }
+bool IfcStructuralLoadSingleForce::is(Type::Enum v) const { return v == Type::IfcStructuralLoadSingleForce || IfcStructuralLoadStatic::is(v); }
+Type::Enum IfcStructuralLoadSingleForce::type() const { return Type::IfcStructuralLoadSingleForce; }
 Type::Enum IfcStructuralLoadSingleForce::Class() { return Type::IfcStructuralLoadSingleForce; }
 IfcStructuralLoadSingleForce::IfcStructuralLoadSingleForce(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadSingleForce)) throw; entity = e; } 
 // IfcStructuralLoadSingleForceWarping
 bool IfcStructuralLoadSingleForceWarping::hasWarpingMoment() { return !entity->getArgument(7)->isNull(); }
 IfcWarpingMomentMeasure IfcStructuralLoadSingleForceWarping::WarpingMoment() { return *entity->getArgument(7); }
-bool IfcStructuralLoadSingleForceWarping::is(Type::Enum v) { return v == Type::IfcStructuralLoadSingleForceWarping || IfcStructuralLoadSingleForce::is(v); }
-Type::Enum IfcStructuralLoadSingleForceWarping::type() { return Type::IfcStructuralLoadSingleForceWarping; }
+bool IfcStructuralLoadSingleForceWarping::is(Type::Enum v) const { return v == Type::IfcStructuralLoadSingleForceWarping || IfcStructuralLoadSingleForce::is(v); }
+Type::Enum IfcStructuralLoadSingleForceWarping::type() const { return Type::IfcStructuralLoadSingleForceWarping; }
 Type::Enum IfcStructuralLoadSingleForceWarping::Class() { return Type::IfcStructuralLoadSingleForceWarping; }
 IfcStructuralLoadSingleForceWarping::IfcStructuralLoadSingleForceWarping(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadSingleForceWarping)) throw; entity = e; } 
 // IfcStructuralLoadStatic
-bool IfcStructuralLoadStatic::is(Type::Enum v) { return v == Type::IfcStructuralLoadStatic || IfcStructuralLoad::is(v); }
-Type::Enum IfcStructuralLoadStatic::type() { return Type::IfcStructuralLoadStatic; }
+bool IfcStructuralLoadStatic::is(Type::Enum v) const { return v == Type::IfcStructuralLoadStatic || IfcStructuralLoad::is(v); }
+Type::Enum IfcStructuralLoadStatic::type() const { return Type::IfcStructuralLoadStatic; }
 Type::Enum IfcStructuralLoadStatic::Class() { return Type::IfcStructuralLoadStatic; }
 IfcStructuralLoadStatic::IfcStructuralLoadStatic(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadStatic)) throw; entity = e; } 
 // IfcStructuralLoadTemperature
@@ -9159,43 +9166,43 @@ bool IfcStructuralLoadTemperature::hasDeltaT_Y() { return !entity->getArgument(2
 IfcThermodynamicTemperatureMeasure IfcStructuralLoadTemperature::DeltaT_Y() { return *entity->getArgument(2); }
 bool IfcStructuralLoadTemperature::hasDeltaT_Z() { return !entity->getArgument(3)->isNull(); }
 IfcThermodynamicTemperatureMeasure IfcStructuralLoadTemperature::DeltaT_Z() { return *entity->getArgument(3); }
-bool IfcStructuralLoadTemperature::is(Type::Enum v) { return v == Type::IfcStructuralLoadTemperature || IfcStructuralLoadStatic::is(v); }
-Type::Enum IfcStructuralLoadTemperature::type() { return Type::IfcStructuralLoadTemperature; }
+bool IfcStructuralLoadTemperature::is(Type::Enum v) const { return v == Type::IfcStructuralLoadTemperature || IfcStructuralLoadStatic::is(v); }
+Type::Enum IfcStructuralLoadTemperature::type() const { return Type::IfcStructuralLoadTemperature; }
 Type::Enum IfcStructuralLoadTemperature::Class() { return Type::IfcStructuralLoadTemperature; }
 IfcStructuralLoadTemperature::IfcStructuralLoadTemperature(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadTemperature)) throw; entity = e; } 
 // IfcStructuralMember
 IfcRelConnectsStructuralElement::list IfcStructuralMember::ReferencesElement() { RETURN_INVERSE(IfcRelConnectsStructuralElement) }
 IfcRelConnectsStructuralMember::list IfcStructuralMember::ConnectedBy() { RETURN_INVERSE(IfcRelConnectsStructuralMember) }
-bool IfcStructuralMember::is(Type::Enum v) { return v == Type::IfcStructuralMember || IfcStructuralItem::is(v); }
-Type::Enum IfcStructuralMember::type() { return Type::IfcStructuralMember; }
+bool IfcStructuralMember::is(Type::Enum v) const { return v == Type::IfcStructuralMember || IfcStructuralItem::is(v); }
+Type::Enum IfcStructuralMember::type() const { return Type::IfcStructuralMember; }
 Type::Enum IfcStructuralMember::Class() { return Type::IfcStructuralMember; }
 IfcStructuralMember::IfcStructuralMember(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralMember)) throw; entity = e; } 
 // IfcStructuralPlanarAction
 IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum IfcStructuralPlanarAction::ProjectedOrTrue() { return IfcProjectedOrTrueLengthEnum::FromString(*entity->getArgument(11)); }
-bool IfcStructuralPlanarAction::is(Type::Enum v) { return v == Type::IfcStructuralPlanarAction || IfcStructuralAction::is(v); }
-Type::Enum IfcStructuralPlanarAction::type() { return Type::IfcStructuralPlanarAction; }
+bool IfcStructuralPlanarAction::is(Type::Enum v) const { return v == Type::IfcStructuralPlanarAction || IfcStructuralAction::is(v); }
+Type::Enum IfcStructuralPlanarAction::type() const { return Type::IfcStructuralPlanarAction; }
 Type::Enum IfcStructuralPlanarAction::Class() { return Type::IfcStructuralPlanarAction; }
 IfcStructuralPlanarAction::IfcStructuralPlanarAction(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralPlanarAction)) throw; entity = e; } 
 // IfcStructuralPlanarActionVarying
-SHARED_PTR<IfcShapeAspect> IfcStructuralPlanarActionVarying::VaryingAppliedLoadLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(12)); }
+IfcShapeAspect* IfcStructuralPlanarActionVarying::VaryingAppliedLoadLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(12)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoad> > IfcStructuralPlanarActionVarying::SubsequentAppliedLoads() { RETURN_AS_LIST(IfcStructuralLoad,13) }
-bool IfcStructuralPlanarActionVarying::is(Type::Enum v) { return v == Type::IfcStructuralPlanarActionVarying || IfcStructuralPlanarAction::is(v); }
-Type::Enum IfcStructuralPlanarActionVarying::type() { return Type::IfcStructuralPlanarActionVarying; }
+bool IfcStructuralPlanarActionVarying::is(Type::Enum v) const { return v == Type::IfcStructuralPlanarActionVarying || IfcStructuralPlanarAction::is(v); }
+Type::Enum IfcStructuralPlanarActionVarying::type() const { return Type::IfcStructuralPlanarActionVarying; }
 Type::Enum IfcStructuralPlanarActionVarying::Class() { return Type::IfcStructuralPlanarActionVarying; }
 IfcStructuralPlanarActionVarying::IfcStructuralPlanarActionVarying(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralPlanarActionVarying)) throw; entity = e; } 
 // IfcStructuralPointAction
-bool IfcStructuralPointAction::is(Type::Enum v) { return v == Type::IfcStructuralPointAction || IfcStructuralAction::is(v); }
-Type::Enum IfcStructuralPointAction::type() { return Type::IfcStructuralPointAction; }
+bool IfcStructuralPointAction::is(Type::Enum v) const { return v == Type::IfcStructuralPointAction || IfcStructuralAction::is(v); }
+Type::Enum IfcStructuralPointAction::type() const { return Type::IfcStructuralPointAction; }
 Type::Enum IfcStructuralPointAction::Class() { return Type::IfcStructuralPointAction; }
 IfcStructuralPointAction::IfcStructuralPointAction(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralPointAction)) throw; entity = e; } 
 // IfcStructuralPointConnection
-bool IfcStructuralPointConnection::is(Type::Enum v) { return v == Type::IfcStructuralPointConnection || IfcStructuralConnection::is(v); }
-Type::Enum IfcStructuralPointConnection::type() { return Type::IfcStructuralPointConnection; }
+bool IfcStructuralPointConnection::is(Type::Enum v) const { return v == Type::IfcStructuralPointConnection || IfcStructuralConnection::is(v); }
+Type::Enum IfcStructuralPointConnection::type() const { return Type::IfcStructuralPointConnection; }
 Type::Enum IfcStructuralPointConnection::Class() { return Type::IfcStructuralPointConnection; }
 IfcStructuralPointConnection::IfcStructuralPointConnection(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralPointConnection)) throw; entity = e; } 
 // IfcStructuralPointReaction
-bool IfcStructuralPointReaction::is(Type::Enum v) { return v == Type::IfcStructuralPointReaction || IfcStructuralReaction::is(v); }
-Type::Enum IfcStructuralPointReaction::type() { return Type::IfcStructuralPointReaction; }
+bool IfcStructuralPointReaction::is(Type::Enum v) const { return v == Type::IfcStructuralPointReaction || IfcStructuralReaction::is(v); }
+Type::Enum IfcStructuralPointReaction::type() const { return Type::IfcStructuralPointReaction; }
 Type::Enum IfcStructuralPointReaction::Class() { return Type::IfcStructuralPointReaction; }
 IfcStructuralPointReaction::IfcStructuralPointReaction(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralPointReaction)) throw; entity = e; } 
 // IfcStructuralProfileProperties
@@ -9231,24 +9238,24 @@ bool IfcStructuralProfileProperties::hasCentreOfGravityInX() { return !entity->g
 IfcLengthMeasure IfcStructuralProfileProperties::CentreOfGravityInX() { return *entity->getArgument(21); }
 bool IfcStructuralProfileProperties::hasCentreOfGravityInY() { return !entity->getArgument(22)->isNull(); }
 IfcLengthMeasure IfcStructuralProfileProperties::CentreOfGravityInY() { return *entity->getArgument(22); }
-bool IfcStructuralProfileProperties::is(Type::Enum v) { return v == Type::IfcStructuralProfileProperties || IfcGeneralProfileProperties::is(v); }
-Type::Enum IfcStructuralProfileProperties::type() { return Type::IfcStructuralProfileProperties; }
+bool IfcStructuralProfileProperties::is(Type::Enum v) const { return v == Type::IfcStructuralProfileProperties || IfcGeneralProfileProperties::is(v); }
+Type::Enum IfcStructuralProfileProperties::type() const { return Type::IfcStructuralProfileProperties; }
 Type::Enum IfcStructuralProfileProperties::Class() { return Type::IfcStructuralProfileProperties; }
 IfcStructuralProfileProperties::IfcStructuralProfileProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralProfileProperties)) throw; entity = e; } 
 // IfcStructuralReaction
 IfcStructuralAction::list IfcStructuralReaction::Causes() { RETURN_INVERSE(IfcStructuralAction) }
-bool IfcStructuralReaction::is(Type::Enum v) { return v == Type::IfcStructuralReaction || IfcStructuralActivity::is(v); }
-Type::Enum IfcStructuralReaction::type() { return Type::IfcStructuralReaction; }
+bool IfcStructuralReaction::is(Type::Enum v) const { return v == Type::IfcStructuralReaction || IfcStructuralActivity::is(v); }
+Type::Enum IfcStructuralReaction::type() const { return Type::IfcStructuralReaction; }
 Type::Enum IfcStructuralReaction::Class() { return Type::IfcStructuralReaction; }
 IfcStructuralReaction::IfcStructuralReaction(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralReaction)) throw; entity = e; } 
 // IfcStructuralResultGroup
 IfcAnalysisTheoryTypeEnum::IfcAnalysisTheoryTypeEnum IfcStructuralResultGroup::TheoryType() { return IfcAnalysisTheoryTypeEnum::FromString(*entity->getArgument(5)); }
 bool IfcStructuralResultGroup::hasResultForLoadGroup() { return !entity->getArgument(6)->isNull(); }
-SHARED_PTR<IfcStructuralLoadGroup> IfcStructuralResultGroup::ResultForLoadGroup() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralLoadGroup>(*entity->getArgument(6)); }
+IfcStructuralLoadGroup* IfcStructuralResultGroup::ResultForLoadGroup() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralLoadGroup>(*entity->getArgument(6)); }
 bool IfcStructuralResultGroup::IsLinear() { return *entity->getArgument(7); }
 IfcStructuralAnalysisModel::list IfcStructuralResultGroup::ResultGroupFor() { RETURN_INVERSE(IfcStructuralAnalysisModel) }
-bool IfcStructuralResultGroup::is(Type::Enum v) { return v == Type::IfcStructuralResultGroup || IfcGroup::is(v); }
-Type::Enum IfcStructuralResultGroup::type() { return Type::IfcStructuralResultGroup; }
+bool IfcStructuralResultGroup::is(Type::Enum v) const { return v == Type::IfcStructuralResultGroup || IfcGroup::is(v); }
+Type::Enum IfcStructuralResultGroup::type() const { return Type::IfcStructuralResultGroup; }
 Type::Enum IfcStructuralResultGroup::Class() { return Type::IfcStructuralResultGroup; }
 IfcStructuralResultGroup::IfcStructuralResultGroup(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralResultGroup)) throw; entity = e; } 
 // IfcStructuralSteelProfileProperties
@@ -9260,53 +9267,53 @@ bool IfcStructuralSteelProfileProperties::hasPlasticShapeFactorY() { return !ent
 IfcPositiveRatioMeasure IfcStructuralSteelProfileProperties::PlasticShapeFactorY() { return *entity->getArgument(25); }
 bool IfcStructuralSteelProfileProperties::hasPlasticShapeFactorZ() { return !entity->getArgument(26)->isNull(); }
 IfcPositiveRatioMeasure IfcStructuralSteelProfileProperties::PlasticShapeFactorZ() { return *entity->getArgument(26); }
-bool IfcStructuralSteelProfileProperties::is(Type::Enum v) { return v == Type::IfcStructuralSteelProfileProperties || IfcStructuralProfileProperties::is(v); }
-Type::Enum IfcStructuralSteelProfileProperties::type() { return Type::IfcStructuralSteelProfileProperties; }
+bool IfcStructuralSteelProfileProperties::is(Type::Enum v) const { return v == Type::IfcStructuralSteelProfileProperties || IfcStructuralProfileProperties::is(v); }
+Type::Enum IfcStructuralSteelProfileProperties::type() const { return Type::IfcStructuralSteelProfileProperties; }
 Type::Enum IfcStructuralSteelProfileProperties::Class() { return Type::IfcStructuralSteelProfileProperties; }
 IfcStructuralSteelProfileProperties::IfcStructuralSteelProfileProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralSteelProfileProperties)) throw; entity = e; } 
 // IfcStructuralSurfaceConnection
-bool IfcStructuralSurfaceConnection::is(Type::Enum v) { return v == Type::IfcStructuralSurfaceConnection || IfcStructuralConnection::is(v); }
-Type::Enum IfcStructuralSurfaceConnection::type() { return Type::IfcStructuralSurfaceConnection; }
+bool IfcStructuralSurfaceConnection::is(Type::Enum v) const { return v == Type::IfcStructuralSurfaceConnection || IfcStructuralConnection::is(v); }
+Type::Enum IfcStructuralSurfaceConnection::type() const { return Type::IfcStructuralSurfaceConnection; }
 Type::Enum IfcStructuralSurfaceConnection::Class() { return Type::IfcStructuralSurfaceConnection; }
 IfcStructuralSurfaceConnection::IfcStructuralSurfaceConnection(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralSurfaceConnection)) throw; entity = e; } 
 // IfcStructuralSurfaceMember
 IfcStructuralSurfaceTypeEnum::IfcStructuralSurfaceTypeEnum IfcStructuralSurfaceMember::PredefinedType() { return IfcStructuralSurfaceTypeEnum::FromString(*entity->getArgument(7)); }
 bool IfcStructuralSurfaceMember::hasThickness() { return !entity->getArgument(8)->isNull(); }
 IfcPositiveLengthMeasure IfcStructuralSurfaceMember::Thickness() { return *entity->getArgument(8); }
-bool IfcStructuralSurfaceMember::is(Type::Enum v) { return v == Type::IfcStructuralSurfaceMember || IfcStructuralMember::is(v); }
-Type::Enum IfcStructuralSurfaceMember::type() { return Type::IfcStructuralSurfaceMember; }
+bool IfcStructuralSurfaceMember::is(Type::Enum v) const { return v == Type::IfcStructuralSurfaceMember || IfcStructuralMember::is(v); }
+Type::Enum IfcStructuralSurfaceMember::type() const { return Type::IfcStructuralSurfaceMember; }
 Type::Enum IfcStructuralSurfaceMember::Class() { return Type::IfcStructuralSurfaceMember; }
 IfcStructuralSurfaceMember::IfcStructuralSurfaceMember(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralSurfaceMember)) throw; entity = e; } 
 // IfcStructuralSurfaceMemberVarying
 std::vector<IfcPositiveLengthMeasure> /*[2:?]*/ IfcStructuralSurfaceMemberVarying::SubsequentThickness() { return *entity->getArgument(9); }
-SHARED_PTR<IfcShapeAspect> IfcStructuralSurfaceMemberVarying::VaryingThicknessLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(10)); }
-bool IfcStructuralSurfaceMemberVarying::is(Type::Enum v) { return v == Type::IfcStructuralSurfaceMemberVarying || IfcStructuralSurfaceMember::is(v); }
-Type::Enum IfcStructuralSurfaceMemberVarying::type() { return Type::IfcStructuralSurfaceMemberVarying; }
+IfcShapeAspect* IfcStructuralSurfaceMemberVarying::VaryingThicknessLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(10)); }
+bool IfcStructuralSurfaceMemberVarying::is(Type::Enum v) const { return v == Type::IfcStructuralSurfaceMemberVarying || IfcStructuralSurfaceMember::is(v); }
+Type::Enum IfcStructuralSurfaceMemberVarying::type() const { return Type::IfcStructuralSurfaceMemberVarying; }
 Type::Enum IfcStructuralSurfaceMemberVarying::Class() { return Type::IfcStructuralSurfaceMemberVarying; }
 IfcStructuralSurfaceMemberVarying::IfcStructuralSurfaceMemberVarying(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralSurfaceMemberVarying)) throw; entity = e; } 
 // IfcStructuredDimensionCallout
-bool IfcStructuredDimensionCallout::is(Type::Enum v) { return v == Type::IfcStructuredDimensionCallout || IfcDraughtingCallout::is(v); }
-Type::Enum IfcStructuredDimensionCallout::type() { return Type::IfcStructuredDimensionCallout; }
+bool IfcStructuredDimensionCallout::is(Type::Enum v) const { return v == Type::IfcStructuredDimensionCallout || IfcDraughtingCallout::is(v); }
+Type::Enum IfcStructuredDimensionCallout::type() const { return Type::IfcStructuredDimensionCallout; }
 Type::Enum IfcStructuredDimensionCallout::Class() { return Type::IfcStructuredDimensionCallout; }
 IfcStructuredDimensionCallout::IfcStructuredDimensionCallout(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuredDimensionCallout)) throw; entity = e; } 
 // IfcStyleModel
-bool IfcStyleModel::is(Type::Enum v) { return v == Type::IfcStyleModel || IfcRepresentation::is(v); }
-Type::Enum IfcStyleModel::type() { return Type::IfcStyleModel; }
+bool IfcStyleModel::is(Type::Enum v) const { return v == Type::IfcStyleModel || IfcRepresentation::is(v); }
+Type::Enum IfcStyleModel::type() const { return Type::IfcStyleModel; }
 Type::Enum IfcStyleModel::Class() { return Type::IfcStyleModel; }
 IfcStyleModel::IfcStyleModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcStyleModel)) throw; entity = e; } 
 // IfcStyledItem
 bool IfcStyledItem::hasItem() { return !entity->getArgument(0)->isNull(); }
-SHARED_PTR<IfcRepresentationItem> IfcStyledItem::Item() { return reinterpret_pointer_cast<IfcBaseClass,IfcRepresentationItem>(*entity->getArgument(0)); }
+IfcRepresentationItem* IfcStyledItem::Item() { return reinterpret_pointer_cast<IfcBaseClass,IfcRepresentationItem>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcPresentationStyleAssignment> > IfcStyledItem::Styles() { RETURN_AS_LIST(IfcPresentationStyleAssignment,1) }
 bool IfcStyledItem::hasName() { return !entity->getArgument(2)->isNull(); }
 IfcLabel IfcStyledItem::Name() { return *entity->getArgument(2); }
-bool IfcStyledItem::is(Type::Enum v) { return v == Type::IfcStyledItem || IfcRepresentationItem::is(v); }
-Type::Enum IfcStyledItem::type() { return Type::IfcStyledItem; }
+bool IfcStyledItem::is(Type::Enum v) const { return v == Type::IfcStyledItem || IfcRepresentationItem::is(v); }
+Type::Enum IfcStyledItem::type() const { return Type::IfcStyledItem; }
 Type::Enum IfcStyledItem::Class() { return Type::IfcStyledItem; }
 IfcStyledItem::IfcStyledItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcStyledItem)) throw; entity = e; } 
 // IfcStyledRepresentation
-bool IfcStyledRepresentation::is(Type::Enum v) { return v == Type::IfcStyledRepresentation || IfcStyleModel::is(v); }
-Type::Enum IfcStyledRepresentation::type() { return Type::IfcStyledRepresentation; }
+bool IfcStyledRepresentation::is(Type::Enum v) const { return v == Type::IfcStyledRepresentation || IfcStyleModel::is(v); }
+Type::Enum IfcStyledRepresentation::type() const { return Type::IfcStyledRepresentation; }
 Type::Enum IfcStyledRepresentation::Class() { return Type::IfcStyledRepresentation; }
 IfcStyledRepresentation::IfcStyledRepresentation(IfcAbstractEntityPtr e) { if (!is(Type::IfcStyledRepresentation)) throw; entity = e; } 
 // IfcSubContractResource
@@ -9314,57 +9321,57 @@ bool IfcSubContractResource::hasSubContractor() { return !entity->getArgument(9)
 IfcActorSelect IfcSubContractResource::SubContractor() { return *entity->getArgument(9); }
 bool IfcSubContractResource::hasJobDescription() { return !entity->getArgument(10)->isNull(); }
 IfcText IfcSubContractResource::JobDescription() { return *entity->getArgument(10); }
-bool IfcSubContractResource::is(Type::Enum v) { return v == Type::IfcSubContractResource || IfcConstructionResource::is(v); }
-Type::Enum IfcSubContractResource::type() { return Type::IfcSubContractResource; }
+bool IfcSubContractResource::is(Type::Enum v) const { return v == Type::IfcSubContractResource || IfcConstructionResource::is(v); }
+Type::Enum IfcSubContractResource::type() const { return Type::IfcSubContractResource; }
 Type::Enum IfcSubContractResource::Class() { return Type::IfcSubContractResource; }
 IfcSubContractResource::IfcSubContractResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcSubContractResource)) throw; entity = e; } 
 // IfcSubedge
-SHARED_PTR<IfcEdge> IfcSubedge::ParentEdge() { return reinterpret_pointer_cast<IfcBaseClass,IfcEdge>(*entity->getArgument(2)); }
-bool IfcSubedge::is(Type::Enum v) { return v == Type::IfcSubedge || IfcEdge::is(v); }
-Type::Enum IfcSubedge::type() { return Type::IfcSubedge; }
+IfcEdge* IfcSubedge::ParentEdge() { return reinterpret_pointer_cast<IfcBaseClass,IfcEdge>(*entity->getArgument(2)); }
+bool IfcSubedge::is(Type::Enum v) const { return v == Type::IfcSubedge || IfcEdge::is(v); }
+Type::Enum IfcSubedge::type() const { return Type::IfcSubedge; }
 Type::Enum IfcSubedge::Class() { return Type::IfcSubedge; }
 IfcSubedge::IfcSubedge(IfcAbstractEntityPtr e) { if (!is(Type::IfcSubedge)) throw; entity = e; } 
 // IfcSurface
-bool IfcSurface::is(Type::Enum v) { return v == Type::IfcSurface || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcSurface::type() { return Type::IfcSurface; }
+bool IfcSurface::is(Type::Enum v) const { return v == Type::IfcSurface || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcSurface::type() const { return Type::IfcSurface; }
 Type::Enum IfcSurface::Class() { return Type::IfcSurface; }
 IfcSurface::IfcSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurface)) throw; entity = e; } 
 // IfcSurfaceCurveSweptAreaSolid
-SHARED_PTR<IfcCurve> IfcSurfaceCurveSweptAreaSolid::Directrix() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(2)); }
+IfcCurve* IfcSurfaceCurveSweptAreaSolid::Directrix() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(2)); }
 IfcParameterValue IfcSurfaceCurveSweptAreaSolid::StartParam() { return *entity->getArgument(3); }
 IfcParameterValue IfcSurfaceCurveSweptAreaSolid::EndParam() { return *entity->getArgument(4); }
-SHARED_PTR<IfcSurface> IfcSurfaceCurveSweptAreaSolid::ReferenceSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(5)); }
-bool IfcSurfaceCurveSweptAreaSolid::is(Type::Enum v) { return v == Type::IfcSurfaceCurveSweptAreaSolid || IfcSweptAreaSolid::is(v); }
-Type::Enum IfcSurfaceCurveSweptAreaSolid::type() { return Type::IfcSurfaceCurveSweptAreaSolid; }
+IfcSurface* IfcSurfaceCurveSweptAreaSolid::ReferenceSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(5)); }
+bool IfcSurfaceCurveSweptAreaSolid::is(Type::Enum v) const { return v == Type::IfcSurfaceCurveSweptAreaSolid || IfcSweptAreaSolid::is(v); }
+Type::Enum IfcSurfaceCurveSweptAreaSolid::type() const { return Type::IfcSurfaceCurveSweptAreaSolid; }
 Type::Enum IfcSurfaceCurveSweptAreaSolid::Class() { return Type::IfcSurfaceCurveSweptAreaSolid; }
 IfcSurfaceCurveSweptAreaSolid::IfcSurfaceCurveSweptAreaSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceCurveSweptAreaSolid)) throw; entity = e; } 
 // IfcSurfaceOfLinearExtrusion
-SHARED_PTR<IfcDirection> IfcSurfaceOfLinearExtrusion::ExtrudedDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(2)); }
+IfcDirection* IfcSurfaceOfLinearExtrusion::ExtrudedDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(2)); }
 IfcLengthMeasure IfcSurfaceOfLinearExtrusion::Depth() { return *entity->getArgument(3); }
-bool IfcSurfaceOfLinearExtrusion::is(Type::Enum v) { return v == Type::IfcSurfaceOfLinearExtrusion || IfcSweptSurface::is(v); }
-Type::Enum IfcSurfaceOfLinearExtrusion::type() { return Type::IfcSurfaceOfLinearExtrusion; }
+bool IfcSurfaceOfLinearExtrusion::is(Type::Enum v) const { return v == Type::IfcSurfaceOfLinearExtrusion || IfcSweptSurface::is(v); }
+Type::Enum IfcSurfaceOfLinearExtrusion::type() const { return Type::IfcSurfaceOfLinearExtrusion; }
 Type::Enum IfcSurfaceOfLinearExtrusion::Class() { return Type::IfcSurfaceOfLinearExtrusion; }
 IfcSurfaceOfLinearExtrusion::IfcSurfaceOfLinearExtrusion(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceOfLinearExtrusion)) throw; entity = e; } 
 // IfcSurfaceOfRevolution
-SHARED_PTR<IfcAxis1Placement> IfcSurfaceOfRevolution::AxisPosition() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis1Placement>(*entity->getArgument(2)); }
-bool IfcSurfaceOfRevolution::is(Type::Enum v) { return v == Type::IfcSurfaceOfRevolution || IfcSweptSurface::is(v); }
-Type::Enum IfcSurfaceOfRevolution::type() { return Type::IfcSurfaceOfRevolution; }
+IfcAxis1Placement* IfcSurfaceOfRevolution::AxisPosition() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis1Placement>(*entity->getArgument(2)); }
+bool IfcSurfaceOfRevolution::is(Type::Enum v) const { return v == Type::IfcSurfaceOfRevolution || IfcSweptSurface::is(v); }
+Type::Enum IfcSurfaceOfRevolution::type() const { return Type::IfcSurfaceOfRevolution; }
 Type::Enum IfcSurfaceOfRevolution::Class() { return Type::IfcSurfaceOfRevolution; }
 IfcSurfaceOfRevolution::IfcSurfaceOfRevolution(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceOfRevolution)) throw; entity = e; } 
 // IfcSurfaceStyle
 IfcSurfaceSide::IfcSurfaceSide IfcSurfaceStyle::Side() { return IfcSurfaceSide::FromString(*entity->getArgument(1)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcSurfaceStyle::Styles() { RETURN_AS_LIST(IfcAbstractSelect,2) }
-bool IfcSurfaceStyle::is(Type::Enum v) { return v == Type::IfcSurfaceStyle || IfcPresentationStyle::is(v); }
-Type::Enum IfcSurfaceStyle::type() { return Type::IfcSurfaceStyle; }
+bool IfcSurfaceStyle::is(Type::Enum v) const { return v == Type::IfcSurfaceStyle || IfcPresentationStyle::is(v); }
+Type::Enum IfcSurfaceStyle::type() const { return Type::IfcSurfaceStyle; }
 Type::Enum IfcSurfaceStyle::Class() { return Type::IfcSurfaceStyle; }
 IfcSurfaceStyle::IfcSurfaceStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceStyle)) throw; entity = e; } 
 // IfcSurfaceStyleLighting
-SHARED_PTR<IfcColourRgb> IfcSurfaceStyleLighting::DiffuseTransmissionColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(0)); }
-SHARED_PTR<IfcColourRgb> IfcSurfaceStyleLighting::DiffuseReflectionColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(1)); }
-SHARED_PTR<IfcColourRgb> IfcSurfaceStyleLighting::TransmissionColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(2)); }
-SHARED_PTR<IfcColourRgb> IfcSurfaceStyleLighting::ReflectanceColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(3)); }
-bool IfcSurfaceStyleLighting::is(Type::Enum v) { return v == Type::IfcSurfaceStyleLighting; }
-Type::Enum IfcSurfaceStyleLighting::type() { return Type::IfcSurfaceStyleLighting; }
+IfcColourRgb* IfcSurfaceStyleLighting::DiffuseTransmissionColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(0)); }
+IfcColourRgb* IfcSurfaceStyleLighting::DiffuseReflectionColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(1)); }
+IfcColourRgb* IfcSurfaceStyleLighting::TransmissionColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(2)); }
+IfcColourRgb* IfcSurfaceStyleLighting::ReflectanceColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(3)); }
+bool IfcSurfaceStyleLighting::is(Type::Enum v) const { return v == Type::IfcSurfaceStyleLighting; }
+Type::Enum IfcSurfaceStyleLighting::type() const { return Type::IfcSurfaceStyleLighting; }
 Type::Enum IfcSurfaceStyleLighting::Class() { return Type::IfcSurfaceStyleLighting; }
 IfcSurfaceStyleLighting::IfcSurfaceStyleLighting(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceStyleLighting)) throw; entity = e; } 
 // IfcSurfaceStyleRefraction
@@ -9372,8 +9379,8 @@ bool IfcSurfaceStyleRefraction::hasRefractionIndex() { return !entity->getArgume
 IfcReal IfcSurfaceStyleRefraction::RefractionIndex() { return *entity->getArgument(0); }
 bool IfcSurfaceStyleRefraction::hasDispersionFactor() { return !entity->getArgument(1)->isNull(); }
 IfcReal IfcSurfaceStyleRefraction::DispersionFactor() { return *entity->getArgument(1); }
-bool IfcSurfaceStyleRefraction::is(Type::Enum v) { return v == Type::IfcSurfaceStyleRefraction; }
-Type::Enum IfcSurfaceStyleRefraction::type() { return Type::IfcSurfaceStyleRefraction; }
+bool IfcSurfaceStyleRefraction::is(Type::Enum v) const { return v == Type::IfcSurfaceStyleRefraction; }
+Type::Enum IfcSurfaceStyleRefraction::type() const { return Type::IfcSurfaceStyleRefraction; }
 Type::Enum IfcSurfaceStyleRefraction::Class() { return Type::IfcSurfaceStyleRefraction; }
 IfcSurfaceStyleRefraction::IfcSurfaceStyleRefraction(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceStyleRefraction)) throw; entity = e; } 
 // IfcSurfaceStyleRendering
@@ -9392,20 +9399,20 @@ IfcColourOrFactor IfcSurfaceStyleRendering::SpecularColour() { return *entity->g
 bool IfcSurfaceStyleRendering::hasSpecularHighlight() { return !entity->getArgument(7)->isNull(); }
 IfcSpecularHighlightSelect IfcSurfaceStyleRendering::SpecularHighlight() { return *entity->getArgument(7); }
 IfcReflectanceMethodEnum::IfcReflectanceMethodEnum IfcSurfaceStyleRendering::ReflectanceMethod() { return IfcReflectanceMethodEnum::FromString(*entity->getArgument(8)); }
-bool IfcSurfaceStyleRendering::is(Type::Enum v) { return v == Type::IfcSurfaceStyleRendering || IfcSurfaceStyleShading::is(v); }
-Type::Enum IfcSurfaceStyleRendering::type() { return Type::IfcSurfaceStyleRendering; }
+bool IfcSurfaceStyleRendering::is(Type::Enum v) const { return v == Type::IfcSurfaceStyleRendering || IfcSurfaceStyleShading::is(v); }
+Type::Enum IfcSurfaceStyleRendering::type() const { return Type::IfcSurfaceStyleRendering; }
 Type::Enum IfcSurfaceStyleRendering::Class() { return Type::IfcSurfaceStyleRendering; }
 IfcSurfaceStyleRendering::IfcSurfaceStyleRendering(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceStyleRendering)) throw; entity = e; } 
 // IfcSurfaceStyleShading
-SHARED_PTR<IfcColourRgb> IfcSurfaceStyleShading::SurfaceColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(0)); }
-bool IfcSurfaceStyleShading::is(Type::Enum v) { return v == Type::IfcSurfaceStyleShading; }
-Type::Enum IfcSurfaceStyleShading::type() { return Type::IfcSurfaceStyleShading; }
+IfcColourRgb* IfcSurfaceStyleShading::SurfaceColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(0)); }
+bool IfcSurfaceStyleShading::is(Type::Enum v) const { return v == Type::IfcSurfaceStyleShading; }
+Type::Enum IfcSurfaceStyleShading::type() const { return Type::IfcSurfaceStyleShading; }
 Type::Enum IfcSurfaceStyleShading::Class() { return Type::IfcSurfaceStyleShading; }
 IfcSurfaceStyleShading::IfcSurfaceStyleShading(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceStyleShading)) throw; entity = e; } 
 // IfcSurfaceStyleWithTextures
 SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceTexture> > IfcSurfaceStyleWithTextures::Textures() { RETURN_AS_LIST(IfcSurfaceTexture,0) }
-bool IfcSurfaceStyleWithTextures::is(Type::Enum v) { return v == Type::IfcSurfaceStyleWithTextures; }
-Type::Enum IfcSurfaceStyleWithTextures::type() { return Type::IfcSurfaceStyleWithTextures; }
+bool IfcSurfaceStyleWithTextures::is(Type::Enum v) const { return v == Type::IfcSurfaceStyleWithTextures; }
+Type::Enum IfcSurfaceStyleWithTextures::type() const { return Type::IfcSurfaceStyleWithTextures; }
 Type::Enum IfcSurfaceStyleWithTextures::Class() { return Type::IfcSurfaceStyleWithTextures; }
 IfcSurfaceStyleWithTextures::IfcSurfaceStyleWithTextures(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceStyleWithTextures)) throw; entity = e; } 
 // IfcSurfaceTexture
@@ -9413,57 +9420,57 @@ bool IfcSurfaceTexture::RepeatS() { return *entity->getArgument(0); }
 bool IfcSurfaceTexture::RepeatT() { return *entity->getArgument(1); }
 IfcSurfaceTextureEnum::IfcSurfaceTextureEnum IfcSurfaceTexture::TextureType() { return IfcSurfaceTextureEnum::FromString(*entity->getArgument(2)); }
 bool IfcSurfaceTexture::hasTextureTransform() { return !entity->getArgument(3)->isNull(); }
-SHARED_PTR<IfcCartesianTransformationOperator2D> IfcSurfaceTexture::TextureTransform() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianTransformationOperator2D>(*entity->getArgument(3)); }
-bool IfcSurfaceTexture::is(Type::Enum v) { return v == Type::IfcSurfaceTexture; }
-Type::Enum IfcSurfaceTexture::type() { return Type::IfcSurfaceTexture; }
+IfcCartesianTransformationOperator2D* IfcSurfaceTexture::TextureTransform() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianTransformationOperator2D>(*entity->getArgument(3)); }
+bool IfcSurfaceTexture::is(Type::Enum v) const { return v == Type::IfcSurfaceTexture; }
+Type::Enum IfcSurfaceTexture::type() const { return Type::IfcSurfaceTexture; }
 Type::Enum IfcSurfaceTexture::Class() { return Type::IfcSurfaceTexture; }
 IfcSurfaceTexture::IfcSurfaceTexture(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceTexture)) throw; entity = e; } 
 // IfcSweptAreaSolid
-SHARED_PTR<IfcProfileDef> IfcSweptAreaSolid::SweptArea() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(0)); }
-SHARED_PTR<IfcAxis2Placement3D> IfcSweptAreaSolid::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(1)); }
-bool IfcSweptAreaSolid::is(Type::Enum v) { return v == Type::IfcSweptAreaSolid || IfcSolidModel::is(v); }
-Type::Enum IfcSweptAreaSolid::type() { return Type::IfcSweptAreaSolid; }
+IfcProfileDef* IfcSweptAreaSolid::SweptArea() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(0)); }
+IfcAxis2Placement3D* IfcSweptAreaSolid::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(1)); }
+bool IfcSweptAreaSolid::is(Type::Enum v) const { return v == Type::IfcSweptAreaSolid || IfcSolidModel::is(v); }
+Type::Enum IfcSweptAreaSolid::type() const { return Type::IfcSweptAreaSolid; }
 Type::Enum IfcSweptAreaSolid::Class() { return Type::IfcSweptAreaSolid; }
 IfcSweptAreaSolid::IfcSweptAreaSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcSweptAreaSolid)) throw; entity = e; } 
 // IfcSweptDiskSolid
-SHARED_PTR<IfcCurve> IfcSweptDiskSolid::Directrix() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
+IfcCurve* IfcSweptDiskSolid::Directrix() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
 IfcPositiveLengthMeasure IfcSweptDiskSolid::Radius() { return *entity->getArgument(1); }
 bool IfcSweptDiskSolid::hasInnerRadius() { return !entity->getArgument(2)->isNull(); }
 IfcPositiveLengthMeasure IfcSweptDiskSolid::InnerRadius() { return *entity->getArgument(2); }
 IfcParameterValue IfcSweptDiskSolid::StartParam() { return *entity->getArgument(3); }
 IfcParameterValue IfcSweptDiskSolid::EndParam() { return *entity->getArgument(4); }
-bool IfcSweptDiskSolid::is(Type::Enum v) { return v == Type::IfcSweptDiskSolid || IfcSolidModel::is(v); }
-Type::Enum IfcSweptDiskSolid::type() { return Type::IfcSweptDiskSolid; }
+bool IfcSweptDiskSolid::is(Type::Enum v) const { return v == Type::IfcSweptDiskSolid || IfcSolidModel::is(v); }
+Type::Enum IfcSweptDiskSolid::type() const { return Type::IfcSweptDiskSolid; }
 Type::Enum IfcSweptDiskSolid::Class() { return Type::IfcSweptDiskSolid; }
 IfcSweptDiskSolid::IfcSweptDiskSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcSweptDiskSolid)) throw; entity = e; } 
 // IfcSweptSurface
-SHARED_PTR<IfcProfileDef> IfcSweptSurface::SweptCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(0)); }
-SHARED_PTR<IfcAxis2Placement3D> IfcSweptSurface::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(1)); }
-bool IfcSweptSurface::is(Type::Enum v) { return v == Type::IfcSweptSurface || IfcSurface::is(v); }
-Type::Enum IfcSweptSurface::type() { return Type::IfcSweptSurface; }
+IfcProfileDef* IfcSweptSurface::SweptCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(0)); }
+IfcAxis2Placement3D* IfcSweptSurface::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(1)); }
+bool IfcSweptSurface::is(Type::Enum v) const { return v == Type::IfcSweptSurface || IfcSurface::is(v); }
+Type::Enum IfcSweptSurface::type() const { return Type::IfcSweptSurface; }
 Type::Enum IfcSweptSurface::Class() { return Type::IfcSweptSurface; }
 IfcSweptSurface::IfcSweptSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcSweptSurface)) throw; entity = e; } 
 // IfcSwitchingDeviceType
 IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum IfcSwitchingDeviceType::PredefinedType() { return IfcSwitchingDeviceTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcSwitchingDeviceType::is(Type::Enum v) { return v == Type::IfcSwitchingDeviceType || IfcFlowControllerType::is(v); }
-Type::Enum IfcSwitchingDeviceType::type() { return Type::IfcSwitchingDeviceType; }
+bool IfcSwitchingDeviceType::is(Type::Enum v) const { return v == Type::IfcSwitchingDeviceType || IfcFlowControllerType::is(v); }
+Type::Enum IfcSwitchingDeviceType::type() const { return Type::IfcSwitchingDeviceType; }
 Type::Enum IfcSwitchingDeviceType::Class() { return Type::IfcSwitchingDeviceType; }
 IfcSwitchingDeviceType::IfcSwitchingDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSwitchingDeviceType)) throw; entity = e; } 
 // IfcSymbolStyle
 IfcSymbolStyleSelect IfcSymbolStyle::StyleOfSymbol() { return *entity->getArgument(1); }
-bool IfcSymbolStyle::is(Type::Enum v) { return v == Type::IfcSymbolStyle || IfcPresentationStyle::is(v); }
-Type::Enum IfcSymbolStyle::type() { return Type::IfcSymbolStyle; }
+bool IfcSymbolStyle::is(Type::Enum v) const { return v == Type::IfcSymbolStyle || IfcPresentationStyle::is(v); }
+Type::Enum IfcSymbolStyle::type() const { return Type::IfcSymbolStyle; }
 Type::Enum IfcSymbolStyle::Class() { return Type::IfcSymbolStyle; }
 IfcSymbolStyle::IfcSymbolStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcSymbolStyle)) throw; entity = e; } 
 // IfcSystem
 IfcRelServicesBuildings::list IfcSystem::ServicesBuildings() { RETURN_INVERSE(IfcRelServicesBuildings) }
-bool IfcSystem::is(Type::Enum v) { return v == Type::IfcSystem || IfcGroup::is(v); }
-Type::Enum IfcSystem::type() { return Type::IfcSystem; }
+bool IfcSystem::is(Type::Enum v) const { return v == Type::IfcSystem || IfcGroup::is(v); }
+Type::Enum IfcSystem::type() const { return Type::IfcSystem; }
 Type::Enum IfcSystem::Class() { return Type::IfcSystem; }
 IfcSystem::IfcSystem(IfcAbstractEntityPtr e) { if (!is(Type::IfcSystem)) throw; entity = e; } 
 // IfcSystemFurnitureElementType
-bool IfcSystemFurnitureElementType::is(Type::Enum v) { return v == Type::IfcSystemFurnitureElementType || IfcFurnishingElementType::is(v); }
-Type::Enum IfcSystemFurnitureElementType::type() { return Type::IfcSystemFurnitureElementType; }
+bool IfcSystemFurnitureElementType::is(Type::Enum v) const { return v == Type::IfcSystemFurnitureElementType || IfcFurnishingElementType::is(v); }
+Type::Enum IfcSystemFurnitureElementType::type() const { return Type::IfcSystemFurnitureElementType; }
 Type::Enum IfcSystemFurnitureElementType::Class() { return Type::IfcSystemFurnitureElementType; }
 IfcSystemFurnitureElementType::IfcSystemFurnitureElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSystemFurnitureElementType)) throw; entity = e; } 
 // IfcTShapeProfileDef
@@ -9483,29 +9490,29 @@ bool IfcTShapeProfileDef::hasFlangeSlope() { return !entity->getArgument(11)->is
 IfcPlaneAngleMeasure IfcTShapeProfileDef::FlangeSlope() { return *entity->getArgument(11); }
 bool IfcTShapeProfileDef::hasCentreOfGravityInY() { return !entity->getArgument(12)->isNull(); }
 IfcPositiveLengthMeasure IfcTShapeProfileDef::CentreOfGravityInY() { return *entity->getArgument(12); }
-bool IfcTShapeProfileDef::is(Type::Enum v) { return v == Type::IfcTShapeProfileDef || IfcParameterizedProfileDef::is(v); }
-Type::Enum IfcTShapeProfileDef::type() { return Type::IfcTShapeProfileDef; }
+bool IfcTShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcTShapeProfileDef || IfcParameterizedProfileDef::is(v); }
+Type::Enum IfcTShapeProfileDef::type() const { return Type::IfcTShapeProfileDef; }
 Type::Enum IfcTShapeProfileDef::Class() { return Type::IfcTShapeProfileDef; }
 IfcTShapeProfileDef::IfcTShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcTShapeProfileDef)) throw; entity = e; } 
 // IfcTable
 std::string IfcTable::Name() { return *entity->getArgument(0); }
 SHARED_PTR< IfcTemplatedEntityList<IfcTableRow> > IfcTable::Rows() { RETURN_AS_LIST(IfcTableRow,1) }
-bool IfcTable::is(Type::Enum v) { return v == Type::IfcTable; }
-Type::Enum IfcTable::type() { return Type::IfcTable; }
+bool IfcTable::is(Type::Enum v) const { return v == Type::IfcTable; }
+Type::Enum IfcTable::type() const { return Type::IfcTable; }
 Type::Enum IfcTable::Class() { return Type::IfcTable; }
 IfcTable::IfcTable(IfcAbstractEntityPtr e) { if (!is(Type::IfcTable)) throw; entity = e; } 
 // IfcTableRow
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTableRow::RowCells() { RETURN_AS_LIST(IfcAbstractSelect,0) }
 bool IfcTableRow::IsHeading() { return *entity->getArgument(1); }
 IfcTable::list IfcTableRow::OfTable() { RETURN_INVERSE(IfcTable) }
-bool IfcTableRow::is(Type::Enum v) { return v == Type::IfcTableRow; }
-Type::Enum IfcTableRow::type() { return Type::IfcTableRow; }
+bool IfcTableRow::is(Type::Enum v) const { return v == Type::IfcTableRow; }
+Type::Enum IfcTableRow::type() const { return Type::IfcTableRow; }
 Type::Enum IfcTableRow::Class() { return Type::IfcTableRow; }
 IfcTableRow::IfcTableRow(IfcAbstractEntityPtr e) { if (!is(Type::IfcTableRow)) throw; entity = e; } 
 // IfcTankType
 IfcTankTypeEnum::IfcTankTypeEnum IfcTankType::PredefinedType() { return IfcTankTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcTankType::is(Type::Enum v) { return v == Type::IfcTankType || IfcFlowStorageDeviceType::is(v); }
-Type::Enum IfcTankType::type() { return Type::IfcTankType; }
+bool IfcTankType::is(Type::Enum v) const { return v == Type::IfcTankType || IfcFlowStorageDeviceType::is(v); }
+Type::Enum IfcTankType::type() const { return Type::IfcTankType; }
 Type::Enum IfcTankType::Class() { return Type::IfcTankType; }
 IfcTankType::IfcTankType(IfcAbstractEntityPtr e) { if (!is(Type::IfcTankType)) throw; entity = e; } 
 // IfcTask
@@ -9517,8 +9524,8 @@ IfcLabel IfcTask::WorkMethod() { return *entity->getArgument(7); }
 bool IfcTask::IsMilestone() { return *entity->getArgument(8); }
 bool IfcTask::hasPriority() { return !entity->getArgument(9)->isNull(); }
 int IfcTask::Priority() { return *entity->getArgument(9); }
-bool IfcTask::is(Type::Enum v) { return v == Type::IfcTask || IfcProcess::is(v); }
-Type::Enum IfcTask::type() { return Type::IfcTask; }
+bool IfcTask::is(Type::Enum v) const { return v == Type::IfcTask || IfcProcess::is(v); }
+Type::Enum IfcTask::type() const { return Type::IfcTask; }
 Type::Enum IfcTask::Class() { return Type::IfcTask; }
 IfcTask::IfcTask(IfcAbstractEntityPtr e) { if (!is(Type::IfcTask)) throw; entity = e; } 
 // IfcTelecomAddress
@@ -9532,8 +9539,8 @@ bool IfcTelecomAddress::hasElectronicMailAddresses() { return !entity->getArgume
 std::vector<IfcLabel> /*[1:?]*/ IfcTelecomAddress::ElectronicMailAddresses() { return *entity->getArgument(6); }
 bool IfcTelecomAddress::hasWWWHomePageURL() { return !entity->getArgument(7)->isNull(); }
 IfcLabel IfcTelecomAddress::WWWHomePageURL() { return *entity->getArgument(7); }
-bool IfcTelecomAddress::is(Type::Enum v) { return v == Type::IfcTelecomAddress || IfcAddress::is(v); }
-Type::Enum IfcTelecomAddress::type() { return Type::IfcTelecomAddress; }
+bool IfcTelecomAddress::is(Type::Enum v) const { return v == Type::IfcTelecomAddress || IfcAddress::is(v); }
+Type::Enum IfcTelecomAddress::type() const { return Type::IfcTelecomAddress; }
 Type::Enum IfcTelecomAddress::Class() { return Type::IfcTelecomAddress; }
 IfcTelecomAddress::IfcTelecomAddress(IfcAbstractEntityPtr e) { if (!is(Type::IfcTelecomAddress)) throw; entity = e; } 
 // IfcTendon
@@ -9550,34 +9557,34 @@ bool IfcTendon::hasAnchorageSlip() { return !entity->getArgument(15)->isNull(); 
 IfcPositiveLengthMeasure IfcTendon::AnchorageSlip() { return *entity->getArgument(15); }
 bool IfcTendon::hasMinCurvatureRadius() { return !entity->getArgument(16)->isNull(); }
 IfcPositiveLengthMeasure IfcTendon::MinCurvatureRadius() { return *entity->getArgument(16); }
-bool IfcTendon::is(Type::Enum v) { return v == Type::IfcTendon || IfcReinforcingElement::is(v); }
-Type::Enum IfcTendon::type() { return Type::IfcTendon; }
+bool IfcTendon::is(Type::Enum v) const { return v == Type::IfcTendon || IfcReinforcingElement::is(v); }
+Type::Enum IfcTendon::type() const { return Type::IfcTendon; }
 Type::Enum IfcTendon::Class() { return Type::IfcTendon; }
 IfcTendon::IfcTendon(IfcAbstractEntityPtr e) { if (!is(Type::IfcTendon)) throw; entity = e; } 
 // IfcTendonAnchor
-bool IfcTendonAnchor::is(Type::Enum v) { return v == Type::IfcTendonAnchor || IfcReinforcingElement::is(v); }
-Type::Enum IfcTendonAnchor::type() { return Type::IfcTendonAnchor; }
+bool IfcTendonAnchor::is(Type::Enum v) const { return v == Type::IfcTendonAnchor || IfcReinforcingElement::is(v); }
+Type::Enum IfcTendonAnchor::type() const { return Type::IfcTendonAnchor; }
 Type::Enum IfcTendonAnchor::Class() { return Type::IfcTendonAnchor; }
 IfcTendonAnchor::IfcTendonAnchor(IfcAbstractEntityPtr e) { if (!is(Type::IfcTendonAnchor)) throw; entity = e; } 
 // IfcTerminatorSymbol
-SHARED_PTR<IfcAnnotationCurveOccurrence> IfcTerminatorSymbol::AnnotatedCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcAnnotationCurveOccurrence>(*entity->getArgument(3)); }
-bool IfcTerminatorSymbol::is(Type::Enum v) { return v == Type::IfcTerminatorSymbol || IfcAnnotationSymbolOccurrence::is(v); }
-Type::Enum IfcTerminatorSymbol::type() { return Type::IfcTerminatorSymbol; }
+IfcAnnotationCurveOccurrence* IfcTerminatorSymbol::AnnotatedCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcAnnotationCurveOccurrence>(*entity->getArgument(3)); }
+bool IfcTerminatorSymbol::is(Type::Enum v) const { return v == Type::IfcTerminatorSymbol || IfcAnnotationSymbolOccurrence::is(v); }
+Type::Enum IfcTerminatorSymbol::type() const { return Type::IfcTerminatorSymbol; }
 Type::Enum IfcTerminatorSymbol::Class() { return Type::IfcTerminatorSymbol; }
 IfcTerminatorSymbol::IfcTerminatorSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcTerminatorSymbol)) throw; entity = e; } 
 // IfcTextLiteral
 IfcPresentableText IfcTextLiteral::Literal() { return *entity->getArgument(0); }
 IfcAxis2Placement IfcTextLiteral::Placement() { return *entity->getArgument(1); }
 IfcTextPath::IfcTextPath IfcTextLiteral::Path() { return IfcTextPath::FromString(*entity->getArgument(2)); }
-bool IfcTextLiteral::is(Type::Enum v) { return v == Type::IfcTextLiteral || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcTextLiteral::type() { return Type::IfcTextLiteral; }
+bool IfcTextLiteral::is(Type::Enum v) const { return v == Type::IfcTextLiteral || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcTextLiteral::type() const { return Type::IfcTextLiteral; }
 Type::Enum IfcTextLiteral::Class() { return Type::IfcTextLiteral; }
 IfcTextLiteral::IfcTextLiteral(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextLiteral)) throw; entity = e; } 
 // IfcTextLiteralWithExtent
-SHARED_PTR<IfcPlanarExtent> IfcTextLiteralWithExtent::Extent() { return reinterpret_pointer_cast<IfcBaseClass,IfcPlanarExtent>(*entity->getArgument(3)); }
+IfcPlanarExtent* IfcTextLiteralWithExtent::Extent() { return reinterpret_pointer_cast<IfcBaseClass,IfcPlanarExtent>(*entity->getArgument(3)); }
 IfcBoxAlignment IfcTextLiteralWithExtent::BoxAlignment() { return *entity->getArgument(4); }
-bool IfcTextLiteralWithExtent::is(Type::Enum v) { return v == Type::IfcTextLiteralWithExtent || IfcTextLiteral::is(v); }
-Type::Enum IfcTextLiteralWithExtent::type() { return Type::IfcTextLiteralWithExtent; }
+bool IfcTextLiteralWithExtent::is(Type::Enum v) const { return v == Type::IfcTextLiteralWithExtent || IfcTextLiteral::is(v); }
+Type::Enum IfcTextLiteralWithExtent::type() const { return Type::IfcTextLiteralWithExtent; }
 Type::Enum IfcTextLiteralWithExtent::Class() { return Type::IfcTextLiteralWithExtent; }
 IfcTextLiteralWithExtent::IfcTextLiteralWithExtent(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextLiteralWithExtent)) throw; entity = e; } 
 // IfcTextStyle
@@ -9586,8 +9593,8 @@ IfcCharacterStyleSelect IfcTextStyle::TextCharacterAppearance() { return *entity
 bool IfcTextStyle::hasTextStyle() { return !entity->getArgument(2)->isNull(); }
 IfcTextStyleSelect IfcTextStyle::TextStyle() { return *entity->getArgument(2); }
 IfcTextFontSelect IfcTextStyle::TextFontStyle() { return *entity->getArgument(3); }
-bool IfcTextStyle::is(Type::Enum v) { return v == Type::IfcTextStyle || IfcPresentationStyle::is(v); }
-Type::Enum IfcTextStyle::type() { return Type::IfcTextStyle; }
+bool IfcTextStyle::is(Type::Enum v) const { return v == Type::IfcTextStyle || IfcPresentationStyle::is(v); }
+Type::Enum IfcTextStyle::type() const { return Type::IfcTextStyle; }
 Type::Enum IfcTextStyle::Class() { return Type::IfcTextStyle; }
 IfcTextStyle::IfcTextStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextStyle)) throw; entity = e; } 
 // IfcTextStyleFontModel
@@ -9600,16 +9607,16 @@ IfcFontVariant IfcTextStyleFontModel::FontVariant() { return *entity->getArgumen
 bool IfcTextStyleFontModel::hasFontWeight() { return !entity->getArgument(4)->isNull(); }
 IfcFontWeight IfcTextStyleFontModel::FontWeight() { return *entity->getArgument(4); }
 IfcSizeSelect IfcTextStyleFontModel::FontSize() { return *entity->getArgument(5); }
-bool IfcTextStyleFontModel::is(Type::Enum v) { return v == Type::IfcTextStyleFontModel || IfcPreDefinedTextFont::is(v); }
-Type::Enum IfcTextStyleFontModel::type() { return Type::IfcTextStyleFontModel; }
+bool IfcTextStyleFontModel::is(Type::Enum v) const { return v == Type::IfcTextStyleFontModel || IfcPreDefinedTextFont::is(v); }
+Type::Enum IfcTextStyleFontModel::type() const { return Type::IfcTextStyleFontModel; }
 Type::Enum IfcTextStyleFontModel::Class() { return Type::IfcTextStyleFontModel; }
 IfcTextStyleFontModel::IfcTextStyleFontModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextStyleFontModel)) throw; entity = e; } 
 // IfcTextStyleForDefinedFont
 IfcColour IfcTextStyleForDefinedFont::Colour() { return *entity->getArgument(0); }
 bool IfcTextStyleForDefinedFont::hasBackgroundColour() { return !entity->getArgument(1)->isNull(); }
 IfcColour IfcTextStyleForDefinedFont::BackgroundColour() { return *entity->getArgument(1); }
-bool IfcTextStyleForDefinedFont::is(Type::Enum v) { return v == Type::IfcTextStyleForDefinedFont; }
-Type::Enum IfcTextStyleForDefinedFont::type() { return Type::IfcTextStyleForDefinedFont; }
+bool IfcTextStyleForDefinedFont::is(Type::Enum v) const { return v == Type::IfcTextStyleForDefinedFont; }
+Type::Enum IfcTextStyleForDefinedFont::type() const { return Type::IfcTextStyleForDefinedFont; }
 Type::Enum IfcTextStyleForDefinedFont::Class() { return Type::IfcTextStyleForDefinedFont; }
 IfcTextStyleForDefinedFont::IfcTextStyleForDefinedFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextStyleForDefinedFont)) throw; entity = e; } 
 // IfcTextStyleTextModel
@@ -9627,8 +9634,8 @@ bool IfcTextStyleTextModel::hasTextTransform() { return !entity->getArgument(5)-
 IfcTextTransformation IfcTextStyleTextModel::TextTransform() { return *entity->getArgument(5); }
 bool IfcTextStyleTextModel::hasLineHeight() { return !entity->getArgument(6)->isNull(); }
 IfcSizeSelect IfcTextStyleTextModel::LineHeight() { return *entity->getArgument(6); }
-bool IfcTextStyleTextModel::is(Type::Enum v) { return v == Type::IfcTextStyleTextModel; }
-Type::Enum IfcTextStyleTextModel::type() { return Type::IfcTextStyleTextModel; }
+bool IfcTextStyleTextModel::is(Type::Enum v) const { return v == Type::IfcTextStyleTextModel; }
+Type::Enum IfcTextStyleTextModel::type() const { return Type::IfcTextStyleTextModel; }
 Type::Enum IfcTextStyleTextModel::Class() { return Type::IfcTextStyleTextModel; }
 IfcTextStyleTextModel::IfcTextStyleTextModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextStyleTextModel)) throw; entity = e; } 
 // IfcTextStyleWithBoxCharacteristics
@@ -9642,33 +9649,33 @@ bool IfcTextStyleWithBoxCharacteristics::hasBoxRotateAngle() { return !entity->g
 IfcPlaneAngleMeasure IfcTextStyleWithBoxCharacteristics::BoxRotateAngle() { return *entity->getArgument(3); }
 bool IfcTextStyleWithBoxCharacteristics::hasCharacterSpacing() { return !entity->getArgument(4)->isNull(); }
 IfcSizeSelect IfcTextStyleWithBoxCharacteristics::CharacterSpacing() { return *entity->getArgument(4); }
-bool IfcTextStyleWithBoxCharacteristics::is(Type::Enum v) { return v == Type::IfcTextStyleWithBoxCharacteristics; }
-Type::Enum IfcTextStyleWithBoxCharacteristics::type() { return Type::IfcTextStyleWithBoxCharacteristics; }
+bool IfcTextStyleWithBoxCharacteristics::is(Type::Enum v) const { return v == Type::IfcTextStyleWithBoxCharacteristics; }
+Type::Enum IfcTextStyleWithBoxCharacteristics::type() const { return Type::IfcTextStyleWithBoxCharacteristics; }
 Type::Enum IfcTextStyleWithBoxCharacteristics::Class() { return Type::IfcTextStyleWithBoxCharacteristics; }
 IfcTextStyleWithBoxCharacteristics::IfcTextStyleWithBoxCharacteristics(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextStyleWithBoxCharacteristics)) throw; entity = e; } 
 // IfcTextureCoordinate
 IfcAnnotationSurface::list IfcTextureCoordinate::AnnotatedSurface() { RETURN_INVERSE(IfcAnnotationSurface) }
-bool IfcTextureCoordinate::is(Type::Enum v) { return v == Type::IfcTextureCoordinate; }
-Type::Enum IfcTextureCoordinate::type() { return Type::IfcTextureCoordinate; }
+bool IfcTextureCoordinate::is(Type::Enum v) const { return v == Type::IfcTextureCoordinate; }
+Type::Enum IfcTextureCoordinate::type() const { return Type::IfcTextureCoordinate; }
 Type::Enum IfcTextureCoordinate::Class() { return Type::IfcTextureCoordinate; }
 IfcTextureCoordinate::IfcTextureCoordinate(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextureCoordinate)) throw; entity = e; } 
 // IfcTextureCoordinateGenerator
 IfcLabel IfcTextureCoordinateGenerator::Mode() { return *entity->getArgument(0); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTextureCoordinateGenerator::Parameter() { RETURN_AS_LIST(IfcAbstractSelect,1) }
-bool IfcTextureCoordinateGenerator::is(Type::Enum v) { return v == Type::IfcTextureCoordinateGenerator || IfcTextureCoordinate::is(v); }
-Type::Enum IfcTextureCoordinateGenerator::type() { return Type::IfcTextureCoordinateGenerator; }
+bool IfcTextureCoordinateGenerator::is(Type::Enum v) const { return v == Type::IfcTextureCoordinateGenerator || IfcTextureCoordinate::is(v); }
+Type::Enum IfcTextureCoordinateGenerator::type() const { return Type::IfcTextureCoordinateGenerator; }
 Type::Enum IfcTextureCoordinateGenerator::Class() { return Type::IfcTextureCoordinateGenerator; }
 IfcTextureCoordinateGenerator::IfcTextureCoordinateGenerator(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextureCoordinateGenerator)) throw; entity = e; } 
 // IfcTextureMap
 SHARED_PTR< IfcTemplatedEntityList<IfcVertexBasedTextureMap> > IfcTextureMap::TextureMaps() { RETURN_AS_LIST(IfcVertexBasedTextureMap,0) }
-bool IfcTextureMap::is(Type::Enum v) { return v == Type::IfcTextureMap || IfcTextureCoordinate::is(v); }
-Type::Enum IfcTextureMap::type() { return Type::IfcTextureMap; }
+bool IfcTextureMap::is(Type::Enum v) const { return v == Type::IfcTextureMap || IfcTextureCoordinate::is(v); }
+Type::Enum IfcTextureMap::type() const { return Type::IfcTextureMap; }
 Type::Enum IfcTextureMap::Class() { return Type::IfcTextureMap; }
 IfcTextureMap::IfcTextureMap(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextureMap)) throw; entity = e; } 
 // IfcTextureVertex
 std::vector<IfcParameterValue> /*[2:2]*/ IfcTextureVertex::Coordinates() { return *entity->getArgument(0); }
-bool IfcTextureVertex::is(Type::Enum v) { return v == Type::IfcTextureVertex; }
-Type::Enum IfcTextureVertex::type() { return Type::IfcTextureVertex; }
+bool IfcTextureVertex::is(Type::Enum v) const { return v == Type::IfcTextureVertex; }
+Type::Enum IfcTextureVertex::type() const { return Type::IfcTextureVertex; }
 Type::Enum IfcTextureVertex::Class() { return Type::IfcTextureVertex; }
 IfcTextureVertex::IfcTextureVertex(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextureVertex)) throw; entity = e; } 
 // IfcThermalMaterialProperties
@@ -9680,8 +9687,8 @@ bool IfcThermalMaterialProperties::hasFreezingPoint() { return !entity->getArgum
 IfcThermodynamicTemperatureMeasure IfcThermalMaterialProperties::FreezingPoint() { return *entity->getArgument(3); }
 bool IfcThermalMaterialProperties::hasThermalConductivity() { return !entity->getArgument(4)->isNull(); }
 IfcThermalConductivityMeasure IfcThermalMaterialProperties::ThermalConductivity() { return *entity->getArgument(4); }
-bool IfcThermalMaterialProperties::is(Type::Enum v) { return v == Type::IfcThermalMaterialProperties || IfcMaterialProperties::is(v); }
-Type::Enum IfcThermalMaterialProperties::type() { return Type::IfcThermalMaterialProperties; }
+bool IfcThermalMaterialProperties::is(Type::Enum v) const { return v == Type::IfcThermalMaterialProperties || IfcMaterialProperties::is(v); }
+Type::Enum IfcThermalMaterialProperties::type() const { return Type::IfcThermalMaterialProperties; }
 Type::Enum IfcThermalMaterialProperties::Class() { return Type::IfcThermalMaterialProperties; }
 IfcThermalMaterialProperties::IfcThermalMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcThermalMaterialProperties)) throw; entity = e; } 
 // IfcTimeSeries
@@ -9697,46 +9704,46 @@ IfcLabel IfcTimeSeries::UserDefinedDataOrigin() { return *entity->getArgument(6)
 bool IfcTimeSeries::hasUnit() { return !entity->getArgument(7)->isNull(); }
 IfcUnit IfcTimeSeries::Unit() { return *entity->getArgument(7); }
 IfcTimeSeriesReferenceRelationship::list IfcTimeSeries::DocumentedBy() { RETURN_INVERSE(IfcTimeSeriesReferenceRelationship) }
-bool IfcTimeSeries::is(Type::Enum v) { return v == Type::IfcTimeSeries; }
-Type::Enum IfcTimeSeries::type() { return Type::IfcTimeSeries; }
+bool IfcTimeSeries::is(Type::Enum v) const { return v == Type::IfcTimeSeries; }
+Type::Enum IfcTimeSeries::type() const { return Type::IfcTimeSeries; }
 Type::Enum IfcTimeSeries::Class() { return Type::IfcTimeSeries; }
 IfcTimeSeries::IfcTimeSeries(IfcAbstractEntityPtr e) { if (!is(Type::IfcTimeSeries)) throw; entity = e; } 
 // IfcTimeSeriesReferenceRelationship
-SHARED_PTR<IfcTimeSeries> IfcTimeSeriesReferenceRelationship::ReferencedTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(0)); }
+IfcTimeSeries* IfcTimeSeriesReferenceRelationship::ReferencedTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTimeSeriesReferenceRelationship::TimeSeriesReferences() { RETURN_AS_LIST(IfcAbstractSelect,1) }
-bool IfcTimeSeriesReferenceRelationship::is(Type::Enum v) { return v == Type::IfcTimeSeriesReferenceRelationship; }
-Type::Enum IfcTimeSeriesReferenceRelationship::type() { return Type::IfcTimeSeriesReferenceRelationship; }
+bool IfcTimeSeriesReferenceRelationship::is(Type::Enum v) const { return v == Type::IfcTimeSeriesReferenceRelationship; }
+Type::Enum IfcTimeSeriesReferenceRelationship::type() const { return Type::IfcTimeSeriesReferenceRelationship; }
 Type::Enum IfcTimeSeriesReferenceRelationship::Class() { return Type::IfcTimeSeriesReferenceRelationship; }
 IfcTimeSeriesReferenceRelationship::IfcTimeSeriesReferenceRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcTimeSeriesReferenceRelationship)) throw; entity = e; } 
 // IfcTimeSeriesSchedule
 bool IfcTimeSeriesSchedule::hasApplicableDates() { return !entity->getArgument(5)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTimeSeriesSchedule::ApplicableDates() { RETURN_AS_LIST(IfcAbstractSelect,5) }
 IfcTimeSeriesScheduleTypeEnum::IfcTimeSeriesScheduleTypeEnum IfcTimeSeriesSchedule::TimeSeriesScheduleType() { return IfcTimeSeriesScheduleTypeEnum::FromString(*entity->getArgument(6)); }
-SHARED_PTR<IfcTimeSeries> IfcTimeSeriesSchedule::TimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(7)); }
-bool IfcTimeSeriesSchedule::is(Type::Enum v) { return v == Type::IfcTimeSeriesSchedule || IfcControl::is(v); }
-Type::Enum IfcTimeSeriesSchedule::type() { return Type::IfcTimeSeriesSchedule; }
+IfcTimeSeries* IfcTimeSeriesSchedule::TimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(7)); }
+bool IfcTimeSeriesSchedule::is(Type::Enum v) const { return v == Type::IfcTimeSeriesSchedule || IfcControl::is(v); }
+Type::Enum IfcTimeSeriesSchedule::type() const { return Type::IfcTimeSeriesSchedule; }
 Type::Enum IfcTimeSeriesSchedule::Class() { return Type::IfcTimeSeriesSchedule; }
 IfcTimeSeriesSchedule::IfcTimeSeriesSchedule(IfcAbstractEntityPtr e) { if (!is(Type::IfcTimeSeriesSchedule)) throw; entity = e; } 
 // IfcTimeSeriesValue
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTimeSeriesValue::ListValues() { RETURN_AS_LIST(IfcAbstractSelect,0) }
-bool IfcTimeSeriesValue::is(Type::Enum v) { return v == Type::IfcTimeSeriesValue; }
-Type::Enum IfcTimeSeriesValue::type() { return Type::IfcTimeSeriesValue; }
+bool IfcTimeSeriesValue::is(Type::Enum v) const { return v == Type::IfcTimeSeriesValue; }
+Type::Enum IfcTimeSeriesValue::type() const { return Type::IfcTimeSeriesValue; }
 Type::Enum IfcTimeSeriesValue::Class() { return Type::IfcTimeSeriesValue; }
 IfcTimeSeriesValue::IfcTimeSeriesValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcTimeSeriesValue)) throw; entity = e; } 
 // IfcTopologicalRepresentationItem
-bool IfcTopologicalRepresentationItem::is(Type::Enum v) { return v == Type::IfcTopologicalRepresentationItem || IfcRepresentationItem::is(v); }
-Type::Enum IfcTopologicalRepresentationItem::type() { return Type::IfcTopologicalRepresentationItem; }
+bool IfcTopologicalRepresentationItem::is(Type::Enum v) const { return v == Type::IfcTopologicalRepresentationItem || IfcRepresentationItem::is(v); }
+Type::Enum IfcTopologicalRepresentationItem::type() const { return Type::IfcTopologicalRepresentationItem; }
 Type::Enum IfcTopologicalRepresentationItem::Class() { return Type::IfcTopologicalRepresentationItem; }
 IfcTopologicalRepresentationItem::IfcTopologicalRepresentationItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcTopologicalRepresentationItem)) throw; entity = e; } 
 // IfcTopologyRepresentation
-bool IfcTopologyRepresentation::is(Type::Enum v) { return v == Type::IfcTopologyRepresentation || IfcShapeModel::is(v); }
-Type::Enum IfcTopologyRepresentation::type() { return Type::IfcTopologyRepresentation; }
+bool IfcTopologyRepresentation::is(Type::Enum v) const { return v == Type::IfcTopologyRepresentation || IfcShapeModel::is(v); }
+Type::Enum IfcTopologyRepresentation::type() const { return Type::IfcTopologyRepresentation; }
 Type::Enum IfcTopologyRepresentation::Class() { return Type::IfcTopologyRepresentation; }
 IfcTopologyRepresentation::IfcTopologyRepresentation(IfcAbstractEntityPtr e) { if (!is(Type::IfcTopologyRepresentation)) throw; entity = e; } 
 // IfcTransformerType
 IfcTransformerTypeEnum::IfcTransformerTypeEnum IfcTransformerType::PredefinedType() { return IfcTransformerTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcTransformerType::is(Type::Enum v) { return v == Type::IfcTransformerType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcTransformerType::type() { return Type::IfcTransformerType; }
+bool IfcTransformerType::is(Type::Enum v) const { return v == Type::IfcTransformerType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcTransformerType::type() const { return Type::IfcTransformerType; }
 Type::Enum IfcTransformerType::Class() { return Type::IfcTransformerType; }
 IfcTransformerType::IfcTransformerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcTransformerType)) throw; entity = e; } 
 // IfcTransportElement
@@ -9746,14 +9753,14 @@ bool IfcTransportElement::hasCapacityByWeight() { return !entity->getArgument(9)
 IfcMassMeasure IfcTransportElement::CapacityByWeight() { return *entity->getArgument(9); }
 bool IfcTransportElement::hasCapacityByNumber() { return !entity->getArgument(10)->isNull(); }
 IfcCountMeasure IfcTransportElement::CapacityByNumber() { return *entity->getArgument(10); }
-bool IfcTransportElement::is(Type::Enum v) { return v == Type::IfcTransportElement || IfcElement::is(v); }
-Type::Enum IfcTransportElement::type() { return Type::IfcTransportElement; }
+bool IfcTransportElement::is(Type::Enum v) const { return v == Type::IfcTransportElement || IfcElement::is(v); }
+Type::Enum IfcTransportElement::type() const { return Type::IfcTransportElement; }
 Type::Enum IfcTransportElement::Class() { return Type::IfcTransportElement; }
 IfcTransportElement::IfcTransportElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcTransportElement)) throw; entity = e; } 
 // IfcTransportElementType
 IfcTransportElementTypeEnum::IfcTransportElementTypeEnum IfcTransportElementType::PredefinedType() { return IfcTransportElementTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcTransportElementType::is(Type::Enum v) { return v == Type::IfcTransportElementType || IfcElementType::is(v); }
-Type::Enum IfcTransportElementType::type() { return Type::IfcTransportElementType; }
+bool IfcTransportElementType::is(Type::Enum v) const { return v == Type::IfcTransportElementType || IfcElementType::is(v); }
+Type::Enum IfcTransportElementType::type() const { return Type::IfcTransportElementType; }
 Type::Enum IfcTransportElementType::Class() { return Type::IfcTransportElementType; }
 IfcTransportElementType::IfcTransportElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcTransportElementType)) throw; entity = e; } 
 // IfcTrapeziumProfileDef
@@ -9761,30 +9768,30 @@ IfcPositiveLengthMeasure IfcTrapeziumProfileDef::BottomXDim() { return *entity->
 IfcPositiveLengthMeasure IfcTrapeziumProfileDef::TopXDim() { return *entity->getArgument(4); }
 IfcPositiveLengthMeasure IfcTrapeziumProfileDef::YDim() { return *entity->getArgument(5); }
 IfcLengthMeasure IfcTrapeziumProfileDef::TopXOffset() { return *entity->getArgument(6); }
-bool IfcTrapeziumProfileDef::is(Type::Enum v) { return v == Type::IfcTrapeziumProfileDef || IfcParameterizedProfileDef::is(v); }
-Type::Enum IfcTrapeziumProfileDef::type() { return Type::IfcTrapeziumProfileDef; }
+bool IfcTrapeziumProfileDef::is(Type::Enum v) const { return v == Type::IfcTrapeziumProfileDef || IfcParameterizedProfileDef::is(v); }
+Type::Enum IfcTrapeziumProfileDef::type() const { return Type::IfcTrapeziumProfileDef; }
 Type::Enum IfcTrapeziumProfileDef::Class() { return Type::IfcTrapeziumProfileDef; }
 IfcTrapeziumProfileDef::IfcTrapeziumProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcTrapeziumProfileDef)) throw; entity = e; } 
 // IfcTrimmedCurve
-SHARED_PTR<IfcCurve> IfcTrimmedCurve::BasisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
+IfcCurve* IfcTrimmedCurve::BasisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTrimmedCurve::Trim1() { RETURN_AS_LIST(IfcAbstractSelect,1) }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTrimmedCurve::Trim2() { RETURN_AS_LIST(IfcAbstractSelect,2) }
 bool IfcTrimmedCurve::SenseAgreement() { return *entity->getArgument(3); }
 IfcTrimmingPreference::IfcTrimmingPreference IfcTrimmedCurve::MasterRepresentation() { return IfcTrimmingPreference::FromString(*entity->getArgument(4)); }
-bool IfcTrimmedCurve::is(Type::Enum v) { return v == Type::IfcTrimmedCurve || IfcBoundedCurve::is(v); }
-Type::Enum IfcTrimmedCurve::type() { return Type::IfcTrimmedCurve; }
+bool IfcTrimmedCurve::is(Type::Enum v) const { return v == Type::IfcTrimmedCurve || IfcBoundedCurve::is(v); }
+Type::Enum IfcTrimmedCurve::type() const { return Type::IfcTrimmedCurve; }
 Type::Enum IfcTrimmedCurve::Class() { return Type::IfcTrimmedCurve; }
 IfcTrimmedCurve::IfcTrimmedCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcTrimmedCurve)) throw; entity = e; } 
 // IfcTubeBundleType
 IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum IfcTubeBundleType::PredefinedType() { return IfcTubeBundleTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcTubeBundleType::is(Type::Enum v) { return v == Type::IfcTubeBundleType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcTubeBundleType::type() { return Type::IfcTubeBundleType; }
+bool IfcTubeBundleType::is(Type::Enum v) const { return v == Type::IfcTubeBundleType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcTubeBundleType::type() const { return Type::IfcTubeBundleType; }
 Type::Enum IfcTubeBundleType::Class() { return Type::IfcTubeBundleType; }
 IfcTubeBundleType::IfcTubeBundleType(IfcAbstractEntityPtr e) { if (!is(Type::IfcTubeBundleType)) throw; entity = e; } 
 // IfcTwoDirectionRepeatFactor
-SHARED_PTR<IfcVector> IfcTwoDirectionRepeatFactor::SecondRepeatFactor() { return reinterpret_pointer_cast<IfcBaseClass,IfcVector>(*entity->getArgument(1)); }
-bool IfcTwoDirectionRepeatFactor::is(Type::Enum v) { return v == Type::IfcTwoDirectionRepeatFactor || IfcOneDirectionRepeatFactor::is(v); }
-Type::Enum IfcTwoDirectionRepeatFactor::type() { return Type::IfcTwoDirectionRepeatFactor; }
+IfcVector* IfcTwoDirectionRepeatFactor::SecondRepeatFactor() { return reinterpret_pointer_cast<IfcBaseClass,IfcVector>(*entity->getArgument(1)); }
+bool IfcTwoDirectionRepeatFactor::is(Type::Enum v) const { return v == Type::IfcTwoDirectionRepeatFactor || IfcOneDirectionRepeatFactor::is(v); }
+Type::Enum IfcTwoDirectionRepeatFactor::type() const { return Type::IfcTwoDirectionRepeatFactor; }
 Type::Enum IfcTwoDirectionRepeatFactor::Class() { return Type::IfcTwoDirectionRepeatFactor; }
 IfcTwoDirectionRepeatFactor::IfcTwoDirectionRepeatFactor(IfcAbstractEntityPtr e) { if (!is(Type::IfcTwoDirectionRepeatFactor)) throw; entity = e; } 
 // IfcTypeObject
@@ -9793,8 +9800,8 @@ IfcLabel IfcTypeObject::ApplicableOccurrence() { return *entity->getArgument(4);
 bool IfcTypeObject::hasHasPropertySets() { return !entity->getArgument(5)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcPropertySetDefinition> > IfcTypeObject::HasPropertySets() { RETURN_AS_LIST(IfcPropertySetDefinition,5) }
 IfcRelDefinesByType::list IfcTypeObject::ObjectTypeOf() { RETURN_INVERSE(IfcRelDefinesByType) }
-bool IfcTypeObject::is(Type::Enum v) { return v == Type::IfcTypeObject || IfcObjectDefinition::is(v); }
-Type::Enum IfcTypeObject::type() { return Type::IfcTypeObject; }
+bool IfcTypeObject::is(Type::Enum v) const { return v == Type::IfcTypeObject || IfcObjectDefinition::is(v); }
+Type::Enum IfcTypeObject::type() const { return Type::IfcTypeObject; }
 Type::Enum IfcTypeObject::Class() { return Type::IfcTypeObject; }
 IfcTypeObject::IfcTypeObject(IfcAbstractEntityPtr e) { if (!is(Type::IfcTypeObject)) throw; entity = e; } 
 // IfcTypeProduct
@@ -9802,8 +9809,8 @@ bool IfcTypeProduct::hasRepresentationMaps() { return !entity->getArgument(6)->i
 SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationMap> > IfcTypeProduct::RepresentationMaps() { RETURN_AS_LIST(IfcRepresentationMap,6) }
 bool IfcTypeProduct::hasTag() { return !entity->getArgument(7)->isNull(); }
 IfcLabel IfcTypeProduct::Tag() { return *entity->getArgument(7); }
-bool IfcTypeProduct::is(Type::Enum v) { return v == Type::IfcTypeProduct || IfcTypeObject::is(v); }
-Type::Enum IfcTypeProduct::type() { return Type::IfcTypeProduct; }
+bool IfcTypeProduct::is(Type::Enum v) const { return v == Type::IfcTypeProduct || IfcTypeObject::is(v); }
+Type::Enum IfcTypeProduct::type() const { return Type::IfcTypeProduct; }
 Type::Enum IfcTypeProduct::Class() { return Type::IfcTypeProduct; }
 IfcTypeProduct::IfcTypeProduct(IfcAbstractEntityPtr e) { if (!is(Type::IfcTypeProduct)) throw; entity = e; } 
 // IfcUShapeProfileDef
@@ -9819,97 +9826,97 @@ bool IfcUShapeProfileDef::hasFlangeSlope() { return !entity->getArgument(9)->isN
 IfcPlaneAngleMeasure IfcUShapeProfileDef::FlangeSlope() { return *entity->getArgument(9); }
 bool IfcUShapeProfileDef::hasCentreOfGravityInX() { return !entity->getArgument(10)->isNull(); }
 IfcPositiveLengthMeasure IfcUShapeProfileDef::CentreOfGravityInX() { return *entity->getArgument(10); }
-bool IfcUShapeProfileDef::is(Type::Enum v) { return v == Type::IfcUShapeProfileDef || IfcParameterizedProfileDef::is(v); }
-Type::Enum IfcUShapeProfileDef::type() { return Type::IfcUShapeProfileDef; }
+bool IfcUShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcUShapeProfileDef || IfcParameterizedProfileDef::is(v); }
+Type::Enum IfcUShapeProfileDef::type() const { return Type::IfcUShapeProfileDef; }
 Type::Enum IfcUShapeProfileDef::Class() { return Type::IfcUShapeProfileDef; }
 IfcUShapeProfileDef::IfcUShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcUShapeProfileDef)) throw; entity = e; } 
 // IfcUnitAssignment
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcUnitAssignment::Units() { RETURN_AS_LIST(IfcAbstractSelect,0) }
-bool IfcUnitAssignment::is(Type::Enum v) { return v == Type::IfcUnitAssignment; }
-Type::Enum IfcUnitAssignment::type() { return Type::IfcUnitAssignment; }
+bool IfcUnitAssignment::is(Type::Enum v) const { return v == Type::IfcUnitAssignment; }
+Type::Enum IfcUnitAssignment::type() const { return Type::IfcUnitAssignment; }
 Type::Enum IfcUnitAssignment::Class() { return Type::IfcUnitAssignment; }
 IfcUnitAssignment::IfcUnitAssignment(IfcAbstractEntityPtr e) { if (!is(Type::IfcUnitAssignment)) throw; entity = e; } 
 // IfcUnitaryEquipmentType
 IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum IfcUnitaryEquipmentType::PredefinedType() { return IfcUnitaryEquipmentTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcUnitaryEquipmentType::is(Type::Enum v) { return v == Type::IfcUnitaryEquipmentType || IfcEnergyConversionDeviceType::is(v); }
-Type::Enum IfcUnitaryEquipmentType::type() { return Type::IfcUnitaryEquipmentType; }
+bool IfcUnitaryEquipmentType::is(Type::Enum v) const { return v == Type::IfcUnitaryEquipmentType || IfcEnergyConversionDeviceType::is(v); }
+Type::Enum IfcUnitaryEquipmentType::type() const { return Type::IfcUnitaryEquipmentType; }
 Type::Enum IfcUnitaryEquipmentType::Class() { return Type::IfcUnitaryEquipmentType; }
 IfcUnitaryEquipmentType::IfcUnitaryEquipmentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcUnitaryEquipmentType)) throw; entity = e; } 
 // IfcValveType
 IfcValveTypeEnum::IfcValveTypeEnum IfcValveType::PredefinedType() { return IfcValveTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcValveType::is(Type::Enum v) { return v == Type::IfcValveType || IfcFlowControllerType::is(v); }
-Type::Enum IfcValveType::type() { return Type::IfcValveType; }
+bool IfcValveType::is(Type::Enum v) const { return v == Type::IfcValveType || IfcFlowControllerType::is(v); }
+Type::Enum IfcValveType::type() const { return Type::IfcValveType; }
 Type::Enum IfcValveType::Class() { return Type::IfcValveType; }
 IfcValveType::IfcValveType(IfcAbstractEntityPtr e) { if (!is(Type::IfcValveType)) throw; entity = e; } 
 // IfcVector
-SHARED_PTR<IfcDirection> IfcVector::Orientation() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(0)); }
+IfcDirection* IfcVector::Orientation() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(0)); }
 IfcLengthMeasure IfcVector::Magnitude() { return *entity->getArgument(1); }
-bool IfcVector::is(Type::Enum v) { return v == Type::IfcVector || IfcGeometricRepresentationItem::is(v); }
-Type::Enum IfcVector::type() { return Type::IfcVector; }
+bool IfcVector::is(Type::Enum v) const { return v == Type::IfcVector || IfcGeometricRepresentationItem::is(v); }
+Type::Enum IfcVector::type() const { return Type::IfcVector; }
 Type::Enum IfcVector::Class() { return Type::IfcVector; }
 IfcVector::IfcVector(IfcAbstractEntityPtr e) { if (!is(Type::IfcVector)) throw; entity = e; } 
 // IfcVertex
-bool IfcVertex::is(Type::Enum v) { return v == Type::IfcVertex || IfcTopologicalRepresentationItem::is(v); }
-Type::Enum IfcVertex::type() { return Type::IfcVertex; }
+bool IfcVertex::is(Type::Enum v) const { return v == Type::IfcVertex || IfcTopologicalRepresentationItem::is(v); }
+Type::Enum IfcVertex::type() const { return Type::IfcVertex; }
 Type::Enum IfcVertex::Class() { return Type::IfcVertex; }
 IfcVertex::IfcVertex(IfcAbstractEntityPtr e) { if (!is(Type::IfcVertex)) throw; entity = e; } 
 // IfcVertexBasedTextureMap
 SHARED_PTR< IfcTemplatedEntityList<IfcTextureVertex> > IfcVertexBasedTextureMap::TextureVertices() { RETURN_AS_LIST(IfcTextureVertex,0) }
 SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > IfcVertexBasedTextureMap::TexturePoints() { RETURN_AS_LIST(IfcCartesianPoint,1) }
-bool IfcVertexBasedTextureMap::is(Type::Enum v) { return v == Type::IfcVertexBasedTextureMap; }
-Type::Enum IfcVertexBasedTextureMap::type() { return Type::IfcVertexBasedTextureMap; }
+bool IfcVertexBasedTextureMap::is(Type::Enum v) const { return v == Type::IfcVertexBasedTextureMap; }
+Type::Enum IfcVertexBasedTextureMap::type() const { return Type::IfcVertexBasedTextureMap; }
 Type::Enum IfcVertexBasedTextureMap::Class() { return Type::IfcVertexBasedTextureMap; }
 IfcVertexBasedTextureMap::IfcVertexBasedTextureMap(IfcAbstractEntityPtr e) { if (!is(Type::IfcVertexBasedTextureMap)) throw; entity = e; } 
 // IfcVertexLoop
-SHARED_PTR<IfcVertex> IfcVertexLoop::LoopVertex() { return reinterpret_pointer_cast<IfcBaseClass,IfcVertex>(*entity->getArgument(0)); }
-bool IfcVertexLoop::is(Type::Enum v) { return v == Type::IfcVertexLoop || IfcLoop::is(v); }
-Type::Enum IfcVertexLoop::type() { return Type::IfcVertexLoop; }
+IfcVertex* IfcVertexLoop::LoopVertex() { return reinterpret_pointer_cast<IfcBaseClass,IfcVertex>(*entity->getArgument(0)); }
+bool IfcVertexLoop::is(Type::Enum v) const { return v == Type::IfcVertexLoop || IfcLoop::is(v); }
+Type::Enum IfcVertexLoop::type() const { return Type::IfcVertexLoop; }
 Type::Enum IfcVertexLoop::Class() { return Type::IfcVertexLoop; }
 IfcVertexLoop::IfcVertexLoop(IfcAbstractEntityPtr e) { if (!is(Type::IfcVertexLoop)) throw; entity = e; } 
 // IfcVertexPoint
-SHARED_PTR<IfcPoint> IfcVertexPoint::VertexGeometry() { return reinterpret_pointer_cast<IfcBaseClass,IfcPoint>(*entity->getArgument(0)); }
-bool IfcVertexPoint::is(Type::Enum v) { return v == Type::IfcVertexPoint || IfcVertex::is(v); }
-Type::Enum IfcVertexPoint::type() { return Type::IfcVertexPoint; }
+IfcPoint* IfcVertexPoint::VertexGeometry() { return reinterpret_pointer_cast<IfcBaseClass,IfcPoint>(*entity->getArgument(0)); }
+bool IfcVertexPoint::is(Type::Enum v) const { return v == Type::IfcVertexPoint || IfcVertex::is(v); }
+Type::Enum IfcVertexPoint::type() const { return Type::IfcVertexPoint; }
 Type::Enum IfcVertexPoint::Class() { return Type::IfcVertexPoint; }
 IfcVertexPoint::IfcVertexPoint(IfcAbstractEntityPtr e) { if (!is(Type::IfcVertexPoint)) throw; entity = e; } 
 // IfcVibrationIsolatorType
 IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum IfcVibrationIsolatorType::PredefinedType() { return IfcVibrationIsolatorTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcVibrationIsolatorType::is(Type::Enum v) { return v == Type::IfcVibrationIsolatorType || IfcDiscreteAccessoryType::is(v); }
-Type::Enum IfcVibrationIsolatorType::type() { return Type::IfcVibrationIsolatorType; }
+bool IfcVibrationIsolatorType::is(Type::Enum v) const { return v == Type::IfcVibrationIsolatorType || IfcDiscreteAccessoryType::is(v); }
+Type::Enum IfcVibrationIsolatorType::type() const { return Type::IfcVibrationIsolatorType; }
 Type::Enum IfcVibrationIsolatorType::Class() { return Type::IfcVibrationIsolatorType; }
 IfcVibrationIsolatorType::IfcVibrationIsolatorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcVibrationIsolatorType)) throw; entity = e; } 
 // IfcVirtualElement
-bool IfcVirtualElement::is(Type::Enum v) { return v == Type::IfcVirtualElement || IfcElement::is(v); }
-Type::Enum IfcVirtualElement::type() { return Type::IfcVirtualElement; }
+bool IfcVirtualElement::is(Type::Enum v) const { return v == Type::IfcVirtualElement || IfcElement::is(v); }
+Type::Enum IfcVirtualElement::type() const { return Type::IfcVirtualElement; }
 Type::Enum IfcVirtualElement::Class() { return Type::IfcVirtualElement; }
 IfcVirtualElement::IfcVirtualElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcVirtualElement)) throw; entity = e; } 
 // IfcVirtualGridIntersection
 SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > IfcVirtualGridIntersection::IntersectingAxes() { RETURN_AS_LIST(IfcGridAxis,0) }
 std::vector<IfcLengthMeasure> /*[2:3]*/ IfcVirtualGridIntersection::OffsetDistances() { return *entity->getArgument(1); }
-bool IfcVirtualGridIntersection::is(Type::Enum v) { return v == Type::IfcVirtualGridIntersection; }
-Type::Enum IfcVirtualGridIntersection::type() { return Type::IfcVirtualGridIntersection; }
+bool IfcVirtualGridIntersection::is(Type::Enum v) const { return v == Type::IfcVirtualGridIntersection; }
+Type::Enum IfcVirtualGridIntersection::type() const { return Type::IfcVirtualGridIntersection; }
 Type::Enum IfcVirtualGridIntersection::Class() { return Type::IfcVirtualGridIntersection; }
 IfcVirtualGridIntersection::IfcVirtualGridIntersection(IfcAbstractEntityPtr e) { if (!is(Type::IfcVirtualGridIntersection)) throw; entity = e; } 
 // IfcWall
-bool IfcWall::is(Type::Enum v) { return v == Type::IfcWall || IfcBuildingElement::is(v); }
-Type::Enum IfcWall::type() { return Type::IfcWall; }
+bool IfcWall::is(Type::Enum v) const { return v == Type::IfcWall || IfcBuildingElement::is(v); }
+Type::Enum IfcWall::type() const { return Type::IfcWall; }
 Type::Enum IfcWall::Class() { return Type::IfcWall; }
 IfcWall::IfcWall(IfcAbstractEntityPtr e) { if (!is(Type::IfcWall)) throw; entity = e; } 
 // IfcWallStandardCase
-bool IfcWallStandardCase::is(Type::Enum v) { return v == Type::IfcWallStandardCase || IfcWall::is(v); }
-Type::Enum IfcWallStandardCase::type() { return Type::IfcWallStandardCase; }
+bool IfcWallStandardCase::is(Type::Enum v) const { return v == Type::IfcWallStandardCase || IfcWall::is(v); }
+Type::Enum IfcWallStandardCase::type() const { return Type::IfcWallStandardCase; }
 Type::Enum IfcWallStandardCase::Class() { return Type::IfcWallStandardCase; }
 IfcWallStandardCase::IfcWallStandardCase(IfcAbstractEntityPtr e) { if (!is(Type::IfcWallStandardCase)) throw; entity = e; } 
 // IfcWallType
 IfcWallTypeEnum::IfcWallTypeEnum IfcWallType::PredefinedType() { return IfcWallTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcWallType::is(Type::Enum v) { return v == Type::IfcWallType || IfcBuildingElementType::is(v); }
-Type::Enum IfcWallType::type() { return Type::IfcWallType; }
+bool IfcWallType::is(Type::Enum v) const { return v == Type::IfcWallType || IfcBuildingElementType::is(v); }
+Type::Enum IfcWallType::type() const { return Type::IfcWallType; }
 Type::Enum IfcWallType::Class() { return Type::IfcWallType; }
 IfcWallType::IfcWallType(IfcAbstractEntityPtr e) { if (!is(Type::IfcWallType)) throw; entity = e; } 
 // IfcWasteTerminalType
 IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum IfcWasteTerminalType::PredefinedType() { return IfcWasteTerminalTypeEnum::FromString(*entity->getArgument(9)); }
-bool IfcWasteTerminalType::is(Type::Enum v) { return v == Type::IfcWasteTerminalType || IfcFlowTerminalType::is(v); }
-Type::Enum IfcWasteTerminalType::type() { return Type::IfcWasteTerminalType; }
+bool IfcWasteTerminalType::is(Type::Enum v) const { return v == Type::IfcWasteTerminalType || IfcFlowTerminalType::is(v); }
+Type::Enum IfcWasteTerminalType::type() const { return Type::IfcWasteTerminalType; }
 Type::Enum IfcWasteTerminalType::Class() { return Type::IfcWasteTerminalType; }
 IfcWasteTerminalType::IfcWasteTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcWasteTerminalType)) throw; entity = e; } 
 // IfcWaterProperties
@@ -9927,8 +9934,8 @@ bool IfcWaterProperties::hasPHLevel() { return !entity->getArgument(6)->isNull()
 IfcPHMeasure IfcWaterProperties::PHLevel() { return *entity->getArgument(6); }
 bool IfcWaterProperties::hasDissolvedSolidsContent() { return !entity->getArgument(7)->isNull(); }
 IfcNormalisedRatioMeasure IfcWaterProperties::DissolvedSolidsContent() { return *entity->getArgument(7); }
-bool IfcWaterProperties::is(Type::Enum v) { return v == Type::IfcWaterProperties || IfcMaterialProperties::is(v); }
-Type::Enum IfcWaterProperties::type() { return Type::IfcWaterProperties; }
+bool IfcWaterProperties::is(Type::Enum v) const { return v == Type::IfcWaterProperties || IfcMaterialProperties::is(v); }
+Type::Enum IfcWaterProperties::type() const { return Type::IfcWaterProperties; }
 Type::Enum IfcWaterProperties::Class() { return Type::IfcWaterProperties; }
 IfcWaterProperties::IfcWaterProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcWaterProperties)) throw; entity = e; } 
 // IfcWindow
@@ -9936,8 +9943,8 @@ bool IfcWindow::hasOverallHeight() { return !entity->getArgument(8)->isNull(); }
 IfcPositiveLengthMeasure IfcWindow::OverallHeight() { return *entity->getArgument(8); }
 bool IfcWindow::hasOverallWidth() { return !entity->getArgument(9)->isNull(); }
 IfcPositiveLengthMeasure IfcWindow::OverallWidth() { return *entity->getArgument(9); }
-bool IfcWindow::is(Type::Enum v) { return v == Type::IfcWindow || IfcBuildingElement::is(v); }
-Type::Enum IfcWindow::type() { return Type::IfcWindow; }
+bool IfcWindow::is(Type::Enum v) const { return v == Type::IfcWindow || IfcBuildingElement::is(v); }
+Type::Enum IfcWindow::type() const { return Type::IfcWindow; }
 Type::Enum IfcWindow::Class() { return Type::IfcWindow; }
 IfcWindow::IfcWindow(IfcAbstractEntityPtr e) { if (!is(Type::IfcWindow)) throw; entity = e; } 
 // IfcWindowLiningProperties
@@ -9958,9 +9965,9 @@ IfcNormalisedRatioMeasure IfcWindowLiningProperties::FirstMullionOffset() { retu
 bool IfcWindowLiningProperties::hasSecondMullionOffset() { return !entity->getArgument(11)->isNull(); }
 IfcNormalisedRatioMeasure IfcWindowLiningProperties::SecondMullionOffset() { return *entity->getArgument(11); }
 bool IfcWindowLiningProperties::hasShapeAspectStyle() { return !entity->getArgument(12)->isNull(); }
-SHARED_PTR<IfcShapeAspect> IfcWindowLiningProperties::ShapeAspectStyle() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(12)); }
-bool IfcWindowLiningProperties::is(Type::Enum v) { return v == Type::IfcWindowLiningProperties || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcWindowLiningProperties::type() { return Type::IfcWindowLiningProperties; }
+IfcShapeAspect* IfcWindowLiningProperties::ShapeAspectStyle() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(12)); }
+bool IfcWindowLiningProperties::is(Type::Enum v) const { return v == Type::IfcWindowLiningProperties || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcWindowLiningProperties::type() const { return Type::IfcWindowLiningProperties; }
 Type::Enum IfcWindowLiningProperties::Class() { return Type::IfcWindowLiningProperties; }
 IfcWindowLiningProperties::IfcWindowLiningProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcWindowLiningProperties)) throw; entity = e; } 
 // IfcWindowPanelProperties
@@ -9971,9 +9978,9 @@ IfcPositiveLengthMeasure IfcWindowPanelProperties::FrameDepth() { return *entity
 bool IfcWindowPanelProperties::hasFrameThickness() { return !entity->getArgument(7)->isNull(); }
 IfcPositiveLengthMeasure IfcWindowPanelProperties::FrameThickness() { return *entity->getArgument(7); }
 bool IfcWindowPanelProperties::hasShapeAspectStyle() { return !entity->getArgument(8)->isNull(); }
-SHARED_PTR<IfcShapeAspect> IfcWindowPanelProperties::ShapeAspectStyle() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(8)); }
-bool IfcWindowPanelProperties::is(Type::Enum v) { return v == Type::IfcWindowPanelProperties || IfcPropertySetDefinition::is(v); }
-Type::Enum IfcWindowPanelProperties::type() { return Type::IfcWindowPanelProperties; }
+IfcShapeAspect* IfcWindowPanelProperties::ShapeAspectStyle() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(8)); }
+bool IfcWindowPanelProperties::is(Type::Enum v) const { return v == Type::IfcWindowPanelProperties || IfcPropertySetDefinition::is(v); }
+Type::Enum IfcWindowPanelProperties::type() const { return Type::IfcWindowPanelProperties; }
 Type::Enum IfcWindowPanelProperties::Class() { return Type::IfcWindowPanelProperties; }
 IfcWindowPanelProperties::IfcWindowPanelProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcWindowPanelProperties)) throw; entity = e; } 
 // IfcWindowStyle
@@ -9981,8 +9988,8 @@ IfcWindowStyleConstructionEnum::IfcWindowStyleConstructionEnum IfcWindowStyle::C
 IfcWindowStyleOperationEnum::IfcWindowStyleOperationEnum IfcWindowStyle::OperationType() { return IfcWindowStyleOperationEnum::FromString(*entity->getArgument(9)); }
 bool IfcWindowStyle::ParameterTakesPrecedence() { return *entity->getArgument(10); }
 bool IfcWindowStyle::Sizeable() { return *entity->getArgument(11); }
-bool IfcWindowStyle::is(Type::Enum v) { return v == Type::IfcWindowStyle || IfcTypeProduct::is(v); }
-Type::Enum IfcWindowStyle::type() { return Type::IfcWindowStyle; }
+bool IfcWindowStyle::is(Type::Enum v) const { return v == Type::IfcWindowStyle || IfcTypeProduct::is(v); }
+Type::Enum IfcWindowStyle::type() const { return Type::IfcWindowStyle; }
 Type::Enum IfcWindowStyle::Class() { return Type::IfcWindowStyle; }
 IfcWindowStyle::IfcWindowStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcWindowStyle)) throw; entity = e; } 
 // IfcWorkControl
@@ -10003,18 +10010,18 @@ bool IfcWorkControl::hasWorkControlType() { return !entity->getArgument(13)->isN
 IfcWorkControlTypeEnum::IfcWorkControlTypeEnum IfcWorkControl::WorkControlType() { return IfcWorkControlTypeEnum::FromString(*entity->getArgument(13)); }
 bool IfcWorkControl::hasUserDefinedControlType() { return !entity->getArgument(14)->isNull(); }
 IfcLabel IfcWorkControl::UserDefinedControlType() { return *entity->getArgument(14); }
-bool IfcWorkControl::is(Type::Enum v) { return v == Type::IfcWorkControl || IfcControl::is(v); }
-Type::Enum IfcWorkControl::type() { return Type::IfcWorkControl; }
+bool IfcWorkControl::is(Type::Enum v) const { return v == Type::IfcWorkControl || IfcControl::is(v); }
+Type::Enum IfcWorkControl::type() const { return Type::IfcWorkControl; }
 Type::Enum IfcWorkControl::Class() { return Type::IfcWorkControl; }
 IfcWorkControl::IfcWorkControl(IfcAbstractEntityPtr e) { if (!is(Type::IfcWorkControl)) throw; entity = e; } 
 // IfcWorkPlan
-bool IfcWorkPlan::is(Type::Enum v) { return v == Type::IfcWorkPlan || IfcWorkControl::is(v); }
-Type::Enum IfcWorkPlan::type() { return Type::IfcWorkPlan; }
+bool IfcWorkPlan::is(Type::Enum v) const { return v == Type::IfcWorkPlan || IfcWorkControl::is(v); }
+Type::Enum IfcWorkPlan::type() const { return Type::IfcWorkPlan; }
 Type::Enum IfcWorkPlan::Class() { return Type::IfcWorkPlan; }
 IfcWorkPlan::IfcWorkPlan(IfcAbstractEntityPtr e) { if (!is(Type::IfcWorkPlan)) throw; entity = e; } 
 // IfcWorkSchedule
-bool IfcWorkSchedule::is(Type::Enum v) { return v == Type::IfcWorkSchedule || IfcWorkControl::is(v); }
-Type::Enum IfcWorkSchedule::type() { return Type::IfcWorkSchedule; }
+bool IfcWorkSchedule::is(Type::Enum v) const { return v == Type::IfcWorkSchedule || IfcWorkControl::is(v); }
+Type::Enum IfcWorkSchedule::type() const { return Type::IfcWorkSchedule; }
 Type::Enum IfcWorkSchedule::Class() { return Type::IfcWorkSchedule; }
 IfcWorkSchedule::IfcWorkSchedule(IfcAbstractEntityPtr e) { if (!is(Type::IfcWorkSchedule)) throw; entity = e; } 
 // IfcZShapeProfileDef
@@ -10026,12 +10033,12 @@ bool IfcZShapeProfileDef::hasFilletRadius() { return !entity->getArgument(7)->is
 IfcPositiveLengthMeasure IfcZShapeProfileDef::FilletRadius() { return *entity->getArgument(7); }
 bool IfcZShapeProfileDef::hasEdgeRadius() { return !entity->getArgument(8)->isNull(); }
 IfcPositiveLengthMeasure IfcZShapeProfileDef::EdgeRadius() { return *entity->getArgument(8); }
-bool IfcZShapeProfileDef::is(Type::Enum v) { return v == Type::IfcZShapeProfileDef || IfcParameterizedProfileDef::is(v); }
-Type::Enum IfcZShapeProfileDef::type() { return Type::IfcZShapeProfileDef; }
+bool IfcZShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcZShapeProfileDef || IfcParameterizedProfileDef::is(v); }
+Type::Enum IfcZShapeProfileDef::type() const { return Type::IfcZShapeProfileDef; }
 Type::Enum IfcZShapeProfileDef::Class() { return Type::IfcZShapeProfileDef; }
 IfcZShapeProfileDef::IfcZShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcZShapeProfileDef)) throw; entity = e; } 
 // IfcZone
-bool IfcZone::is(Type::Enum v) { return v == Type::IfcZone || IfcGroup::is(v); }
-Type::Enum IfcZone::type() { return Type::IfcZone; }
+bool IfcZone::is(Type::Enum v) const { return v == Type::IfcZone || IfcGroup::is(v); }
+Type::Enum IfcZone::type() const { return Type::IfcZone; }
 Type::Enum IfcZone::Class() { return Type::IfcZone; }
 IfcZone::IfcZone(IfcAbstractEntityPtr e) { if (!is(Type::IfcZone)) throw; entity = e; }

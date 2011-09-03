@@ -46,7 +46,7 @@ namespace IfcParse {
 
 	class Entity;
 	class Entities;
-	typedef SHARED_PTR<Entity> EntityPtr;
+	typedef Entity* EntityPtr;
 	typedef SHARED_PTR<Entities> EntitiesPtr;
 
 	//
@@ -130,6 +130,7 @@ namespace IfcParse {
 		void Push(ArgumentPtr l);
 	public:
 		ArgumentList(Tokens* t, std::vector<unsigned int>& ids);
+		~ArgumentList();
 		operator int() const;
 		operator bool() const;
 		operator float() const;
@@ -138,7 +139,7 @@ namespace IfcParse {
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
 		operator IfcUtil::IfcSchemaEntity() const;
-		operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const;
+		//operator IfcUtil::IfcAbstractSelect::ptr() const;
 		operator IfcEntities() const;
 		unsigned int Size() const;
 		ArgumentPtr operator [] (unsigned int i) const;
@@ -164,7 +165,7 @@ namespace IfcParse {
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
 		operator IfcUtil::IfcSchemaEntity() const;
-		operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const;
+		//operator IfcUtil::IfcAbstractSelect::ptr() const;
 		operator IfcEntities() const;
 		unsigned int Size() const;
 		ArgumentPtr operator [] (unsigned int i) const;
@@ -179,9 +180,10 @@ namespace IfcParse {
 	//
 	class EntityArgument : public Argument {
 	private:		
-		IfcUtil::IfcSchemaEntity entity;		
+		IfcUtil::IfcArgumentSelect* entity;		
 	public:
-		EntityArgument(IfcUtil::IfcSchemaEntity e);
+		EntityArgument(Ifc2x3::Type::Enum ty, Token t);
+		~EntityArgument();
 		operator int() const;
 		operator bool() const;
 		operator float() const;
@@ -190,7 +192,7 @@ namespace IfcParse {
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
 		operator IfcUtil::IfcSchemaEntity() const;
-		operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const;
+		//operator IfcUtil::IfcAbstractSelect::ptr() const;
 		operator IfcEntities() const;
 		unsigned int Size() const;
 		ArgumentPtr operator [] (unsigned int i) const;
@@ -212,14 +214,15 @@ namespace IfcParse {
 		unsigned int offset;		
 		Entity(unsigned int i, Tokens* t);
 		Entity(unsigned int i, Tokens* t, unsigned int o);
+		~Entity();
 		IfcEntities getInverse(Ifc2x3::Type::Enum c = Ifc2x3::Type::ALL);
 		IfcEntities getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a);
 		void Load(std::vector<unsigned int>& ids, bool seek=false);
 		ArgumentPtr getArgument (unsigned int i);
 		std::string toString();
 		std::string datatype();
-		Ifc2x3::Type::Enum type();
-		bool is(Ifc2x3::Type::Enum v);
+		Ifc2x3::Type::Enum type() const;
+		bool is(Ifc2x3::Type::Enum v) const;
 		unsigned int id();
 	};
 
@@ -254,7 +257,7 @@ private:
 	static std::ostream* log2;
 public:
 	static void SetOutput(std::ostream* l1, std::ostream* l2);
-	static void LogMessage(const std::string& type, const std::string& message, const SHARED_PTR<IfcAbstractEntity>& entity=SHARED_PTR<IfcAbstractEntity>());
+	static void LogMessage(const std::string& type, const std::string& message, const IfcAbstractEntityPtr entity=0);
 	static IfcParse::File* file;
 	static IfcParse::Tokens* tokens;
 	template <class T>

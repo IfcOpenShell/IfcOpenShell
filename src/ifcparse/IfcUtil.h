@@ -27,15 +27,17 @@
 #include "../ifcparse/Ifc2x3enum.h"
 
 class IfcAbstractEntity;
-typedef SHARED_PTR<IfcAbstractEntity> IfcAbstractEntityPtr;
+//typedef SHARED_PTR<IfcAbstractEntity> IfcAbstractEntityPtr;
+typedef IfcAbstractEntity* IfcAbstractEntityPtr;
 
 class IfcEntityList;
 typedef SHARED_PTR<IfcEntityList> IfcEntities;
 
 template <class F, class T>
-inline SHARED_PTR<T> reinterpret_pointer_cast(SHARED_PTR<F> from) {
-	SHARED_PTR<void> v = std::tr1::static_pointer_cast<void,F>(from);
-	return std::tr1::static_pointer_cast<T,void>(v);
+inline T* reinterpret_pointer_cast(F* from) {
+	return (T*)from;
+	//SHARED_PTR<void> v = std::tr1::static_pointer_cast<void,F>(from);
+	//return std::tr1::static_pointer_cast<T,void>(v);
 }
 
 namespace IfcUtil {
@@ -43,11 +45,12 @@ namespace IfcUtil {
 class IfcBaseClass {
 public:
     IfcAbstractEntityPtr entity;
-    virtual bool is(Ifc2x3::Type::Enum v) = 0;
-    virtual Ifc2x3::Type::Enum type() = 0;
+    virtual bool is(Ifc2x3::Type::Enum v) const = 0;
+    virtual Ifc2x3::Type::Enum type() const = 0;
 };
 
-typedef SHARED_PTR<IfcBaseClass> IfcSchemaEntity;
+//typedef SHARED_PTR<IfcBaseClass> IfcSchemaEntity;
+typedef IfcBaseClass* IfcSchemaEntity;
 
 }
 
@@ -67,10 +70,10 @@ public:
 
 template <class T>
 class IfcTemplatedEntityList {
-	std::vector<SHARED_PTR<T> > ls;
+	std::vector<T*> ls;
 public:
-	typedef typename std::vector<SHARED_PTR<T> >::const_iterator it;
-	inline void push(SHARED_PTR<T> t) {if (t) ls.push_back(t);}
+	typedef typename std::vector<T*>::const_iterator it;
+	inline void push(T* t) {if (t) ls.push_back(t);}
 	inline void push(SHARED_PTR< IfcTemplatedEntityList<T> > t) { for ( typename T::it it = t->begin(); it != t->end(); ++it ) push(*it); }
 	inline it begin() { return ls.begin(); }
 	inline it end() { return ls.end(); }
@@ -79,34 +82,37 @@ public:
 };
 
 class Argument;
-typedef SHARED_PTR<Argument> ArgumentPtr;
+//typedef SHARED_PTR<Argument> ArgumentPtr;
+typedef Argument* ArgumentPtr;
 
 namespace IfcUtil {
 	class IfcAbstractSelect : public IfcBaseClass {
 	public:
 		typedef SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > list;
 		typedef IfcTemplatedEntityList<IfcAbstractSelect>::it it;
-		typedef SHARED_PTR<IfcAbstractSelect> ptr;
+		typedef IfcAbstractSelect* ptr;
 		virtual bool isSimpleType() = 0;
 	};
 	class IfcEntitySelect : public IfcAbstractSelect {
 	public:
-		typedef SHARED_PTR<IfcEntitySelect> ptr;
-		IfcEntitySelect(SHARED_PTR<IfcUtil::IfcBaseClass> b);
+		typedef IfcEntitySelect* ptr;
+		IfcEntitySelect(IfcSchemaEntity b);
 		IfcEntitySelect(IfcAbstractEntityPtr e);
-		bool is(Ifc2x3::Type::Enum v);
-		Ifc2x3::Type::Enum type();
+		~IfcEntitySelect();
+		bool is(Ifc2x3::Type::Enum v) const;
+		Ifc2x3::Type::Enum type() const;
 		bool isSimpleType();
 	};
 	class IfcArgumentSelect : public IfcAbstractSelect {
 		Ifc2x3::Type::Enum _type;
 		ArgumentPtr arg;
 	public:
-		typedef SHARED_PTR<IfcArgumentSelect> ptr;
+		typedef IfcArgumentSelect* ptr;
 		IfcArgumentSelect(Ifc2x3::Type::Enum t, ArgumentPtr a);
+		~IfcArgumentSelect();
 		ArgumentPtr wrappedValue();
-		bool is(Ifc2x3::Type::Enum v);
-		Ifc2x3::Type::Enum type();
+		bool is(Ifc2x3::Type::Enum v) const;
+		Ifc2x3::Type::Enum type() const;
 		bool isSimpleType();
 	};
 }
@@ -122,12 +128,13 @@ public:
 	virtual operator std::vector<int>() const = 0;
 	virtual operator std::vector<std::string>() const = 0;
 	virtual operator IfcUtil::IfcSchemaEntity() const = 0;
-	virtual operator SHARED_PTR<IfcUtil::IfcAbstractSelect>() const = 0;
+	//virtual operator IfcUtil::IfcAbstractSelect::ptr() const = 0;
 	virtual operator IfcEntities() const = 0;
 	virtual unsigned int Size() const = 0;
 	virtual ArgumentPtr operator [] (unsigned int i) const = 0;
 	virtual std::string toString() const = 0;
 	virtual bool isNull() const = 0;
+	virtual ~Argument() {};
 };
 
 class IfcAbstractEntity {
@@ -136,8 +143,9 @@ public:
 	virtual IfcEntities getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a) = 0;
 	virtual std::string datatype() = 0;
 	virtual ArgumentPtr getArgument (unsigned int i) = 0;
-	virtual Ifc2x3::Type::Enum type() = 0;
-	virtual bool is(Ifc2x3::Type::Enum v) = 0;
+	virtual ~IfcAbstractEntity() {};
+	virtual Ifc2x3::Type::Enum type() const = 0;
+	virtual bool is(Ifc2x3::Type::Enum v) const = 0;
 	virtual std::string toString() = 0;
 	virtual unsigned int id() = 0;
 };

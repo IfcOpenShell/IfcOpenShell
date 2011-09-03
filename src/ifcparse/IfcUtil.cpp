@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "IfcUtil.h"
+#include <iostream>
 
 void IfcEntityList::push(IfcUtil::IfcSchemaEntity l) {
 	if ( l ) ls.push_back(l);
@@ -48,14 +49,16 @@ IfcEntities IfcEntityList::getInverse(Ifc2x3::Type::Enum c, int ar, const std::s
 	return l;
 }
  
-bool IfcUtil::IfcEntitySelect::is(Ifc2x3::Type::Enum v) { return entity->is(v); }
-Ifc2x3::Type::Enum IfcUtil::IfcEntitySelect::type() { return entity->type(); }
-IfcUtil::IfcEntitySelect::IfcEntitySelect(SHARED_PTR<IfcBaseClass> b) { entity = b->entity; }
+bool IfcUtil::IfcEntitySelect::is(Ifc2x3::Type::Enum v) const { return entity->is(v); }
+Ifc2x3::Type::Enum IfcUtil::IfcEntitySelect::type() const { return entity->type(); }
+IfcUtil::IfcEntitySelect::IfcEntitySelect(IfcSchemaEntity b) { entity = b->entity; }
 IfcUtil::IfcEntitySelect::IfcEntitySelect(IfcAbstractEntityPtr e) { entity = e; }
 bool IfcUtil::IfcEntitySelect::isSimpleType() { return false; }
+IfcUtil::IfcEntitySelect::~IfcEntitySelect() { delete entity; }
 
-bool IfcUtil::IfcArgumentSelect::is(Ifc2x3::Type::Enum v) { return _type == v; }
-Ifc2x3::Type::Enum IfcUtil::IfcArgumentSelect::type() { return _type; }
+bool IfcUtil::IfcArgumentSelect::is(Ifc2x3::Type::Enum v) const { return _type == v; }
+Ifc2x3::Type::Enum IfcUtil::IfcArgumentSelect::type() const { return _type; }
 IfcUtil::IfcArgumentSelect::IfcArgumentSelect(Ifc2x3::Type::Enum t, ArgumentPtr a) { _type = t; arg = a; }
 ArgumentPtr IfcUtil::IfcArgumentSelect::wrappedValue() { return arg; }
 bool IfcUtil::IfcArgumentSelect::isSimpleType() { return true; }
+IfcUtil::IfcArgumentSelect::~IfcArgumentSelect() { delete arg; }

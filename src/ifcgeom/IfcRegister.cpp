@@ -31,7 +31,7 @@ namespace IfcGeom {
 using namespace Ifc2x3;
 using namespace IfcUtil;
 
-bool IfcGeom::convert_shape(const SHARED_PTR<IfcBaseClass>& l, TopoDS_Shape& r) {
+bool IfcGeom::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
 	const unsigned int id = l->entity->id();
 	std::map<int,TopoDS_Shape>::const_iterator it = Cache::Shape.find(id);
 	if ( it != Cache::Shape.end() ) { r = it->second; return true; }
@@ -39,17 +39,17 @@ bool IfcGeom::convert_shape(const SHARED_PTR<IfcBaseClass>& l, TopoDS_Shape& r) 
 	Ifc::LogMessage("Error","No operation defined for:",l->entity);
 	return false;
 }
-bool IfcGeom::convert_wire(const SHARED_PTR<IfcBaseClass>& l, TopoDS_Wire& r) {
+bool IfcGeom::convert_wire(const IfcBaseClass* l, TopoDS_Wire& r) {
 #include "IfcRegisterConvertWire.h"
 	Ifc::LogMessage("Error","No operation defined for:",l->entity);
 	return false;
 }
-bool IfcGeom::convert_face(const SHARED_PTR<IfcBaseClass>& l, TopoDS_Face& r) {
+bool IfcGeom::convert_face(const IfcBaseClass* l, TopoDS_Face& r) {
 #include "IfcRegisterConvertFace.h"
 	Ifc::LogMessage("Error","No operation defined for:",l->entity);
 	return false;
 }
-bool IfcGeom::convert_curve(const SHARED_PTR<IfcBaseClass>& l, Handle(Geom_Curve)& r) {
+bool IfcGeom::convert_curve(const IfcBaseClass* l, Handle(Geom_Curve)& r) {
 #include "IfcRegisterConvertCurve.h"
 	Ifc::LogMessage("Error","No operation defined for:",l->entity);
 	return false;

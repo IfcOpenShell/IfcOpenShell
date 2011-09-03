@@ -2,7 +2,7 @@
 #define SHAPE(T) \
 	if ( l->is(T::Class()) ) { \
 		try { \
-			bool b = convert(reinterpret_pointer_cast<IfcBaseClass,T>(l),r); \
+			bool b = convert((T*)l,r); \
 			if ( b ) { \
 				Cache::Shape[l->entity->id()] = r; \
 				return true; \
