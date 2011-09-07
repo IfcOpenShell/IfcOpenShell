@@ -159,7 +159,8 @@ IfcGeomObjects::IfcGeomObject* _get() {
 
 		// Has the list of IfcProducts for this representation been initialized?
 		if ( ! entities ) {
-			if ( shaperep->RepresentationIdentifier() != "Body" ) {
+			if ( shaperep->RepresentationIdentifier() != "Body" &&
+				shaperep->RepresentationIdentifier() != "Facetation" ) {
 				_nextShape();
 				continue;
 			}
@@ -219,7 +220,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 
 		if ( (openings && openings->Size()) || use_world_coords ) {
 			if ( shape ) delete shape;
-			TopoDS_Shape temp_shape (shapes);
+			TopoDS_Shape temp_shape = shapes.Moved(gp_Trsf());
 			try {
 				if (openings && openings->Size()) IfcGeom::convert_openings(entity,openings,temp_shape,trsf);
 			} catch( IfcParse::IfcException& e ) {Ifc::LogMessage("Warning",e.what()); }

@@ -50,8 +50,8 @@ SHAPE(IfcMappedItem);
 SHAPE(IfcPolygonalBoundedHalfSpace);
 SHAPE(IfcHalfSpaceSolid);
 
-FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcArbitraryProfileDefWithVoids);
+FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcRectangleProfileDef);
 FACE(IfcIShapeProfileDef);
 FACE(IfcCShapeProfileDef);

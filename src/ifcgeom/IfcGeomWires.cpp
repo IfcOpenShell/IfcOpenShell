@@ -111,7 +111,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 		if ( i->is(Ifc2x3::Type::IfcCartesianPoint) && trim_cartesian ) {
 			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcCartesianPoint>(i), pnt1 );
 			trimmed1 = true;
-		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) ) {
+		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) && !trim_cartesian ) {
 			const float value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
 			flt1 = value * parameterFactor;
 			trimmed1 = true;
@@ -125,12 +125,14 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 			BRepBuilderAPI_MakeEdge e (curve,pnt1,pnt2);
 			w.Add(e.Edge());			
 			trimmed2 = true;
-		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) && trimmed1 ) {
+			break;
+		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) && !trim_cartesian && trimmed1 ) {
 			const float value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
 			float flt2 = value * parameterFactor;
 			BRepBuilderAPI_MakeEdge e (curve,flt1,flt2);
 			w.Add(e.Edge());
 			trimmed2 = true;
+			break;
 		}
 	}
 	if ( trimmed2 ) wire = w.Wire();

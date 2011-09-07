@@ -212,7 +212,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, TopoDS_Shape& shape) {
 		trsf2 = trsf2_2d;
 	}
 	if ( ! IfcGeom::convert_shape(map->MappedRepresentation(),shape) ) return false;
-	shape.Move(trsf2 * trsf1);
+	shape = shape.Moved(trsf2 * trsf1);
 	return !shape.IsNull();
 }
 bool IfcGeom::convert(const Ifc2x3::IfcShapeRepresentation::ptr l, TopoDS_Shape& shape) {
