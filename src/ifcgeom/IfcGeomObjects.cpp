@@ -192,7 +192,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			}
 		}
 		Ifc2x3::IfcProduct::ptr entity = *inner;
-		const std::string guid = entity->GlobalId();
+		const std::string name = entity->hasName() ? entity->Name() : entity->GlobalId();
 
 		gp_Trsf trsf;
 		try {
@@ -235,7 +235,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),shapes);
 		}
 
-		return new IfcGeomObjects::IfcGeomObject(guid, Ifc2x3::Type::ToString(entity->type()), trsf, shape);		
+		return new IfcGeomObjects::IfcGeomObject(name, Ifc2x3::Type::ToString(entity->type()), trsf, shape);		
 	}
 	
 }
