@@ -33,6 +33,7 @@
 #include <Poly_Array1OfTriangle.hxx>
 #include <StdFail_NotDone.hxx>
 
+#include "../ifcparse/IfcException.h"
 #include "../ifcgeom/IfcGeomObjects.h"
 #include "../ifcgeom/IfcGeom.h"
 

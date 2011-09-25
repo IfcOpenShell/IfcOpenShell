@@ -36,6 +36,14 @@ ELSE()
 	MESSAGE(FATAL_ERROR "Unable to find library files, aborting")
 ENDIF()
 
+FIND_LIBRARY(icu "icuuc" /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
+
+IF(icu)
+	MESSAGE(STATUS "ICU libraries found")
+ELSE()
+	MESSAGE(FATAL_ERROR "Unable to find ICU library files, aborting")
+ENDIF()
+
 INCLUDE(CheckIncludeFileCXX)
 
 MACRO(CHECK_ADD_OCE_OCC_DEF INCLUDE)
@@ -68,6 +76,7 @@ ADD_LIBRARY(IfcParse STATIC
   ../src/ifcparse/Ifc2x3.cpp
   ../src/ifcparse/IfcUtil.cpp
   ../src/ifcparse/IfcParse.cpp
+  ../src/ifcparse/IfcCharacterDecoder.cpp
 )
 
 ADD_LIBRARY(IfcGeom STATIC
@@ -81,6 +90,7 @@ ADD_LIBRARY(IfcGeom STATIC
   ../src/ifcgeom/IfcRegister.cpp
 )
 
+TARGET_LINK_LIBRARIES(IfcParse icuuc)
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
 LINK_DIRECTORIES (${IfcOpenShell_BINARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64) 

@@ -34,13 +34,12 @@
 #include <fstream>
 #include <cstring>
 #include <map>
-#include <exception>
 
 #include "../ifcparse/SharedPointer.h"
+#include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/Ifc2x3.h"
-
-const int BUF_SIZE = (32 * 1024 * 1024);
+#include "../ifcparse/IfcFile.h"
 
 namespace IfcParse {
 
@@ -48,33 +47,6 @@ namespace IfcParse {
 	class Entities;
 	typedef Entity* EntityPtr;
 	typedef SHARED_PTR<Entities> EntitiesPtr;
-
-	//
-	// Reads a file in chunks of BUF_SIZE and provides 
-	// functions to randomly access its contents
-	//
-	class File {
-	private:
-		std::ifstream stream;
-		char* buffer;
-		unsigned int ptr;
-		unsigned int len;
-		unsigned int offset;
-		void ReadBuffer(bool inc=true);
-		bool paging;
-	public:
-		bool valid;
-		bool eof;
-		unsigned int size;
-		File(const std::string& fn);
-		File(std::istream& f, int len);
-		char Peek();
-		char Read(unsigned int offset);
-		void Inc();		
-		void Close();
-		void Seek(unsigned int offset);
-		unsigned int Tell();
-	};
 
 	typedef unsigned int Token;
 
@@ -113,9 +85,11 @@ namespace IfcParse {
 	class Tokens {
 	private:
 		File* file;
+		IfcCharacterDecoder* decoder;
 	public:
 		Tokens(File* f);
 		Token Next();
+		~Tokens();
 		std::string TokenString(unsigned int offset);
 	};
 
@@ -154,8 +128,9 @@ namespace IfcParse {
 	//
 	class TokenArgument : public Argument {
 	private:
-		Token token;
+		
 	public: 
+		Token token;
 		TokenArgument(Token t);
 		operator int() const;
 		operator bool() const;
@@ -219,20 +194,12 @@ namespace IfcParse {
 		IfcEntities getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a);
 		void Load(std::vector<unsigned int>& ids, bool seek=false);
 		ArgumentPtr getArgument (unsigned int i);
+		unsigned int getArgumentCount();
 		std::string toString();
 		std::string datatype();
 		Ifc2x3::Type::Enum type() const;
 		bool is(Ifc2x3::Type::Enum v) const;
 		unsigned int id();
-	};
-
-	class IfcException : public std::exception {
-	private:
-		std::string error;
-	public:
-		IfcException(std::string e);
-		~IfcException () throw ();
-		const char* what() const throw();
 	};
 }
 
@@ -248,8 +215,8 @@ typedef std::map<unsigned int,unsigned int> MapOffsetById;
 //
 class Ifc {
 private:
-	static MapEntitiesByType bytype;
 	static MapEntityById byid;
+	static MapEntitiesByType bytype;
 	static MapEntitiesByRef byref;
 	static MapOffsetById offsets;
 	static unsigned int lastId;

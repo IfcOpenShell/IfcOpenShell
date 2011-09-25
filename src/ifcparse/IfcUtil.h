@@ -143,6 +143,7 @@ public:
 	virtual IfcEntities getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a) = 0;
 	virtual std::string datatype() = 0;
 	virtual ArgumentPtr getArgument (unsigned int i) = 0;
+	virtual unsigned int getArgumentCount() = 0;
 	virtual ~IfcAbstractEntity() {};
 	virtual Ifc2x3::Type::Enum type() const = 0;
 	virtual bool is(Ifc2x3::Type::Enum v) const = 0;

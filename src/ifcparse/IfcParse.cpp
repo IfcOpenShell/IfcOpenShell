@@ -20,8 +20,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcParse.h"
+#include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcFile.h"
 
 using namespace IfcParse;
 
@@ -134,10 +137,17 @@ void File::Inc() {
 		if ( paging ) ReadBuffer();
 		else eof = true;
 	}
+	const char current = File::Peek();
+	if ( current == '\n' || current == '\r' ) File::Inc();
 }
 
 Tokens::Tokens(IfcParse::File *f) {
 	file = f;
+	decoder = new IfcCharacterDecoder(f);
+}
+
+Tokens::~Tokens() {
+	delete decoder;
 }
 
 //
@@ -186,7 +196,7 @@ Token Tokens::Next() {
 		// Keep track of whether cursor is inside a string or comment		
 		if ( inComment && p == '*' && c == '/' ) inComment = false;
 		else if ( !inString && !inComment && p == '/' && c == '*' ) inComment = true;
-		else if ( !inComment && c == '\'' ) inString = ! inString;
+		else if ( !inComment && c == '\'' ) decoder->dryRun();
 
 		p = c;
 	}
@@ -214,7 +224,7 @@ std::string Tokens::TokenString(unsigned int offset) {
 		if ( !inComment ) buffer.push_back(c);
 		if ( inComment && p == '*' && c == '/' ) inComment = false;
 		else if ( !inString && !inComment && p == '/' && c == '*' ) inComment = true;
-		else if ( !inComment && c == '\'' ) inString = ! inString;
+		else if ( !inComment && c == '\'' ) return *decoder;
 		p = c;
 	}
 	file->Seek(old_offset);
@@ -448,6 +458,14 @@ ArgumentPtr Entity::getArgument(unsigned int i) {
 		Load(ids, true);
 	}
 	return (*args)[i];
+}
+
+unsigned int Entity::getArgumentCount() {
+	if ( ! args ) {
+		std::vector<unsigned int> ids;
+		Load(ids, true);
+	}
+	return args->Size();
 }
 
 //
