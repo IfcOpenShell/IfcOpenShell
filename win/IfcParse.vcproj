@@ -162,6 +162,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\ifcparse\IfcCharacterDecoder.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ifcparse\IfcParse.cpp"
 				>
 			</File>
