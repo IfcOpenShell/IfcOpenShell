@@ -69,6 +69,7 @@
 using namespace IfcParse;
 
 void IfcCharacterDecoder::addChar(std::stringstream& s,const UChar32& ch) {
+#ifdef HAVE_ICU
 	if ( destination ) {
 		char* extraction_buffer = new char[4];
 		UnicodeString(ch).extract(extraction_buffer,4,destination,status);
@@ -79,18 +80,25 @@ void IfcCharacterDecoder::addChar(std::stringstream& s,const UChar32& ch) {
 		s2 << "\\u" << std::hex << std::setw(4) << std::setfill('0') << (int) ch;
 		s << s2.str();
 	}
+#else
+	s.put(substitution_character);
+#endif
 }
 IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::File* f) {
 	file = f;
+#ifdef HAVE_ICU
 	if ( ! destination && mode == UTF8 ) {
 		destination = ucnv_open("utf-8", &status);
 	} else if ( ! destination && mode == LATIN ) {
 		destination = ucnv_open("iso-8859-1", &status);
 	}
+#endif
 }
 IfcCharacterDecoder::~IfcCharacterDecoder() {
+#ifdef HAVE_ICU
 	if ( destination ) ucnv_close(destination);
 	if ( converter ) ucnv_close(converter);
+#endif
 }
 IfcCharacterDecoder::operator std::string() {
 	unsigned int parse_state = 0;
@@ -102,6 +110,7 @@ IfcCharacterDecoder::operator std::string() {
 	unsigned int hex_count = 0;
 	while ( current_char = file->Peek() ) {
 		if ( EXPECTS_CHARACTER(parse_state) ) {
+#ifdef HAVE_ICU
 			if ( previous_codepage != codepage ) {
 				if ( converter ) ucnv_close(converter);
 				char encoder[11] = {'i','s','o','-','8','8','5','9','-',codepage + 0x30};
@@ -111,6 +120,10 @@ IfcCharacterDecoder::operator std::string() {
 			const char* char_array = &characters[0];
 			UChar32 ch = ucnv_getNextUChar(converter,&char_array,char_array+1,&status);
 			addChar(s,ch);
+#else
+			UChar32 ch = 0;
+			addChar(s,ch);
+#endif
 			parse_state = 0;
 		} else if ( current_char == '\'' && ! parse_state ) {
 			parse_state = APOSTROPHE;
@@ -225,10 +238,12 @@ void IfcCharacterDecoder::dryRun() {
 		file->Inc();
 	}
 }
-
+#ifdef HAVE_ICU
 UConverter* IfcCharacterDecoder::destination = 0;
 UConverter* IfcCharacterDecoder::converter = 0;
 int IfcCharacterDecoder::previous_codepage = -1;
 UErrorCode IfcCharacterDecoder::status = U_ZERO_ERROR;
 IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDecoder::JSON;
-
+#else
+char IfcCharacterDecoder::substitution_character = '_';
+#endif

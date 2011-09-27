@@ -30,7 +30,11 @@
 #include <string>
 #include <sstream>
 
+#ifdef HAVE_ICU
 #include "unicode/ucnv.h"
+#else
+typedef unsigned int UChar32;
+#endif
 
 #include "../ifcparse/IfcFile.h"
 
@@ -39,14 +43,20 @@ namespace IfcParse {
 	class IfcCharacterDecoder {
 	private:
 		IfcParse::File* file;
+#ifdef HAVE_ICU
 		static UConverter* destination;
 		static UConverter* converter;
 		static int previous_codepage;
 		static UErrorCode status;
+#endif
 		void addChar(std::stringstream& s,const UChar32& ch);
 	public:
+#ifdef HAVE_ICU
 		enum ConversionMode {UTF8,LATIN,JSON,PYTHON};
 		static ConversionMode mode;
+#else
+		static char substitution_character;
+#endif
 		IfcCharacterDecoder(IfcParse::File* file);
 		~IfcCharacterDecoder();
 		void dryRun();
