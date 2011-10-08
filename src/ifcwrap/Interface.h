@@ -26,17 +26,25 @@ namespace IfcGeomObjects {
 		std::vector<int> edges;
 	};
 
-	class IfcGeomObject {
+	class IfcObject {
 	public:
 		int id;
+		int parent_id;
 		std::string name;
 		std::string type;
+		std::string guid;
 		std::vector<float> matrix;
+	};
+
+	class IfcGeomObject : public IfcObject {
+	public:
 		IfcMesh* mesh;
 	};
 
-	extern bool Next();
-	extern const IfcGeomObject* Get();
-	extern bool Init(const char* fn, bool world_coords = false);
-	extern int Progress();
+	bool Next();
+	const IfcGeomObject* Get();
+	bool Init(const char* fn, bool world_coords = false);
+	int Progress();
+	const IfcObject* GetObject(int id);
+	bool CleanUp();
 };

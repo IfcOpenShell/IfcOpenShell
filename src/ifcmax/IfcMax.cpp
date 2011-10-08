@@ -27,7 +27,7 @@
 
 #include "../ifcmax/IfcMax.h"
 #include "../ifcmax/MaxMaterials.h"
-#include "../ifcparse/IfcGeomObjects.h"
+#include "../ifcgeom/IfcGeomObjects.h"
 
 int controlsInit = false;
 
@@ -109,7 +109,7 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 
 	itfc->ProgressStart("Importing file...", TRUE, fn, NULL);
 
-	if ( ! IfcGeomObjects::Init((char*)name) ) return false;
+	if ( ! IfcGeomObjects::Init((char*)name,false,0,0) ) return false;
 
 	std::map<int, TriObject*> dict;
 	MtlBaseLib* mats = itfc->GetSceneMtls();
@@ -158,7 +158,7 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 
 		ImpNode* node = impitfc->CreateNode();
 		node->Reference(tri);
-		node->SetName(o->name.c_str());
+		node->SetName(o->guid.c_str());
 		node->GetINode()->SetMtl(m);
 		node->SetTransform(0,Matrix3 ( Point3(o->matrix[0],o->matrix[1],o->matrix[2]),Point3(o->matrix[3],o->matrix[4],o->matrix[5]),
 			Point3(o->matrix[6],o->matrix[7],o->matrix[8]),Point3(o->matrix[9],o->matrix[10],o->matrix[11]) ));
@@ -167,6 +167,8 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 		itfc->ProgressUpdate(IfcGeomObjects::Progress(),true,"");
 
 	} while ( IfcGeomObjects::Next() );
+
+	IfcGeomObjects::CleanUp();
 
 	itfc->ProgressEnd();
 	

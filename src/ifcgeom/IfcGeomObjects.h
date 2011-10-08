@@ -88,22 +88,31 @@ namespace IfcGeomObjects {
 		}
 	};
 
-	class IfcGeomObject {
+	class IfcObject {
 	public:
 		int id;
+		int parent_id;
 		std::string name;
 		std::string type;
+		std::string guid;
 		std::vector<float> matrix;
-		IfcMesh* mesh;
-		IfcGeomObject(int i, const std::string& n, const std::string& t, gp_Trsf trsf, IfcMesh* m);
+		IfcObject(int my_id, int p_id, const std::string& n, const std::string& t, const std::string& g, const gp_Trsf& trsf);
 	};
 
-	extern bool Init(const char* fn, bool world_coords = false);
-	extern bool Init(const char* fn, bool world_coords = false, std::ostream* log1= 0, std::ostream* log2= 0);
-	extern bool Init(std::istream& f, int len, bool world_coords = false, std::ostream* log1= 0, std::ostream* log2= 0);
-	extern const IfcGeomObject* Get();
-	extern bool Next();	
-	extern int Progress();
+	class IfcGeomObject : public IfcObject {
+	public:
+		IfcMesh* mesh;
+		IfcGeomObject(int my_id, int p_id, const std::string& n, const std::string& t, const std::string& g, const gp_Trsf& trsf, IfcMesh* m);
+	};
+
+	bool Init(const char* fn, bool world_coords = false);
+	bool Init(const char* fn, bool world_coords = false, std::ostream* log1= 0, std::ostream* log2= 0);
+	bool Init(std::istream& f, int len, bool world_coords = false, std::ostream* log1= 0, std::ostream* log2= 0);
+	bool CleanUp();
+	const IfcGeomObject* Get();
+	bool Next();	
+	int Progress();
+	const IfcObject* GetObject(int id);
 
 }
 

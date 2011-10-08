@@ -104,15 +104,33 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, TopoDS_Shape s) {
 	}
 }
 
-IfcGeomObjects::IfcGeomObject::IfcGeomObject(int my_id, const std::string& n, const std::string& t, gp_Trsf trsf, IfcMesh* m) {	
+IfcGeomObjects::IfcObject::IfcObject(int my_id, 
+		int p_id, 
+		const std::string& n, 
+		const std::string& t, 
+		const std::string& g, 
+		const gp_Trsf& trsf) {
+
 	// Convert the gp_Trsf into a 4x3 Matrix
 	for( int i = 1; i < 5; ++ i )
 		for ( int j = 1; j < 4; ++ j )
 			matrix.push_back((float)trsf.Value(j,i));
 
 	id = my_id;
+	parent_id = p_id;
 	name = n;
 	type = t;
+	guid = g;
+}
+
+IfcGeomObjects::IfcGeomObject::IfcGeomObject(int my_id, 
+		int p_id, 
+		const std::string& n, 
+		const std::string& t, 
+		const std::string& g,
+		const gp_Trsf& trsf, 
+		IfcMesh* m) : IfcObject(my_id,p_id,n,t,g,trsf) {	
+
 	mesh = m;
 }
 
@@ -194,7 +212,9 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			}
 		}
 		Ifc2x3::IfcProduct::ptr ifc_product = *inner;
-		const std::string name = ifc_product->hasName() ? ifc_product->Name() : ifc_product->GlobalId();
+		int parent_id = -1;
+		const std::string name = ifc_product->hasName() ? ifc_product->Name() : "";
+		const std::string guid = ifc_product->GlobalId();
 
 		gp_Trsf trsf;
 		try {
@@ -220,13 +240,37 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			}
 		}
 
+		if ( ifc_product->is(Ifc2x3::Type::IfcElement ) ) {
+			Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcElement>(ifc_product);
+			Ifc2x3::IfcRelContainedInSpatialStructure::list parents = element->ContainedInStructure();
+			if ( parents->Size() ) {
+				Ifc2x3::IfcRelContainedInSpatialStructure::ptr parent = *parents->begin();
+				parent_id = parent->RelatingStructure()->entity->id();
+			}
+		}
+		if ( parent_id == -1 ) {
+			Ifc2x3::IfcRelDecomposes::list decomposes = ifc_product->IsDecomposedBy();
+			// This is a bug in IfcParse IsDecomposedBy() and Decomposes() are mixed
+			for ( Ifc2x3::IfcRelDecomposes::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
+				Ifc2x3::IfcRelDecomposes::ptr decompose = *it;
+				Ifc2x3::IfcObjectDefinition* ifc_objectdef = decompose->RelatingObject();
+				if ( ifc_product == ifc_objectdef ) continue;
+				parent_id = ifc_objectdef->entity->id();
+			}
+		}
+
 		if ( (openings && openings->Size()) || use_world_coords ) {
 			if ( shape ) delete shape;
 			TopoDS_Shape temp_shape = shapes.Moved(gp_Trsf());
 			try {
-				if (openings && openings->Size()) IfcGeom::convert_openings(ifc_product,openings,temp_shape,trsf);
-			} catch( IfcParse::IfcException& e ) {Ifc::LogMessage("Warning",e.what()); }
-			catch(...) { Ifc::LogMessage("Error","Error processing openings for:",ifc_product->entity); }
+				if (openings && openings->Size()) {
+					IfcGeom::convert_openings(ifc_product,openings,temp_shape,trsf);
+				}
+			} catch( IfcParse::IfcException& e ) {
+				Ifc::LogMessage("Warning",e.what()); 
+			} catch(...) { 
+				Ifc::LogMessage("Error","Error processing openings for:",ifc_product->entity); 
+			}
 			if ( use_world_coords ) {
 				shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),temp_shape.Moved(trsf));
 				trsf = gp_Trsf();
@@ -237,12 +281,13 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),shapes);
 		}
 
-		return new IfcGeomObjects::IfcGeomObject(ifc_product->entity->id(), name, Ifc2x3::Type::ToString(ifc_product->type()), trsf, shape);		
+		return new IfcGeomObjects::IfcGeomObject(ifc_product->entity->id(), parent_id, name, 
+			Ifc2x3::Type::ToString(ifc_product->type()), guid, trsf, shape);		
 	}
 	
 }
 
-extern bool IfcGeomObjects::Next() {
+bool IfcGeomObjects::Next() {
 	if ( entities ) {
 		++inner;
 	}
@@ -250,20 +295,67 @@ extern bool IfcGeomObjects::Next() {
 	currentGeomObj = _get();
 	if ( ! currentGeomObj ) {
 		delete shape;
-		Ifc::Dispose();
-		IfcGeom::Cache::Purge();
 		return false;
 	} else {
 		return true;
 	}
 }
-extern const IfcGeomObjects::IfcGeomObject* IfcGeomObjects::Get() {
+std::vector<IfcGeomObjects::IfcObject*> returned_objects;
+bool IfcGeomObjects::CleanUp() {
+	Ifc::Dispose();
+	IfcGeom::Cache::Purge();
+	for ( std::vector<IfcGeomObjects::IfcObject*>::const_iterator it = returned_objects.begin();
+		it != returned_objects.end(); 
+		++ it ) {
+			delete *it;			
+	}
+	return true;
+}
+const IfcGeomObjects::IfcObject* IfcGeomObjects::GetObject(int id) {
+	IfcObject* ifc_object = 0;
+	try {
+		const IfcEntity& ifc_entity = Ifc::EntityById(id);
+		if ( ifc_entity->is(Ifc2x3::Type::IfcProduct) ) {
+			Ifc2x3::IfcProduct::ptr ifc_product = reinterpret_pointer_cast<IfcUtil::IfcBaseClass,Ifc2x3::IfcProduct>(ifc_entity);
+			int parent_id = -1;
+			if ( ifc_product->is(Ifc2x3::Type::IfcElement ) ) {
+				Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcElement>(ifc_product);
+				Ifc2x3::IfcRelContainedInSpatialStructure::list parents = element->ContainedInStructure();
+				if ( parents->Size() ) {
+					Ifc2x3::IfcRelContainedInSpatialStructure::ptr parent = *parents->begin();
+					parent_id = parent->RelatingStructure()->entity->id();
+				}
+			}
+			if ( parent_id == -1 ) {
+				Ifc2x3::IfcRelDecomposes::list decomposes = ifc_product->IsDecomposedBy();
+				// This is a bug in IfcParse IsDecomposedBy() and Decomposes() are mixed
+				for ( Ifc2x3::IfcRelDecomposes::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
+					Ifc2x3::IfcRelDecomposes::ptr decompose = *it;
+					Ifc2x3::IfcObjectDefinition* ifc_objectdef = decompose->RelatingObject();
+					if ( ifc_product == ifc_objectdef ) continue;
+					parent_id = ifc_objectdef->entity->id();
+				}
+			}
+			const std::string name = ifc_product->hasName() ? ifc_product->Name() : "";
+			gp_Trsf trsf;
+			try {
+				IfcGeom::convert(ifc_product->ObjectPlacement(),trsf);
+			} catch (...) {}
+			ifc_object = new IfcObject(ifc_product->entity->id(),parent_id,name,
+				Ifc2x3::Type::ToString(ifc_product->type()),ifc_product->GlobalId(),trsf);
+		}
+	} catch(...) {}
+	if ( !ifc_object ) ifc_object = new IfcObject(-1,-1,"","","",gp_Trsf());
+	returned_objects.push_back(ifc_object);
+	return ifc_object;
+}
+const IfcGeomObjects::IfcGeomObject* IfcGeomObjects::Get() {
 	return currentGeomObj;
 }
-extern bool IfcGeomObjects::Init(const char* fn, bool world_coords) {
+bool IfcGeomObjects::Init(const char* fn, bool world_coords) {
 	return IfcGeomObjects::Init(fn, world_coords, 0, 0);
 }
-extern bool IfcGeomObjects::Init(const char* fn, bool world_coords, std::ostream* log1, std::ostream* log2) {
+bool IfcGeomObjects::Init(const char* fn, bool world_coords, std::ostream* log1, std::ostream* log2) {
 	if ( log1 || log2 ) Ifc::SetOutput(log1,log2);
 	use_world_coords = world_coords;
 	if ( !Ifc::Init(fn) ) return false;
@@ -281,7 +373,7 @@ extern bool IfcGeomObjects::Init(const char* fn, bool world_coords, std::ostream
 	total = shapereps->Size();
 	return true;
 }
-extern bool IfcGeomObjects::Init(std::istream& f, int len, bool world_coords, std::ostream* log1, std::ostream* log2) {
+bool IfcGeomObjects::Init(std::istream& f, int len, bool world_coords, std::ostream* log1, std::ostream* log2) {
 	if ( log1 || log2 ) Ifc::SetOutput(log1,log2);
 	use_world_coords = world_coords;
 	if ( !Ifc::Init(f, len) ) return false;
@@ -299,6 +391,6 @@ extern bool IfcGeomObjects::Init(std::istream& f, int len, bool world_coords, st
 	total = shapereps->Size();
 	return true;
 }
-extern int IfcGeomObjects::Progress() {
+int IfcGeomObjects::Progress() {
 	return 100 * done / total;
 }
