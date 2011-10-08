@@ -28,6 +28,7 @@ namespace IfcGeomObjects {
 
 	class IfcGeomObject {
 	public:
+		int id;
 		std::string name;
 		std::string type;
 		std::vector<float> matrix;

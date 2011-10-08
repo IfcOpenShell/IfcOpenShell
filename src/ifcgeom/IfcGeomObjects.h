@@ -90,11 +90,12 @@ namespace IfcGeomObjects {
 
 	class IfcGeomObject {
 	public:
+		int id;
 		std::string name;
 		std::string type;
 		std::vector<float> matrix;
 		IfcMesh* mesh;
-		IfcGeomObject( const std::string& n, const std::string& t, gp_Trsf trsf, IfcMesh* m );
+		IfcGeomObject(int i, const std::string& n, const std::string& t, gp_Trsf trsf, IfcMesh* m);
 	};
 
 	extern bool Init(const char* fn, bool world_coords = false);

@@ -104,12 +104,13 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, TopoDS_Shape s) {
 	}
 }
 
-IfcGeomObjects::IfcGeomObject::IfcGeomObject( const std::string& n, const std::string& t, gp_Trsf trsf, IfcMesh* m ) {
+IfcGeomObjects::IfcGeomObject::IfcGeomObject(int my_id, const std::string& n, const std::string& t, gp_Trsf trsf, IfcMesh* m) {	
 	// Convert the gp_Trsf into a 4x3 Matrix
 	for( int i = 1; i < 5; ++ i )
 		for ( int j = 1; j < 4; ++ j )
 			matrix.push_back((float)trsf.Value(j,i));
 
+	id = my_id;
 	name = n;
 	type = t;
 	mesh = m;
@@ -192,23 +193,23 @@ IfcGeomObjects::IfcGeomObject* _get() {
 				continue;
 			}
 		}
-		Ifc2x3::IfcProduct::ptr entity = *inner;
-		const std::string name = entity->hasName() ? entity->Name() : entity->GlobalId();
+		Ifc2x3::IfcProduct::ptr ifc_product = *inner;
+		const std::string name = ifc_product->hasName() ? ifc_product->Name() : ifc_product->GlobalId();
 
 		gp_Trsf trsf;
 		try {
-			IfcGeom::convert(entity->ObjectPlacement(),trsf);
+			IfcGeom::convert(ifc_product->ObjectPlacement(),trsf);
 		} catch (...) {}
 
 		// Does the IfcElement have any IfcOpenings?
 		Ifc2x3::IfcRelVoidsElement::list openings = Ifc2x3::IfcRelVoidsElement::list();
-		if ( entity->is(Ifc2x3::Type::IfcElement) ) {
-			Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcElement>(entity);
+		if ( ifc_product->is(Ifc2x3::Type::IfcElement) ) {
+			Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcElement>(ifc_product);
 			openings = element->HasOpenings();
 		}
 		// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
-		if ( entity->is(Ifc2x3::Type::IfcBuildingElementPart ) ) {
-			Ifc2x3::IfcBuildingElementPart::ptr part = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcBuildingElementPart>(entity);
+		if ( ifc_product->is(Ifc2x3::Type::IfcBuildingElementPart ) ) {
+			Ifc2x3::IfcBuildingElementPart::ptr part = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcBuildingElementPart>(ifc_product);
 			Ifc2x3::IfcRelDecomposes::list decomposes = part->Decomposes();
 			for ( Ifc2x3::IfcRelDecomposes::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
 				Ifc2x3::IfcObjectDefinition::ptr obdef = (*it)->RelatingObject();
@@ -223,9 +224,9 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			if ( shape ) delete shape;
 			TopoDS_Shape temp_shape = shapes.Moved(gp_Trsf());
 			try {
-				if (openings && openings->Size()) IfcGeom::convert_openings(entity,openings,temp_shape,trsf);
+				if (openings && openings->Size()) IfcGeom::convert_openings(ifc_product,openings,temp_shape,trsf);
 			} catch( IfcParse::IfcException& e ) {Ifc::LogMessage("Warning",e.what()); }
-			catch(...) { Ifc::LogMessage("Error","Error processing openings for:",entity->entity); }
+			catch(...) { Ifc::LogMessage("Error","Error processing openings for:",ifc_product->entity); }
 			if ( use_world_coords ) {
 				shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),temp_shape.Moved(trsf));
 				trsf = gp_Trsf();
@@ -236,7 +237,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),shapes);
 		}
 
-		return new IfcGeomObjects::IfcGeomObject(name, Ifc2x3::Type::ToString(entity->type()), trsf, shape);		
+		return new IfcGeomObjects::IfcGeomObject(ifc_product->entity->id(), name, Ifc2x3::Type::ToString(ifc_product->type()), trsf, shape);		
 	}
 	
 }
