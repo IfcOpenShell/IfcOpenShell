@@ -79,6 +79,8 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
             return {'FINISHED'}
         id_to_object = {}
         id_to_parent = {}
+        old_progress = -1
+        print ("Creating geometry...")
         while True:
             ob = IfcImport.Get()
             if ob.type != 'IfcOpeningElement':
@@ -123,8 +125,14 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
 
                 if ob.parent_id > 0:
                     id_to_parent[ob.id] = ob.parent_id
+            progress = IfcImport.Progress() // 2
+            if progress > old_progress:
+                print ("\r[" + "=" * progress + " " * (50 - progress) + "]",end="")
+                old_progress = progress            
             if not IfcImport.Next():
                 break
+                
+        print ("\rDone creating geometry"+" "*30)
 
         while len(id_to_parent) and self.process_relations:
             id, parent_id = id_to_parent.popitem()

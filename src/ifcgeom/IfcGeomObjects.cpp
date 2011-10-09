@@ -309,6 +309,7 @@ bool IfcGeomObjects::CleanUp() {
 		++ it ) {
 			delete *it;			
 	}
+	returned_objects.clear();
 	return true;
 }
 const IfcGeomObjects::IfcObject* IfcGeomObjects::GetObject(int id) {
