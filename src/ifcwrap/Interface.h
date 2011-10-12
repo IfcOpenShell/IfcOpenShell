@@ -47,4 +47,6 @@ namespace IfcGeomObjects {
 	int Progress();
 	const IfcObject* GetObject(int id);
 	bool CleanUp();
+	std::string GetLog();
+
 };

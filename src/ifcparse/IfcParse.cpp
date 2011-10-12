@@ -677,10 +677,11 @@ void Ifc::Dispose() {
 	bytype.clear();
 	byid.clear();
 	byref.clear();
-  file->Close();
+	file->Close();
 	delete file;
 	delete tokens;
 	offsets.clear();
+	log_stream.clear();
 }
 
 float UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v ) {
@@ -702,12 +703,21 @@ float UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v ) {
 	else if ( v == Ifc2x3::IfcSIPrefix::ATTO  ) return (float) 1e-18;
 	else return 1.0f;
 }
-void Ifc::SetOutput(std::ostream* l1, std::ostream* l2) { log1 = l1; log2 = l2; }
+void Ifc::SetOutput(std::ostream* l1, std::ostream* l2) { 
+	log1 = l1; 
+	log2 = l2; 
+	if ( ! log2 ) {
+		log2 = &log_stream;
+	}
+}
 void Ifc::LogMessage(const std::string& type, const std::string& message, const IfcAbstractEntityPtr entity) {
 	if ( log2 ) {
 		(*log2) << "[" << type << "] " << message << std::endl;
 		if ( entity ) (*log2) << entity->toString() << std::endl;
 	}
+}
+std::string Ifc::GetLog() {
+	return log_stream.str();
 }
 
 File* Ifc::file = 0;
@@ -722,3 +732,4 @@ MapEntitiesByType Ifc::bytype;
 MapEntityById Ifc::byid;
 MapEntitiesByRef Ifc::byref;
 MapOffsetById Ifc::offsets;
+std::stringstream Ifc::log_stream;

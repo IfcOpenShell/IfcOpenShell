@@ -72,6 +72,9 @@
 
 #include <TopLoc_Location.hxx>
 
+#include <GProp_GProps.hxx>
+#include <BRepGProp.hxx>
+
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, 
@@ -91,7 +94,14 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity,
 					TopoDS_Shape s;
 					IfcGeom::convert_shape(*it2,s);
 					s.Move(trsf);
+					const float opening_volume = shape_volume(s);
+					if ( opening_volume <= ALMOST_ZERO )
+						Ifc::LogMessage("warning","Empty solid for:",fes->entity);
+					const float original_shape_volume = shape_volume(result);
 					result = BRepAlgoAPI_Cut(result,s);
+					const float volume_after_subtraction = shape_volume(result);
+					if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
+						Ifc::LogMessage("warning","Warning subtraction yields unchanged volume:",entity->entity);
 				}
 			}
 		}
@@ -140,4 +150,9 @@ bool IfcGeom::profile_helper(int numVerts, float* verts, int numFillets, int* fi
 
 	delete[] vertices;
 	return true;
+}
+float IfcGeom::shape_volume(const TopoDS_Shape& s) {
+	GProp_GProps System;
+	BRepGProp::VolumeProperties(s, System);
+	return (float) System.Mass();
 }

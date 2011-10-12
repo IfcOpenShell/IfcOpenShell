@@ -113,6 +113,7 @@ namespace IfcGeomObjects {
 	bool Next();	
 	int Progress();
 	const IfcObject* GetObject(int id);
+	std::string GetLog();
 
 }
 

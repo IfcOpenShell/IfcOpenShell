@@ -81,8 +81,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire)
 		const Ifc2x3::IfcCurve::ptr curve = (*it)->ParentCurve();
 		TopoDS_Wire wire2;
 		if ( ! IfcGeom::convert_wire(curve,wire2) ) continue;
-		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(wire2, 0.01, TopAbs_WIRE);
+		//ShapeFix_ShapeTolerance FTol;
+		//FTol.SetTolerance(wire2, 0.01, TopAbs_WIRE);
 		w.Add(wire2);
 		if ( w.Error() != BRepBuilderAPI_WireDone ) {
 			Ifc::LogMessage("Error","Failed to join curve segments:",l->entity);

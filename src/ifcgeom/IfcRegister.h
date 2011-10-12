@@ -39,7 +39,6 @@
 using namespace Ifc2x3;
 
 SHAPE(IfcExtrudedAreaSolid);
-SHAPE(IfcClosedShell);
 SHAPE(IfcConnectedFaceSet);
 SHAPE(IfcFacetedBrep);
 SHAPE(IfcShellBasedSurfaceModel);

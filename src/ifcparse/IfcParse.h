@@ -222,6 +222,7 @@ private:
 	static unsigned int lastId;
 	static std::ostream* log1;
 	static std::ostream* log2;
+	static std::stringstream log_stream;
 public:
 	static void SetOutput(std::ostream* l1, std::ostream* l2);
 	static void LogMessage(const std::string& type, const std::string& message, const IfcAbstractEntityPtr entity=0);
@@ -243,6 +244,7 @@ public:
 	static bool Init(const std::string& fn);
 	static bool Init(std::istream& fn, int len);
 	static bool Init(IfcParse::File* f);
+	static std::string GetLog();
 	static void Dispose();
 	static float LengthUnit;
 	static float PlaneAngleUnit;

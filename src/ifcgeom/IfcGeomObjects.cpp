@@ -59,7 +59,7 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, TopoDS_Shape s) {
 		BRepTools::Clean(s);
 		BRepMesh::Mesh(s,0.001f);
 	} catch(...) {
-		Ifc::LogMessage("Error","Failed to triangulate mesh");
+		Ifc::LogMessage("Error","Failed to triangulate mesh:",Ifc::EntityById(i)->entity);
 		return;
 	}
 	TopExp_Explorer exp;
@@ -267,7 +267,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 					IfcGeom::convert_openings(ifc_product,openings,temp_shape,trsf);
 				}
 			} catch( IfcParse::IfcException& e ) {
-				Ifc::LogMessage("Warning",e.what()); 
+				Ifc::LogMessage("Error",e.what(),ifc_product->entity); 
 			} catch(...) { 
 				Ifc::LogMessage("Error","Error processing openings for:",ifc_product->entity); 
 			}
@@ -357,7 +357,7 @@ bool IfcGeomObjects::Init(const char* fn, bool world_coords) {
 	return IfcGeomObjects::Init(fn, world_coords, 0, 0);
 }
 bool IfcGeomObjects::Init(const char* fn, bool world_coords, std::ostream* log1, std::ostream* log2) {
-	if ( log1 || log2 ) Ifc::SetOutput(log1,log2);
+	Ifc::SetOutput(log1,log2);
 	use_world_coords = world_coords;
 	if ( !Ifc::Init(fn) ) return false;
 
@@ -375,7 +375,7 @@ bool IfcGeomObjects::Init(const char* fn, bool world_coords, std::ostream* log1,
 	return true;
 }
 bool IfcGeomObjects::Init(std::istream& f, int len, bool world_coords, std::ostream* log1, std::ostream* log2) {
-	if ( log1 || log2 ) Ifc::SetOutput(log1,log2);
+	Ifc::SetOutput(log1,log2);
 	use_world_coords = world_coords;
 	if ( !Ifc::Init(f, len) ) return false;
 
@@ -394,4 +394,7 @@ bool IfcGeomObjects::Init(std::istream& f, int len, bool world_coords, std::ostr
 }
 int IfcGeomObjects::Progress() {
 	return 100 * done / total;
+}
+std::string IfcGeomObjects::GetLog() {
+	return Ifc::GetLog();
 }

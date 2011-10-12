@@ -125,7 +125,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr l, TopoDS_
 	TopoDS_Shape halfspace;
 	if ( ! IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcPolygonalBoundedHalfSpace,Ifc2x3::IfcHalfSpaceSolid>(l),halfspace) ) return false;	
 	TopoDS_Wire wire;
-	if ( ! IfcGeom::convert_wire(l->PolygonalBoundary(),wire) ) return false;	
+	if ( ! IfcGeom::convert_wire(l->PolygonalBoundary(),wire) || ! wire.Closed() ) return false;	
 	gp_Trsf trsf;
 	convert(l->Position(),trsf);
 	TopoDS_Shape extrusion = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,20000.0));
@@ -150,20 +150,30 @@ bool IfcGeom::convert(const Ifc2x3::IfcShellBasedSurfaceModel::ptr l, TopoDS_Sha
 }
 bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shape& shape) {
 	TopoDS_Shape s1, s2;
+
 	if ( ! IfcGeom::convert_shape(l->FirstOperand(),s1) )
 		return false;
-	if ( ! IfcGeom::convert_shape(l->SecondOperand(),s2) )
-		return false;
+	
+	const float first_operand_volume = shape_volume(s1);
+	if ( first_operand_volume <= ALMOST_ZERO )
+		Ifc::LogMessage("warning","Empty solid for:",l->FirstOperand()->entity);
+	
+	if (  ! IfcGeom::convert_shape(l->SecondOperand(),s2) ) {
+		shape = s1;
+		Ifc::LogMessage("Error","Failed to convert SecondOperand of:",l->SecondOperand()->entity);
+		return true;
+	}
+
+	const float second_operand_volume = shape_volume(s2);
+	if ( second_operand_volume <= ALMOST_ZERO )
+		Ifc::LogMessage("warning","Empty solid for:",l->SecondOperand()->entity);
+
 	shape = BRepAlgoAPI_Cut(s1,s2);
-	return true;
-}
-bool IfcGeom::convert(const Ifc2x3::IfcClosedShell::ptr l, TopoDS_Shape& shape) {
-	if ( ! IfcGeom::convert((Ifc2x3::IfcConnectedFaceSet::ptr)l,shape) ) return false;
-	try {
-		ShapeFix_Solid solid;
-		solid.LimitTolerance(0.01);
-		shape = solid.SolidFromShell(TopoDS::Shell(shape));
-	} catch(...) {}
+
+	const float volume_after_subtraction = shape_volume(shape);
+	if ( ALMOST_THE_SAME(first_operand_volume,volume_after_subtraction) )
+		Ifc::LogMessage("warning","Warning subtraction yields unchanged volume:",l->entity);
+
 	return true;
 }
 bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& shape) {
@@ -183,6 +193,11 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 	if ( ! facesAdded ) return false;
 	builder.Perform();
 	shape = builder.SewedShape();
+	try {
+		ShapeFix_Solid solid;
+		solid.LimitTolerance(0.01);
+		shape = solid.SolidFromShell(TopoDS::Shell(shape));
+	} catch(...) {}
 	return true;
 }
 bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, TopoDS_Shape& shape) {

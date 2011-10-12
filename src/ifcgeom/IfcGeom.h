@@ -20,6 +20,9 @@
 #ifndef IFCGEOM_H
 #define IFCGEOM_H
 
+#define ALMOST_ZERO (1e-9)
+#define ALMOST_THE_SAME(a,b) (fabs(a-b) < ALMOST_ZERO)
+
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 #include <gp_Trsf.hxx>
@@ -41,6 +44,7 @@ namespace IfcGeom {
 	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Face& result);
 	bool convert_openings(const Ifc2x3::IfcProduct::ptr L, const Ifc2x3::IfcRelVoidsElement::list& openings, TopoDS_Shape& result, const gp_Trsf& trsf);
 	bool profile_helper(int numVerts, float* verts, int numFillets, int* filletIndices, float* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
+	float shape_volume(const TopoDS_Shape& s);
 	namespace Cache {
 		void Purge();
 		void PurgeShapeCache();
