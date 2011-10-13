@@ -72,18 +72,36 @@
 
 #include <TopLoc_Location.hxx>
 
+#include <BRep_Tool.hxx>
+
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire) {
 	Ifc2x3::IfcCompositeCurveSegment::list segments = l->Segments();
 	BRepBuilderAPI_MakeWire w;
+	//TopoDS_Vertex last_vertex;
 	for( Ifc2x3::IfcCompositeCurveSegment::it it = segments->begin(); it != segments->end(); ++ it ) {
 		const Ifc2x3::IfcCurve::ptr curve = (*it)->ParentCurve();
 		TopoDS_Wire wire2;
-		if ( ! IfcGeom::convert_wire(curve,wire2) ) continue;
-		//ShapeFix_ShapeTolerance FTol;
-		//FTol.SetTolerance(wire2, 0.01, TopAbs_WIRE);
+		if ( ! IfcGeom::convert_wire(curve,wire2) ) {
+			Ifc::LogMessage("Error","Failed to convert curve:",curve->entity);
+			continue;
+		}
+		if ( ! (*it)->SameSense() ) wire2.Reverse();
+		ShapeFix_ShapeTolerance FTol;
+		FTol.SetTolerance(wire2, 0.001, TopAbs_WIRE);
+		/*if ( it != segments->begin() ) {
+			TopExp_Explorer exp (wire2,TopAbs_VERTEX);
+			const TopoDS_Vertex& first_vertex = TopoDS::Vertex(exp.Current());
+			gp_Pnt first = BRep_Tool::Pnt(first_vertex);
+			gp_Pnt last = BRep_Tool::Pnt(last_vertex);
+			Standard_Real distance = first.Distance(last);
+			if ( distance > ALMOST_ZERO ) {
+				w.Add( BRepBuilderAPI_MakeEdge( last_vertex, first_vertex ) );
+			}
+		}*/
 		w.Add(wire2);
+		//last_vertex = w.Vertex();
 		if ( w.Error() != BRepBuilderAPI_WireDone ) {
 			Ifc::LogMessage("Error","Failed to join curve segments:",l->entity);
 			return false;
@@ -103,6 +121,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 	IfcUtil::IfcAbstractSelect::list trims2 = l->Trim2();
 	bool trimmed1 = false;
 	bool trimmed2 = false;
+	bool sense_agreement = l->SenseAgreement();
 	float flt1;
 	gp_Pnt pnt1;
 	BRepBuilderAPI_MakeWire w;
@@ -129,7 +148,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) && !trim_cartesian && trimmed1 ) {
 			const float value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
 			float flt2 = value * parameterFactor;
-			BRepBuilderAPI_MakeEdge e (curve,flt1,flt2);
+			BRepBuilderAPI_MakeEdge e (curve,sense_agreement ? flt1 : flt2,sense_agreement ? flt2 : flt1);
 			w.Add(e.Edge());
 			trimmed2 = true;
 			break;
