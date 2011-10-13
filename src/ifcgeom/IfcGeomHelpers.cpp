@@ -139,7 +139,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcCartesianTransformationOperator3D::ptr l,
 	if ( l->hasAxis2() ) IfcGeom::convert(l->Axis2(),axis2);
 	if ( l->hasAxis3() ) IfcGeom::convert(l->Axis3(),axis3);
 	else axis3 = axis1.Crossed(axis2);
-	const gp_Ax3 ax3 (origin,axis3,axis1);
+	gp_Ax3 ax3 (origin,axis3,axis1);
+	if ( axis2.Dot(ax3.YDirection()) < 0 ) ax3.YReverse();
 	trsf.SetTransformation(ax3);
 	trsf.Invert();
 	if ( l->hasScale() ) trsf.SetScaleFactor(l->Scale());

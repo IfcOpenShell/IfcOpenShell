@@ -568,8 +568,14 @@ bool Ifc::Init(IfcParse::File* f) {
 	if ( log1 ) std::cout << "Scanning file..." << std::endl;
 	while ( true ) {
 		if ( currentId ) {
-			e = new Entity(currentId,tokens);
-			entity = Ifc2x3::SchemaEntity(e);
+			try {
+				e = new Entity(currentId,tokens);
+				entity = Ifc2x3::SchemaEntity(e);
+			} catch (IfcException ex) {
+				currentId = 0;
+				Ifc::LogMessage("Error",ex.what());
+				continue;
+			}
 			if ( log1 && !((++x)%1000) ) std::cout << "\r#" << currentId << "         " << std::flush;
 			Ifc2x3::Type::Enum ty = entity->type();
 			do {

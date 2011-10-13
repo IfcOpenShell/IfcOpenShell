@@ -168,9 +168,9 @@ class Typedef:
 			return "typedef %s %s;"%(self.type,self.name)
 		elif generator_mode == 'SOURCE' and isinstance(self.type,EnumType):
 			generator_mode = 'SOURCE_TO'
-			s =  "std::string %(name)s::ToString(%(name)s v) {\n    if ( v < 0 || v >= %(len)d ) throw;\n    const char* names[] = %(type)s;\n    return names[v];\n}\n"%self.__dict__
+			s =  "std::string %(name)s::ToString(%(name)s v) {\n    if ( v < 0 || v >= %(len)d ) throw IfcException(\"Unable to find find keyword in schema\");\n    const char* names[] = %(type)s;\n    return names[v];\n}\n"%self.__dict__
 			generator_mode = 'SOURCE_FROM'
-			s += ("%(name)s::%(name)s %(name)s::FromString(const std::string& s) {\n%(type)s    throw;\n}"%self.__dict__)%self.__dict__
+			s += ("%(name)s::%(name)s %(name)s::FromString(const std::string& s) {\n%(type)s    throw IfcException(\"Unable to find find keyword in schema\);\n}"%self.__dict__)%self.__dict__
 			generator_mode = 'SOURCE'
 			return s
 class Argument(object):
@@ -252,7 +252,7 @@ class Classdef:
 			"\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s || %(parent_class)s::is(v); }")+
 			"\nType::Enum %(class_name)s::type() const { return Type::%(class_name)s; }"+
 			"\nType::Enum %(class_name)s::Class() { return Type::%(class_name)s; }"+
-			"\n%(class_name)s::%(class_name)s(IfcAbstractEntityPtr e) { if (!is(Type::%(class_name)s)) throw; entity = e; }")%self.__dict__)%self.__dict__
+			"\n%(class_name)s::%(class_name)s(IfcAbstractEntityPtr e) { if (!is(Type::%(class_name)s)) throw IfcException(\"Unable to find find keyword in schema\"); entity = e; }")%self.__dict__)%self.__dict__
 
 
 from funcparserlib.parser import a, skip, many, maybe, some
@@ -427,8 +427,10 @@ print >>h_file, "}\n\n#endif"
 generator_mode = 'SOURCE'
 
 print >>cpp_file, """#include "%(schema)s.h"
+#include "IfcException.h"
 
 using namespace %(schema)s;
+using namespace IfcParse;
 
 IfcSchemaEntity %(schema)s::SchemaEntity(IfcAbstractEntityPtr e) {
     switch(e->type()){"""%{'schema':schema_version}
@@ -437,11 +439,11 @@ for e in simple_enumerations:
 	print >>cpp_file, "        case Type::%s: return new IfcEntitySelect(e); break;"%e
 for e in entity_enumerations:
 	print >>cpp_file, "        case Type::%s: return new %s(e); break;"%(e,e)
-print >>cpp_file, "        default: throw; break; "
+print >>cpp_file, "        default: throw IfcException(\"Unable to find find keyword in schema\"); break; "
 print >>cpp_file, "    }\n}"
 print >>cpp_file
 print >>cpp_file, "std::string Type::ToString(Enum v) {"
-print >>cpp_file, "    if (v < 0 || v >= %d) throw;"%len(all_enumerations)
+print >>cpp_file, "    if (v < 0 || v >= %d) throw IfcException(\"Unable to find find keyword in schema\");"%len(all_enumerations)
 print >>cpp_file, '    const char* names[] = { "%s" };'%'","'.join(all_enumerations)
 print >>cpp_file, '    return names[v];'
 print >>cpp_file, "}"
@@ -461,7 +463,7 @@ for e in all_enumerations:
 print >>cpp_file, """}
 Type::Enum Type::FromString(const std::string& s) {
     std::map<std::string,Type::Enum>::const_iterator it = string_map.find(s);
-	if ( it == string_map.end() ) throw;
+	if ( it == string_map.end() ) throw IfcException("Unable to find find keyword in schema");
 	else return it->second;
 }"""
 
