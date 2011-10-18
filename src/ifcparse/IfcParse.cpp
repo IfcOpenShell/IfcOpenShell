@@ -616,6 +616,7 @@ bool Ifc::Init(IfcParse::File* f) {
 		units = unit_assignment->Units();
     }
 	if ( ! units ) return true;
+	try {
 	for ( IfcUtil::IfcAbstractSelect::it it = units->begin(); it != units->end(); ++ it ) {
 		const IfcUtil::IfcAbstractSelect::ptr base = *it;
 		Ifc2x3::IfcSIUnit::ptr unit = Ifc2x3::IfcSIUnit::ptr();
@@ -645,6 +646,9 @@ bool Ifc::Init(IfcParse::File* f) {
 				Ifc::PlaneAngleUnit = value;
 			}
 		}
+	}
+	} catch ( IfcException ex ) {
+		Ifc::LogMessage("Error",ex.what());
 	}
 	return true;
 }
