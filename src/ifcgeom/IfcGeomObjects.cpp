@@ -190,6 +190,17 @@ IfcGeomObjects::IfcGeomObject* _get() {
 				if ( (*it)->is(Ifc2x3::Type::IfcProductDefinitionShape) ) {
 					Ifc2x3::IfcProductDefinitionShape::ptr pds = reinterpret_pointer_cast<Ifc2x3::IfcProductRepresentation,Ifc2x3::IfcProductDefinitionShape>(*it);
 					entities->push(pds->ShapeOfProduct());
+				} else {
+					// http://buildingsmart-tech.org/ifc/IFC2x3/TC1/html/ifcrepresentationresource/lexical/ifcproductrepresentation.htm
+					// IFC2x Edition 3 NOTE  Users should not instantiate the entity IfcProductRepresentation from IFC2x Edition 3 onwards. 
+					// It will be changed into an ABSTRACT supertype in future releases of IFC.
+
+					// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
+					// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
+					IfcEntities products = (*it)->entity->getInverse(Ifc2x3::Type::IfcProduct);
+					for ( IfcEntityList::it it = products->begin(); it != products->end(); ++ it ) {
+						entities->push(reinterpret_pointer_cast<IfcBaseClass,Ifc2x3::IfcProduct>(*it));
+					}
 				}
 			}
 			// Does this representation have any IfcProducts?
