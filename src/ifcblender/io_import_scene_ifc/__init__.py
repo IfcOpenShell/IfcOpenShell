@@ -61,8 +61,10 @@ bpy.types.Object.ifc_type = StringProperty(name="IFC Entity Type",
 
 def import_ifc(filename, use_names, process_relations):
     from . import IfcImport
+    print("Reading %s..."%bpy.path.basename(filename))
     if not IfcImport.Init(filename):
-        return
+        return False
+    print("Done reading file")
     id_to_object = {}
     id_to_parent = {}
     id_to_matrix = {}
@@ -126,6 +128,9 @@ def import_ifc(filename, use_names, process_relations):
     print("\rDone creating geometry" + " " * 30)
 
     id_to_parent_temp = dict(id_to_parent)
+    
+    if process_relations:
+        print("Processing relations...")
 
     while len(id_to_parent_temp) and process_relations:
         id, parent_id = id_to_parent_temp.popitem()
@@ -171,8 +176,16 @@ def import_ifc(filename, use_names, process_relations):
             id_to_object[id].matrix_local = parent_matrix.inverted() * matrix
         else:
             id_to_object[id].matrix_world = matrix
+            
+    if process_relations:
+        print("Done processing relations")
+            
+    txt = bpy.data.texts.new("%s.log"%bpy.path.basename(filename))
+    txt.from_string(IfcImport.GetLog())
 
     IfcImport.CleanUp()
+    
+    return True
 
 
 class ImportIFC(bpy.types.Operator, ImportHelper):
@@ -191,7 +204,10 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         default=True)
 
     def execute(self, context):
-        import_ifc(self.filepath, self.use_names, self.process_relations)
+        if not import_ifc(self.filepath, self.use_names, self.process_relations):
+            self.report('ERROR',
+                'Unable to parse .ifc file or no geometrical entities found'
+            )
         return {'FINISHED'}
 
 
