@@ -29,9 +29,12 @@
 #include <gp_Pnt2d.hxx>
 #include <gp_Vec2d.hxx>
 #include <gp_Dir2d.hxx>
+#include <gp_Mat.hxx>
+#include <gp_Mat2d.hxx>
+#include <gp_GTrsf.hxx>
+#include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
-#include <gp_Mat.hxx>
 #include <gp_Ax3.hxx>
 #include <gp_Ax2d.hxx>
 #include <gp_Pln.hxx>
@@ -158,6 +161,52 @@ bool IfcGeom::convert(const Ifc2x3::IfcCartesianTransformationOperator2D::ptr l,
 	trsf.Invert();
 	if ( l->hasScale() ) trsf.SetScaleFactor(l->Scale());
 	CACHE(IfcCartesianTransformationOperator2D,l,trsf)
+	return true;
+}
+bool IfcGeom::convert(const Ifc2x3::IfcCartesianTransformationOperator3DnonUniform::ptr l, gp_GTrsf& gtrsf) {
+	IN_CACHE(IfcCartesianTransformationOperator3DnonUniform,l,gp_GTrsf,gtrsf)
+	gp_Trsf trsf;
+	gp_Pnt origin;
+	IfcGeom::convert(l->LocalOrigin(),origin);
+	gp_Dir axis1 (1.,0.,0.);
+	gp_Dir axis2 (0.,1.,0.);
+	gp_Dir axis3;
+	if ( l->hasAxis1() ) IfcGeom::convert(l->Axis1(),axis1);
+	if ( l->hasAxis2() ) IfcGeom::convert(l->Axis2(),axis2);
+	if ( l->hasAxis3() ) IfcGeom::convert(l->Axis3(),axis3);
+	else axis3 = axis1.Crossed(axis2);
+	gp_Ax3 ax3 (origin,axis3,axis1);
+	if ( axis2.Dot(ax3.YDirection()) < 0 ) ax3.YReverse();
+	trsf.SetTransformation(ax3);
+	trsf.Invert();
+	const float scale1 = l->hasScale() ? l->Scale() : 1.0f;
+	const float scale2 = l->hasScale2() ? l->Scale2() : scale1;
+	const float scale3 = l->hasScale3() ? l->Scale3() : scale1;
+	gtrsf = gp_GTrsf();
+	gtrsf.SetValue(1,1,scale1);
+	gtrsf.SetValue(2,2,scale2);
+	gtrsf.SetValue(3,3,scale3);
+	gtrsf.Multiply(trsf);
+	CACHE(IfcCartesianTransformationOperator3DnonUniform,l,gtrsf)
+	return true;
+}
+bool IfcGeom::convert(const Ifc2x3::IfcCartesianTransformationOperator2DnonUniform::ptr l, gp_GTrsf2d& gtrsf) {
+	IN_CACHE(IfcCartesianTransformationOperator2DnonUniform,l,gp_GTrsf2d,gtrsf)
+	gp_Trsf2d trsf;
+	gp_Pnt origin;
+	IfcGeom::convert(l->LocalOrigin(),origin);
+	gp_Dir axis1 (1.,0.,0.);
+	if ( l->hasAxis1() ) IfcGeom::convert(l->Axis1(),axis1);
+	const gp_Ax2d ax2d (gp_Pnt2d(origin.X(),origin.Y()),gp_Dir2d(axis1.X(),axis1.Y()));
+	trsf.SetTransformation(ax2d);
+	trsf.Invert();
+	const float scale1 = l->hasScale() ? l->Scale() : 1.0f;
+	const float scale2 = l->hasScale2() ? l->Scale2() : scale1;
+	gtrsf = gp_GTrsf2d();
+	gtrsf.SetValue(1,1,scale1);
+	gtrsf.SetValue(2,2,scale2);
+	gtrsf.Multiply(trsf);
+	CACHE(IfcCartesianTransformationOperator2DnonUniform,l,gtrsf)
 	return true;
 }
 bool IfcGeom::convert(const Ifc2x3::IfcPlane::ptr pln, gp_Pln& plane) {

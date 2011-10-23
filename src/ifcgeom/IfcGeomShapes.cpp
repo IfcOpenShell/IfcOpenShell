@@ -29,9 +29,12 @@
 #include <gp_Pnt2d.hxx>
 #include <gp_Vec2d.hxx>
 #include <gp_Dir2d.hxx>
+#include <gp_Mat.hxx>
+#include <gp_Mat2d.hxx>
+#include <gp_GTrsf.hxx>
+#include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
-#include <gp_Mat.hxx>
 #include <gp_Ax3.hxx>
 #include <gp_Ax2d.hxx>
 #include <gp_Pln.hxx>
@@ -88,21 +91,22 @@ bool IfcGeom::convert(const Ifc2x3::IfcExtrudedAreaSolid::ptr l, TopoDS_Shape& s
 	shape.Move(trsf);
 	return ! shape.IsNull();
 }
-bool IfcGeom::convert(const Ifc2x3::IfcFacetedBrep::ptr l, TopoDS_Shape& shape) {
-	return IfcGeom::convert_shape(l->Outer(),shape);
+bool IfcGeom::convert(const Ifc2x3::IfcFacetedBrep::ptr l, ShapeList& shape) {
+	TopoDS_Shape s;
+	if ( const TopoDS_Shape* shape_id = IfcGeom::convert_shape(l->Outer(),s) ) {
+		shape.push_back(LocationShape(new gp_GTrsf(),shape_id));
+		return true;
+	}
+	return false;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcFaceBasedSurfaceModel::ptr l, TopoDS_Shape& shape) {
+bool IfcGeom::convert(const Ifc2x3::IfcFaceBasedSurfaceModel::ptr l, ShapeList& shapes) {
 	Ifc2x3::IfcConnectedFaceSet::list facesets = l->FbsmFaces();
-	BRep_Builder builder;
-	TopoDS_Compound c;
-	builder.MakeCompound(c);
 	for( Ifc2x3::IfcConnectedFaceSet::it it = facesets->begin(); it != facesets->end(); ++ it ) {
 		TopoDS_Shape s;
-		if ( IfcGeom::convert_shape(*it,s) ) {
-			builder.Add(c,s);
+		if ( const TopoDS_Shape* shape_id = IfcGeom::convert_shape(*it,s) ) {
+			shapes.push_back(LocationShape(new gp_GTrsf(),shape_id));
 		}
 	}
-	shape = c;
 	return true;
 }
 bool IfcGeom::convert(const Ifc2x3::IfcHalfSpaceSolid::ptr l, TopoDS_Shape& shape) {
@@ -128,24 +132,20 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr l, TopoDS_
 	if ( ! IfcGeom::convert_wire(l->PolygonalBoundary(),wire) || ! wire.Closed() ) return false;	
 	gp_Trsf trsf;
 	convert(l->Position(),trsf);
-	TopoDS_Shape extrusion = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,20000.0));
-	gp_Trsf down; down.SetTranslation(gp_Vec(0,0,-10000.0));
+	TopoDS_Shape extrusion = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,200.0));
+	gp_Trsf down; down.SetTranslation(gp_Vec(0,0,-100.0));
 	extrusion.Move(down*trsf);
 	shape = BRepAlgoAPI_Cut(extrusion,halfspace);
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcShellBasedSurfaceModel::ptr l, TopoDS_Shape& shape) {
+bool IfcGeom::convert(const Ifc2x3::IfcShellBasedSurfaceModel::ptr l, ShapeList& shapes) {
 	IfcUtil::IfcAbstractSelect::list shells = l->SbsmBoundary();
-	BRep_Builder builder;
-	TopoDS_Compound c;
-	builder.MakeCompound(c);
 	for( IfcUtil::IfcAbstractSelect::it it = shells->begin(); it != shells->end(); ++ it ) {
 		TopoDS_Shape s;
-		if ( IfcGeom::convert_shape(*it,s) ) {
-			builder.Add(c,s);
+		if ( const TopoDS_Shape* shape_id = IfcGeom::convert_shape(*it,s) ) {
+			shapes.push_back(LocationShape(new gp_GTrsf(),shape_id));
 		}
 	}
-	shape = c;
 	return true;
 }
 bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shape& shape) {
@@ -200,47 +200,53 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 	} catch(...) {}
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, TopoDS_Shape& shape) {
-	gp_Trsf trsf1;
+bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, ShapeList& shapes) {
+	gp_GTrsf gtrsf;
 	Ifc2x3::IfcCartesianTransformationOperator::ptr transform = l->MappingTarget();
-	if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator2DnonUniform) || 
-		transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
-		// Not implemented
-		return false;
-	} else if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator3D) ) {
+	if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
 		IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcCartesianTransformationOperator,
-			Ifc2x3::IfcCartesianTransformationOperator3D>(transform),trsf1);
+			Ifc2x3::IfcCartesianTransformationOperator3DnonUniform>(transform),gtrsf);
+	} else if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
+ 		return false;
+ 	} else if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator3D) ) {
+		gp_Trsf trsf;
+		IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcCartesianTransformationOperator,
+			Ifc2x3::IfcCartesianTransformationOperator3D>(transform),trsf);
+		gtrsf = trsf;
 	} else if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator2D) ) {
-		gp_Trsf2d trsf1_2d;
+		gp_Trsf2d trsf_2d;
 		IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcCartesianTransformationOperator,
-			Ifc2x3::IfcCartesianTransformationOperator2D>(transform),trsf1_2d);
-		trsf1 = trsf1_2d;
+			Ifc2x3::IfcCartesianTransformationOperator2D>(transform),trsf_2d);
+		gtrsf = (gp_Trsf) trsf_2d;
 	}
 	Ifc2x3::IfcRepresentationMap::ptr map = l->MappingSource();
 	Ifc2x3::IfcAxis2Placement placement = map->MappingOrigin();
-	gp_Trsf trsf2;
+	gp_Trsf trsf;
 	if (placement->is(Ifc2x3::Type::IfcAxis2Placement3D)) {
-		IfcGeom::convert((Ifc2x3::IfcAxis2Placement3D*)placement,trsf2);
+		IfcGeom::convert((Ifc2x3::IfcAxis2Placement3D*)placement,trsf);
 	} else {
-		gp_Trsf2d trsf2_2d;
-		IfcGeom::convert((Ifc2x3::IfcAxis2Placement2D*)placement,trsf2_2d);
-		trsf2 = trsf2_2d;
+		gp_Trsf2d trsf_2d;
+		IfcGeom::convert((Ifc2x3::IfcAxis2Placement2D*)placement,trsf_2d);
+		trsf = trsf_2d;
 	}
-	if ( ! IfcGeom::convert_shape(map->MappedRepresentation(),shape) ) return false;
-	shape = shape.Moved(trsf2 * trsf1);
-	return !shape.IsNull();
+	gtrsf.Multiply(trsf);
+	const unsigned int previous_size = (const unsigned int) shapes.size();
+	bool b = IfcGeom::convert_shapes(map->MappedRepresentation(),shapes);
+	for ( unsigned int i = previous_size; i < shapes.size(); ++ i ) {
+		shapes[i].first->Multiply(gtrsf);
+	}
+	return b;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcShapeRepresentation::ptr l, TopoDS_Shape& shape) {
+bool IfcGeom::convert(const Ifc2x3::IfcShapeRepresentation::ptr l, ShapeList& shapes) {
 	Ifc2x3::IfcRepresentationItem::list items = l->Items();
 	if ( ! items->Size() ) return false;
-	BRep_Builder builder;
-	TopoDS_Compound c;
-	builder.MakeCompound(c);
 	for ( Ifc2x3::IfcRepresentationItem::it it = items->begin(); it != items->end(); ++ it ) {
-		TopoDS_Shape s;
-		if ( ! IfcGeom::convert_shape(*it,s)) continue;
-		builder.Add(c,s);
+		if ( IfcGeom::is_shape_collection(*it) ) IfcGeom::convert_shapes(*it,shapes);
+		else {
+			TopoDS_Shape s;
+			if ( const TopoDS_Shape* shape_id = IfcGeom::convert_shape(*it,s))
+				shapes.push_back(LocationShape(new gp_GTrsf(),shape_id));
+		}
 	}
-	shape = c;
-	return !shape.IsNull();
+	return true;
 }

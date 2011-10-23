@@ -57,9 +57,14 @@
 #include <vector>
 #include <algorithm>
 
+#include <gp_Mat.hxx>
+#include <gp_Mat2d.hxx>
+#include <gp_GTrsf.hxx>
+#include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
-#include <gp_Pnt.hxx>
-#include <TopoDS.hxx>
+#include <gp_Trsf2d.hxx>
+
+#include "../ifcgeom/IfcGeom.h"
 
 namespace IfcGeomObjects {
 
@@ -77,9 +82,9 @@ namespace IfcGeomObjects {
 		std::vector<int> edges;
 		VertKeyMap welds;
 		
-		IfcMesh(int i, TopoDS_Shape s);
+		IfcMesh(int i, const IfcGeom::ShapeList& s);
 	private:
-		int addvert(gp_Pnt p);
+		int addvert(const gp_XYZ& p);
 		inline void addedge(int n1, int n2, std::map<std::pair<int,int>,int>& edgecount, std::vector<std::pair<int,int> >& edges_temp) {
 			const Edge e = Edge( (std::min)(n1,n2),(std::max)(n1,n2) );
 			if ( edgecount.find(e) == edgecount.end() ) edgecount[e] = 1;

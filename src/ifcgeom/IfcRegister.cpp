@@ -31,13 +31,22 @@ namespace IfcGeom {
 using namespace Ifc2x3;
 using namespace IfcUtil;
 
-bool IfcGeom::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
-	const unsigned int id = l->entity->id();
-	std::map<int,TopoDS_Shape>::const_iterator it = Cache::Shape.find(id);
-	if ( it != Cache::Shape.end() ) { r = it->second; return true; }
-#include "IfcRegisterConvertShape.h"
+bool IfcGeom::convert_shapes(const IfcBaseClass* l, ShapeList& r) {
+#include "IfcRegisterConvertShapes.h"
 	Ifc::LogMessage("Error","No operation defined for:",l->entity);
 	return false;
+}
+bool IfcGeom::is_shape_collection(const IfcBaseClass* l) {
+#include "IfcRegisterIsShapeCollection.h"
+	return false;
+}
+const TopoDS_Shape* IfcGeom::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
+	const unsigned int id = l->entity->id();
+	std::map<int,TopoDS_Shape>::const_iterator it = Cache::Shape.find(id);
+	if ( it != Cache::Shape.end() ) { r = it->second; return &(it->second); }
+#include "IfcRegisterConvertShape.h"
+	Ifc::LogMessage("Error","No operation defined for:",l->entity);
+	return 0;
 }
 bool IfcGeom::convert_wire(const IfcBaseClass* l, TopoDS_Wire& r) {
 #include "IfcRegisterConvertWire.h"

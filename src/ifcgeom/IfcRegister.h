@@ -31,6 +31,10 @@
 #include <gp_Pnt.hxx>
 #include <gp_Pln.hxx>
 #include <gp_Dir.hxx>
+#include <gp_Mat.hxx>
+#include <gp_Mat2d.hxx>
+#include <gp_GTrsf.hxx>
+#include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
 
@@ -38,14 +42,15 @@
 
 using namespace Ifc2x3;
 
+SHAPES(IfcShellBasedSurfaceModel);
+SHAPES(IfcFaceBasedSurfaceModel);
+SHAPES(IfcShapeRepresentation);
+SHAPES(IfcMappedItem);
+SHAPES(IfcFacetedBrep);
+
 SHAPE(IfcExtrudedAreaSolid);
 SHAPE(IfcConnectedFaceSet);
-SHAPE(IfcFacetedBrep);
-SHAPE(IfcShellBasedSurfaceModel);
-SHAPE(IfcFaceBasedSurfaceModel);
 SHAPE(IfcBooleanClippingResult);
-SHAPE(IfcShapeRepresentation);
-SHAPE(IfcMappedItem);
 SHAPE(IfcPolygonalBoundedHalfSpace);
 SHAPE(IfcHalfSpaceSolid);
 
@@ -72,6 +77,8 @@ CLASS(IfcCartesianPoint,gp_Pnt);
 CLASS(IfcDirection,gp_Dir);
 CLASS(IfcAxis2Placement2D,gp_Trsf2d);
 CLASS(IfcAxis2Placement3D,gp_Trsf);
+CLASS(IfcCartesianTransformationOperator2DnonUniform,gp_GTrsf2d);
+CLASS(IfcCartesianTransformationOperator3DnonUniform,gp_GTrsf);
 CLASS(IfcCartesianTransformationOperator2D,gp_Trsf2d);
 CLASS(IfcCartesianTransformationOperator3D,gp_Trsf);
 CLASS(IfcObjectPlacement,gp_Trsf);

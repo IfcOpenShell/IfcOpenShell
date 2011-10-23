@@ -29,9 +29,12 @@
 #include <gp_Pnt2d.hxx>
 #include <gp_Vec2d.hxx>
 #include <gp_Dir2d.hxx>
+#include <gp_Mat.hxx>
+#include <gp_Mat2d.hxx>
+#include <gp_GTrsf.hxx>
+#include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
-#include <gp_Mat.hxx>
 #include <gp_Ax3.hxx>
 #include <gp_Ax2d.hxx>
 #include <gp_Pln.hxx>
@@ -89,7 +92,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire)
 		}
 		if ( ! (*it)->SameSense() ) wire2.Reverse();
 		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(wire2, 0.001, TopAbs_WIRE);
+		FTol.SetTolerance(wire2, 0.0001, TopAbs_WIRE);
 		/*if ( it != segments->begin() ) {
 			TopExp_Explorer exp (wire2,TopAbs_VERTEX);
 			const TopoDS_Vertex& first_vertex = TopoDS::Vertex(exp.Current());

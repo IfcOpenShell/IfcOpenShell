@@ -19,7 +19,12 @@
 
 #include <map>
 
+#include <gp_Mat.hxx>
+#include <gp_Mat2d.hxx>
+#include <gp_GTrsf.hxx>
+#include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
+#include <gp_Trsf2d.hxx>
 #include <TopoDS_Compound.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepTools.hxx>
@@ -38,7 +43,7 @@
 #include "../ifcgeom/IfcGeom.h"
 
 // Welds vertices that belong to different faces
-int IfcGeomObjects::IfcMesh::addvert(gp_Pnt p) {
+int IfcGeomObjects::IfcMesh::addvert(const gp_XYZ& p) {
 	const float X = (float)p.X();const float Y = (float)p.Y();const float Z = (float)p.Z();
 	const VertKey key = VertKey(X,std::pair<float,float>(Y,Z));
 	VertKeyMap::const_iterator it = welds.find(key);
@@ -51,54 +56,62 @@ int IfcGeomObjects::IfcMesh::addvert(gp_Pnt p) {
 	return i;
 }
 
-IfcGeomObjects::IfcMesh::IfcMesh(int i, TopoDS_Shape s) {
+IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
 	id = i;
 
-	// Triangulate the shape
-	try {
-		BRepTools::Clean(s);
-		BRepMesh::Mesh(s,0.001f);
-	} catch(...) {
-		Ifc::LogMessage("Error","Failed to triangulate mesh:",Ifc::EntityById(i)->entity);
-		return;
-	}
-	TopExp_Explorer exp;
+	for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 
-	// Iterates over the faces of the shape
-	for ( exp.Init(s,TopAbs_FACE); exp.More(); exp.Next() ) {
-		TopoDS_Face face = TopoDS::Face(exp.Current());
-		TopLoc_Location loc;
-		Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face,loc);
+		const TopoDS_Shape& s = *(*it).second;
+		const gp_GTrsf& trsf = *(*it).first;
 
-		if ( ! tri.IsNull() ) {
+		// Triangulate the shape
+		try {
+			//BRepTools::Clean(s);
+			BRepMesh::Mesh(s,0.001f);
+		} catch(...) {
+			Ifc::LogMessage("Error","Failed to triangulate mesh:",Ifc::EntityById(i)->entity);
+			continue;
+		}
+		TopExp_Explorer exp;
+
+		// Iterates over the faces of the shape
+		for ( exp.Init(s,TopAbs_FACE); exp.More(); exp.Next() ) {
+			TopoDS_Face face = TopoDS::Face(exp.Current());
+			TopLoc_Location loc;
+			Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face,loc);
+
+			if ( ! tri.IsNull() ) {
 			
-			// Keep track of the number of times an edge is used
-			// Manifold edges (i.e. edges used twice) are deemed invisible
-			std::map<std::pair<int,int>,int> edgecount;
-			std::vector<std::pair<int,int> > edges_temp;
+				// Keep track of the number of times an edge is used
+				// Manifold edges (i.e. edges used twice) are deemed invisible
+				std::map<std::pair<int,int>,int> edgecount;
+				std::vector<std::pair<int,int> > edges_temp;
 
-			const TColgp_Array1OfPnt& nodes = tri->Nodes();
-			std::map<int,int> dict;
-			for( int i = 1; i <= nodes.Length(); ++ i ) {
-				dict[i] = addvert(nodes(i).Transformed(loc));
-			}
+				const TColgp_Array1OfPnt& nodes = tri->Nodes();
+				std::map<int,int> dict;
+				for( int i = 1; i <= nodes.Length(); ++ i ) {
+					gp_XYZ xyz = nodes(i).Transformed(loc).XYZ();
+					trsf.Transforms(xyz);
+					dict[i] = addvert(xyz);
+				}
 
-			const Poly_Array1OfTriangle& triangles = tri->Triangles();			
-			for( int i = 1; i <= triangles.Length(); ++ i ) {
-				int n1,n2,n3;
-				if ( face.Orientation() == TopAbs_REVERSED )
-					triangles(i).Get(n3,n2,n1);
-				else triangles(i).Get(n1,n2,n3);
-				faces.push_back(dict[n1]);
-				faces.push_back(dict[n2]);
-				faces.push_back(dict[n3]);
+				const Poly_Array1OfTriangle& triangles = tri->Triangles();			
+				for( int i = 1; i <= triangles.Length(); ++ i ) {
+					int n1,n2,n3;
+					if ( face.Orientation() == TopAbs_REVERSED )
+						triangles(i).Get(n3,n2,n1);
+					else triangles(i).Get(n1,n2,n3);
+					faces.push_back(dict[n1]);
+					faces.push_back(dict[n2]);
+					faces.push_back(dict[n3]);
 
-				addedge(n1,n2,edgecount,edges_temp);
-				addedge(n2,n3,edgecount,edges_temp);
-				addedge(n3,n1,edgecount,edges_temp);
-			}
-			for ( std::vector<std::pair<int,int> >::const_iterator it = edges_temp.begin(); it != edges_temp.end(); ++it ) {
-				edges.push_back(edgecount[*it]==1);
+					addedge(n1,n2,edgecount,edges_temp);
+					addedge(n2,n3,edgecount,edges_temp);
+					addedge(n3,n1,edgecount,edges_temp);
+				}
+				for ( std::vector<std::pair<int,int> >::const_iterator it = edges_temp.begin(); it != edges_temp.end(); ++it ) {
+					edges.push_back(edgecount[*it]==1);
+				}
 			}
 		}
 	}
@@ -138,14 +151,8 @@ IfcGeomObjects::IfcGeomObject::IfcGeomObject(int my_id,
 Ifc2x3::IfcShapeRepresentation::list shapereps;
 Ifc2x3::IfcShapeRepresentation::it outer;
 
-// The triangulated shape is stored globally because it can be used by multiple IfcBuildingElements
-IfcGeomObjects::IfcMesh* shape;
-// The compound shape is stored globally because multiple IfcShapeRepresentations 
-// can have IfcBuildingElements with different IfcOpeningElements
-TopoDS_Shape shapes;
-
 // The object is fetched beforehand to be positive an entity actually exists
-IfcGeomObjects::IfcGeomObject* currentGeomObj;
+IfcGeomObjects::IfcGeomObject* current_geom_obj;
 
 // A container and iterator for IfcBuildingElements for the current IfcShapeRepresentation referenced by *outer
 Ifc2x3::IfcProduct::list entities;
@@ -157,9 +164,6 @@ int total;
 
 // Move the the next IfcShapeRepresentation
 void _nextShape() {
-	if ( shape ) delete shape;
-	shapes.Nullify();
-	shape = 0;
 	entities.reset();
 	++ outer;
 	++ done;
@@ -215,13 +219,15 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			_nextShape();
 			continue;
 		}
-		// Has the TopoDS_Shape been created for this representation?
-		if ( shapes.IsNull() ) {
-			if ( !IfcGeom::convert_shape(shaperep,shapes) ) {
-				_nextShape();
-				continue;
-			}
+		
+		IfcGeomObjects::IfcMesh* shape;
+		IfcGeom::ShapeList shapes;
+
+		if ( !IfcGeom::convert_shapes(shaperep,shapes) ) {
+			_nextShape();
+			continue;
 		}
+
 		Ifc2x3::IfcProduct::ptr ifc_product = *inner;
 		int parent_id = -1;
 		const std::string name = ifc_product->hasName() ? ifc_product->Name() : "";
@@ -270,42 +276,55 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			}
 		}
 
-		if ( (openings && openings->Size()) || use_world_coords ) {
-			if ( shape ) delete shape;
-			TopoDS_Shape temp_shape = shapes.Moved(gp_Trsf());
+		if ( openings && openings->Size() ) {
+			IfcGeom::ShapeList opened_shapes;
 			try {
-				if (openings && openings->Size()) {
-					IfcGeom::convert_openings(ifc_product,openings,temp_shape,trsf);
-				}
-			} catch( IfcParse::IfcException& e ) {
-				Ifc::LogMessage("Error",e.what(),ifc_product->entity); 
+				IfcGeom::convert_openings(ifc_product,openings,shapes,trsf,opened_shapes);
 			} catch(...) { 
 				Ifc::LogMessage("Error","Error processing openings for:",ifc_product->entity); 
 			}
 			if ( use_world_coords ) {
-				shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),temp_shape.Moved(trsf));
+				for ( IfcGeom::ShapeList::const_iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
+					it->first->PreMultiply(trsf);
+				}
 				trsf = gp_Trsf();
-			} else {
-				shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),temp_shape);
 			}
-		} else if ( ! shape ) {
+			shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),opened_shapes);
+			for ( IfcGeom::ShapeList::const_iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
+				delete it->first;
+				delete it->second;
+			}
+		} else if ( use_world_coords ) {
+			for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+				it->first->PreMultiply(trsf);
+			}
+			trsf = gp_Trsf();
+			shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),shapes);
+		} else {
 			shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),shapes);
 		}
 
-		return new IfcGeomObjects::IfcGeomObject(ifc_product->entity->id(), parent_id, name, 
-			Ifc2x3::Type::ToString(ifc_product->type()), guid, trsf, shape);		
-	}
-	
+		IfcGeomObjects::IfcGeomObject* geom_obj = new IfcGeomObjects::IfcGeomObject(ifc_product->entity->id(), parent_id, name, 
+			Ifc2x3::Type::ToString(ifc_product->type()), guid, trsf, shape);
+
+		for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+			delete it->first;
+		}
+
+		return geom_obj;
+	}	
 }
 
 bool IfcGeomObjects::Next() {
+	if ( current_geom_obj ) {
+		delete current_geom_obj->mesh;
+		delete current_geom_obj;
+	}
 	if ( entities ) {
 		++inner;
 	}
-	delete currentGeomObj;
-	currentGeomObj = _get();
-	if ( ! currentGeomObj ) {
-		delete shape;
+	current_geom_obj = _get();
+	if ( ! current_geom_obj ) {
 		return false;
 	} else {
 		return true;
@@ -362,7 +381,7 @@ const IfcGeomObjects::IfcObject* IfcGeomObjects::GetObject(int id) {
 	return ifc_object;
 }
 const IfcGeomObjects::IfcGeomObject* IfcGeomObjects::Get() {
-	return currentGeomObj;
+	return current_geom_obj;
 }
 bool IfcGeomObjects::Init(const char* fn, bool world_coords) {
 	return IfcGeomObjects::Init(fn, world_coords, 0, 0);
@@ -377,9 +396,9 @@ bool IfcGeomObjects::Init(const char* fn, bool world_coords, std::ostream* log1,
 	
 	outer = shapereps->begin();
 	entities.reset();
-	currentGeomObj = _get();
+	current_geom_obj = _get();
 	
-	if ( ! currentGeomObj ) return false;
+	if ( ! current_geom_obj ) return false;
 
 	done = 0;
 	total = shapereps->Size();
@@ -395,9 +414,9 @@ bool IfcGeomObjects::Init(std::istream& f, int len, bool world_coords, std::ostr
 	
 	outer = shapereps->begin();
 	entities.reset();
-	currentGeomObj = _get();
+	current_geom_obj = _get();
 	
-	if ( ! currentGeomObj ) return false;
+	if ( ! current_geom_obj ) return false;
 
 	done = 0;
 	total = shapereps->Size();

@@ -1,3 +1,6 @@
+#ifdef SHAPES
+#undef SHAPES
+#endif
 #ifdef SHAPE
 #undef SHAPE
 #endif

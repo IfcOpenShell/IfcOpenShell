@@ -1,3 +1,6 @@
+#ifndef SHAPES
+#define SHAPES(T)
+#endif
 #ifndef SHAPE
 #define SHAPE(T)
 #endif

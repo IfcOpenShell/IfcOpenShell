@@ -25,6 +25,10 @@
 
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
+#include <gp_Mat.hxx>
+#include <gp_Mat2d.hxx>
+#include <gp_GTrsf.hxx>
+#include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
 #include <TopoDS.hxx>
@@ -37,12 +41,17 @@
 #include "../ifcparse/IfcUtil.h"
 
 namespace IfcGeom {
+	typedef std::pair<gp_GTrsf*,const TopoDS_Shape*> LocationShape;
+	typedef std::vector<LocationShape> ShapeList;
+
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
-	bool convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
+	bool convert_shapes(const IfcUtil::IfcBaseClass* L, ShapeList& result);
+	bool is_shape_collection(const IfcUtil::IfcBaseClass* L);
+	const TopoDS_Shape* convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
 	bool convert_wire(const IfcUtil::IfcBaseClass* L, TopoDS_Wire& result);
 	bool convert_curve(const IfcUtil::IfcBaseClass* L, Handle(Geom_Curve)& result);
 	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Face& result);
-	bool convert_openings(const Ifc2x3::IfcProduct::ptr L, const Ifc2x3::IfcRelVoidsElement::list& openings, TopoDS_Shape& result, const gp_Trsf& trsf);
+	bool convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, const ShapeList& entity_shapes, const gp_Trsf& entity_trsf, ShapeList& cut_shapes);
 	bool profile_helper(int numVerts, float* verts, int numFillets, int* filletIndices, float* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
 	float shape_volume(const TopoDS_Shape& s);
 	namespace Cache {

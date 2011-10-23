@@ -29,9 +29,12 @@
 #include <gp_Pnt2d.hxx>
 #include <gp_Vec2d.hxx>
 #include <gp_Dir2d.hxx>
+#include <gp_Mat.hxx>
+#include <gp_Mat2d.hxx>
+#include <gp_GTrsf.hxx>
+#include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
-#include <gp_Mat.hxx>
 #include <gp_Ax3.hxx>
 #include <gp_Ax2d.hxx>
 #include <gp_Pln.hxx>
@@ -75,37 +78,86 @@
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>
 
+#include <BRepBuilderAPI_GTransform.hxx>
+
 #include "../ifcgeom/IfcGeom.h"
 
-bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, 
-							   const Ifc2x3::IfcRelVoidsElement::list& openings, TopoDS_Shape& result, const gp_Trsf& trsf2) {
+bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, 
+							   const ShapeList& entity_shapes, const gp_Trsf& entity_trsf, ShapeList& cut_shapes) {
+	// Iterate over IfcOpeningElements
+	IfcGeom::ShapeList opening_shapes;
+	unsigned int last_size = 0;
 	for ( Ifc2x3::IfcRelVoidsElement::it it = openings->begin(); it != openings->end(); ++ it ) {
 		Ifc2x3::IfcRelVoidsElement::ptr v = *it;
 		Ifc2x3::IfcFeatureElementSubtraction::ptr fes = v->RelatedOpeningElement();
 		if ( fes->is(Ifc2x3::Type::IfcOpeningElement) ) {
-			gp_Trsf trsf;
-			IfcGeom::convert(fes->ObjectPlacement(),trsf);
-			trsf.PreMultiply(trsf2.Inverted());
+
+			// Convert the IfcRepresentation of the IfcOpeningElement
+			gp_Trsf opening_trsf;
+			IfcGeom::convert(fes->ObjectPlacement(),opening_trsf);
+
+			// Move the opening into the coordinate system of the IfcProduct
+			opening_trsf.PreMultiply(entity_trsf.Inverted());
+
 			Ifc2x3::IfcProductRepresentation::ptr prodrep = fes->Representation();
-			if ( prodrep->is(Ifc2x3::Type::IfcProductDefinitionShape) ) {
-				Ifc2x3::IfcProductDefinitionShape::ptr pds = reinterpret_pointer_cast<Ifc2x3::IfcProductRepresentation,Ifc2x3::IfcProductDefinitionShape>(prodrep);
-				Ifc2x3::IfcRepresentation::list reps = pds->Representations();
-				for ( Ifc2x3::IfcRepresentation::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
-					TopoDS_Shape s;
-					IfcGeom::convert_shape(*it2,s);
-					s.Move(trsf);
-					const float opening_volume = shape_volume(s);
-					if ( opening_volume <= ALMOST_ZERO )
-						Ifc::LogMessage("warning","Empty solid for:",fes->entity);
-					const float original_shape_volume = shape_volume(result);
-					result = BRepAlgoAPI_Cut(result,s);
-					const float volume_after_subtraction = shape_volume(result);
-					if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
-						Ifc::LogMessage("warning","Warning subtraction yields unchanged volume:",entity->entity);
-				}
+			Ifc2x3::IfcRepresentation::list reps = prodrep->Representations();
+						
+			for ( Ifc2x3::IfcRepresentation::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
+				IfcGeom::convert_shapes(*it2,opening_shapes);
 			}
+
+			const unsigned int current_size = (const unsigned int) opening_shapes.size();
+			for ( unsigned int i = last_size; i < current_size; ++ i ) {
+				opening_shapes[i].first->PreMultiply(opening_trsf);
+			}
+			last_size = current_size;
 		}
 	}
+
+	// Iterate over the shapes of the IfcProduct
+	for ( IfcGeom::ShapeList::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
+		const TopoDS_Shape& entity_shape_unlocated = *(it3->second);
+		const gp_GTrsf& entity_shape_gtrsf = *(it3->first);
+		TopoDS_Shape entity_shape;
+		if ( entity_shape_gtrsf.Form() == gp_Other ) {
+			Ifc::LogMessage("warning","Applying non uniform transformation to:",entity->entity);
+			entity_shape = BRepBuilderAPI_GTransform(entity_shape_unlocated,entity_shape_gtrsf,true).Shape();
+		} else {
+			entity_shape = entity_shape_unlocated.Moved(entity_shape_gtrsf.Trsf());
+		}
+
+		// Iterate over the shapes of the IfcOpeningElements
+		for ( IfcGeom::ShapeList::const_iterator it4 = opening_shapes.begin(); it4 != opening_shapes.end(); ++ it4 ) {
+			const TopoDS_Shape& opening_shape_unlocated = *(it4->second);
+			const gp_GTrsf& opening_shape_gtrsf = *(it4->first);
+			if ( opening_shape_gtrsf.Form() == gp_Other ) {
+				Ifc::LogMessage("warning","Applying non uniform transformation to opening of:",entity->entity);
+			}
+			const TopoDS_Shape& opening_shape = opening_shape_gtrsf.Form() == gp_Other
+				? BRepBuilderAPI_GTransform(opening_shape_unlocated,opening_shape_gtrsf,true).Shape()
+				: opening_shape_unlocated.Moved(opening_shape_gtrsf.Trsf());
+					
+			const float opening_volume = shape_volume(opening_shape);
+			if ( opening_volume <= ALMOST_ZERO )
+				Ifc::LogMessage("warning","Empty opening for:",entity->entity);
+
+			const float original_shape_volume = shape_volume(entity_shape);
+
+			entity_shape = BRepAlgoAPI_Cut(entity_shape,opening_shape);
+					
+			const float volume_after_subtraction = shape_volume(entity_shape);
+					
+			if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
+				Ifc::LogMessage("warning","Warning subtraction yields unchanged volume:",entity->entity);
+		}
+		cut_shapes.push_back(IfcGeom::LocationShape(new gp_GTrsf(),new TopoDS_Shape(entity_shape)));
+	}
+
+	// Delete references to opening transformations, but keep shapes in the cache
+	for ( IfcGeom::ShapeList::const_iterator it5 = opening_shapes.begin(); it5 != opening_shapes.end(); ++ it5 ) {
+		delete it5->first;
+	}
+
 	return true;
 }
 bool IfcGeom::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face) {
