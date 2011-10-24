@@ -200,8 +200,9 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         default=True)
     process_relations = BoolProperty(name="Process relations",
         description="Convert containment and aggregation" \
-            " relations to parenting",
-        default=True)
+            " relations to parenting" \
+            " (warning: may be slow on large files)",
+        default=False)
 
     def execute(self, context):
         if not import_ifc(self.filepath, self.use_names, self.process_relations):
