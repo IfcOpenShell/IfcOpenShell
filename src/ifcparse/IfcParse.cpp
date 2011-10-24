@@ -691,7 +691,7 @@ void Ifc::Dispose() {
 	delete file;
 	delete tokens;
 	offsets.clear();
-	log_stream.clear();
+	log_stream.str("");
 }
 
 float UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v ) {
