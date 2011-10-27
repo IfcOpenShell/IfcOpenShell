@@ -49,6 +49,7 @@ namespace IfcParse {
 		unsigned int size;
 		File(const std::string& fn);
 		File(std::istream& f, int len);
+		File(void* data, int len);
 		char Peek();
 		char Read(unsigned int offset);
 		void Inc();		

@@ -26,12 +26,29 @@
 
 #include <iostream>
 
-#include "../ifcparse/IfcGeomObjects.h"
+#include "../ifcgeom/IfcGeomObjects.h"
 
 #if defined(WIN32) && !defined(__CYGWIN__)
 #include <io.h>
 #include <fcntl.h>
 #endif
+
+#define PRODUCT ("IfcOpenShell-0.2.3")
+#define ACK ("y")
+#define NEG ("n")
+#define CONFIRM ("ok")
+#define CLOSED ("No opened file")
+#define QUIT ("Bye :)")
+#define UNKNOWN ("Unknown command")
+
+void send_msg(const char* c) {
+	std::cout.write(c,strlen(c));
+	std::cout.flush();
+}
+
+void send_msg(const std::string& s) {
+	std::cout << s << std::flush;
+}
 
 int main ( int argc, char** argv ) {
 #if defined(WIN32) && !defined(__CYGWIN__)
@@ -39,8 +56,7 @@ int main ( int argc, char** argv ) {
 	std::cout.setf(std::ios_base::binary);
 #endif
 	bool has_more = false;
-	std::cout.write("IfcOpenShell-0.2.0",18);
-	std::cout.flush();
+	send_msg(PRODUCT);
 	const IfcGeomObjects::IfcGeomObject* ifc_geom = 0;
 	while (1) {
 		std::string command;
@@ -50,20 +66,17 @@ int main ( int argc, char** argv ) {
 			std::getline(std::cin,fn);
 			fn = fn.erase(0,fn.find_first_not_of(" "));
 			has_more = IfcGeomObjects::Init(fn.c_str(),true,0,&std::cerr);
-			std::cout.write(has_more ? "y" : "n",1);
-			std::cout.flush();
+			send_msg(has_more ? ACK : NEG);
 		} else if ( command == "loadstdin" ) {
-			std::cout << "ok" << std::flush;
+			send_msg(CONFIRM);
 			int len;
 			std::cin >> len;
-			std::cout << "ok" << std::flush;
+			send_msg(CONFIRM);
 			has_more = IfcGeomObjects::Init(std::cin,len,true,0,&std::cerr);
-			std::cout.write(has_more ? "y" : "n",1);
-			std::cout.flush();
+			send_msg(has_more ? ACK : NEG);
 		} else if ( command == "get" ) {
-			if ( !has_more ) {
-				std::cout << "Not loaded" << std::flush;
-			} else {
+			if ( ! has_more ) send_msg(CLOSED);
+			else {
 				ifc_geom = IfcGeomObjects::Get();
 				const int vcount = ifc_geom->mesh->verts.size() / 3;
 				std::cout.write((char*)&vcount,sizeof(int));
@@ -74,30 +87,25 @@ int main ( int argc, char** argv ) {
 				std::cout.flush();
 			}
 		} else if ( command == "type" ) {
-			if ( ! ifc_geom ) {
-				std::cout << "Not loaded" << std::flush;
-			} else {
-				std::cout << ifc_geom->type << std::flush;			
-			}
+			if ( ifc_geom ) send_msg(ifc_geom->type);
+			else send_msg(CLOSED);
 		} else if ( command == "guid" ) {
-			if ( ! ifc_geom ) {
-				std::cout << "Not loaded" << std::flush;
-			} else {
-				std::cout << ifc_geom->name << std::flush;			
-			}
+			if ( ifc_geom ) send_msg(ifc_geom->guid);
+			else send_msg(CLOSED);
 		} else if ( command == "next" ) {
-			if ( !has_more ) {
-				std::cout << "Not loaded" << std::flush;
-			} else {
+			if ( !has_more ) send_msg(CLOSED);
+			else {
 				has_more = IfcGeomObjects::Next();
-				std::cout.write(has_more ? "y" : "n",1);
-				std::cout.flush();
+				if ( ! has_more )
+					IfcGeomObjects::CleanUp();
+				send_msg(has_more ? ACK : NEG);
 			}
 		} else if ( command == "quit" || command == "exit" ) {
-			std::cout << "Bye" << std::flush;
+			send_msg(QUIT);
 			break;
 		} else {
-			std::cout << "Unknown command " << command << std::flush;
+			send_msg(UNKNOWN);
 		}
 	}
+	return 0;
 }

@@ -62,6 +62,17 @@ File::File(std::istream& f, int l) {
 	offset = 0;
 }
 
+File::File(void* data, int l) {
+	eof = false;
+	size = l;
+	paging = false;
+	buffer = (char*) data;
+	valid = true;
+	ptr = 0;
+	len = l;
+	offset = 0;
+}
+
 void File::Close() {
 	stream.close();
 	delete[] buffer;
@@ -552,6 +563,9 @@ bool Ifc::Init(const std::string& fn) {
 }
 bool Ifc::Init(std::istream& f, int len) {
   return Ifc::Init(new File(f,len));
+}
+bool Ifc::Init(void* data, int len) {
+  return Ifc::Init(new File(data,len));
 }
 bool Ifc::Init(IfcParse::File* f) {
 	Ifc2x3::InitStringMap();

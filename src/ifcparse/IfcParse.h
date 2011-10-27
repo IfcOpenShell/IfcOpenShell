@@ -243,6 +243,7 @@ public:
 	static IfcEntity EntityById(int id);
 	static bool Init(const std::string& fn);
 	static bool Init(std::istream& fn, int len);
+	static bool Init(void* data, int len);
 	static bool Init(IfcParse::File* f);
 	static std::string GetLog();
 	static void Dispose();

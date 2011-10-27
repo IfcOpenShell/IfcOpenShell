@@ -43,16 +43,20 @@
 #include "../ifcgeom/IfcGeom.h"
 
 // Welds vertices that belong to different faces
+bool weld_vertices = true;
 int IfcGeomObjects::IfcMesh::addvert(const gp_XYZ& p) {
 	const float X = (float)p.X();const float Y = (float)p.Y();const float Z = (float)p.Z();
-	const VertKey key = VertKey(X,std::pair<float,float>(Y,Z));
-	VertKeyMap::const_iterator it = welds.find(key);
-	if ( it != welds.end() ) return it->second;
+	int i = verts.size() / 3;
+	if ( weld_vertices ) {
+		const VertKey key = VertKey(X,std::pair<float,float>(Y,Z));
+		VertKeyMap::const_iterator it = welds.find(key);
+		if ( it != welds.end() ) return it->second;
+		i = (int) welds.size();
+		welds[key] = i;
+	}
 	verts.push_back(X);
 	verts.push_back(Y);
 	verts.push_back(Z);
-	int i = (int) welds.size();
-	welds[key] = i;
 	return i;
 }
 
@@ -239,8 +243,9 @@ IfcGeomObjects::IfcGeomObject* _get() {
 		} catch (...) {}
 
 		// Does the IfcElement have any IfcOpenings?
+		// Note that openings for IfcOpeningElements are not processed
 		Ifc2x3::IfcRelVoidsElement::list openings = Ifc2x3::IfcRelVoidsElement::list();
-		if ( ifc_product->is(Ifc2x3::Type::IfcElement) ) {
+		if ( ifc_product->is(Ifc2x3::Type::IfcElement) && !ifc_product->is(Ifc2x3::Type::IfcOpeningElement) ) {
 			Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcElement>(ifc_product);
 			openings = element->HasOpenings();
 		}
@@ -408,6 +413,25 @@ bool IfcGeomObjects::Init(std::istream& f, int len, bool world_coords, std::ostr
 	Ifc::SetOutput(log1,log2);
 	use_world_coords = world_coords;
 	if ( !Ifc::Init(f, len) ) return false;
+
+	shapereps = Ifc::EntitiesByType<Ifc2x3::IfcShapeRepresentation>();
+	if ( ! shapereps ) return false;
+	
+	outer = shapereps->begin();
+	entities.reset();
+	current_geom_obj = _get();
+	
+	if ( ! current_geom_obj ) return false;
+
+	done = 0;
+	total = shapereps->Size();
+	return true;
+}
+bool IfcGeomObjects::Init(void* data, int len) {
+	Ifc::SetOutput(0,0);
+	use_world_coords = true;
+	weld_vertices = false;
+	if ( !Ifc::Init(data, len) ) return false;
 
 	shapereps = Ifc::EntitiesByType<Ifc2x3::IfcShapeRepresentation>();
 	if ( ! shapereps ) return false;

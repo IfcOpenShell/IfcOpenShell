@@ -113,6 +113,7 @@ namespace IfcGeomObjects {
 	bool Init(const char* fn, bool world_coords = false);
 	bool Init(const char* fn, bool world_coords = false, std::ostream* log1= 0, std::ostream* log2= 0);
 	bool Init(std::istream& f, int len, bool world_coords = false, std::ostream* log1= 0, std::ostream* log2= 0);
+	bool Init(void* data, int len);
 	bool CleanUp();
 	const IfcGeomObject* Get();
 	bool Next();	
