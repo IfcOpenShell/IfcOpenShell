@@ -72,7 +72,9 @@ int main ( int argc, char** argv ) {
 	do {
 		const IfcGeomObjects::IfcGeomObject* o = IfcGeomObjects::Get();
 		if ( o->type == "IfcSpace" || o->type == "IfcOpeningElement" ) continue;
-		fObj << "o " << o->name << std::endl;
+		const std::string name = o->name.empty() ? o->guid : o->name;
+		fObj << "g " << name << std::endl;
+		fObj << "s 1" << std::endl;
 		fObj << "usemtl " << o->type << std::endl;
 		materials.insert(o->type);
 		const int vcount = o->mesh->verts.size() / 3;
@@ -82,11 +84,17 @@ int main ( int argc, char** argv ) {
 			const float z = *(it++);
 			fObj << "v " << x << " " << y << " " << z << std::endl;
 		}
+		for ( IfcGeomObjects::FltIt it = o->mesh->normals.begin(); it != o->mesh->normals.end(); ) {
+			const float x = *(it++);
+			const float y = *(it++);
+			const float z = *(it++);
+			fObj << "vn " << x << " " << y << " " << z << std::endl;
+		}
 		for ( IfcGeomObjects::IntIt it = o->mesh->faces.begin(); it != o->mesh->faces.end(); ) {
 			const int v1 = *(it++)-vcount;
 			const int v2 = *(it++)-vcount;
 			const int v3 = *(it++)-vcount;
-			fObj << "f " << v1 << " " << v2 << " " << v3 << std::endl;
+			fObj << "f " << v1 << "//" << v1 << " " << v2 << "//" << v2 << " " << v3 << "//" << v3 << std::endl;
 		}
 
 		const int progress = IfcGeomObjects::Progress() / 2;

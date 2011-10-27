@@ -80,6 +80,7 @@ namespace IfcGeomObjects {
 		std::vector<float> verts;
 		std::vector<int> faces;
 		std::vector<int> edges;
+		std::vector<float> normals;
 		VertKeyMap welds;
 		
 		IfcMesh(int i, const IfcGeom::ShapeList& s);

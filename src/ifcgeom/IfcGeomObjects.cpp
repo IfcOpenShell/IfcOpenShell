@@ -25,6 +25,7 @@
 #include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
+#include <gp_Quaternion.hxx>
 #include <TopoDS_Compound.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepTools.hxx>
@@ -34,19 +35,22 @@
 #include <Poly_Triangulation.hxx>
 #include <Poly_PolygonOnTriangulation.hxx>
 #include <TColgp_Array1OfPnt.hxx>
+#include <TColgp_Array1OfPnt2d.hxx>
 #include <TShort_Array1OfShortReal.hxx>
 #include <Poly_Array1OfTriangle.hxx>
 #include <StdFail_NotDone.hxx>
+#include <BRepGProp_Face.hxx>
 
 #include "../ifcparse/IfcException.h"
 #include "../ifcgeom/IfcGeomObjects.h"
 #include "../ifcgeom/IfcGeom.h"
 
 // Welds vertices that belong to different faces
-bool weld_vertices = true;
+bool weld_vertices = false;
+
 int IfcGeomObjects::IfcMesh::addvert(const gp_XYZ& p) {
 	const float X = (float)p.X();const float Y = (float)p.Y();const float Z = (float)p.Z();
-	int i = verts.size() / 3;
+	int i = (int) verts.size() / 3;
 	if ( weld_vertices ) {
 		const VertKey key = VertKey(X,std::pair<float,float>(Y,Z));
 		VertKeyMap::const_iterator it = welds.find(key);
@@ -59,6 +63,8 @@ int IfcGeomObjects::IfcMesh::addvert(const gp_XYZ& p) {
 	verts.push_back(Z);
 	return i;
 }
+
+bool use_world_coords = false;
 
 IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
 	id = i;
@@ -85,6 +91,11 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
 			Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face,loc);
 
 			if ( ! tri.IsNull() ) {
+
+				// A 3x3 matrix to rotate the vertex normals
+				const gp_Mat rotation_matrix = use_world_coords 
+					? trsf.VectorialPart() * loc.Transformation().VectorialPart()
+					: loc.Transformation().VectorialPart();
 			
 				// Keep track of the number of times an edge is used
 				// Manifold edges (i.e. edges used twice) are deemed invisible
@@ -92,11 +103,29 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
 				std::vector<std::pair<int,int> > edges_temp;
 
 				const TColgp_Array1OfPnt& nodes = tri->Nodes();
+				const TColgp_Array1OfPnt2d& uvs = tri->UVNodes();
+				std::vector<gp_XYZ> coords;
+				BRepGProp_Face prop(face);
 				std::map<int,int> dict;
+
+				// Vertex normals are only calculated if vertices are not welded
+				const bool calculate_normals = ! weld_vertices;
+
 				for( int i = 1; i <= nodes.Length(); ++ i ) {
-					gp_XYZ xyz = nodes(i).Transformed(loc).XYZ();
-					trsf.Transforms(xyz);
-					dict[i] = addvert(xyz);
+					coords.push_back(nodes(i).Transformed(loc).XYZ());
+					trsf.Transforms(*coords.rbegin());
+					dict[i] = addvert(*coords.rbegin());
+					
+					if ( calculate_normals ) {
+						const gp_Pnt2d& uv = uvs(i);
+						gp_Pnt p;
+						gp_Vec normal_direction;
+						prop.Normal(uv.X(),uv.Y(),p,normal_direction);						
+						gp_Dir normal = gp_Dir(normal_direction.XYZ() * rotation_matrix);
+						normals.push_back((float)normal.X());
+						normals.push_back((float)normal.Y());
+						normals.push_back((float)normal.Z());
+					}
 				}
 
 				const Poly_Array1OfTriangle& triangles = tri->Triangles();			
@@ -105,6 +134,21 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
 					if ( face.Orientation() == TopAbs_REVERSED )
 						triangles(i).Get(n3,n2,n1);
 					else triangles(i).Get(n1,n2,n3);
+
+					/* An alternative would be to calculate normals based
+					 * on the coordinates of the mesh vertices */
+					/*
+					const gp_XYZ pt1 = coords[n1-1];
+					const gp_XYZ pt2 = coords[n2-1];
+					const gp_XYZ pt3 = coords[n3-1];
+					const gp_XYZ v1 = pt2-pt1;
+					const gp_XYZ v2 = pt3-pt2;
+					gp_Dir normal = gp_Dir(v1^v2);
+					normals.push_back((float)normal.X());
+					normals.push_back((float)normal.Y());
+					normals.push_back((float)normal.Z());
+					*/
+
 					faces.push_back(dict[n1]);
 					faces.push_back(dict[n2]);
 					faces.push_back(dict[n3]);
@@ -162,7 +206,6 @@ IfcGeomObjects::IfcGeomObject* current_geom_obj;
 Ifc2x3::IfcProduct::list entities;
 Ifc2x3::IfcProduct::it inner;
 
-bool use_world_coords;
 int done;
 int total;
 
