@@ -47,12 +47,15 @@ int main ( int argc, char** argv ) {
 		return 1;
 	}
 
+	IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS,true);
+	IfcGeomObjects::Settings(IfcGeomObjects::WELD_VERTICES,false);
+
 	// Stream for log messages, we don't want to interupt our new progress bar...
 	std::stringstream ss;
 
 	// Parse the file supplied in argv[1]. Returns true on succes.
 	// The second argument defines whether geometry will be defined using global or local coordinates.
-	if ( ! IfcGeomObjects::Init(argv[1],true,&std::cout,&ss) ) {
+	if ( ! IfcGeomObjects::Init(argv[1],&std::cout,&ss) ) {
 		std::cout << "[Error] unable to parse .ifc file or no geometrical entities found" << std::endl;
 		return 1;
 	}

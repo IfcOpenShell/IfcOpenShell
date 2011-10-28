@@ -18,12 +18,17 @@
  ********************************************************************************/
 
 namespace IfcGeomObjects {
+
+	const int WELD_VERTICES = 1;
+	const int USE_WORLD_COORDS = 2;
+
 	class IfcMesh {
 	public:
 		int id;
 		std::vector<float> verts;
 		std::vector<int> faces;
 		std::vector<int> edges;
+		std::vector<float> normals;
 	};
 
 	class IfcObject {
@@ -43,7 +48,8 @@ namespace IfcGeomObjects {
 
 	bool Next();
 	const IfcGeomObject* Get();
-	bool Init(const char* fn, bool world_coords = false);
+	bool Init(const char* fn);
+	void Settings(int setting, bool value);
 	int Progress();
 	const IfcObject* GetObject(int id);
 	bool CleanUp();

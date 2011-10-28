@@ -46,7 +46,7 @@
 #include "../ifcgeom/IfcGeom.h"
 
 // Welds vertices that belong to different faces
-bool weld_vertices = false;
+bool weld_vertices = true;
 
 int IfcGeomObjects::IfcMesh::addvert(const gp_XYZ& p) {
 	const float X = (float)p.X();const float Y = (float)p.Y();const float Z = (float)p.Z();
@@ -93,9 +93,7 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
 			if ( ! tri.IsNull() ) {
 
 				// A 3x3 matrix to rotate the vertex normals
-				const gp_Mat rotation_matrix = use_world_coords 
-					? trsf.VectorialPart() * loc.Transformation().VectorialPart()
-					: loc.Transformation().VectorialPart();
+				const gp_Mat rotation_matrix = trsf.VectorialPart();
 			
 				// Keep track of the number of times an edge is used
 				// Manifold edges (i.e. edges used twice) are deemed invisible
@@ -431,63 +429,47 @@ const IfcGeomObjects::IfcObject* IfcGeomObjects::GetObject(int id) {
 const IfcGeomObjects::IfcGeomObject* IfcGeomObjects::Get() {
 	return current_geom_obj;
 }
-bool IfcGeomObjects::Init(const char* fn, bool world_coords) {
-	return IfcGeomObjects::Init(fn, world_coords, 0, 0);
+bool IfcGeomObjects::Init(const char* fn) {
+	return IfcGeomObjects::Init(fn, 0, 0);
 }
-bool IfcGeomObjects::Init(const char* fn, bool world_coords, std::ostream* log1, std::ostream* log2) {
+bool _Init() {
+	shapereps = Ifc::EntitiesByType<Ifc2x3::IfcShapeRepresentation>();
+	if ( ! shapereps ) return false;
+	
+	outer = shapereps->begin();
+	entities.reset();
+	current_geom_obj = _get();
+	
+	if ( ! current_geom_obj ) return false;
+
+	done = 0;
+	total = shapereps->Size();
+	return true;
+}
+bool IfcGeomObjects::Init(const char* fn, std::ostream* log1, std::ostream* log2) {
 	Ifc::SetOutput(log1,log2);
-	use_world_coords = world_coords;
 	if ( !Ifc::Init(fn) ) return false;
-
-	shapereps = Ifc::EntitiesByType<Ifc2x3::IfcShapeRepresentation>();
-	if ( ! shapereps ) return false;
-	
-	outer = shapereps->begin();
-	entities.reset();
-	current_geom_obj = _get();
-	
-	if ( ! current_geom_obj ) return false;
-
-	done = 0;
-	total = shapereps->Size();
-	return true;
+	return _Init();	
 }
-bool IfcGeomObjects::Init(std::istream& f, int len, bool world_coords, std::ostream* log1, std::ostream* log2) {
+bool IfcGeomObjects::Init(std::istream& f, int len, std::ostream* log1, std::ostream* log2) {
 	Ifc::SetOutput(log1,log2);
-	use_world_coords = world_coords;
 	if ( !Ifc::Init(f, len) ) return false;
-
-	shapereps = Ifc::EntitiesByType<Ifc2x3::IfcShapeRepresentation>();
-	if ( ! shapereps ) return false;
-	
-	outer = shapereps->begin();
-	entities.reset();
-	current_geom_obj = _get();
-	
-	if ( ! current_geom_obj ) return false;
-
-	done = 0;
-	total = shapereps->Size();
-	return true;
+	return _Init();
 }
 bool IfcGeomObjects::Init(void* data, int len) {
 	Ifc::SetOutput(0,0);
-	use_world_coords = true;
-	weld_vertices = false;
 	if ( !Ifc::Init(data, len) ) return false;
-
-	shapereps = Ifc::EntitiesByType<Ifc2x3::IfcShapeRepresentation>();
-	if ( ! shapereps ) return false;
-	
-	outer = shapereps->begin();
-	entities.reset();
-	current_geom_obj = _get();
-	
-	if ( ! current_geom_obj ) return false;
-
-	done = 0;
-	total = shapereps->Size();
-	return true;
+	return _Init();
+}
+void IfcGeomObjects::Settings(int setting, bool value) {
+	switch ( setting ) {
+	case USE_WORLD_COORDS:
+		use_world_coords = value;
+		break;
+	case WELD_VERTICES:
+		weld_vertices = value;
+		break;
+	}
 }
 int IfcGeomObjects::Progress() {
 	return 100 * done / total;

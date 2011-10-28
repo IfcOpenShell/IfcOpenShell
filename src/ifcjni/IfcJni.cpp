@@ -43,10 +43,11 @@ JNIEXPORT jobject JNICALL Java_org_ifcopenshell_IfcOpenShellModel_getGeometry (J
   
   jintArray indices = env->NewIntArray(o->mesh->faces.size());
   jfloatArray positions = env->NewFloatArray(o->mesh->verts.size());
-  jfloatArray normals = env->NewFloatArray(o->mesh->verts.size());
+  jfloatArray normals = env->NewFloatArray(o->mesh->normals.size());
   
   env->SetIntArrayRegion(indices,0,o->mesh->faces.size(),(jint*) &o->mesh->faces[0]);
   env->SetFloatArrayRegion(positions,0,o->mesh->verts.size(),(jfloat*) &o->mesh->verts[0]);
+  env->SetFloatArrayRegion(normals,0,o->mesh->normals.size(),(jfloat*) &o->mesh->normals[0]);
   
   jobject return_obj = env->NewObject(class_def, jconstructor, name, type, guid, indices, positions, normals);
   
@@ -68,5 +69,7 @@ JNIEXPORT bool JNICALL Java_org_ifcopenshell_IfcOpenShellModel_setIfcData (JNIEn
   void* data = env->GetByteArrayElements(jdata, NULL);
   const int length = env->GetArrayLength(jdata);
   if ( ! data || ! length ) return false;
+  IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS,true);
+  IfcGeomObjects::Settings(IfcGeomObjects::WELD_VERTICES,false);
   return has_more = IfcGeomObjects::Init(data,length);
 }

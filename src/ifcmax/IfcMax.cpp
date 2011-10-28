@@ -109,7 +109,10 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 
 	itfc->ProgressStart("Importing file...", TRUE, fn, NULL);
 
-	if ( ! IfcGeomObjects::Init((char*)name,false,0,0) ) return false;
+	IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS,false);
+	IfcGeomObjects::Settings(IfcGeomObjects::WELD_VERTICES,true);
+
+	if ( ! IfcGeomObjects::Init((char*)name,0,0) ) return false;
 
 	std::map<int, TriObject*> dict;
 	MtlBaseLib* mats = itfc->GetSceneMtls();

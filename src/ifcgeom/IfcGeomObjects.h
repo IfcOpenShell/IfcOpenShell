@@ -68,6 +68,9 @@
 
 namespace IfcGeomObjects {
 
+	const int WELD_VERTICES = 1;
+	const int USE_WORLD_COORDS = 2;
+
 	typedef std::vector<int>::const_iterator IntIt;
 	typedef std::vector<float>::const_iterator FltIt;
 	typedef std::pair< float,std::pair<float,float> > VertKey;
@@ -111,10 +114,11 @@ namespace IfcGeomObjects {
 		IfcGeomObject(int my_id, int p_id, const std::string& n, const std::string& t, const std::string& g, const gp_Trsf& trsf, IfcMesh* m);
 	};
 
-	bool Init(const char* fn, bool world_coords = false);
-	bool Init(const char* fn, bool world_coords = false, std::ostream* log1= 0, std::ostream* log2= 0);
-	bool Init(std::istream& f, int len, bool world_coords = false, std::ostream* log1= 0, std::ostream* log2= 0);
+	bool Init(const char* fn);
 	bool Init(void* data, int len);
+	bool Init(const char* fn, std::ostream* log1= 0, std::ostream* log2= 0);
+	bool Init(std::istream& f, int len, std::ostream* log1= 0, std::ostream* log2= 0);
+	void Settings(int setting, bool value);
 	bool CleanUp();
 	const IfcGeomObject* Get();
 	bool Next();	
