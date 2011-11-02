@@ -70,6 +70,7 @@ namespace IfcGeomObjects {
 
 	const int WELD_VERTICES = 1;
 	const int USE_WORLD_COORDS = 2;
+	const int CONVERT_BACK_UNITS = 3;
 
 	typedef std::vector<int>::const_iterator IntIt;
 	typedef std::vector<float>::const_iterator FltIt;

@@ -71,5 +71,6 @@ JNIEXPORT bool JNICALL Java_org_ifcopenshell_IfcOpenShellModel_setIfcData (JNIEn
   if ( ! data || ! length ) return false;
   IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS,true);
   IfcGeomObjects::Settings(IfcGeomObjects::WELD_VERTICES,false);
+  IfcGeomObjects::Settings(IfcGeomObjects::CONVERT_BACK_UNITS,true);
   return has_more = IfcGeomObjects::Init(data,length);
 }

@@ -628,8 +628,22 @@ bool Ifc::Init(IfcParse::File* f) {
 	if ( unit_assignments->Size() ) {
 		Ifc2x3::IfcUnitAssignment::ptr unit_assignment = *unit_assignments->begin();
 		units = unit_assignment->Units();
-    }
-	if ( ! units ) return true;
+	}
+	if ( ! units ) {
+		// No units eh... Since tolerances and deflection are specified internally in meters
+		// we will try to find another indication of the model size.
+		// Note that for IfcTrimmedCurves to render correctly, IfcParameterValues better be 
+		// in radians or IfcOpenShell would not know what to make of them.
+		Ifc2x3::IfcExtrudedAreaSolid::list extrusions = EntitiesByType<Ifc2x3::IfcExtrudedAreaSolid>();
+		if ( ! extrusions->Size() ) return true;
+		float max_height = -1.0f;
+		for ( Ifc2x3::IfcExtrudedAreaSolid::it it = extrusions->begin(); it != extrusions->end(); ++ it ) {
+			const float depth = (*it)->Depth();
+			if ( depth > max_height ) max_height = depth;
+		}
+		if ( max_height > 100.0f ) Ifc::LengthUnit = 0.001f;
+		return true;
+	}
 	try {
 	for ( IfcUtil::IfcAbstractSelect::it it = units->begin(); it != units->end(); ++ it ) {
 		const IfcUtil::IfcAbstractSelect::ptr base = *it;

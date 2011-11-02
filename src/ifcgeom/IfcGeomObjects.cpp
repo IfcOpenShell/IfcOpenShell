@@ -47,9 +47,12 @@
 
 // Welds vertices that belong to different faces
 bool weld_vertices = true;
+bool convert_back_units = false;
 
 int IfcGeomObjects::IfcMesh::addvert(const gp_XYZ& p) {
-	const float X = (float)p.X();const float Y = (float)p.Y();const float Z = (float)p.Z();
+	const float X = convert_back_units ? (float)p.X() / Ifc::LengthUnit : (float)p.X();
+	const float Y = convert_back_units ? (float)p.Y() / Ifc::LengthUnit : (float)p.Y();
+	const float Z = convert_back_units ? (float)p.Z() / Ifc::LengthUnit : (float)p.Z();
 	int i = (int) verts.size() / 3;
 	if ( weld_vertices ) {
 		const VertKey key = VertKey(X,std::pair<float,float>(Y,Z));
@@ -277,7 +280,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 		int parent_id = -1;
 		const std::string name = ifc_product->hasName() ? ifc_product->Name() : "";
 		const std::string guid = ifc_product->GlobalId();
-
+		
 		gp_Trsf trsf;
 		try {
 			IfcGeom::convert(ifc_product->ObjectPlacement(),trsf);
@@ -468,6 +471,9 @@ void IfcGeomObjects::Settings(int setting, bool value) {
 		break;
 	case WELD_VERTICES:
 		weld_vertices = value;
+		break;
+	case CONVERT_BACK_UNITS:
+		convert_back_units = value;
 		break;
 	}
 }
