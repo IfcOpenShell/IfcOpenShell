@@ -30,7 +30,7 @@
 #include <fstream>
 #include <string>
 
-const int BUF_SIZE = (32 * 1024 * 1024);
+const int BUF_SIZE = (128 * 1024 * 1024);
 
 namespace IfcParse {
 
