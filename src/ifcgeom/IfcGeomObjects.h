@@ -64,7 +64,7 @@
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
 
-#include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom/IfcShapeList.h"
 
 namespace IfcGeomObjects {
 
