@@ -206,7 +206,7 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         if not import_ifc(self.filepath, self.use_names, self.process_relations):
-            self.report('ERROR',
+            self.report({'ERROR'},
                 'Unable to parse .ifc file or no geometrical entities found'
             )
         return {'FINISHED'}
