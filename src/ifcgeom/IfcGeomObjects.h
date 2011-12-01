@@ -115,9 +115,9 @@ namespace IfcGeomObjects {
 		IfcGeomObject(int my_id, int p_id, const std::string& n, const std::string& t, const std::string& g, const gp_Trsf& trsf, IfcMesh* m);
 	};
 
-	bool Init(const char* fn);
+	bool Init(const std::string fn);
 	bool Init(void* data, int len);
-	bool Init(const char* fn, std::ostream* log1= 0, std::ostream* log2= 0);
+	bool Init(const std::string fn, std::ostream* log1= 0, std::ostream* log2= 0);
 	bool Init(std::istream& f, int len, std::ostream* log1= 0, std::ostream* log2= 0);
 	void Settings(int setting, bool value);
 	bool CleanUp();

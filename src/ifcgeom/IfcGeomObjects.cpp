@@ -432,7 +432,7 @@ const IfcGeomObjects::IfcObject* IfcGeomObjects::GetObject(int id) {
 const IfcGeomObjects::IfcGeomObject* IfcGeomObjects::Get() {
 	return current_geom_obj;
 }
-bool IfcGeomObjects::Init(const char* fn) {
+bool IfcGeomObjects::Init(const std::string fn) {
 	return IfcGeomObjects::Init(fn, 0, 0);
 }
 bool _Init() {
@@ -449,7 +449,7 @@ bool _Init() {
 	total = shapereps->Size();
 	return true;
 }
-bool IfcGeomObjects::Init(const char* fn, std::ostream* log1, std::ostream* log2) {
+bool IfcGeomObjects::Init(const std::string fn, std::ostream* log1, std::ostream* log2) {
 	Ifc::SetOutput(log1,log2);
 	if ( !Ifc::Init(fn) ) return false;
 	return _Init();	
