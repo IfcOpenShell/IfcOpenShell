@@ -435,6 +435,9 @@ const IfcGeomObjects::IfcGeomObject* IfcGeomObjects::Get() {
 bool IfcGeomObjects::Init(const std::string fn) {
 	return IfcGeomObjects::Init(fn, 0, 0);
 }
+bool IfcGeomObjects::InitUCS2(char* fn) {
+        return IfcGeomObjects::Init(fn+1, 0, 0);
+}
 bool _Init() {
 	shapereps = Ifc::EntitiesByType<Ifc2x3::IfcShapeRepresentation>();
 	if ( ! shapereps ) return false;

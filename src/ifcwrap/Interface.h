@@ -49,6 +49,7 @@ namespace IfcGeomObjects {
 	bool Next();
 	const IfcGeomObject* Get();
 	bool Init(const std::string fn);
+	bool InitUCS2(char* fn);
 	void Settings(int setting, bool value);
 	int Progress();
 	const IfcObject* GetObject(int id);

@@ -44,10 +44,14 @@ if "bpy" in locals():
     if "IfcImport" in locals():
         imp.reload(IfcImport)
 
+import sys
 import bpy
 import mathutils
 from bpy.props import StringProperty, IntProperty, BoolProperty
 from bpy_extras.io_utils import ImportHelper
+
+wrong_unicode = sys.platform[0:5] == 'linux' and sys.maxunicode==(2**16-1)
+warned_about_wrong_unicode = False
 
 bpy.types.Object.ifc_id = IntProperty(name="IFC Entity ID",
     description="The STEP entity instance name")
@@ -62,7 +66,7 @@ bpy.types.Object.ifc_type = StringProperty(name="IFC Entity Type",
 def import_ifc(filename, use_names, process_relations):
     from . import IfcImport
     print("Reading %s..."%bpy.path.basename(filename))
-    if not IfcImport.Init(filename):
+    if (wrong_unicode and not IfcImport.InitUCS2(''.join(['\0']+['\0%s'%s for s in filename]+['\0\0']))) or (not wrong_unicode and not IfcImport.Init(filename)):
         return False
     print("Done reading file")
     id_to_object = {}
@@ -205,6 +209,16 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         default=False)
 
     def execute(self, context):
+        global wrong_unicode,warned_about_wrong_unicode
+        if wrong_unicode and not warned_about_wrong_unicode:
+            warned_about_wrong_unicode = True
+            self.report({'WARNING'},
+                """This addon has been built with a different unicode configuration
+This will result in incorrectly imported text and may result in undefined behaviour
+Additionally it will result in IfcSpaces and IfcOpeningElements being visible by default
+You can use the offical builds from the blender.org website instead
+Sorry for the inconvenience"""
+            )
         if not import_ifc(self.filepath, self.use_names, self.process_relations):
             self.report({'ERROR'},
                 'Unable to parse .ifc file or no geometrical entities found'
