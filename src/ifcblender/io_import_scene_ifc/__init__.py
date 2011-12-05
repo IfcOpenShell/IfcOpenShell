@@ -39,19 +39,22 @@ bl_info = {
     "tracker_url": "http://sourceforge.net/tracker/?group_id=543113",
     "category": "Import-Export"}
 
+import sys   
+max_unicode = 0x110000-1 if sys.platform[0:5] == 'linux' else 0x10000-1
+wrong_unicode = max_unicode != sys.maxunicode
+if wrong_unicode:
+    print("\nWarning: wrong unicode representation detected, switching to "\
+        "compatibility layer for text transferral\n")
+    
 if "bpy" in locals():
     import imp
     if "IfcImport" in locals():
         imp.reload(IfcImport)
 
-import sys
 import bpy
 import mathutils
 from bpy.props import StringProperty, IntProperty, BoolProperty
 from bpy_extras.io_utils import ImportHelper
-
-wrong_unicode = sys.platform[0:5] == 'linux' and sys.maxunicode==(2**16-1)
-warned_about_wrong_unicode = False
 
 bpy.types.Object.ifc_id = IntProperty(name="IFC Entity ID",
     description="The STEP entity instance name")
@@ -64,9 +67,16 @@ bpy.types.Object.ifc_type = StringProperty(name="IFC Entity Type",
 
 
 def import_ifc(filename, use_names, process_relations):
+    global wrong_unicode
     from . import IfcImport
     print("Reading %s..."%bpy.path.basename(filename))
-    if (wrong_unicode and not IfcImport.InitUCS2(''.join(['\0']+['\0%s'%s for s in filename]+['\0\0']))) or (not wrong_unicode and not IfcImport.Init(filename)):
+    if wrong_unicode:
+        vec = IfcImport.IntVector(len(filename))
+        for i in range(len(filename)): vec[i] = ord(filename[i])
+        valid_file = IfcImport.Init(vec)
+    else:
+        valid_file = IfcImport.Init(filename)
+    if not valid_file:
         return False
     print("Done reading file")
     id_to_object = {}
@@ -76,52 +86,60 @@ def import_ifc(filename, use_names, process_relations):
     print("Creating geometry...")
     while True:
         ob = IfcImport.Get()
-        if ob.type != 'IfcOpeningElement':
-            f = ob.mesh.faces
-            v = ob.mesh.verts
-            m = ob.matrix
-            t = ob.type[0:21]
-            nm = ob.name if len(ob.name) and use_names else ob.guid
+        
+        if wrong_unicode:
+            ob_type = ''.join([chr(c) for c in ob.type_as_intvector()])
+            ob_name = ''.join([chr(c) for c in ob.name_as_intvector()])
+            ob_guid = ''.join([chr(c) for c in ob.guid_as_intvector()])
+        else:
+            ob_type, ob_name, ob_guid = ob.name, ob.type, ob.guid
+        
+        f = ob.mesh.faces
+        v = ob.mesh.verts
+        m = ob.matrix
+        t = ob_type[0:21]
+        nm = ob_name if len(ob_name) and use_names else ob_guid
 
-            verts = [[v[i], v[i + 1], v[i + 2]] \
-                for i in range(0, len(v), 3)]
-            faces = [[f[i], f[i + 1], f[i + 2]] \
-                for i in range(0, len(f), 3)]
+        verts = [[v[i], v[i + 1], v[i + 2]] \
+            for i in range(0, len(v), 3)]
+        faces = [[f[i], f[i + 1], f[i + 2]] \
+            for i in range(0, len(f), 3)]
 
-            me = bpy.data.meshes.new('mesh%d' % ob.mesh.id)
-            me.from_pydata(verts, [], faces)
-            if t in bpy.data.materials:
-                mat = bpy.data.materials[t]
-                mat.use_fake_user = True
-            else:
-                mat = bpy.data.materials.new(t)
-            me.materials.append(mat)
+        me = bpy.data.meshes.new('mesh%d' % ob.mesh.id)
+        me.from_pydata(verts, [], faces)
+        if t in bpy.data.materials:
+            mat = bpy.data.materials[t]
+            mat.use_fake_user = True
+        else:
+            mat = bpy.data.materials.new(t)
+        me.materials.append(mat)
 
-            bob = bpy.data.objects.new(nm, me)
-            mat = mathutils.Matrix(([m[0], m[1], m[2], 0],
-                [m[3], m[4], m[5], 0],
-                [m[6], m[7], m[8], 0],
-                [m[9], m[10], m[11], 1]))
-            if process_relations:
-                id_to_matrix[ob.id] = mat
-            else:
-                bob.matrix_world = mat
-            bpy.context.scene.objects.link(bob)
+        bob = bpy.data.objects.new(nm, me)
+        mat = mathutils.Matrix(([m[0], m[1], m[2], 0],
+            [m[3], m[4], m[5], 0],
+            [m[6], m[7], m[8], 0],
+            [m[9], m[10], m[11], 1]))
+        if process_relations:
+            id_to_matrix[ob.id] = mat
+        else:
+            bob.matrix_world = mat
+        bpy.context.scene.objects.link(bob)
 
-            bpy.ops.object.select_all(action='DESELECT')
-            bpy.ops.object.select_name(name=bob.name)
-            bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.mesh.normals_make_consistent()
-            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_name(name=bob.name)
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.normals_make_consistent()
+        bpy.ops.object.mode_set(mode='OBJECT')
 
-            bob.ifc_id, bob.ifc_guid, bob.ifc_name, bob.ifc_type = \
-                ob.id, ob.guid, ob.name, ob.type
+        bob.ifc_id, bob.ifc_guid, bob.ifc_name, bob.ifc_type = \
+            ob.id, ob_guid, ob_name, ob_type
 
-            bob.hide = ob.type == 'IfcSpace'
-            id_to_object[ob.id] = bob
+        bob.hide = ob_type == 'IfcSpace' or ob_type == 'IfcOpeningElement'
+        id_to_object[ob.id] = bob
 
-            if ob.parent_id > 0:
-                id_to_parent[ob.id] = ob.parent_id
+        if ob.parent_id > 0:
+            id_to_parent[ob.id] = ob.parent_id
+            
         progress = IfcImport.Progress() // 2
         if progress > old_progress:
             print("\r[" + "#" * progress + " " * (50 - progress) + "]", end="")
@@ -158,9 +176,14 @@ def import_ifc(filename, use_names, process_relations):
                 bpy.context.scene.objects.link(bob)
 
                 bob.ifc_id = parent_ob.id
-                bob.ifc_guid = parent_ob.guid
-                bob.ifc_name = parent_ob.name
-                bob.ifc_type = parent_ob.type
+                if wrong_unicode:
+                    bob.ifc_type = ''.join([chr(c) for c in parent_ob.type_as_intvector()])
+                    bob.ifc_name = ''.join([chr(c) for c in parent_ob.name_as_intvector()])
+                    bob.ifc_guid = ''.join([chr(c) for c in parent_ob.guid_as_intvector()])
+                else:
+                    bob.ifc_guid = parent_ob.guid
+                    bob.ifc_name = parent_ob.name
+                    bob.ifc_type = parent_ob.type
 
                 if parent_ob.parent_id > 0:
                     id_to_parent[parent_id] = parent_ob.parent_id
@@ -183,9 +206,10 @@ def import_ifc(filename, use_names, process_relations):
             
     if process_relations:
         print("Done processing relations")
-            
-    txt = bpy.data.texts.new("%s.log"%bpy.path.basename(filename))
-    txt.from_string(IfcImport.GetLog())
+    
+    if not wrong_unicode:
+        txt = bpy.data.texts.new("%s.log"%bpy.path.basename(filename))
+        txt.from_string(IfcImport.GetLog())
 
     IfcImport.CleanUp()
     
@@ -209,16 +233,6 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         default=False)
 
     def execute(self, context):
-        global wrong_unicode,warned_about_wrong_unicode
-        if wrong_unicode and not warned_about_wrong_unicode:
-            warned_about_wrong_unicode = True
-            self.report({'WARNING'},
-                """This addon has been built with a different unicode configuration
-This will result in incorrectly imported text and may result in undefined behaviour
-Additionally it will result in IfcSpaces and IfcOpeningElements being visible by default
-You can use the offical builds from the blender.org website instead
-Sorry for the inconvenience"""
-            )
         if not import_ifc(self.filepath, self.use_names, self.process_relations):
             self.report({'ERROR'},
                 'Unable to parse .ifc file or no geometrical entities found'

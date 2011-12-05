@@ -39,6 +39,21 @@ namespace IfcGeomObjects {
 		std::string type;
 		std::string guid;
 		std::vector<float> matrix;
+		const std::vector<int> name_as_intvector() {
+			std::vector<int> r;
+			for ( std::string::const_iterator it = name.begin(); it != name.end(); ++ it ) r.push_back(*it);
+			return r;
+		}
+		const std::vector<int> type_as_intvector() {
+			std::vector<int> r;
+			for ( std::string::const_iterator it = type.begin(); it != type.end(); ++ it ) r.push_back(*it);
+			return r;
+		}
+		const std::vector<int> guid_as_intvector() {
+			std::vector<int> r;
+			for ( std::string::const_iterator it = guid.begin(); it != guid.end(); ++ it ) r.push_back(*it);
+			return r;
+		}
 	};
 
 	class IfcGeomObject : public IfcObject {
@@ -49,7 +64,7 @@ namespace IfcGeomObjects {
 	bool Next();
 	const IfcGeomObject* Get();
 	bool Init(const std::string fn);
-	bool InitUCS2(char* fn);
+	bool Init(const std::vector<int>& fn);
 	void Settings(int setting, bool value);
 	int Progress();
 	const IfcObject* GetObject(int id);
