@@ -88,11 +88,11 @@ def import_ifc(filename, use_names, process_relations):
         ob = IfcImport.Get()
         
         if wrong_unicode:
-            ob_type = ''.join([chr(c) for c in ob.type_as_intvector()])
             ob_name = ''.join([chr(c) for c in ob.name_as_intvector()])
+            ob_type = ''.join([chr(c) for c in ob.type_as_intvector()])
             ob_guid = ''.join([chr(c) for c in ob.guid_as_intvector()])
         else:
-            ob_type, ob_name, ob_guid = ob.name, ob.type, ob.guid
+            ob_name, ob_type, ob_guid = ob.name, ob.type, ob.guid
         
         f = ob.mesh.faces
         v = ob.mesh.verts
@@ -177,13 +177,13 @@ def import_ifc(filename, use_names, process_relations):
 
                 bob.ifc_id = parent_ob.id
                 if wrong_unicode:
-                    bob.ifc_type = ''.join([chr(c) for c in parent_ob.type_as_intvector()])
                     bob.ifc_name = ''.join([chr(c) for c in parent_ob.name_as_intvector()])
+                    bob.ifc_type = ''.join([chr(c) for c in parent_ob.type_as_intvector()])
                     bob.ifc_guid = ''.join([chr(c) for c in parent_ob.guid_as_intvector()])
                 else:
-                    bob.ifc_guid = parent_ob.guid
                     bob.ifc_name = parent_ob.name
                     bob.ifc_type = parent_ob.type
+                    bob.ifc_guid = parent_ob.guid
 
                 if parent_ob.parent_id > 0:
                     id_to_parent[parent_id] = parent_ob.parent_id
