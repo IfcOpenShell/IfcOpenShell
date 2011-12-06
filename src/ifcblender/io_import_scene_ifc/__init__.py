@@ -165,9 +165,20 @@ def import_ifc(filename, use_names, process_relations):
             if parent_ob.id == -1:
                 bob = None
             else:
+                if wrong_unicode:
+                    parent_ob_name = ''.join(
+                        [chr(c) for c in parent_ob.name_as_intvector()])
+                    parent_ob_type = ''.join(
+                        [chr(c) for c in parent_ob.type_as_intvector()])
+                    parent_ob_guid = ''.join(
+                        [chr(c) for c in parent_ob.guid_as_intvector()])
+                else:
+                    parent_ob_name, parent_ob_type, parent_ob_guid = \
+                        parent_ob.name, parent_ob.type, parent_ob.guid
+                    
                 m = parent_ob.matrix
-                nm = parent_ob.name if len(parent_ob.name) and use_names \
-                    else parent_ob.guid
+                nm = parent_ob_name if len(parent_ob_name) and use_names \
+                    else parent_ob_guid
                 bob = bpy.data.objects.new(nm, None)
                 id_to_matrix[parent_ob.id] = mathutils.Matrix((
                     [m[0], m[1], m[2], 0],
@@ -177,14 +188,8 @@ def import_ifc(filename, use_names, process_relations):
                 bpy.context.scene.objects.link(bob)
 
                 bob.ifc_id = parent_ob.id
-                if wrong_unicode:
-                    bob.ifc_name = ''.join([chr(c) for c in parent_ob.name_as_intvector()])
-                    bob.ifc_type = ''.join([chr(c) for c in parent_ob.type_as_intvector()])
-                    bob.ifc_guid = ''.join([chr(c) for c in parent_ob.guid_as_intvector()])
-                else:
-                    bob.ifc_name = parent_ob.name
-                    bob.ifc_type = parent_ob.type
-                    bob.ifc_guid = parent_ob.guid
+                bob.ifc_name, bob.ifc_type, bob.ifc_guid = \
+                    parent_ob_name, parent_ob_type, parent_ob_guid
 
                 if parent_ob.parent_id > 0:
                     id_to_parent[parent_id] = parent_ob.parent_id
@@ -240,7 +245,7 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
                 'Your version of Blender is incompatible with IfcBlender\n' \
                 'Please use the offical release from http://blender.org instead'
             )
-        if not import_ifc(self.filepath, self.use_names, self.process_relations):
+        elif not import_ifc(self.filepath, self.use_names, self.process_relations):
             self.report({'ERROR'},
                 'Unable to parse .ifc file or no geometrical entities found'
             )
