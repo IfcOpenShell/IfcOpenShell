@@ -44,7 +44,8 @@ max_unicode = 0x110000-1 if sys.platform[0:5] == 'linux' else 0x10000-1
 wrong_unicode = max_unicode != sys.maxunicode
 if wrong_unicode:
     print("\nWarning: wrong unicode representation detected, switching to "\
-        "compatibility layer for text transferral\n")
+        "compatibility layer for text transferral, may result in undefined "\
+        "behaviour, please use offical release from http://blender.org\n")
     
 if "bpy" in locals():
     import imp
@@ -71,9 +72,9 @@ def import_ifc(filename, use_names, process_relations):
     from . import IfcImport
     print("Reading %s..."%bpy.path.basename(filename))
     if wrong_unicode:
-        vec = IfcImport.IntVector(len(filename))
-        for i in range(len(filename)): vec[i] = ord(filename[i])
-        valid_file = IfcImport.Init(vec)
+        valid_file = IfcImport.InitUCS2( 
+            ''.join(['\0']+['\0%s'%s for s in filename]+['\0\0'])
+        )
     else:
         valid_file = IfcImport.Init(filename)
     if not valid_file:
@@ -233,6 +234,12 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         default=False)
 
     def execute(self, context):
+        global wrong_unicode
+        if wrong_unicode and sys.platform[0:5] != 'linux':
+            self.report({'ERROR'},
+                'Your version of Blender is incompatible with IfcBlender\n' \
+                'Please use the offical release from http://blender.org instead'
+            )
         if not import_ifc(self.filepath, self.use_names, self.process_relations):
             self.report({'ERROR'},
                 'Unable to parse .ifc file or no geometrical entities found'

@@ -116,7 +116,6 @@ namespace IfcGeomObjects {
 	};
 
 	bool Init(const std::string fn);
-	bool Init(const std::vector<int>& fn);
 	bool Init(void* data, int len);
 	bool Init(const std::string fn, std::ostream* log1= 0, std::ostream* log2= 0);
 	bool Init(std::istream& f, int len, std::ostream* log1= 0, std::ostream* log2= 0);
