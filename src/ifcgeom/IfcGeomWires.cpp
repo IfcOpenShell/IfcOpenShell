@@ -80,6 +80,28 @@
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire) {
+	if ( ! Ifc::hasPlaneAngleUnit ) {
+		Ifc::LogMessage("Warning","Creating a composite curve without unit information:",l->entity);
+		Ifc::hasPlaneAngleUnit = true;
+		// First try radians
+		Ifc::PlaneAngleUnit = 1.0f;
+		bool succes_radians = IfcGeom::convert(l,wire);
+		bool succes_degrees;
+		if ( succes_radians ) {
+			Ifc::LogMessage("Notice","Used radians to create composite curve");
+		} else {
+			// Now try degrees
+			Ifc::PlaneAngleUnit = 0.0174532925199433f;
+			succes_degrees = IfcGeom::convert(l,wire);
+			if ( succes_degrees ) {
+				Ifc::LogMessage("Notice","Used degrees to create composite curve");
+			}
+			// Restore to radians
+			Ifc::PlaneAngleUnit = 1.0f;
+		}
+		Ifc::hasPlaneAngleUnit = false;
+		return succes_radians || succes_degrees;
+	}
 	Ifc2x3::IfcCompositeCurveSegment::list segments = l->Segments();
 	BRepBuilderAPI_MakeWire w;
 	//TopoDS_Vertex last_vertex;

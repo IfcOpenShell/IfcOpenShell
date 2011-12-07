@@ -247,6 +247,7 @@ public:
 	static bool Init(IfcParse::File* f);
 	static std::string GetLog();
 	static void Dispose();
+	static bool hasPlaneAngleUnit;
 	static float LengthUnit;
 	static float PlaneAngleUnit;
 	static int CircleSegments;

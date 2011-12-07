@@ -672,6 +672,7 @@ bool Ifc::Init(IfcParse::File* f) {
 				Ifc::LengthUnit = value;
 			} else if ( type == Ifc2x3::IfcUnitEnum::PLANEANGLEUNIT ) {
 				Ifc::PlaneAngleUnit = value;
+				Ifc::hasPlaneAngleUnit = true;
 			}
 		}
 	}
@@ -765,6 +766,7 @@ unsigned int Ifc::lastId = 0;
 Tokens* Ifc::tokens = 0;
 float Ifc::LengthUnit = 1.0f;
 float Ifc::PlaneAngleUnit = 1.0f;
+bool Ifc::hasPlaneAngleUnit = false;
 int Ifc::CircleSegments = 32;
 MapEntitiesByType Ifc::bytype;
 MapEntityById Ifc::byid;
