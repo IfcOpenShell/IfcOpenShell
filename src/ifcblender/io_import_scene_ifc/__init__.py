@@ -136,7 +136,9 @@ def import_ifc(filename, use_names, process_relations):
             ob.id, ob_guid, ob_name, ob_type
 
         bob.hide = ob_type == 'IfcSpace' or ob_type == 'IfcOpeningElement'
-        id_to_object[ob.id] = bob
+        
+        if ob.id not in id_to_object: id_to_object[ob.id] = []
+        id_to_object[ob.id].append(bob)
 
         if ob.parent_id > 0:
             id_to_parent[ob.id] = ob.parent_id
@@ -157,9 +159,9 @@ def import_ifc(filename, use_names, process_relations):
 
     while len(id_to_parent_temp) and process_relations:
         id, parent_id = id_to_parent_temp.popitem()
-
+        
         if parent_id in id_to_object:
-            bob = id_to_object[parent_id]
+            bob = id_to_object[parent_id][0]
         else:
             parent_ob = IfcImport.GetObject(parent_id)
             if parent_ob.id == -1:
@@ -194,10 +196,11 @@ def import_ifc(filename, use_names, process_relations):
                 if parent_ob.parent_id > 0:
                     id_to_parent[parent_id] = parent_ob.parent_id
                     id_to_parent_temp[parent_id] = parent_ob.parent_id
-                id_to_object[parent_id] = bob
+                if parent_id not in id_to_object: id_to_object[parent_id] = []
+                id_to_object[parent_id].append(bob)
         if bob:
-            ob = id_to_object[id]
-            ob.parent = bob
+            for ob in id_to_object[id]:
+                ob.parent = bob
 
     id_to_matrix_temp = dict(id_to_matrix)
 
@@ -205,10 +208,11 @@ def import_ifc(filename, use_names, process_relations):
         id, matrix = id_to_matrix_temp.popitem()
         parent_id = id_to_parent.get(id, None)
         parent_matrix = id_to_matrix.get(parent_id, None)
-        if parent_matrix:
-            id_to_object[id].matrix_local = parent_matrix.inverted() * matrix
-        else:
-            id_to_object[id].matrix_world = matrix
+        for ob in id_to_object[id]:
+            if parent_matrix:
+                ob.matrix_local = parent_matrix.inverted() * matrix
+            else:
+                ob.matrix_world = matrix
             
     if process_relations:
         print("Done processing relations")
