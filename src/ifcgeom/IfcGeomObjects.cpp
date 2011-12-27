@@ -217,6 +217,51 @@ void _nextShape() {
 	++ done;
 }
 
+int _getParentId(const Ifc2x3::IfcProduct::ptr ifc_product) {
+	int parent_id = -1;
+	// In case of an opening element, parent to the RelatingBuildingElement
+	if ( ifc_product->is(Ifc2x3::Type::IfcOpeningElement ) ) {
+		Ifc2x3::IfcOpeningElement::ptr opening = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcOpeningElement>(ifc_product);
+		Ifc2x3::IfcRelVoidsElement::list voids = opening->VoidsElements();
+		if ( voids->Size() ) {
+			Ifc2x3::IfcRelVoidsElement::ptr ifc_void = *voids->begin();
+			parent_id = ifc_void->RelatingBuildingElement()->entity->id();
+		}
+	} else if ( ifc_product->is(Ifc2x3::Type::IfcElement ) ) {
+		Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcElement>(ifc_product);
+		Ifc2x3::IfcRelFillsElement::list fills = element->FillsVoids();
+		// Incase of a RelatedBuildingElement parent to the opening element
+		if ( fills->Size() ) {
+			for ( Ifc2x3::IfcRelFillsElement::it it = fills->begin(); it != fills->end(); ++ it ) {
+				Ifc2x3::IfcRelFillsElement::ptr fill = *it;
+				Ifc2x3::IfcObjectDefinition* ifc_objectdef = fill->RelatingOpeningElement();
+				if ( ifc_product == ifc_objectdef ) continue;
+				parent_id = ifc_objectdef->entity->id();
+			}
+		} 
+		// Else simply parent to the containing structure
+		if ( parent_id == -1 ) {
+			Ifc2x3::IfcRelContainedInSpatialStructure::list parents = element->ContainedInStructure();
+			if ( parents->Size() ) {
+				Ifc2x3::IfcRelContainedInSpatialStructure::ptr parent = *parents->begin();
+				parent_id = parent->RelatingStructure()->entity->id();
+			}
+		}
+	}
+	// Parent decompositions to the RelatingObject
+	if ( parent_id == -1 ) {
+		IfcEntities parents = ifc_product->entity->getInverse(Ifc2x3::Type::IfcRelAggregates);
+		parents->push(ifc_product->entity->getInverse(Ifc2x3::Type::IfcRelNests));
+		for ( IfcEntityList::it it = parents->begin(); it != parents->end(); ++ it ) {
+			Ifc2x3::IfcRelDecomposes::ptr decompose = reinterpret_pointer_cast<IfcBaseClass,Ifc2x3::IfcRelDecomposes>(*it);
+			Ifc2x3::IfcObjectDefinition* ifc_objectdef = decompose->RelatingObject();
+			if ( ifc_product == ifc_objectdef ) continue;
+			parent_id = ifc_objectdef->entity->id();
+		}
+	}
+	return parent_id;
+}
+
 // Returns the current IfcGeomObject*
 IfcGeomObjects::IfcGeomObject* _get() {
 	while ( true ) {
@@ -277,7 +322,12 @@ IfcGeomObjects::IfcGeomObject* _get() {
 		}
 
 		Ifc2x3::IfcProduct::ptr ifc_product = *inner;
+
 		int parent_id = -1;
+		try {
+			parent_id = _getParentId(ifc_product);
+		} catch (...) {}
+		
 		const std::string name = ifc_product->hasName() ? ifc_product->Name() : "";
 		const std::string guid = ifc_product->GlobalId();
 		
@@ -303,25 +353,6 @@ IfcGeomObjects::IfcGeomObject* _get() {
 					Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcObjectDefinition,Ifc2x3::IfcElement>(obdef);
 					openings->push(element->HasOpenings());
 				}
-			}
-		}
-
-		if ( ifc_product->is(Ifc2x3::Type::IfcElement ) ) {
-			Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcElement>(ifc_product);
-			Ifc2x3::IfcRelContainedInSpatialStructure::list parents = element->ContainedInStructure();
-			if ( parents->Size() ) {
-				Ifc2x3::IfcRelContainedInSpatialStructure::ptr parent = *parents->begin();
-				parent_id = parent->RelatingStructure()->entity->id();
-			}
-		}
-		if ( parent_id == -1 ) {
-			Ifc2x3::IfcRelDecomposes::list decomposes = ifc_product->IsDecomposedBy();
-			// This is a bug in IfcParse IsDecomposedBy() and Decomposes() are mixed
-			for ( Ifc2x3::IfcRelDecomposes::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
-				Ifc2x3::IfcRelDecomposes::ptr decompose = *it;
-				Ifc2x3::IfcObjectDefinition* ifc_objectdef = decompose->RelatingObject();
-				if ( ifc_product == ifc_objectdef ) continue;
-				parent_id = ifc_objectdef->entity->id();
 			}
 		}
 
@@ -398,24 +429,9 @@ const IfcGeomObjects::IfcObject* IfcGeomObjects::GetObject(int id) {
 		if ( ifc_entity->is(Ifc2x3::Type::IfcProduct) ) {
 			Ifc2x3::IfcProduct::ptr ifc_product = reinterpret_pointer_cast<IfcUtil::IfcBaseClass,Ifc2x3::IfcProduct>(ifc_entity);
 			int parent_id = -1;
-			if ( ifc_product->is(Ifc2x3::Type::IfcElement ) ) {
-				Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcElement>(ifc_product);
-				Ifc2x3::IfcRelContainedInSpatialStructure::list parents = element->ContainedInStructure();
-				if ( parents->Size() ) {
-					Ifc2x3::IfcRelContainedInSpatialStructure::ptr parent = *parents->begin();
-					parent_id = parent->RelatingStructure()->entity->id();
-				}
-			}
-			if ( parent_id == -1 ) {
-				Ifc2x3::IfcRelDecomposes::list decomposes = ifc_product->IsDecomposedBy();
-				// This is a bug in IfcParse IsDecomposedBy() and Decomposes() are mixed
-				for ( Ifc2x3::IfcRelDecomposes::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
-					Ifc2x3::IfcRelDecomposes::ptr decompose = *it;
-					Ifc2x3::IfcObjectDefinition* ifc_objectdef = decompose->RelatingObject();
-					if ( ifc_product == ifc_objectdef ) continue;
-					parent_id = ifc_objectdef->entity->id();
-				}
-			}
+			try {
+				parent_id = _getParentId(ifc_product);
+			} catch (...) {}
 			const std::string name = ifc_product->hasName() ? ifc_product->Name() : "";
 			gp_Trsf trsf;
 			try {
