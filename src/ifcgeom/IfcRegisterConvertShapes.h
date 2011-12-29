@@ -1,7 +1,11 @@
 #include "IfcRegisterUndef.h"
 #define SHAPES(T) \
 	if ( l->is(T::Class()) ) { \
-		return IfcGeom::convert((T*)l,r); \
+		try { \
+			return IfcGeom::convert((T*)l,r); \
+		} catch (...) { } \
+		Ifc::LogMessage("Error","Failed to convert:",l->entity); \
+		return false; \
 	}
 #include "IfcRegisterDef.h"
 
