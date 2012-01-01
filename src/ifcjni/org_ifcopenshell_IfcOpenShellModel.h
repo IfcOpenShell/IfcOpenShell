@@ -10,7 +10,7 @@ extern "C" {
 /*
  * Class:     org_ifcopenshell_IfcOpenShellModel
  * Method:    getGeometry
- * Signature: ()Lorg/bimserver/plugins/ifcengine/IfcEngineGeometry;
+ * Signature: ()Lorg/ifcopenshell/IfcGeomObject;
  */
 JNIEXPORT jobject JNICALL Java_org_ifcopenshell_IfcOpenShellModel_getGeometry
   (JNIEnv *, jobject);
@@ -18,9 +18,9 @@ JNIEXPORT jobject JNICALL Java_org_ifcopenshell_IfcOpenShellModel_getGeometry
 /*
  * Class:     org_ifcopenshell_IfcOpenShellModel
  * Method:    setIfcData
- * Signature: ([B)V
+ * Signature: ([B)Z
  */
-JNIEXPORT bool JNICALL Java_org_ifcopenshell_IfcOpenShellModel_setIfcData
+JNIEXPORT jboolean JNICALL Java_org_ifcopenshell_IfcOpenShellModel_setIfcData
   (JNIEnv *, jobject, jbyteArray);
 
 #ifdef __cplusplus

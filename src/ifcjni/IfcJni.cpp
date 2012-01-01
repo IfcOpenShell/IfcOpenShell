@@ -33,7 +33,7 @@ JNIEXPORT jobject JNICALL Java_org_ifcopenshell_IfcOpenShellModel_getGeometry (J
   if ( ! has_more ) return 0;
   jclass class_def = env->FindClass ("org/ifcopenshell/IfcGeomObject");
   if ( ! class_def ) return 0;
-  jmethodID jconstructor = env->GetMethodID(class_def, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[I[F[F)V");
+  jmethodID jconstructor = env->GetMethodID(class_def, "<init>", "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;[I[F[F)V");
   if ( ! jconstructor ) return 0;
   const IfcGeomObjects::IfcGeomObject* o = IfcGeomObjects::Get();
   
@@ -49,7 +49,7 @@ JNIEXPORT jobject JNICALL Java_org_ifcopenshell_IfcOpenShellModel_getGeometry (J
   env->SetFloatArrayRegion(positions,0,o->mesh->verts.size(),(jfloat*) &o->mesh->verts[0]);
   env->SetFloatArrayRegion(normals,0,o->mesh->normals.size(),(jfloat*) &o->mesh->normals[0]);
   
-  jobject return_obj = env->NewObject(class_def, jconstructor, name, type, guid, indices, positions, normals);
+  jobject return_obj = env->NewObject(class_def, jconstructor, o->id, name, type, guid, indices, positions, normals);
   
   env->DeleteLocalRef(name);
   env->DeleteLocalRef(type);
@@ -65,7 +65,7 @@ JNIEXPORT jobject JNICALL Java_org_ifcopenshell_IfcOpenShellModel_getGeometry (J
   return return_obj;
 }
 
-JNIEXPORT bool JNICALL Java_org_ifcopenshell_IfcOpenShellModel_setIfcData (JNIEnv * env, jobject, jbyteArray jdata) {
+JNIEXPORT jboolean JNICALL Java_org_ifcopenshell_IfcOpenShellModel_setIfcData (JNIEnv * env, jobject, jbyteArray jdata) {
   void* data = env->GetByteArrayElements(jdata, NULL);
   const int length = env->GetArrayLength(jdata);
   if ( ! data || ! length ) return false;
