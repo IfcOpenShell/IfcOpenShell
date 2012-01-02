@@ -167,14 +167,22 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 			gp_Pnt pnt2;
 			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcCartesianPoint>(i), pnt2 );
 			BRepBuilderAPI_MakeEdge e (curve,pnt1,pnt2);
+			if ( ! e.IsDone() ) {
+				BRepBuilderAPI_EdgeError err = e.Error();
+				return false;
+			}
 			w.Add(e.Edge());			
 			trimmed2 = true;
 			break;
 		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) && !trim_cartesian && trimmed1 ) {
 			const float value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
 			float flt2 = value * parameterFactor;
-			BRepBuilderAPI_MakeEdge e (curve,sense_agreement ? flt1 : flt2,sense_agreement ? flt2 : flt1);
-			w.Add(e.Edge());
+			if ( isConic && ALMOST_THE_SAME(fmod(flt2-flt1,(float)(PI*2.0)),0.0f) ) {
+				w.Add(BRepBuilderAPI_MakeEdge(curve));
+			} else {
+				BRepBuilderAPI_MakeEdge e (curve,sense_agreement ? flt1 : flt2,sense_agreement ? flt2 : flt1);
+				w.Add(e.Edge());
+			}
 			trimmed2 = true;
 			break;
 		}
