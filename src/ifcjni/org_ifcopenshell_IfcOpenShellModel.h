@@ -23,6 +23,14 @@ JNIEXPORT jobject JNICALL Java_org_ifcopenshell_IfcOpenShellModel_getGeometry
 JNIEXPORT jboolean JNICALL Java_org_ifcopenshell_IfcOpenShellModel_setIfcData
   (JNIEnv *, jobject, jbyteArray);
 
+/*
+ * Class:     org_ifcopenshell_IfcOpenShellModel
+ * Method:    getPluginVersion
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_ifcopenshell_IfcOpenShellModel_getPluginVersion
+  (JNIEnv *, jobject);
+
 #ifdef __cplusplus
 }
 #endif
