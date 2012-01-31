@@ -164,9 +164,11 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 		return true;
 	}
 
-	const float second_operand_volume = shape_volume(s2);
-	if ( second_operand_volume <= ALMOST_ZERO )
-		Ifc::LogMessage("warning","Empty solid for:",l->SecondOperand()->entity);
+	if ( ! l->SecondOperand()->is(Ifc2x3::Type::IfcHalfSpaceSolid) ) {
+		const float second_operand_volume = shape_volume(s2);
+		if ( second_operand_volume <= ALMOST_ZERO )
+			Ifc::LogMessage("warning","Empty solid for:",l->SecondOperand()->entity);
+	}
 
 	shape = BRepAlgoAPI_Cut(s1,s2);
 
