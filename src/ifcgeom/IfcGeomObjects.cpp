@@ -40,6 +40,7 @@
 #include <Poly_Array1OfTriangle.hxx>
 #include <StdFail_NotDone.hxx>
 #include <BRepGProp_Face.hxx>
+#include <BRepBuilderAPI_GTransform.hxx>
 
 #include "../ifcparse/IfcException.h"
 #include "../ifcgeom/IfcGeomObjects.h"
@@ -68,10 +69,32 @@ int IfcGeomObjects::IfcMesh::addvert(const gp_XYZ& p) {
 }
 
 bool use_world_coords = false;
+bool use_brep_data = false;
 
 IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
 	id = i;
 
+	if ( use_brep_data ) {
+		TopoDS_Compound compound;
+		BRep_Builder builder;
+		builder.MakeCompound(compound);
+		for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+			const TopoDS_Shape& s = *(*it).second;
+			const gp_GTrsf& trsf = *(*it).first;
+			bool trsf_valid = false;
+			gp_Trsf _trsf;
+			try {
+				_trsf = trsf.Trsf();
+				trsf_valid = true;
+			} catch (...) {}
+			const TopoDS_Shape moved_shape = trsf_valid ? s.Moved(_trsf) :
+				BRepBuilderAPI_GTransform(s,trsf,true).Shape();
+			builder.Add(compound,moved_shape);
+		}
+		std::stringstream sstream;
+		BRepTools::Write(compound,sstream);
+		brep_data = sstream.str();
+	} else
 	for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 
 		const TopoDS_Shape& s = *(*it).second;
@@ -490,6 +513,9 @@ void IfcGeomObjects::Settings(int setting, bool value) {
 		break;
 	case CONVERT_BACK_UNITS:
 		convert_back_units = value;
+		break;
+	case USE_BREP_DATA:
+		use_brep_data = value;
 		break;
 	}
 }

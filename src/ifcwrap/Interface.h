@@ -21,6 +21,8 @@ namespace IfcGeomObjects {
 
 	const int WELD_VERTICES = 1;
 	const int USE_WORLD_COORDS = 2;
+	const int CONVERT_BACK_UNITS = 3;
+	const int USE_BREP_DATA = 4;
 
 	class IfcMesh {
 	public:
@@ -29,6 +31,7 @@ namespace IfcGeomObjects {
 		std::vector<int> faces;
 		std::vector<int> edges;
 		std::vector<float> normals;
+		std::string brep_data;
 	};
 
 	class IfcObject {
