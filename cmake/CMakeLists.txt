@@ -40,9 +40,9 @@ FIND_LIBRARY(icu "icuuc" /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
 
 IF(icu)
 	MESSAGE(STATUS "ICU libraries found")
+    ADD_DEFINITIONS(-DHAVE_ICU)
 ELSE()
-	MESSAGE(STATUS "Unable to find ICU library files, continuing")
-	ADD_DEFINITIONS(-DHAVE_ICU)
+	MESSAGE(STATUS "Unable to find ICU library files, continuing")	
 ENDIF()
 
 INCLUDE(CheckIncludeFileCXX)
