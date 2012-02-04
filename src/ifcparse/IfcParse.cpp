@@ -100,6 +100,7 @@ void File::ReadBuffer(bool inc) {
 void File::Seek(unsigned int o) {
 	if ( !paging ) {
 		ptr = o;
+		if (ptr >= len) throw IfcException("Reading outside of file limits");
 		eof = false;
 	} else if ( o >= offset && (o < (offset+len)) ) {
 		ptr = o - offset;
@@ -123,7 +124,7 @@ char File::Peek() {
 //
 char File::Read(unsigned int o) {
 	if ( ! paging ) {
-        	return buffer[o];
+		return buffer[o];
 	} else if ( o >= offset && (o < (offset+len)) ) {
 		return buffer[o-offset];
 	} else {
@@ -146,7 +147,10 @@ unsigned int File::Tell() {
 void File::Inc() {
 	if ( ++ptr == len ) { 
 		if ( paging ) ReadBuffer();
-		else eof = true;
+		else {
+			eof = true;
+			return;
+		}
 	}
 	const char current = File::Peek();
 	if ( current == '\n' || current == '\r' ) File::Inc();
@@ -220,6 +224,7 @@ Token Tokens::Next() {
 // Omits whitespace and comments
 //
 std::string Tokens::TokenString(unsigned int offset) {
+	const bool was_eof = file->eof;
 	unsigned int old_offset = file->Tell();
 	file->Seek(offset);
 	bool inString = false;
@@ -238,7 +243,8 @@ std::string Tokens::TokenString(unsigned int offset) {
 		else if ( !inComment && c == '\'' ) return *decoder;
 		p = c;
 	}
-	file->Seek(old_offset);
+	if ( was_eof ) file->eof = true;
+	else file->Seek(old_offset);
 	return buffer;
 }
 
@@ -580,7 +586,7 @@ bool Ifc::Init(IfcParse::File* f) {
 	EntityPtr e;
 	IfcUtil::IfcSchemaEntity entity; 
 	if ( log1 ) std::cout << "Scanning file..." << std::endl;
-	while ( true ) {
+	while ( ! file->eof ) {
 		if ( currentId ) {
 			try {
 				e = new Entity(currentId,tokens);
@@ -601,6 +607,11 @@ bool Ifc::Init(IfcParse::File* f) {
 				L->push(entity);
 				ty = Ifc2x3::Type::Parent(ty);
 			} while ( ty > -1 );
+			if ( byid.find(currentId) != byid.end() ) {
+				std::stringstream ss;
+				ss << "Overwriting entity with id " << currentId;
+				Ifc::LogMessage("Warning",ss.str());
+			}
 			byid[currentId] = entity;
 			currentId = 0;
 		} else token = tokens->Next();
