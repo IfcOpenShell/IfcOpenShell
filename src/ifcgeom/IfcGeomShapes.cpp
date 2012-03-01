@@ -132,8 +132,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr l, TopoDS_
 	if ( ! IfcGeom::convert_wire(l->PolygonalBoundary(),wire) || ! wire.Closed() ) return false;	
 	gp_Trsf trsf;
 	convert(l->Position(),trsf);
-	TopoDS_Shape extrusion = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,20000.0));
-	gp_Trsf down; down.SetTranslation(gp_Vec(0,0,-10000.0));
+	TopoDS_Shape extrusion = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,200.0));
+	gp_Trsf down; down.SetTranslation(gp_Vec(0,0,-100.0));
 	extrusion.Move(down*trsf);
 	shape = BRepAlgoAPI_Cut(extrusion,halfspace);
 	return true;
@@ -179,20 +179,33 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 	return true;
 }
 bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& shape) {
+#ifdef FACESET_AS_COMPOUND
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	builder.MakeCompound(compound);
+#else
 	BRepOffsetAPI_Sewing builder;
 	builder.SetTolerance(0.01);
+#endif
 	Ifc2x3::IfcFace::list faces = l->CfsFaces();
 	bool facesAdded = false;
 	for( Ifc2x3::IfcFace::it it = faces->begin(); it != faces->end(); ++ it ) {
 		TopoDS_Face face;
 		if ( IfcGeom::convert_face(*it,face) ) {
+#ifdef FACESET_AS_COMPOUND
+			builder.Add(compound,face);
+#else
 			builder.Add(face);
+#endif
 			facesAdded = true;
 		} else {
 			Ifc::LogMessage("Warning","Invalid face:",(*it)->entity);
 		}
 	}
 	if ( ! facesAdded ) return false;
+#ifdef FACESET_AS_COMPOUND
+	shape = compound;
+#else
 	builder.Perform();
 	shape = builder.SewedShape();
 	try {
@@ -200,6 +213,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 		solid.LimitTolerance(0.01);
 		shape = solid.SolidFromShell(TopoDS::Shell(shape));
 	} catch(...) {}
+#endif
 	return true;
 }
 bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, ShapeList& shapes) {

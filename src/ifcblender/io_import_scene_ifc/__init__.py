@@ -78,6 +78,7 @@ def import_ifc(filename, use_names, process_relations):
     else:
         valid_file = IfcImport.Init(filename)
     if not valid_file:
+        IfcImport.CleanUp()
         return False
     print("Done reading file")
     id_to_object = {}
@@ -136,6 +137,7 @@ def import_ifc(filename, use_names, process_relations):
             ob.id, ob_guid, ob_name, ob_type
 
         bob.hide = ob_type == 'IfcSpace' or ob_type == 'IfcOpeningElement'
+        bob.hide_render = bob.hide
         
         if ob.id not in id_to_object: id_to_object[ob.id] = []
         id_to_object[ob.id].append(bob)

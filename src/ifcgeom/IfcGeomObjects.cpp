@@ -299,10 +299,15 @@ IfcGeomObjects::IfcGeomObject* _get() {
 
 		// Has the list of IfcProducts for this representation been initialized?
 		if ( ! entities ) {
-			if ( shaperep->RepresentationIdentifier() != "Body" &&
-				shaperep->RepresentationIdentifier() != "Facetation" ) {
-				_nextShape();
-				continue;
+			if ( shaperep->hasRepresentationIdentifier() ) {
+				const std::string representation_identifier = shaperep->RepresentationIdentifier();
+				if ( shaperep->hasRepresentationType() && representation_identifier == "IAI" && shaperep->RepresentationType() != "BoundingBox" ) {
+					// Allow for Ifc 2x compatibility
+				} else if ( representation_identifier != "Body" &&
+					representation_identifier != "Facetation" ) {
+						_nextShape();
+						continue;
+				}
 			}
 			Ifc2x3::IfcProductRepresentation::list prodreps = shaperep->OfProductRepresentation();
 			entities = Ifc2x3::IfcProduct::list( new IfcTemplatedEntityList<Ifc2x3::IfcProduct>() );

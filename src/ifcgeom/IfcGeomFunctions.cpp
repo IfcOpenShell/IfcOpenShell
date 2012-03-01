@@ -82,6 +82,40 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
+bool IfcGeom::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
+	BRepOffsetAPI_Sewing builder;
+	builder.SetTolerance(0.01);
+	TopExp_Explorer exp(compound,TopAbs_FACE);
+	if ( ! exp.More() ) return false;
+	for ( ; exp.More(); exp.Next() ) {
+		TopoDS_Face face = TopoDS::Face(exp.Current());
+		builder.Add(face);
+	}
+	builder.Perform();
+	shape = builder.SewedShape();
+	try {
+	ShapeFix_Solid sf_solid;
+	sf_solid.LimitTolerance(0.01);
+	shape = sf_solid.SolidFromShell(TopoDS::Shell(shape));
+	} catch(...) {}
+	return true;
+}
+
+bool IfcGeom::is_compound(const TopoDS_Shape& shape) {
+	bool has_solids = TopExp_Explorer(shape,TopAbs_SHELL).More() != 0;
+	bool has_shells = TopExp_Explorer(shape,TopAbs_SHELL).More() != 0;
+	bool has_compounds = TopExp_Explorer(shape,TopAbs_COMPOUND).More() != 0;
+	bool has_faces = TopExp_Explorer(shape,TopAbs_FACE).More() != 0;
+	return has_compounds && has_faces && !has_solids && !has_shells;
+}
+
+const TopoDS_Shape& IfcGeom::ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid) {
+	const bool is_comp = IfcGeom::is_compound(shape);
+	if ( ! is_comp ) return shape;
+	IfcGeom::create_solid_from_compound(shape,solid);
+	return solid;
+}
+
 bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, 
 							   const ShapeList& entity_shapes, const gp_Trsf& entity_trsf, ShapeList& cut_shapes) {
 	// Iterate over IfcOpeningElements
@@ -116,7 +150,8 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x
 
 	// Iterate over the shapes of the IfcProduct
 	for ( IfcGeom::ShapeList::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
-		const TopoDS_Shape& entity_shape_unlocated = *(it3->second);
+		TopoDS_Shape entity_shape_solid;
+		const TopoDS_Shape& entity_shape_unlocated = IfcGeom::ensure_fit_for_subtraction(*(it3->second),entity_shape_solid);
 		const gp_GTrsf& entity_shape_gtrsf = *(it3->first);
 		TopoDS_Shape entity_shape;
 		if ( entity_shape_gtrsf.Form() == gp_Other ) {
@@ -128,7 +163,8 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x
 
 		// Iterate over the shapes of the IfcOpeningElements
 		for ( IfcGeom::ShapeList::const_iterator it4 = opening_shapes.begin(); it4 != opening_shapes.end(); ++ it4 ) {
-			const TopoDS_Shape& opening_shape_unlocated = *(it4->second);
+			TopoDS_Shape opening_shape_solid;
+			const TopoDS_Shape& opening_shape_unlocated = IfcGeom::ensure_fit_for_subtraction(*(it4->second),opening_shape_solid);
 			const gp_GTrsf& opening_shape_gtrsf = *(it4->first);
 			if ( opening_shape_gtrsf.Form() == gp_Other ) {
 				Ifc::LogMessage("warning","Applying non uniform transformation to opening of:",entity->entity);
@@ -143,12 +179,16 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x
 
 			const float original_shape_volume = shape_volume(entity_shape);
 
-			entity_shape = BRepAlgoAPI_Cut(entity_shape,opening_shape);
+			BRepAlgoAPI_Cut brep_cut(entity_shape,opening_shape);
+
+			if ( brep_cut.IsDone() ) {
+				entity_shape = brep_cut;
 					
-			const float volume_after_subtraction = shape_volume(entity_shape);
+				const float volume_after_subtraction = shape_volume(entity_shape);
 					
-			if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
-				Ifc::LogMessage("warning","Warning subtraction yields unchanged volume:",entity->entity);
+				if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
+					Ifc::LogMessage("warning","Warning subtraction yields unchanged volume:",entity->entity);
+			}
 		}
 		cut_shapes.push_back(IfcGeom::LocationShape(new gp_GTrsf(),new TopoDS_Shape(entity_shape)));
 	}

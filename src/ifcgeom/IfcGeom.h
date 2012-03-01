@@ -42,6 +42,8 @@
 
 #include "../ifcgeom/IfcShapeList.h"
 
+#define FACESET_AS_COMPOUND 1
+
 namespace IfcGeom {
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
 	bool convert_shapes(const IfcUtil::IfcBaseClass* L, ShapeList& result);
@@ -51,6 +53,9 @@ namespace IfcGeom {
 	bool convert_curve(const IfcUtil::IfcBaseClass* L, Handle(Geom_Curve)& result);
 	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Face& result);
 	bool convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, const ShapeList& entity_shapes, const gp_Trsf& entity_trsf, ShapeList& cut_shapes);
+	bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid);
+	bool is_compound(const TopoDS_Shape& shape);
+	const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid);
 	bool profile_helper(int numVerts, float* verts, int numFillets, int* filletIndices, float* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
 	float shape_volume(const TopoDS_Shape& s);
 	namespace Cache {
