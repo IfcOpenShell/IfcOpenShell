@@ -29,6 +29,6 @@
 
 namespace std {
    %template(IntVector) vector<int>;
-   %template(FloatVector) vector<float>;
+   %template(FloatVector) vector<double>;
    %template(ObjVector) vector<IfcGeomObject>;
 };

@@ -119,7 +119,7 @@ TestFile("ftp://ftp.dds.no/pub/ifc/HiTOS/HITOS_Architectural_2006-10-25.zip")
 # Nemetschek Vectorworks
 TestFile("http://download2cf.nemetschek.net/www_misc/bim/DCR-LOD_100.zip")
 TestFile("http://download2cf.nemetschek.net/www_misc/bim/DCR-LOD_200.zip")
-# Rather large: 
+# Rather large:
 # TestFile("http://download2cf.nemetschek.net/www_misc/bim/DCR-LOD_300.zip")
 
 # Data Design Systems
@@ -128,7 +128,7 @@ TestFile("ftp://ftp.dds.no/pub/ifc/BardNa/Dds_BardNa.zip")
 # Common Building Information Model Files
 TestFile("http://projects.buildingsmartalliance.org/files/?artifact_id=4278","2011-09-14-Duplex-IFC.zip")
 TestFile("http://projects.buildingsmartalliance.org/files/?artifact_id=4284","2011-09-14-Office-IFC.zip")
-# Rather large
+# Rather large:
 # TestFile("http://projects.buildingsmartalliance.org/files/?artifact_id=4289","2011-09-14-Clinic-IFC.zip")
 
 # http://openifcmodel.cs.auckland.ac.nz IAI 
@@ -151,7 +151,6 @@ TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/0912105-01doors_explicit
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/0912105-02DoorOperationsPlacementInsideWall_rev_1.ifc")
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/0912106-01window_brep_ac_1.ifc")
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/0912106-02windows_placement_inside_wall_all_1.ifc")
-TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/0912107-01stair_geom_ac_1.ifc")
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/0912107-01stair_geometry_ben_1.ifc")
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/0912108-01ramp_geometry_ben_2.ifc")
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/0912108-01RampAsContainer_rev_1.ifc")
@@ -183,6 +182,25 @@ TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/171210sections_brep.ifc"
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/171210threebeams_brep.ifc")
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/171210TrainingStructure_brep.ifc")
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/171210eccentricity_physical.ifc")
+
+# BIMserver 
+TestFile("http://bimserver.googlecode.com/svn/trunk/TestData/data/06-03-01_windows_in_curved_wall_vw.ifc")
+TestFile("http://bimserver.googlecode.com/svn/trunk/TestData/data/4351.ifc")
+TestFile("http://bimserver.googlecode.com/svn/trunk/TestData/data/AC9R1-Haus-G-H-Ver2-2x3.ifc")
+TestFile("http://bimserver.googlecode.com/svn/trunk/TestData/data/AC90R1-niedriha-V2-2x3.ifc")
+
+# File courtesey of Jon Mirtschin / Geometry Gym  
+TestFile("geometrygym_great_court_roof.ifc")
+
+# Walls cut by IfcPolygonalBoundedHalfSpaces from Revit 2011
+TestFile("revit2011_wall1.ifc")
+TestFile("revit2011_wall2.ifc")
+
+# Walls from Autocad Architecture 2010
+TestFile("acad2010_walls.ifc")
+
+# Various half space configuration to test cutting tolerances
+TestFile("ifcopenshell_halfspaces.ifc")
 
 for test in test_cases:
     succes = test()

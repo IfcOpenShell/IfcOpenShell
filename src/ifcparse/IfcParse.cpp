@@ -17,6 +17,8 @@
 *                                                                              *
 ********************************************************************************/
 
+#include <algorithm>
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -287,9 +289,9 @@ bool TokenFunc::asBool(Token t) {
 	const std::string str = asString(t);
 	return str == "T";
 }
-float TokenFunc::asFloat(Token t) {
+double TokenFunc::asFloat(Token t) {
 	const std::string str = asString(t);
-	return (float) atof(str.c_str());
+	return (double) atof(str.c_str());
 }
 std::string TokenFunc::asString(Token t) {
 	if ( isOperator(t,'$') ) return "";
@@ -342,10 +344,10 @@ void ArgumentList::Push(ArgumentPtr l) {
 //
 ArgumentList::operator int() const { throw IfcException("Argument is not an integer"); }
 ArgumentList::operator bool() const { throw IfcException("Argument is not a boolean"); }
-ArgumentList::operator float() const { throw IfcException("Argument is not a number"); }
+ArgumentList::operator double() const { throw IfcException("Argument is not a number"); }
 ArgumentList::operator std::string() const { throw IfcException("Argument is not a string"); }
-ArgumentList::operator std::vector<float>() const {
-	std::vector<float> r;
+ArgumentList::operator std::vector<double>() const {
+	std::vector<double> r;
 	std::vector<ArgumentPtr>::const_iterator it;
 	for ( it = list.begin(); it != list.end(); ++ it ) {
 		r.push_back(**it);
@@ -386,12 +388,12 @@ ArgumentPtr ArgumentList::operator [] (unsigned int i) const {
 		throw IfcException("Argument index out of range");
 	return list[i];
 }
-std::string ArgumentList::toString() const {
+std::string ArgumentList::toString(bool upper) const {
 	std::stringstream ss;
 	ss << "(";
 	for( std::vector<ArgumentPtr>::const_iterator it = list.begin(); it != list.end(); it ++ ) {
 		if ( it != list.begin() ) ss << ",";
-		ss << (*it)->toString();
+		ss << (*it)->toString(upper);
 	}
 	ss << ")";
 	return ss.str();
@@ -409,29 +411,29 @@ ArgumentList::~ArgumentList() {
 //
 TokenArgument::operator int() const { return TokenFunc::asInt(token); }
 TokenArgument::operator bool() const { return TokenFunc::asBool(token); }
-TokenArgument::operator float() const { return TokenFunc::asFloat(token); }
+TokenArgument::operator double() const { return TokenFunc::asFloat(token); }
 TokenArgument::operator std::string() const { return TokenFunc::asString(token); }
-TokenArgument::operator std::vector<float>() const { throw IfcException("Argument is not a list of floats"); }
+TokenArgument::operator std::vector<double>() const { throw IfcException("Argument is not a list of floats"); }
 TokenArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
 TokenArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
 TokenArgument::operator IfcUtil::IfcSchemaEntity() const { return Ifc::EntityById(TokenFunc::asInt(token)); }
 /*TokenArgument::operator IfcUtil::IfcAbstractSelect::ptr() const {
-	//TODO Fix memory leak
-	return new IfcUtil::IfcEntitySelect(*this); 
+//TODO Fix memory leak
+return new IfcUtil::IfcEntitySelect(*this); 
 }*/
 TokenArgument::operator IfcEntities() const { throw IfcException("Argument is not a list of entities"); }
 unsigned int TokenArgument::Size() const { return 1; }
 ArgumentPtr TokenArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
-std::string TokenArgument::toString() const { return TokenFunc::toString(token); }
+std::string TokenArgument::toString(bool upper) const { return TokenFunc::toString(token); }
 bool TokenArgument::isNull() const { return TokenFunc::isOperator(token,'$'); }
 //
 // Functions for casting the EntityArgument to other types
 //
 EntityArgument::operator int() const { throw IfcException("Argument is not an integer"); }
 EntityArgument::operator bool() const { throw IfcException("Argument is not a boolean"); }
-EntityArgument::operator float() const { throw IfcException("Argument is not a number"); }
+EntityArgument::operator double() const { throw IfcException("Argument is not a number"); }
 EntityArgument::operator std::string() const { throw IfcException("Argument is not a string"); }
-EntityArgument::operator std::vector<float>() const { throw IfcException("Argument is not a list of floats"); }
+EntityArgument::operator std::vector<double>() const { throw IfcException("Argument is not a list of floats"); }
 EntityArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
 EntityArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
 EntityArgument::operator IfcUtil::IfcSchemaEntity() const {	return entity; }
@@ -439,7 +441,16 @@ EntityArgument::operator IfcUtil::IfcSchemaEntity() const {	return entity; }
 EntityArgument::operator IfcEntities() const { throw IfcException("Argument is not a list of entities"); }
 unsigned int EntityArgument::Size() const { return 1; }
 ArgumentPtr EntityArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
-std::string EntityArgument::toString() const { return Ifc2x3::Type::ToString(entity->type()); }
+std::string EntityArgument::toString(bool upper) const { 
+	ArgumentPtr arg = entity->wrappedValue();
+	IfcParse::TokenArgument* token_arg = dynamic_cast<IfcParse::TokenArgument*>(arg);
+	std::string token_string = ( token_arg ) ? TokenFunc::asString(token_arg->token) : "";
+	std::string dt = Ifc2x3::Type::ToString(entity->type());
+	if ( upper ) {
+		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
+	}
+	return dt + "(" + token_string + ")";
+}
 //return entity->entity->toString(); }
 bool EntityArgument::isNull() const { return false; }
 EntityArgument::~EntityArgument() { delete entity; }
@@ -517,13 +528,17 @@ std::string Entity::datatype() {
 // Returns a string representation of the entity
 // Note that this initializes the entity if it is not initialized
 //
-std::string Entity::toString() {
+std::string Entity::toString(bool upper) {
 	if ( ! args ) {
 		std::vector<unsigned int> ids;
 		Load(ids, true);
 	}
 	std::stringstream ss;
-	ss << "#" << _id << "=" << datatype() << args->toString();
+	std::string dt = datatype();
+	if ( upper ) {
+		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
+	}
+	ss << "#" << _id << "=" << dt << args->toString(upper);
 	return ss.str();
 }
 
@@ -565,13 +580,13 @@ unsigned int Entity::id() { return _id; }
 // Gets the unit definitins from the file
 //
 bool Ifc::Init(const std::string& fn) {
-  return Ifc::Init(new File(fn));
+	return Ifc::Init(new File(fn));
 }
 bool Ifc::Init(std::istream& f, int len) {
-  return Ifc::Init(new File(f,len));
+	return Ifc::Init(new File(f,len));
 }
 bool Ifc::Init(void* data, int len) {
-  return Ifc::Init(new File(data,len));
+	return Ifc::Init(new File(data,len));
 }
 bool Ifc::Init(IfcParse::File* f) {
 	Ifc2x3::InitStringMap();
@@ -584,7 +599,7 @@ bool Ifc::Init(IfcParse::File* f) {
 	lastId = 0;
 	int x = 0;
 	EntityPtr e;
-	IfcUtil::IfcSchemaEntity entity; 
+	IfcUtil::IfcSchemaEntity entity = 0; 
 	if ( log1 ) std::cout << "Scanning file..." << std::endl;
 	while ( ! file->eof ) {
 		if ( currentId ) {
@@ -597,6 +612,20 @@ bool Ifc::Init(IfcParse::File* f) {
 				continue;
 			}
 			if ( log1 && !((++x)%1000) ) std::cout << "\r#" << currentId << "         " << std::flush;
+			if ( entity->is(Ifc2x3::Type::IfcRoot) ) {
+				Ifc2x3::IfcRoot::ptr ifc_root = (Ifc2x3::IfcRoot::ptr) entity;
+				try {
+					const std::string guid = ifc_root->GlobalId();
+					if ( byguid.find(guid) != byguid.end() ) {
+						std::stringstream ss;
+						ss << "Overwriting entity with guid " << guid;
+						Ifc::LogMessage("Warning",ss.str());
+					}
+					byguid[guid] = ifc_root;
+				} catch (IfcException ex) {
+					Ifc::LogMessage("Error",ex.what());
+				}
+			}
 			Ifc2x3::Type::Enum ty = entity->type();
 			do {
 				IfcEntities L = EntitiesByType(ty);
@@ -614,13 +643,16 @@ bool Ifc::Init(IfcParse::File* f) {
 			}
 			byid[currentId] = entity;
 			currentId = 0;
-		} else token = tokens->Next();
+		} else {
+			try { token = tokens->Next(); }
+			catch (... ) { token = 0; }
+		}
 		if ( ! token ) break;
 		if ( previous && TokenFunc::isIdentifier(previous) ) {
 			int id = TokenFunc::asInt(previous);
 			if ( TokenFunc::isOperator(token,'=') ) {
 				currentId = id;
-			} else {				
+			} else if (entity) {
 				IfcEntities L = EntitiesByReference(id);
 				if ( L == 0 ) {
 					L = IfcEntities(new IfcEntityList());
@@ -633,7 +665,7 @@ bool Ifc::Init(IfcParse::File* f) {
 	}
 
 	if ( log1 ) std::cout << "\rDone scanning file   " << std::endl;
-	
+
 	Ifc2x3::IfcUnitAssignment::list unit_assignments = EntitiesByType<Ifc2x3::IfcUnitAssignment>();
 	IfcUtil::IfcAbstractSelect::list units = IfcUtil::IfcAbstractSelect::list();
 	if ( unit_assignments->Size() ) {
@@ -643,50 +675,48 @@ bool Ifc::Init(IfcParse::File* f) {
 	if ( ! units ) {
 		// No units eh... Since tolerances and deflection are specified internally in meters
 		// we will try to find another indication of the model size.
-		// Note that for IfcTrimmedCurves to render correctly, IfcParameterValues better be 
-		// in radians or IfcOpenShell would not know what to make of them.
 		Ifc2x3::IfcExtrudedAreaSolid::list extrusions = EntitiesByType<Ifc2x3::IfcExtrudedAreaSolid>();
 		if ( ! extrusions->Size() ) return true;
-		float max_height = -1.0f;
+		double max_height = -1.0f;
 		for ( Ifc2x3::IfcExtrudedAreaSolid::it it = extrusions->begin(); it != extrusions->end(); ++ it ) {
-			const float depth = (*it)->Depth();
+			const double depth = (*it)->Depth();
 			if ( depth > max_height ) max_height = depth;
 		}
 		if ( max_height > 100.0f ) Ifc::LengthUnit = 0.001f;
 		return true;
 	}
 	try {
-	for ( IfcUtil::IfcAbstractSelect::it it = units->begin(); it != units->end(); ++ it ) {
-		const IfcUtil::IfcAbstractSelect::ptr base = *it;
-		Ifc2x3::IfcSIUnit::ptr unit = Ifc2x3::IfcSIUnit::ptr();
-		float value = 1.0f;
-		if ( base->is(Ifc2x3::Type::IfcConversionBasedUnit) ) {
-			const Ifc2x3::IfcConversionBasedUnit::ptr u = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcConversionBasedUnit>(base);
-			const Ifc2x3::IfcMeasureWithUnit::ptr u2 = u->ConversionFactor();
-			Ifc2x3::IfcUnit u3 = u2->UnitComponent();
-			if ( u3->is(Ifc2x3::Type::IfcSIUnit) ) {
-				unit = (Ifc2x3::IfcSIUnit*) u3;
+		for ( IfcUtil::IfcAbstractSelect::it it = units->begin(); it != units->end(); ++ it ) {
+			const IfcUtil::IfcAbstractSelect::ptr base = *it;
+			Ifc2x3::IfcSIUnit::ptr unit = Ifc2x3::IfcSIUnit::ptr();
+			double value = 1.0f;
+			if ( base->is(Ifc2x3::Type::IfcConversionBasedUnit) ) {
+				const Ifc2x3::IfcConversionBasedUnit::ptr u = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcConversionBasedUnit>(base);
+				const Ifc2x3::IfcMeasureWithUnit::ptr u2 = u->ConversionFactor();
+				Ifc2x3::IfcUnit u3 = u2->UnitComponent();
+				if ( u3->is(Ifc2x3::Type::IfcSIUnit) ) {
+					unit = (Ifc2x3::IfcSIUnit*) u3;
+				}
+				Ifc2x3::IfcValue v = u2->ValueComponent();
+				IfcUtil::IfcArgumentSelect* v2 = (IfcUtil::IfcArgumentSelect*) v;
+				const double f = *v2->wrappedValue();
+				value *= f;
+			} else if ( base->is(Ifc2x3::Type::IfcSIUnit) ) {
+				unit = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcSIUnit>(base);
 			}
-			Ifc2x3::IfcValue v = u2->ValueComponent();
-			IfcUtil::IfcArgumentSelect* v2 = (IfcUtil::IfcArgumentSelect*) v;
-			const float f = *v2->wrappedValue();
-			value *= f;
-		} else if ( base->is(Ifc2x3::Type::IfcSIUnit) ) {
-			unit = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcSIUnit>(base);
+			if ( unit ) {
+				if ( unit->hasPrefix() ) {
+					value *= UnitPrefixToValue(unit->Prefix());
+				}
+				Ifc2x3::IfcUnitEnum::IfcUnitEnum type = unit->UnitType();
+				if ( type == Ifc2x3::IfcUnitEnum::IfcUnit_LENGTHUNIT ) {
+					Ifc::LengthUnit = value;
+				} else if ( type == Ifc2x3::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT ) {
+					Ifc::PlaneAngleUnit = value;
+					Ifc::hasPlaneAngleUnit = true;
+				}
+			}
 		}
-		if ( unit ) {
-			if ( unit->hasPrefix() ) {
-				value *= UnitPrefixToValue(unit->Prefix());
-			}
-			Ifc2x3::IfcUnitEnum::IfcUnitEnum type = unit->UnitType();
-			if ( type == Ifc2x3::IfcUnitEnum::LENGTHUNIT ) {
-				Ifc::LengthUnit = value;
-			} else if ( type == Ifc2x3::IfcUnitEnum::PLANEANGLEUNIT ) {
-				Ifc::PlaneAngleUnit = value;
-				Ifc::hasPlaneAngleUnit = true;
-			}
-		}
-	}
 	} catch ( IfcException ex ) {
 		Ifc::LogMessage("Error",ex.what());
 	}
@@ -714,6 +744,14 @@ IfcUtil::IfcSchemaEntity Ifc::EntityById(int id) {
 	}
 	return it->second;
 }
+Ifc2x3::IfcRoot::ptr Ifc::EntityByGuid(const std::string& guid) {
+	MapEntityByGuid::const_iterator it = byguid.find(guid);
+	if ( it == byguid.end() ) {
+		throw IfcException("Entity not found");
+	} else {
+		return it->second;
+	}
+}
 
 IfcException::IfcException(std::string e) { error = e; }
 IfcException::~IfcException() throw () {}
@@ -734,23 +772,23 @@ void Ifc::Dispose() {
 	log_stream.str("");
 }
 
-float UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v ) {
-	     if ( v == Ifc2x3::IfcSIPrefix::EXA   ) return (float) 1e18;
-	else if ( v == Ifc2x3::IfcSIPrefix::PETA  ) return (float) 1e15;
-	else if ( v == Ifc2x3::IfcSIPrefix::TERA  ) return (float) 1e12;
-	else if ( v == Ifc2x3::IfcSIPrefix::GIGA  ) return (float) 1e9;
-	else if ( v == Ifc2x3::IfcSIPrefix::MEGA  ) return (float) 1e6;
-	else if ( v == Ifc2x3::IfcSIPrefix::KILO  ) return (float) 1e3;
-	else if ( v == Ifc2x3::IfcSIPrefix::HECTO ) return (float) 1e2;
-	else if ( v == Ifc2x3::IfcSIPrefix::DECA  ) return (float) 1;
-	else if ( v == Ifc2x3::IfcSIPrefix::DECI  ) return (float) 1e-1;
-	else if ( v == Ifc2x3::IfcSIPrefix::CENTI ) return (float) 1e-2;
-	else if ( v == Ifc2x3::IfcSIPrefix::MILLI ) return (float) 1e-3;
-	else if ( v == Ifc2x3::IfcSIPrefix::MICRO ) return (float) 1e-6;
-	else if ( v == Ifc2x3::IfcSIPrefix::NANO  ) return (float) 1e-9;
-	else if ( v == Ifc2x3::IfcSIPrefix::PICO  ) return (float) 1e-12;
-	else if ( v == Ifc2x3::IfcSIPrefix::FEMTO ) return (float) 1e-15;
-	else if ( v == Ifc2x3::IfcSIPrefix::ATTO  ) return (float) 1e-18;
+double UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v ) {
+	if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_EXA   ) return (double) 1e18;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_PETA  ) return (double) 1e15;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_TERA  ) return (double) 1e12;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_GIGA  ) return (double) 1e9;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_MEGA  ) return (double) 1e6;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_KILO  ) return (double) 1e3;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_HECTO ) return (double) 1e2;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_DECA  ) return (double) 1;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_DECI  ) return (double) 1e-1;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_CENTI ) return (double) 1e-2;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_MILLI ) return (double) 1e-3;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_MICRO ) return (double) 1e-6;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_NANO  ) return (double) 1e-9;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_PICO  ) return (double) 1e-12;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_FEMTO ) return (double) 1e-15;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_ATTO  ) return (double) 1e-18;
 	else return 1.0f;
 }
 void Ifc::SetOutput(std::ostream* l1, std::ostream* l2) { 
@@ -775,12 +813,13 @@ std::ostream* Ifc::log1 = 0;
 std::ostream* Ifc::log2 = 0;
 unsigned int Ifc::lastId = 0;
 Tokens* Ifc::tokens = 0;
-float Ifc::LengthUnit = 1.0f;
-float Ifc::PlaneAngleUnit = 1.0f;
+double Ifc::LengthUnit = 1.0f;
+double Ifc::PlaneAngleUnit = 1.0f;
 bool Ifc::hasPlaneAngleUnit = false;
 int Ifc::CircleSegments = 32;
 MapEntitiesByType Ifc::bytype;
 MapEntityById Ifc::byid;
+MapEntityByGuid Ifc::byguid;
 MapEntitiesByRef Ifc::byref;
 MapOffsetById Ifc::offsets;
 std::stringstream Ifc::log_stream;

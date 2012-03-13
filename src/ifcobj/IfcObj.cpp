@@ -81,15 +81,15 @@ int main ( int argc, char** argv ) {
 		materials.insert(o->type);
 		const int vcount = o->mesh->verts.size() / 3;
 		for ( IfcGeomObjects::FltIt it = o->mesh->verts.begin(); it != o->mesh->verts.end(); ) {
-			const float x = *(it++);
-			const float y = *(it++);
-			const float z = *(it++);
+			const double x = *(it++);
+			const double y = *(it++);
+			const double z = *(it++);
 			fObj << "v " << x << " " << y << " " << z << std::endl;
 		}
 		for ( IfcGeomObjects::FltIt it = o->mesh->normals.begin(); it != o->mesh->normals.end(); ) {
-			const float x = *(it++);
-			const float y = *(it++);
-			const float z = *(it++);
+			const double x = *(it++);
+			const double y = *(it++);
+			const double z = *(it++);
 			fObj << "vn " << x << " " << y << " " << z << std::endl;
 		}
 		for ( IfcGeomObjects::IntIt it = o->mesh->faces.begin(); it != o->mesh->faces.end(); ) {

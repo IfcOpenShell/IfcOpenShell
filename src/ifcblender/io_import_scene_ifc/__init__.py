@@ -57,6 +57,9 @@ import mathutils
 from bpy.props import StringProperty, IntProperty, BoolProperty
 from bpy_extras.io_utils import ImportHelper
 
+major,minor = bpy.app.version[0:2]
+transpose_matrices = minor >= 62
+
 bpy.types.Object.ifc_id = IntProperty(name="IFC Entity ID",
     description="The STEP entity instance name")
 bpy.types.Object.ifc_guid = StringProperty(name="IFC Entity GUID",
@@ -121,14 +124,15 @@ def import_ifc(filename, use_names, process_relations):
             [m[3], m[4], m[5], 0],
             [m[6], m[7], m[8], 0],
             [m[9], m[10], m[11], 1]))
+        if transpose_matrices: mat.transpose()
+        
         if process_relations:
             id_to_matrix[ob.id] = mat
         else:
             bob.matrix_world = mat
         bpy.context.scene.objects.link(bob)
 
-        bpy.ops.object.select_all(action='DESELECT')
-        bpy.ops.object.select_name(name=bob.name)
+        bpy.context.scene.objects.active = bob
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.normals_make_consistent()
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -184,11 +188,15 @@ def import_ifc(filename, use_names, process_relations):
                 nm = parent_ob_name if len(parent_ob_name) and use_names \
                     else parent_ob_guid
                 bob = bpy.data.objects.new(nm, None)
-                id_to_matrix[parent_ob.id] = mathutils.Matrix((
+                
+                mat = mathutils.Matrix((
                     [m[0], m[1], m[2], 0],
                     [m[3], m[4], m[5], 0],
                     [m[6], m[7], m[8], 0],
                     [m[9], m[10], m[11], 1]))
+                if transpose_matrices: mat.transpose()
+                id_to_matrix[parent_ob.id] = mat
+                
                 bpy.context.scene.objects.link(bob)
 
                 bob.ifc_id = parent_ob.id

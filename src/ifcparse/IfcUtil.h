@@ -122,9 +122,9 @@ protected:
 public:
 	virtual operator int() const = 0;
 	virtual operator bool() const = 0;
-	virtual operator float() const = 0;
+	virtual operator double() const = 0;
 	virtual operator std::string() const = 0;
-	virtual operator std::vector<float>() const = 0;
+	virtual operator std::vector<double>() const = 0;
 	virtual operator std::vector<int>() const = 0;
 	virtual operator std::vector<std::string>() const = 0;
 	virtual operator IfcUtil::IfcSchemaEntity() const = 0;
@@ -132,7 +132,7 @@ public:
 	virtual operator IfcEntities() const = 0;
 	virtual unsigned int Size() const = 0;
 	virtual ArgumentPtr operator [] (unsigned int i) const = 0;
-	virtual std::string toString() const = 0;
+	virtual std::string toString(bool upper=false) const = 0;
 	virtual bool isNull() const = 0;
 	virtual ~Argument() {};
 };
@@ -147,7 +147,7 @@ public:
 	virtual ~IfcAbstractEntity() {};
 	virtual Ifc2x3::Type::Enum type() const = 0;
 	virtual bool is(Ifc2x3::Type::Enum v) const = 0;
-	virtual std::string toString() = 0;
+	virtual std::string toString(bool upper=false) = 0;
 	virtual unsigned int id() = 0;
 };
 

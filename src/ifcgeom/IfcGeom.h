@@ -55,9 +55,13 @@ namespace IfcGeom {
 	bool convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, const ShapeList& entity_shapes, const gp_Trsf& entity_trsf, ShapeList& cut_shapes);
 	bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid);
 	bool is_compound(const TopoDS_Shape& shape);
+	bool is_convex(const TopoDS_Wire& wire);
+	TopoDS_Shape halfspace_from_plane(const gp_Pln& pln,const gp_Pnt& cent);
+	gp_Pln plane_from_face(const TopoDS_Face& face);
+	gp_Pnt point_above_plane(const gp_Pln& pln, bool agree=true);
 	const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid);
-	bool profile_helper(int numVerts, float* verts, int numFillets, int* filletIndices, float* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
-	float shape_volume(const TopoDS_Shape& s);
+	bool profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
+	double shape_volume(const TopoDS_Shape& s);
 	namespace Cache {
 		void Purge();
 		void PurgeShapeCache();

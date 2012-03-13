@@ -138,16 +138,16 @@ bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire)
 bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 	Ifc2x3::IfcCurve::ptr basis_curve = l->BasisCurve();
 	bool isConic = basis_curve->is(Ifc2x3::Type::IfcConic);
-	float parameterFactor = isConic ? Ifc::PlaneAngleUnit : Ifc::LengthUnit;
+	double parameterFactor = isConic ? Ifc::PlaneAngleUnit : Ifc::LengthUnit;
 	Handle(Geom_Curve) curve;
 	if ( ! IfcGeom::convert_curve(basis_curve,curve) ) return false;
-	bool trim_cartesian = l->MasterRepresentation() == Ifc2x3::IfcTrimmingPreference::CARTESIAN;
+	bool trim_cartesian = l->MasterRepresentation() == Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN;
 	IfcUtil::IfcAbstractSelect::list trims1 = l->Trim1();
 	IfcUtil::IfcAbstractSelect::list trims2 = l->Trim2();
 	bool trimmed1 = false;
 	bool trimmed2 = false;
 	bool sense_agreement = l->SenseAgreement();
-	float flt1;
+	double flt1;
 	gp_Pnt pnt1;
 	BRepBuilderAPI_MakeWire w;
 	for ( IfcUtil::IfcAbstractSelect::it it = trims1->begin(); it != trims1->end(); it ++ ) {
@@ -156,7 +156,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcCartesianPoint>(i), pnt1 );
 			trimmed1 = true;
 		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) && !trim_cartesian ) {
-			const float value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
+			const double value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
 			flt1 = value * parameterFactor;
 			trimmed1 = true;
 		}
@@ -166,18 +166,22 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 		if ( i->is(Ifc2x3::Type::IfcCartesianPoint) && trim_cartesian && trimmed1 ) {
 			gp_Pnt pnt2;
 			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcCartesianPoint>(i), pnt2 );
-			BRepBuilderAPI_MakeEdge e (curve,pnt1,pnt2);
+			BRepBuilderAPI_MakeEdge e (curve,sense_agreement ? pnt1 : pnt2,sense_agreement ? pnt2 : pnt1);
 			if ( ! e.IsDone() ) {
 				BRepBuilderAPI_EdgeError err = e.Error();
-				return false;
+				if ( err == BRepBuilderAPI_PointProjectionFailed ) {
+					w.Add(BRepBuilderAPI_MakeEdge(sense_agreement ? pnt1 : pnt2,sense_agreement ? pnt2 : pnt1));
+					Ifc::LogMessage("Warning","Point projection failed for:",l->entity);
+				}
+			} else {
+				w.Add(e.Edge());
 			}
-			w.Add(e.Edge());			
 			trimmed2 = true;
 			break;
 		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) && !trim_cartesian && trimmed1 ) {
-			const float value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
-			float flt2 = value * parameterFactor;
-			if ( isConic && ALMOST_THE_SAME(fmod(flt2-flt1,(float)(PI*2.0)),0.0f) ) {
+			const double value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
+			double flt2 = value * parameterFactor;
+			if ( isConic && ALMOST_THE_SAME(fmod(flt2-flt1,(double)(PI*2.0)),0.0f) ) {
 				w.Add(BRepBuilderAPI_MakeEdge(curve));
 			} else {
 				BRepBuilderAPI_MakeEdge e (curve,sense_agreement ? flt1 : flt2,sense_agreement ? flt2 : flt1);
@@ -197,7 +201,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolyline::ptr l, TopoDS_Wire& result) {
 	gp_Pnt P1;gp_Pnt P2;
 	for( Ifc2x3::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it ) {
 		IfcGeom::convert(*it,P2);
-		if ( it != points->begin() && ( P1.X() != P2.X() || P1.Y() != P2.Y() || P1.Z() != P2.Z() ) )
+		if ( it != points->begin() && ( !P1.IsEqual(P2,0.0001) ) )
 			w.Add(BRepBuilderAPI_MakeEdge(P1,P2));
 		P1 = P2;
 	}
@@ -213,13 +217,13 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolyLoop::ptr l, TopoDS_Wire& result) {
 	int count = 0;
 	for( Ifc2x3::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it ) {
 		IfcGeom::convert(*it,P2);
-		if ( it != points->begin() && ( P1.X() != P2.X() || P1.Y() != P2.Y() || P1.Z() != P2.Z() ) ) {
+		if ( it != points->begin() && ( !P1.IsEqual(P2,0.0001) ) ) {
 			w.Add(BRepBuilderAPI_MakeEdge(P1,P2));
 			count ++;
 		} else if ( ! count ) F = P2;		
 		P1 = P2;
 	}
-	if ( P1.X() != F.X() || P1.Y() != F.Y() || P1.Z() != F.Z() ) {
+	if ( !P1.IsEqual(F,0.0001) ) {
 		w.Add(BRepBuilderAPI_MakeEdge(P1,F));
 		count ++;
 	}

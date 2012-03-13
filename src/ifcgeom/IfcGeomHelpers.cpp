@@ -89,7 +89,7 @@ namespace IfcGeom {
 
 bool IfcGeom::convert(const Ifc2x3::IfcCartesianPoint::ptr l, gp_Pnt& point) {
 	IN_CACHE(IfcCartesianPoint,l,gp_Pnt,point)
-	std::vector<float> xyz = l->Coordinates();
+	std::vector<double> xyz = l->Coordinates();
 	point = gp_Pnt(
 		xyz.size()     ? (xyz[0]*Ifc::LengthUnit) : 0.0f,
 		xyz.size() > 1 ? (xyz[1]*Ifc::LengthUnit) : 0.0f,
@@ -100,7 +100,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcCartesianPoint::ptr l, gp_Pnt& point) {
 }
 bool IfcGeom::convert(const Ifc2x3::IfcDirection::ptr l, gp_Dir& dir) {
 	IN_CACHE(IfcDirection,l,gp_Dir,dir)
-	std::vector<float> xyz = l->DirectionRatios();
+	std::vector<double> xyz = l->DirectionRatios();
 	dir = gp_Dir(
 		xyz.size()     ? xyz[0] : 0.0f,
 		xyz.size() > 1 ? xyz[1] : 0.0f,
@@ -179,9 +179,9 @@ bool IfcGeom::convert(const Ifc2x3::IfcCartesianTransformationOperator3DnonUnifo
 	if ( axis2.Dot(ax3.YDirection()) < 0 ) ax3.YReverse();
 	trsf.SetTransformation(ax3);
 	trsf.Invert();
-	const float scale1 = l->hasScale() ? l->Scale() : 1.0f;
-	const float scale2 = l->hasScale2() ? l->Scale2() : scale1;
-	const float scale3 = l->hasScale3() ? l->Scale3() : scale1;
+	const double scale1 = l->hasScale() ? l->Scale() : 1.0f;
+	const double scale2 = l->hasScale2() ? l->Scale2() : scale1;
+	const double scale3 = l->hasScale3() ? l->Scale3() : scale1;
 	gtrsf = gp_GTrsf();
 	gtrsf.SetValue(1,1,scale1);
 	gtrsf.SetValue(2,2,scale2);
@@ -200,8 +200,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcCartesianTransformationOperator2DnonUnifo
 	const gp_Ax2d ax2d (gp_Pnt2d(origin.X(),origin.Y()),gp_Dir2d(axis1.X(),axis1.Y()));
 	trsf.SetTransformation(ax2d);
 	trsf.Invert();
-	const float scale1 = l->hasScale() ? l->Scale() : 1.0f;
-	const float scale2 = l->hasScale2() ? l->Scale2() : scale1;
+	const double scale1 = l->hasScale() ? l->Scale() : 1.0f;
+	const double scale2 = l->hasScale2() ? l->Scale2() : scale1;
 	gtrsf = gp_GTrsf2d();
 	gtrsf.SetValue(1,1,scale1);
 	gtrsf.SetValue(2,2,scale2);

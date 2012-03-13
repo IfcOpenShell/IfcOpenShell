@@ -113,7 +113,8 @@ cam.clip_end = max(D) * 10
 
 scn.render.filepath = os.path.join("output",os.path.basename(fn)+".png")
 
-bpy.ops.render.render(write_still=True)
 bpy.ops.wm.save_mainfile(filepath=os.path.join("output",os.path.basename(fn)+".blend"),compress=True)
+
+bpy.ops.render.render(write_still=True)
 
 sys.exit(0)

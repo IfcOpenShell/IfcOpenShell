@@ -68,7 +68,7 @@ namespace IfcParse {
 		static bool isDatatype(Token t);
 		static int asInt(Token t);
 		static bool asBool(Token t);
-		static float asFloat(Token t);
+		static double asFloat(Token t);
 		static std::string asString(Token t);
 		static std::string toString(Token t);
 	};
@@ -109,9 +109,9 @@ namespace IfcParse {
 		~ArgumentList();
 		operator int() const;
 		operator bool() const;
-		operator float() const;
+		operator double() const;
 		operator std::string() const;
-		operator std::vector<float>() const;
+		operator std::vector<double>() const;
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
 		operator IfcUtil::IfcSchemaEntity() const;
@@ -119,7 +119,7 @@ namespace IfcParse {
 		operator IfcEntities() const;
 		unsigned int Size() const;
 		ArgumentPtr operator [] (unsigned int i) const;
-		std::string toString() const;
+		std::string toString(bool upper=false) const;
 		bool isNull() const;
 	};
 
@@ -136,9 +136,9 @@ namespace IfcParse {
 		TokenArgument(Token t);
 		operator int() const;
 		operator bool() const;
-		operator float() const;
+		operator double() const;
 		operator std::string() const;
-		operator std::vector<float>() const;
+		operator std::vector<double>() const;
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
 		operator IfcUtil::IfcSchemaEntity() const;
@@ -146,7 +146,7 @@ namespace IfcParse {
 		operator IfcEntities() const;
 		unsigned int Size() const;
 		ArgumentPtr operator [] (unsigned int i) const;
-		std::string toString() const;
+		std::string toString(bool upper=false) const;
 		bool isNull() const;
 	};
 
@@ -163,9 +163,9 @@ namespace IfcParse {
 		~EntityArgument();
 		operator int() const;
 		operator bool() const;
-		operator float() const;
+		operator double() const;
 		operator std::string() const;
-		operator std::vector<float>() const;
+		operator std::vector<double>() const;
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
 		operator IfcUtil::IfcSchemaEntity() const;
@@ -173,7 +173,7 @@ namespace IfcParse {
 		operator IfcEntities() const;
 		unsigned int Size() const;
 		ArgumentPtr operator [] (unsigned int i) const;
-		std::string toString() const;
+		std::string toString(bool upper=false) const;
 		bool isNull() const;
 	};
 
@@ -197,7 +197,7 @@ namespace IfcParse {
 		void Load(std::vector<unsigned int>& ids, bool seek=false);
 		ArgumentPtr getArgument (unsigned int i);
 		unsigned int getArgumentCount();
-		std::string toString();
+		std::string toString(bool upper=false);
 		std::string datatype();
 		Ifc2x3::Type::Enum type() const;
 		bool is(Ifc2x3::Type::Enum v) const;
@@ -209,6 +209,7 @@ typedef IfcUtil::IfcSchemaEntity IfcEntity;
 typedef IfcEntities IfcEntities;
 typedef std::map<Ifc2x3::Type::Enum,IfcEntities> MapEntitiesByType;
 typedef std::map<unsigned int,IfcEntity> MapEntityById;
+typedef std::map<std::string,Ifc2x3::IfcRoot::ptr> MapEntityByGuid;
 typedef std::map<unsigned int,IfcEntities> MapEntitiesByRef;
 typedef std::map<unsigned int,unsigned int> MapOffsetById;
 
@@ -220,6 +221,7 @@ private:
 	static MapEntityById byid;
 	static MapEntitiesByType bytype;
 	static MapEntitiesByRef byref;
+	static MapEntityByGuid byguid;
 	static MapOffsetById offsets;
 	static unsigned int lastId;
 	static std::ostream* log1;
@@ -243,6 +245,7 @@ public:
 	static IfcEntities EntitiesByType(Ifc2x3::Type::Enum t);
 	static IfcEntities EntitiesByReference(int id);
 	static IfcEntity EntityById(int id);
+	static Ifc2x3::IfcRoot::ptr Ifc::EntityByGuid(const std::string& guid);
 	static bool Init(const std::string& fn);
 	static bool Init(std::istream& fn, int len);
 	static bool Init(void* data, int len);
@@ -250,11 +253,11 @@ public:
 	static std::string GetLog();
 	static void Dispose();
 	static bool hasPlaneAngleUnit;
-	static float LengthUnit;
-	static float PlaneAngleUnit;
+	static double LengthUnit;
+	static double PlaneAngleUnit;
 	static int CircleSegments;
 };
 
-float UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v );
+double UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v );
 
 #endif

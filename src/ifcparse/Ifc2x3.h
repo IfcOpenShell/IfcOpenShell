@@ -37,137 +37,137 @@
 using namespace IfcUtil;
 
 #define RETURN_INVERSE(T) \
-	IfcEntities e = entity->getInverse(T::Class()); \
-	SHARED_PTR< IfcTemplatedEntityList<T> > l ( new IfcTemplatedEntityList<T>() ); \
-	for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) { \
-		l->push(reinterpret_pointer_cast<IfcBaseClass,T>(*it)); \
-	} \
-	return l;
+    IfcEntities e = entity->getInverse(T::Class()); \
+    SHARED_PTR< IfcTemplatedEntityList<T> > l ( new IfcTemplatedEntityList<T>() ); \
+    for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) { \
+        l->push(reinterpret_pointer_cast<IfcBaseClass,T>(*it)); \
+    } \
+    return l;
 
 #define RETURN_AS_SINGLE(T,a) \
-	return reinterpret_pointer_cast<IfcBaseClass,T>(*entity->getArgument(a));
+    return reinterpret_pointer_cast<IfcBaseClass,T>(*entity->getArgument(a));
 
 #define RETURN_AS_LIST(T,a)  \
-	IfcEntities e = *entity->getArgument(a);  \
-	SHARED_PTR< IfcTemplatedEntityList<T> > l ( new IfcTemplatedEntityList<T>() );  \
-	for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {  \
-		l->push(reinterpret_pointer_cast<IfcBaseClass,T>(*it)); \
-	}  \
-	return l;
+    IfcEntities e = *entity->getArgument(a);  \
+    SHARED_PTR< IfcTemplatedEntityList<T> > l ( new IfcTemplatedEntityList<T>() );  \
+    for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {  \
+        l->push(reinterpret_pointer_cast<IfcBaseClass,T>(*it)); \
+    }  \
+    return l;
 
 namespace Ifc2x3 {
 
-typedef float IfcAbsorbedDoseMeasure;
-typedef float IfcAccelerationMeasure;
-typedef float IfcAmountOfSubstanceMeasure;
-typedef float IfcAngularVelocityMeasure;
-typedef float IfcAreaMeasure;
+typedef double IfcAbsorbedDoseMeasure;
+typedef double IfcAccelerationMeasure;
+typedef double IfcAmountOfSubstanceMeasure;
+typedef double IfcAngularVelocityMeasure;
+typedef double IfcAreaMeasure;
 typedef bool IfcBoolean;
-typedef std::vector<float> /*[1:2]*/ IfcComplexNumber;
+typedef std::vector<double> /*[1:2]*/ IfcComplexNumber;
 typedef std::vector<int> /*[3:4]*/ IfcCompoundPlaneAngleMeasure;
-typedef float IfcContextDependentMeasure;
-typedef float IfcCountMeasure;
-typedef float IfcCurvatureMeasure;
+typedef double IfcContextDependentMeasure;
+typedef double IfcCountMeasure;
+typedef double IfcCurvatureMeasure;
 typedef int IfcDayInMonthNumber;
 typedef int IfcDaylightSavingHour;
 typedef std::string IfcDescriptiveMeasure;
 typedef int IfcDimensionCount;
-typedef float IfcDoseEquivalentMeasure;
-typedef float IfcDynamicViscosityMeasure;
-typedef float IfcElectricCapacitanceMeasure;
-typedef float IfcElectricChargeMeasure;
-typedef float IfcElectricConductanceMeasure;
-typedef float IfcElectricCurrentMeasure;
-typedef float IfcElectricResistanceMeasure;
-typedef float IfcElectricVoltageMeasure;
-typedef float IfcEnergyMeasure;
+typedef double IfcDoseEquivalentMeasure;
+typedef double IfcDynamicViscosityMeasure;
+typedef double IfcElectricCapacitanceMeasure;
+typedef double IfcElectricChargeMeasure;
+typedef double IfcElectricConductanceMeasure;
+typedef double IfcElectricCurrentMeasure;
+typedef double IfcElectricResistanceMeasure;
+typedef double IfcElectricVoltageMeasure;
+typedef double IfcEnergyMeasure;
 typedef std::string IfcFontStyle;
 typedef std::string IfcFontVariant;
 typedef std::string IfcFontWeight;
-typedef float IfcForceMeasure;
-typedef float IfcFrequencyMeasure;
+typedef double IfcForceMeasure;
+typedef double IfcFrequencyMeasure;
 typedef std::string IfcGloballyUniqueId;
-typedef float IfcHeatFluxDensityMeasure;
-typedef float IfcHeatingValueMeasure;
+typedef double IfcHeatFluxDensityMeasure;
+typedef double IfcHeatingValueMeasure;
 typedef int IfcHourInDay;
 typedef std::string IfcIdentifier;
-typedef float IfcIlluminanceMeasure;
-typedef float IfcInductanceMeasure;
+typedef double IfcIlluminanceMeasure;
+typedef double IfcInductanceMeasure;
 typedef int IfcInteger;
 typedef int IfcIntegerCountRateMeasure;
-typedef float IfcIonConcentrationMeasure;
-typedef float IfcIsothermalMoistureCapacityMeasure;
-typedef float IfcKinematicViscosityMeasure;
+typedef double IfcIonConcentrationMeasure;
+typedef double IfcIsothermalMoistureCapacityMeasure;
+typedef double IfcKinematicViscosityMeasure;
 typedef std::string IfcLabel;
-typedef float IfcLengthMeasure;
-typedef float IfcLinearForceMeasure;
-typedef float IfcLinearMomentMeasure;
-typedef float IfcLinearStiffnessMeasure;
-typedef float IfcLinearVelocityMeasure;
+typedef double IfcLengthMeasure;
+typedef double IfcLinearForceMeasure;
+typedef double IfcLinearMomentMeasure;
+typedef double IfcLinearStiffnessMeasure;
+typedef double IfcLinearVelocityMeasure;
 typedef bool IfcLogical;
-typedef float IfcLuminousFluxMeasure;
-typedef float IfcLuminousIntensityDistributionMeasure;
-typedef float IfcLuminousIntensityMeasure;
-typedef float IfcMagneticFluxDensityMeasure;
-typedef float IfcMagneticFluxMeasure;
-typedef float IfcMassDensityMeasure;
-typedef float IfcMassFlowRateMeasure;
-typedef float IfcMassMeasure;
-typedef float IfcMassPerLengthMeasure;
+typedef double IfcLuminousFluxMeasure;
+typedef double IfcLuminousIntensityDistributionMeasure;
+typedef double IfcLuminousIntensityMeasure;
+typedef double IfcMagneticFluxDensityMeasure;
+typedef double IfcMagneticFluxMeasure;
+typedef double IfcMassDensityMeasure;
+typedef double IfcMassFlowRateMeasure;
+typedef double IfcMassMeasure;
+typedef double IfcMassPerLengthMeasure;
 typedef int IfcMinuteInHour;
-typedef float IfcModulusOfElasticityMeasure;
-typedef float IfcModulusOfLinearSubgradeReactionMeasure;
-typedef float IfcModulusOfRotationalSubgradeReactionMeasure;
-typedef float IfcModulusOfSubgradeReactionMeasure;
-typedef float IfcMoistureDiffusivityMeasure;
-typedef float IfcMolecularWeightMeasure;
-typedef float IfcMomentOfInertiaMeasure;
-typedef float IfcMonetaryMeasure;
+typedef double IfcModulusOfElasticityMeasure;
+typedef double IfcModulusOfLinearSubgradeReactionMeasure;
+typedef double IfcModulusOfRotationalSubgradeReactionMeasure;
+typedef double IfcModulusOfSubgradeReactionMeasure;
+typedef double IfcMoistureDiffusivityMeasure;
+typedef double IfcMolecularWeightMeasure;
+typedef double IfcMomentOfInertiaMeasure;
+typedef double IfcMonetaryMeasure;
 typedef int IfcMonthInYearNumber;
-typedef float IfcNumericMeasure;
-typedef float IfcPHMeasure;
-typedef float IfcParameterValue;
-typedef float IfcPlanarForceMeasure;
-typedef float IfcPlaneAngleMeasure;
-typedef float IfcPowerMeasure;
+typedef double IfcNumericMeasure;
+typedef double IfcPHMeasure;
+typedef double IfcParameterValue;
+typedef double IfcPlanarForceMeasure;
+typedef double IfcPlaneAngleMeasure;
+typedef double IfcPowerMeasure;
 typedef std::string IfcPresentableText;
-typedef float IfcPressureMeasure;
-typedef float IfcRadioActivityMeasure;
-typedef float IfcRatioMeasure;
-typedef float IfcReal;
-typedef float IfcRotationalFrequencyMeasure;
-typedef float IfcRotationalMassMeasure;
-typedef float IfcRotationalStiffnessMeasure;
-typedef float IfcSecondInMinute;
-typedef float IfcSectionModulusMeasure;
-typedef float IfcSectionalAreaIntegralMeasure;
-typedef float IfcShearModulusMeasure;
-typedef float IfcSolidAngleMeasure;
-typedef float IfcSoundPowerMeasure;
-typedef float IfcSoundPressureMeasure;
-typedef float IfcSpecificHeatCapacityMeasure;
-typedef float IfcSpecularExponent;
-typedef float IfcSpecularRoughness;
-typedef float IfcTemperatureGradientMeasure;
+typedef double IfcPressureMeasure;
+typedef double IfcRadioActivityMeasure;
+typedef double IfcRatioMeasure;
+typedef double IfcReal;
+typedef double IfcRotationalFrequencyMeasure;
+typedef double IfcRotationalMassMeasure;
+typedef double IfcRotationalStiffnessMeasure;
+typedef double IfcSecondInMinute;
+typedef double IfcSectionModulusMeasure;
+typedef double IfcSectionalAreaIntegralMeasure;
+typedef double IfcShearModulusMeasure;
+typedef double IfcSolidAngleMeasure;
+typedef double IfcSoundPowerMeasure;
+typedef double IfcSoundPressureMeasure;
+typedef double IfcSpecificHeatCapacityMeasure;
+typedef double IfcSpecularExponent;
+typedef double IfcSpecularRoughness;
+typedef double IfcTemperatureGradientMeasure;
 typedef std::string IfcText;
 typedef std::string IfcTextAlignment;
 typedef std::string IfcTextDecoration;
 typedef std::string IfcTextFontName;
 typedef std::string IfcTextTransformation;
-typedef float IfcThermalAdmittanceMeasure;
-typedef float IfcThermalConductivityMeasure;
-typedef float IfcThermalExpansionCoefficientMeasure;
-typedef float IfcThermalResistanceMeasure;
-typedef float IfcThermalTransmittanceMeasure;
-typedef float IfcThermodynamicTemperatureMeasure;
-typedef float IfcTimeMeasure;
+typedef double IfcThermalAdmittanceMeasure;
+typedef double IfcThermalConductivityMeasure;
+typedef double IfcThermalExpansionCoefficientMeasure;
+typedef double IfcThermalResistanceMeasure;
+typedef double IfcThermalTransmittanceMeasure;
+typedef double IfcThermodynamicTemperatureMeasure;
+typedef double IfcTimeMeasure;
 typedef int IfcTimeStamp;
-typedef float IfcTorqueMeasure;
-typedef float IfcVaporPermeabilityMeasure;
-typedef float IfcVolumeMeasure;
-typedef float IfcVolumetricFlowRateMeasure;
-typedef float IfcWarpingConstantMeasure;
-typedef float IfcWarpingMomentMeasure;
+typedef double IfcTorqueMeasure;
+typedef double IfcVaporPermeabilityMeasure;
+typedef double IfcVolumeMeasure;
+typedef double IfcVolumetricFlowRateMeasure;
+typedef double IfcWarpingConstantMeasure;
+typedef double IfcWarpingMomentMeasure;
 typedef int IfcYearNumber;
 typedef IfcSchemaEntity IfcActorSelect;
 typedef IfcSchemaEntity IfcAppliedValueSelect;
@@ -220,496 +220,496 @@ typedef IfcRatioMeasure IfcNormalisedRatioMeasure;
 typedef IfcLengthMeasure IfcPositiveLengthMeasure;
 typedef IfcPlaneAngleMeasure IfcPositivePlaneAngleMeasure;
 typedef IfcRatioMeasure IfcPositiveRatioMeasure;
-namespace IfcActionSourceTypeEnum {typedef enum {DEAD_LOAD_G, COMPLETION_G1, LIVE_LOAD_Q, SNOW_S, WIND_W, PRESTRESSING_P, SETTLEMENT_U, TEMPERATURE_T, EARTHQUAKE_E, FIRE, IMPULSE, IMPACT, TRANSPORT, ERECTION, PROPPING, SYSTEM_IMPERFECTION, SHRINKAGE, CREEP, LACK_OF_FIT, BUOYANCY, ICE, CURRENT, WAVE, RAIN, BRAKES, USERDEFINED, NOTDEFINED} IfcActionSourceTypeEnum;
+namespace IfcActionSourceTypeEnum {typedef enum {IfcActionSourceType_DEAD_LOAD_G, IfcActionSourceType_COMPLETION_G1, IfcActionSourceType_LIVE_LOAD_Q, IfcActionSourceType_SNOW_S, IfcActionSourceType_WIND_W, IfcActionSourceType_PRESTRESSING_P, IfcActionSourceType_SETTLEMENT_U, IfcActionSourceType_TEMPERATURE_T, IfcActionSourceType_EARTHQUAKE_E, IfcActionSourceType_FIRE, IfcActionSourceType_IMPULSE, IfcActionSourceType_IMPACT, IfcActionSourceType_TRANSPORT, IfcActionSourceType_ERECTION, IfcActionSourceType_PROPPING, IfcActionSourceType_SYSTEM_IMPERFECTION, IfcActionSourceType_SHRINKAGE, IfcActionSourceType_CREEP, IfcActionSourceType_LACK_OF_FIT, IfcActionSourceType_BUOYANCY, IfcActionSourceType_ICE, IfcActionSourceType_CURRENT, IfcActionSourceType_WAVE, IfcActionSourceType_RAIN, IfcActionSourceType_BRAKES, IfcActionSourceType_USERDEFINED, IfcActionSourceType_NOTDEFINED} IfcActionSourceTypeEnum;
 std::string ToString(IfcActionSourceTypeEnum v);
 IfcActionSourceTypeEnum FromString(const std::string& s);}
-namespace IfcActionTypeEnum {typedef enum {PERMANENT_G, VARIABLE_Q, EXTRAORDINARY_A, USERDEFINED, NOTDEFINED} IfcActionTypeEnum;
+namespace IfcActionTypeEnum {typedef enum {IfcActionType_PERMANENT_G, IfcActionType_VARIABLE_Q, IfcActionType_EXTRAORDINARY_A, IfcActionType_USERDEFINED, IfcActionType_NOTDEFINED} IfcActionTypeEnum;
 std::string ToString(IfcActionTypeEnum v);
 IfcActionTypeEnum FromString(const std::string& s);}
-namespace IfcActuatorTypeEnum {typedef enum {ELECTRICACTUATOR, HANDOPERATEDACTUATOR, HYDRAULICACTUATOR, PNEUMATICACTUATOR, THERMOSTATICACTUATOR, USERDEFINED, NOTDEFINED} IfcActuatorTypeEnum;
+namespace IfcActuatorTypeEnum {typedef enum {IfcActuatorType_ELECTRICACTUATOR, IfcActuatorType_HANDOPERATEDACTUATOR, IfcActuatorType_HYDRAULICACTUATOR, IfcActuatorType_PNEUMATICACTUATOR, IfcActuatorType_THERMOSTATICACTUATOR, IfcActuatorType_USERDEFINED, IfcActuatorType_NOTDEFINED} IfcActuatorTypeEnum;
 std::string ToString(IfcActuatorTypeEnum v);
 IfcActuatorTypeEnum FromString(const std::string& s);}
-namespace IfcAddressTypeEnum {typedef enum {OFFICE, SITE, HOME, DISTRIBUTIONPOINT, USERDEFINED} IfcAddressTypeEnum;
+namespace IfcAddressTypeEnum {typedef enum {IfcAddressType_OFFICE, IfcAddressType_SITE, IfcAddressType_HOME, IfcAddressType_DISTRIBUTIONPOINT, IfcAddressType_USERDEFINED} IfcAddressTypeEnum;
 std::string ToString(IfcAddressTypeEnum v);
 IfcAddressTypeEnum FromString(const std::string& s);}
-namespace IfcAheadOrBehind {typedef enum {AHEAD, BEHIND} IfcAheadOrBehind;
+namespace IfcAheadOrBehind {typedef enum {IfcAheadOrBehind_AHEAD, IfcAheadOrBehind_BEHIND} IfcAheadOrBehind;
 std::string ToString(IfcAheadOrBehind v);
 IfcAheadOrBehind FromString(const std::string& s);}
-namespace IfcAirTerminalBoxTypeEnum {typedef enum {CONSTANTFLOW, VARIABLEFLOWPRESSUREDEPENDANT, VARIABLEFLOWPRESSUREINDEPENDANT, USERDEFINED, NOTDEFINED} IfcAirTerminalBoxTypeEnum;
+namespace IfcAirTerminalBoxTypeEnum {typedef enum {IfcAirTerminalBoxType_CONSTANTFLOW, IfcAirTerminalBoxType_VARIABLEFLOWPRESSUREDEPENDANT, IfcAirTerminalBoxType_VARIABLEFLOWPRESSUREINDEPENDANT, IfcAirTerminalBoxType_USERDEFINED, IfcAirTerminalBoxType_NOTDEFINED} IfcAirTerminalBoxTypeEnum;
 std::string ToString(IfcAirTerminalBoxTypeEnum v);
 IfcAirTerminalBoxTypeEnum FromString(const std::string& s);}
-namespace IfcAirTerminalTypeEnum {typedef enum {GRILLE, REGISTER, DIFFUSER, EYEBALL, IRIS, LINEARGRILLE, LINEARDIFFUSER, USERDEFINED, NOTDEFINED} IfcAirTerminalTypeEnum;
+namespace IfcAirTerminalTypeEnum {typedef enum {IfcAirTerminalType_GRILLE, IfcAirTerminalType_REGISTER, IfcAirTerminalType_DIFFUSER, IfcAirTerminalType_EYEBALL, IfcAirTerminalType_IRIS, IfcAirTerminalType_LINEARGRILLE, IfcAirTerminalType_LINEARDIFFUSER, IfcAirTerminalType_USERDEFINED, IfcAirTerminalType_NOTDEFINED} IfcAirTerminalTypeEnum;
 std::string ToString(IfcAirTerminalTypeEnum v);
 IfcAirTerminalTypeEnum FromString(const std::string& s);}
-namespace IfcAirToAirHeatRecoveryTypeEnum {typedef enum {FIXEDPLATECOUNTERFLOWEXCHANGER, FIXEDPLATECROSSFLOWEXCHANGER, FIXEDPLATEPARALLELFLOWEXCHANGER, ROTARYWHEEL, RUNAROUNDCOILLOOP, HEATPIPE, TWINTOWERENTHALPYRECOVERYLOOPS, THERMOSIPHONSEALEDTUBEHEATEXCHANGERS, THERMOSIPHONCOILTYPEHEATEXCHANGERS, USERDEFINED, NOTDEFINED} IfcAirToAirHeatRecoveryTypeEnum;
+namespace IfcAirToAirHeatRecoveryTypeEnum {typedef enum {IfcAirToAirHeatRecoveryType_FIXEDPLATECOUNTERFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_FIXEDPLATECROSSFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_FIXEDPLATEPARALLELFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_ROTARYWHEEL, IfcAirToAirHeatRecoveryType_RUNAROUNDCOILLOOP, IfcAirToAirHeatRecoveryType_HEATPIPE, IfcAirToAirHeatRecoveryType_TWINTOWERENTHALPYRECOVERYLOOPS, IfcAirToAirHeatRecoveryType_THERMOSIPHONSEALEDTUBEHEATEXCHANGERS, IfcAirToAirHeatRecoveryType_THERMOSIPHONCOILTYPEHEATEXCHANGERS, IfcAirToAirHeatRecoveryType_USERDEFINED, IfcAirToAirHeatRecoveryType_NOTDEFINED} IfcAirToAirHeatRecoveryTypeEnum;
 std::string ToString(IfcAirToAirHeatRecoveryTypeEnum v);
 IfcAirToAirHeatRecoveryTypeEnum FromString(const std::string& s);}
-namespace IfcAlarmTypeEnum {typedef enum {BELL, BREAKGLASSBUTTON, LIGHT, MANUALPULLBOX, SIREN, WHISTLE, USERDEFINED, NOTDEFINED} IfcAlarmTypeEnum;
+namespace IfcAlarmTypeEnum {typedef enum {IfcAlarmType_BELL, IfcAlarmType_BREAKGLASSBUTTON, IfcAlarmType_LIGHT, IfcAlarmType_MANUALPULLBOX, IfcAlarmType_SIREN, IfcAlarmType_WHISTLE, IfcAlarmType_USERDEFINED, IfcAlarmType_NOTDEFINED} IfcAlarmTypeEnum;
 std::string ToString(IfcAlarmTypeEnum v);
 IfcAlarmTypeEnum FromString(const std::string& s);}
-namespace IfcAnalysisModelTypeEnum {typedef enum {IN_PLANE_LOADING_2D, OUT_PLANE_LOADING_2D, LOADING_3D, USERDEFINED, NOTDEFINED} IfcAnalysisModelTypeEnum;
+namespace IfcAnalysisModelTypeEnum {typedef enum {IfcAnalysisModelType_IN_PLANE_LOADING_2D, IfcAnalysisModelType_OUT_PLANE_LOADING_2D, IfcAnalysisModelType_LOADING_3D, IfcAnalysisModelType_USERDEFINED, IfcAnalysisModelType_NOTDEFINED} IfcAnalysisModelTypeEnum;
 std::string ToString(IfcAnalysisModelTypeEnum v);
 IfcAnalysisModelTypeEnum FromString(const std::string& s);}
-namespace IfcAnalysisTheoryTypeEnum {typedef enum {FIRST_ORDER_THEORY, SECOND_ORDER_THEORY, THIRD_ORDER_THEORY, FULL_NONLINEAR_THEORY, USERDEFINED, NOTDEFINED} IfcAnalysisTheoryTypeEnum;
+namespace IfcAnalysisTheoryTypeEnum {typedef enum {IfcAnalysisTheoryType_FIRST_ORDER_THEORY, IfcAnalysisTheoryType_SECOND_ORDER_THEORY, IfcAnalysisTheoryType_THIRD_ORDER_THEORY, IfcAnalysisTheoryType_FULL_NONLINEAR_THEORY, IfcAnalysisTheoryType_USERDEFINED, IfcAnalysisTheoryType_NOTDEFINED} IfcAnalysisTheoryTypeEnum;
 std::string ToString(IfcAnalysisTheoryTypeEnum v);
 IfcAnalysisTheoryTypeEnum FromString(const std::string& s);}
-namespace IfcArithmeticOperatorEnum {typedef enum {ADD, DIVIDE, MULTIPLY, SUBTRACT} IfcArithmeticOperatorEnum;
+namespace IfcArithmeticOperatorEnum {typedef enum {IfcArithmeticOperator_ADD, IfcArithmeticOperator_DIVIDE, IfcArithmeticOperator_MULTIPLY, IfcArithmeticOperator_SUBTRACT} IfcArithmeticOperatorEnum;
 std::string ToString(IfcArithmeticOperatorEnum v);
 IfcArithmeticOperatorEnum FromString(const std::string& s);}
-namespace IfcAssemblyPlaceEnum {typedef enum {SITE, FACTORY, NOTDEFINED} IfcAssemblyPlaceEnum;
+namespace IfcAssemblyPlaceEnum {typedef enum {IfcAssemblyPlace_SITE, IfcAssemblyPlace_FACTORY, IfcAssemblyPlace_NOTDEFINED} IfcAssemblyPlaceEnum;
 std::string ToString(IfcAssemblyPlaceEnum v);
 IfcAssemblyPlaceEnum FromString(const std::string& s);}
-namespace IfcBSplineCurveForm {typedef enum {POLYLINE_FORM, CIRCULAR_ARC, ELLIPTIC_ARC, PARABOLIC_ARC, HYPERBOLIC_ARC, UNSPECIFIED} IfcBSplineCurveForm;
+namespace IfcBSplineCurveForm {typedef enum {IfcBSplineCurveForm_POLYLINE_FORM, IfcBSplineCurveForm_CIRCULAR_ARC, IfcBSplineCurveForm_ELLIPTIC_ARC, IfcBSplineCurveForm_PARABOLIC_ARC, IfcBSplineCurveForm_HYPERBOLIC_ARC, IfcBSplineCurveForm_UNSPECIFIED} IfcBSplineCurveForm;
 std::string ToString(IfcBSplineCurveForm v);
 IfcBSplineCurveForm FromString(const std::string& s);}
-namespace IfcBeamTypeEnum {typedef enum {BEAM, JOIST, LINTEL, T_BEAM, USERDEFINED, NOTDEFINED} IfcBeamTypeEnum;
+namespace IfcBeamTypeEnum {typedef enum {IfcBeamType_BEAM, IfcBeamType_JOIST, IfcBeamType_LINTEL, IfcBeamType_T_BEAM, IfcBeamType_USERDEFINED, IfcBeamType_NOTDEFINED} IfcBeamTypeEnum;
 std::string ToString(IfcBeamTypeEnum v);
 IfcBeamTypeEnum FromString(const std::string& s);}
-namespace IfcBenchmarkEnum {typedef enum {GREATERTHAN, GREATERTHANOREQUALTO, LESSTHAN, LESSTHANOREQUALTO, EQUALTO, NOTEQUALTO} IfcBenchmarkEnum;
+namespace IfcBenchmarkEnum {typedef enum {IfcBenchmark_GREATERTHAN, IfcBenchmark_GREATERTHANOREQUALTO, IfcBenchmark_LESSTHAN, IfcBenchmark_LESSTHANOREQUALTO, IfcBenchmark_EQUALTO, IfcBenchmark_NOTEQUALTO} IfcBenchmarkEnum;
 std::string ToString(IfcBenchmarkEnum v);
 IfcBenchmarkEnum FromString(const std::string& s);}
-namespace IfcBoilerTypeEnum {typedef enum {WATER, STEAM, USERDEFINED, NOTDEFINED} IfcBoilerTypeEnum;
+namespace IfcBoilerTypeEnum {typedef enum {IfcBoilerType_WATER, IfcBoilerType_STEAM, IfcBoilerType_USERDEFINED, IfcBoilerType_NOTDEFINED} IfcBoilerTypeEnum;
 std::string ToString(IfcBoilerTypeEnum v);
 IfcBoilerTypeEnum FromString(const std::string& s);}
-namespace IfcBooleanOperator {typedef enum {UNION, INTERSECTION, DIFFERENCE} IfcBooleanOperator;
+namespace IfcBooleanOperator {typedef enum {IfcBooleanOperator_UNION, IfcBooleanOperator_INTERSECTION, IfcBooleanOperator_DIFFERENCE} IfcBooleanOperator;
 std::string ToString(IfcBooleanOperator v);
 IfcBooleanOperator FromString(const std::string& s);}
-namespace IfcBuildingElementProxyTypeEnum {typedef enum {USERDEFINED, NOTDEFINED} IfcBuildingElementProxyTypeEnum;
+namespace IfcBuildingElementProxyTypeEnum {typedef enum {IfcBuildingElementProxyType_USERDEFINED, IfcBuildingElementProxyType_NOTDEFINED} IfcBuildingElementProxyTypeEnum;
 std::string ToString(IfcBuildingElementProxyTypeEnum v);
 IfcBuildingElementProxyTypeEnum FromString(const std::string& s);}
-namespace IfcCableCarrierFittingTypeEnum {typedef enum {BEND, CROSS, REDUCER, TEE, USERDEFINED, NOTDEFINED} IfcCableCarrierFittingTypeEnum;
+namespace IfcCableCarrierFittingTypeEnum {typedef enum {IfcCableCarrierFittingType_BEND, IfcCableCarrierFittingType_CROSS, IfcCableCarrierFittingType_REDUCER, IfcCableCarrierFittingType_TEE, IfcCableCarrierFittingType_USERDEFINED, IfcCableCarrierFittingType_NOTDEFINED} IfcCableCarrierFittingTypeEnum;
 std::string ToString(IfcCableCarrierFittingTypeEnum v);
 IfcCableCarrierFittingTypeEnum FromString(const std::string& s);}
-namespace IfcCableCarrierSegmentTypeEnum {typedef enum {CABLELADDERSEGMENT, CABLETRAYSEGMENT, CABLETRUNKINGSEGMENT, CONDUITSEGMENT, USERDEFINED, NOTDEFINED} IfcCableCarrierSegmentTypeEnum;
+namespace IfcCableCarrierSegmentTypeEnum {typedef enum {IfcCableCarrierSegmentType_CABLELADDERSEGMENT, IfcCableCarrierSegmentType_CABLETRAYSEGMENT, IfcCableCarrierSegmentType_CABLETRUNKINGSEGMENT, IfcCableCarrierSegmentType_CONDUITSEGMENT, IfcCableCarrierSegmentType_USERDEFINED, IfcCableCarrierSegmentType_NOTDEFINED} IfcCableCarrierSegmentTypeEnum;
 std::string ToString(IfcCableCarrierSegmentTypeEnum v);
 IfcCableCarrierSegmentTypeEnum FromString(const std::string& s);}
-namespace IfcCableSegmentTypeEnum {typedef enum {CABLESEGMENT, CONDUCTORSEGMENT, USERDEFINED, NOTDEFINED} IfcCableSegmentTypeEnum;
+namespace IfcCableSegmentTypeEnum {typedef enum {IfcCableSegmentType_CABLESEGMENT, IfcCableSegmentType_CONDUCTORSEGMENT, IfcCableSegmentType_USERDEFINED, IfcCableSegmentType_NOTDEFINED} IfcCableSegmentTypeEnum;
 std::string ToString(IfcCableSegmentTypeEnum v);
 IfcCableSegmentTypeEnum FromString(const std::string& s);}
-namespace IfcChangeActionEnum {typedef enum {NOCHANGE, MODIFIED, ADDED, DELETED, MODIFIEDADDED, MODIFIEDDELETED} IfcChangeActionEnum;
+namespace IfcChangeActionEnum {typedef enum {IfcChangeAction_NOCHANGE, IfcChangeAction_MODIFIED, IfcChangeAction_ADDED, IfcChangeAction_DELETED, IfcChangeAction_MODIFIEDADDED, IfcChangeAction_MODIFIEDDELETED} IfcChangeActionEnum;
 std::string ToString(IfcChangeActionEnum v);
 IfcChangeActionEnum FromString(const std::string& s);}
-namespace IfcChillerTypeEnum {typedef enum {AIRCOOLED, WATERCOOLED, HEATRECOVERY, USERDEFINED, NOTDEFINED} IfcChillerTypeEnum;
+namespace IfcChillerTypeEnum {typedef enum {IfcChillerType_AIRCOOLED, IfcChillerType_WATERCOOLED, IfcChillerType_HEATRECOVERY, IfcChillerType_USERDEFINED, IfcChillerType_NOTDEFINED} IfcChillerTypeEnum;
 std::string ToString(IfcChillerTypeEnum v);
 IfcChillerTypeEnum FromString(const std::string& s);}
-namespace IfcCoilTypeEnum {typedef enum {DXCOOLINGCOIL, WATERCOOLINGCOIL, STEAMHEATINGCOIL, WATERHEATINGCOIL, ELECTRICHEATINGCOIL, GASHEATINGCOIL, USERDEFINED, NOTDEFINED} IfcCoilTypeEnum;
+namespace IfcCoilTypeEnum {typedef enum {IfcCoilType_DXCOOLINGCOIL, IfcCoilType_WATERCOOLINGCOIL, IfcCoilType_STEAMHEATINGCOIL, IfcCoilType_WATERHEATINGCOIL, IfcCoilType_ELECTRICHEATINGCOIL, IfcCoilType_GASHEATINGCOIL, IfcCoilType_USERDEFINED, IfcCoilType_NOTDEFINED} IfcCoilTypeEnum;
 std::string ToString(IfcCoilTypeEnum v);
 IfcCoilTypeEnum FromString(const std::string& s);}
-namespace IfcColumnTypeEnum {typedef enum {COLUMN, USERDEFINED, NOTDEFINED} IfcColumnTypeEnum;
+namespace IfcColumnTypeEnum {typedef enum {IfcColumnType_COLUMN, IfcColumnType_USERDEFINED, IfcColumnType_NOTDEFINED} IfcColumnTypeEnum;
 std::string ToString(IfcColumnTypeEnum v);
 IfcColumnTypeEnum FromString(const std::string& s);}
-namespace IfcCompressorTypeEnum {typedef enum {DYNAMIC, RECIPROCATING, ROTARY, SCROLL, TROCHOIDAL, SINGLESTAGE, BOOSTER, OPENTYPE, HERMETIC, SEMIHERMETIC, WELDEDSHELLHERMETIC, ROLLINGPISTON, ROTARYVANE, SINGLESCREW, TWINSCREW, USERDEFINED, NOTDEFINED} IfcCompressorTypeEnum;
+namespace IfcCompressorTypeEnum {typedef enum {IfcCompressorType_DYNAMIC, IfcCompressorType_RECIPROCATING, IfcCompressorType_ROTARY, IfcCompressorType_SCROLL, IfcCompressorType_TROCHOIDAL, IfcCompressorType_SINGLESTAGE, IfcCompressorType_BOOSTER, IfcCompressorType_OPENTYPE, IfcCompressorType_HERMETIC, IfcCompressorType_SEMIHERMETIC, IfcCompressorType_WELDEDSHELLHERMETIC, IfcCompressorType_ROLLINGPISTON, IfcCompressorType_ROTARYVANE, IfcCompressorType_SINGLESCREW, IfcCompressorType_TWINSCREW, IfcCompressorType_USERDEFINED, IfcCompressorType_NOTDEFINED} IfcCompressorTypeEnum;
 std::string ToString(IfcCompressorTypeEnum v);
 IfcCompressorTypeEnum FromString(const std::string& s);}
-namespace IfcCondenserTypeEnum {typedef enum {WATERCOOLEDSHELLTUBE, WATERCOOLEDSHELLCOIL, WATERCOOLEDTUBEINTUBE, WATERCOOLEDBRAZEDPLATE, AIRCOOLED, EVAPORATIVECOOLED, USERDEFINED, NOTDEFINED} IfcCondenserTypeEnum;
+namespace IfcCondenserTypeEnum {typedef enum {IfcCondenserType_WATERCOOLEDSHELLTUBE, IfcCondenserType_WATERCOOLEDSHELLCOIL, IfcCondenserType_WATERCOOLEDTUBEINTUBE, IfcCondenserType_WATERCOOLEDBRAZEDPLATE, IfcCondenserType_AIRCOOLED, IfcCondenserType_EVAPORATIVECOOLED, IfcCondenserType_USERDEFINED, IfcCondenserType_NOTDEFINED} IfcCondenserTypeEnum;
 std::string ToString(IfcCondenserTypeEnum v);
 IfcCondenserTypeEnum FromString(const std::string& s);}
-namespace IfcConnectionTypeEnum {typedef enum {ATPATH, ATSTART, ATEND, NOTDEFINED} IfcConnectionTypeEnum;
+namespace IfcConnectionTypeEnum {typedef enum {IfcConnectionType_ATPATH, IfcConnectionType_ATSTART, IfcConnectionType_ATEND, IfcConnectionType_NOTDEFINED} IfcConnectionTypeEnum;
 std::string ToString(IfcConnectionTypeEnum v);
 IfcConnectionTypeEnum FromString(const std::string& s);}
-namespace IfcConstraintEnum {typedef enum {HARD, SOFT, ADVISORY, USERDEFINED, NOTDEFINED} IfcConstraintEnum;
+namespace IfcConstraintEnum {typedef enum {IfcConstraint_HARD, IfcConstraint_SOFT, IfcConstraint_ADVISORY, IfcConstraint_USERDEFINED, IfcConstraint_NOTDEFINED} IfcConstraintEnum;
 std::string ToString(IfcConstraintEnum v);
 IfcConstraintEnum FromString(const std::string& s);}
-namespace IfcControllerTypeEnum {typedef enum {FLOATING, PROPORTIONAL, PROPORTIONALINTEGRAL, PROPORTIONALINTEGRALDERIVATIVE, TIMEDTWOPOSITION, TWOPOSITION, USERDEFINED, NOTDEFINED} IfcControllerTypeEnum;
+namespace IfcControllerTypeEnum {typedef enum {IfcControllerType_FLOATING, IfcControllerType_PROPORTIONAL, IfcControllerType_PROPORTIONALINTEGRAL, IfcControllerType_PROPORTIONALINTEGRALDERIVATIVE, IfcControllerType_TIMEDTWOPOSITION, IfcControllerType_TWOPOSITION, IfcControllerType_USERDEFINED, IfcControllerType_NOTDEFINED} IfcControllerTypeEnum;
 std::string ToString(IfcControllerTypeEnum v);
 IfcControllerTypeEnum FromString(const std::string& s);}
-namespace IfcCooledBeamTypeEnum {typedef enum {ACTIVE, PASSIVE, USERDEFINED, NOTDEFINED} IfcCooledBeamTypeEnum;
+namespace IfcCooledBeamTypeEnum {typedef enum {IfcCooledBeamType_ACTIVE, IfcCooledBeamType_PASSIVE, IfcCooledBeamType_USERDEFINED, IfcCooledBeamType_NOTDEFINED} IfcCooledBeamTypeEnum;
 std::string ToString(IfcCooledBeamTypeEnum v);
 IfcCooledBeamTypeEnum FromString(const std::string& s);}
-namespace IfcCoolingTowerTypeEnum {typedef enum {NATURALDRAFT, MECHANICALINDUCEDDRAFT, MECHANICALFORCEDDRAFT, USERDEFINED, NOTDEFINED} IfcCoolingTowerTypeEnum;
+namespace IfcCoolingTowerTypeEnum {typedef enum {IfcCoolingTowerType_NATURALDRAFT, IfcCoolingTowerType_MECHANICALINDUCEDDRAFT, IfcCoolingTowerType_MECHANICALFORCEDDRAFT, IfcCoolingTowerType_USERDEFINED, IfcCoolingTowerType_NOTDEFINED} IfcCoolingTowerTypeEnum;
 std::string ToString(IfcCoolingTowerTypeEnum v);
 IfcCoolingTowerTypeEnum FromString(const std::string& s);}
-namespace IfcCostScheduleTypeEnum {typedef enum {BUDGET, COSTPLAN, ESTIMATE, TENDER, PRICEDBILLOFQUANTITIES, UNPRICEDBILLOFQUANTITIES, SCHEDULEOFRATES, USERDEFINED, NOTDEFINED} IfcCostScheduleTypeEnum;
+namespace IfcCostScheduleTypeEnum {typedef enum {IfcCostScheduleType_BUDGET, IfcCostScheduleType_COSTPLAN, IfcCostScheduleType_ESTIMATE, IfcCostScheduleType_TENDER, IfcCostScheduleType_PRICEDBILLOFQUANTITIES, IfcCostScheduleType_UNPRICEDBILLOFQUANTITIES, IfcCostScheduleType_SCHEDULEOFRATES, IfcCostScheduleType_USERDEFINED, IfcCostScheduleType_NOTDEFINED} IfcCostScheduleTypeEnum;
 std::string ToString(IfcCostScheduleTypeEnum v);
 IfcCostScheduleTypeEnum FromString(const std::string& s);}
-namespace IfcCoveringTypeEnum {typedef enum {CEILING, FLOORING, CLADDING, ROOFING, INSULATION, MEMBRANE, SLEEVING, WRAPPING, USERDEFINED, NOTDEFINED} IfcCoveringTypeEnum;
+namespace IfcCoveringTypeEnum {typedef enum {IfcCoveringType_CEILING, IfcCoveringType_FLOORING, IfcCoveringType_CLADDING, IfcCoveringType_ROOFING, IfcCoveringType_INSULATION, IfcCoveringType_MEMBRANE, IfcCoveringType_SLEEVING, IfcCoveringType_WRAPPING, IfcCoveringType_USERDEFINED, IfcCoveringType_NOTDEFINED} IfcCoveringTypeEnum;
 std::string ToString(IfcCoveringTypeEnum v);
 IfcCoveringTypeEnum FromString(const std::string& s);}
-namespace IfcCurrencyEnum {typedef enum {AED, AES, ATS, AUD, BBD, BEG, BGL, BHD, BMD, BND, BRL, BSD, BWP, BZD, CAD, CBD, CHF, CLP, CNY, CYS, CZK, DDP, DEM, DKK, EGL, EST, EUR, FAK, FIM, FJD, FKP, FRF, GBP, GIP, GMD, GRX, HKD, HUF, ICK, IDR, ILS, INR, IRP, ITL, JMD, JOD, JPY, KES, KRW, KWD, KYD, LKR, LUF, MTL, MUR, MXN, MYR, NLG, NZD, OMR, PGK, PHP, PKR, PLN, PTN, QAR, RUR, SAR, SCR, SEK, SGD, SKP, THB, TRL, TTD, TWD, USD, VEB, VND, XEU, ZAR, ZWD, NOK} IfcCurrencyEnum;
+namespace IfcCurrencyEnum {typedef enum {IfcCurrency_AED, IfcCurrency_AES, IfcCurrency_ATS, IfcCurrency_AUD, IfcCurrency_BBD, IfcCurrency_BEG, IfcCurrency_BGL, IfcCurrency_BHD, IfcCurrency_BMD, IfcCurrency_BND, IfcCurrency_BRL, IfcCurrency_BSD, IfcCurrency_BWP, IfcCurrency_BZD, IfcCurrency_CAD, IfcCurrency_CBD, IfcCurrency_CHF, IfcCurrency_CLP, IfcCurrency_CNY, IfcCurrency_CYS, IfcCurrency_CZK, IfcCurrency_DDP, IfcCurrency_DEM, IfcCurrency_DKK, IfcCurrency_EGL, IfcCurrency_EST, IfcCurrency_EUR, IfcCurrency_FAK, IfcCurrency_FIM, IfcCurrency_FJD, IfcCurrency_FKP, IfcCurrency_FRF, IfcCurrency_GBP, IfcCurrency_GIP, IfcCurrency_GMD, IfcCurrency_GRX, IfcCurrency_HKD, IfcCurrency_HUF, IfcCurrency_ICK, IfcCurrency_IDR, IfcCurrency_ILS, IfcCurrency_INR, IfcCurrency_IRP, IfcCurrency_ITL, IfcCurrency_JMD, IfcCurrency_JOD, IfcCurrency_JPY, IfcCurrency_KES, IfcCurrency_KRW, IfcCurrency_KWD, IfcCurrency_KYD, IfcCurrency_LKR, IfcCurrency_LUF, IfcCurrency_MTL, IfcCurrency_MUR, IfcCurrency_MXN, IfcCurrency_MYR, IfcCurrency_NLG, IfcCurrency_NZD, IfcCurrency_OMR, IfcCurrency_PGK, IfcCurrency_PHP, IfcCurrency_PKR, IfcCurrency_PLN, IfcCurrency_PTN, IfcCurrency_QAR, IfcCurrency_RUR, IfcCurrency_SAR, IfcCurrency_SCR, IfcCurrency_SEK, IfcCurrency_SGD, IfcCurrency_SKP, IfcCurrency_THB, IfcCurrency_TRL, IfcCurrency_TTD, IfcCurrency_TWD, IfcCurrency_USD, IfcCurrency_VEB, IfcCurrency_VND, IfcCurrency_XEU, IfcCurrency_ZAR, IfcCurrency_ZWD, IfcCurrency_NOK} IfcCurrencyEnum;
 std::string ToString(IfcCurrencyEnum v);
 IfcCurrencyEnum FromString(const std::string& s);}
-namespace IfcCurtainWallTypeEnum {typedef enum {USERDEFINED, NOTDEFINED} IfcCurtainWallTypeEnum;
+namespace IfcCurtainWallTypeEnum {typedef enum {IfcCurtainWallType_USERDEFINED, IfcCurtainWallType_NOTDEFINED} IfcCurtainWallTypeEnum;
 std::string ToString(IfcCurtainWallTypeEnum v);
 IfcCurtainWallTypeEnum FromString(const std::string& s);}
-namespace IfcDamperTypeEnum {typedef enum {CONTROLDAMPER, FIREDAMPER, SMOKEDAMPER, FIRESMOKEDAMPER, BACKDRAFTDAMPER, RELIEFDAMPER, BLASTDAMPER, GRAVITYDAMPER, GRAVITYRELIEFDAMPER, BALANCINGDAMPER, FUMEHOODEXHAUST, USERDEFINED, NOTDEFINED} IfcDamperTypeEnum;
+namespace IfcDamperTypeEnum {typedef enum {IfcDamperType_CONTROLDAMPER, IfcDamperType_FIREDAMPER, IfcDamperType_SMOKEDAMPER, IfcDamperType_FIRESMOKEDAMPER, IfcDamperType_BACKDRAFTDAMPER, IfcDamperType_RELIEFDAMPER, IfcDamperType_BLASTDAMPER, IfcDamperType_GRAVITYDAMPER, IfcDamperType_GRAVITYRELIEFDAMPER, IfcDamperType_BALANCINGDAMPER, IfcDamperType_FUMEHOODEXHAUST, IfcDamperType_USERDEFINED, IfcDamperType_NOTDEFINED} IfcDamperTypeEnum;
 std::string ToString(IfcDamperTypeEnum v);
 IfcDamperTypeEnum FromString(const std::string& s);}
-namespace IfcDataOriginEnum {typedef enum {MEASURED, PREDICTED, SIMULATED, USERDEFINED, NOTDEFINED} IfcDataOriginEnum;
+namespace IfcDataOriginEnum {typedef enum {IfcDataOrigin_MEASURED, IfcDataOrigin_PREDICTED, IfcDataOrigin_SIMULATED, IfcDataOrigin_USERDEFINED, IfcDataOrigin_NOTDEFINED} IfcDataOriginEnum;
 std::string ToString(IfcDataOriginEnum v);
 IfcDataOriginEnum FromString(const std::string& s);}
-namespace IfcDerivedUnitEnum {typedef enum {ANGULARVELOCITYUNIT, COMPOUNDPLANEANGLEUNIT, DYNAMICVISCOSITYUNIT, HEATFLUXDENSITYUNIT, INTEGERCOUNTRATEUNIT, ISOTHERMALMOISTURECAPACITYUNIT, KINEMATICVISCOSITYUNIT, LINEARVELOCITYUNIT, MASSDENSITYUNIT, MASSFLOWRATEUNIT, MOISTUREDIFFUSIVITYUNIT, MOLECULARWEIGHTUNIT, SPECIFICHEATCAPACITYUNIT, THERMALADMITTANCEUNIT, THERMALCONDUCTANCEUNIT, THERMALRESISTANCEUNIT, THERMALTRANSMITTANCEUNIT, VAPORPERMEABILITYUNIT, VOLUMETRICFLOWRATEUNIT, ROTATIONALFREQUENCYUNIT, TORQUEUNIT, MOMENTOFINERTIAUNIT, LINEARMOMENTUNIT, LINEARFORCEUNIT, PLANARFORCEUNIT, MODULUSOFELASTICITYUNIT, SHEARMODULUSUNIT, LINEARSTIFFNESSUNIT, ROTATIONALSTIFFNESSUNIT, MODULUSOFSUBGRADEREACTIONUNIT, ACCELERATIONUNIT, CURVATUREUNIT, HEATINGVALUEUNIT, IONCONCENTRATIONUNIT, LUMINOUSINTENSITYDISTRIBUTIONUNIT, MASSPERLENGTHUNIT, MODULUSOFLINEARSUBGRADEREACTIONUNIT, MODULUSOFROTATIONALSUBGRADEREACTIONUNIT, PHUNIT, ROTATIONALMASSUNIT, SECTIONAREAINTEGRALUNIT, SECTIONMODULUSUNIT, SOUNDPOWERUNIT, SOUNDPRESSUREUNIT, TEMPERATUREGRADIENTUNIT, THERMALEXPANSIONCOEFFICIENTUNIT, WARPINGCONSTANTUNIT, WARPINGMOMENTUNIT, USERDEFINED} IfcDerivedUnitEnum;
+namespace IfcDerivedUnitEnum {typedef enum {IfcDerivedUnit_ANGULARVELOCITYUNIT, IfcDerivedUnit_COMPOUNDPLANEANGLEUNIT, IfcDerivedUnit_DYNAMICVISCOSITYUNIT, IfcDerivedUnit_HEATFLUXDENSITYUNIT, IfcDerivedUnit_INTEGERCOUNTRATEUNIT, IfcDerivedUnit_ISOTHERMALMOISTURECAPACITYUNIT, IfcDerivedUnit_KINEMATICVISCOSITYUNIT, IfcDerivedUnit_LINEARVELOCITYUNIT, IfcDerivedUnit_MASSDENSITYUNIT, IfcDerivedUnit_MASSFLOWRATEUNIT, IfcDerivedUnit_MOISTUREDIFFUSIVITYUNIT, IfcDerivedUnit_MOLECULARWEIGHTUNIT, IfcDerivedUnit_SPECIFICHEATCAPACITYUNIT, IfcDerivedUnit_THERMALADMITTANCEUNIT, IfcDerivedUnit_THERMALCONDUCTANCEUNIT, IfcDerivedUnit_THERMALRESISTANCEUNIT, IfcDerivedUnit_THERMALTRANSMITTANCEUNIT, IfcDerivedUnit_VAPORPERMEABILITYUNIT, IfcDerivedUnit_VOLUMETRICFLOWRATEUNIT, IfcDerivedUnit_ROTATIONALFREQUENCYUNIT, IfcDerivedUnit_TORQUEUNIT, IfcDerivedUnit_MOMENTOFINERTIAUNIT, IfcDerivedUnit_LINEARMOMENTUNIT, IfcDerivedUnit_LINEARFORCEUNIT, IfcDerivedUnit_PLANARFORCEUNIT, IfcDerivedUnit_MODULUSOFELASTICITYUNIT, IfcDerivedUnit_SHEARMODULUSUNIT, IfcDerivedUnit_LINEARSTIFFNESSUNIT, IfcDerivedUnit_ROTATIONALSTIFFNESSUNIT, IfcDerivedUnit_MODULUSOFSUBGRADEREACTIONUNIT, IfcDerivedUnit_ACCELERATIONUNIT, IfcDerivedUnit_CURVATUREUNIT, IfcDerivedUnit_HEATINGVALUEUNIT, IfcDerivedUnit_IONCONCENTRATIONUNIT, IfcDerivedUnit_LUMINOUSINTENSITYDISTRIBUTIONUNIT, IfcDerivedUnit_MASSPERLENGTHUNIT, IfcDerivedUnit_MODULUSOFLINEARSUBGRADEREACTIONUNIT, IfcDerivedUnit_MODULUSOFROTATIONALSUBGRADEREACTIONUNIT, IfcDerivedUnit_PHUNIT, IfcDerivedUnit_ROTATIONALMASSUNIT, IfcDerivedUnit_SECTIONAREAINTEGRALUNIT, IfcDerivedUnit_SECTIONMODULUSUNIT, IfcDerivedUnit_SOUNDPOWERUNIT, IfcDerivedUnit_SOUNDPRESSUREUNIT, IfcDerivedUnit_TEMPERATUREGRADIENTUNIT, IfcDerivedUnit_THERMALEXPANSIONCOEFFICIENTUNIT, IfcDerivedUnit_WARPINGCONSTANTUNIT, IfcDerivedUnit_WARPINGMOMENTUNIT, IfcDerivedUnit_USERDEFINED} IfcDerivedUnitEnum;
 std::string ToString(IfcDerivedUnitEnum v);
 IfcDerivedUnitEnum FromString(const std::string& s);}
-namespace IfcDimensionExtentUsage {typedef enum {ORIGIN, TARGET} IfcDimensionExtentUsage;
+namespace IfcDimensionExtentUsage {typedef enum {IfcDimensionExtentUsage_ORIGIN, IfcDimensionExtentUsage_TARGET} IfcDimensionExtentUsage;
 std::string ToString(IfcDimensionExtentUsage v);
 IfcDimensionExtentUsage FromString(const std::string& s);}
-namespace IfcDirectionSenseEnum {typedef enum {POSITIVE, NEGATIVE} IfcDirectionSenseEnum;
+namespace IfcDirectionSenseEnum {typedef enum {IfcDirectionSense_POSITIVE, IfcDirectionSense_NEGATIVE} IfcDirectionSenseEnum;
 std::string ToString(IfcDirectionSenseEnum v);
 IfcDirectionSenseEnum FromString(const std::string& s);}
-namespace IfcDistributionChamberElementTypeEnum {typedef enum {FORMEDDUCT, INSPECTIONCHAMBER, INSPECTIONPIT, MANHOLE, METERCHAMBER, SUMP, TRENCH, VALVECHAMBER, USERDEFINED, NOTDEFINED} IfcDistributionChamberElementTypeEnum;
+namespace IfcDistributionChamberElementTypeEnum {typedef enum {IfcDistributionChamberElementType_FORMEDDUCT, IfcDistributionChamberElementType_INSPECTIONCHAMBER, IfcDistributionChamberElementType_INSPECTIONPIT, IfcDistributionChamberElementType_MANHOLE, IfcDistributionChamberElementType_METERCHAMBER, IfcDistributionChamberElementType_SUMP, IfcDistributionChamberElementType_TRENCH, IfcDistributionChamberElementType_VALVECHAMBER, IfcDistributionChamberElementType_USERDEFINED, IfcDistributionChamberElementType_NOTDEFINED} IfcDistributionChamberElementTypeEnum;
 std::string ToString(IfcDistributionChamberElementTypeEnum v);
 IfcDistributionChamberElementTypeEnum FromString(const std::string& s);}
-namespace IfcDocumentConfidentialityEnum {typedef enum {PUBLIC, RESTRICTED, CONFIDENTIAL, PERSONAL, USERDEFINED, NOTDEFINED} IfcDocumentConfidentialityEnum;
+namespace IfcDocumentConfidentialityEnum {typedef enum {IfcDocumentConfidentiality_PUBLIC, IfcDocumentConfidentiality_RESTRICTED, IfcDocumentConfidentiality_CONFIDENTIAL, IfcDocumentConfidentiality_PERSONAL, IfcDocumentConfidentiality_USERDEFINED, IfcDocumentConfidentiality_NOTDEFINED} IfcDocumentConfidentialityEnum;
 std::string ToString(IfcDocumentConfidentialityEnum v);
 IfcDocumentConfidentialityEnum FromString(const std::string& s);}
-namespace IfcDocumentStatusEnum {typedef enum {DRAFT, FINALDRAFT, FINAL, REVISION, NOTDEFINED} IfcDocumentStatusEnum;
+namespace IfcDocumentStatusEnum {typedef enum {IfcDocumentStatus_DRAFT, IfcDocumentStatus_FINALDRAFT, IfcDocumentStatus_FINAL, IfcDocumentStatus_REVISION, IfcDocumentStatus_NOTDEFINED} IfcDocumentStatusEnum;
 std::string ToString(IfcDocumentStatusEnum v);
 IfcDocumentStatusEnum FromString(const std::string& s);}
-namespace IfcDoorPanelOperationEnum {typedef enum {SWINGING, DOUBLE_ACTING, SLIDING, FOLDING, REVOLVING, ROLLINGUP, USERDEFINED, NOTDEFINED} IfcDoorPanelOperationEnum;
+namespace IfcDoorPanelOperationEnum {typedef enum {IfcDoorPanelOperation_SWINGING, IfcDoorPanelOperation_DOUBLE_ACTING, IfcDoorPanelOperation_SLIDING, IfcDoorPanelOperation_FOLDING, IfcDoorPanelOperation_REVOLVING, IfcDoorPanelOperation_ROLLINGUP, IfcDoorPanelOperation_USERDEFINED, IfcDoorPanelOperation_NOTDEFINED} IfcDoorPanelOperationEnum;
 std::string ToString(IfcDoorPanelOperationEnum v);
 IfcDoorPanelOperationEnum FromString(const std::string& s);}
-namespace IfcDoorPanelPositionEnum {typedef enum {LEFT, MIDDLE, RIGHT, NOTDEFINED} IfcDoorPanelPositionEnum;
+namespace IfcDoorPanelPositionEnum {typedef enum {IfcDoorPanelPosition_LEFT, IfcDoorPanelPosition_MIDDLE, IfcDoorPanelPosition_RIGHT, IfcDoorPanelPosition_NOTDEFINED} IfcDoorPanelPositionEnum;
 std::string ToString(IfcDoorPanelPositionEnum v);
 IfcDoorPanelPositionEnum FromString(const std::string& s);}
-namespace IfcDoorStyleConstructionEnum {typedef enum {ALUMINIUM, HIGH_GRADE_STEEL, STEEL, WOOD, ALUMINIUM_WOOD, ALUMINIUM_PLASTIC, PLASTIC, USERDEFINED, NOTDEFINED} IfcDoorStyleConstructionEnum;
+namespace IfcDoorStyleConstructionEnum {typedef enum {IfcDoorStyleConstruction_ALUMINIUM, IfcDoorStyleConstruction_HIGH_GRADE_STEEL, IfcDoorStyleConstruction_STEEL, IfcDoorStyleConstruction_WOOD, IfcDoorStyleConstruction_ALUMINIUM_WOOD, IfcDoorStyleConstruction_ALUMINIUM_PLASTIC, IfcDoorStyleConstruction_PLASTIC, IfcDoorStyleConstruction_USERDEFINED, IfcDoorStyleConstruction_NOTDEFINED} IfcDoorStyleConstructionEnum;
 std::string ToString(IfcDoorStyleConstructionEnum v);
 IfcDoorStyleConstructionEnum FromString(const std::string& s);}
-namespace IfcDoorStyleOperationEnum {typedef enum {SINGLE_SWING_LEFT, SINGLE_SWING_RIGHT, DOUBLE_DOOR_SINGLE_SWING, DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT, DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, DOUBLE_SWING_LEFT, DOUBLE_SWING_RIGHT, DOUBLE_DOOR_DOUBLE_SWING, SLIDING_TO_LEFT, SLIDING_TO_RIGHT, DOUBLE_DOOR_SLIDING, FOLDING_TO_LEFT, FOLDING_TO_RIGHT, DOUBLE_DOOR_FOLDING, REVOLVING, ROLLINGUP, USERDEFINED, NOTDEFINED} IfcDoorStyleOperationEnum;
+namespace IfcDoorStyleOperationEnum {typedef enum {IfcDoorStyleOperation_SINGLE_SWING_LEFT, IfcDoorStyleOperation_SINGLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, IfcDoorStyleOperation_DOUBLE_SWING_LEFT, IfcDoorStyleOperation_DOUBLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_DOUBLE_SWING, IfcDoorStyleOperation_SLIDING_TO_LEFT, IfcDoorStyleOperation_SLIDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SLIDING, IfcDoorStyleOperation_FOLDING_TO_LEFT, IfcDoorStyleOperation_FOLDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_FOLDING, IfcDoorStyleOperation_REVOLVING, IfcDoorStyleOperation_ROLLINGUP, IfcDoorStyleOperation_USERDEFINED, IfcDoorStyleOperation_NOTDEFINED} IfcDoorStyleOperationEnum;
 std::string ToString(IfcDoorStyleOperationEnum v);
 IfcDoorStyleOperationEnum FromString(const std::string& s);}
-namespace IfcDuctFittingTypeEnum {typedef enum {BEND, CONNECTOR, ENTRY, EXIT, JUNCTION, OBSTRUCTION, TRANSITION, USERDEFINED, NOTDEFINED} IfcDuctFittingTypeEnum;
+namespace IfcDuctFittingTypeEnum {typedef enum {IfcDuctFittingType_BEND, IfcDuctFittingType_CONNECTOR, IfcDuctFittingType_ENTRY, IfcDuctFittingType_EXIT, IfcDuctFittingType_JUNCTION, IfcDuctFittingType_OBSTRUCTION, IfcDuctFittingType_TRANSITION, IfcDuctFittingType_USERDEFINED, IfcDuctFittingType_NOTDEFINED} IfcDuctFittingTypeEnum;
 std::string ToString(IfcDuctFittingTypeEnum v);
 IfcDuctFittingTypeEnum FromString(const std::string& s);}
-namespace IfcDuctSegmentTypeEnum {typedef enum {RIGIDSEGMENT, FLEXIBLESEGMENT, USERDEFINED, NOTDEFINED} IfcDuctSegmentTypeEnum;
+namespace IfcDuctSegmentTypeEnum {typedef enum {IfcDuctSegmentType_RIGIDSEGMENT, IfcDuctSegmentType_FLEXIBLESEGMENT, IfcDuctSegmentType_USERDEFINED, IfcDuctSegmentType_NOTDEFINED} IfcDuctSegmentTypeEnum;
 std::string ToString(IfcDuctSegmentTypeEnum v);
 IfcDuctSegmentTypeEnum FromString(const std::string& s);}
-namespace IfcDuctSilencerTypeEnum {typedef enum {FLATOVAL, RECTANGULAR, ROUND, USERDEFINED, NOTDEFINED} IfcDuctSilencerTypeEnum;
+namespace IfcDuctSilencerTypeEnum {typedef enum {IfcDuctSilencerType_FLATOVAL, IfcDuctSilencerType_RECTANGULAR, IfcDuctSilencerType_ROUND, IfcDuctSilencerType_USERDEFINED, IfcDuctSilencerType_NOTDEFINED} IfcDuctSilencerTypeEnum;
 std::string ToString(IfcDuctSilencerTypeEnum v);
 IfcDuctSilencerTypeEnum FromString(const std::string& s);}
-namespace IfcElectricApplianceTypeEnum {typedef enum {COMPUTER, DIRECTWATERHEATER, DISHWASHER, ELECTRICCOOKER, ELECTRICHEATER, FACSIMILE, FREESTANDINGFAN, FREEZER, FRIDGE_FREEZER, HANDDRYER, INDIRECTWATERHEATER, MICROWAVE, PHOTOCOPIER, PRINTER, REFRIGERATOR, RADIANTHEATER, SCANNER, TELEPHONE, TUMBLEDRYER, TV, VENDINGMACHINE, WASHINGMACHINE, WATERHEATER, WATERCOOLER, USERDEFINED, NOTDEFINED} IfcElectricApplianceTypeEnum;
+namespace IfcElectricApplianceTypeEnum {typedef enum {IfcElectricApplianceType_COMPUTER, IfcElectricApplianceType_DIRECTWATERHEATER, IfcElectricApplianceType_DISHWASHER, IfcElectricApplianceType_ELECTRICCOOKER, IfcElectricApplianceType_ELECTRICHEATER, IfcElectricApplianceType_FACSIMILE, IfcElectricApplianceType_FREESTANDINGFAN, IfcElectricApplianceType_FREEZER, IfcElectricApplianceType_FRIDGE_FREEZER, IfcElectricApplianceType_HANDDRYER, IfcElectricApplianceType_INDIRECTWATERHEATER, IfcElectricApplianceType_MICROWAVE, IfcElectricApplianceType_PHOTOCOPIER, IfcElectricApplianceType_PRINTER, IfcElectricApplianceType_REFRIGERATOR, IfcElectricApplianceType_RADIANTHEATER, IfcElectricApplianceType_SCANNER, IfcElectricApplianceType_TELEPHONE, IfcElectricApplianceType_TUMBLEDRYER, IfcElectricApplianceType_TV, IfcElectricApplianceType_VENDINGMACHINE, IfcElectricApplianceType_WASHINGMACHINE, IfcElectricApplianceType_WATERHEATER, IfcElectricApplianceType_WATERCOOLER, IfcElectricApplianceType_USERDEFINED, IfcElectricApplianceType_NOTDEFINED} IfcElectricApplianceTypeEnum;
 std::string ToString(IfcElectricApplianceTypeEnum v);
 IfcElectricApplianceTypeEnum FromString(const std::string& s);}
-namespace IfcElectricCurrentEnum {typedef enum {ALTERNATING, DIRECT, NOTDEFINED} IfcElectricCurrentEnum;
+namespace IfcElectricCurrentEnum {typedef enum {IfcElectricCurrent_ALTERNATING, IfcElectricCurrent_DIRECT, IfcElectricCurrent_NOTDEFINED} IfcElectricCurrentEnum;
 std::string ToString(IfcElectricCurrentEnum v);
 IfcElectricCurrentEnum FromString(const std::string& s);}
-namespace IfcElectricDistributionPointFunctionEnum {typedef enum {ALARMPANEL, CONSUMERUNIT, CONTROLPANEL, DISTRIBUTIONBOARD, GASDETECTORPANEL, INDICATORPANEL, MIMICPANEL, MOTORCONTROLCENTRE, SWITCHBOARD, USERDEFINED, NOTDEFINED} IfcElectricDistributionPointFunctionEnum;
+namespace IfcElectricDistributionPointFunctionEnum {typedef enum {IfcElectricDistributionPointFunction_ALARMPANEL, IfcElectricDistributionPointFunction_CONSUMERUNIT, IfcElectricDistributionPointFunction_CONTROLPANEL, IfcElectricDistributionPointFunction_DISTRIBUTIONBOARD, IfcElectricDistributionPointFunction_GASDETECTORPANEL, IfcElectricDistributionPointFunction_INDICATORPANEL, IfcElectricDistributionPointFunction_MIMICPANEL, IfcElectricDistributionPointFunction_MOTORCONTROLCENTRE, IfcElectricDistributionPointFunction_SWITCHBOARD, IfcElectricDistributionPointFunction_USERDEFINED, IfcElectricDistributionPointFunction_NOTDEFINED} IfcElectricDistributionPointFunctionEnum;
 std::string ToString(IfcElectricDistributionPointFunctionEnum v);
 IfcElectricDistributionPointFunctionEnum FromString(const std::string& s);}
-namespace IfcElectricFlowStorageDeviceTypeEnum {typedef enum {BATTERY, CAPACITORBANK, HARMONICFILTER, INDUCTORBANK, UPS, USERDEFINED, NOTDEFINED} IfcElectricFlowStorageDeviceTypeEnum;
+namespace IfcElectricFlowStorageDeviceTypeEnum {typedef enum {IfcElectricFlowStorageDeviceType_BATTERY, IfcElectricFlowStorageDeviceType_CAPACITORBANK, IfcElectricFlowStorageDeviceType_HARMONICFILTER, IfcElectricFlowStorageDeviceType_INDUCTORBANK, IfcElectricFlowStorageDeviceType_UPS, IfcElectricFlowStorageDeviceType_USERDEFINED, IfcElectricFlowStorageDeviceType_NOTDEFINED} IfcElectricFlowStorageDeviceTypeEnum;
 std::string ToString(IfcElectricFlowStorageDeviceTypeEnum v);
 IfcElectricFlowStorageDeviceTypeEnum FromString(const std::string& s);}
-namespace IfcElectricGeneratorTypeEnum {typedef enum {USERDEFINED, NOTDEFINED} IfcElectricGeneratorTypeEnum;
+namespace IfcElectricGeneratorTypeEnum {typedef enum {IfcElectricGeneratorType_USERDEFINED, IfcElectricGeneratorType_NOTDEFINED} IfcElectricGeneratorTypeEnum;
 std::string ToString(IfcElectricGeneratorTypeEnum v);
 IfcElectricGeneratorTypeEnum FromString(const std::string& s);}
-namespace IfcElectricHeaterTypeEnum {typedef enum {ELECTRICPOINTHEATER, ELECTRICCABLEHEATER, ELECTRICMATHEATER, USERDEFINED, NOTDEFINED} IfcElectricHeaterTypeEnum;
+namespace IfcElectricHeaterTypeEnum {typedef enum {IfcElectricHeaterType_ELECTRICPOINTHEATER, IfcElectricHeaterType_ELECTRICCABLEHEATER, IfcElectricHeaterType_ELECTRICMATHEATER, IfcElectricHeaterType_USERDEFINED, IfcElectricHeaterType_NOTDEFINED} IfcElectricHeaterTypeEnum;
 std::string ToString(IfcElectricHeaterTypeEnum v);
 IfcElectricHeaterTypeEnum FromString(const std::string& s);}
-namespace IfcElectricMotorTypeEnum {typedef enum {DC, INDUCTION, POLYPHASE, RELUCTANCESYNCHRONOUS, SYNCHRONOUS, USERDEFINED, NOTDEFINED} IfcElectricMotorTypeEnum;
+namespace IfcElectricMotorTypeEnum {typedef enum {IfcElectricMotorType_DC, IfcElectricMotorType_INDUCTION, IfcElectricMotorType_POLYPHASE, IfcElectricMotorType_RELUCTANCESYNCHRONOUS, IfcElectricMotorType_SYNCHRONOUS, IfcElectricMotorType_USERDEFINED, IfcElectricMotorType_NOTDEFINED} IfcElectricMotorTypeEnum;
 std::string ToString(IfcElectricMotorTypeEnum v);
 IfcElectricMotorTypeEnum FromString(const std::string& s);}
-namespace IfcElectricTimeControlTypeEnum {typedef enum {TIMECLOCK, TIMEDELAY, RELAY, USERDEFINED, NOTDEFINED} IfcElectricTimeControlTypeEnum;
+namespace IfcElectricTimeControlTypeEnum {typedef enum {IfcElectricTimeControlType_TIMECLOCK, IfcElectricTimeControlType_TIMEDELAY, IfcElectricTimeControlType_RELAY, IfcElectricTimeControlType_USERDEFINED, IfcElectricTimeControlType_NOTDEFINED} IfcElectricTimeControlTypeEnum;
 std::string ToString(IfcElectricTimeControlTypeEnum v);
 IfcElectricTimeControlTypeEnum FromString(const std::string& s);}
-namespace IfcElementAssemblyTypeEnum {typedef enum {ACCESSORY_ASSEMBLY, ARCH, BEAM_GRID, BRACED_FRAME, GIRDER, REINFORCEMENT_UNIT, RIGID_FRAME, SLAB_FIELD, TRUSS, USERDEFINED, NOTDEFINED} IfcElementAssemblyTypeEnum;
+namespace IfcElementAssemblyTypeEnum {typedef enum {IfcElementAssemblyType_ACCESSORY_ASSEMBLY, IfcElementAssemblyType_ARCH, IfcElementAssemblyType_BEAM_GRID, IfcElementAssemblyType_BRACED_FRAME, IfcElementAssemblyType_GIRDER, IfcElementAssemblyType_REINFORCEMENT_UNIT, IfcElementAssemblyType_RIGID_FRAME, IfcElementAssemblyType_SLAB_FIELD, IfcElementAssemblyType_TRUSS, IfcElementAssemblyType_USERDEFINED, IfcElementAssemblyType_NOTDEFINED} IfcElementAssemblyTypeEnum;
 std::string ToString(IfcElementAssemblyTypeEnum v);
 IfcElementAssemblyTypeEnum FromString(const std::string& s);}
-namespace IfcElementCompositionEnum {typedef enum {COMPLEX, ELEMENT, PARTIAL} IfcElementCompositionEnum;
+namespace IfcElementCompositionEnum {typedef enum {IfcElementComposition_COMPLEX, IfcElementComposition_ELEMENT, IfcElementComposition_PARTIAL} IfcElementCompositionEnum;
 std::string ToString(IfcElementCompositionEnum v);
 IfcElementCompositionEnum FromString(const std::string& s);}
-namespace IfcEnergySequenceEnum {typedef enum {PRIMARY, SECONDARY, TERTIARY, AUXILIARY, USERDEFINED, NOTDEFINED} IfcEnergySequenceEnum;
+namespace IfcEnergySequenceEnum {typedef enum {IfcEnergySequence_PRIMARY, IfcEnergySequence_SECONDARY, IfcEnergySequence_TERTIARY, IfcEnergySequence_AUXILIARY, IfcEnergySequence_USERDEFINED, IfcEnergySequence_NOTDEFINED} IfcEnergySequenceEnum;
 std::string ToString(IfcEnergySequenceEnum v);
 IfcEnergySequenceEnum FromString(const std::string& s);}
-namespace IfcEnvironmentalImpactCategoryEnum {typedef enum {COMBINEDVALUE, DISPOSAL, EXTRACTION, INSTALLATION, MANUFACTURE, TRANSPORTATION, USERDEFINED, NOTDEFINED} IfcEnvironmentalImpactCategoryEnum;
+namespace IfcEnvironmentalImpactCategoryEnum {typedef enum {IfcEnvironmentalImpactCategory_COMBINEDVALUE, IfcEnvironmentalImpactCategory_DISPOSAL, IfcEnvironmentalImpactCategory_EXTRACTION, IfcEnvironmentalImpactCategory_INSTALLATION, IfcEnvironmentalImpactCategory_MANUFACTURE, IfcEnvironmentalImpactCategory_TRANSPORTATION, IfcEnvironmentalImpactCategory_USERDEFINED, IfcEnvironmentalImpactCategory_NOTDEFINED} IfcEnvironmentalImpactCategoryEnum;
 std::string ToString(IfcEnvironmentalImpactCategoryEnum v);
 IfcEnvironmentalImpactCategoryEnum FromString(const std::string& s);}
-namespace IfcEvaporativeCoolerTypeEnum {typedef enum {DIRECTEVAPORATIVERANDOMMEDIAAIRCOOLER, DIRECTEVAPORATIVERIGIDMEDIAAIRCOOLER, DIRECTEVAPORATIVESLINGERSPACKAGEDAIRCOOLER, DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER, DIRECTEVAPORATIVEAIRWASHER, INDIRECTEVAPORATIVEPACKAGEAIRCOOLER, INDIRECTEVAPORATIVEWETCOIL, INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER, INDIRECTDIRECTCOMBINATION, USERDEFINED, NOTDEFINED} IfcEvaporativeCoolerTypeEnum;
+namespace IfcEvaporativeCoolerTypeEnum {typedef enum {IfcEvaporativeCoolerType_DIRECTEVAPORATIVERANDOMMEDIAAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVERIGIDMEDIAAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVESLINGERSPACKAGEDAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVEAIRWASHER, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVEPACKAGEAIRCOOLER, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVEWETCOIL, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER, IfcEvaporativeCoolerType_INDIRECTDIRECTCOMBINATION, IfcEvaporativeCoolerType_USERDEFINED, IfcEvaporativeCoolerType_NOTDEFINED} IfcEvaporativeCoolerTypeEnum;
 std::string ToString(IfcEvaporativeCoolerTypeEnum v);
 IfcEvaporativeCoolerTypeEnum FromString(const std::string& s);}
-namespace IfcEvaporatorTypeEnum {typedef enum {DIRECTEXPANSIONSHELLANDTUBE, DIRECTEXPANSIONTUBEINTUBE, DIRECTEXPANSIONBRAZEDPLATE, FLOODEDSHELLANDTUBE, SHELLANDCOIL, USERDEFINED, NOTDEFINED} IfcEvaporatorTypeEnum;
+namespace IfcEvaporatorTypeEnum {typedef enum {IfcEvaporatorType_DIRECTEXPANSIONSHELLANDTUBE, IfcEvaporatorType_DIRECTEXPANSIONTUBEINTUBE, IfcEvaporatorType_DIRECTEXPANSIONBRAZEDPLATE, IfcEvaporatorType_FLOODEDSHELLANDTUBE, IfcEvaporatorType_SHELLANDCOIL, IfcEvaporatorType_USERDEFINED, IfcEvaporatorType_NOTDEFINED} IfcEvaporatorTypeEnum;
 std::string ToString(IfcEvaporatorTypeEnum v);
 IfcEvaporatorTypeEnum FromString(const std::string& s);}
-namespace IfcFanTypeEnum {typedef enum {CENTRIFUGALFORWARDCURVED, CENTRIFUGALRADIAL, CENTRIFUGALBACKWARDINCLINEDCURVED, CENTRIFUGALAIRFOIL, TUBEAXIAL, VANEAXIAL, PROPELLORAXIAL, USERDEFINED, NOTDEFINED} IfcFanTypeEnum;
+namespace IfcFanTypeEnum {typedef enum {IfcFanType_CENTRIFUGALFORWARDCURVED, IfcFanType_CENTRIFUGALRADIAL, IfcFanType_CENTRIFUGALBACKWARDINCLINEDCURVED, IfcFanType_CENTRIFUGALAIRFOIL, IfcFanType_TUBEAXIAL, IfcFanType_VANEAXIAL, IfcFanType_PROPELLORAXIAL, IfcFanType_USERDEFINED, IfcFanType_NOTDEFINED} IfcFanTypeEnum;
 std::string ToString(IfcFanTypeEnum v);
 IfcFanTypeEnum FromString(const std::string& s);}
-namespace IfcFilterTypeEnum {typedef enum {AIRPARTICLEFILTER, ODORFILTER, OILFILTER, STRAINER, WATERFILTER, USERDEFINED, NOTDEFINED} IfcFilterTypeEnum;
+namespace IfcFilterTypeEnum {typedef enum {IfcFilterType_AIRPARTICLEFILTER, IfcFilterType_ODORFILTER, IfcFilterType_OILFILTER, IfcFilterType_STRAINER, IfcFilterType_WATERFILTER, IfcFilterType_USERDEFINED, IfcFilterType_NOTDEFINED} IfcFilterTypeEnum;
 std::string ToString(IfcFilterTypeEnum v);
 IfcFilterTypeEnum FromString(const std::string& s);}
-namespace IfcFireSuppressionTerminalTypeEnum {typedef enum {BREECHINGINLET, FIREHYDRANT, HOSEREEL, SPRINKLER, SPRINKLERDEFLECTOR, USERDEFINED, NOTDEFINED} IfcFireSuppressionTerminalTypeEnum;
+namespace IfcFireSuppressionTerminalTypeEnum {typedef enum {IfcFireSuppressionTerminalType_BREECHINGINLET, IfcFireSuppressionTerminalType_FIREHYDRANT, IfcFireSuppressionTerminalType_HOSEREEL, IfcFireSuppressionTerminalType_SPRINKLER, IfcFireSuppressionTerminalType_SPRINKLERDEFLECTOR, IfcFireSuppressionTerminalType_USERDEFINED, IfcFireSuppressionTerminalType_NOTDEFINED} IfcFireSuppressionTerminalTypeEnum;
 std::string ToString(IfcFireSuppressionTerminalTypeEnum v);
 IfcFireSuppressionTerminalTypeEnum FromString(const std::string& s);}
-namespace IfcFlowDirectionEnum {typedef enum {SOURCE, SINK, SOURCEANDSINK, NOTDEFINED} IfcFlowDirectionEnum;
+namespace IfcFlowDirectionEnum {typedef enum {IfcFlowDirection_SOURCE, IfcFlowDirection_SINK, IfcFlowDirection_SOURCEANDSINK, IfcFlowDirection_NOTDEFINED} IfcFlowDirectionEnum;
 std::string ToString(IfcFlowDirectionEnum v);
 IfcFlowDirectionEnum FromString(const std::string& s);}
-namespace IfcFlowInstrumentTypeEnum {typedef enum {PRESSUREGAUGE, THERMOMETER, AMMETER, FREQUENCYMETER, POWERFACTORMETER, PHASEANGLEMETER, VOLTMETER_PEAK, VOLTMETER_RMS, USERDEFINED, NOTDEFINED} IfcFlowInstrumentTypeEnum;
+namespace IfcFlowInstrumentTypeEnum {typedef enum {IfcFlowInstrumentType_PRESSUREGAUGE, IfcFlowInstrumentType_THERMOMETER, IfcFlowInstrumentType_AMMETER, IfcFlowInstrumentType_FREQUENCYMETER, IfcFlowInstrumentType_POWERFACTORMETER, IfcFlowInstrumentType_PHASEANGLEMETER, IfcFlowInstrumentType_VOLTMETER_PEAK, IfcFlowInstrumentType_VOLTMETER_RMS, IfcFlowInstrumentType_USERDEFINED, IfcFlowInstrumentType_NOTDEFINED} IfcFlowInstrumentTypeEnum;
 std::string ToString(IfcFlowInstrumentTypeEnum v);
 IfcFlowInstrumentTypeEnum FromString(const std::string& s);}
-namespace IfcFlowMeterTypeEnum {typedef enum {ELECTRICMETER, ENERGYMETER, FLOWMETER, GASMETER, OILMETER, WATERMETER, USERDEFINED, NOTDEFINED} IfcFlowMeterTypeEnum;
+namespace IfcFlowMeterTypeEnum {typedef enum {IfcFlowMeterType_ELECTRICMETER, IfcFlowMeterType_ENERGYMETER, IfcFlowMeterType_FLOWMETER, IfcFlowMeterType_GASMETER, IfcFlowMeterType_OILMETER, IfcFlowMeterType_WATERMETER, IfcFlowMeterType_USERDEFINED, IfcFlowMeterType_NOTDEFINED} IfcFlowMeterTypeEnum;
 std::string ToString(IfcFlowMeterTypeEnum v);
 IfcFlowMeterTypeEnum FromString(const std::string& s);}
-namespace IfcFootingTypeEnum {typedef enum {FOOTING_BEAM, PAD_FOOTING, PILE_CAP, STRIP_FOOTING, USERDEFINED, NOTDEFINED} IfcFootingTypeEnum;
+namespace IfcFootingTypeEnum {typedef enum {IfcFootingType_FOOTING_BEAM, IfcFootingType_PAD_FOOTING, IfcFootingType_PILE_CAP, IfcFootingType_STRIP_FOOTING, IfcFootingType_USERDEFINED, IfcFootingType_NOTDEFINED} IfcFootingTypeEnum;
 std::string ToString(IfcFootingTypeEnum v);
 IfcFootingTypeEnum FromString(const std::string& s);}
-namespace IfcGasTerminalTypeEnum {typedef enum {GASAPPLIANCE, GASBOOSTER, GASBURNER, USERDEFINED, NOTDEFINED} IfcGasTerminalTypeEnum;
+namespace IfcGasTerminalTypeEnum {typedef enum {IfcGasTerminalType_GASAPPLIANCE, IfcGasTerminalType_GASBOOSTER, IfcGasTerminalType_GASBURNER, IfcGasTerminalType_USERDEFINED, IfcGasTerminalType_NOTDEFINED} IfcGasTerminalTypeEnum;
 std::string ToString(IfcGasTerminalTypeEnum v);
 IfcGasTerminalTypeEnum FromString(const std::string& s);}
-namespace IfcGeometricProjectionEnum {typedef enum {GRAPH_VIEW, SKETCH_VIEW, MODEL_VIEW, PLAN_VIEW, REFLECTED_PLAN_VIEW, SECTION_VIEW, ELEVATION_VIEW, USERDEFINED, NOTDEFINED} IfcGeometricProjectionEnum;
+namespace IfcGeometricProjectionEnum {typedef enum {IfcGeometricProjection_GRAPH_VIEW, IfcGeometricProjection_SKETCH_VIEW, IfcGeometricProjection_MODEL_VIEW, IfcGeometricProjection_PLAN_VIEW, IfcGeometricProjection_REFLECTED_PLAN_VIEW, IfcGeometricProjection_SECTION_VIEW, IfcGeometricProjection_ELEVATION_VIEW, IfcGeometricProjection_USERDEFINED, IfcGeometricProjection_NOTDEFINED} IfcGeometricProjectionEnum;
 std::string ToString(IfcGeometricProjectionEnum v);
 IfcGeometricProjectionEnum FromString(const std::string& s);}
-namespace IfcGlobalOrLocalEnum {typedef enum {GLOBAL_COORDS, LOCAL_COORDS} IfcGlobalOrLocalEnum;
+namespace IfcGlobalOrLocalEnum {typedef enum {IfcGlobalOrLocal_GLOBAL_COORDS, IfcGlobalOrLocal_LOCAL_COORDS} IfcGlobalOrLocalEnum;
 std::string ToString(IfcGlobalOrLocalEnum v);
 IfcGlobalOrLocalEnum FromString(const std::string& s);}
-namespace IfcHeatExchangerTypeEnum {typedef enum {PLATE, SHELLANDTUBE, USERDEFINED, NOTDEFINED} IfcHeatExchangerTypeEnum;
+namespace IfcHeatExchangerTypeEnum {typedef enum {IfcHeatExchangerType_PLATE, IfcHeatExchangerType_SHELLANDTUBE, IfcHeatExchangerType_USERDEFINED, IfcHeatExchangerType_NOTDEFINED} IfcHeatExchangerTypeEnum;
 std::string ToString(IfcHeatExchangerTypeEnum v);
 IfcHeatExchangerTypeEnum FromString(const std::string& s);}
-namespace IfcHumidifierTypeEnum {typedef enum {STEAMINJECTION, ADIABATICAIRWASHER, ADIABATICPAN, ADIABATICWETTEDELEMENT, ADIABATICATOMIZING, ADIABATICULTRASONIC, ADIABATICRIGIDMEDIA, ADIABATICCOMPRESSEDAIRNOZZLE, ASSISTEDELECTRIC, ASSISTEDNATURALGAS, ASSISTEDPROPANE, ASSISTEDBUTANE, ASSISTEDSTEAM, USERDEFINED, NOTDEFINED} IfcHumidifierTypeEnum;
+namespace IfcHumidifierTypeEnum {typedef enum {IfcHumidifierType_STEAMINJECTION, IfcHumidifierType_ADIABATICAIRWASHER, IfcHumidifierType_ADIABATICPAN, IfcHumidifierType_ADIABATICWETTEDELEMENT, IfcHumidifierType_ADIABATICATOMIZING, IfcHumidifierType_ADIABATICULTRASONIC, IfcHumidifierType_ADIABATICRIGIDMEDIA, IfcHumidifierType_ADIABATICCOMPRESSEDAIRNOZZLE, IfcHumidifierType_ASSISTEDELECTRIC, IfcHumidifierType_ASSISTEDNATURALGAS, IfcHumidifierType_ASSISTEDPROPANE, IfcHumidifierType_ASSISTEDBUTANE, IfcHumidifierType_ASSISTEDSTEAM, IfcHumidifierType_USERDEFINED, IfcHumidifierType_NOTDEFINED} IfcHumidifierTypeEnum;
 std::string ToString(IfcHumidifierTypeEnum v);
 IfcHumidifierTypeEnum FromString(const std::string& s);}
-namespace IfcInternalOrExternalEnum {typedef enum {INTERNAL, EXTERNAL, NOTDEFINED} IfcInternalOrExternalEnum;
+namespace IfcInternalOrExternalEnum {typedef enum {IfcInternalOrExternal_INTERNAL, IfcInternalOrExternal_EXTERNAL, IfcInternalOrExternal_NOTDEFINED} IfcInternalOrExternalEnum;
 std::string ToString(IfcInternalOrExternalEnum v);
 IfcInternalOrExternalEnum FromString(const std::string& s);}
-namespace IfcInventoryTypeEnum {typedef enum {ASSETINVENTORY, SPACEINVENTORY, FURNITUREINVENTORY, USERDEFINED, NOTDEFINED} IfcInventoryTypeEnum;
+namespace IfcInventoryTypeEnum {typedef enum {IfcInventoryType_ASSETINVENTORY, IfcInventoryType_SPACEINVENTORY, IfcInventoryType_FURNITUREINVENTORY, IfcInventoryType_USERDEFINED, IfcInventoryType_NOTDEFINED} IfcInventoryTypeEnum;
 std::string ToString(IfcInventoryTypeEnum v);
 IfcInventoryTypeEnum FromString(const std::string& s);}
-namespace IfcJunctionBoxTypeEnum {typedef enum {USERDEFINED, NOTDEFINED} IfcJunctionBoxTypeEnum;
+namespace IfcJunctionBoxTypeEnum {typedef enum {IfcJunctionBoxType_USERDEFINED, IfcJunctionBoxType_NOTDEFINED} IfcJunctionBoxTypeEnum;
 std::string ToString(IfcJunctionBoxTypeEnum v);
 IfcJunctionBoxTypeEnum FromString(const std::string& s);}
-namespace IfcLampTypeEnum {typedef enum {COMPACTFLUORESCENT, FLUORESCENT, HIGHPRESSUREMERCURY, HIGHPRESSURESODIUM, METALHALIDE, TUNGSTENFILAMENT, USERDEFINED, NOTDEFINED} IfcLampTypeEnum;
+namespace IfcLampTypeEnum {typedef enum {IfcLampType_COMPACTFLUORESCENT, IfcLampType_FLUORESCENT, IfcLampType_HIGHPRESSUREMERCURY, IfcLampType_HIGHPRESSURESODIUM, IfcLampType_METALHALIDE, IfcLampType_TUNGSTENFILAMENT, IfcLampType_USERDEFINED, IfcLampType_NOTDEFINED} IfcLampTypeEnum;
 std::string ToString(IfcLampTypeEnum v);
 IfcLampTypeEnum FromString(const std::string& s);}
-namespace IfcLayerSetDirectionEnum {typedef enum {AXIS1, AXIS2, AXIS3} IfcLayerSetDirectionEnum;
+namespace IfcLayerSetDirectionEnum {typedef enum {IfcLayerSetDirection_AXIS1, IfcLayerSetDirection_AXIS2, IfcLayerSetDirection_AXIS3} IfcLayerSetDirectionEnum;
 std::string ToString(IfcLayerSetDirectionEnum v);
 IfcLayerSetDirectionEnum FromString(const std::string& s);}
-namespace IfcLightDistributionCurveEnum {typedef enum {TYPE_A, TYPE_B, TYPE_C, NOTDEFINED} IfcLightDistributionCurveEnum;
+namespace IfcLightDistributionCurveEnum {typedef enum {IfcLightDistributionCurve_TYPE_A, IfcLightDistributionCurve_TYPE_B, IfcLightDistributionCurve_TYPE_C, IfcLightDistributionCurve_NOTDEFINED} IfcLightDistributionCurveEnum;
 std::string ToString(IfcLightDistributionCurveEnum v);
 IfcLightDistributionCurveEnum FromString(const std::string& s);}
-namespace IfcLightEmissionSourceEnum {typedef enum {COMPACTFLUORESCENT, FLUORESCENT, HIGHPRESSUREMERCURY, HIGHPRESSURESODIUM, LIGHTEMITTINGDIODE, LOWPRESSURESODIUM, LOWVOLTAGEHALOGEN, MAINVOLTAGEHALOGEN, METALHALIDE, TUNGSTENFILAMENT, NOTDEFINED} IfcLightEmissionSourceEnum;
+namespace IfcLightEmissionSourceEnum {typedef enum {IfcLightEmissionSource_COMPACTFLUORESCENT, IfcLightEmissionSource_FLUORESCENT, IfcLightEmissionSource_HIGHPRESSUREMERCURY, IfcLightEmissionSource_HIGHPRESSURESODIUM, IfcLightEmissionSource_LIGHTEMITTINGDIODE, IfcLightEmissionSource_LOWPRESSURESODIUM, IfcLightEmissionSource_LOWVOLTAGEHALOGEN, IfcLightEmissionSource_MAINVOLTAGEHALOGEN, IfcLightEmissionSource_METALHALIDE, IfcLightEmissionSource_TUNGSTENFILAMENT, IfcLightEmissionSource_NOTDEFINED} IfcLightEmissionSourceEnum;
 std::string ToString(IfcLightEmissionSourceEnum v);
 IfcLightEmissionSourceEnum FromString(const std::string& s);}
-namespace IfcLightFixtureTypeEnum {typedef enum {POINTSOURCE, DIRECTIONSOURCE, USERDEFINED, NOTDEFINED} IfcLightFixtureTypeEnum;
+namespace IfcLightFixtureTypeEnum {typedef enum {IfcLightFixtureType_POINTSOURCE, IfcLightFixtureType_DIRECTIONSOURCE, IfcLightFixtureType_USERDEFINED, IfcLightFixtureType_NOTDEFINED} IfcLightFixtureTypeEnum;
 std::string ToString(IfcLightFixtureTypeEnum v);
 IfcLightFixtureTypeEnum FromString(const std::string& s);}
-namespace IfcLoadGroupTypeEnum {typedef enum {LOAD_GROUP, LOAD_CASE, LOAD_COMBINATION_GROUP, LOAD_COMBINATION, USERDEFINED, NOTDEFINED} IfcLoadGroupTypeEnum;
+namespace IfcLoadGroupTypeEnum {typedef enum {IfcLoadGroupType_LOAD_GROUP, IfcLoadGroupType_LOAD_CASE, IfcLoadGroupType_LOAD_COMBINATION_GROUP, IfcLoadGroupType_LOAD_COMBINATION, IfcLoadGroupType_USERDEFINED, IfcLoadGroupType_NOTDEFINED} IfcLoadGroupTypeEnum;
 std::string ToString(IfcLoadGroupTypeEnum v);
 IfcLoadGroupTypeEnum FromString(const std::string& s);}
-namespace IfcLogicalOperatorEnum {typedef enum {LOGICALAND, LOGICALOR} IfcLogicalOperatorEnum;
+namespace IfcLogicalOperatorEnum {typedef enum {IfcLogicalOperator_LOGICALAND, IfcLogicalOperator_LOGICALOR} IfcLogicalOperatorEnum;
 std::string ToString(IfcLogicalOperatorEnum v);
 IfcLogicalOperatorEnum FromString(const std::string& s);}
-namespace IfcMemberTypeEnum {typedef enum {BRACE, CHORD, COLLAR, MEMBER, MULLION, PLATE, POST, PURLIN, RAFTER, STRINGER, STRUT, STUD, USERDEFINED, NOTDEFINED} IfcMemberTypeEnum;
+namespace IfcMemberTypeEnum {typedef enum {IfcMemberType_BRACE, IfcMemberType_CHORD, IfcMemberType_COLLAR, IfcMemberType_MEMBER, IfcMemberType_MULLION, IfcMemberType_PLATE, IfcMemberType_POST, IfcMemberType_PURLIN, IfcMemberType_RAFTER, IfcMemberType_STRINGER, IfcMemberType_STRUT, IfcMemberType_STUD, IfcMemberType_USERDEFINED, IfcMemberType_NOTDEFINED} IfcMemberTypeEnum;
 std::string ToString(IfcMemberTypeEnum v);
 IfcMemberTypeEnum FromString(const std::string& s);}
-namespace IfcMotorConnectionTypeEnum {typedef enum {BELTDRIVE, COUPLING, DIRECTDRIVE, USERDEFINED, NOTDEFINED} IfcMotorConnectionTypeEnum;
+namespace IfcMotorConnectionTypeEnum {typedef enum {IfcMotorConnectionType_BELTDRIVE, IfcMotorConnectionType_COUPLING, IfcMotorConnectionType_DIRECTDRIVE, IfcMotorConnectionType_USERDEFINED, IfcMotorConnectionType_NOTDEFINED} IfcMotorConnectionTypeEnum;
 std::string ToString(IfcMotorConnectionTypeEnum v);
 IfcMotorConnectionTypeEnum FromString(const std::string& s);}
-namespace IfcNullStyle {typedef enum {IFC_NULL} IfcNullStyle;
+namespace IfcNullStyle {typedef enum {IfcNullStyle_NULL} IfcNullStyle;
 std::string ToString(IfcNullStyle v);
 IfcNullStyle FromString(const std::string& s);}
-namespace IfcObjectTypeEnum {typedef enum {PRODUCT, PROCESS, CONTROL, RESOURCE, ACTOR, GROUP, PROJECT, NOTDEFINED} IfcObjectTypeEnum;
+namespace IfcObjectTypeEnum {typedef enum {IfcObjectType_PRODUCT, IfcObjectType_PROCESS, IfcObjectType_CONTROL, IfcObjectType_RESOURCE, IfcObjectType_ACTOR, IfcObjectType_GROUP, IfcObjectType_PROJECT, IfcObjectType_NOTDEFINED} IfcObjectTypeEnum;
 std::string ToString(IfcObjectTypeEnum v);
 IfcObjectTypeEnum FromString(const std::string& s);}
-namespace IfcObjectiveEnum {typedef enum {CODECOMPLIANCE, DESIGNINTENT, HEALTHANDSAFETY, REQUIREMENT, SPECIFICATION, TRIGGERCONDITION, USERDEFINED, NOTDEFINED} IfcObjectiveEnum;
+namespace IfcObjectiveEnum {typedef enum {IfcObjective_CODECOMPLIANCE, IfcObjective_DESIGNINTENT, IfcObjective_HEALTHANDSAFETY, IfcObjective_REQUIREMENT, IfcObjective_SPECIFICATION, IfcObjective_TRIGGERCONDITION, IfcObjective_USERDEFINED, IfcObjective_NOTDEFINED} IfcObjectiveEnum;
 std::string ToString(IfcObjectiveEnum v);
 IfcObjectiveEnum FromString(const std::string& s);}
-namespace IfcOccupantTypeEnum {typedef enum {ASSIGNEE, ASSIGNOR, LESSEE, LESSOR, LETTINGAGENT, OWNER, TENANT, USERDEFINED, NOTDEFINED} IfcOccupantTypeEnum;
+namespace IfcOccupantTypeEnum {typedef enum {IfcOccupantType_ASSIGNEE, IfcOccupantType_ASSIGNOR, IfcOccupantType_LESSEE, IfcOccupantType_LESSOR, IfcOccupantType_LETTINGAGENT, IfcOccupantType_OWNER, IfcOccupantType_TENANT, IfcOccupantType_USERDEFINED, IfcOccupantType_NOTDEFINED} IfcOccupantTypeEnum;
 std::string ToString(IfcOccupantTypeEnum v);
 IfcOccupantTypeEnum FromString(const std::string& s);}
-namespace IfcOutletTypeEnum {typedef enum {AUDIOVISUALOUTLET, COMMUNICATIONSOUTLET, POWEROUTLET, USERDEFINED, NOTDEFINED} IfcOutletTypeEnum;
+namespace IfcOutletTypeEnum {typedef enum {IfcOutletType_AUDIOVISUALOUTLET, IfcOutletType_COMMUNICATIONSOUTLET, IfcOutletType_POWEROUTLET, IfcOutletType_USERDEFINED, IfcOutletType_NOTDEFINED} IfcOutletTypeEnum;
 std::string ToString(IfcOutletTypeEnum v);
 IfcOutletTypeEnum FromString(const std::string& s);}
-namespace IfcPermeableCoveringOperationEnum {typedef enum {GRILL, LOUVER, SCREEN, USERDEFINED, NOTDEFINED} IfcPermeableCoveringOperationEnum;
+namespace IfcPermeableCoveringOperationEnum {typedef enum {IfcPermeableCoveringOperation_GRILL, IfcPermeableCoveringOperation_LOUVER, IfcPermeableCoveringOperation_SCREEN, IfcPermeableCoveringOperation_USERDEFINED, IfcPermeableCoveringOperation_NOTDEFINED} IfcPermeableCoveringOperationEnum;
 std::string ToString(IfcPermeableCoveringOperationEnum v);
 IfcPermeableCoveringOperationEnum FromString(const std::string& s);}
-namespace IfcPhysicalOrVirtualEnum {typedef enum {PHYSICAL, VIRTUAL, NOTDEFINED} IfcPhysicalOrVirtualEnum;
+namespace IfcPhysicalOrVirtualEnum {typedef enum {IfcPhysicalOrVirtual_PHYSICAL, IfcPhysicalOrVirtual_VIRTUAL, IfcPhysicalOrVirtual_NOTDEFINED} IfcPhysicalOrVirtualEnum;
 std::string ToString(IfcPhysicalOrVirtualEnum v);
 IfcPhysicalOrVirtualEnum FromString(const std::string& s);}
-namespace IfcPileConstructionEnum {typedef enum {CAST_IN_PLACE, COMPOSITE, PRECAST_CONCRETE, PREFAB_STEEL, USERDEFINED, NOTDEFINED} IfcPileConstructionEnum;
+namespace IfcPileConstructionEnum {typedef enum {IfcPileConstruction_CAST_IN_PLACE, IfcPileConstruction_COMPOSITE, IfcPileConstruction_PRECAST_CONCRETE, IfcPileConstruction_PREFAB_STEEL, IfcPileConstruction_USERDEFINED, IfcPileConstruction_NOTDEFINED} IfcPileConstructionEnum;
 std::string ToString(IfcPileConstructionEnum v);
 IfcPileConstructionEnum FromString(const std::string& s);}
-namespace IfcPileTypeEnum {typedef enum {COHESION, FRICTION, SUPPORT, USERDEFINED, NOTDEFINED} IfcPileTypeEnum;
+namespace IfcPileTypeEnum {typedef enum {IfcPileType_COHESION, IfcPileType_FRICTION, IfcPileType_SUPPORT, IfcPileType_USERDEFINED, IfcPileType_NOTDEFINED} IfcPileTypeEnum;
 std::string ToString(IfcPileTypeEnum v);
 IfcPileTypeEnum FromString(const std::string& s);}
-namespace IfcPipeFittingTypeEnum {typedef enum {BEND, CONNECTOR, ENTRY, EXIT, JUNCTION, OBSTRUCTION, TRANSITION, USERDEFINED, NOTDEFINED} IfcPipeFittingTypeEnum;
+namespace IfcPipeFittingTypeEnum {typedef enum {IfcPipeFittingType_BEND, IfcPipeFittingType_CONNECTOR, IfcPipeFittingType_ENTRY, IfcPipeFittingType_EXIT, IfcPipeFittingType_JUNCTION, IfcPipeFittingType_OBSTRUCTION, IfcPipeFittingType_TRANSITION, IfcPipeFittingType_USERDEFINED, IfcPipeFittingType_NOTDEFINED} IfcPipeFittingTypeEnum;
 std::string ToString(IfcPipeFittingTypeEnum v);
 IfcPipeFittingTypeEnum FromString(const std::string& s);}
-namespace IfcPipeSegmentTypeEnum {typedef enum {FLEXIBLESEGMENT, RIGIDSEGMENT, GUTTER, SPOOL, USERDEFINED, NOTDEFINED} IfcPipeSegmentTypeEnum;
+namespace IfcPipeSegmentTypeEnum {typedef enum {IfcPipeSegmentType_FLEXIBLESEGMENT, IfcPipeSegmentType_RIGIDSEGMENT, IfcPipeSegmentType_GUTTER, IfcPipeSegmentType_SPOOL, IfcPipeSegmentType_USERDEFINED, IfcPipeSegmentType_NOTDEFINED} IfcPipeSegmentTypeEnum;
 std::string ToString(IfcPipeSegmentTypeEnum v);
 IfcPipeSegmentTypeEnum FromString(const std::string& s);}
-namespace IfcPlateTypeEnum {typedef enum {CURTAIN_PANEL, SHEET, USERDEFINED, NOTDEFINED} IfcPlateTypeEnum;
+namespace IfcPlateTypeEnum {typedef enum {IfcPlateType_CURTAIN_PANEL, IfcPlateType_SHEET, IfcPlateType_USERDEFINED, IfcPlateType_NOTDEFINED} IfcPlateTypeEnum;
 std::string ToString(IfcPlateTypeEnum v);
 IfcPlateTypeEnum FromString(const std::string& s);}
-namespace IfcProcedureTypeEnum {typedef enum {ADVICE_CAUTION, ADVICE_NOTE, ADVICE_WARNING, CALIBRATION, DIAGNOSTIC, SHUTDOWN, STARTUP, USERDEFINED, NOTDEFINED} IfcProcedureTypeEnum;
+namespace IfcProcedureTypeEnum {typedef enum {IfcProcedureType_ADVICE_CAUTION, IfcProcedureType_ADVICE_NOTE, IfcProcedureType_ADVICE_WARNING, IfcProcedureType_CALIBRATION, IfcProcedureType_DIAGNOSTIC, IfcProcedureType_SHUTDOWN, IfcProcedureType_STARTUP, IfcProcedureType_USERDEFINED, IfcProcedureType_NOTDEFINED} IfcProcedureTypeEnum;
 std::string ToString(IfcProcedureTypeEnum v);
 IfcProcedureTypeEnum FromString(const std::string& s);}
-namespace IfcProfileTypeEnum {typedef enum {CURVE, AREA} IfcProfileTypeEnum;
+namespace IfcProfileTypeEnum {typedef enum {IfcProfileType_CURVE, IfcProfileType_AREA} IfcProfileTypeEnum;
 std::string ToString(IfcProfileTypeEnum v);
 IfcProfileTypeEnum FromString(const std::string& s);}
-namespace IfcProjectOrderRecordTypeEnum {typedef enum {CHANGE, MAINTENANCE, MOVE, PURCHASE, WORK, USERDEFINED, NOTDEFINED} IfcProjectOrderRecordTypeEnum;
+namespace IfcProjectOrderRecordTypeEnum {typedef enum {IfcProjectOrderRecordType_CHANGE, IfcProjectOrderRecordType_MAINTENANCE, IfcProjectOrderRecordType_MOVE, IfcProjectOrderRecordType_PURCHASE, IfcProjectOrderRecordType_WORK, IfcProjectOrderRecordType_USERDEFINED, IfcProjectOrderRecordType_NOTDEFINED} IfcProjectOrderRecordTypeEnum;
 std::string ToString(IfcProjectOrderRecordTypeEnum v);
 IfcProjectOrderRecordTypeEnum FromString(const std::string& s);}
-namespace IfcProjectOrderTypeEnum {typedef enum {CHANGEORDER, MAINTENANCEWORKORDER, MOVEORDER, PURCHASEORDER, WORKORDER, USERDEFINED, NOTDEFINED} IfcProjectOrderTypeEnum;
+namespace IfcProjectOrderTypeEnum {typedef enum {IfcProjectOrderType_CHANGEORDER, IfcProjectOrderType_MAINTENANCEWORKORDER, IfcProjectOrderType_MOVEORDER, IfcProjectOrderType_PURCHASEORDER, IfcProjectOrderType_WORKORDER, IfcProjectOrderType_USERDEFINED, IfcProjectOrderType_NOTDEFINED} IfcProjectOrderTypeEnum;
 std::string ToString(IfcProjectOrderTypeEnum v);
 IfcProjectOrderTypeEnum FromString(const std::string& s);}
-namespace IfcProjectedOrTrueLengthEnum {typedef enum {PROJECTED_LENGTH, TRUE_LENGTH} IfcProjectedOrTrueLengthEnum;
+namespace IfcProjectedOrTrueLengthEnum {typedef enum {IfcProjectedOrTrueLength_PROJECTED_LENGTH, IfcProjectedOrTrueLength_TRUE_LENGTH} IfcProjectedOrTrueLengthEnum;
 std::string ToString(IfcProjectedOrTrueLengthEnum v);
 IfcProjectedOrTrueLengthEnum FromString(const std::string& s);}
-namespace IfcPropertySourceEnum {typedef enum {DESIGN, DESIGNMAXIMUM, DESIGNMINIMUM, SIMULATED, ASBUILT, COMMISSIONING, MEASURED, USERDEFINED, NOTKNOWN} IfcPropertySourceEnum;
+namespace IfcPropertySourceEnum {typedef enum {IfcPropertySource_DESIGN, IfcPropertySource_DESIGNMAXIMUM, IfcPropertySource_DESIGNMINIMUM, IfcPropertySource_SIMULATED, IfcPropertySource_ASBUILT, IfcPropertySource_COMMISSIONING, IfcPropertySource_MEASURED, IfcPropertySource_USERDEFINED, IfcPropertySource_NOTKNOWN} IfcPropertySourceEnum;
 std::string ToString(IfcPropertySourceEnum v);
 IfcPropertySourceEnum FromString(const std::string& s);}
-namespace IfcProtectiveDeviceTypeEnum {typedef enum {FUSEDISCONNECTOR, CIRCUITBREAKER, EARTHFAILUREDEVICE, RESIDUALCURRENTCIRCUITBREAKER, RESIDUALCURRENTSWITCH, VARISTOR, USERDEFINED, NOTDEFINED} IfcProtectiveDeviceTypeEnum;
+namespace IfcProtectiveDeviceTypeEnum {typedef enum {IfcProtectiveDeviceType_FUSEDISCONNECTOR, IfcProtectiveDeviceType_CIRCUITBREAKER, IfcProtectiveDeviceType_EARTHFAILUREDEVICE, IfcProtectiveDeviceType_RESIDUALCURRENTCIRCUITBREAKER, IfcProtectiveDeviceType_RESIDUALCURRENTSWITCH, IfcProtectiveDeviceType_VARISTOR, IfcProtectiveDeviceType_USERDEFINED, IfcProtectiveDeviceType_NOTDEFINED} IfcProtectiveDeviceTypeEnum;
 std::string ToString(IfcProtectiveDeviceTypeEnum v);
 IfcProtectiveDeviceTypeEnum FromString(const std::string& s);}
-namespace IfcPumpTypeEnum {typedef enum {CIRCULATOR, ENDSUCTION, SPLITCASE, VERTICALINLINE, VERTICALTURBINE, USERDEFINED, NOTDEFINED} IfcPumpTypeEnum;
+namespace IfcPumpTypeEnum {typedef enum {IfcPumpType_CIRCULATOR, IfcPumpType_ENDSUCTION, IfcPumpType_SPLITCASE, IfcPumpType_VERTICALINLINE, IfcPumpType_VERTICALTURBINE, IfcPumpType_USERDEFINED, IfcPumpType_NOTDEFINED} IfcPumpTypeEnum;
 std::string ToString(IfcPumpTypeEnum v);
 IfcPumpTypeEnum FromString(const std::string& s);}
-namespace IfcRailingTypeEnum {typedef enum {HANDRAIL, GUARDRAIL, BALUSTRADE, USERDEFINED, NOTDEFINED} IfcRailingTypeEnum;
+namespace IfcRailingTypeEnum {typedef enum {IfcRailingType_HANDRAIL, IfcRailingType_GUARDRAIL, IfcRailingType_BALUSTRADE, IfcRailingType_USERDEFINED, IfcRailingType_NOTDEFINED} IfcRailingTypeEnum;
 std::string ToString(IfcRailingTypeEnum v);
 IfcRailingTypeEnum FromString(const std::string& s);}
-namespace IfcRampFlightTypeEnum {typedef enum {STRAIGHT, SPIRAL, USERDEFINED, NOTDEFINED} IfcRampFlightTypeEnum;
+namespace IfcRampFlightTypeEnum {typedef enum {IfcRampFlightType_STRAIGHT, IfcRampFlightType_SPIRAL, IfcRampFlightType_USERDEFINED, IfcRampFlightType_NOTDEFINED} IfcRampFlightTypeEnum;
 std::string ToString(IfcRampFlightTypeEnum v);
 IfcRampFlightTypeEnum FromString(const std::string& s);}
-namespace IfcRampTypeEnum {typedef enum {STRAIGHT_RUN_RAMP, TWO_STRAIGHT_RUN_RAMP, QUARTER_TURN_RAMP, TWO_QUARTER_TURN_RAMP, HALF_TURN_RAMP, SPIRAL_RAMP, USERDEFINED, NOTDEFINED} IfcRampTypeEnum;
+namespace IfcRampTypeEnum {typedef enum {IfcRampType_STRAIGHT_RUN_RAMP, IfcRampType_TWO_STRAIGHT_RUN_RAMP, IfcRampType_QUARTER_TURN_RAMP, IfcRampType_TWO_QUARTER_TURN_RAMP, IfcRampType_HALF_TURN_RAMP, IfcRampType_SPIRAL_RAMP, IfcRampType_USERDEFINED, IfcRampType_NOTDEFINED} IfcRampTypeEnum;
 std::string ToString(IfcRampTypeEnum v);
 IfcRampTypeEnum FromString(const std::string& s);}
-namespace IfcReflectanceMethodEnum {typedef enum {BLINN, FLAT, GLASS, MATT, METAL, MIRROR, PHONG, PLASTIC, STRAUSS, NOTDEFINED} IfcReflectanceMethodEnum;
+namespace IfcReflectanceMethodEnum {typedef enum {IfcReflectanceMethod_BLINN, IfcReflectanceMethod_FLAT, IfcReflectanceMethod_GLASS, IfcReflectanceMethod_MATT, IfcReflectanceMethod_METAL, IfcReflectanceMethod_MIRROR, IfcReflectanceMethod_PHONG, IfcReflectanceMethod_PLASTIC, IfcReflectanceMethod_STRAUSS, IfcReflectanceMethod_NOTDEFINED} IfcReflectanceMethodEnum;
 std::string ToString(IfcReflectanceMethodEnum v);
 IfcReflectanceMethodEnum FromString(const std::string& s);}
-namespace IfcReinforcingBarRoleEnum {typedef enum {MAIN, SHEAR, LIGATURE, STUD, PUNCHING, EDGE, RING, USERDEFINED, NOTDEFINED} IfcReinforcingBarRoleEnum;
+namespace IfcReinforcingBarRoleEnum {typedef enum {IfcReinforcingBarRole_MAIN, IfcReinforcingBarRole_SHEAR, IfcReinforcingBarRole_LIGATURE, IfcReinforcingBarRole_STUD, IfcReinforcingBarRole_PUNCHING, IfcReinforcingBarRole_EDGE, IfcReinforcingBarRole_RING, IfcReinforcingBarRole_USERDEFINED, IfcReinforcingBarRole_NOTDEFINED} IfcReinforcingBarRoleEnum;
 std::string ToString(IfcReinforcingBarRoleEnum v);
 IfcReinforcingBarRoleEnum FromString(const std::string& s);}
-namespace IfcReinforcingBarSurfaceEnum {typedef enum {PLAIN, TEXTURED} IfcReinforcingBarSurfaceEnum;
+namespace IfcReinforcingBarSurfaceEnum {typedef enum {IfcReinforcingBarSurface_PLAIN, IfcReinforcingBarSurface_TEXTURED} IfcReinforcingBarSurfaceEnum;
 std::string ToString(IfcReinforcingBarSurfaceEnum v);
 IfcReinforcingBarSurfaceEnum FromString(const std::string& s);}
-namespace IfcResourceConsumptionEnum {typedef enum {CONSUMED, PARTIALLYCONSUMED, NOTCONSUMED, OCCUPIED, PARTIALLYOCCUPIED, NOTOCCUPIED, USERDEFINED, NOTDEFINED} IfcResourceConsumptionEnum;
+namespace IfcResourceConsumptionEnum {typedef enum {IfcResourceConsumption_CONSUMED, IfcResourceConsumption_PARTIALLYCONSUMED, IfcResourceConsumption_NOTCONSUMED, IfcResourceConsumption_OCCUPIED, IfcResourceConsumption_PARTIALLYOCCUPIED, IfcResourceConsumption_NOTOCCUPIED, IfcResourceConsumption_USERDEFINED, IfcResourceConsumption_NOTDEFINED} IfcResourceConsumptionEnum;
 std::string ToString(IfcResourceConsumptionEnum v);
 IfcResourceConsumptionEnum FromString(const std::string& s);}
-namespace IfcRibPlateDirectionEnum {typedef enum {DIRECTION_X, DIRECTION_Y} IfcRibPlateDirectionEnum;
+namespace IfcRibPlateDirectionEnum {typedef enum {IfcRibPlateDirection_DIRECTION_X, IfcRibPlateDirection_DIRECTION_Y} IfcRibPlateDirectionEnum;
 std::string ToString(IfcRibPlateDirectionEnum v);
 IfcRibPlateDirectionEnum FromString(const std::string& s);}
-namespace IfcRoleEnum {typedef enum {SUPPLIER, MANUFACTURER, CONTRACTOR, SUBCONTRACTOR, ARCHITECT, STRUCTURALENGINEER, COSTENGINEER, CLIENT, BUILDINGOWNER, BUILDINGOPERATOR, MECHANICALENGINEER, ELECTRICALENGINEER, PROJECTMANAGER, FACILITIESMANAGER, CIVILENGINEER, COMISSIONINGENGINEER, ENGINEER, OWNER, CONSULTANT, CONSTRUCTIONMANAGER, FIELDCONSTRUCTIONMANAGER, RESELLER, USERDEFINED} IfcRoleEnum;
+namespace IfcRoleEnum {typedef enum {IfcRole_SUPPLIER, IfcRole_MANUFACTURER, IfcRole_CONTRACTOR, IfcRole_SUBCONTRACTOR, IfcRole_ARCHITECT, IfcRole_STRUCTURALENGINEER, IfcRole_COSTENGINEER, IfcRole_CLIENT, IfcRole_BUILDINGOWNER, IfcRole_BUILDINGOPERATOR, IfcRole_MECHANICALENGINEER, IfcRole_ELECTRICALENGINEER, IfcRole_PROJECTMANAGER, IfcRole_FACILITIESMANAGER, IfcRole_CIVILENGINEER, IfcRole_COMISSIONINGENGINEER, IfcRole_ENGINEER, IfcRole_OWNER, IfcRole_CONSULTANT, IfcRole_CONSTRUCTIONMANAGER, IfcRole_FIELDCONSTRUCTIONMANAGER, IfcRole_RESELLER, IfcRole_USERDEFINED} IfcRoleEnum;
 std::string ToString(IfcRoleEnum v);
 IfcRoleEnum FromString(const std::string& s);}
-namespace IfcRoofTypeEnum {typedef enum {FLAT_ROOF, SHED_ROOF, GABLE_ROOF, HIP_ROOF, HIPPED_GABLE_ROOF, GAMBREL_ROOF, MANSARD_ROOF, BARREL_ROOF, RAINBOW_ROOF, BUTTERFLY_ROOF, PAVILION_ROOF, DOME_ROOF, FREEFORM, NOTDEFINED} IfcRoofTypeEnum;
+namespace IfcRoofTypeEnum {typedef enum {IfcRoofType_FLAT_ROOF, IfcRoofType_SHED_ROOF, IfcRoofType_GABLE_ROOF, IfcRoofType_HIP_ROOF, IfcRoofType_HIPPED_GABLE_ROOF, IfcRoofType_GAMBREL_ROOF, IfcRoofType_MANSARD_ROOF, IfcRoofType_BARREL_ROOF, IfcRoofType_RAINBOW_ROOF, IfcRoofType_BUTTERFLY_ROOF, IfcRoofType_PAVILION_ROOF, IfcRoofType_DOME_ROOF, IfcRoofType_FREEFORM, IfcRoofType_NOTDEFINED} IfcRoofTypeEnum;
 std::string ToString(IfcRoofTypeEnum v);
 IfcRoofTypeEnum FromString(const std::string& s);}
-namespace IfcSIPrefix {typedef enum {EXA, PETA, TERA, GIGA, MEGA, KILO, HECTO, DECA, DECI, CENTI, MILLI, MICRO, NANO, PICO, FEMTO, ATTO} IfcSIPrefix;
+namespace IfcSIPrefix {typedef enum {IfcSIPrefix_EXA, IfcSIPrefix_PETA, IfcSIPrefix_TERA, IfcSIPrefix_GIGA, IfcSIPrefix_MEGA, IfcSIPrefix_KILO, IfcSIPrefix_HECTO, IfcSIPrefix_DECA, IfcSIPrefix_DECI, IfcSIPrefix_CENTI, IfcSIPrefix_MILLI, IfcSIPrefix_MICRO, IfcSIPrefix_NANO, IfcSIPrefix_PICO, IfcSIPrefix_FEMTO, IfcSIPrefix_ATTO} IfcSIPrefix;
 std::string ToString(IfcSIPrefix v);
 IfcSIPrefix FromString(const std::string& s);}
-namespace IfcSIUnitName {typedef enum {AMPERE, BECQUEREL, CANDELA, COULOMB, CUBIC_METRE, DEGREE_CELSIUS, FARAD, GRAM, GRAY, HENRY, HERTZ, JOULE, KELVIN, LUMEN, LUX, METRE, MOLE, NEWTON, OHM, PASCAL, RADIAN, SECOND, SIEMENS, SIEVERT, SQUARE_METRE, STERADIAN, TESLA, VOLT, WATT, WEBER} IfcSIUnitName;
+namespace IfcSIUnitName {typedef enum {IfcSIUnitName_AMPERE, IfcSIUnitName_BECQUEREL, IfcSIUnitName_CANDELA, IfcSIUnitName_COULOMB, IfcSIUnitName_CUBIC_METRE, IfcSIUnitName_DEGREE_CELSIUS, IfcSIUnitName_FARAD, IfcSIUnitName_GRAM, IfcSIUnitName_GRAY, IfcSIUnitName_HENRY, IfcSIUnitName_HERTZ, IfcSIUnitName_JOULE, IfcSIUnitName_KELVIN, IfcSIUnitName_LUMEN, IfcSIUnitName_LUX, IfcSIUnitName_METRE, IfcSIUnitName_MOLE, IfcSIUnitName_NEWTON, IfcSIUnitName_OHM, IfcSIUnitName_PASCAL, IfcSIUnitName_RADIAN, IfcSIUnitName_SECOND, IfcSIUnitName_SIEMENS, IfcSIUnitName_SIEVERT, IfcSIUnitName_SQUARE_METRE, IfcSIUnitName_STERADIAN, IfcSIUnitName_TESLA, IfcSIUnitName_VOLT, IfcSIUnitName_WATT, IfcSIUnitName_WEBER} IfcSIUnitName;
 std::string ToString(IfcSIUnitName v);
 IfcSIUnitName FromString(const std::string& s);}
-namespace IfcSanitaryTerminalTypeEnum {typedef enum {BATH, BIDET, CISTERN, SHOWER, SINK, SANITARYFOUNTAIN, TOILETPAN, URINAL, WASHHANDBASIN, WCSEAT, USERDEFINED, NOTDEFINED} IfcSanitaryTerminalTypeEnum;
+namespace IfcSanitaryTerminalTypeEnum {typedef enum {IfcSanitaryTerminalType_BATH, IfcSanitaryTerminalType_BIDET, IfcSanitaryTerminalType_CISTERN, IfcSanitaryTerminalType_SHOWER, IfcSanitaryTerminalType_SINK, IfcSanitaryTerminalType_SANITARYFOUNTAIN, IfcSanitaryTerminalType_TOILETPAN, IfcSanitaryTerminalType_URINAL, IfcSanitaryTerminalType_WASHHANDBASIN, IfcSanitaryTerminalType_WCSEAT, IfcSanitaryTerminalType_USERDEFINED, IfcSanitaryTerminalType_NOTDEFINED} IfcSanitaryTerminalTypeEnum;
 std::string ToString(IfcSanitaryTerminalTypeEnum v);
 IfcSanitaryTerminalTypeEnum FromString(const std::string& s);}
-namespace IfcSectionTypeEnum {typedef enum {UNIFORM, TAPERED} IfcSectionTypeEnum;
+namespace IfcSectionTypeEnum {typedef enum {IfcSectionType_UNIFORM, IfcSectionType_TAPERED} IfcSectionTypeEnum;
 std::string ToString(IfcSectionTypeEnum v);
 IfcSectionTypeEnum FromString(const std::string& s);}
-namespace IfcSensorTypeEnum {typedef enum {CO2SENSOR, FIRESENSOR, FLOWSENSOR, GASSENSOR, HEATSENSOR, HUMIDITYSENSOR, LIGHTSENSOR, MOISTURESENSOR, MOVEMENTSENSOR, PRESSURESENSOR, SMOKESENSOR, SOUNDSENSOR, TEMPERATURESENSOR, USERDEFINED, NOTDEFINED} IfcSensorTypeEnum;
+namespace IfcSensorTypeEnum {typedef enum {IfcSensorType_CO2SENSOR, IfcSensorType_FIRESENSOR, IfcSensorType_FLOWSENSOR, IfcSensorType_GASSENSOR, IfcSensorType_HEATSENSOR, IfcSensorType_HUMIDITYSENSOR, IfcSensorType_LIGHTSENSOR, IfcSensorType_MOISTURESENSOR, IfcSensorType_MOVEMENTSENSOR, IfcSensorType_PRESSURESENSOR, IfcSensorType_SMOKESENSOR, IfcSensorType_SOUNDSENSOR, IfcSensorType_TEMPERATURESENSOR, IfcSensorType_USERDEFINED, IfcSensorType_NOTDEFINED} IfcSensorTypeEnum;
 std::string ToString(IfcSensorTypeEnum v);
 IfcSensorTypeEnum FromString(const std::string& s);}
-namespace IfcSequenceEnum {typedef enum {START_START, START_FINISH, FINISH_START, FINISH_FINISH, NOTDEFINED} IfcSequenceEnum;
+namespace IfcSequenceEnum {typedef enum {IfcSequence_START_START, IfcSequence_START_FINISH, IfcSequence_FINISH_START, IfcSequence_FINISH_FINISH, IfcSequence_NOTDEFINED} IfcSequenceEnum;
 std::string ToString(IfcSequenceEnum v);
 IfcSequenceEnum FromString(const std::string& s);}
-namespace IfcServiceLifeFactorTypeEnum {typedef enum {A_QUALITYOFCOMPONENTS, B_DESIGNLEVEL, C_WORKEXECUTIONLEVEL, D_INDOORENVIRONMENT, E_OUTDOORENVIRONMENT, F_INUSECONDITIONS, G_MAINTENANCELEVEL, USERDEFINED, NOTDEFINED} IfcServiceLifeFactorTypeEnum;
+namespace IfcServiceLifeFactorTypeEnum {typedef enum {IfcServiceLifeFactorType_A_QUALITYOFCOMPONENTS, IfcServiceLifeFactorType_B_DESIGNLEVEL, IfcServiceLifeFactorType_C_WORKEXECUTIONLEVEL, IfcServiceLifeFactorType_D_INDOORENVIRONMENT, IfcServiceLifeFactorType_E_OUTDOORENVIRONMENT, IfcServiceLifeFactorType_F_INUSECONDITIONS, IfcServiceLifeFactorType_G_MAINTENANCELEVEL, IfcServiceLifeFactorType_USERDEFINED, IfcServiceLifeFactorType_NOTDEFINED} IfcServiceLifeFactorTypeEnum;
 std::string ToString(IfcServiceLifeFactorTypeEnum v);
 IfcServiceLifeFactorTypeEnum FromString(const std::string& s);}
-namespace IfcServiceLifeTypeEnum {typedef enum {ACTUALSERVICELIFE, EXPECTEDSERVICELIFE, OPTIMISTICREFERENCESERVICELIFE, PESSIMISTICREFERENCESERVICELIFE, REFERENCESERVICELIFE} IfcServiceLifeTypeEnum;
+namespace IfcServiceLifeTypeEnum {typedef enum {IfcServiceLifeType_ACTUALSERVICELIFE, IfcServiceLifeType_EXPECTEDSERVICELIFE, IfcServiceLifeType_OPTIMISTICREFERENCESERVICELIFE, IfcServiceLifeType_PESSIMISTICREFERENCESERVICELIFE, IfcServiceLifeType_REFERENCESERVICELIFE} IfcServiceLifeTypeEnum;
 std::string ToString(IfcServiceLifeTypeEnum v);
 IfcServiceLifeTypeEnum FromString(const std::string& s);}
-namespace IfcSlabTypeEnum {typedef enum {FLOOR, ROOF, LANDING, BASESLAB, USERDEFINED, NOTDEFINED} IfcSlabTypeEnum;
+namespace IfcSlabTypeEnum {typedef enum {IfcSlabType_FLOOR, IfcSlabType_ROOF, IfcSlabType_LANDING, IfcSlabType_BASESLAB, IfcSlabType_USERDEFINED, IfcSlabType_NOTDEFINED} IfcSlabTypeEnum;
 std::string ToString(IfcSlabTypeEnum v);
 IfcSlabTypeEnum FromString(const std::string& s);}
-namespace IfcSoundScaleEnum {typedef enum {DBA, DBB, DBC, NC, NR, USERDEFINED, NOTDEFINED} IfcSoundScaleEnum;
+namespace IfcSoundScaleEnum {typedef enum {IfcSoundScale_DBA, IfcSoundScale_DBB, IfcSoundScale_DBC, IfcSoundScale_NC, IfcSoundScale_NR, IfcSoundScale_USERDEFINED, IfcSoundScale_NOTDEFINED} IfcSoundScaleEnum;
 std::string ToString(IfcSoundScaleEnum v);
 IfcSoundScaleEnum FromString(const std::string& s);}
-namespace IfcSpaceHeaterTypeEnum {typedef enum {SECTIONALRADIATOR, PANELRADIATOR, TUBULARRADIATOR, CONVECTOR, BASEBOARDHEATER, FINNEDTUBEUNIT, UNITHEATER, USERDEFINED, NOTDEFINED} IfcSpaceHeaterTypeEnum;
+namespace IfcSpaceHeaterTypeEnum {typedef enum {IfcSpaceHeaterType_SECTIONALRADIATOR, IfcSpaceHeaterType_PANELRADIATOR, IfcSpaceHeaterType_TUBULARRADIATOR, IfcSpaceHeaterType_CONVECTOR, IfcSpaceHeaterType_BASEBOARDHEATER, IfcSpaceHeaterType_FINNEDTUBEUNIT, IfcSpaceHeaterType_UNITHEATER, IfcSpaceHeaterType_USERDEFINED, IfcSpaceHeaterType_NOTDEFINED} IfcSpaceHeaterTypeEnum;
 std::string ToString(IfcSpaceHeaterTypeEnum v);
 IfcSpaceHeaterTypeEnum FromString(const std::string& s);}
-namespace IfcSpaceTypeEnum {typedef enum {USERDEFINED, NOTDEFINED} IfcSpaceTypeEnum;
+namespace IfcSpaceTypeEnum {typedef enum {IfcSpaceType_USERDEFINED, IfcSpaceType_NOTDEFINED} IfcSpaceTypeEnum;
 std::string ToString(IfcSpaceTypeEnum v);
 IfcSpaceTypeEnum FromString(const std::string& s);}
-namespace IfcStackTerminalTypeEnum {typedef enum {BIRDCAGE, COWL, RAINWATERHOPPER, USERDEFINED, NOTDEFINED} IfcStackTerminalTypeEnum;
+namespace IfcStackTerminalTypeEnum {typedef enum {IfcStackTerminalType_BIRDCAGE, IfcStackTerminalType_COWL, IfcStackTerminalType_RAINWATERHOPPER, IfcStackTerminalType_USERDEFINED, IfcStackTerminalType_NOTDEFINED} IfcStackTerminalTypeEnum;
 std::string ToString(IfcStackTerminalTypeEnum v);
 IfcStackTerminalTypeEnum FromString(const std::string& s);}
-namespace IfcStairFlightTypeEnum {typedef enum {STRAIGHT, WINDER, SPIRAL, CURVED, FREEFORM, USERDEFINED, NOTDEFINED} IfcStairFlightTypeEnum;
+namespace IfcStairFlightTypeEnum {typedef enum {IfcStairFlightType_STRAIGHT, IfcStairFlightType_WINDER, IfcStairFlightType_SPIRAL, IfcStairFlightType_CURVED, IfcStairFlightType_FREEFORM, IfcStairFlightType_USERDEFINED, IfcStairFlightType_NOTDEFINED} IfcStairFlightTypeEnum;
 std::string ToString(IfcStairFlightTypeEnum v);
 IfcStairFlightTypeEnum FromString(const std::string& s);}
-namespace IfcStairTypeEnum {typedef enum {STRAIGHT_RUN_STAIR, TWO_STRAIGHT_RUN_STAIR, QUARTER_WINDING_STAIR, QUARTER_TURN_STAIR, HALF_WINDING_STAIR, HALF_TURN_STAIR, TWO_QUARTER_WINDING_STAIR, TWO_QUARTER_TURN_STAIR, THREE_QUARTER_WINDING_STAIR, THREE_QUARTER_TURN_STAIR, SPIRAL_STAIR, DOUBLE_RETURN_STAIR, CURVED_RUN_STAIR, TWO_CURVED_RUN_STAIR, USERDEFINED, NOTDEFINED} IfcStairTypeEnum;
+namespace IfcStairTypeEnum {typedef enum {IfcStairType_STRAIGHT_RUN_STAIR, IfcStairType_TWO_STRAIGHT_RUN_STAIR, IfcStairType_QUARTER_WINDING_STAIR, IfcStairType_QUARTER_TURN_STAIR, IfcStairType_HALF_WINDING_STAIR, IfcStairType_HALF_TURN_STAIR, IfcStairType_TWO_QUARTER_WINDING_STAIR, IfcStairType_TWO_QUARTER_TURN_STAIR, IfcStairType_THREE_QUARTER_WINDING_STAIR, IfcStairType_THREE_QUARTER_TURN_STAIR, IfcStairType_SPIRAL_STAIR, IfcStairType_DOUBLE_RETURN_STAIR, IfcStairType_CURVED_RUN_STAIR, IfcStairType_TWO_CURVED_RUN_STAIR, IfcStairType_USERDEFINED, IfcStairType_NOTDEFINED} IfcStairTypeEnum;
 std::string ToString(IfcStairTypeEnum v);
 IfcStairTypeEnum FromString(const std::string& s);}
-namespace IfcStateEnum {typedef enum {READWRITE, READONLY, LOCKED, READWRITELOCKED, READONLYLOCKED} IfcStateEnum;
+namespace IfcStateEnum {typedef enum {IfcState_READWRITE, IfcState_READONLY, IfcState_LOCKED, IfcState_READWRITELOCKED, IfcState_READONLYLOCKED} IfcStateEnum;
 std::string ToString(IfcStateEnum v);
 IfcStateEnum FromString(const std::string& s);}
-namespace IfcStructuralCurveTypeEnum {typedef enum {RIGID_JOINED_MEMBER, PIN_JOINED_MEMBER, CABLE, TENSION_MEMBER, COMPRESSION_MEMBER, USERDEFINED, NOTDEFINED} IfcStructuralCurveTypeEnum;
+namespace IfcStructuralCurveTypeEnum {typedef enum {IfcStructuralCurveType_RIGID_JOINED_MEMBER, IfcStructuralCurveType_PIN_JOINED_MEMBER, IfcStructuralCurveType_CABLE, IfcStructuralCurveType_TENSION_MEMBER, IfcStructuralCurveType_COMPRESSION_MEMBER, IfcStructuralCurveType_USERDEFINED, IfcStructuralCurveType_NOTDEFINED} IfcStructuralCurveTypeEnum;
 std::string ToString(IfcStructuralCurveTypeEnum v);
 IfcStructuralCurveTypeEnum FromString(const std::string& s);}
-namespace IfcStructuralSurfaceTypeEnum {typedef enum {BENDING_ELEMENT, MEMBRANE_ELEMENT, SHELL, USERDEFINED, NOTDEFINED} IfcStructuralSurfaceTypeEnum;
+namespace IfcStructuralSurfaceTypeEnum {typedef enum {IfcStructuralSurfaceType_BENDING_ELEMENT, IfcStructuralSurfaceType_MEMBRANE_ELEMENT, IfcStructuralSurfaceType_SHELL, IfcStructuralSurfaceType_USERDEFINED, IfcStructuralSurfaceType_NOTDEFINED} IfcStructuralSurfaceTypeEnum;
 std::string ToString(IfcStructuralSurfaceTypeEnum v);
 IfcStructuralSurfaceTypeEnum FromString(const std::string& s);}
-namespace IfcSurfaceSide {typedef enum {POSITIVE, NEGATIVE, BOTH} IfcSurfaceSide;
+namespace IfcSurfaceSide {typedef enum {IfcSurfaceSide_POSITIVE, IfcSurfaceSide_NEGATIVE, IfcSurfaceSide_BOTH} IfcSurfaceSide;
 std::string ToString(IfcSurfaceSide v);
 IfcSurfaceSide FromString(const std::string& s);}
-namespace IfcSurfaceTextureEnum {typedef enum {BUMP, OPACITY, REFLECTION, SELFILLUMINATION, SHININESS, SPECULAR, TEXTURE, TRANSPARENCYMAP, NOTDEFINED} IfcSurfaceTextureEnum;
+namespace IfcSurfaceTextureEnum {typedef enum {IfcSurfaceTexture_BUMP, IfcSurfaceTexture_OPACITY, IfcSurfaceTexture_REFLECTION, IfcSurfaceTexture_SELFILLUMINATION, IfcSurfaceTexture_SHININESS, IfcSurfaceTexture_SPECULAR, IfcSurfaceTexture_TEXTURE, IfcSurfaceTexture_TRANSPARENCYMAP, IfcSurfaceTexture_NOTDEFINED} IfcSurfaceTextureEnum;
 std::string ToString(IfcSurfaceTextureEnum v);
 IfcSurfaceTextureEnum FromString(const std::string& s);}
-namespace IfcSwitchingDeviceTypeEnum {typedef enum {CONTACTOR, EMERGENCYSTOP, STARTER, SWITCHDISCONNECTOR, TOGGLESWITCH, USERDEFINED, NOTDEFINED} IfcSwitchingDeviceTypeEnum;
+namespace IfcSwitchingDeviceTypeEnum {typedef enum {IfcSwitchingDeviceType_CONTACTOR, IfcSwitchingDeviceType_EMERGENCYSTOP, IfcSwitchingDeviceType_STARTER, IfcSwitchingDeviceType_SWITCHDISCONNECTOR, IfcSwitchingDeviceType_TOGGLESWITCH, IfcSwitchingDeviceType_USERDEFINED, IfcSwitchingDeviceType_NOTDEFINED} IfcSwitchingDeviceTypeEnum;
 std::string ToString(IfcSwitchingDeviceTypeEnum v);
 IfcSwitchingDeviceTypeEnum FromString(const std::string& s);}
-namespace IfcTankTypeEnum {typedef enum {PREFORMED, SECTIONAL, EXPANSION, PRESSUREVESSEL, USERDEFINED, NOTDEFINED} IfcTankTypeEnum;
+namespace IfcTankTypeEnum {typedef enum {IfcTankType_PREFORMED, IfcTankType_SECTIONAL, IfcTankType_EXPANSION, IfcTankType_PRESSUREVESSEL, IfcTankType_USERDEFINED, IfcTankType_NOTDEFINED} IfcTankTypeEnum;
 std::string ToString(IfcTankTypeEnum v);
 IfcTankTypeEnum FromString(const std::string& s);}
-namespace IfcTendonTypeEnum {typedef enum {STRAND, WIRE, BAR, COATED, USERDEFINED, NOTDEFINED} IfcTendonTypeEnum;
+namespace IfcTendonTypeEnum {typedef enum {IfcTendonType_STRAND, IfcTendonType_WIRE, IfcTendonType_BAR, IfcTendonType_COATED, IfcTendonType_USERDEFINED, IfcTendonType_NOTDEFINED} IfcTendonTypeEnum;
 std::string ToString(IfcTendonTypeEnum v);
 IfcTendonTypeEnum FromString(const std::string& s);}
-namespace IfcTextPath {typedef enum {LEFT, RIGHT, UP, DOWN} IfcTextPath;
+namespace IfcTextPath {typedef enum {IfcTextPath_LEFT, IfcTextPath_RIGHT, IfcTextPath_UP, IfcTextPath_DOWN} IfcTextPath;
 std::string ToString(IfcTextPath v);
 IfcTextPath FromString(const std::string& s);}
-namespace IfcThermalLoadSourceEnum {typedef enum {PEOPLE, LIGHTING, EQUIPMENT, VENTILATIONINDOORAIR, VENTILATIONOUTSIDEAIR, RECIRCULATEDAIR, EXHAUSTAIR, AIREXCHANGERATE, DRYBULBTEMPERATURE, RELATIVEHUMIDITY, INFILTRATION, USERDEFINED, NOTDEFINED} IfcThermalLoadSourceEnum;
+namespace IfcThermalLoadSourceEnum {typedef enum {IfcThermalLoadSource_PEOPLE, IfcThermalLoadSource_LIGHTING, IfcThermalLoadSource_EQUIPMENT, IfcThermalLoadSource_VENTILATIONINDOORAIR, IfcThermalLoadSource_VENTILATIONOUTSIDEAIR, IfcThermalLoadSource_RECIRCULATEDAIR, IfcThermalLoadSource_EXHAUSTAIR, IfcThermalLoadSource_AIREXCHANGERATE, IfcThermalLoadSource_DRYBULBTEMPERATURE, IfcThermalLoadSource_RELATIVEHUMIDITY, IfcThermalLoadSource_INFILTRATION, IfcThermalLoadSource_USERDEFINED, IfcThermalLoadSource_NOTDEFINED} IfcThermalLoadSourceEnum;
 std::string ToString(IfcThermalLoadSourceEnum v);
 IfcThermalLoadSourceEnum FromString(const std::string& s);}
-namespace IfcThermalLoadTypeEnum {typedef enum {SENSIBLE, LATENT, RADIANT, NOTDEFINED} IfcThermalLoadTypeEnum;
+namespace IfcThermalLoadTypeEnum {typedef enum {IfcThermalLoadType_SENSIBLE, IfcThermalLoadType_LATENT, IfcThermalLoadType_RADIANT, IfcThermalLoadType_NOTDEFINED} IfcThermalLoadTypeEnum;
 std::string ToString(IfcThermalLoadTypeEnum v);
 IfcThermalLoadTypeEnum FromString(const std::string& s);}
-namespace IfcTimeSeriesDataTypeEnum {typedef enum {CONTINUOUS, DISCRETE, DISCRETEBINARY, PIECEWISEBINARY, PIECEWISECONSTANT, PIECEWISECONTINUOUS, NOTDEFINED} IfcTimeSeriesDataTypeEnum;
+namespace IfcTimeSeriesDataTypeEnum {typedef enum {IfcTimeSeriesDataType_CONTINUOUS, IfcTimeSeriesDataType_DISCRETE, IfcTimeSeriesDataType_DISCRETEBINARY, IfcTimeSeriesDataType_PIECEWISEBINARY, IfcTimeSeriesDataType_PIECEWISECONSTANT, IfcTimeSeriesDataType_PIECEWISECONTINUOUS, IfcTimeSeriesDataType_NOTDEFINED} IfcTimeSeriesDataTypeEnum;
 std::string ToString(IfcTimeSeriesDataTypeEnum v);
 IfcTimeSeriesDataTypeEnum FromString(const std::string& s);}
-namespace IfcTimeSeriesScheduleTypeEnum {typedef enum {ANNUAL, MONTHLY, WEEKLY, DAILY, USERDEFINED, NOTDEFINED} IfcTimeSeriesScheduleTypeEnum;
+namespace IfcTimeSeriesScheduleTypeEnum {typedef enum {IfcTimeSeriesScheduleType_ANNUAL, IfcTimeSeriesScheduleType_MONTHLY, IfcTimeSeriesScheduleType_WEEKLY, IfcTimeSeriesScheduleType_DAILY, IfcTimeSeriesScheduleType_USERDEFINED, IfcTimeSeriesScheduleType_NOTDEFINED} IfcTimeSeriesScheduleTypeEnum;
 std::string ToString(IfcTimeSeriesScheduleTypeEnum v);
 IfcTimeSeriesScheduleTypeEnum FromString(const std::string& s);}
-namespace IfcTransformerTypeEnum {typedef enum {CURRENT, FREQUENCY, VOLTAGE, USERDEFINED, NOTDEFINED} IfcTransformerTypeEnum;
+namespace IfcTransformerTypeEnum {typedef enum {IfcTransformerType_CURRENT, IfcTransformerType_FREQUENCY, IfcTransformerType_VOLTAGE, IfcTransformerType_USERDEFINED, IfcTransformerType_NOTDEFINED} IfcTransformerTypeEnum;
 std::string ToString(IfcTransformerTypeEnum v);
 IfcTransformerTypeEnum FromString(const std::string& s);}
-namespace IfcTransitionCode {typedef enum {DISCONTINUOUS, CONTINUOUS, CONTSAMEGRADIENT, CONTSAMEGRADIENTSAMECURVATURE} IfcTransitionCode;
+namespace IfcTransitionCode {typedef enum {IfcTransitionCode_DISCONTINUOUS, IfcTransitionCode_CONTINUOUS, IfcTransitionCode_CONTSAMEGRADIENT, IfcTransitionCode_CONTSAMEGRADIENTSAMECURVATURE} IfcTransitionCode;
 std::string ToString(IfcTransitionCode v);
 IfcTransitionCode FromString(const std::string& s);}
-namespace IfcTransportElementTypeEnum {typedef enum {ELEVATOR, ESCALATOR, MOVINGWALKWAY, USERDEFINED, NOTDEFINED} IfcTransportElementTypeEnum;
+namespace IfcTransportElementTypeEnum {typedef enum {IfcTransportElementType_ELEVATOR, IfcTransportElementType_ESCALATOR, IfcTransportElementType_MOVINGWALKWAY, IfcTransportElementType_USERDEFINED, IfcTransportElementType_NOTDEFINED} IfcTransportElementTypeEnum;
 std::string ToString(IfcTransportElementTypeEnum v);
 IfcTransportElementTypeEnum FromString(const std::string& s);}
-namespace IfcTrimmingPreference {typedef enum {CARTESIAN, PARAMETER, UNSPECIFIED} IfcTrimmingPreference;
+namespace IfcTrimmingPreference {typedef enum {IfcTrimmingPreference_CARTESIAN, IfcTrimmingPreference_PARAMETER, IfcTrimmingPreference_UNSPECIFIED} IfcTrimmingPreference;
 std::string ToString(IfcTrimmingPreference v);
 IfcTrimmingPreference FromString(const std::string& s);}
-namespace IfcTubeBundleTypeEnum {typedef enum {FINNED, USERDEFINED, NOTDEFINED} IfcTubeBundleTypeEnum;
+namespace IfcTubeBundleTypeEnum {typedef enum {IfcTubeBundleType_FINNED, IfcTubeBundleType_USERDEFINED, IfcTubeBundleType_NOTDEFINED} IfcTubeBundleTypeEnum;
 std::string ToString(IfcTubeBundleTypeEnum v);
 IfcTubeBundleTypeEnum FromString(const std::string& s);}
-namespace IfcUnitEnum {typedef enum {ABSORBEDDOSEUNIT, AMOUNTOFSUBSTANCEUNIT, AREAUNIT, DOSEEQUIVALENTUNIT, ELECTRICCAPACITANCEUNIT, ELECTRICCHARGEUNIT, ELECTRICCONDUCTANCEUNIT, ELECTRICCURRENTUNIT, ELECTRICRESISTANCEUNIT, ELECTRICVOLTAGEUNIT, ENERGYUNIT, FORCEUNIT, FREQUENCYUNIT, ILLUMINANCEUNIT, INDUCTANCEUNIT, LENGTHUNIT, LUMINOUSFLUXUNIT, LUMINOUSINTENSITYUNIT, MAGNETICFLUXDENSITYUNIT, MAGNETICFLUXUNIT, MASSUNIT, PLANEANGLEUNIT, POWERUNIT, PRESSUREUNIT, RADIOACTIVITYUNIT, SOLIDANGLEUNIT, THERMODYNAMICTEMPERATUREUNIT, TIMEUNIT, VOLUMEUNIT, USERDEFINED} IfcUnitEnum;
+namespace IfcUnitEnum {typedef enum {IfcUnit_ABSORBEDDOSEUNIT, IfcUnit_AMOUNTOFSUBSTANCEUNIT, IfcUnit_AREAUNIT, IfcUnit_DOSEEQUIVALENTUNIT, IfcUnit_ELECTRICCAPACITANCEUNIT, IfcUnit_ELECTRICCHARGEUNIT, IfcUnit_ELECTRICCONDUCTANCEUNIT, IfcUnit_ELECTRICCURRENTUNIT, IfcUnit_ELECTRICRESISTANCEUNIT, IfcUnit_ELECTRICVOLTAGEUNIT, IfcUnit_ENERGYUNIT, IfcUnit_FORCEUNIT, IfcUnit_FREQUENCYUNIT, IfcUnit_ILLUMINANCEUNIT, IfcUnit_INDUCTANCEUNIT, IfcUnit_LENGTHUNIT, IfcUnit_LUMINOUSFLUXUNIT, IfcUnit_LUMINOUSINTENSITYUNIT, IfcUnit_MAGNETICFLUXDENSITYUNIT, IfcUnit_MAGNETICFLUXUNIT, IfcUnit_MASSUNIT, IfcUnit_PLANEANGLEUNIT, IfcUnit_POWERUNIT, IfcUnit_PRESSUREUNIT, IfcUnit_RADIOACTIVITYUNIT, IfcUnit_SOLIDANGLEUNIT, IfcUnit_THERMODYNAMICTEMPERATUREUNIT, IfcUnit_TIMEUNIT, IfcUnit_VOLUMEUNIT, IfcUnit_USERDEFINED} IfcUnitEnum;
 std::string ToString(IfcUnitEnum v);
 IfcUnitEnum FromString(const std::string& s);}
-namespace IfcUnitaryEquipmentTypeEnum {typedef enum {AIRHANDLER, AIRCONDITIONINGUNIT, SPLITSYSTEM, ROOFTOPUNIT, USERDEFINED, NOTDEFINED} IfcUnitaryEquipmentTypeEnum;
+namespace IfcUnitaryEquipmentTypeEnum {typedef enum {IfcUnitaryEquipmentType_AIRHANDLER, IfcUnitaryEquipmentType_AIRCONDITIONINGUNIT, IfcUnitaryEquipmentType_SPLITSYSTEM, IfcUnitaryEquipmentType_ROOFTOPUNIT, IfcUnitaryEquipmentType_USERDEFINED, IfcUnitaryEquipmentType_NOTDEFINED} IfcUnitaryEquipmentTypeEnum;
 std::string ToString(IfcUnitaryEquipmentTypeEnum v);
 IfcUnitaryEquipmentTypeEnum FromString(const std::string& s);}
-namespace IfcValveTypeEnum {typedef enum {AIRRELEASE, ANTIVACUUM, CHANGEOVER, CHECK, COMMISSIONING, DIVERTING, DRAWOFFCOCK, DOUBLECHECK, DOUBLEREGULATING, FAUCET, FLUSHING, GASCOCK, GASTAP, ISOLATING, MIXING, PRESSUREREDUCING, PRESSURERELIEF, REGULATING, SAFETYCUTOFF, STEAMTRAP, STOPCOCK, USERDEFINED, NOTDEFINED} IfcValveTypeEnum;
+namespace IfcValveTypeEnum {typedef enum {IfcValveType_AIRRELEASE, IfcValveType_ANTIVACUUM, IfcValveType_CHANGEOVER, IfcValveType_CHECK, IfcValveType_COMMISSIONING, IfcValveType_DIVERTING, IfcValveType_DRAWOFFCOCK, IfcValveType_DOUBLECHECK, IfcValveType_DOUBLEREGULATING, IfcValveType_FAUCET, IfcValveType_FLUSHING, IfcValveType_GASCOCK, IfcValveType_GASTAP, IfcValveType_ISOLATING, IfcValveType_MIXING, IfcValveType_PRESSUREREDUCING, IfcValveType_PRESSURERELIEF, IfcValveType_REGULATING, IfcValveType_SAFETYCUTOFF, IfcValveType_STEAMTRAP, IfcValveType_STOPCOCK, IfcValveType_USERDEFINED, IfcValveType_NOTDEFINED} IfcValveTypeEnum;
 std::string ToString(IfcValveTypeEnum v);
 IfcValveTypeEnum FromString(const std::string& s);}
-namespace IfcVibrationIsolatorTypeEnum {typedef enum {COMPRESSION, SPRING, USERDEFINED, NOTDEFINED} IfcVibrationIsolatorTypeEnum;
+namespace IfcVibrationIsolatorTypeEnum {typedef enum {IfcVibrationIsolatorType_COMPRESSION, IfcVibrationIsolatorType_SPRING, IfcVibrationIsolatorType_USERDEFINED, IfcVibrationIsolatorType_NOTDEFINED} IfcVibrationIsolatorTypeEnum;
 std::string ToString(IfcVibrationIsolatorTypeEnum v);
 IfcVibrationIsolatorTypeEnum FromString(const std::string& s);}
-namespace IfcWallTypeEnum {typedef enum {STANDARD, POLYGONAL, SHEAR, ELEMENTEDWALL, PLUMBINGWALL, USERDEFINED, NOTDEFINED} IfcWallTypeEnum;
+namespace IfcWallTypeEnum {typedef enum {IfcWallType_STANDARD, IfcWallType_POLYGONAL, IfcWallType_SHEAR, IfcWallType_ELEMENTEDWALL, IfcWallType_PLUMBINGWALL, IfcWallType_USERDEFINED, IfcWallType_NOTDEFINED} IfcWallTypeEnum;
 std::string ToString(IfcWallTypeEnum v);
 IfcWallTypeEnum FromString(const std::string& s);}
-namespace IfcWasteTerminalTypeEnum {typedef enum {FLOORTRAP, FLOORWASTE, GULLYSUMP, GULLYTRAP, GREASEINTERCEPTOR, OILINTERCEPTOR, PETROLINTERCEPTOR, ROOFDRAIN, WASTEDISPOSALUNIT, WASTETRAP, USERDEFINED, NOTDEFINED} IfcWasteTerminalTypeEnum;
+namespace IfcWasteTerminalTypeEnum {typedef enum {IfcWasteTerminalType_FLOORTRAP, IfcWasteTerminalType_FLOORWASTE, IfcWasteTerminalType_GULLYSUMP, IfcWasteTerminalType_GULLYTRAP, IfcWasteTerminalType_GREASEINTERCEPTOR, IfcWasteTerminalType_OILINTERCEPTOR, IfcWasteTerminalType_PETROLINTERCEPTOR, IfcWasteTerminalType_ROOFDRAIN, IfcWasteTerminalType_WASTEDISPOSALUNIT, IfcWasteTerminalType_WASTETRAP, IfcWasteTerminalType_USERDEFINED, IfcWasteTerminalType_NOTDEFINED} IfcWasteTerminalTypeEnum;
 std::string ToString(IfcWasteTerminalTypeEnum v);
 IfcWasteTerminalTypeEnum FromString(const std::string& s);}
-namespace IfcWindowPanelOperationEnum {typedef enum {SIDEHUNGRIGHTHAND, SIDEHUNGLEFTHAND, TILTANDTURNRIGHTHAND, TILTANDTURNLEFTHAND, TOPHUNG, BOTTOMHUNG, PIVOTHORIZONTAL, PIVOTVERTICAL, SLIDINGHORIZONTAL, SLIDINGVERTICAL, REMOVABLECASEMENT, FIXEDCASEMENT, OTHEROPERATION, NOTDEFINED} IfcWindowPanelOperationEnum;
+namespace IfcWindowPanelOperationEnum {typedef enum {IfcWindowPanelOperation_SIDEHUNGRIGHTHAND, IfcWindowPanelOperation_SIDEHUNGLEFTHAND, IfcWindowPanelOperation_TILTANDTURNRIGHTHAND, IfcWindowPanelOperation_TILTANDTURNLEFTHAND, IfcWindowPanelOperation_TOPHUNG, IfcWindowPanelOperation_BOTTOMHUNG, IfcWindowPanelOperation_PIVOTHORIZONTAL, IfcWindowPanelOperation_PIVOTVERTICAL, IfcWindowPanelOperation_SLIDINGHORIZONTAL, IfcWindowPanelOperation_SLIDINGVERTICAL, IfcWindowPanelOperation_REMOVABLECASEMENT, IfcWindowPanelOperation_FIXEDCASEMENT, IfcWindowPanelOperation_OTHEROPERATION, IfcWindowPanelOperation_NOTDEFINED} IfcWindowPanelOperationEnum;
 std::string ToString(IfcWindowPanelOperationEnum v);
 IfcWindowPanelOperationEnum FromString(const std::string& s);}
-namespace IfcWindowPanelPositionEnum {typedef enum {LEFT, MIDDLE, RIGHT, BOTTOM, TOP, NOTDEFINED} IfcWindowPanelPositionEnum;
+namespace IfcWindowPanelPositionEnum {typedef enum {IfcWindowPanelPosition_LEFT, IfcWindowPanelPosition_MIDDLE, IfcWindowPanelPosition_RIGHT, IfcWindowPanelPosition_BOTTOM, IfcWindowPanelPosition_TOP, IfcWindowPanelPosition_NOTDEFINED} IfcWindowPanelPositionEnum;
 std::string ToString(IfcWindowPanelPositionEnum v);
 IfcWindowPanelPositionEnum FromString(const std::string& s);}
-namespace IfcWindowStyleConstructionEnum {typedef enum {ALUMINIUM, HIGH_GRADE_STEEL, STEEL, WOOD, ALUMINIUM_WOOD, PLASTIC, OTHER_CONSTRUCTION, NOTDEFINED} IfcWindowStyleConstructionEnum;
+namespace IfcWindowStyleConstructionEnum {typedef enum {IfcWindowStyleConstruction_ALUMINIUM, IfcWindowStyleConstruction_HIGH_GRADE_STEEL, IfcWindowStyleConstruction_STEEL, IfcWindowStyleConstruction_WOOD, IfcWindowStyleConstruction_ALUMINIUM_WOOD, IfcWindowStyleConstruction_PLASTIC, IfcWindowStyleConstruction_OTHER_CONSTRUCTION, IfcWindowStyleConstruction_NOTDEFINED} IfcWindowStyleConstructionEnum;
 std::string ToString(IfcWindowStyleConstructionEnum v);
 IfcWindowStyleConstructionEnum FromString(const std::string& s);}
-namespace IfcWindowStyleOperationEnum {typedef enum {SINGLE_PANEL, DOUBLE_PANEL_VERTICAL, DOUBLE_PANEL_HORIZONTAL, TRIPLE_PANEL_VERTICAL, TRIPLE_PANEL_BOTTOM, TRIPLE_PANEL_TOP, TRIPLE_PANEL_LEFT, TRIPLE_PANEL_RIGHT, TRIPLE_PANEL_HORIZONTAL, USERDEFINED, NOTDEFINED} IfcWindowStyleOperationEnum;
+namespace IfcWindowStyleOperationEnum {typedef enum {IfcWindowStyleOperation_SINGLE_PANEL, IfcWindowStyleOperation_DOUBLE_PANEL_VERTICAL, IfcWindowStyleOperation_DOUBLE_PANEL_HORIZONTAL, IfcWindowStyleOperation_TRIPLE_PANEL_VERTICAL, IfcWindowStyleOperation_TRIPLE_PANEL_BOTTOM, IfcWindowStyleOperation_TRIPLE_PANEL_TOP, IfcWindowStyleOperation_TRIPLE_PANEL_LEFT, IfcWindowStyleOperation_TRIPLE_PANEL_RIGHT, IfcWindowStyleOperation_TRIPLE_PANEL_HORIZONTAL, IfcWindowStyleOperation_USERDEFINED, IfcWindowStyleOperation_NOTDEFINED} IfcWindowStyleOperationEnum;
 std::string ToString(IfcWindowStyleOperationEnum v);
 IfcWindowStyleOperationEnum FromString(const std::string& s);}
-namespace IfcWorkControlTypeEnum {typedef enum {ACTUAL, BASELINE, PLANNED, USERDEFINED, NOTDEFINED} IfcWorkControlTypeEnum;
+namespace IfcWorkControlTypeEnum {typedef enum {IfcWorkControlType_ACTUAL, IfcWorkControlType_BASELINE, IfcWorkControlType_PLANNED, IfcWorkControlType_USERDEFINED, IfcWorkControlType_NOTDEFINED} IfcWorkControlTypeEnum;
 std::string ToString(IfcWorkControlTypeEnum v);
 IfcWorkControlTypeEnum FromString(const std::string& s);}
 // Forward definitions
@@ -3446,7 +3446,7 @@ class IfcGeometricRepresentationContext : public IfcRepresentationContext {
 public:
     IfcDimensionCount CoordinateSpaceDimension();
     bool hasPrecision();
-    float Precision();
+    double Precision();
     IfcAxis2Placement WorldCoordinateSystem();
     bool hasTrueNorth();
     IfcDirection* TrueNorth();
@@ -4901,7 +4901,7 @@ public:
     IfcDirection* Axis2();
     IfcCartesianPoint* LocalOrigin();
     bool hasScale();
-    float Scale();
+    double Scale();
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
@@ -4923,7 +4923,7 @@ public:
 class IfcCartesianTransformationOperator2DnonUniform : public IfcCartesianTransformationOperator2D {
 public:
     bool hasScale2();
-    float Scale2();
+    double Scale2();
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
@@ -4947,9 +4947,9 @@ public:
 class IfcCartesianTransformationOperator3DnonUniform : public IfcCartesianTransformationOperator3D {
 public:
     bool hasScale2();
-    float Scale2();
+    double Scale2();
     bool hasScale3();
-    float Scale3();
+    double Scale3();
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
@@ -5119,7 +5119,7 @@ public:
 };
 class IfcDirection : public IfcGeometricRepresentationItem {
 public:
-    std::vector<float> /*[2:3]*/ DirectionRatios();
+    std::vector<double> /*[2:3]*/ DirectionRatios();
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
@@ -8958,7 +8958,7 @@ public:
 };
 class IfcRationalBezierCurve : public IfcBezierCurve {
 public:
-    std::vector<float> /*[2:?]*/ WeightsData();
+    std::vector<double> /*[2:?]*/ WeightsData();
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();

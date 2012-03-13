@@ -31,10 +31,10 @@ private:
 	std::string data;
 public:
 	ObjMaterial(const std::string& name,
-		float Kd_r = 0.7f,float Kd_g = 0.7f,float Kd_b = 0.7f,
-		float Ks_r = 0.2f,float Ks_g = 0.2f,float Ks_b = 0.2f, 
-		float Ka_r = 0.1f,float Ka_g = 0.1f,float Ka_b = 0.1f,
-		float Ns = 10.0f, float Tr = 1.0f) {
+		double Kd_r = 0.7f,double Kd_g = 0.7f,double Kd_b = 0.7f,
+		double Ks_r = 0.2f,double Ks_g = 0.2f,double Ks_b = 0.2f, 
+		double Ka_r = 0.1f,double Ka_g = 0.1f,double Ka_b = 0.1f,
+		double Ns = 10.0f, double Tr = 1.0f) {
 			std::stringstream ss;
 			ss << "newmtl " << name << std::endl;
 			ss << "Kd " << Kd_r << " " << Kd_g << " " << Kd_b << std::endl;

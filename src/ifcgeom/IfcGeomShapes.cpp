@@ -75,18 +75,21 @@
 
 #include <TopLoc_Location.hxx>
 
+#include <BRepCheck_Analyzer.hxx>
+#include <BRepAlgoAPI_Common.hxx>
+
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::convert(const Ifc2x3::IfcExtrudedAreaSolid::ptr l, TopoDS_Shape& shape) {
 	TopoDS_Face face;
 	if ( ! IfcGeom::convert_face(l->SweptArea(),face) ) return false;
-	const float height = l->Depth() * Ifc::LengthUnit;
+	const double height = l->Depth() * Ifc::LengthUnit;
 	gp_Trsf trsf;
 	IfcGeom::convert(l->Position(),trsf);
 
 	gp_Dir dir;
 	convert(l->ExtrudedDirection(),dir);
-	
+
 	shape = BRepPrimAPI_MakePrism(face,height*dir);
 	shape.Move(trsf);
 	return ! shape.IsNull();
@@ -117,11 +120,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcHalfSpaceSolid::ptr l, TopoDS_Shape& shap
 	}
 	gp_Pln pln;
 	IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcSurface,Ifc2x3::IfcPlane>(surface),pln);
-	gp_Pnt pnt = pln.Location();
-	bool reverse = l->AgreementFlag();
-	if ( l->is(Ifc2x3::Type::IfcPolygonalBoundedHalfSpace) ) reverse = !reverse;
-	if ( reverse ) pnt.Translate(-pln.Axis().Direction());
-	else pnt.Translate(pln.Axis().Direction());
+	const gp_Pnt pnt = pln.Location().Translated( l->AgreementFlag() ? -pln.Axis().Direction() : pln.Axis().Direction());
 	shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln),pnt).Solid();
 	return true;
 }
@@ -132,10 +131,10 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr l, TopoDS_
 	if ( ! IfcGeom::convert_wire(l->PolygonalBoundary(),wire) || ! wire.Closed() ) return false;	
 	gp_Trsf trsf;
 	convert(l->Position(),trsf);
-	TopoDS_Shape extrusion = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,200.0));
+	TopoDS_Shape prism = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,200));
 	gp_Trsf down; down.SetTranslation(gp_Vec(0,0,-100.0));
-	extrusion.Move(down*trsf);
-	shape = BRepAlgoAPI_Cut(extrusion,halfspace);
+	prism.Move(down*trsf);
+	shape = BRepAlgoAPI_Common(halfspace,prism);
 	return true;
 }
 bool IfcGeom::convert(const Ifc2x3::IfcShellBasedSurfaceModel::ptr l, ShapeList& shapes) {
@@ -150,33 +149,148 @@ bool IfcGeom::convert(const Ifc2x3::IfcShellBasedSurfaceModel::ptr l, ShapeList&
 }
 bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shape& shape) {
 	TopoDS_Shape s1, s2;
+	TopoDS_Wire boundary_wire;
+	Ifc2x3::IfcBooleanOperand operand2 = l->SecondOperand();
+	bool is_halfspace = operand2->is(Ifc2x3::Type::IfcHalfSpaceSolid);
+	bool is_bounded = operand2->is(Ifc2x3::Type::IfcPolygonalBoundedHalfSpace);
+	bool is_convex_bound = false;
 
 	if ( ! IfcGeom::convert_shape(l->FirstOperand(),s1) )
 		return false;
-	
-	const float first_operand_volume = shape_volume(s1);
+
+	const double first_operand_volume = shape_volume(s1);
 	if ( first_operand_volume <= ALMOST_ZERO )
-		Ifc::LogMessage("warning","Empty solid for:",l->FirstOperand()->entity);
-	
-	if (  ! IfcGeom::convert_shape(l->SecondOperand(),s2) ) {
+		Ifc::LogMessage("Warning","Empty solid for:",l->FirstOperand()->entity);
+
+	if ( !IfcGeom::convert_shape(l->SecondOperand(),s2) ) {
 		shape = s1;
-		Ifc::LogMessage("Error","Failed to convert SecondOperand of:",l->SecondOperand()->entity);
+		Ifc::LogMessage("Error","Failed to convert SecondOperand of:",l->entity);
 		return true;
 	}
 
-	if ( ! l->SecondOperand()->is(Ifc2x3::Type::IfcHalfSpaceSolid) ) {
-		const float second_operand_volume = shape_volume(s2);
-		if ( second_operand_volume <= ALMOST_ZERO )
-			Ifc::LogMessage("warning","Empty solid for:",l->SecondOperand()->entity);
+	if ( is_bounded ) {
+		Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr ifc_bounded_halfspace = 
+			(Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr) operand2;		
+		IfcGeom::convert_wire(ifc_bounded_halfspace->PolygonalBoundary(),boundary_wire);
+		is_convex_bound = is_convex(boundary_wire);
 	}
 
-	shape = BRepAlgoAPI_Cut(s1,s2);
+	if ( ! is_halfspace ) {
+		const double second_operand_volume = shape_volume(s2);
+		if ( second_operand_volume <= ALMOST_ZERO )
+			Ifc::LogMessage("Warning","Empty solid for:",operand2->entity);
+	}
 
-	const float volume_after_subtraction = shape_volume(shape);
-	if ( ALMOST_THE_SAME(first_operand_volume,volume_after_subtraction) )
-		Ifc::LogMessage("warning","Warning subtraction yields unchanged volume:",l->entity);
+	bool valid_cut = false;
+	if ( !is_bounded || !is_convex_bound ) {
+		BRepAlgoAPI_Cut brep_cut(s1,s2);
+		if ( brep_cut.IsDone() ) {
+			TopoDS_Shape result = brep_cut;
+			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+			if ( is_valid ) {
+				shape = result;
+				valid_cut = true;
+			} 
+		}
+		if ( !valid_cut && !is_bounded ) {
+			Ifc2x3::IfcHalfSpaceSolid::ptr ifc_halfspace = (Ifc2x3::IfcHalfSpaceSolid::ptr) operand2;
+			Ifc2x3::IfcSurface::ptr surface = ifc_halfspace->BaseSurface();
+			if ( surface->is(Ifc2x3::Type::IfcPlane) ) {
+				gp_Pln pln;
+				IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcSurface,Ifc2x3::IfcPlane>(surface),pln);
+				gp_Pnt pnt = pln.Location();
+				bool reverse = ifc_halfspace->AgreementFlag();
+				gp_Vec direction = pln.Axis().Direction();
+				if ( reverse ) direction *= -1;
+				pnt.Translate(direction);
+				pln.SetLocation(pln.Location().Translated(direction * -0.0001));
+				TopoDS_Shape halfspace = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln),pnt).Solid();
+
+				BRepAlgoAPI_Cut brep_cut(s1,halfspace);
+				if ( brep_cut.IsDone() ) {
+					TopoDS_Shape result = brep_cut;
+					bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+					if ( is_valid ) {
+						shape = result;
+						valid_cut = true;
+						Ifc::LogMessage("Warning","Slightly nudged the SecondOperand of:",l->entity);
+					} 
+				}
+			}
+		}
+	} else {
+		Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr ifc_bounded_halfspace = 
+			(Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr) operand2;
+		gp_Trsf trsf;
+		convert(ifc_bounded_halfspace->Position(),trsf);
+		TopoDS_Shape face = BRepBuilderAPI_MakeFace(boundary_wire).Face();
+		TopoDS_Shape prism = BRepPrimAPI_MakePrism (boundary_wire,gp_Vec(0,0,1),1);
+		prism.Move(trsf);
+		face.Move(trsf);
+
+		gp_Pln pln = plane_from_face(TopoDS::Face(face));
+		gp_Pnt pnt = point_above_plane(pln,ifc_bounded_halfspace->AgreementFlag());
+
+		TopoDS_Shape halfspace;
+		Ifc2x3::IfcHalfSpaceSolid::ptr ifc_halfspace = (Ifc2x3::IfcHalfSpaceSolid::ptr) operand2;
+		if ( ! IfcGeom::convert(ifc_halfspace,halfspace) ) return false;
+
+		TopoDS_Shape subtraction_volume = s1;
+		double subtraction_volume_volume = shape_volume(subtraction_volume);
+
+		const double minimal_substraction_difference = subtraction_volume_volume * 0.0001;
+
+		BRepAlgoAPI_Common brep_common(subtraction_volume,halfspace);
+		if ( brep_common.IsDone() ) {
+			TopoDS_Shape brep_common_shape = brep_common;
+			bool is_valid = BRepCheck_Analyzer(brep_common_shape).IsValid() != 0;
+			double new_subtraction_volume_volume = shape_volume(brep_common_shape);
+			double subtraction_volume_difference = subtraction_volume_volume - new_subtraction_volume_volume;
+			if ( is_valid && subtraction_volume_difference > minimal_substraction_difference ) {
+				subtraction_volume = brep_common_shape;
+				subtraction_volume_volume = new_subtraction_volume_volume;
+			}
+		}
+
+		TopExp_Explorer exp(prism,TopAbs_FACE);
+		while ( exp.More() ) {
+			TopoDS_Shape halfspace = halfspace_from_plane(plane_from_face(TopoDS::Face(exp.Current())),pnt);
+			BRepAlgoAPI_Common brep_common(subtraction_volume,halfspace);
+			if ( brep_common.IsDone() ) {
+				TopoDS_Shape brep_common_shape = brep_common;
+				bool is_valid = BRepCheck_Analyzer(brep_common_shape).IsValid() != 0;
+				double new_subtraction_volume_volume = shape_volume(brep_common_shape);
+				double subtraction_volume_difference = subtraction_volume_volume - new_subtraction_volume_volume;
+				if ( is_valid && subtraction_volume_difference > minimal_substraction_difference ) {
+					subtraction_volume = brep_common_shape;
+					subtraction_volume_volume = new_subtraction_volume_volume;
+				}
+			}
+			exp.Next();
+		}
+
+		BRepAlgoAPI_Cut brep_cut(s1,subtraction_volume);
+		if ( brep_cut.IsDone() ) {
+			TopoDS_Shape result = brep_cut;
+			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+			if ( is_valid ) {
+				shape = result;
+				valid_cut = true;
+			} 
+		}
+	}
+
+	if ( valid_cut ) {
+		const double volume_after_subtraction = shape_volume(shape);
+		if ( ALMOST_THE_SAME(first_operand_volume,volume_after_subtraction) )
+			Ifc::LogMessage("Warning","Subtraction yields unchanged volume:",l->entity);
+	} else {
+		Ifc::LogMessage("Error","Failed to process subtraction:",l->entity);
+		shape = s1;
+	}
 
 	return true;
+
 }
 bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& shape) {
 #ifdef FACESET_AS_COMPOUND
@@ -223,8 +337,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, ShapeList& shapes) {
 		IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcCartesianTransformationOperator,
 			Ifc2x3::IfcCartesianTransformationOperator3DnonUniform>(transform),gtrsf);
 	} else if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
- 		return false;
- 	} else if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator3D) ) {
+		return false;
+	} else if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator3D) ) {
 		gp_Trsf trsf;
 		IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcCartesianTransformationOperator,
 			Ifc2x3::IfcCartesianTransformationOperator3D>(transform),trsf);

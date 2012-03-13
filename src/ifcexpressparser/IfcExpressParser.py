@@ -40,54 +40,54 @@ filename = sys.argv[1]
 # A class to split the Express schema files into seperate tokens
 #
 class Tokenizer(object):
-	comment = ['(*','*)']
-	termchars = ',;()=[]:'
-	def __init__(self, fn):
-		if hasattr(fn,'read'): object.__setattr__(self,'f',fn)
-		else: object.__setattr__(self,'f',open(fn,'rb'))
-	def __getattr__(self, name):
-		return getattr(self.f, name)
-	def __setattr__(self, name, value):
-		setattr(self.f, name, value)
-	def __iter__(self): return self
-	def next(self):
-		def get():
-			buffer = ''
-			in_comment = False
-			in_string = False
-			offset = self.tell()
-			while True:
-				c = self.read(2)
-				if len(c) < 2: raise StopIteration
-				if c in Tokenizer.comment:
-					in_comment = c == Tokenizer.comment[0]
-					continue
-				if in_string and c == "''":
-					buffer += "'"
-					continue
-				self.seek(-1,1)
-				if not in_string and c[0].isspace():
-					if ( len(buffer) ): return buffer
-					else:
-						offset = self.tell()
-						continue
-				if not in_comment:
-					if len(buffer) and (c[0] in Tokenizer.termchars or buffer[-1] in Tokenizer.termchars):
-						self.seek(-1,1)
-						return buffer
-					buffer += c[0]
-		return get()
+    comment = ['(*','*)']
+    termchars = ',;()=[]:'
+    def __init__(self, fn):
+        if hasattr(fn,'read'): object.__setattr__(self,'f',fn)
+        else: object.__setattr__(self,'f',open(fn,'rb'))
+    def __getattr__(self, name):
+        return getattr(self.f, name)
+    def __setattr__(self, name, value):
+        setattr(self.f, name, value)
+    def __iter__(self): return self
+    def next(self):
+        def get():
+            buffer = ''
+            in_comment = False
+            in_string = False
+            offset = self.tell()
+            while True:
+                c = self.read(2)
+                if len(c) < 2: raise StopIteration
+                if c in Tokenizer.comment:
+                    in_comment = c == Tokenizer.comment[0]
+                    continue
+                if in_string and c == "''":
+                    buffer += "'"
+                    continue
+                self.seek(-1,1)
+                if not in_string and c[0].isspace():
+                    if ( len(buffer) ): return buffer
+                    else:
+                        offset = self.tell()
+                        continue
+                if not in_comment:
+                    if len(buffer) and (c[0] in Tokenizer.termchars or buffer[-1] in Tokenizer.termchars):
+                        self.seek(-1,1)
+                        return buffer
+                    buffer += c[0]
+        return get()
 
 #
 # Some global variables to keep track of variable names
 #
 express_to_cpp = {
-	'BOOLEAN':'bool',
-	'LOGICAL':'bool',
-	'INTEGER':'int',
-	'REAL':'float',
-	'NUMBER':'float',
-	'STRING':'std::string'
+    'BOOLEAN':'bool',
+    'LOGICAL':'bool',
+    'INTEGER':'int',
+    'REAL':'double',
+    'NUMBER':'double',
+    'STRING':'std::string'
 }
 schema_version = ''
 enumerations = set()
@@ -102,157 +102,157 @@ parent_relations = {}
 # Since inherited arguments of Express entities are placed in sequence before the non-inherited once, we need to keep track of how many inherited arguments exist
 #
 def argument_start(c):
-	if c not in parent_relations: return 0
-	i = 0
-	while True:
-		c = parent_relations[c]
-		i += argument_count[c] if c in argument_count else 0
-		if not (c in parent_relations): break
-	return i
+    if c not in parent_relations: return 0
+    i = 0
+    while True:
+        c = parent_relations[c]
+        i += argument_count[c] if c in argument_count else 0
+        if not (c in parent_relations): break
+    return i
 
 #
 # Several classes to generate code from Express types and entities
 #
 class ArrayType:
-	def __init__(self,l): 
-		self.type = express_to_cpp.get(l[3],l[3])
-		self.upper = l[2]
-		self.lower = l[1]
-	def __str__(self):
-		if self.type in entity_names:
-			return "SHARED_PTR< IfcTemplatedEntityList<%s> >"%self.type
-		elif self.type in selections:
-			return "SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> >"
-		else:
-			return "std::vector<%(type)s> /*[%(lower)s:%(upper)s]*/"%self.__dict__
+    def __init__(self,l): 
+        self.type = express_to_cpp.get(l[3],l[3])
+        self.upper = l[2]
+        self.lower = l[1]
+    def __str__(self):
+        if self.type in entity_names:
+            return "SHARED_PTR< IfcTemplatedEntityList<%s> >"%self.type
+        elif self.type in selections:
+            return "SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> >"
+        else:
+            return "std::vector<%(type)s> /*[%(lower)s:%(upper)s]*/"%self.__dict__
 class ScalarType:
-	def __init__(self,l): self.type = express_to_cpp.get(l,l)
-	def __str__(self): return self.type
+    def __init__(self,l): self.type = express_to_cpp.get(l,l)
+    def __str__(self): return self.type
 class EnumType:
-	def __init__(self,l):
-		self.v = ['IFC_NULL' if x == 'NULL' else x for x in l]
-		self.maxlen = max([len(v) for v in self.v])
-	def __str__(self): 
-		if generator_mode == 'HEADER':
-			return "enum {%s}"%", ".join(self.v)
-		elif generator_mode == 'SOURCE_TO':
-			return '{ "%s" }'%'","'.join(self.v)
-		elif generator_mode == 'SOURCE_FROM':
-			return "".join(['    if(s=="%s"%s) return %s::%s;\n'%(v.upper()," "*(self.maxlen-len(v)),"%(name)s",v) for v in self.v])
-			
-	def __len__(self): return len(self.v)
+    def __init__(self,l):
+        self.v = [(x,'%s_%s'%('%(fancy_name)s',x)) for x in l]
+        self.maxlen = max([len(v) for v in self.v])
+    def __str__(self): 
+        if generator_mode == 'HEADER':
+            return "enum {%s}"%", ".join([v2 for v1,v2 in self.v])
+        elif generator_mode == 'SOURCE_TO':
+            return '{ "%s" }'%'","'.join([v1 for v1,v2 in self.v])
+        elif generator_mode == 'SOURCE_FROM':
+            return "".join(['    if(s=="%s"%s) return %s::%s;\n'%(v1.upper()," "*(self.maxlen-len(v1)),"%(name)s",v2) for v1,v2 in self.v])            
+    def __len__(self): return len(self.v)
 class SelectType:
-	def __init__(self,l): 
-		for x in l: 
-			if x in simple_types: selectable_simple_types.add(x)
-	def __str__(self): return "IfcSchemaEntity"
+    def __init__(self,l): 
+        for x in l: 
+            if x in simple_types: selectable_simple_types.add(x)
+    def __str__(self): return "IfcSchemaEntity"
 class BinaryType:
-	def __init__(self,l): self.l = int(l)
-	def __str__(self): return "char[%s]"%self.l
+    def __init__(self,l): self.l = int(l)
+    def __str__(self): return "char[%s]"%self.l
 class InverseType:
-	def __init__(self,l):
-		self.name, self.type, self.reference = l
+    def __init__(self,l):
+        self.name, self.type, self.reference = l
 class Typedef:
-	def __init__(self,l):
-		self.name,self.type=l[1:3]
-		if isinstance(self.type,EnumType): 
-			enumerations.add(self.name)
-			self.len = len(self.type)
-		elif isinstance(self.type,SelectType): selections.add(self.name)
-		simple_types.add(self.name)
-	def __str__(self):
-		global generator_mode
-		if generator_mode == 'HEADER' and isinstance(self.type,EnumType):
-			return "namespace %(name)s {typedef %(type)s %(name)s;\nstd::string ToString(%(name)s v);\n%(name)s FromString(const std::string& s);}"%self.__dict__
-		elif generator_mode == 'HEADER':
-			return "typedef %s %s;"%(self.type,self.name)
-		elif generator_mode == 'SOURCE' and isinstance(self.type,EnumType):
-			generator_mode = 'SOURCE_TO'
-			s =  "std::string %(name)s::ToString(%(name)s v) {\n    if ( v < 0 || v >= %(len)d ) throw IfcException(\"Unable to find find keyword in schema\");\n    const char* names[] = %(type)s;\n    return names[v];\n}\n"%self.__dict__
-			generator_mode = 'SOURCE_FROM'
-			s += ("%(name)s::%(name)s %(name)s::FromString(const std::string& s) {\n%(type)s    throw IfcException(\"Unable to find find keyword in schema\);\n}"%self.__dict__)%self.__dict__
-			generator_mode = 'SOURCE'
-			return s
+    def __init__(self,l):
+        self.name,self.type=l[1:3]
+        self.fancy_name = self.name[:-4] if self.name.endswith("Enum") else self.name
+        if isinstance(self.type,EnumType): 
+            enumerations.add(self.name)
+            self.len = len(self.type)
+        elif isinstance(self.type,SelectType): selections.add(self.name)
+        simple_types.add(self.name)
+    def __str__(self):
+        global generator_mode
+        if generator_mode == 'HEADER' and isinstance(self.type,EnumType):
+            return ("namespace %(name)s {typedef %(type)s %(name)s;\nstd::string ToString(%(name)s v);\n%(name)s FromString(const std::string& s);}"%self.__dict__)%self.__dict__
+        elif generator_mode == 'HEADER':
+            return "typedef %s %s;"%(self.type,self.name)
+        elif generator_mode == 'SOURCE' and isinstance(self.type,EnumType):
+            generator_mode = 'SOURCE_TO'
+            s =  "std::string %(name)s::ToString(%(name)s v) {\n    if ( v < 0 || v >= %(len)d ) throw IfcException(\"Unable to find find keyword in schema\");\n    const char* names[] = %(type)s;\n    return names[v];\n}\n"%self.__dict__
+            generator_mode = 'SOURCE_FROM'
+            s += ("%(name)s::%(name)s %(name)s::FromString(const std::string& s) {\n%(type)s    throw IfcException(\"Unable to find find keyword in schema\");\n}"%self.__dict__)%self.__dict__
+            generator_mode = 'SOURCE'
+            return s
 class Argument(object):
-	def __init__(self,l):
-		self.name, self.optional, self.type = l
+    def __init__(self,l):
+        self.name, self.optional, self.type = l
 class ArgumentList:
-	def __init__(self,l):
-		self.l = [Argument(a) for a in l]
-		self.argstart = 0
-	def __len__(self): return len(self.l)
-	def __str__(self):
-		s = ""
-		argv = self.argstart
-		for a in self.l:
-			class_name = indent = ""
-			return_type = str(a.type)
-			if generator_mode == 'SOURCE':
-				class_name = "%(class_name)s::"
-				if isinstance(a.type,BinaryType) or (isinstance(a.type,ArrayType) and isinstance(a.type.type,BinaryType)):
-					function_body = " { throw; /* Not implemented argument 7 */ }"
-				elif isinstance(a.type,ArrayType) and str(a.type.type) in entity_names:
-					function_body = " { RETURN_AS_LIST(%s,%d) }"%(a.type.type,argv)
-				elif isinstance(a.type,ArrayType) and str(a.type.type) in selections:
-					function_body = " { RETURN_AS_LIST(IfcAbstractSelect,%d) }"%(argv)
-				elif return_type in entity_names:
-					function_body = " { return reinterpret_pointer_cast<IfcBaseClass,%s>(*entity->getArgument(%d)); }"%(return_type,argv)
-				elif return_type in enumerations:
-					function_body = " { return %s::FromString(*entity->getArgument(%d)); }"%(return_type,argv)
-				else:
-					function_body = " { return *entity->getArgument(%d); }"%argv
-				function_body2 = " { return !entity->getArgument(%d)->isNull(); }"%argv
-			else:
-				indent = "    "
-				function_body = function_body2 = ";"			
-			if a.optional: s += "\n%sbool %shas%s()%s"%(indent,class_name,a.name,function_body2)
-			if ( str(a.type) in enumerations ):
-				return_type = "%(type)s::%(type)s"%a.__dict__
-			elif ( str(a.type) in entity_names ):
-				return_type = "%(type)s*"%a.__dict__
-			s += "\n%s%s %s%s()%s"%(indent,return_type,class_name,a.name,function_body)
-			argv += 1
-		return s
+    def __init__(self,l):
+        self.l = [Argument(a) for a in l]
+        self.argstart = 0
+    def __len__(self): return len(self.l)
+    def __str__(self):
+        s = ""
+        argv = self.argstart
+        for a in self.l:
+            class_name = indent = ""
+            return_type = str(a.type)
+            if generator_mode == 'SOURCE':
+                class_name = "%(class_name)s::"
+                if isinstance(a.type,BinaryType) or (isinstance(a.type,ArrayType) and isinstance(a.type.type,BinaryType)):
+                    function_body = " { throw; /* Not implemented argument 7 */ }"
+                elif isinstance(a.type,ArrayType) and str(a.type.type) in entity_names:
+                    function_body = " { RETURN_AS_LIST(%s,%d) }"%(a.type.type,argv)
+                elif isinstance(a.type,ArrayType) and str(a.type.type) in selections:
+                    function_body = " { RETURN_AS_LIST(IfcAbstractSelect,%d) }"%(argv)
+                elif return_type in entity_names:
+                    function_body = " { return reinterpret_pointer_cast<IfcBaseClass,%s>(*entity->getArgument(%d)); }"%(return_type,argv)
+                elif return_type in enumerations:
+                    function_body = " { return %s::FromString(*entity->getArgument(%d)); }"%(return_type,argv)
+                else:
+                    function_body = " { return *entity->getArgument(%d); }"%argv
+                function_body2 = " { return !entity->getArgument(%d)->isNull(); }"%argv
+            else:
+                indent = "    "
+                function_body = function_body2 = ";"            
+            if a.optional: s += "\n%sbool %shas%s()%s"%(indent,class_name,a.name,function_body2)
+            if ( str(a.type) in enumerations ):
+                return_type = "%(type)s::%(type)s"%a.__dict__
+            elif ( str(a.type) in entity_names ):
+                return_type = "%(type)s*"%a.__dict__
+            s += "\n%s%s %s%s()%s"%(indent,return_type,class_name,a.name,function_body)
+            argv += 1
+        return s
 class InverseList:
-	def __init__(self,l):
-		self.l = l
-	def __str__(self):
-		if self.l is None: return ""
-		s = ""
-		for i in self.l:
-			if generator_mode == 'HEADER':
-				s += "\n    SHARED_PTR< IfcTemplatedEntityList<%s> > %s(); // INVERSE %s::%s"%(i.type.type,i.name,i.type.type,i.reference)
-			elif generator_mode == 'SOURCE':
-				s += "\n%s::list %s::%s() { RETURN_INVERSE(%s) }"%(i.type.type,"%(class_name)s",i.name,i.type.type)
-		return s
+    def __init__(self,l):
+        self.l = l
+    def __str__(self):
+        if self.l is None: return ""
+        s = ""
+        for i in self.l:
+            if generator_mode == 'HEADER':
+                s += "\n    SHARED_PTR< IfcTemplatedEntityList<%s> > %s(); // INVERSE %s::%s"%(i.type.type,i.name,i.type.type,i.reference)
+            elif generator_mode == 'SOURCE':
+                s += "\n%s::list %s::%s() { RETURN_INVERSE(%s) }"%(i.type.type,"%(class_name)s",i.name,i.type.type)
+        return s
 class Classdef:
-	def __init__(self,l):
-		self.class_name, self.parent_class, self.arguments, self.inverse = l
-		entity_names.add(self.class_name)
-		parent_relations[self.class_name] = self.parent_class
-		argument_count[self.class_name] = len(self.arguments)
-	def __str__(self):
-		if generator_mode == 'HEADER':
-			return "class %s : public %s {\npublic:%s%s%s\n};" % (self.class_name,
-				"IfcBaseClass" if self.parent_class is None else self.parent_class,
-				self.arguments,
-				self.inverse,
-				("\n    bool is(Type::Enum v) const;"+
-				"\n    Type::Enum type() const;"+
-				"\n    static Type::Enum Class();"+
-				"\n    %(class_name)s (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());"+
-				"\n    typedef %(class_name)s* ptr;"+
-				"\n    typedef SHARED_PTR< IfcTemplatedEntityList<%(class_name)s> > list;"+
-				"\n    typedef IfcTemplatedEntityList<%(class_name)s>::it it;")%self.__dict__
-			)
-		elif generator_mode == 'SOURCE':
-			self.arguments.argstart = argument_start(self.class_name)
-			return (("\n// %(class_name)s"+str(self.arguments)+str(self.inverse)+
-			("\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s; }" if self.parent_class is None else
-			"\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s || %(parent_class)s::is(v); }")+
-			"\nType::Enum %(class_name)s::type() const { return Type::%(class_name)s; }"+
-			"\nType::Enum %(class_name)s::Class() { return Type::%(class_name)s; }"+
-			"\n%(class_name)s::%(class_name)s(IfcAbstractEntityPtr e) { if (!is(Type::%(class_name)s)) throw IfcException(\"Unable to find find keyword in schema\"); entity = e; }")%self.__dict__)%self.__dict__
+    def __init__(self,l):
+        self.class_name, self.parent_class, self.arguments, self.inverse = l
+        entity_names.add(self.class_name)
+        parent_relations[self.class_name] = self.parent_class
+        argument_count[self.class_name] = len(self.arguments)
+    def __str__(self):
+        if generator_mode == 'HEADER':
+            return "class %s : public %s {\npublic:%s%s%s\n};" % (self.class_name,
+                "IfcBaseClass" if self.parent_class is None else self.parent_class,
+                self.arguments,
+                self.inverse,
+                ("\n    bool is(Type::Enum v) const;"+
+                "\n    Type::Enum type() const;"+
+                "\n    static Type::Enum Class();"+
+                "\n    %(class_name)s (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());"+
+                "\n    typedef %(class_name)s* ptr;"+
+                "\n    typedef SHARED_PTR< IfcTemplatedEntityList<%(class_name)s> > list;"+
+                "\n    typedef IfcTemplatedEntityList<%(class_name)s>::it it;")%self.__dict__
+            )
+        elif generator_mode == 'SOURCE':
+            self.arguments.argstart = argument_start(self.class_name)
+            return (("\n// %(class_name)s"+str(self.arguments)+str(self.inverse)+
+            ("\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s; }" if self.parent_class is None else
+            "\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s || %(parent_class)s::is(v); }")+
+            "\nType::Enum %(class_name)s::type() const { return Type::%(class_name)s; }"+
+            "\nType::Enum %(class_name)s::Class() { return Type::%(class_name)s; }"+
+            "\n%(class_name)s::%(class_name)s(IfcAbstractEntityPtr e) { if (!is(Type::%(class_name)s)) throw IfcException(\"Unable to find find keyword in schema\"); entity = e; }")%self.__dict__)%self.__dict__
 
 
 from funcparserlib.parser import a, skip, many, maybe, some
@@ -348,23 +348,23 @@ print >>h_file, """#ifndef %(schema_upper)s_H
 using namespace IfcUtil;
 
 #define RETURN_INVERSE(T) \\
-	IfcEntities e = entity->getInverse(T::Class()); \\
-	SHARED_PTR< IfcTemplatedEntityList<T> > l ( new IfcTemplatedEntityList<T>() ); \\
-	for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) { \\
-		l->push(reinterpret_pointer_cast<IfcBaseClass,T>(*it)); \\
-	} \\
-	return l;
+    IfcEntities e = entity->getInverse(T::Class()); \\
+    SHARED_PTR< IfcTemplatedEntityList<T> > l ( new IfcTemplatedEntityList<T>() ); \\
+    for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) { \\
+        l->push(reinterpret_pointer_cast<IfcBaseClass,T>(*it)); \\
+    } \\
+    return l;
 
 #define RETURN_AS_SINGLE(T,a) \\
-	return reinterpret_pointer_cast<IfcBaseClass,T>(*entity->getArgument(a));
+    return reinterpret_pointer_cast<IfcBaseClass,T>(*entity->getArgument(a));
 
 #define RETURN_AS_LIST(T,a)  \\
-	IfcEntities e = *entity->getArgument(a);  \\
-	SHARED_PTR< IfcTemplatedEntityList<T> > l ( new IfcTemplatedEntityList<T>() );  \\
-	for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {  \\
-		l->push(reinterpret_pointer_cast<IfcBaseClass,T>(*it)); \\
-	}  \\
-	return l;
+    IfcEntities e = *entity->getArgument(a);  \\
+    SHARED_PTR< IfcTemplatedEntityList<T> > l ( new IfcTemplatedEntityList<T>() );  \\
+    for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {  \\
+        l->push(reinterpret_pointer_cast<IfcBaseClass,T>(*it)); \\
+    }  \\
+    return l;
 
 namespace %(schema)s {
 """%{'schema_upper':schema_version.upper(),'schema':schema_version}
@@ -381,8 +381,8 @@ namespace Ifc2x3 {
 namespace Type {
     typedef enum {
         %(enum)s
-	} Enum;
-	Enum Parent(Enum v);
+    } Enum;
+    Enum Parent(Enum v);
     Enum FromString(const std::string& s);
     std::string ToString(Enum v);
 }
@@ -396,28 +396,28 @@ defined_types = set(express_to_cpp.values())
 deferred_types = []
 
 for t in [T for T in types if not (isinstance(T.type,EnumType) or isinstance(T.type,SelectType))]:
-	if isinstance(t.type,ScalarType) and str(t.type) not in defined_types:
-		deferred_types.append(t)
-	else:
-		print >>h_file, t
+    if isinstance(t.type,ScalarType) and str(t.type) not in defined_types:
+        deferred_types.append(t)
+    else:
+        print >>h_file, t
 for t in [T for T in types if isinstance(T.type,SelectType)]:
-	print >>h_file, t
+    print >>h_file, t
 for t in deferred_types:
-	print >>h_file, t
+    print >>h_file, t
 for t in [T for T in types if isinstance(T.type,EnumType)]:
-	print >>h_file, t
-	
+    print >>h_file, t
+    
 print >>h_file, "// Forward definitions"
 print >>h_file, "class %s;\n"%"; class ".join([e.class_name for e in entities])
 
 defined_classes = set()
 while True:
-	classes = [c for c in entities if c.class_name not in defined_classes]
-	if not len(classes): break
-	for c in classes:
-		if c.parent_class is None or c.parent_class in defined_classes:
-			defined_classes.add(c.class_name)
-			print >>h_file, c
+    classes = [c for c in entities if c.class_name not in defined_classes]
+    if not len(classes): break
+    for c in classes:
+        if c.parent_class is None or c.parent_class in defined_classes:
+            defined_classes.add(c.class_name)
+            print >>h_file, c
 
 print >>h_file, "void InitStringMap();"
 print >>h_file, "IfcSchemaEntity SchemaEntity(IfcAbstractEntityPtr e = 0);"
@@ -436,9 +436,9 @@ IfcSchemaEntity %(schema)s::SchemaEntity(IfcAbstractEntityPtr e) {
     switch(e->type()){"""%{'schema':schema_version}
 
 for e in simple_enumerations:
-	print >>cpp_file, "        case Type::%s: return new IfcEntitySelect(e); break;"%e
+    print >>cpp_file, "        case Type::%s: return new IfcEntitySelect(e); break;"%e
 for e in entity_enumerations:
-	print >>cpp_file, "        case Type::%s: return new %s(e); break;"%(e,e)
+    print >>cpp_file, "        case Type::%s: return new %s(e); break;"%(e,e)
 print >>cpp_file, "        default: throw IfcException(\"Unable to find find keyword in schema\"); break; "
 print >>cpp_file, "    }\n}"
 print >>cpp_file
@@ -452,29 +452,29 @@ print >>cpp_file
 #elseif = "if"
 #maxlen = max([len(e) for e in all_enumerations])
 #for e in all_enumerations:
-#	print >>cpp_file, '    %s(s=="%s"%s) { return %s; }'%(elseif,e.upper()," "*(maxlen-len(e)),e)
+#    print >>cpp_file, '    %s(s=="%s"%s) { return %s; }'%(elseif,e.upper()," "*(maxlen-len(e)),e)
 #print >>cpp_file, "    throw;"
 #print >>cpp_file, "}"
 print >>cpp_file, "std::map<std::string,Type::Enum> string_map;"
 print >>cpp_file, "void Ifc2x3::InitStringMap() {"
 maxlen = max([len(e) for e in all_enumerations])
 for e in all_enumerations:
-	print >>cpp_file, '    string_map["%s"%s] = Type::%s;'%(e.upper()," "*(maxlen-len(e)),e)
+    print >>cpp_file, '    string_map["%s"%s] = Type::%s;'%(e.upper()," "*(maxlen-len(e)),e)
 print >>cpp_file, """}
 Type::Enum Type::FromString(const std::string& s) {
     std::map<std::string,Type::Enum>::const_iterator it = string_map.find(s);
-	if ( it == string_map.end() ) throw IfcException("Unable to find find keyword in schema");
-	else return it->second;
+    if ( it == string_map.end() ) throw IfcException("Unable to find find keyword in schema");
+    else return it->second;
 }"""
 
 print >>cpp_file, "Type::Enum Type::Parent(Enum v){"
 print >>cpp_file, "    if (v < 0 || v >= %d) return (Enum)-1;"%len(all_enumerations)
 for e in entity_enumerations:
-	if e not in parent_relations or parent_relations[e] is None: continue
-	print >>cpp_file, '    if(v==%s%s) { return %s; }'%(e," "*(maxlen-len(e)),parent_relations[e])
+    if e not in parent_relations or parent_relations[e] is None: continue
+    print >>cpp_file, '    if(v==%s%s) { return %s; }'%(e," "*(maxlen-len(e)),parent_relations[e])
 print >>cpp_file, "    return (Enum)-1;"
 print >>cpp_file, "}"
 
 for t in [T for T in types if isinstance(T.type,EnumType)]:
-	print >>cpp_file, t
+    print >>cpp_file, t
 for e in entities: print >>cpp_file, e,

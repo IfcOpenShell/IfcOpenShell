@@ -33,16 +33,16 @@ StdMat2* GetMaterial(const std::string& s) {
 	TimeValue t (-1);
 	mat->SetSpecular(Color(0.2f,0.2f,0.2f),t);
 	mat->SetAmbient(Color(0.1f,0.1f,0.1f),t);
-	mat->SetWire( s == "IFCSPACE" || s == "IFCOPENINGELEMENT" );
-	if ( s == "IFCSITE" ) { mat->SetDiffuse(Color(0.75f,0.8f,0.65f),t); }
-	if ( s == "IFCSLAB" ) { mat->SetDiffuse(Color(0.4f,0.4f,0.4f),t); }
-	if ( s == "IFCWALLSTANDARDCASE" ) { mat->SetDiffuse(Color(0.9f,0.9f,0.9f),t); }
-	if ( s == "IFCWALL" ) { mat->SetDiffuse(Color(0.9f,0.9f,0.9f),t); }
-	if ( s == "IFCWINDOW" ) { mat->SetDiffuse(Color(0.75f,0.8f,0.75f),t); mat->SetSpecular(Color(1.0f,1.0f,1.0f),t); 
+	mat->SetWire( s == "IfcSpace" || s == "IfcOpeningElement" );
+	if ( s == "IfcSite" ) { mat->SetDiffuse(Color(0.75f,0.8f,0.65f),t); }
+	if ( s == "IfcSlab" ) { mat->SetDiffuse(Color(0.4f,0.4f,0.4f),t); }
+	if ( s == "IfcWallStandardCase" ) { mat->SetDiffuse(Color(0.9f,0.9f,0.9f),t); }
+	if ( s == "IfcWall" ) { mat->SetDiffuse(Color(0.9f,0.9f,0.9f),t); }
+	if ( s == "IfcWindow" ) { mat->SetDiffuse(Color(0.75f,0.8f,0.75f),t); mat->SetSpecular(Color(1.0f,1.0f,1.0f),t); 
 	mat->SetAmbient(Color(0.0f,0.0f,0.0f),t); mat->SetShininess(500.0f,t); mat->SetOpacity(0.3f,t); }
-	if ( s == "IFCDOOR" ) { mat->SetDiffuse(Color(0.55f,0.3f,0.15f),t); }
-	if ( s == "IFCBEAM" ) { mat->SetDiffuse(Color(0.75f,0.7f,0.7f),t); }
-	if ( s == "IFCRAILING" ) { mat->SetDiffuse(Color(0.75f,0.7f,0.7f),t); }
-	if ( s == "IFCMEMBER" ) { mat->SetDiffuse(Color(0.75f,0.7f,0.7f),t); }
+	if ( s == "IfcDoor" ) { mat->SetDiffuse(Color(0.55f,0.3f,0.15f),t); }
+	if ( s == "IfcBeam" ) { mat->SetDiffuse(Color(0.75f,0.7f,0.7f),t); }
+	if ( s == "IfcRailing" ) { mat->SetDiffuse(Color(0.75f,0.7f,0.7f),t); }
+	if ( s == "IfcMember" ) { mat->SetDiffuse(Color(0.75f,0.7f,0.7f),t); }
 	return mat;
 }

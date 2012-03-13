@@ -19,16 +19,11 @@
 
 #include "Max.h"
 #include "stdmat.h"
-#include "decomp.h"
-#include "shape.h"
-#include "splshape.h"
-#include "dummy.h"
 #include "istdplug.h"
 
 #include "../ifcmax/IfcMax.h"
 #include "../ifcmax/MaxMaterials.h"
 #include "../ifcgeom/IfcGeomObjects.h"
-
 int controlsInit = false;
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL,ULONG fdwReason,LPVOID lpvReserved) {	

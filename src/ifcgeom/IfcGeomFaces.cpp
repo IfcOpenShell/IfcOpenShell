@@ -108,8 +108,14 @@ bool IfcGeom::convert(const Ifc2x3::IfcFace::ptr l, TopoDS_Face& face) {
 	if ( mf.IsDone() ) {
 		ShapeFix_Shape sfs(mf.Face());
 		sfs.Perform();
-		face = TopoDS::Face(sfs.Shape());
-		return true;
+		TopoDS_Shape sfs_shape = sfs.Shape();
+		bool is_face = sfs_shape.ShapeType() == TopAbs_FACE;
+		if ( is_face ) {
+			face = TopoDS::Face(sfs_shape);
+			return true;
+		} else {
+			return false;
+		}
 	} else {
 		return false;
 	}
@@ -136,8 +142,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcArbitraryProfileDefWithVoids::ptr l, Topo
 	return true;
 }
 bool IfcGeom::convert(const Ifc2x3::IfcRectangleProfileDef::ptr l, TopoDS_Face& face) {
-	const float x = l->XDim() / 2.0f * Ifc::LengthUnit;
-	const float y = l->YDim() / 2.0f  * Ifc::LengthUnit;
+	const double x = l->XDim() / 2.0f * Ifc::LengthUnit;
+	const double y = l->YDim() / 2.0f  * Ifc::LengthUnit;
 
 	if ( x == 0.0f || y == 0.0f ) {
 		Ifc::LogMessage("Notice","Skipping zero sized profile:",l->entity);
@@ -146,16 +152,16 @@ bool IfcGeom::convert(const Ifc2x3::IfcRectangleProfileDef::ptr l, TopoDS_Face& 
 
 	gp_Trsf2d trsf2d;
 	IfcGeom::convert(l->Position(),trsf2d);
-	float coords[8] = {-x,-y,x,-y,x,y,-x,y};
+	double coords[8] = {-x,-y,x,-y,x,y,-x,y};
 	return IfcGeom::profile_helper(4,coords,0,0,0,trsf2d,face);
 }
 bool IfcGeom::convert(const Ifc2x3::IfcIShapeProfileDef::ptr l, TopoDS_Face& face) {
-	const float x = l->OverallWidth() / 2.0f * Ifc::LengthUnit;
-	const float y = l->OverallDepth() / 2.0f * Ifc::LengthUnit;
-	const float d1 = l->WebThickness() / 2.0f  * Ifc::LengthUnit;
-	const float d2 = l->FlangeThickness() * Ifc::LengthUnit;
+	const double x = l->OverallWidth() / 2.0f * Ifc::LengthUnit;
+	const double y = l->OverallDepth() / 2.0f * Ifc::LengthUnit;
+	const double d1 = l->WebThickness() / 2.0f  * Ifc::LengthUnit;
+	const double d2 = l->FlangeThickness() * Ifc::LengthUnit;
 	bool doFillet = l->hasFilletRadius();
-	float f;
+	double f;
 	if ( doFillet ) {
 		f = l->FilletRadius() * Ifc::LengthUnit;
 	}
@@ -168,18 +174,18 @@ bool IfcGeom::convert(const Ifc2x3::IfcIShapeProfileDef::ptr l, TopoDS_Face& fac
 	gp_Trsf2d trsf2d;
 	IfcGeom::convert(l->Position(),trsf2d);
 
-	float coords[24] = {-x,-y,x,-y,x,-y+d2,d1,-y+d2,d1,y-d2,x,y-d2,x,y,-x,y,-x,y-d2,-d1,y-d2,-d1,-y+d2,-x,-y+d2};
+	double coords[24] = {-x,-y,x,-y,x,-y+d2,d1,-y+d2,d1,y-d2,x,y-d2,x,y,-x,y,-x,y-d2,-d1,y-d2,-d1,-y+d2,-x,-y+d2};
 	int fillets[4] = {3,4,9,10};
-	float radii[4] = {f,f,f,f};
+	double radii[4] = {f,f,f,f};
 	return IfcGeom::profile_helper(12,coords,doFillet ? 4 : 0,fillets,radii,trsf2d,face);
 }
 bool IfcGeom::convert(const Ifc2x3::IfcCShapeProfileDef::ptr l, TopoDS_Face& face) {
-	const float x = l->Depth() / 2.0f * Ifc::LengthUnit;
-	const float y = l->Width() / 2.0f * Ifc::LengthUnit;
-	const float d1 = l->WallThickness() * Ifc::LengthUnit;
-	const float d2 = l->Girth() * Ifc::LengthUnit;
+	const double x = l->Depth() / 2.0f * Ifc::LengthUnit;
+	const double y = l->Width() / 2.0f * Ifc::LengthUnit;
+	const double d1 = l->WallThickness() * Ifc::LengthUnit;
+	const double d2 = l->Girth() * Ifc::LengthUnit;
 	bool doFillet = l->hasInternalFilletRadius();
-	float f1,f2;
+	double f1,f2;
 	if ( doFillet ) {
 		f1 = l->InternalFilletRadius() * Ifc::LengthUnit;
 		f2 = f1 + d1;
@@ -193,19 +199,19 @@ bool IfcGeom::convert(const Ifc2x3::IfcCShapeProfileDef::ptr l, TopoDS_Face& fac
 	gp_Trsf2d trsf2d;
 	IfcGeom::convert(l->Position(),trsf2d);
 
-	float coords[24] = {-x,-y,x,-y,x,-y+d2,x-d1,-y+d2,x-d1,-y+d1,-x+d1,-y+d1,-x+d1,y-d1,x-d1,y-d1,x-d1,y-d2,x,y-d2,x,y,-x,y};
+	double coords[24] = {-x,-y,x,-y,x,-y+d2,x-d1,-y+d2,x-d1,-y+d1,-x+d1,-y+d1,-x+d1,y-d1,x-d1,y-d1,x-d1,y-d2,x,y-d2,x,y,-x,y};
 	int fillets[8] = {0,1,4,5,6,7,10,11};
-	float radii[8] = {f2,f2,f1,f1,f1,f1,f2,f2};
+	double radii[8] = {f2,f2,f1,f1,f1,f1,f2,f2};
 	return IfcGeom::profile_helper(12,coords,doFillet ? 8 : 0,fillets,radii,trsf2d,face);
 }
 bool IfcGeom::convert(const Ifc2x3::IfcLShapeProfileDef::ptr l, TopoDS_Face& face) {
-	const float y = l->Depth() / 2.0f * Ifc::LengthUnit;
-	const float x = l->Width() / 2.0f * Ifc::LengthUnit;
-	const float d = l->Thickness() * Ifc::LengthUnit;
+	const double y = l->Depth() / 2.0f * Ifc::LengthUnit;
+	const double x = l->Width() / 2.0f * Ifc::LengthUnit;
+	const double d = l->Thickness() * Ifc::LengthUnit;
 	bool doEdgeFillet = l->hasEdgeRadius();
 	bool doFillet = l->hasFilletRadius();
-	float f1 = 0.0f;
-	float f2 = 0.0f;
+	double f1 = 0.0f;
+	double f2 = 0.0f;
 	if (doFillet) {
 		f1 = l->FilletRadius() * Ifc::LengthUnit;
 	}
@@ -220,13 +226,13 @@ bool IfcGeom::convert(const Ifc2x3::IfcLShapeProfileDef::ptr l, TopoDS_Face& fac
 	gp_Trsf2d trsf2d;
 	IfcGeom::convert(l->Position(),trsf2d);
 
-	float coords[12] = {-x,-y,x,-y,x,-y+d,-x+d,-y+d,-x+d,y,-x,y};
+	double coords[12] = {-x,-y,x,-y,x,-y+d,-x+d,-y+d,-x+d,y,-x,y};
 	int fillets[3] = {2,3,4};
-	float radii[3] = {f2,f1,f2};
+	double radii[3] = {f2,f1,f2};
 	return IfcGeom::profile_helper(6,coords,doFillet ? 3 : 0,fillets,radii,trsf2d,face);
 }
 bool IfcGeom::convert(const Ifc2x3::IfcCircleProfileDef::ptr l, TopoDS_Face& face) {
-	const float r = l->Radius() * Ifc::LengthUnit;
+	const double r = l->Radius() * Ifc::LengthUnit;
 	if ( r == 0.0f ) {
 		Ifc::LogMessage("Notice","Skipping zero sized profile:",l->entity);
 		return false;
@@ -243,8 +249,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcCircleProfileDef::ptr l, TopoDS_Face& fac
 	return IfcGeom::convert_wire_to_face(w,face);
 }
 bool IfcGeom::convert(const Ifc2x3::IfcCircleHollowProfileDef::ptr l, TopoDS_Face& face) {
-	const float r = l->Radius() * Ifc::LengthUnit;
-	const float t = l->WallThickness() * Ifc::LengthUnit;
+	const double r = l->Radius() * Ifc::LengthUnit;
+	const double t = l->WallThickness() * Ifc::LengthUnit;
 	
 	if ( r == 0.0f || t == 0.0f ) {
 		Ifc::LogMessage("Notice","Skipping zero sized profile:",l->entity);

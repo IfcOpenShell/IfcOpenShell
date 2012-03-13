@@ -30,8 +30,6 @@
 
 extern ClassDesc* GetIFCImpDesc();
 
-//extern HINSTANCE hInstance;
-
 class IFCImp : public SceneImport 
 {
 public:
@@ -46,7 +44,6 @@ public:
 	unsigned int Version();           //  = 12
 	void	ShowAbout(HWND hWnd);
 	int		DoImport(const TCHAR *name,ImpInterface *ei,Interface *i, BOOL suppressPrompts);
-	//static BOOL resetScene;
 };
 
 #endif
