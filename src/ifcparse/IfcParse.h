@@ -228,6 +228,8 @@ private:
 	static std::ostream* log2;
 	static std::stringstream log_stream;
 public:
+	static MapEntityById::const_iterator First();
+	static MapEntityById::const_iterator Last();
 	static void SetOutput(std::ostream* l1, std::ostream* l2);
 	static void LogMessage(const std::string& type, const std::string& message, const IfcAbstractEntityPtr entity=0);
 	static IfcParse::File* file;

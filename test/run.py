@@ -192,12 +192,16 @@ TestFile("http://bimserver.googlecode.com/svn/trunk/TestData/data/AC90R1-niedrih
 # File courtesey of Jon Mirtschin / Geometry Gym  
 TestFile("geometrygym_great_court_roof.ifc")
 
+# File courtesey of Ryan Schultz / Opening Design / Studio Wikitecture  
+TestFile("revit2012_janesville_restaurant.zip")
+
 # Walls cut by IfcPolygonalBoundedHalfSpaces from Revit 2011
 TestFile("revit2011_wall1.ifc")
 TestFile("revit2011_wall2.ifc")
 
-# Walls from Autocad Architecture 2010
+# Objects from Autocad Architecture 2010
 TestFile("acad2010_walls.ifc")
+TestFile("acad2010_objects.ifc")
 
 # Various half space configuration to test cutting tolerances
 TestFile("ifcopenshell_halfspaces.ifc")

@@ -444,7 +444,7 @@ ArgumentPtr EntityArgument::operator [] (unsigned int i) const { throw IfcExcept
 std::string EntityArgument::toString(bool upper) const { 
 	ArgumentPtr arg = entity->wrappedValue();
 	IfcParse::TokenArgument* token_arg = dynamic_cast<IfcParse::TokenArgument*>(arg);
-	std::string token_string = ( token_arg ) ? TokenFunc::asString(token_arg->token) : "";
+	std::string token_string = ( token_arg ) ? TokenFunc::toString(token_arg->token) : "";
 	std::string dt = Ifc2x3::Type::ToString(entity->type());
 	if ( upper ) {
 		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
@@ -806,6 +806,12 @@ void Ifc::LogMessage(const std::string& type, const std::string& message, const 
 }
 std::string Ifc::GetLog() {
 	return log_stream.str();
+}
+MapEntityById::const_iterator Ifc::First() {
+	return byid.begin();
+}
+MapEntityById::const_iterator Ifc::Last() {
+	return byid.end();
 }
 
 File* Ifc::file = 0;

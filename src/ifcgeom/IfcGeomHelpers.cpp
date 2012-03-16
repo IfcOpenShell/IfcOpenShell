@@ -186,7 +186,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcCartesianTransformationOperator3DnonUnifo
 	gtrsf.SetValue(1,1,scale1);
 	gtrsf.SetValue(2,2,scale2);
 	gtrsf.SetValue(3,3,scale3);
-	gtrsf.Multiply(trsf);
+	gtrsf.PreMultiply(trsf);
 	CACHE(IfcCartesianTransformationOperator3DnonUniform,l,gtrsf)
 	return true;
 }
