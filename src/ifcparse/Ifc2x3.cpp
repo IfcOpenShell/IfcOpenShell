@@ -4745,25 +4745,25 @@ IfcWorkControlTypeEnum::IfcWorkControlTypeEnum IfcWorkControlTypeEnum::FromStrin
     throw IfcException("Unable to find find keyword in schema");
 }
 
-// Ifc2DCompositeCurve
+// Function implementations for Ifc2DCompositeCurve
 bool Ifc2DCompositeCurve::is(Type::Enum v) const { return v == Type::Ifc2DCompositeCurve || IfcCompositeCurve::is(v); }
 Type::Enum Ifc2DCompositeCurve::type() const { return Type::Ifc2DCompositeCurve; }
 Type::Enum Ifc2DCompositeCurve::Class() { return Type::Ifc2DCompositeCurve; }
 Ifc2DCompositeCurve::Ifc2DCompositeCurve(IfcAbstractEntityPtr e) { if (!is(Type::Ifc2DCompositeCurve)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcActionRequest
+// Function implementations for IfcActionRequest
 IfcIdentifier IfcActionRequest::RequestID() { return *entity->getArgument(5); }
 bool IfcActionRequest::is(Type::Enum v) const { return v == Type::IfcActionRequest || IfcControl::is(v); }
 Type::Enum IfcActionRequest::type() const { return Type::IfcActionRequest; }
 Type::Enum IfcActionRequest::Class() { return Type::IfcActionRequest; }
 IfcActionRequest::IfcActionRequest(IfcAbstractEntityPtr e) { if (!is(Type::IfcActionRequest)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcActor
+// Function implementations for IfcActor
 IfcActorSelect IfcActor::TheActor() { return *entity->getArgument(5); }
 IfcRelAssignsToActor::list IfcActor::IsActingUpon() { RETURN_INVERSE(IfcRelAssignsToActor) }
 bool IfcActor::is(Type::Enum v) const { return v == Type::IfcActor || IfcObject::is(v); }
 Type::Enum IfcActor::type() const { return Type::IfcActor; }
 Type::Enum IfcActor::Class() { return Type::IfcActor; }
 IfcActor::IfcActor(IfcAbstractEntityPtr e) { if (!is(Type::IfcActor)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcActorRole
+// Function implementations for IfcActorRole
 IfcRoleEnum::IfcRoleEnum IfcActorRole::Role() { return IfcRoleEnum::FromString(*entity->getArgument(0)); }
 bool IfcActorRole::hasUserDefinedRole() { return !entity->getArgument(1)->isNull(); }
 IfcLabel IfcActorRole::UserDefinedRole() { return *entity->getArgument(1); }
@@ -4773,13 +4773,13 @@ bool IfcActorRole::is(Type::Enum v) const { return v == Type::IfcActorRole; }
 Type::Enum IfcActorRole::type() const { return Type::IfcActorRole; }
 Type::Enum IfcActorRole::Class() { return Type::IfcActorRole; }
 IfcActorRole::IfcActorRole(IfcAbstractEntityPtr e) { if (!is(Type::IfcActorRole)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcActuatorType
+// Function implementations for IfcActuatorType
 IfcActuatorTypeEnum::IfcActuatorTypeEnum IfcActuatorType::PredefinedType() { return IfcActuatorTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcActuatorType::is(Type::Enum v) const { return v == Type::IfcActuatorType || IfcDistributionControlElementType::is(v); }
 Type::Enum IfcActuatorType::type() const { return Type::IfcActuatorType; }
 Type::Enum IfcActuatorType::Class() { return Type::IfcActuatorType; }
 IfcActuatorType::IfcActuatorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcActuatorType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAddress
+// Function implementations for IfcAddress
 bool IfcAddress::hasPurpose() { return !entity->getArgument(0)->isNull(); }
 IfcAddressTypeEnum::IfcAddressTypeEnum IfcAddress::Purpose() { return IfcAddressTypeEnum::FromString(*entity->getArgument(0)); }
 bool IfcAddress::hasDescription() { return !entity->getArgument(1)->isNull(); }
@@ -4792,47 +4792,47 @@ bool IfcAddress::is(Type::Enum v) const { return v == Type::IfcAddress; }
 Type::Enum IfcAddress::type() const { return Type::IfcAddress; }
 Type::Enum IfcAddress::Class() { return Type::IfcAddress; }
 IfcAddress::IfcAddress(IfcAbstractEntityPtr e) { if (!is(Type::IfcAddress)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAirTerminalBoxType
+// Function implementations for IfcAirTerminalBoxType
 IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum IfcAirTerminalBoxType::PredefinedType() { return IfcAirTerminalBoxTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcAirTerminalBoxType::is(Type::Enum v) const { return v == Type::IfcAirTerminalBoxType || IfcFlowControllerType::is(v); }
 Type::Enum IfcAirTerminalBoxType::type() const { return Type::IfcAirTerminalBoxType; }
 Type::Enum IfcAirTerminalBoxType::Class() { return Type::IfcAirTerminalBoxType; }
 IfcAirTerminalBoxType::IfcAirTerminalBoxType(IfcAbstractEntityPtr e) { if (!is(Type::IfcAirTerminalBoxType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAirTerminalType
+// Function implementations for IfcAirTerminalType
 IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum IfcAirTerminalType::PredefinedType() { return IfcAirTerminalTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcAirTerminalType::is(Type::Enum v) const { return v == Type::IfcAirTerminalType || IfcFlowTerminalType::is(v); }
 Type::Enum IfcAirTerminalType::type() const { return Type::IfcAirTerminalType; }
 Type::Enum IfcAirTerminalType::Class() { return Type::IfcAirTerminalType; }
 IfcAirTerminalType::IfcAirTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcAirTerminalType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAirToAirHeatRecoveryType
+// Function implementations for IfcAirToAirHeatRecoveryType
 IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum IfcAirToAirHeatRecoveryType::PredefinedType() { return IfcAirToAirHeatRecoveryTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcAirToAirHeatRecoveryType::is(Type::Enum v) const { return v == Type::IfcAirToAirHeatRecoveryType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcAirToAirHeatRecoveryType::type() const { return Type::IfcAirToAirHeatRecoveryType; }
 Type::Enum IfcAirToAirHeatRecoveryType::Class() { return Type::IfcAirToAirHeatRecoveryType; }
 IfcAirToAirHeatRecoveryType::IfcAirToAirHeatRecoveryType(IfcAbstractEntityPtr e) { if (!is(Type::IfcAirToAirHeatRecoveryType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAlarmType
+// Function implementations for IfcAlarmType
 IfcAlarmTypeEnum::IfcAlarmTypeEnum IfcAlarmType::PredefinedType() { return IfcAlarmTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcAlarmType::is(Type::Enum v) const { return v == Type::IfcAlarmType || IfcDistributionControlElementType::is(v); }
 Type::Enum IfcAlarmType::type() const { return Type::IfcAlarmType; }
 Type::Enum IfcAlarmType::Class() { return Type::IfcAlarmType; }
 IfcAlarmType::IfcAlarmType(IfcAbstractEntityPtr e) { if (!is(Type::IfcAlarmType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAngularDimension
+// Function implementations for IfcAngularDimension
 bool IfcAngularDimension::is(Type::Enum v) const { return v == Type::IfcAngularDimension || IfcDimensionCurveDirectedCallout::is(v); }
 Type::Enum IfcAngularDimension::type() const { return Type::IfcAngularDimension; }
 Type::Enum IfcAngularDimension::Class() { return Type::IfcAngularDimension; }
 IfcAngularDimension::IfcAngularDimension(IfcAbstractEntityPtr e) { if (!is(Type::IfcAngularDimension)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAnnotation
+// Function implementations for IfcAnnotation
 IfcRelContainedInSpatialStructure::list IfcAnnotation::ContainedInStructure() { RETURN_INVERSE(IfcRelContainedInSpatialStructure) }
 bool IfcAnnotation::is(Type::Enum v) const { return v == Type::IfcAnnotation || IfcProduct::is(v); }
 Type::Enum IfcAnnotation::type() const { return Type::IfcAnnotation; }
 Type::Enum IfcAnnotation::Class() { return Type::IfcAnnotation; }
 IfcAnnotation::IfcAnnotation(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotation)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAnnotationCurveOccurrence
+// Function implementations for IfcAnnotationCurveOccurrence
 bool IfcAnnotationCurveOccurrence::is(Type::Enum v) const { return v == Type::IfcAnnotationCurveOccurrence || IfcAnnotationOccurrence::is(v); }
 Type::Enum IfcAnnotationCurveOccurrence::type() const { return Type::IfcAnnotationCurveOccurrence; }
 Type::Enum IfcAnnotationCurveOccurrence::Class() { return Type::IfcAnnotationCurveOccurrence; }
 IfcAnnotationCurveOccurrence::IfcAnnotationCurveOccurrence(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationCurveOccurrence)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAnnotationFillArea
+// Function implementations for IfcAnnotationFillArea
 IfcCurve* IfcAnnotationFillArea::OuterBoundary() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
 bool IfcAnnotationFillArea::hasInnerBoundaries() { return !entity->getArgument(1)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > IfcAnnotationFillArea::InnerBoundaries() { RETURN_AS_LIST(IfcCurve,1) }
@@ -4840,7 +4840,7 @@ bool IfcAnnotationFillArea::is(Type::Enum v) const { return v == Type::IfcAnnota
 Type::Enum IfcAnnotationFillArea::type() const { return Type::IfcAnnotationFillArea; }
 Type::Enum IfcAnnotationFillArea::Class() { return Type::IfcAnnotationFillArea; }
 IfcAnnotationFillArea::IfcAnnotationFillArea(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationFillArea)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAnnotationFillAreaOccurrence
+// Function implementations for IfcAnnotationFillAreaOccurrence
 bool IfcAnnotationFillAreaOccurrence::hasFillStyleTarget() { return !entity->getArgument(3)->isNull(); }
 IfcPoint* IfcAnnotationFillAreaOccurrence::FillStyleTarget() { return reinterpret_pointer_cast<IfcBaseClass,IfcPoint>(*entity->getArgument(3)); }
 bool IfcAnnotationFillAreaOccurrence::hasGlobalOrLocal() { return !entity->getArgument(4)->isNull(); }
@@ -4849,12 +4849,12 @@ bool IfcAnnotationFillAreaOccurrence::is(Type::Enum v) const { return v == Type:
 Type::Enum IfcAnnotationFillAreaOccurrence::type() const { return Type::IfcAnnotationFillAreaOccurrence; }
 Type::Enum IfcAnnotationFillAreaOccurrence::Class() { return Type::IfcAnnotationFillAreaOccurrence; }
 IfcAnnotationFillAreaOccurrence::IfcAnnotationFillAreaOccurrence(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationFillAreaOccurrence)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAnnotationOccurrence
+// Function implementations for IfcAnnotationOccurrence
 bool IfcAnnotationOccurrence::is(Type::Enum v) const { return v == Type::IfcAnnotationOccurrence || IfcStyledItem::is(v); }
 Type::Enum IfcAnnotationOccurrence::type() const { return Type::IfcAnnotationOccurrence; }
 Type::Enum IfcAnnotationOccurrence::Class() { return Type::IfcAnnotationOccurrence; }
 IfcAnnotationOccurrence::IfcAnnotationOccurrence(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationOccurrence)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAnnotationSurface
+// Function implementations for IfcAnnotationSurface
 IfcGeometricRepresentationItem* IfcAnnotationSurface::Item() { return reinterpret_pointer_cast<IfcBaseClass,IfcGeometricRepresentationItem>(*entity->getArgument(0)); }
 bool IfcAnnotationSurface::hasTextureCoordinates() { return !entity->getArgument(1)->isNull(); }
 IfcTextureCoordinate* IfcAnnotationSurface::TextureCoordinates() { return reinterpret_pointer_cast<IfcBaseClass,IfcTextureCoordinate>(*entity->getArgument(1)); }
@@ -4862,22 +4862,22 @@ bool IfcAnnotationSurface::is(Type::Enum v) const { return v == Type::IfcAnnotat
 Type::Enum IfcAnnotationSurface::type() const { return Type::IfcAnnotationSurface; }
 Type::Enum IfcAnnotationSurface::Class() { return Type::IfcAnnotationSurface; }
 IfcAnnotationSurface::IfcAnnotationSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationSurface)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAnnotationSurfaceOccurrence
+// Function implementations for IfcAnnotationSurfaceOccurrence
 bool IfcAnnotationSurfaceOccurrence::is(Type::Enum v) const { return v == Type::IfcAnnotationSurfaceOccurrence || IfcAnnotationOccurrence::is(v); }
 Type::Enum IfcAnnotationSurfaceOccurrence::type() const { return Type::IfcAnnotationSurfaceOccurrence; }
 Type::Enum IfcAnnotationSurfaceOccurrence::Class() { return Type::IfcAnnotationSurfaceOccurrence; }
 IfcAnnotationSurfaceOccurrence::IfcAnnotationSurfaceOccurrence(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationSurfaceOccurrence)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAnnotationSymbolOccurrence
+// Function implementations for IfcAnnotationSymbolOccurrence
 bool IfcAnnotationSymbolOccurrence::is(Type::Enum v) const { return v == Type::IfcAnnotationSymbolOccurrence || IfcAnnotationOccurrence::is(v); }
 Type::Enum IfcAnnotationSymbolOccurrence::type() const { return Type::IfcAnnotationSymbolOccurrence; }
 Type::Enum IfcAnnotationSymbolOccurrence::Class() { return Type::IfcAnnotationSymbolOccurrence; }
 IfcAnnotationSymbolOccurrence::IfcAnnotationSymbolOccurrence(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationSymbolOccurrence)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAnnotationTextOccurrence
+// Function implementations for IfcAnnotationTextOccurrence
 bool IfcAnnotationTextOccurrence::is(Type::Enum v) const { return v == Type::IfcAnnotationTextOccurrence || IfcAnnotationOccurrence::is(v); }
 Type::Enum IfcAnnotationTextOccurrence::type() const { return Type::IfcAnnotationTextOccurrence; }
 Type::Enum IfcAnnotationTextOccurrence::Class() { return Type::IfcAnnotationTextOccurrence; }
 IfcAnnotationTextOccurrence::IfcAnnotationTextOccurrence(IfcAbstractEntityPtr e) { if (!is(Type::IfcAnnotationTextOccurrence)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcApplication
+// Function implementations for IfcApplication
 IfcOrganization* IfcApplication::ApplicationDeveloper() { return reinterpret_pointer_cast<IfcBaseClass,IfcOrganization>(*entity->getArgument(0)); }
 IfcLabel IfcApplication::Version() { return *entity->getArgument(1); }
 IfcLabel IfcApplication::ApplicationFullName() { return *entity->getArgument(2); }
@@ -4886,7 +4886,7 @@ bool IfcApplication::is(Type::Enum v) const { return v == Type::IfcApplication; 
 Type::Enum IfcApplication::type() const { return Type::IfcApplication; }
 Type::Enum IfcApplication::Class() { return Type::IfcApplication; }
 IfcApplication::IfcApplication(IfcAbstractEntityPtr e) { if (!is(Type::IfcApplication)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAppliedValue
+// Function implementations for IfcAppliedValue
 bool IfcAppliedValue::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcAppliedValue::Name() { return *entity->getArgument(0); }
 bool IfcAppliedValue::hasDescription() { return !entity->getArgument(1)->isNull(); }
@@ -4906,7 +4906,7 @@ bool IfcAppliedValue::is(Type::Enum v) const { return v == Type::IfcAppliedValue
 Type::Enum IfcAppliedValue::type() const { return Type::IfcAppliedValue; }
 Type::Enum IfcAppliedValue::Class() { return Type::IfcAppliedValue; }
 IfcAppliedValue::IfcAppliedValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcAppliedValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAppliedValueRelationship
+// Function implementations for IfcAppliedValueRelationship
 IfcAppliedValue* IfcAppliedValueRelationship::ComponentOfTotal() { return reinterpret_pointer_cast<IfcBaseClass,IfcAppliedValue>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValue> > IfcAppliedValueRelationship::Components() { RETURN_AS_LIST(IfcAppliedValue,1) }
 IfcArithmeticOperatorEnum::IfcArithmeticOperatorEnum IfcAppliedValueRelationship::ArithmeticOperator() { return IfcArithmeticOperatorEnum::FromString(*entity->getArgument(2)); }
@@ -4918,7 +4918,7 @@ bool IfcAppliedValueRelationship::is(Type::Enum v) const { return v == Type::Ifc
 Type::Enum IfcAppliedValueRelationship::type() const { return Type::IfcAppliedValueRelationship; }
 Type::Enum IfcAppliedValueRelationship::Class() { return Type::IfcAppliedValueRelationship; }
 IfcAppliedValueRelationship::IfcAppliedValueRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcAppliedValueRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcApproval
+// Function implementations for IfcApproval
 bool IfcApproval::hasDescription() { return !entity->getArgument(0)->isNull(); }
 IfcText IfcApproval::Description() { return *entity->getArgument(0); }
 IfcDateTimeSelect IfcApproval::ApprovalDateTime() { return *entity->getArgument(1); }
@@ -4937,7 +4937,7 @@ bool IfcApproval::is(Type::Enum v) const { return v == Type::IfcApproval; }
 Type::Enum IfcApproval::type() const { return Type::IfcApproval; }
 Type::Enum IfcApproval::Class() { return Type::IfcApproval; }
 IfcApproval::IfcApproval(IfcAbstractEntityPtr e) { if (!is(Type::IfcApproval)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcApprovalActorRelationship
+// Function implementations for IfcApprovalActorRelationship
 IfcActorSelect IfcApprovalActorRelationship::Actor() { return *entity->getArgument(0); }
 IfcApproval* IfcApprovalActorRelationship::Approval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(1)); }
 IfcActorRole* IfcApprovalActorRelationship::Role() { return reinterpret_pointer_cast<IfcBaseClass,IfcActorRole>(*entity->getArgument(2)); }
@@ -4945,14 +4945,14 @@ bool IfcApprovalActorRelationship::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcApprovalActorRelationship::type() const { return Type::IfcApprovalActorRelationship; }
 Type::Enum IfcApprovalActorRelationship::Class() { return Type::IfcApprovalActorRelationship; }
 IfcApprovalActorRelationship::IfcApprovalActorRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcApprovalActorRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcApprovalPropertyRelationship
+// Function implementations for IfcApprovalPropertyRelationship
 SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > IfcApprovalPropertyRelationship::ApprovedProperties() { RETURN_AS_LIST(IfcProperty,0) }
 IfcApproval* IfcApprovalPropertyRelationship::Approval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(1)); }
 bool IfcApprovalPropertyRelationship::is(Type::Enum v) const { return v == Type::IfcApprovalPropertyRelationship; }
 Type::Enum IfcApprovalPropertyRelationship::type() const { return Type::IfcApprovalPropertyRelationship; }
 Type::Enum IfcApprovalPropertyRelationship::Class() { return Type::IfcApprovalPropertyRelationship; }
 IfcApprovalPropertyRelationship::IfcApprovalPropertyRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcApprovalPropertyRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcApprovalRelationship
+// Function implementations for IfcApprovalRelationship
 IfcApproval* IfcApprovalRelationship::RelatedApproval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(0)); }
 IfcApproval* IfcApprovalRelationship::RelatingApproval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(1)); }
 bool IfcApprovalRelationship::hasDescription() { return !entity->getArgument(2)->isNull(); }
@@ -4962,25 +4962,25 @@ bool IfcApprovalRelationship::is(Type::Enum v) const { return v == Type::IfcAppr
 Type::Enum IfcApprovalRelationship::type() const { return Type::IfcApprovalRelationship; }
 Type::Enum IfcApprovalRelationship::Class() { return Type::IfcApprovalRelationship; }
 IfcApprovalRelationship::IfcApprovalRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcApprovalRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcArbitraryClosedProfileDef
+// Function implementations for IfcArbitraryClosedProfileDef
 IfcCurve* IfcArbitraryClosedProfileDef::OuterCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(2)); }
 bool IfcArbitraryClosedProfileDef::is(Type::Enum v) const { return v == Type::IfcArbitraryClosedProfileDef || IfcProfileDef::is(v); }
 Type::Enum IfcArbitraryClosedProfileDef::type() const { return Type::IfcArbitraryClosedProfileDef; }
 Type::Enum IfcArbitraryClosedProfileDef::Class() { return Type::IfcArbitraryClosedProfileDef; }
 IfcArbitraryClosedProfileDef::IfcArbitraryClosedProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcArbitraryClosedProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcArbitraryOpenProfileDef
+// Function implementations for IfcArbitraryOpenProfileDef
 IfcBoundedCurve* IfcArbitraryOpenProfileDef::Curve() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundedCurve>(*entity->getArgument(2)); }
 bool IfcArbitraryOpenProfileDef::is(Type::Enum v) const { return v == Type::IfcArbitraryOpenProfileDef || IfcProfileDef::is(v); }
 Type::Enum IfcArbitraryOpenProfileDef::type() const { return Type::IfcArbitraryOpenProfileDef; }
 Type::Enum IfcArbitraryOpenProfileDef::Class() { return Type::IfcArbitraryOpenProfileDef; }
 IfcArbitraryOpenProfileDef::IfcArbitraryOpenProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcArbitraryOpenProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcArbitraryProfileDefWithVoids
+// Function implementations for IfcArbitraryProfileDefWithVoids
 SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > IfcArbitraryProfileDefWithVoids::InnerCurves() { RETURN_AS_LIST(IfcCurve,3) }
 bool IfcArbitraryProfileDefWithVoids::is(Type::Enum v) const { return v == Type::IfcArbitraryProfileDefWithVoids || IfcArbitraryClosedProfileDef::is(v); }
 Type::Enum IfcArbitraryProfileDefWithVoids::type() const { return Type::IfcArbitraryProfileDefWithVoids; }
 Type::Enum IfcArbitraryProfileDefWithVoids::Class() { return Type::IfcArbitraryProfileDefWithVoids; }
 IfcArbitraryProfileDefWithVoids::IfcArbitraryProfileDefWithVoids(IfcAbstractEntityPtr e) { if (!is(Type::IfcArbitraryProfileDefWithVoids)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAsset
+// Function implementations for IfcAsset
 IfcIdentifier IfcAsset::AssetID() { return *entity->getArgument(5); }
 IfcCostValue* IfcAsset::OriginalValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(6)); }
 IfcCostValue* IfcAsset::CurrentValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcCostValue>(*entity->getArgument(7)); }
@@ -4994,7 +4994,7 @@ bool IfcAsset::is(Type::Enum v) const { return v == Type::IfcAsset || IfcGroup::
 Type::Enum IfcAsset::type() const { return Type::IfcAsset; }
 Type::Enum IfcAsset::Class() { return Type::IfcAsset; }
 IfcAsset::IfcAsset(IfcAbstractEntityPtr e) { if (!is(Type::IfcAsset)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAsymmetricIShapeProfileDef
+// Function implementations for IfcAsymmetricIShapeProfileDef
 IfcPositiveLengthMeasure IfcAsymmetricIShapeProfileDef::TopFlangeWidth() { return *entity->getArgument(8); }
 bool IfcAsymmetricIShapeProfileDef::hasTopFlangeThickness() { return !entity->getArgument(9)->isNull(); }
 IfcPositiveLengthMeasure IfcAsymmetricIShapeProfileDef::TopFlangeThickness() { return *entity->getArgument(9); }
@@ -5006,21 +5006,21 @@ bool IfcAsymmetricIShapeProfileDef::is(Type::Enum v) const { return v == Type::I
 Type::Enum IfcAsymmetricIShapeProfileDef::type() const { return Type::IfcAsymmetricIShapeProfileDef; }
 Type::Enum IfcAsymmetricIShapeProfileDef::Class() { return Type::IfcAsymmetricIShapeProfileDef; }
 IfcAsymmetricIShapeProfileDef::IfcAsymmetricIShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcAsymmetricIShapeProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAxis1Placement
+// Function implementations for IfcAxis1Placement
 bool IfcAxis1Placement::hasAxis() { return !entity->getArgument(1)->isNull(); }
 IfcDirection* IfcAxis1Placement::Axis() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(1)); }
 bool IfcAxis1Placement::is(Type::Enum v) const { return v == Type::IfcAxis1Placement || IfcPlacement::is(v); }
 Type::Enum IfcAxis1Placement::type() const { return Type::IfcAxis1Placement; }
 Type::Enum IfcAxis1Placement::Class() { return Type::IfcAxis1Placement; }
 IfcAxis1Placement::IfcAxis1Placement(IfcAbstractEntityPtr e) { if (!is(Type::IfcAxis1Placement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAxis2Placement2D
+// Function implementations for IfcAxis2Placement2D
 bool IfcAxis2Placement2D::hasRefDirection() { return !entity->getArgument(1)->isNull(); }
 IfcDirection* IfcAxis2Placement2D::RefDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(1)); }
 bool IfcAxis2Placement2D::is(Type::Enum v) const { return v == Type::IfcAxis2Placement2D || IfcPlacement::is(v); }
 Type::Enum IfcAxis2Placement2D::type() const { return Type::IfcAxis2Placement2D; }
 Type::Enum IfcAxis2Placement2D::Class() { return Type::IfcAxis2Placement2D; }
 IfcAxis2Placement2D::IfcAxis2Placement2D(IfcAbstractEntityPtr e) { if (!is(Type::IfcAxis2Placement2D)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcAxis2Placement3D
+// Function implementations for IfcAxis2Placement3D
 bool IfcAxis2Placement3D::hasAxis() { return !entity->getArgument(1)->isNull(); }
 IfcDirection* IfcAxis2Placement3D::Axis() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(1)); }
 bool IfcAxis2Placement3D::hasRefDirection() { return !entity->getArgument(2)->isNull(); }
@@ -5029,7 +5029,7 @@ bool IfcAxis2Placement3D::is(Type::Enum v) const { return v == Type::IfcAxis2Pla
 Type::Enum IfcAxis2Placement3D::type() const { return Type::IfcAxis2Placement3D; }
 Type::Enum IfcAxis2Placement3D::Class() { return Type::IfcAxis2Placement3D; }
 IfcAxis2Placement3D::IfcAxis2Placement3D(IfcAbstractEntityPtr e) { if (!is(Type::IfcAxis2Placement3D)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBSplineCurve
+// Function implementations for IfcBSplineCurve
 int IfcBSplineCurve::Degree() { return *entity->getArgument(0); }
 SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > IfcBSplineCurve::ControlPointsList() { RETURN_AS_LIST(IfcCartesianPoint,1) }
 IfcBSplineCurveForm::IfcBSplineCurveForm IfcBSplineCurve::CurveForm() { return IfcBSplineCurveForm::FromString(*entity->getArgument(2)); }
@@ -5039,30 +5039,30 @@ bool IfcBSplineCurve::is(Type::Enum v) const { return v == Type::IfcBSplineCurve
 Type::Enum IfcBSplineCurve::type() const { return Type::IfcBSplineCurve; }
 Type::Enum IfcBSplineCurve::Class() { return Type::IfcBSplineCurve; }
 IfcBSplineCurve::IfcBSplineCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcBSplineCurve)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBeam
+// Function implementations for IfcBeam
 bool IfcBeam::is(Type::Enum v) const { return v == Type::IfcBeam || IfcBuildingElement::is(v); }
 Type::Enum IfcBeam::type() const { return Type::IfcBeam; }
 Type::Enum IfcBeam::Class() { return Type::IfcBeam; }
 IfcBeam::IfcBeam(IfcAbstractEntityPtr e) { if (!is(Type::IfcBeam)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBeamType
+// Function implementations for IfcBeamType
 IfcBeamTypeEnum::IfcBeamTypeEnum IfcBeamType::PredefinedType() { return IfcBeamTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcBeamType::is(Type::Enum v) const { return v == Type::IfcBeamType || IfcBuildingElementType::is(v); }
 Type::Enum IfcBeamType::type() const { return Type::IfcBeamType; }
 Type::Enum IfcBeamType::Class() { return Type::IfcBeamType; }
 IfcBeamType::IfcBeamType(IfcAbstractEntityPtr e) { if (!is(Type::IfcBeamType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBezierCurve
+// Function implementations for IfcBezierCurve
 bool IfcBezierCurve::is(Type::Enum v) const { return v == Type::IfcBezierCurve || IfcBSplineCurve::is(v); }
 Type::Enum IfcBezierCurve::type() const { return Type::IfcBezierCurve; }
 Type::Enum IfcBezierCurve::Class() { return Type::IfcBezierCurve; }
 IfcBezierCurve::IfcBezierCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcBezierCurve)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBlobTexture
+// Function implementations for IfcBlobTexture
 IfcIdentifier IfcBlobTexture::RasterFormat() { return *entity->getArgument(4); }
 bool IfcBlobTexture::RasterCode() { return *entity->getArgument(5); }
 bool IfcBlobTexture::is(Type::Enum v) const { return v == Type::IfcBlobTexture || IfcSurfaceTexture::is(v); }
 Type::Enum IfcBlobTexture::type() const { return Type::IfcBlobTexture; }
 Type::Enum IfcBlobTexture::Class() { return Type::IfcBlobTexture; }
 IfcBlobTexture::IfcBlobTexture(IfcAbstractEntityPtr e) { if (!is(Type::IfcBlobTexture)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBlock
+// Function implementations for IfcBlock
 IfcPositiveLengthMeasure IfcBlock::XLength() { return *entity->getArgument(1); }
 IfcPositiveLengthMeasure IfcBlock::YLength() { return *entity->getArgument(2); }
 IfcPositiveLengthMeasure IfcBlock::ZLength() { return *entity->getArgument(3); }
@@ -5070,18 +5070,18 @@ bool IfcBlock::is(Type::Enum v) const { return v == Type::IfcBlock || IfcCsgPrim
 Type::Enum IfcBlock::type() const { return Type::IfcBlock; }
 Type::Enum IfcBlock::Class() { return Type::IfcBlock; }
 IfcBlock::IfcBlock(IfcAbstractEntityPtr e) { if (!is(Type::IfcBlock)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBoilerType
+// Function implementations for IfcBoilerType
 IfcBoilerTypeEnum::IfcBoilerTypeEnum IfcBoilerType::PredefinedType() { return IfcBoilerTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcBoilerType::is(Type::Enum v) const { return v == Type::IfcBoilerType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcBoilerType::type() const { return Type::IfcBoilerType; }
 Type::Enum IfcBoilerType::Class() { return Type::IfcBoilerType; }
 IfcBoilerType::IfcBoilerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoilerType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBooleanClippingResult
+// Function implementations for IfcBooleanClippingResult
 bool IfcBooleanClippingResult::is(Type::Enum v) const { return v == Type::IfcBooleanClippingResult || IfcBooleanResult::is(v); }
 Type::Enum IfcBooleanClippingResult::type() const { return Type::IfcBooleanClippingResult; }
 Type::Enum IfcBooleanClippingResult::Class() { return Type::IfcBooleanClippingResult; }
 IfcBooleanClippingResult::IfcBooleanClippingResult(IfcAbstractEntityPtr e) { if (!is(Type::IfcBooleanClippingResult)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBooleanResult
+// Function implementations for IfcBooleanResult
 IfcBooleanOperator::IfcBooleanOperator IfcBooleanResult::Operator() { return IfcBooleanOperator::FromString(*entity->getArgument(0)); }
 IfcBooleanOperand IfcBooleanResult::FirstOperand() { return *entity->getArgument(1); }
 IfcBooleanOperand IfcBooleanResult::SecondOperand() { return *entity->getArgument(2); }
@@ -5089,14 +5089,14 @@ bool IfcBooleanResult::is(Type::Enum v) const { return v == Type::IfcBooleanResu
 Type::Enum IfcBooleanResult::type() const { return Type::IfcBooleanResult; }
 Type::Enum IfcBooleanResult::Class() { return Type::IfcBooleanResult; }
 IfcBooleanResult::IfcBooleanResult(IfcAbstractEntityPtr e) { if (!is(Type::IfcBooleanResult)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBoundaryCondition
+// Function implementations for IfcBoundaryCondition
 bool IfcBoundaryCondition::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcBoundaryCondition::Name() { return *entity->getArgument(0); }
 bool IfcBoundaryCondition::is(Type::Enum v) const { return v == Type::IfcBoundaryCondition; }
 Type::Enum IfcBoundaryCondition::type() const { return Type::IfcBoundaryCondition; }
 Type::Enum IfcBoundaryCondition::Class() { return Type::IfcBoundaryCondition; }
 IfcBoundaryCondition::IfcBoundaryCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundaryCondition)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBoundaryEdgeCondition
+// Function implementations for IfcBoundaryEdgeCondition
 bool IfcBoundaryEdgeCondition::hasLinearStiffnessByLengthX() { return !entity->getArgument(1)->isNull(); }
 IfcModulusOfLinearSubgradeReactionMeasure IfcBoundaryEdgeCondition::LinearStiffnessByLengthX() { return *entity->getArgument(1); }
 bool IfcBoundaryEdgeCondition::hasLinearStiffnessByLengthY() { return !entity->getArgument(2)->isNull(); }
@@ -5113,7 +5113,7 @@ bool IfcBoundaryEdgeCondition::is(Type::Enum v) const { return v == Type::IfcBou
 Type::Enum IfcBoundaryEdgeCondition::type() const { return Type::IfcBoundaryEdgeCondition; }
 Type::Enum IfcBoundaryEdgeCondition::Class() { return Type::IfcBoundaryEdgeCondition; }
 IfcBoundaryEdgeCondition::IfcBoundaryEdgeCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundaryEdgeCondition)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBoundaryFaceCondition
+// Function implementations for IfcBoundaryFaceCondition
 bool IfcBoundaryFaceCondition::hasLinearStiffnessByAreaX() { return !entity->getArgument(1)->isNull(); }
 IfcModulusOfSubgradeReactionMeasure IfcBoundaryFaceCondition::LinearStiffnessByAreaX() { return *entity->getArgument(1); }
 bool IfcBoundaryFaceCondition::hasLinearStiffnessByAreaY() { return !entity->getArgument(2)->isNull(); }
@@ -5124,7 +5124,7 @@ bool IfcBoundaryFaceCondition::is(Type::Enum v) const { return v == Type::IfcBou
 Type::Enum IfcBoundaryFaceCondition::type() const { return Type::IfcBoundaryFaceCondition; }
 Type::Enum IfcBoundaryFaceCondition::Class() { return Type::IfcBoundaryFaceCondition; }
 IfcBoundaryFaceCondition::IfcBoundaryFaceCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundaryFaceCondition)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBoundaryNodeCondition
+// Function implementations for IfcBoundaryNodeCondition
 bool IfcBoundaryNodeCondition::hasLinearStiffnessX() { return !entity->getArgument(1)->isNull(); }
 IfcLinearStiffnessMeasure IfcBoundaryNodeCondition::LinearStiffnessX() { return *entity->getArgument(1); }
 bool IfcBoundaryNodeCondition::hasLinearStiffnessY() { return !entity->getArgument(2)->isNull(); }
@@ -5141,24 +5141,24 @@ bool IfcBoundaryNodeCondition::is(Type::Enum v) const { return v == Type::IfcBou
 Type::Enum IfcBoundaryNodeCondition::type() const { return Type::IfcBoundaryNodeCondition; }
 Type::Enum IfcBoundaryNodeCondition::Class() { return Type::IfcBoundaryNodeCondition; }
 IfcBoundaryNodeCondition::IfcBoundaryNodeCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundaryNodeCondition)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBoundaryNodeConditionWarping
+// Function implementations for IfcBoundaryNodeConditionWarping
 bool IfcBoundaryNodeConditionWarping::hasWarpingStiffness() { return !entity->getArgument(7)->isNull(); }
 IfcWarpingMomentMeasure IfcBoundaryNodeConditionWarping::WarpingStiffness() { return *entity->getArgument(7); }
 bool IfcBoundaryNodeConditionWarping::is(Type::Enum v) const { return v == Type::IfcBoundaryNodeConditionWarping || IfcBoundaryNodeCondition::is(v); }
 Type::Enum IfcBoundaryNodeConditionWarping::type() const { return Type::IfcBoundaryNodeConditionWarping; }
 Type::Enum IfcBoundaryNodeConditionWarping::Class() { return Type::IfcBoundaryNodeConditionWarping; }
 IfcBoundaryNodeConditionWarping::IfcBoundaryNodeConditionWarping(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundaryNodeConditionWarping)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBoundedCurve
+// Function implementations for IfcBoundedCurve
 bool IfcBoundedCurve::is(Type::Enum v) const { return v == Type::IfcBoundedCurve || IfcCurve::is(v); }
 Type::Enum IfcBoundedCurve::type() const { return Type::IfcBoundedCurve; }
 Type::Enum IfcBoundedCurve::Class() { return Type::IfcBoundedCurve; }
 IfcBoundedCurve::IfcBoundedCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundedCurve)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBoundedSurface
+// Function implementations for IfcBoundedSurface
 bool IfcBoundedSurface::is(Type::Enum v) const { return v == Type::IfcBoundedSurface || IfcSurface::is(v); }
 Type::Enum IfcBoundedSurface::type() const { return Type::IfcBoundedSurface; }
 Type::Enum IfcBoundedSurface::Class() { return Type::IfcBoundedSurface; }
 IfcBoundedSurface::IfcBoundedSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundedSurface)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBoundingBox
+// Function implementations for IfcBoundingBox
 IfcCartesianPoint* IfcBoundingBox::Corner() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(0)); }
 IfcPositiveLengthMeasure IfcBoundingBox::XDim() { return *entity->getArgument(1); }
 IfcPositiveLengthMeasure IfcBoundingBox::YDim() { return *entity->getArgument(2); }
@@ -5167,13 +5167,13 @@ bool IfcBoundingBox::is(Type::Enum v) const { return v == Type::IfcBoundingBox |
 Type::Enum IfcBoundingBox::type() const { return Type::IfcBoundingBox; }
 Type::Enum IfcBoundingBox::Class() { return Type::IfcBoundingBox; }
 IfcBoundingBox::IfcBoundingBox(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoundingBox)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBoxedHalfSpace
+// Function implementations for IfcBoxedHalfSpace
 IfcBoundingBox* IfcBoxedHalfSpace::Enclosure() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundingBox>(*entity->getArgument(2)); }
 bool IfcBoxedHalfSpace::is(Type::Enum v) const { return v == Type::IfcBoxedHalfSpace || IfcHalfSpaceSolid::is(v); }
 Type::Enum IfcBoxedHalfSpace::type() const { return Type::IfcBoxedHalfSpace; }
 Type::Enum IfcBoxedHalfSpace::Class() { return Type::IfcBoxedHalfSpace; }
 IfcBoxedHalfSpace::IfcBoxedHalfSpace(IfcAbstractEntityPtr e) { if (!is(Type::IfcBoxedHalfSpace)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBuilding
+// Function implementations for IfcBuilding
 bool IfcBuilding::hasElevationOfRefHeight() { return !entity->getArgument(9)->isNull(); }
 IfcLengthMeasure IfcBuilding::ElevationOfRefHeight() { return *entity->getArgument(9); }
 bool IfcBuilding::hasElevationOfTerrain() { return !entity->getArgument(10)->isNull(); }
@@ -5184,47 +5184,47 @@ bool IfcBuilding::is(Type::Enum v) const { return v == Type::IfcBuilding || IfcS
 Type::Enum IfcBuilding::type() const { return Type::IfcBuilding; }
 Type::Enum IfcBuilding::Class() { return Type::IfcBuilding; }
 IfcBuilding::IfcBuilding(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuilding)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBuildingElement
+// Function implementations for IfcBuildingElement
 bool IfcBuildingElement::is(Type::Enum v) const { return v == Type::IfcBuildingElement || IfcElement::is(v); }
 Type::Enum IfcBuildingElement::type() const { return Type::IfcBuildingElement; }
 Type::Enum IfcBuildingElement::Class() { return Type::IfcBuildingElement; }
 IfcBuildingElement::IfcBuildingElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBuildingElementComponent
+// Function implementations for IfcBuildingElementComponent
 bool IfcBuildingElementComponent::is(Type::Enum v) const { return v == Type::IfcBuildingElementComponent || IfcBuildingElement::is(v); }
 Type::Enum IfcBuildingElementComponent::type() const { return Type::IfcBuildingElementComponent; }
 Type::Enum IfcBuildingElementComponent::Class() { return Type::IfcBuildingElementComponent; }
 IfcBuildingElementComponent::IfcBuildingElementComponent(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingElementComponent)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBuildingElementPart
+// Function implementations for IfcBuildingElementPart
 bool IfcBuildingElementPart::is(Type::Enum v) const { return v == Type::IfcBuildingElementPart || IfcBuildingElementComponent::is(v); }
 Type::Enum IfcBuildingElementPart::type() const { return Type::IfcBuildingElementPart; }
 Type::Enum IfcBuildingElementPart::Class() { return Type::IfcBuildingElementPart; }
 IfcBuildingElementPart::IfcBuildingElementPart(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingElementPart)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBuildingElementProxy
+// Function implementations for IfcBuildingElementProxy
 bool IfcBuildingElementProxy::hasCompositionType() { return !entity->getArgument(8)->isNull(); }
 IfcElementCompositionEnum::IfcElementCompositionEnum IfcBuildingElementProxy::CompositionType() { return IfcElementCompositionEnum::FromString(*entity->getArgument(8)); }
 bool IfcBuildingElementProxy::is(Type::Enum v) const { return v == Type::IfcBuildingElementProxy || IfcBuildingElement::is(v); }
 Type::Enum IfcBuildingElementProxy::type() const { return Type::IfcBuildingElementProxy; }
 Type::Enum IfcBuildingElementProxy::Class() { return Type::IfcBuildingElementProxy; }
 IfcBuildingElementProxy::IfcBuildingElementProxy(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingElementProxy)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBuildingElementProxyType
+// Function implementations for IfcBuildingElementProxyType
 IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum IfcBuildingElementProxyType::PredefinedType() { return IfcBuildingElementProxyTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcBuildingElementProxyType::is(Type::Enum v) const { return v == Type::IfcBuildingElementProxyType || IfcBuildingElementType::is(v); }
 Type::Enum IfcBuildingElementProxyType::type() const { return Type::IfcBuildingElementProxyType; }
 Type::Enum IfcBuildingElementProxyType::Class() { return Type::IfcBuildingElementProxyType; }
 IfcBuildingElementProxyType::IfcBuildingElementProxyType(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingElementProxyType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBuildingElementType
+// Function implementations for IfcBuildingElementType
 bool IfcBuildingElementType::is(Type::Enum v) const { return v == Type::IfcBuildingElementType || IfcElementType::is(v); }
 Type::Enum IfcBuildingElementType::type() const { return Type::IfcBuildingElementType; }
 Type::Enum IfcBuildingElementType::Class() { return Type::IfcBuildingElementType; }
 IfcBuildingElementType::IfcBuildingElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingElementType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcBuildingStorey
+// Function implementations for IfcBuildingStorey
 bool IfcBuildingStorey::hasElevation() { return !entity->getArgument(9)->isNull(); }
 IfcLengthMeasure IfcBuildingStorey::Elevation() { return *entity->getArgument(9); }
 bool IfcBuildingStorey::is(Type::Enum v) const { return v == Type::IfcBuildingStorey || IfcSpatialStructureElement::is(v); }
 Type::Enum IfcBuildingStorey::type() const { return Type::IfcBuildingStorey; }
 Type::Enum IfcBuildingStorey::Class() { return Type::IfcBuildingStorey; }
 IfcBuildingStorey::IfcBuildingStorey(IfcAbstractEntityPtr e) { if (!is(Type::IfcBuildingStorey)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCShapeProfileDef
+// Function implementations for IfcCShapeProfileDef
 IfcPositiveLengthMeasure IfcCShapeProfileDef::Depth() { return *entity->getArgument(3); }
 IfcPositiveLengthMeasure IfcCShapeProfileDef::Width() { return *entity->getArgument(4); }
 IfcPositiveLengthMeasure IfcCShapeProfileDef::WallThickness() { return *entity->getArgument(5); }
@@ -5237,25 +5237,25 @@ bool IfcCShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcCShapePr
 Type::Enum IfcCShapeProfileDef::type() const { return Type::IfcCShapeProfileDef; }
 Type::Enum IfcCShapeProfileDef::Class() { return Type::IfcCShapeProfileDef; }
 IfcCShapeProfileDef::IfcCShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCShapeProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCableCarrierFittingType
+// Function implementations for IfcCableCarrierFittingType
 IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum IfcCableCarrierFittingType::PredefinedType() { return IfcCableCarrierFittingTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcCableCarrierFittingType::is(Type::Enum v) const { return v == Type::IfcCableCarrierFittingType || IfcFlowFittingType::is(v); }
 Type::Enum IfcCableCarrierFittingType::type() const { return Type::IfcCableCarrierFittingType; }
 Type::Enum IfcCableCarrierFittingType::Class() { return Type::IfcCableCarrierFittingType; }
 IfcCableCarrierFittingType::IfcCableCarrierFittingType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCableCarrierFittingType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCableCarrierSegmentType
+// Function implementations for IfcCableCarrierSegmentType
 IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum IfcCableCarrierSegmentType::PredefinedType() { return IfcCableCarrierSegmentTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcCableCarrierSegmentType::is(Type::Enum v) const { return v == Type::IfcCableCarrierSegmentType || IfcFlowSegmentType::is(v); }
 Type::Enum IfcCableCarrierSegmentType::type() const { return Type::IfcCableCarrierSegmentType; }
 Type::Enum IfcCableCarrierSegmentType::Class() { return Type::IfcCableCarrierSegmentType; }
 IfcCableCarrierSegmentType::IfcCableCarrierSegmentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCableCarrierSegmentType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCableSegmentType
+// Function implementations for IfcCableSegmentType
 IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum IfcCableSegmentType::PredefinedType() { return IfcCableSegmentTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcCableSegmentType::is(Type::Enum v) const { return v == Type::IfcCableSegmentType || IfcFlowSegmentType::is(v); }
 Type::Enum IfcCableSegmentType::type() const { return Type::IfcCableSegmentType; }
 Type::Enum IfcCableSegmentType::Class() { return Type::IfcCableSegmentType; }
 IfcCableSegmentType::IfcCableSegmentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCableSegmentType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCalendarDate
+// Function implementations for IfcCalendarDate
 IfcDayInMonthNumber IfcCalendarDate::DayComponent() { return *entity->getArgument(0); }
 IfcMonthInYearNumber IfcCalendarDate::MonthComponent() { return *entity->getArgument(1); }
 IfcYearNumber IfcCalendarDate::YearComponent() { return *entity->getArgument(2); }
@@ -5263,13 +5263,13 @@ bool IfcCalendarDate::is(Type::Enum v) const { return v == Type::IfcCalendarDate
 Type::Enum IfcCalendarDate::type() const { return Type::IfcCalendarDate; }
 Type::Enum IfcCalendarDate::Class() { return Type::IfcCalendarDate; }
 IfcCalendarDate::IfcCalendarDate(IfcAbstractEntityPtr e) { if (!is(Type::IfcCalendarDate)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCartesianPoint
+// Function implementations for IfcCartesianPoint
 std::vector<IfcLengthMeasure> /*[1:3]*/ IfcCartesianPoint::Coordinates() { return *entity->getArgument(0); }
 bool IfcCartesianPoint::is(Type::Enum v) const { return v == Type::IfcCartesianPoint || IfcPoint::is(v); }
 Type::Enum IfcCartesianPoint::type() const { return Type::IfcCartesianPoint; }
 Type::Enum IfcCartesianPoint::Class() { return Type::IfcCartesianPoint; }
 IfcCartesianPoint::IfcCartesianPoint(IfcAbstractEntityPtr e) { if (!is(Type::IfcCartesianPoint)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCartesianTransformationOperator
+// Function implementations for IfcCartesianTransformationOperator
 bool IfcCartesianTransformationOperator::hasAxis1() { return !entity->getArgument(0)->isNull(); }
 IfcDirection* IfcCartesianTransformationOperator::Axis1() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(0)); }
 bool IfcCartesianTransformationOperator::hasAxis2() { return !entity->getArgument(1)->isNull(); }
@@ -5281,26 +5281,26 @@ bool IfcCartesianTransformationOperator::is(Type::Enum v) const { return v == Ty
 Type::Enum IfcCartesianTransformationOperator::type() const { return Type::IfcCartesianTransformationOperator; }
 Type::Enum IfcCartesianTransformationOperator::Class() { return Type::IfcCartesianTransformationOperator; }
 IfcCartesianTransformationOperator::IfcCartesianTransformationOperator(IfcAbstractEntityPtr e) { if (!is(Type::IfcCartesianTransformationOperator)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCartesianTransformationOperator2D
+// Function implementations for IfcCartesianTransformationOperator2D
 bool IfcCartesianTransformationOperator2D::is(Type::Enum v) const { return v == Type::IfcCartesianTransformationOperator2D || IfcCartesianTransformationOperator::is(v); }
 Type::Enum IfcCartesianTransformationOperator2D::type() const { return Type::IfcCartesianTransformationOperator2D; }
 Type::Enum IfcCartesianTransformationOperator2D::Class() { return Type::IfcCartesianTransformationOperator2D; }
 IfcCartesianTransformationOperator2D::IfcCartesianTransformationOperator2D(IfcAbstractEntityPtr e) { if (!is(Type::IfcCartesianTransformationOperator2D)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCartesianTransformationOperator2DnonUniform
+// Function implementations for IfcCartesianTransformationOperator2DnonUniform
 bool IfcCartesianTransformationOperator2DnonUniform::hasScale2() { return !entity->getArgument(4)->isNull(); }
 double IfcCartesianTransformationOperator2DnonUniform::Scale2() { return *entity->getArgument(4); }
 bool IfcCartesianTransformationOperator2DnonUniform::is(Type::Enum v) const { return v == Type::IfcCartesianTransformationOperator2DnonUniform || IfcCartesianTransformationOperator2D::is(v); }
 Type::Enum IfcCartesianTransformationOperator2DnonUniform::type() const { return Type::IfcCartesianTransformationOperator2DnonUniform; }
 Type::Enum IfcCartesianTransformationOperator2DnonUniform::Class() { return Type::IfcCartesianTransformationOperator2DnonUniform; }
 IfcCartesianTransformationOperator2DnonUniform::IfcCartesianTransformationOperator2DnonUniform(IfcAbstractEntityPtr e) { if (!is(Type::IfcCartesianTransformationOperator2DnonUniform)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCartesianTransformationOperator3D
+// Function implementations for IfcCartesianTransformationOperator3D
 bool IfcCartesianTransformationOperator3D::hasAxis3() { return !entity->getArgument(4)->isNull(); }
 IfcDirection* IfcCartesianTransformationOperator3D::Axis3() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(4)); }
 bool IfcCartesianTransformationOperator3D::is(Type::Enum v) const { return v == Type::IfcCartesianTransformationOperator3D || IfcCartesianTransformationOperator::is(v); }
 Type::Enum IfcCartesianTransformationOperator3D::type() const { return Type::IfcCartesianTransformationOperator3D; }
 Type::Enum IfcCartesianTransformationOperator3D::Class() { return Type::IfcCartesianTransformationOperator3D; }
 IfcCartesianTransformationOperator3D::IfcCartesianTransformationOperator3D(IfcAbstractEntityPtr e) { if (!is(Type::IfcCartesianTransformationOperator3D)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCartesianTransformationOperator3DnonUniform
+// Function implementations for IfcCartesianTransformationOperator3DnonUniform
 bool IfcCartesianTransformationOperator3DnonUniform::hasScale2() { return !entity->getArgument(5)->isNull(); }
 double IfcCartesianTransformationOperator3DnonUniform::Scale2() { return *entity->getArgument(5); }
 bool IfcCartesianTransformationOperator3DnonUniform::hasScale3() { return !entity->getArgument(6)->isNull(); }
@@ -5309,13 +5309,13 @@ bool IfcCartesianTransformationOperator3DnonUniform::is(Type::Enum v) const { re
 Type::Enum IfcCartesianTransformationOperator3DnonUniform::type() const { return Type::IfcCartesianTransformationOperator3DnonUniform; }
 Type::Enum IfcCartesianTransformationOperator3DnonUniform::Class() { return Type::IfcCartesianTransformationOperator3DnonUniform; }
 IfcCartesianTransformationOperator3DnonUniform::IfcCartesianTransformationOperator3DnonUniform(IfcAbstractEntityPtr e) { if (!is(Type::IfcCartesianTransformationOperator3DnonUniform)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCenterLineProfileDef
+// Function implementations for IfcCenterLineProfileDef
 IfcPositiveLengthMeasure IfcCenterLineProfileDef::Thickness() { return *entity->getArgument(3); }
 bool IfcCenterLineProfileDef::is(Type::Enum v) const { return v == Type::IfcCenterLineProfileDef || IfcArbitraryOpenProfileDef::is(v); }
 Type::Enum IfcCenterLineProfileDef::type() const { return Type::IfcCenterLineProfileDef; }
 Type::Enum IfcCenterLineProfileDef::Class() { return Type::IfcCenterLineProfileDef; }
 IfcCenterLineProfileDef::IfcCenterLineProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCenterLineProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcChamferEdgeFeature
+// Function implementations for IfcChamferEdgeFeature
 bool IfcChamferEdgeFeature::hasWidth() { return !entity->getArgument(9)->isNull(); }
 IfcPositiveLengthMeasure IfcChamferEdgeFeature::Width() { return *entity->getArgument(9); }
 bool IfcChamferEdgeFeature::hasHeight() { return !entity->getArgument(10)->isNull(); }
@@ -5324,31 +5324,31 @@ bool IfcChamferEdgeFeature::is(Type::Enum v) const { return v == Type::IfcChamfe
 Type::Enum IfcChamferEdgeFeature::type() const { return Type::IfcChamferEdgeFeature; }
 Type::Enum IfcChamferEdgeFeature::Class() { return Type::IfcChamferEdgeFeature; }
 IfcChamferEdgeFeature::IfcChamferEdgeFeature(IfcAbstractEntityPtr e) { if (!is(Type::IfcChamferEdgeFeature)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcChillerType
+// Function implementations for IfcChillerType
 IfcChillerTypeEnum::IfcChillerTypeEnum IfcChillerType::PredefinedType() { return IfcChillerTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcChillerType::is(Type::Enum v) const { return v == Type::IfcChillerType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcChillerType::type() const { return Type::IfcChillerType; }
 Type::Enum IfcChillerType::Class() { return Type::IfcChillerType; }
 IfcChillerType::IfcChillerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcChillerType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCircle
+// Function implementations for IfcCircle
 IfcPositiveLengthMeasure IfcCircle::Radius() { return *entity->getArgument(1); }
 bool IfcCircle::is(Type::Enum v) const { return v == Type::IfcCircle || IfcConic::is(v); }
 Type::Enum IfcCircle::type() const { return Type::IfcCircle; }
 Type::Enum IfcCircle::Class() { return Type::IfcCircle; }
 IfcCircle::IfcCircle(IfcAbstractEntityPtr e) { if (!is(Type::IfcCircle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCircleHollowProfileDef
+// Function implementations for IfcCircleHollowProfileDef
 IfcPositiveLengthMeasure IfcCircleHollowProfileDef::WallThickness() { return *entity->getArgument(4); }
 bool IfcCircleHollowProfileDef::is(Type::Enum v) const { return v == Type::IfcCircleHollowProfileDef || IfcCircleProfileDef::is(v); }
 Type::Enum IfcCircleHollowProfileDef::type() const { return Type::IfcCircleHollowProfileDef; }
 Type::Enum IfcCircleHollowProfileDef::Class() { return Type::IfcCircleHollowProfileDef; }
 IfcCircleHollowProfileDef::IfcCircleHollowProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCircleHollowProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCircleProfileDef
+// Function implementations for IfcCircleProfileDef
 IfcPositiveLengthMeasure IfcCircleProfileDef::Radius() { return *entity->getArgument(3); }
 bool IfcCircleProfileDef::is(Type::Enum v) const { return v == Type::IfcCircleProfileDef || IfcParameterizedProfileDef::is(v); }
 Type::Enum IfcCircleProfileDef::type() const { return Type::IfcCircleProfileDef; }
 Type::Enum IfcCircleProfileDef::Class() { return Type::IfcCircleProfileDef; }
 IfcCircleProfileDef::IfcCircleProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCircleProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcClassification
+// Function implementations for IfcClassification
 IfcLabel IfcClassification::Source() { return *entity->getArgument(0); }
 IfcLabel IfcClassification::Edition() { return *entity->getArgument(1); }
 bool IfcClassification::hasEditionDate() { return !entity->getArgument(2)->isNull(); }
@@ -5359,7 +5359,7 @@ bool IfcClassification::is(Type::Enum v) const { return v == Type::IfcClassifica
 Type::Enum IfcClassification::type() const { return Type::IfcClassification; }
 Type::Enum IfcClassification::Class() { return Type::IfcClassification; }
 IfcClassification::IfcClassification(IfcAbstractEntityPtr e) { if (!is(Type::IfcClassification)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcClassificationItem
+// Function implementations for IfcClassificationItem
 IfcClassificationNotationFacet* IfcClassificationItem::Notation() { return reinterpret_pointer_cast<IfcBaseClass,IfcClassificationNotationFacet>(*entity->getArgument(0)); }
 bool IfcClassificationItem::hasItemOf() { return !entity->getArgument(1)->isNull(); }
 IfcClassification* IfcClassificationItem::ItemOf() { return reinterpret_pointer_cast<IfcBaseClass,IfcClassification>(*entity->getArgument(1)); }
@@ -5370,44 +5370,44 @@ bool IfcClassificationItem::is(Type::Enum v) const { return v == Type::IfcClassi
 Type::Enum IfcClassificationItem::type() const { return Type::IfcClassificationItem; }
 Type::Enum IfcClassificationItem::Class() { return Type::IfcClassificationItem; }
 IfcClassificationItem::IfcClassificationItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcClassificationItem)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcClassificationItemRelationship
+// Function implementations for IfcClassificationItemRelationship
 IfcClassificationItem* IfcClassificationItemRelationship::RelatingItem() { return reinterpret_pointer_cast<IfcBaseClass,IfcClassificationItem>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItem> > IfcClassificationItemRelationship::RelatedItems() { RETURN_AS_LIST(IfcClassificationItem,1) }
 bool IfcClassificationItemRelationship::is(Type::Enum v) const { return v == Type::IfcClassificationItemRelationship; }
 Type::Enum IfcClassificationItemRelationship::type() const { return Type::IfcClassificationItemRelationship; }
 Type::Enum IfcClassificationItemRelationship::Class() { return Type::IfcClassificationItemRelationship; }
 IfcClassificationItemRelationship::IfcClassificationItemRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcClassificationItemRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcClassificationNotation
+// Function implementations for IfcClassificationNotation
 SHARED_PTR< IfcTemplatedEntityList<IfcClassificationNotationFacet> > IfcClassificationNotation::NotationFacets() { RETURN_AS_LIST(IfcClassificationNotationFacet,0) }
 bool IfcClassificationNotation::is(Type::Enum v) const { return v == Type::IfcClassificationNotation; }
 Type::Enum IfcClassificationNotation::type() const { return Type::IfcClassificationNotation; }
 Type::Enum IfcClassificationNotation::Class() { return Type::IfcClassificationNotation; }
 IfcClassificationNotation::IfcClassificationNotation(IfcAbstractEntityPtr e) { if (!is(Type::IfcClassificationNotation)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcClassificationNotationFacet
+// Function implementations for IfcClassificationNotationFacet
 IfcLabel IfcClassificationNotationFacet::NotationValue() { return *entity->getArgument(0); }
 bool IfcClassificationNotationFacet::is(Type::Enum v) const { return v == Type::IfcClassificationNotationFacet; }
 Type::Enum IfcClassificationNotationFacet::type() const { return Type::IfcClassificationNotationFacet; }
 Type::Enum IfcClassificationNotationFacet::Class() { return Type::IfcClassificationNotationFacet; }
 IfcClassificationNotationFacet::IfcClassificationNotationFacet(IfcAbstractEntityPtr e) { if (!is(Type::IfcClassificationNotationFacet)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcClassificationReference
+// Function implementations for IfcClassificationReference
 bool IfcClassificationReference::hasReferencedSource() { return !entity->getArgument(3)->isNull(); }
 IfcClassification* IfcClassificationReference::ReferencedSource() { return reinterpret_pointer_cast<IfcBaseClass,IfcClassification>(*entity->getArgument(3)); }
 bool IfcClassificationReference::is(Type::Enum v) const { return v == Type::IfcClassificationReference || IfcExternalReference::is(v); }
 Type::Enum IfcClassificationReference::type() const { return Type::IfcClassificationReference; }
 Type::Enum IfcClassificationReference::Class() { return Type::IfcClassificationReference; }
 IfcClassificationReference::IfcClassificationReference(IfcAbstractEntityPtr e) { if (!is(Type::IfcClassificationReference)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcClosedShell
+// Function implementations for IfcClosedShell
 bool IfcClosedShell::is(Type::Enum v) const { return v == Type::IfcClosedShell || IfcConnectedFaceSet::is(v); }
 Type::Enum IfcClosedShell::type() const { return Type::IfcClosedShell; }
 Type::Enum IfcClosedShell::Class() { return Type::IfcClosedShell; }
 IfcClosedShell::IfcClosedShell(IfcAbstractEntityPtr e) { if (!is(Type::IfcClosedShell)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCoilType
+// Function implementations for IfcCoilType
 IfcCoilTypeEnum::IfcCoilTypeEnum IfcCoilType::PredefinedType() { return IfcCoilTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcCoilType::is(Type::Enum v) const { return v == Type::IfcCoilType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcCoilType::type() const { return Type::IfcCoilType; }
 Type::Enum IfcCoilType::Class() { return Type::IfcCoilType; }
 IfcCoilType::IfcCoilType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCoilType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcColourRgb
+// Function implementations for IfcColourRgb
 IfcNormalisedRatioMeasure IfcColourRgb::Red() { return *entity->getArgument(1); }
 IfcNormalisedRatioMeasure IfcColourRgb::Green() { return *entity->getArgument(2); }
 IfcNormalisedRatioMeasure IfcColourRgb::Blue() { return *entity->getArgument(3); }
@@ -5415,39 +5415,39 @@ bool IfcColourRgb::is(Type::Enum v) const { return v == Type::IfcColourRgb || If
 Type::Enum IfcColourRgb::type() const { return Type::IfcColourRgb; }
 Type::Enum IfcColourRgb::Class() { return Type::IfcColourRgb; }
 IfcColourRgb::IfcColourRgb(IfcAbstractEntityPtr e) { if (!is(Type::IfcColourRgb)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcColourSpecification
+// Function implementations for IfcColourSpecification
 bool IfcColourSpecification::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcColourSpecification::Name() { return *entity->getArgument(0); }
 bool IfcColourSpecification::is(Type::Enum v) const { return v == Type::IfcColourSpecification; }
 Type::Enum IfcColourSpecification::type() const { return Type::IfcColourSpecification; }
 Type::Enum IfcColourSpecification::Class() { return Type::IfcColourSpecification; }
 IfcColourSpecification::IfcColourSpecification(IfcAbstractEntityPtr e) { if (!is(Type::IfcColourSpecification)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcColumn
+// Function implementations for IfcColumn
 bool IfcColumn::is(Type::Enum v) const { return v == Type::IfcColumn || IfcBuildingElement::is(v); }
 Type::Enum IfcColumn::type() const { return Type::IfcColumn; }
 Type::Enum IfcColumn::Class() { return Type::IfcColumn; }
 IfcColumn::IfcColumn(IfcAbstractEntityPtr e) { if (!is(Type::IfcColumn)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcColumnType
+// Function implementations for IfcColumnType
 IfcColumnTypeEnum::IfcColumnTypeEnum IfcColumnType::PredefinedType() { return IfcColumnTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcColumnType::is(Type::Enum v) const { return v == Type::IfcColumnType || IfcBuildingElementType::is(v); }
 Type::Enum IfcColumnType::type() const { return Type::IfcColumnType; }
 Type::Enum IfcColumnType::Class() { return Type::IfcColumnType; }
 IfcColumnType::IfcColumnType(IfcAbstractEntityPtr e) { if (!is(Type::IfcColumnType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcComplexProperty
+// Function implementations for IfcComplexProperty
 IfcIdentifier IfcComplexProperty::UsageName() { return *entity->getArgument(2); }
 SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > IfcComplexProperty::HasProperties() { RETURN_AS_LIST(IfcProperty,3) }
 bool IfcComplexProperty::is(Type::Enum v) const { return v == Type::IfcComplexProperty || IfcProperty::is(v); }
 Type::Enum IfcComplexProperty::type() const { return Type::IfcComplexProperty; }
 Type::Enum IfcComplexProperty::Class() { return Type::IfcComplexProperty; }
 IfcComplexProperty::IfcComplexProperty(IfcAbstractEntityPtr e) { if (!is(Type::IfcComplexProperty)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCompositeCurve
+// Function implementations for IfcCompositeCurve
 SHARED_PTR< IfcTemplatedEntityList<IfcCompositeCurveSegment> > IfcCompositeCurve::Segments() { RETURN_AS_LIST(IfcCompositeCurveSegment,0) }
 bool IfcCompositeCurve::SelfIntersect() { return *entity->getArgument(1); }
 bool IfcCompositeCurve::is(Type::Enum v) const { return v == Type::IfcCompositeCurve || IfcBoundedCurve::is(v); }
 Type::Enum IfcCompositeCurve::type() const { return Type::IfcCompositeCurve; }
 Type::Enum IfcCompositeCurve::Class() { return Type::IfcCompositeCurve; }
 IfcCompositeCurve::IfcCompositeCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcCompositeCurve)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCompositeCurveSegment
+// Function implementations for IfcCompositeCurveSegment
 IfcTransitionCode::IfcTransitionCode IfcCompositeCurveSegment::Transition() { return IfcTransitionCode::FromString(*entity->getArgument(0)); }
 bool IfcCompositeCurveSegment::SameSense() { return *entity->getArgument(1); }
 IfcCurve* IfcCompositeCurveSegment::ParentCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(2)); }
@@ -5456,7 +5456,7 @@ bool IfcCompositeCurveSegment::is(Type::Enum v) const { return v == Type::IfcCom
 Type::Enum IfcCompositeCurveSegment::type() const { return Type::IfcCompositeCurveSegment; }
 Type::Enum IfcCompositeCurveSegment::Class() { return Type::IfcCompositeCurveSegment; }
 IfcCompositeCurveSegment::IfcCompositeCurveSegment(IfcAbstractEntityPtr e) { if (!is(Type::IfcCompositeCurveSegment)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCompositeProfileDef
+// Function implementations for IfcCompositeProfileDef
 SHARED_PTR< IfcTemplatedEntityList<IfcProfileDef> > IfcCompositeProfileDef::Profiles() { RETURN_AS_LIST(IfcProfileDef,2) }
 bool IfcCompositeProfileDef::hasLabel() { return !entity->getArgument(3)->isNull(); }
 IfcLabel IfcCompositeProfileDef::Label() { return *entity->getArgument(3); }
@@ -5464,43 +5464,43 @@ bool IfcCompositeProfileDef::is(Type::Enum v) const { return v == Type::IfcCompo
 Type::Enum IfcCompositeProfileDef::type() const { return Type::IfcCompositeProfileDef; }
 Type::Enum IfcCompositeProfileDef::Class() { return Type::IfcCompositeProfileDef; }
 IfcCompositeProfileDef::IfcCompositeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCompositeProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCompressorType
+// Function implementations for IfcCompressorType
 IfcCompressorTypeEnum::IfcCompressorTypeEnum IfcCompressorType::PredefinedType() { return IfcCompressorTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcCompressorType::is(Type::Enum v) const { return v == Type::IfcCompressorType || IfcFlowMovingDeviceType::is(v); }
 Type::Enum IfcCompressorType::type() const { return Type::IfcCompressorType; }
 Type::Enum IfcCompressorType::Class() { return Type::IfcCompressorType; }
 IfcCompressorType::IfcCompressorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCompressorType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCondenserType
+// Function implementations for IfcCondenserType
 IfcCondenserTypeEnum::IfcCondenserTypeEnum IfcCondenserType::PredefinedType() { return IfcCondenserTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcCondenserType::is(Type::Enum v) const { return v == Type::IfcCondenserType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcCondenserType::type() const { return Type::IfcCondenserType; }
 Type::Enum IfcCondenserType::Class() { return Type::IfcCondenserType; }
 IfcCondenserType::IfcCondenserType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCondenserType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCondition
+// Function implementations for IfcCondition
 bool IfcCondition::is(Type::Enum v) const { return v == Type::IfcCondition || IfcGroup::is(v); }
 Type::Enum IfcCondition::type() const { return Type::IfcCondition; }
 Type::Enum IfcCondition::Class() { return Type::IfcCondition; }
 IfcCondition::IfcCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcCondition)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConditionCriterion
+// Function implementations for IfcConditionCriterion
 IfcConditionCriterionSelect IfcConditionCriterion::Criterion() { return *entity->getArgument(5); }
 IfcDateTimeSelect IfcConditionCriterion::CriterionDateTime() { return *entity->getArgument(6); }
 bool IfcConditionCriterion::is(Type::Enum v) const { return v == Type::IfcConditionCriterion || IfcControl::is(v); }
 Type::Enum IfcConditionCriterion::type() const { return Type::IfcConditionCriterion; }
 Type::Enum IfcConditionCriterion::Class() { return Type::IfcConditionCriterion; }
 IfcConditionCriterion::IfcConditionCriterion(IfcAbstractEntityPtr e) { if (!is(Type::IfcConditionCriterion)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConic
+// Function implementations for IfcConic
 IfcAxis2Placement IfcConic::Position() { return *entity->getArgument(0); }
 bool IfcConic::is(Type::Enum v) const { return v == Type::IfcConic || IfcCurve::is(v); }
 Type::Enum IfcConic::type() const { return Type::IfcConic; }
 Type::Enum IfcConic::Class() { return Type::IfcConic; }
 IfcConic::IfcConic(IfcAbstractEntityPtr e) { if (!is(Type::IfcConic)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConnectedFaceSet
+// Function implementations for IfcConnectedFaceSet
 SHARED_PTR< IfcTemplatedEntityList<IfcFace> > IfcConnectedFaceSet::CfsFaces() { RETURN_AS_LIST(IfcFace,0) }
 bool IfcConnectedFaceSet::is(Type::Enum v) const { return v == Type::IfcConnectedFaceSet || IfcTopologicalRepresentationItem::is(v); }
 Type::Enum IfcConnectedFaceSet::type() const { return Type::IfcConnectedFaceSet; }
 Type::Enum IfcConnectedFaceSet::Class() { return Type::IfcConnectedFaceSet; }
 IfcConnectedFaceSet::IfcConnectedFaceSet(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectedFaceSet)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConnectionCurveGeometry
+// Function implementations for IfcConnectionCurveGeometry
 IfcCurveOrEdgeCurve IfcConnectionCurveGeometry::CurveOnRelatingElement() { return *entity->getArgument(0); }
 bool IfcConnectionCurveGeometry::hasCurveOnRelatedElement() { return !entity->getArgument(1)->isNull(); }
 IfcCurveOrEdgeCurve IfcConnectionCurveGeometry::CurveOnRelatedElement() { return *entity->getArgument(1); }
@@ -5508,12 +5508,12 @@ bool IfcConnectionCurveGeometry::is(Type::Enum v) const { return v == Type::IfcC
 Type::Enum IfcConnectionCurveGeometry::type() const { return Type::IfcConnectionCurveGeometry; }
 Type::Enum IfcConnectionCurveGeometry::Class() { return Type::IfcConnectionCurveGeometry; }
 IfcConnectionCurveGeometry::IfcConnectionCurveGeometry(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectionCurveGeometry)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConnectionGeometry
+// Function implementations for IfcConnectionGeometry
 bool IfcConnectionGeometry::is(Type::Enum v) const { return v == Type::IfcConnectionGeometry; }
 Type::Enum IfcConnectionGeometry::type() const { return Type::IfcConnectionGeometry; }
 Type::Enum IfcConnectionGeometry::Class() { return Type::IfcConnectionGeometry; }
 IfcConnectionGeometry::IfcConnectionGeometry(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectionGeometry)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConnectionPointEccentricity
+// Function implementations for IfcConnectionPointEccentricity
 bool IfcConnectionPointEccentricity::hasEccentricityInX() { return !entity->getArgument(2)->isNull(); }
 IfcLengthMeasure IfcConnectionPointEccentricity::EccentricityInX() { return *entity->getArgument(2); }
 bool IfcConnectionPointEccentricity::hasEccentricityInY() { return !entity->getArgument(3)->isNull(); }
@@ -5524,7 +5524,7 @@ bool IfcConnectionPointEccentricity::is(Type::Enum v) const { return v == Type::
 Type::Enum IfcConnectionPointEccentricity::type() const { return Type::IfcConnectionPointEccentricity; }
 Type::Enum IfcConnectionPointEccentricity::Class() { return Type::IfcConnectionPointEccentricity; }
 IfcConnectionPointEccentricity::IfcConnectionPointEccentricity(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectionPointEccentricity)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConnectionPointGeometry
+// Function implementations for IfcConnectionPointGeometry
 IfcPointOrVertexPoint IfcConnectionPointGeometry::PointOnRelatingElement() { return *entity->getArgument(0); }
 bool IfcConnectionPointGeometry::hasPointOnRelatedElement() { return !entity->getArgument(1)->isNull(); }
 IfcPointOrVertexPoint IfcConnectionPointGeometry::PointOnRelatedElement() { return *entity->getArgument(1); }
@@ -5532,7 +5532,7 @@ bool IfcConnectionPointGeometry::is(Type::Enum v) const { return v == Type::IfcC
 Type::Enum IfcConnectionPointGeometry::type() const { return Type::IfcConnectionPointGeometry; }
 Type::Enum IfcConnectionPointGeometry::Class() { return Type::IfcConnectionPointGeometry; }
 IfcConnectionPointGeometry::IfcConnectionPointGeometry(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectionPointGeometry)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConnectionPortGeometry
+// Function implementations for IfcConnectionPortGeometry
 IfcAxis2Placement IfcConnectionPortGeometry::LocationAtRelatingElement() { return *entity->getArgument(0); }
 bool IfcConnectionPortGeometry::hasLocationAtRelatedElement() { return !entity->getArgument(1)->isNull(); }
 IfcAxis2Placement IfcConnectionPortGeometry::LocationAtRelatedElement() { return *entity->getArgument(1); }
@@ -5541,7 +5541,7 @@ bool IfcConnectionPortGeometry::is(Type::Enum v) const { return v == Type::IfcCo
 Type::Enum IfcConnectionPortGeometry::type() const { return Type::IfcConnectionPortGeometry; }
 Type::Enum IfcConnectionPortGeometry::Class() { return Type::IfcConnectionPortGeometry; }
 IfcConnectionPortGeometry::IfcConnectionPortGeometry(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectionPortGeometry)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConnectionSurfaceGeometry
+// Function implementations for IfcConnectionSurfaceGeometry
 IfcSurfaceOrFaceSurface IfcConnectionSurfaceGeometry::SurfaceOnRelatingElement() { return *entity->getArgument(0); }
 bool IfcConnectionSurfaceGeometry::hasSurfaceOnRelatedElement() { return !entity->getArgument(1)->isNull(); }
 IfcSurfaceOrFaceSurface IfcConnectionSurfaceGeometry::SurfaceOnRelatedElement() { return *entity->getArgument(1); }
@@ -5549,7 +5549,7 @@ bool IfcConnectionSurfaceGeometry::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcConnectionSurfaceGeometry::type() const { return Type::IfcConnectionSurfaceGeometry; }
 Type::Enum IfcConnectionSurfaceGeometry::Class() { return Type::IfcConnectionSurfaceGeometry; }
 IfcConnectionSurfaceGeometry::IfcConnectionSurfaceGeometry(IfcAbstractEntityPtr e) { if (!is(Type::IfcConnectionSurfaceGeometry)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConstraint
+// Function implementations for IfcConstraint
 IfcLabel IfcConstraint::Name() { return *entity->getArgument(0); }
 bool IfcConstraint::hasDescription() { return !entity->getArgument(1)->isNull(); }
 IfcText IfcConstraint::Description() { return *entity->getArgument(1); }
@@ -5572,7 +5572,7 @@ bool IfcConstraint::is(Type::Enum v) const { return v == Type::IfcConstraint; }
 Type::Enum IfcConstraint::type() const { return Type::IfcConstraint; }
 Type::Enum IfcConstraint::Class() { return Type::IfcConstraint; }
 IfcConstraint::IfcConstraint(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstraint)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConstraintAggregationRelationship
+// Function implementations for IfcConstraintAggregationRelationship
 bool IfcConstraintAggregationRelationship::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcConstraintAggregationRelationship::Name() { return *entity->getArgument(0); }
 bool IfcConstraintAggregationRelationship::hasDescription() { return !entity->getArgument(1)->isNull(); }
@@ -5584,14 +5584,14 @@ bool IfcConstraintAggregationRelationship::is(Type::Enum v) const { return v == 
 Type::Enum IfcConstraintAggregationRelationship::type() const { return Type::IfcConstraintAggregationRelationship; }
 Type::Enum IfcConstraintAggregationRelationship::Class() { return Type::IfcConstraintAggregationRelationship; }
 IfcConstraintAggregationRelationship::IfcConstraintAggregationRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstraintAggregationRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConstraintClassificationRelationship
+// Function implementations for IfcConstraintClassificationRelationship
 IfcConstraint* IfcConstraintClassificationRelationship::ClassifiedConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcConstraintClassificationRelationship::RelatedClassifications() { RETURN_AS_LIST(IfcAbstractSelect,1) }
 bool IfcConstraintClassificationRelationship::is(Type::Enum v) const { return v == Type::IfcConstraintClassificationRelationship; }
 Type::Enum IfcConstraintClassificationRelationship::type() const { return Type::IfcConstraintClassificationRelationship; }
 Type::Enum IfcConstraintClassificationRelationship::Class() { return Type::IfcConstraintClassificationRelationship; }
 IfcConstraintClassificationRelationship::IfcConstraintClassificationRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstraintClassificationRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConstraintRelationship
+// Function implementations for IfcConstraintRelationship
 bool IfcConstraintRelationship::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcConstraintRelationship::Name() { return *entity->getArgument(0); }
 bool IfcConstraintRelationship::hasDescription() { return !entity->getArgument(1)->isNull(); }
@@ -5602,12 +5602,12 @@ bool IfcConstraintRelationship::is(Type::Enum v) const { return v == Type::IfcCo
 Type::Enum IfcConstraintRelationship::type() const { return Type::IfcConstraintRelationship; }
 Type::Enum IfcConstraintRelationship::Class() { return Type::IfcConstraintRelationship; }
 IfcConstraintRelationship::IfcConstraintRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstraintRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConstructionEquipmentResource
+// Function implementations for IfcConstructionEquipmentResource
 bool IfcConstructionEquipmentResource::is(Type::Enum v) const { return v == Type::IfcConstructionEquipmentResource || IfcConstructionResource::is(v); }
 Type::Enum IfcConstructionEquipmentResource::type() const { return Type::IfcConstructionEquipmentResource; }
 Type::Enum IfcConstructionEquipmentResource::Class() { return Type::IfcConstructionEquipmentResource; }
 IfcConstructionEquipmentResource::IfcConstructionEquipmentResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstructionEquipmentResource)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConstructionMaterialResource
+// Function implementations for IfcConstructionMaterialResource
 bool IfcConstructionMaterialResource::hasSuppliers() { return !entity->getArgument(9)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcConstructionMaterialResource::Suppliers() { RETURN_AS_LIST(IfcAbstractSelect,9) }
 bool IfcConstructionMaterialResource::hasUsageRatio() { return !entity->getArgument(10)->isNull(); }
@@ -5616,12 +5616,12 @@ bool IfcConstructionMaterialResource::is(Type::Enum v) const { return v == Type:
 Type::Enum IfcConstructionMaterialResource::type() const { return Type::IfcConstructionMaterialResource; }
 Type::Enum IfcConstructionMaterialResource::Class() { return Type::IfcConstructionMaterialResource; }
 IfcConstructionMaterialResource::IfcConstructionMaterialResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstructionMaterialResource)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConstructionProductResource
+// Function implementations for IfcConstructionProductResource
 bool IfcConstructionProductResource::is(Type::Enum v) const { return v == Type::IfcConstructionProductResource || IfcConstructionResource::is(v); }
 Type::Enum IfcConstructionProductResource::type() const { return Type::IfcConstructionProductResource; }
 Type::Enum IfcConstructionProductResource::Class() { return Type::IfcConstructionProductResource; }
 IfcConstructionProductResource::IfcConstructionProductResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstructionProductResource)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConstructionResource
+// Function implementations for IfcConstructionResource
 bool IfcConstructionResource::hasResourceIdentifier() { return !entity->getArgument(5)->isNull(); }
 IfcIdentifier IfcConstructionResource::ResourceIdentifier() { return *entity->getArgument(5); }
 bool IfcConstructionResource::hasResourceGroup() { return !entity->getArgument(6)->isNull(); }
@@ -5634,44 +5634,44 @@ bool IfcConstructionResource::is(Type::Enum v) const { return v == Type::IfcCons
 Type::Enum IfcConstructionResource::type() const { return Type::IfcConstructionResource; }
 Type::Enum IfcConstructionResource::Class() { return Type::IfcConstructionResource; }
 IfcConstructionResource::IfcConstructionResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcConstructionResource)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcContextDependentUnit
+// Function implementations for IfcContextDependentUnit
 IfcLabel IfcContextDependentUnit::Name() { return *entity->getArgument(2); }
 bool IfcContextDependentUnit::is(Type::Enum v) const { return v == Type::IfcContextDependentUnit || IfcNamedUnit::is(v); }
 Type::Enum IfcContextDependentUnit::type() const { return Type::IfcContextDependentUnit; }
 Type::Enum IfcContextDependentUnit::Class() { return Type::IfcContextDependentUnit; }
 IfcContextDependentUnit::IfcContextDependentUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcContextDependentUnit)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcControl
+// Function implementations for IfcControl
 IfcRelAssignsToControl::list IfcControl::Controls() { RETURN_INVERSE(IfcRelAssignsToControl) }
 bool IfcControl::is(Type::Enum v) const { return v == Type::IfcControl || IfcObject::is(v); }
 Type::Enum IfcControl::type() const { return Type::IfcControl; }
 Type::Enum IfcControl::Class() { return Type::IfcControl; }
 IfcControl::IfcControl(IfcAbstractEntityPtr e) { if (!is(Type::IfcControl)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcControllerType
+// Function implementations for IfcControllerType
 IfcControllerTypeEnum::IfcControllerTypeEnum IfcControllerType::PredefinedType() { return IfcControllerTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcControllerType::is(Type::Enum v) const { return v == Type::IfcControllerType || IfcDistributionControlElementType::is(v); }
 Type::Enum IfcControllerType::type() const { return Type::IfcControllerType; }
 Type::Enum IfcControllerType::Class() { return Type::IfcControllerType; }
 IfcControllerType::IfcControllerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcControllerType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcConversionBasedUnit
+// Function implementations for IfcConversionBasedUnit
 IfcLabel IfcConversionBasedUnit::Name() { return *entity->getArgument(2); }
 IfcMeasureWithUnit* IfcConversionBasedUnit::ConversionFactor() { return reinterpret_pointer_cast<IfcBaseClass,IfcMeasureWithUnit>(*entity->getArgument(3)); }
 bool IfcConversionBasedUnit::is(Type::Enum v) const { return v == Type::IfcConversionBasedUnit || IfcNamedUnit::is(v); }
 Type::Enum IfcConversionBasedUnit::type() const { return Type::IfcConversionBasedUnit; }
 Type::Enum IfcConversionBasedUnit::Class() { return Type::IfcConversionBasedUnit; }
 IfcConversionBasedUnit::IfcConversionBasedUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcConversionBasedUnit)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCooledBeamType
+// Function implementations for IfcCooledBeamType
 IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum IfcCooledBeamType::PredefinedType() { return IfcCooledBeamTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcCooledBeamType::is(Type::Enum v) const { return v == Type::IfcCooledBeamType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcCooledBeamType::type() const { return Type::IfcCooledBeamType; }
 Type::Enum IfcCooledBeamType::Class() { return Type::IfcCooledBeamType; }
 IfcCooledBeamType::IfcCooledBeamType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCooledBeamType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCoolingTowerType
+// Function implementations for IfcCoolingTowerType
 IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum IfcCoolingTowerType::PredefinedType() { return IfcCoolingTowerTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcCoolingTowerType::is(Type::Enum v) const { return v == Type::IfcCoolingTowerType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcCoolingTowerType::type() const { return Type::IfcCoolingTowerType; }
 Type::Enum IfcCoolingTowerType::Class() { return Type::IfcCoolingTowerType; }
 IfcCoolingTowerType::IfcCoolingTowerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCoolingTowerType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCoordinatedUniversalTimeOffset
+// Function implementations for IfcCoordinatedUniversalTimeOffset
 IfcHourInDay IfcCoordinatedUniversalTimeOffset::HourOffset() { return *entity->getArgument(0); }
 bool IfcCoordinatedUniversalTimeOffset::hasMinuteOffset() { return !entity->getArgument(1)->isNull(); }
 IfcMinuteInHour IfcCoordinatedUniversalTimeOffset::MinuteOffset() { return *entity->getArgument(1); }
@@ -5680,12 +5680,12 @@ bool IfcCoordinatedUniversalTimeOffset::is(Type::Enum v) const { return v == Typ
 Type::Enum IfcCoordinatedUniversalTimeOffset::type() const { return Type::IfcCoordinatedUniversalTimeOffset; }
 Type::Enum IfcCoordinatedUniversalTimeOffset::Class() { return Type::IfcCoordinatedUniversalTimeOffset; }
 IfcCoordinatedUniversalTimeOffset::IfcCoordinatedUniversalTimeOffset(IfcAbstractEntityPtr e) { if (!is(Type::IfcCoordinatedUniversalTimeOffset)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCostItem
+// Function implementations for IfcCostItem
 bool IfcCostItem::is(Type::Enum v) const { return v == Type::IfcCostItem || IfcControl::is(v); }
 Type::Enum IfcCostItem::type() const { return Type::IfcCostItem; }
 Type::Enum IfcCostItem::Class() { return Type::IfcCostItem; }
 IfcCostItem::IfcCostItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcCostItem)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCostSchedule
+// Function implementations for IfcCostSchedule
 bool IfcCostSchedule::hasSubmittedBy() { return !entity->getArgument(5)->isNull(); }
 IfcActorSelect IfcCostSchedule::SubmittedBy() { return *entity->getArgument(5); }
 bool IfcCostSchedule::hasPreparedBy() { return !entity->getArgument(6)->isNull(); }
@@ -5704,7 +5704,7 @@ bool IfcCostSchedule::is(Type::Enum v) const { return v == Type::IfcCostSchedule
 Type::Enum IfcCostSchedule::type() const { return Type::IfcCostSchedule; }
 Type::Enum IfcCostSchedule::Class() { return Type::IfcCostSchedule; }
 IfcCostSchedule::IfcCostSchedule(IfcAbstractEntityPtr e) { if (!is(Type::IfcCostSchedule)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCostValue
+// Function implementations for IfcCostValue
 IfcLabel IfcCostValue::CostType() { return *entity->getArgument(6); }
 bool IfcCostValue::hasCondition() { return !entity->getArgument(7)->isNull(); }
 IfcText IfcCostValue::Condition() { return *entity->getArgument(7); }
@@ -5712,7 +5712,7 @@ bool IfcCostValue::is(Type::Enum v) const { return v == Type::IfcCostValue || If
 Type::Enum IfcCostValue::type() const { return Type::IfcCostValue; }
 Type::Enum IfcCostValue::Class() { return Type::IfcCostValue; }
 IfcCostValue::IfcCostValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcCostValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCovering
+// Function implementations for IfcCovering
 bool IfcCovering::hasPredefinedType() { return !entity->getArgument(8)->isNull(); }
 IfcCoveringTypeEnum::IfcCoveringTypeEnum IfcCovering::PredefinedType() { return IfcCoveringTypeEnum::FromString(*entity->getArgument(8)); }
 IfcRelCoversSpaces::list IfcCovering::CoversSpaces() { RETURN_INVERSE(IfcRelCoversSpaces) }
@@ -5721,13 +5721,13 @@ bool IfcCovering::is(Type::Enum v) const { return v == Type::IfcCovering || IfcB
 Type::Enum IfcCovering::type() const { return Type::IfcCovering; }
 Type::Enum IfcCovering::Class() { return Type::IfcCovering; }
 IfcCovering::IfcCovering(IfcAbstractEntityPtr e) { if (!is(Type::IfcCovering)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCoveringType
+// Function implementations for IfcCoveringType
 IfcCoveringTypeEnum::IfcCoveringTypeEnum IfcCoveringType::PredefinedType() { return IfcCoveringTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcCoveringType::is(Type::Enum v) const { return v == Type::IfcCoveringType || IfcBuildingElementType::is(v); }
 Type::Enum IfcCoveringType::type() const { return Type::IfcCoveringType; }
 Type::Enum IfcCoveringType::Class() { return Type::IfcCoveringType; }
 IfcCoveringType::IfcCoveringType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCoveringType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCraneRailAShapeProfileDef
+// Function implementations for IfcCraneRailAShapeProfileDef
 IfcPositiveLengthMeasure IfcCraneRailAShapeProfileDef::OverallHeight() { return *entity->getArgument(3); }
 IfcPositiveLengthMeasure IfcCraneRailAShapeProfileDef::BaseWidth2() { return *entity->getArgument(4); }
 bool IfcCraneRailAShapeProfileDef::hasRadius() { return !entity->getArgument(5)->isNull(); }
@@ -5746,7 +5746,7 @@ bool IfcCraneRailAShapeProfileDef::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcCraneRailAShapeProfileDef::type() const { return Type::IfcCraneRailAShapeProfileDef; }
 Type::Enum IfcCraneRailAShapeProfileDef::Class() { return Type::IfcCraneRailAShapeProfileDef; }
 IfcCraneRailAShapeProfileDef::IfcCraneRailAShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCraneRailAShapeProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCraneRailFShapeProfileDef
+// Function implementations for IfcCraneRailFShapeProfileDef
 IfcPositiveLengthMeasure IfcCraneRailFShapeProfileDef::OverallHeight() { return *entity->getArgument(3); }
 IfcPositiveLengthMeasure IfcCraneRailFShapeProfileDef::HeadWidth() { return *entity->getArgument(4); }
 bool IfcCraneRailFShapeProfileDef::hasRadius() { return !entity->getArgument(5)->isNull(); }
@@ -5762,24 +5762,24 @@ bool IfcCraneRailFShapeProfileDef::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcCraneRailFShapeProfileDef::type() const { return Type::IfcCraneRailFShapeProfileDef; }
 Type::Enum IfcCraneRailFShapeProfileDef::Class() { return Type::IfcCraneRailFShapeProfileDef; }
 IfcCraneRailFShapeProfileDef::IfcCraneRailFShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcCraneRailFShapeProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCrewResource
+// Function implementations for IfcCrewResource
 bool IfcCrewResource::is(Type::Enum v) const { return v == Type::IfcCrewResource || IfcConstructionResource::is(v); }
 Type::Enum IfcCrewResource::type() const { return Type::IfcCrewResource; }
 Type::Enum IfcCrewResource::Class() { return Type::IfcCrewResource; }
 IfcCrewResource::IfcCrewResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcCrewResource)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCsgPrimitive3D
+// Function implementations for IfcCsgPrimitive3D
 IfcAxis2Placement3D* IfcCsgPrimitive3D::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(0)); }
 bool IfcCsgPrimitive3D::is(Type::Enum v) const { return v == Type::IfcCsgPrimitive3D || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcCsgPrimitive3D::type() const { return Type::IfcCsgPrimitive3D; }
 Type::Enum IfcCsgPrimitive3D::Class() { return Type::IfcCsgPrimitive3D; }
 IfcCsgPrimitive3D::IfcCsgPrimitive3D(IfcAbstractEntityPtr e) { if (!is(Type::IfcCsgPrimitive3D)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCsgSolid
+// Function implementations for IfcCsgSolid
 IfcCsgSelect IfcCsgSolid::TreeRootExpression() { return *entity->getArgument(0); }
 bool IfcCsgSolid::is(Type::Enum v) const { return v == Type::IfcCsgSolid || IfcSolidModel::is(v); }
 Type::Enum IfcCsgSolid::type() const { return Type::IfcCsgSolid; }
 Type::Enum IfcCsgSolid::Class() { return Type::IfcCsgSolid; }
 IfcCsgSolid::IfcCsgSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcCsgSolid)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCurrencyRelationship
+// Function implementations for IfcCurrencyRelationship
 IfcMonetaryUnit* IfcCurrencyRelationship::RelatingMonetaryUnit() { return reinterpret_pointer_cast<IfcBaseClass,IfcMonetaryUnit>(*entity->getArgument(0)); }
 IfcMonetaryUnit* IfcCurrencyRelationship::RelatedMonetaryUnit() { return reinterpret_pointer_cast<IfcBaseClass,IfcMonetaryUnit>(*entity->getArgument(1)); }
 IfcPositiveRatioMeasure IfcCurrencyRelationship::ExchangeRate() { return *entity->getArgument(2); }
@@ -5790,23 +5790,23 @@ bool IfcCurrencyRelationship::is(Type::Enum v) const { return v == Type::IfcCurr
 Type::Enum IfcCurrencyRelationship::type() const { return Type::IfcCurrencyRelationship; }
 Type::Enum IfcCurrencyRelationship::Class() { return Type::IfcCurrencyRelationship; }
 IfcCurrencyRelationship::IfcCurrencyRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurrencyRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCurtainWall
+// Function implementations for IfcCurtainWall
 bool IfcCurtainWall::is(Type::Enum v) const { return v == Type::IfcCurtainWall || IfcBuildingElement::is(v); }
 Type::Enum IfcCurtainWall::type() const { return Type::IfcCurtainWall; }
 Type::Enum IfcCurtainWall::Class() { return Type::IfcCurtainWall; }
 IfcCurtainWall::IfcCurtainWall(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurtainWall)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCurtainWallType
+// Function implementations for IfcCurtainWallType
 IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum IfcCurtainWallType::PredefinedType() { return IfcCurtainWallTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcCurtainWallType::is(Type::Enum v) const { return v == Type::IfcCurtainWallType || IfcBuildingElementType::is(v); }
 Type::Enum IfcCurtainWallType::type() const { return Type::IfcCurtainWallType; }
 Type::Enum IfcCurtainWallType::Class() { return Type::IfcCurtainWallType; }
 IfcCurtainWallType::IfcCurtainWallType(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurtainWallType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCurve
+// Function implementations for IfcCurve
 bool IfcCurve::is(Type::Enum v) const { return v == Type::IfcCurve || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcCurve::type() const { return Type::IfcCurve; }
 Type::Enum IfcCurve::Class() { return Type::IfcCurve; }
 IfcCurve::IfcCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurve)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCurveBoundedPlane
+// Function implementations for IfcCurveBoundedPlane
 IfcPlane* IfcCurveBoundedPlane::BasisSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcPlane>(*entity->getArgument(0)); }
 IfcCurve* IfcCurveBoundedPlane::OuterBoundary() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(1)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > IfcCurveBoundedPlane::InnerBoundaries() { RETURN_AS_LIST(IfcCurve,2) }
@@ -5814,7 +5814,7 @@ bool IfcCurveBoundedPlane::is(Type::Enum v) const { return v == Type::IfcCurveBo
 Type::Enum IfcCurveBoundedPlane::type() const { return Type::IfcCurveBoundedPlane; }
 Type::Enum IfcCurveBoundedPlane::Class() { return Type::IfcCurveBoundedPlane; }
 IfcCurveBoundedPlane::IfcCurveBoundedPlane(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurveBoundedPlane)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCurveStyle
+// Function implementations for IfcCurveStyle
 bool IfcCurveStyle::hasCurveFont() { return !entity->getArgument(1)->isNull(); }
 IfcCurveFontOrScaledCurveFontSelect IfcCurveStyle::CurveFont() { return *entity->getArgument(1); }
 bool IfcCurveStyle::hasCurveWidth() { return !entity->getArgument(2)->isNull(); }
@@ -5825,7 +5825,7 @@ bool IfcCurveStyle::is(Type::Enum v) const { return v == Type::IfcCurveStyle || 
 Type::Enum IfcCurveStyle::type() const { return Type::IfcCurveStyle; }
 Type::Enum IfcCurveStyle::Class() { return Type::IfcCurveStyle; }
 IfcCurveStyle::IfcCurveStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurveStyle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCurveStyleFont
+// Function implementations for IfcCurveStyleFont
 bool IfcCurveStyleFont::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcCurveStyleFont::Name() { return *entity->getArgument(0); }
 SHARED_PTR< IfcTemplatedEntityList<IfcCurveStyleFontPattern> > IfcCurveStyleFont::PatternList() { RETURN_AS_LIST(IfcCurveStyleFontPattern,1) }
@@ -5833,7 +5833,7 @@ bool IfcCurveStyleFont::is(Type::Enum v) const { return v == Type::IfcCurveStyle
 Type::Enum IfcCurveStyleFont::type() const { return Type::IfcCurveStyleFont; }
 Type::Enum IfcCurveStyleFont::Class() { return Type::IfcCurveStyleFont; }
 IfcCurveStyleFont::IfcCurveStyleFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurveStyleFont)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCurveStyleFontAndScaling
+// Function implementations for IfcCurveStyleFontAndScaling
 bool IfcCurveStyleFontAndScaling::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcCurveStyleFontAndScaling::Name() { return *entity->getArgument(0); }
 IfcCurveStyleFontSelect IfcCurveStyleFontAndScaling::CurveFont() { return *entity->getArgument(1); }
@@ -5842,34 +5842,34 @@ bool IfcCurveStyleFontAndScaling::is(Type::Enum v) const { return v == Type::Ifc
 Type::Enum IfcCurveStyleFontAndScaling::type() const { return Type::IfcCurveStyleFontAndScaling; }
 Type::Enum IfcCurveStyleFontAndScaling::Class() { return Type::IfcCurveStyleFontAndScaling; }
 IfcCurveStyleFontAndScaling::IfcCurveStyleFontAndScaling(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurveStyleFontAndScaling)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcCurveStyleFontPattern
+// Function implementations for IfcCurveStyleFontPattern
 IfcLengthMeasure IfcCurveStyleFontPattern::VisibleSegmentLength() { return *entity->getArgument(0); }
 IfcPositiveLengthMeasure IfcCurveStyleFontPattern::InvisibleSegmentLength() { return *entity->getArgument(1); }
 bool IfcCurveStyleFontPattern::is(Type::Enum v) const { return v == Type::IfcCurveStyleFontPattern; }
 Type::Enum IfcCurveStyleFontPattern::type() const { return Type::IfcCurveStyleFontPattern; }
 Type::Enum IfcCurveStyleFontPattern::Class() { return Type::IfcCurveStyleFontPattern; }
 IfcCurveStyleFontPattern::IfcCurveStyleFontPattern(IfcAbstractEntityPtr e) { if (!is(Type::IfcCurveStyleFontPattern)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDamperType
+// Function implementations for IfcDamperType
 IfcDamperTypeEnum::IfcDamperTypeEnum IfcDamperType::PredefinedType() { return IfcDamperTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcDamperType::is(Type::Enum v) const { return v == Type::IfcDamperType || IfcFlowControllerType::is(v); }
 Type::Enum IfcDamperType::type() const { return Type::IfcDamperType; }
 Type::Enum IfcDamperType::Class() { return Type::IfcDamperType; }
 IfcDamperType::IfcDamperType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDamperType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDateAndTime
+// Function implementations for IfcDateAndTime
 IfcCalendarDate* IfcDateAndTime::DateComponent() { return reinterpret_pointer_cast<IfcBaseClass,IfcCalendarDate>(*entity->getArgument(0)); }
 IfcLocalTime* IfcDateAndTime::TimeComponent() { return reinterpret_pointer_cast<IfcBaseClass,IfcLocalTime>(*entity->getArgument(1)); }
 bool IfcDateAndTime::is(Type::Enum v) const { return v == Type::IfcDateAndTime; }
 Type::Enum IfcDateAndTime::type() const { return Type::IfcDateAndTime; }
 Type::Enum IfcDateAndTime::Class() { return Type::IfcDateAndTime; }
 IfcDateAndTime::IfcDateAndTime(IfcAbstractEntityPtr e) { if (!is(Type::IfcDateAndTime)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDefinedSymbol
+// Function implementations for IfcDefinedSymbol
 IfcDefinedSymbolSelect IfcDefinedSymbol::Definition() { return *entity->getArgument(0); }
 IfcCartesianTransformationOperator2D* IfcDefinedSymbol::Target() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianTransformationOperator2D>(*entity->getArgument(1)); }
 bool IfcDefinedSymbol::is(Type::Enum v) const { return v == Type::IfcDefinedSymbol || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcDefinedSymbol::type() const { return Type::IfcDefinedSymbol; }
 Type::Enum IfcDefinedSymbol::Class() { return Type::IfcDefinedSymbol; }
 IfcDefinedSymbol::IfcDefinedSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcDefinedSymbol)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDerivedProfileDef
+// Function implementations for IfcDerivedProfileDef
 IfcProfileDef* IfcDerivedProfileDef::ParentProfile() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(2)); }
 IfcCartesianTransformationOperator2D* IfcDerivedProfileDef::Operator() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianTransformationOperator2D>(*entity->getArgument(3)); }
 bool IfcDerivedProfileDef::hasLabel() { return !entity->getArgument(4)->isNull(); }
@@ -5878,7 +5878,7 @@ bool IfcDerivedProfileDef::is(Type::Enum v) const { return v == Type::IfcDerived
 Type::Enum IfcDerivedProfileDef::type() const { return Type::IfcDerivedProfileDef; }
 Type::Enum IfcDerivedProfileDef::Class() { return Type::IfcDerivedProfileDef; }
 IfcDerivedProfileDef::IfcDerivedProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcDerivedProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDerivedUnit
+// Function implementations for IfcDerivedUnit
 SHARED_PTR< IfcTemplatedEntityList<IfcDerivedUnitElement> > IfcDerivedUnit::Elements() { RETURN_AS_LIST(IfcDerivedUnitElement,0) }
 IfcDerivedUnitEnum::IfcDerivedUnitEnum IfcDerivedUnit::UnitType() { return IfcDerivedUnitEnum::FromString(*entity->getArgument(1)); }
 bool IfcDerivedUnit::hasUserDefinedType() { return !entity->getArgument(2)->isNull(); }
@@ -5887,46 +5887,46 @@ bool IfcDerivedUnit::is(Type::Enum v) const { return v == Type::IfcDerivedUnit; 
 Type::Enum IfcDerivedUnit::type() const { return Type::IfcDerivedUnit; }
 Type::Enum IfcDerivedUnit::Class() { return Type::IfcDerivedUnit; }
 IfcDerivedUnit::IfcDerivedUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcDerivedUnit)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDerivedUnitElement
+// Function implementations for IfcDerivedUnitElement
 IfcNamedUnit* IfcDerivedUnitElement::Unit() { return reinterpret_pointer_cast<IfcBaseClass,IfcNamedUnit>(*entity->getArgument(0)); }
 int IfcDerivedUnitElement::Exponent() { return *entity->getArgument(1); }
 bool IfcDerivedUnitElement::is(Type::Enum v) const { return v == Type::IfcDerivedUnitElement; }
 Type::Enum IfcDerivedUnitElement::type() const { return Type::IfcDerivedUnitElement; }
 Type::Enum IfcDerivedUnitElement::Class() { return Type::IfcDerivedUnitElement; }
 IfcDerivedUnitElement::IfcDerivedUnitElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcDerivedUnitElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDiameterDimension
+// Function implementations for IfcDiameterDimension
 bool IfcDiameterDimension::is(Type::Enum v) const { return v == Type::IfcDiameterDimension || IfcDimensionCurveDirectedCallout::is(v); }
 Type::Enum IfcDiameterDimension::type() const { return Type::IfcDiameterDimension; }
 Type::Enum IfcDiameterDimension::Class() { return Type::IfcDiameterDimension; }
 IfcDiameterDimension::IfcDiameterDimension(IfcAbstractEntityPtr e) { if (!is(Type::IfcDiameterDimension)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDimensionCalloutRelationship
+// Function implementations for IfcDimensionCalloutRelationship
 bool IfcDimensionCalloutRelationship::is(Type::Enum v) const { return v == Type::IfcDimensionCalloutRelationship || IfcDraughtingCalloutRelationship::is(v); }
 Type::Enum IfcDimensionCalloutRelationship::type() const { return Type::IfcDimensionCalloutRelationship; }
 Type::Enum IfcDimensionCalloutRelationship::Class() { return Type::IfcDimensionCalloutRelationship; }
 IfcDimensionCalloutRelationship::IfcDimensionCalloutRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcDimensionCalloutRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDimensionCurve
+// Function implementations for IfcDimensionCurve
 IfcTerminatorSymbol::list IfcDimensionCurve::AnnotatedBySymbols() { RETURN_INVERSE(IfcTerminatorSymbol) }
 bool IfcDimensionCurve::is(Type::Enum v) const { return v == Type::IfcDimensionCurve || IfcAnnotationCurveOccurrence::is(v); }
 Type::Enum IfcDimensionCurve::type() const { return Type::IfcDimensionCurve; }
 Type::Enum IfcDimensionCurve::Class() { return Type::IfcDimensionCurve; }
 IfcDimensionCurve::IfcDimensionCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcDimensionCurve)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDimensionCurveDirectedCallout
+// Function implementations for IfcDimensionCurveDirectedCallout
 bool IfcDimensionCurveDirectedCallout::is(Type::Enum v) const { return v == Type::IfcDimensionCurveDirectedCallout || IfcDraughtingCallout::is(v); }
 Type::Enum IfcDimensionCurveDirectedCallout::type() const { return Type::IfcDimensionCurveDirectedCallout; }
 Type::Enum IfcDimensionCurveDirectedCallout::Class() { return Type::IfcDimensionCurveDirectedCallout; }
 IfcDimensionCurveDirectedCallout::IfcDimensionCurveDirectedCallout(IfcAbstractEntityPtr e) { if (!is(Type::IfcDimensionCurveDirectedCallout)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDimensionCurveTerminator
+// Function implementations for IfcDimensionCurveTerminator
 IfcDimensionExtentUsage::IfcDimensionExtentUsage IfcDimensionCurveTerminator::Role() { return IfcDimensionExtentUsage::FromString(*entity->getArgument(4)); }
 bool IfcDimensionCurveTerminator::is(Type::Enum v) const { return v == Type::IfcDimensionCurveTerminator || IfcTerminatorSymbol::is(v); }
 Type::Enum IfcDimensionCurveTerminator::type() const { return Type::IfcDimensionCurveTerminator; }
 Type::Enum IfcDimensionCurveTerminator::Class() { return Type::IfcDimensionCurveTerminator; }
 IfcDimensionCurveTerminator::IfcDimensionCurveTerminator(IfcAbstractEntityPtr e) { if (!is(Type::IfcDimensionCurveTerminator)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDimensionPair
+// Function implementations for IfcDimensionPair
 bool IfcDimensionPair::is(Type::Enum v) const { return v == Type::IfcDimensionPair || IfcDraughtingCalloutRelationship::is(v); }
 Type::Enum IfcDimensionPair::type() const { return Type::IfcDimensionPair; }
 Type::Enum IfcDimensionPair::Class() { return Type::IfcDimensionPair; }
 IfcDimensionPair::IfcDimensionPair(IfcAbstractEntityPtr e) { if (!is(Type::IfcDimensionPair)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDimensionalExponents
+// Function implementations for IfcDimensionalExponents
 int IfcDimensionalExponents::LengthExponent() { return *entity->getArgument(0); }
 int IfcDimensionalExponents::MassExponent() { return *entity->getArgument(1); }
 int IfcDimensionalExponents::TimeExponent() { return *entity->getArgument(2); }
@@ -5938,34 +5938,34 @@ bool IfcDimensionalExponents::is(Type::Enum v) const { return v == Type::IfcDime
 Type::Enum IfcDimensionalExponents::type() const { return Type::IfcDimensionalExponents; }
 Type::Enum IfcDimensionalExponents::Class() { return Type::IfcDimensionalExponents; }
 IfcDimensionalExponents::IfcDimensionalExponents(IfcAbstractEntityPtr e) { if (!is(Type::IfcDimensionalExponents)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDirection
+// Function implementations for IfcDirection
 std::vector<double> /*[2:3]*/ IfcDirection::DirectionRatios() { return *entity->getArgument(0); }
 bool IfcDirection::is(Type::Enum v) const { return v == Type::IfcDirection || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcDirection::type() const { return Type::IfcDirection; }
 Type::Enum IfcDirection::Class() { return Type::IfcDirection; }
 IfcDirection::IfcDirection(IfcAbstractEntityPtr e) { if (!is(Type::IfcDirection)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDiscreteAccessory
+// Function implementations for IfcDiscreteAccessory
 bool IfcDiscreteAccessory::is(Type::Enum v) const { return v == Type::IfcDiscreteAccessory || IfcElementComponent::is(v); }
 Type::Enum IfcDiscreteAccessory::type() const { return Type::IfcDiscreteAccessory; }
 Type::Enum IfcDiscreteAccessory::Class() { return Type::IfcDiscreteAccessory; }
 IfcDiscreteAccessory::IfcDiscreteAccessory(IfcAbstractEntityPtr e) { if (!is(Type::IfcDiscreteAccessory)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDiscreteAccessoryType
+// Function implementations for IfcDiscreteAccessoryType
 bool IfcDiscreteAccessoryType::is(Type::Enum v) const { return v == Type::IfcDiscreteAccessoryType || IfcElementComponentType::is(v); }
 Type::Enum IfcDiscreteAccessoryType::type() const { return Type::IfcDiscreteAccessoryType; }
 Type::Enum IfcDiscreteAccessoryType::Class() { return Type::IfcDiscreteAccessoryType; }
 IfcDiscreteAccessoryType::IfcDiscreteAccessoryType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDiscreteAccessoryType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDistributionChamberElement
+// Function implementations for IfcDistributionChamberElement
 bool IfcDistributionChamberElement::is(Type::Enum v) const { return v == Type::IfcDistributionChamberElement || IfcDistributionFlowElement::is(v); }
 Type::Enum IfcDistributionChamberElement::type() const { return Type::IfcDistributionChamberElement; }
 Type::Enum IfcDistributionChamberElement::Class() { return Type::IfcDistributionChamberElement; }
 IfcDistributionChamberElement::IfcDistributionChamberElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionChamberElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDistributionChamberElementType
+// Function implementations for IfcDistributionChamberElementType
 IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum IfcDistributionChamberElementType::PredefinedType() { return IfcDistributionChamberElementTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcDistributionChamberElementType::is(Type::Enum v) const { return v == Type::IfcDistributionChamberElementType || IfcDistributionFlowElementType::is(v); }
 Type::Enum IfcDistributionChamberElementType::type() const { return Type::IfcDistributionChamberElementType; }
 Type::Enum IfcDistributionChamberElementType::Class() { return Type::IfcDistributionChamberElementType; }
 IfcDistributionChamberElementType::IfcDistributionChamberElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionChamberElementType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDistributionControlElement
+// Function implementations for IfcDistributionControlElement
 bool IfcDistributionControlElement::hasControlElementId() { return !entity->getArgument(8)->isNull(); }
 IfcIdentifier IfcDistributionControlElement::ControlElementId() { return *entity->getArgument(8); }
 IfcRelFlowControlElements::list IfcDistributionControlElement::AssignedToFlowElement() { RETURN_INVERSE(IfcRelFlowControlElements) }
@@ -5973,40 +5973,40 @@ bool IfcDistributionControlElement::is(Type::Enum v) const { return v == Type::I
 Type::Enum IfcDistributionControlElement::type() const { return Type::IfcDistributionControlElement; }
 Type::Enum IfcDistributionControlElement::Class() { return Type::IfcDistributionControlElement; }
 IfcDistributionControlElement::IfcDistributionControlElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionControlElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDistributionControlElementType
+// Function implementations for IfcDistributionControlElementType
 bool IfcDistributionControlElementType::is(Type::Enum v) const { return v == Type::IfcDistributionControlElementType || IfcDistributionElementType::is(v); }
 Type::Enum IfcDistributionControlElementType::type() const { return Type::IfcDistributionControlElementType; }
 Type::Enum IfcDistributionControlElementType::Class() { return Type::IfcDistributionControlElementType; }
 IfcDistributionControlElementType::IfcDistributionControlElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionControlElementType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDistributionElement
+// Function implementations for IfcDistributionElement
 bool IfcDistributionElement::is(Type::Enum v) const { return v == Type::IfcDistributionElement || IfcElement::is(v); }
 Type::Enum IfcDistributionElement::type() const { return Type::IfcDistributionElement; }
 Type::Enum IfcDistributionElement::Class() { return Type::IfcDistributionElement; }
 IfcDistributionElement::IfcDistributionElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDistributionElementType
+// Function implementations for IfcDistributionElementType
 bool IfcDistributionElementType::is(Type::Enum v) const { return v == Type::IfcDistributionElementType || IfcElementType::is(v); }
 Type::Enum IfcDistributionElementType::type() const { return Type::IfcDistributionElementType; }
 Type::Enum IfcDistributionElementType::Class() { return Type::IfcDistributionElementType; }
 IfcDistributionElementType::IfcDistributionElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionElementType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDistributionFlowElement
+// Function implementations for IfcDistributionFlowElement
 IfcRelFlowControlElements::list IfcDistributionFlowElement::HasControlElements() { RETURN_INVERSE(IfcRelFlowControlElements) }
 bool IfcDistributionFlowElement::is(Type::Enum v) const { return v == Type::IfcDistributionFlowElement || IfcDistributionElement::is(v); }
 Type::Enum IfcDistributionFlowElement::type() const { return Type::IfcDistributionFlowElement; }
 Type::Enum IfcDistributionFlowElement::Class() { return Type::IfcDistributionFlowElement; }
 IfcDistributionFlowElement::IfcDistributionFlowElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionFlowElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDistributionFlowElementType
+// Function implementations for IfcDistributionFlowElementType
 bool IfcDistributionFlowElementType::is(Type::Enum v) const { return v == Type::IfcDistributionFlowElementType || IfcDistributionElementType::is(v); }
 Type::Enum IfcDistributionFlowElementType::type() const { return Type::IfcDistributionFlowElementType; }
 Type::Enum IfcDistributionFlowElementType::Class() { return Type::IfcDistributionFlowElementType; }
 IfcDistributionFlowElementType::IfcDistributionFlowElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionFlowElementType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDistributionPort
+// Function implementations for IfcDistributionPort
 bool IfcDistributionPort::hasFlowDirection() { return !entity->getArgument(7)->isNull(); }
 IfcFlowDirectionEnum::IfcFlowDirectionEnum IfcDistributionPort::FlowDirection() { return IfcFlowDirectionEnum::FromString(*entity->getArgument(7)); }
 bool IfcDistributionPort::is(Type::Enum v) const { return v == Type::IfcDistributionPort || IfcPort::is(v); }
 Type::Enum IfcDistributionPort::type() const { return Type::IfcDistributionPort; }
 Type::Enum IfcDistributionPort::Class() { return Type::IfcDistributionPort; }
 IfcDistributionPort::IfcDistributionPort(IfcAbstractEntityPtr e) { if (!is(Type::IfcDistributionPort)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDocumentElectronicFormat
+// Function implementations for IfcDocumentElectronicFormat
 bool IfcDocumentElectronicFormat::hasFileExtension() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcDocumentElectronicFormat::FileExtension() { return *entity->getArgument(0); }
 bool IfcDocumentElectronicFormat::hasMimeContentType() { return !entity->getArgument(1)->isNull(); }
@@ -6017,7 +6017,7 @@ bool IfcDocumentElectronicFormat::is(Type::Enum v) const { return v == Type::Ifc
 Type::Enum IfcDocumentElectronicFormat::type() const { return Type::IfcDocumentElectronicFormat; }
 Type::Enum IfcDocumentElectronicFormat::Class() { return Type::IfcDocumentElectronicFormat; }
 IfcDocumentElectronicFormat::IfcDocumentElectronicFormat(IfcAbstractEntityPtr e) { if (!is(Type::IfcDocumentElectronicFormat)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDocumentInformation
+// Function implementations for IfcDocumentInformation
 IfcIdentifier IfcDocumentInformation::DocumentId() { return *entity->getArgument(0); }
 IfcLabel IfcDocumentInformation::Name() { return *entity->getArgument(1); }
 bool IfcDocumentInformation::hasDescription() { return !entity->getArgument(2)->isNull(); }
@@ -6056,7 +6056,7 @@ bool IfcDocumentInformation::is(Type::Enum v) const { return v == Type::IfcDocum
 Type::Enum IfcDocumentInformation::type() const { return Type::IfcDocumentInformation; }
 Type::Enum IfcDocumentInformation::Class() { return Type::IfcDocumentInformation; }
 IfcDocumentInformation::IfcDocumentInformation(IfcAbstractEntityPtr e) { if (!is(Type::IfcDocumentInformation)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDocumentInformationRelationship
+// Function implementations for IfcDocumentInformationRelationship
 IfcDocumentInformation* IfcDocumentInformationRelationship::RelatingDocument() { return reinterpret_pointer_cast<IfcBaseClass,IfcDocumentInformation>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformation> > IfcDocumentInformationRelationship::RelatedDocuments() { RETURN_AS_LIST(IfcDocumentInformation,1) }
 bool IfcDocumentInformationRelationship::hasRelationshipType() { return !entity->getArgument(2)->isNull(); }
@@ -6065,13 +6065,13 @@ bool IfcDocumentInformationRelationship::is(Type::Enum v) const { return v == Ty
 Type::Enum IfcDocumentInformationRelationship::type() const { return Type::IfcDocumentInformationRelationship; }
 Type::Enum IfcDocumentInformationRelationship::Class() { return Type::IfcDocumentInformationRelationship; }
 IfcDocumentInformationRelationship::IfcDocumentInformationRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcDocumentInformationRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDocumentReference
+// Function implementations for IfcDocumentReference
 IfcDocumentInformation::list IfcDocumentReference::ReferenceToDocument() { RETURN_INVERSE(IfcDocumentInformation) }
 bool IfcDocumentReference::is(Type::Enum v) const { return v == Type::IfcDocumentReference || IfcExternalReference::is(v); }
 Type::Enum IfcDocumentReference::type() const { return Type::IfcDocumentReference; }
 Type::Enum IfcDocumentReference::Class() { return Type::IfcDocumentReference; }
 IfcDocumentReference::IfcDocumentReference(IfcAbstractEntityPtr e) { if (!is(Type::IfcDocumentReference)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDoor
+// Function implementations for IfcDoor
 bool IfcDoor::hasOverallHeight() { return !entity->getArgument(8)->isNull(); }
 IfcPositiveLengthMeasure IfcDoor::OverallHeight() { return *entity->getArgument(8); }
 bool IfcDoor::hasOverallWidth() { return !entity->getArgument(9)->isNull(); }
@@ -6080,7 +6080,7 @@ bool IfcDoor::is(Type::Enum v) const { return v == Type::IfcDoor || IfcBuildingE
 Type::Enum IfcDoor::type() const { return Type::IfcDoor; }
 Type::Enum IfcDoor::Class() { return Type::IfcDoor; }
 IfcDoor::IfcDoor(IfcAbstractEntityPtr e) { if (!is(Type::IfcDoor)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDoorLiningProperties
+// Function implementations for IfcDoorLiningProperties
 bool IfcDoorLiningProperties::hasLiningDepth() { return !entity->getArgument(4)->isNull(); }
 IfcPositiveLengthMeasure IfcDoorLiningProperties::LiningDepth() { return *entity->getArgument(4); }
 bool IfcDoorLiningProperties::hasLiningThickness() { return !entity->getArgument(5)->isNull(); }
@@ -6107,7 +6107,7 @@ bool IfcDoorLiningProperties::is(Type::Enum v) const { return v == Type::IfcDoor
 Type::Enum IfcDoorLiningProperties::type() const { return Type::IfcDoorLiningProperties; }
 Type::Enum IfcDoorLiningProperties::Class() { return Type::IfcDoorLiningProperties; }
 IfcDoorLiningProperties::IfcDoorLiningProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcDoorLiningProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDoorPanelProperties
+// Function implementations for IfcDoorPanelProperties
 bool IfcDoorPanelProperties::hasPanelDepth() { return !entity->getArgument(4)->isNull(); }
 IfcPositiveLengthMeasure IfcDoorPanelProperties::PanelDepth() { return *entity->getArgument(4); }
 IfcDoorPanelOperationEnum::IfcDoorPanelOperationEnum IfcDoorPanelProperties::PanelOperation() { return IfcDoorPanelOperationEnum::FromString(*entity->getArgument(5)); }
@@ -6120,7 +6120,7 @@ bool IfcDoorPanelProperties::is(Type::Enum v) const { return v == Type::IfcDoorP
 Type::Enum IfcDoorPanelProperties::type() const { return Type::IfcDoorPanelProperties; }
 Type::Enum IfcDoorPanelProperties::Class() { return Type::IfcDoorPanelProperties; }
 IfcDoorPanelProperties::IfcDoorPanelProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcDoorPanelProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDoorStyle
+// Function implementations for IfcDoorStyle
 IfcDoorStyleOperationEnum::IfcDoorStyleOperationEnum IfcDoorStyle::OperationType() { return IfcDoorStyleOperationEnum::FromString(*entity->getArgument(8)); }
 IfcDoorStyleConstructionEnum::IfcDoorStyleConstructionEnum IfcDoorStyle::ConstructionType() { return IfcDoorStyleConstructionEnum::FromString(*entity->getArgument(9)); }
 bool IfcDoorStyle::ParameterTakesPrecedence() { return *entity->getArgument(10); }
@@ -6129,7 +6129,7 @@ bool IfcDoorStyle::is(Type::Enum v) const { return v == Type::IfcDoorStyle || If
 Type::Enum IfcDoorStyle::type() const { return Type::IfcDoorStyle; }
 Type::Enum IfcDoorStyle::Class() { return Type::IfcDoorStyle; }
 IfcDoorStyle::IfcDoorStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcDoorStyle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDraughtingCallout
+// Function implementations for IfcDraughtingCallout
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcDraughtingCallout::Contents() { RETURN_AS_LIST(IfcAbstractSelect,0) }
 IfcDraughtingCalloutRelationship::list IfcDraughtingCallout::IsRelatedFromCallout() { RETURN_INVERSE(IfcDraughtingCalloutRelationship) }
 IfcDraughtingCalloutRelationship::list IfcDraughtingCallout::IsRelatedToCallout() { RETURN_INVERSE(IfcDraughtingCalloutRelationship) }
@@ -6137,7 +6137,7 @@ bool IfcDraughtingCallout::is(Type::Enum v) const { return v == Type::IfcDraught
 Type::Enum IfcDraughtingCallout::type() const { return Type::IfcDraughtingCallout; }
 Type::Enum IfcDraughtingCallout::Class() { return Type::IfcDraughtingCallout; }
 IfcDraughtingCallout::IfcDraughtingCallout(IfcAbstractEntityPtr e) { if (!is(Type::IfcDraughtingCallout)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDraughtingCalloutRelationship
+// Function implementations for IfcDraughtingCalloutRelationship
 bool IfcDraughtingCalloutRelationship::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcDraughtingCalloutRelationship::Name() { return *entity->getArgument(0); }
 bool IfcDraughtingCalloutRelationship::hasDescription() { return !entity->getArgument(1)->isNull(); }
@@ -6148,73 +6148,73 @@ bool IfcDraughtingCalloutRelationship::is(Type::Enum v) const { return v == Type
 Type::Enum IfcDraughtingCalloutRelationship::type() const { return Type::IfcDraughtingCalloutRelationship; }
 Type::Enum IfcDraughtingCalloutRelationship::Class() { return Type::IfcDraughtingCalloutRelationship; }
 IfcDraughtingCalloutRelationship::IfcDraughtingCalloutRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcDraughtingCalloutRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDraughtingPreDefinedColour
+// Function implementations for IfcDraughtingPreDefinedColour
 bool IfcDraughtingPreDefinedColour::is(Type::Enum v) const { return v == Type::IfcDraughtingPreDefinedColour || IfcPreDefinedColour::is(v); }
 Type::Enum IfcDraughtingPreDefinedColour::type() const { return Type::IfcDraughtingPreDefinedColour; }
 Type::Enum IfcDraughtingPreDefinedColour::Class() { return Type::IfcDraughtingPreDefinedColour; }
 IfcDraughtingPreDefinedColour::IfcDraughtingPreDefinedColour(IfcAbstractEntityPtr e) { if (!is(Type::IfcDraughtingPreDefinedColour)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDraughtingPreDefinedCurveFont
+// Function implementations for IfcDraughtingPreDefinedCurveFont
 bool IfcDraughtingPreDefinedCurveFont::is(Type::Enum v) const { return v == Type::IfcDraughtingPreDefinedCurveFont || IfcPreDefinedCurveFont::is(v); }
 Type::Enum IfcDraughtingPreDefinedCurveFont::type() const { return Type::IfcDraughtingPreDefinedCurveFont; }
 Type::Enum IfcDraughtingPreDefinedCurveFont::Class() { return Type::IfcDraughtingPreDefinedCurveFont; }
 IfcDraughtingPreDefinedCurveFont::IfcDraughtingPreDefinedCurveFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcDraughtingPreDefinedCurveFont)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDraughtingPreDefinedTextFont
+// Function implementations for IfcDraughtingPreDefinedTextFont
 bool IfcDraughtingPreDefinedTextFont::is(Type::Enum v) const { return v == Type::IfcDraughtingPreDefinedTextFont || IfcPreDefinedTextFont::is(v); }
 Type::Enum IfcDraughtingPreDefinedTextFont::type() const { return Type::IfcDraughtingPreDefinedTextFont; }
 Type::Enum IfcDraughtingPreDefinedTextFont::Class() { return Type::IfcDraughtingPreDefinedTextFont; }
 IfcDraughtingPreDefinedTextFont::IfcDraughtingPreDefinedTextFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcDraughtingPreDefinedTextFont)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDuctFittingType
+// Function implementations for IfcDuctFittingType
 IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum IfcDuctFittingType::PredefinedType() { return IfcDuctFittingTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcDuctFittingType::is(Type::Enum v) const { return v == Type::IfcDuctFittingType || IfcFlowFittingType::is(v); }
 Type::Enum IfcDuctFittingType::type() const { return Type::IfcDuctFittingType; }
 Type::Enum IfcDuctFittingType::Class() { return Type::IfcDuctFittingType; }
 IfcDuctFittingType::IfcDuctFittingType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDuctFittingType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDuctSegmentType
+// Function implementations for IfcDuctSegmentType
 IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum IfcDuctSegmentType::PredefinedType() { return IfcDuctSegmentTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcDuctSegmentType::is(Type::Enum v) const { return v == Type::IfcDuctSegmentType || IfcFlowSegmentType::is(v); }
 Type::Enum IfcDuctSegmentType::type() const { return Type::IfcDuctSegmentType; }
 Type::Enum IfcDuctSegmentType::Class() { return Type::IfcDuctSegmentType; }
 IfcDuctSegmentType::IfcDuctSegmentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDuctSegmentType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcDuctSilencerType
+// Function implementations for IfcDuctSilencerType
 IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum IfcDuctSilencerType::PredefinedType() { return IfcDuctSilencerTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcDuctSilencerType::is(Type::Enum v) const { return v == Type::IfcDuctSilencerType || IfcFlowTreatmentDeviceType::is(v); }
 Type::Enum IfcDuctSilencerType::type() const { return Type::IfcDuctSilencerType; }
 Type::Enum IfcDuctSilencerType::Class() { return Type::IfcDuctSilencerType; }
 IfcDuctSilencerType::IfcDuctSilencerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcDuctSilencerType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEdge
+// Function implementations for IfcEdge
 IfcVertex* IfcEdge::EdgeStart() { return reinterpret_pointer_cast<IfcBaseClass,IfcVertex>(*entity->getArgument(0)); }
 IfcVertex* IfcEdge::EdgeEnd() { return reinterpret_pointer_cast<IfcBaseClass,IfcVertex>(*entity->getArgument(1)); }
 bool IfcEdge::is(Type::Enum v) const { return v == Type::IfcEdge || IfcTopologicalRepresentationItem::is(v); }
 Type::Enum IfcEdge::type() const { return Type::IfcEdge; }
 Type::Enum IfcEdge::Class() { return Type::IfcEdge; }
 IfcEdge::IfcEdge(IfcAbstractEntityPtr e) { if (!is(Type::IfcEdge)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEdgeCurve
+// Function implementations for IfcEdgeCurve
 IfcCurve* IfcEdgeCurve::EdgeGeometry() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(2)); }
 bool IfcEdgeCurve::SameSense() { return *entity->getArgument(3); }
 bool IfcEdgeCurve::is(Type::Enum v) const { return v == Type::IfcEdgeCurve || IfcEdge::is(v); }
 Type::Enum IfcEdgeCurve::type() const { return Type::IfcEdgeCurve; }
 Type::Enum IfcEdgeCurve::Class() { return Type::IfcEdgeCurve; }
 IfcEdgeCurve::IfcEdgeCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcEdgeCurve)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEdgeFeature
+// Function implementations for IfcEdgeFeature
 bool IfcEdgeFeature::hasFeatureLength() { return !entity->getArgument(8)->isNull(); }
 IfcPositiveLengthMeasure IfcEdgeFeature::FeatureLength() { return *entity->getArgument(8); }
 bool IfcEdgeFeature::is(Type::Enum v) const { return v == Type::IfcEdgeFeature || IfcFeatureElementSubtraction::is(v); }
 Type::Enum IfcEdgeFeature::type() const { return Type::IfcEdgeFeature; }
 Type::Enum IfcEdgeFeature::Class() { return Type::IfcEdgeFeature; }
 IfcEdgeFeature::IfcEdgeFeature(IfcAbstractEntityPtr e) { if (!is(Type::IfcEdgeFeature)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEdgeLoop
+// Function implementations for IfcEdgeLoop
 SHARED_PTR< IfcTemplatedEntityList<IfcOrientedEdge> > IfcEdgeLoop::EdgeList() { RETURN_AS_LIST(IfcOrientedEdge,0) }
 bool IfcEdgeLoop::is(Type::Enum v) const { return v == Type::IfcEdgeLoop || IfcLoop::is(v); }
 Type::Enum IfcEdgeLoop::type() const { return Type::IfcEdgeLoop; }
 Type::Enum IfcEdgeLoop::Class() { return Type::IfcEdgeLoop; }
 IfcEdgeLoop::IfcEdgeLoop(IfcAbstractEntityPtr e) { if (!is(Type::IfcEdgeLoop)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElectricApplianceType
+// Function implementations for IfcElectricApplianceType
 IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum IfcElectricApplianceType::PredefinedType() { return IfcElectricApplianceTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcElectricApplianceType::is(Type::Enum v) const { return v == Type::IfcElectricApplianceType || IfcFlowTerminalType::is(v); }
 Type::Enum IfcElectricApplianceType::type() const { return Type::IfcElectricApplianceType; }
 Type::Enum IfcElectricApplianceType::Class() { return Type::IfcElectricApplianceType; }
 IfcElectricApplianceType::IfcElectricApplianceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricApplianceType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElectricDistributionPoint
+// Function implementations for IfcElectricDistributionPoint
 IfcElectricDistributionPointFunctionEnum::IfcElectricDistributionPointFunctionEnum IfcElectricDistributionPoint::DistributionPointFunction() { return IfcElectricDistributionPointFunctionEnum::FromString(*entity->getArgument(8)); }
 bool IfcElectricDistributionPoint::hasUserDefinedFunction() { return !entity->getArgument(9)->isNull(); }
 IfcLabel IfcElectricDistributionPoint::UserDefinedFunction() { return *entity->getArgument(9); }
@@ -6222,37 +6222,37 @@ bool IfcElectricDistributionPoint::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcElectricDistributionPoint::type() const { return Type::IfcElectricDistributionPoint; }
 Type::Enum IfcElectricDistributionPoint::Class() { return Type::IfcElectricDistributionPoint; }
 IfcElectricDistributionPoint::IfcElectricDistributionPoint(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricDistributionPoint)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElectricFlowStorageDeviceType
+// Function implementations for IfcElectricFlowStorageDeviceType
 IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum IfcElectricFlowStorageDeviceType::PredefinedType() { return IfcElectricFlowStorageDeviceTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcElectricFlowStorageDeviceType::is(Type::Enum v) const { return v == Type::IfcElectricFlowStorageDeviceType || IfcFlowStorageDeviceType::is(v); }
 Type::Enum IfcElectricFlowStorageDeviceType::type() const { return Type::IfcElectricFlowStorageDeviceType; }
 Type::Enum IfcElectricFlowStorageDeviceType::Class() { return Type::IfcElectricFlowStorageDeviceType; }
 IfcElectricFlowStorageDeviceType::IfcElectricFlowStorageDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricFlowStorageDeviceType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElectricGeneratorType
+// Function implementations for IfcElectricGeneratorType
 IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum IfcElectricGeneratorType::PredefinedType() { return IfcElectricGeneratorTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcElectricGeneratorType::is(Type::Enum v) const { return v == Type::IfcElectricGeneratorType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcElectricGeneratorType::type() const { return Type::IfcElectricGeneratorType; }
 Type::Enum IfcElectricGeneratorType::Class() { return Type::IfcElectricGeneratorType; }
 IfcElectricGeneratorType::IfcElectricGeneratorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricGeneratorType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElectricHeaterType
+// Function implementations for IfcElectricHeaterType
 IfcElectricHeaterTypeEnum::IfcElectricHeaterTypeEnum IfcElectricHeaterType::PredefinedType() { return IfcElectricHeaterTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcElectricHeaterType::is(Type::Enum v) const { return v == Type::IfcElectricHeaterType || IfcFlowTerminalType::is(v); }
 Type::Enum IfcElectricHeaterType::type() const { return Type::IfcElectricHeaterType; }
 Type::Enum IfcElectricHeaterType::Class() { return Type::IfcElectricHeaterType; }
 IfcElectricHeaterType::IfcElectricHeaterType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricHeaterType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElectricMotorType
+// Function implementations for IfcElectricMotorType
 IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum IfcElectricMotorType::PredefinedType() { return IfcElectricMotorTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcElectricMotorType::is(Type::Enum v) const { return v == Type::IfcElectricMotorType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcElectricMotorType::type() const { return Type::IfcElectricMotorType; }
 Type::Enum IfcElectricMotorType::Class() { return Type::IfcElectricMotorType; }
 IfcElectricMotorType::IfcElectricMotorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricMotorType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElectricTimeControlType
+// Function implementations for IfcElectricTimeControlType
 IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum IfcElectricTimeControlType::PredefinedType() { return IfcElectricTimeControlTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcElectricTimeControlType::is(Type::Enum v) const { return v == Type::IfcElectricTimeControlType || IfcFlowControllerType::is(v); }
 Type::Enum IfcElectricTimeControlType::type() const { return Type::IfcElectricTimeControlType; }
 Type::Enum IfcElectricTimeControlType::Class() { return Type::IfcElectricTimeControlType; }
 IfcElectricTimeControlType::IfcElectricTimeControlType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricTimeControlType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElectricalBaseProperties
+// Function implementations for IfcElectricalBaseProperties
 bool IfcElectricalBaseProperties::hasElectricCurrentType() { return !entity->getArgument(6)->isNull(); }
 IfcElectricCurrentEnum::IfcElectricCurrentEnum IfcElectricalBaseProperties::ElectricCurrentType() { return IfcElectricCurrentEnum::FromString(*entity->getArgument(6)); }
 IfcElectricVoltageMeasure IfcElectricalBaseProperties::InputVoltage() { return *entity->getArgument(7); }
@@ -6270,17 +6270,17 @@ bool IfcElectricalBaseProperties::is(Type::Enum v) const { return v == Type::Ifc
 Type::Enum IfcElectricalBaseProperties::type() const { return Type::IfcElectricalBaseProperties; }
 Type::Enum IfcElectricalBaseProperties::Class() { return Type::IfcElectricalBaseProperties; }
 IfcElectricalBaseProperties::IfcElectricalBaseProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricalBaseProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElectricalCircuit
+// Function implementations for IfcElectricalCircuit
 bool IfcElectricalCircuit::is(Type::Enum v) const { return v == Type::IfcElectricalCircuit || IfcSystem::is(v); }
 Type::Enum IfcElectricalCircuit::type() const { return Type::IfcElectricalCircuit; }
 Type::Enum IfcElectricalCircuit::Class() { return Type::IfcElectricalCircuit; }
 IfcElectricalCircuit::IfcElectricalCircuit(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricalCircuit)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElectricalElement
+// Function implementations for IfcElectricalElement
 bool IfcElectricalElement::is(Type::Enum v) const { return v == Type::IfcElectricalElement || IfcElement::is(v); }
 Type::Enum IfcElectricalElement::type() const { return Type::IfcElectricalElement; }
 Type::Enum IfcElectricalElement::Class() { return Type::IfcElectricalElement; }
 IfcElectricalElement::IfcElectricalElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcElectricalElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElement
+// Function implementations for IfcElement
 bool IfcElement::hasTag() { return !entity->getArgument(7)->isNull(); }
 IfcIdentifier IfcElement::Tag() { return *entity->getArgument(7); }
 IfcRelConnectsStructuralElement::list IfcElement::HasStructuralMember() { RETURN_INVERSE(IfcRelConnectsStructuralElement) }
@@ -6299,7 +6299,7 @@ bool IfcElement::is(Type::Enum v) const { return v == Type::IfcElement || IfcPro
 Type::Enum IfcElement::type() const { return Type::IfcElement; }
 Type::Enum IfcElement::Class() { return Type::IfcElement; }
 IfcElement::IfcElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElementAssembly
+// Function implementations for IfcElementAssembly
 bool IfcElementAssembly::hasAssemblyPlace() { return !entity->getArgument(8)->isNull(); }
 IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum IfcElementAssembly::AssemblyPlace() { return IfcAssemblyPlaceEnum::FromString(*entity->getArgument(8)); }
 IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum IfcElementAssembly::PredefinedType() { return IfcElementAssemblyTypeEnum::FromString(*entity->getArgument(9)); }
@@ -6307,17 +6307,17 @@ bool IfcElementAssembly::is(Type::Enum v) const { return v == Type::IfcElementAs
 Type::Enum IfcElementAssembly::type() const { return Type::IfcElementAssembly; }
 Type::Enum IfcElementAssembly::Class() { return Type::IfcElementAssembly; }
 IfcElementAssembly::IfcElementAssembly(IfcAbstractEntityPtr e) { if (!is(Type::IfcElementAssembly)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElementComponent
+// Function implementations for IfcElementComponent
 bool IfcElementComponent::is(Type::Enum v) const { return v == Type::IfcElementComponent || IfcElement::is(v); }
 Type::Enum IfcElementComponent::type() const { return Type::IfcElementComponent; }
 Type::Enum IfcElementComponent::Class() { return Type::IfcElementComponent; }
 IfcElementComponent::IfcElementComponent(IfcAbstractEntityPtr e) { if (!is(Type::IfcElementComponent)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElementComponentType
+// Function implementations for IfcElementComponentType
 bool IfcElementComponentType::is(Type::Enum v) const { return v == Type::IfcElementComponentType || IfcElementType::is(v); }
 Type::Enum IfcElementComponentType::type() const { return Type::IfcElementComponentType; }
 Type::Enum IfcElementComponentType::Class() { return Type::IfcElementComponentType; }
 IfcElementComponentType::IfcElementComponentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElementComponentType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElementQuantity
+// Function implementations for IfcElementQuantity
 bool IfcElementQuantity::hasMethodOfMeasurement() { return !entity->getArgument(4)->isNull(); }
 IfcLabel IfcElementQuantity::MethodOfMeasurement() { return *entity->getArgument(4); }
 SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalQuantity> > IfcElementQuantity::Quantities() { RETURN_AS_LIST(IfcPhysicalQuantity,5) }
@@ -6325,44 +6325,44 @@ bool IfcElementQuantity::is(Type::Enum v) const { return v == Type::IfcElementQu
 Type::Enum IfcElementQuantity::type() const { return Type::IfcElementQuantity; }
 Type::Enum IfcElementQuantity::Class() { return Type::IfcElementQuantity; }
 IfcElementQuantity::IfcElementQuantity(IfcAbstractEntityPtr e) { if (!is(Type::IfcElementQuantity)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElementType
+// Function implementations for IfcElementType
 bool IfcElementType::hasElementType() { return !entity->getArgument(8)->isNull(); }
 IfcLabel IfcElementType::ElementType() { return *entity->getArgument(8); }
 bool IfcElementType::is(Type::Enum v) const { return v == Type::IfcElementType || IfcTypeProduct::is(v); }
 Type::Enum IfcElementType::type() const { return Type::IfcElementType; }
 Type::Enum IfcElementType::Class() { return Type::IfcElementType; }
 IfcElementType::IfcElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcElementType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcElementarySurface
+// Function implementations for IfcElementarySurface
 IfcAxis2Placement3D* IfcElementarySurface::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(0)); }
 bool IfcElementarySurface::is(Type::Enum v) const { return v == Type::IfcElementarySurface || IfcSurface::is(v); }
 Type::Enum IfcElementarySurface::type() const { return Type::IfcElementarySurface; }
 Type::Enum IfcElementarySurface::Class() { return Type::IfcElementarySurface; }
 IfcElementarySurface::IfcElementarySurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcElementarySurface)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEllipse
+// Function implementations for IfcEllipse
 IfcPositiveLengthMeasure IfcEllipse::SemiAxis1() { return *entity->getArgument(1); }
 IfcPositiveLengthMeasure IfcEllipse::SemiAxis2() { return *entity->getArgument(2); }
 bool IfcEllipse::is(Type::Enum v) const { return v == Type::IfcEllipse || IfcConic::is(v); }
 Type::Enum IfcEllipse::type() const { return Type::IfcEllipse; }
 Type::Enum IfcEllipse::Class() { return Type::IfcEllipse; }
 IfcEllipse::IfcEllipse(IfcAbstractEntityPtr e) { if (!is(Type::IfcEllipse)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEllipseProfileDef
+// Function implementations for IfcEllipseProfileDef
 IfcPositiveLengthMeasure IfcEllipseProfileDef::SemiAxis1() { return *entity->getArgument(3); }
 IfcPositiveLengthMeasure IfcEllipseProfileDef::SemiAxis2() { return *entity->getArgument(4); }
 bool IfcEllipseProfileDef::is(Type::Enum v) const { return v == Type::IfcEllipseProfileDef || IfcParameterizedProfileDef::is(v); }
 Type::Enum IfcEllipseProfileDef::type() const { return Type::IfcEllipseProfileDef; }
 Type::Enum IfcEllipseProfileDef::Class() { return Type::IfcEllipseProfileDef; }
 IfcEllipseProfileDef::IfcEllipseProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcEllipseProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEnergyConversionDevice
+// Function implementations for IfcEnergyConversionDevice
 bool IfcEnergyConversionDevice::is(Type::Enum v) const { return v == Type::IfcEnergyConversionDevice || IfcDistributionFlowElement::is(v); }
 Type::Enum IfcEnergyConversionDevice::type() const { return Type::IfcEnergyConversionDevice; }
 Type::Enum IfcEnergyConversionDevice::Class() { return Type::IfcEnergyConversionDevice; }
 IfcEnergyConversionDevice::IfcEnergyConversionDevice(IfcAbstractEntityPtr e) { if (!is(Type::IfcEnergyConversionDevice)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEnergyConversionDeviceType
+// Function implementations for IfcEnergyConversionDeviceType
 bool IfcEnergyConversionDeviceType::is(Type::Enum v) const { return v == Type::IfcEnergyConversionDeviceType || IfcDistributionFlowElementType::is(v); }
 Type::Enum IfcEnergyConversionDeviceType::type() const { return Type::IfcEnergyConversionDeviceType; }
 Type::Enum IfcEnergyConversionDeviceType::Class() { return Type::IfcEnergyConversionDeviceType; }
 IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcEnergyConversionDeviceType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEnergyProperties
+// Function implementations for IfcEnergyProperties
 bool IfcEnergyProperties::hasEnergySequence() { return !entity->getArgument(4)->isNull(); }
 IfcEnergySequenceEnum::IfcEnergySequenceEnum IfcEnergyProperties::EnergySequence() { return IfcEnergySequenceEnum::FromString(*entity->getArgument(4)); }
 bool IfcEnergyProperties::hasUserDefinedEnergySequence() { return !entity->getArgument(5)->isNull(); }
@@ -6371,7 +6371,7 @@ bool IfcEnergyProperties::is(Type::Enum v) const { return v == Type::IfcEnergyPr
 Type::Enum IfcEnergyProperties::type() const { return Type::IfcEnergyProperties; }
 Type::Enum IfcEnergyProperties::Class() { return Type::IfcEnergyProperties; }
 IfcEnergyProperties::IfcEnergyProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcEnergyProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEnvironmentalImpactValue
+// Function implementations for IfcEnvironmentalImpactValue
 IfcLabel IfcEnvironmentalImpactValue::ImpactType() { return *entity->getArgument(6); }
 IfcEnvironmentalImpactCategoryEnum::IfcEnvironmentalImpactCategoryEnum IfcEnvironmentalImpactValue::Category() { return IfcEnvironmentalImpactCategoryEnum::FromString(*entity->getArgument(7)); }
 bool IfcEnvironmentalImpactValue::hasUserDefinedCategory() { return !entity->getArgument(8)->isNull(); }
@@ -6380,29 +6380,29 @@ bool IfcEnvironmentalImpactValue::is(Type::Enum v) const { return v == Type::Ifc
 Type::Enum IfcEnvironmentalImpactValue::type() const { return Type::IfcEnvironmentalImpactValue; }
 Type::Enum IfcEnvironmentalImpactValue::Class() { return Type::IfcEnvironmentalImpactValue; }
 IfcEnvironmentalImpactValue::IfcEnvironmentalImpactValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcEnvironmentalImpactValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEquipmentElement
+// Function implementations for IfcEquipmentElement
 bool IfcEquipmentElement::is(Type::Enum v) const { return v == Type::IfcEquipmentElement || IfcElement::is(v); }
 Type::Enum IfcEquipmentElement::type() const { return Type::IfcEquipmentElement; }
 Type::Enum IfcEquipmentElement::Class() { return Type::IfcEquipmentElement; }
 IfcEquipmentElement::IfcEquipmentElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcEquipmentElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEquipmentStandard
+// Function implementations for IfcEquipmentStandard
 bool IfcEquipmentStandard::is(Type::Enum v) const { return v == Type::IfcEquipmentStandard || IfcControl::is(v); }
 Type::Enum IfcEquipmentStandard::type() const { return Type::IfcEquipmentStandard; }
 Type::Enum IfcEquipmentStandard::Class() { return Type::IfcEquipmentStandard; }
 IfcEquipmentStandard::IfcEquipmentStandard(IfcAbstractEntityPtr e) { if (!is(Type::IfcEquipmentStandard)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEvaporativeCoolerType
+// Function implementations for IfcEvaporativeCoolerType
 IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum IfcEvaporativeCoolerType::PredefinedType() { return IfcEvaporativeCoolerTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcEvaporativeCoolerType::is(Type::Enum v) const { return v == Type::IfcEvaporativeCoolerType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcEvaporativeCoolerType::type() const { return Type::IfcEvaporativeCoolerType; }
 Type::Enum IfcEvaporativeCoolerType::Class() { return Type::IfcEvaporativeCoolerType; }
 IfcEvaporativeCoolerType::IfcEvaporativeCoolerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcEvaporativeCoolerType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcEvaporatorType
+// Function implementations for IfcEvaporatorType
 IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum IfcEvaporatorType::PredefinedType() { return IfcEvaporatorTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcEvaporatorType::is(Type::Enum v) const { return v == Type::IfcEvaporatorType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcEvaporatorType::type() const { return Type::IfcEvaporatorType; }
 Type::Enum IfcEvaporatorType::Class() { return Type::IfcEvaporatorType; }
 IfcEvaporatorType::IfcEvaporatorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcEvaporatorType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcExtendedMaterialProperties
+// Function implementations for IfcExtendedMaterialProperties
 SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > IfcExtendedMaterialProperties::ExtendedProperties() { RETURN_AS_LIST(IfcProperty,1) }
 bool IfcExtendedMaterialProperties::hasDescription() { return !entity->getArgument(2)->isNull(); }
 IfcText IfcExtendedMaterialProperties::Description() { return *entity->getArgument(2); }
@@ -6411,7 +6411,7 @@ bool IfcExtendedMaterialProperties::is(Type::Enum v) const { return v == Type::I
 Type::Enum IfcExtendedMaterialProperties::type() const { return Type::IfcExtendedMaterialProperties; }
 Type::Enum IfcExtendedMaterialProperties::Class() { return Type::IfcExtendedMaterialProperties; }
 IfcExtendedMaterialProperties::IfcExtendedMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcExtendedMaterialProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcExternalReference
+// Function implementations for IfcExternalReference
 bool IfcExternalReference::hasLocation() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcExternalReference::Location() { return *entity->getArgument(0); }
 bool IfcExternalReference::hasItemReference() { return !entity->getArgument(1)->isNull(); }
@@ -6422,76 +6422,76 @@ bool IfcExternalReference::is(Type::Enum v) const { return v == Type::IfcExterna
 Type::Enum IfcExternalReference::type() const { return Type::IfcExternalReference; }
 Type::Enum IfcExternalReference::Class() { return Type::IfcExternalReference; }
 IfcExternalReference::IfcExternalReference(IfcAbstractEntityPtr e) { if (!is(Type::IfcExternalReference)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcExternallyDefinedHatchStyle
+// Function implementations for IfcExternallyDefinedHatchStyle
 bool IfcExternallyDefinedHatchStyle::is(Type::Enum v) const { return v == Type::IfcExternallyDefinedHatchStyle || IfcExternalReference::is(v); }
 Type::Enum IfcExternallyDefinedHatchStyle::type() const { return Type::IfcExternallyDefinedHatchStyle; }
 Type::Enum IfcExternallyDefinedHatchStyle::Class() { return Type::IfcExternallyDefinedHatchStyle; }
 IfcExternallyDefinedHatchStyle::IfcExternallyDefinedHatchStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcExternallyDefinedHatchStyle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcExternallyDefinedSurfaceStyle
+// Function implementations for IfcExternallyDefinedSurfaceStyle
 bool IfcExternallyDefinedSurfaceStyle::is(Type::Enum v) const { return v == Type::IfcExternallyDefinedSurfaceStyle || IfcExternalReference::is(v); }
 Type::Enum IfcExternallyDefinedSurfaceStyle::type() const { return Type::IfcExternallyDefinedSurfaceStyle; }
 Type::Enum IfcExternallyDefinedSurfaceStyle::Class() { return Type::IfcExternallyDefinedSurfaceStyle; }
 IfcExternallyDefinedSurfaceStyle::IfcExternallyDefinedSurfaceStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcExternallyDefinedSurfaceStyle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcExternallyDefinedSymbol
+// Function implementations for IfcExternallyDefinedSymbol
 bool IfcExternallyDefinedSymbol::is(Type::Enum v) const { return v == Type::IfcExternallyDefinedSymbol || IfcExternalReference::is(v); }
 Type::Enum IfcExternallyDefinedSymbol::type() const { return Type::IfcExternallyDefinedSymbol; }
 Type::Enum IfcExternallyDefinedSymbol::Class() { return Type::IfcExternallyDefinedSymbol; }
 IfcExternallyDefinedSymbol::IfcExternallyDefinedSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcExternallyDefinedSymbol)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcExternallyDefinedTextFont
+// Function implementations for IfcExternallyDefinedTextFont
 bool IfcExternallyDefinedTextFont::is(Type::Enum v) const { return v == Type::IfcExternallyDefinedTextFont || IfcExternalReference::is(v); }
 Type::Enum IfcExternallyDefinedTextFont::type() const { return Type::IfcExternallyDefinedTextFont; }
 Type::Enum IfcExternallyDefinedTextFont::Class() { return Type::IfcExternallyDefinedTextFont; }
 IfcExternallyDefinedTextFont::IfcExternallyDefinedTextFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcExternallyDefinedTextFont)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcExtrudedAreaSolid
+// Function implementations for IfcExtrudedAreaSolid
 IfcDirection* IfcExtrudedAreaSolid::ExtrudedDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(2)); }
 IfcPositiveLengthMeasure IfcExtrudedAreaSolid::Depth() { return *entity->getArgument(3); }
 bool IfcExtrudedAreaSolid::is(Type::Enum v) const { return v == Type::IfcExtrudedAreaSolid || IfcSweptAreaSolid::is(v); }
 Type::Enum IfcExtrudedAreaSolid::type() const { return Type::IfcExtrudedAreaSolid; }
 Type::Enum IfcExtrudedAreaSolid::Class() { return Type::IfcExtrudedAreaSolid; }
 IfcExtrudedAreaSolid::IfcExtrudedAreaSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcExtrudedAreaSolid)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFace
+// Function implementations for IfcFace
 SHARED_PTR< IfcTemplatedEntityList<IfcFaceBound> > IfcFace::Bounds() { RETURN_AS_LIST(IfcFaceBound,0) }
 bool IfcFace::is(Type::Enum v) const { return v == Type::IfcFace || IfcTopologicalRepresentationItem::is(v); }
 Type::Enum IfcFace::type() const { return Type::IfcFace; }
 Type::Enum IfcFace::Class() { return Type::IfcFace; }
 IfcFace::IfcFace(IfcAbstractEntityPtr e) { if (!is(Type::IfcFace)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFaceBasedSurfaceModel
+// Function implementations for IfcFaceBasedSurfaceModel
 SHARED_PTR< IfcTemplatedEntityList<IfcConnectedFaceSet> > IfcFaceBasedSurfaceModel::FbsmFaces() { RETURN_AS_LIST(IfcConnectedFaceSet,0) }
 bool IfcFaceBasedSurfaceModel::is(Type::Enum v) const { return v == Type::IfcFaceBasedSurfaceModel || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcFaceBasedSurfaceModel::type() const { return Type::IfcFaceBasedSurfaceModel; }
 Type::Enum IfcFaceBasedSurfaceModel::Class() { return Type::IfcFaceBasedSurfaceModel; }
 IfcFaceBasedSurfaceModel::IfcFaceBasedSurfaceModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcFaceBasedSurfaceModel)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFaceBound
+// Function implementations for IfcFaceBound
 IfcLoop* IfcFaceBound::Bound() { return reinterpret_pointer_cast<IfcBaseClass,IfcLoop>(*entity->getArgument(0)); }
 bool IfcFaceBound::Orientation() { return *entity->getArgument(1); }
 bool IfcFaceBound::is(Type::Enum v) const { return v == Type::IfcFaceBound || IfcTopologicalRepresentationItem::is(v); }
 Type::Enum IfcFaceBound::type() const { return Type::IfcFaceBound; }
 Type::Enum IfcFaceBound::Class() { return Type::IfcFaceBound; }
 IfcFaceBound::IfcFaceBound(IfcAbstractEntityPtr e) { if (!is(Type::IfcFaceBound)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFaceOuterBound
+// Function implementations for IfcFaceOuterBound
 bool IfcFaceOuterBound::is(Type::Enum v) const { return v == Type::IfcFaceOuterBound || IfcFaceBound::is(v); }
 Type::Enum IfcFaceOuterBound::type() const { return Type::IfcFaceOuterBound; }
 Type::Enum IfcFaceOuterBound::Class() { return Type::IfcFaceOuterBound; }
 IfcFaceOuterBound::IfcFaceOuterBound(IfcAbstractEntityPtr e) { if (!is(Type::IfcFaceOuterBound)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFaceSurface
+// Function implementations for IfcFaceSurface
 IfcSurface* IfcFaceSurface::FaceSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(1)); }
 bool IfcFaceSurface::SameSense() { return *entity->getArgument(2); }
 bool IfcFaceSurface::is(Type::Enum v) const { return v == Type::IfcFaceSurface || IfcFace::is(v); }
 Type::Enum IfcFaceSurface::type() const { return Type::IfcFaceSurface; }
 Type::Enum IfcFaceSurface::Class() { return Type::IfcFaceSurface; }
 IfcFaceSurface::IfcFaceSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcFaceSurface)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFacetedBrep
+// Function implementations for IfcFacetedBrep
 bool IfcFacetedBrep::is(Type::Enum v) const { return v == Type::IfcFacetedBrep || IfcManifoldSolidBrep::is(v); }
 Type::Enum IfcFacetedBrep::type() const { return Type::IfcFacetedBrep; }
 Type::Enum IfcFacetedBrep::Class() { return Type::IfcFacetedBrep; }
 IfcFacetedBrep::IfcFacetedBrep(IfcAbstractEntityPtr e) { if (!is(Type::IfcFacetedBrep)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFacetedBrepWithVoids
+// Function implementations for IfcFacetedBrepWithVoids
 SHARED_PTR< IfcTemplatedEntityList<IfcClosedShell> > IfcFacetedBrepWithVoids::Voids() { RETURN_AS_LIST(IfcClosedShell,1) }
 bool IfcFacetedBrepWithVoids::is(Type::Enum v) const { return v == Type::IfcFacetedBrepWithVoids || IfcManifoldSolidBrep::is(v); }
 Type::Enum IfcFacetedBrepWithVoids::type() const { return Type::IfcFacetedBrepWithVoids; }
 Type::Enum IfcFacetedBrepWithVoids::Class() { return Type::IfcFacetedBrepWithVoids; }
 IfcFacetedBrepWithVoids::IfcFacetedBrepWithVoids(IfcAbstractEntityPtr e) { if (!is(Type::IfcFacetedBrepWithVoids)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFailureConnectionCondition
+// Function implementations for IfcFailureConnectionCondition
 bool IfcFailureConnectionCondition::hasTensionFailureX() { return !entity->getArgument(1)->isNull(); }
 IfcForceMeasure IfcFailureConnectionCondition::TensionFailureX() { return *entity->getArgument(1); }
 bool IfcFailureConnectionCondition::hasTensionFailureY() { return !entity->getArgument(2)->isNull(); }
@@ -6508,46 +6508,46 @@ bool IfcFailureConnectionCondition::is(Type::Enum v) const { return v == Type::I
 Type::Enum IfcFailureConnectionCondition::type() const { return Type::IfcFailureConnectionCondition; }
 Type::Enum IfcFailureConnectionCondition::Class() { return Type::IfcFailureConnectionCondition; }
 IfcFailureConnectionCondition::IfcFailureConnectionCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcFailureConnectionCondition)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFanType
+// Function implementations for IfcFanType
 IfcFanTypeEnum::IfcFanTypeEnum IfcFanType::PredefinedType() { return IfcFanTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcFanType::is(Type::Enum v) const { return v == Type::IfcFanType || IfcFlowMovingDeviceType::is(v); }
 Type::Enum IfcFanType::type() const { return Type::IfcFanType; }
 Type::Enum IfcFanType::Class() { return Type::IfcFanType; }
 IfcFanType::IfcFanType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFanType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFastener
+// Function implementations for IfcFastener
 bool IfcFastener::is(Type::Enum v) const { return v == Type::IfcFastener || IfcElementComponent::is(v); }
 Type::Enum IfcFastener::type() const { return Type::IfcFastener; }
 Type::Enum IfcFastener::Class() { return Type::IfcFastener; }
 IfcFastener::IfcFastener(IfcAbstractEntityPtr e) { if (!is(Type::IfcFastener)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFastenerType
+// Function implementations for IfcFastenerType
 bool IfcFastenerType::is(Type::Enum v) const { return v == Type::IfcFastenerType || IfcElementComponentType::is(v); }
 Type::Enum IfcFastenerType::type() const { return Type::IfcFastenerType; }
 Type::Enum IfcFastenerType::Class() { return Type::IfcFastenerType; }
 IfcFastenerType::IfcFastenerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFastenerType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFeatureElement
+// Function implementations for IfcFeatureElement
 bool IfcFeatureElement::is(Type::Enum v) const { return v == Type::IfcFeatureElement || IfcElement::is(v); }
 Type::Enum IfcFeatureElement::type() const { return Type::IfcFeatureElement; }
 Type::Enum IfcFeatureElement::Class() { return Type::IfcFeatureElement; }
 IfcFeatureElement::IfcFeatureElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcFeatureElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFeatureElementAddition
+// Function implementations for IfcFeatureElementAddition
 IfcRelProjectsElement::list IfcFeatureElementAddition::ProjectsElements() { RETURN_INVERSE(IfcRelProjectsElement) }
 bool IfcFeatureElementAddition::is(Type::Enum v) const { return v == Type::IfcFeatureElementAddition || IfcFeatureElement::is(v); }
 Type::Enum IfcFeatureElementAddition::type() const { return Type::IfcFeatureElementAddition; }
 Type::Enum IfcFeatureElementAddition::Class() { return Type::IfcFeatureElementAddition; }
 IfcFeatureElementAddition::IfcFeatureElementAddition(IfcAbstractEntityPtr e) { if (!is(Type::IfcFeatureElementAddition)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFeatureElementSubtraction
+// Function implementations for IfcFeatureElementSubtraction
 IfcRelVoidsElement::list IfcFeatureElementSubtraction::VoidsElements() { RETURN_INVERSE(IfcRelVoidsElement) }
 bool IfcFeatureElementSubtraction::is(Type::Enum v) const { return v == Type::IfcFeatureElementSubtraction || IfcFeatureElement::is(v); }
 Type::Enum IfcFeatureElementSubtraction::type() const { return Type::IfcFeatureElementSubtraction; }
 Type::Enum IfcFeatureElementSubtraction::Class() { return Type::IfcFeatureElementSubtraction; }
 IfcFeatureElementSubtraction::IfcFeatureElementSubtraction(IfcAbstractEntityPtr e) { if (!is(Type::IfcFeatureElementSubtraction)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFillAreaStyle
+// Function implementations for IfcFillAreaStyle
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcFillAreaStyle::FillStyles() { RETURN_AS_LIST(IfcAbstractSelect,1) }
 bool IfcFillAreaStyle::is(Type::Enum v) const { return v == Type::IfcFillAreaStyle || IfcPresentationStyle::is(v); }
 Type::Enum IfcFillAreaStyle::type() const { return Type::IfcFillAreaStyle; }
 Type::Enum IfcFillAreaStyle::Class() { return Type::IfcFillAreaStyle; }
 IfcFillAreaStyle::IfcFillAreaStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcFillAreaStyle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFillAreaStyleHatching
+// Function implementations for IfcFillAreaStyleHatching
 IfcCurveStyle* IfcFillAreaStyleHatching::HatchLineAppearance() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurveStyle>(*entity->getArgument(0)); }
 IfcHatchLineDistanceSelect IfcFillAreaStyleHatching::StartOfNextHatchLine() { return *entity->getArgument(1); }
 bool IfcFillAreaStyleHatching::hasPointOfReferenceHatchLine() { return !entity->getArgument(2)->isNull(); }
@@ -6559,13 +6559,13 @@ bool IfcFillAreaStyleHatching::is(Type::Enum v) const { return v == Type::IfcFil
 Type::Enum IfcFillAreaStyleHatching::type() const { return Type::IfcFillAreaStyleHatching; }
 Type::Enum IfcFillAreaStyleHatching::Class() { return Type::IfcFillAreaStyleHatching; }
 IfcFillAreaStyleHatching::IfcFillAreaStyleHatching(IfcAbstractEntityPtr e) { if (!is(Type::IfcFillAreaStyleHatching)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFillAreaStyleTileSymbolWithStyle
+// Function implementations for IfcFillAreaStyleTileSymbolWithStyle
 IfcAnnotationSymbolOccurrence* IfcFillAreaStyleTileSymbolWithStyle::Symbol() { return reinterpret_pointer_cast<IfcBaseClass,IfcAnnotationSymbolOccurrence>(*entity->getArgument(0)); }
 bool IfcFillAreaStyleTileSymbolWithStyle::is(Type::Enum v) const { return v == Type::IfcFillAreaStyleTileSymbolWithStyle || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcFillAreaStyleTileSymbolWithStyle::type() const { return Type::IfcFillAreaStyleTileSymbolWithStyle; }
 Type::Enum IfcFillAreaStyleTileSymbolWithStyle::Class() { return Type::IfcFillAreaStyleTileSymbolWithStyle; }
 IfcFillAreaStyleTileSymbolWithStyle::IfcFillAreaStyleTileSymbolWithStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcFillAreaStyleTileSymbolWithStyle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFillAreaStyleTiles
+// Function implementations for IfcFillAreaStyleTiles
 IfcOneDirectionRepeatFactor* IfcFillAreaStyleTiles::TilingPattern() { return reinterpret_pointer_cast<IfcBaseClass,IfcOneDirectionRepeatFactor>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcFillAreaStyleTiles::Tiles() { RETURN_AS_LIST(IfcAbstractSelect,1) }
 IfcPositiveRatioMeasure IfcFillAreaStyleTiles::TilingScale() { return *entity->getArgument(2); }
@@ -6573,101 +6573,101 @@ bool IfcFillAreaStyleTiles::is(Type::Enum v) const { return v == Type::IfcFillAr
 Type::Enum IfcFillAreaStyleTiles::type() const { return Type::IfcFillAreaStyleTiles; }
 Type::Enum IfcFillAreaStyleTiles::Class() { return Type::IfcFillAreaStyleTiles; }
 IfcFillAreaStyleTiles::IfcFillAreaStyleTiles(IfcAbstractEntityPtr e) { if (!is(Type::IfcFillAreaStyleTiles)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFilterType
+// Function implementations for IfcFilterType
 IfcFilterTypeEnum::IfcFilterTypeEnum IfcFilterType::PredefinedType() { return IfcFilterTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcFilterType::is(Type::Enum v) const { return v == Type::IfcFilterType || IfcFlowTreatmentDeviceType::is(v); }
 Type::Enum IfcFilterType::type() const { return Type::IfcFilterType; }
 Type::Enum IfcFilterType::Class() { return Type::IfcFilterType; }
 IfcFilterType::IfcFilterType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFilterType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFireSuppressionTerminalType
+// Function implementations for IfcFireSuppressionTerminalType
 IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum IfcFireSuppressionTerminalType::PredefinedType() { return IfcFireSuppressionTerminalTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcFireSuppressionTerminalType::is(Type::Enum v) const { return v == Type::IfcFireSuppressionTerminalType || IfcFlowTerminalType::is(v); }
 Type::Enum IfcFireSuppressionTerminalType::type() const { return Type::IfcFireSuppressionTerminalType; }
 Type::Enum IfcFireSuppressionTerminalType::Class() { return Type::IfcFireSuppressionTerminalType; }
 IfcFireSuppressionTerminalType::IfcFireSuppressionTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFireSuppressionTerminalType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowController
+// Function implementations for IfcFlowController
 bool IfcFlowController::is(Type::Enum v) const { return v == Type::IfcFlowController || IfcDistributionFlowElement::is(v); }
 Type::Enum IfcFlowController::type() const { return Type::IfcFlowController; }
 Type::Enum IfcFlowController::Class() { return Type::IfcFlowController; }
 IfcFlowController::IfcFlowController(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowController)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowControllerType
+// Function implementations for IfcFlowControllerType
 bool IfcFlowControllerType::is(Type::Enum v) const { return v == Type::IfcFlowControllerType || IfcDistributionFlowElementType::is(v); }
 Type::Enum IfcFlowControllerType::type() const { return Type::IfcFlowControllerType; }
 Type::Enum IfcFlowControllerType::Class() { return Type::IfcFlowControllerType; }
 IfcFlowControllerType::IfcFlowControllerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowControllerType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowFitting
+// Function implementations for IfcFlowFitting
 bool IfcFlowFitting::is(Type::Enum v) const { return v == Type::IfcFlowFitting || IfcDistributionFlowElement::is(v); }
 Type::Enum IfcFlowFitting::type() const { return Type::IfcFlowFitting; }
 Type::Enum IfcFlowFitting::Class() { return Type::IfcFlowFitting; }
 IfcFlowFitting::IfcFlowFitting(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowFitting)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowFittingType
+// Function implementations for IfcFlowFittingType
 bool IfcFlowFittingType::is(Type::Enum v) const { return v == Type::IfcFlowFittingType || IfcDistributionFlowElementType::is(v); }
 Type::Enum IfcFlowFittingType::type() const { return Type::IfcFlowFittingType; }
 Type::Enum IfcFlowFittingType::Class() { return Type::IfcFlowFittingType; }
 IfcFlowFittingType::IfcFlowFittingType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowFittingType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowInstrumentType
+// Function implementations for IfcFlowInstrumentType
 IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum IfcFlowInstrumentType::PredefinedType() { return IfcFlowInstrumentTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcFlowInstrumentType::is(Type::Enum v) const { return v == Type::IfcFlowInstrumentType || IfcDistributionControlElementType::is(v); }
 Type::Enum IfcFlowInstrumentType::type() const { return Type::IfcFlowInstrumentType; }
 Type::Enum IfcFlowInstrumentType::Class() { return Type::IfcFlowInstrumentType; }
 IfcFlowInstrumentType::IfcFlowInstrumentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowInstrumentType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowMeterType
+// Function implementations for IfcFlowMeterType
 IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum IfcFlowMeterType::PredefinedType() { return IfcFlowMeterTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcFlowMeterType::is(Type::Enum v) const { return v == Type::IfcFlowMeterType || IfcFlowControllerType::is(v); }
 Type::Enum IfcFlowMeterType::type() const { return Type::IfcFlowMeterType; }
 Type::Enum IfcFlowMeterType::Class() { return Type::IfcFlowMeterType; }
 IfcFlowMeterType::IfcFlowMeterType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowMeterType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowMovingDevice
+// Function implementations for IfcFlowMovingDevice
 bool IfcFlowMovingDevice::is(Type::Enum v) const { return v == Type::IfcFlowMovingDevice || IfcDistributionFlowElement::is(v); }
 Type::Enum IfcFlowMovingDevice::type() const { return Type::IfcFlowMovingDevice; }
 Type::Enum IfcFlowMovingDevice::Class() { return Type::IfcFlowMovingDevice; }
 IfcFlowMovingDevice::IfcFlowMovingDevice(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowMovingDevice)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowMovingDeviceType
+// Function implementations for IfcFlowMovingDeviceType
 bool IfcFlowMovingDeviceType::is(Type::Enum v) const { return v == Type::IfcFlowMovingDeviceType || IfcDistributionFlowElementType::is(v); }
 Type::Enum IfcFlowMovingDeviceType::type() const { return Type::IfcFlowMovingDeviceType; }
 Type::Enum IfcFlowMovingDeviceType::Class() { return Type::IfcFlowMovingDeviceType; }
 IfcFlowMovingDeviceType::IfcFlowMovingDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowMovingDeviceType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowSegment
+// Function implementations for IfcFlowSegment
 bool IfcFlowSegment::is(Type::Enum v) const { return v == Type::IfcFlowSegment || IfcDistributionFlowElement::is(v); }
 Type::Enum IfcFlowSegment::type() const { return Type::IfcFlowSegment; }
 Type::Enum IfcFlowSegment::Class() { return Type::IfcFlowSegment; }
 IfcFlowSegment::IfcFlowSegment(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowSegment)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowSegmentType
+// Function implementations for IfcFlowSegmentType
 bool IfcFlowSegmentType::is(Type::Enum v) const { return v == Type::IfcFlowSegmentType || IfcDistributionFlowElementType::is(v); }
 Type::Enum IfcFlowSegmentType::type() const { return Type::IfcFlowSegmentType; }
 Type::Enum IfcFlowSegmentType::Class() { return Type::IfcFlowSegmentType; }
 IfcFlowSegmentType::IfcFlowSegmentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowSegmentType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowStorageDevice
+// Function implementations for IfcFlowStorageDevice
 bool IfcFlowStorageDevice::is(Type::Enum v) const { return v == Type::IfcFlowStorageDevice || IfcDistributionFlowElement::is(v); }
 Type::Enum IfcFlowStorageDevice::type() const { return Type::IfcFlowStorageDevice; }
 Type::Enum IfcFlowStorageDevice::Class() { return Type::IfcFlowStorageDevice; }
 IfcFlowStorageDevice::IfcFlowStorageDevice(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowStorageDevice)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowStorageDeviceType
+// Function implementations for IfcFlowStorageDeviceType
 bool IfcFlowStorageDeviceType::is(Type::Enum v) const { return v == Type::IfcFlowStorageDeviceType || IfcDistributionFlowElementType::is(v); }
 Type::Enum IfcFlowStorageDeviceType::type() const { return Type::IfcFlowStorageDeviceType; }
 Type::Enum IfcFlowStorageDeviceType::Class() { return Type::IfcFlowStorageDeviceType; }
 IfcFlowStorageDeviceType::IfcFlowStorageDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowStorageDeviceType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowTerminal
+// Function implementations for IfcFlowTerminal
 bool IfcFlowTerminal::is(Type::Enum v) const { return v == Type::IfcFlowTerminal || IfcDistributionFlowElement::is(v); }
 Type::Enum IfcFlowTerminal::type() const { return Type::IfcFlowTerminal; }
 Type::Enum IfcFlowTerminal::Class() { return Type::IfcFlowTerminal; }
 IfcFlowTerminal::IfcFlowTerminal(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowTerminal)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowTerminalType
+// Function implementations for IfcFlowTerminalType
 bool IfcFlowTerminalType::is(Type::Enum v) const { return v == Type::IfcFlowTerminalType || IfcDistributionFlowElementType::is(v); }
 Type::Enum IfcFlowTerminalType::type() const { return Type::IfcFlowTerminalType; }
 Type::Enum IfcFlowTerminalType::Class() { return Type::IfcFlowTerminalType; }
 IfcFlowTerminalType::IfcFlowTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowTerminalType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowTreatmentDevice
+// Function implementations for IfcFlowTreatmentDevice
 bool IfcFlowTreatmentDevice::is(Type::Enum v) const { return v == Type::IfcFlowTreatmentDevice || IfcDistributionFlowElement::is(v); }
 Type::Enum IfcFlowTreatmentDevice::type() const { return Type::IfcFlowTreatmentDevice; }
 Type::Enum IfcFlowTreatmentDevice::Class() { return Type::IfcFlowTreatmentDevice; }
 IfcFlowTreatmentDevice::IfcFlowTreatmentDevice(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowTreatmentDevice)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFlowTreatmentDeviceType
+// Function implementations for IfcFlowTreatmentDeviceType
 bool IfcFlowTreatmentDeviceType::is(Type::Enum v) const { return v == Type::IfcFlowTreatmentDeviceType || IfcDistributionFlowElementType::is(v); }
 Type::Enum IfcFlowTreatmentDeviceType::type() const { return Type::IfcFlowTreatmentDeviceType; }
 Type::Enum IfcFlowTreatmentDeviceType::Class() { return Type::IfcFlowTreatmentDeviceType; }
 IfcFlowTreatmentDeviceType::IfcFlowTreatmentDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFlowTreatmentDeviceType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFluidFlowProperties
+// Function implementations for IfcFluidFlowProperties
 IfcPropertySourceEnum::IfcPropertySourceEnum IfcFluidFlowProperties::PropertySource() { return IfcPropertySourceEnum::FromString(*entity->getArgument(4)); }
 bool IfcFluidFlowProperties::hasFlowConditionTimeSeries() { return !entity->getArgument(5)->isNull(); }
 IfcTimeSeries* IfcFluidFlowProperties::FlowConditionTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(5)); }
@@ -6700,13 +6700,13 @@ bool IfcFluidFlowProperties::is(Type::Enum v) const { return v == Type::IfcFluid
 Type::Enum IfcFluidFlowProperties::type() const { return Type::IfcFluidFlowProperties; }
 Type::Enum IfcFluidFlowProperties::Class() { return Type::IfcFluidFlowProperties; }
 IfcFluidFlowProperties::IfcFluidFlowProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcFluidFlowProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFooting
+// Function implementations for IfcFooting
 IfcFootingTypeEnum::IfcFootingTypeEnum IfcFooting::PredefinedType() { return IfcFootingTypeEnum::FromString(*entity->getArgument(8)); }
 bool IfcFooting::is(Type::Enum v) const { return v == Type::IfcFooting || IfcBuildingElement::is(v); }
 Type::Enum IfcFooting::type() const { return Type::IfcFooting; }
 Type::Enum IfcFooting::Class() { return Type::IfcFooting; }
 IfcFooting::IfcFooting(IfcAbstractEntityPtr e) { if (!is(Type::IfcFooting)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFuelProperties
+// Function implementations for IfcFuelProperties
 bool IfcFuelProperties::hasCombustionTemperature() { return !entity->getArgument(1)->isNull(); }
 IfcThermodynamicTemperatureMeasure IfcFuelProperties::CombustionTemperature() { return *entity->getArgument(1); }
 bool IfcFuelProperties::hasCarbonContent() { return !entity->getArgument(2)->isNull(); }
@@ -6719,34 +6719,34 @@ bool IfcFuelProperties::is(Type::Enum v) const { return v == Type::IfcFuelProper
 Type::Enum IfcFuelProperties::type() const { return Type::IfcFuelProperties; }
 Type::Enum IfcFuelProperties::Class() { return Type::IfcFuelProperties; }
 IfcFuelProperties::IfcFuelProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcFuelProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFurnishingElement
+// Function implementations for IfcFurnishingElement
 bool IfcFurnishingElement::is(Type::Enum v) const { return v == Type::IfcFurnishingElement || IfcElement::is(v); }
 Type::Enum IfcFurnishingElement::type() const { return Type::IfcFurnishingElement; }
 Type::Enum IfcFurnishingElement::Class() { return Type::IfcFurnishingElement; }
 IfcFurnishingElement::IfcFurnishingElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcFurnishingElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFurnishingElementType
+// Function implementations for IfcFurnishingElementType
 bool IfcFurnishingElementType::is(Type::Enum v) const { return v == Type::IfcFurnishingElementType || IfcElementType::is(v); }
 Type::Enum IfcFurnishingElementType::type() const { return Type::IfcFurnishingElementType; }
 Type::Enum IfcFurnishingElementType::Class() { return Type::IfcFurnishingElementType; }
 IfcFurnishingElementType::IfcFurnishingElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFurnishingElementType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFurnitureStandard
+// Function implementations for IfcFurnitureStandard
 bool IfcFurnitureStandard::is(Type::Enum v) const { return v == Type::IfcFurnitureStandard || IfcControl::is(v); }
 Type::Enum IfcFurnitureStandard::type() const { return Type::IfcFurnitureStandard; }
 Type::Enum IfcFurnitureStandard::Class() { return Type::IfcFurnitureStandard; }
 IfcFurnitureStandard::IfcFurnitureStandard(IfcAbstractEntityPtr e) { if (!is(Type::IfcFurnitureStandard)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcFurnitureType
+// Function implementations for IfcFurnitureType
 IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum IfcFurnitureType::AssemblyPlace() { return IfcAssemblyPlaceEnum::FromString(*entity->getArgument(9)); }
 bool IfcFurnitureType::is(Type::Enum v) const { return v == Type::IfcFurnitureType || IfcFurnishingElementType::is(v); }
 Type::Enum IfcFurnitureType::type() const { return Type::IfcFurnitureType; }
 Type::Enum IfcFurnitureType::Class() { return Type::IfcFurnitureType; }
 IfcFurnitureType::IfcFurnitureType(IfcAbstractEntityPtr e) { if (!is(Type::IfcFurnitureType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcGasTerminalType
+// Function implementations for IfcGasTerminalType
 IfcGasTerminalTypeEnum::IfcGasTerminalTypeEnum IfcGasTerminalType::PredefinedType() { return IfcGasTerminalTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcGasTerminalType::is(Type::Enum v) const { return v == Type::IfcGasTerminalType || IfcFlowTerminalType::is(v); }
 Type::Enum IfcGasTerminalType::type() const { return Type::IfcGasTerminalType; }
 Type::Enum IfcGasTerminalType::Class() { return Type::IfcGasTerminalType; }
 IfcGasTerminalType::IfcGasTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcGasTerminalType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcGeneralMaterialProperties
+// Function implementations for IfcGeneralMaterialProperties
 bool IfcGeneralMaterialProperties::hasMolecularWeight() { return !entity->getArgument(1)->isNull(); }
 IfcMolecularWeightMeasure IfcGeneralMaterialProperties::MolecularWeight() { return *entity->getArgument(1); }
 bool IfcGeneralMaterialProperties::hasPorosity() { return !entity->getArgument(2)->isNull(); }
@@ -6757,7 +6757,7 @@ bool IfcGeneralMaterialProperties::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcGeneralMaterialProperties::type() const { return Type::IfcGeneralMaterialProperties; }
 Type::Enum IfcGeneralMaterialProperties::Class() { return Type::IfcGeneralMaterialProperties; }
 IfcGeneralMaterialProperties::IfcGeneralMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeneralMaterialProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcGeneralProfileProperties
+// Function implementations for IfcGeneralProfileProperties
 bool IfcGeneralProfileProperties::hasPhysicalWeight() { return !entity->getArgument(2)->isNull(); }
 IfcMassPerLengthMeasure IfcGeneralProfileProperties::PhysicalWeight() { return *entity->getArgument(2); }
 bool IfcGeneralProfileProperties::hasPerimeter() { return !entity->getArgument(3)->isNull(); }
@@ -6772,12 +6772,12 @@ bool IfcGeneralProfileProperties::is(Type::Enum v) const { return v == Type::Ifc
 Type::Enum IfcGeneralProfileProperties::type() const { return Type::IfcGeneralProfileProperties; }
 Type::Enum IfcGeneralProfileProperties::Class() { return Type::IfcGeneralProfileProperties; }
 IfcGeneralProfileProperties::IfcGeneralProfileProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeneralProfileProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcGeometricCurveSet
+// Function implementations for IfcGeometricCurveSet
 bool IfcGeometricCurveSet::is(Type::Enum v) const { return v == Type::IfcGeometricCurveSet || IfcGeometricSet::is(v); }
 Type::Enum IfcGeometricCurveSet::type() const { return Type::IfcGeometricCurveSet; }
 Type::Enum IfcGeometricCurveSet::Class() { return Type::IfcGeometricCurveSet; }
 IfcGeometricCurveSet::IfcGeometricCurveSet(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeometricCurveSet)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcGeometricRepresentationContext
+// Function implementations for IfcGeometricRepresentationContext
 IfcDimensionCount IfcGeometricRepresentationContext::CoordinateSpaceDimension() { return *entity->getArgument(2); }
 bool IfcGeometricRepresentationContext::hasPrecision() { return !entity->getArgument(3)->isNull(); }
 double IfcGeometricRepresentationContext::Precision() { return *entity->getArgument(3); }
@@ -6789,12 +6789,12 @@ bool IfcGeometricRepresentationContext::is(Type::Enum v) const { return v == Typ
 Type::Enum IfcGeometricRepresentationContext::type() const { return Type::IfcGeometricRepresentationContext; }
 Type::Enum IfcGeometricRepresentationContext::Class() { return Type::IfcGeometricRepresentationContext; }
 IfcGeometricRepresentationContext::IfcGeometricRepresentationContext(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeometricRepresentationContext)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcGeometricRepresentationItem
+// Function implementations for IfcGeometricRepresentationItem
 bool IfcGeometricRepresentationItem::is(Type::Enum v) const { return v == Type::IfcGeometricRepresentationItem || IfcRepresentationItem::is(v); }
 Type::Enum IfcGeometricRepresentationItem::type() const { return Type::IfcGeometricRepresentationItem; }
 Type::Enum IfcGeometricRepresentationItem::Class() { return Type::IfcGeometricRepresentationItem; }
 IfcGeometricRepresentationItem::IfcGeometricRepresentationItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeometricRepresentationItem)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcGeometricRepresentationSubContext
+// Function implementations for IfcGeometricRepresentationSubContext
 IfcGeometricRepresentationContext* IfcGeometricRepresentationSubContext::ParentContext() { return reinterpret_pointer_cast<IfcBaseClass,IfcGeometricRepresentationContext>(*entity->getArgument(6)); }
 bool IfcGeometricRepresentationSubContext::hasTargetScale() { return !entity->getArgument(7)->isNull(); }
 IfcPositiveRatioMeasure IfcGeometricRepresentationSubContext::TargetScale() { return *entity->getArgument(7); }
@@ -6805,13 +6805,13 @@ bool IfcGeometricRepresentationSubContext::is(Type::Enum v) const { return v == 
 Type::Enum IfcGeometricRepresentationSubContext::type() const { return Type::IfcGeometricRepresentationSubContext; }
 Type::Enum IfcGeometricRepresentationSubContext::Class() { return Type::IfcGeometricRepresentationSubContext; }
 IfcGeometricRepresentationSubContext::IfcGeometricRepresentationSubContext(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeometricRepresentationSubContext)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcGeometricSet
+// Function implementations for IfcGeometricSet
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcGeometricSet::Elements() { RETURN_AS_LIST(IfcAbstractSelect,0) }
 bool IfcGeometricSet::is(Type::Enum v) const { return v == Type::IfcGeometricSet || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcGeometricSet::type() const { return Type::IfcGeometricSet; }
 Type::Enum IfcGeometricSet::Class() { return Type::IfcGeometricSet; }
 IfcGeometricSet::IfcGeometricSet(IfcAbstractEntityPtr e) { if (!is(Type::IfcGeometricSet)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcGrid
+// Function implementations for IfcGrid
 SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > IfcGrid::UAxes() { RETURN_AS_LIST(IfcGridAxis,7) }
 SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > IfcGrid::VAxes() { RETURN_AS_LIST(IfcGridAxis,8) }
 bool IfcGrid::hasWAxes() { return !entity->getArgument(9)->isNull(); }
@@ -6821,7 +6821,7 @@ bool IfcGrid::is(Type::Enum v) const { return v == Type::IfcGrid || IfcProduct::
 Type::Enum IfcGrid::type() const { return Type::IfcGrid; }
 Type::Enum IfcGrid::Class() { return Type::IfcGrid; }
 IfcGrid::IfcGrid(IfcAbstractEntityPtr e) { if (!is(Type::IfcGrid)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcGridAxis
+// Function implementations for IfcGridAxis
 bool IfcGridAxis::hasAxisTag() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcGridAxis::AxisTag() { return *entity->getArgument(0); }
 IfcCurve* IfcGridAxis::AxisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(1)); }
@@ -6834,7 +6834,7 @@ bool IfcGridAxis::is(Type::Enum v) const { return v == Type::IfcGridAxis; }
 Type::Enum IfcGridAxis::type() const { return Type::IfcGridAxis; }
 Type::Enum IfcGridAxis::Class() { return Type::IfcGridAxis; }
 IfcGridAxis::IfcGridAxis(IfcAbstractEntityPtr e) { if (!is(Type::IfcGridAxis)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcGridPlacement
+// Function implementations for IfcGridPlacement
 IfcVirtualGridIntersection* IfcGridPlacement::PlacementLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcVirtualGridIntersection>(*entity->getArgument(0)); }
 bool IfcGridPlacement::hasPlacementRefDirection() { return !entity->getArgument(1)->isNull(); }
 IfcVirtualGridIntersection* IfcGridPlacement::PlacementRefDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcVirtualGridIntersection>(*entity->getArgument(1)); }
@@ -6842,32 +6842,32 @@ bool IfcGridPlacement::is(Type::Enum v) const { return v == Type::IfcGridPlaceme
 Type::Enum IfcGridPlacement::type() const { return Type::IfcGridPlacement; }
 Type::Enum IfcGridPlacement::Class() { return Type::IfcGridPlacement; }
 IfcGridPlacement::IfcGridPlacement(IfcAbstractEntityPtr e) { if (!is(Type::IfcGridPlacement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcGroup
+// Function implementations for IfcGroup
 IfcRelAssignsToGroup::list IfcGroup::IsGroupedBy() { RETURN_INVERSE(IfcRelAssignsToGroup) }
 bool IfcGroup::is(Type::Enum v) const { return v == Type::IfcGroup || IfcObject::is(v); }
 Type::Enum IfcGroup::type() const { return Type::IfcGroup; }
 Type::Enum IfcGroup::Class() { return Type::IfcGroup; }
 IfcGroup::IfcGroup(IfcAbstractEntityPtr e) { if (!is(Type::IfcGroup)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcHalfSpaceSolid
+// Function implementations for IfcHalfSpaceSolid
 IfcSurface* IfcHalfSpaceSolid::BaseSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(0)); }
 bool IfcHalfSpaceSolid::AgreementFlag() { return *entity->getArgument(1); }
 bool IfcHalfSpaceSolid::is(Type::Enum v) const { return v == Type::IfcHalfSpaceSolid || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcHalfSpaceSolid::type() const { return Type::IfcHalfSpaceSolid; }
 Type::Enum IfcHalfSpaceSolid::Class() { return Type::IfcHalfSpaceSolid; }
 IfcHalfSpaceSolid::IfcHalfSpaceSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcHalfSpaceSolid)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcHeatExchangerType
+// Function implementations for IfcHeatExchangerType
 IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum IfcHeatExchangerType::PredefinedType() { return IfcHeatExchangerTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcHeatExchangerType::is(Type::Enum v) const { return v == Type::IfcHeatExchangerType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcHeatExchangerType::type() const { return Type::IfcHeatExchangerType; }
 Type::Enum IfcHeatExchangerType::Class() { return Type::IfcHeatExchangerType; }
 IfcHeatExchangerType::IfcHeatExchangerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcHeatExchangerType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcHumidifierType
+// Function implementations for IfcHumidifierType
 IfcHumidifierTypeEnum::IfcHumidifierTypeEnum IfcHumidifierType::PredefinedType() { return IfcHumidifierTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcHumidifierType::is(Type::Enum v) const { return v == Type::IfcHumidifierType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcHumidifierType::type() const { return Type::IfcHumidifierType; }
 Type::Enum IfcHumidifierType::Class() { return Type::IfcHumidifierType; }
 IfcHumidifierType::IfcHumidifierType(IfcAbstractEntityPtr e) { if (!is(Type::IfcHumidifierType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcHygroscopicMaterialProperties
+// Function implementations for IfcHygroscopicMaterialProperties
 bool IfcHygroscopicMaterialProperties::hasUpperVaporResistanceFactor() { return !entity->getArgument(1)->isNull(); }
 IfcPositiveRatioMeasure IfcHygroscopicMaterialProperties::UpperVaporResistanceFactor() { return *entity->getArgument(1); }
 bool IfcHygroscopicMaterialProperties::hasLowerVaporResistanceFactor() { return !entity->getArgument(2)->isNull(); }
@@ -6882,7 +6882,7 @@ bool IfcHygroscopicMaterialProperties::is(Type::Enum v) const { return v == Type
 Type::Enum IfcHygroscopicMaterialProperties::type() const { return Type::IfcHygroscopicMaterialProperties; }
 Type::Enum IfcHygroscopicMaterialProperties::Class() { return Type::IfcHygroscopicMaterialProperties; }
 IfcHygroscopicMaterialProperties::IfcHygroscopicMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcHygroscopicMaterialProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcIShapeProfileDef
+// Function implementations for IfcIShapeProfileDef
 IfcPositiveLengthMeasure IfcIShapeProfileDef::OverallWidth() { return *entity->getArgument(3); }
 IfcPositiveLengthMeasure IfcIShapeProfileDef::OverallDepth() { return *entity->getArgument(4); }
 IfcPositiveLengthMeasure IfcIShapeProfileDef::WebThickness() { return *entity->getArgument(5); }
@@ -6893,13 +6893,13 @@ bool IfcIShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcIShapePr
 Type::Enum IfcIShapeProfileDef::type() const { return Type::IfcIShapeProfileDef; }
 Type::Enum IfcIShapeProfileDef::Class() { return Type::IfcIShapeProfileDef; }
 IfcIShapeProfileDef::IfcIShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcIShapeProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcImageTexture
+// Function implementations for IfcImageTexture
 IfcIdentifier IfcImageTexture::UrlReference() { return *entity->getArgument(4); }
 bool IfcImageTexture::is(Type::Enum v) const { return v == Type::IfcImageTexture || IfcSurfaceTexture::is(v); }
 Type::Enum IfcImageTexture::type() const { return Type::IfcImageTexture; }
 Type::Enum IfcImageTexture::Class() { return Type::IfcImageTexture; }
 IfcImageTexture::IfcImageTexture(IfcAbstractEntityPtr e) { if (!is(Type::IfcImageTexture)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcInventory
+// Function implementations for IfcInventory
 IfcInventoryTypeEnum::IfcInventoryTypeEnum IfcInventory::InventoryType() { return IfcInventoryTypeEnum::FromString(*entity->getArgument(5)); }
 IfcActorSelect IfcInventory::Jurisdiction() { return *entity->getArgument(6); }
 SHARED_PTR< IfcTemplatedEntityList<IfcPerson> > IfcInventory::ResponsiblePersons() { RETURN_AS_LIST(IfcPerson,7) }
@@ -6912,26 +6912,26 @@ bool IfcInventory::is(Type::Enum v) const { return v == Type::IfcInventory || If
 Type::Enum IfcInventory::type() const { return Type::IfcInventory; }
 Type::Enum IfcInventory::Class() { return Type::IfcInventory; }
 IfcInventory::IfcInventory(IfcAbstractEntityPtr e) { if (!is(Type::IfcInventory)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcIrregularTimeSeries
+// Function implementations for IfcIrregularTimeSeries
 SHARED_PTR< IfcTemplatedEntityList<IfcIrregularTimeSeriesValue> > IfcIrregularTimeSeries::Values() { RETURN_AS_LIST(IfcIrregularTimeSeriesValue,8) }
 bool IfcIrregularTimeSeries::is(Type::Enum v) const { return v == Type::IfcIrregularTimeSeries || IfcTimeSeries::is(v); }
 Type::Enum IfcIrregularTimeSeries::type() const { return Type::IfcIrregularTimeSeries; }
 Type::Enum IfcIrregularTimeSeries::Class() { return Type::IfcIrregularTimeSeries; }
 IfcIrregularTimeSeries::IfcIrregularTimeSeries(IfcAbstractEntityPtr e) { if (!is(Type::IfcIrregularTimeSeries)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcIrregularTimeSeriesValue
+// Function implementations for IfcIrregularTimeSeriesValue
 IfcDateTimeSelect IfcIrregularTimeSeriesValue::TimeStamp() { return *entity->getArgument(0); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcIrregularTimeSeriesValue::ListValues() { RETURN_AS_LIST(IfcAbstractSelect,1) }
 bool IfcIrregularTimeSeriesValue::is(Type::Enum v) const { return v == Type::IfcIrregularTimeSeriesValue; }
 Type::Enum IfcIrregularTimeSeriesValue::type() const { return Type::IfcIrregularTimeSeriesValue; }
 Type::Enum IfcIrregularTimeSeriesValue::Class() { return Type::IfcIrregularTimeSeriesValue; }
 IfcIrregularTimeSeriesValue::IfcIrregularTimeSeriesValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcIrregularTimeSeriesValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcJunctionBoxType
+// Function implementations for IfcJunctionBoxType
 IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum IfcJunctionBoxType::PredefinedType() { return IfcJunctionBoxTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcJunctionBoxType::is(Type::Enum v) const { return v == Type::IfcJunctionBoxType || IfcFlowFittingType::is(v); }
 Type::Enum IfcJunctionBoxType::type() const { return Type::IfcJunctionBoxType; }
 Type::Enum IfcJunctionBoxType::Class() { return Type::IfcJunctionBoxType; }
 IfcJunctionBoxType::IfcJunctionBoxType(IfcAbstractEntityPtr e) { if (!is(Type::IfcJunctionBoxType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLShapeProfileDef
+// Function implementations for IfcLShapeProfileDef
 IfcPositiveLengthMeasure IfcLShapeProfileDef::Depth() { return *entity->getArgument(3); }
 bool IfcLShapeProfileDef::hasWidth() { return !entity->getArgument(4)->isNull(); }
 IfcPositiveLengthMeasure IfcLShapeProfileDef::Width() { return *entity->getArgument(4); }
@@ -6950,20 +6950,20 @@ bool IfcLShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcLShapePr
 Type::Enum IfcLShapeProfileDef::type() const { return Type::IfcLShapeProfileDef; }
 Type::Enum IfcLShapeProfileDef::Class() { return Type::IfcLShapeProfileDef; }
 IfcLShapeProfileDef::IfcLShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcLShapeProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLaborResource
+// Function implementations for IfcLaborResource
 bool IfcLaborResource::hasSkillSet() { return !entity->getArgument(9)->isNull(); }
 IfcText IfcLaborResource::SkillSet() { return *entity->getArgument(9); }
 bool IfcLaborResource::is(Type::Enum v) const { return v == Type::IfcLaborResource || IfcConstructionResource::is(v); }
 Type::Enum IfcLaborResource::type() const { return Type::IfcLaborResource; }
 Type::Enum IfcLaborResource::Class() { return Type::IfcLaborResource; }
 IfcLaborResource::IfcLaborResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcLaborResource)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLampType
+// Function implementations for IfcLampType
 IfcLampTypeEnum::IfcLampTypeEnum IfcLampType::PredefinedType() { return IfcLampTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcLampType::is(Type::Enum v) const { return v == Type::IfcLampType || IfcFlowTerminalType::is(v); }
 Type::Enum IfcLampType::type() const { return Type::IfcLampType; }
 Type::Enum IfcLampType::Class() { return Type::IfcLampType; }
 IfcLampType::IfcLampType(IfcAbstractEntityPtr e) { if (!is(Type::IfcLampType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLibraryInformation
+// Function implementations for IfcLibraryInformation
 IfcLabel IfcLibraryInformation::Name() { return *entity->getArgument(0); }
 bool IfcLibraryInformation::hasVersion() { return !entity->getArgument(1)->isNull(); }
 IfcLabel IfcLibraryInformation::Version() { return *entity->getArgument(1); }
@@ -6977,13 +6977,13 @@ bool IfcLibraryInformation::is(Type::Enum v) const { return v == Type::IfcLibrar
 Type::Enum IfcLibraryInformation::type() const { return Type::IfcLibraryInformation; }
 Type::Enum IfcLibraryInformation::Class() { return Type::IfcLibraryInformation; }
 IfcLibraryInformation::IfcLibraryInformation(IfcAbstractEntityPtr e) { if (!is(Type::IfcLibraryInformation)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLibraryReference
+// Function implementations for IfcLibraryReference
 IfcLibraryInformation::list IfcLibraryReference::ReferenceIntoLibrary() { RETURN_INVERSE(IfcLibraryInformation) }
 bool IfcLibraryReference::is(Type::Enum v) const { return v == Type::IfcLibraryReference || IfcExternalReference::is(v); }
 Type::Enum IfcLibraryReference::type() const { return Type::IfcLibraryReference; }
 Type::Enum IfcLibraryReference::Class() { return Type::IfcLibraryReference; }
 IfcLibraryReference::IfcLibraryReference(IfcAbstractEntityPtr e) { if (!is(Type::IfcLibraryReference)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLightDistributionData
+// Function implementations for IfcLightDistributionData
 IfcPlaneAngleMeasure IfcLightDistributionData::MainPlaneAngle() { return *entity->getArgument(0); }
 std::vector<IfcPlaneAngleMeasure> /*[1:?]*/ IfcLightDistributionData::SecondaryPlaneAngle() { return *entity->getArgument(1); }
 std::vector<IfcLuminousIntensityDistributionMeasure> /*[1:?]*/ IfcLightDistributionData::LuminousIntensity() { return *entity->getArgument(2); }
@@ -6991,20 +6991,20 @@ bool IfcLightDistributionData::is(Type::Enum v) const { return v == Type::IfcLig
 Type::Enum IfcLightDistributionData::type() const { return Type::IfcLightDistributionData; }
 Type::Enum IfcLightDistributionData::Class() { return Type::IfcLightDistributionData; }
 IfcLightDistributionData::IfcLightDistributionData(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightDistributionData)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLightFixtureType
+// Function implementations for IfcLightFixtureType
 IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum IfcLightFixtureType::PredefinedType() { return IfcLightFixtureTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcLightFixtureType::is(Type::Enum v) const { return v == Type::IfcLightFixtureType || IfcFlowTerminalType::is(v); }
 Type::Enum IfcLightFixtureType::type() const { return Type::IfcLightFixtureType; }
 Type::Enum IfcLightFixtureType::Class() { return Type::IfcLightFixtureType; }
 IfcLightFixtureType::IfcLightFixtureType(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightFixtureType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLightIntensityDistribution
+// Function implementations for IfcLightIntensityDistribution
 IfcLightDistributionCurveEnum::IfcLightDistributionCurveEnum IfcLightIntensityDistribution::LightDistributionCurve() { return IfcLightDistributionCurveEnum::FromString(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcLightDistributionData> > IfcLightIntensityDistribution::DistributionData() { RETURN_AS_LIST(IfcLightDistributionData,1) }
 bool IfcLightIntensityDistribution::is(Type::Enum v) const { return v == Type::IfcLightIntensityDistribution; }
 Type::Enum IfcLightIntensityDistribution::type() const { return Type::IfcLightIntensityDistribution; }
 Type::Enum IfcLightIntensityDistribution::Class() { return Type::IfcLightIntensityDistribution; }
 IfcLightIntensityDistribution::IfcLightIntensityDistribution(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightIntensityDistribution)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLightSource
+// Function implementations for IfcLightSource
 bool IfcLightSource::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcLightSource::Name() { return *entity->getArgument(0); }
 IfcColourRgb* IfcLightSource::LightColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(1)); }
@@ -7016,18 +7016,18 @@ bool IfcLightSource::is(Type::Enum v) const { return v == Type::IfcLightSource |
 Type::Enum IfcLightSource::type() const { return Type::IfcLightSource; }
 Type::Enum IfcLightSource::Class() { return Type::IfcLightSource; }
 IfcLightSource::IfcLightSource(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightSource)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLightSourceAmbient
+// Function implementations for IfcLightSourceAmbient
 bool IfcLightSourceAmbient::is(Type::Enum v) const { return v == Type::IfcLightSourceAmbient || IfcLightSource::is(v); }
 Type::Enum IfcLightSourceAmbient::type() const { return Type::IfcLightSourceAmbient; }
 Type::Enum IfcLightSourceAmbient::Class() { return Type::IfcLightSourceAmbient; }
 IfcLightSourceAmbient::IfcLightSourceAmbient(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightSourceAmbient)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLightSourceDirectional
+// Function implementations for IfcLightSourceDirectional
 IfcDirection* IfcLightSourceDirectional::Orientation() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(4)); }
 bool IfcLightSourceDirectional::is(Type::Enum v) const { return v == Type::IfcLightSourceDirectional || IfcLightSource::is(v); }
 Type::Enum IfcLightSourceDirectional::type() const { return Type::IfcLightSourceDirectional; }
 Type::Enum IfcLightSourceDirectional::Class() { return Type::IfcLightSourceDirectional; }
 IfcLightSourceDirectional::IfcLightSourceDirectional(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightSourceDirectional)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLightSourceGoniometric
+// Function implementations for IfcLightSourceGoniometric
 IfcAxis2Placement3D* IfcLightSourceGoniometric::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(4)); }
 bool IfcLightSourceGoniometric::hasColourAppearance() { return !entity->getArgument(5)->isNull(); }
 IfcColourRgb* IfcLightSourceGoniometric::ColourAppearance() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(5)); }
@@ -7039,7 +7039,7 @@ bool IfcLightSourceGoniometric::is(Type::Enum v) const { return v == Type::IfcLi
 Type::Enum IfcLightSourceGoniometric::type() const { return Type::IfcLightSourceGoniometric; }
 Type::Enum IfcLightSourceGoniometric::Class() { return Type::IfcLightSourceGoniometric; }
 IfcLightSourceGoniometric::IfcLightSourceGoniometric(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightSourceGoniometric)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLightSourcePositional
+// Function implementations for IfcLightSourcePositional
 IfcCartesianPoint* IfcLightSourcePositional::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(4)); }
 IfcPositiveLengthMeasure IfcLightSourcePositional::Radius() { return *entity->getArgument(5); }
 IfcReal IfcLightSourcePositional::ConstantAttenuation() { return *entity->getArgument(6); }
@@ -7049,7 +7049,7 @@ bool IfcLightSourcePositional::is(Type::Enum v) const { return v == Type::IfcLig
 Type::Enum IfcLightSourcePositional::type() const { return Type::IfcLightSourcePositional; }
 Type::Enum IfcLightSourcePositional::Class() { return Type::IfcLightSourcePositional; }
 IfcLightSourcePositional::IfcLightSourcePositional(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightSourcePositional)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLightSourceSpot
+// Function implementations for IfcLightSourceSpot
 IfcDirection* IfcLightSourceSpot::Orientation() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(9)); }
 bool IfcLightSourceSpot::hasConcentrationExponent() { return !entity->getArgument(10)->isNull(); }
 IfcReal IfcLightSourceSpot::ConcentrationExponent() { return *entity->getArgument(10); }
@@ -7059,19 +7059,19 @@ bool IfcLightSourceSpot::is(Type::Enum v) const { return v == Type::IfcLightSour
 Type::Enum IfcLightSourceSpot::type() const { return Type::IfcLightSourceSpot; }
 Type::Enum IfcLightSourceSpot::Class() { return Type::IfcLightSourceSpot; }
 IfcLightSourceSpot::IfcLightSourceSpot(IfcAbstractEntityPtr e) { if (!is(Type::IfcLightSourceSpot)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLine
+// Function implementations for IfcLine
 IfcCartesianPoint* IfcLine::Pnt() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(0)); }
 IfcVector* IfcLine::Dir() { return reinterpret_pointer_cast<IfcBaseClass,IfcVector>(*entity->getArgument(1)); }
 bool IfcLine::is(Type::Enum v) const { return v == Type::IfcLine || IfcCurve::is(v); }
 Type::Enum IfcLine::type() const { return Type::IfcLine; }
 Type::Enum IfcLine::Class() { return Type::IfcLine; }
 IfcLine::IfcLine(IfcAbstractEntityPtr e) { if (!is(Type::IfcLine)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLinearDimension
+// Function implementations for IfcLinearDimension
 bool IfcLinearDimension::is(Type::Enum v) const { return v == Type::IfcLinearDimension || IfcDimensionCurveDirectedCallout::is(v); }
 Type::Enum IfcLinearDimension::type() const { return Type::IfcLinearDimension; }
 Type::Enum IfcLinearDimension::Class() { return Type::IfcLinearDimension; }
 IfcLinearDimension::IfcLinearDimension(IfcAbstractEntityPtr e) { if (!is(Type::IfcLinearDimension)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLocalPlacement
+// Function implementations for IfcLocalPlacement
 bool IfcLocalPlacement::hasPlacementRelTo() { return !entity->getArgument(0)->isNull(); }
 IfcObjectPlacement* IfcLocalPlacement::PlacementRelTo() { return reinterpret_pointer_cast<IfcBaseClass,IfcObjectPlacement>(*entity->getArgument(0)); }
 IfcAxis2Placement IfcLocalPlacement::RelativePlacement() { return *entity->getArgument(1); }
@@ -7079,7 +7079,7 @@ bool IfcLocalPlacement::is(Type::Enum v) const { return v == Type::IfcLocalPlace
 Type::Enum IfcLocalPlacement::type() const { return Type::IfcLocalPlacement; }
 Type::Enum IfcLocalPlacement::Class() { return Type::IfcLocalPlacement; }
 IfcLocalPlacement::IfcLocalPlacement(IfcAbstractEntityPtr e) { if (!is(Type::IfcLocalPlacement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLocalTime
+// Function implementations for IfcLocalTime
 IfcHourInDay IfcLocalTime::HourComponent() { return *entity->getArgument(0); }
 bool IfcLocalTime::hasMinuteComponent() { return !entity->getArgument(1)->isNull(); }
 IfcMinuteInHour IfcLocalTime::MinuteComponent() { return *entity->getArgument(1); }
@@ -7093,25 +7093,25 @@ bool IfcLocalTime::is(Type::Enum v) const { return v == Type::IfcLocalTime; }
 Type::Enum IfcLocalTime::type() const { return Type::IfcLocalTime; }
 Type::Enum IfcLocalTime::Class() { return Type::IfcLocalTime; }
 IfcLocalTime::IfcLocalTime(IfcAbstractEntityPtr e) { if (!is(Type::IfcLocalTime)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcLoop
+// Function implementations for IfcLoop
 bool IfcLoop::is(Type::Enum v) const { return v == Type::IfcLoop || IfcTopologicalRepresentationItem::is(v); }
 Type::Enum IfcLoop::type() const { return Type::IfcLoop; }
 Type::Enum IfcLoop::Class() { return Type::IfcLoop; }
 IfcLoop::IfcLoop(IfcAbstractEntityPtr e) { if (!is(Type::IfcLoop)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcManifoldSolidBrep
+// Function implementations for IfcManifoldSolidBrep
 IfcClosedShell* IfcManifoldSolidBrep::Outer() { return reinterpret_pointer_cast<IfcBaseClass,IfcClosedShell>(*entity->getArgument(0)); }
 bool IfcManifoldSolidBrep::is(Type::Enum v) const { return v == Type::IfcManifoldSolidBrep || IfcSolidModel::is(v); }
 Type::Enum IfcManifoldSolidBrep::type() const { return Type::IfcManifoldSolidBrep; }
 Type::Enum IfcManifoldSolidBrep::Class() { return Type::IfcManifoldSolidBrep; }
 IfcManifoldSolidBrep::IfcManifoldSolidBrep(IfcAbstractEntityPtr e) { if (!is(Type::IfcManifoldSolidBrep)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMappedItem
+// Function implementations for IfcMappedItem
 IfcRepresentationMap* IfcMappedItem::MappingSource() { return reinterpret_pointer_cast<IfcBaseClass,IfcRepresentationMap>(*entity->getArgument(0)); }
 IfcCartesianTransformationOperator* IfcMappedItem::MappingTarget() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianTransformationOperator>(*entity->getArgument(1)); }
 bool IfcMappedItem::is(Type::Enum v) const { return v == Type::IfcMappedItem || IfcRepresentationItem::is(v); }
 Type::Enum IfcMappedItem::type() const { return Type::IfcMappedItem; }
 Type::Enum IfcMappedItem::Class() { return Type::IfcMappedItem; }
 IfcMappedItem::IfcMappedItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcMappedItem)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMaterial
+// Function implementations for IfcMaterial
 IfcLabel IfcMaterial::Name() { return *entity->getArgument(0); }
 IfcMaterialDefinitionRepresentation::list IfcMaterial::HasRepresentation() { RETURN_INVERSE(IfcMaterialDefinitionRepresentation) }
 IfcMaterialClassificationRelationship::list IfcMaterial::ClassifiedAs() { RETURN_INVERSE(IfcMaterialClassificationRelationship) }
@@ -7119,20 +7119,20 @@ bool IfcMaterial::is(Type::Enum v) const { return v == Type::IfcMaterial; }
 Type::Enum IfcMaterial::type() const { return Type::IfcMaterial; }
 Type::Enum IfcMaterial::Class() { return Type::IfcMaterial; }
 IfcMaterial::IfcMaterial(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterial)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMaterialClassificationRelationship
+// Function implementations for IfcMaterialClassificationRelationship
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcMaterialClassificationRelationship::MaterialClassifications() { RETURN_AS_LIST(IfcAbstractSelect,0) }
 IfcMaterial* IfcMaterialClassificationRelationship::ClassifiedMaterial() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(1)); }
 bool IfcMaterialClassificationRelationship::is(Type::Enum v) const { return v == Type::IfcMaterialClassificationRelationship; }
 Type::Enum IfcMaterialClassificationRelationship::type() const { return Type::IfcMaterialClassificationRelationship; }
 Type::Enum IfcMaterialClassificationRelationship::Class() { return Type::IfcMaterialClassificationRelationship; }
 IfcMaterialClassificationRelationship::IfcMaterialClassificationRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialClassificationRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMaterialDefinitionRepresentation
+// Function implementations for IfcMaterialDefinitionRepresentation
 IfcMaterial* IfcMaterialDefinitionRepresentation::RepresentedMaterial() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(3)); }
 bool IfcMaterialDefinitionRepresentation::is(Type::Enum v) const { return v == Type::IfcMaterialDefinitionRepresentation || IfcProductRepresentation::is(v); }
 Type::Enum IfcMaterialDefinitionRepresentation::type() const { return Type::IfcMaterialDefinitionRepresentation; }
 Type::Enum IfcMaterialDefinitionRepresentation::Class() { return Type::IfcMaterialDefinitionRepresentation; }
 IfcMaterialDefinitionRepresentation::IfcMaterialDefinitionRepresentation(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialDefinitionRepresentation)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMaterialLayer
+// Function implementations for IfcMaterialLayer
 bool IfcMaterialLayer::hasMaterial() { return !entity->getArgument(0)->isNull(); }
 IfcMaterial* IfcMaterialLayer::Material() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(0)); }
 IfcPositiveLengthMeasure IfcMaterialLayer::LayerThickness() { return *entity->getArgument(1); }
@@ -7143,7 +7143,7 @@ bool IfcMaterialLayer::is(Type::Enum v) const { return v == Type::IfcMaterialLay
 Type::Enum IfcMaterialLayer::type() const { return Type::IfcMaterialLayer; }
 Type::Enum IfcMaterialLayer::Class() { return Type::IfcMaterialLayer; }
 IfcMaterialLayer::IfcMaterialLayer(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialLayer)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMaterialLayerSet
+// Function implementations for IfcMaterialLayerSet
 SHARED_PTR< IfcTemplatedEntityList<IfcMaterialLayer> > IfcMaterialLayerSet::MaterialLayers() { RETURN_AS_LIST(IfcMaterialLayer,0) }
 bool IfcMaterialLayerSet::hasLayerSetName() { return !entity->getArgument(1)->isNull(); }
 IfcLabel IfcMaterialLayerSet::LayerSetName() { return *entity->getArgument(1); }
@@ -7151,7 +7151,7 @@ bool IfcMaterialLayerSet::is(Type::Enum v) const { return v == Type::IfcMaterial
 Type::Enum IfcMaterialLayerSet::type() const { return Type::IfcMaterialLayerSet; }
 Type::Enum IfcMaterialLayerSet::Class() { return Type::IfcMaterialLayerSet; }
 IfcMaterialLayerSet::IfcMaterialLayerSet(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialLayerSet)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMaterialLayerSetUsage
+// Function implementations for IfcMaterialLayerSetUsage
 IfcMaterialLayerSet* IfcMaterialLayerSetUsage::ForLayerSet() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterialLayerSet>(*entity->getArgument(0)); }
 IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum IfcMaterialLayerSetUsage::LayerSetDirection() { return IfcLayerSetDirectionEnum::FromString(*entity->getArgument(1)); }
 IfcDirectionSenseEnum::IfcDirectionSenseEnum IfcMaterialLayerSetUsage::DirectionSense() { return IfcDirectionSenseEnum::FromString(*entity->getArgument(2)); }
@@ -7160,26 +7160,26 @@ bool IfcMaterialLayerSetUsage::is(Type::Enum v) const { return v == Type::IfcMat
 Type::Enum IfcMaterialLayerSetUsage::type() const { return Type::IfcMaterialLayerSetUsage; }
 Type::Enum IfcMaterialLayerSetUsage::Class() { return Type::IfcMaterialLayerSetUsage; }
 IfcMaterialLayerSetUsage::IfcMaterialLayerSetUsage(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialLayerSetUsage)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMaterialList
+// Function implementations for IfcMaterialList
 SHARED_PTR< IfcTemplatedEntityList<IfcMaterial> > IfcMaterialList::Materials() { RETURN_AS_LIST(IfcMaterial,0) }
 bool IfcMaterialList::is(Type::Enum v) const { return v == Type::IfcMaterialList; }
 Type::Enum IfcMaterialList::type() const { return Type::IfcMaterialList; }
 Type::Enum IfcMaterialList::Class() { return Type::IfcMaterialList; }
 IfcMaterialList::IfcMaterialList(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialList)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMaterialProperties
+// Function implementations for IfcMaterialProperties
 IfcMaterial* IfcMaterialProperties::Material() { return reinterpret_pointer_cast<IfcBaseClass,IfcMaterial>(*entity->getArgument(0)); }
 bool IfcMaterialProperties::is(Type::Enum v) const { return v == Type::IfcMaterialProperties; }
 Type::Enum IfcMaterialProperties::type() const { return Type::IfcMaterialProperties; }
 Type::Enum IfcMaterialProperties::Class() { return Type::IfcMaterialProperties; }
 IfcMaterialProperties::IfcMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcMaterialProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMeasureWithUnit
+// Function implementations for IfcMeasureWithUnit
 IfcValue IfcMeasureWithUnit::ValueComponent() { return *entity->getArgument(0); }
 IfcUnit IfcMeasureWithUnit::UnitComponent() { return *entity->getArgument(1); }
 bool IfcMeasureWithUnit::is(Type::Enum v) const { return v == Type::IfcMeasureWithUnit; }
 Type::Enum IfcMeasureWithUnit::type() const { return Type::IfcMeasureWithUnit; }
 Type::Enum IfcMeasureWithUnit::Class() { return Type::IfcMeasureWithUnit; }
 IfcMeasureWithUnit::IfcMeasureWithUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcMeasureWithUnit)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMechanicalConcreteMaterialProperties
+// Function implementations for IfcMechanicalConcreteMaterialProperties
 bool IfcMechanicalConcreteMaterialProperties::hasCompressiveStrength() { return !entity->getArgument(6)->isNull(); }
 IfcPressureMeasure IfcMechanicalConcreteMaterialProperties::CompressiveStrength() { return *entity->getArgument(6); }
 bool IfcMechanicalConcreteMaterialProperties::hasMaxAggregateSize() { return !entity->getArgument(7)->isNull(); }
@@ -7196,7 +7196,7 @@ bool IfcMechanicalConcreteMaterialProperties::is(Type::Enum v) const { return v 
 Type::Enum IfcMechanicalConcreteMaterialProperties::type() const { return Type::IfcMechanicalConcreteMaterialProperties; }
 Type::Enum IfcMechanicalConcreteMaterialProperties::Class() { return Type::IfcMechanicalConcreteMaterialProperties; }
 IfcMechanicalConcreteMaterialProperties::IfcMechanicalConcreteMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcMechanicalConcreteMaterialProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMechanicalFastener
+// Function implementations for IfcMechanicalFastener
 bool IfcMechanicalFastener::hasNominalDiameter() { return !entity->getArgument(8)->isNull(); }
 IfcPositiveLengthMeasure IfcMechanicalFastener::NominalDiameter() { return *entity->getArgument(8); }
 bool IfcMechanicalFastener::hasNominalLength() { return !entity->getArgument(9)->isNull(); }
@@ -7205,12 +7205,12 @@ bool IfcMechanicalFastener::is(Type::Enum v) const { return v == Type::IfcMechan
 Type::Enum IfcMechanicalFastener::type() const { return Type::IfcMechanicalFastener; }
 Type::Enum IfcMechanicalFastener::Class() { return Type::IfcMechanicalFastener; }
 IfcMechanicalFastener::IfcMechanicalFastener(IfcAbstractEntityPtr e) { if (!is(Type::IfcMechanicalFastener)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMechanicalFastenerType
+// Function implementations for IfcMechanicalFastenerType
 bool IfcMechanicalFastenerType::is(Type::Enum v) const { return v == Type::IfcMechanicalFastenerType || IfcFastenerType::is(v); }
 Type::Enum IfcMechanicalFastenerType::type() const { return Type::IfcMechanicalFastenerType; }
 Type::Enum IfcMechanicalFastenerType::Class() { return Type::IfcMechanicalFastenerType; }
 IfcMechanicalFastenerType::IfcMechanicalFastenerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcMechanicalFastenerType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMechanicalMaterialProperties
+// Function implementations for IfcMechanicalMaterialProperties
 bool IfcMechanicalMaterialProperties::hasDynamicViscosity() { return !entity->getArgument(1)->isNull(); }
 IfcDynamicViscosityMeasure IfcMechanicalMaterialProperties::DynamicViscosity() { return *entity->getArgument(1); }
 bool IfcMechanicalMaterialProperties::hasYoungModulus() { return !entity->getArgument(2)->isNull(); }
@@ -7225,7 +7225,7 @@ bool IfcMechanicalMaterialProperties::is(Type::Enum v) const { return v == Type:
 Type::Enum IfcMechanicalMaterialProperties::type() const { return Type::IfcMechanicalMaterialProperties; }
 Type::Enum IfcMechanicalMaterialProperties::Class() { return Type::IfcMechanicalMaterialProperties; }
 IfcMechanicalMaterialProperties::IfcMechanicalMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcMechanicalMaterialProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMechanicalSteelMaterialProperties
+// Function implementations for IfcMechanicalSteelMaterialProperties
 bool IfcMechanicalSteelMaterialProperties::hasYieldStress() { return !entity->getArgument(6)->isNull(); }
 IfcPressureMeasure IfcMechanicalSteelMaterialProperties::YieldStress() { return *entity->getArgument(6); }
 bool IfcMechanicalSteelMaterialProperties::hasUltimateStress() { return !entity->getArgument(7)->isNull(); }
@@ -7244,18 +7244,18 @@ bool IfcMechanicalSteelMaterialProperties::is(Type::Enum v) const { return v == 
 Type::Enum IfcMechanicalSteelMaterialProperties::type() const { return Type::IfcMechanicalSteelMaterialProperties; }
 Type::Enum IfcMechanicalSteelMaterialProperties::Class() { return Type::IfcMechanicalSteelMaterialProperties; }
 IfcMechanicalSteelMaterialProperties::IfcMechanicalSteelMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcMechanicalSteelMaterialProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMember
+// Function implementations for IfcMember
 bool IfcMember::is(Type::Enum v) const { return v == Type::IfcMember || IfcBuildingElement::is(v); }
 Type::Enum IfcMember::type() const { return Type::IfcMember; }
 Type::Enum IfcMember::Class() { return Type::IfcMember; }
 IfcMember::IfcMember(IfcAbstractEntityPtr e) { if (!is(Type::IfcMember)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMemberType
+// Function implementations for IfcMemberType
 IfcMemberTypeEnum::IfcMemberTypeEnum IfcMemberType::PredefinedType() { return IfcMemberTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcMemberType::is(Type::Enum v) const { return v == Type::IfcMemberType || IfcBuildingElementType::is(v); }
 Type::Enum IfcMemberType::type() const { return Type::IfcMemberType; }
 Type::Enum IfcMemberType::Class() { return Type::IfcMemberType; }
 IfcMemberType::IfcMemberType(IfcAbstractEntityPtr e) { if (!is(Type::IfcMemberType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMetric
+// Function implementations for IfcMetric
 IfcBenchmarkEnum::IfcBenchmarkEnum IfcMetric::Benchmark() { return IfcBenchmarkEnum::FromString(*entity->getArgument(7)); }
 bool IfcMetric::hasValueSource() { return !entity->getArgument(8)->isNull(); }
 IfcLabel IfcMetric::ValueSource() { return *entity->getArgument(8); }
@@ -7264,19 +7264,19 @@ bool IfcMetric::is(Type::Enum v) const { return v == Type::IfcMetric || IfcConst
 Type::Enum IfcMetric::type() const { return Type::IfcMetric; }
 Type::Enum IfcMetric::Class() { return Type::IfcMetric; }
 IfcMetric::IfcMetric(IfcAbstractEntityPtr e) { if (!is(Type::IfcMetric)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMonetaryUnit
+// Function implementations for IfcMonetaryUnit
 IfcCurrencyEnum::IfcCurrencyEnum IfcMonetaryUnit::Currency() { return IfcCurrencyEnum::FromString(*entity->getArgument(0)); }
 bool IfcMonetaryUnit::is(Type::Enum v) const { return v == Type::IfcMonetaryUnit; }
 Type::Enum IfcMonetaryUnit::type() const { return Type::IfcMonetaryUnit; }
 Type::Enum IfcMonetaryUnit::Class() { return Type::IfcMonetaryUnit; }
 IfcMonetaryUnit::IfcMonetaryUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcMonetaryUnit)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMotorConnectionType
+// Function implementations for IfcMotorConnectionType
 IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum IfcMotorConnectionType::PredefinedType() { return IfcMotorConnectionTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcMotorConnectionType::is(Type::Enum v) const { return v == Type::IfcMotorConnectionType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcMotorConnectionType::type() const { return Type::IfcMotorConnectionType; }
 Type::Enum IfcMotorConnectionType::Class() { return Type::IfcMotorConnectionType; }
 IfcMotorConnectionType::IfcMotorConnectionType(IfcAbstractEntityPtr e) { if (!is(Type::IfcMotorConnectionType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcMove
+// Function implementations for IfcMove
 IfcSpatialStructureElement* IfcMove::MoveFrom() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(10)); }
 IfcSpatialStructureElement* IfcMove::MoveTo() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(11)); }
 bool IfcMove::hasPunchList() { return !entity->getArgument(12)->isNull(); }
@@ -7285,14 +7285,14 @@ bool IfcMove::is(Type::Enum v) const { return v == Type::IfcMove || IfcTask::is(
 Type::Enum IfcMove::type() const { return Type::IfcMove; }
 Type::Enum IfcMove::Class() { return Type::IfcMove; }
 IfcMove::IfcMove(IfcAbstractEntityPtr e) { if (!is(Type::IfcMove)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcNamedUnit
+// Function implementations for IfcNamedUnit
 IfcDimensionalExponents* IfcNamedUnit::Dimensions() { return reinterpret_pointer_cast<IfcBaseClass,IfcDimensionalExponents>(*entity->getArgument(0)); }
 IfcUnitEnum::IfcUnitEnum IfcNamedUnit::UnitType() { return IfcUnitEnum::FromString(*entity->getArgument(1)); }
 bool IfcNamedUnit::is(Type::Enum v) const { return v == Type::IfcNamedUnit; }
 Type::Enum IfcNamedUnit::type() const { return Type::IfcNamedUnit; }
 Type::Enum IfcNamedUnit::Class() { return Type::IfcNamedUnit; }
 IfcNamedUnit::IfcNamedUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcNamedUnit)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcObject
+// Function implementations for IfcObject
 bool IfcObject::hasObjectType() { return !entity->getArgument(4)->isNull(); }
 IfcLabel IfcObject::ObjectType() { return *entity->getArgument(4); }
 IfcRelDefines::list IfcObject::IsDefinedBy() { RETURN_INVERSE(IfcRelDefines) }
@@ -7300,7 +7300,7 @@ bool IfcObject::is(Type::Enum v) const { return v == Type::IfcObject || IfcObjec
 Type::Enum IfcObject::type() const { return Type::IfcObject; }
 Type::Enum IfcObject::Class() { return Type::IfcObject; }
 IfcObject::IfcObject(IfcAbstractEntityPtr e) { if (!is(Type::IfcObject)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcObjectDefinition
+// Function implementations for IfcObjectDefinition
 IfcRelAssigns::list IfcObjectDefinition::HasAssignments() { RETURN_INVERSE(IfcRelAssigns) }
 IfcRelDecomposes::list IfcObjectDefinition::IsDecomposedBy() { RETURN_INVERSE(IfcRelDecomposes) }
 IfcRelDecomposes::list IfcObjectDefinition::Decomposes() { RETURN_INVERSE(IfcRelDecomposes) }
@@ -7309,14 +7309,14 @@ bool IfcObjectDefinition::is(Type::Enum v) const { return v == Type::IfcObjectDe
 Type::Enum IfcObjectDefinition::type() const { return Type::IfcObjectDefinition; }
 Type::Enum IfcObjectDefinition::Class() { return Type::IfcObjectDefinition; }
 IfcObjectDefinition::IfcObjectDefinition(IfcAbstractEntityPtr e) { if (!is(Type::IfcObjectDefinition)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcObjectPlacement
+// Function implementations for IfcObjectPlacement
 IfcProduct::list IfcObjectPlacement::PlacesObject() { RETURN_INVERSE(IfcProduct) }
 IfcLocalPlacement::list IfcObjectPlacement::ReferencedByPlacements() { RETURN_INVERSE(IfcLocalPlacement) }
 bool IfcObjectPlacement::is(Type::Enum v) const { return v == Type::IfcObjectPlacement; }
 Type::Enum IfcObjectPlacement::type() const { return Type::IfcObjectPlacement; }
 Type::Enum IfcObjectPlacement::Class() { return Type::IfcObjectPlacement; }
 IfcObjectPlacement::IfcObjectPlacement(IfcAbstractEntityPtr e) { if (!is(Type::IfcObjectPlacement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcObjective
+// Function implementations for IfcObjective
 bool IfcObjective::hasBenchmarkValues() { return !entity->getArgument(7)->isNull(); }
 IfcMetric* IfcObjective::BenchmarkValues() { return reinterpret_pointer_cast<IfcBaseClass,IfcMetric>(*entity->getArgument(7)); }
 bool IfcObjective::hasResultValues() { return !entity->getArgument(8)->isNull(); }
@@ -7328,13 +7328,13 @@ bool IfcObjective::is(Type::Enum v) const { return v == Type::IfcObjective || If
 Type::Enum IfcObjective::type() const { return Type::IfcObjective; }
 Type::Enum IfcObjective::Class() { return Type::IfcObjective; }
 IfcObjective::IfcObjective(IfcAbstractEntityPtr e) { if (!is(Type::IfcObjective)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOccupant
+// Function implementations for IfcOccupant
 IfcOccupantTypeEnum::IfcOccupantTypeEnum IfcOccupant::PredefinedType() { return IfcOccupantTypeEnum::FromString(*entity->getArgument(6)); }
 bool IfcOccupant::is(Type::Enum v) const { return v == Type::IfcOccupant || IfcActor::is(v); }
 Type::Enum IfcOccupant::type() const { return Type::IfcOccupant; }
 Type::Enum IfcOccupant::Class() { return Type::IfcOccupant; }
 IfcOccupant::IfcOccupant(IfcAbstractEntityPtr e) { if (!is(Type::IfcOccupant)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOffsetCurve2D
+// Function implementations for IfcOffsetCurve2D
 IfcCurve* IfcOffsetCurve2D::BasisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
 IfcLengthMeasure IfcOffsetCurve2D::Distance() { return *entity->getArgument(1); }
 bool IfcOffsetCurve2D::SelfIntersect() { return *entity->getArgument(2); }
@@ -7342,7 +7342,7 @@ bool IfcOffsetCurve2D::is(Type::Enum v) const { return v == Type::IfcOffsetCurve
 Type::Enum IfcOffsetCurve2D::type() const { return Type::IfcOffsetCurve2D; }
 Type::Enum IfcOffsetCurve2D::Class() { return Type::IfcOffsetCurve2D; }
 IfcOffsetCurve2D::IfcOffsetCurve2D(IfcAbstractEntityPtr e) { if (!is(Type::IfcOffsetCurve2D)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOffsetCurve3D
+// Function implementations for IfcOffsetCurve3D
 IfcCurve* IfcOffsetCurve3D::BasisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
 IfcLengthMeasure IfcOffsetCurve3D::Distance() { return *entity->getArgument(1); }
 bool IfcOffsetCurve3D::SelfIntersect() { return *entity->getArgument(2); }
@@ -7351,24 +7351,24 @@ bool IfcOffsetCurve3D::is(Type::Enum v) const { return v == Type::IfcOffsetCurve
 Type::Enum IfcOffsetCurve3D::type() const { return Type::IfcOffsetCurve3D; }
 Type::Enum IfcOffsetCurve3D::Class() { return Type::IfcOffsetCurve3D; }
 IfcOffsetCurve3D::IfcOffsetCurve3D(IfcAbstractEntityPtr e) { if (!is(Type::IfcOffsetCurve3D)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOneDirectionRepeatFactor
+// Function implementations for IfcOneDirectionRepeatFactor
 IfcVector* IfcOneDirectionRepeatFactor::RepeatFactor() { return reinterpret_pointer_cast<IfcBaseClass,IfcVector>(*entity->getArgument(0)); }
 bool IfcOneDirectionRepeatFactor::is(Type::Enum v) const { return v == Type::IfcOneDirectionRepeatFactor || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcOneDirectionRepeatFactor::type() const { return Type::IfcOneDirectionRepeatFactor; }
 Type::Enum IfcOneDirectionRepeatFactor::Class() { return Type::IfcOneDirectionRepeatFactor; }
 IfcOneDirectionRepeatFactor::IfcOneDirectionRepeatFactor(IfcAbstractEntityPtr e) { if (!is(Type::IfcOneDirectionRepeatFactor)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOpenShell
+// Function implementations for IfcOpenShell
 bool IfcOpenShell::is(Type::Enum v) const { return v == Type::IfcOpenShell || IfcConnectedFaceSet::is(v); }
 Type::Enum IfcOpenShell::type() const { return Type::IfcOpenShell; }
 Type::Enum IfcOpenShell::Class() { return Type::IfcOpenShell; }
 IfcOpenShell::IfcOpenShell(IfcAbstractEntityPtr e) { if (!is(Type::IfcOpenShell)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOpeningElement
+// Function implementations for IfcOpeningElement
 IfcRelFillsElement::list IfcOpeningElement::HasFillings() { RETURN_INVERSE(IfcRelFillsElement) }
 bool IfcOpeningElement::is(Type::Enum v) const { return v == Type::IfcOpeningElement || IfcFeatureElementSubtraction::is(v); }
 Type::Enum IfcOpeningElement::type() const { return Type::IfcOpeningElement; }
 Type::Enum IfcOpeningElement::Class() { return Type::IfcOpeningElement; }
 IfcOpeningElement::IfcOpeningElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcOpeningElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOpticalMaterialProperties
+// Function implementations for IfcOpticalMaterialProperties
 bool IfcOpticalMaterialProperties::hasVisibleTransmittance() { return !entity->getArgument(1)->isNull(); }
 IfcPositiveRatioMeasure IfcOpticalMaterialProperties::VisibleTransmittance() { return *entity->getArgument(1); }
 bool IfcOpticalMaterialProperties::hasSolarTransmittance() { return !entity->getArgument(2)->isNull(); }
@@ -7391,13 +7391,13 @@ bool IfcOpticalMaterialProperties::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcOpticalMaterialProperties::type() const { return Type::IfcOpticalMaterialProperties; }
 Type::Enum IfcOpticalMaterialProperties::Class() { return Type::IfcOpticalMaterialProperties; }
 IfcOpticalMaterialProperties::IfcOpticalMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcOpticalMaterialProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOrderAction
+// Function implementations for IfcOrderAction
 IfcIdentifier IfcOrderAction::ActionID() { return *entity->getArgument(10); }
 bool IfcOrderAction::is(Type::Enum v) const { return v == Type::IfcOrderAction || IfcTask::is(v); }
 Type::Enum IfcOrderAction::type() const { return Type::IfcOrderAction; }
 Type::Enum IfcOrderAction::Class() { return Type::IfcOrderAction; }
 IfcOrderAction::IfcOrderAction(IfcAbstractEntityPtr e) { if (!is(Type::IfcOrderAction)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOrganization
+// Function implementations for IfcOrganization
 bool IfcOrganization::hasId() { return !entity->getArgument(0)->isNull(); }
 IfcIdentifier IfcOrganization::Id() { return *entity->getArgument(0); }
 IfcLabel IfcOrganization::Name() { return *entity->getArgument(1); }
@@ -7414,7 +7414,7 @@ bool IfcOrganization::is(Type::Enum v) const { return v == Type::IfcOrganization
 Type::Enum IfcOrganization::type() const { return Type::IfcOrganization; }
 Type::Enum IfcOrganization::Class() { return Type::IfcOrganization; }
 IfcOrganization::IfcOrganization(IfcAbstractEntityPtr e) { if (!is(Type::IfcOrganization)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOrganizationRelationship
+// Function implementations for IfcOrganizationRelationship
 IfcLabel IfcOrganizationRelationship::Name() { return *entity->getArgument(0); }
 bool IfcOrganizationRelationship::hasDescription() { return !entity->getArgument(1)->isNull(); }
 IfcText IfcOrganizationRelationship::Description() { return *entity->getArgument(1); }
@@ -7424,20 +7424,20 @@ bool IfcOrganizationRelationship::is(Type::Enum v) const { return v == Type::Ifc
 Type::Enum IfcOrganizationRelationship::type() const { return Type::IfcOrganizationRelationship; }
 Type::Enum IfcOrganizationRelationship::Class() { return Type::IfcOrganizationRelationship; }
 IfcOrganizationRelationship::IfcOrganizationRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcOrganizationRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOrientedEdge
+// Function implementations for IfcOrientedEdge
 IfcEdge* IfcOrientedEdge::EdgeElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcEdge>(*entity->getArgument(2)); }
 bool IfcOrientedEdge::Orientation() { return *entity->getArgument(3); }
 bool IfcOrientedEdge::is(Type::Enum v) const { return v == Type::IfcOrientedEdge || IfcEdge::is(v); }
 Type::Enum IfcOrientedEdge::type() const { return Type::IfcOrientedEdge; }
 Type::Enum IfcOrientedEdge::Class() { return Type::IfcOrientedEdge; }
 IfcOrientedEdge::IfcOrientedEdge(IfcAbstractEntityPtr e) { if (!is(Type::IfcOrientedEdge)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOutletType
+// Function implementations for IfcOutletType
 IfcOutletTypeEnum::IfcOutletTypeEnum IfcOutletType::PredefinedType() { return IfcOutletTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcOutletType::is(Type::Enum v) const { return v == Type::IfcOutletType || IfcFlowTerminalType::is(v); }
 Type::Enum IfcOutletType::type() const { return Type::IfcOutletType; }
 Type::Enum IfcOutletType::Class() { return Type::IfcOutletType; }
 IfcOutletType::IfcOutletType(IfcAbstractEntityPtr e) { if (!is(Type::IfcOutletType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcOwnerHistory
+// Function implementations for IfcOwnerHistory
 IfcPersonAndOrganization* IfcOwnerHistory::OwningUser() { return reinterpret_pointer_cast<IfcBaseClass,IfcPersonAndOrganization>(*entity->getArgument(0)); }
 IfcApplication* IfcOwnerHistory::OwningApplication() { return reinterpret_pointer_cast<IfcBaseClass,IfcApplication>(*entity->getArgument(1)); }
 bool IfcOwnerHistory::hasState() { return !entity->getArgument(2)->isNull(); }
@@ -7454,25 +7454,25 @@ bool IfcOwnerHistory::is(Type::Enum v) const { return v == Type::IfcOwnerHistory
 Type::Enum IfcOwnerHistory::type() const { return Type::IfcOwnerHistory; }
 Type::Enum IfcOwnerHistory::Class() { return Type::IfcOwnerHistory; }
 IfcOwnerHistory::IfcOwnerHistory(IfcAbstractEntityPtr e) { if (!is(Type::IfcOwnerHistory)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcParameterizedProfileDef
+// Function implementations for IfcParameterizedProfileDef
 IfcAxis2Placement2D* IfcParameterizedProfileDef::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement2D>(*entity->getArgument(2)); }
 bool IfcParameterizedProfileDef::is(Type::Enum v) const { return v == Type::IfcParameterizedProfileDef || IfcProfileDef::is(v); }
 Type::Enum IfcParameterizedProfileDef::type() const { return Type::IfcParameterizedProfileDef; }
 Type::Enum IfcParameterizedProfileDef::Class() { return Type::IfcParameterizedProfileDef; }
 IfcParameterizedProfileDef::IfcParameterizedProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcParameterizedProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPath
+// Function implementations for IfcPath
 SHARED_PTR< IfcTemplatedEntityList<IfcOrientedEdge> > IfcPath::EdgeList() { RETURN_AS_LIST(IfcOrientedEdge,0) }
 bool IfcPath::is(Type::Enum v) const { return v == Type::IfcPath || IfcTopologicalRepresentationItem::is(v); }
 Type::Enum IfcPath::type() const { return Type::IfcPath; }
 Type::Enum IfcPath::Class() { return Type::IfcPath; }
 IfcPath::IfcPath(IfcAbstractEntityPtr e) { if (!is(Type::IfcPath)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPerformanceHistory
+// Function implementations for IfcPerformanceHistory
 IfcLabel IfcPerformanceHistory::LifeCyclePhase() { return *entity->getArgument(5); }
 bool IfcPerformanceHistory::is(Type::Enum v) const { return v == Type::IfcPerformanceHistory || IfcControl::is(v); }
 Type::Enum IfcPerformanceHistory::type() const { return Type::IfcPerformanceHistory; }
 Type::Enum IfcPerformanceHistory::Class() { return Type::IfcPerformanceHistory; }
 IfcPerformanceHistory::IfcPerformanceHistory(IfcAbstractEntityPtr e) { if (!is(Type::IfcPerformanceHistory)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPermeableCoveringProperties
+// Function implementations for IfcPermeableCoveringProperties
 IfcPermeableCoveringOperationEnum::IfcPermeableCoveringOperationEnum IfcPermeableCoveringProperties::OperationType() { return IfcPermeableCoveringOperationEnum::FromString(*entity->getArgument(4)); }
 IfcWindowPanelPositionEnum::IfcWindowPanelPositionEnum IfcPermeableCoveringProperties::PanelPosition() { return IfcWindowPanelPositionEnum::FromString(*entity->getArgument(5)); }
 bool IfcPermeableCoveringProperties::hasFrameDepth() { return !entity->getArgument(6)->isNull(); }
@@ -7485,13 +7485,13 @@ bool IfcPermeableCoveringProperties::is(Type::Enum v) const { return v == Type::
 Type::Enum IfcPermeableCoveringProperties::type() const { return Type::IfcPermeableCoveringProperties; }
 Type::Enum IfcPermeableCoveringProperties::Class() { return Type::IfcPermeableCoveringProperties; }
 IfcPermeableCoveringProperties::IfcPermeableCoveringProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcPermeableCoveringProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPermit
+// Function implementations for IfcPermit
 IfcIdentifier IfcPermit::PermitID() { return *entity->getArgument(5); }
 bool IfcPermit::is(Type::Enum v) const { return v == Type::IfcPermit || IfcControl::is(v); }
 Type::Enum IfcPermit::type() const { return Type::IfcPermit; }
 Type::Enum IfcPermit::Class() { return Type::IfcPermit; }
 IfcPermit::IfcPermit(IfcAbstractEntityPtr e) { if (!is(Type::IfcPermit)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPerson
+// Function implementations for IfcPerson
 bool IfcPerson::hasId() { return !entity->getArgument(0)->isNull(); }
 IfcIdentifier IfcPerson::Id() { return *entity->getArgument(0); }
 bool IfcPerson::hasFamilyName() { return !entity->getArgument(1)->isNull(); }
@@ -7513,7 +7513,7 @@ bool IfcPerson::is(Type::Enum v) const { return v == Type::IfcPerson; }
 Type::Enum IfcPerson::type() const { return Type::IfcPerson; }
 Type::Enum IfcPerson::Class() { return Type::IfcPerson; }
 IfcPerson::IfcPerson(IfcAbstractEntityPtr e) { if (!is(Type::IfcPerson)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPersonAndOrganization
+// Function implementations for IfcPersonAndOrganization
 IfcPerson* IfcPersonAndOrganization::ThePerson() { return reinterpret_pointer_cast<IfcBaseClass,IfcPerson>(*entity->getArgument(0)); }
 IfcOrganization* IfcPersonAndOrganization::TheOrganization() { return reinterpret_pointer_cast<IfcBaseClass,IfcOrganization>(*entity->getArgument(1)); }
 bool IfcPersonAndOrganization::hasRoles() { return !entity->getArgument(2)->isNull(); }
@@ -7522,7 +7522,7 @@ bool IfcPersonAndOrganization::is(Type::Enum v) const { return v == Type::IfcPer
 Type::Enum IfcPersonAndOrganization::type() const { return Type::IfcPersonAndOrganization; }
 Type::Enum IfcPersonAndOrganization::Class() { return Type::IfcPersonAndOrganization; }
 IfcPersonAndOrganization::IfcPersonAndOrganization(IfcAbstractEntityPtr e) { if (!is(Type::IfcPersonAndOrganization)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPhysicalComplexQuantity
+// Function implementations for IfcPhysicalComplexQuantity
 SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalQuantity> > IfcPhysicalComplexQuantity::HasQuantities() { RETURN_AS_LIST(IfcPhysicalQuantity,2) }
 IfcLabel IfcPhysicalComplexQuantity::Discrimination() { return *entity->getArgument(3); }
 bool IfcPhysicalComplexQuantity::hasQuality() { return !entity->getArgument(4)->isNull(); }
@@ -7533,7 +7533,7 @@ bool IfcPhysicalComplexQuantity::is(Type::Enum v) const { return v == Type::IfcP
 Type::Enum IfcPhysicalComplexQuantity::type() const { return Type::IfcPhysicalComplexQuantity; }
 Type::Enum IfcPhysicalComplexQuantity::Class() { return Type::IfcPhysicalComplexQuantity; }
 IfcPhysicalComplexQuantity::IfcPhysicalComplexQuantity(IfcAbstractEntityPtr e) { if (!is(Type::IfcPhysicalComplexQuantity)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPhysicalQuantity
+// Function implementations for IfcPhysicalQuantity
 IfcLabel IfcPhysicalQuantity::Name() { return *entity->getArgument(0); }
 bool IfcPhysicalQuantity::hasDescription() { return !entity->getArgument(1)->isNull(); }
 IfcText IfcPhysicalQuantity::Description() { return *entity->getArgument(1); }
@@ -7542,14 +7542,14 @@ bool IfcPhysicalQuantity::is(Type::Enum v) const { return v == Type::IfcPhysical
 Type::Enum IfcPhysicalQuantity::type() const { return Type::IfcPhysicalQuantity; }
 Type::Enum IfcPhysicalQuantity::Class() { return Type::IfcPhysicalQuantity; }
 IfcPhysicalQuantity::IfcPhysicalQuantity(IfcAbstractEntityPtr e) { if (!is(Type::IfcPhysicalQuantity)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPhysicalSimpleQuantity
+// Function implementations for IfcPhysicalSimpleQuantity
 bool IfcPhysicalSimpleQuantity::hasUnit() { return !entity->getArgument(2)->isNull(); }
 IfcNamedUnit* IfcPhysicalSimpleQuantity::Unit() { return reinterpret_pointer_cast<IfcBaseClass,IfcNamedUnit>(*entity->getArgument(2)); }
 bool IfcPhysicalSimpleQuantity::is(Type::Enum v) const { return v == Type::IfcPhysicalSimpleQuantity || IfcPhysicalQuantity::is(v); }
 Type::Enum IfcPhysicalSimpleQuantity::type() const { return Type::IfcPhysicalSimpleQuantity; }
 Type::Enum IfcPhysicalSimpleQuantity::Class() { return Type::IfcPhysicalSimpleQuantity; }
 IfcPhysicalSimpleQuantity::IfcPhysicalSimpleQuantity(IfcAbstractEntityPtr e) { if (!is(Type::IfcPhysicalSimpleQuantity)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPile
+// Function implementations for IfcPile
 IfcPileTypeEnum::IfcPileTypeEnum IfcPile::PredefinedType() { return IfcPileTypeEnum::FromString(*entity->getArgument(8)); }
 bool IfcPile::hasConstructionType() { return !entity->getArgument(9)->isNull(); }
 IfcPileConstructionEnum::IfcPileConstructionEnum IfcPile::ConstructionType() { return IfcPileConstructionEnum::FromString(*entity->getArgument(9)); }
@@ -7557,19 +7557,19 @@ bool IfcPile::is(Type::Enum v) const { return v == Type::IfcPile || IfcBuildingE
 Type::Enum IfcPile::type() const { return Type::IfcPile; }
 Type::Enum IfcPile::Class() { return Type::IfcPile; }
 IfcPile::IfcPile(IfcAbstractEntityPtr e) { if (!is(Type::IfcPile)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPipeFittingType
+// Function implementations for IfcPipeFittingType
 IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum IfcPipeFittingType::PredefinedType() { return IfcPipeFittingTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcPipeFittingType::is(Type::Enum v) const { return v == Type::IfcPipeFittingType || IfcFlowFittingType::is(v); }
 Type::Enum IfcPipeFittingType::type() const { return Type::IfcPipeFittingType; }
 Type::Enum IfcPipeFittingType::Class() { return Type::IfcPipeFittingType; }
 IfcPipeFittingType::IfcPipeFittingType(IfcAbstractEntityPtr e) { if (!is(Type::IfcPipeFittingType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPipeSegmentType
+// Function implementations for IfcPipeSegmentType
 IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum IfcPipeSegmentType::PredefinedType() { return IfcPipeSegmentTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcPipeSegmentType::is(Type::Enum v) const { return v == Type::IfcPipeSegmentType || IfcFlowSegmentType::is(v); }
 Type::Enum IfcPipeSegmentType::type() const { return Type::IfcPipeSegmentType; }
 Type::Enum IfcPipeSegmentType::Class() { return Type::IfcPipeSegmentType; }
 IfcPipeSegmentType::IfcPipeSegmentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcPipeSegmentType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPixelTexture
+// Function implementations for IfcPixelTexture
 IfcInteger IfcPixelTexture::Width() { return *entity->getArgument(4); }
 IfcInteger IfcPixelTexture::Height() { return *entity->getArgument(5); }
 IfcInteger IfcPixelTexture::ColourComponents() { return *entity->getArgument(6); }
@@ -7578,54 +7578,54 @@ bool IfcPixelTexture::is(Type::Enum v) const { return v == Type::IfcPixelTexture
 Type::Enum IfcPixelTexture::type() const { return Type::IfcPixelTexture; }
 Type::Enum IfcPixelTexture::Class() { return Type::IfcPixelTexture; }
 IfcPixelTexture::IfcPixelTexture(IfcAbstractEntityPtr e) { if (!is(Type::IfcPixelTexture)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPlacement
+// Function implementations for IfcPlacement
 IfcCartesianPoint* IfcPlacement::Location() { return reinterpret_pointer_cast<IfcBaseClass,IfcCartesianPoint>(*entity->getArgument(0)); }
 bool IfcPlacement::is(Type::Enum v) const { return v == Type::IfcPlacement || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcPlacement::type() const { return Type::IfcPlacement; }
 Type::Enum IfcPlacement::Class() { return Type::IfcPlacement; }
 IfcPlacement::IfcPlacement(IfcAbstractEntityPtr e) { if (!is(Type::IfcPlacement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPlanarBox
+// Function implementations for IfcPlanarBox
 IfcAxis2Placement IfcPlanarBox::Placement() { return *entity->getArgument(2); }
 bool IfcPlanarBox::is(Type::Enum v) const { return v == Type::IfcPlanarBox || IfcPlanarExtent::is(v); }
 Type::Enum IfcPlanarBox::type() const { return Type::IfcPlanarBox; }
 Type::Enum IfcPlanarBox::Class() { return Type::IfcPlanarBox; }
 IfcPlanarBox::IfcPlanarBox(IfcAbstractEntityPtr e) { if (!is(Type::IfcPlanarBox)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPlanarExtent
+// Function implementations for IfcPlanarExtent
 IfcLengthMeasure IfcPlanarExtent::SizeInX() { return *entity->getArgument(0); }
 IfcLengthMeasure IfcPlanarExtent::SizeInY() { return *entity->getArgument(1); }
 bool IfcPlanarExtent::is(Type::Enum v) const { return v == Type::IfcPlanarExtent || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcPlanarExtent::type() const { return Type::IfcPlanarExtent; }
 Type::Enum IfcPlanarExtent::Class() { return Type::IfcPlanarExtent; }
 IfcPlanarExtent::IfcPlanarExtent(IfcAbstractEntityPtr e) { if (!is(Type::IfcPlanarExtent)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPlane
+// Function implementations for IfcPlane
 bool IfcPlane::is(Type::Enum v) const { return v == Type::IfcPlane || IfcElementarySurface::is(v); }
 Type::Enum IfcPlane::type() const { return Type::IfcPlane; }
 Type::Enum IfcPlane::Class() { return Type::IfcPlane; }
 IfcPlane::IfcPlane(IfcAbstractEntityPtr e) { if (!is(Type::IfcPlane)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPlate
+// Function implementations for IfcPlate
 bool IfcPlate::is(Type::Enum v) const { return v == Type::IfcPlate || IfcBuildingElement::is(v); }
 Type::Enum IfcPlate::type() const { return Type::IfcPlate; }
 Type::Enum IfcPlate::Class() { return Type::IfcPlate; }
 IfcPlate::IfcPlate(IfcAbstractEntityPtr e) { if (!is(Type::IfcPlate)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPlateType
+// Function implementations for IfcPlateType
 IfcPlateTypeEnum::IfcPlateTypeEnum IfcPlateType::PredefinedType() { return IfcPlateTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcPlateType::is(Type::Enum v) const { return v == Type::IfcPlateType || IfcBuildingElementType::is(v); }
 Type::Enum IfcPlateType::type() const { return Type::IfcPlateType; }
 Type::Enum IfcPlateType::Class() { return Type::IfcPlateType; }
 IfcPlateType::IfcPlateType(IfcAbstractEntityPtr e) { if (!is(Type::IfcPlateType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPoint
+// Function implementations for IfcPoint
 bool IfcPoint::is(Type::Enum v) const { return v == Type::IfcPoint || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcPoint::type() const { return Type::IfcPoint; }
 Type::Enum IfcPoint::Class() { return Type::IfcPoint; }
 IfcPoint::IfcPoint(IfcAbstractEntityPtr e) { if (!is(Type::IfcPoint)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPointOnCurve
+// Function implementations for IfcPointOnCurve
 IfcCurve* IfcPointOnCurve::BasisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
 IfcParameterValue IfcPointOnCurve::PointParameter() { return *entity->getArgument(1); }
 bool IfcPointOnCurve::is(Type::Enum v) const { return v == Type::IfcPointOnCurve || IfcPoint::is(v); }
 Type::Enum IfcPointOnCurve::type() const { return Type::IfcPointOnCurve; }
 Type::Enum IfcPointOnCurve::Class() { return Type::IfcPointOnCurve; }
 IfcPointOnCurve::IfcPointOnCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcPointOnCurve)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPointOnSurface
+// Function implementations for IfcPointOnSurface
 IfcSurface* IfcPointOnSurface::BasisSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(0)); }
 IfcParameterValue IfcPointOnSurface::PointParameterU() { return *entity->getArgument(1); }
 IfcParameterValue IfcPointOnSurface::PointParameterV() { return *entity->getArgument(2); }
@@ -7633,26 +7633,26 @@ bool IfcPointOnSurface::is(Type::Enum v) const { return v == Type::IfcPointOnSur
 Type::Enum IfcPointOnSurface::type() const { return Type::IfcPointOnSurface; }
 Type::Enum IfcPointOnSurface::Class() { return Type::IfcPointOnSurface; }
 IfcPointOnSurface::IfcPointOnSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcPointOnSurface)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPolyLoop
+// Function implementations for IfcPolyLoop
 SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > IfcPolyLoop::Polygon() { RETURN_AS_LIST(IfcCartesianPoint,0) }
 bool IfcPolyLoop::is(Type::Enum v) const { return v == Type::IfcPolyLoop || IfcLoop::is(v); }
 Type::Enum IfcPolyLoop::type() const { return Type::IfcPolyLoop; }
 Type::Enum IfcPolyLoop::Class() { return Type::IfcPolyLoop; }
 IfcPolyLoop::IfcPolyLoop(IfcAbstractEntityPtr e) { if (!is(Type::IfcPolyLoop)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPolygonalBoundedHalfSpace
+// Function implementations for IfcPolygonalBoundedHalfSpace
 IfcAxis2Placement3D* IfcPolygonalBoundedHalfSpace::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(2)); }
 IfcBoundedCurve* IfcPolygonalBoundedHalfSpace::PolygonalBoundary() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundedCurve>(*entity->getArgument(3)); }
 bool IfcPolygonalBoundedHalfSpace::is(Type::Enum v) const { return v == Type::IfcPolygonalBoundedHalfSpace || IfcHalfSpaceSolid::is(v); }
 Type::Enum IfcPolygonalBoundedHalfSpace::type() const { return Type::IfcPolygonalBoundedHalfSpace; }
 Type::Enum IfcPolygonalBoundedHalfSpace::Class() { return Type::IfcPolygonalBoundedHalfSpace; }
 IfcPolygonalBoundedHalfSpace::IfcPolygonalBoundedHalfSpace(IfcAbstractEntityPtr e) { if (!is(Type::IfcPolygonalBoundedHalfSpace)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPolyline
+// Function implementations for IfcPolyline
 SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > IfcPolyline::Points() { RETURN_AS_LIST(IfcCartesianPoint,0) }
 bool IfcPolyline::is(Type::Enum v) const { return v == Type::IfcPolyline || IfcBoundedCurve::is(v); }
 Type::Enum IfcPolyline::type() const { return Type::IfcPolyline; }
 Type::Enum IfcPolyline::Class() { return Type::IfcPolyline; }
 IfcPolyline::IfcPolyline(IfcAbstractEntityPtr e) { if (!is(Type::IfcPolyline)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPort
+// Function implementations for IfcPort
 IfcRelConnectsPortToElement::list IfcPort::ContainedIn() { RETURN_INVERSE(IfcRelConnectsPortToElement) }
 IfcRelConnectsPorts::list IfcPort::ConnectedFrom() { RETURN_INVERSE(IfcRelConnectsPorts) }
 IfcRelConnectsPorts::list IfcPort::ConnectedTo() { RETURN_INVERSE(IfcRelConnectsPorts) }
@@ -7660,7 +7660,7 @@ bool IfcPort::is(Type::Enum v) const { return v == Type::IfcPort || IfcProduct::
 Type::Enum IfcPort::type() const { return Type::IfcPort; }
 Type::Enum IfcPort::Class() { return Type::IfcPort; }
 IfcPort::IfcPort(IfcAbstractEntityPtr e) { if (!is(Type::IfcPort)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPostalAddress
+// Function implementations for IfcPostalAddress
 bool IfcPostalAddress::hasInternalLocation() { return !entity->getArgument(3)->isNull(); }
 IfcLabel IfcPostalAddress::InternalLocation() { return *entity->getArgument(3); }
 bool IfcPostalAddress::hasAddressLines() { return !entity->getArgument(4)->isNull(); }
@@ -7679,48 +7679,48 @@ bool IfcPostalAddress::is(Type::Enum v) const { return v == Type::IfcPostalAddre
 Type::Enum IfcPostalAddress::type() const { return Type::IfcPostalAddress; }
 Type::Enum IfcPostalAddress::Class() { return Type::IfcPostalAddress; }
 IfcPostalAddress::IfcPostalAddress(IfcAbstractEntityPtr e) { if (!is(Type::IfcPostalAddress)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPreDefinedColour
+// Function implementations for IfcPreDefinedColour
 bool IfcPreDefinedColour::is(Type::Enum v) const { return v == Type::IfcPreDefinedColour || IfcPreDefinedItem::is(v); }
 Type::Enum IfcPreDefinedColour::type() const { return Type::IfcPreDefinedColour; }
 Type::Enum IfcPreDefinedColour::Class() { return Type::IfcPreDefinedColour; }
 IfcPreDefinedColour::IfcPreDefinedColour(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedColour)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPreDefinedCurveFont
+// Function implementations for IfcPreDefinedCurveFont
 bool IfcPreDefinedCurveFont::is(Type::Enum v) const { return v == Type::IfcPreDefinedCurveFont || IfcPreDefinedItem::is(v); }
 Type::Enum IfcPreDefinedCurveFont::type() const { return Type::IfcPreDefinedCurveFont; }
 Type::Enum IfcPreDefinedCurveFont::Class() { return Type::IfcPreDefinedCurveFont; }
 IfcPreDefinedCurveFont::IfcPreDefinedCurveFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedCurveFont)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPreDefinedDimensionSymbol
+// Function implementations for IfcPreDefinedDimensionSymbol
 bool IfcPreDefinedDimensionSymbol::is(Type::Enum v) const { return v == Type::IfcPreDefinedDimensionSymbol || IfcPreDefinedSymbol::is(v); }
 Type::Enum IfcPreDefinedDimensionSymbol::type() const { return Type::IfcPreDefinedDimensionSymbol; }
 Type::Enum IfcPreDefinedDimensionSymbol::Class() { return Type::IfcPreDefinedDimensionSymbol; }
 IfcPreDefinedDimensionSymbol::IfcPreDefinedDimensionSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedDimensionSymbol)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPreDefinedItem
+// Function implementations for IfcPreDefinedItem
 IfcLabel IfcPreDefinedItem::Name() { return *entity->getArgument(0); }
 bool IfcPreDefinedItem::is(Type::Enum v) const { return v == Type::IfcPreDefinedItem; }
 Type::Enum IfcPreDefinedItem::type() const { return Type::IfcPreDefinedItem; }
 Type::Enum IfcPreDefinedItem::Class() { return Type::IfcPreDefinedItem; }
 IfcPreDefinedItem::IfcPreDefinedItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedItem)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPreDefinedPointMarkerSymbol
+// Function implementations for IfcPreDefinedPointMarkerSymbol
 bool IfcPreDefinedPointMarkerSymbol::is(Type::Enum v) const { return v == Type::IfcPreDefinedPointMarkerSymbol || IfcPreDefinedSymbol::is(v); }
 Type::Enum IfcPreDefinedPointMarkerSymbol::type() const { return Type::IfcPreDefinedPointMarkerSymbol; }
 Type::Enum IfcPreDefinedPointMarkerSymbol::Class() { return Type::IfcPreDefinedPointMarkerSymbol; }
 IfcPreDefinedPointMarkerSymbol::IfcPreDefinedPointMarkerSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedPointMarkerSymbol)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPreDefinedSymbol
+// Function implementations for IfcPreDefinedSymbol
 bool IfcPreDefinedSymbol::is(Type::Enum v) const { return v == Type::IfcPreDefinedSymbol || IfcPreDefinedItem::is(v); }
 Type::Enum IfcPreDefinedSymbol::type() const { return Type::IfcPreDefinedSymbol; }
 Type::Enum IfcPreDefinedSymbol::Class() { return Type::IfcPreDefinedSymbol; }
 IfcPreDefinedSymbol::IfcPreDefinedSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedSymbol)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPreDefinedTerminatorSymbol
+// Function implementations for IfcPreDefinedTerminatorSymbol
 bool IfcPreDefinedTerminatorSymbol::is(Type::Enum v) const { return v == Type::IfcPreDefinedTerminatorSymbol || IfcPreDefinedSymbol::is(v); }
 Type::Enum IfcPreDefinedTerminatorSymbol::type() const { return Type::IfcPreDefinedTerminatorSymbol; }
 Type::Enum IfcPreDefinedTerminatorSymbol::Class() { return Type::IfcPreDefinedTerminatorSymbol; }
 IfcPreDefinedTerminatorSymbol::IfcPreDefinedTerminatorSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedTerminatorSymbol)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPreDefinedTextFont
+// Function implementations for IfcPreDefinedTextFont
 bool IfcPreDefinedTextFont::is(Type::Enum v) const { return v == Type::IfcPreDefinedTextFont || IfcPreDefinedItem::is(v); }
 Type::Enum IfcPreDefinedTextFont::type() const { return Type::IfcPreDefinedTextFont; }
 Type::Enum IfcPreDefinedTextFont::Class() { return Type::IfcPreDefinedTextFont; }
 IfcPreDefinedTextFont::IfcPreDefinedTextFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcPreDefinedTextFont)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPresentationLayerAssignment
+// Function implementations for IfcPresentationLayerAssignment
 IfcLabel IfcPresentationLayerAssignment::Name() { return *entity->getArgument(0); }
 bool IfcPresentationLayerAssignment::hasDescription() { return !entity->getArgument(1)->isNull(); }
 IfcText IfcPresentationLayerAssignment::Description() { return *entity->getArgument(1); }
@@ -7731,7 +7731,7 @@ bool IfcPresentationLayerAssignment::is(Type::Enum v) const { return v == Type::
 Type::Enum IfcPresentationLayerAssignment::type() const { return Type::IfcPresentationLayerAssignment; }
 Type::Enum IfcPresentationLayerAssignment::Class() { return Type::IfcPresentationLayerAssignment; }
 IfcPresentationLayerAssignment::IfcPresentationLayerAssignment(IfcAbstractEntityPtr e) { if (!is(Type::IfcPresentationLayerAssignment)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPresentationLayerWithStyle
+// Function implementations for IfcPresentationLayerWithStyle
 bool IfcPresentationLayerWithStyle::LayerOn() { return *entity->getArgument(4); }
 bool IfcPresentationLayerWithStyle::LayerFrozen() { return *entity->getArgument(5); }
 bool IfcPresentationLayerWithStyle::LayerBlocked() { return *entity->getArgument(6); }
@@ -7740,20 +7740,20 @@ bool IfcPresentationLayerWithStyle::is(Type::Enum v) const { return v == Type::I
 Type::Enum IfcPresentationLayerWithStyle::type() const { return Type::IfcPresentationLayerWithStyle; }
 Type::Enum IfcPresentationLayerWithStyle::Class() { return Type::IfcPresentationLayerWithStyle; }
 IfcPresentationLayerWithStyle::IfcPresentationLayerWithStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcPresentationLayerWithStyle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPresentationStyle
+// Function implementations for IfcPresentationStyle
 bool IfcPresentationStyle::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcPresentationStyle::Name() { return *entity->getArgument(0); }
 bool IfcPresentationStyle::is(Type::Enum v) const { return v == Type::IfcPresentationStyle; }
 Type::Enum IfcPresentationStyle::type() const { return Type::IfcPresentationStyle; }
 Type::Enum IfcPresentationStyle::Class() { return Type::IfcPresentationStyle; }
 IfcPresentationStyle::IfcPresentationStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcPresentationStyle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPresentationStyleAssignment
+// Function implementations for IfcPresentationStyleAssignment
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcPresentationStyleAssignment::Styles() { RETURN_AS_LIST(IfcAbstractSelect,0) }
 bool IfcPresentationStyleAssignment::is(Type::Enum v) const { return v == Type::IfcPresentationStyleAssignment; }
 Type::Enum IfcPresentationStyleAssignment::type() const { return Type::IfcPresentationStyleAssignment; }
 Type::Enum IfcPresentationStyleAssignment::Class() { return Type::IfcPresentationStyleAssignment; }
 IfcPresentationStyleAssignment::IfcPresentationStyleAssignment(IfcAbstractEntityPtr e) { if (!is(Type::IfcPresentationStyleAssignment)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProcedure
+// Function implementations for IfcProcedure
 IfcIdentifier IfcProcedure::ProcedureID() { return *entity->getArgument(5); }
 IfcProcedureTypeEnum::IfcProcedureTypeEnum IfcProcedure::ProcedureType() { return IfcProcedureTypeEnum::FromString(*entity->getArgument(6)); }
 bool IfcProcedure::hasUserDefinedProcedureType() { return !entity->getArgument(7)->isNull(); }
@@ -7762,7 +7762,7 @@ bool IfcProcedure::is(Type::Enum v) const { return v == Type::IfcProcedure || If
 Type::Enum IfcProcedure::type() const { return Type::IfcProcedure; }
 Type::Enum IfcProcedure::Class() { return Type::IfcProcedure; }
 IfcProcedure::IfcProcedure(IfcAbstractEntityPtr e) { if (!is(Type::IfcProcedure)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProcess
+// Function implementations for IfcProcess
 IfcRelAssignsToProcess::list IfcProcess::OperatesOn() { RETURN_INVERSE(IfcRelAssignsToProcess) }
 IfcRelSequence::list IfcProcess::IsSuccessorFrom() { RETURN_INVERSE(IfcRelSequence) }
 IfcRelSequence::list IfcProcess::IsPredecessorTo() { RETURN_INVERSE(IfcRelSequence) }
@@ -7770,7 +7770,7 @@ bool IfcProcess::is(Type::Enum v) const { return v == Type::IfcProcess || IfcObj
 Type::Enum IfcProcess::type() const { return Type::IfcProcess; }
 Type::Enum IfcProcess::Class() { return Type::IfcProcess; }
 IfcProcess::IfcProcess(IfcAbstractEntityPtr e) { if (!is(Type::IfcProcess)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProduct
+// Function implementations for IfcProduct
 bool IfcProduct::hasObjectPlacement() { return !entity->getArgument(5)->isNull(); }
 IfcObjectPlacement* IfcProduct::ObjectPlacement() { return reinterpret_pointer_cast<IfcBaseClass,IfcObjectPlacement>(*entity->getArgument(5)); }
 bool IfcProduct::hasRepresentation() { return !entity->getArgument(6)->isNull(); }
@@ -7780,14 +7780,14 @@ bool IfcProduct::is(Type::Enum v) const { return v == Type::IfcProduct || IfcObj
 Type::Enum IfcProduct::type() const { return Type::IfcProduct; }
 Type::Enum IfcProduct::Class() { return Type::IfcProduct; }
 IfcProduct::IfcProduct(IfcAbstractEntityPtr e) { if (!is(Type::IfcProduct)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProductDefinitionShape
+// Function implementations for IfcProductDefinitionShape
 IfcProduct::list IfcProductDefinitionShape::ShapeOfProduct() { RETURN_INVERSE(IfcProduct) }
 IfcShapeAspect::list IfcProductDefinitionShape::HasShapeAspects() { RETURN_INVERSE(IfcShapeAspect) }
 bool IfcProductDefinitionShape::is(Type::Enum v) const { return v == Type::IfcProductDefinitionShape || IfcProductRepresentation::is(v); }
 Type::Enum IfcProductDefinitionShape::type() const { return Type::IfcProductDefinitionShape; }
 Type::Enum IfcProductDefinitionShape::Class() { return Type::IfcProductDefinitionShape; }
 IfcProductDefinitionShape::IfcProductDefinitionShape(IfcAbstractEntityPtr e) { if (!is(Type::IfcProductDefinitionShape)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProductRepresentation
+// Function implementations for IfcProductRepresentation
 bool IfcProductRepresentation::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcProductRepresentation::Name() { return *entity->getArgument(0); }
 bool IfcProductRepresentation::hasDescription() { return !entity->getArgument(1)->isNull(); }
@@ -7797,7 +7797,7 @@ bool IfcProductRepresentation::is(Type::Enum v) const { return v == Type::IfcPro
 Type::Enum IfcProductRepresentation::type() const { return Type::IfcProductRepresentation; }
 Type::Enum IfcProductRepresentation::Class() { return Type::IfcProductRepresentation; }
 IfcProductRepresentation::IfcProductRepresentation(IfcAbstractEntityPtr e) { if (!is(Type::IfcProductRepresentation)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProductsOfCombustionProperties
+// Function implementations for IfcProductsOfCombustionProperties
 bool IfcProductsOfCombustionProperties::hasSpecificHeatCapacity() { return !entity->getArgument(1)->isNull(); }
 IfcSpecificHeatCapacityMeasure IfcProductsOfCombustionProperties::SpecificHeatCapacity() { return *entity->getArgument(1); }
 bool IfcProductsOfCombustionProperties::hasN20Content() { return !entity->getArgument(2)->isNull(); }
@@ -7810,7 +7810,7 @@ bool IfcProductsOfCombustionProperties::is(Type::Enum v) const { return v == Typ
 Type::Enum IfcProductsOfCombustionProperties::type() const { return Type::IfcProductsOfCombustionProperties; }
 Type::Enum IfcProductsOfCombustionProperties::Class() { return Type::IfcProductsOfCombustionProperties; }
 IfcProductsOfCombustionProperties::IfcProductsOfCombustionProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcProductsOfCombustionProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProfileDef
+// Function implementations for IfcProfileDef
 IfcProfileTypeEnum::IfcProfileTypeEnum IfcProfileDef::ProfileType() { return IfcProfileTypeEnum::FromString(*entity->getArgument(0)); }
 bool IfcProfileDef::hasProfileName() { return !entity->getArgument(1)->isNull(); }
 IfcLabel IfcProfileDef::ProfileName() { return *entity->getArgument(1); }
@@ -7818,7 +7818,7 @@ bool IfcProfileDef::is(Type::Enum v) const { return v == Type::IfcProfileDef; }
 Type::Enum IfcProfileDef::type() const { return Type::IfcProfileDef; }
 Type::Enum IfcProfileDef::Class() { return Type::IfcProfileDef; }
 IfcProfileDef::IfcProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProfileProperties
+// Function implementations for IfcProfileProperties
 bool IfcProfileProperties::hasProfileName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcProfileProperties::ProfileName() { return *entity->getArgument(0); }
 bool IfcProfileProperties::hasProfileDefinition() { return !entity->getArgument(1)->isNull(); }
@@ -7827,7 +7827,7 @@ bool IfcProfileProperties::is(Type::Enum v) const { return v == Type::IfcProfile
 Type::Enum IfcProfileProperties::type() const { return Type::IfcProfileProperties; }
 Type::Enum IfcProfileProperties::Class() { return Type::IfcProfileProperties; }
 IfcProfileProperties::IfcProfileProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcProfileProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProject
+// Function implementations for IfcProject
 bool IfcProject::hasLongName() { return !entity->getArgument(5)->isNull(); }
 IfcLabel IfcProject::LongName() { return *entity->getArgument(5); }
 bool IfcProject::hasPhase() { return !entity->getArgument(6)->isNull(); }
@@ -7838,7 +7838,7 @@ bool IfcProject::is(Type::Enum v) const { return v == Type::IfcProject || IfcObj
 Type::Enum IfcProject::type() const { return Type::IfcProject; }
 Type::Enum IfcProject::Class() { return Type::IfcProject; }
 IfcProject::IfcProject(IfcAbstractEntityPtr e) { if (!is(Type::IfcProject)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProjectOrder
+// Function implementations for IfcProjectOrder
 IfcIdentifier IfcProjectOrder::ID() { return *entity->getArgument(5); }
 IfcProjectOrderTypeEnum::IfcProjectOrderTypeEnum IfcProjectOrder::PredefinedType() { return IfcProjectOrderTypeEnum::FromString(*entity->getArgument(6)); }
 bool IfcProjectOrder::hasStatus() { return !entity->getArgument(7)->isNull(); }
@@ -7847,24 +7847,24 @@ bool IfcProjectOrder::is(Type::Enum v) const { return v == Type::IfcProjectOrder
 Type::Enum IfcProjectOrder::type() const { return Type::IfcProjectOrder; }
 Type::Enum IfcProjectOrder::Class() { return Type::IfcProjectOrder; }
 IfcProjectOrder::IfcProjectOrder(IfcAbstractEntityPtr e) { if (!is(Type::IfcProjectOrder)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProjectOrderRecord
+// Function implementations for IfcProjectOrderRecord
 SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProjectOrder> > IfcProjectOrderRecord::Records() { RETURN_AS_LIST(IfcRelAssignsToProjectOrder,5) }
 IfcProjectOrderRecordTypeEnum::IfcProjectOrderRecordTypeEnum IfcProjectOrderRecord::PredefinedType() { return IfcProjectOrderRecordTypeEnum::FromString(*entity->getArgument(6)); }
 bool IfcProjectOrderRecord::is(Type::Enum v) const { return v == Type::IfcProjectOrderRecord || IfcControl::is(v); }
 Type::Enum IfcProjectOrderRecord::type() const { return Type::IfcProjectOrderRecord; }
 Type::Enum IfcProjectOrderRecord::Class() { return Type::IfcProjectOrderRecord; }
 IfcProjectOrderRecord::IfcProjectOrderRecord(IfcAbstractEntityPtr e) { if (!is(Type::IfcProjectOrderRecord)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProjectionCurve
+// Function implementations for IfcProjectionCurve
 bool IfcProjectionCurve::is(Type::Enum v) const { return v == Type::IfcProjectionCurve || IfcAnnotationCurveOccurrence::is(v); }
 Type::Enum IfcProjectionCurve::type() const { return Type::IfcProjectionCurve; }
 Type::Enum IfcProjectionCurve::Class() { return Type::IfcProjectionCurve; }
 IfcProjectionCurve::IfcProjectionCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcProjectionCurve)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProjectionElement
+// Function implementations for IfcProjectionElement
 bool IfcProjectionElement::is(Type::Enum v) const { return v == Type::IfcProjectionElement || IfcFeatureElementAddition::is(v); }
 Type::Enum IfcProjectionElement::type() const { return Type::IfcProjectionElement; }
 Type::Enum IfcProjectionElement::Class() { return Type::IfcProjectionElement; }
 IfcProjectionElement::IfcProjectionElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcProjectionElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProperty
+// Function implementations for IfcProperty
 IfcIdentifier IfcProperty::Name() { return *entity->getArgument(0); }
 bool IfcProperty::hasDescription() { return !entity->getArgument(1)->isNull(); }
 IfcText IfcProperty::Description() { return *entity->getArgument(1); }
@@ -7875,7 +7875,7 @@ bool IfcProperty::is(Type::Enum v) const { return v == Type::IfcProperty; }
 Type::Enum IfcProperty::type() const { return Type::IfcProperty; }
 Type::Enum IfcProperty::Class() { return Type::IfcProperty; }
 IfcProperty::IfcProperty(IfcAbstractEntityPtr e) { if (!is(Type::IfcProperty)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPropertyBoundedValue
+// Function implementations for IfcPropertyBoundedValue
 bool IfcPropertyBoundedValue::hasUpperBoundValue() { return !entity->getArgument(2)->isNull(); }
 IfcValue IfcPropertyBoundedValue::UpperBoundValue() { return *entity->getArgument(2); }
 bool IfcPropertyBoundedValue::hasLowerBoundValue() { return !entity->getArgument(3)->isNull(); }
@@ -7886,7 +7886,7 @@ bool IfcPropertyBoundedValue::is(Type::Enum v) const { return v == Type::IfcProp
 Type::Enum IfcPropertyBoundedValue::type() const { return Type::IfcPropertyBoundedValue; }
 Type::Enum IfcPropertyBoundedValue::Class() { return Type::IfcPropertyBoundedValue; }
 IfcPropertyBoundedValue::IfcPropertyBoundedValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyBoundedValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPropertyConstraintRelationship
+// Function implementations for IfcPropertyConstraintRelationship
 IfcConstraint* IfcPropertyConstraintRelationship::RelatingConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > IfcPropertyConstraintRelationship::RelatedProperties() { RETURN_AS_LIST(IfcProperty,1) }
 bool IfcPropertyConstraintRelationship::hasName() { return !entity->getArgument(2)->isNull(); }
@@ -7897,13 +7897,13 @@ bool IfcPropertyConstraintRelationship::is(Type::Enum v) const { return v == Typ
 Type::Enum IfcPropertyConstraintRelationship::type() const { return Type::IfcPropertyConstraintRelationship; }
 Type::Enum IfcPropertyConstraintRelationship::Class() { return Type::IfcPropertyConstraintRelationship; }
 IfcPropertyConstraintRelationship::IfcPropertyConstraintRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyConstraintRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPropertyDefinition
+// Function implementations for IfcPropertyDefinition
 IfcRelAssociates::list IfcPropertyDefinition::HasAssociations() { RETURN_INVERSE(IfcRelAssociates) }
 bool IfcPropertyDefinition::is(Type::Enum v) const { return v == Type::IfcPropertyDefinition || IfcRoot::is(v); }
 Type::Enum IfcPropertyDefinition::type() const { return Type::IfcPropertyDefinition; }
 Type::Enum IfcPropertyDefinition::Class() { return Type::IfcPropertyDefinition; }
 IfcPropertyDefinition::IfcPropertyDefinition(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyDefinition)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPropertyDependencyRelationship
+// Function implementations for IfcPropertyDependencyRelationship
 IfcProperty* IfcPropertyDependencyRelationship::DependingProperty() { return reinterpret_pointer_cast<IfcBaseClass,IfcProperty>(*entity->getArgument(0)); }
 IfcProperty* IfcPropertyDependencyRelationship::DependantProperty() { return reinterpret_pointer_cast<IfcBaseClass,IfcProperty>(*entity->getArgument(1)); }
 bool IfcPropertyDependencyRelationship::hasName() { return !entity->getArgument(2)->isNull(); }
@@ -7916,7 +7916,7 @@ bool IfcPropertyDependencyRelationship::is(Type::Enum v) const { return v == Typ
 Type::Enum IfcPropertyDependencyRelationship::type() const { return Type::IfcPropertyDependencyRelationship; }
 Type::Enum IfcPropertyDependencyRelationship::Class() { return Type::IfcPropertyDependencyRelationship; }
 IfcPropertyDependencyRelationship::IfcPropertyDependencyRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyDependencyRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPropertyEnumeratedValue
+// Function implementations for IfcPropertyEnumeratedValue
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcPropertyEnumeratedValue::EnumerationValues() { RETURN_AS_LIST(IfcAbstractSelect,2) }
 bool IfcPropertyEnumeratedValue::hasEnumerationReference() { return !entity->getArgument(3)->isNull(); }
 IfcPropertyEnumeration* IfcPropertyEnumeratedValue::EnumerationReference() { return reinterpret_pointer_cast<IfcBaseClass,IfcPropertyEnumeration>(*entity->getArgument(3)); }
@@ -7924,7 +7924,7 @@ bool IfcPropertyEnumeratedValue::is(Type::Enum v) const { return v == Type::IfcP
 Type::Enum IfcPropertyEnumeratedValue::type() const { return Type::IfcPropertyEnumeratedValue; }
 Type::Enum IfcPropertyEnumeratedValue::Class() { return Type::IfcPropertyEnumeratedValue; }
 IfcPropertyEnumeratedValue::IfcPropertyEnumeratedValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyEnumeratedValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPropertyEnumeration
+// Function implementations for IfcPropertyEnumeration
 IfcLabel IfcPropertyEnumeration::Name() { return *entity->getArgument(0); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcPropertyEnumeration::EnumerationValues() { RETURN_AS_LIST(IfcAbstractSelect,1) }
 bool IfcPropertyEnumeration::hasUnit() { return !entity->getArgument(2)->isNull(); }
@@ -7933,7 +7933,7 @@ bool IfcPropertyEnumeration::is(Type::Enum v) const { return v == Type::IfcPrope
 Type::Enum IfcPropertyEnumeration::type() const { return Type::IfcPropertyEnumeration; }
 Type::Enum IfcPropertyEnumeration::Class() { return Type::IfcPropertyEnumeration; }
 IfcPropertyEnumeration::IfcPropertyEnumeration(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyEnumeration)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPropertyListValue
+// Function implementations for IfcPropertyListValue
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcPropertyListValue::ListValues() { RETURN_AS_LIST(IfcAbstractSelect,2) }
 bool IfcPropertyListValue::hasUnit() { return !entity->getArgument(3)->isNull(); }
 IfcUnit IfcPropertyListValue::Unit() { return *entity->getArgument(3); }
@@ -7941,7 +7941,7 @@ bool IfcPropertyListValue::is(Type::Enum v) const { return v == Type::IfcPropert
 Type::Enum IfcPropertyListValue::type() const { return Type::IfcPropertyListValue; }
 Type::Enum IfcPropertyListValue::Class() { return Type::IfcPropertyListValue; }
 IfcPropertyListValue::IfcPropertyListValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyListValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPropertyReferenceValue
+// Function implementations for IfcPropertyReferenceValue
 bool IfcPropertyReferenceValue::hasUsageName() { return !entity->getArgument(2)->isNull(); }
 IfcLabel IfcPropertyReferenceValue::UsageName() { return *entity->getArgument(2); }
 IfcObjectReferenceSelect IfcPropertyReferenceValue::PropertyReference() { return *entity->getArgument(3); }
@@ -7949,20 +7949,20 @@ bool IfcPropertyReferenceValue::is(Type::Enum v) const { return v == Type::IfcPr
 Type::Enum IfcPropertyReferenceValue::type() const { return Type::IfcPropertyReferenceValue; }
 Type::Enum IfcPropertyReferenceValue::Class() { return Type::IfcPropertyReferenceValue; }
 IfcPropertyReferenceValue::IfcPropertyReferenceValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyReferenceValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPropertySet
+// Function implementations for IfcPropertySet
 SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > IfcPropertySet::HasProperties() { RETURN_AS_LIST(IfcProperty,4) }
 bool IfcPropertySet::is(Type::Enum v) const { return v == Type::IfcPropertySet || IfcPropertySetDefinition::is(v); }
 Type::Enum IfcPropertySet::type() const { return Type::IfcPropertySet; }
 Type::Enum IfcPropertySet::Class() { return Type::IfcPropertySet; }
 IfcPropertySet::IfcPropertySet(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertySet)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPropertySetDefinition
+// Function implementations for IfcPropertySetDefinition
 IfcRelDefinesByProperties::list IfcPropertySetDefinition::PropertyDefinitionOf() { RETURN_INVERSE(IfcRelDefinesByProperties) }
 IfcTypeObject::list IfcPropertySetDefinition::DefinesType() { RETURN_INVERSE(IfcTypeObject) }
 bool IfcPropertySetDefinition::is(Type::Enum v) const { return v == Type::IfcPropertySetDefinition || IfcPropertyDefinition::is(v); }
 Type::Enum IfcPropertySetDefinition::type() const { return Type::IfcPropertySetDefinition; }
 Type::Enum IfcPropertySetDefinition::Class() { return Type::IfcPropertySetDefinition; }
 IfcPropertySetDefinition::IfcPropertySetDefinition(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertySetDefinition)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPropertySingleValue
+// Function implementations for IfcPropertySingleValue
 bool IfcPropertySingleValue::hasNominalValue() { return !entity->getArgument(2)->isNull(); }
 IfcValue IfcPropertySingleValue::NominalValue() { return *entity->getArgument(2); }
 bool IfcPropertySingleValue::hasUnit() { return !entity->getArgument(3)->isNull(); }
@@ -7971,7 +7971,7 @@ bool IfcPropertySingleValue::is(Type::Enum v) const { return v == Type::IfcPrope
 Type::Enum IfcPropertySingleValue::type() const { return Type::IfcPropertySingleValue; }
 Type::Enum IfcPropertySingleValue::Class() { return Type::IfcPropertySingleValue; }
 IfcPropertySingleValue::IfcPropertySingleValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertySingleValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPropertyTableValue
+// Function implementations for IfcPropertyTableValue
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcPropertyTableValue::DefiningValues() { RETURN_AS_LIST(IfcAbstractSelect,2) }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcPropertyTableValue::DefinedValues() { RETURN_AS_LIST(IfcAbstractSelect,3) }
 bool IfcPropertyTableValue::hasExpression() { return !entity->getArgument(4)->isNull(); }
@@ -7984,13 +7984,13 @@ bool IfcPropertyTableValue::is(Type::Enum v) const { return v == Type::IfcProper
 Type::Enum IfcPropertyTableValue::type() const { return Type::IfcPropertyTableValue; }
 Type::Enum IfcPropertyTableValue::Class() { return Type::IfcPropertyTableValue; }
 IfcPropertyTableValue::IfcPropertyTableValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcPropertyTableValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProtectiveDeviceType
+// Function implementations for IfcProtectiveDeviceType
 IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum IfcProtectiveDeviceType::PredefinedType() { return IfcProtectiveDeviceTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcProtectiveDeviceType::is(Type::Enum v) const { return v == Type::IfcProtectiveDeviceType || IfcFlowControllerType::is(v); }
 Type::Enum IfcProtectiveDeviceType::type() const { return Type::IfcProtectiveDeviceType; }
 Type::Enum IfcProtectiveDeviceType::Class() { return Type::IfcProtectiveDeviceType; }
 IfcProtectiveDeviceType::IfcProtectiveDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcProtectiveDeviceType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcProxy
+// Function implementations for IfcProxy
 IfcObjectTypeEnum::IfcObjectTypeEnum IfcProxy::ProxyType() { return IfcObjectTypeEnum::FromString(*entity->getArgument(7)); }
 bool IfcProxy::hasTag() { return !entity->getArgument(8)->isNull(); }
 IfcLabel IfcProxy::Tag() { return *entity->getArgument(8); }
@@ -7998,90 +7998,90 @@ bool IfcProxy::is(Type::Enum v) const { return v == Type::IfcProxy || IfcProduct
 Type::Enum IfcProxy::type() const { return Type::IfcProxy; }
 Type::Enum IfcProxy::Class() { return Type::IfcProxy; }
 IfcProxy::IfcProxy(IfcAbstractEntityPtr e) { if (!is(Type::IfcProxy)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcPumpType
+// Function implementations for IfcPumpType
 IfcPumpTypeEnum::IfcPumpTypeEnum IfcPumpType::PredefinedType() { return IfcPumpTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcPumpType::is(Type::Enum v) const { return v == Type::IfcPumpType || IfcFlowMovingDeviceType::is(v); }
 Type::Enum IfcPumpType::type() const { return Type::IfcPumpType; }
 Type::Enum IfcPumpType::Class() { return Type::IfcPumpType; }
 IfcPumpType::IfcPumpType(IfcAbstractEntityPtr e) { if (!is(Type::IfcPumpType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcQuantityArea
+// Function implementations for IfcQuantityArea
 IfcAreaMeasure IfcQuantityArea::AreaValue() { return *entity->getArgument(3); }
 bool IfcQuantityArea::is(Type::Enum v) const { return v == Type::IfcQuantityArea || IfcPhysicalSimpleQuantity::is(v); }
 Type::Enum IfcQuantityArea::type() const { return Type::IfcQuantityArea; }
 Type::Enum IfcQuantityArea::Class() { return Type::IfcQuantityArea; }
 IfcQuantityArea::IfcQuantityArea(IfcAbstractEntityPtr e) { if (!is(Type::IfcQuantityArea)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcQuantityCount
+// Function implementations for IfcQuantityCount
 IfcCountMeasure IfcQuantityCount::CountValue() { return *entity->getArgument(3); }
 bool IfcQuantityCount::is(Type::Enum v) const { return v == Type::IfcQuantityCount || IfcPhysicalSimpleQuantity::is(v); }
 Type::Enum IfcQuantityCount::type() const { return Type::IfcQuantityCount; }
 Type::Enum IfcQuantityCount::Class() { return Type::IfcQuantityCount; }
 IfcQuantityCount::IfcQuantityCount(IfcAbstractEntityPtr e) { if (!is(Type::IfcQuantityCount)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcQuantityLength
+// Function implementations for IfcQuantityLength
 IfcLengthMeasure IfcQuantityLength::LengthValue() { return *entity->getArgument(3); }
 bool IfcQuantityLength::is(Type::Enum v) const { return v == Type::IfcQuantityLength || IfcPhysicalSimpleQuantity::is(v); }
 Type::Enum IfcQuantityLength::type() const { return Type::IfcQuantityLength; }
 Type::Enum IfcQuantityLength::Class() { return Type::IfcQuantityLength; }
 IfcQuantityLength::IfcQuantityLength(IfcAbstractEntityPtr e) { if (!is(Type::IfcQuantityLength)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcQuantityTime
+// Function implementations for IfcQuantityTime
 IfcTimeMeasure IfcQuantityTime::TimeValue() { return *entity->getArgument(3); }
 bool IfcQuantityTime::is(Type::Enum v) const { return v == Type::IfcQuantityTime || IfcPhysicalSimpleQuantity::is(v); }
 Type::Enum IfcQuantityTime::type() const { return Type::IfcQuantityTime; }
 Type::Enum IfcQuantityTime::Class() { return Type::IfcQuantityTime; }
 IfcQuantityTime::IfcQuantityTime(IfcAbstractEntityPtr e) { if (!is(Type::IfcQuantityTime)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcQuantityVolume
+// Function implementations for IfcQuantityVolume
 IfcVolumeMeasure IfcQuantityVolume::VolumeValue() { return *entity->getArgument(3); }
 bool IfcQuantityVolume::is(Type::Enum v) const { return v == Type::IfcQuantityVolume || IfcPhysicalSimpleQuantity::is(v); }
 Type::Enum IfcQuantityVolume::type() const { return Type::IfcQuantityVolume; }
 Type::Enum IfcQuantityVolume::Class() { return Type::IfcQuantityVolume; }
 IfcQuantityVolume::IfcQuantityVolume(IfcAbstractEntityPtr e) { if (!is(Type::IfcQuantityVolume)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcQuantityWeight
+// Function implementations for IfcQuantityWeight
 IfcMassMeasure IfcQuantityWeight::WeightValue() { return *entity->getArgument(3); }
 bool IfcQuantityWeight::is(Type::Enum v) const { return v == Type::IfcQuantityWeight || IfcPhysicalSimpleQuantity::is(v); }
 Type::Enum IfcQuantityWeight::type() const { return Type::IfcQuantityWeight; }
 Type::Enum IfcQuantityWeight::Class() { return Type::IfcQuantityWeight; }
 IfcQuantityWeight::IfcQuantityWeight(IfcAbstractEntityPtr e) { if (!is(Type::IfcQuantityWeight)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRadiusDimension
+// Function implementations for IfcRadiusDimension
 bool IfcRadiusDimension::is(Type::Enum v) const { return v == Type::IfcRadiusDimension || IfcDimensionCurveDirectedCallout::is(v); }
 Type::Enum IfcRadiusDimension::type() const { return Type::IfcRadiusDimension; }
 Type::Enum IfcRadiusDimension::Class() { return Type::IfcRadiusDimension; }
 IfcRadiusDimension::IfcRadiusDimension(IfcAbstractEntityPtr e) { if (!is(Type::IfcRadiusDimension)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRailing
+// Function implementations for IfcRailing
 bool IfcRailing::hasPredefinedType() { return !entity->getArgument(8)->isNull(); }
 IfcRailingTypeEnum::IfcRailingTypeEnum IfcRailing::PredefinedType() { return IfcRailingTypeEnum::FromString(*entity->getArgument(8)); }
 bool IfcRailing::is(Type::Enum v) const { return v == Type::IfcRailing || IfcBuildingElement::is(v); }
 Type::Enum IfcRailing::type() const { return Type::IfcRailing; }
 Type::Enum IfcRailing::Class() { return Type::IfcRailing; }
 IfcRailing::IfcRailing(IfcAbstractEntityPtr e) { if (!is(Type::IfcRailing)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRailingType
+// Function implementations for IfcRailingType
 IfcRailingTypeEnum::IfcRailingTypeEnum IfcRailingType::PredefinedType() { return IfcRailingTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcRailingType::is(Type::Enum v) const { return v == Type::IfcRailingType || IfcBuildingElementType::is(v); }
 Type::Enum IfcRailingType::type() const { return Type::IfcRailingType; }
 Type::Enum IfcRailingType::Class() { return Type::IfcRailingType; }
 IfcRailingType::IfcRailingType(IfcAbstractEntityPtr e) { if (!is(Type::IfcRailingType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRamp
+// Function implementations for IfcRamp
 IfcRampTypeEnum::IfcRampTypeEnum IfcRamp::ShapeType() { return IfcRampTypeEnum::FromString(*entity->getArgument(8)); }
 bool IfcRamp::is(Type::Enum v) const { return v == Type::IfcRamp || IfcBuildingElement::is(v); }
 Type::Enum IfcRamp::type() const { return Type::IfcRamp; }
 Type::Enum IfcRamp::Class() { return Type::IfcRamp; }
 IfcRamp::IfcRamp(IfcAbstractEntityPtr e) { if (!is(Type::IfcRamp)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRampFlight
+// Function implementations for IfcRampFlight
 bool IfcRampFlight::is(Type::Enum v) const { return v == Type::IfcRampFlight || IfcBuildingElement::is(v); }
 Type::Enum IfcRampFlight::type() const { return Type::IfcRampFlight; }
 Type::Enum IfcRampFlight::Class() { return Type::IfcRampFlight; }
 IfcRampFlight::IfcRampFlight(IfcAbstractEntityPtr e) { if (!is(Type::IfcRampFlight)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRampFlightType
+// Function implementations for IfcRampFlightType
 IfcRampFlightTypeEnum::IfcRampFlightTypeEnum IfcRampFlightType::PredefinedType() { return IfcRampFlightTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcRampFlightType::is(Type::Enum v) const { return v == Type::IfcRampFlightType || IfcBuildingElementType::is(v); }
 Type::Enum IfcRampFlightType::type() const { return Type::IfcRampFlightType; }
 Type::Enum IfcRampFlightType::Class() { return Type::IfcRampFlightType; }
 IfcRampFlightType::IfcRampFlightType(IfcAbstractEntityPtr e) { if (!is(Type::IfcRampFlightType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRationalBezierCurve
+// Function implementations for IfcRationalBezierCurve
 std::vector<double> /*[2:?]*/ IfcRationalBezierCurve::WeightsData() { return *entity->getArgument(5); }
 bool IfcRationalBezierCurve::is(Type::Enum v) const { return v == Type::IfcRationalBezierCurve || IfcBezierCurve::is(v); }
 Type::Enum IfcRationalBezierCurve::type() const { return Type::IfcRationalBezierCurve; }
 Type::Enum IfcRationalBezierCurve::Class() { return Type::IfcRationalBezierCurve; }
 IfcRationalBezierCurve::IfcRationalBezierCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcRationalBezierCurve)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRectangleHollowProfileDef
+// Function implementations for IfcRectangleHollowProfileDef
 IfcPositiveLengthMeasure IfcRectangleHollowProfileDef::WallThickness() { return *entity->getArgument(5); }
 bool IfcRectangleHollowProfileDef::hasInnerFilletRadius() { return !entity->getArgument(6)->isNull(); }
 IfcPositiveLengthMeasure IfcRectangleHollowProfileDef::InnerFilletRadius() { return *entity->getArgument(6); }
@@ -8091,14 +8091,14 @@ bool IfcRectangleHollowProfileDef::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcRectangleHollowProfileDef::type() const { return Type::IfcRectangleHollowProfileDef; }
 Type::Enum IfcRectangleHollowProfileDef::Class() { return Type::IfcRectangleHollowProfileDef; }
 IfcRectangleHollowProfileDef::IfcRectangleHollowProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcRectangleHollowProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRectangleProfileDef
+// Function implementations for IfcRectangleProfileDef
 IfcPositiveLengthMeasure IfcRectangleProfileDef::XDim() { return *entity->getArgument(3); }
 IfcPositiveLengthMeasure IfcRectangleProfileDef::YDim() { return *entity->getArgument(4); }
 bool IfcRectangleProfileDef::is(Type::Enum v) const { return v == Type::IfcRectangleProfileDef || IfcParameterizedProfileDef::is(v); }
 Type::Enum IfcRectangleProfileDef::type() const { return Type::IfcRectangleProfileDef; }
 Type::Enum IfcRectangleProfileDef::Class() { return Type::IfcRectangleProfileDef; }
 IfcRectangleProfileDef::IfcRectangleProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcRectangleProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRectangularPyramid
+// Function implementations for IfcRectangularPyramid
 IfcPositiveLengthMeasure IfcRectangularPyramid::XLength() { return *entity->getArgument(1); }
 IfcPositiveLengthMeasure IfcRectangularPyramid::YLength() { return *entity->getArgument(2); }
 IfcPositiveLengthMeasure IfcRectangularPyramid::Height() { return *entity->getArgument(3); }
@@ -8106,7 +8106,7 @@ bool IfcRectangularPyramid::is(Type::Enum v) const { return v == Type::IfcRectan
 Type::Enum IfcRectangularPyramid::type() const { return Type::IfcRectangularPyramid; }
 Type::Enum IfcRectangularPyramid::Class() { return Type::IfcRectangularPyramid; }
 IfcRectangularPyramid::IfcRectangularPyramid(IfcAbstractEntityPtr e) { if (!is(Type::IfcRectangularPyramid)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRectangularTrimmedSurface
+// Function implementations for IfcRectangularTrimmedSurface
 IfcSurface* IfcRectangularTrimmedSurface::BasisSurface() { return reinterpret_pointer_cast<IfcBaseClass,IfcSurface>(*entity->getArgument(0)); }
 IfcParameterValue IfcRectangularTrimmedSurface::U1() { return *entity->getArgument(1); }
 IfcParameterValue IfcRectangularTrimmedSurface::V1() { return *entity->getArgument(2); }
@@ -8118,7 +8118,7 @@ bool IfcRectangularTrimmedSurface::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcRectangularTrimmedSurface::type() const { return Type::IfcRectangularTrimmedSurface; }
 Type::Enum IfcRectangularTrimmedSurface::Class() { return Type::IfcRectangularTrimmedSurface; }
 IfcRectangularTrimmedSurface::IfcRectangularTrimmedSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcRectangularTrimmedSurface)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcReferencesValueDocument
+// Function implementations for IfcReferencesValueDocument
 IfcDocumentSelect IfcReferencesValueDocument::ReferencedDocument() { return *entity->getArgument(0); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValue> > IfcReferencesValueDocument::ReferencingValues() { RETURN_AS_LIST(IfcAppliedValue,1) }
 bool IfcReferencesValueDocument::hasName() { return !entity->getArgument(2)->isNull(); }
@@ -8129,14 +8129,14 @@ bool IfcReferencesValueDocument::is(Type::Enum v) const { return v == Type::IfcR
 Type::Enum IfcReferencesValueDocument::type() const { return Type::IfcReferencesValueDocument; }
 Type::Enum IfcReferencesValueDocument::Class() { return Type::IfcReferencesValueDocument; }
 IfcReferencesValueDocument::IfcReferencesValueDocument(IfcAbstractEntityPtr e) { if (!is(Type::IfcReferencesValueDocument)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRegularTimeSeries
+// Function implementations for IfcRegularTimeSeries
 IfcTimeMeasure IfcRegularTimeSeries::TimeStep() { return *entity->getArgument(8); }
 SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeriesValue> > IfcRegularTimeSeries::Values() { RETURN_AS_LIST(IfcTimeSeriesValue,9) }
 bool IfcRegularTimeSeries::is(Type::Enum v) const { return v == Type::IfcRegularTimeSeries || IfcTimeSeries::is(v); }
 Type::Enum IfcRegularTimeSeries::type() const { return Type::IfcRegularTimeSeries; }
 Type::Enum IfcRegularTimeSeries::Class() { return Type::IfcRegularTimeSeries; }
 IfcRegularTimeSeries::IfcRegularTimeSeries(IfcAbstractEntityPtr e) { if (!is(Type::IfcRegularTimeSeries)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcReinforcementBarProperties
+// Function implementations for IfcReinforcementBarProperties
 IfcAreaMeasure IfcReinforcementBarProperties::TotalCrossSectionArea() { return *entity->getArgument(0); }
 IfcLabel IfcReinforcementBarProperties::SteelGrade() { return *entity->getArgument(1); }
 bool IfcReinforcementBarProperties::hasBarSurface() { return !entity->getArgument(2)->isNull(); }
@@ -8151,7 +8151,7 @@ bool IfcReinforcementBarProperties::is(Type::Enum v) const { return v == Type::I
 Type::Enum IfcReinforcementBarProperties::type() const { return Type::IfcReinforcementBarProperties; }
 Type::Enum IfcReinforcementBarProperties::Class() { return Type::IfcReinforcementBarProperties; }
 IfcReinforcementBarProperties::IfcReinforcementBarProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcReinforcementBarProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcReinforcementDefinitionProperties
+// Function implementations for IfcReinforcementDefinitionProperties
 bool IfcReinforcementDefinitionProperties::hasDefinitionType() { return !entity->getArgument(4)->isNull(); }
 IfcLabel IfcReinforcementDefinitionProperties::DefinitionType() { return *entity->getArgument(4); }
 SHARED_PTR< IfcTemplatedEntityList<IfcSectionReinforcementProperties> > IfcReinforcementDefinitionProperties::ReinforcementSectionDefinitions() { RETURN_AS_LIST(IfcSectionReinforcementProperties,5) }
@@ -8159,7 +8159,7 @@ bool IfcReinforcementDefinitionProperties::is(Type::Enum v) const { return v == 
 Type::Enum IfcReinforcementDefinitionProperties::type() const { return Type::IfcReinforcementDefinitionProperties; }
 Type::Enum IfcReinforcementDefinitionProperties::Class() { return Type::IfcReinforcementDefinitionProperties; }
 IfcReinforcementDefinitionProperties::IfcReinforcementDefinitionProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcReinforcementDefinitionProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcReinforcingBar
+// Function implementations for IfcReinforcingBar
 IfcPositiveLengthMeasure IfcReinforcingBar::NominalDiameter() { return *entity->getArgument(9); }
 IfcAreaMeasure IfcReinforcingBar::CrossSectionArea() { return *entity->getArgument(10); }
 bool IfcReinforcingBar::hasBarLength() { return !entity->getArgument(11)->isNull(); }
@@ -8171,14 +8171,14 @@ bool IfcReinforcingBar::is(Type::Enum v) const { return v == Type::IfcReinforcin
 Type::Enum IfcReinforcingBar::type() const { return Type::IfcReinforcingBar; }
 Type::Enum IfcReinforcingBar::Class() { return Type::IfcReinforcingBar; }
 IfcReinforcingBar::IfcReinforcingBar(IfcAbstractEntityPtr e) { if (!is(Type::IfcReinforcingBar)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcReinforcingElement
+// Function implementations for IfcReinforcingElement
 bool IfcReinforcingElement::hasSteelGrade() { return !entity->getArgument(8)->isNull(); }
 IfcLabel IfcReinforcingElement::SteelGrade() { return *entity->getArgument(8); }
 bool IfcReinforcingElement::is(Type::Enum v) const { return v == Type::IfcReinforcingElement || IfcBuildingElementComponent::is(v); }
 Type::Enum IfcReinforcingElement::type() const { return Type::IfcReinforcingElement; }
 Type::Enum IfcReinforcingElement::Class() { return Type::IfcReinforcingElement; }
 IfcReinforcingElement::IfcReinforcingElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcReinforcingElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcReinforcingMesh
+// Function implementations for IfcReinforcingMesh
 bool IfcReinforcingMesh::hasMeshLength() { return !entity->getArgument(9)->isNull(); }
 IfcPositiveLengthMeasure IfcReinforcingMesh::MeshLength() { return *entity->getArgument(9); }
 bool IfcReinforcingMesh::hasMeshWidth() { return !entity->getArgument(10)->isNull(); }
@@ -8193,12 +8193,12 @@ bool IfcReinforcingMesh::is(Type::Enum v) const { return v == Type::IfcReinforci
 Type::Enum IfcReinforcingMesh::type() const { return Type::IfcReinforcingMesh; }
 Type::Enum IfcReinforcingMesh::Class() { return Type::IfcReinforcingMesh; }
 IfcReinforcingMesh::IfcReinforcingMesh(IfcAbstractEntityPtr e) { if (!is(Type::IfcReinforcingMesh)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAggregates
+// Function implementations for IfcRelAggregates
 bool IfcRelAggregates::is(Type::Enum v) const { return v == Type::IfcRelAggregates || IfcRelDecomposes::is(v); }
 Type::Enum IfcRelAggregates::type() const { return Type::IfcRelAggregates; }
 Type::Enum IfcRelAggregates::Class() { return Type::IfcRelAggregates; }
 IfcRelAggregates::IfcRelAggregates(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAggregates)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssigns
+// Function implementations for IfcRelAssigns
 SHARED_PTR< IfcTemplatedEntityList<IfcObjectDefinition> > IfcRelAssigns::RelatedObjects() { RETURN_AS_LIST(IfcObjectDefinition,4) }
 bool IfcRelAssigns::hasRelatedObjectsType() { return !entity->getArgument(5)->isNull(); }
 IfcObjectTypeEnum::IfcObjectTypeEnum IfcRelAssigns::RelatedObjectsType() { return IfcObjectTypeEnum::FromString(*entity->getArgument(5)); }
@@ -8206,14 +8206,14 @@ bool IfcRelAssigns::is(Type::Enum v) const { return v == Type::IfcRelAssigns || 
 Type::Enum IfcRelAssigns::type() const { return Type::IfcRelAssigns; }
 Type::Enum IfcRelAssigns::Class() { return Type::IfcRelAssigns; }
 IfcRelAssigns::IfcRelAssigns(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssigns)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssignsTasks
+// Function implementations for IfcRelAssignsTasks
 bool IfcRelAssignsTasks::hasTimeForTask() { return !entity->getArgument(7)->isNull(); }
 IfcScheduleTimeControl* IfcRelAssignsTasks::TimeForTask() { return reinterpret_pointer_cast<IfcBaseClass,IfcScheduleTimeControl>(*entity->getArgument(7)); }
 bool IfcRelAssignsTasks::is(Type::Enum v) const { return v == Type::IfcRelAssignsTasks || IfcRelAssignsToControl::is(v); }
 Type::Enum IfcRelAssignsTasks::type() const { return Type::IfcRelAssignsTasks; }
 Type::Enum IfcRelAssignsTasks::Class() { return Type::IfcRelAssignsTasks; }
 IfcRelAssignsTasks::IfcRelAssignsTasks(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsTasks)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssignsToActor
+// Function implementations for IfcRelAssignsToActor
 IfcActor* IfcRelAssignsToActor::RelatingActor() { return reinterpret_pointer_cast<IfcBaseClass,IfcActor>(*entity->getArgument(6)); }
 bool IfcRelAssignsToActor::hasActingRole() { return !entity->getArgument(7)->isNull(); }
 IfcActorRole* IfcRelAssignsToActor::ActingRole() { return reinterpret_pointer_cast<IfcBaseClass,IfcActorRole>(*entity->getArgument(7)); }
@@ -8221,19 +8221,19 @@ bool IfcRelAssignsToActor::is(Type::Enum v) const { return v == Type::IfcRelAssi
 Type::Enum IfcRelAssignsToActor::type() const { return Type::IfcRelAssignsToActor; }
 Type::Enum IfcRelAssignsToActor::Class() { return Type::IfcRelAssignsToActor; }
 IfcRelAssignsToActor::IfcRelAssignsToActor(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToActor)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssignsToControl
+// Function implementations for IfcRelAssignsToControl
 IfcControl* IfcRelAssignsToControl::RelatingControl() { return reinterpret_pointer_cast<IfcBaseClass,IfcControl>(*entity->getArgument(6)); }
 bool IfcRelAssignsToControl::is(Type::Enum v) const { return v == Type::IfcRelAssignsToControl || IfcRelAssigns::is(v); }
 Type::Enum IfcRelAssignsToControl::type() const { return Type::IfcRelAssignsToControl; }
 Type::Enum IfcRelAssignsToControl::Class() { return Type::IfcRelAssignsToControl; }
 IfcRelAssignsToControl::IfcRelAssignsToControl(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToControl)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssignsToGroup
+// Function implementations for IfcRelAssignsToGroup
 IfcGroup* IfcRelAssignsToGroup::RelatingGroup() { return reinterpret_pointer_cast<IfcBaseClass,IfcGroup>(*entity->getArgument(6)); }
 bool IfcRelAssignsToGroup::is(Type::Enum v) const { return v == Type::IfcRelAssignsToGroup || IfcRelAssigns::is(v); }
 Type::Enum IfcRelAssignsToGroup::type() const { return Type::IfcRelAssignsToGroup; }
 Type::Enum IfcRelAssignsToGroup::Class() { return Type::IfcRelAssignsToGroup; }
 IfcRelAssignsToGroup::IfcRelAssignsToGroup(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToGroup)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssignsToProcess
+// Function implementations for IfcRelAssignsToProcess
 IfcProcess* IfcRelAssignsToProcess::RelatingProcess() { return reinterpret_pointer_cast<IfcBaseClass,IfcProcess>(*entity->getArgument(6)); }
 bool IfcRelAssignsToProcess::hasQuantityInProcess() { return !entity->getArgument(7)->isNull(); }
 IfcMeasureWithUnit* IfcRelAssignsToProcess::QuantityInProcess() { return reinterpret_pointer_cast<IfcBaseClass,IfcMeasureWithUnit>(*entity->getArgument(7)); }
@@ -8241,73 +8241,73 @@ bool IfcRelAssignsToProcess::is(Type::Enum v) const { return v == Type::IfcRelAs
 Type::Enum IfcRelAssignsToProcess::type() const { return Type::IfcRelAssignsToProcess; }
 Type::Enum IfcRelAssignsToProcess::Class() { return Type::IfcRelAssignsToProcess; }
 IfcRelAssignsToProcess::IfcRelAssignsToProcess(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToProcess)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssignsToProduct
+// Function implementations for IfcRelAssignsToProduct
 IfcProduct* IfcRelAssignsToProduct::RelatingProduct() { return reinterpret_pointer_cast<IfcBaseClass,IfcProduct>(*entity->getArgument(6)); }
 bool IfcRelAssignsToProduct::is(Type::Enum v) const { return v == Type::IfcRelAssignsToProduct || IfcRelAssigns::is(v); }
 Type::Enum IfcRelAssignsToProduct::type() const { return Type::IfcRelAssignsToProduct; }
 Type::Enum IfcRelAssignsToProduct::Class() { return Type::IfcRelAssignsToProduct; }
 IfcRelAssignsToProduct::IfcRelAssignsToProduct(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToProduct)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssignsToProjectOrder
+// Function implementations for IfcRelAssignsToProjectOrder
 bool IfcRelAssignsToProjectOrder::is(Type::Enum v) const { return v == Type::IfcRelAssignsToProjectOrder || IfcRelAssignsToControl::is(v); }
 Type::Enum IfcRelAssignsToProjectOrder::type() const { return Type::IfcRelAssignsToProjectOrder; }
 Type::Enum IfcRelAssignsToProjectOrder::Class() { return Type::IfcRelAssignsToProjectOrder; }
 IfcRelAssignsToProjectOrder::IfcRelAssignsToProjectOrder(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToProjectOrder)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssignsToResource
+// Function implementations for IfcRelAssignsToResource
 IfcResource* IfcRelAssignsToResource::RelatingResource() { return reinterpret_pointer_cast<IfcBaseClass,IfcResource>(*entity->getArgument(6)); }
 bool IfcRelAssignsToResource::is(Type::Enum v) const { return v == Type::IfcRelAssignsToResource || IfcRelAssigns::is(v); }
 Type::Enum IfcRelAssignsToResource::type() const { return Type::IfcRelAssignsToResource; }
 Type::Enum IfcRelAssignsToResource::Class() { return Type::IfcRelAssignsToResource; }
 IfcRelAssignsToResource::IfcRelAssignsToResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssignsToResource)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssociates
+// Function implementations for IfcRelAssociates
 SHARED_PTR< IfcTemplatedEntityList<IfcRoot> > IfcRelAssociates::RelatedObjects() { RETURN_AS_LIST(IfcRoot,4) }
 bool IfcRelAssociates::is(Type::Enum v) const { return v == Type::IfcRelAssociates || IfcRelationship::is(v); }
 Type::Enum IfcRelAssociates::type() const { return Type::IfcRelAssociates; }
 Type::Enum IfcRelAssociates::Class() { return Type::IfcRelAssociates; }
 IfcRelAssociates::IfcRelAssociates(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociates)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssociatesAppliedValue
+// Function implementations for IfcRelAssociatesAppliedValue
 IfcAppliedValue* IfcRelAssociatesAppliedValue::RelatingAppliedValue() { return reinterpret_pointer_cast<IfcBaseClass,IfcAppliedValue>(*entity->getArgument(5)); }
 bool IfcRelAssociatesAppliedValue::is(Type::Enum v) const { return v == Type::IfcRelAssociatesAppliedValue || IfcRelAssociates::is(v); }
 Type::Enum IfcRelAssociatesAppliedValue::type() const { return Type::IfcRelAssociatesAppliedValue; }
 Type::Enum IfcRelAssociatesAppliedValue::Class() { return Type::IfcRelAssociatesAppliedValue; }
 IfcRelAssociatesAppliedValue::IfcRelAssociatesAppliedValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesAppliedValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssociatesApproval
+// Function implementations for IfcRelAssociatesApproval
 IfcApproval* IfcRelAssociatesApproval::RelatingApproval() { return reinterpret_pointer_cast<IfcBaseClass,IfcApproval>(*entity->getArgument(5)); }
 bool IfcRelAssociatesApproval::is(Type::Enum v) const { return v == Type::IfcRelAssociatesApproval || IfcRelAssociates::is(v); }
 Type::Enum IfcRelAssociatesApproval::type() const { return Type::IfcRelAssociatesApproval; }
 Type::Enum IfcRelAssociatesApproval::Class() { return Type::IfcRelAssociatesApproval; }
 IfcRelAssociatesApproval::IfcRelAssociatesApproval(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesApproval)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssociatesClassification
+// Function implementations for IfcRelAssociatesClassification
 IfcClassificationNotationSelect IfcRelAssociatesClassification::RelatingClassification() { return *entity->getArgument(5); }
 bool IfcRelAssociatesClassification::is(Type::Enum v) const { return v == Type::IfcRelAssociatesClassification || IfcRelAssociates::is(v); }
 Type::Enum IfcRelAssociatesClassification::type() const { return Type::IfcRelAssociatesClassification; }
 Type::Enum IfcRelAssociatesClassification::Class() { return Type::IfcRelAssociatesClassification; }
 IfcRelAssociatesClassification::IfcRelAssociatesClassification(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesClassification)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssociatesConstraint
+// Function implementations for IfcRelAssociatesConstraint
 IfcLabel IfcRelAssociatesConstraint::Intent() { return *entity->getArgument(5); }
 IfcConstraint* IfcRelAssociatesConstraint::RelatingConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConstraint>(*entity->getArgument(6)); }
 bool IfcRelAssociatesConstraint::is(Type::Enum v) const { return v == Type::IfcRelAssociatesConstraint || IfcRelAssociates::is(v); }
 Type::Enum IfcRelAssociatesConstraint::type() const { return Type::IfcRelAssociatesConstraint; }
 Type::Enum IfcRelAssociatesConstraint::Class() { return Type::IfcRelAssociatesConstraint; }
 IfcRelAssociatesConstraint::IfcRelAssociatesConstraint(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesConstraint)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssociatesDocument
+// Function implementations for IfcRelAssociatesDocument
 IfcDocumentSelect IfcRelAssociatesDocument::RelatingDocument() { return *entity->getArgument(5); }
 bool IfcRelAssociatesDocument::is(Type::Enum v) const { return v == Type::IfcRelAssociatesDocument || IfcRelAssociates::is(v); }
 Type::Enum IfcRelAssociatesDocument::type() const { return Type::IfcRelAssociatesDocument; }
 Type::Enum IfcRelAssociatesDocument::Class() { return Type::IfcRelAssociatesDocument; }
 IfcRelAssociatesDocument::IfcRelAssociatesDocument(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesDocument)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssociatesLibrary
+// Function implementations for IfcRelAssociatesLibrary
 IfcLibrarySelect IfcRelAssociatesLibrary::RelatingLibrary() { return *entity->getArgument(5); }
 bool IfcRelAssociatesLibrary::is(Type::Enum v) const { return v == Type::IfcRelAssociatesLibrary || IfcRelAssociates::is(v); }
 Type::Enum IfcRelAssociatesLibrary::type() const { return Type::IfcRelAssociatesLibrary; }
 Type::Enum IfcRelAssociatesLibrary::Class() { return Type::IfcRelAssociatesLibrary; }
 IfcRelAssociatesLibrary::IfcRelAssociatesLibrary(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesLibrary)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssociatesMaterial
+// Function implementations for IfcRelAssociatesMaterial
 IfcMaterialSelect IfcRelAssociatesMaterial::RelatingMaterial() { return *entity->getArgument(5); }
 bool IfcRelAssociatesMaterial::is(Type::Enum v) const { return v == Type::IfcRelAssociatesMaterial || IfcRelAssociates::is(v); }
 Type::Enum IfcRelAssociatesMaterial::type() const { return Type::IfcRelAssociatesMaterial; }
 Type::Enum IfcRelAssociatesMaterial::Class() { return Type::IfcRelAssociatesMaterial; }
 IfcRelAssociatesMaterial::IfcRelAssociatesMaterial(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesMaterial)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelAssociatesProfileProperties
+// Function implementations for IfcRelAssociatesProfileProperties
 IfcProfileProperties* IfcRelAssociatesProfileProperties::RelatingProfileProperties() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileProperties>(*entity->getArgument(5)); }
 bool IfcRelAssociatesProfileProperties::hasProfileSectionLocation() { return !entity->getArgument(6)->isNull(); }
 IfcShapeAspect* IfcRelAssociatesProfileProperties::ProfileSectionLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(6)); }
@@ -8317,12 +8317,12 @@ bool IfcRelAssociatesProfileProperties::is(Type::Enum v) const { return v == Typ
 Type::Enum IfcRelAssociatesProfileProperties::type() const { return Type::IfcRelAssociatesProfileProperties; }
 Type::Enum IfcRelAssociatesProfileProperties::Class() { return Type::IfcRelAssociatesProfileProperties; }
 IfcRelAssociatesProfileProperties::IfcRelAssociatesProfileProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelAssociatesProfileProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelConnects
+// Function implementations for IfcRelConnects
 bool IfcRelConnects::is(Type::Enum v) const { return v == Type::IfcRelConnects || IfcRelationship::is(v); }
 Type::Enum IfcRelConnects::type() const { return Type::IfcRelConnects; }
 Type::Enum IfcRelConnects::Class() { return Type::IfcRelConnects; }
 IfcRelConnects::IfcRelConnects(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnects)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelConnectsElements
+// Function implementations for IfcRelConnectsElements
 bool IfcRelConnectsElements::hasConnectionGeometry() { return !entity->getArgument(4)->isNull(); }
 IfcConnectionGeometry* IfcRelConnectsElements::ConnectionGeometry() { return reinterpret_pointer_cast<IfcBaseClass,IfcConnectionGeometry>(*entity->getArgument(4)); }
 IfcElement* IfcRelConnectsElements::RelatingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(5)); }
@@ -8331,7 +8331,7 @@ bool IfcRelConnectsElements::is(Type::Enum v) const { return v == Type::IfcRelCo
 Type::Enum IfcRelConnectsElements::type() const { return Type::IfcRelConnectsElements; }
 Type::Enum IfcRelConnectsElements::Class() { return Type::IfcRelConnectsElements; }
 IfcRelConnectsElements::IfcRelConnectsElements(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsElements)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelConnectsPathElements
+// Function implementations for IfcRelConnectsPathElements
 std::vector<int> /*[0:?]*/ IfcRelConnectsPathElements::RelatingPriorities() { return *entity->getArgument(7); }
 std::vector<int> /*[0:?]*/ IfcRelConnectsPathElements::RelatedPriorities() { return *entity->getArgument(8); }
 IfcConnectionTypeEnum::IfcConnectionTypeEnum IfcRelConnectsPathElements::RelatedConnectionType() { return IfcConnectionTypeEnum::FromString(*entity->getArgument(9)); }
@@ -8340,14 +8340,14 @@ bool IfcRelConnectsPathElements::is(Type::Enum v) const { return v == Type::IfcR
 Type::Enum IfcRelConnectsPathElements::type() const { return Type::IfcRelConnectsPathElements; }
 Type::Enum IfcRelConnectsPathElements::Class() { return Type::IfcRelConnectsPathElements; }
 IfcRelConnectsPathElements::IfcRelConnectsPathElements(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsPathElements)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelConnectsPortToElement
+// Function implementations for IfcRelConnectsPortToElement
 IfcPort* IfcRelConnectsPortToElement::RelatingPort() { return reinterpret_pointer_cast<IfcBaseClass,IfcPort>(*entity->getArgument(4)); }
 IfcElement* IfcRelConnectsPortToElement::RelatedElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(5)); }
 bool IfcRelConnectsPortToElement::is(Type::Enum v) const { return v == Type::IfcRelConnectsPortToElement || IfcRelConnects::is(v); }
 Type::Enum IfcRelConnectsPortToElement::type() const { return Type::IfcRelConnectsPortToElement; }
 Type::Enum IfcRelConnectsPortToElement::Class() { return Type::IfcRelConnectsPortToElement; }
 IfcRelConnectsPortToElement::IfcRelConnectsPortToElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsPortToElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelConnectsPorts
+// Function implementations for IfcRelConnectsPorts
 IfcPort* IfcRelConnectsPorts::RelatingPort() { return reinterpret_pointer_cast<IfcBaseClass,IfcPort>(*entity->getArgument(4)); }
 IfcPort* IfcRelConnectsPorts::RelatedPort() { return reinterpret_pointer_cast<IfcBaseClass,IfcPort>(*entity->getArgument(5)); }
 bool IfcRelConnectsPorts::hasRealizingElement() { return !entity->getArgument(6)->isNull(); }
@@ -8356,21 +8356,21 @@ bool IfcRelConnectsPorts::is(Type::Enum v) const { return v == Type::IfcRelConne
 Type::Enum IfcRelConnectsPorts::type() const { return Type::IfcRelConnectsPorts; }
 Type::Enum IfcRelConnectsPorts::Class() { return Type::IfcRelConnectsPorts; }
 IfcRelConnectsPorts::IfcRelConnectsPorts(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsPorts)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelConnectsStructuralActivity
+// Function implementations for IfcRelConnectsStructuralActivity
 IfcStructuralActivityAssignmentSelect IfcRelConnectsStructuralActivity::RelatingElement() { return *entity->getArgument(4); }
 IfcStructuralActivity* IfcRelConnectsStructuralActivity::RelatedStructuralActivity() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralActivity>(*entity->getArgument(5)); }
 bool IfcRelConnectsStructuralActivity::is(Type::Enum v) const { return v == Type::IfcRelConnectsStructuralActivity || IfcRelConnects::is(v); }
 Type::Enum IfcRelConnectsStructuralActivity::type() const { return Type::IfcRelConnectsStructuralActivity; }
 Type::Enum IfcRelConnectsStructuralActivity::Class() { return Type::IfcRelConnectsStructuralActivity; }
 IfcRelConnectsStructuralActivity::IfcRelConnectsStructuralActivity(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsStructuralActivity)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelConnectsStructuralElement
+// Function implementations for IfcRelConnectsStructuralElement
 IfcElement* IfcRelConnectsStructuralElement::RelatingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(4)); }
 IfcStructuralMember* IfcRelConnectsStructuralElement::RelatedStructuralMember() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralMember>(*entity->getArgument(5)); }
 bool IfcRelConnectsStructuralElement::is(Type::Enum v) const { return v == Type::IfcRelConnectsStructuralElement || IfcRelConnects::is(v); }
 Type::Enum IfcRelConnectsStructuralElement::type() const { return Type::IfcRelConnectsStructuralElement; }
 Type::Enum IfcRelConnectsStructuralElement::Class() { return Type::IfcRelConnectsStructuralElement; }
 IfcRelConnectsStructuralElement::IfcRelConnectsStructuralElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsStructuralElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelConnectsStructuralMember
+// Function implementations for IfcRelConnectsStructuralMember
 IfcStructuralMember* IfcRelConnectsStructuralMember::RelatingStructuralMember() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralMember>(*entity->getArgument(4)); }
 IfcStructuralConnection* IfcRelConnectsStructuralMember::RelatedStructuralConnection() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralConnection>(*entity->getArgument(5)); }
 bool IfcRelConnectsStructuralMember::hasAppliedCondition() { return !entity->getArgument(6)->isNull(); }
@@ -8385,13 +8385,13 @@ bool IfcRelConnectsStructuralMember::is(Type::Enum v) const { return v == Type::
 Type::Enum IfcRelConnectsStructuralMember::type() const { return Type::IfcRelConnectsStructuralMember; }
 Type::Enum IfcRelConnectsStructuralMember::Class() { return Type::IfcRelConnectsStructuralMember; }
 IfcRelConnectsStructuralMember::IfcRelConnectsStructuralMember(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsStructuralMember)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelConnectsWithEccentricity
+// Function implementations for IfcRelConnectsWithEccentricity
 IfcConnectionGeometry* IfcRelConnectsWithEccentricity::ConnectionConstraint() { return reinterpret_pointer_cast<IfcBaseClass,IfcConnectionGeometry>(*entity->getArgument(10)); }
 bool IfcRelConnectsWithEccentricity::is(Type::Enum v) const { return v == Type::IfcRelConnectsWithEccentricity || IfcRelConnectsStructuralMember::is(v); }
 Type::Enum IfcRelConnectsWithEccentricity::type() const { return Type::IfcRelConnectsWithEccentricity; }
 Type::Enum IfcRelConnectsWithEccentricity::Class() { return Type::IfcRelConnectsWithEccentricity; }
 IfcRelConnectsWithEccentricity::IfcRelConnectsWithEccentricity(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsWithEccentricity)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelConnectsWithRealizingElements
+// Function implementations for IfcRelConnectsWithRealizingElements
 SHARED_PTR< IfcTemplatedEntityList<IfcElement> > IfcRelConnectsWithRealizingElements::RealizingElements() { RETURN_AS_LIST(IfcElement,7) }
 bool IfcRelConnectsWithRealizingElements::hasConnectionType() { return !entity->getArgument(8)->isNull(); }
 IfcLabel IfcRelConnectsWithRealizingElements::ConnectionType() { return *entity->getArgument(8); }
@@ -8399,67 +8399,67 @@ bool IfcRelConnectsWithRealizingElements::is(Type::Enum v) const { return v == T
 Type::Enum IfcRelConnectsWithRealizingElements::type() const { return Type::IfcRelConnectsWithRealizingElements; }
 Type::Enum IfcRelConnectsWithRealizingElements::Class() { return Type::IfcRelConnectsWithRealizingElements; }
 IfcRelConnectsWithRealizingElements::IfcRelConnectsWithRealizingElements(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelConnectsWithRealizingElements)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelContainedInSpatialStructure
+// Function implementations for IfcRelContainedInSpatialStructure
 SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > IfcRelContainedInSpatialStructure::RelatedElements() { RETURN_AS_LIST(IfcProduct,4) }
 IfcSpatialStructureElement* IfcRelContainedInSpatialStructure::RelatingStructure() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(5)); }
 bool IfcRelContainedInSpatialStructure::is(Type::Enum v) const { return v == Type::IfcRelContainedInSpatialStructure || IfcRelConnects::is(v); }
 Type::Enum IfcRelContainedInSpatialStructure::type() const { return Type::IfcRelContainedInSpatialStructure; }
 Type::Enum IfcRelContainedInSpatialStructure::Class() { return Type::IfcRelContainedInSpatialStructure; }
 IfcRelContainedInSpatialStructure::IfcRelContainedInSpatialStructure(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelContainedInSpatialStructure)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelCoversBldgElements
+// Function implementations for IfcRelCoversBldgElements
 IfcElement* IfcRelCoversBldgElements::RelatingBuildingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(4)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcCovering> > IfcRelCoversBldgElements::RelatedCoverings() { RETURN_AS_LIST(IfcCovering,5) }
 bool IfcRelCoversBldgElements::is(Type::Enum v) const { return v == Type::IfcRelCoversBldgElements || IfcRelConnects::is(v); }
 Type::Enum IfcRelCoversBldgElements::type() const { return Type::IfcRelCoversBldgElements; }
 Type::Enum IfcRelCoversBldgElements::Class() { return Type::IfcRelCoversBldgElements; }
 IfcRelCoversBldgElements::IfcRelCoversBldgElements(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelCoversBldgElements)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelCoversSpaces
+// Function implementations for IfcRelCoversSpaces
 IfcSpace* IfcRelCoversSpaces::RelatedSpace() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpace>(*entity->getArgument(4)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcCovering> > IfcRelCoversSpaces::RelatedCoverings() { RETURN_AS_LIST(IfcCovering,5) }
 bool IfcRelCoversSpaces::is(Type::Enum v) const { return v == Type::IfcRelCoversSpaces || IfcRelConnects::is(v); }
 Type::Enum IfcRelCoversSpaces::type() const { return Type::IfcRelCoversSpaces; }
 Type::Enum IfcRelCoversSpaces::Class() { return Type::IfcRelCoversSpaces; }
 IfcRelCoversSpaces::IfcRelCoversSpaces(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelCoversSpaces)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelDecomposes
+// Function implementations for IfcRelDecomposes
 IfcObjectDefinition* IfcRelDecomposes::RelatingObject() { return reinterpret_pointer_cast<IfcBaseClass,IfcObjectDefinition>(*entity->getArgument(4)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcObjectDefinition> > IfcRelDecomposes::RelatedObjects() { RETURN_AS_LIST(IfcObjectDefinition,5) }
 bool IfcRelDecomposes::is(Type::Enum v) const { return v == Type::IfcRelDecomposes || IfcRelationship::is(v); }
 Type::Enum IfcRelDecomposes::type() const { return Type::IfcRelDecomposes; }
 Type::Enum IfcRelDecomposes::Class() { return Type::IfcRelDecomposes; }
 IfcRelDecomposes::IfcRelDecomposes(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelDecomposes)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelDefines
+// Function implementations for IfcRelDefines
 SHARED_PTR< IfcTemplatedEntityList<IfcObject> > IfcRelDefines::RelatedObjects() { RETURN_AS_LIST(IfcObject,4) }
 bool IfcRelDefines::is(Type::Enum v) const { return v == Type::IfcRelDefines || IfcRelationship::is(v); }
 Type::Enum IfcRelDefines::type() const { return Type::IfcRelDefines; }
 Type::Enum IfcRelDefines::Class() { return Type::IfcRelDefines; }
 IfcRelDefines::IfcRelDefines(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelDefines)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelDefinesByProperties
+// Function implementations for IfcRelDefinesByProperties
 IfcPropertySetDefinition* IfcRelDefinesByProperties::RelatingPropertyDefinition() { return reinterpret_pointer_cast<IfcBaseClass,IfcPropertySetDefinition>(*entity->getArgument(5)); }
 bool IfcRelDefinesByProperties::is(Type::Enum v) const { return v == Type::IfcRelDefinesByProperties || IfcRelDefines::is(v); }
 Type::Enum IfcRelDefinesByProperties::type() const { return Type::IfcRelDefinesByProperties; }
 Type::Enum IfcRelDefinesByProperties::Class() { return Type::IfcRelDefinesByProperties; }
 IfcRelDefinesByProperties::IfcRelDefinesByProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelDefinesByProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelDefinesByType
+// Function implementations for IfcRelDefinesByType
 IfcTypeObject* IfcRelDefinesByType::RelatingType() { return reinterpret_pointer_cast<IfcBaseClass,IfcTypeObject>(*entity->getArgument(5)); }
 bool IfcRelDefinesByType::is(Type::Enum v) const { return v == Type::IfcRelDefinesByType || IfcRelDefines::is(v); }
 Type::Enum IfcRelDefinesByType::type() const { return Type::IfcRelDefinesByType; }
 Type::Enum IfcRelDefinesByType::Class() { return Type::IfcRelDefinesByType; }
 IfcRelDefinesByType::IfcRelDefinesByType(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelDefinesByType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelFillsElement
+// Function implementations for IfcRelFillsElement
 IfcOpeningElement* IfcRelFillsElement::RelatingOpeningElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcOpeningElement>(*entity->getArgument(4)); }
 IfcElement* IfcRelFillsElement::RelatedBuildingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(5)); }
 bool IfcRelFillsElement::is(Type::Enum v) const { return v == Type::IfcRelFillsElement || IfcRelConnects::is(v); }
 Type::Enum IfcRelFillsElement::type() const { return Type::IfcRelFillsElement; }
 Type::Enum IfcRelFillsElement::Class() { return Type::IfcRelFillsElement; }
 IfcRelFillsElement::IfcRelFillsElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelFillsElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelFlowControlElements
+// Function implementations for IfcRelFlowControlElements
 SHARED_PTR< IfcTemplatedEntityList<IfcDistributionControlElement> > IfcRelFlowControlElements::RelatedControlElements() { RETURN_AS_LIST(IfcDistributionControlElement,4) }
 IfcDistributionFlowElement* IfcRelFlowControlElements::RelatingFlowElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcDistributionFlowElement>(*entity->getArgument(5)); }
 bool IfcRelFlowControlElements::is(Type::Enum v) const { return v == Type::IfcRelFlowControlElements || IfcRelConnects::is(v); }
 Type::Enum IfcRelFlowControlElements::type() const { return Type::IfcRelFlowControlElements; }
 Type::Enum IfcRelFlowControlElements::Class() { return Type::IfcRelFlowControlElements; }
 IfcRelFlowControlElements::IfcRelFlowControlElements(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelFlowControlElements)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelInteractionRequirements
+// Function implementations for IfcRelInteractionRequirements
 bool IfcRelInteractionRequirements::hasDailyInteraction() { return !entity->getArgument(4)->isNull(); }
 IfcCountMeasure IfcRelInteractionRequirements::DailyInteraction() { return *entity->getArgument(4); }
 bool IfcRelInteractionRequirements::hasImportanceRating() { return !entity->getArgument(5)->isNull(); }
@@ -8472,42 +8472,42 @@ bool IfcRelInteractionRequirements::is(Type::Enum v) const { return v == Type::I
 Type::Enum IfcRelInteractionRequirements::type() const { return Type::IfcRelInteractionRequirements; }
 Type::Enum IfcRelInteractionRequirements::Class() { return Type::IfcRelInteractionRequirements; }
 IfcRelInteractionRequirements::IfcRelInteractionRequirements(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelInteractionRequirements)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelNests
+// Function implementations for IfcRelNests
 bool IfcRelNests::is(Type::Enum v) const { return v == Type::IfcRelNests || IfcRelDecomposes::is(v); }
 Type::Enum IfcRelNests::type() const { return Type::IfcRelNests; }
 Type::Enum IfcRelNests::Class() { return Type::IfcRelNests; }
 IfcRelNests::IfcRelNests(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelNests)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelOccupiesSpaces
+// Function implementations for IfcRelOccupiesSpaces
 bool IfcRelOccupiesSpaces::is(Type::Enum v) const { return v == Type::IfcRelOccupiesSpaces || IfcRelAssignsToActor::is(v); }
 Type::Enum IfcRelOccupiesSpaces::type() const { return Type::IfcRelOccupiesSpaces; }
 Type::Enum IfcRelOccupiesSpaces::Class() { return Type::IfcRelOccupiesSpaces; }
 IfcRelOccupiesSpaces::IfcRelOccupiesSpaces(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelOccupiesSpaces)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelOverridesProperties
+// Function implementations for IfcRelOverridesProperties
 SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > IfcRelOverridesProperties::OverridingProperties() { RETURN_AS_LIST(IfcProperty,6) }
 bool IfcRelOverridesProperties::is(Type::Enum v) const { return v == Type::IfcRelOverridesProperties || IfcRelDefinesByProperties::is(v); }
 Type::Enum IfcRelOverridesProperties::type() const { return Type::IfcRelOverridesProperties; }
 Type::Enum IfcRelOverridesProperties::Class() { return Type::IfcRelOverridesProperties; }
 IfcRelOverridesProperties::IfcRelOverridesProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelOverridesProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelProjectsElement
+// Function implementations for IfcRelProjectsElement
 IfcElement* IfcRelProjectsElement::RelatingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(4)); }
 IfcFeatureElementAddition* IfcRelProjectsElement::RelatedFeatureElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcFeatureElementAddition>(*entity->getArgument(5)); }
 bool IfcRelProjectsElement::is(Type::Enum v) const { return v == Type::IfcRelProjectsElement || IfcRelConnects::is(v); }
 Type::Enum IfcRelProjectsElement::type() const { return Type::IfcRelProjectsElement; }
 Type::Enum IfcRelProjectsElement::Class() { return Type::IfcRelProjectsElement; }
 IfcRelProjectsElement::IfcRelProjectsElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelProjectsElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelReferencedInSpatialStructure
+// Function implementations for IfcRelReferencedInSpatialStructure
 SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > IfcRelReferencedInSpatialStructure::RelatedElements() { RETURN_AS_LIST(IfcProduct,4) }
 IfcSpatialStructureElement* IfcRelReferencedInSpatialStructure::RelatingStructure() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpatialStructureElement>(*entity->getArgument(5)); }
 bool IfcRelReferencedInSpatialStructure::is(Type::Enum v) const { return v == Type::IfcRelReferencedInSpatialStructure || IfcRelConnects::is(v); }
 Type::Enum IfcRelReferencedInSpatialStructure::type() const { return Type::IfcRelReferencedInSpatialStructure; }
 Type::Enum IfcRelReferencedInSpatialStructure::Class() { return Type::IfcRelReferencedInSpatialStructure; }
 IfcRelReferencedInSpatialStructure::IfcRelReferencedInSpatialStructure(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelReferencedInSpatialStructure)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelSchedulesCostItems
+// Function implementations for IfcRelSchedulesCostItems
 bool IfcRelSchedulesCostItems::is(Type::Enum v) const { return v == Type::IfcRelSchedulesCostItems || IfcRelAssignsToControl::is(v); }
 Type::Enum IfcRelSchedulesCostItems::type() const { return Type::IfcRelSchedulesCostItems; }
 Type::Enum IfcRelSchedulesCostItems::Class() { return Type::IfcRelSchedulesCostItems; }
 IfcRelSchedulesCostItems::IfcRelSchedulesCostItems(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelSchedulesCostItems)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelSequence
+// Function implementations for IfcRelSequence
 IfcProcess* IfcRelSequence::RelatingProcess() { return reinterpret_pointer_cast<IfcBaseClass,IfcProcess>(*entity->getArgument(4)); }
 IfcProcess* IfcRelSequence::RelatedProcess() { return reinterpret_pointer_cast<IfcBaseClass,IfcProcess>(*entity->getArgument(5)); }
 IfcTimeMeasure IfcRelSequence::TimeLag() { return *entity->getArgument(6); }
@@ -8516,14 +8516,14 @@ bool IfcRelSequence::is(Type::Enum v) const { return v == Type::IfcRelSequence |
 Type::Enum IfcRelSequence::type() const { return Type::IfcRelSequence; }
 Type::Enum IfcRelSequence::Class() { return Type::IfcRelSequence; }
 IfcRelSequence::IfcRelSequence(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelSequence)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelServicesBuildings
+// Function implementations for IfcRelServicesBuildings
 IfcSystem* IfcRelServicesBuildings::RelatingSystem() { return reinterpret_pointer_cast<IfcBaseClass,IfcSystem>(*entity->getArgument(4)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcSpatialStructureElement> > IfcRelServicesBuildings::RelatedBuildings() { RETURN_AS_LIST(IfcSpatialStructureElement,5) }
 bool IfcRelServicesBuildings::is(Type::Enum v) const { return v == Type::IfcRelServicesBuildings || IfcRelConnects::is(v); }
 Type::Enum IfcRelServicesBuildings::type() const { return Type::IfcRelServicesBuildings; }
 Type::Enum IfcRelServicesBuildings::Class() { return Type::IfcRelServicesBuildings; }
 IfcRelServicesBuildings::IfcRelServicesBuildings(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelServicesBuildings)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelSpaceBoundary
+// Function implementations for IfcRelSpaceBoundary
 IfcSpace* IfcRelSpaceBoundary::RelatingSpace() { return reinterpret_pointer_cast<IfcBaseClass,IfcSpace>(*entity->getArgument(4)); }
 bool IfcRelSpaceBoundary::hasRelatedBuildingElement() { return !entity->getArgument(5)->isNull(); }
 IfcElement* IfcRelSpaceBoundary::RelatedBuildingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(5)); }
@@ -8535,26 +8535,26 @@ bool IfcRelSpaceBoundary::is(Type::Enum v) const { return v == Type::IfcRelSpace
 Type::Enum IfcRelSpaceBoundary::type() const { return Type::IfcRelSpaceBoundary; }
 Type::Enum IfcRelSpaceBoundary::Class() { return Type::IfcRelSpaceBoundary; }
 IfcRelSpaceBoundary::IfcRelSpaceBoundary(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelSpaceBoundary)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelVoidsElement
+// Function implementations for IfcRelVoidsElement
 IfcElement* IfcRelVoidsElement::RelatingBuildingElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcElement>(*entity->getArgument(4)); }
 IfcFeatureElementSubtraction* IfcRelVoidsElement::RelatedOpeningElement() { return reinterpret_pointer_cast<IfcBaseClass,IfcFeatureElementSubtraction>(*entity->getArgument(5)); }
 bool IfcRelVoidsElement::is(Type::Enum v) const { return v == Type::IfcRelVoidsElement || IfcRelConnects::is(v); }
 Type::Enum IfcRelVoidsElement::type() const { return Type::IfcRelVoidsElement; }
 Type::Enum IfcRelVoidsElement::Class() { return Type::IfcRelVoidsElement; }
 IfcRelVoidsElement::IfcRelVoidsElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelVoidsElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelationship
+// Function implementations for IfcRelationship
 bool IfcRelationship::is(Type::Enum v) const { return v == Type::IfcRelationship || IfcRoot::is(v); }
 Type::Enum IfcRelationship::type() const { return Type::IfcRelationship; }
 Type::Enum IfcRelationship::Class() { return Type::IfcRelationship; }
 IfcRelationship::IfcRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRelaxation
+// Function implementations for IfcRelaxation
 IfcNormalisedRatioMeasure IfcRelaxation::RelaxationValue() { return *entity->getArgument(0); }
 IfcNormalisedRatioMeasure IfcRelaxation::InitialStress() { return *entity->getArgument(1); }
 bool IfcRelaxation::is(Type::Enum v) const { return v == Type::IfcRelaxation; }
 Type::Enum IfcRelaxation::type() const { return Type::IfcRelaxation; }
 Type::Enum IfcRelaxation::Class() { return Type::IfcRelaxation; }
 IfcRelaxation::IfcRelaxation(IfcAbstractEntityPtr e) { if (!is(Type::IfcRelaxation)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRepresentation
+// Function implementations for IfcRepresentation
 IfcRepresentationContext* IfcRepresentation::ContextOfItems() { return reinterpret_pointer_cast<IfcBaseClass,IfcRepresentationContext>(*entity->getArgument(0)); }
 bool IfcRepresentation::hasRepresentationIdentifier() { return !entity->getArgument(1)->isNull(); }
 IfcLabel IfcRepresentation::RepresentationIdentifier() { return *entity->getArgument(1); }
@@ -8568,7 +8568,7 @@ bool IfcRepresentation::is(Type::Enum v) const { return v == Type::IfcRepresenta
 Type::Enum IfcRepresentation::type() const { return Type::IfcRepresentation; }
 Type::Enum IfcRepresentation::Class() { return Type::IfcRepresentation; }
 IfcRepresentation::IfcRepresentation(IfcAbstractEntityPtr e) { if (!is(Type::IfcRepresentation)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRepresentationContext
+// Function implementations for IfcRepresentationContext
 bool IfcRepresentationContext::hasContextIdentifier() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcRepresentationContext::ContextIdentifier() { return *entity->getArgument(0); }
 bool IfcRepresentationContext::hasContextType() { return !entity->getArgument(1)->isNull(); }
@@ -8578,14 +8578,14 @@ bool IfcRepresentationContext::is(Type::Enum v) const { return v == Type::IfcRep
 Type::Enum IfcRepresentationContext::type() const { return Type::IfcRepresentationContext; }
 Type::Enum IfcRepresentationContext::Class() { return Type::IfcRepresentationContext; }
 IfcRepresentationContext::IfcRepresentationContext(IfcAbstractEntityPtr e) { if (!is(Type::IfcRepresentationContext)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRepresentationItem
+// Function implementations for IfcRepresentationItem
 IfcPresentationLayerAssignment::list IfcRepresentationItem::LayerAssignments() { RETURN_INVERSE(IfcPresentationLayerAssignment) }
 IfcStyledItem::list IfcRepresentationItem::StyledByItem() { RETURN_INVERSE(IfcStyledItem) }
 bool IfcRepresentationItem::is(Type::Enum v) const { return v == Type::IfcRepresentationItem; }
 Type::Enum IfcRepresentationItem::type() const { return Type::IfcRepresentationItem; }
 Type::Enum IfcRepresentationItem::Class() { return Type::IfcRepresentationItem; }
 IfcRepresentationItem::IfcRepresentationItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcRepresentationItem)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRepresentationMap
+// Function implementations for IfcRepresentationMap
 IfcAxis2Placement IfcRepresentationMap::MappingOrigin() { return *entity->getArgument(0); }
 IfcRepresentation* IfcRepresentationMap::MappedRepresentation() { return reinterpret_pointer_cast<IfcBaseClass,IfcRepresentation>(*entity->getArgument(1)); }
 IfcMappedItem::list IfcRepresentationMap::MapUsage() { RETURN_INVERSE(IfcMappedItem) }
@@ -8593,20 +8593,20 @@ bool IfcRepresentationMap::is(Type::Enum v) const { return v == Type::IfcReprese
 Type::Enum IfcRepresentationMap::type() const { return Type::IfcRepresentationMap; }
 Type::Enum IfcRepresentationMap::Class() { return Type::IfcRepresentationMap; }
 IfcRepresentationMap::IfcRepresentationMap(IfcAbstractEntityPtr e) { if (!is(Type::IfcRepresentationMap)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcResource
+// Function implementations for IfcResource
 IfcRelAssignsToResource::list IfcResource::ResourceOf() { RETURN_INVERSE(IfcRelAssignsToResource) }
 bool IfcResource::is(Type::Enum v) const { return v == Type::IfcResource || IfcObject::is(v); }
 Type::Enum IfcResource::type() const { return Type::IfcResource; }
 Type::Enum IfcResource::Class() { return Type::IfcResource; }
 IfcResource::IfcResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcResource)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRevolvedAreaSolid
+// Function implementations for IfcRevolvedAreaSolid
 IfcAxis1Placement* IfcRevolvedAreaSolid::Axis() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis1Placement>(*entity->getArgument(2)); }
 IfcPlaneAngleMeasure IfcRevolvedAreaSolid::Angle() { return *entity->getArgument(3); }
 bool IfcRevolvedAreaSolid::is(Type::Enum v) const { return v == Type::IfcRevolvedAreaSolid || IfcSweptAreaSolid::is(v); }
 Type::Enum IfcRevolvedAreaSolid::type() const { return Type::IfcRevolvedAreaSolid; }
 Type::Enum IfcRevolvedAreaSolid::Class() { return Type::IfcRevolvedAreaSolid; }
 IfcRevolvedAreaSolid::IfcRevolvedAreaSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcRevolvedAreaSolid)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRibPlateProfileProperties
+// Function implementations for IfcRibPlateProfileProperties
 bool IfcRibPlateProfileProperties::hasThickness() { return !entity->getArgument(2)->isNull(); }
 IfcPositiveLengthMeasure IfcRibPlateProfileProperties::Thickness() { return *entity->getArgument(2); }
 bool IfcRibPlateProfileProperties::hasRibHeight() { return !entity->getArgument(3)->isNull(); }
@@ -8620,27 +8620,27 @@ bool IfcRibPlateProfileProperties::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcRibPlateProfileProperties::type() const { return Type::IfcRibPlateProfileProperties; }
 Type::Enum IfcRibPlateProfileProperties::Class() { return Type::IfcRibPlateProfileProperties; }
 IfcRibPlateProfileProperties::IfcRibPlateProfileProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcRibPlateProfileProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRightCircularCone
+// Function implementations for IfcRightCircularCone
 IfcPositiveLengthMeasure IfcRightCircularCone::Height() { return *entity->getArgument(1); }
 IfcPositiveLengthMeasure IfcRightCircularCone::BottomRadius() { return *entity->getArgument(2); }
 bool IfcRightCircularCone::is(Type::Enum v) const { return v == Type::IfcRightCircularCone || IfcCsgPrimitive3D::is(v); }
 Type::Enum IfcRightCircularCone::type() const { return Type::IfcRightCircularCone; }
 Type::Enum IfcRightCircularCone::Class() { return Type::IfcRightCircularCone; }
 IfcRightCircularCone::IfcRightCircularCone(IfcAbstractEntityPtr e) { if (!is(Type::IfcRightCircularCone)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRightCircularCylinder
+// Function implementations for IfcRightCircularCylinder
 IfcPositiveLengthMeasure IfcRightCircularCylinder::Height() { return *entity->getArgument(1); }
 IfcPositiveLengthMeasure IfcRightCircularCylinder::Radius() { return *entity->getArgument(2); }
 bool IfcRightCircularCylinder::is(Type::Enum v) const { return v == Type::IfcRightCircularCylinder || IfcCsgPrimitive3D::is(v); }
 Type::Enum IfcRightCircularCylinder::type() const { return Type::IfcRightCircularCylinder; }
 Type::Enum IfcRightCircularCylinder::Class() { return Type::IfcRightCircularCylinder; }
 IfcRightCircularCylinder::IfcRightCircularCylinder(IfcAbstractEntityPtr e) { if (!is(Type::IfcRightCircularCylinder)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRoof
+// Function implementations for IfcRoof
 IfcRoofTypeEnum::IfcRoofTypeEnum IfcRoof::ShapeType() { return IfcRoofTypeEnum::FromString(*entity->getArgument(8)); }
 bool IfcRoof::is(Type::Enum v) const { return v == Type::IfcRoof || IfcBuildingElement::is(v); }
 Type::Enum IfcRoof::type() const { return Type::IfcRoof; }
 Type::Enum IfcRoof::Class() { return Type::IfcRoof; }
 IfcRoof::IfcRoof(IfcAbstractEntityPtr e) { if (!is(Type::IfcRoof)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRoot
+// Function implementations for IfcRoot
 IfcGloballyUniqueId IfcRoot::GlobalId() { return *entity->getArgument(0); }
 IfcOwnerHistory* IfcRoot::OwnerHistory() { return reinterpret_pointer_cast<IfcBaseClass,IfcOwnerHistory>(*entity->getArgument(1)); }
 bool IfcRoot::hasName() { return !entity->getArgument(2)->isNull(); }
@@ -8651,20 +8651,20 @@ bool IfcRoot::is(Type::Enum v) const { return v == Type::IfcRoot; }
 Type::Enum IfcRoot::type() const { return Type::IfcRoot; }
 Type::Enum IfcRoot::Class() { return Type::IfcRoot; }
 IfcRoot::IfcRoot(IfcAbstractEntityPtr e) { if (!is(Type::IfcRoot)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRoundedEdgeFeature
+// Function implementations for IfcRoundedEdgeFeature
 bool IfcRoundedEdgeFeature::hasRadius() { return !entity->getArgument(9)->isNull(); }
 IfcPositiveLengthMeasure IfcRoundedEdgeFeature::Radius() { return *entity->getArgument(9); }
 bool IfcRoundedEdgeFeature::is(Type::Enum v) const { return v == Type::IfcRoundedEdgeFeature || IfcEdgeFeature::is(v); }
 Type::Enum IfcRoundedEdgeFeature::type() const { return Type::IfcRoundedEdgeFeature; }
 Type::Enum IfcRoundedEdgeFeature::Class() { return Type::IfcRoundedEdgeFeature; }
 IfcRoundedEdgeFeature::IfcRoundedEdgeFeature(IfcAbstractEntityPtr e) { if (!is(Type::IfcRoundedEdgeFeature)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcRoundedRectangleProfileDef
+// Function implementations for IfcRoundedRectangleProfileDef
 IfcPositiveLengthMeasure IfcRoundedRectangleProfileDef::RoundingRadius() { return *entity->getArgument(5); }
 bool IfcRoundedRectangleProfileDef::is(Type::Enum v) const { return v == Type::IfcRoundedRectangleProfileDef || IfcRectangleProfileDef::is(v); }
 Type::Enum IfcRoundedRectangleProfileDef::type() const { return Type::IfcRoundedRectangleProfileDef; }
 Type::Enum IfcRoundedRectangleProfileDef::Class() { return Type::IfcRoundedRectangleProfileDef; }
 IfcRoundedRectangleProfileDef::IfcRoundedRectangleProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcRoundedRectangleProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSIUnit
+// Function implementations for IfcSIUnit
 bool IfcSIUnit::hasPrefix() { return !entity->getArgument(2)->isNull(); }
 IfcSIPrefix::IfcSIPrefix IfcSIUnit::Prefix() { return IfcSIPrefix::FromString(*entity->getArgument(2)); }
 IfcSIUnitName::IfcSIUnitName IfcSIUnit::Name() { return IfcSIUnitName::FromString(*entity->getArgument(3)); }
@@ -8672,13 +8672,13 @@ bool IfcSIUnit::is(Type::Enum v) const { return v == Type::IfcSIUnit || IfcNamed
 Type::Enum IfcSIUnit::type() const { return Type::IfcSIUnit; }
 Type::Enum IfcSIUnit::Class() { return Type::IfcSIUnit; }
 IfcSIUnit::IfcSIUnit(IfcAbstractEntityPtr e) { if (!is(Type::IfcSIUnit)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSanitaryTerminalType
+// Function implementations for IfcSanitaryTerminalType
 IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum IfcSanitaryTerminalType::PredefinedType() { return IfcSanitaryTerminalTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcSanitaryTerminalType::is(Type::Enum v) const { return v == Type::IfcSanitaryTerminalType || IfcFlowTerminalType::is(v); }
 Type::Enum IfcSanitaryTerminalType::type() const { return Type::IfcSanitaryTerminalType; }
 Type::Enum IfcSanitaryTerminalType::Class() { return Type::IfcSanitaryTerminalType; }
 IfcSanitaryTerminalType::IfcSanitaryTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSanitaryTerminalType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcScheduleTimeControl
+// Function implementations for IfcScheduleTimeControl
 bool IfcScheduleTimeControl::hasActualStart() { return !entity->getArgument(5)->isNull(); }
 IfcDateTimeSelect IfcScheduleTimeControl::ActualStart() { return *entity->getArgument(5); }
 bool IfcScheduleTimeControl::hasEarlyStart() { return !entity->getArgument(6)->isNull(); }
@@ -8720,7 +8720,7 @@ bool IfcScheduleTimeControl::is(Type::Enum v) const { return v == Type::IfcSched
 Type::Enum IfcScheduleTimeControl::type() const { return Type::IfcScheduleTimeControl; }
 Type::Enum IfcScheduleTimeControl::Class() { return Type::IfcScheduleTimeControl; }
 IfcScheduleTimeControl::IfcScheduleTimeControl(IfcAbstractEntityPtr e) { if (!is(Type::IfcScheduleTimeControl)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSectionProperties
+// Function implementations for IfcSectionProperties
 IfcSectionTypeEnum::IfcSectionTypeEnum IfcSectionProperties::SectionType() { return IfcSectionTypeEnum::FromString(*entity->getArgument(0)); }
 IfcProfileDef* IfcSectionProperties::StartProfile() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(1)); }
 bool IfcSectionProperties::hasEndProfile() { return !entity->getArgument(2)->isNull(); }
@@ -8729,7 +8729,7 @@ bool IfcSectionProperties::is(Type::Enum v) const { return v == Type::IfcSection
 Type::Enum IfcSectionProperties::type() const { return Type::IfcSectionProperties; }
 Type::Enum IfcSectionProperties::Class() { return Type::IfcSectionProperties; }
 IfcSectionProperties::IfcSectionProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcSectionProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSectionReinforcementProperties
+// Function implementations for IfcSectionReinforcementProperties
 IfcLengthMeasure IfcSectionReinforcementProperties::LongitudinalStartPosition() { return *entity->getArgument(0); }
 IfcLengthMeasure IfcSectionReinforcementProperties::LongitudinalEndPosition() { return *entity->getArgument(1); }
 bool IfcSectionReinforcementProperties::hasTransversePosition() { return !entity->getArgument(2)->isNull(); }
@@ -8741,7 +8741,7 @@ bool IfcSectionReinforcementProperties::is(Type::Enum v) const { return v == Typ
 Type::Enum IfcSectionReinforcementProperties::type() const { return Type::IfcSectionReinforcementProperties; }
 Type::Enum IfcSectionReinforcementProperties::Class() { return Type::IfcSectionReinforcementProperties; }
 IfcSectionReinforcementProperties::IfcSectionReinforcementProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcSectionReinforcementProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSectionedSpine
+// Function implementations for IfcSectionedSpine
 IfcCompositeCurve* IfcSectionedSpine::SpineCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCompositeCurve>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcProfileDef> > IfcSectionedSpine::CrossSections() { RETURN_AS_LIST(IfcProfileDef,1) }
 SHARED_PTR< IfcTemplatedEntityList<IfcAxis2Placement3D> > IfcSectionedSpine::CrossSectionPositions() { RETURN_AS_LIST(IfcAxis2Placement3D,2) }
@@ -8749,20 +8749,20 @@ bool IfcSectionedSpine::is(Type::Enum v) const { return v == Type::IfcSectionedS
 Type::Enum IfcSectionedSpine::type() const { return Type::IfcSectionedSpine; }
 Type::Enum IfcSectionedSpine::Class() { return Type::IfcSectionedSpine; }
 IfcSectionedSpine::IfcSectionedSpine(IfcAbstractEntityPtr e) { if (!is(Type::IfcSectionedSpine)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSensorType
+// Function implementations for IfcSensorType
 IfcSensorTypeEnum::IfcSensorTypeEnum IfcSensorType::PredefinedType() { return IfcSensorTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcSensorType::is(Type::Enum v) const { return v == Type::IfcSensorType || IfcDistributionControlElementType::is(v); }
 Type::Enum IfcSensorType::type() const { return Type::IfcSensorType; }
 Type::Enum IfcSensorType::Class() { return Type::IfcSensorType; }
 IfcSensorType::IfcSensorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSensorType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcServiceLife
+// Function implementations for IfcServiceLife
 IfcServiceLifeTypeEnum::IfcServiceLifeTypeEnum IfcServiceLife::ServiceLifeType() { return IfcServiceLifeTypeEnum::FromString(*entity->getArgument(5)); }
 IfcTimeMeasure IfcServiceLife::ServiceLifeDuration() { return *entity->getArgument(6); }
 bool IfcServiceLife::is(Type::Enum v) const { return v == Type::IfcServiceLife || IfcControl::is(v); }
 Type::Enum IfcServiceLife::type() const { return Type::IfcServiceLife; }
 Type::Enum IfcServiceLife::Class() { return Type::IfcServiceLife; }
 IfcServiceLife::IfcServiceLife(IfcAbstractEntityPtr e) { if (!is(Type::IfcServiceLife)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcServiceLifeFactor
+// Function implementations for IfcServiceLifeFactor
 IfcServiceLifeFactorTypeEnum::IfcServiceLifeFactorTypeEnum IfcServiceLifeFactor::PredefinedType() { return IfcServiceLifeFactorTypeEnum::FromString(*entity->getArgument(4)); }
 bool IfcServiceLifeFactor::hasUpperValue() { return !entity->getArgument(5)->isNull(); }
 IfcMeasureValue IfcServiceLifeFactor::UpperValue() { return *entity->getArgument(5); }
@@ -8773,7 +8773,7 @@ bool IfcServiceLifeFactor::is(Type::Enum v) const { return v == Type::IfcService
 Type::Enum IfcServiceLifeFactor::type() const { return Type::IfcServiceLifeFactor; }
 Type::Enum IfcServiceLifeFactor::Class() { return Type::IfcServiceLifeFactor; }
 IfcServiceLifeFactor::IfcServiceLifeFactor(IfcAbstractEntityPtr e) { if (!is(Type::IfcServiceLifeFactor)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcShapeAspect
+// Function implementations for IfcShapeAspect
 SHARED_PTR< IfcTemplatedEntityList<IfcShapeModel> > IfcShapeAspect::ShapeRepresentations() { RETURN_AS_LIST(IfcShapeModel,0) }
 bool IfcShapeAspect::hasName() { return !entity->getArgument(1)->isNull(); }
 IfcLabel IfcShapeAspect::Name() { return *entity->getArgument(1); }
@@ -8785,29 +8785,29 @@ bool IfcShapeAspect::is(Type::Enum v) const { return v == Type::IfcShapeAspect; 
 Type::Enum IfcShapeAspect::type() const { return Type::IfcShapeAspect; }
 Type::Enum IfcShapeAspect::Class() { return Type::IfcShapeAspect; }
 IfcShapeAspect::IfcShapeAspect(IfcAbstractEntityPtr e) { if (!is(Type::IfcShapeAspect)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcShapeModel
+// Function implementations for IfcShapeModel
 IfcShapeAspect::list IfcShapeModel::OfShapeAspect() { RETURN_INVERSE(IfcShapeAspect) }
 bool IfcShapeModel::is(Type::Enum v) const { return v == Type::IfcShapeModel || IfcRepresentation::is(v); }
 Type::Enum IfcShapeModel::type() const { return Type::IfcShapeModel; }
 Type::Enum IfcShapeModel::Class() { return Type::IfcShapeModel; }
 IfcShapeModel::IfcShapeModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcShapeModel)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcShapeRepresentation
+// Function implementations for IfcShapeRepresentation
 bool IfcShapeRepresentation::is(Type::Enum v) const { return v == Type::IfcShapeRepresentation || IfcShapeModel::is(v); }
 Type::Enum IfcShapeRepresentation::type() const { return Type::IfcShapeRepresentation; }
 Type::Enum IfcShapeRepresentation::Class() { return Type::IfcShapeRepresentation; }
 IfcShapeRepresentation::IfcShapeRepresentation(IfcAbstractEntityPtr e) { if (!is(Type::IfcShapeRepresentation)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcShellBasedSurfaceModel
+// Function implementations for IfcShellBasedSurfaceModel
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcShellBasedSurfaceModel::SbsmBoundary() { RETURN_AS_LIST(IfcAbstractSelect,0) }
 bool IfcShellBasedSurfaceModel::is(Type::Enum v) const { return v == Type::IfcShellBasedSurfaceModel || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcShellBasedSurfaceModel::type() const { return Type::IfcShellBasedSurfaceModel; }
 Type::Enum IfcShellBasedSurfaceModel::Class() { return Type::IfcShellBasedSurfaceModel; }
 IfcShellBasedSurfaceModel::IfcShellBasedSurfaceModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcShellBasedSurfaceModel)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSimpleProperty
+// Function implementations for IfcSimpleProperty
 bool IfcSimpleProperty::is(Type::Enum v) const { return v == Type::IfcSimpleProperty || IfcProperty::is(v); }
 Type::Enum IfcSimpleProperty::type() const { return Type::IfcSimpleProperty; }
 Type::Enum IfcSimpleProperty::Class() { return Type::IfcSimpleProperty; }
 IfcSimpleProperty::IfcSimpleProperty(IfcAbstractEntityPtr e) { if (!is(Type::IfcSimpleProperty)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSite
+// Function implementations for IfcSite
 bool IfcSite::hasRefLatitude() { return !entity->getArgument(9)->isNull(); }
 IfcCompoundPlaneAngleMeasure IfcSite::RefLatitude() { return *entity->getArgument(9); }
 bool IfcSite::hasRefLongitude() { return !entity->getArgument(10)->isNull(); }
@@ -8822,20 +8822,20 @@ bool IfcSite::is(Type::Enum v) const { return v == Type::IfcSite || IfcSpatialSt
 Type::Enum IfcSite::type() const { return Type::IfcSite; }
 Type::Enum IfcSite::Class() { return Type::IfcSite; }
 IfcSite::IfcSite(IfcAbstractEntityPtr e) { if (!is(Type::IfcSite)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSlab
+// Function implementations for IfcSlab
 bool IfcSlab::hasPredefinedType() { return !entity->getArgument(8)->isNull(); }
 IfcSlabTypeEnum::IfcSlabTypeEnum IfcSlab::PredefinedType() { return IfcSlabTypeEnum::FromString(*entity->getArgument(8)); }
 bool IfcSlab::is(Type::Enum v) const { return v == Type::IfcSlab || IfcBuildingElement::is(v); }
 Type::Enum IfcSlab::type() const { return Type::IfcSlab; }
 Type::Enum IfcSlab::Class() { return Type::IfcSlab; }
 IfcSlab::IfcSlab(IfcAbstractEntityPtr e) { if (!is(Type::IfcSlab)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSlabType
+// Function implementations for IfcSlabType
 IfcSlabTypeEnum::IfcSlabTypeEnum IfcSlabType::PredefinedType() { return IfcSlabTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcSlabType::is(Type::Enum v) const { return v == Type::IfcSlabType || IfcBuildingElementType::is(v); }
 Type::Enum IfcSlabType::type() const { return Type::IfcSlabType; }
 Type::Enum IfcSlabType::Class() { return Type::IfcSlabType; }
 IfcSlabType::IfcSlabType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSlabType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSlippageConnectionCondition
+// Function implementations for IfcSlippageConnectionCondition
 bool IfcSlippageConnectionCondition::hasSlippageX() { return !entity->getArgument(1)->isNull(); }
 IfcLengthMeasure IfcSlippageConnectionCondition::SlippageX() { return *entity->getArgument(1); }
 bool IfcSlippageConnectionCondition::hasSlippageY() { return !entity->getArgument(2)->isNull(); }
@@ -8846,12 +8846,12 @@ bool IfcSlippageConnectionCondition::is(Type::Enum v) const { return v == Type::
 Type::Enum IfcSlippageConnectionCondition::type() const { return Type::IfcSlippageConnectionCondition; }
 Type::Enum IfcSlippageConnectionCondition::Class() { return Type::IfcSlippageConnectionCondition; }
 IfcSlippageConnectionCondition::IfcSlippageConnectionCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcSlippageConnectionCondition)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSolidModel
+// Function implementations for IfcSolidModel
 bool IfcSolidModel::is(Type::Enum v) const { return v == Type::IfcSolidModel || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcSolidModel::type() const { return Type::IfcSolidModel; }
 Type::Enum IfcSolidModel::Class() { return Type::IfcSolidModel; }
 IfcSolidModel::IfcSolidModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcSolidModel)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSoundProperties
+// Function implementations for IfcSoundProperties
 IfcBoolean IfcSoundProperties::IsAttenuating() { return *entity->getArgument(4); }
 bool IfcSoundProperties::hasSoundScale() { return !entity->getArgument(5)->isNull(); }
 IfcSoundScaleEnum::IfcSoundScaleEnum IfcSoundProperties::SoundScale() { return IfcSoundScaleEnum::FromString(*entity->getArgument(5)); }
@@ -8860,7 +8860,7 @@ bool IfcSoundProperties::is(Type::Enum v) const { return v == Type::IfcSoundProp
 Type::Enum IfcSoundProperties::type() const { return Type::IfcSoundProperties; }
 Type::Enum IfcSoundProperties::Class() { return Type::IfcSoundProperties; }
 IfcSoundProperties::IfcSoundProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcSoundProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSoundValue
+// Function implementations for IfcSoundValue
 bool IfcSoundValue::hasSoundLevelTimeSeries() { return !entity->getArgument(4)->isNull(); }
 IfcTimeSeries* IfcSoundValue::SoundLevelTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(4)); }
 IfcFrequencyMeasure IfcSoundValue::Frequency() { return *entity->getArgument(5); }
@@ -8870,7 +8870,7 @@ bool IfcSoundValue::is(Type::Enum v) const { return v == Type::IfcSoundValue || 
 Type::Enum IfcSoundValue::type() const { return Type::IfcSoundValue; }
 Type::Enum IfcSoundValue::Class() { return Type::IfcSoundValue; }
 IfcSoundValue::IfcSoundValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcSoundValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSpace
+// Function implementations for IfcSpace
 IfcInternalOrExternalEnum::IfcInternalOrExternalEnum IfcSpace::InteriorOrExteriorSpace() { return IfcInternalOrExternalEnum::FromString(*entity->getArgument(9)); }
 bool IfcSpace::hasElevationWithFlooring() { return !entity->getArgument(10)->isNull(); }
 IfcLengthMeasure IfcSpace::ElevationWithFlooring() { return *entity->getArgument(10); }
@@ -8880,13 +8880,13 @@ bool IfcSpace::is(Type::Enum v) const { return v == Type::IfcSpace || IfcSpatial
 Type::Enum IfcSpace::type() const { return Type::IfcSpace; }
 Type::Enum IfcSpace::Class() { return Type::IfcSpace; }
 IfcSpace::IfcSpace(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpace)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSpaceHeaterType
+// Function implementations for IfcSpaceHeaterType
 IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum IfcSpaceHeaterType::PredefinedType() { return IfcSpaceHeaterTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcSpaceHeaterType::is(Type::Enum v) const { return v == Type::IfcSpaceHeaterType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcSpaceHeaterType::type() const { return Type::IfcSpaceHeaterType; }
 Type::Enum IfcSpaceHeaterType::Class() { return Type::IfcSpaceHeaterType; }
 IfcSpaceHeaterType::IfcSpaceHeaterType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpaceHeaterType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSpaceProgram
+// Function implementations for IfcSpaceProgram
 IfcIdentifier IfcSpaceProgram::SpaceProgramIdentifier() { return *entity->getArgument(5); }
 bool IfcSpaceProgram::hasMaxRequiredArea() { return !entity->getArgument(6)->isNull(); }
 IfcAreaMeasure IfcSpaceProgram::MaxRequiredArea() { return *entity->getArgument(6); }
@@ -8901,7 +8901,7 @@ bool IfcSpaceProgram::is(Type::Enum v) const { return v == Type::IfcSpaceProgram
 Type::Enum IfcSpaceProgram::type() const { return Type::IfcSpaceProgram; }
 Type::Enum IfcSpaceProgram::Class() { return Type::IfcSpaceProgram; }
 IfcSpaceProgram::IfcSpaceProgram(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpaceProgram)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSpaceThermalLoadProperties
+// Function implementations for IfcSpaceThermalLoadProperties
 bool IfcSpaceThermalLoadProperties::hasApplicableValueRatio() { return !entity->getArgument(4)->isNull(); }
 IfcPositiveRatioMeasure IfcSpaceThermalLoadProperties::ApplicableValueRatio() { return *entity->getArgument(4); }
 IfcThermalLoadSourceEnum::IfcThermalLoadSourceEnum IfcSpaceThermalLoadProperties::ThermalLoadSource() { return IfcThermalLoadSourceEnum::FromString(*entity->getArgument(5)); }
@@ -8922,13 +8922,13 @@ bool IfcSpaceThermalLoadProperties::is(Type::Enum v) const { return v == Type::I
 Type::Enum IfcSpaceThermalLoadProperties::type() const { return Type::IfcSpaceThermalLoadProperties; }
 Type::Enum IfcSpaceThermalLoadProperties::Class() { return Type::IfcSpaceThermalLoadProperties; }
 IfcSpaceThermalLoadProperties::IfcSpaceThermalLoadProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpaceThermalLoadProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSpaceType
+// Function implementations for IfcSpaceType
 IfcSpaceTypeEnum::IfcSpaceTypeEnum IfcSpaceType::PredefinedType() { return IfcSpaceTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcSpaceType::is(Type::Enum v) const { return v == Type::IfcSpaceType || IfcSpatialStructureElementType::is(v); }
 Type::Enum IfcSpaceType::type() const { return Type::IfcSpaceType; }
 Type::Enum IfcSpaceType::Class() { return Type::IfcSpaceType; }
 IfcSpaceType::IfcSpaceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpaceType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSpatialStructureElement
+// Function implementations for IfcSpatialStructureElement
 bool IfcSpatialStructureElement::hasLongName() { return !entity->getArgument(7)->isNull(); }
 IfcLabel IfcSpatialStructureElement::LongName() { return *entity->getArgument(7); }
 IfcElementCompositionEnum::IfcElementCompositionEnum IfcSpatialStructureElement::CompositionType() { return IfcElementCompositionEnum::FromString(*entity->getArgument(8)); }
@@ -8939,30 +8939,30 @@ bool IfcSpatialStructureElement::is(Type::Enum v) const { return v == Type::IfcS
 Type::Enum IfcSpatialStructureElement::type() const { return Type::IfcSpatialStructureElement; }
 Type::Enum IfcSpatialStructureElement::Class() { return Type::IfcSpatialStructureElement; }
 IfcSpatialStructureElement::IfcSpatialStructureElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpatialStructureElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSpatialStructureElementType
+// Function implementations for IfcSpatialStructureElementType
 bool IfcSpatialStructureElementType::is(Type::Enum v) const { return v == Type::IfcSpatialStructureElementType || IfcElementType::is(v); }
 Type::Enum IfcSpatialStructureElementType::type() const { return Type::IfcSpatialStructureElementType; }
 Type::Enum IfcSpatialStructureElementType::Class() { return Type::IfcSpatialStructureElementType; }
 IfcSpatialStructureElementType::IfcSpatialStructureElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSpatialStructureElementType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSphere
+// Function implementations for IfcSphere
 IfcPositiveLengthMeasure IfcSphere::Radius() { return *entity->getArgument(1); }
 bool IfcSphere::is(Type::Enum v) const { return v == Type::IfcSphere || IfcCsgPrimitive3D::is(v); }
 Type::Enum IfcSphere::type() const { return Type::IfcSphere; }
 Type::Enum IfcSphere::Class() { return Type::IfcSphere; }
 IfcSphere::IfcSphere(IfcAbstractEntityPtr e) { if (!is(Type::IfcSphere)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStackTerminalType
+// Function implementations for IfcStackTerminalType
 IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum IfcStackTerminalType::PredefinedType() { return IfcStackTerminalTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcStackTerminalType::is(Type::Enum v) const { return v == Type::IfcStackTerminalType || IfcFlowTerminalType::is(v); }
 Type::Enum IfcStackTerminalType::type() const { return Type::IfcStackTerminalType; }
 Type::Enum IfcStackTerminalType::Class() { return Type::IfcStackTerminalType; }
 IfcStackTerminalType::IfcStackTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcStackTerminalType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStair
+// Function implementations for IfcStair
 IfcStairTypeEnum::IfcStairTypeEnum IfcStair::ShapeType() { return IfcStairTypeEnum::FromString(*entity->getArgument(8)); }
 bool IfcStair::is(Type::Enum v) const { return v == Type::IfcStair || IfcBuildingElement::is(v); }
 Type::Enum IfcStair::type() const { return Type::IfcStair; }
 Type::Enum IfcStair::Class() { return Type::IfcStair; }
 IfcStair::IfcStair(IfcAbstractEntityPtr e) { if (!is(Type::IfcStair)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStairFlight
+// Function implementations for IfcStairFlight
 bool IfcStairFlight::hasNumberOfRiser() { return !entity->getArgument(8)->isNull(); }
 int IfcStairFlight::NumberOfRiser() { return *entity->getArgument(8); }
 bool IfcStairFlight::hasNumberOfTreads() { return !entity->getArgument(9)->isNull(); }
@@ -8975,13 +8975,13 @@ bool IfcStairFlight::is(Type::Enum v) const { return v == Type::IfcStairFlight |
 Type::Enum IfcStairFlight::type() const { return Type::IfcStairFlight; }
 Type::Enum IfcStairFlight::Class() { return Type::IfcStairFlight; }
 IfcStairFlight::IfcStairFlight(IfcAbstractEntityPtr e) { if (!is(Type::IfcStairFlight)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStairFlightType
+// Function implementations for IfcStairFlightType
 IfcStairFlightTypeEnum::IfcStairFlightTypeEnum IfcStairFlightType::PredefinedType() { return IfcStairFlightTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcStairFlightType::is(Type::Enum v) const { return v == Type::IfcStairFlightType || IfcBuildingElementType::is(v); }
 Type::Enum IfcStairFlightType::type() const { return Type::IfcStairFlightType; }
 Type::Enum IfcStairFlightType::Class() { return Type::IfcStairFlightType; }
 IfcStairFlightType::IfcStairFlightType(IfcAbstractEntityPtr e) { if (!is(Type::IfcStairFlightType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralAction
+// Function implementations for IfcStructuralAction
 bool IfcStructuralAction::DestabilizingLoad() { return *entity->getArgument(9); }
 bool IfcStructuralAction::hasCausedBy() { return !entity->getArgument(10)->isNull(); }
 IfcStructuralReaction* IfcStructuralAction::CausedBy() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralReaction>(*entity->getArgument(10)); }
@@ -8989,7 +8989,7 @@ bool IfcStructuralAction::is(Type::Enum v) const { return v == Type::IfcStructur
 Type::Enum IfcStructuralAction::type() const { return Type::IfcStructuralAction; }
 Type::Enum IfcStructuralAction::Class() { return Type::IfcStructuralAction; }
 IfcStructuralAction::IfcStructuralAction(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralAction)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralActivity
+// Function implementations for IfcStructuralActivity
 IfcStructuralLoad* IfcStructuralActivity::AppliedLoad() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralLoad>(*entity->getArgument(7)); }
 IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum IfcStructuralActivity::GlobalOrLocal() { return IfcGlobalOrLocalEnum::FromString(*entity->getArgument(8)); }
 IfcRelConnectsStructuralActivity::list IfcStructuralActivity::AssignedToStructuralItem() { RETURN_INVERSE(IfcRelConnectsStructuralActivity) }
@@ -8997,7 +8997,7 @@ bool IfcStructuralActivity::is(Type::Enum v) const { return v == Type::IfcStruct
 Type::Enum IfcStructuralActivity::type() const { return Type::IfcStructuralActivity; }
 Type::Enum IfcStructuralActivity::Class() { return Type::IfcStructuralActivity; }
 IfcStructuralActivity::IfcStructuralActivity(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralActivity)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralAnalysisModel
+// Function implementations for IfcStructuralAnalysisModel
 IfcAnalysisModelTypeEnum::IfcAnalysisModelTypeEnum IfcStructuralAnalysisModel::PredefinedType() { return IfcAnalysisModelTypeEnum::FromString(*entity->getArgument(5)); }
 bool IfcStructuralAnalysisModel::hasOrientationOf2DPlane() { return !entity->getArgument(6)->isNull(); }
 IfcAxis2Placement3D* IfcStructuralAnalysisModel::OrientationOf2DPlane() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(6)); }
@@ -9009,7 +9009,7 @@ bool IfcStructuralAnalysisModel::is(Type::Enum v) const { return v == Type::IfcS
 Type::Enum IfcStructuralAnalysisModel::type() const { return Type::IfcStructuralAnalysisModel; }
 Type::Enum IfcStructuralAnalysisModel::Class() { return Type::IfcStructuralAnalysisModel; }
 IfcStructuralAnalysisModel::IfcStructuralAnalysisModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralAnalysisModel)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralConnection
+// Function implementations for IfcStructuralConnection
 bool IfcStructuralConnection::hasAppliedCondition() { return !entity->getArgument(7)->isNull(); }
 IfcBoundaryCondition* IfcStructuralConnection::AppliedCondition() { return reinterpret_pointer_cast<IfcBaseClass,IfcBoundaryCondition>(*entity->getArgument(7)); }
 IfcRelConnectsStructuralMember::list IfcStructuralConnection::ConnectsStructuralMembers() { RETURN_INVERSE(IfcRelConnectsStructuralMember) }
@@ -9017,56 +9017,56 @@ bool IfcStructuralConnection::is(Type::Enum v) const { return v == Type::IfcStru
 Type::Enum IfcStructuralConnection::type() const { return Type::IfcStructuralConnection; }
 Type::Enum IfcStructuralConnection::Class() { return Type::IfcStructuralConnection; }
 IfcStructuralConnection::IfcStructuralConnection(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralConnection)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralConnectionCondition
+// Function implementations for IfcStructuralConnectionCondition
 bool IfcStructuralConnectionCondition::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcStructuralConnectionCondition::Name() { return *entity->getArgument(0); }
 bool IfcStructuralConnectionCondition::is(Type::Enum v) const { return v == Type::IfcStructuralConnectionCondition; }
 Type::Enum IfcStructuralConnectionCondition::type() const { return Type::IfcStructuralConnectionCondition; }
 Type::Enum IfcStructuralConnectionCondition::Class() { return Type::IfcStructuralConnectionCondition; }
 IfcStructuralConnectionCondition::IfcStructuralConnectionCondition(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralConnectionCondition)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralCurveConnection
+// Function implementations for IfcStructuralCurveConnection
 bool IfcStructuralCurveConnection::is(Type::Enum v) const { return v == Type::IfcStructuralCurveConnection || IfcStructuralConnection::is(v); }
 Type::Enum IfcStructuralCurveConnection::type() const { return Type::IfcStructuralCurveConnection; }
 Type::Enum IfcStructuralCurveConnection::Class() { return Type::IfcStructuralCurveConnection; }
 IfcStructuralCurveConnection::IfcStructuralCurveConnection(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralCurveConnection)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralCurveMember
+// Function implementations for IfcStructuralCurveMember
 IfcStructuralCurveTypeEnum::IfcStructuralCurveTypeEnum IfcStructuralCurveMember::PredefinedType() { return IfcStructuralCurveTypeEnum::FromString(*entity->getArgument(7)); }
 bool IfcStructuralCurveMember::is(Type::Enum v) const { return v == Type::IfcStructuralCurveMember || IfcStructuralMember::is(v); }
 Type::Enum IfcStructuralCurveMember::type() const { return Type::IfcStructuralCurveMember; }
 Type::Enum IfcStructuralCurveMember::Class() { return Type::IfcStructuralCurveMember; }
 IfcStructuralCurveMember::IfcStructuralCurveMember(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralCurveMember)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralCurveMemberVarying
+// Function implementations for IfcStructuralCurveMemberVarying
 bool IfcStructuralCurveMemberVarying::is(Type::Enum v) const { return v == Type::IfcStructuralCurveMemberVarying || IfcStructuralCurveMember::is(v); }
 Type::Enum IfcStructuralCurveMemberVarying::type() const { return Type::IfcStructuralCurveMemberVarying; }
 Type::Enum IfcStructuralCurveMemberVarying::Class() { return Type::IfcStructuralCurveMemberVarying; }
 IfcStructuralCurveMemberVarying::IfcStructuralCurveMemberVarying(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralCurveMemberVarying)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralItem
+// Function implementations for IfcStructuralItem
 IfcRelConnectsStructuralActivity::list IfcStructuralItem::AssignedStructuralActivity() { RETURN_INVERSE(IfcRelConnectsStructuralActivity) }
 bool IfcStructuralItem::is(Type::Enum v) const { return v == Type::IfcStructuralItem || IfcProduct::is(v); }
 Type::Enum IfcStructuralItem::type() const { return Type::IfcStructuralItem; }
 Type::Enum IfcStructuralItem::Class() { return Type::IfcStructuralItem; }
 IfcStructuralItem::IfcStructuralItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralItem)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralLinearAction
+// Function implementations for IfcStructuralLinearAction
 IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum IfcStructuralLinearAction::ProjectedOrTrue() { return IfcProjectedOrTrueLengthEnum::FromString(*entity->getArgument(11)); }
 bool IfcStructuralLinearAction::is(Type::Enum v) const { return v == Type::IfcStructuralLinearAction || IfcStructuralAction::is(v); }
 Type::Enum IfcStructuralLinearAction::type() const { return Type::IfcStructuralLinearAction; }
 Type::Enum IfcStructuralLinearAction::Class() { return Type::IfcStructuralLinearAction; }
 IfcStructuralLinearAction::IfcStructuralLinearAction(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLinearAction)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralLinearActionVarying
+// Function implementations for IfcStructuralLinearActionVarying
 IfcShapeAspect* IfcStructuralLinearActionVarying::VaryingAppliedLoadLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(12)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoad> > IfcStructuralLinearActionVarying::SubsequentAppliedLoads() { RETURN_AS_LIST(IfcStructuralLoad,13) }
 bool IfcStructuralLinearActionVarying::is(Type::Enum v) const { return v == Type::IfcStructuralLinearActionVarying || IfcStructuralLinearAction::is(v); }
 Type::Enum IfcStructuralLinearActionVarying::type() const { return Type::IfcStructuralLinearActionVarying; }
 Type::Enum IfcStructuralLinearActionVarying::Class() { return Type::IfcStructuralLinearActionVarying; }
 IfcStructuralLinearActionVarying::IfcStructuralLinearActionVarying(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLinearActionVarying)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralLoad
+// Function implementations for IfcStructuralLoad
 bool IfcStructuralLoad::hasName() { return !entity->getArgument(0)->isNull(); }
 IfcLabel IfcStructuralLoad::Name() { return *entity->getArgument(0); }
 bool IfcStructuralLoad::is(Type::Enum v) const { return v == Type::IfcStructuralLoad; }
 Type::Enum IfcStructuralLoad::type() const { return Type::IfcStructuralLoad; }
 Type::Enum IfcStructuralLoad::Class() { return Type::IfcStructuralLoad; }
 IfcStructuralLoad::IfcStructuralLoad(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoad)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralLoadGroup
+// Function implementations for IfcStructuralLoadGroup
 IfcLoadGroupTypeEnum::IfcLoadGroupTypeEnum IfcStructuralLoadGroup::PredefinedType() { return IfcLoadGroupTypeEnum::FromString(*entity->getArgument(5)); }
 IfcActionTypeEnum::IfcActionTypeEnum IfcStructuralLoadGroup::ActionType() { return IfcActionTypeEnum::FromString(*entity->getArgument(6)); }
 IfcActionSourceTypeEnum::IfcActionSourceTypeEnum IfcStructuralLoadGroup::ActionSource() { return IfcActionSourceTypeEnum::FromString(*entity->getArgument(7)); }
@@ -9080,7 +9080,7 @@ bool IfcStructuralLoadGroup::is(Type::Enum v) const { return v == Type::IfcStruc
 Type::Enum IfcStructuralLoadGroup::type() const { return Type::IfcStructuralLoadGroup; }
 Type::Enum IfcStructuralLoadGroup::Class() { return Type::IfcStructuralLoadGroup; }
 IfcStructuralLoadGroup::IfcStructuralLoadGroup(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadGroup)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralLoadLinearForce
+// Function implementations for IfcStructuralLoadLinearForce
 bool IfcStructuralLoadLinearForce::hasLinearForceX() { return !entity->getArgument(1)->isNull(); }
 IfcLinearForceMeasure IfcStructuralLoadLinearForce::LinearForceX() { return *entity->getArgument(1); }
 bool IfcStructuralLoadLinearForce::hasLinearForceY() { return !entity->getArgument(2)->isNull(); }
@@ -9097,7 +9097,7 @@ bool IfcStructuralLoadLinearForce::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcStructuralLoadLinearForce::type() const { return Type::IfcStructuralLoadLinearForce; }
 Type::Enum IfcStructuralLoadLinearForce::Class() { return Type::IfcStructuralLoadLinearForce; }
 IfcStructuralLoadLinearForce::IfcStructuralLoadLinearForce(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadLinearForce)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralLoadPlanarForce
+// Function implementations for IfcStructuralLoadPlanarForce
 bool IfcStructuralLoadPlanarForce::hasPlanarForceX() { return !entity->getArgument(1)->isNull(); }
 IfcPlanarForceMeasure IfcStructuralLoadPlanarForce::PlanarForceX() { return *entity->getArgument(1); }
 bool IfcStructuralLoadPlanarForce::hasPlanarForceY() { return !entity->getArgument(2)->isNull(); }
@@ -9108,7 +9108,7 @@ bool IfcStructuralLoadPlanarForce::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcStructuralLoadPlanarForce::type() const { return Type::IfcStructuralLoadPlanarForce; }
 Type::Enum IfcStructuralLoadPlanarForce::Class() { return Type::IfcStructuralLoadPlanarForce; }
 IfcStructuralLoadPlanarForce::IfcStructuralLoadPlanarForce(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadPlanarForce)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralLoadSingleDisplacement
+// Function implementations for IfcStructuralLoadSingleDisplacement
 bool IfcStructuralLoadSingleDisplacement::hasDisplacementX() { return !entity->getArgument(1)->isNull(); }
 IfcLengthMeasure IfcStructuralLoadSingleDisplacement::DisplacementX() { return *entity->getArgument(1); }
 bool IfcStructuralLoadSingleDisplacement::hasDisplacementY() { return !entity->getArgument(2)->isNull(); }
@@ -9125,14 +9125,14 @@ bool IfcStructuralLoadSingleDisplacement::is(Type::Enum v) const { return v == T
 Type::Enum IfcStructuralLoadSingleDisplacement::type() const { return Type::IfcStructuralLoadSingleDisplacement; }
 Type::Enum IfcStructuralLoadSingleDisplacement::Class() { return Type::IfcStructuralLoadSingleDisplacement; }
 IfcStructuralLoadSingleDisplacement::IfcStructuralLoadSingleDisplacement(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadSingleDisplacement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralLoadSingleDisplacementDistortion
+// Function implementations for IfcStructuralLoadSingleDisplacementDistortion
 bool IfcStructuralLoadSingleDisplacementDistortion::hasDistortion() { return !entity->getArgument(7)->isNull(); }
 IfcCurvatureMeasure IfcStructuralLoadSingleDisplacementDistortion::Distortion() { return *entity->getArgument(7); }
 bool IfcStructuralLoadSingleDisplacementDistortion::is(Type::Enum v) const { return v == Type::IfcStructuralLoadSingleDisplacementDistortion || IfcStructuralLoadSingleDisplacement::is(v); }
 Type::Enum IfcStructuralLoadSingleDisplacementDistortion::type() const { return Type::IfcStructuralLoadSingleDisplacementDistortion; }
 Type::Enum IfcStructuralLoadSingleDisplacementDistortion::Class() { return Type::IfcStructuralLoadSingleDisplacementDistortion; }
 IfcStructuralLoadSingleDisplacementDistortion::IfcStructuralLoadSingleDisplacementDistortion(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadSingleDisplacementDistortion)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralLoadSingleForce
+// Function implementations for IfcStructuralLoadSingleForce
 bool IfcStructuralLoadSingleForce::hasForceX() { return !entity->getArgument(1)->isNull(); }
 IfcForceMeasure IfcStructuralLoadSingleForce::ForceX() { return *entity->getArgument(1); }
 bool IfcStructuralLoadSingleForce::hasForceY() { return !entity->getArgument(2)->isNull(); }
@@ -9149,19 +9149,19 @@ bool IfcStructuralLoadSingleForce::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcStructuralLoadSingleForce::type() const { return Type::IfcStructuralLoadSingleForce; }
 Type::Enum IfcStructuralLoadSingleForce::Class() { return Type::IfcStructuralLoadSingleForce; }
 IfcStructuralLoadSingleForce::IfcStructuralLoadSingleForce(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadSingleForce)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralLoadSingleForceWarping
+// Function implementations for IfcStructuralLoadSingleForceWarping
 bool IfcStructuralLoadSingleForceWarping::hasWarpingMoment() { return !entity->getArgument(7)->isNull(); }
 IfcWarpingMomentMeasure IfcStructuralLoadSingleForceWarping::WarpingMoment() { return *entity->getArgument(7); }
 bool IfcStructuralLoadSingleForceWarping::is(Type::Enum v) const { return v == Type::IfcStructuralLoadSingleForceWarping || IfcStructuralLoadSingleForce::is(v); }
 Type::Enum IfcStructuralLoadSingleForceWarping::type() const { return Type::IfcStructuralLoadSingleForceWarping; }
 Type::Enum IfcStructuralLoadSingleForceWarping::Class() { return Type::IfcStructuralLoadSingleForceWarping; }
 IfcStructuralLoadSingleForceWarping::IfcStructuralLoadSingleForceWarping(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadSingleForceWarping)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralLoadStatic
+// Function implementations for IfcStructuralLoadStatic
 bool IfcStructuralLoadStatic::is(Type::Enum v) const { return v == Type::IfcStructuralLoadStatic || IfcStructuralLoad::is(v); }
 Type::Enum IfcStructuralLoadStatic::type() const { return Type::IfcStructuralLoadStatic; }
 Type::Enum IfcStructuralLoadStatic::Class() { return Type::IfcStructuralLoadStatic; }
 IfcStructuralLoadStatic::IfcStructuralLoadStatic(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadStatic)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralLoadTemperature
+// Function implementations for IfcStructuralLoadTemperature
 bool IfcStructuralLoadTemperature::hasDeltaT_Constant() { return !entity->getArgument(1)->isNull(); }
 IfcThermodynamicTemperatureMeasure IfcStructuralLoadTemperature::DeltaT_Constant() { return *entity->getArgument(1); }
 bool IfcStructuralLoadTemperature::hasDeltaT_Y() { return !entity->getArgument(2)->isNull(); }
@@ -9172,42 +9172,42 @@ bool IfcStructuralLoadTemperature::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcStructuralLoadTemperature::type() const { return Type::IfcStructuralLoadTemperature; }
 Type::Enum IfcStructuralLoadTemperature::Class() { return Type::IfcStructuralLoadTemperature; }
 IfcStructuralLoadTemperature::IfcStructuralLoadTemperature(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralLoadTemperature)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralMember
+// Function implementations for IfcStructuralMember
 IfcRelConnectsStructuralElement::list IfcStructuralMember::ReferencesElement() { RETURN_INVERSE(IfcRelConnectsStructuralElement) }
 IfcRelConnectsStructuralMember::list IfcStructuralMember::ConnectedBy() { RETURN_INVERSE(IfcRelConnectsStructuralMember) }
 bool IfcStructuralMember::is(Type::Enum v) const { return v == Type::IfcStructuralMember || IfcStructuralItem::is(v); }
 Type::Enum IfcStructuralMember::type() const { return Type::IfcStructuralMember; }
 Type::Enum IfcStructuralMember::Class() { return Type::IfcStructuralMember; }
 IfcStructuralMember::IfcStructuralMember(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralMember)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralPlanarAction
+// Function implementations for IfcStructuralPlanarAction
 IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum IfcStructuralPlanarAction::ProjectedOrTrue() { return IfcProjectedOrTrueLengthEnum::FromString(*entity->getArgument(11)); }
 bool IfcStructuralPlanarAction::is(Type::Enum v) const { return v == Type::IfcStructuralPlanarAction || IfcStructuralAction::is(v); }
 Type::Enum IfcStructuralPlanarAction::type() const { return Type::IfcStructuralPlanarAction; }
 Type::Enum IfcStructuralPlanarAction::Class() { return Type::IfcStructuralPlanarAction; }
 IfcStructuralPlanarAction::IfcStructuralPlanarAction(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralPlanarAction)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralPlanarActionVarying
+// Function implementations for IfcStructuralPlanarActionVarying
 IfcShapeAspect* IfcStructuralPlanarActionVarying::VaryingAppliedLoadLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(12)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoad> > IfcStructuralPlanarActionVarying::SubsequentAppliedLoads() { RETURN_AS_LIST(IfcStructuralLoad,13) }
 bool IfcStructuralPlanarActionVarying::is(Type::Enum v) const { return v == Type::IfcStructuralPlanarActionVarying || IfcStructuralPlanarAction::is(v); }
 Type::Enum IfcStructuralPlanarActionVarying::type() const { return Type::IfcStructuralPlanarActionVarying; }
 Type::Enum IfcStructuralPlanarActionVarying::Class() { return Type::IfcStructuralPlanarActionVarying; }
 IfcStructuralPlanarActionVarying::IfcStructuralPlanarActionVarying(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralPlanarActionVarying)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralPointAction
+// Function implementations for IfcStructuralPointAction
 bool IfcStructuralPointAction::is(Type::Enum v) const { return v == Type::IfcStructuralPointAction || IfcStructuralAction::is(v); }
 Type::Enum IfcStructuralPointAction::type() const { return Type::IfcStructuralPointAction; }
 Type::Enum IfcStructuralPointAction::Class() { return Type::IfcStructuralPointAction; }
 IfcStructuralPointAction::IfcStructuralPointAction(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralPointAction)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralPointConnection
+// Function implementations for IfcStructuralPointConnection
 bool IfcStructuralPointConnection::is(Type::Enum v) const { return v == Type::IfcStructuralPointConnection || IfcStructuralConnection::is(v); }
 Type::Enum IfcStructuralPointConnection::type() const { return Type::IfcStructuralPointConnection; }
 Type::Enum IfcStructuralPointConnection::Class() { return Type::IfcStructuralPointConnection; }
 IfcStructuralPointConnection::IfcStructuralPointConnection(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralPointConnection)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralPointReaction
+// Function implementations for IfcStructuralPointReaction
 bool IfcStructuralPointReaction::is(Type::Enum v) const { return v == Type::IfcStructuralPointReaction || IfcStructuralReaction::is(v); }
 Type::Enum IfcStructuralPointReaction::type() const { return Type::IfcStructuralPointReaction; }
 Type::Enum IfcStructuralPointReaction::Class() { return Type::IfcStructuralPointReaction; }
 IfcStructuralPointReaction::IfcStructuralPointReaction(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralPointReaction)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralProfileProperties
+// Function implementations for IfcStructuralProfileProperties
 bool IfcStructuralProfileProperties::hasTorsionalConstantX() { return !entity->getArgument(7)->isNull(); }
 IfcMomentOfInertiaMeasure IfcStructuralProfileProperties::TorsionalConstantX() { return *entity->getArgument(7); }
 bool IfcStructuralProfileProperties::hasMomentOfInertiaYZ() { return !entity->getArgument(8)->isNull(); }
@@ -9244,13 +9244,13 @@ bool IfcStructuralProfileProperties::is(Type::Enum v) const { return v == Type::
 Type::Enum IfcStructuralProfileProperties::type() const { return Type::IfcStructuralProfileProperties; }
 Type::Enum IfcStructuralProfileProperties::Class() { return Type::IfcStructuralProfileProperties; }
 IfcStructuralProfileProperties::IfcStructuralProfileProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralProfileProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralReaction
+// Function implementations for IfcStructuralReaction
 IfcStructuralAction::list IfcStructuralReaction::Causes() { RETURN_INVERSE(IfcStructuralAction) }
 bool IfcStructuralReaction::is(Type::Enum v) const { return v == Type::IfcStructuralReaction || IfcStructuralActivity::is(v); }
 Type::Enum IfcStructuralReaction::type() const { return Type::IfcStructuralReaction; }
 Type::Enum IfcStructuralReaction::Class() { return Type::IfcStructuralReaction; }
 IfcStructuralReaction::IfcStructuralReaction(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralReaction)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralResultGroup
+// Function implementations for IfcStructuralResultGroup
 IfcAnalysisTheoryTypeEnum::IfcAnalysisTheoryTypeEnum IfcStructuralResultGroup::TheoryType() { return IfcAnalysisTheoryTypeEnum::FromString(*entity->getArgument(5)); }
 bool IfcStructuralResultGroup::hasResultForLoadGroup() { return !entity->getArgument(6)->isNull(); }
 IfcStructuralLoadGroup* IfcStructuralResultGroup::ResultForLoadGroup() { return reinterpret_pointer_cast<IfcBaseClass,IfcStructuralLoadGroup>(*entity->getArgument(6)); }
@@ -9260,7 +9260,7 @@ bool IfcStructuralResultGroup::is(Type::Enum v) const { return v == Type::IfcStr
 Type::Enum IfcStructuralResultGroup::type() const { return Type::IfcStructuralResultGroup; }
 Type::Enum IfcStructuralResultGroup::Class() { return Type::IfcStructuralResultGroup; }
 IfcStructuralResultGroup::IfcStructuralResultGroup(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralResultGroup)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralSteelProfileProperties
+// Function implementations for IfcStructuralSteelProfileProperties
 bool IfcStructuralSteelProfileProperties::hasShearAreaZ() { return !entity->getArgument(23)->isNull(); }
 IfcAreaMeasure IfcStructuralSteelProfileProperties::ShearAreaZ() { return *entity->getArgument(23); }
 bool IfcStructuralSteelProfileProperties::hasShearAreaY() { return !entity->getArgument(24)->isNull(); }
@@ -9273,12 +9273,12 @@ bool IfcStructuralSteelProfileProperties::is(Type::Enum v) const { return v == T
 Type::Enum IfcStructuralSteelProfileProperties::type() const { return Type::IfcStructuralSteelProfileProperties; }
 Type::Enum IfcStructuralSteelProfileProperties::Class() { return Type::IfcStructuralSteelProfileProperties; }
 IfcStructuralSteelProfileProperties::IfcStructuralSteelProfileProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralSteelProfileProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralSurfaceConnection
+// Function implementations for IfcStructuralSurfaceConnection
 bool IfcStructuralSurfaceConnection::is(Type::Enum v) const { return v == Type::IfcStructuralSurfaceConnection || IfcStructuralConnection::is(v); }
 Type::Enum IfcStructuralSurfaceConnection::type() const { return Type::IfcStructuralSurfaceConnection; }
 Type::Enum IfcStructuralSurfaceConnection::Class() { return Type::IfcStructuralSurfaceConnection; }
 IfcStructuralSurfaceConnection::IfcStructuralSurfaceConnection(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralSurfaceConnection)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralSurfaceMember
+// Function implementations for IfcStructuralSurfaceMember
 IfcStructuralSurfaceTypeEnum::IfcStructuralSurfaceTypeEnum IfcStructuralSurfaceMember::PredefinedType() { return IfcStructuralSurfaceTypeEnum::FromString(*entity->getArgument(7)); }
 bool IfcStructuralSurfaceMember::hasThickness() { return !entity->getArgument(8)->isNull(); }
 IfcPositiveLengthMeasure IfcStructuralSurfaceMember::Thickness() { return *entity->getArgument(8); }
@@ -9286,24 +9286,24 @@ bool IfcStructuralSurfaceMember::is(Type::Enum v) const { return v == Type::IfcS
 Type::Enum IfcStructuralSurfaceMember::type() const { return Type::IfcStructuralSurfaceMember; }
 Type::Enum IfcStructuralSurfaceMember::Class() { return Type::IfcStructuralSurfaceMember; }
 IfcStructuralSurfaceMember::IfcStructuralSurfaceMember(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralSurfaceMember)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuralSurfaceMemberVarying
+// Function implementations for IfcStructuralSurfaceMemberVarying
 std::vector<IfcPositiveLengthMeasure> /*[2:?]*/ IfcStructuralSurfaceMemberVarying::SubsequentThickness() { return *entity->getArgument(9); }
 IfcShapeAspect* IfcStructuralSurfaceMemberVarying::VaryingThicknessLocation() { return reinterpret_pointer_cast<IfcBaseClass,IfcShapeAspect>(*entity->getArgument(10)); }
 bool IfcStructuralSurfaceMemberVarying::is(Type::Enum v) const { return v == Type::IfcStructuralSurfaceMemberVarying || IfcStructuralSurfaceMember::is(v); }
 Type::Enum IfcStructuralSurfaceMemberVarying::type() const { return Type::IfcStructuralSurfaceMemberVarying; }
 Type::Enum IfcStructuralSurfaceMemberVarying::Class() { return Type::IfcStructuralSurfaceMemberVarying; }
 IfcStructuralSurfaceMemberVarying::IfcStructuralSurfaceMemberVarying(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuralSurfaceMemberVarying)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStructuredDimensionCallout
+// Function implementations for IfcStructuredDimensionCallout
 bool IfcStructuredDimensionCallout::is(Type::Enum v) const { return v == Type::IfcStructuredDimensionCallout || IfcDraughtingCallout::is(v); }
 Type::Enum IfcStructuredDimensionCallout::type() const { return Type::IfcStructuredDimensionCallout; }
 Type::Enum IfcStructuredDimensionCallout::Class() { return Type::IfcStructuredDimensionCallout; }
 IfcStructuredDimensionCallout::IfcStructuredDimensionCallout(IfcAbstractEntityPtr e) { if (!is(Type::IfcStructuredDimensionCallout)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStyleModel
+// Function implementations for IfcStyleModel
 bool IfcStyleModel::is(Type::Enum v) const { return v == Type::IfcStyleModel || IfcRepresentation::is(v); }
 Type::Enum IfcStyleModel::type() const { return Type::IfcStyleModel; }
 Type::Enum IfcStyleModel::Class() { return Type::IfcStyleModel; }
 IfcStyleModel::IfcStyleModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcStyleModel)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStyledItem
+// Function implementations for IfcStyledItem
 bool IfcStyledItem::hasItem() { return !entity->getArgument(0)->isNull(); }
 IfcRepresentationItem* IfcStyledItem::Item() { return reinterpret_pointer_cast<IfcBaseClass,IfcRepresentationItem>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcPresentationStyleAssignment> > IfcStyledItem::Styles() { RETURN_AS_LIST(IfcPresentationStyleAssignment,1) }
@@ -9313,12 +9313,12 @@ bool IfcStyledItem::is(Type::Enum v) const { return v == Type::IfcStyledItem || 
 Type::Enum IfcStyledItem::type() const { return Type::IfcStyledItem; }
 Type::Enum IfcStyledItem::Class() { return Type::IfcStyledItem; }
 IfcStyledItem::IfcStyledItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcStyledItem)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcStyledRepresentation
+// Function implementations for IfcStyledRepresentation
 bool IfcStyledRepresentation::is(Type::Enum v) const { return v == Type::IfcStyledRepresentation || IfcStyleModel::is(v); }
 Type::Enum IfcStyledRepresentation::type() const { return Type::IfcStyledRepresentation; }
 Type::Enum IfcStyledRepresentation::Class() { return Type::IfcStyledRepresentation; }
 IfcStyledRepresentation::IfcStyledRepresentation(IfcAbstractEntityPtr e) { if (!is(Type::IfcStyledRepresentation)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSubContractResource
+// Function implementations for IfcSubContractResource
 bool IfcSubContractResource::hasSubContractor() { return !entity->getArgument(9)->isNull(); }
 IfcActorSelect IfcSubContractResource::SubContractor() { return *entity->getArgument(9); }
 bool IfcSubContractResource::hasJobDescription() { return !entity->getArgument(10)->isNull(); }
@@ -9327,18 +9327,18 @@ bool IfcSubContractResource::is(Type::Enum v) const { return v == Type::IfcSubCo
 Type::Enum IfcSubContractResource::type() const { return Type::IfcSubContractResource; }
 Type::Enum IfcSubContractResource::Class() { return Type::IfcSubContractResource; }
 IfcSubContractResource::IfcSubContractResource(IfcAbstractEntityPtr e) { if (!is(Type::IfcSubContractResource)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSubedge
+// Function implementations for IfcSubedge
 IfcEdge* IfcSubedge::ParentEdge() { return reinterpret_pointer_cast<IfcBaseClass,IfcEdge>(*entity->getArgument(2)); }
 bool IfcSubedge::is(Type::Enum v) const { return v == Type::IfcSubedge || IfcEdge::is(v); }
 Type::Enum IfcSubedge::type() const { return Type::IfcSubedge; }
 Type::Enum IfcSubedge::Class() { return Type::IfcSubedge; }
 IfcSubedge::IfcSubedge(IfcAbstractEntityPtr e) { if (!is(Type::IfcSubedge)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSurface
+// Function implementations for IfcSurface
 bool IfcSurface::is(Type::Enum v) const { return v == Type::IfcSurface || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcSurface::type() const { return Type::IfcSurface; }
 Type::Enum IfcSurface::Class() { return Type::IfcSurface; }
 IfcSurface::IfcSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurface)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSurfaceCurveSweptAreaSolid
+// Function implementations for IfcSurfaceCurveSweptAreaSolid
 IfcCurve* IfcSurfaceCurveSweptAreaSolid::Directrix() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(2)); }
 IfcParameterValue IfcSurfaceCurveSweptAreaSolid::StartParam() { return *entity->getArgument(3); }
 IfcParameterValue IfcSurfaceCurveSweptAreaSolid::EndParam() { return *entity->getArgument(4); }
@@ -9347,27 +9347,27 @@ bool IfcSurfaceCurveSweptAreaSolid::is(Type::Enum v) const { return v == Type::I
 Type::Enum IfcSurfaceCurveSweptAreaSolid::type() const { return Type::IfcSurfaceCurveSweptAreaSolid; }
 Type::Enum IfcSurfaceCurveSweptAreaSolid::Class() { return Type::IfcSurfaceCurveSweptAreaSolid; }
 IfcSurfaceCurveSweptAreaSolid::IfcSurfaceCurveSweptAreaSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceCurveSweptAreaSolid)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSurfaceOfLinearExtrusion
+// Function implementations for IfcSurfaceOfLinearExtrusion
 IfcDirection* IfcSurfaceOfLinearExtrusion::ExtrudedDirection() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(2)); }
 IfcLengthMeasure IfcSurfaceOfLinearExtrusion::Depth() { return *entity->getArgument(3); }
 bool IfcSurfaceOfLinearExtrusion::is(Type::Enum v) const { return v == Type::IfcSurfaceOfLinearExtrusion || IfcSweptSurface::is(v); }
 Type::Enum IfcSurfaceOfLinearExtrusion::type() const { return Type::IfcSurfaceOfLinearExtrusion; }
 Type::Enum IfcSurfaceOfLinearExtrusion::Class() { return Type::IfcSurfaceOfLinearExtrusion; }
 IfcSurfaceOfLinearExtrusion::IfcSurfaceOfLinearExtrusion(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceOfLinearExtrusion)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSurfaceOfRevolution
+// Function implementations for IfcSurfaceOfRevolution
 IfcAxis1Placement* IfcSurfaceOfRevolution::AxisPosition() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis1Placement>(*entity->getArgument(2)); }
 bool IfcSurfaceOfRevolution::is(Type::Enum v) const { return v == Type::IfcSurfaceOfRevolution || IfcSweptSurface::is(v); }
 Type::Enum IfcSurfaceOfRevolution::type() const { return Type::IfcSurfaceOfRevolution; }
 Type::Enum IfcSurfaceOfRevolution::Class() { return Type::IfcSurfaceOfRevolution; }
 IfcSurfaceOfRevolution::IfcSurfaceOfRevolution(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceOfRevolution)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSurfaceStyle
+// Function implementations for IfcSurfaceStyle
 IfcSurfaceSide::IfcSurfaceSide IfcSurfaceStyle::Side() { return IfcSurfaceSide::FromString(*entity->getArgument(1)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcSurfaceStyle::Styles() { RETURN_AS_LIST(IfcAbstractSelect,2) }
 bool IfcSurfaceStyle::is(Type::Enum v) const { return v == Type::IfcSurfaceStyle || IfcPresentationStyle::is(v); }
 Type::Enum IfcSurfaceStyle::type() const { return Type::IfcSurfaceStyle; }
 Type::Enum IfcSurfaceStyle::Class() { return Type::IfcSurfaceStyle; }
 IfcSurfaceStyle::IfcSurfaceStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceStyle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSurfaceStyleLighting
+// Function implementations for IfcSurfaceStyleLighting
 IfcColourRgb* IfcSurfaceStyleLighting::DiffuseTransmissionColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(0)); }
 IfcColourRgb* IfcSurfaceStyleLighting::DiffuseReflectionColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(1)); }
 IfcColourRgb* IfcSurfaceStyleLighting::TransmissionColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(2)); }
@@ -9376,7 +9376,7 @@ bool IfcSurfaceStyleLighting::is(Type::Enum v) const { return v == Type::IfcSurf
 Type::Enum IfcSurfaceStyleLighting::type() const { return Type::IfcSurfaceStyleLighting; }
 Type::Enum IfcSurfaceStyleLighting::Class() { return Type::IfcSurfaceStyleLighting; }
 IfcSurfaceStyleLighting::IfcSurfaceStyleLighting(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceStyleLighting)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSurfaceStyleRefraction
+// Function implementations for IfcSurfaceStyleRefraction
 bool IfcSurfaceStyleRefraction::hasRefractionIndex() { return !entity->getArgument(0)->isNull(); }
 IfcReal IfcSurfaceStyleRefraction::RefractionIndex() { return *entity->getArgument(0); }
 bool IfcSurfaceStyleRefraction::hasDispersionFactor() { return !entity->getArgument(1)->isNull(); }
@@ -9385,7 +9385,7 @@ bool IfcSurfaceStyleRefraction::is(Type::Enum v) const { return v == Type::IfcSu
 Type::Enum IfcSurfaceStyleRefraction::type() const { return Type::IfcSurfaceStyleRefraction; }
 Type::Enum IfcSurfaceStyleRefraction::Class() { return Type::IfcSurfaceStyleRefraction; }
 IfcSurfaceStyleRefraction::IfcSurfaceStyleRefraction(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceStyleRefraction)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSurfaceStyleRendering
+// Function implementations for IfcSurfaceStyleRendering
 bool IfcSurfaceStyleRendering::hasTransparency() { return !entity->getArgument(1)->isNull(); }
 IfcNormalisedRatioMeasure IfcSurfaceStyleRendering::Transparency() { return *entity->getArgument(1); }
 bool IfcSurfaceStyleRendering::hasDiffuseColour() { return !entity->getArgument(2)->isNull(); }
@@ -9405,19 +9405,19 @@ bool IfcSurfaceStyleRendering::is(Type::Enum v) const { return v == Type::IfcSur
 Type::Enum IfcSurfaceStyleRendering::type() const { return Type::IfcSurfaceStyleRendering; }
 Type::Enum IfcSurfaceStyleRendering::Class() { return Type::IfcSurfaceStyleRendering; }
 IfcSurfaceStyleRendering::IfcSurfaceStyleRendering(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceStyleRendering)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSurfaceStyleShading
+// Function implementations for IfcSurfaceStyleShading
 IfcColourRgb* IfcSurfaceStyleShading::SurfaceColour() { return reinterpret_pointer_cast<IfcBaseClass,IfcColourRgb>(*entity->getArgument(0)); }
 bool IfcSurfaceStyleShading::is(Type::Enum v) const { return v == Type::IfcSurfaceStyleShading; }
 Type::Enum IfcSurfaceStyleShading::type() const { return Type::IfcSurfaceStyleShading; }
 Type::Enum IfcSurfaceStyleShading::Class() { return Type::IfcSurfaceStyleShading; }
 IfcSurfaceStyleShading::IfcSurfaceStyleShading(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceStyleShading)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSurfaceStyleWithTextures
+// Function implementations for IfcSurfaceStyleWithTextures
 SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceTexture> > IfcSurfaceStyleWithTextures::Textures() { RETURN_AS_LIST(IfcSurfaceTexture,0) }
 bool IfcSurfaceStyleWithTextures::is(Type::Enum v) const { return v == Type::IfcSurfaceStyleWithTextures; }
 Type::Enum IfcSurfaceStyleWithTextures::type() const { return Type::IfcSurfaceStyleWithTextures; }
 Type::Enum IfcSurfaceStyleWithTextures::Class() { return Type::IfcSurfaceStyleWithTextures; }
 IfcSurfaceStyleWithTextures::IfcSurfaceStyleWithTextures(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceStyleWithTextures)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSurfaceTexture
+// Function implementations for IfcSurfaceTexture
 bool IfcSurfaceTexture::RepeatS() { return *entity->getArgument(0); }
 bool IfcSurfaceTexture::RepeatT() { return *entity->getArgument(1); }
 IfcSurfaceTextureEnum::IfcSurfaceTextureEnum IfcSurfaceTexture::TextureType() { return IfcSurfaceTextureEnum::FromString(*entity->getArgument(2)); }
@@ -9427,14 +9427,14 @@ bool IfcSurfaceTexture::is(Type::Enum v) const { return v == Type::IfcSurfaceTex
 Type::Enum IfcSurfaceTexture::type() const { return Type::IfcSurfaceTexture; }
 Type::Enum IfcSurfaceTexture::Class() { return Type::IfcSurfaceTexture; }
 IfcSurfaceTexture::IfcSurfaceTexture(IfcAbstractEntityPtr e) { if (!is(Type::IfcSurfaceTexture)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSweptAreaSolid
+// Function implementations for IfcSweptAreaSolid
 IfcProfileDef* IfcSweptAreaSolid::SweptArea() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(0)); }
 IfcAxis2Placement3D* IfcSweptAreaSolid::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(1)); }
 bool IfcSweptAreaSolid::is(Type::Enum v) const { return v == Type::IfcSweptAreaSolid || IfcSolidModel::is(v); }
 Type::Enum IfcSweptAreaSolid::type() const { return Type::IfcSweptAreaSolid; }
 Type::Enum IfcSweptAreaSolid::Class() { return Type::IfcSweptAreaSolid; }
 IfcSweptAreaSolid::IfcSweptAreaSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcSweptAreaSolid)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSweptDiskSolid
+// Function implementations for IfcSweptDiskSolid
 IfcCurve* IfcSweptDiskSolid::Directrix() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
 IfcPositiveLengthMeasure IfcSweptDiskSolid::Radius() { return *entity->getArgument(1); }
 bool IfcSweptDiskSolid::hasInnerRadius() { return !entity->getArgument(2)->isNull(); }
@@ -9445,37 +9445,37 @@ bool IfcSweptDiskSolid::is(Type::Enum v) const { return v == Type::IfcSweptDiskS
 Type::Enum IfcSweptDiskSolid::type() const { return Type::IfcSweptDiskSolid; }
 Type::Enum IfcSweptDiskSolid::Class() { return Type::IfcSweptDiskSolid; }
 IfcSweptDiskSolid::IfcSweptDiskSolid(IfcAbstractEntityPtr e) { if (!is(Type::IfcSweptDiskSolid)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSweptSurface
+// Function implementations for IfcSweptSurface
 IfcProfileDef* IfcSweptSurface::SweptCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcProfileDef>(*entity->getArgument(0)); }
 IfcAxis2Placement3D* IfcSweptSurface::Position() { return reinterpret_pointer_cast<IfcBaseClass,IfcAxis2Placement3D>(*entity->getArgument(1)); }
 bool IfcSweptSurface::is(Type::Enum v) const { return v == Type::IfcSweptSurface || IfcSurface::is(v); }
 Type::Enum IfcSweptSurface::type() const { return Type::IfcSweptSurface; }
 Type::Enum IfcSweptSurface::Class() { return Type::IfcSweptSurface; }
 IfcSweptSurface::IfcSweptSurface(IfcAbstractEntityPtr e) { if (!is(Type::IfcSweptSurface)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSwitchingDeviceType
+// Function implementations for IfcSwitchingDeviceType
 IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum IfcSwitchingDeviceType::PredefinedType() { return IfcSwitchingDeviceTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcSwitchingDeviceType::is(Type::Enum v) const { return v == Type::IfcSwitchingDeviceType || IfcFlowControllerType::is(v); }
 Type::Enum IfcSwitchingDeviceType::type() const { return Type::IfcSwitchingDeviceType; }
 Type::Enum IfcSwitchingDeviceType::Class() { return Type::IfcSwitchingDeviceType; }
 IfcSwitchingDeviceType::IfcSwitchingDeviceType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSwitchingDeviceType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSymbolStyle
+// Function implementations for IfcSymbolStyle
 IfcSymbolStyleSelect IfcSymbolStyle::StyleOfSymbol() { return *entity->getArgument(1); }
 bool IfcSymbolStyle::is(Type::Enum v) const { return v == Type::IfcSymbolStyle || IfcPresentationStyle::is(v); }
 Type::Enum IfcSymbolStyle::type() const { return Type::IfcSymbolStyle; }
 Type::Enum IfcSymbolStyle::Class() { return Type::IfcSymbolStyle; }
 IfcSymbolStyle::IfcSymbolStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcSymbolStyle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSystem
+// Function implementations for IfcSystem
 IfcRelServicesBuildings::list IfcSystem::ServicesBuildings() { RETURN_INVERSE(IfcRelServicesBuildings) }
 bool IfcSystem::is(Type::Enum v) const { return v == Type::IfcSystem || IfcGroup::is(v); }
 Type::Enum IfcSystem::type() const { return Type::IfcSystem; }
 Type::Enum IfcSystem::Class() { return Type::IfcSystem; }
 IfcSystem::IfcSystem(IfcAbstractEntityPtr e) { if (!is(Type::IfcSystem)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcSystemFurnitureElementType
+// Function implementations for IfcSystemFurnitureElementType
 bool IfcSystemFurnitureElementType::is(Type::Enum v) const { return v == Type::IfcSystemFurnitureElementType || IfcFurnishingElementType::is(v); }
 Type::Enum IfcSystemFurnitureElementType::type() const { return Type::IfcSystemFurnitureElementType; }
 Type::Enum IfcSystemFurnitureElementType::Class() { return Type::IfcSystemFurnitureElementType; }
 IfcSystemFurnitureElementType::IfcSystemFurnitureElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcSystemFurnitureElementType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTShapeProfileDef
+// Function implementations for IfcTShapeProfileDef
 IfcPositiveLengthMeasure IfcTShapeProfileDef::Depth() { return *entity->getArgument(3); }
 IfcPositiveLengthMeasure IfcTShapeProfileDef::FlangeWidth() { return *entity->getArgument(4); }
 IfcPositiveLengthMeasure IfcTShapeProfileDef::WebThickness() { return *entity->getArgument(5); }
@@ -9496,14 +9496,14 @@ bool IfcTShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcTShapePr
 Type::Enum IfcTShapeProfileDef::type() const { return Type::IfcTShapeProfileDef; }
 Type::Enum IfcTShapeProfileDef::Class() { return Type::IfcTShapeProfileDef; }
 IfcTShapeProfileDef::IfcTShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcTShapeProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTable
+// Function implementations for IfcTable
 std::string IfcTable::Name() { return *entity->getArgument(0); }
 SHARED_PTR< IfcTemplatedEntityList<IfcTableRow> > IfcTable::Rows() { RETURN_AS_LIST(IfcTableRow,1) }
 bool IfcTable::is(Type::Enum v) const { return v == Type::IfcTable; }
 Type::Enum IfcTable::type() const { return Type::IfcTable; }
 Type::Enum IfcTable::Class() { return Type::IfcTable; }
 IfcTable::IfcTable(IfcAbstractEntityPtr e) { if (!is(Type::IfcTable)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTableRow
+// Function implementations for IfcTableRow
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTableRow::RowCells() { RETURN_AS_LIST(IfcAbstractSelect,0) }
 bool IfcTableRow::IsHeading() { return *entity->getArgument(1); }
 IfcTable::list IfcTableRow::OfTable() { RETURN_INVERSE(IfcTable) }
@@ -9511,13 +9511,13 @@ bool IfcTableRow::is(Type::Enum v) const { return v == Type::IfcTableRow; }
 Type::Enum IfcTableRow::type() const { return Type::IfcTableRow; }
 Type::Enum IfcTableRow::Class() { return Type::IfcTableRow; }
 IfcTableRow::IfcTableRow(IfcAbstractEntityPtr e) { if (!is(Type::IfcTableRow)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTankType
+// Function implementations for IfcTankType
 IfcTankTypeEnum::IfcTankTypeEnum IfcTankType::PredefinedType() { return IfcTankTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcTankType::is(Type::Enum v) const { return v == Type::IfcTankType || IfcFlowStorageDeviceType::is(v); }
 Type::Enum IfcTankType::type() const { return Type::IfcTankType; }
 Type::Enum IfcTankType::Class() { return Type::IfcTankType; }
 IfcTankType::IfcTankType(IfcAbstractEntityPtr e) { if (!is(Type::IfcTankType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTask
+// Function implementations for IfcTask
 IfcIdentifier IfcTask::TaskId() { return *entity->getArgument(5); }
 bool IfcTask::hasStatus() { return !entity->getArgument(6)->isNull(); }
 IfcLabel IfcTask::Status() { return *entity->getArgument(6); }
@@ -9530,7 +9530,7 @@ bool IfcTask::is(Type::Enum v) const { return v == Type::IfcTask || IfcProcess::
 Type::Enum IfcTask::type() const { return Type::IfcTask; }
 Type::Enum IfcTask::Class() { return Type::IfcTask; }
 IfcTask::IfcTask(IfcAbstractEntityPtr e) { if (!is(Type::IfcTask)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTelecomAddress
+// Function implementations for IfcTelecomAddress
 bool IfcTelecomAddress::hasTelephoneNumbers() { return !entity->getArgument(3)->isNull(); }
 std::vector<IfcLabel> /*[1:?]*/ IfcTelecomAddress::TelephoneNumbers() { return *entity->getArgument(3); }
 bool IfcTelecomAddress::hasFacsimileNumbers() { return !entity->getArgument(4)->isNull(); }
@@ -9545,7 +9545,7 @@ bool IfcTelecomAddress::is(Type::Enum v) const { return v == Type::IfcTelecomAdd
 Type::Enum IfcTelecomAddress::type() const { return Type::IfcTelecomAddress; }
 Type::Enum IfcTelecomAddress::Class() { return Type::IfcTelecomAddress; }
 IfcTelecomAddress::IfcTelecomAddress(IfcAbstractEntityPtr e) { if (!is(Type::IfcTelecomAddress)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTendon
+// Function implementations for IfcTendon
 IfcTendonTypeEnum::IfcTendonTypeEnum IfcTendon::PredefinedType() { return IfcTendonTypeEnum::FromString(*entity->getArgument(9)); }
 IfcPositiveLengthMeasure IfcTendon::NominalDiameter() { return *entity->getArgument(10); }
 IfcAreaMeasure IfcTendon::CrossSectionArea() { return *entity->getArgument(11); }
@@ -9563,18 +9563,18 @@ bool IfcTendon::is(Type::Enum v) const { return v == Type::IfcTendon || IfcReinf
 Type::Enum IfcTendon::type() const { return Type::IfcTendon; }
 Type::Enum IfcTendon::Class() { return Type::IfcTendon; }
 IfcTendon::IfcTendon(IfcAbstractEntityPtr e) { if (!is(Type::IfcTendon)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTendonAnchor
+// Function implementations for IfcTendonAnchor
 bool IfcTendonAnchor::is(Type::Enum v) const { return v == Type::IfcTendonAnchor || IfcReinforcingElement::is(v); }
 Type::Enum IfcTendonAnchor::type() const { return Type::IfcTendonAnchor; }
 Type::Enum IfcTendonAnchor::Class() { return Type::IfcTendonAnchor; }
 IfcTendonAnchor::IfcTendonAnchor(IfcAbstractEntityPtr e) { if (!is(Type::IfcTendonAnchor)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTerminatorSymbol
+// Function implementations for IfcTerminatorSymbol
 IfcAnnotationCurveOccurrence* IfcTerminatorSymbol::AnnotatedCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcAnnotationCurveOccurrence>(*entity->getArgument(3)); }
 bool IfcTerminatorSymbol::is(Type::Enum v) const { return v == Type::IfcTerminatorSymbol || IfcAnnotationSymbolOccurrence::is(v); }
 Type::Enum IfcTerminatorSymbol::type() const { return Type::IfcTerminatorSymbol; }
 Type::Enum IfcTerminatorSymbol::Class() { return Type::IfcTerminatorSymbol; }
 IfcTerminatorSymbol::IfcTerminatorSymbol(IfcAbstractEntityPtr e) { if (!is(Type::IfcTerminatorSymbol)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTextLiteral
+// Function implementations for IfcTextLiteral
 IfcPresentableText IfcTextLiteral::Literal() { return *entity->getArgument(0); }
 IfcAxis2Placement IfcTextLiteral::Placement() { return *entity->getArgument(1); }
 IfcTextPath::IfcTextPath IfcTextLiteral::Path() { return IfcTextPath::FromString(*entity->getArgument(2)); }
@@ -9582,14 +9582,14 @@ bool IfcTextLiteral::is(Type::Enum v) const { return v == Type::IfcTextLiteral |
 Type::Enum IfcTextLiteral::type() const { return Type::IfcTextLiteral; }
 Type::Enum IfcTextLiteral::Class() { return Type::IfcTextLiteral; }
 IfcTextLiteral::IfcTextLiteral(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextLiteral)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTextLiteralWithExtent
+// Function implementations for IfcTextLiteralWithExtent
 IfcPlanarExtent* IfcTextLiteralWithExtent::Extent() { return reinterpret_pointer_cast<IfcBaseClass,IfcPlanarExtent>(*entity->getArgument(3)); }
 IfcBoxAlignment IfcTextLiteralWithExtent::BoxAlignment() { return *entity->getArgument(4); }
 bool IfcTextLiteralWithExtent::is(Type::Enum v) const { return v == Type::IfcTextLiteralWithExtent || IfcTextLiteral::is(v); }
 Type::Enum IfcTextLiteralWithExtent::type() const { return Type::IfcTextLiteralWithExtent; }
 Type::Enum IfcTextLiteralWithExtent::Class() { return Type::IfcTextLiteralWithExtent; }
 IfcTextLiteralWithExtent::IfcTextLiteralWithExtent(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextLiteralWithExtent)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTextStyle
+// Function implementations for IfcTextStyle
 bool IfcTextStyle::hasTextCharacterAppearance() { return !entity->getArgument(1)->isNull(); }
 IfcCharacterStyleSelect IfcTextStyle::TextCharacterAppearance() { return *entity->getArgument(1); }
 bool IfcTextStyle::hasTextStyle() { return !entity->getArgument(2)->isNull(); }
@@ -9599,7 +9599,7 @@ bool IfcTextStyle::is(Type::Enum v) const { return v == Type::IfcTextStyle || If
 Type::Enum IfcTextStyle::type() const { return Type::IfcTextStyle; }
 Type::Enum IfcTextStyle::Class() { return Type::IfcTextStyle; }
 IfcTextStyle::IfcTextStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextStyle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTextStyleFontModel
+// Function implementations for IfcTextStyleFontModel
 bool IfcTextStyleFontModel::hasFontFamily() { return !entity->getArgument(1)->isNull(); }
 std::vector<IfcTextFontName> /*[1:?]*/ IfcTextStyleFontModel::FontFamily() { return *entity->getArgument(1); }
 bool IfcTextStyleFontModel::hasFontStyle() { return !entity->getArgument(2)->isNull(); }
@@ -9613,7 +9613,7 @@ bool IfcTextStyleFontModel::is(Type::Enum v) const { return v == Type::IfcTextSt
 Type::Enum IfcTextStyleFontModel::type() const { return Type::IfcTextStyleFontModel; }
 Type::Enum IfcTextStyleFontModel::Class() { return Type::IfcTextStyleFontModel; }
 IfcTextStyleFontModel::IfcTextStyleFontModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextStyleFontModel)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTextStyleForDefinedFont
+// Function implementations for IfcTextStyleForDefinedFont
 IfcColour IfcTextStyleForDefinedFont::Colour() { return *entity->getArgument(0); }
 bool IfcTextStyleForDefinedFont::hasBackgroundColour() { return !entity->getArgument(1)->isNull(); }
 IfcColour IfcTextStyleForDefinedFont::BackgroundColour() { return *entity->getArgument(1); }
@@ -9621,7 +9621,7 @@ bool IfcTextStyleForDefinedFont::is(Type::Enum v) const { return v == Type::IfcT
 Type::Enum IfcTextStyleForDefinedFont::type() const { return Type::IfcTextStyleForDefinedFont; }
 Type::Enum IfcTextStyleForDefinedFont::Class() { return Type::IfcTextStyleForDefinedFont; }
 IfcTextStyleForDefinedFont::IfcTextStyleForDefinedFont(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextStyleForDefinedFont)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTextStyleTextModel
+// Function implementations for IfcTextStyleTextModel
 bool IfcTextStyleTextModel::hasTextIndent() { return !entity->getArgument(0)->isNull(); }
 IfcSizeSelect IfcTextStyleTextModel::TextIndent() { return *entity->getArgument(0); }
 bool IfcTextStyleTextModel::hasTextAlign() { return !entity->getArgument(1)->isNull(); }
@@ -9640,7 +9640,7 @@ bool IfcTextStyleTextModel::is(Type::Enum v) const { return v == Type::IfcTextSt
 Type::Enum IfcTextStyleTextModel::type() const { return Type::IfcTextStyleTextModel; }
 Type::Enum IfcTextStyleTextModel::Class() { return Type::IfcTextStyleTextModel; }
 IfcTextStyleTextModel::IfcTextStyleTextModel(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextStyleTextModel)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTextStyleWithBoxCharacteristics
+// Function implementations for IfcTextStyleWithBoxCharacteristics
 bool IfcTextStyleWithBoxCharacteristics::hasBoxHeight() { return !entity->getArgument(0)->isNull(); }
 IfcPositiveLengthMeasure IfcTextStyleWithBoxCharacteristics::BoxHeight() { return *entity->getArgument(0); }
 bool IfcTextStyleWithBoxCharacteristics::hasBoxWidth() { return !entity->getArgument(1)->isNull(); }
@@ -9655,32 +9655,32 @@ bool IfcTextStyleWithBoxCharacteristics::is(Type::Enum v) const { return v == Ty
 Type::Enum IfcTextStyleWithBoxCharacteristics::type() const { return Type::IfcTextStyleWithBoxCharacteristics; }
 Type::Enum IfcTextStyleWithBoxCharacteristics::Class() { return Type::IfcTextStyleWithBoxCharacteristics; }
 IfcTextStyleWithBoxCharacteristics::IfcTextStyleWithBoxCharacteristics(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextStyleWithBoxCharacteristics)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTextureCoordinate
+// Function implementations for IfcTextureCoordinate
 IfcAnnotationSurface::list IfcTextureCoordinate::AnnotatedSurface() { RETURN_INVERSE(IfcAnnotationSurface) }
 bool IfcTextureCoordinate::is(Type::Enum v) const { return v == Type::IfcTextureCoordinate; }
 Type::Enum IfcTextureCoordinate::type() const { return Type::IfcTextureCoordinate; }
 Type::Enum IfcTextureCoordinate::Class() { return Type::IfcTextureCoordinate; }
 IfcTextureCoordinate::IfcTextureCoordinate(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextureCoordinate)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTextureCoordinateGenerator
+// Function implementations for IfcTextureCoordinateGenerator
 IfcLabel IfcTextureCoordinateGenerator::Mode() { return *entity->getArgument(0); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTextureCoordinateGenerator::Parameter() { RETURN_AS_LIST(IfcAbstractSelect,1) }
 bool IfcTextureCoordinateGenerator::is(Type::Enum v) const { return v == Type::IfcTextureCoordinateGenerator || IfcTextureCoordinate::is(v); }
 Type::Enum IfcTextureCoordinateGenerator::type() const { return Type::IfcTextureCoordinateGenerator; }
 Type::Enum IfcTextureCoordinateGenerator::Class() { return Type::IfcTextureCoordinateGenerator; }
 IfcTextureCoordinateGenerator::IfcTextureCoordinateGenerator(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextureCoordinateGenerator)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTextureMap
+// Function implementations for IfcTextureMap
 SHARED_PTR< IfcTemplatedEntityList<IfcVertexBasedTextureMap> > IfcTextureMap::TextureMaps() { RETURN_AS_LIST(IfcVertexBasedTextureMap,0) }
 bool IfcTextureMap::is(Type::Enum v) const { return v == Type::IfcTextureMap || IfcTextureCoordinate::is(v); }
 Type::Enum IfcTextureMap::type() const { return Type::IfcTextureMap; }
 Type::Enum IfcTextureMap::Class() { return Type::IfcTextureMap; }
 IfcTextureMap::IfcTextureMap(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextureMap)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTextureVertex
+// Function implementations for IfcTextureVertex
 std::vector<IfcParameterValue> /*[2:2]*/ IfcTextureVertex::Coordinates() { return *entity->getArgument(0); }
 bool IfcTextureVertex::is(Type::Enum v) const { return v == Type::IfcTextureVertex; }
 Type::Enum IfcTextureVertex::type() const { return Type::IfcTextureVertex; }
 Type::Enum IfcTextureVertex::Class() { return Type::IfcTextureVertex; }
 IfcTextureVertex::IfcTextureVertex(IfcAbstractEntityPtr e) { if (!is(Type::IfcTextureVertex)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcThermalMaterialProperties
+// Function implementations for IfcThermalMaterialProperties
 bool IfcThermalMaterialProperties::hasSpecificHeatCapacity() { return !entity->getArgument(1)->isNull(); }
 IfcSpecificHeatCapacityMeasure IfcThermalMaterialProperties::SpecificHeatCapacity() { return *entity->getArgument(1); }
 bool IfcThermalMaterialProperties::hasBoilingPoint() { return !entity->getArgument(2)->isNull(); }
@@ -9693,7 +9693,7 @@ bool IfcThermalMaterialProperties::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcThermalMaterialProperties::type() const { return Type::IfcThermalMaterialProperties; }
 Type::Enum IfcThermalMaterialProperties::Class() { return Type::IfcThermalMaterialProperties; }
 IfcThermalMaterialProperties::IfcThermalMaterialProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcThermalMaterialProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTimeSeries
+// Function implementations for IfcTimeSeries
 IfcLabel IfcTimeSeries::Name() { return *entity->getArgument(0); }
 bool IfcTimeSeries::hasDescription() { return !entity->getArgument(1)->isNull(); }
 IfcText IfcTimeSeries::Description() { return *entity->getArgument(1); }
@@ -9710,14 +9710,14 @@ bool IfcTimeSeries::is(Type::Enum v) const { return v == Type::IfcTimeSeries; }
 Type::Enum IfcTimeSeries::type() const { return Type::IfcTimeSeries; }
 Type::Enum IfcTimeSeries::Class() { return Type::IfcTimeSeries; }
 IfcTimeSeries::IfcTimeSeries(IfcAbstractEntityPtr e) { if (!is(Type::IfcTimeSeries)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTimeSeriesReferenceRelationship
+// Function implementations for IfcTimeSeriesReferenceRelationship
 IfcTimeSeries* IfcTimeSeriesReferenceRelationship::ReferencedTimeSeries() { return reinterpret_pointer_cast<IfcBaseClass,IfcTimeSeries>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTimeSeriesReferenceRelationship::TimeSeriesReferences() { RETURN_AS_LIST(IfcAbstractSelect,1) }
 bool IfcTimeSeriesReferenceRelationship::is(Type::Enum v) const { return v == Type::IfcTimeSeriesReferenceRelationship; }
 Type::Enum IfcTimeSeriesReferenceRelationship::type() const { return Type::IfcTimeSeriesReferenceRelationship; }
 Type::Enum IfcTimeSeriesReferenceRelationship::Class() { return Type::IfcTimeSeriesReferenceRelationship; }
 IfcTimeSeriesReferenceRelationship::IfcTimeSeriesReferenceRelationship(IfcAbstractEntityPtr e) { if (!is(Type::IfcTimeSeriesReferenceRelationship)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTimeSeriesSchedule
+// Function implementations for IfcTimeSeriesSchedule
 bool IfcTimeSeriesSchedule::hasApplicableDates() { return !entity->getArgument(5)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTimeSeriesSchedule::ApplicableDates() { RETURN_AS_LIST(IfcAbstractSelect,5) }
 IfcTimeSeriesScheduleTypeEnum::IfcTimeSeriesScheduleTypeEnum IfcTimeSeriesSchedule::TimeSeriesScheduleType() { return IfcTimeSeriesScheduleTypeEnum::FromString(*entity->getArgument(6)); }
@@ -9726,29 +9726,29 @@ bool IfcTimeSeriesSchedule::is(Type::Enum v) const { return v == Type::IfcTimeSe
 Type::Enum IfcTimeSeriesSchedule::type() const { return Type::IfcTimeSeriesSchedule; }
 Type::Enum IfcTimeSeriesSchedule::Class() { return Type::IfcTimeSeriesSchedule; }
 IfcTimeSeriesSchedule::IfcTimeSeriesSchedule(IfcAbstractEntityPtr e) { if (!is(Type::IfcTimeSeriesSchedule)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTimeSeriesValue
+// Function implementations for IfcTimeSeriesValue
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTimeSeriesValue::ListValues() { RETURN_AS_LIST(IfcAbstractSelect,0) }
 bool IfcTimeSeriesValue::is(Type::Enum v) const { return v == Type::IfcTimeSeriesValue; }
 Type::Enum IfcTimeSeriesValue::type() const { return Type::IfcTimeSeriesValue; }
 Type::Enum IfcTimeSeriesValue::Class() { return Type::IfcTimeSeriesValue; }
 IfcTimeSeriesValue::IfcTimeSeriesValue(IfcAbstractEntityPtr e) { if (!is(Type::IfcTimeSeriesValue)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTopologicalRepresentationItem
+// Function implementations for IfcTopologicalRepresentationItem
 bool IfcTopologicalRepresentationItem::is(Type::Enum v) const { return v == Type::IfcTopologicalRepresentationItem || IfcRepresentationItem::is(v); }
 Type::Enum IfcTopologicalRepresentationItem::type() const { return Type::IfcTopologicalRepresentationItem; }
 Type::Enum IfcTopologicalRepresentationItem::Class() { return Type::IfcTopologicalRepresentationItem; }
 IfcTopologicalRepresentationItem::IfcTopologicalRepresentationItem(IfcAbstractEntityPtr e) { if (!is(Type::IfcTopologicalRepresentationItem)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTopologyRepresentation
+// Function implementations for IfcTopologyRepresentation
 bool IfcTopologyRepresentation::is(Type::Enum v) const { return v == Type::IfcTopologyRepresentation || IfcShapeModel::is(v); }
 Type::Enum IfcTopologyRepresentation::type() const { return Type::IfcTopologyRepresentation; }
 Type::Enum IfcTopologyRepresentation::Class() { return Type::IfcTopologyRepresentation; }
 IfcTopologyRepresentation::IfcTopologyRepresentation(IfcAbstractEntityPtr e) { if (!is(Type::IfcTopologyRepresentation)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTransformerType
+// Function implementations for IfcTransformerType
 IfcTransformerTypeEnum::IfcTransformerTypeEnum IfcTransformerType::PredefinedType() { return IfcTransformerTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcTransformerType::is(Type::Enum v) const { return v == Type::IfcTransformerType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcTransformerType::type() const { return Type::IfcTransformerType; }
 Type::Enum IfcTransformerType::Class() { return Type::IfcTransformerType; }
 IfcTransformerType::IfcTransformerType(IfcAbstractEntityPtr e) { if (!is(Type::IfcTransformerType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTransportElement
+// Function implementations for IfcTransportElement
 bool IfcTransportElement::hasOperationType() { return !entity->getArgument(8)->isNull(); }
 IfcTransportElementTypeEnum::IfcTransportElementTypeEnum IfcTransportElement::OperationType() { return IfcTransportElementTypeEnum::FromString(*entity->getArgument(8)); }
 bool IfcTransportElement::hasCapacityByWeight() { return !entity->getArgument(9)->isNull(); }
@@ -9759,13 +9759,13 @@ bool IfcTransportElement::is(Type::Enum v) const { return v == Type::IfcTranspor
 Type::Enum IfcTransportElement::type() const { return Type::IfcTransportElement; }
 Type::Enum IfcTransportElement::Class() { return Type::IfcTransportElement; }
 IfcTransportElement::IfcTransportElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcTransportElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTransportElementType
+// Function implementations for IfcTransportElementType
 IfcTransportElementTypeEnum::IfcTransportElementTypeEnum IfcTransportElementType::PredefinedType() { return IfcTransportElementTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcTransportElementType::is(Type::Enum v) const { return v == Type::IfcTransportElementType || IfcElementType::is(v); }
 Type::Enum IfcTransportElementType::type() const { return Type::IfcTransportElementType; }
 Type::Enum IfcTransportElementType::Class() { return Type::IfcTransportElementType; }
 IfcTransportElementType::IfcTransportElementType(IfcAbstractEntityPtr e) { if (!is(Type::IfcTransportElementType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTrapeziumProfileDef
+// Function implementations for IfcTrapeziumProfileDef
 IfcPositiveLengthMeasure IfcTrapeziumProfileDef::BottomXDim() { return *entity->getArgument(3); }
 IfcPositiveLengthMeasure IfcTrapeziumProfileDef::TopXDim() { return *entity->getArgument(4); }
 IfcPositiveLengthMeasure IfcTrapeziumProfileDef::YDim() { return *entity->getArgument(5); }
@@ -9774,7 +9774,7 @@ bool IfcTrapeziumProfileDef::is(Type::Enum v) const { return v == Type::IfcTrape
 Type::Enum IfcTrapeziumProfileDef::type() const { return Type::IfcTrapeziumProfileDef; }
 Type::Enum IfcTrapeziumProfileDef::Class() { return Type::IfcTrapeziumProfileDef; }
 IfcTrapeziumProfileDef::IfcTrapeziumProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcTrapeziumProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTrimmedCurve
+// Function implementations for IfcTrimmedCurve
 IfcCurve* IfcTrimmedCurve::BasisCurve() { return reinterpret_pointer_cast<IfcBaseClass,IfcCurve>(*entity->getArgument(0)); }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTrimmedCurve::Trim1() { RETURN_AS_LIST(IfcAbstractSelect,1) }
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcTrimmedCurve::Trim2() { RETURN_AS_LIST(IfcAbstractSelect,2) }
@@ -9784,19 +9784,19 @@ bool IfcTrimmedCurve::is(Type::Enum v) const { return v == Type::IfcTrimmedCurve
 Type::Enum IfcTrimmedCurve::type() const { return Type::IfcTrimmedCurve; }
 Type::Enum IfcTrimmedCurve::Class() { return Type::IfcTrimmedCurve; }
 IfcTrimmedCurve::IfcTrimmedCurve(IfcAbstractEntityPtr e) { if (!is(Type::IfcTrimmedCurve)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTubeBundleType
+// Function implementations for IfcTubeBundleType
 IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum IfcTubeBundleType::PredefinedType() { return IfcTubeBundleTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcTubeBundleType::is(Type::Enum v) const { return v == Type::IfcTubeBundleType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcTubeBundleType::type() const { return Type::IfcTubeBundleType; }
 Type::Enum IfcTubeBundleType::Class() { return Type::IfcTubeBundleType; }
 IfcTubeBundleType::IfcTubeBundleType(IfcAbstractEntityPtr e) { if (!is(Type::IfcTubeBundleType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTwoDirectionRepeatFactor
+// Function implementations for IfcTwoDirectionRepeatFactor
 IfcVector* IfcTwoDirectionRepeatFactor::SecondRepeatFactor() { return reinterpret_pointer_cast<IfcBaseClass,IfcVector>(*entity->getArgument(1)); }
 bool IfcTwoDirectionRepeatFactor::is(Type::Enum v) const { return v == Type::IfcTwoDirectionRepeatFactor || IfcOneDirectionRepeatFactor::is(v); }
 Type::Enum IfcTwoDirectionRepeatFactor::type() const { return Type::IfcTwoDirectionRepeatFactor; }
 Type::Enum IfcTwoDirectionRepeatFactor::Class() { return Type::IfcTwoDirectionRepeatFactor; }
 IfcTwoDirectionRepeatFactor::IfcTwoDirectionRepeatFactor(IfcAbstractEntityPtr e) { if (!is(Type::IfcTwoDirectionRepeatFactor)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTypeObject
+// Function implementations for IfcTypeObject
 bool IfcTypeObject::hasApplicableOccurrence() { return !entity->getArgument(4)->isNull(); }
 IfcLabel IfcTypeObject::ApplicableOccurrence() { return *entity->getArgument(4); }
 bool IfcTypeObject::hasHasPropertySets() { return !entity->getArgument(5)->isNull(); }
@@ -9806,7 +9806,7 @@ bool IfcTypeObject::is(Type::Enum v) const { return v == Type::IfcTypeObject || 
 Type::Enum IfcTypeObject::type() const { return Type::IfcTypeObject; }
 Type::Enum IfcTypeObject::Class() { return Type::IfcTypeObject; }
 IfcTypeObject::IfcTypeObject(IfcAbstractEntityPtr e) { if (!is(Type::IfcTypeObject)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcTypeProduct
+// Function implementations for IfcTypeProduct
 bool IfcTypeProduct::hasRepresentationMaps() { return !entity->getArgument(6)->isNull(); }
 SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationMap> > IfcTypeProduct::RepresentationMaps() { RETURN_AS_LIST(IfcRepresentationMap,6) }
 bool IfcTypeProduct::hasTag() { return !entity->getArgument(7)->isNull(); }
@@ -9815,7 +9815,7 @@ bool IfcTypeProduct::is(Type::Enum v) const { return v == Type::IfcTypeProduct |
 Type::Enum IfcTypeProduct::type() const { return Type::IfcTypeProduct; }
 Type::Enum IfcTypeProduct::Class() { return Type::IfcTypeProduct; }
 IfcTypeProduct::IfcTypeProduct(IfcAbstractEntityPtr e) { if (!is(Type::IfcTypeProduct)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcUShapeProfileDef
+// Function implementations for IfcUShapeProfileDef
 IfcPositiveLengthMeasure IfcUShapeProfileDef::Depth() { return *entity->getArgument(3); }
 IfcPositiveLengthMeasure IfcUShapeProfileDef::FlangeWidth() { return *entity->getArgument(4); }
 IfcPositiveLengthMeasure IfcUShapeProfileDef::WebThickness() { return *entity->getArgument(5); }
@@ -9832,96 +9832,96 @@ bool IfcUShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcUShapePr
 Type::Enum IfcUShapeProfileDef::type() const { return Type::IfcUShapeProfileDef; }
 Type::Enum IfcUShapeProfileDef::Class() { return Type::IfcUShapeProfileDef; }
 IfcUShapeProfileDef::IfcUShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcUShapeProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcUnitAssignment
+// Function implementations for IfcUnitAssignment
 SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > IfcUnitAssignment::Units() { RETURN_AS_LIST(IfcAbstractSelect,0) }
 bool IfcUnitAssignment::is(Type::Enum v) const { return v == Type::IfcUnitAssignment; }
 Type::Enum IfcUnitAssignment::type() const { return Type::IfcUnitAssignment; }
 Type::Enum IfcUnitAssignment::Class() { return Type::IfcUnitAssignment; }
 IfcUnitAssignment::IfcUnitAssignment(IfcAbstractEntityPtr e) { if (!is(Type::IfcUnitAssignment)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcUnitaryEquipmentType
+// Function implementations for IfcUnitaryEquipmentType
 IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum IfcUnitaryEquipmentType::PredefinedType() { return IfcUnitaryEquipmentTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcUnitaryEquipmentType::is(Type::Enum v) const { return v == Type::IfcUnitaryEquipmentType || IfcEnergyConversionDeviceType::is(v); }
 Type::Enum IfcUnitaryEquipmentType::type() const { return Type::IfcUnitaryEquipmentType; }
 Type::Enum IfcUnitaryEquipmentType::Class() { return Type::IfcUnitaryEquipmentType; }
 IfcUnitaryEquipmentType::IfcUnitaryEquipmentType(IfcAbstractEntityPtr e) { if (!is(Type::IfcUnitaryEquipmentType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcValveType
+// Function implementations for IfcValveType
 IfcValveTypeEnum::IfcValveTypeEnum IfcValveType::PredefinedType() { return IfcValveTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcValveType::is(Type::Enum v) const { return v == Type::IfcValveType || IfcFlowControllerType::is(v); }
 Type::Enum IfcValveType::type() const { return Type::IfcValveType; }
 Type::Enum IfcValveType::Class() { return Type::IfcValveType; }
 IfcValveType::IfcValveType(IfcAbstractEntityPtr e) { if (!is(Type::IfcValveType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcVector
+// Function implementations for IfcVector
 IfcDirection* IfcVector::Orientation() { return reinterpret_pointer_cast<IfcBaseClass,IfcDirection>(*entity->getArgument(0)); }
 IfcLengthMeasure IfcVector::Magnitude() { return *entity->getArgument(1); }
 bool IfcVector::is(Type::Enum v) const { return v == Type::IfcVector || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcVector::type() const { return Type::IfcVector; }
 Type::Enum IfcVector::Class() { return Type::IfcVector; }
 IfcVector::IfcVector(IfcAbstractEntityPtr e) { if (!is(Type::IfcVector)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcVertex
+// Function implementations for IfcVertex
 bool IfcVertex::is(Type::Enum v) const { return v == Type::IfcVertex || IfcTopologicalRepresentationItem::is(v); }
 Type::Enum IfcVertex::type() const { return Type::IfcVertex; }
 Type::Enum IfcVertex::Class() { return Type::IfcVertex; }
 IfcVertex::IfcVertex(IfcAbstractEntityPtr e) { if (!is(Type::IfcVertex)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcVertexBasedTextureMap
+// Function implementations for IfcVertexBasedTextureMap
 SHARED_PTR< IfcTemplatedEntityList<IfcTextureVertex> > IfcVertexBasedTextureMap::TextureVertices() { RETURN_AS_LIST(IfcTextureVertex,0) }
 SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > IfcVertexBasedTextureMap::TexturePoints() { RETURN_AS_LIST(IfcCartesianPoint,1) }
 bool IfcVertexBasedTextureMap::is(Type::Enum v) const { return v == Type::IfcVertexBasedTextureMap; }
 Type::Enum IfcVertexBasedTextureMap::type() const { return Type::IfcVertexBasedTextureMap; }
 Type::Enum IfcVertexBasedTextureMap::Class() { return Type::IfcVertexBasedTextureMap; }
 IfcVertexBasedTextureMap::IfcVertexBasedTextureMap(IfcAbstractEntityPtr e) { if (!is(Type::IfcVertexBasedTextureMap)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcVertexLoop
+// Function implementations for IfcVertexLoop
 IfcVertex* IfcVertexLoop::LoopVertex() { return reinterpret_pointer_cast<IfcBaseClass,IfcVertex>(*entity->getArgument(0)); }
 bool IfcVertexLoop::is(Type::Enum v) const { return v == Type::IfcVertexLoop || IfcLoop::is(v); }
 Type::Enum IfcVertexLoop::type() const { return Type::IfcVertexLoop; }
 Type::Enum IfcVertexLoop::Class() { return Type::IfcVertexLoop; }
 IfcVertexLoop::IfcVertexLoop(IfcAbstractEntityPtr e) { if (!is(Type::IfcVertexLoop)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcVertexPoint
+// Function implementations for IfcVertexPoint
 IfcPoint* IfcVertexPoint::VertexGeometry() { return reinterpret_pointer_cast<IfcBaseClass,IfcPoint>(*entity->getArgument(0)); }
 bool IfcVertexPoint::is(Type::Enum v) const { return v == Type::IfcVertexPoint || IfcVertex::is(v); }
 Type::Enum IfcVertexPoint::type() const { return Type::IfcVertexPoint; }
 Type::Enum IfcVertexPoint::Class() { return Type::IfcVertexPoint; }
 IfcVertexPoint::IfcVertexPoint(IfcAbstractEntityPtr e) { if (!is(Type::IfcVertexPoint)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcVibrationIsolatorType
+// Function implementations for IfcVibrationIsolatorType
 IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum IfcVibrationIsolatorType::PredefinedType() { return IfcVibrationIsolatorTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcVibrationIsolatorType::is(Type::Enum v) const { return v == Type::IfcVibrationIsolatorType || IfcDiscreteAccessoryType::is(v); }
 Type::Enum IfcVibrationIsolatorType::type() const { return Type::IfcVibrationIsolatorType; }
 Type::Enum IfcVibrationIsolatorType::Class() { return Type::IfcVibrationIsolatorType; }
 IfcVibrationIsolatorType::IfcVibrationIsolatorType(IfcAbstractEntityPtr e) { if (!is(Type::IfcVibrationIsolatorType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcVirtualElement
+// Function implementations for IfcVirtualElement
 bool IfcVirtualElement::is(Type::Enum v) const { return v == Type::IfcVirtualElement || IfcElement::is(v); }
 Type::Enum IfcVirtualElement::type() const { return Type::IfcVirtualElement; }
 Type::Enum IfcVirtualElement::Class() { return Type::IfcVirtualElement; }
 IfcVirtualElement::IfcVirtualElement(IfcAbstractEntityPtr e) { if (!is(Type::IfcVirtualElement)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcVirtualGridIntersection
+// Function implementations for IfcVirtualGridIntersection
 SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > IfcVirtualGridIntersection::IntersectingAxes() { RETURN_AS_LIST(IfcGridAxis,0) }
 std::vector<IfcLengthMeasure> /*[2:3]*/ IfcVirtualGridIntersection::OffsetDistances() { return *entity->getArgument(1); }
 bool IfcVirtualGridIntersection::is(Type::Enum v) const { return v == Type::IfcVirtualGridIntersection; }
 Type::Enum IfcVirtualGridIntersection::type() const { return Type::IfcVirtualGridIntersection; }
 Type::Enum IfcVirtualGridIntersection::Class() { return Type::IfcVirtualGridIntersection; }
 IfcVirtualGridIntersection::IfcVirtualGridIntersection(IfcAbstractEntityPtr e) { if (!is(Type::IfcVirtualGridIntersection)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcWall
+// Function implementations for IfcWall
 bool IfcWall::is(Type::Enum v) const { return v == Type::IfcWall || IfcBuildingElement::is(v); }
 Type::Enum IfcWall::type() const { return Type::IfcWall; }
 Type::Enum IfcWall::Class() { return Type::IfcWall; }
 IfcWall::IfcWall(IfcAbstractEntityPtr e) { if (!is(Type::IfcWall)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcWallStandardCase
+// Function implementations for IfcWallStandardCase
 bool IfcWallStandardCase::is(Type::Enum v) const { return v == Type::IfcWallStandardCase || IfcWall::is(v); }
 Type::Enum IfcWallStandardCase::type() const { return Type::IfcWallStandardCase; }
 Type::Enum IfcWallStandardCase::Class() { return Type::IfcWallStandardCase; }
 IfcWallStandardCase::IfcWallStandardCase(IfcAbstractEntityPtr e) { if (!is(Type::IfcWallStandardCase)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcWallType
+// Function implementations for IfcWallType
 IfcWallTypeEnum::IfcWallTypeEnum IfcWallType::PredefinedType() { return IfcWallTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcWallType::is(Type::Enum v) const { return v == Type::IfcWallType || IfcBuildingElementType::is(v); }
 Type::Enum IfcWallType::type() const { return Type::IfcWallType; }
 Type::Enum IfcWallType::Class() { return Type::IfcWallType; }
 IfcWallType::IfcWallType(IfcAbstractEntityPtr e) { if (!is(Type::IfcWallType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcWasteTerminalType
+// Function implementations for IfcWasteTerminalType
 IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum IfcWasteTerminalType::PredefinedType() { return IfcWasteTerminalTypeEnum::FromString(*entity->getArgument(9)); }
 bool IfcWasteTerminalType::is(Type::Enum v) const { return v == Type::IfcWasteTerminalType || IfcFlowTerminalType::is(v); }
 Type::Enum IfcWasteTerminalType::type() const { return Type::IfcWasteTerminalType; }
 Type::Enum IfcWasteTerminalType::Class() { return Type::IfcWasteTerminalType; }
 IfcWasteTerminalType::IfcWasteTerminalType(IfcAbstractEntityPtr e) { if (!is(Type::IfcWasteTerminalType)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcWaterProperties
+// Function implementations for IfcWaterProperties
 bool IfcWaterProperties::hasIsPotable() { return !entity->getArgument(1)->isNull(); }
 bool IfcWaterProperties::IsPotable() { return *entity->getArgument(1); }
 bool IfcWaterProperties::hasHardness() { return !entity->getArgument(2)->isNull(); }
@@ -9940,7 +9940,7 @@ bool IfcWaterProperties::is(Type::Enum v) const { return v == Type::IfcWaterProp
 Type::Enum IfcWaterProperties::type() const { return Type::IfcWaterProperties; }
 Type::Enum IfcWaterProperties::Class() { return Type::IfcWaterProperties; }
 IfcWaterProperties::IfcWaterProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcWaterProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcWindow
+// Function implementations for IfcWindow
 bool IfcWindow::hasOverallHeight() { return !entity->getArgument(8)->isNull(); }
 IfcPositiveLengthMeasure IfcWindow::OverallHeight() { return *entity->getArgument(8); }
 bool IfcWindow::hasOverallWidth() { return !entity->getArgument(9)->isNull(); }
@@ -9949,7 +9949,7 @@ bool IfcWindow::is(Type::Enum v) const { return v == Type::IfcWindow || IfcBuild
 Type::Enum IfcWindow::type() const { return Type::IfcWindow; }
 Type::Enum IfcWindow::Class() { return Type::IfcWindow; }
 IfcWindow::IfcWindow(IfcAbstractEntityPtr e) { if (!is(Type::IfcWindow)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcWindowLiningProperties
+// Function implementations for IfcWindowLiningProperties
 bool IfcWindowLiningProperties::hasLiningDepth() { return !entity->getArgument(4)->isNull(); }
 IfcPositiveLengthMeasure IfcWindowLiningProperties::LiningDepth() { return *entity->getArgument(4); }
 bool IfcWindowLiningProperties::hasLiningThickness() { return !entity->getArgument(5)->isNull(); }
@@ -9972,7 +9972,7 @@ bool IfcWindowLiningProperties::is(Type::Enum v) const { return v == Type::IfcWi
 Type::Enum IfcWindowLiningProperties::type() const { return Type::IfcWindowLiningProperties; }
 Type::Enum IfcWindowLiningProperties::Class() { return Type::IfcWindowLiningProperties; }
 IfcWindowLiningProperties::IfcWindowLiningProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcWindowLiningProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcWindowPanelProperties
+// Function implementations for IfcWindowPanelProperties
 IfcWindowPanelOperationEnum::IfcWindowPanelOperationEnum IfcWindowPanelProperties::OperationType() { return IfcWindowPanelOperationEnum::FromString(*entity->getArgument(4)); }
 IfcWindowPanelPositionEnum::IfcWindowPanelPositionEnum IfcWindowPanelProperties::PanelPosition() { return IfcWindowPanelPositionEnum::FromString(*entity->getArgument(5)); }
 bool IfcWindowPanelProperties::hasFrameDepth() { return !entity->getArgument(6)->isNull(); }
@@ -9985,7 +9985,7 @@ bool IfcWindowPanelProperties::is(Type::Enum v) const { return v == Type::IfcWin
 Type::Enum IfcWindowPanelProperties::type() const { return Type::IfcWindowPanelProperties; }
 Type::Enum IfcWindowPanelProperties::Class() { return Type::IfcWindowPanelProperties; }
 IfcWindowPanelProperties::IfcWindowPanelProperties(IfcAbstractEntityPtr e) { if (!is(Type::IfcWindowPanelProperties)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcWindowStyle
+// Function implementations for IfcWindowStyle
 IfcWindowStyleConstructionEnum::IfcWindowStyleConstructionEnum IfcWindowStyle::ConstructionType() { return IfcWindowStyleConstructionEnum::FromString(*entity->getArgument(8)); }
 IfcWindowStyleOperationEnum::IfcWindowStyleOperationEnum IfcWindowStyle::OperationType() { return IfcWindowStyleOperationEnum::FromString(*entity->getArgument(9)); }
 bool IfcWindowStyle::ParameterTakesPrecedence() { return *entity->getArgument(10); }
@@ -9994,7 +9994,7 @@ bool IfcWindowStyle::is(Type::Enum v) const { return v == Type::IfcWindowStyle |
 Type::Enum IfcWindowStyle::type() const { return Type::IfcWindowStyle; }
 Type::Enum IfcWindowStyle::Class() { return Type::IfcWindowStyle; }
 IfcWindowStyle::IfcWindowStyle(IfcAbstractEntityPtr e) { if (!is(Type::IfcWindowStyle)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcWorkControl
+// Function implementations for IfcWorkControl
 IfcIdentifier IfcWorkControl::Identifier() { return *entity->getArgument(5); }
 IfcDateTimeSelect IfcWorkControl::CreationDate() { return *entity->getArgument(6); }
 bool IfcWorkControl::hasCreators() { return !entity->getArgument(7)->isNull(); }
@@ -10016,17 +10016,17 @@ bool IfcWorkControl::is(Type::Enum v) const { return v == Type::IfcWorkControl |
 Type::Enum IfcWorkControl::type() const { return Type::IfcWorkControl; }
 Type::Enum IfcWorkControl::Class() { return Type::IfcWorkControl; }
 IfcWorkControl::IfcWorkControl(IfcAbstractEntityPtr e) { if (!is(Type::IfcWorkControl)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcWorkPlan
+// Function implementations for IfcWorkPlan
 bool IfcWorkPlan::is(Type::Enum v) const { return v == Type::IfcWorkPlan || IfcWorkControl::is(v); }
 Type::Enum IfcWorkPlan::type() const { return Type::IfcWorkPlan; }
 Type::Enum IfcWorkPlan::Class() { return Type::IfcWorkPlan; }
 IfcWorkPlan::IfcWorkPlan(IfcAbstractEntityPtr e) { if (!is(Type::IfcWorkPlan)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcWorkSchedule
+// Function implementations for IfcWorkSchedule
 bool IfcWorkSchedule::is(Type::Enum v) const { return v == Type::IfcWorkSchedule || IfcWorkControl::is(v); }
 Type::Enum IfcWorkSchedule::type() const { return Type::IfcWorkSchedule; }
 Type::Enum IfcWorkSchedule::Class() { return Type::IfcWorkSchedule; }
 IfcWorkSchedule::IfcWorkSchedule(IfcAbstractEntityPtr e) { if (!is(Type::IfcWorkSchedule)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcZShapeProfileDef
+// Function implementations for IfcZShapeProfileDef
 IfcPositiveLengthMeasure IfcZShapeProfileDef::Depth() { return *entity->getArgument(3); }
 IfcPositiveLengthMeasure IfcZShapeProfileDef::FlangeWidth() { return *entity->getArgument(4); }
 IfcPositiveLengthMeasure IfcZShapeProfileDef::WebThickness() { return *entity->getArgument(5); }
@@ -10039,7 +10039,7 @@ bool IfcZShapeProfileDef::is(Type::Enum v) const { return v == Type::IfcZShapePr
 Type::Enum IfcZShapeProfileDef::type() const { return Type::IfcZShapeProfileDef; }
 Type::Enum IfcZShapeProfileDef::Class() { return Type::IfcZShapeProfileDef; }
 IfcZShapeProfileDef::IfcZShapeProfileDef(IfcAbstractEntityPtr e) { if (!is(Type::IfcZShapeProfileDef)) throw IfcException("Unable to find find keyword in schema"); entity = e; } 
-// IfcZone
+// Function implementations for IfcZone
 bool IfcZone::is(Type::Enum v) const { return v == Type::IfcZone || IfcGroup::is(v); }
 Type::Enum IfcZone::type() const { return Type::IfcZone; }
 Type::Enum IfcZone::Class() { return Type::IfcZone; }

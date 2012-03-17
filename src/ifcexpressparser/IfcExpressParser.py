@@ -34,6 +34,8 @@ header = """
 ###############################################################################
 
 import os, sys
+import IfcDocumentation
+
 filename = sys.argv[1]
 
 #
@@ -160,12 +162,14 @@ class Typedef:
             self.len = len(self.type)
         elif isinstance(self.type,SelectType): selections.add(self.name)
         simple_types.add(self.name)
+        comment = IfcDocumentation.description(self.name)
+        self.comment = comment+"\n" if comment else ''
     def __str__(self):
         global generator_mode
         if generator_mode == 'HEADER' and isinstance(self.type,EnumType):
-            return ("namespace %(name)s {typedef %(type)s %(name)s;\nstd::string ToString(%(name)s v);\n%(name)s FromString(const std::string& s);}"%self.__dict__)%self.__dict__
+            return ("namespace %(name)s {\n%(comment)stypedef %(type)s %(name)s;\nstd::string ToString(%(name)s v);\n%(name)s FromString(const std::string& s);\n}"%self.__dict__)%self.__dict__
         elif generator_mode == 'HEADER':
-            return "typedef %s %s;"%(self.type,self.name)
+            return "%stypedef %s %s;"%(self.comment,self.type,self.name)
         elif generator_mode == 'SOURCE' and isinstance(self.type,EnumType):
             generator_mode = 'SOURCE_TO'
             s =  "std::string %(name)s::ToString(%(name)s v) {\n    if ( v < 0 || v >= %(len)d ) throw IfcException(\"Unable to find find keyword in schema\");\n    const char* names[] = %(type)s;\n    return names[v];\n}\n"%self.__dict__
@@ -185,7 +189,7 @@ class ArgumentList:
         s = ""
         argv = self.argstart
         for a in self.l:
-            class_name = indent = ""
+            class_name = indent = comment = optional_comment = ""
             return_type = str(a.type)
             if generator_mode == 'SOURCE':
                 class_name = "%(class_name)s::"
@@ -204,13 +208,17 @@ class ArgumentList:
                 function_body2 = " { return !entity->getArgument(%d)->isNull(); }"%argv
             else:
                 indent = "    "
-                function_body = function_body2 = ";"            
-            if a.optional: s += "\n%sbool %shas%s()%s"%(indent,class_name,a.name,function_body2)
+                function_body = function_body2 = ";"
+                comment = IfcDocumentation.description((self.class_name,a.name))
+                comment = comment+"\n" if comment else ''
+                comment = comment.replace("///","%s///"%indent)
+                optional_comment = "%s/// Whether the optional attribute %s is defined for this %s\n"%(indent,a.name,self.class_name)
+            if a.optional: s += "\n%s%sbool %shas%s()%s"%(optional_comment,indent,class_name,a.name,function_body2)
             if ( str(a.type) in enumerations ):
                 return_type = "%(type)s::%(type)s"%a.__dict__
             elif ( str(a.type) in entity_names ):
                 return_type = "%(type)s*"%a.__dict__
-            s += "\n%s%s %s%s()%s"%(indent,return_type,class_name,a.name,function_body)
+            s += "\n%s%s%s %s%s()%s"%(comment,indent,return_type,class_name,a.name,function_body)
             argv += 1
         return s
 class InverseList:
@@ -228,12 +236,15 @@ class InverseList:
 class Classdef:
     def __init__(self,l):
         self.class_name, self.parent_class, self.arguments, self.inverse = l
+        self.arguments.class_name = self.class_name
         entity_names.add(self.class_name)
         parent_relations[self.class_name] = self.parent_class
         argument_count[self.class_name] = len(self.arguments)
     def __str__(self):
         if generator_mode == 'HEADER':
-            return "class %s : public %s {\npublic:%s%s%s\n};" % (self.class_name,
+            comment = IfcDocumentation.description(self.class_name)
+            comment = comment+"\n" if comment else ''
+            return "%sclass %s : public %s {\npublic:%s%s%s\n};" % (comment,self.class_name,
                 "IfcBaseClass" if self.parent_class is None else self.parent_class,
                 self.arguments,
                 self.inverse,
@@ -247,7 +258,7 @@ class Classdef:
             )
         elif generator_mode == 'SOURCE':
             self.arguments.argstart = argument_start(self.class_name)
-            return (("\n// %(class_name)s"+str(self.arguments)+str(self.inverse)+
+            return (("\n// Function implementations for %(class_name)s"+str(self.arguments)+str(self.inverse)+
             ("\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s; }" if self.parent_class is None else
             "\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s || %(parent_class)s::is(v); }")+
             "\nType::Enum %(class_name)s::type() const { return Type::%(class_name)s; }"+
