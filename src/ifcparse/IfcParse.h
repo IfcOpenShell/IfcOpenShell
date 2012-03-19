@@ -27,7 +27,7 @@
 #ifndef IFCPARSE_H
 #define IFCPARSE_H
 
-#define IFCOPENSHELL_VERSION "0.3.0-rc2"
+#define IFCOPENSHELL_VERSION "0.3.0-rc3"
 
 #include <string>
 #include <sstream>
@@ -260,7 +260,7 @@ public:
 	/// Returns the entity with the specified id
 	static IfcEntity EntityById(int id);
 	/// Returns the entity with the specified GlobalId
-	static Ifc2x3::IfcRoot::ptr Ifc::EntityByGuid(const std::string& guid);
+	static Ifc2x3::IfcRoot::ptr EntityByGuid(const std::string& guid);
 	static bool Init(const std::string& fn);
 	static bool Init(std::istream& fn, int len);
 	static bool Init(void* data, int len);
