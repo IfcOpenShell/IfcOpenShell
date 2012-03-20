@@ -42,6 +42,14 @@
 
 #include "../ifcgeom/IfcShapeList.h"
 
+// Tolerances for various geometrical operations:
+// Specifies the deflection of the mesher
+#define DEFLECTION_TOLERANCE 0.001
+// Specifies the tolerance of the wire builder, most notably for trimmed curves
+#define WIRE_CREATION_TOLERANCE 0.0001
+// Specifies the treshold distance under which cartesian points are deemed equal
+#define POINT_EQUALITY_TOLERANCE 0.000001
+
 #define FACESET_AS_COMPOUND 1
 
 namespace IfcGeom {

@@ -103,7 +103,7 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
 		// Triangulate the shape
 		try {
 			//BRepTools::Clean(s);
-			BRepMesh::Mesh(s,0.001f);
+			BRepMesh::Mesh(s,DEFLECTION_TOLERANCE);
 		} catch(...) {
 			Ifc::LogMessage("Error","Failed to triangulate mesh:",Ifc::EntityById(i)->entity);
 			continue;

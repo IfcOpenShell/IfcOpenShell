@@ -278,8 +278,8 @@ bool IfcGeom::is_convex(const TopoDS_Wire& wire) {
 				edge_points.push_back(P2);
 			}
 			if ( edge_points.size() != 2 ) continue;
-			if ( edge_points[0].IsEqual(P1,0.0001)) neighbors.push_back(edge_points[1]);
-			else if ( edge_points[1].IsEqual(P1,0.0001)) neighbors.push_back(edge_points[0]);
+			if ( edge_points[0].IsEqual(P1,POINT_EQUALITY_TOLERANCE)) neighbors.push_back(edge_points[1]);
+			else if ( edge_points[1].IsEqual(P1,POINT_EQUALITY_TOLERANCE)) neighbors.push_back(edge_points[0]);
 		}
 		// There should be two of these
 		if ( neighbors.size() != 2 ) return false;
@@ -288,10 +288,10 @@ bool IfcGeom::is_convex(const TopoDS_Wire& wire) {
 		for ( TopExp_Explorer exp2(wire,TopAbs_VERTEX); exp2.More(); exp2.Next() ) {
 			TopoDS_Vertex V2 = TopoDS::Vertex(exp2.Current());
 			gp_Pnt P2 = BRep_Tool::Pnt(V2);
-			if ( P1.IsEqual(P2,0.0001) ) continue;
+			if ( P1.IsEqual(P2,POINT_EQUALITY_TOLERANCE) ) continue;
 			bool found = false;
 			for( std::vector<gp_Pnt>::const_iterator it = neighbors.begin(); it != neighbors.end(); ++ it ) {
-				if ( (*it).IsEqual(P2,0.0001) ) { found = true; break; }
+				if ( (*it).IsEqual(P2,POINT_EQUALITY_TOLERANCE) ) { found = true; break; }
 			}
 			if ( ! found ) non_neighbors.push_back(P2);
 		}
