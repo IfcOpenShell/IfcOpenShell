@@ -25,7 +25,6 @@
 #include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
-#include <gp_Quaternion.hxx>
 #include <TopoDS_Compound.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepTools.hxx>
@@ -521,6 +520,9 @@ void IfcGeomObjects::Settings(int setting, bool value) {
 		break;
 	case USE_BREP_DATA:
 		use_brep_data = value;
+		break;
+	case SEW_SHELLS:
+		Ifc::SewShells = value;
 		break;
 	}
 }

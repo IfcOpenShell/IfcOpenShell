@@ -49,6 +49,7 @@ int main ( int argc, char** argv ) {
 
 	IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS,true);
 	IfcGeomObjects::Settings(IfcGeomObjects::WELD_VERTICES,false);
+	IfcGeomObjects::Settings(IfcGeomObjects::SEW_SHELLS,true);
 
 	// Stream for log messages, we don't want to interupt our new progress bar...
 	std::stringstream ss;

@@ -24,6 +24,7 @@
 #include "../ifcmax/IfcMax.h"
 #include "../ifcmax/MaxMaterials.h"
 #include "../ifcgeom/IfcGeomObjects.h"
+
 int controlsInit = false;
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL,ULONG fdwReason,LPVOID lpvReserved) {	
@@ -106,10 +107,11 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 
 	IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS,false);
 	IfcGeomObjects::Settings(IfcGeomObjects::WELD_VERTICES,true);
+	IfcGeomObjects::Settings(IfcGeomObjects::SEW_SHELLS,true);
 
 	if ( ! IfcGeomObjects::Init((char*)name,0,0) ) return false;
 
-	std::map<int, TriObject*> dict;
+	//std::map<int, TriObject*> dict;
 	MtlBaseLib* mats = itfc->GetSceneMtls();
 	int slot = mats->Count();
 
@@ -129,10 +131,14 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 			m = static_cast<Mtl*>((*mats)[matIndex]);
 		} 
 		
-		std::map<int, TriObject*>::const_iterator it = dict.find(o->mesh->id);
+		// This mapping is useless for now, because this even in case
+		// meshes entities in IFC share the same representation elements
+		// they will never be given the same id.
+		// TODO: Fix this!
+		// std::map<int, TriObject*>::const_iterator it = dict.find(o->mesh->id);
 
 		TriObject* tri;
-		if ( it == dict.end() ) {
+		// if ( it == dict.end() ) {
 			tri = CreateNewTriObject();
 			const int numVerts = o->mesh->verts.size()/3;
 			tri->mesh.setNumVerts(numVerts);
@@ -145,14 +151,21 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 				tri->mesh.faces[i].setVerts(o->mesh->faces[3*i+0],o->mesh->faces[3*i+1],o->mesh->faces[3*i+2]);
 				tri->mesh.faces[i].setEdgeVisFlags(o->mesh->edges[3*i+0],o->mesh->edges[3*i+1],o->mesh->edges[3*i+2]);
 			}
-			tri->mesh.InvalidateTopologyCache();
-			tri->mesh.InvalidateGeomCache();	
+				
 			tri->mesh.buildNormals();
+			// Either use this or undefine the FACESETS_AS_COMPOUND option in IfcGeom.h to have
+			// properly oriented normals. Using only the line below will result in a consistent
+			// orientation of normals accross shells, but not always oriented towards the
+			// outside.
+			// tri->mesh.UnifyNormals(false);
 			tri->mesh.BuildStripsAndEdges();
-			dict[o->mesh->id] = tri;
-		} else {
-			tri = (*it).second;
-		}
+			tri->mesh.InvalidateTopologyCache();
+			tri->mesh.InvalidateGeomCache();
+
+		//	dict[o->mesh->id] = tri;
+		// } else {
+		// 	tri = (*it).second;
+		// }
 
 		ImpNode* node = impitfc->CreateNode();
 		node->Reference(tri);

@@ -268,6 +268,7 @@ public:
 	static std::string GetLog();
 	static void Dispose();
 	static bool hasPlaneAngleUnit;
+	static bool SewShells;
 	static double LengthUnit;
 	static double PlaneAngleUnit;
 	static int CircleSegments;

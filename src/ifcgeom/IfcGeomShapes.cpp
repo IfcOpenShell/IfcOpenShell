@@ -71,8 +71,6 @@
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Solid.hxx>
 
-#include <BRepFilletAPI_MakeFillet2d.hxx>
-
 #include <TopLoc_Location.hxx>
 
 #include <BRepCheck_Analyzer.hxx>
@@ -293,41 +291,45 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 
 }
 bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& shape) {
-#ifdef FACESET_AS_COMPOUND
-	TopoDS_Compound compound;
-	BRep_Builder builder;
-	builder.MakeCompound(compound);
-#else
-	BRepOffsetAPI_Sewing builder;
-	builder.SetTolerance(0.01);
-#endif
 	Ifc2x3::IfcFace::list faces = l->CfsFaces();
 	bool facesAdded = false;
-	for( Ifc2x3::IfcFace::it it = faces->begin(); it != faces->end(); ++ it ) {
-		TopoDS_Face face;
-		if ( IfcGeom::convert_face(*it,face) ) {
-#ifdef FACESET_AS_COMPOUND
-			builder.Add(compound,face);
-#else
-			builder.Add(face);
-#endif
-			facesAdded = true;
-		} else {
-			Ifc::LogMessage("Warning","Invalid face:",(*it)->entity);
+	const unsigned int num_faces = faces->Size();
+	if ( Ifc::SewShells && num_faces < MAX_FACES_TO_SEW ) {
+		BRepOffsetAPI_Sewing builder;
+		builder.SetTolerance(0.01);
+		for( Ifc2x3::IfcFace::it it = faces->begin(); it != faces->end(); ++ it ) {
+			TopoDS_Face face;
+			if ( IfcGeom::convert_face(*it,face) ) {
+				builder.Add(face);
+				facesAdded = true;
+			} else {
+				Ifc::LogMessage("Warning","Invalid face:",(*it)->entity);
+			}
 		}
+		if ( ! facesAdded ) return false;
+		builder.Perform();
+		shape = builder.SewedShape();
+		try {
+			ShapeFix_Solid solid;
+			solid.LimitTolerance(0.01);
+			shape = solid.SolidFromShell(TopoDS::Shell(shape));
+		} catch(...) {}
+	} else {
+		TopoDS_Compound compound;
+		BRep_Builder builder;
+		builder.MakeCompound(compound);
+		for( Ifc2x3::IfcFace::it it = faces->begin(); it != faces->end(); ++ it ) {
+			TopoDS_Face face;
+			if ( IfcGeom::convert_face(*it,face) ) {
+				builder.Add(compound,face);
+				facesAdded = true;
+			} else {
+				Ifc::LogMessage("Warning","Invalid face:",(*it)->entity);
+			}
+		}
+		if ( ! facesAdded ) return false;
+		shape = compound;
 	}
-	if ( ! facesAdded ) return false;
-#ifdef FACESET_AS_COMPOUND
-	shape = compound;
-#else
-	builder.Perform();
-	shape = builder.SewedShape();
-	try {
-		ShapeFix_Solid solid;
-		solid.LimitTolerance(0.01);
-		shape = solid.SolidFromShell(TopoDS::Shell(shape));
-	} catch(...) {}
-#endif
 	return true;
 }
 bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, ShapeList& shapes) {

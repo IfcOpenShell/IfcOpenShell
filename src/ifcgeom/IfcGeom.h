@@ -50,7 +50,9 @@
 // Specifies the treshold distance under which cartesian points are deemed equal
 #define POINT_EQUALITY_TOLERANCE 0.000001
 
-#define FACESET_AS_COMPOUND 1
+// Specifies maximum number of faces for a shell to be sewed. Sewing shells
+// that consist of many faces is really detrimental for the performance.
+#define MAX_FACES_TO_SEW 100
 
 namespace IfcGeom {
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);

@@ -23,6 +23,7 @@ namespace IfcGeomObjects {
 	const int USE_WORLD_COORDS = 2;
 	const int CONVERT_BACK_UNITS = 3;
 	const int USE_BREP_DATA = 4;
+	const int SEW_SHELLS = 5;
 
 	class IfcMesh {
 	public:

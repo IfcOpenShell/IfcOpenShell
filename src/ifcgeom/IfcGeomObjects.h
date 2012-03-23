@@ -38,9 +38,7 @@
  *   IfcGeomObject.matrix is a 4x3 matrix that defines the orientation and      *
  *     translation of the mesh in relation to the world origin                  *
  *                                                                              *
- * Init(char* fn, bool world_coords) parses the IFC file in fn, returns true    *
- *   on succes, world_coords = true will result in all IfcGeomObject.matrix     *
- *   being an identity matrix and IfcMesh.verts containing global positions     *
+ * Init(char* fn) parses the IFC file in fn, returns true on succes.            *
  *                                                                              *
  * Get() returns a pointer to the current IfcGeomObject                         *
  *                                                                              * 
@@ -69,13 +67,37 @@
 
 namespace IfcGeomObjects {
 
-	const int WELD_VERTICES = 1;
-	const int USE_WORLD_COORDS = 2;
-	const int CONVERT_BACK_UNITS = 3;
-	const int USE_BREP_DATA = 4;
+	// Enumeration of setting identifiers. These settings define the
+	// behaviour of various aspects of IfcOpenShell.
 
+	// Specifies whether vertices are welded, meaning that the coordinates
+	// vector will only contain unique xyz-triplets. This results in a 
+	// manifold mesh which is useful for modelling applications, but might 
+	// result in unwanted shading artifacts in rendering applications.
+	const int WELD_VERTICES = 1;
+	// Specifies whether to apply the local placements of building elements
+	// directly to the coordinates of the representation mesh rather than
+	// to represent the local placement in the 4x3 matrix, which will in that
+	// case be the identity matrix.
+	const int USE_WORLD_COORDS = 2;
+	// Internally IfcOpenShell measures everything in meters. This settings
+	// specifies whether to convert IfcGeomObjects back to the units in which
+	// the geometry in the IFC file is specified.
+	const int CONVERT_BACK_UNITS = 3;
+	// Specifies whether to use the Open Cascade BREP format for representation
+	// items rather than to create triangle meshes. This is useful is IfcOpenShell
+	// is used as a library in an application that is also built on Open Cascade.
+	const int USE_BREP_DATA = 4;
+	// Specifies whether to sew IfcConnectedFaceSets (open and closed shells) to
+	// TopoDS_Shells or whether to keep them as a loose collection of faces.
+	const int SEW_SHELLS = 5;
+
+	// End of settings enumeration.
+
+	// Some typedefs for convenience
 	typedef std::vector<int>::const_iterator IntIt;
 	typedef std::vector<double>::const_iterator FltIt;
+	// A nested pair of doubles to be able to store an XYZ coordinate in a map.
 	typedef std::pair< double,std::pair<double,double> > VertKey;
 	typedef std::map<VertKey,int> VertKeyMap;
 	typedef std::pair<int,int> Edge;

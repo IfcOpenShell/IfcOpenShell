@@ -822,6 +822,7 @@ Tokens* Ifc::tokens = 0;
 double Ifc::LengthUnit = 1.0f;
 double Ifc::PlaneAngleUnit = 1.0f;
 bool Ifc::hasPlaneAngleUnit = false;
+bool Ifc::SewShells = false;
 int Ifc::CircleSegments = 32;
 MapEntitiesByType Ifc::bytype;
 MapEntityById Ifc::byid;
