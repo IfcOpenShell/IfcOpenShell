@@ -326,7 +326,11 @@ ArgumentList::ArgumentList(Tokens* t, std::vector<unsigned int>& ids) {
 			if ( TokenFunc::isIdentifier(next) ) ids.push_back(TokenFunc::asInt(next));
 			if ( TokenFunc::isDatatype(next) ) {
 				t->Next();
-				Push ( new EntityArgument(Ifc2x3::Type::FromString(TokenFunc::asString(next)),t->Next()) );
+				try {
+					Push ( new EntityArgument(Ifc2x3::Type::FromString(TokenFunc::asString(next)),t->Next()) );
+				} catch ( IfcException& e ) {
+					Ifc::LogMessage("Error",e.what());
+				}
 				t->Next();
 			} else {
 				Push ( new TokenArgument(next) );
