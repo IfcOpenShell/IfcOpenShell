@@ -88,7 +88,9 @@
 
 bool IfcGeom::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
 	BRepOffsetAPI_Sewing builder;
-	builder.SetTolerance(0.01);
+	builder.SetTolerance(POINT_EQUALITY_TOLERANCE);
+	builder.SetMaxTolerance(POINT_EQUALITY_TOLERANCE);
+	builder.SetMinTolerance(POINT_EQUALITY_TOLERANCE);
 	TopExp_Explorer exp(compound,TopAbs_FACE);
 	if ( ! exp.More() ) return false;
 	for ( ; exp.More(); exp.Next() ) {
@@ -99,7 +101,7 @@ bool IfcGeom::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Sh
 	shape = builder.SewedShape();
 	try {
 	ShapeFix_Solid sf_solid;
-	sf_solid.LimitTolerance(0.01);
+	sf_solid.LimitTolerance(POINT_EQUALITY_TOLERANCE);
 	shape = sf_solid.SolidFromShell(TopoDS::Shell(shape));
 	} catch(...) {}
 	return true;
@@ -259,9 +261,14 @@ bool IfcGeom::profile_helper(int numVerts, double* verts, int numFillets, int* f
 	return true;
 }
 double IfcGeom::shape_volume(const TopoDS_Shape& s) {
-	GProp_GProps System;
-	BRepGProp::VolumeProperties(s, System);
-	return (double) System.Mass();
+	GProp_GProps prop;
+	BRepGProp::VolumeProperties(s, prop);
+	return prop.Mass();
+}
+double IfcGeom::face_area(const TopoDS_Face& f) {
+	GProp_GProps prop;
+	BRepGProp::SurfaceProperties(f,prop);
+	return prop.Mass();
 }
 bool IfcGeom::is_convex(const TopoDS_Wire& wire) {
 	for ( TopExp_Explorer exp1(wire,TopAbs_VERTEX); exp1.More(); exp1.Next() ) {

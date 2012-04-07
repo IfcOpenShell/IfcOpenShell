@@ -73,8 +73,6 @@
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Solid.hxx>
 
-#include <BRepFilletAPI_MakeFillet2d.hxx>
-
 #include <TopLoc_Location.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
@@ -97,28 +95,33 @@ bool IfcGeom::convert(const Ifc2x3::IfcFace::ptr l, TopoDS_Face& face) {
 	if ( er != BRepBuilderAPI_FaceDone ) return false;
 	if ( bounds->Size() == 1 ) {
 		face = mf.Face();
-		return true;
-	}
-	for( ++it; it != bounds->end(); ++ it) {
-		Ifc2x3::IfcLoop::ptr loop = (*it)->Bound();
-		TopoDS_Wire wire;
-		if ( ! IfcGeom::convert_wire(loop,wire) ) return false;
-		mf.Add(wire);
-	}
-	if ( mf.IsDone() ) {
-		ShapeFix_Shape sfs(mf.Face());
-		sfs.Perform();
-		TopoDS_Shape sfs_shape = sfs.Shape();
-		bool is_face = sfs_shape.ShapeType() == TopAbs_FACE;
-		if ( is_face ) {
-			face = TopoDS::Face(sfs_shape);
-			return true;
+	} else {
+		for( ++it; it != bounds->end(); ++ it) {
+			Ifc2x3::IfcLoop::ptr loop = (*it)->Bound();
+			TopoDS_Wire wire;
+			if ( ! IfcGeom::convert_wire(loop,wire) ) return false;
+			mf.Add(wire);
+		}
+		if ( mf.IsDone() ) {
+			ShapeFix_Shape sfs(mf.Face());
+			sfs.Perform();
+			TopoDS_Shape sfs_shape = sfs.Shape();
+			bool is_face = sfs_shape.ShapeType() == TopAbs_FACE;
+			if ( is_face ) {
+				face = TopoDS::Face(sfs_shape);
+			} else {
+				return false;
+			}
 		} else {
 			return false;
 		}
-	} else {
-		return false;
 	}
+	// It might be a good idea to globally discard faces
+	// smaller than a certain treshold value. But for now
+	// only when processing IfcConnectedFacesets the small
+	// faces are skipped.
+	// return face_area(face) > 0.0001;
+	return true;
 }
 bool IfcGeom::convert(const Ifc2x3::IfcArbitraryClosedProfileDef::ptr l, TopoDS_Face& face) {
 	TopoDS_Wire wire;

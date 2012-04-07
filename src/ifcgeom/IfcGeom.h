@@ -47,8 +47,10 @@
 #define DEFLECTION_TOLERANCE 0.001
 // Specifies the tolerance of the wire builder, most notably for trimmed curves
 #define WIRE_CREATION_TOLERANCE 0.0001
+// Specifies the minimal area of a face to be included in an IfcConnectedFaceset
+#define MINIMAL_FACE_AREA 0.000001
 // Specifies the treshold distance under which cartesian points are deemed equal
-#define POINT_EQUALITY_TOLERANCE 0.0000001
+#define POINT_EQUALITY_TOLERANCE 0.00001
 
 // Specifies maximum number of faces for a shell to be sewed. Sewing shells
 // that consist of many faces is really detrimental for the performance.
@@ -72,6 +74,7 @@ namespace IfcGeom {
 	const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid);
 	bool profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
 	double shape_volume(const TopoDS_Shape& s);
+	double face_area(const TopoDS_Face& f);
 	namespace Cache {
 		void Purge();
 		void PurgeShapeCache();
