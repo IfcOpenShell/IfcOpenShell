@@ -48,11 +48,11 @@
 // Specifies the tolerance of the wire builder, most notably for trimmed curves
 #define WIRE_CREATION_TOLERANCE 0.0001
 // Specifies the treshold distance under which cartesian points are deemed equal
-#define POINT_EQUALITY_TOLERANCE 0.000001
+#define POINT_EQUALITY_TOLERANCE 0.0000001
 
 // Specifies maximum number of faces for a shell to be sewed. Sewing shells
 // that consist of many faces is really detrimental for the performance.
-#define MAX_FACES_TO_SEW 100
+#define MAX_FACES_TO_SEW 1000
 
 namespace IfcGeom {
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
