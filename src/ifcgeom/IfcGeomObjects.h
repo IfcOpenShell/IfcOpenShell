@@ -23,7 +23,7 @@
  * and instances (SUBTYPE OF IfcBuildingElement e.g. IfcWindow).                *
  *                                                                              *
  * IfcMesh is a class that represents a triangulated IfcShapeRepresentation.    *
- *   IfcMesh.verts is a 1 dimensional vector of double defining the cartesian    *
+ *   IfcMesh.verts is a 1 dimensional vector of float defining the cartesian    *
  *      coordinates of the vertices of the triangulated shape in the format of  *
  *      [x1,y1,z1,..,xn,yn,zn]                                                  *
  *   IfcMesh.faces is a 1 dimensional vector of int containing the indices of   *
@@ -96,19 +96,19 @@ namespace IfcGeomObjects {
 
 	// Some typedefs for convenience
 	typedef std::vector<int>::const_iterator IntIt;
-	typedef std::vector<double>::const_iterator FltIt;
+	typedef std::vector<float>::const_iterator FltIt;
 	// A nested pair of doubles to be able to store an XYZ coordinate in a map.
-	typedef std::pair< double,std::pair<double,double> > VertKey;
+	typedef std::pair< float,std::pair<float,float> > VertKey;
 	typedef std::map<VertKey,int> VertKeyMap;
 	typedef std::pair<int,int> Edge;
 
 	class IfcMesh {
 	public:
 		int id;
-		std::vector<double> verts;
+		std::vector<float> verts;
 		std::vector<int> faces;
 		std::vector<int> edges;
-		std::vector<double> normals;
+		std::vector<float> normals;
 		std::string brep_data;
 		VertKeyMap welds;
 		
@@ -130,7 +130,7 @@ namespace IfcGeomObjects {
 		std::string name;
 		std::string type;
 		std::string guid;
-		std::vector<double> matrix;
+		std::vector<float> matrix;
 		IfcObject(int my_id, int p_id, const std::string& n, const std::string& t, const std::string& g, const gp_Trsf& trsf);
 	};
 
