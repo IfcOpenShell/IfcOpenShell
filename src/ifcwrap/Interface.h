@@ -28,10 +28,10 @@ namespace IfcGeomObjects {
 	class IfcMesh {
 	public:
 		int id;
-		std::vector<double> verts;
+		std::vector<float> verts;
 		std::vector<int> faces;
 		std::vector<int> edges;
-		std::vector<double> normals;
+		std::vector<float> normals;
 		std::string brep_data;
 	};
 
@@ -42,7 +42,7 @@ namespace IfcGeomObjects {
 		std::string name;
 		std::string type;
 		std::string guid;
-		std::vector<double> matrix;
+		std::vector<float> matrix;
 		const std::vector<int> name_as_intvector() {
 			std::vector<int> r;
 			for ( std::string::const_iterator it = name.begin(); it != name.end(); ++ it ) r.push_back(*it);
