@@ -71,10 +71,13 @@ using namespace IfcParse;
 void IfcCharacterDecoder::addChar(std::stringstream& s,const UChar32& ch) {
 #ifdef HAVE_ICU
 	if ( destination ) {
-		char* extraction_buffer = new char[4];
-		UnicodeString(ch).extract(extraction_buffer,4,destination,status);
+        /* Note: The extraction buffer is of size 5, because in the UTF-8 encoding the
+           maximum length in bytes is 4. We add 1 for the NUL character. In other encodings
+           the length could be higher, but we have not taken that into account. */
+		char extraction_buffer[5] = {};
+		UnicodeString(ch).extract(extraction_buffer,5,destination,status);
+        extraction_buffer[4] = '\0';
 		s << extraction_buffer;
-		delete extraction_buffer;
 	} else {
 		std::stringstream s2;
 		s2 << "\\u" << std::hex << std::setw(4) << std::setfill('0') << (int) ch;
@@ -174,6 +177,8 @@ IfcCharacterDecoder::operator std::string() {
 				throw IfcException("Invalid character encountered");
 		} else {
 			parse_state = hex = hex_count = 0;
+            // NOTE: this is in fact wrong, this ought to be the representation of the character.
+            // In UTF-8 this is the same, but we should not rely on that.
 			s.put(current_char);
 		}
 		file->Inc();
