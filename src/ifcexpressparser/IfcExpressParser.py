@@ -28,7 +28,7 @@ header = """
 #                                                                             #
 # Note this script uses funcparserlib, which is available at:                 #
 # http://code.google.com/p/funcparserlib/                                     #
-# The script only works with revision e1df5066addd because it uses the some() #
+# The script only works with revision 30f7ee896bc9 because it uses the some() #
 # parser and is incompatible with other changes as well.                      #
 #                                                                             #
 ###############################################################################
@@ -95,7 +95,7 @@ schema_version = ''
 enumerations = set()
 selections = set()
 entity_names = set()
-simple_types = set()
+simple_types = {}
 selectable_simple_types = set()
 argument_count = {}
 parent_relations = {}
@@ -127,9 +127,36 @@ class ArrayType:
             return "SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> >"
         else:
             return "std::vector<%(type)s> /*[%(lower)s:%(upper)s]*/"%self.__dict__
+    def type_enum(self):
+        if self.type in simple_types:
+            t = simple_types[self.type].type_enum()
+        else:
+            t = self.type
+        if t in entity_names or t == "ENTITY":
+            return "ENTITY_LIST"
+        elif t in selections:
+            return "ENTITY_LIST"
+        elif t == "int":
+            return "VECTOR_INT"
+        elif t == "double" or t == "DOUBLE":
+            return "VECTOR_DOUBLE"
+        elif t == "std::string" or t == "STRING":
+            return "VECTOR_STRING"
+        elif isinstance(t, BinaryType):
+            return "UNKNOWN"
+        else:
+            assert False, t
+        
 class ScalarType:
     def __init__(self,l): self.type = express_to_cpp.get(l,l)
     def __str__(self): return self.type
+    def type_enum(self):
+        if self.type in simple_types:
+            return simple_types[self.type].type_enum()
+        elif self.type in entity_names:
+            return "ENTITY"
+        else:
+            return { "bool":"BOOL","int":"INT","double":"DOUBLE","std::string":"STRING"}[self.type]
 class EnumType:
     def __init__(self,l):
         self.v = [(x,'%s_%s'%('%(fancy_name)s',x)) for x in l]
@@ -142,17 +169,22 @@ class EnumType:
         elif generator_mode == 'SOURCE_FROM':
             return "".join(['    if(s=="%s"%s) return %s::%s;\n'%(v1.upper()," "*(self.maxlen-len(v1)),"%(name)s",v2) for v1,v2 in self.v])            
     def __len__(self): return len(self.v)
+    def type_enum(self):
+        return "ENUMERATION"
 class SelectType:
     def __init__(self,l): 
         for x in l: 
             if x in simple_types: selectable_simple_types.add(x)
     def __str__(self): return "IfcSchemaEntity"
+    def type_enum(self): return "ENTITY"
 class BinaryType:
     def __init__(self,l): self.l = int(l)
     def __str__(self): return "char[%s]"%self.l
+    def type_enum(self): raise NotImplementedError()
 class InverseType:
     def __init__(self,l):
         self.name, self.type, self.reference = l
+    def type_enum(self): return "ENTITY" 
 class Typedef:
     def __init__(self,l):
         self.name,self.type=l[1:3]
@@ -161,7 +193,7 @@ class Typedef:
             enumerations.add(self.name)
             self.len = len(self.type)
         elif isinstance(self.type,SelectType): selections.add(self.name)
-        simple_types.add(self.name)
+        simple_types[self.name] = self
         comment = IfcDocumentation.description(self.name)
         self.comment = comment+"\n" if comment else ''
     def __str__(self):
@@ -177,6 +209,8 @@ class Typedef:
             s += ("%(name)s::%(name)s %(name)s::FromString(const std::string& s) {\n%(type)s    throw IfcException(\"Unable to find find keyword in schema\");\n}"%self.__dict__)%self.__dict__
             generator_mode = 'SOURCE'
             return s
+    def type_enum(self):
+        return self.type.type_enum()
 class Argument(object):
     def __init__(self,l):
         self.name, self.optional, self.type = l
@@ -220,6 +254,33 @@ class ArgumentList:
                 return_type = "%(type)s*"%a.__dict__
             s += "\n%s%s%s %s%s()%s"%(comment,indent,return_type,class_name,a.name,function_body)
             argv += 1
+
+        if generator_mode == 'HEADER':
+            s += "\n virtual unsigned int getArgumentCount() const { return %(n_arguments)d; }" % dict(class_name=self.class_name, n_arguments=len(self.l) + argument_start(self.class_name))
+
+            s += "\n virtual ArgumentType getArgumentType(unsigned int i) const {"
+            s += " switch (i) {"
+            for i, a in enumerate(self.l):
+                s += "case %d: " % (i + argument_start(self.class_name))
+                s += "return %s; " % a.type.type_enum()
+            s += "}"
+            if self.parent_class is not None:
+                s += " return %s::getArgumentType(i); }" % self.parent_class
+            else:
+                s += " throw IfcException(\"argument out of range\"); }"
+
+            s += "\n virtual const char* getArgumentName(unsigned int i) const {"
+            s += " switch (i) {"
+            for i, a in enumerate(self.l):
+                s += "case %d: " % (i + argument_start(self.class_name))
+                s += "return \"%s\"; " % a.name
+            s += "}"
+            if self.parent_class is not None:
+                s += " return %s::getArgumentName(i); }" % self.parent_class
+            else:
+                s += " throw IfcException(\"argument out of range\"); }"
+
+            s += "\n virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }"
         return s
 class InverseList:
     def __init__(self,l):
@@ -237,6 +298,7 @@ class Classdef:
     def __init__(self,l):
         self.class_name, self.parent_class, self.arguments, self.inverse = l
         self.arguments.class_name = self.class_name
+        self.arguments.parent_class = self.parent_class
         entity_names.add(self.class_name)
         parent_relations[self.class_name] = self.parent_class
         argument_count[self.class_name] = len(self.arguments)
@@ -245,7 +307,7 @@ class Classdef:
             comment = IfcDocumentation.description(self.class_name)
             comment = comment+"\n" if comment else ''
             return "%sclass %s : public %s {\npublic:%s%s%s\n};" % (comment,self.class_name,
-                "IfcBaseClass" if self.parent_class is None else self.parent_class,
+                "IfcBaseEntity" if self.parent_class is None else self.parent_class,
                 self.arguments,
                 self.inverse,
                 ("\n    bool is(Type::Enum v) const;"+
@@ -354,9 +416,11 @@ print >>h_file, """#ifndef %(schema_upper)s_H
 #include <map>
 
 #include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcException.h"
 #include "../ifcparse/%(schema)senum.h"
 
 using namespace IfcUtil;
+using IfcParse::IfcException;
 
 #define RETURN_INVERSE(T) \\
     IfcEntities e = entity->getInverse(T::Class()); \\

@@ -33,11 +33,22 @@ typedef IfcAbstractEntity* IfcAbstractEntityPtr;
 class IfcEntityList;
 typedef SHARED_PTR<IfcEntityList> IfcEntities;
 
+class Argument;
+//typedef SHARED_PTR<Argument> ArgumentPtr;
+typedef Argument* ArgumentPtr;
+
+
 template <class F, class T>
 inline T* reinterpret_pointer_cast(F* from) {
 	return (T*)from;
 	//SHARED_PTR<void> v = std::tr1::static_pointer_cast<void,F>(from);
 	//return std::tr1::static_pointer_cast<T,void>(v);
+}
+
+namespace IfcUtil {
+    enum ArgumentType {
+        INT, BOOL, DOUBLE, STRING, VECTOR_INT, VECTOR_DOUBLE, VECTOR_STRING, ENTITY, ENTITY_LIST, ENUMERATION, UNKNOWN
+    };
 }
 
 namespace IfcUtil {
@@ -47,6 +58,14 @@ public:
     IfcAbstractEntityPtr entity;
     virtual bool is(Ifc2x3::Type::Enum v) const = 0;
     virtual Ifc2x3::Type::Enum type() const = 0;
+};
+
+class IfcBaseEntity : public IfcBaseClass {
+public:
+    virtual unsigned int getArgumentCount() const = 0;
+    virtual ArgumentType getArgumentType(unsigned int i) const = 0;
+    virtual ArgumentPtr getArgument(unsigned int i) const = 0;
+    virtual const char* getArgumentName(unsigned int i) const = 0;
 };
 
 //typedef SHARED_PTR<IfcBaseClass> IfcSchemaEntity;
@@ -80,10 +99,6 @@ public:
 	inline T operator[] (int i) { return ls[i]; }
 	inline unsigned int Size() const { return (unsigned int) ls.size(); }
 };
-
-class Argument;
-//typedef SHARED_PTR<Argument> ArgumentPtr;
-typedef Argument* ArgumentPtr;
 
 namespace IfcUtil {
 	class IfcAbstractSelect : public IfcBaseClass {
