@@ -19,7 +19,7 @@
 
 /********************************************************************************
  *                                                                              *
- * This file has been generated from /tmp/IFC2X3_FINAL.exp. Do not make modifications  *
+ * This file has been generated from IFC2X3_TC1.exp. Do not make modifications  *
  * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
@@ -6283,11 +6283,11 @@ IfcElectricalElement::IfcElectricalElement(IfcAbstractEntityPtr e) { if (!is(Typ
 // Function implementations for IfcElement
 bool IfcElement::hasTag() { return !entity->getArgument(7)->isNull(); }
 IfcIdentifier IfcElement::Tag() { return *entity->getArgument(7); }
+IfcRelConnectsStructuralElement::list IfcElement::HasStructuralMember() { RETURN_INVERSE(IfcRelConnectsStructuralElement) }
 IfcRelFillsElement::list IfcElement::FillsVoids() { RETURN_INVERSE(IfcRelFillsElement) }
 IfcRelConnectsElements::list IfcElement::ConnectedTo() { RETURN_INVERSE(IfcRelConnectsElements) }
 IfcRelCoversBldgElements::list IfcElement::HasCoverings() { RETURN_INVERSE(IfcRelCoversBldgElements) }
 IfcRelProjectsElement::list IfcElement::HasProjections() { RETURN_INVERSE(IfcRelProjectsElement) }
-IfcRelConnectsStructuralElement::list IfcElement::HasStructuralMember() { RETURN_INVERSE(IfcRelConnectsStructuralElement) }
 IfcRelReferencedInSpatialStructure::list IfcElement::ReferencedInStructures() { RETURN_INVERSE(IfcRelReferencedInSpatialStructure) }
 IfcRelConnectsPortToElement::list IfcElement::HasPorts() { RETURN_INVERSE(IfcRelConnectsPortToElement) }
 IfcRelVoidsElement::list IfcElement::HasOpenings() { RETURN_INVERSE(IfcRelVoidsElement) }
@@ -9071,7 +9071,7 @@ IfcLoadGroupTypeEnum::IfcLoadGroupTypeEnum IfcStructuralLoadGroup::PredefinedTyp
 IfcActionTypeEnum::IfcActionTypeEnum IfcStructuralLoadGroup::ActionType() { return IfcActionTypeEnum::FromString(*entity->getArgument(6)); }
 IfcActionSourceTypeEnum::IfcActionSourceTypeEnum IfcStructuralLoadGroup::ActionSource() { return IfcActionSourceTypeEnum::FromString(*entity->getArgument(7)); }
 bool IfcStructuralLoadGroup::hasCoefficient() { return !entity->getArgument(8)->isNull(); }
-IfcPositiveRatioMeasure IfcStructuralLoadGroup::Coefficient() { return *entity->getArgument(8); }
+IfcRatioMeasure IfcStructuralLoadGroup::Coefficient() { return *entity->getArgument(8); }
 bool IfcStructuralLoadGroup::hasPurpose() { return !entity->getArgument(9)->isNull(); }
 IfcLabel IfcStructuralLoadGroup::Purpose() { return *entity->getArgument(9); }
 IfcStructuralResultGroup::list IfcStructuralLoadGroup::SourceOfResultGroup() { RETURN_INVERSE(IfcStructuralResultGroup) }

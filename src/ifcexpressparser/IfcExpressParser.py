@@ -259,22 +259,24 @@ class ArgumentList:
             s += "\n virtual unsigned int getArgumentCount() const { return %(n_arguments)d; }" % dict(class_name=self.class_name, n_arguments=len(self.l) + argument_start(self.class_name))
 
             s += "\n virtual ArgumentType getArgumentType(unsigned int i) const {"
-            s += " switch (i) {"
-            for i, a in enumerate(self.l):
-                s += "case %d: " % (i + argument_start(self.class_name))
-                s += "return %s; " % a.type.type_enum()
-            s += "}"
+            if len(self.l):
+                s += " switch (i) {"
+                for i, a in enumerate(self.l):
+                    s += "case %d: " % (i + argument_start(self.class_name))
+                    s += "return %s; " % a.type.type_enum()
+                s += "}"
             if self.parent_class is not None:
                 s += " return %s::getArgumentType(i); }" % self.parent_class
             else:
                 s += " throw IfcException(\"argument out of range\"); }"
 
             s += "\n virtual const char* getArgumentName(unsigned int i) const {"
-            s += " switch (i) {"
-            for i, a in enumerate(self.l):
-                s += "case %d: " % (i + argument_start(self.class_name))
-                s += "return \"%s\"; " % a.name
-            s += "}"
+            if len(self.l):
+                s += " switch (i) {"
+                for i, a in enumerate(self.l):
+                    s += "case %d: " % (i + argument_start(self.class_name))
+                    s += "return \"%s\"; " % a.name
+                s += "}"
             if self.parent_class is not None:
                 s += " return %s::getArgumentName(i); }" % self.parent_class
             else:

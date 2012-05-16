@@ -19,7 +19,7 @@
 
 /********************************************************************************
  *                                                                              *
- * This file has been generated from /tmp/IFC2X3_FINAL.exp. Do not make modifications  *
+ * This file has been generated from IFC2X3_TC1.exp. Do not make modifications  *
  * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
@@ -160,7 +160,7 @@ typedef std::vector<double> /*[1:2]*/ IfcComplexNumber;
 ///      + FORMAT(ABS(c[4]), '##');  -- -50° 58' 33" 110400
 /// 
 /// Another often encountered display format of latitudes and longitudes is to omit the signs and print N, S, E, W indicators instead, for example, 50°58'33"S.  When stored as IfcCompoundPlaneAngleMeasure however, a compound plane angle measure is always signed, with same sign of all components.
-typedef std::vector<int> /*[3:3]*/ IfcCompoundPlaneAngleMeasure;
+typedef std::vector<int> /*[3:4]*/ IfcCompoundPlaneAngleMeasure;
 /// Definition from ISO/CD 10303-41:1992: Is the value of a physical quantity as defined by an application context.
 /// Type: REAL
 /// 
@@ -6050,8 +6050,8 @@ public:
 class IfcConnectionGeometry : public IfcBaseEntity {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} throw IfcException("argument out of range"); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} throw IfcException("argument out of range"); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { throw IfcException("argument out of range"); }
+ virtual const char* getArgumentName(unsigned int i) const { throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -6853,8 +6853,8 @@ public:
 class IfcExternallyDefinedHatchStyle : public IfcExternalReference {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcExternalReference::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcExternalReference::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcExternalReference::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcExternalReference::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -6874,8 +6874,8 @@ public:
 class IfcExternallyDefinedSurfaceStyle : public IfcExternalReference {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcExternalReference::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcExternalReference::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcExternalReference::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcExternalReference::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -6897,8 +6897,8 @@ public:
 class IfcExternallyDefinedSymbol : public IfcExternalReference {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcExternalReference::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcExternalReference::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcExternalReference::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcExternalReference::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -6918,8 +6918,8 @@ public:
 class IfcExternallyDefinedTextFont : public IfcExternalReference {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcExternalReference::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcExternalReference::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcExternalReference::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcExternalReference::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7050,8 +7050,8 @@ public:
 class IfcLibraryReference : public IfcExternalReference {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcExternalReference::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcExternalReference::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcExternalReference::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcExternalReference::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcLibraryInformation> > ReferenceIntoLibrary(); // INVERSE IfcLibraryInformation::LibraryReference
     bool is(Type::Enum v) const;
@@ -7752,8 +7752,8 @@ public:
 class IfcObjectPlacement : public IfcBaseEntity {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} throw IfcException("argument out of range"); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} throw IfcException("argument out of range"); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { throw IfcException("argument out of range"); }
+ virtual const char* getArgumentName(unsigned int i) const { throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > PlacesObject(); // INVERSE IfcProduct::ObjectPlacement
     SHARED_PTR< IfcTemplatedEntityList<IfcLocalPlacement> > ReferencedByPlacements(); // INVERSE IfcLocalPlacement::PlacementRelTo
@@ -8189,8 +8189,8 @@ public:
 class IfcPreDefinedSymbol : public IfcPreDefinedItem {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcPreDefinedItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcPreDefinedItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcPreDefinedItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8203,8 +8203,8 @@ public:
 class IfcPreDefinedTerminatorSymbol : public IfcPreDefinedSymbol {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcPreDefinedSymbol::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcPreDefinedSymbol::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedSymbol::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcPreDefinedSymbol::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8228,8 +8228,8 @@ public:
 class IfcPreDefinedTextFont : public IfcPreDefinedItem {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcPreDefinedItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcPreDefinedItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcPreDefinedItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9073,7 +9073,7 @@ public:
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ContextOfItems"; case 1: return "RepresentationIdentifier"; case 2: return "RepresentationType"; case 3: return "Items"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationMap> > RepresentationMap(); // INVERSE IfcRepresentationMap::MappedRepresentation
-    SHARED_PTR< IfcTemplatedEntityList<IfcPresentationLayerAssignment> > LayerAssignments(); // INVERSE IfcPresentationLayerAssignment::Assigneditems
+    SHARED_PTR< IfcTemplatedEntityList<IfcPresentationLayerAssignment> > LayerAssignments(); // INVERSE IfcPresentationLayerAssignment::AssignedItems
     SHARED_PTR< IfcTemplatedEntityList<IfcProductRepresentation> > OfProductRepresentation(); // INVERSE IfcProductRepresentation::Representations
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9151,8 +9151,8 @@ public:
 class IfcRepresentationItem : public IfcBaseEntity {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} throw IfcException("argument out of range"); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} throw IfcException("argument out of range"); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { throw IfcException("argument out of range"); }
+ virtual const char* getArgumentName(unsigned int i) const { throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcPresentationLayerAssignment> > LayerAssignments(); // INVERSE IfcPresentationLayerAssignment::AssignedItems
     SHARED_PTR< IfcTemplatedEntityList<IfcStyledItem> > StyledByItem(); // INVERSE IfcStyledItem::Item
@@ -9442,8 +9442,8 @@ public:
 class IfcShapeModel : public IfcRepresentation {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRepresentation::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRepresentation::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRepresentation::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRepresentation::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcShapeAspect> > OfShapeAspect(); // INVERSE IfcShapeAspect::ShapeRepresentations
     bool is(Type::Enum v) const;
@@ -9592,8 +9592,8 @@ public:
 class IfcShapeRepresentation : public IfcShapeModel {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcShapeModel::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcShapeModel::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcShapeModel::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcShapeModel::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9609,8 +9609,8 @@ public:
 class IfcSimpleProperty : public IfcProperty {
 public:
  virtual unsigned int getArgumentCount() const { return 2; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcProperty::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcProperty::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcProperty::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcProperty::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9668,8 +9668,8 @@ public:
 class IfcStructuralLoadStatic : public IfcStructuralLoad {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcStructuralLoad::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcStructuralLoad::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralLoad::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcStructuralLoad::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9715,8 +9715,8 @@ public:
 class IfcStyleModel : public IfcRepresentation {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRepresentation::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRepresentation::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRepresentation::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRepresentation::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9795,8 +9795,8 @@ public:
 class IfcStyledRepresentation : public IfcStyleModel {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcStyleModel::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcStyleModel::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStyleModel::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcStyleModel::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10514,8 +10514,8 @@ public:
 class IfcTextureCoordinate : public IfcBaseEntity {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} throw IfcException("argument out of range"); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} throw IfcException("argument out of range"); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { throw IfcException("argument out of range"); }
+ virtual const char* getArgumentName(unsigned int i) const { throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationSurface> > AnnotatedSurface(); // INVERSE IfcAnnotationSurface::TextureCoordinates
     bool is(Type::Enum v) const;
@@ -10800,8 +10800,8 @@ public:
 class IfcTopologicalRepresentationItem : public IfcRepresentationItem {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRepresentationItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRepresentationItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRepresentationItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRepresentationItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10848,8 +10848,8 @@ public:
 class IfcTopologyRepresentation : public IfcShapeModel {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcShapeModel::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcShapeModel::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcShapeModel::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcShapeModel::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10893,8 +10893,8 @@ public:
 class IfcVertex : public IfcTopologicalRepresentationItem {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcTopologicalRepresentationItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcTopologicalRepresentationItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcTopologicalRepresentationItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcTopologicalRepresentationItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11060,8 +11060,8 @@ public:
 class IfcAnnotationOccurrence : public IfcStyledItem {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcStyledItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcStyledItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStyledItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcStyledItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11074,8 +11074,8 @@ public:
 class IfcAnnotationSurfaceOccurrence : public IfcAnnotationOccurrence {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcAnnotationOccurrence::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcAnnotationOccurrence::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcAnnotationOccurrence::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcAnnotationOccurrence::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11088,8 +11088,8 @@ public:
 class IfcAnnotationSymbolOccurrence : public IfcAnnotationOccurrence {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcAnnotationOccurrence::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcAnnotationOccurrence::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcAnnotationOccurrence::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcAnnotationOccurrence::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11102,8 +11102,8 @@ public:
 class IfcAnnotationTextOccurrence : public IfcAnnotationOccurrence {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcAnnotationOccurrence::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcAnnotationOccurrence::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcAnnotationOccurrence::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcAnnotationOccurrence::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11781,8 +11781,8 @@ public:
 class IfcDimensionCalloutRelationship : public IfcDraughtingCalloutRelationship {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDraughtingCalloutRelationship::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDraughtingCalloutRelationship::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDraughtingCalloutRelationship::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDraughtingCalloutRelationship::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11795,8 +11795,8 @@ public:
 class IfcDimensionPair : public IfcDraughtingCalloutRelationship {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDraughtingCalloutRelationship::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDraughtingCalloutRelationship::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDraughtingCalloutRelationship::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDraughtingCalloutRelationship::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11820,8 +11820,8 @@ public:
 class IfcDocumentReference : public IfcExternalReference {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcExternalReference::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcExternalReference::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcExternalReference::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcExternalReference::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformation> > ReferenceToDocument(); // INVERSE IfcDocumentInformation::DocumentReferences
     bool is(Type::Enum v) const;
@@ -11845,8 +11845,8 @@ public:
 class IfcDraughtingPreDefinedTextFont : public IfcPreDefinedTextFont {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcPreDefinedTextFont::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcPreDefinedTextFont::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedTextFont::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcPreDefinedTextFont::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -12119,8 +12119,8 @@ public:
 class IfcFaceOuterBound : public IfcFaceBound {
 public:
  virtual unsigned int getArgumentCount() const { return 2; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcFaceBound::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcFaceBound::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcFaceBound::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcFaceBound::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -12455,8 +12455,8 @@ public:
 class IfcGeometricRepresentationItem : public IfcRepresentationItem {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRepresentationItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRepresentationItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRepresentationItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRepresentationItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -12784,8 +12784,8 @@ public:
 class IfcLightSourceAmbient : public IfcLightSource {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcLightSource::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcLightSource::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcLightSource::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcLightSource::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -13040,8 +13040,8 @@ public:
 class IfcLoop : public IfcTopologicalRepresentationItem {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcTopologicalRepresentationItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcTopologicalRepresentationItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcTopologicalRepresentationItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcTopologicalRepresentationItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -13219,8 +13219,8 @@ public:
 class IfcObjectDefinition : public IfcRoot {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRoot::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRoot::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRoot::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRoot::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssigns> > HasAssignments(); // INVERSE IfcRelAssigns::RelatedObjects
     SHARED_PTR< IfcTemplatedEntityList<IfcRelDecomposes> > IsDecomposedBy(); // INVERSE IfcRelDecomposes::RelatingObject
@@ -13319,8 +13319,8 @@ public:
 class IfcOpenShell : public IfcConnectedFaceSet {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcConnectedFaceSet::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcConnectedFaceSet::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcConnectedFaceSet::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcConnectedFaceSet::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -13576,8 +13576,8 @@ public:
 class IfcPoint : public IfcGeometricRepresentationItem {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcGeometricRepresentationItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcGeometricRepresentationItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -13782,8 +13782,8 @@ public:
 class IfcPreDefinedColour : public IfcPreDefinedItem {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcPreDefinedItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcPreDefinedItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcPreDefinedItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -13803,8 +13803,8 @@ public:
 class IfcPreDefinedCurveFont : public IfcPreDefinedItem {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcPreDefinedItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcPreDefinedItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcPreDefinedItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -13817,8 +13817,8 @@ public:
 class IfcPreDefinedDimensionSymbol : public IfcPreDefinedSymbol {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcPreDefinedSymbol::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcPreDefinedSymbol::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedSymbol::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcPreDefinedSymbol::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -13831,8 +13831,8 @@ public:
 class IfcPreDefinedPointMarkerSymbol : public IfcPreDefinedSymbol {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcPreDefinedSymbol::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcPreDefinedSymbol::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedSymbol::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcPreDefinedSymbol::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -13857,8 +13857,8 @@ public:
 class IfcProductDefinitionShape : public IfcProductRepresentation {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcProductRepresentation::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcProductRepresentation::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcProductRepresentation::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcProductRepresentation::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > ShapeOfProduct(); // INVERSE IfcProduct::Representation
     SHARED_PTR< IfcTemplatedEntityList<IfcShapeAspect> > HasShapeAspects(); // INVERSE IfcShapeAspect::PartOfProductDefinitionShape
@@ -14053,8 +14053,8 @@ public:
 class IfcPropertyDefinition : public IfcRoot {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRoot::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRoot::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRoot::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRoot::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociates> > HasAssociations(); // INVERSE IfcRelAssociates::RelatedObjects
     bool is(Type::Enum v) const;
@@ -14333,8 +14333,8 @@ public:
 class IfcPropertySetDefinition : public IfcPropertyDefinition {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcPropertyDefinition::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcPropertyDefinition::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcPropertyDefinition::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcPropertyDefinition::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelDefinesByProperties> > PropertyDefinitionOf(); // INVERSE IfcRelDefinesByProperties::RelatingPropertyDefinition
     SHARED_PTR< IfcTemplatedEntityList<IfcTypeObject> > DefinesType(); // INVERSE IfcTypeObject::HasPropertySets
@@ -14728,8 +14728,8 @@ public:
 class IfcRelationship : public IfcRoot {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRoot::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRoot::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRoot::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRoot::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -14957,8 +14957,8 @@ public:
 class IfcSolidModel : public IfcGeometricRepresentationItem {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcGeometricRepresentationItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcGeometricRepresentationItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -15379,8 +15379,8 @@ public:
 class IfcSurface : public IfcGeometricRepresentationItem {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcGeometricRepresentationItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcGeometricRepresentationItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -16455,8 +16455,8 @@ public:
 class IfcAnnotationCurveOccurrence : public IfcAnnotationOccurrence {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcAnnotationOccurrence::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcAnnotationOccurrence::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcAnnotationOccurrence::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcAnnotationOccurrence::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -16700,8 +16700,8 @@ public:
 class IfcBoundedSurface : public IfcSurface {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcSurface::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcSurface::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcSurface::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcSurface::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -16941,8 +16941,8 @@ public:
 class IfcCartesianTransformationOperator2D : public IfcCartesianTransformationOperator {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcCartesianTransformationOperator::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcCartesianTransformationOperator::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcCartesianTransformationOperator::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcCartesianTransformationOperator::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -17116,8 +17116,8 @@ public:
 class IfcClosedShell : public IfcConnectedFaceSet {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcConnectedFaceSet::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcConnectedFaceSet::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcConnectedFaceSet::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcConnectedFaceSet::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -17305,8 +17305,8 @@ public:
 class IfcCurve : public IfcGeometricRepresentationItem {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcGeometricRepresentationItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcGeometricRepresentationItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -17377,8 +17377,8 @@ public:
 class IfcDimensionCurve : public IfcAnnotationCurveOccurrence {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcAnnotationCurveOccurrence::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcAnnotationCurveOccurrence::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcAnnotationCurveOccurrence::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcAnnotationCurveOccurrence::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcTerminatorSymbol> > AnnotatedBySymbols(); // INVERSE IfcTerminatorSymbol::AnnotatedCurve
     bool is(Type::Enum v) const;
@@ -17799,8 +17799,8 @@ public:
 class IfcDraughtingPreDefinedColour : public IfcPreDefinedColour {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcPreDefinedColour::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcPreDefinedColour::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedColour::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcPreDefinedColour::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -17826,8 +17826,8 @@ public:
 class IfcDraughtingPreDefinedCurveFont : public IfcPreDefinedCurveFont {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcPreDefinedCurveFont::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcPreDefinedCurveFont::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedCurveFont::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcPreDefinedCurveFont::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -18414,8 +18414,8 @@ public:
 class IfcFurnishingElementType : public IfcElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -18488,8 +18488,8 @@ public:
 class IfcGeometricCurveSet : public IfcGeometricSet {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcGeometricSet::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcGeometricSet::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcGeometricSet::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcGeometricSet::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -19081,8 +19081,8 @@ public:
 class IfcPlane : public IfcElementarySurface {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElementarySurface::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElementarySurface::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElementarySurface::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElementarySurface::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -19135,8 +19135,8 @@ public:
 class IfcProcess : public IfcObject {
 public:
  virtual unsigned int getArgumentCount() const { return 5; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcObject::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcObject::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcObject::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcObject::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProcess> > OperatesOn(); // INVERSE IfcRelAssignsToProcess::RelatingProcess
     SHARED_PTR< IfcTemplatedEntityList<IfcRelSequence> > IsSuccessorFrom(); // INVERSE IfcRelSequence::RelatedProcess
@@ -19332,8 +19332,8 @@ public:
 class IfcProjectionCurve : public IfcAnnotationCurveOccurrence {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcAnnotationCurveOccurrence::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcAnnotationCurveOccurrence::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcAnnotationCurveOccurrence::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcAnnotationCurveOccurrence::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -19827,8 +19827,8 @@ public:
 class IfcRelAssignsToProjectOrder : public IfcRelAssignsToControl {
 public:
  virtual unsigned int getArgumentCount() const { return 7; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRelAssignsToControl::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRelAssignsToControl::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRelAssignsToControl::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRelAssignsToControl::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -20205,8 +20205,8 @@ public:
 class IfcRelConnects : public IfcRelationship {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRelationship::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRelationship::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRelationship::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRelationship::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -21039,8 +21039,8 @@ public:
 class IfcRelNests : public IfcRelDecomposes {
 public:
  virtual unsigned int getArgumentCount() const { return 6; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRelDecomposes::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRelDecomposes::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRelDecomposes::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRelDecomposes::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -21053,8 +21053,8 @@ public:
 class IfcRelOccupiesSpaces : public IfcRelAssignsToActor {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRelAssignsToActor::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRelAssignsToActor::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRelAssignsToActor::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRelAssignsToActor::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -21202,8 +21202,8 @@ public:
 class IfcRelSchedulesCostItems : public IfcRelAssignsToControl {
 public:
  virtual unsigned int getArgumentCount() const { return 7; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRelAssignsToControl::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRelAssignsToControl::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRelAssignsToControl::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRelAssignsToControl::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -21569,8 +21569,8 @@ public:
 class IfcResource : public IfcObject {
 public:
  virtual unsigned int getArgumentCount() const { return 5; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcObject::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcObject::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcObject::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcObject::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToResource> > ResourceOf(); // INVERSE IfcRelAssignsToResource::RelatingResource
     bool is(Type::Enum v) const;
@@ -21993,8 +21993,8 @@ public:
 class IfcSpatialStructureElementType : public IfcElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -22290,8 +22290,8 @@ public:
 class IfcStructuralItem : public IfcProduct {
 public:
  virtual unsigned int getArgumentCount() const { return 7; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcProduct::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcProduct::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcProduct::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcProduct::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralActivity> > AssignedStructuralActivity(); // INVERSE IfcRelConnectsStructuralActivity::RelatingElement
     bool is(Type::Enum v) const;
@@ -22309,8 +22309,8 @@ public:
 class IfcStructuralMember : public IfcStructuralItem {
 public:
  virtual unsigned int getArgumentCount() const { return 7; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcStructuralItem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcStructuralItem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralItem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcStructuralItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralElement> > ReferencesElement(); // INVERSE IfcRelConnectsStructuralElement::RelatedStructuralMember
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralMember> > ConnectedBy(); // INVERSE IfcRelConnectsStructuralMember::RelatingStructuralMember
@@ -22345,8 +22345,8 @@ public:
 class IfcStructuralReaction : public IfcStructuralActivity {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcStructuralActivity::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcStructuralActivity::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralActivity::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcStructuralActivity::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcStructuralAction> > Causes(); // INVERSE IfcStructuralAction::CausedBy
     bool is(Type::Enum v) const;
@@ -22434,8 +22434,8 @@ public:
 class IfcStructuredDimensionCallout : public IfcDraughtingCallout {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDraughtingCallout::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDraughtingCallout::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDraughtingCallout::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDraughtingCallout::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -22630,8 +22630,8 @@ public:
 class IfcSystemFurnitureElementType : public IfcFurnishingElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcFurnishingElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcFurnishingElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcFurnishingElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcFurnishingElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -23218,8 +23218,8 @@ public:
 class IfcAnnotation : public IfcProduct {
 public:
  virtual unsigned int getArgumentCount() const { return 7; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcProduct::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcProduct::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcProduct::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcProduct::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelContainedInSpatialStructure> > ContainedInStructure(); // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     bool is(Type::Enum v) const;
@@ -23421,8 +23421,8 @@ public:
 class IfcBooleanClippingResult : public IfcBooleanResult {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcBooleanResult::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcBooleanResult::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcBooleanResult::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcBooleanResult::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -23445,8 +23445,8 @@ public:
 class IfcBoundedCurve : public IfcCurve {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcCurve::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcCurve::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcCurve::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcCurve::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -23689,8 +23689,8 @@ public:
 class IfcBuildingElementType : public IfcElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -24260,8 +24260,8 @@ public:
 class IfcControl : public IfcObject {
 public:
  virtual unsigned int getArgumentCount() const { return 5; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcObject::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcObject::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcObject::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcObject::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToControl> > Controls(); // INVERSE IfcRelAssignsToControl::RelatingControl
     bool is(Type::Enum v) const;
@@ -24311,8 +24311,8 @@ public:
 class IfcCostItem : public IfcControl {
 public:
  virtual unsigned int getArgumentCount() const { return 5; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcControl::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcControl::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcControl::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcControl::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -24503,8 +24503,8 @@ public:
 class IfcCrewResource : public IfcConstructionResource {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcConstructionResource::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcConstructionResource::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcConstructionResource::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcConstructionResource::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -24554,8 +24554,8 @@ public:
 class IfcDimensionCurveDirectedCallout : public IfcDraughtingCallout {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDraughtingCallout::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDraughtingCallout::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDraughtingCallout::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDraughtingCallout::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -24596,8 +24596,8 @@ public:
 class IfcDistributionElementType : public IfcElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -24675,8 +24675,8 @@ public:
 class IfcDistributionFlowElementType : public IfcDistributionElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -24781,11 +24781,11 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return STRING; } return IfcProduct::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "Tag"; } return IfcProduct::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
+    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralElement> > HasStructuralMember(); // INVERSE IfcRelConnectsStructuralElement::RelatingElement
     SHARED_PTR< IfcTemplatedEntityList<IfcRelFillsElement> > FillsVoids(); // INVERSE IfcRelFillsElement::RelatedBuildingElement
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsElements> > ConnectedTo(); // INVERSE IfcRelConnectsElements::RelatingElement
     SHARED_PTR< IfcTemplatedEntityList<IfcRelCoversBldgElements> > HasCoverings(); // INVERSE IfcRelCoversBldgElements::RelatingBuildingElement
     SHARED_PTR< IfcTemplatedEntityList<IfcRelProjectsElement> > HasProjections(); // INVERSE IfcRelProjectsElement::RelatingElement
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralElement> > HasStructuralMember(); // INVERSE IfcRelConnectsStructuralElement::RelatingElement
     SHARED_PTR< IfcTemplatedEntityList<IfcRelReferencedInSpatialStructure> > ReferencedInStructures(); // INVERSE IfcRelReferencedInSpatialStructure::RelatedElements
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPortToElement> > HasPorts(); // INVERSE IfcRelConnectsPortToElement::RelatedElement
     SHARED_PTR< IfcTemplatedEntityList<IfcRelVoidsElement> > HasOpenings(); // INVERSE IfcRelVoidsElement::RelatingBuildingElement
@@ -24997,8 +24997,8 @@ public:
 class IfcElementComponent : public IfcElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25020,8 +25020,8 @@ public:
 class IfcElementComponentType : public IfcElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25102,8 +25102,8 @@ public:
 class IfcEnergyConversionDeviceType : public IfcDistributionFlowElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25116,8 +25116,8 @@ public:
 class IfcEquipmentElement : public IfcElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25130,8 +25130,8 @@ public:
 class IfcEquipmentStandard : public IfcControl {
 public:
  virtual unsigned int getArgumentCount() const { return 5; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcControl::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcControl::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcControl::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcControl::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25252,8 +25252,8 @@ public:
 class IfcFacetedBrep : public IfcManifoldSolidBrep {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcManifoldSolidBrep::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcManifoldSolidBrep::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcManifoldSolidBrep::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcManifoldSolidBrep::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25314,8 +25314,8 @@ public:
 class IfcFastener : public IfcElementComponent {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElementComponent::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElementComponent::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElementComponent::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElementComponent::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25351,8 +25351,8 @@ public:
 class IfcFastenerType : public IfcElementComponentType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElementComponentType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElementComponentType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElementComponentType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElementComponentType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25459,8 +25459,8 @@ public:
 class IfcFeatureElement : public IfcElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25528,8 +25528,8 @@ public:
 class IfcFeatureElementAddition : public IfcFeatureElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcFeatureElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcFeatureElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcFeatureElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcFeatureElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelProjectsElement> > ProjectsElements(); // INVERSE IfcRelProjectsElement::RelatedFeatureElement
     bool is(Type::Enum v) const;
@@ -25593,8 +25593,8 @@ public:
 class IfcFeatureElementSubtraction : public IfcFeatureElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcFeatureElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcFeatureElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcFeatureElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcFeatureElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelVoidsElement> > VoidsElements(); // INVERSE IfcRelVoidsElement::RelatedOpeningElement
     bool is(Type::Enum v) const;
@@ -25630,8 +25630,8 @@ public:
 class IfcFlowControllerType : public IfcDistributionFlowElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25667,8 +25667,8 @@ public:
 class IfcFlowFittingType : public IfcDistributionFlowElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25751,8 +25751,8 @@ public:
 class IfcFlowMovingDeviceType : public IfcDistributionFlowElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25796,8 +25796,8 @@ public:
 class IfcFlowSegmentType : public IfcDistributionFlowElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25817,8 +25817,8 @@ public:
 class IfcFlowStorageDeviceType : public IfcDistributionFlowElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25838,8 +25838,8 @@ public:
 class IfcFlowTerminalType : public IfcDistributionFlowElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25860,8 +25860,8 @@ public:
 class IfcFlowTreatmentDeviceType : public IfcDistributionFlowElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25978,8 +25978,8 @@ public:
 class IfcFurnishingElement : public IfcElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -25992,8 +25992,8 @@ public:
 class IfcFurnitureStandard : public IfcControl {
 public:
  virtual unsigned int getArgumentCount() const { return 5; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcControl::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcControl::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcControl::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcControl::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -26170,8 +26170,8 @@ public:
 class IfcGroup : public IfcObject {
 public:
  virtual unsigned int getArgumentCount() const { return 5; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcObject::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcObject::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcObject::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcObject::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToGroup> > IsGroupedBy(); // INVERSE IfcRelAssignsToGroup::RelatingGroup
     bool is(Type::Enum v) const;
@@ -26490,8 +26490,8 @@ public:
 class IfcLinearDimension : public IfcDimensionCurveDirectedCallout {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDimensionCurveDirectedCallout::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDimensionCurveDirectedCallout::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDimensionCurveDirectedCallout::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDimensionCurveDirectedCallout::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -26588,8 +26588,8 @@ public:
 class IfcMechanicalFastenerType : public IfcFastenerType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcFastenerType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcFastenerType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcFastenerType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcFastenerType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -27008,8 +27008,8 @@ public:
 class IfcOpeningElement : public IfcFeatureElementSubtraction {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcFeatureElementSubtraction::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcFeatureElementSubtraction::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcFeatureElementSubtraction::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcFeatureElementSubtraction::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelFillsElement> > HasFillings(); // INVERSE IfcRelFillsElement::RelatingOpeningElement
     bool is(Type::Enum v) const;
@@ -27426,8 +27426,8 @@ public:
 class IfcPort : public IfcProduct {
 public:
  virtual unsigned int getArgumentCount() const { return 7; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcProduct::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcProduct::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcProduct::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcProduct::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPortToElement> > ContainedIn(); // INVERSE IfcRelConnectsPortToElement::RelatingPort
     SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPorts> > ConnectedFrom(); // INVERSE IfcRelConnectsPorts::RelatedPort
@@ -27763,8 +27763,8 @@ public:
 class IfcProjectionElement : public IfcFeatureElementAddition {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcFeatureElementAddition::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcFeatureElementAddition::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcFeatureElementAddition::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcFeatureElementAddition::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -27872,8 +27872,8 @@ public:
 class IfcRadiusDimension : public IfcDimensionCurveDirectedCallout {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDimensionCurveDirectedCallout::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDimensionCurveDirectedCallout::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDimensionCurveDirectedCallout::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDimensionCurveDirectedCallout::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -27980,8 +27980,8 @@ public:
 class IfcRelAggregates : public IfcRelDecomposes {
 public:
  virtual unsigned int getArgumentCount() const { return 6; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcRelDecomposes::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcRelDecomposes::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRelDecomposes::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcRelDecomposes::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -29064,8 +29064,8 @@ public:
 class IfcStructuralCurveConnection : public IfcStructuralConnection {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcStructuralConnection::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcStructuralConnection::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralConnection::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcStructuralConnection::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -29151,8 +29151,8 @@ public:
 class IfcStructuralCurveMemberVarying : public IfcStructuralCurveMember {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcStructuralCurveMember::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcStructuralCurveMember::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralCurveMember::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcStructuralCurveMember::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -29244,7 +29244,7 @@ public:
     /// Whether the optional attribute Coefficient is defined for this IfcStructuralLoadGroup
     bool hasCoefficient();
     /// Load factor. If omitted, a factor is not yet known or not specified. A load factor of 1.0 shall be explicitly exported as Coefficient = 1.0.
-    IfcPositiveRatioMeasure Coefficient();
+    IfcRatioMeasure Coefficient();
     /// Whether the optional attribute Purpose is defined for this IfcStructuralLoadGroup
     bool hasPurpose();
     /// Description of the purpose of this instance. Among else, possible values of the Purpose of load combinations are 'SLS', 'ULS', 'ALS' to indicate serviceability, ultimate, or accidental limit state.
@@ -29349,8 +29349,8 @@ public:
 class IfcStructuralPointAction : public IfcStructuralAction {
 public:
  virtual unsigned int getArgumentCount() const { return 11; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcStructuralAction::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcStructuralAction::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralAction::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcStructuralAction::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -29376,8 +29376,8 @@ public:
 class IfcStructuralPointConnection : public IfcStructuralConnection {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcStructuralConnection::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcStructuralConnection::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralConnection::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcStructuralConnection::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -29433,8 +29433,8 @@ public:
 class IfcStructuralPointReaction : public IfcStructuralReaction {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcStructuralReaction::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcStructuralReaction::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralReaction::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcStructuralReaction::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -29486,8 +29486,8 @@ public:
 class IfcStructuralSurfaceConnection : public IfcStructuralConnection {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcStructuralConnection::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcStructuralConnection::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralConnection::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcStructuralConnection::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -29617,8 +29617,8 @@ public:
 class IfcSystem : public IfcGroup {
 public:
  virtual unsigned int getArgumentCount() const { return 5; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcGroup::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcGroup::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcGroup::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcGroup::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelServicesBuildings> > ServicesBuildings(); // INVERSE IfcRelServicesBuildings::RelatingSystem
     bool is(Type::Enum v) const;
@@ -30214,8 +30214,8 @@ public:
 class IfcVirtualElement : public IfcElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -30494,8 +30494,8 @@ public:
 class IfcWorkPlan : public IfcWorkControl {
 public:
  virtual unsigned int getArgumentCount() const { return 15; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcWorkControl::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcWorkControl::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcWorkControl::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcWorkControl::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -30548,8 +30548,8 @@ public:
 class IfcWorkSchedule : public IfcWorkControl {
 public:
  virtual unsigned int getArgumentCount() const { return 15; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcWorkControl::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcWorkControl::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcWorkControl::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcWorkControl::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -30647,8 +30647,8 @@ public:
 class IfcZone : public IfcGroup {
 public:
  virtual unsigned int getArgumentCount() const { return 5; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcGroup::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcGroup::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcGroup::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcGroup::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -30661,8 +30661,8 @@ public:
 class Ifc2DCompositeCurve : public IfcCompositeCurve {
 public:
  virtual unsigned int getArgumentCount() const { return 2; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcCompositeCurve::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcCompositeCurve::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcCompositeCurve::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcCompositeCurve::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -30853,8 +30853,8 @@ public:
 class IfcAngularDimension : public IfcDimensionCurveDirectedCallout {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDimensionCurveDirectedCallout::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDimensionCurveDirectedCallout::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDimensionCurveDirectedCallout::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDimensionCurveDirectedCallout::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -31113,8 +31113,8 @@ public:
 class IfcBezierCurve : public IfcBSplineCurve {
 public:
  virtual unsigned int getArgumentCount() const { return 5; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcBSplineCurve::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcBSplineCurve::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcBSplineCurve::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcBSplineCurve::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -31535,8 +31535,8 @@ public:
 class IfcBuildingElement : public IfcElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -31549,8 +31549,8 @@ public:
 class IfcBuildingElementComponent : public IfcBuildingElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcBuildingElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcBuildingElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -31580,8 +31580,8 @@ public:
 class IfcBuildingElementPart : public IfcBuildingElementComponent {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcBuildingElementComponent::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcBuildingElementComponent::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcBuildingElementComponent::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcBuildingElementComponent::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -32403,8 +32403,8 @@ public:
 class IfcColumn : public IfcBuildingElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcBuildingElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcBuildingElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -32503,8 +32503,8 @@ public:
 class IfcCondition : public IfcGroup {
 public:
  virtual unsigned int getArgumentCount() const { return 5; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcGroup::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcGroup::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcGroup::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcGroup::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -32555,8 +32555,8 @@ public:
 class IfcConstructionEquipmentResource : public IfcConstructionResource {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcConstructionResource::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcConstructionResource::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcConstructionResource::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcConstructionResource::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -32630,8 +32630,8 @@ public:
 class IfcConstructionProductResource : public IfcConstructionResource {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcConstructionResource::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcConstructionResource::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcConstructionResource::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcConstructionResource::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -33120,8 +33120,8 @@ public:
 class IfcCurtainWall : public IfcBuildingElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcBuildingElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcBuildingElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -33184,8 +33184,8 @@ public:
 class IfcDiameterDimension : public IfcDimensionCurveDirectedCallout {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDimensionCurveDirectedCallout::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDimensionCurveDirectedCallout::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDimensionCurveDirectedCallout::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDimensionCurveDirectedCallout::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -33371,8 +33371,8 @@ public:
 class IfcDiscreteAccessory : public IfcElementComponent {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElementComponent::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElementComponent::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElementComponent::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElementComponent::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -33573,8 +33573,8 @@ public:
 class IfcDiscreteAccessoryType : public IfcElementComponentType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElementComponentType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElementComponentType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElementComponentType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElementComponentType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -33694,8 +33694,8 @@ public:
 class IfcDistributionControlElementType : public IfcDistributionElementType {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionElementType::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionElementType::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionElementType::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionElementType::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -33870,8 +33870,8 @@ public:
 class IfcDistributionElement : public IfcElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -33952,8 +33952,8 @@ public:
 class IfcDistributionFlowElement : public IfcDistributionElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     SHARED_PTR< IfcTemplatedEntityList<IfcRelFlowControlElements> > HasControlElements(); // INVERSE IfcRelFlowControlElements::RelatingFlowElement
     bool is(Type::Enum v) const;
@@ -34835,8 +34835,8 @@ public:
 class IfcElectricalCircuit : public IfcSystem {
 public:
  virtual unsigned int getArgumentCount() const { return 5; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcSystem::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcSystem::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcSystem::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcSystem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -34849,8 +34849,8 @@ public:
 class IfcElectricalElement : public IfcElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -34872,8 +34872,8 @@ public:
 class IfcEnergyConversionDevice : public IfcDistributionFlowElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -35033,8 +35033,8 @@ public:
 class IfcFlowController : public IfcDistributionFlowElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -35052,8 +35052,8 @@ public:
 class IfcFlowFitting : public IfcDistributionFlowElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -35117,8 +35117,8 @@ public:
 class IfcFlowMovingDevice : public IfcDistributionFlowElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -35154,8 +35154,8 @@ public:
 class IfcFlowSegment : public IfcDistributionFlowElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -35177,8 +35177,8 @@ public:
 class IfcFlowStorageDevice : public IfcDistributionFlowElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -35202,8 +35202,8 @@ public:
 class IfcFlowTerminal : public IfcDistributionFlowElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -35221,8 +35221,8 @@ public:
 class IfcFlowTreatmentDevice : public IfcDistributionFlowElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -35525,8 +35525,8 @@ public:
 class IfcMember : public IfcBuildingElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcBuildingElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcBuildingElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -35809,8 +35809,8 @@ public:
 class IfcPlate : public IfcBuildingElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcBuildingElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcBuildingElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -36311,8 +36311,8 @@ public:
 class IfcRampFlight : public IfcBuildingElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcBuildingElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcBuildingElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -37414,8 +37414,8 @@ public:
 class IfcTendonAnchor : public IfcReinforcingElement {
 public:
  virtual unsigned int getArgumentCount() const { return 9; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcReinforcingElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcReinforcingElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcReinforcingElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcReinforcingElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -37708,8 +37708,8 @@ public:
 class IfcWall : public IfcBuildingElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcBuildingElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcBuildingElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -37924,8 +37924,8 @@ public:
 class IfcWallStandardCase : public IfcWall {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcWall::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcWall::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcWall::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcWall::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -38648,8 +38648,8 @@ public:
 class IfcBeam : public IfcBuildingElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcBuildingElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcBuildingElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcBuildingElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -38765,8 +38765,8 @@ public:
 class IfcDistributionChamberElement : public IfcDistributionFlowElement {
 public:
  virtual unsigned int getArgumentCount() const { return 8; }
- virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentType(i); }
- virtual const char* getArgumentName(unsigned int i) const { switch (i) {} return IfcDistributionFlowElement::getArgumentName(i); }
+ virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
+ virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionFlowElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
