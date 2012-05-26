@@ -44,35 +44,43 @@ File::File(const std::string& fn) {
 	stream.seekg(0,std::ios_base::end);
 	size = (unsigned int) stream.tellg();
 	stream.seekg(0,std::ios_base::beg);
+#ifdef BUF_SIZE
+	offset = 0;
 	paging = size > BUF_SIZE;
 	buffer = new char[size < BUF_SIZE ? size : BUF_SIZE];
+#else
+	buffer = new char[size];
+#endif
 	ptr = 0;
-	len = 0;
-	offset = 0;
+	len = 0;	
 	ReadBuffer(false);
 }
 
 File::File(std::istream& f, int l) {
 	eof = false;
 	size = l;
+#ifdef BUF_SIZE
 	paging = false;
+	offset = 0;
+#endif
 	buffer = new char[size];
 	f.read(buffer,size);
 	valid = f.gcount() == size;
 	ptr = 0;
-	len = l;
-	offset = 0;
+	len = l;	
 }
 
 File::File(void* data, int l) {
 	eof = false;
 	size = l;
+#ifdef BUF_SIZE
 	paging = false;
+	offset = 0;
+#endif
 	buffer = (char*) data;
 	valid = true;
 	ptr = 0;
-	len = l;
-	offset = 0;
+	len = l;	
 }
 
 void File::Close() {
@@ -84,13 +92,19 @@ void File::Close() {
 // Reads a chunk of BUF_SIZE in memory and increments cursor if requested
 //
 void File::ReadBuffer(bool inc) {
+#ifdef BUF_SIZE
 	if ( inc ) {
 		offset += len;
 		stream.seekg(offset,std::ios_base::beg);
 	}
+#endif
 	eof = stream.eof();
 	if ( eof ) return;
+#ifdef BUF_SIZE
 	stream.read(buffer,size < BUF_SIZE ? size : BUF_SIZE);
+#else
+	stream.read(buffer,size);
+#endif
 	len = (unsigned int) stream.gcount();
 	eof = len == 0;
 	ptr = 0;
@@ -100,10 +114,13 @@ void File::ReadBuffer(bool inc) {
 // Seeks an arbitrary position in the file
 //
 void File::Seek(unsigned int o) {
+#ifdef BUF_SIZE
 	if ( !paging ) {
+#endif
 		ptr = o;
 		if (ptr >= len) throw IfcException("Reading outside of file limits");
 		eof = false;
+#ifdef BUF_SIZE
 	} else if ( o >= offset && (o < (offset+len)) ) {
 		ptr = o - offset;
 	} else {
@@ -112,6 +129,7 @@ void File::Seek(unsigned int o) {
 		stream.seekg(o,std::ios_base::beg);
 		ReadBuffer(false);
 	}
+#endif
 }
 
 //
@@ -125,8 +143,11 @@ char File::Peek() {
 // Returns the character at specified offset
 //
 char File::Read(unsigned int o) {
+#ifdef BUF_SIZE
 	if ( ! paging ) {
+#endif
 		return buffer[o];
+#ifdef BUF_SIZE
 	} else if ( o >= offset && (o < (offset+len)) ) {
 		return buffer[o-offset];
 	} else {
@@ -134,13 +155,18 @@ char File::Read(unsigned int o) {
 		stream.seekg(o,std::ios_base::beg);
 		return stream.peek();
 	}
+#endif
 }
 
 //
 // Returns the cursor position
 //
 unsigned int File::Tell() {
+#ifdef BUF_SIZE
 	return offset + ptr;
+#else
+	return ptr;
+#endif
 }
 
 //
@@ -148,11 +174,15 @@ unsigned int File::Tell() {
 //
 void File::Inc() {
 	if ( ++ptr == len ) { 
+#ifdef BUF_SIZE
 		if ( paging ) ReadBuffer();
 		else {
+#endif
 			eof = true;
 			return;
+#ifdef BUF_SIZE
 		}
+#endif
 	}
 	const char current = File::Peek();
 	if ( current == '\n' || current == '\r' ) File::Inc();

@@ -30,7 +30,13 @@
 #include <fstream>
 #include <string>
 
-const int BUF_SIZE = (128 * 1024 * 1024);
+// As of IfcOpenShell version 0.3.0 the paging functionality, which
+// loads a file on disk into multiple chunks, has been disabled.
+// It proved to be an inefficient way of working with large files,
+// as often these did not facilitate to be parsed in a sequential 
+// manner efficiently, to enable the paging functionality uncomment
+// the following statement.
+//const int BUF_SIZE = (128 * 1024 * 1024);
 
 namespace IfcParse {
 	/// The File class represents a ISO 10303-21 IFC-SPF file in memory.
@@ -46,9 +52,11 @@ namespace IfcParse {
 		char* buffer;
 		unsigned int ptr;
 		unsigned int len;
-		unsigned int offset;
 		void ReadBuffer(bool inc=true);
+#ifdef BUF_SIZE
+		unsigned int offset;
 		bool paging;
+#endif
 	public:
 		bool valid;
 		bool eof;
