@@ -48,6 +48,7 @@
 // Welds vertices that belong to different faces
 bool weld_vertices = true;
 bool convert_back_units = false;
+bool use_faster_booleans = false;
 
 int IfcGeomObjects::IfcMesh::addvert(const gp_XYZ& p) {
 	const float X = convert_back_units ? (float) (p.X() / Ifc::LengthUnit) : (float)p.X();
@@ -386,7 +387,19 @@ IfcGeomObjects::IfcGeomObject* _get() {
 		if ( openings && openings->Size() ) {
 			IfcGeom::ShapeList opened_shapes;
 			try {
-				IfcGeom::convert_openings(ifc_product,openings,shapes,trsf,opened_shapes);
+				if ( use_faster_booleans ) {
+					bool succes = IfcGeom::convert_openings_fast(ifc_product,openings,shapes,trsf,opened_shapes);
+					if ( ! succes ) {
+						for ( IfcGeom::ShapeList::const_iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
+							delete it->first;
+							delete it->second;
+						}
+						opened_shapes.clear();
+						IfcGeom::convert_openings(ifc_product,openings,shapes,trsf,opened_shapes);
+					}
+				} else {
+					IfcGeom::convert_openings(ifc_product,openings,shapes,trsf,opened_shapes);
+				}
 			} catch(...) { 
 				Ifc::LogMessage("Error","Error processing openings for:",ifc_product->entity); 
 			}
@@ -520,6 +533,9 @@ void IfcGeomObjects::Settings(int setting, bool value) {
 		break;
 	case USE_BREP_DATA:
 		use_brep_data = value;
+		break;
+	case FASTER_BOOLEANS:
+		use_faster_booleans = value;
 		break;
 	case SEW_SHELLS:
 		Ifc::SewShells = value;

@@ -868,3 +868,4 @@ MapEntityByGuid Ifc::byguid;
 MapEntitiesByRef Ifc::byref;
 MapOffsetById Ifc::offsets;
 std::stringstream Ifc::log_stream;
+int Ifc::Verbosity = 2;

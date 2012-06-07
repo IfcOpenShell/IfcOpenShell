@@ -272,6 +272,7 @@ public:
 	static double LengthUnit;
 	static double PlaneAngleUnit;
 	static int CircleSegments;
+	static int Verbosity;
 };
 
 double UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v );

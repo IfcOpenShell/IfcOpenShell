@@ -91,6 +91,9 @@ namespace IfcGeomObjects {
 	// Specifies whether to sew IfcConnectedFaceSets (open and closed shells) to
 	// TopoDS_Shells or whether to keep them as a loose collection of faces.
 	const int SEW_SHELLS = 5;
+	// Specifies whether to compose IfcOpeningElements into a single compound
+	// in order to speed up the processing of opening subtractions.
+	const int FASTER_BOOLEANS = 6;
 
 	// End of settings enumeration.
 

@@ -179,12 +179,14 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x
 				? BRepBuilderAPI_GTransform(opening_shape_unlocated,opening_shape_gtrsf,true).Shape()
 				: opening_shape_unlocated.Moved(opening_shape_gtrsf.Trsf());
 					
-			const double opening_volume = shape_volume(opening_shape);
-			if ( opening_volume <= ALMOST_ZERO )
-				Ifc::LogMessage("Warning","Empty opening for:",entity->entity);
-
-			const double original_shape_volume = shape_volume(entity_shape);
-
+			double opening_volume, original_shape_volume;
+			if ( Ifc::Verbosity > 1 ) {
+				opening_volume = shape_volume(opening_shape);
+				if ( opening_volume <= ALMOST_ZERO )
+					Ifc::LogMessage("Warning","Empty opening for:",entity->entity);
+				original_shape_volume = shape_volume(entity_shape);
+			}
+			
 			BRepAlgoAPI_Cut brep_cut(entity_shape,opening_shape);
 
 			if ( brep_cut.IsDone() ) {
@@ -194,11 +196,12 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x
 				bool is_valid = analyser.IsValid() != 0;
 				if ( is_valid ) {
 					entity_shape = brep_cut;
-					const double volume_after_subtraction = shape_volume(entity_shape);
+					if ( Ifc::Verbosity > 1 ) {
+						const double volume_after_subtraction = shape_volume(entity_shape);
 					
-					if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
-						Ifc::LogMessage("Warning","Subtraction yields unchanged volume:",entity->entity);
-
+						if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
+							Ifc::LogMessage("Warning","Subtraction yields unchanged volume:",entity->entity);
+					}
 				} else {
 					Ifc::LogMessage("Error","Invalid result from subtraction:",entity->entity);
 				}
@@ -217,6 +220,87 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x
 
 	return true;
 }
+
+bool IfcGeom::convert_openings_fast(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, 
+							   const ShapeList& entity_shapes, const gp_Trsf& entity_trsf, ShapeList& cut_shapes) {
+	
+	// Create a compound of all opening shapes in order to speed up the boolean operations
+	TopoDS_Compound opening_compound;
+	BRep_Builder builder;
+	builder.MakeCompound(opening_compound);
+
+	for ( Ifc2x3::IfcRelVoidsElement::it it = openings->begin(); it != openings->end(); ++ it ) {
+		Ifc2x3::IfcRelVoidsElement::ptr v = *it;
+		Ifc2x3::IfcFeatureElementSubtraction::ptr fes = v->RelatedOpeningElement();
+		if ( fes->is(Ifc2x3::Type::IfcOpeningElement) ) {
+
+			// Convert the IfcRepresentation of the IfcOpeningElement
+			gp_Trsf opening_trsf;
+			IfcGeom::convert(fes->ObjectPlacement(),opening_trsf);
+
+			// Move the opening into the coordinate system of the IfcProduct
+			opening_trsf.PreMultiply(entity_trsf.Inverted());
+
+			Ifc2x3::IfcProductRepresentation::ptr prodrep = fes->Representation();
+			Ifc2x3::IfcRepresentation::list reps = prodrep->Representations();
+
+			IfcGeom::ShapeList opening_shapes;
+						
+			for ( Ifc2x3::IfcRepresentation::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
+				IfcGeom::convert_shapes(*it2,opening_shapes);
+			}
+
+			for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
+				gp_GTrsf& gtrsf = *opening_shapes[i].first;
+				gtrsf.PreMultiply(opening_trsf);
+				const TopoDS_Shape& opening_shape = gtrsf.Form() == gp_Other
+					? BRepBuilderAPI_GTransform(*opening_shapes[i].second,gtrsf,true).Shape()
+					: (*opening_shapes[i].second).Moved(gtrsf.Trsf());
+				builder.Add(opening_compound,opening_shape);
+			}
+
+			for ( IfcGeom::ShapeList::const_iterator it5 = opening_shapes.begin(); it5 != opening_shapes.end(); ++ it5 ) {
+				delete it5->first;
+			}
+		}
+	}
+
+	// Iterate over the shapes of the IfcProduct
+	for ( IfcGeom::ShapeList::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
+		TopoDS_Shape entity_shape_solid;
+		const TopoDS_Shape& entity_shape_unlocated = IfcGeom::ensure_fit_for_subtraction(*(it3->second),entity_shape_solid);
+		const gp_GTrsf& entity_shape_gtrsf = *(it3->first);
+		TopoDS_Shape entity_shape;
+		if ( entity_shape_gtrsf.Form() == gp_Other ) {
+			Ifc::LogMessage("Warning","Applying non uniform transformation to:",entity->entity);
+			entity_shape = BRepBuilderAPI_GTransform(entity_shape_unlocated,entity_shape_gtrsf,true).Shape();
+		} else {
+			entity_shape = entity_shape_unlocated.Moved(entity_shape_gtrsf.Trsf());
+		}
+
+		BRepAlgoAPI_Cut brep_cut(entity_shape,opening_compound);
+		bool is_valid = false;
+		if ( brep_cut.IsDone() ) {
+			TopoDS_Shape brep_cut_result = brep_cut;
+				
+			BRepCheck_Analyzer analyser(brep_cut_result);
+			is_valid = analyser.IsValid() != 0;
+			if ( is_valid ) {
+				cut_shapes.push_back(IfcGeom::LocationShape(new gp_GTrsf(),new TopoDS_Shape(brep_cut_result)));
+			}
+		}
+		if ( !is_valid ) {
+			// Apparently processing the boolean operation failed or resulted in an invalid result
+			// in which case the original shape without the subtractions is returned instead
+			// we try convert the openings in the original way, one by one.
+			Ifc::LogMessage("Warning","Subtracting combined openings compound failed:",entity->entity);
+			return false;
+		}
+		
+	}
+	return true;
+}
+
 bool IfcGeom::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face) {
 	BRepBuilderAPI_MakeFace mf(wire, false);
 	BRepBuilderAPI_FaceError er = mf.Error();
