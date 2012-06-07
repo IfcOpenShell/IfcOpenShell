@@ -132,18 +132,18 @@ class ArrayType:
             t = simple_types[self.type].type_enum()
         else:
             t = self.type
-        if t in entity_names or t == "ENTITY":
-            return "ENTITY_LIST"
+        if t in entity_names or t == "Argument_ENTITY":
+            return "Argument_ENTITY_LIST"
         elif t in selections:
-            return "ENTITY_LIST"
+            return "Argument_ENTITY_LIST"
         elif t == "int":
-            return "VECTOR_INT"
-        elif t == "double" or t == "DOUBLE":
-            return "VECTOR_DOUBLE"
-        elif t == "std::string" or t == "STRING":
-            return "VECTOR_STRING"
+            return "Argument_VECTOR_INT"
+        elif t == "double" or t == "Argument_DOUBLE":
+            return "Argument_VECTOR_DOUBLE"
+        elif t == "std::string" or t == "Argument_STRING":
+            return "Argument_VECTOR_STRING"
         elif isinstance(t, BinaryType):
-            return "UNKNOWN"
+            return "Argument_UNKNOWN"
         else:
             assert False, t
         
@@ -154,9 +154,9 @@ class ScalarType:
         if self.type in simple_types:
             return simple_types[self.type].type_enum()
         elif self.type in entity_names:
-            return "ENTITY"
+            return "Argument_ENTITY"
         else:
-            return { "bool":"BOOL","int":"INT","double":"DOUBLE","std::string":"STRING"}[self.type]
+            return { "bool":"Argument_BOOL","int":"Argument_INT","double":"Argument_DOUBLE","std::string":"Argument_STRING"}[self.type]
 class EnumType:
     def __init__(self,l):
         self.v = [(x,'%s_%s'%('%(fancy_name)s',x)) for x in l]
@@ -170,13 +170,13 @@ class EnumType:
             return "".join(['    if(s=="%s"%s) return %s::%s;\n'%(v1.upper()," "*(self.maxlen-len(v1)),"%(name)s",v2) for v1,v2 in self.v])            
     def __len__(self): return len(self.v)
     def type_enum(self):
-        return "ENUMERATION"
+        return "Argument_ENUMERATION"
 class SelectType:
     def __init__(self,l): 
         for x in l: 
             if x in simple_types: selectable_simple_types.add(x)
     def __str__(self): return "IfcSchemaEntity"
-    def type_enum(self): return "ENTITY"
+    def type_enum(self): return "Argument_ENTITY"
 class BinaryType:
     def __init__(self,l): self.l = int(l)
     def __str__(self): return "char[%s]"%self.l
@@ -184,7 +184,7 @@ class BinaryType:
 class InverseType:
     def __init__(self,l):
         self.name, self.type, self.reference = l
-    def type_enum(self): return "ENTITY" 
+    def type_enum(self): return "Argument_ENTITY" 
 class Typedef:
     def __init__(self,l):
         self.name,self.type=l[1:3]
