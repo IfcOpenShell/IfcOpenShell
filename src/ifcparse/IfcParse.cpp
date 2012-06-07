@@ -311,9 +311,13 @@ bool TokenFunc::isDatatype(Token t) {
 	return ! isOperator(t) && startsWith(t, 'I');
 }
 int TokenFunc::asInt(Token t) {
-	if ( ! isIdentifier(t) ) throw IfcException("Token is not an identifier");
 	const std::string str = asString(t);
-	return atoi(str.c_str()+1);
+	// In case of an ENTITY_INSTANCE_NAME skip the leading #
+	const char* start = str.c_str() + (isIdentifier(t) ? 1 : 0);
+	char* end;
+	long result = strtol(start,&end,10);
+	if ( start == end ) throw IfcException("Token is not an integer or identifier");
+	return (int) result;
 }
 bool TokenFunc::asBool(Token t) {
 	const std::string str = asString(t);
