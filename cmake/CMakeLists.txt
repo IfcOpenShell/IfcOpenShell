@@ -18,7 +18,6 @@ ELSE()
 	MESSAGE(FATAL_ERROR "Unable to find header files, aborting")
 ENDIF()
 
-
 # Find Open CASCADE library files
 IF("$ENV{OCC_LIBRARY_DIR}" STREQUAL "") 
 	SET(OCC_LIBRARY_DIR "/usr/lib/" CACHE FILEPATH "Open CASCADE library files")
@@ -36,7 +35,19 @@ ELSE()
 	MESSAGE(FATAL_ERROR "Unable to find library files, aborting")
 ENDIF()
 
-FIND_LIBRARY(icu "icuuc" /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
+IF("$ENV{ICU_INCLUDE_DIR}" STREQUAL "")
+    MESSAGE(STATUS "No ICU include directory specified")
+ElSE()
+    SET(ICU_INCLUDE_DIR CACHE FILEPATH "ICU header files")
+ENDIF()
+
+IF("$ENV{ICU_LIBRARY_DIR}" STREQUAL "")
+    MESSAGE(STATUS "No ICU library directory specified")
+ElSE()
+    SET(ICU_LIBRARY_DIR CACHE FILEPATH "ICU library files")
+ENDIF()
+
+FIND_LIBRARY(icu "icuuc" /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR})
 
 IF(icu)
 	MESSAGE(STATUS "ICU libraries found")
@@ -71,11 +82,14 @@ IF(NOT CMAKE_BUILD_TYPE)
  	SET(CMAKE_BUILD_TYPE "Release")
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
-IF(NOT MSVC)
+IF(MSVC)
+    ADD_DEFINITIONS(-D_UNICODE)
+ElSE(MSVC)
     ADD_DEFINITIONS(-fPIC -Wno-non-virtual-dtor)
-ENDIF(NOT MSVC)
+ENDIF(MSVC)
 
-INCLUDE_DIRECTORIES(${OCC_INCLUDE_DIR} /usr/inc /usr/local/inc /usr/local/include/oce)
+INCLUDE_DIRECTORIES(${OCC_INCLUDE_DIR} /usr/inc /usr/local/inc /usr/local/include/oce ${ICU_INCLUDE_DIR})
+
 ADD_LIBRARY(IfcParse STATIC 
   ../src/ifcparse/Ifc2x3.cpp
   ../src/ifcparse/IfcUtil.cpp
@@ -100,18 +114,11 @@ ENDIF()
 
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
-LINK_DIRECTORIES (${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64) 
+LINK_DIRECTORIES (${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR}) 
+
 ADD_EXECUTABLE(IfcObj ../src/ifcobj/IfcObj.cpp)
 
-IF(MINGW)
-TARGET_LINK_libRARIES (IfcObj IfcParse IfcGeom libTKernel libTKMath TKBRep.dll.a TKGeomBase.dll.a TKGeomAlgo.dll.a TKG3d.dll.a TKG2d.dll.a TKShHealing.dll.a TKTopAlgo.dll.a TKMesh.dll.a TKPrim.dll.a TKBool.dll.a TKBO.dll.a TKFillet.dll.a)
-ENDIF(MINGW)
-IF(MSVC)
-TARGET_LINK_LIBRARIES (IfcObj IfcParse.lib IfcGeom.lib TKernel.lib TKMath.lib TKBRep.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKShHealing.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKBool.lib TKBO.lib TKFillet.lib)
-ENDIF(MSVC)
-IF(UNIX)
 TARGET_LINK_LIBRARIES (IfcObj IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet)
-ENDIF(UNIX)
 
 # Build python wrapper using separate CMakeLists.txt
 ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
