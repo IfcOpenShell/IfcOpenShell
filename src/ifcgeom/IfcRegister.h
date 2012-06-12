@@ -60,9 +60,9 @@ FACE(IfcRectangleProfileDef);
 FACE(IfcIShapeProfileDef);
 FACE(IfcCShapeProfileDef);
 FACE(IfcLShapeProfileDef);
+FACE(IfcCircleHollowProfileDef);
 FACE(IfcCircleProfileDef);
 FACE(IfcFace);
-FACE(IfcCircleHollowProfileDef);
 
 WIRE(IfcPolyline);
 WIRE(IfcPolyLoop);
