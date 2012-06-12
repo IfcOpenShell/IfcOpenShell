@@ -70,7 +70,10 @@ CHECK_ADD_OCE_OCC_DEF(iostream.h)
 IF(NOT CMAKE_BUILD_TYPE)
  	SET(CMAKE_BUILD_TYPE "Release")
 ENDIF(NOT CMAKE_BUILD_TYPE)
-ADD_DEFINITIONS(-fPIC -Wno-non-virtual-dtor)
+
+IF(NOT MSVC)
+    ADD_DEFINITIONS(-fPIC -Wno-non-virtual-dtor)
+ENDIF(NOT MSVC)
 
 INCLUDE_DIRECTORIES(${OCC_INCLUDE_DIR} /usr/inc /usr/local/inc /usr/local/include/oce)
 ADD_LIBRARY(IfcParse STATIC 
@@ -97,9 +100,18 @@ ENDIF()
 
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
-LINK_DIRECTORIES (${IfcOpenShell_BINARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64) 
+LINK_DIRECTORIES (${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64) 
 ADD_EXECUTABLE(IfcObj ../src/ifcobj/IfcObj.cpp)
+
+IF(MINGW)
+TARGET_LINK_libRARIES (IfcObj IfcParse IfcGeom libTKernel libTKMath TKBRep.dll.a TKGeomBase.dll.a TKGeomAlgo.dll.a TKG3d.dll.a TKG2d.dll.a TKShHealing.dll.a TKTopAlgo.dll.a TKMesh.dll.a TKPrim.dll.a TKBool.dll.a TKBO.dll.a TKFillet.dll.a)
+ENDIF(MINGW)
+IF(MSVC)
+TARGET_LINK_LIBRARIES (IfcObj IfcParse.lib IfcGeom.lib TKernel.lib TKMath.lib TKBRep.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKShHealing.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKBool.lib TKBO.lib TKFillet.lib)
+ENDIF(MSVC)
+IF(UNIX)
 TARGET_LINK_LIBRARIES (IfcObj IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet)
+ENDIF(UNIX)
 
 # Build python wrapper using separate CMakeLists.txt
 ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
