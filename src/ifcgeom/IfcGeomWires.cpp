@@ -23,6 +23,9 @@
  *                                                                              *
  ********************************************************************************/
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 #include <gp_Dir.hxx>
@@ -181,7 +184,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) && !trim_cartesian && trimmed1 ) {
 			const double value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
 			double flt2 = value * parameterFactor;
-			if ( isConic && ALMOST_THE_SAME(fmod(flt2-flt1,(double)(PI*2.0)),0.0f) ) {
+			if ( isConic && ALMOST_THE_SAME(fmod(flt2-flt1,(double)(M_PI*2.0)),0.0f) ) {
 				w.Add(BRepBuilderAPI_MakeEdge(curve));
 			} else {
 				BRepBuilderAPI_MakeEdge e (curve,sense_agreement ? flt1 : flt2,sense_agreement ? flt2 : flt1);
