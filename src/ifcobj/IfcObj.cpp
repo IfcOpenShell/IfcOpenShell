@@ -72,6 +72,7 @@ int main ( int argc, char** argv ) {
 	// The functions IfcGeomObjects::Get() and IfcGeomObjects::Next() wrap an iterator of all geometrical entities in the Ifc file.
 	// IfcGeomObjects::Get() returns an IfcGeomObjects::IfcGeomObject (see IfcObjects.h for definition)
 	// IfcGeomObjects::Next() is used to poll whether more geometrical entities are available
+    int vcount_total = 1;
 	do {
 		const IfcGeomObjects::IfcGeomObject* o = IfcGeomObjects::Get();
 		if ( o->type == "IfcSpace" || o->type == "IfcOpeningElement" ) continue;
@@ -94,11 +95,12 @@ int main ( int argc, char** argv ) {
 			fObj << "vn " << x << " " << y << " " << z << std::endl;
 		}
 		for ( IfcGeomObjects::IntIt it = o->mesh->faces.begin(); it != o->mesh->faces.end(); ) {
-			const int v1 = *(it++)-vcount;
-			const int v2 = *(it++)-vcount;
-			const int v3 = *(it++)-vcount;
+			const int v1 = *(it++)+vcount_total;
+			const int v2 = *(it++)+vcount_total;
+			const int v3 = *(it++)+vcount_total;
 			fObj << "f " << v1 << "//" << v1 << " " << v2 << "//" << v2 << " " << v3 << "//" << v3 << std::endl;
 		}
+        vcount_total += vcount;
 
 		const int progress = IfcGeomObjects::Progress() / 2;
 		if ( old_progress!= progress ) std::cout << "\r[" << std::string(progress,'#') << std::string(50 - progress,' ') << "]" << std::flush;
