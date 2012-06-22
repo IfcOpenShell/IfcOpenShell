@@ -6,7 +6,6 @@
 #include <qobject.h>
 #include <QMainWindow>
 #include <QString>
-#include <qobject.h>
 #include "../ifcgeom/IfcGeomObjects.h"
 
 class ObjectsView;
