@@ -33,7 +33,6 @@ public Q_SLOTS:
 
 public slots:
     void openFile(const QString &path = QString());
-    void setRenderer(QAction *action);
 
 private:
     QAction *m_nativeAction;
