@@ -126,6 +126,8 @@ ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
 # Build IfcParseExamples using separate CMakeLists.txt
 ADD_SUBDIRECTORY(../src/examples examples)
 
+ADD_SUBDIRECTORY(../src/qtviewer qtviewer)
+
 # CMake installation targets
 SET(include_files_geom
     ../src/ifcgeom/IfcGeom.h
