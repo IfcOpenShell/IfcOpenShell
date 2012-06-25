@@ -42,21 +42,23 @@
 
 #include "../ifcgeom/IfcShapeList.h"
 
-// Tolerances for various geometrical operations:
-// Specifies the deflection of the mesher
-#define DEFLECTION_TOLERANCE 0.001
-// Specifies the tolerance of the wire builder, most notably for trimmed curves
-#define WIRE_CREATION_TOLERANCE 0.0001
-// Specifies the minimal area of a face to be included in an IfcConnectedFaceset
-#define MINIMAL_FACE_AREA 0.000001
-// Specifies the treshold distance under which cartesian points are deemed equal
-#define POINT_EQUALITY_TOLERANCE 0.00001
-
-// Specifies maximum number of faces for a shell to be sewed. Sewing shells
-// that consist of many faces is really detrimental for the performance.
-#define MAX_FACES_TO_SEW 1000
-
 namespace IfcGeom {
+
+	// Tolerances and settings for various geometrical operations:
+	enum GeomValue {
+		// Specifies the deflection of the mesher
+		GV_DEFLECTION_TOLERANCE, 
+		// Specifies the tolerance of the wire builder, most notably for trimmed curves
+		GV_WIRE_CREATION_TOLERANCE,
+		// Specifies the minimal area of a face to be included in an IfcConnectedFaceset
+		GV_MINIMAL_FACE_AREA,
+		// Specifies the treshold distance under which cartesian points are deemed equal
+		GV_POINT_EQUALITY_TOLERANCE,
+		// Specifies maximum number of faces for a shell to be sewed. Sewing shells
+		// that consist of many faces is really detrimental for the performance.
+		GV_MAX_FACES_TO_SEW
+	};
+
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
 	bool convert_shapes(const IfcUtil::IfcBaseClass* L, ShapeList& result);
 	bool is_shape_collection(const IfcUtil::IfcBaseClass* L);
@@ -76,6 +78,9 @@ namespace IfcGeom {
 	bool profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
 	double shape_volume(const TopoDS_Shape& s);
 	double face_area(const TopoDS_Face& f);
+	void SetValue(GeomValue var, double value);
+	double GetValue(GeomValue var);
+
 	namespace Cache {
 		void Purge();
 		void PurgeShapeCache();

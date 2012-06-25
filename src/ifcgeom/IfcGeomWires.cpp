@@ -117,7 +117,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire)
 		}
 		if ( ! (*it)->SameSense() ) wire2.Reverse();
 		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(wire2, WIRE_CREATION_TOLERANCE, TopAbs_WIRE);
+		FTol.SetTolerance(wire2, GetValue(GV_WIRE_CREATION_TOLERANCE), TopAbs_WIRE);
 		/*if ( it != segments->begin() ) {
 			TopExp_Explorer exp (wire2,TopAbs_VERTEX);
 			const TopoDS_Vertex& first_vertex = TopoDS::Vertex(exp.Current());
@@ -204,7 +204,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolyline::ptr l, TopoDS_Wire& result) {
 	gp_Pnt P1;gp_Pnt P2;
 	for( Ifc2x3::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it ) {
 		IfcGeom::convert(*it,P2);
-		if ( it != points->begin() && ( !P1.IsEqual(P2,POINT_EQUALITY_TOLERANCE) ) )
+		if ( it != points->begin() && ( !P1.IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) )
 			w.Add(BRepBuilderAPI_MakeEdge(P1,P2));
 		P1 = P2;
 	}
@@ -220,13 +220,13 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolyLoop::ptr l, TopoDS_Wire& result) {
 	int count = 0;
 	for( Ifc2x3::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it ) {
 		IfcGeom::convert(*it,P2);
-		if ( it != points->begin() && ( !P1.IsEqual(P2,POINT_EQUALITY_TOLERANCE) ) ) {
+		if ( it != points->begin() && ( !P1.IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) ) {
 			w.Add(BRepBuilderAPI_MakeEdge(P1,P2));
 			count ++;
 		} else if ( ! count ) F = P2;		
 		P1 = P2;
 	}
-	if ( !P1.IsEqual(F,POINT_EQUALITY_TOLERANCE) ) {
+	if ( !P1.IsEqual(F,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) {
 		w.Add(BRepBuilderAPI_MakeEdge(P1,F));
 		count ++;
 	}
