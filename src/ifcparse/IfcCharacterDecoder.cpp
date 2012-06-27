@@ -90,10 +90,10 @@ void IfcCharacterDecoder::addChar(std::stringstream& s,const UChar32& ch) {
 IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::File* f) {
   file = f;
 #ifdef HAVE_ICU
-  if (destination != nullptr) {
-    ucnv_close(destination);
-  }
+  if (destination) ucnv_close(destination);
+  if (compatibility_converter) ucnv_close(compatibility_converter);
   destination = nullptr;
+  compatibility_converter = nullptr;
 
   if (mode == DEFAULT) {
     destination = ucnv_open(nullptr, &status);
@@ -112,8 +112,10 @@ IfcCharacterDecoder::~IfcCharacterDecoder() {
 #ifdef HAVE_ICU
   if ( destination ) ucnv_close(destination);
   if ( converter ) ucnv_close(converter);
+  if ( compatibility_converter ) ucnv_close(compatibility_converter);
   destination = nullptr;
   converter = nullptr;
+  compatibility_converter = nullptr;
 #endif
 }
 IfcCharacterDecoder::operator std::string() {
