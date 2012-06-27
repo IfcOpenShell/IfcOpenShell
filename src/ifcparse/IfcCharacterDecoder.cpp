@@ -87,20 +87,30 @@ void IfcCharacterDecoder::addChar(std::stringstream& s,const UChar32& ch) {
 	s.put(substitution_character);
 #endif
 }
+#include <iostream>
 IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::File* f) {
-	file = f;
+  file = f;
 #ifdef HAVE_ICU
-	if ( ! destination && mode == UTF8 ) {
-		destination = ucnv_open("utf-8", &status);
-	} else if ( ! destination && mode == LATIN ) {
-		destination = ucnv_open("iso-8859-1", &status);
-	}
+  if (destination != nullptr) {
+    ucnv_close(destination);
+  }
+  destination = nullptr;
+
+  if (mode == DEFAULT) {
+    destination = ucnv_open(nullptr, &status);
+  } else if (mode == UTF8) {
+    destination = ucnv_open("utf-8", &status);
+  } else if (mode == LATIN) {
+    destination = ucnv_open("iso-8859-1", &status);
+  }
 #endif
 }
 IfcCharacterDecoder::~IfcCharacterDecoder() {
 #ifdef HAVE_ICU
-	if ( destination ) ucnv_close(destination);
-	if ( converter ) ucnv_close(converter);
+  if ( destination ) ucnv_close(destination);
+  if ( converter ) ucnv_close(converter);
+  destination = nullptr;
+  converter = nullptr;
 #endif
 }
 IfcCharacterDecoder::operator std::string() {
@@ -248,7 +258,10 @@ UConverter* IfcCharacterDecoder::destination = 0;
 UConverter* IfcCharacterDecoder::converter = 0;
 int IfcCharacterDecoder::previous_codepage = -1;
 UErrorCode IfcCharacterDecoder::status = U_ZERO_ERROR;
-IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDecoder::JSON;
-#else
-char IfcCharacterDecoder::substitution_character = '_';
 #endif
+
+//#ifdef HAVE_ICU
+IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDecoder::JSON;
+//#else
+char IfcCharacterDecoder::substitution_character = '_';
+//#endif

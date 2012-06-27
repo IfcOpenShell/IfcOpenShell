@@ -51,12 +51,12 @@ namespace IfcParse {
 #endif
 		void addChar(std::stringstream& s,const UChar32& ch);
 	public:
-#ifdef HAVE_ICU
-		enum ConversionMode {UTF8,LATIN,JSON,PYTHON};
+//#ifdef HAVE_ICU
+    enum ConversionMode {DEFAULT,UTF8,LATIN,JSON,PYTHON};
 		static ConversionMode mode;
-#else
+//#else
 		static char substitution_character;
-#endif
+//#endif
 		IfcCharacterDecoder(IfcParse::File* file);
 		~IfcCharacterDecoder();
 		void dryRun();
