@@ -444,7 +444,6 @@ void IfcGeom::SetValue(GeomValue var, double value) {
 	case GV_MAX_FACES_TO_SEW:
 		max_faces_to_sew = value;
 	}
-	assert(!"never reach here");
 }
 
 double IfcGeom::GetValue(GeomValue var) {
