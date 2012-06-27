@@ -46,6 +46,7 @@ namespace IfcParse {
 #ifdef HAVE_ICU
 		static UConverter* destination;
 		static UConverter* converter;
+    static UConverter* compatibility_converter;
 		static int previous_codepage;
 		static UErrorCode status;
 #endif
@@ -54,6 +55,13 @@ namespace IfcParse {
 //#ifdef HAVE_ICU
     enum ConversionMode {DEFAULT,UTF8,LATIN,JSON,PYTHON};
 		static ConversionMode mode;
+
+    // Many BIM software (eg. Revit, ArchiCAD, ...) has wrong behavior to encode characters.
+    // It just translate to extended string in system default code page, not unicode.
+    // If you want to process these strings, set true.
+    static bool compatibility_mode;
+    static std::string compatibility_charset;
+
 //#else
 		static char substitution_character;
 //#endif

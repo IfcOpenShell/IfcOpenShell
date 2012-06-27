@@ -87,7 +87,6 @@ void IfcCharacterDecoder::addChar(std::stringstream& s,const UChar32& ch) {
 	s.put(substitution_character);
 #endif
 }
-#include <iostream>
 IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::File* f) {
   file = f;
 #ifdef HAVE_ICU
@@ -103,6 +102,10 @@ IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::File* f) {
   } else if (mode == LATIN) {
     destination = ucnv_open("iso-8859-1", &status);
   }
+  if (compatibility_charset.empty()) {
+    compatibility_charset = ucnv_getDefaultName();
+  }
+  compatibility_converter = ucnv_open(compatibility_charset.c_str(), &status);
 #endif
 }
 IfcCharacterDecoder::~IfcCharacterDecoder() {
@@ -121,6 +124,8 @@ IfcCharacterDecoder::operator std::string() {
 	int codepage = 1;
 	unsigned int hex = 0;
 	unsigned int hex_count = 0;
+  unsigned int old_hex = 0; // for compatibility_mode
+  
 	while ( current_char = file->Peek() ) {
 		if ( EXPECTS_CHARACTER(parse_state) ) {
 #ifdef HAVE_ICU
@@ -171,14 +176,27 @@ IfcCharacterDecoder::operator std::string() {
 			hex <<= 4;
 			parse_state += HEX((++hex_count));
 			hex += HEX_TO_INT(current_char);
-			if ( (hex_count == 2 && !(parse_state & EXTENDED2)) ||
-				(hex_count == 4 && !(parse_state & EXTENDED4)) ||
-				(hex_count == 8) ) {
-					addChar(s,(UChar32) hex);
-					if ( hex_count == 2 ) parse_state = 0;
-					else CLEAR_HEX(parse_state);
-					hex = hex_count = 0;
-			}
+      if ( (hex_count == 2 && !(parse_state & EXTENDED2)) ||
+        (hex_count == 4 && !(parse_state & EXTENDED4)) ||
+        (hex_count == 8) ) {
+          if (compatibility_mode) {
+            if (old_hex == 0) {
+              old_hex = hex;
+            } else {
+              char characters[3] = { old_hex, hex };
+              const char* char_array = &characters[0];
+              UChar32 ch = ucnv_getNextUChar(compatibility_converter,&char_array,char_array+2,&status);
+              addChar(s,ch);
+              old_hex = 0;
+            }
+          }
+          else {
+            addChar(s,(UChar32) hex);
+          }
+          if ( hex_count == 2 ) parse_state = 0;
+          else CLEAR_HEX(parse_state);
+          hex = hex_count = 0;
+      }
 		} else if ( parse_state && !(
 			(current_char == '\\' && parse_state == FIRST_SOLIDUS) ||
 			(current_char == '\'' && parse_state == APOSTROPHE)
@@ -256,12 +274,18 @@ void IfcCharacterDecoder::dryRun() {
 #ifdef HAVE_ICU
 UConverter* IfcCharacterDecoder::destination = 0;
 UConverter* IfcCharacterDecoder::converter = 0;
+UConverter* IfcCharacterDecoder::compatibility_converter = 0;
 int IfcCharacterDecoder::previous_codepage = -1;
 UErrorCode IfcCharacterDecoder::status = U_ZERO_ERROR;
 #endif
 
 //#ifdef HAVE_ICU
 IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDecoder::JSON;
+
+// Many BIM software (eg. Revit, ArchiCAD, ...) has wrong behavior  
+bool IfcCharacterDecoder::compatibility_mode = false;
+std::string IfcCharacterDecoder::compatibility_charset = "";
+
 //#else
 char IfcCharacterDecoder::substitution_character = '_';
 //#endif
