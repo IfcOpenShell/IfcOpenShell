@@ -435,14 +435,21 @@ void IfcGeom::SetValue(GeomValue var, double value) {
 	switch (var) {
 	case GV_DEFLECTION_TOLERANCE:
 		deflection_tolerance = value;
+		break;
 	case GV_WIRE_CREATION_TOLERANCE:
 		wire_creation_tolerance = value;
+		break;
 	case GV_MINIMAL_FACE_AREA:
 		minimal_face_area = value;
+		break;
 	case GV_POINT_EQUALITY_TOLERANCE:
 		point_equality_tolerance = value;
+		break;
 	case GV_MAX_FACES_TO_SEW:
 		max_faces_to_sew = value;
+		break;
+	default:
+		assert(!"never reach here");
 	}
 }
 
