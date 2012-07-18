@@ -95,6 +95,9 @@ ADD_LIBRARY(IfcParse STATIC
   ../src/ifcparse/IfcUtil.cpp
   ../src/ifcparse/IfcParse.cpp
   ../src/ifcparse/IfcCharacterDecoder.cpp
+  
+  ../src/ifcparse/IfcWrite.cpp
+  ../src/ifcparse/IfcGuidHelper.cpp
 )
 
 ADD_LIBRARY(IfcGeom STATIC
@@ -155,6 +158,9 @@ SET(include_files_parse
     ../src/ifcparse/IfcParse.h
     ../src/ifcparse/IfcUtil.h
     ../src/ifcparse/SharedPointer.h
+    
+    ../src/ifcparse/IfcWrite.h
+    ../src/ifcparse/IfcWritableEntity.h
 )
 INSTALL(FILES ${include_files_geom} DESTINATION include/ifcgeom)
 INSTALL(FILES ${include_files_parse} DESTINATION include/ifcparse)

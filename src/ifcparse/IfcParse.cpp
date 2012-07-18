@@ -27,6 +27,7 @@
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcFile.h"
+#include "../ifcparse/IfcWritableEntity.h"
 
 using namespace IfcParse;
 
@@ -612,6 +613,10 @@ IfcEntities Entity::getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a
 bool Entity::is(Ifc2x3::Type::Enum v) const {	return _type == v; }
 unsigned int Entity::id() { return _id; }
 
+bool Entity::isWritable() {
+	return false;
+}
+
 //
 // Parses the IFC file in fn
 // Creates the maps
@@ -680,6 +685,7 @@ bool Ifc::Init(IfcParse::File* f) {
 				Ifc::LogMessage("Warning",ss.str());
 			}
 			byid[currentId] = entity;
+			MaxId = std::max(MaxId,currentId);
 			currentId = 0;
 		} else {
 			try { token = tokens->Next(); }
@@ -759,6 +765,47 @@ bool Ifc::Init(IfcParse::File* f) {
 		Ifc::LogMessage("Error",ex.what());
 	}
 	return true;
+}
+void Ifc::AddEntity(IfcUtil::IfcSchemaEntity entity) {
+	if ( entity->is(Ifc2x3::Type::IfcRoot) ) {
+		Ifc2x3::IfcRoot::ptr ifc_root = (Ifc2x3::IfcRoot::ptr) entity;
+		try {
+			const std::string guid = ifc_root->GlobalId();
+			if ( byguid.find(guid) != byguid.end() ) {
+				std::stringstream ss;
+				ss << "Overwriting entity with guid " << guid;
+				Ifc::LogMessage("Warning",ss.str());
+			}
+			byguid[guid] = ifc_root;
+		} catch (IfcException ex) {
+			Ifc::LogMessage("Error",ex.what());
+		}
+	}
+	Ifc2x3::Type::Enum ty = entity->type();
+	do {
+		IfcEntities L = EntitiesByType(ty);
+		if ( L == 0 ) {
+			L = IfcEntities(new IfcEntityList());
+			bytype[ty] = L;
+		}
+		L->push(entity);
+		ty = Ifc2x3::Type::Parent(ty);
+	} while ( ty > -1 );
+	int new_id = -1;
+	// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
+	if ( entity->entity->isWritable() ) {
+		new_id = ((IfcWrite::IfcWritableEntity*)(entity->entity))->setId();
+	} else {
+		// TODO: Detect and fix ENTITY_INSTANCE_NAME collisions
+		new_id = entity->entity->id();
+	}
+	if ( byid.find(new_id) != byid.end() ) {
+		std::stringstream ss;
+		ss << "Overwriting entity with id " << new_id;
+		Ifc::LogMessage("Warning",ss.str());
+	}
+	byid[new_id] = entity;
+
 }
 
 IfcEntities Ifc::EntitiesByType(Ifc2x3::Type::Enum t) {
@@ -851,6 +898,23 @@ MapEntityById::const_iterator Ifc::First() {
 MapEntityById::const_iterator Ifc::Last() {
 	return byid.end();
 }
+void Ifc::Serialize(std::ostream& os) {
+	os << "ISO-10303-21;" << std::endl;
+	os << "HEADER;" << std::endl;
+	os << "FILE_DESCRIPTION(('ViewDefinition []'),'2;1');" << std::endl;
+	os << "FILE_NAME('','',(''),('',''),'IfcOpenShell','IfcOpenShell','');" << std::endl;
+	os << "FILE_SCHEMA(('IFC2X3'));" << std::endl;
+	os << "ENDSEC;" << std::endl;
+	os << "DATA;" << std::endl;
+
+	for ( MapEntityById::const_iterator it = First(); it != Last(); ++ it ) {
+		const IfcEntity e = it->second;
+		os << e->entity->toString(true) << ";" << std::endl;
+	}
+
+	os << "ENDSEC;" << std::endl;
+	os << "END-ISO-10303-21;" << std::endl;	
+}
 
 File* Ifc::file = 0;
 std::ostream* Ifc::log1 = 0;
@@ -869,3 +933,4 @@ MapEntitiesByRef Ifc::byref;
 MapOffsetById Ifc::offsets;
 std::stringstream Ifc::log_stream;
 int Ifc::Verbosity = 2;
+unsigned int Ifc::MaxId = 0;

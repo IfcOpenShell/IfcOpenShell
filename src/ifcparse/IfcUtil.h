@@ -73,6 +73,50 @@ typedef IfcBaseClass* IfcSchemaEntity;
 
 }
 
+template <class T>
+class Nullable {
+private:
+	T t;
+	bool null;
+public:
+	Nullable(const T& v) {
+		t = v;
+		null = false;
+	}
+	Nullable() { null = true; }
+	operator T() const { return t; }
+	bool IsNull() const { return null; }
+};
+
+template <>
+class Nullable<std::string> {
+private:
+	std::string t;
+	bool null;
+public:
+	Nullable(const std::string& v) {
+		t = v;
+		null = false;
+	}
+	Nullable() { null = true; }
+	operator std::string() const { return t; }
+	Nullable<std::string>& operator =(const char* const c) { t = std::string(c); }
+	bool IsNull() const { return null; }
+
+};
+
+class Null {
+public:
+	operator Nullable<std::string>() const { return Nullable<std::string>(); }
+	operator Nullable<std::vector<std::string> >() { return Nullable<std::vector<std::string> >(); }
+	operator int() { return 0; }
+	operator void*() { return 0; }
+};
+
+#define NULL_STRING Nullable<std::string>()
+#define NULL_VECTOR_STRING Nullable<std::vector<std::string> >()
+#define IfcNull Null()
+
 class IfcEntityList {
 	std::vector<IfcUtil::IfcSchemaEntity> ls;
 public:
@@ -98,6 +142,11 @@ public:
 	inline it end() { return ls.end(); }
 	inline T operator[] (int i) { return ls[i]; }
 	inline unsigned int Size() const { return (unsigned int) ls.size(); }
+	IfcEntities generalize() {
+		IfcEntities r (new IfcEntityList());
+		for ( it i = begin(); i != end(); ++ i ) r->push(*i);
+		return r;
+	}
 };
 
 namespace IfcUtil {
@@ -164,6 +213,8 @@ public:
 	virtual bool is(Ifc2x3::Type::Enum v) const = 0;
 	virtual std::string toString(bool upper=false) = 0;
 	virtual unsigned int id() = 0;
+	virtual bool isWritable() = 0;
+	//virtual void setArgument(int i,int n);
 };
 
 #endif

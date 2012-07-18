@@ -203,6 +203,7 @@ namespace IfcParse {
 		Ifc2x3::Type::Enum type() const;
 		bool is(Ifc2x3::Type::Enum v) const;
 		unsigned int id();
+		bool isWritable();
 	};
 }
 
@@ -227,6 +228,7 @@ private:
 	static std::ostream* log1;
 	static std::ostream* log2;
 	static std::stringstream log_stream;
+	static unsigned int MaxId;
 public:
 	/// Returns the first entity in the file, this probably is the entity with the lowest id (EXPRESS ENTITY_NAME)
 	static MapEntityById::const_iterator First();
@@ -273,6 +275,9 @@ public:
 	static double PlaneAngleUnit;
 	static int CircleSegments;
 	static int Verbosity;
+	static unsigned int FreshId() { MaxId ++; return MaxId; }
+	static void AddEntity(IfcUtil::IfcSchemaEntity e);
+	static void Serialize(std::ostream& os);
 };
 
 double UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v );

@@ -173,6 +173,14 @@
 				RelativePath="..\src\ifcparse\IfcUtil.cpp"
 				>
 			</File>
+            <File
+				RelativePath="..\src\ifcparse\IfcWrite.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcGuidHelper.cpp"
+				>
+			</File>     
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -201,6 +209,14 @@
 			</File>
 			<File
 				RelativePath="..\src\ifcparse\SharedPointer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcWrite.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcWritableEntity.h"
 				>
 			</File>
 		</Filter>

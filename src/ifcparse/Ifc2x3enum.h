@@ -36,6 +36,7 @@ namespace Type {
     Enum Parent(Enum v);
     Enum FromString(const std::string& s);
     std::string ToString(Enum v);
+    bool IsSimple(Enum v);
 }
 
 }
