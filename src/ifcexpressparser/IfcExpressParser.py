@@ -99,6 +99,8 @@ simple_types = {}
 selectable_simple_types = set()
 argument_count = {}
 parent_relations = {}
+argument_names_and_types = {}
+entity_map = {}
 
 #
 # Since inherited arguments of Express entities are placed in sequence before the non-inherited once, we need to keep track of how many inherited arguments exist
@@ -111,6 +113,15 @@ def argument_start(c):
         i += argument_count[c] if c in argument_count else 0
         if not (c in parent_relations): break
     return i
+    
+def parent_arguments(c):
+    if c not in parent_relations: return []
+    l = []
+    while True:
+        c = parent_relations[c]
+        i += argument_count[c] if c in argument_count else 0
+        if not (c in parent_relations): break
+    return []
 
 #
 # Several classes to generate code from Express types and entities
@@ -127,6 +138,7 @@ class ArrayType:
             return "SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> >"
         else:
             return "std::vector<%(type)s> /*[%(lower)s:%(upper)s]*/"%self.__dict__
+    def is_shared_ptr(self): return self.type in entity_names or self.type in selections
     def type_enum(self):
         if self.type in simple_types:
             t = simple_types[self.type].type_enum()
@@ -199,12 +211,12 @@ class Typedef:
     def __str__(self):
         global generator_mode
         if generator_mode == 'HEADER' and isinstance(self.type,EnumType):
-            return ("namespace %(name)s {\n%(comment)stypedef %(type)s %(name)s;\nstd::string ToString(%(name)s v);\n%(name)s FromString(const std::string& s);\n}"%self.__dict__)%self.__dict__
+            return ("namespace %(name)s {\n%(comment)stypedef %(type)s %(name)s;\nconst char* ToString(%(name)s v);\n%(name)s FromString(const std::string& s);\n}"%self.__dict__)%self.__dict__
         elif generator_mode == 'HEADER':
             return "%stypedef %s %s;"%(self.comment,self.type,self.name)
         elif generator_mode == 'SOURCE' and isinstance(self.type,EnumType):
             generator_mode = 'SOURCE_TO'
-            s =  "std::string %(name)s::ToString(%(name)s v) {\n    if ( v < 0 || v >= %(len)d ) throw IfcException(\"Unable to find find keyword in schema\");\n    const char* names[] = %(type)s;\n    return names[v];\n}\n"%self.__dict__
+            s =  "const char* %(name)s::ToString(%(name)s v) {\n    if ( v < 0 || v >= %(len)d ) throw IfcException(\"Unable to find find keyword in schema\");\n    const char* names[] = %(type)s;\n    return names[v];\n}\n"%self.__dict__
             generator_mode = 'SOURCE_FROM'
             s += ("%(name)s::%(name)s %(name)s::FromString(const std::string& s) {\n%(type)s    throw IfcException(\"Unable to find find keyword in schema\");\n}"%self.__dict__)%self.__dict__
             generator_mode = 'SOURCE'
@@ -214,6 +226,12 @@ class Typedef:
 class Argument(object):
     def __init__(self,l):
         self.name, self.optional, self.type = l
+    def is_enum(self): return str(self.type) in enumerations
+    def type_str(self):
+        if str(self.type) in entity_names:
+            return "%(type)s*"%self.__dict__
+        else:
+            return "%(type)s::%(type)s"%self.__dict__ if self.is_enum() else self.type
 class ArgumentList:
     def __init__(self,l):
         self.l = [Argument(a) for a in l]
@@ -224,11 +242,12 @@ class ArgumentList:
         argv = self.argstart
         for a in self.l:
             class_name = indent = comment = optional_comment = ""
+            is_array = isinstance(a.type,ArrayType) and a.type.is_shared_ptr()
             return_type = str(a.type)
             if generator_mode == 'SOURCE':
                 class_name = "%(class_name)s::"
                 if isinstance(a.type,BinaryType) or (isinstance(a.type,ArrayType) and isinstance(a.type.type,BinaryType)):
-                    function_body = " { throw; /* Not implemented argument 7 */ }"
+                    function_body = " { throw; /* Not implemented argument*/ }"
                 elif isinstance(a.type,ArrayType) and str(a.type.type) in entity_names:
                     function_body = " { RETURN_AS_LIST(%s,%d) }"%(a.type.type,argv)
                 elif isinstance(a.type,ArrayType) and str(a.type.type) in selections:
@@ -240,9 +259,15 @@ class ArgumentList:
                 else:
                     function_body = " { return *entity->getArgument(%d); }"%argv
                 function_body2 = " { return !entity->getArgument(%d)->isNull(); }"%argv
+                if isinstance(a.type,BinaryType) or (isinstance(a.type,ArrayType) and isinstance(a.type.type,BinaryType)):
+                    function_body3 = " { if ( ! entity->isWritable() ) { throw; } }"
+                elif return_type in enumerations:
+                    function_body3 = " { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(%d,v%s,%s::ToString(v)); }"%(argv,"->generalize()" if is_array else "",return_type)
+                else:
+                    function_body3 = " { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(%d,v%s); }"%(argv,"->generalize()" if is_array else "")
             else:
                 indent = "    "
-                function_body = function_body2 = ";"
+                function_body = function_body2 = function_body3 = ";"
                 comment = IfcDocumentation.description((self.class_name,a.name))
                 comment = comment+"\n" if comment else ''
                 comment = comment.replace("///","%s///"%indent)
@@ -253,6 +278,7 @@ class ArgumentList:
             elif ( str(a.type) in entity_names ):
                 return_type = "%(type)s*"%a.__dict__
             s += "\n%s%s%s %s%s()%s"%(comment,indent,return_type,class_name,a.name,function_body)
+            s += "\n%svoid %sset%s(%s v)%s"%(indent,class_name,a.name,return_type,function_body3)
             argv += 1
 
         if generator_mode == 'HEADER':
@@ -304,8 +330,27 @@ class Classdef:
         entity_names.add(self.class_name)
         parent_relations[self.class_name] = self.parent_class
         argument_count[self.class_name] = len(self.arguments)
+        entity_map[self.class_name] = self
+    def get_constructor_args(self):
+        s = entity_map[self.parent_class].get_constructor_args() if self.parent_class else []
+        i = len(s) + 1
+        s += ["%s v%d_%s"%(a.type_str(),b+i,a.name) for a,b in zip(self.arguments.l,range(len(self.arguments)))]
+        return s
+    def get_constructor_implementation(self):
+        s = entity_map[self.parent_class].get_constructor_implementation() if self.parent_class else []
+        i = len(s) + 1
+        b = 0
+        for a in self.arguments.l:
+            generalize = "->generalize()" if (isinstance(a.type,ArrayType) and a.type.is_shared_ptr()) else ""
+            if isinstance(a.type,BinaryType) or (isinstance(a.type,ArrayType) and isinstance(a.type.type,BinaryType)):
+                continue
+            s.append("e->setArgument(%d,v%d_%s%s)"%(b+i-1,b+i,a.name,generalize))
+            b += 1
+        return s#"; ".join(s)
     def __str__(self):
-        if generator_mode == 'HEADER':
+        self.constructor_args_list = self.get_constructor_args()
+        self.constructor_args = ", ".join(self.constructor_args_list)
+        if generator_mode == 'HEADER':            
             comment = IfcDocumentation.description(self.class_name)
             comment = comment+"\n" if comment else ''
             return "%sclass %s : public %s {\npublic:%s%s%s\n};" % (comment,self.class_name,
@@ -316,18 +361,22 @@ class Classdef:
                 "\n    Type::Enum type() const;"+
                 "\n    static Type::Enum Class();"+
                 "\n    %(class_name)s (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());"+
+               ("\n    %(class_name)s (%(constructor_args)s);" if len(self.constructor_args_list) else "")+
                 "\n    typedef %(class_name)s* ptr;"+
                 "\n    typedef SHARED_PTR< IfcTemplatedEntityList<%(class_name)s> > list;"+
                 "\n    typedef IfcTemplatedEntityList<%(class_name)s>::it it;")%self.__dict__
             )
         elif generator_mode == 'SOURCE':
             self.arguments.argstart = argument_start(self.class_name)
+            self.constructor_implementation = "; ".join(self.get_constructor_implementation())
             return (("\n// Function implementations for %(class_name)s"+str(self.arguments)+str(self.inverse)+
             ("\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s; }" if self.parent_class is None else
             "\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s || %(parent_class)s::is(v); }")+
             "\nType::Enum %(class_name)s::type() const { return Type::%(class_name)s; }"+
             "\nType::Enum %(class_name)s::Class() { return Type::%(class_name)s; }"+
-            "\n%(class_name)s::%(class_name)s(IfcAbstractEntityPtr e) { if (!is(Type::%(class_name)s)) throw IfcException(\"Unable to find find keyword in schema\"); entity = e; }")%self.__dict__)%self.__dict__
+            "\n%(class_name)s::%(class_name)s(IfcAbstractEntityPtr e) { if (!is(Type::%(class_name)s)) throw IfcException(\"Unable to find find keyword in schema\"); entity = e; }"+
+            ("\n%(class_name)s::%(class_name)s(%(constructor_args)s) { IfcWritableEntity* e = new IfcWritableEntity(Class()); %(constructor_implementation)s; entity = e; }"  if len(self.constructor_args_list) else "")
+            )%self.__dict__)%self.__dict__
 
 
 from funcparserlib.parser import a, skip, many, maybe, some
@@ -462,6 +511,7 @@ namespace Type {
     Enum Parent(Enum v);
     Enum FromString(const std::string& s);
     std::string ToString(Enum v);
+    bool IsSimple(Enum v);
 }
 
 }
@@ -505,9 +555,12 @@ generator_mode = 'SOURCE'
 
 print >>cpp_file, """#include "%(schema)s.h"
 #include "IfcException.h"
+#include "IfcWrite.h"
+#include "IfcWritableEntity.h"
 
 using namespace %(schema)s;
 using namespace IfcParse;
+using namespace IfcWrite;
 
 IfcSchemaEntity %(schema)s::SchemaEntity(IfcAbstractEntityPtr e) {
     switch(e->type()){"""%{'schema':schema_version}
@@ -550,6 +603,10 @@ for e in entity_enumerations:
     if e not in parent_relations or parent_relations[e] is None: continue
     print >>cpp_file, '    if(v==%s%s) { return %s; }'%(e," "*(maxlen-len(e)),parent_relations[e])
 print >>cpp_file, "    return (Enum)-1;"
+print >>cpp_file, "}"
+
+print >>cpp_file, "bool Type::IsSimple(Enum v){"
+print >>cpp_file, "    return v == Type::%s;"%" || v == Type::".join(simple_enumerations)
 print >>cpp_file, "}"
 
 for t in [T for T in types if isinstance(T.type,EnumType)]:
