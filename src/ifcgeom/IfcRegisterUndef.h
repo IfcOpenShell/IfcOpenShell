@@ -1,4 +1,4 @@
-#ifdef SHAPES
+﻿#ifdef SHAPES
 #undef SHAPES
 #endif
 #ifdef SHAPE

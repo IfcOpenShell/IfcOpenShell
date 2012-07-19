@@ -1,4 +1,4 @@
-
+﻿
 #include <QApplication>
 #include <QString>
 #ifndef QT_NO_OPENGL
