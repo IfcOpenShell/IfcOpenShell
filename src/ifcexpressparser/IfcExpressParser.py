@@ -1,4 +1,4 @@
-header = """
+﻿header = """
 /********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
@@ -131,6 +131,7 @@ class ArrayType:
         self.type = express_to_cpp.get(l[3],l[3])
         self.upper = l[2]
         self.lower = l[1]
+    def is_select_list(self): return self.type in selections
     def __str__(self):
         if self.type in entity_names:
             return "SHARED_PTR< IfcTemplatedEntityList<%s> >"%self.type
@@ -162,6 +163,7 @@ class ArrayType:
 class ScalarType:
     def __init__(self,l): self.type = express_to_cpp.get(l,l)
     def __str__(self): return self.type
+    def is_select_list(self): return False
     def type_enum(self):
         if self.type in simple_types:
             return simple_types[self.type].type_enum()
@@ -179,7 +181,8 @@ class EnumType:
         elif generator_mode == 'SOURCE_TO':
             return '{ "%s" }'%'","'.join([v1 for v1,v2 in self.v])
         elif generator_mode == 'SOURCE_FROM':
-            return "".join(['    if(s=="%s"%s) return %s::%s;\n'%(v1.upper()," "*(self.maxlen-len(v1)),"%(name)s",v2) for v1,v2 in self.v])            
+            return "".join(['    if(s=="%s"%s) return %s::%s;\n'%(v1.upper()," "*(self.maxlen-len(v1)),"%(name)s",v2) for v1,v2 in self.v])
+    def is_select_list(self): return False
     def __len__(self): return len(self.v)
     def type_enum(self):
         return "Argument_ENUMERATION"
@@ -188,15 +191,18 @@ class SelectType:
         for x in l: 
             if x in simple_types: selectable_simple_types.add(x)
     def __str__(self): return "IfcSchemaEntity"
+    def is_select_list(self): return False
     def type_enum(self): return "Argument_ENTITY"
 class BinaryType:
     def __init__(self,l): self.l = int(l)
     def __str__(self): return "char[%s]"%self.l
+    def is_select_list(self): return False
     def type_enum(self): raise NotImplementedError()
 class InverseType:
     def __init__(self,l):
         self.name, self.type, self.reference = l
-    def type_enum(self): return "Argument_ENTITY" 
+    def type_enum(self): return "Argument_ENTITY"
+    def is_select_list(self): return False
 class Typedef:
     def __init__(self,l):
         self.name,self.type=l[1:3]
@@ -228,7 +234,10 @@ class Argument(object):
         self.name, self.optional, self.type = l
     def is_enum(self): return str(self.type) in enumerations
     def type_str(self):
-        if str(self.type) in entity_names:
+        if self.type.is_select_list():
+            # This is extremely hackish indeed
+            return "IfcEntities"
+        elif str(self.type) in entity_names:
             return "%(type)s*"%self.__dict__
         else:
             return "%(type)s::%(type)s"%self.__dict__ if self.is_enum() else self.type
@@ -341,7 +350,7 @@ class Classdef:
         i = len(s) + 1
         b = 0
         for a in self.arguments.l:
-            generalize = "->generalize()" if (isinstance(a.type,ArrayType) and a.type.is_shared_ptr()) else ""
+            generalize = "->generalize()" if (isinstance(a.type,ArrayType) and a.type.is_shared_ptr() and not a.type.is_select_list()) else ""
             if isinstance(a.type,BinaryType) or (isinstance(a.type,ArrayType) and isinstance(a.type.type,BinaryType)):
                 continue
             s.append("e->setArgument(%d,v%d_%s%s)"%(b+i-1,b+i,a.name,generalize))
