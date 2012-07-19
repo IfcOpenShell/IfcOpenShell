@@ -257,6 +257,10 @@ public:
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
 	static IfcEntities EntitiesByType(Ifc2x3::Type::Enum t);
+	/// Returns all entities in the file that match the positional argument.
+	/// NOTE: This also returns subtypes of the requested type, for example:
+	/// IfcWall will also return IfcWallStandardCase entities
+	static IfcEntities EntitiesByType(const std::string& t);
 	/// Returns all entities in the file that reference the id
 	static IfcEntities EntitiesByReference(int id);
 	/// Returns the entity with the specified id

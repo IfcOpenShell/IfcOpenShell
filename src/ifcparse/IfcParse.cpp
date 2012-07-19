@@ -812,6 +812,11 @@ IfcEntities Ifc::EntitiesByType(Ifc2x3::Type::Enum t) {
 	MapEntitiesByType::const_iterator it = bytype.find(t);
 	return (it == bytype.end()) ? IfcEntities() : it->second;
 }
+IfcEntities Ifc::EntitiesByType(const std::string& t) {
+	std::string ty = t;
+	for (std::string::iterator p = ty.begin(); p != ty.end(); ++p ) *p = toupper(*p);
+	return EntitiesByType(Ifc2x3::Type::FromString(ty));
+}
 IfcEntities Ifc::EntitiesByReference(int t) {
 	MapEntitiesByRef::const_iterator it = byref.find(t);
 	return (it == byref.end()) ? IfcEntities() : it->second;
