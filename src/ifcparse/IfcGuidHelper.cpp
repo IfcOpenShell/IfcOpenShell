@@ -34,7 +34,7 @@ IfcWrite::IfcGuidHelper::IfcGuidHelper() {
 	if ( ! seeded ) { srand((unsigned int)time(0)); seeded = true; }
 	data.resize(length);
 	for ( unsigned int i = 0; i < length; ++ i ) {
-		data[i] = chars[rand()%length];
+		data[i] = chars[rand()%strlen(chars)];
 	}
 }
 IfcWrite::IfcGuidHelper::operator std::string() const {
