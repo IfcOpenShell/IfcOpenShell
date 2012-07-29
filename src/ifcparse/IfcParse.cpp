@@ -710,6 +710,7 @@ bool Ifc::Init(IfcParse::File* f) {
 
 	if ( log1 ) (*log1) << "\rDone scanning file   " << std::endl;
 
+    hasPlaneAngleUnit = false;
 	Ifc2x3::IfcUnitAssignment::list unit_assignments = EntitiesByType<Ifc2x3::IfcUnitAssignment>();
 	IfcUtil::IfcAbstractSelect::list units = IfcUtil::IfcAbstractSelect::list();
 	if ( unit_assignments->Size() ) {
