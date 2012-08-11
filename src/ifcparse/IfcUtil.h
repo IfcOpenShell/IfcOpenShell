@@ -22,6 +22,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include "../ifcparse/SharedPointer.h"
 #include "../ifcparse/Ifc2x3enum.h"
@@ -72,50 +73,6 @@ public:
 typedef IfcBaseClass* IfcSchemaEntity;
 
 }
-
-template <class T>
-class Nullable {
-private:
-	T t;
-	bool null;
-public:
-	Nullable(const T& v) {
-		t = v;
-		null = false;
-	}
-	Nullable() { null = true; }
-	operator T() const { return t; }
-	bool IsNull() const { return null; }
-};
-
-template <>
-class Nullable<std::string> {
-private:
-	std::string t;
-	bool null;
-public:
-	Nullable(const std::string& v) {
-		t = v;
-		null = false;
-	}
-	Nullable() { null = true; }
-	operator std::string() const { return t; }
-	Nullable<std::string>& operator =(const char* const c) { t = std::string(c); }
-	bool IsNull() const { return null; }
-
-};
-
-class Null {
-public:
-	operator Nullable<std::string>() const { return Nullable<std::string>(); }
-	operator Nullable<std::vector<std::string> >() { return Nullable<std::vector<std::string> >(); }
-	operator int() { return 0; }
-	operator void*() { return 0; }
-};
-
-#define NULL_STRING Nullable<std::string>()
-#define NULL_VECTOR_STRING Nullable<std::vector<std::string> >()
-#define IfcNull Null()
 
 class IfcEntityList {
 	std::vector<IfcUtil::IfcSchemaEntity> ls;
@@ -181,9 +138,14 @@ namespace IfcUtil {
 	};
 }
 
+namespace IfcParse {
+	class IfcFile;
+}
+
 class Argument {
-protected:
 public:
+	//void* file;
+//public:
 	virtual operator int() const = 0;
 	virtual operator bool() const = 0;
 	virtual operator double() const = 0;
@@ -203,6 +165,7 @@ public:
 
 class IfcAbstractEntity {
 public:
+	IfcParse::IfcFile* file;
 	virtual IfcEntities getInverse(Ifc2x3::Type::Enum c = Ifc2x3::Type::ALL) = 0;
 	virtual IfcEntities getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a) = 0;
 	virtual std::string datatype() = 0;
@@ -214,7 +177,27 @@ public:
 	virtual std::string toString(bool upper=false) = 0;
 	virtual unsigned int id() = 0;
 	virtual bool isWritable() = 0;
-	//virtual void setArgument(int i,int n);
+};
+
+class Logger {
+public:
+	typedef enum { LOG_NOTICE, LOG_WARNING, LOG_ERROR } Severity;
+private:
+	static std::ostream* log1;
+	static std::ostream* log2;
+	static std::stringstream log_stream;
+	static Severity verbosity;
+	static char* severity_strings[];
+public:
+	/// Determines to what stream respectively progress and errors are logged
+	static void SetOutput(std::ostream* l1, std::ostream* l2);
+	/// Determines the types of log messages to get logged
+	static void Verbosity(Severity v);
+	static Severity Verbosity();
+	/// Log a message to the output stream
+	static void Message(Severity type, const std::string& message, const IfcAbstractEntityPtr entity=0);
+	static void Status(const std::string& message, bool new_line=true);
+	static std::string Logger::GetLog();
 };
 
 #endif

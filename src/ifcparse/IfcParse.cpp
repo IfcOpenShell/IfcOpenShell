@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -34,7 +34,7 @@ using namespace IfcParse;
 // 
 // Opens the file, gets the filesize and reads a chunk in memory
 //
-File::File(const std::string& fn) {
+IfcSpfStream::IfcSpfStream(const std::string& fn) {
 	eof = false;
 	stream.open(fn.c_str(),std::ios_base::binary);
 	if ( ! stream.good() ) {
@@ -57,7 +57,7 @@ File::File(const std::string& fn) {
 	ReadBuffer(false);
 }
 
-File::File(std::istream& f, int l) {
+IfcSpfStream::IfcSpfStream(std::istream& f, int l) {
 	eof = false;
 	size = l;
 #ifdef BUF_SIZE
@@ -71,7 +71,7 @@ File::File(std::istream& f, int l) {
 	len = l;	
 }
 
-File::File(void* data, int l) {
+IfcSpfStream::IfcSpfStream(void* data, int l) {
 	eof = false;
 	size = l;
 #ifdef BUF_SIZE
@@ -84,15 +84,17 @@ File::File(void* data, int l) {
 	len = l;	
 }
 
-void File::Close() {
-	stream.close();
+void IfcSpfStream::Close() {
+#ifdef BUF_SIZE
+	if ( paging ) stream.close();
+#endif
 	delete[] buffer;
 }
 
 //
 // Reads a chunk of BUF_SIZE in memory and increments cursor if requested
 //
-void File::ReadBuffer(bool inc) {
+void IfcSpfStream::ReadBuffer(bool inc) {
 #ifdef BUF_SIZE
 	if ( inc ) {
 		offset += len;
@@ -109,12 +111,17 @@ void File::ReadBuffer(bool inc) {
 	len = (unsigned int) stream.gcount();
 	eof = len == 0;
 	ptr = 0;
+#ifdef BUF_SIZE
+	if (!paging) stream.close();
+#else
+	stream.close();
+#endif
 }
 
 //
 // Seeks an arbitrary position in the file
 //
-void File::Seek(unsigned int o) {
+void IfcSpfStream::Seek(unsigned int o) {
 #ifdef BUF_SIZE
 	if ( !paging ) {
 #endif
@@ -136,14 +143,14 @@ void File::Seek(unsigned int o) {
 //
 // Returns the character at the cursor
 //
-char File::Peek() {
+char IfcSpfStream::Peek() {
 	return buffer[ptr];
 }
 
 //
 // Returns the character at specified offset
 //
-char File::Read(unsigned int o) {
+char IfcSpfStream::Read(unsigned int o) {
 #ifdef BUF_SIZE
 	if ( ! paging ) {
 #endif
@@ -162,7 +169,7 @@ char File::Read(unsigned int o) {
 //
 // Returns the cursor position
 //
-unsigned int File::Tell() {
+unsigned int IfcSpfStream::Tell() {
 #ifdef BUF_SIZE
 	return offset + ptr;
 #else
@@ -173,7 +180,7 @@ unsigned int File::Tell() {
 //
 // Increments cursor and reads new chunk if necessary
 //
-void File::Inc() {
+void IfcSpfStream::Inc() {
 	if ( ++ptr == len ) { 
 #ifdef BUF_SIZE
 		if ( paging ) ReadBuffer();
@@ -185,13 +192,14 @@ void File::Inc() {
 		}
 #endif
 	}
-	const char current = File::Peek();
-	if ( current == '\n' || current == '\r' ) File::Inc();
+	const char current = IfcSpfStream::Peek();
+	if ( current == '\n' || current == '\r' ) IfcSpfStream::Inc();
 }
 
-Tokens::Tokens(IfcParse::File *f) {
+Tokens::Tokens(IfcParse::IfcSpfStream *s, IfcParse::IfcFile* f) {
 	file = f;
-	decoder = new IfcCharacterDecoder(f);
+	stream = s;
+	decoder = new IfcCharacterDecoder(s);
 }
 
 Tokens::~Tokens() {
@@ -203,38 +211,38 @@ Tokens::~Tokens() {
 //
 Token Tokens::Next() {
 
-	if ( file->eof ) return TokenPtr();
+	if ( stream->eof ) return TokenPtr();
 
 	char c;
 
 	// Trim whitespace
-	while ( !file->eof ) {
-		c = file->Peek();
-		if ( (c == ' ' || c == '\r' || c == '\n' || c == '\t' ) ) file->Inc();
+	while ( !stream->eof ) {
+		c = stream->Peek();
+		if ( (c == ' ' || c == '\r' || c == '\n' || c == '\t' ) ) stream->Inc();
 		else break;
 	}
 
-	if ( file->eof ) return TokenPtr();
-	unsigned int pos = file->Tell();
+	if ( stream->eof ) return TokenPtr();
+	unsigned int pos = stream->Tell();
 
 	bool inString = false;
 	bool inComment = false;
 
 	// If the cursor is at [()=,;$*] we know token consists of single char
 	if ( c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '$' || c == '*' ) {
-		file->Inc();
+		stream->Inc();
 		return TokenPtr(c);
 	}
 
 	int len = 0;
 
 	char p = 0;
-	while ( ! file->eof ) {
+	while ( ! stream->eof ) {
 
 		// Read character and increment pointer if not starting a new token
-		char c = file->Peek();
+		char c = stream->Peek();
 		if ( len && (!inString || inComment) && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' ) ) break;
-		file->Inc();
+		stream->Inc();
 
 		// Skip whitespace if not in comment or string
 		if ( !inComment && !inString && (c == ' ' || c == '\r' || c == '\n' || c == '\t' ) ) continue;
@@ -248,7 +256,7 @@ Token Tokens::Next() {
 
 		p = c;
 	}
-	if ( len ) return TokenPtr(pos);
+	if ( len ) return TokenPtr(this,pos);
 	else return TokenPtr();
 }
 
@@ -257,18 +265,18 @@ Token Tokens::Next() {
 // Omits whitespace and comments
 //
 std::string Tokens::TokenString(unsigned int offset) {
-	const bool was_eof = file->eof;
-	unsigned int old_offset = file->Tell();
-	file->Seek(offset);
+	const bool was_eof = stream->eof;
+	unsigned int old_offset = stream->Tell();
+	stream->Seek(offset);
 	bool inString = false;
 	bool inComment = false;
 	std::string buffer;
 	buffer.reserve(128);
 	char p = 0;
-	while ( ! file->eof ) {
-		char c = file->Peek();
+	while ( ! stream->eof ) {
+		char c = stream->Peek();
 		if ( buffer.size() && (!inString || inComment) && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' ) ) break;
-		file->Inc();
+		stream->Inc();
 		if ( !inComment && !inString && (c == ' ' || c == '\r' || c == '\n' || c == '\t' ) ) continue;
 		if ( !inComment ) buffer.push_back(c);
 		if ( inComment && p == '*' && c == '/' ) inComment = false;
@@ -276,8 +284,8 @@ std::string Tokens::TokenString(unsigned int offset) {
 		else if ( !inComment && c == '\'' ) return *decoder;
 		p = c;
 	}
-	if ( was_eof ) file->eof = true;
-	else file->Seek(old_offset);
+	if ( was_eof ) stream->eof = true;
+	else stream->Seek(old_offset);
 	return buffer;
 }
 
@@ -285,33 +293,32 @@ std::string Tokens::TokenString(unsigned int offset) {
 // Functions for creating Tokens from an arbitary file offset.
 // The first 4 bits are reserved for Tokens of type ()=,;$*
 //
-Token IfcParse::TokenPtr(unsigned int offset) { return offset + 128; }
-Token IfcParse::TokenPtr(char c) { return c; }
-Token IfcParse::TokenPtr() { return 0; }
+Token IfcParse::TokenPtr(Tokens* tokens, unsigned int offset) { return Token(tokens,offset); }
+Token IfcParse::TokenPtr(char c) { return Token((Tokens*)0,(unsigned) c); }
+Token IfcParse::TokenPtr() { return Token((Tokens*)0,0); }
 
 //
 // Functions to convert Tokens to binary data
 //
-unsigned int TokenFunc::Offset(Token t) { return t - 128; }
-bool TokenFunc::startsWith(Token t, char c) {
-	return Ifc::file->Read(Offset(t)) == c;
+bool TokenFunc::startsWith(const Token& t, char c) {
+	return t.first->stream->Read(t.second) == c;
 }
-bool TokenFunc::isOperator(Token t, char op) {
-	return (t < 128) && (!op || op == t);
+bool TokenFunc::isOperator(const Token& t, char op) {
+	return (!t.first) && (!op || op == t.second);
 }
-bool TokenFunc::isIdentifier(Token t) {
+bool TokenFunc::isIdentifier(const Token& t) {
 	return ! isOperator(t) && startsWith(t, '#');
 }
-bool TokenFunc::isString(Token t) {
+bool TokenFunc::isString(const Token& t) {
 	return ! isOperator(t) && startsWith(t, '\'');
 }
-bool TokenFunc::isEnumeration(Token t) {
+bool TokenFunc::isEnumeration(const Token& t) {
 	return ! isOperator(t) && startsWith(t, '.');
 }
-bool TokenFunc::isDatatype(Token t) {
+bool TokenFunc::isDatatype(const Token& t) {
 	return ! isOperator(t) && startsWith(t, 'I');
 }
-int TokenFunc::asInt(Token t) {
+int TokenFunc::asInt(const Token& t) {
 	const std::string str = asString(t);
 	// In case of an ENTITY_INSTANCE_NAME skip the leading #
 	const char* start = str.c_str() + (isIdentifier(t) ? 1 : 0);
@@ -320,31 +327,31 @@ int TokenFunc::asInt(Token t) {
 	if ( start == end ) throw IfcException("Token is not an integer or identifier");
 	return (int) result;
 }
-bool TokenFunc::asBool(Token t) {
+bool TokenFunc::asBool(const Token& t) {
 	const std::string str = asString(t);
 	return str == "T";
 }
-double TokenFunc::asFloat(Token t) {
+double TokenFunc::asFloat(const Token& t) {
 	const std::string str = asString(t);
 	return (double) atof(str.c_str());
 }
-std::string TokenFunc::asString(Token t) {
+std::string TokenFunc::asString(const Token& t) {
 	if ( isOperator(t,'$') ) return "";
 	else if ( isOperator(t) ) throw IfcException("Token is not a string");
-	std::string str = Ifc::tokens->TokenString(t - 128);
+	std::string str = t.first->TokenString(t.second);
 	return isString(t) || isEnumeration(t) ? str.substr(1,str.size()-2) : str;
 }
-std::string TokenFunc::toString(Token t) {
-	if ( isOperator(t) ) return std::string ( (char*) &t, 1 );
-	else return Ifc::tokens->TokenString(t - 128);
+std::string TokenFunc::toString(const Token& t) {
+	if ( isOperator(t) ) return std::string ( (char*) &t.second	, 1 );
+	else return t.first->TokenString(t.second);
 }
 
 
-TokenArgument::TokenArgument(Token t) {
+TokenArgument::TokenArgument(const Token& t) {
 	token = t;
 }
 
-EntityArgument::EntityArgument(Ifc2x3::Type::Enum ty, Token t) {
+EntityArgument::EntityArgument(Ifc2x3::Type::Enum ty, const Token& t) {
 	entity = new IfcUtil::IfcArgumentSelect(ty,new TokenArgument(t));
 }
 
@@ -353,10 +360,11 @@ EntityArgument::EntityArgument(Ifc2x3::Type::Enum ty, Token t) {
 // Aditionally, stores the ids (i.e. #[\d]+) in a vector
 //
 ArgumentList::ArgumentList(Tokens* t, std::vector<unsigned int>& ids) {
-	while( Token next = t->Next() ) {
-		if ( TokenFunc::isOperator(next,',') ) continue;
-		if ( TokenFunc::isOperator(next,')') ) break;
-		if ( TokenFunc::isOperator(next,'(') ) Push( new ArgumentList(t,ids) );
+	Token next = t->Next();
+	while( next.second || next.first ) {
+		if ( TokenFunc::isOperator(next,',') ) {}
+		else if ( TokenFunc::isOperator(next,')') ) break;
+		else if ( TokenFunc::isOperator(next,'(') ) Push( new ArgumentList(t,ids) );
 		else {
 			if ( TokenFunc::isIdentifier(next) ) ids.push_back(TokenFunc::asInt(next));
 			if ( TokenFunc::isDatatype(next) ) {
@@ -364,13 +372,14 @@ ArgumentList::ArgumentList(Tokens* t, std::vector<unsigned int>& ids) {
 				try {
 					Push ( new EntityArgument(Ifc2x3::Type::FromString(TokenFunc::asString(next)),t->Next()) );
 				} catch ( IfcException& e ) {
-					Ifc::LogMessage("Error",e.what());
+					Logger::Message(Logger::LOG_ERROR,e.what());
 				}
 				t->Next();
 			} else {
 				Push ( new TokenArgument(next) );
 			}
 		}
+		next = t->Next();
 	}
 }
 
@@ -455,11 +464,7 @@ TokenArgument::operator std::string() const { return TokenFunc::asString(token);
 TokenArgument::operator std::vector<double>() const { throw IfcException("Argument is not a list of floats"); }
 TokenArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
 TokenArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
-TokenArgument::operator IfcUtil::IfcSchemaEntity() const { return Ifc::EntityById(TokenFunc::asInt(token)); }
-/*TokenArgument::operator IfcUtil::IfcAbstractSelect::ptr() const {
-//TODO Fix memory leak
-return new IfcUtil::IfcEntitySelect(*this); 
-}*/
+TokenArgument::operator IfcUtil::IfcSchemaEntity() const { return token.first->file->EntityById(TokenFunc::asInt(token)); }
 TokenArgument::operator IfcEntities() const { throw IfcException("Argument is not a list of entities"); }
 unsigned int TokenArgument::Size() const { return 1; }
 ArgumentPtr TokenArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
@@ -497,19 +502,21 @@ EntityArgument::~EntityArgument() { delete entity; }
 //
 // Reads an Entity from the list of Tokens
 //
-Entity::Entity(unsigned int i, Tokens* t) {
-	Token datatype = t->Next();
+Entity::Entity(unsigned int i, IfcFile* f) { //: file(f) {
+	file = f;
+	Token datatype = f->tokens->Next();
 	if ( ! TokenFunc::isDatatype(datatype)) throw IfcException("Unexpected token while parsing entity");
 	_type = Ifc2x3::Type::FromString(TokenFunc::asString(datatype));
 	_id = i;
 	args = ArgumentPtr();
-	offset = TokenFunc::Offset(datatype);
+	offset = datatype.second;
 }
 
 //
 // Reads an Entity from the list of Tokens at the specified offset in the file
 //
-Entity::Entity(unsigned int i, Tokens* t, unsigned int o) {
+Entity::Entity(unsigned int i, IfcFile* f, unsigned int o) { // : file(f) {
+	file = f;
 	std::vector<unsigned int> ids;
 	_id = i;
 	offset = o;
@@ -540,16 +547,16 @@ unsigned int Entity::getArgumentCount() {
 //
 void Entity::Load(std::vector<unsigned int>& ids, bool seek) {
 	if ( seek ) {
-		Ifc::file->Seek(offset);
-		Token datatype = Ifc::tokens->Next();
+		file->tokens->stream->Seek(offset);
+		Token datatype = file->tokens->Next();
 		if ( ! TokenFunc::isDatatype(datatype)) throw IfcException("Unexpected token while parsing entity");
 		_type = Ifc2x3::Type::FromString(TokenFunc::asString(datatype));
 	}
-	Token open = Ifc::tokens->Next();
-	args = new ArgumentList(Ifc::tokens, ids);
-	unsigned int old_offset = Ifc::file->Tell();
-	Token semilocon = Ifc::tokens->Next();
-	if ( ! TokenFunc::isOperator(semilocon,';') ) Ifc::file->Seek(old_offset);
+	Token open = file->tokens->Next();
+	args = new ArgumentList(file->tokens, ids);
+	unsigned int old_offset = file->tokens->stream->Tell();
+	Token semilocon = file->tokens->Next();
+	if ( ! TokenFunc::isOperator(semilocon,';') ) file->tokens->stream->Seek(old_offset);
 }
 
 Ifc2x3::Type::Enum Entity::type() const {
@@ -590,7 +597,7 @@ Entity::~Entity() {
 //
 IfcEntities Entity::getInverse(Ifc2x3::Type::Enum c) {
 	IfcEntities l = IfcEntities(new IfcEntityList());
-	IfcEntities all = Ifc::EntitiesByReference(_id);
+	IfcEntities all = file->EntitiesByReference(_id);
 	if ( ! all ) return l;
 	for( IfcEntityList::it it = all->begin(); it != all->end();++  it  ) {
 		if ( c == Ifc2x3::Type::ALL || (*it)->is(c) ) {
@@ -617,44 +624,55 @@ bool Entity::isWritable() {
 	return false;
 }
 
+IfcFile::IfcFile() {
+	file = 0;
+	lastId = 0;
+	tokens = 0;
+	MaxId = 0;
+}
+
 //
 // Parses the IFC file in fn
 // Creates the maps
 // Gets the unit definitins from the file
 //
-bool Ifc::Init(const std::string& fn) {
-	return Ifc::Init(new File(fn));
+bool IfcFile::Init(const std::string& fn) {
+	return IfcFile::Init(new IfcSpfStream(fn));
 }
-bool Ifc::Init(std::istream& f, int len) {
-	return Ifc::Init(new File(f,len));
+bool IfcFile::Init(std::istream& f, int len) {
+	return IfcFile::Init(new IfcSpfStream(f,len));
 }
-bool Ifc::Init(void* data, int len) {
-	return Ifc::Init(new File(data,len));
+bool IfcFile::Init(void* data, int len) {
+	return IfcFile::Init(new IfcSpfStream(data,len));
 }
-bool Ifc::Init(IfcParse::File* f) {
+bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
 	Ifc2x3::InitStringMap();
 	file = f;
 	if ( ! file->valid ) return false;
-	tokens = new Tokens (file);
-	Token token = 0;
-	Token previous = 0;
+	tokens = new Tokens (file,this);
+	Token token = TokenPtr();
+	Token previous = TokenPtr();
 	unsigned int currentId = 0;
 	lastId = 0;
 	int x = 0;
 	EntityPtr e;
 	IfcUtil::IfcSchemaEntity entity = 0; 
-	if ( log1 ) (*log1) << "Scanning file..." << std::endl;
+	Logger::Status("Scanning file...");
 	while ( ! file->eof ) {
 		if ( currentId ) {
 			try {
-				e = new Entity(currentId,tokens);
+				e = new Entity(currentId,this);
 				entity = Ifc2x3::SchemaEntity(e);
 			} catch (IfcException ex) {
 				currentId = 0;
-				Ifc::LogMessage("Error",ex.what());
+				Logger::Message(Logger::LOG_ERROR,ex.what());
 				continue;
 			}
-			if ( log1 && !((++x)%1000) ) (*log1) << "\r#" << currentId << "         " << std::flush;
+			// Update the status after every 1000 instances parsed
+			if ( !((++x)%1000) ) {
+				std::stringstream ss; ss << "\r#" << currentId;
+				Logger::Status(ss.str());
+			}
 			if ( entity->is(Ifc2x3::Type::IfcRoot) ) {
 				Ifc2x3::IfcRoot::ptr ifc_root = (Ifc2x3::IfcRoot::ptr) entity;
 				try {
@@ -662,11 +680,11 @@ bool Ifc::Init(IfcParse::File* f) {
 					if ( byguid.find(guid) != byguid.end() ) {
 						std::stringstream ss;
 						ss << "Overwriting entity with guid " << guid;
-						Ifc::LogMessage("Warning",ss.str());
+						Logger::Message(Logger::LOG_WARNING,ss.str());
 					}
 					byguid[guid] = ifc_root;
 				} catch (IfcException ex) {
-					Ifc::LogMessage("Error",ex.what());
+					Logger::Message(Logger::LOG_ERROR,ex.what());
 				}
 			}
 			Ifc2x3::Type::Enum ty = entity->type();
@@ -682,17 +700,17 @@ bool Ifc::Init(IfcParse::File* f) {
 			if ( byid.find(currentId) != byid.end() ) {
 				std::stringstream ss;
 				ss << "Overwriting entity with id " << currentId;
-				Ifc::LogMessage("Warning",ss.str());
+				Logger::Message(Logger::LOG_WARNING,ss.str());
 			}
 			byid[currentId] = entity;
 			MaxId = std::max(MaxId,currentId);
 			currentId = 0;
 		} else {
 			try { token = tokens->Next(); }
-			catch (... ) { token = 0; }
+			catch (... ) { token = TokenPtr(); }
 		}
-		if ( ! token ) break;
-		if ( previous && TokenFunc::isIdentifier(previous) ) {
+		if ( ! (token.second || token.first) ) break;
+		if ( (previous.second || previous.first) && TokenFunc::isIdentifier(previous) ) {
 			int id = TokenFunc::asInt(previous);
 			if ( TokenFunc::isOperator(token,'=') ) {
 				currentId = id;
@@ -707,67 +725,15 @@ bool Ifc::Init(IfcParse::File* f) {
 		}
 		previous = token;
 	}
-
-	if ( log1 ) (*log1) << "\rDone scanning file   " << std::endl;
-
-    hasPlaneAngleUnit = false;
-	Ifc2x3::IfcUnitAssignment::list unit_assignments = EntitiesByType<Ifc2x3::IfcUnitAssignment>();
-	IfcUtil::IfcAbstractSelect::list units = IfcUtil::IfcAbstractSelect::list();
-	if ( unit_assignments->Size() ) {
-		Ifc2x3::IfcUnitAssignment::ptr unit_assignment = *unit_assignments->begin();
-		units = unit_assignment->Units();
-	}
-	if ( ! units ) {
-		// No units eh... Since tolerances and deflection are specified internally in meters
-		// we will try to find another indication of the model size.
-		Ifc2x3::IfcExtrudedAreaSolid::list extrusions = EntitiesByType<Ifc2x3::IfcExtrudedAreaSolid>();
-		if ( ! extrusions->Size() ) return true;
-		double max_height = -1.0f;
-		for ( Ifc2x3::IfcExtrudedAreaSolid::it it = extrusions->begin(); it != extrusions->end(); ++ it ) {
-			const double depth = (*it)->Depth();
-			if ( depth > max_height ) max_height = depth;
-		}
-		if ( max_height > 100.0f ) Ifc::LengthUnit = 0.001f;
-		return true;
-	}
-	try {
-		for ( IfcUtil::IfcAbstractSelect::it it = units->begin(); it != units->end(); ++ it ) {
-			const IfcUtil::IfcAbstractSelect::ptr base = *it;
-			Ifc2x3::IfcSIUnit::ptr unit = Ifc2x3::IfcSIUnit::ptr();
-			double value = 1.0f;
-			if ( base->is(Ifc2x3::Type::IfcConversionBasedUnit) ) {
-				const Ifc2x3::IfcConversionBasedUnit::ptr u = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcConversionBasedUnit>(base);
-				const Ifc2x3::IfcMeasureWithUnit::ptr u2 = u->ConversionFactor();
-				Ifc2x3::IfcUnit u3 = u2->UnitComponent();
-				if ( u3->is(Ifc2x3::Type::IfcSIUnit) ) {
-					unit = (Ifc2x3::IfcSIUnit*) u3;
-				}
-				Ifc2x3::IfcValue v = u2->ValueComponent();
-				IfcUtil::IfcArgumentSelect* v2 = (IfcUtil::IfcArgumentSelect*) v;
-				const double f = *v2->wrappedValue();
-				value *= f;
-			} else if ( base->is(Ifc2x3::Type::IfcSIUnit) ) {
-				unit = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcSIUnit>(base);
-			}
-			if ( unit ) {
-				if ( unit->hasPrefix() ) {
-					value *= UnitPrefixToValue(unit->Prefix());
-				}
-				Ifc2x3::IfcUnitEnum::IfcUnitEnum type = unit->UnitType();
-				if ( type == Ifc2x3::IfcUnitEnum::IfcUnit_LENGTHUNIT ) {
-					Ifc::LengthUnit = value;
-				} else if ( type == Ifc2x3::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT ) {
-					Ifc::PlaneAngleUnit = value;
-					Ifc::hasPlaneAngleUnit = true;
-				}
-			}
-		}
-	} catch ( IfcException ex ) {
-		Ifc::LogMessage("Error",ex.what());
-	}
+	Logger::Status("\rDone scanning file   ");
 	return true;
 }
-void Ifc::AddEntity(IfcUtil::IfcSchemaEntity entity) {
+void IfcFile::AddEntities(IfcEntities es) {
+	for( IfcEntityList::it i = es->begin(); i != es->end(); ++ i ) {
+		AddEntity(*i);
+	}
+}
+void IfcFile::AddEntity(IfcUtil::IfcSchemaEntity entity) {
 	if ( entity->is(Ifc2x3::Type::IfcRoot) ) {
 		Ifc2x3::IfcRoot::ptr ifc_root = (Ifc2x3::IfcRoot::ptr) entity;
 		try {
@@ -775,11 +741,11 @@ void Ifc::AddEntity(IfcUtil::IfcSchemaEntity entity) {
 			if ( byguid.find(guid) != byguid.end() ) {
 				std::stringstream ss;
 				ss << "Overwriting entity with guid " << guid;
-				Ifc::LogMessage("Warning",ss.str());
+				Logger::Message(Logger::LOG_WARNING,ss.str());
 			}
 			byguid[guid] = ifc_root;
 		} catch (IfcException ex) {
-			Ifc::LogMessage("Error",ex.what());
+			Logger::Message(Logger::LOG_ERROR,ex.what());
 		}
 	}
 	Ifc2x3::Type::Enum ty = entity->type();
@@ -795,6 +761,7 @@ void Ifc::AddEntity(IfcUtil::IfcSchemaEntity entity) {
 	int new_id = -1;
 	// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
 	if ( entity->entity->isWritable() ) {
+		if ( ! entity->entity->file ) entity->entity->file = this;
 		new_id = ((IfcWrite::IfcWritableEntity*)(entity->entity))->setId();
 	} else {
 		// TODO: Detect and fix ENTITY_INSTANCE_NAME collisions
@@ -803,39 +770,38 @@ void Ifc::AddEntity(IfcUtil::IfcSchemaEntity entity) {
 	if ( byid.find(new_id) != byid.end() ) {
 		std::stringstream ss;
 		ss << "Overwriting entity with id " << new_id;
-		Ifc::LogMessage("Warning",ss.str());
+		Logger::Message(Logger::LOG_WARNING,ss.str());
 	}
 	byid[new_id] = entity;
 
 }
-
-IfcEntities Ifc::EntitiesByType(Ifc2x3::Type::Enum t) {
+IfcEntities IfcFile::EntitiesByType(Ifc2x3::Type::Enum t) {
 	MapEntitiesByType::const_iterator it = bytype.find(t);
 	return (it == bytype.end()) ? IfcEntities() : it->second;
 }
-IfcEntities Ifc::EntitiesByType(const std::string& t) {
+IfcEntities IfcFile::EntitiesByType(const std::string& t) {
 	std::string ty = t;
 	for (std::string::iterator p = ty.begin(); p != ty.end(); ++p ) *p = toupper(*p);
 	return EntitiesByType(Ifc2x3::Type::FromString(ty));
 }
-IfcEntities Ifc::EntitiesByReference(int t) {
+IfcEntities IfcFile::EntitiesByReference(int t) {
 	MapEntitiesByRef::const_iterator it = byref.find(t);
 	return (it == byref.end()) ? IfcEntities() : it->second;
 }
-IfcUtil::IfcSchemaEntity Ifc::EntityById(int id) {
+IfcUtil::IfcSchemaEntity IfcFile::EntityById(int id) {
 	MapEntityById::const_iterator it = byid.find(id);
 	if ( it == byid.end() ) {
 		MapOffsetById::const_iterator it2 = offsets.find(id);
 		if ( it2 == offsets.end() ) throw IfcException("Entity not found");
 		const unsigned int offset = (*it2).second;
-		EntityPtr e = EntityPtr(new Entity(id,Ifc::tokens,offset));
+		EntityPtr e = EntityPtr(new Entity(id,this,offset));
 		IfcUtil::IfcSchemaEntity entity = Ifc2x3::SchemaEntity(e);
 		byid[id] = entity;
 		return entity;
 	}
 	return it->second;
 }
-Ifc2x3::IfcRoot::ptr Ifc::EntityByGuid(const std::string& guid) {
+Ifc2x3::IfcRoot::ptr IfcFile::EntityByGuid(const std::string& guid) {
 	MapEntityByGuid::const_iterator it = byguid.find(guid);
 	if ( it == byguid.end() ) {
 		throw IfcException("Entity not found");
@@ -848,63 +814,24 @@ IfcException::IfcException(std::string e) { error = e; }
 IfcException::~IfcException() throw () {}
 const char* IfcException::what() const throw() { return error.c_str(); }
 
-void Ifc::Dispose() {
+// FIXME: Test destructor to delete entity and arg allocations
+IfcFile::~IfcFile() {
 	for( MapEntityById::const_iterator it = byid.begin(); it != byid.end(); ++ it ) {
 		delete it->second->entity;
 		delete it->second;
 	}
-	bytype.clear();
-	byid.clear();
-	byref.clear();
-	file->Close();
 	delete file;
 	delete tokens;
-	offsets.clear();
-	log_stream.str("");
 }
 
-double UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v ) {
-	if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_EXA   ) return (double) 1e18;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_PETA  ) return (double) 1e15;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_TERA  ) return (double) 1e12;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_GIGA  ) return (double) 1e9;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_MEGA  ) return (double) 1e6;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_KILO  ) return (double) 1e3;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_HECTO ) return (double) 1e2;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_DECA  ) return (double) 1;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_DECI  ) return (double) 1e-1;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_CENTI ) return (double) 1e-2;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_MILLI ) return (double) 1e-3;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_MICRO ) return (double) 1e-6;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_NANO  ) return (double) 1e-9;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_PICO  ) return (double) 1e-12;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_FEMTO ) return (double) 1e-15;
-	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_ATTO  ) return (double) 1e-18;
-	else return 1.0f;
-}
-void Ifc::SetOutput(std::ostream* l1, std::ostream* l2) { 
-	log1 = l1; 
-	log2 = l2; 
-	if ( ! log2 ) {
-		log2 = &log_stream;
-	}
-}
-void Ifc::LogMessage(const std::string& type, const std::string& message, const IfcAbstractEntityPtr entity) {
-	if ( log2 ) {
-		(*log2) << "[" << type << "] " << message << std::endl;
-		if ( entity ) (*log2) << entity->toString() << std::endl;
-	}
-}
-std::string Ifc::GetLog() {
-	return log_stream.str();
-}
-MapEntityById::const_iterator Ifc::First() {
+MapEntityById::const_iterator IfcFile::begin() const {
 	return byid.begin();
 }
-MapEntityById::const_iterator Ifc::Last() {
+MapEntityById::const_iterator IfcFile::end() const {
 	return byid.end();
 }
-void Ifc::Serialize(std::ostream& os) {
+
+std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f) {
 	os << "ISO-10303-21;" << std::endl;
 	os << "HEADER;" << std::endl;
 	os << "FILE_DESCRIPTION(('ViewDefinition []'),'2;1');" << std::endl;
@@ -913,30 +840,13 @@ void Ifc::Serialize(std::ostream& os) {
 	os << "ENDSEC;" << std::endl;
 	os << "DATA;" << std::endl;
 
-	for ( MapEntityById::const_iterator it = First(); it != Last(); ++ it ) {
+	for ( MapEntityById::const_iterator it = f.begin(); it != f.end(); ++ it ) {
 		const IfcEntity e = it->second;
 		os << e->entity->toString(true) << ";" << std::endl;
 	}
 
 	os << "ENDSEC;" << std::endl;
-	os << "END-ISO-10303-21;" << std::endl;	
-}
+	os << "END-ISO-10303-21;" << std::endl;
 
-File* Ifc::file = 0;
-std::ostream* Ifc::log1 = 0;
-std::ostream* Ifc::log2 = 0;
-unsigned int Ifc::lastId = 0;
-Tokens* Ifc::tokens = 0;
-double Ifc::LengthUnit = 1.0f;
-double Ifc::PlaneAngleUnit = 1.0f;
-bool Ifc::hasPlaneAngleUnit = false;
-bool Ifc::SewShells = false;
-int Ifc::CircleSegments = 32;
-MapEntitiesByType Ifc::bytype;
-MapEntityById Ifc::byid;
-MapEntityByGuid Ifc::byguid;
-MapEntitiesByRef Ifc::byref;
-MapOffsetById Ifc::offsets;
-std::stringstream Ifc::log_stream;
-int Ifc::Verbosity = 2;
-unsigned int Ifc::MaxId = 0;
+	return os;
+}

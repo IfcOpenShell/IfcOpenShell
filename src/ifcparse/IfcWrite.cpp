@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -26,12 +26,14 @@ using namespace IfcWrite;
 IfcWritableEntity::IfcWritableEntity(Ifc2x3::Type::Enum t) {
 	_type = t;
 	_id = 0;
+	file = 0;
 }
 int IfcWritableEntity::setId(int i) {
-	return *(_id = new int(i > 0 ? i : Ifc::FreshId()));
+	return *(_id = new int(i > 0 ? i : file->FreshId()));
 }
 IfcWritableEntity::IfcWritableEntity(IfcAbstractEntity* e) 
 {
+	file = e->file;
 	_type = e->type();
 	_id = new int(e->id());
 
@@ -45,7 +47,7 @@ IfcWritableEntity::IfcWritableEntity(IfcAbstractEntity* e)
 IfcEntities IfcWritableEntity::getInverse(Ifc2x3::Type::Enum c) {
 	IfcEntities l = IfcEntities(new IfcEntityList());
 	int id = _id ? *_id : setId();
-	IfcEntities all = Ifc::EntitiesByReference(id);
+	IfcEntities all = file->EntitiesByReference(id);
 	if ( ! all ) return l;
 	for( IfcEntityList::it it = all->begin(); it != all->end();++  it  ) {
 		if ( c == Ifc2x3::Type::ALL || (*it)->is(c) ) {
@@ -87,7 +89,7 @@ std::string IfcWritableEntity::toString(bool upper) {
 	ss << ")";
 	return ss.str();
 }
-unsigned int IfcWritableEntity::id() { if ( !_id ) _id = new int(Ifc::FreshId()); return *_id; }
+unsigned int IfcWritableEntity::id() { if ( !_id ) _id = new int(file->FreshId()); return *_id; }
 bool IfcWritableEntity::isWritable() { return true; }
 bool IfcWritableEntity::arg_writable(int i) {
 	std::map<int,bool>::const_iterator it = writemask.find(i);
@@ -96,6 +98,11 @@ bool IfcWritableEntity::arg_writable(int i) {
 }
 void IfcWritableEntity::arg_writable(int i, bool b) {
 	writemask[i] = b;
+}
+void IfcWritableEntity::setArgument(int i) {
+	if ( arg_writable(i) ) delete args[i];
+	args[i] = new IfcWriteNullArgument();
+	arg_writable(i,true);
 }
 void IfcWritableEntity::setArgument(int i,int v) {
 	if ( arg_writable(i) ) delete args[i];
@@ -110,12 +117,6 @@ void IfcWritableEntity::setArgument(int i,int v, const char* c){
 void IfcWritableEntity::setArgument(int i,const std::string& v){
 	if ( arg_writable(i) ) delete args[i];
 	args[i] = new IfcWriteIntegralArgument(v);
-	arg_writable(i,true);
-}
-void IfcWritableEntity::setArgument(int i,const Nullable<std::string>& v){
-	if ( arg_writable(i) ) delete args[i];
-	if ( v.IsNull() ) new IfcWriteNullArgument();
-	else args[i] = new IfcWriteIntegralArgument(v);
 	arg_writable(i,true);
 }
 void IfcWritableEntity::setArgument(int i,double v){
@@ -370,3 +371,21 @@ IfcSelectHelper::IfcSelectHelper(bool v, Ifc2x3::Type::Enum t) {
 }
 bool IfcSelectHelper::is(Ifc2x3::Type::Enum t) const { return entity->is(t); }
 Ifc2x3::Type::Enum IfcSelectHelper::type() const { return entity->type(); } 
+
+EntityBuffer* EntityBuffer::i = 0;
+EntityBuffer* EntityBuffer::instance() {
+	if ( ! i ) {
+		i = new EntityBuffer();
+		i->buffer = IfcEntities(new IfcEntityList());
+	}
+	return i;
+}
+IfcEntities EntityBuffer::Get() {
+	return instance()->buffer;
+}
+void EntityBuffer::Clear() {
+	instance()->buffer = IfcEntities(new IfcEntityList());
+}
+void EntityBuffer::Add(IfcUtil::IfcSchemaEntity e) {
+	instance()->buffer->push(e);
+}

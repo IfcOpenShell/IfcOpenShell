@@ -29,10 +29,11 @@ int main(int argc, char** argv) {
 	}
 
 	// Redirect the output (both progress and log) to stdout
-	Ifc::SetOutput(&std::cout,&std::cout);
+	Logger::SetOutput(&std::cout,&std::cout);
 
 	// Parse the IFC file provided in argv[1]
-	if ( ! Ifc::Init(argv[1]) ) {
+	IfcParse::IfcFile file;
+	if ( ! file.Init(argv[1]) ) {
 		std::cout << "Unable to parse .ifc file" << std::endl;
 		return 1;
 	}
@@ -53,12 +54,7 @@ int main(int argc, char** argv) {
 	// we need to cast them to IfcWindows. Since these properties 
 	// are optional we need to make sure the properties are 
 	// defined for the window in question before accessing them.
-	//
-	// Since we are accessing properties that represent a length
-	// measure we can multiply the value by Ifc::LengthUnit, which
-	// contains the ratio of the unit defined in the IfcUnitAssignment
-	// to the standard SI Unit, the meter.
-	IfcBuildingElement::list elements = Ifc::EntitiesByType<IfcBuildingElement>();
+	IfcBuildingElement::list elements = file.EntitiesByType<IfcBuildingElement>();
 
 	std::cout << "Found " << elements->Size() << " elements in " << argv[1] << ":" << std::endl;
 	
@@ -71,8 +67,8 @@ int main(int argc, char** argv) {
 			const IfcWindow::ptr window = reinterpret_pointer_cast<IfcBuildingElement,IfcWindow>(element);
 			
 			if ( window->hasOverallWidth() && window->hasOverallHeight() ) {
-				const float area = window->OverallWidth()*window->OverallHeight() * (Ifc::LengthUnit*Ifc::LengthUnit);
-				std::cout << "This window has an area of " << area << "m2" << std::endl;
+				const double area = window->OverallWidth()*window->OverallHeight();
+				std::cout << "The area of this window is " << area << std::endl;
 			}
 		}
 

@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -56,9 +56,9 @@ namespace IfcWrite {
 		std::string toString(bool upper=false);
 		unsigned int id();
 		bool isWritable();
+        void setArgument(int i);
 		void setArgument(int i,int v);
 		void setArgument(int i,int v, const char* c);
-		void setArgument(int i,const Nullable<std::string>& v);
 		void setArgument(int i,const std::string& v);
 		void setArgument(int i,double v);
 		void setArgument(int i,IfcUtil::IfcSchemaEntity v);

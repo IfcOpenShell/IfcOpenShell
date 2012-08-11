@@ -94,6 +94,9 @@ namespace IfcGeomObjects {
 	// Specifies whether to compose IfcOpeningElements into a single compound
 	// in order to speed up the processing of opening subtractions.
 	const int FASTER_BOOLEANS = 6;
+	// By default singular faces have no explicitly defined orientation, to
+	// force faces to be defined CounterClockWise set this to true.
+	const int FORCE_CCW_FACE_ORIENTATION = 7;
 
 	// End of settings enumeration.
 
@@ -143,6 +146,7 @@ namespace IfcGeomObjects {
 		IfcGeomObject(int my_id, int p_id, const std::string& n, const std::string& t, const std::string& g, const gp_Trsf& trsf, IfcMesh* m);
 	};
 
+	void InitUnits();
 	bool Init(const std::string fn);
 	bool Init(void* data, int len);
 	bool Init(const std::string fn, std::ostream* log1= 0, std::ostream* log2= 0);

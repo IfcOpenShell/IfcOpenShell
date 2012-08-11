@@ -47,16 +47,32 @@ namespace IfcGeom {
 	// Tolerances and settings for various geometrical operations:
 	enum GeomValue {
 		// Specifies the deflection of the mesher
+		// Default: 0.001m / 1mm
 		GV_DEFLECTION_TOLERANCE, 
 		// Specifies the tolerance of the wire builder, most notably for trimmed curves
+		// Defailt: 0.0001m / 0.1mm
 		GV_WIRE_CREATION_TOLERANCE,
 		// Specifies the minimal area of a face to be included in an IfcConnectedFaceset
+		// Default: 0.000001m 0.01cm2
 		GV_MINIMAL_FACE_AREA,
 		// Specifies the treshold distance under which cartesian points are deemed equal
+		// Default: 0.00001m / 0.01mm
 		GV_POINT_EQUALITY_TOLERANCE,
 		// Specifies maximum number of faces for a shell to be sewed. Sewing shells
 		// that consist of many faces is really detrimental for the performance.
-		GV_MAX_FACES_TO_SEW
+		// Default: 1000
+		GV_MAX_FACES_TO_SEW,
+		// By default singular faces have no explicitly defined orientation, to
+		// force faces to be defined CounterClockWise, set this value greater than zero.
+		GV_FORCE_CCW_FACE_ORIENTATION,
+		// The length unit used the creation of TopoDS_Shapes, primarily affects the
+		// interpretation of IfcCartesianPoints and IfcVector magnitudes
+		// DefaultL 1.0
+		GV_LENGTH_UNIT,
+		// The plane angle unit used for the creation of TopoDS_Shapes, primarily affects
+		// the interpretation of IfcParamaterValues of IfcTrimmedCurves
+		// Default: -1.0 (= not set, fist try degrees, then radians)
+		GV_PLANEANGLE_UNIT,
 	};
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
@@ -80,7 +96,7 @@ namespace IfcGeom {
 	double face_area(const TopoDS_Face& f);
 	void SetValue(GeomValue var, double value);
 	double GetValue(GeomValue var);
-
+	
 	namespace Cache {
 		void Purge();
 		void PurgeShapeCache();

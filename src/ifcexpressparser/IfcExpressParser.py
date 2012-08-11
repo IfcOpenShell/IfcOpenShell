@@ -1,4 +1,4 @@
-﻿header = """
+header = """
 /********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
@@ -103,7 +103,8 @@ argument_names_and_types = {}
 entity_map = {}
 
 #
-# Since inherited arguments of Express entities are placed in sequence before the non-inherited once, we need to keep track of how many inherited arguments exist
+# Since inherited arguments of Express entities are placed in sequence before the 
+# non-inherited ones, we need to keep track of how many inherited arguments exist
 #
 def argument_start(c):
     if c not in parent_relations: return 0
@@ -114,6 +115,19 @@ def argument_start(c):
         if not (c in parent_relations): break
     return i
     
+def parent_arguments(c):
+    if c not in parent_relations: return []
+    l = []
+    while True:
+        c = parent_relations[c]
+        i += argument_count[c] if c in argument_count else 0
+        if not (c in parent_relations): break
+    return []
+
+#
+# Every constructor also initializes their parent class members, hence they
+# need be stored as well.
+#    
 def parent_arguments(c):
     if c not in parent_relations: return []
     l = []
@@ -236,11 +250,12 @@ class Argument(object):
     def type_str(self):
         if self.type.is_select_list():
             # This is extremely hackish indeed
-            return "IfcEntities"
+            return "optional<IfcEntities>" if self.optional else "IfcEntities"
         elif str(self.type) in entity_names:
             return "%(type)s*"%self.__dict__
         else:
-            return "%(type)s::%(type)s"%self.__dict__ if self.is_enum() else self.type
+            t = "%(type)s::%(type)s"%self.__dict__ if self.is_enum() else self.type
+            return "optional<%s>"%t if self.optional else t
 class ArgumentList:
     def __init__(self,l):
         self.l = [Argument(a) for a in l]
@@ -350,10 +365,21 @@ class Classdef:
         i = len(s) + 1
         b = 0
         for a in self.arguments.l:
+            is_enumeration = str(a.type) in enumerations
+            # boost::optional is not used for pointer types, because they are set to NULL using 0
+            use_boost_optional = a.optional and str(a.type) not in entity_names
+            # boost::optional types need to be dereferenced before passing to the writable entity
+            dereference = "*" if use_boost_optional else ""
             generalize = "->generalize()" if (isinstance(a.type,ArrayType) and a.type.is_shared_ptr() and not a.type.is_select_list()) else ""
             if isinstance(a.type,BinaryType) or (isinstance(a.type,ArrayType) and isinstance(a.type.type,BinaryType)):
                 continue
-            s.append("e->setArgument(%d,v%d_%s%s)"%(b+i-1,b+i,a.name,generalize))
+            if is_enumeration:
+                impl = "e->setArgument(%d,%sv%d_%s,%s::ToString(%sv%d_%s))"%(b+i-1,dereference,b+i,a.name,str(a.type),dereference,b+i,a.name)
+            else:
+                impl = "e->setArgument(%d,(%sv%d_%s)%s)"%(b+i-1,dereference,b+i,a.name,generalize)            
+            if use_boost_optional:
+                s.append("if (v%d_%s) { %s; } else { e->setArgument(%d); } "%(b+i,a.name,impl,b+i-1))
+            else: s.append(impl)
             b += 1
         return s#"; ".join(s)
     def __str__(self):
@@ -384,7 +410,7 @@ class Classdef:
             "\nType::Enum %(class_name)s::type() const { return Type::%(class_name)s; }"+
             "\nType::Enum %(class_name)s::Class() { return Type::%(class_name)s; }"+
             "\n%(class_name)s::%(class_name)s(IfcAbstractEntityPtr e) { if (!is(Type::%(class_name)s)) throw IfcException(\"Unable to find find keyword in schema\"); entity = e; }"+
-            ("\n%(class_name)s::%(class_name)s(%(constructor_args)s) { IfcWritableEntity* e = new IfcWritableEntity(Class()); %(constructor_implementation)s; entity = e; }"  if len(self.constructor_args_list) else "")
+            ("\n%(class_name)s::%(class_name)s(%(constructor_args)s) { IfcWritableEntity* e = new IfcWritableEntity(Class()); %(constructor_implementation)s; entity = e; EntityBuffer::Add(this); }"  if len(self.constructor_args_list) else "")
             )%self.__dict__)%self.__dict__
 
 
@@ -475,12 +501,15 @@ print >>h_file, """#ifndef %(schema_upper)s_H
 #include <vector>
 #include <map>
 
+#include <boost/optional.hpp>
+
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/%(schema)senum.h"
 
 using namespace IfcUtil;
 using IfcParse::IfcException;
+using boost::optional;
 
 #define RETURN_INVERSE(T) \\
     IfcEntities e = entity->getInverse(T::Class()); \\

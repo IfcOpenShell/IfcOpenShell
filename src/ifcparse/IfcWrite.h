@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -187,6 +187,19 @@ namespace IfcWrite {
 		static const unsigned int length = 22;
 		IfcGuidHelper();
 		operator std::string() const;
+	};
+
+	// Accumulates all schema instances created from constructors
+	// This way they can be added in a single batch to the IfcFile
+	class EntityBuffer {
+	private:
+		IfcEntities buffer;
+		static EntityBuffer* i;
+		static EntityBuffer* instance();
+	public:
+		static IfcEntities Get();
+		static void Clear();
+		static void Add(IfcUtil::IfcSchemaEntity e);
 	};
 
 }

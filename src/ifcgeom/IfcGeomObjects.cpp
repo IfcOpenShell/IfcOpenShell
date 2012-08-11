@@ -51,9 +51,9 @@ bool convert_back_units = false;
 bool use_faster_booleans = false;
 
 int IfcGeomObjects::IfcMesh::addvert(const gp_XYZ& p) {
-	const float X = convert_back_units ? (float) (p.X() / Ifc::LengthUnit) : (float)p.X();
-	const float Y = convert_back_units ? (float) (p.Y() / Ifc::LengthUnit) : (float)p.Y();
-	const float Z = convert_back_units ? (float) (p.Z() / Ifc::LengthUnit) : (float)p.Z();
+	const float X = convert_back_units ? (float) (p.X() / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT)) : (float)p.X();
+	const float Y = convert_back_units ? (float) (p.Y() / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT)) : (float)p.Y();
+	const float Z = convert_back_units ? (float) (p.Z() / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT)) : (float)p.Z();
 	int i = (int) verts.size() / 3;
 	if ( weld_vertices ) {
 		const VertKey key = VertKey(X,std::pair<float,float>(Y,Z));
@@ -70,6 +70,8 @@ int IfcGeomObjects::IfcMesh::addvert(const gp_XYZ& p) {
 
 bool use_world_coords = false;
 bool use_brep_data = false;
+
+static IfcParse::IfcFile* ifc_file = 0;
 
 IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
 	id = i;
@@ -102,10 +104,10 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
 
 		// Triangulate the shape
 		try {
-			//BRepTools::Clean(s);
+			// BRepTools::Clean(s);
 			BRepMesh::Mesh(s, IfcGeom::GetValue(IfcGeom::GV_DEFLECTION_TOLERANCE));
 		} catch(...) {
-			Ifc::LogMessage("Error","Failed to triangulate mesh:",Ifc::EntityById(i)->entity);
+			Logger::Message(Logger::LOG_ERROR,"Failed to triangulate mesh:",ifc_file->EntityById(i)->entity);
 			continue;
 		}
 		TopExp_Explorer exp;
@@ -401,7 +403,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 					IfcGeom::convert_openings(ifc_product,openings,shapes,trsf,opened_shapes);
 				}
 			} catch(...) { 
-				Ifc::LogMessage("Error","Error processing openings for:",ifc_product->entity); 
+				Logger::Message(Logger::LOG_ERROR,"Error processing openings for:",ifc_product->entity); 
 			}
 			if ( use_world_coords ) {
 				for ( IfcGeom::ShapeList::const_iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
@@ -452,7 +454,8 @@ bool IfcGeomObjects::Next() {
 }
 std::vector<IfcGeomObjects::IfcObject*> returned_objects;
 bool IfcGeomObjects::CleanUp() {
-	Ifc::Dispose();
+	// TODO: Correctly implement destructor for IfcFile
+	delete ifc_file;
 	IfcGeom::Cache::Purge();
 	for ( std::vector<IfcGeomObjects::IfcObject*>::const_iterator it = returned_objects.begin();
 		it != returned_objects.end(); 
@@ -465,7 +468,7 @@ bool IfcGeomObjects::CleanUp() {
 const IfcGeomObjects::IfcObject* IfcGeomObjects::GetObject(int id) {
 	IfcObject* ifc_object = 0;
 	try {
-		const IfcEntity& ifc_entity = Ifc::EntityById(id);
+		const IfcParse::IfcEntity& ifc_entity = ifc_file->EntityById(id);
 		if ( ifc_entity->is(Ifc2x3::Type::IfcProduct) ) {
 			Ifc2x3::IfcProduct::ptr ifc_product = reinterpret_pointer_cast<IfcUtil::IfcBaseClass,Ifc2x3::IfcProduct>(ifc_entity);
 			int parent_id = -1;
@@ -488,11 +491,93 @@ const IfcGeomObjects::IfcObject* IfcGeomObjects::GetObject(int id) {
 const IfcGeomObjects::IfcGeomObject* IfcGeomObjects::Get() {
 	return current_geom_obj;
 }
+double UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v ) {
+	if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_EXA   ) return (double) 1e18;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_PETA  ) return (double) 1e15;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_TERA  ) return (double) 1e12;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_GIGA  ) return (double) 1e9;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_MEGA  ) return (double) 1e6;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_KILO  ) return (double) 1e3;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_HECTO ) return (double) 1e2;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_DECA  ) return (double) 1;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_DECI  ) return (double) 1e-1;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_CENTI ) return (double) 1e-2;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_MILLI ) return (double) 1e-3;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_MICRO ) return (double) 1e-6;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_NANO  ) return (double) 1e-9;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_PICO  ) return (double) 1e-12;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_FEMTO ) return (double) 1e-15;
+	else if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_ATTO  ) return (double) 1e-18;
+	else return 1.0f;
+}
+
+void IfcGeomObjects::InitUnits() {
+	// Set default units, set length to meters, angles to undefined
+	IfcGeom::SetValue(IfcGeom::GV_LENGTH_UNIT,1.0);
+	IfcGeom::SetValue(IfcGeom::GV_PLANEANGLE_UNIT,-1.0);
+	
+	Ifc2x3::IfcUnitAssignment::list unit_assignments = ifc_file->EntitiesByType<Ifc2x3::IfcUnitAssignment>();
+	IfcUtil::IfcAbstractSelect::list units = IfcUtil::IfcAbstractSelect::list();
+	if ( unit_assignments->Size() ) {
+		Ifc2x3::IfcUnitAssignment::ptr unit_assignment = *unit_assignments->begin();
+		units = unit_assignment->Units();
+	}
+	if ( ! units ) {
+		// No units eh... Since tolerances and deflection are specified internally in meters
+		// we will try to find another indication of the model size.
+		Ifc2x3::IfcExtrudedAreaSolid::list extrusions = ifc_file->EntitiesByType<Ifc2x3::IfcExtrudedAreaSolid>();
+		if ( ! extrusions->Size() ) return;
+		double max_height = -1.0f;
+		for ( Ifc2x3::IfcExtrudedAreaSolid::it it = extrusions->begin(); it != extrusions->end(); ++ it ) {
+			const double depth = (*it)->Depth();
+			if ( depth > max_height ) max_height = depth;
+		}
+		if ( max_height > 100.0f ) IfcGeom::SetValue(IfcGeom::GV_LENGTH_UNIT,0.001);
+		return;
+	}
+	try {
+		for ( IfcUtil::IfcAbstractSelect::it it = units->begin(); it != units->end(); ++ it ) {
+			const IfcUtil::IfcAbstractSelect::ptr base = *it;
+			Ifc2x3::IfcSIUnit::ptr unit = Ifc2x3::IfcSIUnit::ptr();
+			double value = 1.0f;
+			if ( base->is(Ifc2x3::Type::IfcConversionBasedUnit) ) {
+				const Ifc2x3::IfcConversionBasedUnit::ptr u = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcConversionBasedUnit>(base);
+				const Ifc2x3::IfcMeasureWithUnit::ptr u2 = u->ConversionFactor();
+				Ifc2x3::IfcUnit u3 = u2->UnitComponent();
+				if ( u3->is(Ifc2x3::Type::IfcSIUnit) ) {
+					unit = (Ifc2x3::IfcSIUnit*) u3;
+				}
+				Ifc2x3::IfcValue v = u2->ValueComponent();
+				IfcUtil::IfcArgumentSelect* v2 = (IfcUtil::IfcArgumentSelect*) v;
+				const double f = *v2->wrappedValue();
+				value *= f;
+			} else if ( base->is(Ifc2x3::Type::IfcSIUnit) ) {
+				unit = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcSIUnit>(base);
+			}
+			if ( unit ) {
+				if ( unit->hasPrefix() ) {
+					value *= UnitPrefixToValue(unit->Prefix());
+				}
+				Ifc2x3::IfcUnitEnum::IfcUnitEnum type = unit->UnitType();
+				if ( type == Ifc2x3::IfcUnitEnum::IfcUnit_LENGTHUNIT ) {
+					IfcGeom::SetValue(IfcGeom::GV_LENGTH_UNIT,value);
+				} else if ( type == Ifc2x3::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT ) {
+					IfcGeom::SetValue(IfcGeom::GV_PLANEANGLE_UNIT,value);
+				}
+			}
+		}
+	} catch ( IfcException ex ) {
+		Logger::Message(Logger::LOG_ERROR,ex.what());
+	}
+}
+
 bool IfcGeomObjects::Init(const std::string fn) {
 	return IfcGeomObjects::Init(fn, 0, 0);
 }
 bool _Init() {
-	shapereps = Ifc::EntitiesByType<Ifc2x3::IfcShapeRepresentation>();
+	IfcGeomObjects::InitUnits();
+
+	shapereps = ifc_file->EntitiesByType<Ifc2x3::IfcShapeRepresentation>();
 	if ( ! shapereps ) return false;
 	
 	outer = shapereps->begin();
@@ -506,18 +591,21 @@ bool _Init() {
 	return true;
 }
 bool IfcGeomObjects::Init(const std::string fn, std::ostream* log1, std::ostream* log2) {
-	Ifc::SetOutput(log1,log2);
-	if ( !Ifc::Init(fn) ) return false;
+	Logger::SetOutput(log1,log2);
+	ifc_file = new IfcParse::IfcFile();
+	if ( !ifc_file->Init(fn) ) return false;
 	return _Init();	
 }
 bool IfcGeomObjects::Init(std::istream& f, int len, std::ostream* log1, std::ostream* log2) {
-	Ifc::SetOutput(log1,log2);
-	if ( !Ifc::Init(f, len) ) return false;
+	Logger::SetOutput(log1,log2);
+	ifc_file = new IfcParse::IfcFile();
+	if ( !ifc_file->Init(f, len) ) return false;
 	return _Init();
 }
 bool IfcGeomObjects::Init(void* data, int len) {
-	Ifc::SetOutput(0,0);
-	if ( !Ifc::Init(data, len) ) return false;
+	Logger::SetOutput(0,0);
+	ifc_file = new IfcParse::IfcFile();
+	if ( !ifc_file->Init(data, len) ) return false;
 	return _Init();
 }
 void IfcGeomObjects::Settings(int setting, bool value) {
@@ -538,7 +626,10 @@ void IfcGeomObjects::Settings(int setting, bool value) {
 		use_faster_booleans = value;
 		break;
 	case SEW_SHELLS:
-		Ifc::SewShells = value;
+		IfcGeom::SetValue(IfcGeom::GV_MAX_FACES_TO_SEW,value ? 1000 : -1);
+		break;
+	case IfcGeomObjects::FORCE_CCW_FACE_ORIENTATION:
+		IfcGeom::SetValue(IfcGeom::GV_FORCE_CCW_FACE_ORIENTATION,value ? 1 : -1);
 		break;
 	}
 }
@@ -546,5 +637,5 @@ int IfcGeomObjects::Progress() {
 	return 100 * done / total;
 }
 std::string IfcGeomObjects::GetLog() {
-	return Ifc::GetLog();
+	return Logger::GetLog();
 }
