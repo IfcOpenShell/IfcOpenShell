@@ -187,7 +187,7 @@ private:
 	static std::ostream* log2;
 	static std::stringstream log_stream;
 	static Severity verbosity;
-	static char* severity_strings[];
+	static const char* severity_strings[];
 public:
 	/// Determines to what stream respectively progress and errors are logged
 	static void SetOutput(std::ostream* l1, std::ostream* l2);
@@ -197,7 +197,7 @@ public:
 	/// Log a message to the output stream
 	static void Message(Severity type, const std::string& message, const IfcAbstractEntityPtr entity=0);
 	static void Status(const std::string& message, bool new_line=true);
-	static std::string Logger::GetLog();
+	static std::string GetLog();
 };
 
 #endif

@@ -148,11 +148,11 @@ class ArrayType:
     def is_select_list(self): return self.type in selections
     def __str__(self):
         if self.type in entity_names:
-            return "SHARED_PTR< IfcTemplatedEntityList<%s> >"%self.type
+            return "SHARED_PTR< IfcTemplatedEntityList< %s > >"%self.type
         elif self.type in selections:
-            return "SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> >"
+            return "SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > >"
         else:
-            return "std::vector<%(type)s> /*[%(lower)s:%(upper)s]*/"%self.__dict__
+            return "std::vector< %(type)s > /*[%(lower)s:%(upper)s]*/"%self.__dict__
     def is_shared_ptr(self): return self.type in entity_names or self.type in selections
     def type_enum(self):
         if self.type in simple_types:
@@ -195,7 +195,7 @@ class EnumType:
         elif generator_mode == 'SOURCE_TO':
             return '{ "%s" }'%'","'.join([v1 for v1,v2 in self.v])
         elif generator_mode == 'SOURCE_FROM':
-            return "".join(['    if(s=="%s"%s) return %s::%s;\n'%(v1.upper()," "*(self.maxlen-len(v1)),"%(name)s",v2) for v1,v2 in self.v])
+            return "".join(['    if(s=="%s"%s) return ::%s::%s::%s;\n'%(v1.upper()," "*(self.maxlen-len(v1)),schema_version,"%(name)s",v2) for v1,v2 in self.v])
     def is_select_list(self): return False
     def __len__(self): return len(self.v)
     def type_enum(self):
@@ -250,12 +250,12 @@ class Argument(object):
     def type_str(self):
         if self.type.is_select_list():
             # This is extremely hackish indeed
-            return "optional<IfcEntities>" if self.optional else "IfcEntities"
+            return "optional< IfcEntities >" if self.optional else "IfcEntities"
         elif str(self.type) in entity_names:
             return "%(type)s*"%self.__dict__
         else:
             t = "%(type)s::%(type)s"%self.__dict__ if self.is_enum() else self.type
-            return "optional<%s>"%t if self.optional else t
+            return "optional< %s >"%t if self.optional else t
 class ArgumentList:
     def __init__(self,l):
         self.l = [Argument(a) for a in l]
@@ -342,7 +342,7 @@ class InverseList:
         s = ""
         for i in self.l:
             if generator_mode == 'HEADER':
-                s += "\n    SHARED_PTR< IfcTemplatedEntityList<%s> > %s(); // INVERSE %s::%s"%(i.type.type,i.name,i.type.type,i.reference)
+                s += "\n    SHARED_PTR< IfcTemplatedEntityList< %s > > %s(); // INVERSE %s::%s"%(i.type.type,i.name,i.type.type,i.reference)
             elif generator_mode == 'SOURCE':
                 s += "\n%s::list %s::%s() { RETURN_INVERSE(%s) }"%(i.type.type,"%(class_name)s",i.name,i.type.type)
         return s
@@ -398,8 +398,8 @@ class Classdef:
                 "\n    %(class_name)s (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());"+
                ("\n    %(class_name)s (%(constructor_args)s);" if len(self.constructor_args_list) else "")+
                 "\n    typedef %(class_name)s* ptr;"+
-                "\n    typedef SHARED_PTR< IfcTemplatedEntityList<%(class_name)s> > list;"+
-                "\n    typedef IfcTemplatedEntityList<%(class_name)s>::it it;")%self.__dict__
+                "\n    typedef SHARED_PTR< IfcTemplatedEntityList< %(class_name)s > > list;"+
+                "\n    typedef IfcTemplatedEntityList< %(class_name)s >::it it;")%self.__dict__
             )
         elif generator_mode == 'SOURCE':
             self.arguments.argstart = argument_start(self.class_name)

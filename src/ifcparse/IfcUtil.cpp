@@ -93,4 +93,4 @@ std::ostream* Logger::log1 = 0;
 std::ostream* Logger::log2 = 0;
 std::stringstream Logger::log_stream;
 Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
-char* Logger::severity_strings[] = { "Notice","Warning","Error" };
+const char* Logger::severity_strings[] = { "Notice","Warning","Error" };
