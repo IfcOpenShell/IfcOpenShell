@@ -639,3 +639,7 @@ int IfcGeomObjects::Progress() {
 std::string IfcGeomObjects::GetLog() {
 	return Logger::GetLog();
 }
+
+IfcParse::IfcFile* IfcGeomObjects::GetFile() {
+  return ifc_file;
+}

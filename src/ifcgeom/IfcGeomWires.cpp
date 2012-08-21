@@ -83,7 +83,7 @@
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire) {
-	if ( IfcGeom::GetValue(GV_PLANEANGLE_UNIT)>0 ) {
+	if ( IfcGeom::GetValue(GV_PLANEANGLE_UNIT)<0 ) {
 		Logger::Message(Logger::LOG_WARNING,"Creating a composite curve without unit information:",l->entity);
 
 		// Temporarily pretend we do have unit information
@@ -107,7 +107,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire)
         } catch (...) {}
 
 		// Restore to unknown unit state
-		IfcGeom::SetValue(GV_PLANEANGLE_UNIT,-1.0);
+		//IfcGeom::SetValue(GV_PLANEANGLE_UNIT,-1.0);
 
 		if ( succes_degrees && ! succes_radians ) {
 			use_degrees = true;
