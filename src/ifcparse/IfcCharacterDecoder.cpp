@@ -67,6 +67,7 @@
 #define CLEAR_HEX(C)						(C &= ~(HEX(1)&HEX(2)&HEX(3)&HEX(4)&HEX(5)&HEX(6)&HEX(7)&HEX(8)))
 
 using namespace IfcParse;
+using namespace IfcWrite;
 
 void IfcCharacterDecoder::addChar(std::stringstream& s,const UChar32& ch) {
 #ifdef HAVE_ICU
@@ -295,4 +296,62 @@ std::string IfcCharacterDecoder::compatibility_charset = "";
 
 #else
 char IfcCharacterDecoder::substitution_character = '_';
+#endif
+
+
+IfcCharacterEncoder::IfcCharacterEncoder(const std::string& input) {
+	if ( !converter) converter = ucnv_open("utf-8", &status);
+	str = input;
+}
+
+IfcCharacterEncoder::~IfcCharacterEncoder() {
+	if ( !converter) ucnv_close(converter);
+	converter = 0;
+}
+
+IfcCharacterEncoder::operator std::string() {
+#ifdef HAVE_ICU
+	// Either 2 or 4 to uses \X2 or \X4 respectively.
+	// Currently hardcoded to 4, but \X2 might be  
+	// sufficient for nearly all purposes.
+	const int num_bytes = 4; 
+	const std::string num_bytes_str = std::string(1,num_bytes + 0x30);
+
+	std::ostringstream oss;
+	UChar32 ch;
+
+	const char* source = str.c_str();
+	const char* limit = &*str.end();
+	
+	bool in_extended = false;
+
+	while(source < limit) {
+		ch = ucnv_getNextUChar(converter, &source, limit, &status);
+		const bool within_spf_range = ch >= 0x20 && ch <= 0x7e;
+		if ( in_extended && within_spf_range ) {
+			oss << "\\X0\\";
+		} else if ( !in_extended && !within_spf_range ) {
+			oss << "\\X" << num_bytes_str << "\\";
+		}
+		if ( within_spf_range ) {
+			oss.put(ch);
+			if ( ch == '\\' ) oss.put(ch);
+		} else {
+			oss << std::hex << std::setw(num_bytes*2) << std::uppercase << std::setfill('0') << (int) ch;
+		}
+		in_extended = !within_spf_range;
+	}
+
+	if ( in_extended ) oss << "\\X0\\";
+
+	return oss.str();
+#else
+	return str;
+#endif
+}
+
+
+#ifdef HAVE_ICU
+UErrorCode IfcCharacterEncoder::status = U_ZERO_ERROR;
+UConverter* IfcCharacterEncoder::converter = 0;
 #endif

@@ -170,7 +170,7 @@ namespace IfcWrite {
 		IfcSelectHelper(const std::string& v, Ifc2x3::Type::Enum t=Ifc2x3::Type::IfcText);
 		IfcSelectHelper(const char* const v, Ifc2x3::Type::Enum t=Ifc2x3::Type::IfcText);
 		IfcSelectHelper(int v, Ifc2x3::Type::Enum t=Ifc2x3::Type::IfcInteger);
-		IfcSelectHelper(float v, Ifc2x3::Type::Enum t=Ifc2x3::Type::IfcReal);
+		IfcSelectHelper(double v, Ifc2x3::Type::Enum t=Ifc2x3::Type::IfcReal);
 		IfcSelectHelper(bool v, Ifc2x3::Type::Enum t=Ifc2x3::Type::IfcBoolean);
 		bool is(Ifc2x3::Type::Enum t) const;
 		Ifc2x3::Type::Enum type() const;

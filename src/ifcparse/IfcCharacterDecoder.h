@@ -73,4 +73,21 @@ namespace IfcParse {
 
 }
 
+namespace IfcWrite {
+
+	class IfcCharacterEncoder {
+	private:
+#ifdef HAVE_ICU
+		static UErrorCode status;
+		static UConverter* converter;
+		std::string str;
+#endif
+	public:
+		IfcCharacterEncoder(const std::string& input);
+		~IfcCharacterEncoder();
+		operator std::string();
+	};
+
+}
+
 #endif

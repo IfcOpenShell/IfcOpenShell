@@ -20,6 +20,7 @@
 #include "IfcParse.h" 
 #include "IfcWrite.h"
 #include "IfcWritableEntity.h"
+#include "IfcCharacterDecoder.h"
 
 using namespace IfcWrite;
 
@@ -284,10 +285,12 @@ std::string IfcWriteIntegralArgument::toString(bool upper) const {
 	case Argument_DOUBLE:
 		ss << *(double*) data;
 		break;
-	case Argument_STRING:
-		ss << '\'' << *(std::string*) data << '\'';
-		break;
-	case Argument_VECTOR_INT:
+	case Argument_STRING: {
+		std::string d = *(std::string*) data;
+		if ( upper ) d = IfcCharacterEncoder(d);
+		ss << '\'' << d << '\'';
+		break; 
+	} case Argument_VECTOR_INT:
 		ss << "(";
 		{const std::vector<int>& v = *(std::vector<int>*) data;
 		for ( std::vector<int>::const_iterator it = v.begin(); it != v.end(); ++ it ) {
@@ -361,7 +364,7 @@ IfcSelectHelper::IfcSelectHelper(int v, Ifc2x3::Type::Enum t) {
 	IfcWriteArgument* a = new IfcWriteIntegralArgument(v);
 	this->entity = new IfcSelectHelperEntity(t,a);
 }
-IfcSelectHelper::IfcSelectHelper(float v, Ifc2x3::Type::Enum t) {
+IfcSelectHelper::IfcSelectHelper(double v, Ifc2x3::Type::Enum t) {
 	IfcWriteArgument* a = new IfcWriteIntegralArgument(v);
 	this->entity = new IfcSelectHelperEntity(t,a);
 }
