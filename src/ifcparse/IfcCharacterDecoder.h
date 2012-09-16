@@ -77,10 +77,10 @@ namespace IfcWrite {
 
 	class IfcCharacterEncoder {
 	private:
+		std::string str;
 #ifdef HAVE_ICU
 		static UErrorCode status;
 		static UConverter* converter;
-		std::string str;
 #endif
 	public:
 		IfcCharacterEncoder(const std::string& input);

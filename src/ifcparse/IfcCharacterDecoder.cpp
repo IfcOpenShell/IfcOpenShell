@@ -300,13 +300,17 @@ char IfcCharacterDecoder::substitution_character = '_';
 
 
 IfcCharacterEncoder::IfcCharacterEncoder(const std::string& input) {
+#ifdef HAVE_ICU
 	if ( !converter) converter = ucnv_open("utf-8", &status);
+#endif
 	str = input;
 }
 
 IfcCharacterEncoder::~IfcCharacterEncoder() {
+#ifdef HAVE_ICU
 	if ( !converter) ucnv_close(converter);
 	converter = 0;
+#endif
 }
 
 IfcCharacterEncoder::operator std::string() {
