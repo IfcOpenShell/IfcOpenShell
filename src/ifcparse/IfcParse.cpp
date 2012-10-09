@@ -468,7 +468,13 @@ TokenArgument::operator IfcUtil::IfcSchemaEntity() const { return token.first->f
 TokenArgument::operator IfcEntities() const { throw IfcException("Argument is not a list of entities"); }
 unsigned int TokenArgument::Size() const { return 1; }
 ArgumentPtr TokenArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
-std::string TokenArgument::toString(bool upper) const { if ( upper && TokenFunc::isString(token) ) return IfcWrite::IfcCharacterEncoder(TokenFunc::toString(token)); else return TokenFunc::toString(token); }
+std::string TokenArgument::toString(bool upper) const { 
+	if ( upper && TokenFunc::isString(token) ) {
+		return IfcWrite::IfcCharacterEncoder(TokenFunc::asString(token)); 
+	} else {
+		return TokenFunc::toString(token); 
+	}
+}
 bool TokenArgument::isNull() const { return TokenFunc::isOperator(token,'$'); }
 //
 // Functions for casting the EntityArgument to other types
@@ -488,11 +494,18 @@ ArgumentPtr EntityArgument::operator [] (unsigned int i) const { throw IfcExcept
 std::string EntityArgument::toString(bool upper) const { 
 	ArgumentPtr arg = entity->wrappedValue();
 	IfcParse::TokenArgument* token_arg = dynamic_cast<IfcParse::TokenArgument*>(arg);
-	std::string token_string = ( token_arg ) ? TokenFunc::toString(token_arg->token) : std::string();
+	const bool is_string = TokenFunc::isString(token_arg->token);
+	std::string token_string = token_arg ? (is_string 
+		? TokenFunc::asString(token_arg->token) 
+		: TokenFunc::toString(token_arg->token))
+		: std::string();
 	std::string dt = Ifc2x3::Type::ToString(entity->type());
 	if ( upper ) {
 		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
-		token_string = IfcWrite::IfcCharacterEncoder(token_string);
+		if (is_string) token_string = IfcWrite::IfcCharacterEncoder(token_string);
+	} else {
+		token_string.insert(token_string.begin(),'\'');
+		token_string.push_back('\'');
 	}
 	return dt + "(" + token_string + ")";
 }

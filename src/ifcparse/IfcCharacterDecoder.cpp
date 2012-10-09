@@ -314,6 +314,8 @@ IfcCharacterEncoder::~IfcCharacterEncoder() {
 }
 
 IfcCharacterEncoder::operator std::string() {
+	std::ostringstream oss;
+	oss.put('\'');
 #ifdef HAVE_ICU
 	// Either 2 or 4 to uses \X2 or \X4 respectively.
 	// Currently hardcoded to 4, but \X2 might be  
@@ -321,7 +323,7 @@ IfcCharacterEncoder::operator std::string() {
 	const int num_bytes = 4; 
 	const std::string num_bytes_str = std::string(1,num_bytes + 0x30);
 
-	std::ostringstream oss;
+
 	UChar32 ch;
 
 	const char* source = str.c_str();
@@ -339,7 +341,7 @@ IfcCharacterEncoder::operator std::string() {
 		}
 		if ( within_spf_range ) {
 			oss.put(ch);
-			if ( ch == '\\' ) oss.put(ch);
+			if ( ch == '\\' || ch == '\'' ) oss.put(ch);
 		} else {
 			oss << std::hex << std::setw(num_bytes*2) << std::uppercase << std::setfill('0') << (int) ch;
 		}
@@ -347,11 +349,15 @@ IfcCharacterEncoder::operator std::string() {
 	}
 
 	if ( in_extended ) oss << "\\X0\\";
-
-	return oss.str();
 #else
-	return str;
+	for (std::string::const_iterator i = str.begin(); i != str.end(); ++i) {
+		char ch = *i;
+		if ( ch == '\\' || ch == '\'' ) oss.put(ch);
+		oss.put(ch);
+	}
 #endif
+	oss.put('\'');
+	return oss.str();
 }
 
 

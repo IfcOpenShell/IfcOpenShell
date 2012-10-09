@@ -288,7 +288,7 @@ std::string IfcWriteIntegralArgument::toString(bool upper) const {
 	case Argument_STRING: {
 		std::string d = *(std::string*) data;
 		if ( upper ) d = IfcCharacterEncoder(d);
-		ss << '\'' << d << '\'';
+		ss << d;
 		break; 
 	} case Argument_VECTOR_INT:
 		ss << "(";
