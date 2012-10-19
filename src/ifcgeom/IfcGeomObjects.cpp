@@ -48,8 +48,10 @@
 
 // Welds vertices that belong to different faces
 bool weld_vertices = true;
+
 bool convert_back_units = false;
 bool use_faster_booleans = false;
+bool disable_subtractions = false;
 
 int IfcGeomObjects::IfcMesh::addvert(const gp_XYZ& p) {
 	const float X = convert_back_units ? (float) (p.X() / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT)) : (float)p.X();
@@ -387,7 +389,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			}
 		}
 
-		if ( openings && openings->Size() ) {
+		if ( !disable_subtractions && openings && openings->Size() ) {
 			IfcGeom::ShapeList opened_shapes;
 			try {
 				if ( use_faster_booleans ) {
@@ -629,9 +631,12 @@ void IfcGeomObjects::Settings(int setting, bool value) {
 	case SEW_SHELLS:
 		IfcGeom::SetValue(IfcGeom::GV_MAX_FACES_TO_SEW,value ? 1000 : -1);
 		break;
-	case IfcGeomObjects::FORCE_CCW_FACE_ORIENTATION:
+	case FORCE_CCW_FACE_ORIENTATION:
 		IfcGeom::SetValue(IfcGeom::GV_FORCE_CCW_FACE_ORIENTATION,value ? 1 : -1);
 		break;
+    case DISABLE_OPENING_SUBTRACTIONS:
+        disable_subtractions = value;
+        break;
 	}
 }
 int IfcGeomObjects::Progress() {
