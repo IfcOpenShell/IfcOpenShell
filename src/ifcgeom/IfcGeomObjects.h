@@ -97,6 +97,9 @@ namespace IfcGeomObjects {
 	// By default singular faces have no explicitly defined orientation, to
 	// force faces to be defined CounterClockWise set this to true.
 	const int FORCE_CCW_FACE_ORIENTATION = 7;
+    // Disables the subtraction of IfcOpeningElement representations from
+    // the related building element representations.
+    const int DISABLE_OPENING_SUBTRACTIONS = 8;
 
 	// End of settings enumeration.
 
