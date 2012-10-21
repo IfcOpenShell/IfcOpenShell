@@ -96,6 +96,7 @@ namespace IfcGeom {
 	double face_area(const TopoDS_Face& f);
 	void SetValue(GeomValue var, double value);
 	double GetValue(GeomValue var);
+	std::string create_brep_data(Ifc2x3::IfcProduct* s);
 	
 	namespace Cache {
 		void Purge();

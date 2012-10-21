@@ -27,6 +27,8 @@
 #ifndef IFC2X3ENUM_H
 #define IFC2X3ENUM_H
 
+#include "../ifcparse/ArgumentType.h"
+
 namespace Ifc2x3 {
 
 namespace Type {

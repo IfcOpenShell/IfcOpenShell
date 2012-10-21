@@ -42,6 +42,7 @@
 #include <BRepBuilderAPI_GTransform.hxx>
 
 #include "../ifcparse/IfcException.h"
+#include "../ifcparse/IfcFile.h"
 #include "../ifcgeom/IfcGeomObjects.h"
 #include "../ifcgeom/IfcGeom.h"
 

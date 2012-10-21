@@ -91,13 +91,14 @@ ENDIF(MSVC)
 INCLUDE_DIRECTORIES(${OCC_INCLUDE_DIR} /usr/inc /usr/local/inc /usr/local/include/oce ${ICU_INCLUDE_DIR})
 
 ADD_LIBRARY(IfcParse STATIC 
+  ../src/ifcparse/Ifc2x3-rt.cpp
   ../src/ifcparse/Ifc2x3.cpp
-  ../src/ifcparse/IfcUtil.cpp
-  ../src/ifcparse/IfcParse.cpp
   ../src/ifcparse/IfcCharacterDecoder.cpp
-  
-  ../src/ifcparse/IfcWrite.cpp
   ../src/ifcparse/IfcGuidHelper.cpp
+  ../src/ifcparse/IfcParse.cpp
+  ../src/ifcparse/IfcUntypedEntity.cpp
+  ../src/ifcparse/IfcUtil.cpp  
+  ../src/ifcparse/IfcWrite.cpp 
 )
 
 ADD_LIBRARY(IfcGeom STATIC
@@ -150,17 +151,20 @@ SET(include_files_geom
     ../src/ifcgeom/IfcShapeList.h
 )
 SET(include_files_parse
+    ../src/ifcparse/ArgumentType.h
+    ../src/ifcparse/Ifc2x3-rt.h
     ../src/ifcparse/Ifc2x3.h
     ../src/ifcparse/Ifc2x3enum.h
     ../src/ifcparse/IfcCharacterDecoder.h
     ../src/ifcparse/IfcException.h
     ../src/ifcparse/IfcFile.h
     ../src/ifcparse/IfcParse.h
+    ../src/ifcparse/IfcSpfStream.h
+    ../src/ifcparse/IfcUntypedEntity.h
     ../src/ifcparse/IfcUtil.h
-    ../src/ifcparse/SharedPointer.h
-    
     ../src/ifcparse/IfcWrite.h
-    ../src/ifcparse/IfcWritableEntity.h
+    ../src/ifcparse/IfcWritableEntity.h    
+    ../src/ifcparse/SharedPointer.h    
 )
 INSTALL(FILES ${include_files_geom} DESTINATION include/ifcgeom)
 INSTALL(FILES ${include_files_parse} DESTINATION include/ifcparse)

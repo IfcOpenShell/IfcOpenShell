@@ -180,53 +180,73 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 	IfcUtil::IfcAbstractSelect::list trims2 = l->Trim2();
 	bool trimmed1 = false;
 	bool trimmed2 = false;
-	bool sense_agreement = l->SenseAgreement();
-	double flt1;
-	gp_Pnt pnt1;
+	unsigned sense_agreement = l->SenseAgreement() ? 0 : 1;
+	double flts[2];
+	gp_Pnt pnts[2];
+	bool has_flts[2] = {false,false};
+	bool has_pnts[2] = {false,false};
 	BRepBuilderAPI_MakeWire w;
 	for ( IfcUtil::IfcAbstractSelect::it it = trims1->begin(); it != trims1->end(); it ++ ) {
 		const IfcUtil::IfcAbstractSelect::ptr i = *it;
-		if ( i->is(Ifc2x3::Type::IfcCartesianPoint) && trim_cartesian ) {
-			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcCartesianPoint>(i), pnt1 );
-			trimmed1 = true;
-		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) && !trim_cartesian ) {
+		if ( i->is(Ifc2x3::Type::IfcCartesianPoint) ) {
+			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcCartesianPoint>(i), pnts[sense_agreement] );
+			has_pnts[sense_agreement] = true;
+		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) ) {
 			const double value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
-			flt1 = value * parameterFactor;
-			trimmed1 = true;
+			flts[sense_agreement] = value * parameterFactor;
+			has_flts[sense_agreement] = true;
 		}
 	}
 	for ( IfcUtil::IfcAbstractSelect::it it = trims2->begin(); it != trims2->end(); it ++ ) {
 		const IfcUtil::IfcAbstractSelect::ptr i = *it;
-		if ( i->is(Ifc2x3::Type::IfcCartesianPoint) && trim_cartesian && trimmed1 ) {
-			gp_Pnt pnt2;
-			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcCartesianPoint>(i), pnt2 );
-			BRepBuilderAPI_MakeEdge e (curve,sense_agreement ? pnt1 : pnt2,sense_agreement ? pnt2 : pnt1);
-			if ( ! e.IsDone() ) {
-				BRepBuilderAPI_EdgeError err = e.Error();
-				if ( err == BRepBuilderAPI_PointProjectionFailed ) {
-					w.Add(BRepBuilderAPI_MakeEdge(sense_agreement ? pnt1 : pnt2,sense_agreement ? pnt2 : pnt1));
-					Logger::Message(Logger::LOG_WARNING,"Point projection failed for:",l->entity);
-				}
-			} else {
-				w.Add(e.Edge());
-			}
-			trimmed2 = true;
-			break;
-		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) && !trim_cartesian && trimmed1 ) {
+		if ( i->is(Ifc2x3::Type::IfcCartesianPoint) ) {
+			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcCartesianPoint>(i), pnts[1-sense_agreement] );
+			has_pnts[1-sense_agreement] = true;
+		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) ) {
 			const double value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
-			double flt2 = value * parameterFactor;
-			if ( isConic && ALMOST_THE_SAME(fmod(flt2-flt1,(double)(M_PI*2.0)),0.0f) ) {
-				w.Add(BRepBuilderAPI_MakeEdge(curve));
-			} else {
-				BRepBuilderAPI_MakeEdge e (curve,sense_agreement ? flt1 : flt2,sense_agreement ? flt2 : flt1);
-				w.Add(e.Edge());
-			}
-			trimmed2 = true;
-			break;
+			flts[1-sense_agreement] = value * parameterFactor;
+			has_flts[1-sense_agreement] = true;
 		}
 	}
-	if ( trimmed2 ) wire = w.Wire();
-	return trimmed2;
+	trim_cartesian &= has_pnts[0] && has_pnts[1];
+	bool trim_cartesian_failed = !trim_cartesian;
+	if ( trim_cartesian ) {
+		if ( pnts[0].Distance(pnts[1]) < GetValue(GV_WIRE_CREATION_TOLERANCE) ) {
+			Logger::Message(Logger::LOG_WARNING,"Skipping segment with length below tolerance level:",l->entity);
+			return false;
+		}
+		ShapeFix_ShapeTolerance FTol;
+		TopoDS_Vertex v1 = BRepBuilderAPI_MakeVertex(pnts[0]);
+		TopoDS_Vertex v2 = BRepBuilderAPI_MakeVertex(pnts[1]);
+		FTol.SetTolerance(v1, GetValue(GV_WIRE_CREATION_TOLERANCE), TopAbs_VERTEX);
+		FTol.SetTolerance(v2, GetValue(GV_WIRE_CREATION_TOLERANCE), TopAbs_VERTEX);
+		BRepBuilderAPI_MakeEdge e (curve,v1,v2);
+		if ( ! e.IsDone() ) {
+			BRepBuilderAPI_EdgeError err = e.Error();
+			if ( err == BRepBuilderAPI_PointProjectionFailed ) {
+				Logger::Message(Logger::LOG_WARNING,"Point projection failed for:",l->entity);
+				trim_cartesian_failed = true;
+			}
+		} else {
+			w.Add(e.Edge());
+		}
+	}
+	if ( (!trim_cartesian || trim_cartesian_failed) && (has_flts[0] && has_flts[1]) ) {
+		if ( isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],(double)(M_PI*2.0)),0.0f) ) {
+			w.Add(BRepBuilderAPI_MakeEdge(curve));
+		} else {
+			BRepBuilderAPI_MakeEdge e (curve,flts[0],flts[1]);
+			w.Add(e.Edge());
+		}			
+	} else if ( trim_cartesian_failed && (has_pnts[0] && has_pnts[1]) ) {
+		w.Add(BRepBuilderAPI_MakeEdge(pnts[0],pnts[1]));
+	}
+	if ( w.IsDone() ) {
+		wire = w.Wire();
+		return true;
+	} else {
+		return false;
+	}
 }
 bool IfcGeom::convert(const Ifc2x3::IfcPolyline::ptr l, TopoDS_Wire& result) {
 	Ifc2x3::IfcCartesianPoint::list points = l->Points();

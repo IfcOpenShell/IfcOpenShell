@@ -36,7 +36,7 @@
 typedef unsigned int UChar32;
 #endif
 
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/IfcSpfStream.h"
 
 namespace IfcParse {
 
@@ -68,6 +68,23 @@ namespace IfcParse {
 		IfcCharacterDecoder(IfcParse::IfcSpfStream* file);
 		~IfcCharacterDecoder();
 		void dryRun();
+		operator std::string();
+	};
+
+}
+
+namespace IfcWrite {
+
+	class IfcCharacterEncoder {
+	private:
+		std::string str;
+#ifdef HAVE_ICU
+		static UErrorCode status;
+		static UConverter* converter;
+#endif
+	public:
+		IfcCharacterEncoder(const std::string& input);
+		~IfcCharacterEncoder();
 		operator std::string();
 	};
 

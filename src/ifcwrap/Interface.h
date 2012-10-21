@@ -1,82 +1,93 @@
-/********************************************************************************
- *                                                                              *
- * This file is part of IfcOpenShell.                                           *
- *                                                                              *
- * IfcOpenShell is free software: you can redistribute it and/or modify         *
- * it under the terms of the Lesser GNU General Public License as published by  *
- * the Free Software Foundation, either version 3.0 of the License, or          *
- * (at your option) any later version.                                          *
- *                                                                              *
- * IfcOpenShell is distributed in the hope that it will be useful,              *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
- * Lesser GNU General Public License for more details.                          *
- *                                                                              *
- * You should have received a copy of the Lesser GNU General Public License     *
- * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
- *                                                                              *
- ********************************************************************************/
+#define IFCUNTYPEDENTITY_H
 
-namespace IfcGeomObjects {
+#include <map>
+#include <fstream>
 
-	const int WELD_VERTICES = 1;
-	const int USE_WORLD_COORDS = 2;
-	const int CONVERT_BACK_UNITS = 3;
-	const int USE_BREP_DATA = 4;
-	const int SEW_SHELLS = 5;
-	const int FASTER_BOOLEANS = 6;
-	const int FORCE_CCW_FACE_ORIENTATION = 7;
+#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/Ifc2x3.h"
 
-	class IfcMesh {
+#include "../ifcgeom/IfcGeom.h"
+
+
+namespace Ifc {
+	class IfcUntypedEntity : public IfcUtil::IfcBaseEntity {
+	private:
+		Ifc2x3::Type::Enum _type;
 	public:
-		int id;
-		std::vector<float> verts;
-		std::vector<int> faces;
-		std::vector<int> edges;
-		std::vector<float> normals;
-		std::string brep_data;
+		IfcUntypedEntity(const std::string& s);
+		bool is(Ifc2x3::Type::Enum v) const;
+		Ifc2x3::Type::Enum type() const;	
+		bool is_a(const std::string& s) const;
+		std::string is_a() const;
+		unsigned int getArgumentCount() const;
+		IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
+		ArgumentPtr getArgument(unsigned int i) const;
+		ArgumentPtr getArgument(const std::string& a) const;
+		const char* getArgumentName(unsigned int i) const;
+		unsigned getArgumentIndex(const std::string& a) const;
+
+		void setArgument(unsigned int i, int v);
+		void setArgument(unsigned int i, bool v);
+		void setArgument(unsigned int i, double v);
+		void setArgument(unsigned int i, const std::string& v);
+		void setArgument(unsigned int i, const std::vector<int>& v);
+		void setArgument(unsigned int i, const std::vector<double>& v);
+		void setArgument(unsigned int i, const std::vector<std::string>& v);
+		void setArgument(unsigned int i, IfcUntypedEntity* v);
+		void setArgument(unsigned int i, IfcEntities v);
+
+		std::string toString();
+		
+		std::pair<IfcUtil::ArgumentType,ArgumentPtr> get_argument(unsigned i);
+		std::pair<IfcUtil::ArgumentType,ArgumentPtr> get_argument(const std::string& a);
+
+		bool is_valid();
+	};
+}
+
+typedef IfcUtil::IfcSchemaEntity IfcEntity;
+typedef std::map<Ifc2x3::Type::Enum,IfcEntities> MapEntitiesByType;
+typedef std::map<unsigned int,IfcEntity> MapEntityById;
+typedef std::map<std::string,Ifc2x3::IfcRoot::ptr> MapEntityByGuid;
+typedef std::map<unsigned int,IfcEntities> MapEntitiesByRef;
+typedef std::map<unsigned int,unsigned int> MapOffsetById;
+
+namespace IfcParse {
+	class IfcSpfStream;
+	class Tokens;
+
+	class IfcFile {
+	private:
+		MapEntityById byid;
+		MapEntitiesByType bytype;
+		MapEntitiesByRef byref;
+		MapEntityByGuid byguid;
+		MapOffsetById offsets;
+		unsigned int lastId;
+		unsigned int MaxId;
+		IfcParse::IfcSpfStream* file;
+		IfcParse::Tokens* tokens;
+	public:
+		bool Init(const std::string& fn);
+		IfcEntities EntitiesByType(const std::string& t);
+		IfcEntity EntityById(int id);
+		Ifc2x3::IfcRoot::ptr EntityByGuid(const std::string& guid);
+		void AddEntity(IfcUtil::IfcSchemaEntity e);
+		IfcFile();
+		~IfcFile();
 	};
 
-	class IfcObject {
-	public:
-		int id;
-		int parent_id;
-		std::string name;
-		std::string type;
-		std::string guid;
-		std::vector<float> matrix;
-		const std::vector<int> name_as_intvector() {
-			std::vector<int> r;
-			for ( std::string::const_iterator it = name.begin(); it != name.end(); ++ it ) r.push_back(*it);
-			return r;
-		}
-		const std::vector<int> type_as_intvector() {
-			std::vector<int> r;
-			for ( std::string::const_iterator it = type.begin(); it != type.end(); ++ it ) r.push_back(*it);
-			return r;
-		}
-		const std::vector<int> guid_as_intvector() {
-			std::vector<int> r;
-			for ( std::string::const_iterator it = guid.begin(); it != guid.end(); ++ it ) r.push_back(*it);
-			return r;
-		}
-	};
+	IfcParse::IfcFile* open(const std::string& s) {
+		IfcParse::IfcFile* f = new IfcParse::IfcFile();
+		f->Init(s);
+		return f;
+	}
 
-	class IfcGeomObject : public IfcObject {
-	public:
-		IfcMesh* mesh;
-	};
+	std::string create_shape(Ifc::IfcUntypedEntity* e) {
+		if (!e->is(Ifc2x3::Type::IfcProduct)) throw IfcException("Entity is not an IfcProduct");
+		Ifc2x3::IfcProduct* ifc_product = (Ifc2x3::IfcProduct*) e;
+		return IfcGeom::create_brep_data(ifc_product);
+	}
+}
 
-	bool Next();
-	const IfcGeomObject* Get();
-	bool Init(const std::string fn);
-	bool InitUCS2(const char* fn) {
-        return Init(std::string(fn+1));
-    }
-	void Settings(int setting, bool value);
-	int Progress();
-	const IfcObject* GetObject(int id);
-	bool CleanUp();
-	std::string GetLog();
-
-};
+std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);

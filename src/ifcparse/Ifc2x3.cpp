@@ -24,10 +24,11 @@
  *                                                                              *
  ********************************************************************************/
  
-#include "Ifc2x3.h"
-#include "IfcException.h"
-#include "IfcWrite.h"
-#include "IfcWritableEntity.h"
+#include "../ifcparse/Ifc2x3.h"
+#include "../ifcparse/IfcException.h"
+#include "../ifcparse/IfcWrite.h"
+#include "../ifcparse/IfcWritableEntity.h"
+#include "../ifcparse/ArgumentType.h"
 
 using namespace Ifc2x3;
 using namespace IfcParse;
@@ -805,7 +806,7 @@ std::string Type::ToString(Enum v) {
 
 std::map<std::string,Type::Enum> string_map;
 void Ifc2x3::InitStringMap() {
-    string_map["IFCABSORBEDDOSEMEASURE"                        ] = Type::IfcAbsorbedDoseMeasure;
+        string_map["IFCABSORBEDDOSEMEASURE"                        ] = Type::IfcAbsorbedDoseMeasure;
     string_map["IFCACCELERATIONMEASURE"                        ] = Type::IfcAccelerationMeasure;
     string_map["IFCAMOUNTOFSUBSTANCEMEASURE"                   ] = Type::IfcAmountOfSubstanceMeasure;
     string_map["IFCANGULARVELOCITYMEASURE"                     ] = Type::IfcAngularVelocityMeasure;
@@ -1563,8 +1564,10 @@ void Ifc2x3::InitStringMap() {
     string_map["IFCWORKSCHEDULE"                               ] = Type::IfcWorkSchedule;
     string_map["IFCZSHAPEPROFILEDEF"                           ] = Type::IfcZShapeProfileDef;
     string_map["IFCZONE"                                       ] = Type::IfcZone;
+
 }
 Type::Enum Type::FromString(const std::string& s) {
+    if (string_map.empty()) ::Ifc2x3::InitStringMap();
     std::map<std::string,Type::Enum>::const_iterator it = string_map.find(s);
     if ( it == string_map.end() ) throw IfcException("Unable to find find keyword in schema");
     else return it->second;
@@ -12008,4 +12011,4 @@ bool IfcZone::is(Type::Enum v) const { return v == Type::IfcZone || IfcGroup::is
 Type::Enum IfcZone::type() const { return Type::IfcZone; }
 Type::Enum IfcZone::Class() { return Type::IfcZone; }
 IfcZone::IfcZone(IfcAbstractEntityPtr e) { if (!is(Type::IfcZone)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-IfcZone::IfcZone(IfcGloballyUniqueId v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, optional< IfcLabel > v3_Name, optional< IfcText > v4_Description, optional< IfcLabel > v5_ObjectType) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } ; if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } ; if (v5_ObjectType) { e->setArgument(4,(*v5_ObjectType)); } else { e->setArgument(4); } ; entity = e; EntityBuffer::Add(this); }
+IfcZone::IfcZone(IfcGloballyUniqueId v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, optional< IfcLabel > v3_Name, optional< IfcText > v4_Description, optional< IfcLabel > v5_ObjectType) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } ; if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } ; if (v5_ObjectType) { e->setArgument(4,(*v5_ObjectType)); } else { e->setArgument(4); } ; entity = e; EntityBuffer::Add(this); } 

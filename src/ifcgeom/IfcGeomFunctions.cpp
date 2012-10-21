@@ -86,6 +86,8 @@
 
 #include <BRepGProp_Face.hxx>
 
+#include <BRepTools.hxx>
+
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
@@ -489,4 +491,91 @@ double IfcGeom::GetValue(GeomValue var) {
 	}
 	assert(!"never reach here");
 	return 0;
+}
+
+std::string IfcGeom::create_brep_data(Ifc2x3::IfcProduct* ifc_product) {
+	if (!ifc_product->hasRepresentation()) return "";
+
+	Ifc2x3::IfcProductRepresentation* prod_rep = ifc_product->Representation();
+	Ifc2x3::IfcRepresentation::list li = prod_rep->Representations();
+	Ifc2x3::IfcShapeRepresentation* shape_rep;
+	for (Ifc2x3::IfcRepresentation::it i = li->begin(); i != li->end(); ++i) {
+		const std::string representation_identifier = (*i)->RepresentationIdentifier();
+		if ((*i)->is(Ifc2x3::Type::IfcShapeRepresentation) && (representation_identifier == "Body" || representation_identifier == "Facetation")) {
+			shape_rep = (Ifc2x3::IfcShapeRepresentation*) *i;
+			break;
+		}
+	}
+
+	IfcGeom::ShapeList shapes;
+	if (!IfcGeom::convert_shapes(shape_rep,shapes)) {
+		return "";
+	}
+
+	gp_Trsf trsf;
+	try {
+		IfcGeom::convert(ifc_product->ObjectPlacement(),trsf);
+	} catch (...) {}
+
+	// Does the IfcElement have any IfcOpenings?
+	// Note that openings for IfcOpeningElements are not processed
+	Ifc2x3::IfcRelVoidsElement::list openings = Ifc2x3::IfcRelVoidsElement::list();
+	if ( ifc_product->is(Ifc2x3::Type::IfcElement) && !ifc_product->is(Ifc2x3::Type::IfcOpeningElement) ) {
+		Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcElement>(ifc_product);
+		openings = element->HasOpenings();
+	}
+	// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
+	if ( ifc_product->is(Ifc2x3::Type::IfcBuildingElementPart ) ) {
+		Ifc2x3::IfcBuildingElementPart::ptr part = reinterpret_pointer_cast<Ifc2x3::IfcProduct,Ifc2x3::IfcBuildingElementPart>(ifc_product);
+		Ifc2x3::IfcRelDecomposes::list decomposes = part->Decomposes();
+		for ( Ifc2x3::IfcRelDecomposes::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
+			Ifc2x3::IfcObjectDefinition::ptr obdef = (*it)->RelatingObject();
+			if ( obdef->is(Ifc2x3::Type::IfcElement) ) {
+				Ifc2x3::IfcElement::ptr element = reinterpret_pointer_cast<Ifc2x3::IfcObjectDefinition,Ifc2x3::IfcElement>(obdef);
+				openings->push(element->HasOpenings());
+			}
+		}
+	}
+
+	if ( openings && openings->Size() ) {
+		IfcGeom::ShapeList opened_shapes;
+		try {
+			IfcGeom::convert_openings(ifc_product,openings,shapes,trsf,opened_shapes);
+		} catch(...) { 
+			Logger::Message(Logger::LOG_ERROR,"Error processing openings for:",ifc_product->entity); 
+		}
+		for ( IfcGeom::ShapeList::const_iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
+			it->first->PreMultiply(trsf);
+		}
+		trsf = gp_Trsf();
+		for ( IfcGeom::ShapeList::const_iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
+			delete it->first;
+			delete it->second;
+		}
+	} else {
+		for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+			it->first->PreMultiply(trsf);
+		}
+		trsf = gp_Trsf();
+	}
+
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	builder.MakeCompound(compound);
+	for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+		const TopoDS_Shape& s = *(*it).second;
+		const gp_GTrsf& trsf = *(*it).first;
+		bool trsf_valid = false;
+		gp_Trsf _trsf;
+		try {
+			_trsf = trsf.Trsf();
+			trsf_valid = true;
+		} catch (...) {}
+		const TopoDS_Shape moved_shape = trsf_valid ? s.Moved(_trsf) :
+			BRepBuilderAPI_GTransform(s,trsf,true).Shape();
+		builder.Add(compound,moved_shape);
+	}
+	std::stringstream sstream;
+	BRepTools::Write(compound,sstream);
+	return sstream.str();
 }

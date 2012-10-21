@@ -355,6 +355,10 @@ class Classdef:
         parent_relations[self.class_name] = self.parent_class
         argument_count[self.class_name] = len(self.arguments)
         entity_map[self.class_name] = self
+    def get_attributes(self, get_parent=True):
+        s = entity_map[self.parent_class].get_attributes() if get_parent and self.parent_class else []
+        s += [(a.name,not not a.optional,a.type.type_enum()) for a in self.arguments.l]
+        return s
     def get_constructor_args(self):
         s = entity_map[self.parent_class].get_constructor_args() if self.parent_class else []
         i = len(s) + 1
@@ -476,8 +480,10 @@ schema_version = schema_version.capitalize()
 # Writing of the three generated files starts here
 #
 h_file = open("%s.h"%schema_version,'w')
+h2_file = open("%s-rt.h"%schema_version,'w')
 enumh_file = open("%senum.h"%schema_version,'w')
 cpp_file = open("%s.cpp"%schema_version,'w')
+cpp2_file = open("%s-rt.cpp"%schema_version,'w')
 
 header += """
 
@@ -492,19 +498,23 @@ header += """
 generator_mode = 'HEADER'
  
 print >>h_file, header
+print >>h2_file, header
 print >>enumh_file, header
 print >>cpp_file, header
+print >>cpp2_file, header
 print >>h_file, """#ifndef %(schema_upper)s_H
 #define %(schema_upper)s_H
 
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 
 #include <boost/optional.hpp>
 
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcException.h"
+#include "../ifcparse/ArgumentType.h"
 #include "../ifcparse/%(schema)senum.h"
 
 using namespace IfcUtil;
@@ -540,6 +550,8 @@ all_enumerations = simple_enumerations + entity_enumerations
 print >>enumh_file, """#ifndef IFC2X3ENUM_H
 #define IFC2X3ENUM_H
 
+#include "../ifcparse/ArgumentType.h"
+
 namespace Ifc2x3 {
 
 namespace Type {
@@ -556,6 +568,22 @@ namespace Type {
 
 #endif
 """%{'schema_upper':schema_version.upper(),'schema':schema_version,'enum':", ".join(all_enumerations + ["ALL"])}
+print >>h2_file, """#ifndef IFC2X3RT_H
+#define IFC2X3RT_H
+
+#include "../ifcparse/ArgumentType.h"
+
+namespace Ifc2x3 {
+namespace Type {
+    int GetAttributeCount(Enum t);
+    int GetAttributeIndex(Enum t, const std::string& a);
+    IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
+    const std::string& GetAttributeName(Enum t, unsigned char a);
+    bool GetAttributeOptional(Enum t, unsigned char a);
+}}
+
+#endif
+"""
 
 defined_types = set(express_to_cpp.values())
 deferred_types = []
@@ -585,16 +613,31 @@ while True:
             print >>h_file, c
 
 print >>h_file, "void InitStringMap();"
+print >>h_file, "void InitAttributeCountMap();"
+print >>h_file, "void InitAttributeIndexMap();"
+print >>h_file, "void InitAttributeTypeMap();"
+print >>h_file, "void InitAttributeNameMap();"
+print >>h_file, "void InitAttributeOptionalMap();"
 print >>h_file, "IfcSchemaEntity SchemaEntity(IfcAbstractEntityPtr e = 0);"
 
 print >>h_file, "}\n\n#endif"
 
 generator_mode = 'SOURCE'
+print >>cpp2_file, """#include "../ifcparse/%(schema)s.h"
+#include "../ifcparse/%(schema)s-rt.h"
+#include "../ifcparse/IfcException.h"
+#include "../ifcparse/IfcWrite.h"
+#include "../ifcparse/IfcWritableEntity.h"
+#include "../ifcparse/ArgumentType.h"
 
-print >>cpp_file, """#include "%(schema)s.h"
-#include "IfcException.h"
-#include "IfcWrite.h"
-#include "IfcWritableEntity.h"
+using namespace %(schema)s;
+using namespace IfcParse;
+using namespace IfcWrite;"""%{'schema':schema_version}
+print >>cpp_file, """#include "../ifcparse/%(schema)s.h"
+#include "../ifcparse/IfcException.h"
+#include "../ifcparse/IfcWrite.h"
+#include "../ifcparse/IfcWritableEntity.h"
+#include "../ifcparse/ArgumentType.h"
 
 using namespace %(schema)s;
 using namespace IfcParse;
@@ -616,20 +659,37 @@ print >>cpp_file, '    const char* names[] = { "%s" };'%'","'.join(all_enumerati
 print >>cpp_file, '    return names[v];'
 print >>cpp_file, "}"
 print >>cpp_file
-#print >>cpp_file, "Type::Enum Type::FromStringOld(const std::string& s){"
-#elseif = "if"
-#maxlen = max([len(e) for e in all_enumerations])
-#for e in all_enumerations:
-#    print >>cpp_file, '    %s(s=="%s"%s) { return %s; }'%(elseif,e.upper()," "*(maxlen-len(e)),e)
-#print >>cpp_file, "    throw;"
-#print >>cpp_file, "}"
+
 print >>cpp_file, "std::map<std::string,Type::Enum> string_map;"
-print >>cpp_file, "void Ifc2x3::InitStringMap() {"
+print >>cpp2_file, "std::map<Type::Enum,IfcEntityDescriptor*> entity_descriptor_map;"
 maxlen = max([len(e) for e in all_enumerations])
+string_map,attribute_count_map,attribute_index_map,attribute_name_map,attribute_optional_map,attribute_type_map = [""]*6
+print >>cpp2_file, "void InitDescriptorMap() {"
+print >>cpp2_file, "    IfcEntityDescriptor* current;"
+rt_entities = set()
+while True:
+    todo = [e for e in entities if e.class_name not in rt_entities]
+    if len(todo) == 0: break
+    for e in todo:
+        if e.parent_class and e.parent_class not in rt_entities: continue
+        rt_entities.add(e.class_name)
+        args = e.get_attributes(False)
+        parent_descriptor = ("entity_descriptor_map.find(Type::%s)->second"%e.parent_class) if e.parent_class else "0" 
+        print >>cpp2_file, "    current = entity_descriptor_map[Type::%s] = new IfcEntityDescriptor(Type::%s,%s);"%(e.class_name,e.class_name,parent_descriptor)
+        for a,i in zip(args,range(len(args))):
+            name,optional,type = a
+            print >>cpp2_file, "    current->add(\"%s\",%s,%s);"%(name,"true" if optional else "false",type)
+        
+print >>cpp2_file, "}"
+        
 for e in all_enumerations:
-    print >>cpp_file, '    string_map["%s"%s] = Type::%s;'%(e.upper()," "*(maxlen-len(e)),e)
-print >>cpp_file, """}
-Type::Enum Type::FromString(const std::string& s) {
+    string_map += '    string_map["%s"%s] = Type::%s;\n'%(e.upper()," "*(maxlen-len(e)),e)
+print >>cpp_file, """void Ifc2x3::InitStringMap() {
+    %(string_map)s
+}"""%locals()
+
+print >>cpp_file, """Type::Enum Type::FromString(const std::string& s) {
+    if (string_map.empty()) ::Ifc2x3::InitStringMap();
     std::map<std::string,Type::Enum>::const_iterator it = string_map.find(s);
     if ( it == string_map.end() ) throw IfcException("Unable to find find keyword in schema");
     else return it->second;
@@ -650,3 +710,40 @@ print >>cpp_file, "}"
 for t in [T for T in types if isinstance(T.type,EnumType)]:
     print >>cpp_file, t
 for e in entities: print >>cpp_file, e,
+print >>cpp_file, ""
+
+print >>cpp2_file, """int Type::GetAttributeIndex(Enum t, const std::string& a) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else return i->second->getArgumentIndex(a);
+}
+
+int Type::GetAttributeCount(Enum t) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else return i->second->getArgumentCount();
+}
+
+ArgumentType Type::GetAttributeType(Enum t, unsigned char a) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else return i->second->getArgumentType(a);
+}
+
+const std::string& Type::GetAttributeName(Enum t, unsigned char a) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else return i->second->getArgumentName(a);
+}
+
+bool Type::GetAttributeOptional(Enum t, unsigned char a) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else return i->second->getArgumentOptional(a);
+}
+"""

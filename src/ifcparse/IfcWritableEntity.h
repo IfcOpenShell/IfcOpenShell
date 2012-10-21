@@ -31,6 +31,8 @@
 #ifndef IFCWRITABLEENTITY_H
 #define IFCWRITABLEENTITY_H
 
+#include <map>
+
 #include "IfcUtil.h"
 
 namespace IfcWrite {

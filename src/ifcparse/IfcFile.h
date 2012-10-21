@@ -1,81 +1,78 @@
-﻿/********************************************************************************
- *                                                                              *
- * This file is part of IfcOpenShell.                                           *
- *                                                                              *
- * IfcOpenShell is free software: you can redistribute it and/or modify         *
- * it under the terms of the Lesser GNU General Public License as published by  *
- * the Free Software Foundation, either version 3.0 of the License, or          *
- * (at your option) any later version.                                          *
- *                                                                              *
- * IfcOpenShell is distributed in the hope that it will be useful,              *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
- * Lesser GNU General Public License for more details.                          *
- *                                                                              *
- * You should have received a copy of the Lesser GNU General Public License     *
- * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
- *                                                                              *
- ********************************************************************************/
- 
- /********************************************************************************
- *                                                                               *
- * Reads a file in chunks of BUF_SIZE and provides functions to access its       *
- * contents randomly and character by character                                  *
- *                                                                               *
- ********************************************************************************/
- 
 #ifndef IFCFILE_H
 #define IFCFILE_H
 
-#include <fstream>
-#include <string>
+#include <map>
 
-// As of IfcOpenShell version 0.3.0 the paging functionality, which
-// loads a file on disk into multiple chunks, has been disabled.
-// It proved to be an inefficient way of working with large files,
-// as often these did not facilitate to be parsed in a sequential 
-// manner efficiently, to enable the paging functionality uncomment
-// the following statement.
-//const int BUF_SIZE = (128 * 1024 * 1024);
+#include "IfcUtil.h"
+#include "IfcParse.h"
 
 namespace IfcParse {
-	/// The IfcSpfStream class represents a ISO 10303-21 IFC-SPF file in memory.
-	/// The file is interpreted as a sequence of tokens which are lazily
-	/// interpreted only when requested. If the size of the file is
-	/// larger than BUF_SIZE, the file is split into seperate pages, of
-	/// which only one is simultaneously kept in memory, for files
-	/// that define their entities not in a sequential nature, this is
-	/// detrimental for the performance of the parser.
-	class IfcSpfStream {
-	private:
-		std::ifstream stream;
-		char* buffer;
-		unsigned int ptr;
-		unsigned int len;
-		void ReadBuffer(bool inc=true);
-#ifdef BUF_SIZE
-		unsigned int offset;
-		bool paging;
-#endif
-	public:
-		bool valid;
-		bool eof;
-		unsigned int size;
-		IfcSpfStream(const std::string& fn);
-		IfcSpfStream(std::istream& f, int len);
-		IfcSpfStream(void* data, int len);
-		/// Returns the character at the cursor 
-		char Peek();
-		/// Returns the character at specified offset
-		char Read(unsigned int offset);
-		/// Increment the file cursor and reads new page if necessary
-		void Inc();
-		void Close();
-		/// Moves the file cursor to an arbitrary offset in the file
-		void Seek(unsigned int offset);
-		/// Returns the cursor position
-		unsigned int Tell();
-	};
+
+typedef IfcUtil::IfcSchemaEntity IfcEntity;
+//typedef IfcEntities IfcEntities;
+typedef std::map<Ifc2x3::Type::Enum,IfcEntities> MapEntitiesByType;
+typedef std::map<unsigned int,IfcEntity> MapEntityById;
+typedef std::map<std::string,Ifc2x3::IfcRoot::ptr> MapEntityByGuid;
+typedef std::map<unsigned int,IfcEntities> MapEntitiesByRef;
+typedef std::map<unsigned int,unsigned int> MapOffsetById;
+
+/// This class provides several static convenience functions and variables
+/// and provide access to the entities in an IFC file
+class IfcFile {
+private:
+	MapEntityById byid;
+	MapEntitiesByType bytype;
+	MapEntitiesByRef byref;
+	MapEntityByGuid byguid;
+	MapOffsetById offsets;
+	unsigned int lastId;
+	unsigned int MaxId;
+public:
+	typedef MapEntityById::const_iterator const_iterator;
+	IfcFile();
+	~IfcFile();
+	/// Returns the first entity in the file, this probably is the entity with the lowest id (EXPRESS ENTITY_INSTANCE_NAME)
+	const_iterator begin() const;
+	/// Returns the last entity in the file, this probably is the entity with the highes id (EXPRESS ENTITY_INSTANCE_NAME)
+	const_iterator end() const;
+	IfcParse::IfcSpfStream* file;
+	IfcParse::Tokens* tokens;
+	/// Returns all entities in the file that match the template argument.
+	/// NOTE: This also returns subtypes of the requested type, for example:
+	/// IfcWall will also return IfcWallStandardCase entities
+	template <class T>
+	typename T::list EntitiesByType() {
+		IfcEntities e = EntitiesByType(T::Class());
+		typename T::list l ( new IfcTemplatedEntityList<T>() );
+		if ( e && e->Size() )
+			for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {
+				l->push(reinterpret_pointer_cast<IfcUtil::IfcBaseClass,T>(*it));
+			}
+			return l;
+	}
+	/// Returns all entities in the file that match the positional argument.
+	/// NOTE: This also returns subtypes of the requested type, for example:
+	/// IfcWall will also return IfcWallStandardCase entities
+	IfcEntities EntitiesByType(Ifc2x3::Type::Enum t);
+	/// Returns all entities in the file that match the positional argument.
+	/// NOTE: This also returns subtypes of the requested type, for example:
+	/// IfcWall will also return IfcWallStandardCase entities
+	IfcEntities EntitiesByType(const std::string& t);
+	/// Returns all entities in the file that reference the id
+	IfcEntities EntitiesByReference(int id);
+	/// Returns the entity with the specified id
+	IfcEntity EntityById(int id);
+	/// Returns the entity with the specified GlobalId
+	Ifc2x3::IfcRoot::ptr EntityByGuid(const std::string& guid);
+	bool Init(const std::string& fn);
+	bool Init(std::istream& fn, int len);
+	bool Init(void* data, int len);
+	bool Init(IfcParse::IfcSpfStream* f);
+	unsigned int FreshId() { MaxId ++; return MaxId; }
+	void AddEntity(IfcUtil::IfcSchemaEntity e);
+	void AddEntities(IfcEntities es);
+};
+
 }
 
 #endif

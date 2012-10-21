@@ -19,16 +19,139 @@
 
 %include "std_vector.i"
 %include "std_string.i"
+%include "exception.i"
+
+%ignore Ifc::IfcUntypedEntity::is;
+%ignore Ifc::IfcUntypedEntity::type;
+%ignore Ifc::IfcUntypedEntity::getArgument;
+%ignore Ifc::IfcUntypedEntity::IfcUntypedEntity(IfcAbstractEntity);
+
+%ignore IfcParse::IfcFile::Init;
+%ignore IfcParse::IfcFile::EntityById;
+%ignore IfcParse::IfcFile::EntityByGuid;
+%ignore IfcParse::IfcFile::AddEntity;
+%ignore operator<<;
+
+%rename("by_type") EntitiesByType;
+%rename("get_argument_count") getArgumentCount;
+%rename("get_argument_type") getArgumentType;
+%rename("get_argument_name") getArgumentName;
+%rename("get_argument_index") getArgumentIndex;
+%rename("set_argument") setArgument;
+%rename("__repr__") toString;
+%rename("Entity") IfcUntypedEntity;
+
+%typemap(out) IfcEntities {
+	const unsigned size = $1->Size();
+	$result = PyList_New(size);
+	for (unsigned i = 0; i < size; ++i) {
+		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*$1)[i]), SWIGTYPE_p_Ifc__IfcUntypedEntity, 0);
+		PyList_SetItem($result,i,o);
+	}
+}
+
+%typemap(out) std::pair<IfcUtil::ArgumentType,ArgumentPtr> {
+	const Argument& arg = *($1.second);
+	const ArgumentType type = $1.first;
+	if (arg.isNull()) {
+		$result = Py_None;
+	} else {
+	switch(type) {
+		case Argument_INT:
+			$result = PyInt_FromLong((int)arg);
+		break;
+		case Argument_BOOL:
+			$result = PyBool_FromLong((bool)arg);
+		break; 
+		case Argument_DOUBLE:
+			$result = PyFloat_FromDouble(arg);
+		break;
+		case Argument_ENUMERATION:
+		case Argument_STRING: {
+			const std::string s = arg;
+			$result = PyString_FromString(s.c_str());
+		break; }
+		case Argument_VECTOR_INT: {
+			const std::vector<int> v = arg;
+			const unsigned size = v.size();
+			$result = PyList_New(size);
+			for (unsigned int i = 0; i < size; ++i) {
+				PyList_SetItem($result,i,PyInt_FromLong(v[i]));
+			}
+		break; }
+		case Argument_VECTOR_DOUBLE: {
+			const std::vector<double> v = arg;
+			const unsigned size = v.size();
+			$result = PyList_New(size);
+			for (unsigned int i = 0; i < size; ++i) {
+				PyList_SetItem($result,i,PyFloat_FromDouble(v[i]));
+			}
+		break; }
+		case Argument_VECTOR_STRING: {
+			const std::vector<std::string> v = arg;
+			const unsigned size = v.size();
+			$result = PyList_New(size);
+			for (unsigned int i = 0; i < size; ++i) {
+				PyList_SetItem($result,i,PyString_FromString(v[i].c_str()));
+			}
+		break; }
+		case Argument_ENTITY: {
+			IfcUtil::IfcSchemaEntity e = arg;
+			$result = SWIG_NewPointerObj(SWIG_as_voidptr(e), SWIGTYPE_p_Ifc__IfcUntypedEntity, 0);
+		break; }
+		case Argument_ENTITY_LIST: {
+			IfcEntities es = arg;
+			const unsigned size = es->Size();
+			$result = PyList_New(size);
+			for (unsigned i = 0; i < size; ++i) {
+				PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*es)[i]), SWIGTYPE_p_Ifc__IfcUntypedEntity, 0);
+				PyList_SetItem($result,i,o);
+			}
+		break; }
+		case Argument_UNKNOWN:
+		default:
+			SWIG_exception(SWIG_RuntimeError,"Unknown argument type");
+		break;
+	}
+	}
+}
+
+%exception {
+	try {
+		$action
+	} catch(::IfcParse::IfcException& e) {
+		SWIG_exception(SWIG_RuntimeError,e.what());
+	}
+}
+
+%module IfcImport %{
+	#include "../ifcparse/IfcException.h"
+	#include "Interface.h"	
+	using namespace Ifc;
+	using namespace IfcParse;
+%}
 
 %include "Interface.h"
 
-%module IfcImport %{
-	#include "Interface.h"
-	using namespace IfcGeomObjects;
-%}
+%extend IfcParse::IfcFile {
+	Ifc::IfcUntypedEntity* by_id(unsigned id) {
+		return (IfcUntypedEntity*) $self->EntityById(id);
+	}
+	Ifc::IfcUntypedEntity* by_guid(const std::string& guid) {
+		return (IfcUntypedEntity*) $self->EntityByGuid(guid);
+	}
+	void add(Ifc::IfcUntypedEntity* e) {
+		$self->AddEntity(e);
+	}
+	void write(const std::string& fn) {
+		std::ofstream f(fn);
+		f << (*$self);
+	}
+}
+
 
 namespace std {
-   %template(IntVector) vector<int>;
-   %template(FloatVector) vector<float>;
-   %template(ObjVector) vector<IfcGeomObject>;
+   %template(Ints) vector<int>;
+   %template(Doubles) vector<double>;
+   %template(Strings) vector<string>;
 };

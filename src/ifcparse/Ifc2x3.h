@@ -30,11 +30,13 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 
 #include <boost/optional.hpp>
 
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcException.h"
+#include "../ifcparse/ArgumentType.h"
 #include "../ifcparse/Ifc2x3enum.h"
 
 using namespace IfcUtil;

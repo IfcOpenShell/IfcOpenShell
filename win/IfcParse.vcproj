@@ -149,6 +149,18 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+            <File
+				RelativePath="..\src\ifcparse\Ifc2x3-rt.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalOptions="/bigobj"
+					/>
+				</FileConfiguration>
+			</File>
 			<File
 				RelativePath="..\src\ifcparse\Ifc2x3.cpp"
 				>
@@ -165,8 +177,16 @@
 				RelativePath="..\src\ifcparse\IfcCharacterDecoder.cpp"
 				>
 			</File>
+            <File
+				RelativePath="..\src\ifcparse\IfcGuidHelper.cpp"
+				>
+			</File> 
 			<File
 				RelativePath="..\src\ifcparse\IfcParse.cpp"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcparse\IfcUntypedEntity.cpp"
 				>
 			</File>
 			<File
@@ -176,17 +196,21 @@
             <File
 				RelativePath="..\src\ifcparse\IfcWrite.cpp"
 				>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcGuidHelper.cpp"
-				>
-			</File>     
+			</File>    
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+            <File
+				RelativePath="..\src\ifcparse\ArgumentType.h"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcparse\Ifc2x3-rt.h"
+				>
+			</File>
 			<File
 				RelativePath="..\src\ifcparse\Ifc2x3.h"
 				>
@@ -197,6 +221,14 @@
 			</File>
 			<File
 				RelativePath="..\src\ifcparse\IfcParse.h"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcparse\IfcSpfStream.h"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcparse\IfcUntypedEntity.h"
 				>
 			</File>
 			<File
