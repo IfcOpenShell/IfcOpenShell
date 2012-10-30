@@ -353,7 +353,7 @@ TokenArgument::TokenArgument(const Token& t) {
 }
 
 EntityArgument::EntityArgument(Ifc2x3::Type::Enum ty, const Token& t) {
-	entity = new Ifc::IfcUntypedEntity(new Entity(0,t.first->file,t.second));
+	entity = new IfcUtil::IfcArgumentSelect(ty,new TokenArgument(t));
 }
 
 // 
@@ -371,10 +371,11 @@ ArgumentList::ArgumentList(Tokens* t, std::vector<unsigned int>& ids) {
 			if ( TokenFunc::isDatatype(next) ) {
 				t->Next();
 				try {
-					Push ( new EntityArgument(Ifc2x3::Type::ALL,next) ); //Ifc2x3::Type::FromString(TokenFunc::asString(next)),t->Next()) );
+					Push ( new EntityArgument(Ifc2x3::Type::FromString(TokenFunc::asString(next)),t->Next()) );
 				} catch ( IfcException& e ) {
 					Logger::Message(Logger::LOG_ERROR,e.what());
 				}
+				t->Next();
 			} else {
 				Push ( new TokenArgument(next) );
 			}
@@ -492,7 +493,22 @@ EntityArgument::operator IfcEntities() const { throw IfcException("Argument is n
 unsigned int EntityArgument::Size() const { return 1; }
 ArgumentPtr EntityArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
 std::string EntityArgument::toString(bool upper) const { 
-	return entity->entity->toString(upper);
+	ArgumentPtr arg = entity->wrappedValue();
+	IfcParse::TokenArgument* token_arg = dynamic_cast<IfcParse::TokenArgument*>(arg);
+	const bool is_string = TokenFunc::isString(token_arg->token);
+	std::string token_string = token_arg ? (is_string 
+		? TokenFunc::asString(token_arg->token) 
+		: TokenFunc::toString(token_arg->token))
+		: std::string();
+	std::string dt = Ifc2x3::Type::ToString(entity->type());
+	if ( upper ) {
+		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
+		if (is_string) token_string = IfcWrite::IfcCharacterEncoder(token_string);
+	} else {
+		token_string.insert(token_string.begin(),'\'');
+		token_string.push_back('\'');
+	}
+	return dt + "(" + token_string + ")";
 }
 //return entity->entity->toString(); }
 bool EntityArgument::isNull() const { return false; }
@@ -583,10 +599,7 @@ std::string Entity::toString(bool upper) {
 	if ( upper ) {
 		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
 	}
-	if (_id) {
-		ss << "#" << _id << "=";
-	}
-	ss << dt << args->toString(upper);
+	ss << "#" << _id << "=" << dt << args->toString(upper);
 	return ss.str();
 }
 
