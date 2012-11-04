@@ -86,6 +86,12 @@
 
 #include <BRepGProp_Face.hxx>
 
+#include <BRepMesh.hxx>
+#include <BRepTools.hxx>
+
+#include <Poly_Triangulation.hxx>
+#include <Poly_Array1OfTriangle.hxx>
+
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
@@ -489,4 +495,68 @@ double IfcGeom::GetValue(GeomValue var) {
 	}
 	assert(!"never reach here");
 	return 0;
+}
+
+Ifc2x3::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, double deflection, IfcEntities es) {
+	BRepMesh::Mesh(shape, deflection);
+
+	Ifc2x3::IfcFace::list faces (new IfcTemplatedEntityList<Ifc2x3::IfcFace>());
+
+	for (TopExp_Explorer exp(shape, TopAbs_FACE); exp.More(); exp.Next()) {
+		const TopoDS_Face& face = TopoDS::Face(exp.Current());
+		TopLoc_Location loc;
+		Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation(face, loc);
+
+		if (! tri.IsNull()) {
+			const TColgp_Array1OfPnt& nodes = tri->Nodes();
+			std::vector<Ifc2x3::IfcCartesianPoint*> vertices;
+			for (int i = 1; i <= nodes.Length(); ++i) {
+				const gp_Pnt& pnt = nodes(i);
+				std::vector<double> xyz; xyz.push_back(pnt.X()); xyz.push_back(pnt.Y()); xyz.push_back(pnt.Z());
+				Ifc2x3::IfcCartesianPoint* cpnt = new Ifc2x3::IfcCartesianPoint(xyz);
+				vertices.push_back(cpnt);
+				es->push(cpnt);
+			}
+			const Poly_Array1OfTriangle& triangles = tri->Triangles();			
+			for (int i = 1; i <= triangles.Length(); ++ i) {
+				int n1, n2, n3;
+				triangles(i).Get(n1, n2, n3);
+				Ifc2x3::IfcCartesianPoint::list points (new IfcTemplatedEntityList<Ifc2x3::IfcCartesianPoint>());
+				points->push(vertices[n1-1]);
+				points->push(vertices[n2-1]);
+				points->push(vertices[n3-1]);
+				Ifc2x3::IfcPolyLoop* loop = new Ifc2x3::IfcPolyLoop(points);
+				Ifc2x3::IfcFaceOuterBound* bound = new Ifc2x3::IfcFaceOuterBound(loop, face.Orientation() != TopAbs_REVERSED);
+				Ifc2x3::IfcFaceBound::list bounds (new IfcTemplatedEntityList<Ifc2x3::IfcFaceBound>());
+				bounds->push(bound);
+				Ifc2x3::IfcFace* face = new Ifc2x3::IfcFace(bounds);
+				es->push(loop);
+				es->push(bound);
+				es->push(face);
+				faces->push(face);
+			}
+		}
+	}
+	Ifc2x3::IfcOpenShell* shell = new Ifc2x3::IfcOpenShell(faces);
+	Ifc2x3::IfcConnectedFaceSet::list shells (new IfcTemplatedEntityList<Ifc2x3::IfcConnectedFaceSet>());
+	shells->push(shell);
+	Ifc2x3::IfcFaceBasedSurfaceModel* surface_model = new Ifc2x3::IfcFaceBasedSurfaceModel(shells);
+
+	Ifc2x3::IfcRepresentation::list reps (new IfcTemplatedEntityList<Ifc2x3::IfcRepresentation>());
+	Ifc2x3::IfcRepresentationItem::list items (new IfcTemplatedEntityList<Ifc2x3::IfcRepresentationItem>());
+
+	items->push(surface_model);
+
+	Ifc2x3::IfcShapeRepresentation* rep = new Ifc2x3::IfcShapeRepresentation(
+		0, std::string("Facetation"), std::string("SurfaceModel"), items);
+
+	reps->push(rep);
+	Ifc2x3::IfcProductDefinitionShape* shapedef = new Ifc2x3::IfcProductDefinitionShape(0, 0, reps);
+
+	es->push(shell);
+	es->push(surface_model);
+	es->push(rep);
+	es->push(shapedef);
+
+	return shapedef;
 }

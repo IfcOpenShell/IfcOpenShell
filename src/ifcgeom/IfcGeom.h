@@ -96,6 +96,7 @@ namespace IfcGeom {
 	double face_area(const TopoDS_Face& f);
 	void SetValue(GeomValue var, double value);
 	double GetValue(GeomValue var);
+	Ifc2x3::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntities es);
 	
 	namespace Cache {
 		void Purge();

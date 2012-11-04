@@ -74,6 +74,9 @@ typedef IfcBaseClass* IfcSchemaEntity;
 
 }
 
+template <class T>
+class IfcTemplatedEntityList;
+
 class IfcEntityList {
 	std::vector<IfcUtil::IfcSchemaEntity> ls;
 public:
@@ -86,6 +89,12 @@ public:
 	it end();
 	IfcUtil::IfcSchemaEntity operator[] (int i);
 	int Size() const;
+	template <class U>
+	typename U::list as() {
+		typename U::list r(new IfcTemplatedEntityList<U>());
+		for ( it i = begin(); i != end(); ++ i ) if ((*i)->is(U::Class())) r->push((U*)*i);
+		return r;
+	}
 };
 
 template <class T>
@@ -102,6 +111,12 @@ public:
 	IfcEntities generalize() {
 		IfcEntities r (new IfcEntityList());
 		for ( it i = begin(); i != end(); ++ i ) r->push(*i);
+		return r;
+	}
+	template <class U> 
+	typename U::list as() {
+		typename U::list r(new IfcTemplatedEntityList<U>());
+		for ( it i = begin(); i != end(); ++ i ) if ((*i)->is(U::Class())) r->push(*i);
 		return r;
 	}
 };

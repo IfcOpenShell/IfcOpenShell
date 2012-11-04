@@ -102,6 +102,8 @@ ADD_LIBRARY(IfcParse STATIC
   
   ../src/ifcparse/IfcWrite.cpp
   ../src/ifcparse/IfcGuidHelper.cpp
+  
+  ../src/ifcparse/IfcHierarchyHelper.cpp  
 )
 
 ADD_LIBRARY(IfcGeom STATIC
@@ -159,6 +161,7 @@ SET(include_files_parse
     ../src/ifcparse/IfcCharacterDecoder.h
     ../src/ifcparse/IfcException.h
     ../src/ifcparse/IfcFile.h
+    ../src/ifcparse/IfcHierarchyHelper.h
     ../src/ifcparse/IfcParse.h
     ../src/ifcparse/IfcUtil.h
     ../src/ifcparse/SharedPointer.h

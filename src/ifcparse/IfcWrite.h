@@ -28,19 +28,22 @@
 #ifndef IFCWRITE_H
 #define IFCWRITE_H
 
-#include "IfcUtil.h"
-#include "IfcParse.h"
+#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcParse.h"
 
 namespace IfcWrite {
 
 	/// A placeholder class for grouping functionality geared towards writing IFC files
 	class IfcWriteArgument : public Argument {
-
+	protected:
+		IfcAbstractEntity* entity;
+		IfcWriteArgument(IfcAbstractEntity* e) : entity(e) {}
 	};
 
 	/// A null argument. It will always serialize to $
 	class IfcWriteNullArgument : public IfcWriteArgument {
 	public:
+		IfcWriteNullArgument(IfcAbstractEntity* e) : IfcWriteArgument(e) {};
 		operator int() const;
 		operator bool() const;
 		operator double() const;
@@ -63,7 +66,7 @@ namespace IfcWrite {
 	private:
 		IfcEntities value;
 	public:
-		IfcWriteEntityListArgument(const IfcEntities& v);
+		IfcWriteEntityListArgument(IfcAbstractEntity* e, const IfcEntities& v);
 		operator int() const;
 		operator bool() const;
 		operator double() const;
@@ -90,7 +93,7 @@ namespace IfcWrite {
 		int data;
 		const char* enumeration_value;
 	public:
-		IfcWriteEnumerationArgument(int v, const char* c);
+		IfcWriteEnumerationArgument(IfcAbstractEntity* e, int v, const char* c);
 		operator int() const;
 		operator bool() const;
 		operator double() const;
@@ -114,14 +117,14 @@ namespace IfcWrite {
 		void* data;
 		IfcUtil::ArgumentType type;
 	public:
-		IfcWriteIntegralArgument(int v);
-		IfcWriteIntegralArgument(bool v);
-		IfcWriteIntegralArgument(double v);
-		IfcWriteIntegralArgument(const std::string& v);
-		IfcWriteIntegralArgument(const std::vector<int> v);
-		IfcWriteIntegralArgument(const std::vector<double> v);
-		IfcWriteIntegralArgument(const std::vector<std::string> v);
-		IfcWriteIntegralArgument(IfcUtil::IfcSchemaEntity v);
+		IfcWriteIntegralArgument(IfcAbstractEntity* e, int v);
+		IfcWriteIntegralArgument(IfcAbstractEntity* e, bool v);
+		IfcWriteIntegralArgument(IfcAbstractEntity* e, double v);
+		IfcWriteIntegralArgument(IfcAbstractEntity* e, const std::string& v);
+		IfcWriteIntegralArgument(IfcAbstractEntity* e, const std::vector<int> v);
+		IfcWriteIntegralArgument(IfcAbstractEntity* e, const std::vector<double> v);
+		IfcWriteIntegralArgument(IfcAbstractEntity* e, const std::vector<std::string> v);
+		IfcWriteIntegralArgument(IfcAbstractEntity* e, IfcUtil::IfcSchemaEntity v);
 		~IfcWriteIntegralArgument();
 		operator int() const;
 		operator bool() const;

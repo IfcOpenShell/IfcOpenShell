@@ -31,6 +31,8 @@
 #ifndef IFCWRITABLEENTITY_H
 #define IFCWRITABLEENTITY_H
 
+#include <map>
+
 #include "IfcUtil.h"
 
 namespace IfcWrite {
@@ -57,6 +59,7 @@ namespace IfcWrite {
 		unsigned int id();
 		bool isWritable();
         void setArgument(int i);
+		void setArgument(int i,bool v);
 		void setArgument(int i,int v);
 		void setArgument(int i,int v, const char* c);
 		void setArgument(int i,const std::string& v);
