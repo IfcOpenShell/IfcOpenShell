@@ -1,6 +1,10 @@
 cmake_minimum_required (VERSION 2.6)
 project (IfcOpenShell)
 
+FIND_PACKAGE(Boost REQUIRED)
+MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
+MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
+
 # Find Open CASCADE header files
 IF("$ENV{OCC_INCLUDE_DIR}" STREQUAL "") 
 	SET(OCC_INCLUDE_DIR "/usr/include/opencascade/" CACHE FILEPATH "Open CASCADE header files")
@@ -88,7 +92,7 @@ ElSE(MSVC)
     ADD_DEFINITIONS(-fPIC -Wno-non-virtual-dtor)
 ENDIF(MSVC)
 
-INCLUDE_DIRECTORIES(${OCC_INCLUDE_DIR} /usr/inc /usr/local/inc /usr/local/include/oce ${ICU_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} /usr/inc /usr/local/inc /usr/local/include/oce ${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
 ADD_LIBRARY(IfcParse STATIC 
   ../src/ifcparse/Ifc2x3.cpp
@@ -117,7 +121,7 @@ ENDIF()
 
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
-LINK_DIRECTORIES (${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR}) 
+LINK_DIRECTORIES (${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}) 
 
 ADD_EXECUTABLE(IfcObj ../src/ifcobj/IfcObj.cpp)
 
