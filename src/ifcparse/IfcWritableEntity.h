@@ -59,6 +59,7 @@ namespace IfcWrite {
 		unsigned int id();
 		bool isWritable();
         void setArgument(int i);
+		void setArgumentDerived(int i);
 		void setArgument(int i,bool v);
 		void setArgument(int i,int v);
 		void setArgument(int i,int v, const char* c);

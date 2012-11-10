@@ -34,7 +34,7 @@
 #include "../ifcparse/IfcHierarchyHelper.h"
 #include "../ifcgeom/IfcGeom.h"
 
-// Some convinience typedefs and definitions. 
+// Some convenience typedefs and definitions. 
 typedef std::string S;
 typedef IfcWrite::IfcGuidHelper guid;
 typedef std::pair<double, double> XY;
@@ -45,8 +45,8 @@ void createGroundShape(TopoDS_Shape& shape);
 
 int main(int argc, char** argv) {
 
-	// The IfcHierarchyHelper is a subclass of the regular IfcFile that provides several convience
-	// functions for working with geometry in IFC files.
+	// The IfcHierarchyHelper is a subclass of the regular IfcFile that provides several
+	// convenience functions for working with geometry in IFC files.
 	IfcHierarchyHelper file;
 
 	// Start by adding a wall to the file, initially leaving most attributes blank.
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 	// structure: IfcProject > IfcSite > IfcBuilding > IfcBuildingStorey > IfcWall
 
 	// Lateron changing the name of the IfcProject can be done by obtaining a reference to the 
-	// project, which was automatically created. since we know it exists.
+	// project, which has been created automatically.
 	file.getSingle<Ifc2x3::IfcProject>()->setName("IfcOpenHouse");
 
 	// An IfcOwnerHistory has been initialized as well, which should be assigned to the wall.
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
 	// can be a composition of multiple solids. The following door will be composed of four boxes
 	// which constitute the door and its frame.
 	Ifc2x3::IfcDoor* door = new Ifc2x3::IfcDoor(guid(), file.getSingle<Ifc2x3::IfcOwnerHistory>(), null, null, null,
-		file.addLocalPlacement(4800, 1600, 0, 0, 0, 1, 0, 1, 0), 0, null, 2120, 1000);
+		file.addLocalPlacement(4800, 1600, 0, 0, 0, 1, 0, 1, 0), 0, null, 2200, 1000);
 	door->setRepresentation(file.addBox(80, 80, 2120, 0, file.addPlacement3d(460, 0, 0)));
 	Ifc2x3::IfcRepresentation::list door_representations = door->Representation()->Representations();
 	Ifc2x3::IfcShapeRepresentation* door_body = 0;
@@ -258,6 +258,10 @@ int main(int argc, char** argv) {
 	// only the plate will have a transparent material assigned.
 
 	// The window frame will consists of four seperate beams.
+	// AutoCAD Architecture will create an internal window type for the IfcWindow created.
+	// Therefore the OverallWidth and OverallHeight of the window attributes will need to
+	// match the bounding box of the representation. Furthermore, the window placement needs
+	// to align with the lowerleft corner of the constituent parts.
 	Ifc2x3::IfcProductDefinitionShape::list frame_representations (new IfcTemplatedEntityList<Ifc2x3::IfcProductDefinitionShape>());
 	frame_representations->push(file.addBox(1860, 90, 90));
 	frame_representations->push(*frame_representations->begin()); // Add a reference to the shape created above
@@ -277,18 +281,18 @@ int main(int argc, char** argv) {
 	// This window will be placed at five locations within the building. A list of placements is 
 	// created and is iterated over to create all window instances.
 	Ifc2x3::IfcLocalPlacement::list window_placements (new IfcTemplatedEntityList<Ifc2x3::IfcLocalPlacement>());
-	window_placements->push(file.addLocalPlacement(2*-1770-430,   0, 400));
-	window_placements->push(file.addLocalPlacement(  -1770-430,   0, 400));
-	window_placements->push(file.addLocalPlacement(       -430,   0, 400));
-	window_placements->push(file.addLocalPlacement(       3000,   0, 400));
-	window_placements->push(file.addLocalPlacement(      -4855, 885, 400, 0, 0, 1, 0, 1, 0));
+	window_placements->push(file.addLocalPlacement(2*-1770-430-930,   -45, 400));
+	window_placements->push(file.addLocalPlacement(  -1770-430-930,   -45, 400));
+	window_placements->push(file.addLocalPlacement(       -430-930,   -45, 400));
+	window_placements->push(file.addLocalPlacement(       3000-930,   -45, 400));
+	window_placements->push(file.addLocalPlacement(      -4855+45, 885-930, 400, 0, 0, 1, 0, 1, 0));
 	
 	for (Ifc2x3::IfcLocalPlacement::it it = window_placements->begin(); it != window_placements->end(); ++it) {
 		
 		// Create the window at the current location
 		Ifc2x3::IfcLocalPlacement* place = *it;
 		Ifc2x3::IfcWindow* window = new Ifc2x3::IfcWindow(guid(), file.getSingle<Ifc2x3::IfcOwnerHistory>(),
-			null, null, null, place, 0, null, 2000, 1600);
+			null, null, null, place, 0, null, 1600, 1860);
 		file.addBuildingProduct(window);		
 
 		// Initalize a list of parts for the window to be composed of
@@ -297,10 +301,10 @@ int main(int argc, char** argv) {
 		// The placements for the beams are not shared accross the different windows because every
 		// beam is placed relative to its parent window entity.
 		Ifc2x3::IfcLocalPlacement::list frame_placements (new IfcTemplatedEntityList<Ifc2x3::IfcLocalPlacement>());
-		frame_placements->push(file.addLocalPlacement());
-		frame_placements->push(file.addLocalPlacement(   0, 0, 1510));
-		frame_placements->push(file.addLocalPlacement(-885, 0,  90));
-		frame_placements->push(file.addLocalPlacement( 885, 0,  90));
+		frame_placements->push(file.addLocalPlacement( 930,45));
+		frame_placements->push(file.addLocalPlacement( 930, 45, 1510));
+		frame_placements->push(file.addLocalPlacement(-885+930, 45,  90));
+		frame_placements->push(file.addLocalPlacement( 885+930, 45,  90));
 		
 		// Now iterate over the placements and representations of the beam and add them to list of parts
 		Ifc2x3::IfcLocalPlacement::it frame_placement;
@@ -318,7 +322,7 @@ int main(int argc, char** argv) {
 
 		// Add the glass plate to the list of parts
 		Ifc2x3::IfcPlate* glass_part = new Ifc2x3::IfcPlate(guid(), file.getSingle<Ifc2x3::IfcOwnerHistory>(), null,
-			null, null, file.addLocalPlacement(0, 0, 90), file.addBox(1680, 10, 1420), null);
+			null, null, file.addLocalPlacement(930, 45, 90), file.addBox(1680, 10, 1420), null);
 		file.AddEntity(glass_part);
 		window_parts->push(glass_part);
 		file.relatePlacements(window, glass_part);

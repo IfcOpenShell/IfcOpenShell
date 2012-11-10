@@ -348,18 +348,22 @@ class InverseList:
         return s
 class Classdef:
     def __init__(self,l):
-        self.class_name, self.parent_class, self.arguments, self.inverse = l
+        self.class_name, self.parent_class, self.arguments, derive, self.inverse = l
         self.arguments.class_name = self.class_name
         self.arguments.parent_class = self.parent_class
         entity_names.add(self.class_name)
         parent_relations[self.class_name] = self.parent_class
         argument_count[self.class_name] = len(self.arguments)
         entity_map[self.class_name] = self
-    def get_constructor_args(self):
-        s = entity_map[self.parent_class].get_constructor_args() if self.parent_class else []
+        # For derived attributes only a reference is kepts to overridden attributes in parent classes
+        self.derive = [x[0].split('.')[-1] for x in derive[1] if x[0].startswith("SELF\\")] if derive else []
+    def list_constructor_args(self):
+        s = entity_map[self.parent_class].list_constructor_args() if self.parent_class else []
         i = len(s) + 1
-        s += ["%s v%d_%s"%(a.type_str(),b+i,a.name) for a,b in zip(self.arguments.l,range(len(self.arguments)))]
+        s += [(a.type_str(),b+i,a.name) for a,b in zip(self.arguments.l,range(len(self.arguments)))]
         return s
+    def get_constructor_args(self):
+        return ["%s v%d_%s"%x for x in self.list_constructor_args() if x[2] not in self.get_derived()]        
     def get_constructor_implementation(self):
         s = entity_map[self.parent_class].get_constructor_implementation() if self.parent_class else []
         i = len(s) + 1
@@ -378,10 +382,13 @@ class Classdef:
             else:
                 impl = "e->setArgument(%d,(%sv%d_%s)%s)"%(b+i-1,dereference,b+i,a.name,generalize)            
             if use_boost_optional:
-                s.append("if (v%d_%s) { %s; } else { e->setArgument(%d); } "%(b+i,a.name,impl,b+i-1))
-            else: s.append(impl)
+                s.append(["if (v%d_%s) { %s; } else { e->setArgument(%d); } "%(b+i,a.name,impl,b+i-1),a.name,i-1])
+            else: s.append([impl,a.name,i-1])
             b += 1
-        return s#"; ".join(s)
+        return s
+    def get_derived(self):
+        s = entity_map[self.parent_class].get_derived() if self.parent_class else []
+        return s + self.derive
     def __str__(self):
         self.constructor_args_list = self.get_constructor_args()
         self.constructor_args = ", ".join(self.constructor_args_list)
@@ -403,7 +410,7 @@ class Classdef:
             )
         elif generator_mode == 'SOURCE':
             self.arguments.argstart = argument_start(self.class_name)
-            self.constructor_implementation = "; ".join(self.get_constructor_implementation())
+            self.constructor_implementation = "; ".join([x[0] if x[1] not in self.get_derived() else "e->setArgumentDerived(%d)"%x[2] for x in self.get_constructor_implementation()])
             return (("\n// Function implementations for %(class_name)s"+str(self.arguments)+str(self.inverse)+
             ("\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s; }" if self.parent_class is None else
             "\nbool %(class_name)s::is(Type::Enum v) const { return v == Type::%(class_name)s || %(parent_class)s::is(v); }")+
@@ -462,9 +469,9 @@ unique_value = s + x(':') + s + many(a(',')+s) + a(';')
 unique = skip(a('UNIQUE') + many(unique_value))
 inverse_def = s + x(':') + (array|single) + x('FOR') + s + x(';') >> inverse_type
 inverse = maybe(x('INVERSE') + many( inverse_def )) >> inverse_list
-derive = skip(a('DERIVE') + many(clause))
+derive = a('DERIVE') + many(clause)
 
-entity = entity_start + arguments + skip(maybe(unique)) + skip(maybe(derive)) + inverse + skip(maybe(where)) + entity_end >> Classdef
+entity = entity_start + arguments + skip(maybe(unique)) + maybe(derive) + inverse + skip(maybe(where)) + entity_end >> Classdef
 
 schema = skip(a('SCHEMA')) + s + x(';')
 

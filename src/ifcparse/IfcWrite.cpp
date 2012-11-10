@@ -105,6 +105,11 @@ void IfcWritableEntity::setArgument(int i) {
 	args[i] = new IfcWriteNullArgument(this);
 	arg_writable(i,true);
 }
+void IfcWritableEntity::setArgumentDerived(int i) {
+	if ( arg_writable(i) ) delete args[i];
+	args[i] = new IfcWriteDerivedArgument(this);
+	arg_writable(i,true);
+}
 void IfcWritableEntity::setArgument(int i,int v) {
 	if ( arg_writable(i) ) delete args[i];
 	args[i] = new IfcWriteIntegralArgument(this,v);
@@ -171,6 +176,20 @@ bool IfcWriteNullArgument::isNull() const { return true; }
 ArgumentPtr IfcWriteNullArgument::operator [] (unsigned int i) const { throw IfcParse::IfcException("Invalid cast"); }
 std::string IfcWriteNullArgument::toString(bool upper) const { return "$"; }
 unsigned int IfcWriteNullArgument::Size() const { throw IfcParse::IfcException("Invalid cast"); }
+
+IfcWriteDerivedArgument::operator int() const { throw IfcParse::IfcException("Invalid cast"); }
+IfcWriteDerivedArgument::operator bool() const { throw IfcParse::IfcException("Invalid cast"); }
+IfcWriteDerivedArgument::operator double() const { throw IfcParse::IfcException("Invalid cast"); }
+IfcWriteDerivedArgument::operator std::string() const { throw IfcParse::IfcException("Invalid cast"); }
+IfcWriteDerivedArgument::operator std::vector<double>() const { throw IfcParse::IfcException("Invalid cast"); }
+IfcWriteDerivedArgument::operator std::vector<int>() const { throw IfcParse::IfcException("Invalid cast"); }
+IfcWriteDerivedArgument::operator std::vector<std::string>() const { throw IfcParse::IfcException("Invalid cast"); }
+IfcWriteDerivedArgument::operator IfcUtil::IfcSchemaEntity() const { throw IfcParse::IfcException("Invalid cast"); }
+IfcWriteDerivedArgument::operator IfcEntities() const { throw IfcParse::IfcException("Invalid cast"); }
+bool IfcWriteDerivedArgument::isNull() const { throw IfcParse::IfcException("Invalid cast"); }
+ArgumentPtr IfcWriteDerivedArgument::operator [] (unsigned int i) const { throw IfcParse::IfcException("Invalid cast"); }
+std::string IfcWriteDerivedArgument::toString(bool upper) const { return "*"; }
+unsigned int IfcWriteDerivedArgument::Size() const { throw IfcParse::IfcException("Invalid cast"); }
 
 IfcWriteEntityListArgument::IfcWriteEntityListArgument(IfcAbstractEntity* e, const IfcEntities& v) : IfcWriteArgument(e) { value = v; }
 IfcWriteEntityListArgument::operator int() const { throw IfcParse::IfcException("Invalid cast"); }

@@ -58,6 +58,25 @@ namespace IfcWrite {
 		std::string toString(bool upper=false) const;
 		unsigned int Size() const;
 	};
+
+	/// A derived argument. It will always serialize to *
+	class IfcWriteDerivedArgument : public IfcWriteArgument {
+	public:
+		IfcWriteDerivedArgument(IfcAbstractEntity* e) : IfcWriteArgument(e) {};
+		operator int() const;
+		operator bool() const;
+		operator double() const;
+		operator std::string() const;
+		operator std::vector<double>() const;
+		operator std::vector<int>() const;
+		operator std::vector<std::string>() const;
+		operator IfcUtil::IfcSchemaEntity() const;
+		operator IfcEntities() const;
+		bool isNull() const;
+		ArgumentPtr operator [] (unsigned int i) const;
+		std::string toString(bool upper=false) const;
+		unsigned int Size() const;
+	};
 	
 	/// An entity list argument. It will serialize to (#1,#2,#3)
 	/// with possibly a datatype identifier for SELECT types, e.g:

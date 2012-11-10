@@ -9733,7 +9733,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcSIUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    IfcSIUnit (IfcDimensionalExponents* v1_Dimensions, IfcUnitEnum::IfcUnitEnum v2_UnitType, optional< IfcSIPrefix::IfcSIPrefix > v3_Prefix, IfcSIUnitName::IfcSIUnitName v4_Name);
+    IfcSIUnit (IfcUnitEnum::IfcUnitEnum v2_UnitType, optional< IfcSIPrefix::IfcSIPrefix > v3_Prefix, IfcSIUnitName::IfcSIUnitName v4_Name);
     typedef IfcSIUnit* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList< IfcSIUnit > > list;
     typedef IfcTemplatedEntityList< IfcSIUnit >::it it;
@@ -13205,7 +13205,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcGeometricRepresentationSubContext (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    IfcGeometricRepresentationSubContext (optional< IfcLabel > v1_ContextIdentifier, optional< IfcLabel > v2_ContextType, IfcDimensionCount v3_CoordinateSpaceDimension, optional< double > v4_Precision, IfcAxis2Placement v5_WorldCoordinateSystem, IfcDirection* v6_TrueNorth, IfcGeometricRepresentationContext* v7_ParentContext, optional< IfcPositiveRatioMeasure > v8_TargetScale, IfcGeometricProjectionEnum::IfcGeometricProjectionEnum v9_TargetView, optional< IfcLabel > v10_UserDefinedTargetView);
+    IfcGeometricRepresentationSubContext (optional< IfcLabel > v1_ContextIdentifier, optional< IfcLabel > v2_ContextType, IfcGeometricRepresentationContext* v7_ParentContext, optional< IfcPositiveRatioMeasure > v8_TargetScale, IfcGeometricProjectionEnum::IfcGeometricProjectionEnum v9_TargetView, optional< IfcLabel > v10_UserDefinedTargetView);
     typedef IfcGeometricRepresentationSubContext* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList< IfcGeometricRepresentationSubContext > > list;
     typedef IfcTemplatedEntityList< IfcGeometricRepresentationSubContext >::it it;
@@ -14111,7 +14111,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcOrientedEdge (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
-    IfcOrientedEdge (IfcVertex* v1_EdgeStart, IfcVertex* v2_EdgeEnd, IfcEdge* v3_EdgeElement, bool v4_Orientation);
+    IfcOrientedEdge (IfcEdge* v3_EdgeElement, bool v4_Orientation);
     typedef IfcOrientedEdge* ptr;
     typedef SHARED_PTR< IfcTemplatedEntityList< IfcOrientedEdge > > list;
     typedef IfcTemplatedEntityList< IfcOrientedEdge >::it it;

@@ -98,9 +98,9 @@ Ifc2x3::IfcProject* IfcHierarchyHelper::addProject(Ifc2x3::IfcOwnerHistory* owne
 
 	IfcEntities units (new IfcEntityList());
 	Ifc2x3::IfcDimensionalExponents* dimexp = new Ifc2x3::IfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0);
-	Ifc2x3::IfcSIUnit* unit1 = new Ifc2x3::IfcSIUnit(dimexp, Ifc2x3::IfcUnitEnum::IfcUnit_LENGTHUNIT, 
+	Ifc2x3::IfcSIUnit* unit1 = new Ifc2x3::IfcSIUnit(Ifc2x3::IfcUnitEnum::IfcUnit_LENGTHUNIT, 
 		Ifc2x3::IfcSIPrefix::IfcSIPrefix_MILLI, Ifc2x3::IfcSIUnitName::IfcSIUnitName_METRE);
-	Ifc2x3::IfcSIUnit* unit2a = new Ifc2x3::IfcSIUnit(dimexp, Ifc2x3::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT, 
+	Ifc2x3::IfcSIUnit* unit2a = new Ifc2x3::IfcSIUnit(Ifc2x3::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT, 
 		boost::none, Ifc2x3::IfcSIUnitName::IfcSIUnitName_RADIAN);
 	Ifc2x3::IfcMeasureWithUnit* unit2b = new Ifc2x3::IfcMeasureWithUnit(
 		new IfcWrite::IfcSelectHelper(0.017453293, Ifc2x3::Type::IfcPlaneAngleMeasure), unit2a);
