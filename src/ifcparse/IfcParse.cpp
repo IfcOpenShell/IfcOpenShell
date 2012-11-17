@@ -21,6 +21,7 @@
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctime>
 
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcParse.h"
@@ -643,6 +644,7 @@ IfcFile::IfcFile() {
 	lastId = 0;
 	tokens = 0;
 	MaxId = 0;
+	initTimestamp();
 }
 
 //
@@ -849,7 +851,15 @@ std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f) {
 	os << "ISO-10303-21;" << std::endl;
 	os << "HEADER;" << std::endl;
 	os << "FILE_DESCRIPTION(('ViewDefinition []'),'2;1');" << std::endl;
-	os << "FILE_NAME('','',(''),('',''),'IfcOpenShell','IfcOpenShell','');" << std::endl;
+	os << "FILE_NAME(" 
+		<< static_cast<std::string>(IfcWrite::IfcCharacterEncoder(f.filename())) << "," 
+		<< static_cast<std::string>(IfcWrite::IfcCharacterEncoder(f.timestamp())) << ",(" 
+		<< static_cast<std::string>(IfcWrite::IfcCharacterEncoder(f.authorOrganisation())) << "),(" 
+		<< static_cast<std::string>(IfcWrite::IfcCharacterEncoder(f.authorName())) << "," 
+		<< static_cast<std::string>(IfcWrite::IfcCharacterEncoder(f.authorEmail())) 
+		<< "),'IfcOpenShell " << IFCOPENSHELL_VERSION 
+		<< "','IfcOpenShell " << IFCOPENSHELL_VERSION 
+		<< "','');" << std::endl;
 	os << "FILE_SCHEMA(('IFC2X3'));" << std::endl;
 	os << "ENDSEC;" << std::endl;
 	os << "DATA;" << std::endl;
@@ -863,4 +873,26 @@ std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f) {
 	os << "END-ISO-10303-21;" << std::endl;
 
 	return os;
+}
+
+void IfcFile::filename(const std::string& s) { _filename = s; }
+std::string IfcFile::filename() const { return _filename; }
+void IfcFile::timestamp(const std::string& s) { _timestamp = s; }
+std::string IfcFile::timestamp() const { return _timestamp; }
+void IfcFile::author(const std::string& name, const std::string& email, const std::string& organisation) {
+	_author = name;
+	_author_email = email;
+	_author_organisation = organisation;
+}
+std::string IfcFile::authorName() const { return _author; }
+std::string IfcFile::authorEmail() const { return _author_email; }
+std::string IfcFile::authorOrganisation() const { return _author_organisation; }
+void IfcFile::initTimestamp() {
+	char buf[255];
+	time_t t;
+	time(&t);
+	struct tm * ti = localtime (&t);
+	if (strftime(buf,255,"%Y-%m-%dT%H:%M:%S",ti)) {
+		_timestamp = std::string(buf);
+	}
 }

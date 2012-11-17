@@ -229,6 +229,12 @@ private:
 	MapOffsetById offsets;
 	unsigned int lastId;
 	unsigned int MaxId;
+	std::string _filename;
+	std::string _timestamp;
+	std::string _author;
+	std::string _author_email;
+	std::string _author_organisation;
+	void initTimestamp();
 public:
 	typedef MapEntityById::const_iterator const_iterator;
 	IfcFile();
@@ -273,6 +279,15 @@ public:
 	unsigned int FreshId() { MaxId ++; return MaxId; }
 	void AddEntity(IfcUtil::IfcSchemaEntity e);
 	void AddEntities(IfcEntities es);
+
+	void filename(const std::string& s);
+	std::string filename() const;
+	void timestamp(const std::string& s);
+	std::string timestamp() const;
+	void author(const std::string& name, const std::string& email, const std::string& organisation);
+	std::string authorName() const;
+	std::string authorEmail() const;
+	std::string authorOrganisation() const;
 };
 
 double UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v );
