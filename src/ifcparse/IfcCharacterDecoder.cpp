@@ -327,7 +327,7 @@ IfcCharacterEncoder::operator std::string() {
 	UChar32 ch;
 
 	const char* source = str.c_str();
-	const char* limit = &*str.end();
+	const char* limit = source + str.size();
 	
 	bool in_extended = false;
 
