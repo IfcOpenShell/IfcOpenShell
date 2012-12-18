@@ -29,6 +29,8 @@
 #include <Geom_BSplineSurface.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 
+#include <Standard_Version.hxx>
+
 #include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcHierarchyHelper.h"
@@ -375,5 +377,9 @@ void createGroundShape(TopoDS_Shape& shape) {
 	mult(0) = 5;
 	mult(1) = 5;	
 	Handle(Geom_BSplineSurface) surf = new Geom_BSplineSurface(cv, knots, knots, mult, mult, 4, 4);
+#if OCC_VERSION_HEX < 0x60502
+	shape = BRepBuilderAPI_MakeFace(surf);
+#else
 	shape = BRepBuilderAPI_MakeFace(surf, 1);
+#endif
 }
