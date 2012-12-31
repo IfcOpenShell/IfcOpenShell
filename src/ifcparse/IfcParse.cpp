@@ -106,7 +106,6 @@ void IfcSpfStream::Close() {
 // Reads a chunk of BUF_SIZE in memory and increments cursor if requested
 //
 void IfcSpfStream::ReadBuffer(bool inc) {
-	std::cout << "Readbuffer" << std::endl;
 #ifdef BUF_SIZE
 	if ( inc ) {
 		offset += len;
@@ -678,7 +677,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
 			// Update the status after every 1000 instances parsed
 			if ( !((++x)%1000) ) {
 				std::stringstream ss; ss << "\r#" << currentId;
-				Logger::Status(ss.str());
+				Logger::Status(ss.str(), false);
 			}
 			if ( entity->is(Ifc2x3::Type::IfcRoot) ) {
 				Ifc2x3::IfcRoot::ptr ifc_root = (Ifc2x3::IfcRoot::ptr) entity;

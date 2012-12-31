@@ -107,7 +107,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire)
         } catch (...) {}
 
 		// Restore to unknown unit state
-		//IfcGeom::SetValue(GV_PLANEANGLE_UNIT,-1.0);
+		IfcGeom::SetValue(GV_PLANEANGLE_UNIT,-1.0);
 
 		if ( succes_degrees && ! succes_radians ) {
 			use_degrees = true;
@@ -135,6 +135,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire)
 			Logger::Message(Logger::LOG_NOTICE,"Used degrees to create composite curve");
             wire = wire_degrees;
 		}
+
+		return use_radians || use_degrees;
 	}
 	Ifc2x3::IfcCompositeCurveSegment::list segments = l->Segments();
 	BRepBuilderAPI_MakeWire w;
