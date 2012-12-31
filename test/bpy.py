@@ -63,7 +63,8 @@ scn.render.resolution_x = 2048
 scn.render.resolution_y = 2048
 scn.world.horizon_color = (1,1,1)
 scn.world.ambient_color = (0.05,0.05,0.05)
-scn.render.color_mode = 'RGBA'
+try: scn.render.color_mode = 'RGBA'
+except: scn.render.image_settings.color_mode = 'RGBA'
 
 for m in bpy.data.materials: m.specular_intensity = 0
 def material(name,settings):

@@ -23,6 +23,10 @@
 #include <stdlib.h>
 #include <ctime>
 
+#ifdef _MSC_VER
+#include <Windows.h>
+#endif
+
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcException.h"
@@ -37,15 +41,23 @@ using namespace IfcParse;
 //
 IfcSpfStream::IfcSpfStream(const std::string& fn) {
 	eof = false;
-	stream.open(fn.c_str(),std::ios_base::binary);
-	if ( ! stream.good() ) {
+#ifdef _MSC_VER
+	int fn_buffer_size = MultiByteToWideChar(CP_UTF8, 0, fn.c_str(), -1, 0, 0);
+	wchar_t* fn_wide = new wchar_t[fn_buffer_size];
+	MultiByteToWideChar(CP_UTF8, 0, fn.c_str(), -1, fn_wide, fn_buffer_size);
+	stream = _wfopen(fn_wide, L"rb");
+	delete[] fn_wide;
+#else
+	stream = fopen(fn.c_str(), "rb");
+#endif
+	if (stream == NULL) {
 		valid = false;
 		return;
 	}
 	valid = true;
-	stream.seekg(0,std::ios_base::end);
-	size = (unsigned int) stream.tellg();
-	stream.seekg(0,std::ios_base::beg);
+	fseek(stream, 0, SEEK_END);
+	size = (unsigned int) ftell(stream);;
+	rewind(stream);
 #ifdef BUF_SIZE
 	offset = 0;
 	paging = size > BUF_SIZE;
@@ -87,7 +99,7 @@ IfcSpfStream::IfcSpfStream(void* data, int l) {
 
 void IfcSpfStream::Close() {
 #ifdef BUF_SIZE
-	if ( paging ) stream.close();
+	if ( paging ) fclose(stream);
 #endif
 	delete[] buffer;
 }
@@ -96,26 +108,26 @@ void IfcSpfStream::Close() {
 // Reads a chunk of BUF_SIZE in memory and increments cursor if requested
 //
 void IfcSpfStream::ReadBuffer(bool inc) {
+	std::cout << "Readbuffer" << std::endl;
 #ifdef BUF_SIZE
 	if ( inc ) {
 		offset += len;
-		stream.seekg(offset,std::ios_base::beg);
+		fseek(stream, offset, SEEK_SET);
 	}
 #endif
-	eof = stream.eof();
+	eof = feof(stream) != 0;
 	if ( eof ) return;
 #ifdef BUF_SIZE
-	stream.read(buffer,size < BUF_SIZE ? size : BUF_SIZE);
+	len = (unsigned int) fread(buffer, 1, size < BUF_SIZE ? size : BUF_SIZE, stream);
 #else
-	stream.read(buffer,size);
+	len = (unsigned int) fread(buffer, 1, size, stream);
 #endif
-	len = (unsigned int) stream.gcount();
 	eof = len == 0;
 	ptr = 0;
 #ifdef BUF_SIZE
-	if (!paging) stream.close();
+	if (!paging) fclose(stream);
 #else
-	stream.close();
+	fclose(stream);
 #endif
 }
 
@@ -134,8 +146,8 @@ void IfcSpfStream::Seek(unsigned int o) {
 		ptr = o - offset;
 	} else {
 		offset = o;
-		stream.clear();
-		stream.seekg(o,std::ios_base::beg);
+		clearerr(stream);
+		fseek(stream, o, SEEK_SET);
 		ReadBuffer(false);
 	}
 #endif
@@ -160,9 +172,9 @@ char IfcSpfStream::Read(unsigned int o) {
 	} else if ( o >= offset && (o < (offset+len)) ) {
 		return buffer[o-offset];
 	} else {
-		stream.clear();
-		stream.seekg(o,std::ios_base::beg);
-		return stream.peek();
+		clearerr(stream);
+		fseek(stream, o, SEEK_SET);
+		return ungetc(getc(stream), stream);
 	}
 #endif
 }
@@ -719,7 +731,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
 				Logger::Message(Logger::LOG_WARNING,ss.str());
 			}
 			byid[currentId] = entity;
-			MaxId = std::max(MaxId,currentId);
+			MaxId = (std::max)(MaxId,currentId);
 			currentId = 0;
 		} else {
 			try { token = tokens->Next(); }

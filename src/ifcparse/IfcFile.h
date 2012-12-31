@@ -34,9 +34,9 @@
 // loads a file on disk into multiple chunks, has been disabled.
 // It proved to be an inefficient way of working with large files,
 // as often these did not facilitate to be parsed in a sequential 
-// manner efficiently, to enable the paging functionality uncomment
+// manner efficiently. To enable the paging functionality uncomment
 // the following statement.
-//const int BUF_SIZE = (128 * 1024 * 1024);
+// #define BUF_SIZE (8 * 1024 * 1024)
 
 namespace IfcParse {
 	/// The IfcSpfStream class represents a ISO 10303-21 IFC-SPF file in memory.
@@ -48,7 +48,7 @@ namespace IfcParse {
 	/// detrimental for the performance of the parser.
 	class IfcSpfStream {
 	private:
-		std::ifstream stream;
+		FILE* stream;
 		char* buffer;
 		unsigned int ptr;
 		unsigned int len;
