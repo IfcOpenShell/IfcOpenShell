@@ -92,11 +92,11 @@ IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::File* f) {
 #ifdef HAVE_ICU
   if (destination) ucnv_close(destination);
   if (compatibility_converter) ucnv_close(compatibility_converter);
-  destination = nullptr;
-  compatibility_converter = nullptr;
+  destination = 0;
+  compatibility_converter = 0;
 
   if (mode == DEFAULT) {
-    destination = ucnv_open(nullptr, &status);
+    destination = ucnv_open(0, &status);
   } else if (mode == UTF8) {
     destination = ucnv_open("utf-8", &status);
   } else if (mode == LATIN) {
@@ -113,9 +113,9 @@ IfcCharacterDecoder::~IfcCharacterDecoder() {
   if ( destination ) ucnv_close(destination);
   if ( converter ) ucnv_close(converter);
   if ( compatibility_converter ) ucnv_close(compatibility_converter);
-  destination = nullptr;
-  converter = nullptr;
-  compatibility_converter = nullptr;
+  destination = 0;
+  converter = 0;
+  compatibility_converter = 0;
 #endif
 }
 IfcCharacterDecoder::operator std::string() {
