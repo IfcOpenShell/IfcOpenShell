@@ -163,7 +163,7 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x
 		const gp_GTrsf& entity_shape_gtrsf = *(it3->first);
 		TopoDS_Shape entity_shape;
 		if ( entity_shape_gtrsf.Form() == gp_Other ) {
-			Ifc::LogMessage("Warning","Applying non uniform transformation to:",entity->entity);
+			Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to:",entity->entity);
 			entity_shape = BRepBuilderAPI_GTransform(entity_shape_unlocated,entity_shape_gtrsf,true).Shape();
 		} else {
 			entity_shape = entity_shape_unlocated.Moved(entity_shape_gtrsf.Trsf());
@@ -175,17 +175,17 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x
 			const TopoDS_Shape& opening_shape_unlocated = IfcGeom::ensure_fit_for_subtraction(*(it4->second),opening_shape_solid);
 			const gp_GTrsf& opening_shape_gtrsf = *(it4->first);
 			if ( opening_shape_gtrsf.Form() == gp_Other ) {
-				Ifc::LogMessage("Warning","Applying non uniform transformation to opening of:",entity->entity);
+				Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to opening of:",entity->entity);
 			}
 			const TopoDS_Shape& opening_shape = opening_shape_gtrsf.Form() == gp_Other
 				? BRepBuilderAPI_GTransform(opening_shape_unlocated,opening_shape_gtrsf,true).Shape()
 				: opening_shape_unlocated.Moved(opening_shape_gtrsf.Trsf());
 					
 			double opening_volume, original_shape_volume;
-			if ( Ifc::Verbosity > 1 ) {
+			if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
 				opening_volume = shape_volume(opening_shape);
 				if ( opening_volume <= ALMOST_ZERO )
-					Ifc::LogMessage("Warning","Empty opening for:",entity->entity);
+					Logger::Message(Logger::LOG_WARNING,"Empty opening for:",entity->entity);
 				original_shape_volume = shape_volume(entity_shape);
 			}
 			
@@ -198,17 +198,17 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x
 				bool is_valid = analyser.IsValid() != 0;
 				if ( is_valid ) {
 					entity_shape = brep_cut;
-					if ( Ifc::Verbosity > 1 ) {
+					if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
 						const double volume_after_subtraction = shape_volume(entity_shape);
 					
 						if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
-							Ifc::LogMessage("Warning","Subtraction yields unchanged volume:",entity->entity);
+							Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",entity->entity);
 					}
 				} else {
-					Ifc::LogMessage("Error","Invalid result from subtraction:",entity->entity);
+					Logger::Message(Logger::LOG_ERROR,"Invalid result from subtraction:",entity->entity);
 				}
 			} else {
-				Ifc::LogMessage("Error","Failed to process subtraction:",entity->entity);
+				Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",entity->entity);
 			}
 
 		}
@@ -274,7 +274,7 @@ bool IfcGeom::convert_openings_fast(const Ifc2x3::IfcProduct::ptr entity, const 
 		const gp_GTrsf& entity_shape_gtrsf = *(it3->first);
 		TopoDS_Shape entity_shape;
 		if ( entity_shape_gtrsf.Form() == gp_Other ) {
-			Ifc::LogMessage("Warning","Applying non uniform transformation to:",entity->entity);
+			Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to:",entity->entity);
 			entity_shape = BRepBuilderAPI_GTransform(entity_shape_unlocated,entity_shape_gtrsf,true).Shape();
 		} else {
 			entity_shape = entity_shape_unlocated.Moved(entity_shape_gtrsf.Trsf());
@@ -295,7 +295,7 @@ bool IfcGeom::convert_openings_fast(const Ifc2x3::IfcProduct::ptr entity, const 
 			// Apparently processing the boolean operation failed or resulted in an invalid result
 			// in which case the original shape without the subtractions is returned instead
 			// we try convert the openings in the original way, one by one.
-			Ifc::LogMessage("Warning","Subtracting combined openings compound failed:",entity->entity);
+			Logger::Message(Logger::LOG_WARNING,"Subtracting combined openings compound failed:",entity->entity);
 			return false;
 		}
 		
@@ -429,7 +429,10 @@ static double deflection_tolerance = 0.001;
 static double wire_creation_tolerance = 0.0001;
 static double minimal_face_area = 0.000001;
 static double point_equality_tolerance = 0.00001;
-static double max_faces_to_sew = 1000;
+static double max_faces_to_sew = -1.0;
+static double ifc_length_unit = 1.0;
+static double ifc_planeangle_unit = -1.0;
+static double force_ccw_face_orientation = -1.0;
 
 void IfcGeom::SetValue(GeomValue var, double value) {
 	switch (var) {
@@ -448,6 +451,15 @@ void IfcGeom::SetValue(GeomValue var, double value) {
 	case GV_MAX_FACES_TO_SEW:
 		max_faces_to_sew = value;
 		break;
+	case GV_LENGTH_UNIT:
+		ifc_length_unit = value;
+		break;
+	case GV_PLANEANGLE_UNIT:
+		ifc_planeangle_unit = value;
+		break;
+	case GV_FORCE_CCW_FACE_ORIENTATION:
+		force_ccw_face_orientation = value;
+		break;
 	default:
 		assert(!"never reach here");
 	}
@@ -465,6 +477,15 @@ double IfcGeom::GetValue(GeomValue var) {
 		return point_equality_tolerance;
 	case GV_MAX_FACES_TO_SEW:
 		return max_faces_to_sew;
+	case GV_LENGTH_UNIT:
+		return ifc_length_unit;
+		break;
+	case GV_PLANEANGLE_UNIT:
+		return ifc_planeangle_unit;
+		break;
+	case GV_FORCE_CCW_FACE_ORIENTATION:
+		return force_ccw_face_orientation;
+		break;
 	}
 	assert(!"never reach here");
 	return 0;

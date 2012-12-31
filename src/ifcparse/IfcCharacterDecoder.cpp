@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -87,7 +87,7 @@ void IfcCharacterDecoder::addChar(std::stringstream& s,const UChar32& ch) {
 	s.put(substitution_character);
 #endif
 }
-IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::File* f) {
+IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::IfcSpfStream* f) {
   file = f;
 #ifdef HAVE_ICU
   if (destination) ucnv_close(destination);

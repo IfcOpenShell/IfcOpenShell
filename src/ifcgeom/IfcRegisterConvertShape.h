@@ -7,7 +7,7 @@
 				return &(Cache::Shape[id]); \
 			} \
 		} catch(...) {  } \
-		Ifc::LogMessage("Error","Failed to convert:",l->entity); \
+		Logger::Message(Logger::LOG_ERROR,"Failed to convert:",l->entity); \
 		return false; \
 	}
 #include "IfcRegisterDef.h"

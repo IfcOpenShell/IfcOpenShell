@@ -22,6 +22,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include "../ifcparse/SharedPointer.h"
 #include "../ifcparse/Ifc2x3enum.h"
@@ -132,9 +133,14 @@ namespace IfcUtil {
 	};
 }
 
+namespace IfcParse {
+	class IfcFile;
+}
+
 class Argument {
-protected:
 public:
+	//void* file;
+//public:
 	virtual operator int() const = 0;
 	virtual operator bool() const = 0;
 	virtual operator double() const = 0;
@@ -154,6 +160,7 @@ public:
 
 class IfcAbstractEntity {
 public:
+	IfcParse::IfcFile* file;
 	virtual IfcEntities getInverse(Ifc2x3::Type::Enum c = Ifc2x3::Type::ALL) = 0;
 	virtual IfcEntities getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a) = 0;
 	virtual std::string datatype() = 0;
@@ -164,6 +171,27 @@ public:
 	virtual bool is(Ifc2x3::Type::Enum v) const = 0;
 	virtual std::string toString(bool upper=false) = 0;
 	virtual unsigned int id() = 0;
+};
+
+class Logger {
+public:
+	typedef enum { LOG_NOTICE, LOG_WARNING, LOG_ERROR } Severity;
+private:
+	static std::ostream* log1;
+	static std::ostream* log2;
+	static std::stringstream log_stream;
+	static Severity verbosity;
+	static char* severity_strings[];
+public:
+	/// Determines to what stream respectively progress and errors are logged
+	static void SetOutput(std::ostream* l1, std::ostream* l2);
+	/// Determines the types of log messages to get logged
+	static void Verbosity(Severity v);
+	static Severity Verbosity();
+	/// Log a message to the output stream
+	static void Message(Severity type, const std::string& message, const IfcAbstractEntityPtr entity=0);
+	static void Status(const std::string& message, bool new_line=true);
+	static std::string Logger::GetLog();
 };
 
 #endif

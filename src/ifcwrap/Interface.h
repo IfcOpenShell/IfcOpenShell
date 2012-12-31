@@ -24,6 +24,8 @@ namespace IfcGeomObjects {
 	const int CONVERT_BACK_UNITS = 3;
 	const int USE_BREP_DATA = 4;
 	const int SEW_SHELLS = 5;
+	const int FASTER_BOOLEANS = 6;
+	const int FORCE_CCW_FACE_ORIENTATION = 7;
 
 	class IfcMesh {
 	public:

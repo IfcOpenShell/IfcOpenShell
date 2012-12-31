@@ -38,6 +38,7 @@
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
 
+#include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcParse.h"
 
 using namespace Ifc2x3;

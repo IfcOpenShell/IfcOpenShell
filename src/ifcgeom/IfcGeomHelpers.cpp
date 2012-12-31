@@ -91,9 +91,9 @@ bool IfcGeom::convert(const Ifc2x3::IfcCartesianPoint::ptr l, gp_Pnt& point) {
 	IN_CACHE(IfcCartesianPoint,l,gp_Pnt,point)
 	std::vector<double> xyz = l->Coordinates();
 	point = gp_Pnt(
-		xyz.size()     ? (xyz[0]*Ifc::LengthUnit) : 0.0f,
-		xyz.size() > 1 ? (xyz[1]*Ifc::LengthUnit) : 0.0f,
-		xyz.size() > 2 ? (xyz[2]*Ifc::LengthUnit) : 0.0f
+		xyz.size()     ? (xyz[0]*IfcGeom::GetValue(GV_LENGTH_UNIT)) : 0.0f,
+		xyz.size() > 1 ? (xyz[1]*IfcGeom::GetValue(GV_LENGTH_UNIT)) : 0.0f,
+		xyz.size() > 2 ? (xyz[2]*IfcGeom::GetValue(GV_LENGTH_UNIT)) : 0.0f
 	);
 	CACHE(IfcCartesianPoint,l,point)
 	return true;
@@ -113,7 +113,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcVector::ptr l, gp_Vec& v) {
 	IN_CACHE(IfcVector,l,gp_Vec,v)
 	gp_Dir d;
 	IfcGeom::convert(l->Orientation(),d);
-	v = l->Magnitude() * Ifc::LengthUnit * d;
+	v = l->Magnitude() * IfcGeom::GetValue(GV_LENGTH_UNIT) * d;
 	CACHE(IfcVector,l,v)
 	return true;
 }

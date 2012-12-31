@@ -42,7 +42,7 @@ namespace IfcParse {
 
 	class IfcCharacterDecoder {
 	private:
-		IfcParse::File* file;
+		IfcParse::IfcSpfStream* file;
 #ifdef HAVE_ICU
 		static UConverter* destination;
 		static UConverter* converter;
@@ -65,7 +65,7 @@ namespace IfcParse {
 #else
 		static char substitution_character;
 #endif
-		IfcCharacterDecoder(IfcParse::File* file);
+		IfcCharacterDecoder(IfcParse::IfcSpfStream* file);
 		~IfcCharacterDecoder();
 		void dryRun();
 		operator std::string();

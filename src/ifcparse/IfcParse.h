@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -47,56 +47,59 @@ namespace IfcParse {
 
 	class Entity;
 	class Entities;
+	class IfcFile;
 	typedef Entity* EntityPtr;
 	typedef SHARED_PTR<Entities> EntitiesPtr;
 
-	typedef unsigned int Token;
+	class Tokens;
+	typedef std::pair<Tokens*,unsigned> Token;
 
 	/// Provides functions to convert Tokens to binary data
 	/// Tokens are merely offsets to where they can be read in the file
 	class TokenFunc {
 	private:
-		static bool startsWith(Token t, char c);
+		static bool startsWith(const Token& t, char c);
 	public:
 		/// Returns the offset at which the token is read from the file
-		static unsigned int Offset(Token t);
+		// static unsigned int Offset(const Token& t);
 		/// Returns whether the token can be interpreted as a string
-		static bool isString(Token t);
+		static bool isString(const Token& t);
 		/// Returns whether the token can be interpreted as an identifier
-		static bool isIdentifier(Token t);
+		static bool isIdentifier(const Token& t);
 		/// Returns whether the token can be interpreted as an syntactical operator
-		static bool isOperator(Token t, char op = 0);
+		static bool isOperator(const Token& t, char op = 0);
 		/// Returns whether the token can be interpreted as an enumerated value
-		static bool isEnumeration(Token t);
+		static bool isEnumeration(const Token& t);
 		/// Returns whether the token can be interpreted as an datatype name
-		static bool isDatatype(Token t);
+		static bool isDatatype(const Token& t);
 		/// Returns the token interpreted as an integer
-		static int asInt(Token t);
+		static int asInt(const Token& t);
 		/// Returns the token interpreted as an boolean (.T. or .F.)
-		static bool asBool(Token t);
+		static bool asBool(const Token& t);
 		/// Returns the token as a floating point number
-		static double asFloat(Token t);
+		static double asFloat(const Token& t);
 		/// Returns the token as a string (without the dot or apostrophe)
-		static std::string asString(Token t);
+		static std::string asString(const Token& t);
 		/// Returns a string representation of the token (including the dot or apostrophe)
-		static std::string toString(Token t);
+		static std::string toString(const Token& t);
 	};
 
 	//
 	// Functions for creating Tokens from an arbitary file offset
 	// The first 4 bits are reserved for Tokens of type ()=,;$*
 	//
-	Token TokenPtr(unsigned int offset);
+	Token TokenPtr(Tokens* tokens, unsigned int offset);
 	Token TokenPtr(char c);	
 	Token TokenPtr();
 
-	/// A stream of tokens to be read from a File.
+	/// A stream of tokens to be read from a IfcSpfStream.
 	class Tokens {
 	private:
-		File* file;
 		IfcCharacterDecoder* decoder;
 	public:
-		Tokens(File* f);
+		IfcSpfStream* stream;
+		IfcFile* file;
+		Tokens(IfcSpfStream* s, IfcFile* f);
 		Token Next();
 		~Tokens();
 		std::string TokenString(unsigned int offset);
@@ -136,7 +139,7 @@ namespace IfcParse {
 		
 	public: 
 		Token token;
-		TokenArgument(Token t);
+		TokenArgument(const Token& t);
 		operator int() const;
 		operator bool() const;
 		operator double() const;
@@ -160,7 +163,7 @@ namespace IfcParse {
 	private:		
 		IfcUtil::IfcArgumentSelect* entity;		
 	public:
-		EntityArgument(Ifc2x3::Type::Enum ty, Token t);
+		EntityArgument(Ifc2x3::Type::Enum ty, const Token& t);
 		~EntityArgument();
 		operator int() const;
 		operator bool() const;
@@ -183,15 +186,16 @@ namespace IfcParse {
 	/// ============================
 	class Entity : public IfcAbstractEntity {
 	private:
+		//IfcFile* file;
 		ArgumentPtr args;
 		Ifc2x3::Type::Enum _type;
 	public:
-		/// The EXPRESS ENTITY_NAME
+		/// The EXPRESS ENTITY_INSTANCE_NAME
 		unsigned int _id;
 		/// The offset at which the entity is read
 		unsigned int offset;		
-		Entity(unsigned int i, Tokens* t);
-		Entity(unsigned int i, Tokens* t, unsigned int o);
+		Entity(unsigned int i, IfcFile* t);
+		Entity(unsigned int i, IfcFile* t, unsigned int o);
 		~Entity();
 		IfcEntities getInverse(Ifc2x3::Type::Enum c = Ifc2x3::Type::ALL);
 		IfcEntities getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a);
@@ -204,10 +208,9 @@ namespace IfcParse {
 		bool is(Ifc2x3::Type::Enum v) const;
 		unsigned int id();
 	};
-}
 
 typedef IfcUtil::IfcSchemaEntity IfcEntity;
-typedef IfcEntities IfcEntities;
+//typedef IfcEntities IfcEntities;
 typedef std::map<Ifc2x3::Type::Enum,IfcEntities> MapEntitiesByType;
 typedef std::map<unsigned int,IfcEntity> MapEntityById;
 typedef std::map<std::string,Ifc2x3::IfcRoot::ptr> MapEntityByGuid;
@@ -216,65 +219,56 @@ typedef std::map<unsigned int,unsigned int> MapOffsetById;
 
 /// This class provides several static convenience functions and variables
 /// and provide access to the entities in an IFC file
-class Ifc {
+class IfcFile {
 private:
-	static MapEntityById byid;
-	static MapEntitiesByType bytype;
-	static MapEntitiesByRef byref;
-	static MapEntityByGuid byguid;
-	static MapOffsetById offsets;
-	static unsigned int lastId;
-	static std::ostream* log1;
-	static std::ostream* log2;
-	static std::stringstream log_stream;
+	MapEntityById byid;
+	MapEntitiesByType bytype;
+	MapEntitiesByRef byref;
+	MapEntityByGuid byguid;
+	MapOffsetById offsets;
+	unsigned int lastId;
+	unsigned int MaxId;
 public:
-	/// Returns the first entity in the file, this probably is the entity with the lowest id (EXPRESS ENTITY_NAME)
-	static MapEntityById::const_iterator First();
-	/// Returns the last entity in the file, this probably is the entity with the highes id (EXPRESS ENTITY_NAME)
-	static MapEntityById::const_iterator Last();
-	/// Determines to what stream respectively progress and errors are logged
-	static void SetOutput(std::ostream* l1, std::ostream* l2);
-	/// Log a message to the output stream
-	static void LogMessage(const std::string& type, const std::string& message, const IfcAbstractEntityPtr entity=0);
-	static IfcParse::File* file;
-	static IfcParse::Tokens* tokens;
+	typedef MapEntityById::const_iterator const_iterator;
+	IfcFile();
+	~IfcFile();
+	/// Returns the first entity in the file, this probably is the entity with the lowest id (EXPRESS ENTITY_INSTANCE_NAME)
+	const_iterator begin() const;
+	/// Returns the last entity in the file, this probably is the entity with the highes id (EXPRESS ENTITY_INSTANCE_NAME)
+	const_iterator end() const;
+	IfcParse::IfcSpfStream* file;
+	IfcParse::Tokens* tokens;
 	/// Returns all entities in the file that match the template argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
 	template <class T>
-	static typename T::list EntitiesByType() {
+	typename T::list EntitiesByType() {
 		IfcEntities e = EntitiesByType(T::Class());
 		typename T::list l ( new IfcTemplatedEntityList<T>() );
 		if ( e && e->Size() )
-		for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {
-			l->push(reinterpret_pointer_cast<IfcUtil::IfcBaseClass,T>(*it));
-		}
+            for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {
+                l->push(reinterpret_pointer_cast<IfcUtil::IfcBaseClass,T>(*it));
+            }
 		return l;
 	}
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
-	static IfcEntities EntitiesByType(Ifc2x3::Type::Enum t);
+	IfcEntities EntitiesByType(Ifc2x3::Type::Enum t);
 	/// Returns all entities in the file that reference the id
-	static IfcEntities EntitiesByReference(int id);
+	IfcEntities EntitiesByReference(int id);
 	/// Returns the entity with the specified id
-	static IfcEntity EntityById(int id);
+	IfcEntity EntityById(int id);
 	/// Returns the entity with the specified GlobalId
-	static Ifc2x3::IfcRoot::ptr EntityByGuid(const std::string& guid);
-	static bool Init(const std::string& fn);
-	static bool Init(std::istream& fn, int len);
-	static bool Init(void* data, int len);
-	static bool Init(IfcParse::File* f);
-	static std::string GetLog();
-	static void Dispose();
-	static bool hasPlaneAngleUnit;
-	static bool SewShells;
-	static double LengthUnit;
-	static double PlaneAngleUnit;
-	static int CircleSegments;
-	static int Verbosity;
+	Ifc2x3::IfcRoot::ptr EntityByGuid(const std::string& guid);
+	bool Init(const std::string& fn);
+	bool Init(std::istream& fn, int len);
+	bool Init(void* data, int len);
+	bool Init(IfcParse::IfcSpfStream* f);
 };
 
 double UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v );
+
+}
 
 #endif

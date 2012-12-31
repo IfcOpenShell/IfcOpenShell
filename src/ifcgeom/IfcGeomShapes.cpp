@@ -81,7 +81,7 @@
 bool IfcGeom::convert(const Ifc2x3::IfcExtrudedAreaSolid::ptr l, TopoDS_Shape& shape) {
 	TopoDS_Face face;
 	if ( ! IfcGeom::convert_face(l->SweptArea(),face) ) return false;
-	const double height = l->Depth() * Ifc::LengthUnit;
+	const double height = l->Depth() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	gp_Trsf trsf;
 	IfcGeom::convert(l->Position(),trsf);
 
@@ -158,11 +158,11 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 
 	const double first_operand_volume = shape_volume(s1);
 	if ( first_operand_volume <= ALMOST_ZERO )
-		Ifc::LogMessage("Warning","Empty solid for:",l->FirstOperand()->entity);
+		Logger::Message(Logger::LOG_WARNING,"Empty solid for:",l->FirstOperand()->entity);
 
 	if ( !IfcGeom::convert_shape(l->SecondOperand(),s2) ) {
 		shape = s1;
-		Ifc::LogMessage("Error","Failed to convert SecondOperand of:",l->entity);
+		Logger::Message(Logger::LOG_ERROR,"Failed to convert SecondOperand of:",l->entity);
 		return true;
 	}
 
@@ -176,7 +176,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 	if ( ! is_halfspace ) {
 		const double second_operand_volume = shape_volume(s2);
 		if ( second_operand_volume <= ALMOST_ZERO )
-			Ifc::LogMessage("Warning","Empty solid for:",operand2->entity);
+			Logger::Message(Logger::LOG_WARNING,"Empty solid for:",operand2->entity);
 	}
 
 	bool valid_cut = false;
@@ -211,7 +211,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 					if ( is_valid ) {
 						shape = result;
 						valid_cut = true;
-						Ifc::LogMessage("Warning","Slightly nudged the SecondOperand of:",l->entity);
+						Logger::Message(Logger::LOG_WARNING,"Slightly nudged the SecondOperand of:",l->entity);
 					} 
 				}
 			}
@@ -281,9 +281,9 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 	if ( valid_cut ) {
 		const double volume_after_subtraction = shape_volume(shape);
 		if ( ALMOST_THE_SAME(first_operand_volume,volume_after_subtraction) )
-			Ifc::LogMessage("Warning","Subtraction yields unchanged volume:",l->entity);
+			Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",l->entity);
 	} else {
-		Ifc::LogMessage("Error","Failed to process subtraction:",l->entity);
+		Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",l->entity);
 		shape = s1;
 	}
 
@@ -294,7 +294,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 	Ifc2x3::IfcFace::list faces = l->CfsFaces();
 	bool facesAdded = false;
 	const unsigned int num_faces = faces->Size();
-	if ( Ifc::SewShells && num_faces < GetValue(GV_MAX_FACES_TO_SEW) ) {
+	if ( num_faces < GetValue(GV_MAX_FACES_TO_SEW) ) {
 		BRepOffsetAPI_Sewing builder;
 		builder.SetTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
 		builder.SetMaxTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
@@ -305,7 +305,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 				builder.Add(face);
 				facesAdded = true;
 			} else {
-				Ifc::LogMessage("Warning","Invalid face:",(*it)->entity);
+				Logger::Message(Logger::LOG_WARNING,"Invalid face:",(*it)->entity);
 			}
 		}
 		if ( ! facesAdded ) return false;
@@ -326,7 +326,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 				builder.Add(compound,face);
 				facesAdded = true;
 			} else {
-				Ifc::LogMessage("Warning","Invalid face:",(*it)->entity);
+				Logger::Message(Logger::LOG_WARNING,"Invalid face:",(*it)->entity);
 			}
 		}
 		if ( ! facesAdded ) return false;

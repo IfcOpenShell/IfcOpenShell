@@ -78,7 +78,7 @@
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::convert(const Ifc2x3::IfcCircle::ptr l, Handle(Geom_Curve)& curve) {
-	const double r = l->Radius() * Ifc::LengthUnit;
+	const double r = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	if ( r <= 0.0f ) { return false; }
 	gp_Trsf trsf;
 	Ifc2x3::IfcAxis2Placement placement = l->Position();
@@ -94,8 +94,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcCircle::ptr l, Handle(Geom_Curve)& curve)
 	return true;
 }
 bool IfcGeom::convert(const Ifc2x3::IfcEllipse::ptr l, Handle(Geom_Curve)& curve) {
-	double x = l->SemiAxis1() * Ifc::LengthUnit;
-	double y = l->SemiAxis2() * Ifc::LengthUnit;
+	double x = l->SemiAxis1() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	double y = l->SemiAxis2() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	if ( x == 0.0f || y == 0.0f || y > x ) { return false; }
 	gp_Trsf trsf;
 	Ifc2x3::IfcAxis2Placement placement = l->Position();

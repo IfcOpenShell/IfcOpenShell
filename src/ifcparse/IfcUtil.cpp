@@ -62,3 +62,35 @@ IfcUtil::IfcArgumentSelect::IfcArgumentSelect(Ifc2x3::Type::Enum t, ArgumentPtr 
 ArgumentPtr IfcUtil::IfcArgumentSelect::wrappedValue() { return arg; }
 bool IfcUtil::IfcArgumentSelect::isSimpleType() { return true; }
 IfcUtil::IfcArgumentSelect::~IfcArgumentSelect() { delete arg; }
+
+void Logger::SetOutput(std::ostream* l1, std::ostream* l2) { 
+	log1 = l1; 
+	log2 = l2; 
+	if ( ! log2 ) {
+		log2 = &log_stream;
+	}
+}
+void Logger::Message(Logger::Severity type, const std::string& message, const IfcAbstractEntityPtr entity) {
+	if ( log2 && type >= verbosity ) {
+		(*log2) << "[" << severity_strings[type] << "] " << message << std::endl;
+		if ( entity ) (*log2) << entity->toString() << std::endl;
+	}
+}
+void Logger::Status(const std::string& message, bool new_line) {
+	if ( log1 ) {
+		(*log1) << message;
+		if ( new_line ) (*log1) << std::endl;
+		else (*log1) << std::flush;
+	}
+}
+std::string Logger::GetLog() {
+	return log_stream.str();
+}
+void Logger::Verbosity(Logger::Severity v) { verbosity = v; }
+Logger::Severity Logger::Verbosity() { return verbosity; }
+
+std::ostream* Logger::log1 = 0;
+std::ostream* Logger::log2 = 0;
+std::stringstream Logger::log_stream;
+Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
+char* Logger::severity_strings[] = { "Notice","Warning","Error" };

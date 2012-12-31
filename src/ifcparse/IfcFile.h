@@ -39,14 +39,14 @@
 //const int BUF_SIZE = (128 * 1024 * 1024);
 
 namespace IfcParse {
-	/// The File class represents a ISO 10303-21 IFC-SPF file in memory.
+	/// The IfcSpfStream class represents a ISO 10303-21 IFC-SPF file in memory.
 	/// The file is interpreted as a sequence of tokens which are lazily
 	/// interpreted only when requested. If the size of the file is
 	/// larger than BUF_SIZE, the file is split into seperate pages, of
 	/// which only one is simultaneously kept in memory, for files
 	/// that define their entities not in a sequential nature, this is
 	/// detrimental for the performance of the parser.
-	class File {
+	class IfcSpfStream {
 	private:
 		std::ifstream stream;
 		char* buffer;
@@ -61,9 +61,9 @@ namespace IfcParse {
 		bool valid;
 		bool eof;
 		unsigned int size;
-		File(const std::string& fn);
-		File(std::istream& f, int len);
-		File(void* data, int len);
+		IfcSpfStream(const std::string& fn);
+		IfcSpfStream(std::istream& f, int len);
+		IfcSpfStream(void* data, int len);
 		/// Returns the character at the cursor 
 		char Peek();
 		/// Returns the character at specified offset
