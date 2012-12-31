@@ -108,7 +108,6 @@ void IfcSpfStream::Close() {
 // Reads a chunk of BUF_SIZE in memory and increments cursor if requested
 //
 void IfcSpfStream::ReadBuffer(bool inc) {
-	std::cout << "Readbuffer" << std::endl;
 #ifdef BUF_SIZE
 	if ( inc ) {
 		offset += len;
