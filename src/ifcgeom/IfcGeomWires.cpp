@@ -85,24 +85,59 @@
 bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire) {
 	if ( ! Ifc::hasPlaneAngleUnit ) {
 		Ifc::LogMessage("Warning","Creating a composite curve without unit information:",l->entity);
-		Ifc::hasPlaneAngleUnit = true;
-		// First try radians
+		
+        // Temporarily pretend we do have unit information
+        Ifc::hasPlaneAngleUnit = true;
+
+        bool succes_radians = false;
+        bool succes_degrees = false;
+        bool use_radians = false;
+        bool use_degrees = false;
+		
+        // First try radians
 		Ifc::PlaneAngleUnit = 1.0f;
-		bool succes_radians = IfcGeom::convert(l,wire);
-		bool succes_degrees;
-		if ( succes_radians ) {
+        TopoDS_Wire wire_radians, wire_degrees;
+        try {
+		    succes_radians = IfcGeom::convert(l,wire_radians);
+        } catch (...) {}
+		
+        // Now try degrees
+		Ifc::PlaneAngleUnit = 0.0174532925199433f;
+        try {
+		    succes_degrees = IfcGeom::convert(l,wire_degrees);
+        } catch (...) {}
+
+		// Restore to unknown unit state
+		Ifc::PlaneAngleUnit = 1.0f;
+        Ifc::hasPlaneAngleUnit = false;
+
+        if ( succes_degrees && ! succes_radians ) {
+			use_degrees = true;
+		} else if ( succes_radians && ! succes_degrees ) {
+            use_radians = true;
+        } else if ( succes_radians && succes_degrees ) {
+            if ( wire_degrees.Closed() && ! wire_radians.Closed() ) {
+                use_degrees = true;
+            } else if ( wire_radians.Closed() && ! wire_degrees.Closed() ) {
+                use_radians = true;
+            } else {
+                // No heuristic left to prefer the one over the other,
+                // apparently both variants are equally succesful.
+                // The curve might be composed of only straight segments.
+                // Let's go with the wire created using radians as that
+                // at least is a SI unit.
+                use_radians = true;
+            }
+        }
+
+		if ( use_radians ) {
 			Ifc::LogMessage("Notice","Used radians to create composite curve");
-		} else {
-			// Now try degrees
-			Ifc::PlaneAngleUnit = 0.0174532925199433f;
-			succes_degrees = IfcGeom::convert(l,wire);
-			if ( succes_degrees ) {
-				Ifc::LogMessage("Notice","Used degrees to create composite curve");
-			}
-			// Restore to radians
-			Ifc::PlaneAngleUnit = 1.0f;
+            wire = wire_radians;
+		} else if ( use_degrees ) {
+			Ifc::LogMessage("Notice","Used degrees to create composite curve");
+            wire = wire_degrees;
 		}
-		Ifc::hasPlaneAngleUnit = false;
+
 		return succes_radians || succes_degrees;
 	}
 	Ifc2x3::IfcCompositeCurveSegment::list segments = l->Segments();

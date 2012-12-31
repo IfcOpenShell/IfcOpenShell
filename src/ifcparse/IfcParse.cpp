@@ -638,7 +638,7 @@ bool Ifc::Init(IfcParse::File* f) {
 	int x = 0;
 	EntityPtr e;
 	IfcUtil::IfcSchemaEntity entity = 0; 
-	if ( log1 ) std::cout << "Scanning file..." << std::endl;
+	if ( log1 ) (*log1) << "Scanning file..." << std::endl;
 	while ( ! file->eof ) {
 		if ( currentId ) {
 			try {
@@ -649,7 +649,7 @@ bool Ifc::Init(IfcParse::File* f) {
 				Ifc::LogMessage("Error",ex.what());
 				continue;
 			}
-			if ( log1 && !((++x)%1000) ) std::cout << "\r#" << currentId << "         " << std::flush;
+			if ( log1 && !((++x)%1000) ) (*log1) << "\r#" << currentId << "         " << std::flush;
 			if ( entity->is(Ifc2x3::Type::IfcRoot) ) {
 				Ifc2x3::IfcRoot::ptr ifc_root = (Ifc2x3::IfcRoot::ptr) entity;
 				try {
@@ -702,8 +702,9 @@ bool Ifc::Init(IfcParse::File* f) {
 		previous = token;
 	}
 
-	if ( log1 ) std::cout << "\rDone scanning file   " << std::endl;
+	if ( log1 ) (*log1) << "\rDone scanning file   " << std::endl;
 
+    hasPlaneAngleUnit = false;
 	Ifc2x3::IfcUnitAssignment::list unit_assignments = EntitiesByType<Ifc2x3::IfcUnitAssignment>();
 	IfcUtil::IfcAbstractSelect::list units = IfcUtil::IfcAbstractSelect::list();
 	if ( unit_assignments->Size() ) {
