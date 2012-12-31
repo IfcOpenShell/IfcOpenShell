@@ -30,8 +30,8 @@ bl_info = {
     "description": "Import files in the "\
         "Industry Foundation Classes (.ifc) file format",
     "author": "Thomas Krijnen, IfcOpenShell",
-    "blender": (2, 5, 8),
-    "api": 37702,
+    "blender": (2, 6, 5),
+    "api": 52851,
     "location": "File > Import",
     "warning": "",
     "wiki_url": "http://sourceforge.net/apps/"\
@@ -39,14 +39,6 @@ bl_info = {
     "tracker_url": "http://sourceforge.net/tracker/?group_id=543113",
     "category": "Import-Export"}
 
-import sys   
-max_unicode = 0x110000-1 if sys.platform[0:5] == 'linux' else 0x10000-1
-wrong_unicode = max_unicode != sys.maxunicode
-if wrong_unicode:
-    print("\nWarning: wrong unicode representation detected, switching to "\
-        "compatibility layer for text transferral, may result in undefined "\
-        "behaviour, please use offical release from http://blender.org\n")
-    
 if "bpy" in locals():
     import imp
     if "IfcImport" in locals():
@@ -71,15 +63,9 @@ bpy.types.Object.ifc_type = StringProperty(name="IFC Entity Type",
 
 
 def import_ifc(filename, use_names, process_relations):
-    global wrong_unicode
     from . import IfcImport
     print("Reading %s..."%bpy.path.basename(filename))
-    if wrong_unicode:
-        valid_file = IfcImport.InitUCS2( 
-            ''.join(['\0']+['\0%s'%s for s in filename]+['\0\0'])
-        )
-    else:
-        valid_file = IfcImport.Init(filename)
+    valid_file = IfcImport.Init(filename)
     if not valid_file:
         IfcImport.CleanUp()
         return False
@@ -91,19 +77,12 @@ def import_ifc(filename, use_names, process_relations):
     print("Creating geometry...")
     while True:
         ob = IfcImport.Get()
-        
-        if wrong_unicode:
-            ob_name = ''.join([chr(c) for c in ob.name_as_intvector()])
-            ob_type = ''.join([chr(c) for c in ob.type_as_intvector()])
-            ob_guid = ''.join([chr(c) for c in ob.guid_as_intvector()])
-        else:
-            ob_name, ob_type, ob_guid = ob.name, ob.type, ob.guid
-        
+ 
         f = ob.mesh.faces
         v = ob.mesh.verts
         m = ob.matrix
-        t = ob_type[0:21]
-        nm = ob_name if len(ob_name) and use_names else ob_guid
+        t = ob.type[0:21]
+        nm = ob.name if len(ob.name) and use_names else ob.guid
 
         verts = [[v[i], v[i + 1], v[i + 2]] \
             for i in range(0, len(v), 3)]
@@ -138,9 +117,9 @@ def import_ifc(filename, use_names, process_relations):
         bpy.ops.object.mode_set(mode='OBJECT')
 
         bob.ifc_id, bob.ifc_guid, bob.ifc_name, bob.ifc_type = \
-            ob.id, ob_guid, ob_name, ob_type
+            ob.id, ob.guid, ob.name, ob.type
 
-        bob.hide = ob_type == 'IfcSpace' or ob_type == 'IfcOpeningElement'
+        bob.hide = ob.type == 'IfcSpace' or ob.type == 'IfcOpeningElement'
         bob.hide_render = bob.hide
         
         if ob.id not in id_to_object: id_to_object[ob.id] = []
@@ -173,20 +152,9 @@ def import_ifc(filename, use_names, process_relations):
             if parent_ob.id == -1:
                 bob = None
             else:
-                if wrong_unicode:
-                    parent_ob_name = ''.join(
-                        [chr(c) for c in parent_ob.name_as_intvector()])
-                    parent_ob_type = ''.join(
-                        [chr(c) for c in parent_ob.type_as_intvector()])
-                    parent_ob_guid = ''.join(
-                        [chr(c) for c in parent_ob.guid_as_intvector()])
-                else:
-                    parent_ob_name, parent_ob_type, parent_ob_guid = \
-                        parent_ob.name, parent_ob.type, parent_ob.guid
-                    
                 m = parent_ob.matrix
-                nm = parent_ob_name if len(parent_ob_name) and use_names \
-                    else parent_ob_guid
+                nm = parent_ob.name if len(parent_ob.name) and use_names \
+                    else parent_ob.guid
                 bob = bpy.data.objects.new(nm, None)
                 
                 mat = mathutils.Matrix((
@@ -201,7 +169,7 @@ def import_ifc(filename, use_names, process_relations):
 
                 bob.ifc_id = parent_ob.id
                 bob.ifc_name, bob.ifc_type, bob.ifc_guid = \
-                    parent_ob_name, parent_ob_type, parent_ob_guid
+                    parent_ob.name, parent_ob.type, parent_ob.guid
 
                 if parent_ob.parent_id > 0:
                     id_to_parent[parent_id] = parent_ob.parent_id
@@ -227,9 +195,8 @@ def import_ifc(filename, use_names, process_relations):
     if process_relations:
         print("Done processing relations")
     
-    if not wrong_unicode:
-        txt = bpy.data.texts.new("%s.log"%bpy.path.basename(filename))
-        txt.from_string(IfcImport.GetLog())
+    txt = bpy.data.texts.new("%s.log"%bpy.path.basename(filename))
+    txt.from_string(IfcImport.GetLog())
 
     IfcImport.CleanUp()
     
@@ -253,13 +220,7 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         default=False)
 
     def execute(self, context):
-        global wrong_unicode
-        if wrong_unicode and sys.platform[0:5] != 'linux':
-            self.report({'ERROR'},
-                'Your version of Blender is incompatible with IfcBlender\n' \
-                'Please use the offical release from http://blender.org instead'
-            )
-        elif not import_ifc(self.filepath, self.use_names, self.process_relations):
+        if not import_ifc(self.filepath, self.use_names, self.process_relations):
             self.report({'ERROR'},
                 'Unable to parse .ifc file or no geometrical entities found'
             )

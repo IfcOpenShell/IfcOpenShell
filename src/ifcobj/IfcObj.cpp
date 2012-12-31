@@ -70,7 +70,7 @@ int main ( int argc, char** argv ) {
 	std::cout << "Creating geometry..." << std::endl;
 
 	// The functions IfcGeomObjects::Get() and IfcGeomObjects::Next() wrap an iterator of all geometrical entities in the Ifc file.
-	// IfcGeomObjects::Get() returns an IfcGeomObjects::IfcGeomObject (see IfcObjects.h for definition)
+	// IfcGeomObjects::Get() returns an IfcGeomObjects::IfcGeomObject (see IfcGeomObjects.h for definition)
 	// IfcGeomObjects::Next() is used to poll whether more geometrical entities are available
     int vcount_total = 1;
 	do {
