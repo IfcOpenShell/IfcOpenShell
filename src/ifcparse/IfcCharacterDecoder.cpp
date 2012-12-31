@@ -88,19 +88,34 @@ void IfcCharacterDecoder::addChar(std::stringstream& s,const UChar32& ch) {
 #endif
 }
 IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::File* f) {
-	file = f;
+  file = f;
 #ifdef HAVE_ICU
-	if ( ! destination && mode == UTF8 ) {
-		destination = ucnv_open("utf-8", &status);
-	} else if ( ! destination && mode == LATIN ) {
-		destination = ucnv_open("iso-8859-1", &status);
-	}
+  if (destination) ucnv_close(destination);
+  if (compatibility_converter) ucnv_close(compatibility_converter);
+  destination = nullptr;
+  compatibility_converter = nullptr;
+
+  if (mode == DEFAULT) {
+    destination = ucnv_open(nullptr, &status);
+  } else if (mode == UTF8) {
+    destination = ucnv_open("utf-8", &status);
+  } else if (mode == LATIN) {
+    destination = ucnv_open("iso-8859-1", &status);
+  }
+  if (compatibility_charset.empty()) {
+    compatibility_charset = ucnv_getDefaultName();
+  }
+  compatibility_converter = ucnv_open(compatibility_charset.c_str(), &status);
 #endif
 }
 IfcCharacterDecoder::~IfcCharacterDecoder() {
 #ifdef HAVE_ICU
-	if ( destination ) ucnv_close(destination);
-	if ( converter ) ucnv_close(converter);
+  if ( destination ) ucnv_close(destination);
+  if ( converter ) ucnv_close(converter);
+  if ( compatibility_converter ) ucnv_close(compatibility_converter);
+  destination = nullptr;
+  converter = nullptr;
+  compatibility_converter = nullptr;
 #endif
 }
 IfcCharacterDecoder::operator std::string() {
@@ -111,6 +126,9 @@ IfcCharacterDecoder::operator std::string() {
 	int codepage = 1;
 	unsigned int hex = 0;
 	unsigned int hex_count = 0;
+#ifdef HAVE_ICU
+	unsigned int old_hex = 0; // for compatibility_mode
+#endif  
 	while ( current_char = file->Peek() ) {
 		if ( EXPECTS_CHARACTER(parse_state) ) {
 #ifdef HAVE_ICU
@@ -164,7 +182,24 @@ IfcCharacterDecoder::operator std::string() {
 			if ( (hex_count == 2 && !(parse_state & EXTENDED2)) ||
 				(hex_count == 4 && !(parse_state & EXTENDED4)) ||
 				(hex_count == 8) ) {
-					addChar(s,(UChar32) hex);
+#ifdef HAVE_ICU
+					if (compatibility_mode) {
+						if (old_hex == 0) {
+							old_hex = hex;
+						} else {
+							char characters[3] = { old_hex, hex };
+							const char* char_array = &characters[0];
+							UChar32 ch = ucnv_getNextUChar(compatibility_converter,&char_array,char_array+2,&status);
+							addChar(s,ch);
+							old_hex = 0;
+						}
+					}
+					else {
+#endif
+						addChar(s,(UChar32) hex);
+#ifdef HAVE_ICU
+					}
+#endif
 					if ( hex_count == 2 ) parse_state = 0;
 					else CLEAR_HEX(parse_state);
 					hex = hex_count = 0;
@@ -177,8 +212,8 @@ IfcCharacterDecoder::operator std::string() {
 				throw IfcException("Invalid character encountered");
 		} else {
 			parse_state = hex = hex_count = 0;
-            // NOTE: this is in fact wrong, this ought to be the representation of the character.
-            // In UTF-8 this is the same, but we should not rely on that.
+			// NOTE: this is in fact wrong, this ought to be the representation of the character.
+			// In UTF-8 this is the same, but we should not rely on that.
 			s.put(current_char);
 		}
 		file->Inc();
@@ -246,9 +281,18 @@ void IfcCharacterDecoder::dryRun() {
 #ifdef HAVE_ICU
 UConverter* IfcCharacterDecoder::destination = 0;
 UConverter* IfcCharacterDecoder::converter = 0;
+UConverter* IfcCharacterDecoder::compatibility_converter = 0;
 int IfcCharacterDecoder::previous_codepage = -1;
 UErrorCode IfcCharacterDecoder::status = U_ZERO_ERROR;
+#endif
+
+#ifdef HAVE_ICU
 IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDecoder::JSON;
+
+// Many BIM software (eg. Revit, ArchiCAD, ...) has wrong behavior  
+bool IfcCharacterDecoder::compatibility_mode = false;
+std::string IfcCharacterDecoder::compatibility_charset = "";
+
 #else
 char IfcCharacterDecoder::substitution_character = '_';
 #endif
