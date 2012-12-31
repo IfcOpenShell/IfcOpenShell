@@ -8,7 +8,7 @@
 			} \
 		} catch(...) {  } \
 		Logger::Message(Logger::LOG_ERROR,"Failed to convert:",l->entity); \
-		return false; \
+		return 0; \
 	}
 #include "IfcRegisterDef.h"
 

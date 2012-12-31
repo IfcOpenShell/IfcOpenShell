@@ -111,7 +111,7 @@ typedef bool IfcBoolean;
 /// Type: ARRAY [1:2] OF REAL
 /// 
 /// HISTORY New type in IFC Release 2x2.
-typedef std::vector<double> /*[1:2]*/ IfcComplexNumber;
+typedef std::vector< double > /*[1:2]*/ IfcComplexNumber;
 /// IfcCompoundPlaneAngleMeasure is a compound measure of plane angle in degrees, minutes, seconds, and optionally millionth-seconds of arc.
 /// 
 /// NOTE: IfcCompoundPlaneAngleMeasure is used where angles need to be described to an accuracy as fine as one millionth of a degree and expressed as parts of an arc. It may be used for angular measurement by surveyors or for other angular measurements where precision is required. Another usage is exact or approximate global positioning against a geographic coordinate systems using longitude and latitude.
@@ -134,33 +134,33 @@ typedef std::vector<double> /*[1:2]*/ IfcComplexNumber;
 /// All measure components have the same sign (positive or negative).  It is therefore trivial to convert between floating point representation (decimal degrees) and compound representation regardless whether the angle is greater or smaller than zero.  Example:
 /// 
 /// LOCAL
-/// ï¿½ï¿½a : IfcPlaneAngleMeasure := -50.975864; ï¿½(* decimal degrees, -50ï¿½ 58' 33" 110400 *)
-/// ï¿½ï¿½b : IfcPlaneAngleMeasure;
-/// ï¿½ï¿½c : IfcCompoundPlaneAngleMeasure;
-/// ï¿½ï¿½s : IfcText;
+///   a : IfcPlaneAngleMeasure := -50.975864;  (* decimal degrees, -50° 58' 33" 110400 *)
+///   b : IfcPlaneAngleMeasure;
+///   c : IfcCompoundPlaneAngleMeasure;
+///   s : IfcText;
 /// END_LOCAL;
 /// 
 /// (* convert from float to compound *)
-/// ï¿½ï¿½c[1] := ï¿½ï¿½ï¿½a; ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½-- -50
-/// ï¿½ï¿½c[2] := ï¿½ï¿½(a - c[1]) * 60; ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½-- -58
-/// ï¿½ï¿½c[3] := ï¿½((a - c[1]) * 60 - c[2]) * 60; ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½-- -33
-/// ï¿½ï¿½c[4] := (((a - c[1]) * 60 - c[2]) * 60 - c[3]) * 1.e6; ï¿½-- -110400
+///   c[1] :=    a;                                           -- -50
+///   c[2] :=   (a - c[1]) * 60;                              -- -58
+///   c[3] :=  ((a - c[1]) * 60 - c[2]) * 60;                 -- -33
+///   c[4] := (((a - c[1]) * 60 - c[2]) * 60 - c[3]) * 1.e6;  -- -110400
 /// 
 /// (* convert from compound to float *)
-/// ï¿½ï¿½b := c[1] + c[2]/60. + c[3]/3600. + c[4]/3600.e6; ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½-- -50.975864
+///   b := c[1] + c[2]/60. + c[3]/3600. + c[4]/3600.e6;       -- -50.975864
 /// 
 /// Use in string representations
 /// 
 /// When a compound plane angle measure is formatted for display or printout, the signs of the fractional components will usually be discarded because, to a human reader, the sign of the first component alone already indicates the sense of the angle:
 /// 
 /// (* convert from compound to human-readable string *)
-/// ï¿½ï¿½s := FORMAT(c[1], '+##') ï¿½ï¿½ï¿½ï¿½+ "000000B0"
-/// ï¿½ï¿½ï¿½ï¿½ï¿½+ FORMAT(ABS(c[2]), '##') + ''''
-/// ï¿½ï¿½ï¿½ï¿½ï¿½+ FORMAT(ABS(c[3]), '##') + '"'
-/// ï¿½ï¿½ï¿½ï¿½ï¿½+ FORMAT(ABS(c[4]), '##'); ï¿½-- -50ï¿½ 58' 33" 110400
+///   s := FORMAT(c[1], '+##')     + "000000B0"
+///      + FORMAT(ABS(c[2]), '##') + ''''
+///      + FORMAT(ABS(c[3]), '##') + '"'
+///      + FORMAT(ABS(c[4]), '##');  -- -50° 58' 33" 110400
 /// 
-/// Another often encountered display format of latitudes and longitudes is to omit the signs and print N, S, E, W indicators instead, for example, 50ï¿½58'33"S.  When stored as IfcCompoundPlaneAngleMeasure however, a compound plane angle measure is always signed, with same sign of all components.
-typedef std::vector<int> /*[3:4]*/ IfcCompoundPlaneAngleMeasure;
+/// Another often encountered display format of latitudes and longitudes is to omit the signs and print N, S, E, W indicators instead, for example, 50°58'33"S.  When stored as IfcCompoundPlaneAngleMeasure however, a compound plane angle measure is always signed, with same sign of all components.
+typedef std::vector< int > /*[3:4]*/ IfcCompoundPlaneAngleMeasure;
 /// Definition from ISO/CD 10303-41:1992: Is the value of a physical quantity as defined by an application context.
 /// Type: REAL
 /// 
@@ -280,9 +280,9 @@ typedef double IfcEnergyMeasure;
 /// 
 /// Fonts with Oblique, Slanted or Incline in their names will typically be labeled 'oblique' in the user agents font database. Fonts with Italic, Cursive or Kursiv in their names will typically be labeled 'italic'.
 /// 
-/// NOTEï¿½ Corresponding CSS1 definitions is font-style.
+/// NOTE  Corresponding CSS1 definitions is font-style.
 /// 
-/// HISTORYï¿½ New type in IFC2x3.
+/// HISTORY  New type in IFC2x3.
 typedef std::string IfcFontStyle;
 /// Definition from CSS1 (W3C Recommendation): The font-style property selects between normal and small-caps within a font family. Values are:
 /// 
@@ -293,9 +293,9 @@ typedef std::string IfcFontStyle;
 /// 
 /// A value of 'normal' selects a font that is not a small-caps font, 'small-caps' selects a small-caps font. It is acceptable (but not required) in CSS1 if the small-caps font is a created by taking a normal font and replacing the lower case letters by scaled uppercase characters. As a last resort, uppercase letters will be used as replacement for a small-caps font.
 /// 
-/// NOTEï¿½ Corresponding CSS1 definitions is font-variant.
+/// NOTE  Corresponding CSS1 definitions is font-variant.
 /// 
-/// HISTORYï¿½ New type in IFC2x3.
+/// HISTORY  New type in IFC2x3.
 typedef std::string IfcFontVariant;
 /// Definition from CSS1 (W3C Recommendation): The 'font-weight' property selects the weight of the font. The values '100' to '900' form an ordered sequence, where each number indicates a weight that is at least as dark as its predecessor. The keyword 'normal' is synonymous with '400', and 'bold' is synonymous with '700'. Keywords other than 'normal' and 'bold' have been shown to be often confused with font names and a numerical scale was therefore chosen for the 9-value list. Values are:
 /// 
@@ -317,9 +317,9 @@ typedef std::string IfcFontVariant;
 /// Available faces       | Assignments   | Filling the holes----------------------+---------------+-------------------"Example1 Regular"    | 400           | 100, 200, 300"Example1 Medium"     | 500           |"Example1 Bold"       | 700           | 600"Example1 Heavy"      | 800           | 900
 /// Available faces       | Assignments   | Filling the holes----------------------+---------------+-------------------"Example2 Book"       | 400           | 100, 200, 300"Example2 Medium"     | 500           |"Example2 Bold"       | 700           | 600 "Example2 Heavy"      | 800           |"Example2 Black"      | 900           |"Example2 ExtraBlack" | (none)        |
 /// 
-/// NOTEï¿½ Corresponding CSS1 definitions is font-weight.
+/// NOTE  Corresponding CSS1 definitions is font-weight.
 /// 
-/// HISTORYï¿½ New type in IFC2x2 Addendum 2.
+/// HISTORY  New type in IFC2x2 Addendum 2.
 typedef std::string IfcFontWeight;
 /// IfcForceMeasure is a measure of the force.
 /// Usually measured in Newton (N, kg m/s2).
@@ -335,15 +335,15 @@ typedef double IfcForceMeasure;
 typedef double IfcFrequencyMeasure;
 /// An IfcGloballyUniqueId holds an encoded string identifier that is used to uniquely identify an IFC object. An IfcGloballyUniqueId is a Globally Unique Identifier (GUID) which is an auto-generated 128-bit number. Since this identifier is required for all IFC object instances, it is desirable to compress it to reduce overhead. The encoding of the base 64 character set is shown below:
 /// 
-/// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½3ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½4ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½5ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½6
-///   ï¿½0123456789012345678901234567890123456789012345678901234567890123
+///            1         2         3         4         5         6
+///    0123456789012345678901234567890123456789012345678901234567890123
 ///   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
 /// 
 /// The resulting string is a fixed 22 character length string to be exchanged within the IFC exchange file structure.
 /// 
 /// Refer to the BuildingSMART website (www.buildingsmart-tech.org) for more information and sample encoding algorithms.
 /// 
-/// HISTORYï¿½ New type in IFC R1.5.1.
+/// HISTORY  New type in IFC R1.5.1.
 typedef std::string IfcGloballyUniqueId;
 /// IfcHeatFluxDensityMeasure is a measure of the density of heat flux within a body.
 /// Usually measured in W/m2 (J/s m2).
@@ -684,13 +684,13 @@ typedef double IfcPlaneAngleMeasure;
 typedef double IfcPowerMeasure;
 /// IfcPresentableText is a text string used to capture the content of a text literal for the purpose of presentation. The IfcPresentableText can include multiple lines of text, for which the line feed character LF, 0x0A, should be used to separate lines.
 /// 
-/// NOTEï¿½ The non printable characters are converted within the standard exchange format ISO 10303-21 (STEP physical file format), commonly the \X\09 represents the TAB, and \X\0A the LF character.
+/// NOTE  The non printable characters are converted within the standard exchange format ISO 10303-21 (STEP physical file format), commonly the \X\09 represents the TAB, and \X\0A the LF character.
 /// 
-/// NOTEï¿½ The IfcPresentableText is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation.
+/// NOTE  The IfcPresentableText is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: presentable_text. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: presentable_text. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New type in IFC2x2.
+/// HISTORY  New type in IFC2x2.
 typedef std::string IfcPresentableText;
 /// IfcPressureMeasure is a measure of the quantity of a medium acting on a unit area.
 /// Usually measured in Pascals (Pa, N/m2).
@@ -823,16 +823,16 @@ typedef double IfcTemperatureGradientMeasure;
 /// 
 /// Note that while IfcText is not formally restricted in length, the size of a string in ISO 10303-21:2002 conforming exchange files must not exceed 32767 octets after encoding and escaping.
 typedef std::string IfcText;
-/// Definition from CSS1 (W3C Recommendation):ï¿½This property describes how text is aligned within the element. The actual justification algorithm used is user agent and human language dependent. If 'justify' is not supported, the user agent will supply a replacement. Typically, this will be 'left' for western languages. Values are:
+/// Definition from CSS1 (W3C Recommendation): This property describes how text is aligned within the element. The actual justification algorithm used is user agent and human language dependent. If 'justify' is not supported, the user agent will supply a replacement. Typically, this will be 'left' for western languages. Values are:
 /// 
 /// left
 ///   right
 ///   center
 ///   justify
 /// 
-/// NOTEï¿½ Corresponding CSS1 definition is text-align.
+/// NOTE  Corresponding CSS1 definition is text-align.
 /// 
-/// HISTORYï¿½ New type in IFC2x3.
+/// HISTORY  New type in IFC2x3.
 typedef std::string IfcTextAlignment;
 /// Definition from CSS1 (W3C Recommendation): This property describes decorations that are added to the text of an element. A value of 'blink' causes the text to blink.. Values are:
 /// 
@@ -844,9 +844,9 @@ typedef std::string IfcTextAlignment;
 /// 
 /// User agents must recognize the keyword 'blink', but are not required to support the blink effect.
 /// 
-/// NOTEï¿½ Corresponding CSS1 definition is text-decoration.
+/// NOTE  Corresponding CSS1 definition is text-decoration.
 /// 
-/// HISTORYï¿½ New type in IFC2x3.
+/// HISTORY  New type in IFC2x3.
 typedef std::string IfcTextDecoration;
 /// Definition from CSS1 (W3C Recommendation): The value is a font family name and/or generic family name. Values are:
 /// 
@@ -862,9 +862,9 @@ typedef std::string IfcTextDecoration;
 /// 
 /// It is encouraged to offer a generic font family as a last alternative.
 /// 
-/// NOTEï¿½ Corresponding CSS1 definitions are font-family.
+/// NOTE  Corresponding CSS1 definitions are font-family.
 /// 
-/// HISTORYï¿½ New type in IFC2x2 Addendum 2.
+/// HISTORY  New type in IFC2x2 Addendum 2.
 /// 
 /// IFC2x2 Addendum 2 CHANGE: The IfcFontFamily has been added.
 typedef std::string IfcTextFontName;
@@ -875,9 +875,9 @@ typedef std::string IfcTextFontName;
 ///   lowercase: lowercases all letters of the element
 ///   none
 /// 
-/// NOTEï¿½ Corresponding CSS1 definition is text-transform.
+/// NOTE  Corresponding CSS1 definition is text-transform.
 /// 
-/// HISTORYï¿½ New type in IFC2x3.
+/// HISTORY  New type in IFC2x3.
 typedef std::string IfcTextTransformation;
 /// IfcThermalAdmittanceMeasure is the measure of the ability of a surface to smooth out temperature variations.
 /// Usually measured in Watt / m2 Kelvin.
@@ -1019,19 +1019,19 @@ typedef IfcSchemaEntity IfcAxis2Placement;
 typedef IfcSchemaEntity IfcBooleanOperand;
 /// The character style select allows for a selection of character styles for text. Currently only text color and background color is selectable.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: character_style_select. Please refer to ISO/IS
+/// NOTE  Corresponding ISO 10303 name: character_style_select. Please refer to ISO/IS
 /// 10303-46:1994, p. 89 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New type in IFC2x2.
+/// HISTORY  New type in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ The SELECT item IfcTextStyleForDefinedFont replaces the old IfcColour.
+/// IFC2x3 CHANGE  The SELECT item IfcTextStyleForDefinedFont replaces the old IfcColour.
 typedef IfcSchemaEntity IfcCharacterStyleSelect;
 typedef IfcSchemaEntity IfcClassificationNotationSelect;
 /// Definition from ISO/CD 10303-46:1992: The colour entity defines a basic appearance of elements which shall be visualized in a picture.
 /// 
-/// NOTEï¿½ Corresponding STEP name: colour. It has been made into a SELECT type in IFC to avoid multiple inheritance for pre defined colour. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
+/// NOTE  Corresponding STEP name: colour. It has been made into a SELECT type in IFC to avoid multiple inheritance for pre defined colour. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 typedef IfcSchemaEntity IfcColour;
 /// The IfcColourOrFactor enables the selection of either a RGB colour value or a scalar factor value for the use as values of the reflectance components.
 /// 
@@ -1058,7 +1058,7 @@ typedef IfcSchemaEntity IfcCurveFontOrScaledCurveFontSelect;
 /// IfcCurve
 ///   IfcEdgeCurve
 /// 
-/// HISTORYï¿½ New select type in IFC2x Edition 3.
+/// HISTORY  New select type in IFC2x Edition 3.
 typedef IfcSchemaEntity IfcCurveOrEdgeCurve;
 /// Definition from ISO/CD 10303-46:1992: The curve style font select is a selection of a curve style font or a predefined curve style font. 
 /// 
@@ -1181,7 +1181,7 @@ typedef IfcSchemaEntity IfcFillStyleSelect;
 typedef IfcSchemaEntity IfcGeometricSetSelect;
 /// The IfcHatchLineDistanceSelect is a selection between different ways to determine the distance and potentially start point of hatch lines, either by an offset distance length measure or by a vector.
 /// 
-/// HISTORYï¿½ New type in IFC2x3.
+/// HISTORY  New type in IFC2x3.
 typedef IfcSchemaEntity IfcHatchLineDistanceSelect;
 /// Definition from ISO/CD 10303-46:1992: The layered things type selects those things, which can be grouped in layers. 
 /// 
@@ -1277,16 +1277,16 @@ typedef IfcSchemaEntity IfcMeasureValue;
 typedef IfcSchemaEntity IfcMetricValueSelect;
 /// IfcObjectReferenceSelect is a select type, that holds a list of resource level entities that can be used as properties within a property set. 
 /// 
-/// HISTORYï¿½ New select type in IFC Release 2.0.
+/// HISTORY  New select type in IFC Release 2.0.
 typedef IfcSchemaEntity IfcObjectReferenceSelect;
 typedef IfcSchemaEntity IfcOrientationSelect;
-/// IfcPointOrVertexPointï¿½provides the option to either select a geometric point (IfcPoint and subtypes) within a geometric model, or a vertex with associated point coordinates (IfcVertexPoint) within a topological model.
+/// IfcPointOrVertexPoint provides the option to either select a geometric point (IfcPoint and subtypes) within a geometric model, or a vertex with associated point coordinates (IfcVertexPoint) within a topological model.
 /// SELECT 
 /// 
 /// IfcPoint, 
 ///   IfcVertexPoint
 /// 
-/// HISTORYï¿½ New select type in IFC2x Edition 3.
+/// HISTORY  New select type in IFC2x Edition 3.
 typedef IfcSchemaEntity IfcPointOrVertexPoint;
 /// Definition from ISO/CD 10303-46:1992: The presentation style select is a selection of one of many kinds of styles, a different one for each kind of geometric representation item to be styled.
 /// 
@@ -1297,7 +1297,7 @@ typedef IfcSchemaEntity IfcPointOrVertexPoint;
 /// 
 /// IFC2x4 CHANGE The select type has been deprecated.
 typedef IfcSchemaEntity IfcPresentationStyleSelect;
-/// Definition from ISO/CD 10303-42:1992 This type collects together, for reference when constructing more complex models, the subtypes which have the characteristics of a shell. A shell is a connected object of fixed dimensionality d = 0; 1; or 2, typically used to bound a region. The domain of a shell, if present, includes its bounds and 0 ï¿½ X < ï¿½.  
+/// Definition from ISO/CD 10303-42:1992 This type collects together, for reference when constructing more complex models, the subtypes which have the characteristics of a shell. A shell is a connected object of fixed dimensionality d = 0; 1; or 2, typically used to bound a region. The domain of a shell, if present, includes its bounds and 0 £ X < ¥.  
 /// 
 /// A shell of dimensionality 0 is represented by a graph consisting of a single vertex. The vertex shall not have any associated edges. 
 /// A shell of dimensionality 1 is represented by a connected graph of dimensionality 1. 
@@ -1305,9 +1305,9 @@ typedef IfcSchemaEntity IfcPresentationStyleSelect;
 /// 
 /// Shells of dimensionality 0 and 1 are not part of the current IFC release. 
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 type: shell. Please refer to ISO/IS 10303-42:1994, p. 127 for the final definition of the formal standard. Only the select items closed_shell (IfcClosedShell) and open_shell (IfcOpenShell) have been incorporated in the current IFC release. 
+/// NOTE  Corresponding ISO 10303 type: shell. Please refer to ISO/IS 10303-42:1994, p. 127 for the final definition of the formal standard. Only the select items closed_shell (IfcClosedShell) and open_shell (IfcOpenShell) have been incorporated in the current IFC release. 
 /// 
-/// HISTORYï¿½ New type in IFC2x.
+/// HISTORY  New type in IFC2x.
 typedef IfcSchemaEntity IfcShell;
 /// IfcSimpleValue is a select type for selecting between simple value types.
 /// 
@@ -1333,14 +1333,14 @@ typedef IfcSchemaEntity IfcSimpleValue;
 /// 
 /// Definition from ISO: The size (or width) measure value is given in the global drawing length units.
 /// 
-/// NOTEï¿½ global units are defined at the single IfcProject instance, given by UnitsInContext:IfcUnitAssignment, the same units are used for the geometric representation items and for the style definitions.
+/// NOTE  global units are defined at the single IfcProject instance, given by UnitsInContext:IfcUnitAssignment, the same units are used for the geometric representation items and for the style definitions.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: size_select. Please refer to ISO/IS 10303-46:1994 for the final
+/// NOTE  Corresponding ISO 10303 name: size_select. Please refer to ISO/IS 10303-46:1994 for the final
 /// definition of the formal standard.
 /// 
-/// HISTORYï¿½ New type in IFC2x2.
+/// HISTORY  New type in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ The SELECT item IfcMeasureWithUnit has been removed from the IfcSizeSelect, the IfcRatioMeasure and IfcDescriptiveMeasure has been added.
+/// IFC2x3 CHANGE  The SELECT item IfcMeasureWithUnit has been removed from the IfcSizeSelect, the IfcRatioMeasure and IfcDescriptiveMeasure has been added.
 typedef IfcSchemaEntity IfcSizeSelect;
 /// The IfcSpecularHighlightSelect defines the selectable types of value for specular highlight sharpness. 
 /// 
@@ -1371,7 +1371,7 @@ typedef IfcSchemaEntity IfcStructuralActivityAssignmentSelect;
 ///   IfcFaceSurface
 ///   IfcFaceBasedSurfaceModel (a connected face set, representing a faceted surface as an approximation of a non planar, non rectangular bounded surface)
 /// 
-/// HISTORYï¿½ New select type in IFC2x3.
+/// HISTORY  New select type in IFC2x3.
 typedef IfcSchemaEntity IfcSurfaceOrFaceSurface;
 /// Definition from ISO/CD 10303-46:1992: The surface style element select is a selection of the different surface styles to use in the presentation of the side of a surface. 
 /// 
@@ -1393,11 +1393,11 @@ typedef IfcSchemaEntity IfcSurfaceStyleElementSelect;
 typedef IfcSchemaEntity IfcSymbolStyleSelect;
 /// IfcTextFontSelect allows for either a predefined text font, a text font model or an externally defined text font to be used to describe the font of a text literal. The definition of the text font model is based on W3C TR Cascading Style Sheet Version 1, whereas the definition of predefined text font is based on ISO 10303.
 /// 
-/// NOTEï¿½ IfcTextFontSelect is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation. Corresponding ISO 10303 name: font_select. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
+/// NOTE  IfcTextFontSelect is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation. Corresponding ISO 10303 name: font_select. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New type in IFC2x2.
+/// HISTORY  New type in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ The select type has been renamed from IfcFontSelect.
+/// IFC2x3 CHANGE  The select type has been renamed from IfcFontSelect.
 typedef IfcSchemaEntity IfcTextFontSelect;
 /// The text style select allows for the selection of styles to be assigned to an annotated text. The text style determines the text model that affect the visual presentation of characters, spaces, words, and paragraphs. There are two choices:
 /// 
@@ -1405,9 +1405,9 @@ typedef IfcSchemaEntity IfcTextFontSelect;
 ///   IfcTextStyleTextModel for definitions from Cascading
 /// Style Sheets, level 1, W3C Recommendation 17 Dec 1996, revised 11 Jan 1999, CSS1, for all true type text. The use of the CSS1 definitions is the preferred way to represent text styles.
 /// 
-/// HISTORYï¿½ New type in IFC2x2.
+/// HISTORY  New type in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ The items within the IfcTextStyleSelect have changed to IfcTextStyleWithBoxCharacteristics and IfcTextStyleTextModel.
+/// IFC2x3 CHANGE  The items within the IfcTextStyleSelect have changed to IfcTextStyleWithBoxCharacteristics and IfcTextStyleTextModel.
 typedef IfcSchemaEntity IfcTextStyleSelect;
 /// Definition from ISO/CD 10303-42:1992: This select type identifies the two possible ways of trimming a parametric curve; by a Cartesian point on the curve, or by a REAL number defining a parameter value within the parametric range of the curve. 
 /// 
@@ -1461,7 +1461,7 @@ typedef IfcSchemaEntity IfcVectorOrDirection;
 ///   bottom-middle
 ///   bottom-right
 /// 
-/// NOTEï¿½ The top-left is the default value.
+/// NOTE  The top-left is the default value.
 /// 
 /// Figure 298 illustrates alignment values.
 /// 
@@ -1471,9 +1471,9 @@ typedef IfcSchemaEntity IfcVectorOrDirection;
 /// 
 /// Figure 299 &#8212; Box alignment examples
 /// 
-/// HISTORYï¿½ New type in IFC2x2 Addendum2.
+/// HISTORY  New type in IFC2x2 Addendum2.
 /// 
-/// IFC2x3 CHANGEï¿½ The IfcBoxAlignment has been added.
+/// IFC2x3 CHANGE  The IfcBoxAlignment has been added.
 typedef IfcLabel IfcBoxAlignment;
 /// IfcNormalisedRatioMeasure is a dimensionless measure to express ratio values ranging from 0.0 to 1.0.
 /// 
@@ -1709,9 +1709,9 @@ namespace IfcBSplineCurveForm {
 /// hyperbolic arc: An arc of finite length of one branch of a hyperbola represented by a B-spline curve.
 /// unspecified: A B-spline curve for which no particular form is specified.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 type: b_spline_curve_form. Please refer to ISO/IS 10303-42:1994, p. 15 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 type: b_spline_curve_form. Please refer to ISO/IS 10303-42:1994, p. 15 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New type in Release IFC2x2.
+/// HISTORY  New type in Release IFC2x2.
 typedef enum {IfcBSplineCurveForm_POLYLINE_FORM, IfcBSplineCurveForm_CIRCULAR_ARC, IfcBSplineCurveForm_ELLIPTIC_ARC, IfcBSplineCurveForm_PARABOLIC_ARC, IfcBSplineCurveForm_HYPERBOLIC_ARC, IfcBSplineCurveForm_UNSPECIFIED} IfcBSplineCurveForm;
 std::string ToString(IfcBSplineCurveForm v);
 IfcBSplineCurveForm FromString(const std::string& s);
@@ -1732,7 +1732,7 @@ namespace IfcBeamTypeEnum {
 /// exterior of the building. Can be used to support joists or slab
 /// elements on its interior side.
 /// 
-/// NOTEï¿½ They are also referred to as "spandrel
+/// NOTE  They are also referred to as "spandrel
 /// panels", which are parts of a facade and sometimes have
 /// supporting consoles for floor slabs
 /// integrated.
@@ -1742,7 +1742,7 @@ namespace IfcBeamTypeEnum {
 /// often of T-shape (therefore the English name), but may have other
 /// shapes as well, e.g. an L-Shape or an Inverted-T-Shape.
 /// 
-/// NOTEï¿½ In order to distinguish beams by shape,
+/// NOTE  In order to distinguish beams by shape,
 /// the assigned IfcProfileDef subtypes provide the shape type
 /// and, if using a subtype of
 /// IfcParameterizedProfileDef, also the shape
@@ -1751,9 +1751,9 @@ namespace IfcBeamTypeEnum {
 /// USERDEFINED: User-defined linear beam element.
 /// NOTDEFINED: Undefined linear beam element
 /// 
-/// HISTORYï¿½ New Enumeration
+/// HISTORY  New Enumeration
 /// in Release IFC2x Edition 2.
-/// IFC2x4 CHANGEï¿½ The enumerators
+/// IFC2x4 CHANGE  The enumerators
 /// HOLLOWCORE and SPANDREL have been
 /// added.
 typedef enum {IfcBeamType_BEAM, IfcBeamType_JOIST, IfcBeamType_LINTEL, IfcBeamType_T_BEAM, IfcBeamType_USERDEFINED, IfcBeamType_NOTDEFINED} IfcBeamTypeEnum;
@@ -1837,8 +1837,8 @@ namespace IfcBuildingElementProxyTypeEnum {
 /// Definition from IAI: This enumeration defines the
 ///   available generic types for IfcBuildingElementProxyType.
 /// 
-/// HISTORY ï¿½New enumeration
-///   inï¿½Release IFC2x Edition 3.
+/// HISTORY  New enumeration
+///   in Release IFC2x Edition 3.
 /// 
 /// Enumeration
 /// 
@@ -2200,9 +2200,9 @@ namespace IfcCurtainWallTypeEnum {
 /// Definition from IAI: Enumeration defining
 /// the valid types of curtain wall that can be predefined using the
 /// enumeration values. 
-/// HISTORYï¿½
-/// New Enumeration in Releaseï¿½IFC2x Edition 3
-/// NOTE ï¿½Currently there
+/// HISTORY 
+/// New Enumeration in Release IFC2x Edition 3
+/// NOTE  Currently there
 /// are no specific enumerators defined, the IfcCurtainWallTypeEnum
 /// has
 /// been added for future extensions.
@@ -2393,10 +2393,10 @@ namespace IfcDoorPanelOperationEnum {
 /// NOTE Enumerator added in IFC2x4.
 /// 
 /// UserDefined
-/// ï¿½
+///  
 /// 
 /// NotDefined
-/// ï¿½
+///  
 /// 
 /// Figure 164 &#8212; Door operations
 /// 
@@ -2437,7 +2437,7 @@ IfcDoorStyleConstructionEnum FromString(const std::string& s);
 }
 namespace IfcDoorStyleOperationEnum {
 /// This enumeration defines the basic ways to describe how doors operate as shown in Figure 167.
-/// HISTORYï¿½ New Enumeration in Release IFC2x.
+/// HISTORY  New Enumeration in Release IFC2x.
 /// 
 /// Enumerator
 ///   Description
@@ -2471,7 +2471,7 @@ namespace IfcDoorStyleOperationEnum {
 /// left the other opens (swings) to the right.
 ///   Note: Direction of swing (whether
 /// in or out)
-/// is determined at the IfcDoor.ï¿½
+/// is determined at the IfcDoor. 
 /// 
 /// DOUBLE_SWING_LEFT
 /// 
@@ -2481,7 +2481,7 @@ namespace IfcDoorStyleOperationEnum {
 /// double acting door.
 ///   Note: Direction of main swing
 /// (whether in or
-/// out) is determined at the IfcDoor.ï¿½
+/// out) is determined at the IfcDoor. 
 /// 
 /// DOUBLE_SWING_RIGHT
 /// 
@@ -2578,14 +2578,14 @@ namespace IfcDoorStyleOperationEnum {
 /// USERDEFINED
 ///   User defined
 /// operation type
-///   ï¿½
+///    
 /// 
 /// NOTDEFINED
 ///   A door with a
 /// not defined operation type is
 /// considered as a door with a lining, but no panels. It is thereby always
 /// open.
-///   ï¿½
+///    
 /// 
 /// Figure 167 &#8212; Door style operations
 /// 
@@ -2602,7 +2602,7 @@ namespace IfcDoorStyleOperationEnum {
 /// positive y-axis, determined by the ObjectPlacement
 /// at IfcDoor
 ///   The location of the panel relative to the wall thickness is
-/// defined by theï¿½ObjectPlacement at IfcDoor,
+/// defined by the ObjectPlacement at IfcDoor,
 /// and the IfcDoorLiningProperties.LiningOffset
 /// parameter.
 typedef enum {IfcDoorStyleOperation_SINGLE_SWING_LEFT, IfcDoorStyleOperation_SINGLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, IfcDoorStyleOperation_DOUBLE_SWING_LEFT, IfcDoorStyleOperation_DOUBLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_DOUBLE_SWING, IfcDoorStyleOperation_SLIDING_TO_LEFT, IfcDoorStyleOperation_SLIDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SLIDING, IfcDoorStyleOperation_FOLDING_TO_LEFT, IfcDoorStyleOperation_FOLDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_FOLDING, IfcDoorStyleOperation_REVOLVING, IfcDoorStyleOperation_ROLLINGUP, IfcDoorStyleOperation_USERDEFINED, IfcDoorStyleOperation_NOTDEFINED} IfcDoorStyleOperationEnum;
@@ -2994,7 +2994,7 @@ namespace IfcFootingTypeEnum {
 /// Definition from IAI: Enumeration defining the generic footing type.
 /// 
 /// HISTORY New type in IFC Release 2x2
-/// IFC 2x4 change:ï¿½ Item CAISSON_FOUNDATION added
+/// IFC 2x4 change:  Item CAISSON_FOUNDATION added
 /// 
 /// ENUMERATION 
 /// 
@@ -3063,7 +3063,7 @@ IfcGeometricProjectionEnum FromString(const std::string& s);
 namespace IfcGlobalOrLocalEnum {
 /// This enumeration type defines if the local object coordinate system or the global world coordinate system for the project is used to describe the measure values of entities which have a reference to this type.
 /// 
-/// NOTEï¿½ The world coordinate system is given by the IfcGeometricRepresentationContext.WorldCoordinateSystem
+/// NOTE  The world coordinate system is given by the IfcGeometricRepresentationContext.WorldCoordinateSystem
 /// and is unique within the project. The local (or object) coordinate system is given by IfcProduct.ObjectPlacement and is used by all IfcRepresentation's within the IfcProduct.Representation.
 /// 
 /// HISTORY: New type in IFC2x2.
@@ -3235,9 +3235,9 @@ IfcLayerSetDirectionEnum FromString(const std::string& s);
 namespace IfcLightDistributionCurveEnum {
 /// There are three kinds of light distribution curves, according to Standard CEN TC 169, prEN 13032-1, CIE 121: 
 /// 
-/// TYPE_A: Type A is basically not used. For completeness the Type A Photometry equals the Type B rotated 90ï¿½ around the Z-Axis counter clockwise. 
-/// TYPE_B: Type B is sometimes used for floodlights. The B-Plane System has a horizontal axis. B-Angles are valid from -180ï¿½ to +180ï¿½ with B 0ï¿½ at the bottom and B180ï¿½/B-180ï¿½ at the top, &#946;-Angles are valid from -90ï¿½ to +90ï¿½. (See Figure 302.)
-/// TYPE_C: Type C is the recommended standard system. The C-Plane system equals a globe with a vertical axis. C-Angles are valid from 0ï¿½ to 360ï¿½, &#947;-Angles are valid from 0ï¿½ (south pole) to 180ï¿½ (north pole). (See Figure 302.) 
+/// TYPE_A: Type A is basically not used. For completeness the Type A Photometry equals the Type B rotated 90° around the Z-Axis counter clockwise. 
+/// TYPE_B: Type B is sometimes used for floodlights. The B-Plane System has a horizontal axis. B-Angles are valid from -180° to +180° with B 0° at the bottom and B180°/B-180° at the top, &#946;-Angles are valid from -90° to +90°. (See Figure 302.)
+/// TYPE_C: Type C is the recommended standard system. The C-Plane system equals a globe with a vertical axis. C-Angles are valid from 0° to 360°, &#947;-Angles are valid from 0° (south pole) to 180° (north pole). (See Figure 302.) 
 /// 
 /// <table
 /// 
@@ -3246,7 +3246,7 @@ namespace IfcLightDistributionCurveEnum {
 /// 
 /// Figure 302 &#8212; Light distribution curves
 /// 
-/// HISTORYï¿½ This is a new enumeration in IFC2x2.
+/// HISTORY  This is a new enumeration in IFC2x2.
 typedef enum {IfcLightDistributionCurve_TYPE_A, IfcLightDistributionCurve_TYPE_B, IfcLightDistributionCurve_TYPE_C, IfcLightDistributionCurve_NOTDEFINED} IfcLightDistributionCurveEnum;
 std::string ToString(IfcLightDistributionCurveEnum v);
 IfcLightDistributionCurveEnum FromString(const std::string& s);
@@ -3318,7 +3318,7 @@ IfcLoadGroupTypeEnum FromString(const std::string& s);
 namespace IfcLogicalOperatorEnum {
 /// Definition: IfcLogicalOperatorEnum is an enumeration that defines the logical operators that may be applied for the satisfaction of one or more operands (IfcConstraint) at a time. 
 /// 
-/// HISTORYï¿½ New type in IFC Release 2.0.  Renamed from IfcConstraintAggregatorEnum in IFC 2x2
+/// HISTORY  New type in IFC Release 2.0.  Renamed from IfcConstraintAggregatorEnum in IFC 2x2
 /// 
 /// IFC2x4 CHANGE: Extended to include LOGICALXOR, LOGICALNOTAND and LOGICALNOTOR.
 /// 
@@ -3579,10 +3579,10 @@ namespace IfcMemberTypeEnum {
 /// no further meaning.
 /// MULLION: A linear element within a curtain wall system
 /// to connect two (or more) panels.
-/// PLATE: Aï¿½linear continuous horizontal element in wall
+/// PLATE: A linear continuous horizontal element in wall
 /// framing, e.g. a head piece or a sole plate.
 /// 
-/// NOTE ï¿½This head piece or sole plate shall not
+/// NOTE  This head piece or sole plate shall not
 /// be mixed up with planar elements, such as sheets and panels, that
 /// are handled as IfcPlate (and
 /// IfcPlateType).
@@ -3604,9 +3604,9 @@ namespace IfcMemberTypeEnum {
 /// HISTORY: New
 /// Enumeration in Release IFC2x Edition 2.
 /// IFC2x Edition 2
-/// Addendum 1 CHANGEï¿½ The additional identifiers CHORD, PLATE, STUD
+/// Addendum 1 CHANGE  The additional identifiers CHORD, PLATE, STUD
 /// are added.
-/// IFC2x Edition 3 CHANGE ï¿½The additional identifier MULLION has
+/// IFC2x Edition 3 CHANGE  The additional identifier MULLION has
 /// been added.
 typedef enum {IfcMemberType_BRACE, IfcMemberType_CHORD, IfcMemberType_COLLAR, IfcMemberType_MEMBER, IfcMemberType_MULLION, IfcMemberType_PLATE, IfcMemberType_POST, IfcMemberType_PURLIN, IfcMemberType_RAFTER, IfcMemberType_STRINGER, IfcMemberType_STRUT, IfcMemberType_STUD, IfcMemberType_USERDEFINED, IfcMemberType_NOTDEFINED} IfcMemberTypeEnum;
 std::string ToString(IfcMemberTypeEnum v);
@@ -3629,12 +3629,12 @@ IfcMotorConnectionTypeEnum FromString(const std::string& s);
 namespace IfcNullStyle {
 /// Definition from ISO/CD 10303-46:1992: The null style type specifies, that a representation item is not styled.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: null_style. Please refer to ISO/IS 10303-46:1994 for the final
+/// NOTE  Corresponding ISO 10303 name: null_style. Please refer to ISO/IS 10303-46:1994 for the final
 /// definition of the formal standard.
 /// 
-/// HISTORYï¿½ New enumeration in IFC2x2.
+/// HISTORY  New enumeration in IFC2x2.
 /// 
-/// IFC2x4 CHANGEï¿½ The enumeration is deprecated.
+/// IFC2x4 CHANGE  The enumeration is deprecated.
 typedef enum {IfcNullStyle_NULL} IfcNullStyle;
 std::string ToString(IfcNullStyle v);
 IfcNullStyle FromString(const std::string& s);
@@ -3722,21 +3722,21 @@ namespace IfcPermeableCoveringOperationEnum {
 /// 
 /// Enumeration:
 /// 
-/// GRILLï¿½
+/// GRILL 
 ///   protective screen of metal bars or wires
 /// 
-/// LOUVERï¿½
+/// LOUVER 
 ///   set of fixed or movable strips of wood, metal, etc. arranged to let
 ///   air in while keeping light or rain out
 /// 
-/// SCREENï¿½
+/// SCREEN 
 ///   upright, fixed or movable, sometimes folding framework used for
 ///   protection against heat, light, access or similar
 /// 
-/// USERDEFINEDï¿½
+/// USERDEFINED 
 ///   user defined permeable covering type
 /// 
-/// NOTDEFINEDï¿½
+/// NOTDEFINED 
 ///   no information available
 /// 
 /// HISTORY: New Enumeration in IFC Release 2.0
@@ -3803,7 +3803,7 @@ namespace IfcPileTypeEnum {
 /// Definition from IAI: Enumeration defining the pile type. 
 /// 
 /// HISTORY New type in IFC Release 2x2
-/// IFC 2x4 change:ï¿½ Items BORED, DRIVEN, JETGROUTING added
+/// IFC 2x4 change:  Items BORED, DRIVEN, JETGROUTING added
 /// 
 /// BORED A bore pile.
 ///   DRIVEN A rammed, vibrated, or otherwise driven pile.
@@ -3879,17 +3879,17 @@ namespace IfcPlateTypeEnum {
 /// object can fulfill:
 /// 
 /// CURTAIN_PANEL: A planar element within a
-/// curtain wall,ï¿½often consisting of a frame with fixed glazing.
+/// curtain wall, often consisting of a frame with fixed glazing.
 ///   SHEET: A planar, flat and thin element,
 /// comes usually as metal sheet, and is often used as an additonal part
 /// within an assembly.
 ///   USERDEFINED: User-defined linear element.
 ///   NOTDEFINED: Undefined linear element
 /// 
-/// HISTORYï¿½ New Enumeration in Release IFC2x Edition 2. 
+/// HISTORY  New Enumeration in Release IFC2x Edition 2. 
 /// IFC2x
 /// Edition 3
-/// CHANGE ï¿½The additional identifiers CURTAIN_PANEL, SHEET have
+/// CHANGE  The additional identifiers CURTAIN_PANEL, SHEET have
 /// been
 /// added.
 typedef enum {IfcPlateType_CURTAIN_PANEL, IfcPlateType_SHEET, IfcPlateType_USERDEFINED, IfcPlateType_NOTDEFINED} IfcPlateTypeEnum;
@@ -3953,7 +3953,7 @@ namespace IfcProjectedOrTrueLengthEnum {
 /// This enumeration type is needed for load definition and is only considered if the load values are given as global actions and if they define linear or planar loads (that is, one- or two-dimensionally distributed loads).
 /// Figure 234 illustrates the interpretation of a load definition depending on the enumeration types IfcGlobalOrLocalEnum and IfcProjectedOrTrueLengthEnum.
 /// 
-/// HISTORYï¿½ New type in IFC2x2. 
+/// HISTORY  New type in IFC2x2. 
 /// 
 /// Figure 234 &#8212; Projected or true length
 typedef enum {IfcProjectedOrTrueLength_PROJECTED_LENGTH, IfcProjectedOrTrueLength_TRUE_LENGTH} IfcProjectedOrTrueLengthEnum;
@@ -4080,17 +4080,17 @@ namespace IfcRampTypeEnum {
 ///   two straight flights without turns but with one landing. 
 /// 
 /// QuarterTurnRamp 
-///   A ramp making a 90ï¿½ turn,
+///   A ramp making a 90° turn,
 ///   consisting of two straight flights connected by a quarterspace landing. The
 ///   direction of the turn is determined by the walking line. 
 /// 
 /// TwoQuarterTurnRamp 
-///   A ramp making a 180ï¿½
+///   A ramp making a 180°
 ///   turn, consisting of three straight flights connected by two quarterspace
 ///   landings. The direction of the turn is determined by the walking line. 
 /// 
 /// HalfTurnRamp 
-///   A ramp making a 180ï¿½
+///   A ramp making a 180°
 ///   turn, consisting of two straight flights connected by a halfspace landing. The
 ///   orientation of the turn is determined by the walking line. 
 /// 
@@ -4101,11 +4101,11 @@ namespace IfcRampTypeEnum {
 /// UserDefined 
 ///   Free form ramp (user defined
 ///   operation type) 
-///   ï¿½ 
+///     
 /// 
 /// NotDefined 
-///   ï¿½ 
-///   ï¿½ 
+///     
+///     
 /// 
 /// Figure 67 &#8212; Ramp types
 typedef enum {IfcRampType_STRAIGHT_RUN_RAMP, IfcRampType_TWO_STRAIGHT_RUN_RAMP, IfcRampType_QUARTER_TURN_RAMP, IfcRampType_TWO_QUARTER_TURN_RAMP, IfcRampType_HALF_TURN_RAMP, IfcRampType_SPIRAL_RAMP, IfcRampType_USERDEFINED, IfcRampType_NOTDEFINED} IfcRampTypeEnum;
@@ -4287,11 +4287,11 @@ namespace IfcRoofTypeEnum {
 /// 
 /// FREEFORM 
 ///   Free form roof  
-///   ï¿½ 
+///     
 /// 
 /// NOTDEFINED 
 ///   No specification given 
-///   ï¿½ 
+///     
 /// 
 /// Figure 68 &#8212; Roof types
 typedef enum {IfcRoofType_FLAT_ROOF, IfcRoofType_SHED_ROOF, IfcRoofType_GABLE_ROOF, IfcRoofType_HIP_ROOF, IfcRoofType_HIPPED_GABLE_ROOF, IfcRoofType_GAMBREL_ROOF, IfcRoofType_MANSARD_ROOF, IfcRoofType_BARREL_ROOF, IfcRoofType_RAINBOW_ROOF, IfcRoofType_BUTTERFLY_ROOF, IfcRoofType_PAVILION_ROOF, IfcRoofType_DOME_ROOF, IfcRoofType_FREEFORM, IfcRoofType_NOTDEFINED} IfcRoofTypeEnum;
@@ -4451,7 +4451,7 @@ namespace IfcSequenceEnum {
 ///   enumeration that defines the different ways in which a
 ///   time lag is applied to a sequence between two processes.
 /// 
-/// HISTORYï¿½ New entity in IFC 1.0
+/// HISTORY  New entity in IFC 1.0
 typedef enum {IfcSequence_START_START, IfcSequence_START_FINISH, IfcSequence_FINISH_START, IfcSequence_FINISH_FINISH, IfcSequence_NOTDEFINED} IfcSequenceEnum;
 std::string ToString(IfcSequenceEnum v);
 IfcSequenceEnum FromString(const std::string& s);
@@ -4474,7 +4474,7 @@ namespace IfcSlabTypeEnum {
 ///   special property set definition may be provided for each
 ///   predefined type.
 /// 
-/// HISTORYï¿½ New type in IFC
+/// HISTORY  New type in IFC
 ///   Release 2.0
 /// 
 /// Floor
@@ -4498,7 +4498,7 @@ namespace IfcSlabTypeEnum {
 ///   foundation). Another name is mat foundation.
 /// 
 /// IFC2x3 CHANGE
-///   ï¿½new enumerator added.
+///    new enumerator added.
 typedef enum {IfcSlabType_FLOOR, IfcSlabType_ROOF, IfcSlabType_LANDING, IfcSlabType_BASESLAB, IfcSlabType_USERDEFINED, IfcSlabType_NOTDEFINED} IfcSlabTypeEnum;
 std::string ToString(IfcSlabTypeEnum v);
 IfcSlabTypeEnum FromString(const std::string& s);
@@ -4620,44 +4620,44 @@ namespace IfcStairTypeEnum {
 /// 
 /// QuarterWindingStair 
 ///   A stair consisting of one
-///   flight with a quarter winder, which is making a 90ï¿½ turn. The direction of
+///   flight with a quarter winder, which is making a 90° turn. The direction of
 ///   the turn is determined by the walking line. 
 /// 
 /// QuarterTurnStair 
-///   A stair making a 90ï¿½
+///   A stair making a 90°
 ///   turn, consisting of two straight flights connected by a quarterspace landing.
 ///   The direction of the turn is determined by the walking line. 
 /// 
 /// HalfWindingStair 
 ///   A stair consisting of one
-///   flight with one half winder, which makes a 180ï¿½ turn. The orientation of
+///   flight with one half winder, which makes a 180° turn. The orientation of
 ///   the turn is determined by the walking line. 
 /// 
 /// HalfTurnStair 
-///   A stair making a 180ï¿½
+///   A stair making a 180°
 ///   turn, consisting of two straight flights connected by a halfspace landing. The
 ///   orientation of the turn is determined by the walking line. 
 /// 
 /// TwoQuarterWindingStair 
 ///   A stair consisting of one
-///   flight with two quarter winders, which make a 90ï¿½ turn. The stair makes a
-///   180ï¿½ turn. The direction of the turns is determined by the walking
+///   flight with two quarter winders, which make a 90° turn. The stair makes a
+///   180° turn. The direction of the turns is determined by the walking
 ///   line. 
 /// 
 /// TwoQuarterTurnStair 
-///   A stair making a 180ï¿½
+///   A stair making a 180°
 ///   turn, consisting of three straight flights connected by two quarterspace
 ///   landings. The direction of the turns is determined by the walking line. 
 /// 
 /// ThreeQuarterWindingStair
 /// 
 /// A stair consisting of one
-///   flight with three quarter winders, which make a 90ï¿½ turn. The stair makes a
-///   270ï¿½ turn. The direction of the turns is determined by the walking
+///   flight with three quarter winders, which make a 90° turn. The stair makes a
+///   270° turn. The direction of the turns is determined by the walking
 ///   line. 
 /// 
 /// ThreeQuarterTurnStair 
-///   A stair making a 270ï¿½
+///   A stair making a 270°
 ///   turn, consisting of four straight flights connected by three quarterspace
 ///   landings. The direction of the turns is determined by the walking line. 
 /// 
@@ -4670,7 +4670,7 @@ namespace IfcStairTypeEnum {
 /// DoubleReturnStair 
 ///   A stair having one
 ///   straight flight to a wide quarterspace landing, and two side flights from that
-///   landing into opposite directions. The stair is making a 90ï¿½ turn. The
+///   landing into opposite directions. The stair is making a 90° turn. The
 ///   direction of traffic is determined by the walking line. 
 /// 
 /// CurvedRunStair 
@@ -4685,11 +4685,11 @@ namespace IfcStairTypeEnum {
 /// OtherOperation 
 ///   Free form stair (user defined
 ///   operation type) 
-///   ï¿½ 
+///     
 /// 
 /// NotDefined 
-///   ï¿½ 
-///   ï¿½ 
+///     
+///     
 /// 
 /// Figure 69 &#8212; Stair types
 typedef enum {IfcStairType_STRAIGHT_RUN_STAIR, IfcStairType_TWO_STRAIGHT_RUN_STAIR, IfcStairType_QUARTER_WINDING_STAIR, IfcStairType_QUARTER_TURN_STAIR, IfcStairType_HALF_WINDING_STAIR, IfcStairType_HALF_TURN_STAIR, IfcStairType_TWO_QUARTER_WINDING_STAIR, IfcStairType_TWO_QUARTER_TURN_STAIR, IfcStairType_THREE_QUARTER_WINDING_STAIR, IfcStairType_THREE_QUARTER_TURN_STAIR, IfcStairType_SPIRAL_STAIR, IfcStairType_DOUBLE_RETURN_STAIR, IfcStairType_CURVED_RUN_STAIR, IfcStairType_TWO_CURVED_RUN_STAIR, IfcStairType_USERDEFINED, IfcStairType_NOTDEFINED} IfcStairTypeEnum;
@@ -4707,9 +4707,9 @@ namespace IfcStateEnum {
 /// READWRITELOCKED: Object is in a Read-Write-Locked state. It may not be accessed by an application.
 /// READONLYLOCKED: Object is in a Read-Only-Locked state. It may not be accessed by an application.
 /// 
-/// HISTORYï¿½ New enumeration in IFC R2.0.
+/// HISTORY  New enumeration in IFC R2.0.
 /// 
-/// IFC2x3 CHANGEï¿½ This concept was initially introduced in IFC 2.0 as IfcModifiedFlag of type BINARY(3) FIXED and has been modified in R2x to an enumeration. It was initially introduced as a first step towards providing facilities for partial model exchange from a server as requested by the IFC implementers. It is intended for use primarily by a model server so that an application can identify the state of the object.
+/// IFC2x3 CHANGE  This concept was initially introduced in IFC 2.0 as IfcModifiedFlag of type BINARY(3) FIXED and has been modified in R2x to an enumeration. It was initially introduced as a first step towards providing facilities for partial model exchange from a server as requested by the IFC implementers. It is intended for use primarily by a model server so that an application can identify the state of the object.
 typedef enum {IfcState_READWRITE, IfcState_READONLY, IfcState_LOCKED, IfcState_READWRITELOCKED, IfcState_READONLYLOCKED} IfcStateEnum;
 std::string ToString(IfcStateEnum v);
 IfcStateEnum FromString(const std::string& s);
@@ -4861,9 +4861,9 @@ IfcTransformerTypeEnum FromString(const std::string& s);
 namespace IfcTransitionCode {
 /// Definition from ISO/CD 10303-42:1992: This type conveys the continuity properties of a composite curve or surface. The continuity referred to is geometric, not parametric continuity. For example, in ContSameGradient the tangent vectors of successive segments will have the same direction, but may have different magnitude.  
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 type: transition_code, please refer to ISO/IS 10303-42:1994, p. 14 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 type: transition_code, please refer to ISO/IS 10303-42:1994, p. 14 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New Type in IFC Release 1.0
+/// HISTORY  New Type in IFC Release 1.0
 /// 
 /// Figure 273 (quoted from ISO/CD 10303-42:1992, p.55) illustrates transition types.
 /// 
@@ -4899,9 +4899,9 @@ namespace IfcTransportElementTypeEnum {
 /// heavy goods. It may be manually operated or electrically or
 /// pneumatically driven.
 /// 
-/// HISTORYï¿½ New enumeration
+/// HISTORY  New enumeration
 /// in IFC Release 2x.
-/// IFC2x4 CHANGEï¿½ New enumerators
+/// IFC2x4 CHANGE  New enumerators
 /// CRANEWAY and LIFTINGGEAR added in
 /// IFC2x4.
 typedef enum {IfcTransportElementType_ELEVATOR, IfcTransportElementType_ESCALATOR, IfcTransportElementType_MOVINGWALKWAY, IfcTransportElementType_USERDEFINED, IfcTransportElementType_NOTDEFINED} IfcTransportElementTypeEnum;
@@ -5085,15 +5085,15 @@ namespace IfcWallTypeEnum {
 /// USERDEFINED: User-defined wall element.
 /// NOTDEFINED: Undefined wall element
 /// 
-/// HISTORYï¿½ New
+/// HISTORY  New
 /// Enumeration in Release IFC2x Edition 2.
-/// IFC2x2 ADDENDUM CHANGEï¿½
+/// IFC2x2 ADDENDUM CHANGE 
 /// The enumerator POLYGON has been changed to
 /// POLYGONAL.
-/// IFC2x3 CHANGEï¿½ The enumerators
+/// IFC2x3 CHANGE  The enumerators
 /// ELEMENTEDWALL and PLUMBINGWALL have been
 /// added.
-/// IFC2x4 CHANGEï¿½ New enumerator
+/// IFC2x4 CHANGE  New enumerator
 /// MOVABLE has been added.
 typedef enum {IfcWallType_STANDARD, IfcWallType_POLYGONAL, IfcWallType_SHEAR, IfcWallType_ELEMENTEDWALL, IfcWallType_PLUMBINGWALL, IfcWallType_USERDEFINED, IfcWallType_NOTDEFINED} IfcWallTypeEnum;
 std::string ToString(IfcWallTypeEnum v);
@@ -5130,66 +5130,66 @@ namespace IfcWindowPanelOperationEnum {
 /// SideHungRightHand 
 ///   panel that opens to the right
 ///   when viewed from the outside 
-///   ï¿½ 
+///     
 /// 
 /// SideHungLeftHand 
 ///   panel that opens to the left
 ///   when viewed from the outside 
-///   ï¿½ 
+///     
 /// 
 /// TiltAndTurnRightHand 
 ///   panel that opens to the right
 ///   and is bottom hung 
-///   ï¿½ 
+///     
 /// 
 /// TiltAndTurnLeftHand 
 ///   panel that opens to the left
 ///   and is bottom hung 
-///   ï¿½ 
+///     
 /// 
 /// TopHung 
 ///   panel is top hung 
-///   ï¿½ 
+///     
 /// 
 /// BottomHung 
 ///   panel is bottom hung 
-///   ï¿½ 
+///     
 /// 
 /// PivotHorizontal 
 ///   panel is swinging
 ///   horizontally (hinges are in the middle) 
-///   ï¿½ 
+///     
 /// 
 /// PivotVertical 
 ///   panel is swinging vertically
 ///   (hinges are in the middle) 
-///   ï¿½ 
+///     
 /// 
 /// SlidingHorizontal 
 ///   panel is sliding horizontally
 /// 
-/// ï¿½ 
+///   
 /// 
 /// SlidingVertical 
 ///   panel is sliding
 ///   vertically 
-///   ï¿½ 
+///     
 /// 
 /// RemovableCasement 
 ///   panel is removable 
-///   ï¿½ 
+///     
 /// 
 /// FixedCasement 
 ///   panel is fixed 
-///   ï¿½ 
+///     
 /// 
 /// OtherOperation 
 ///   user defined operation type 
-///   ï¿½ 
+///     
 /// 
 /// NotDefined 
-///   ï¿½ 
-///   ï¿½ 
+///     
+///     
 /// 
 /// Figure 168 &#8212; Window panel operations
 /// 
@@ -5344,11 +5344,11 @@ namespace IfcWindowStyleOperationEnum {
 /// UserDefined 
 ///   user defined operation
 ///   type 
-///   ï¿½ 
+///     
 /// 
 /// NotDefined 
-///   ï¿½ 
-///   ï¿½ 
+///     
+///     
 /// 
 /// Figure 171 &#8212; Window style operations
 /// 
@@ -5410,8 +5410,8 @@ public:
     static Type::Enum Class();
     IfcActorRole (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcActorRole* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcActorRole> > list;
-    typedef IfcTemplatedEntityList<IfcActorRole>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcActorRole > > list;
+    typedef IfcTemplatedEntityList< IfcActorRole >::it it;
 };
 /// Definition: An abstract entity type for various kinds of postal and telecom addresses.
 /// 
@@ -5439,19 +5439,19 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENUMERATION; case 1: return Argument_STRING; case 2: return Argument_STRING; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Purpose"; case 1: return "Description"; case 2: return "UserDefinedPurpose"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcPerson> > OfPerson(); // INVERSE IfcPerson::Addresses
-    SHARED_PTR< IfcTemplatedEntityList<IfcOrganization> > OfOrganization(); // INVERSE IfcOrganization::Addresses
+    SHARED_PTR< IfcTemplatedEntityList< IfcPerson > > OfPerson(); // INVERSE IfcPerson::Addresses
+    SHARED_PTR< IfcTemplatedEntityList< IfcOrganization > > OfOrganization(); // INVERSE IfcOrganization::Addresses
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcAddress (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAddress* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAddress> > list;
-    typedef IfcTemplatedEntityList<IfcAddress>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAddress > > list;
+    typedef IfcTemplatedEntityList< IfcAddress >::it it;
 };
 /// IfcApplication holds the information about an IFC compliant application developed by an application developer. The IfcApplication utilizes a short identifying name as provided by the application developer.
 /// 
-/// HISTORYï¿½ New entity in IFC R1.5.
+/// HISTORY  New entity in IFC R1.5.
 class IfcApplication : public IfcBaseEntity {
 public:
     /// Name of the application developer, being requested to be member of the IAI.
@@ -5471,8 +5471,8 @@ public:
     static Type::Enum Class();
     IfcApplication (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcApplication* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcApplication> > list;
-    typedef IfcTemplatedEntityList<IfcApplication>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcApplication > > list;
+    typedef IfcTemplatedEntityList< IfcApplication >::it it;
 };
 /// IfcAppliedValue is an abstract supertype that specifies the common attributes for cost values. 
 /// 
@@ -5526,22 +5526,22 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; case 2: return Argument_ENTITY; case 3: return Argument_ENTITY; case 4: return Argument_ENTITY; case 5: return Argument_ENTITY; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "AppliedValue"; case 3: return "UnitBasis"; case 4: return "ApplicableDate"; case 5: return "FixedUntilDate"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcReferencesValueDocument> > ValuesReferenced(); // INVERSE IfcReferencesValueDocument::ReferencingValues
-    SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValueRelationship> > ValueOfComponents(); // INVERSE IfcAppliedValueRelationship::ComponentOfTotal
-    SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValueRelationship> > IsComponentIn(); // INVERSE IfcAppliedValueRelationship::Components
+    SHARED_PTR< IfcTemplatedEntityList< IfcReferencesValueDocument > > ValuesReferenced(); // INVERSE IfcReferencesValueDocument::ReferencingValues
+    SHARED_PTR< IfcTemplatedEntityList< IfcAppliedValueRelationship > > ValueOfComponents(); // INVERSE IfcAppliedValueRelationship::ComponentOfTotal
+    SHARED_PTR< IfcTemplatedEntityList< IfcAppliedValueRelationship > > IsComponentIn(); // INVERSE IfcAppliedValueRelationship::Components
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcAppliedValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAppliedValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValue> > list;
-    typedef IfcTemplatedEntityList<IfcAppliedValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAppliedValue > > list;
+    typedef IfcTemplatedEntityList< IfcAppliedValue >::it it;
 };
 /// An IfcAppliedValueRelationship is a relationship class that enables cost values to be aggregated together as components of another cost value.
 /// 
-/// HISTORYï¿½ New Entity in Release IFC2.0.
+/// HISTORY  New Entity in Release IFC2.0.
 /// 
-/// IFC2x4 CHANGEï¿½ Subtyped from IfcResourceLevelRelationship, attribute order changed.
+/// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship, attribute order changed.
 /// 
 /// Use definitions
 /// Dependency relationships can exist between applied values on the basis that one particular value may be determined by operations on one or more other values. This is captured through the IfcAppliedValueRelationship entity. In this relationship, one instance of IfcAppliedValue acts as the principal (IfcAppliedValueRelationship.ComponentOf) whose value may be
@@ -5566,7 +5566,7 @@ public:
     /// The applied value (total or subtotal) of which the value being considered is a component.
     IfcAppliedValue* ComponentOfTotal();
     /// Applied values that are components of another applied value and from which that applied value may be deduced.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValue> > Components();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAppliedValue > > Components();
     /// The arithmetic operator applied in an applied value relationship.
     IfcArithmeticOperatorEnum::IfcArithmeticOperatorEnum ArithmeticOperator();
     /// Whether the optional attribute Name is defined for this IfcAppliedValueRelationship
@@ -5584,14 +5584,14 @@ public:
     static Type::Enum Class();
     IfcAppliedValueRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAppliedValueRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValueRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcAppliedValueRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAppliedValueRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcAppliedValueRelationship >::it it;
 };
 /// Definition: An IfcApproval represents information about approval processes such as for a plan, a design, a proposal, or a change order in a construction or facilities management project. IfcApproval is referenced by IfcRelAssociatesApproval in IfcControlExtension schema, and thereby can be related to all subtypes of IfcRoot. An approval may also be given to resource objects using IfcResourceApprovalRelationship
 /// 
 /// HISTORY New Entity in IFC Release 2.0
 /// 
-/// IFC2x Edition 4 CHANGEï¿½ Attributes Identifier and Name made optional, where rule added to require at least one of them being asserted. Inverse attributes ApprovedObjects, ApprovedResources and HasExternalReferences added. Inverse attribute Properties deleted (more general relationship via inverse ApprovedResources to be used instead).
+/// IFC2x Edition 4 CHANGE  Attributes Identifier and Name made optional, where rule added to require at least one of them being asserted. Inverse attributes ApprovedObjects, ApprovedResources and HasExternalReferences added. Inverse attribute Properties deleted (more general relationship via inverse ApprovedResources to be used instead).
 class IfcApproval : public IfcBaseEntity {
 public:
     /// Whether the optional attribute Description is defined for this IfcApproval
@@ -5616,16 +5616,16 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_ENTITY; case 2: return Argument_STRING; case 3: return Argument_STRING; case 4: return Argument_STRING; case 5: return Argument_STRING; case 6: return Argument_STRING; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Description"; case 1: return "ApprovalDateTime"; case 2: return "ApprovalStatus"; case 3: return "ApprovalLevel"; case 4: return "ApprovalQualifier"; case 5: return "Name"; case 6: return "Identifier"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcApprovalActorRelationship> > Actors(); // INVERSE IfcApprovalActorRelationship::Approval
-    SHARED_PTR< IfcTemplatedEntityList<IfcApprovalRelationship> > IsRelatedWith(); // INVERSE IfcApprovalRelationship::RelatedApproval
-    SHARED_PTR< IfcTemplatedEntityList<IfcApprovalRelationship> > Relates(); // INVERSE IfcApprovalRelationship::RelatingApproval
+    SHARED_PTR< IfcTemplatedEntityList< IfcApprovalActorRelationship > > Actors(); // INVERSE IfcApprovalActorRelationship::Approval
+    SHARED_PTR< IfcTemplatedEntityList< IfcApprovalRelationship > > IsRelatedWith(); // INVERSE IfcApprovalRelationship::RelatedApproval
+    SHARED_PTR< IfcTemplatedEntityList< IfcApprovalRelationship > > Relates(); // INVERSE IfcApprovalRelationship::RelatingApproval
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcApproval (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcApproval* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcApproval> > list;
-    typedef IfcTemplatedEntityList<IfcApproval>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcApproval > > list;
+    typedef IfcTemplatedEntityList< IfcApproval >::it it;
 };
 class IfcApprovalActorRelationship : public IfcBaseEntity {
 public:
@@ -5641,12 +5641,12 @@ public:
     static Type::Enum Class();
     IfcApprovalActorRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcApprovalActorRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcApprovalActorRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcApprovalActorRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcApprovalActorRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcApprovalActorRelationship >::it it;
 };
 class IfcApprovalPropertyRelationship : public IfcBaseEntity {
 public:
-    SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > ApprovedProperties();
+    SHARED_PTR< IfcTemplatedEntityList< IfcProperty > > ApprovedProperties();
     IfcApproval* Approval();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; case 1: return Argument_ENTITY; } throw IfcException("argument out of range"); }
@@ -5657,8 +5657,8 @@ public:
     static Type::Enum Class();
     IfcApprovalPropertyRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcApprovalPropertyRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcApprovalPropertyRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcApprovalPropertyRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcApprovalPropertyRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcApprovalPropertyRelationship >::it it;
 };
 /// An IfcApprovalRelationship associates approvals (one
 /// relating approval and one or more related approvals), each having different status or level as the approval process or the approved
@@ -5666,7 +5666,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x2.
 /// 
-/// IFC2x4 CHANGEï¿½ Subtyped from IfcResourceLevelRelationship, order of attributes changed.
+/// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship, order of attributes changed.
 class IfcApprovalRelationship : public IfcBaseEntity {
 public:
     IfcApproval* RelatedApproval();
@@ -5685,8 +5685,8 @@ public:
     static Type::Enum Class();
     IfcApprovalRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcApprovalRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcApprovalRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcApprovalRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcApprovalRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcApprovalRelationship >::it it;
 };
 /// Definition
 /// from IAI: The abstract entity IfcBoundaryCondition
@@ -5718,8 +5718,8 @@ public:
     static Type::Enum Class();
     IfcBoundaryCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBoundaryCondition* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundaryCondition> > list;
-    typedef IfcTemplatedEntityList<IfcBoundaryCondition>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBoundaryCondition > > list;
+    typedef IfcTemplatedEntityList< IfcBoundaryCondition >::it it;
 };
 /// Definition from IAI: Describes linearly elastic support conditions or connection conditions.
 /// 
@@ -5763,8 +5763,8 @@ public:
     static Type::Enum Class();
     IfcBoundaryEdgeCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBoundaryEdgeCondition* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundaryEdgeCondition> > list;
-    typedef IfcTemplatedEntityList<IfcBoundaryEdgeCondition>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBoundaryEdgeCondition > > list;
+    typedef IfcTemplatedEntityList< IfcBoundaryEdgeCondition >::it it;
 };
 /// Definition from IAI: Describes linearly elastic support conditions or connection conditions.
 /// 
@@ -5796,8 +5796,8 @@ public:
     static Type::Enum Class();
     IfcBoundaryFaceCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBoundaryFaceCondition* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundaryFaceCondition> > list;
-    typedef IfcTemplatedEntityList<IfcBoundaryFaceCondition>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBoundaryFaceCondition > > list;
+    typedef IfcTemplatedEntityList< IfcBoundaryFaceCondition >::it it;
 };
 /// Definition from IAI: Describes linearly elastic support conditions or connection conditions.
 /// 
@@ -5841,8 +5841,8 @@ public:
     static Type::Enum Class();
     IfcBoundaryNodeCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBoundaryNodeCondition* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundaryNodeCondition> > list;
-    typedef IfcTemplatedEntityList<IfcBoundaryNodeCondition>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBoundaryNodeCondition > > list;
+    typedef IfcTemplatedEntityList< IfcBoundaryNodeCondition >::it it;
 };
 /// Definition from IAI: Describes linearly elastic support conditions or connection conditions, including linearly elastic warping restraints.
 /// 
@@ -5868,8 +5868,8 @@ public:
     static Type::Enum Class();
     IfcBoundaryNodeConditionWarping (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBoundaryNodeConditionWarping* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundaryNodeConditionWarping> > list;
-    typedef IfcTemplatedEntityList<IfcBoundaryNodeConditionWarping>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBoundaryNodeConditionWarping > > list;
+    typedef IfcTemplatedEntityList< IfcBoundaryNodeConditionWarping >::it it;
 };
 class IfcCalendarDate : public IfcBaseEntity {
 public:
@@ -5885,8 +5885,8 @@ public:
     static Type::Enum Class();
     IfcCalendarDate (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCalendarDate* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCalendarDate> > list;
-    typedef IfcTemplatedEntityList<IfcCalendarDate>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCalendarDate > > list;
+    typedef IfcTemplatedEntityList< IfcCalendarDate >::it it;
 };
 /// An IfcClassification is used for the arrangement of objects into a class or category according to a common purpose or their possession of common
 /// characteristics. A classification in the sense of IfcClassification is taxonomy, or taxonomic scheme, arranged in a hierarchical structure. A category of objects relates to other categories in a generalization-specialization relationship. Therefore the classification items in an
@@ -5931,14 +5931,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; case 2: return Argument_ENTITY; case 3: return Argument_STRING; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Source"; case 1: return "Edition"; case 2: return "EditionDate"; case 3: return "Name"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItem> > Contains(); // INVERSE IfcClassificationItem::ItemOf
+    SHARED_PTR< IfcTemplatedEntityList< IfcClassificationItem > > Contains(); // INVERSE IfcClassificationItem::ItemOf
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcClassification (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcClassification* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcClassification> > list;
-    typedef IfcTemplatedEntityList<IfcClassification>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcClassification > > list;
+    typedef IfcTemplatedEntityList< IfcClassification >::it it;
 };
 class IfcClassificationItem : public IfcBaseEntity {
 public:
@@ -5951,20 +5951,20 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_ENTITY; case 2: return Argument_STRING; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Notation"; case 1: return "ItemOf"; case 2: return "Title"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItemRelationship> > IsClassifiedItemIn(); // INVERSE IfcClassificationItemRelationship::RelatedItems
-    SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItemRelationship> > IsClassifyingItemIn(); // INVERSE IfcClassificationItemRelationship::RelatingItem
+    SHARED_PTR< IfcTemplatedEntityList< IfcClassificationItemRelationship > > IsClassifiedItemIn(); // INVERSE IfcClassificationItemRelationship::RelatedItems
+    SHARED_PTR< IfcTemplatedEntityList< IfcClassificationItemRelationship > > IsClassifyingItemIn(); // INVERSE IfcClassificationItemRelationship::RelatingItem
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcClassificationItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcClassificationItem* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItem> > list;
-    typedef IfcTemplatedEntityList<IfcClassificationItem>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcClassificationItem > > list;
+    typedef IfcTemplatedEntityList< IfcClassificationItem >::it it;
 };
 class IfcClassificationItemRelationship : public IfcBaseEntity {
 public:
     IfcClassificationItem* RelatingItem();
-    SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItem> > RelatedItems();
+    SHARED_PTR< IfcTemplatedEntityList< IfcClassificationItem > > RelatedItems();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingItem"; case 1: return "RelatedItems"; } throw IfcException("argument out of range"); }
@@ -5974,12 +5974,12 @@ public:
     static Type::Enum Class();
     IfcClassificationItemRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcClassificationItemRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcClassificationItemRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcClassificationItemRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcClassificationItemRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcClassificationItemRelationship >::it it;
 };
 class IfcClassificationNotation : public IfcBaseEntity {
 public:
-    SHARED_PTR< IfcTemplatedEntityList<IfcClassificationNotationFacet> > NotationFacets();
+    SHARED_PTR< IfcTemplatedEntityList< IfcClassificationNotationFacet > > NotationFacets();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "NotationFacets"; } throw IfcException("argument out of range"); }
@@ -5989,8 +5989,8 @@ public:
     static Type::Enum Class();
     IfcClassificationNotation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcClassificationNotation* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcClassificationNotation> > list;
-    typedef IfcTemplatedEntityList<IfcClassificationNotation>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcClassificationNotation > > list;
+    typedef IfcTemplatedEntityList< IfcClassificationNotation >::it it;
 };
 class IfcClassificationNotationFacet : public IfcBaseEntity {
 public:
@@ -6004,22 +6004,22 @@ public:
     static Type::Enum Class();
     IfcClassificationNotationFacet (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcClassificationNotationFacet* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcClassificationNotationFacet> > list;
-    typedef IfcTemplatedEntityList<IfcClassificationNotationFacet>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcClassificationNotationFacet > > list;
+    typedef IfcTemplatedEntityList< IfcClassificationNotationFacet >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The colour specification entity contains a direct colour definition. Colour component values refer directly to a specific colour space.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: colour_specification. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: colour_specification. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcColourSpecification : public IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcColourSpecification
     bool hasName();
     /// Optional name given to a particular colour specification in addition to the colour components (like the RGB values).
     /// 
-    /// NOTEï¿½ Examples are the names of a industry colour classification, such as RAL.
-    /// IFC2x Edition 3 CHANGEï¿½ Attribute added.
+    /// NOTE  Examples are the names of a industry colour classification, such as RAL.
+    /// IFC2x Edition 3 CHANGE  Attribute added.
     IfcLabel Name();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; } throw IfcException("argument out of range"); }
@@ -6030,12 +6030,12 @@ public:
     static Type::Enum Class();
     IfcColourSpecification (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcColourSpecification* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcColourSpecification> > list;
-    typedef IfcTemplatedEntityList<IfcColourSpecification>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcColourSpecification > > list;
+    typedef IfcTemplatedEntityList< IfcColourSpecification >::it it;
 };
 /// IfcConnectionGeometry is used to describe the geometric and topological constraints that facilitate the physical connection of two objects. It is envisioned as a control that applies to the element connection relationships.
 /// 
-/// NOTEï¿½ The element connection relationship normally provides for a logical connection information, by referencing the relating and related elements. If in addition an IfcConnectionGeometry is provided, physical connection information is given by specifying exactly where at the relating and related element the element connection occurs. 
+/// NOTE  The element connection relationship normally provides for a logical connection information, by referencing the relating and related elements. If in addition an IfcConnectionGeometry is provided, physical connection information is given by specifying exactly where at the relating and related element the element connection occurs. 
 /// Using the eccentricity subtypes, the connection can also be described when there is a physical distance (or eccentricity) between the connection elements.
 /// 
 /// The IfcConnectionGeometry allows for the provision of connection constraints between geometric and topological elements, the following connection geometry/topology types are in scope:
@@ -6044,9 +6044,9 @@ public:
 ///   curve | edge curve,
 ///   surface | face surface,
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5.
+/// HISTORY  New entity in IFC Release 1.5.
 /// 
-/// IFC2x Edition 3 CHANGEï¿½ The definition of the subtypes has been enhanced by allowing either geometric representation items (point | curve | surface) or topological representation items with associated geometry (vertex point | edge curve | face ï¿½surface).
+/// IFC2x Edition 3 CHANGE  The definition of the subtypes has been enhanced by allowing either geometric representation items (point | curve | surface) or topological representation items with associated geometry (vertex point | edge curve | face  surface).
 class IfcConnectionGeometry : public IfcBaseEntity {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
@@ -6058,21 +6058,21 @@ public:
     static Type::Enum Class();
     IfcConnectionGeometry (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConnectionGeometry* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectionGeometry> > list;
-    typedef IfcTemplatedEntityList<IfcConnectionGeometry>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConnectionGeometry > > list;
+    typedef IfcTemplatedEntityList< IfcConnectionGeometry >::it it;
 };
 /// IfcConnectionPointGeometry
 /// is used to describe the geometric constraints that facilitate the
 /// physical connection of two objects at a point (here IfcCartesianPoint) or at an vertex with point
 /// coordinates associated. It is envisioned as a control that applies to the element connection relationships. 
 /// 
-/// EXAMPLEï¿½ The connection relationship between two path based elements (like a column and a beam) has a geometric constraint which describes the connection points by a PointOnRelatingElement for the column and a PointOnRelatedElement for the beam. The exact usage of the IfcConnectionPointGeometry is further defined in the geometry use sections of the elements that use it.
+/// EXAMPLE  The connection relationship between two path based elements (like a column and a beam) has a geometric constraint which describes the connection points by a PointOnRelatingElement for the column and a PointOnRelatedElement for the beam. The exact usage of the IfcConnectionPointGeometry is further defined in the geometry use sections of the elements that use it.
 /// 
-/// NOTE ï¿½If the point connection has an offset (if the two points or vertex points at the relating and related element do not physically match), the subtype IfcConnectionPointEccentricity shall be used.
+/// NOTE  If the point connection has an offset (if the two points or vertex points at the relating and related element do not physically match), the subtype IfcConnectionPointEccentricity shall be used.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5, has been renamed from IfcPointConnectionGeometry in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 1.5, has been renamed from IfcPointConnectionGeometry in IFC Release 2x.
 /// 
-/// IFC2x Edition 3 CHANGEï¿½ The provision of topology with associated geometry, IfcVertexPoint, is
+/// IFC2x Edition 3 CHANGE  The provision of topology with associated geometry, IfcVertexPoint, is
 /// enabled by using the IfcPointOrVertexPoint.
 /// 
 /// Geometry use definitions
@@ -6094,8 +6094,8 @@ public:
     static Type::Enum Class();
     IfcConnectionPointGeometry (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConnectionPointGeometry* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectionPointGeometry> > list;
-    typedef IfcTemplatedEntityList<IfcConnectionPointGeometry>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConnectionPointGeometry > > list;
+    typedef IfcTemplatedEntityList< IfcConnectionPointGeometry >::it it;
 };
 class IfcConnectionPortGeometry : public IfcConnectionGeometry {
 public:
@@ -6113,17 +6113,17 @@ public:
     static Type::Enum Class();
     IfcConnectionPortGeometry (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConnectionPortGeometry* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectionPortGeometry> > list;
-    typedef IfcTemplatedEntityList<IfcConnectionPortGeometry>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConnectionPortGeometry > > list;
+    typedef IfcTemplatedEntityList< IfcConnectionPortGeometry >::it it;
 };
 /// IfcConnectionSurfaceGeometry is used to describe the geometric constraints that facilitate the physical connection of two objects at a surface or at a face with surface geometry associated. It is envisioned as a control that applies to the element connection relationships. 
 /// 
-/// HISTORYï¿½ New entity in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 2x.
 /// 
-/// IFC2x Edition 3 CHANGEï¿½ The provision of topology with associated geometry, IfcFaceSurface, is enabled by using the IfcSurfaceOrFaceSurface.
+/// IFC2x Edition 3 CHANGE  The provision of topology with associated geometry, IfcFaceSurface, is enabled by using the IfcSurfaceOrFaceSurface.
 /// 
 /// Geometry use definitions 
-/// The IfcSurface (or the IfcFaceSurface with an associated IfcSurface) at the SurfaceOnRelatingElement attribute defines the surface where the basic geometry items of the connected elements connects. The surface geometry and coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnectsSubtype that utilizes the IfcConnectionSurfaceGeometry. Optionally, the sameï¿½surface geometry and coordinates can also be provided within the local coordinate system of the RelatedElement by using the SurfaceOnRelatedElement attribute.
+/// The IfcSurface (or the IfcFaceSurface with an associated IfcSurface) at the SurfaceOnRelatingElement attribute defines the surface where the basic geometry items of the connected elements connects. The surface geometry and coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnectsSubtype that utilizes the IfcConnectionSurfaceGeometry. Optionally, the same surface geometry and coordinates can also be provided within the local coordinate system of the RelatedElement by using the SurfaceOnRelatedElement attribute.
 class IfcConnectionSurfaceGeometry : public IfcConnectionGeometry {
 public:
     /// Surface at which related object is aligned at the relating element, given in the LCS of the relating element.
@@ -6141,8 +6141,8 @@ public:
     static Type::Enum Class();
     IfcConnectionSurfaceGeometry (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConnectionSurfaceGeometry* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectionSurfaceGeometry> > list;
-    typedef IfcTemplatedEntityList<IfcConnectionSurfaceGeometry>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConnectionSurfaceGeometry > > list;
+    typedef IfcTemplatedEntityList< IfcConnectionSurfaceGeometry >::it it;
 };
 /// An IfcConstraint is used to define a constraint or limiting value or boundary condition that may be applied to an object or to the value of a property.  
 /// 
@@ -6189,25 +6189,25 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; case 2: return Argument_ENUMERATION; case 3: return Argument_STRING; case 4: return Argument_ENTITY; case 5: return Argument_ENTITY; case 6: return Argument_STRING; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "ConstraintGrade"; case 3: return "ConstraintSource"; case 4: return "CreatingActor"; case 5: return "CreationTime"; case 6: return "UserDefinedGrade"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcConstraintClassificationRelationship> > ClassifiedAs(); // INVERSE IfcConstraintClassificationRelationship::ClassifiedConstraint
-    SHARED_PTR< IfcTemplatedEntityList<IfcConstraintRelationship> > RelatesConstraints(); // INVERSE IfcConstraintRelationship::RelatingConstraint
-    SHARED_PTR< IfcTemplatedEntityList<IfcConstraintRelationship> > IsRelatedWith(); // INVERSE IfcConstraintRelationship::RelatedConstraints
-    SHARED_PTR< IfcTemplatedEntityList<IfcPropertyConstraintRelationship> > PropertiesForConstraint(); // INVERSE IfcPropertyConstraintRelationship::RelatingConstraint
-    SHARED_PTR< IfcTemplatedEntityList<IfcConstraintAggregationRelationship> > Aggregates(); // INVERSE IfcConstraintAggregationRelationship::RelatingConstraint
-    SHARED_PTR< IfcTemplatedEntityList<IfcConstraintAggregationRelationship> > IsAggregatedIn(); // INVERSE IfcConstraintAggregationRelationship::RelatedConstraints
+    SHARED_PTR< IfcTemplatedEntityList< IfcConstraintClassificationRelationship > > ClassifiedAs(); // INVERSE IfcConstraintClassificationRelationship::ClassifiedConstraint
+    SHARED_PTR< IfcTemplatedEntityList< IfcConstraintRelationship > > RelatesConstraints(); // INVERSE IfcConstraintRelationship::RelatingConstraint
+    SHARED_PTR< IfcTemplatedEntityList< IfcConstraintRelationship > > IsRelatedWith(); // INVERSE IfcConstraintRelationship::RelatedConstraints
+    SHARED_PTR< IfcTemplatedEntityList< IfcPropertyConstraintRelationship > > PropertiesForConstraint(); // INVERSE IfcPropertyConstraintRelationship::RelatingConstraint
+    SHARED_PTR< IfcTemplatedEntityList< IfcConstraintAggregationRelationship > > Aggregates(); // INVERSE IfcConstraintAggregationRelationship::RelatingConstraint
+    SHARED_PTR< IfcTemplatedEntityList< IfcConstraintAggregationRelationship > > IsAggregatedIn(); // INVERSE IfcConstraintAggregationRelationship::RelatedConstraints
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcConstraint (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConstraint* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstraint> > list;
-    typedef IfcTemplatedEntityList<IfcConstraint>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConstraint > > list;
+    typedef IfcTemplatedEntityList< IfcConstraint >::it it;
 };
 /// An IfcConstraintAggregationRelationship is an objectified relationship that enables instances of IfcConstraint subtypes to be aggregated together logically. 
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 2.0. Modified in IFC2x2.
+/// HISTORY  New Entity in IFC Release 2.0. Modified in IFC2x2.
 /// 
-/// IFC2x4 CHANGEï¿½ Subtyped from IfcConstraintRelationship
+/// IFC2x4 CHANGE  Subtyped from IfcConstraintRelationship
 /// 
 /// Use definition 
 /// IfcConstraintAggregationRelationship allows the aggregation link between subtypes of constraint to be logically defined (AND, OR, XOR, NOTAND, NOTOR). In this way, whereby an object or property can have multiple constraints assigned, and the logical linkage between them can be specified. Thus linked constraints might show as for example (> X AND < Y) which is useful for an allowed range, or bounded value, for example, (A OR B OR C) which is valuable for an enumerated property where a selection is constrained to be (at least) one of A, B or C. 
@@ -6223,7 +6223,7 @@ public:
     bool hasDescription();
     IfcText Description();
     IfcConstraint* RelatingConstraint();
-    SHARED_PTR< IfcTemplatedEntityList<IfcConstraint> > RelatedConstraints();
+    SHARED_PTR< IfcTemplatedEntityList< IfcConstraint > > RelatedConstraints();
     /// Enumeration that identifies the logical type of aggregation.
     IfcLogicalOperatorEnum::IfcLogicalOperatorEnum LogicalAggregator();
  virtual unsigned int getArgumentCount() const { return 5; }
@@ -6235,13 +6235,13 @@ public:
     static Type::Enum Class();
     IfcConstraintAggregationRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConstraintAggregationRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstraintAggregationRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcConstraintAggregationRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConstraintAggregationRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcConstraintAggregationRelationship >::it it;
 };
 class IfcConstraintClassificationRelationship : public IfcBaseEntity {
 public:
     IfcConstraint* ClassifiedConstraint();
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > RelatedClassifications();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > RelatedClassifications();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ClassifiedConstraint"; case 1: return "RelatedClassifications"; } throw IfcException("argument out of range"); }
@@ -6251,8 +6251,8 @@ public:
     static Type::Enum Class();
     IfcConstraintClassificationRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConstraintClassificationRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstraintClassificationRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcConstraintClassificationRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConstraintClassificationRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcConstraintClassificationRelationship >::it it;
 };
 /// An IfcConstraintRelationship is an objectified relationship that enables instances of IfcConstraint and its
 /// subtypes to be associated to each other. Logical aggregation of instances of IfcConstraint and its subtypes is handled by the subtype IfcConstraintAggregationRelationship.
@@ -6260,9 +6260,9 @@ public:
 /// EXAMPLE: Certain constraints related to an IfcWall may be derived from a constraint related to an
 /// IfcSpace.
 /// 
-/// HISTORYï¿½ New entity in Release IFC2x2 (Addendum 1).
+/// HISTORY  New entity in Release IFC2x2 (Addendum 1).
 /// 
-/// IFC2x4 CHANGEï¿½ Subtyped from IfcResourceLevelRelationship.
+/// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship.
 class IfcConstraintRelationship : public IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcConstraintRelationship
@@ -6274,7 +6274,7 @@ public:
     /// Constraint with which the other Constraints referenced by attribute RelatedConstraints are related.
     IfcConstraint* RelatingConstraint();
     /// Constraints that are related with the one referenced as RelatingConstraint.
-    SHARED_PTR< IfcTemplatedEntityList<IfcConstraint> > RelatedConstraints();
+    SHARED_PTR< IfcTemplatedEntityList< IfcConstraint > > RelatedConstraints();
  virtual unsigned int getArgumentCount() const { return 4; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; case 2: return Argument_ENTITY; case 3: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingConstraint"; case 3: return "RelatedConstraints"; } throw IfcException("argument out of range"); }
@@ -6284,8 +6284,8 @@ public:
     static Type::Enum Class();
     IfcConstraintRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConstraintRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstraintRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcConstraintRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConstraintRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcConstraintRelationship >::it it;
 };
 class IfcCoordinatedUniversalTimeOffset : public IfcBaseEntity {
 public:
@@ -6303,8 +6303,8 @@ public:
     static Type::Enum Class();
     IfcCoordinatedUniversalTimeOffset (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCoordinatedUniversalTimeOffset* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCoordinatedUniversalTimeOffset> > list;
-    typedef IfcTemplatedEntityList<IfcCoordinatedUniversalTimeOffset>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCoordinatedUniversalTimeOffset > > list;
+    typedef IfcTemplatedEntityList< IfcCoordinatedUniversalTimeOffset >::it it;
 };
 /// IfcCostValue is an amount of money or a value that affects an amount of money. 
 /// 
@@ -6369,16 +6369,16 @@ public:
     static Type::Enum Class();
     IfcCostValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCostValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCostValue> > list;
-    typedef IfcTemplatedEntityList<IfcCostValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCostValue > > list;
+    typedef IfcTemplatedEntityList< IfcCostValue >::it it;
 };
 /// IfcCurrencyRelationship defines the rate of exchange
 /// that applies between two designated currencies at a particular time
 /// and as published by a particular source.
 /// 
-/// HISTORYï¿½ New Entity in IFC2x2.
+/// HISTORY  New Entity in IFC2x2.
 /// 
-/// IFC2x4 CHANGEï¿½ Subtyped from IfcResourceLevelRelationship, attribute order changed.
+/// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship, attribute order changed.
 /// 
 /// Use definitions
 /// An IfcCurrencyRelationship is used where there may be a need to reference an IfcCostValue in one currency to an IfcCostValue in another currency. It takes account of fact that currency exchange rates may vary by requiring the recording the date and time of the currency exchange rate used and the source that publishes the rate. There may be many sources and there are different strategies for currency conversion (spot rate, forward buying of currency at a fixed rate).
@@ -6408,8 +6408,8 @@ public:
     static Type::Enum Class();
     IfcCurrencyRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCurrencyRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurrencyRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcCurrencyRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCurrencyRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcCurrencyRelationship >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: A curve style font combines several curve style font pattern entities into a more complex pattern. The resulting pattern is repeated along the curve. 
 /// 
@@ -6423,7 +6423,7 @@ public:
     /// Name that may be assigned with the curve font.
     IfcLabel Name();
     /// A list of curve font pattern entities, that contains the simple patterns used for drawing curves. The patterns are applied in the order they occur in the list.
-    SHARED_PTR< IfcTemplatedEntityList<IfcCurveStyleFontPattern> > PatternList();
+    SHARED_PTR< IfcTemplatedEntityList< IfcCurveStyleFontPattern > > PatternList();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "PatternList"; } throw IfcException("argument out of range"); }
@@ -6433,20 +6433,20 @@ public:
     static Type::Enum Class();
     IfcCurveStyleFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCurveStyleFont* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurveStyleFont> > list;
-    typedef IfcTemplatedEntityList<IfcCurveStyleFont>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCurveStyleFont > > list;
+    typedef IfcTemplatedEntityList< IfcCurveStyleFont >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: A curve style font and scaling is a curve style font and a scalar factor for that font, so that a given curve style font may be applied at various scales.
 /// 
 /// The IfcCurveStyleFontAndScaling allows for the reuse of the same curve style definition in several sizes. The definition of the CurveFontScale is the scaling of a base curve style pattern to be used as a new or derived curve style pattern.
 /// 
-/// NOTEï¿½ The CurveFontScale should not be mixed up with the target plot scale.
+/// NOTE  The CurveFontScale should not be mixed up with the target plot scale.
 /// 
-/// An example for IfcCurveStyleFontAndScaling is the sizing of a basic curve style dash pattern 'dash' (visible 0.01m, invisible 0.005m) into 'dash large' withï¿½CurveFontScale = 2 (resulting inï¿½visible 0.02m, invisible 0.01m), and into 'dash small'ï¿½withï¿½CurveFontScale = 0.5 (resulting inï¿½visible 0.005m, invisible 0.0025m).
+/// An example for IfcCurveStyleFontAndScaling is the sizing of a basic curve style dash pattern 'dash' (visible 0.01m, invisible 0.005m) into 'dash large' with CurveFontScale = 2 (resulting in visible 0.02m, invisible 0.01m), and into 'dash small' with CurveFontScale = 0.5 (resulting in visible 0.005m, invisible 0.0025m).
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: curve_style_font_and_scaling. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: curve_style_font_and_scaling. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcCurveStyleFontAndScaling : public IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcCurveStyleFontAndScaling
@@ -6466,8 +6466,8 @@ public:
     static Type::Enum Class();
     IfcCurveStyleFontAndScaling (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCurveStyleFontAndScaling* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurveStyleFontAndScaling> > list;
-    typedef IfcTemplatedEntityList<IfcCurveStyleFontAndScaling>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCurveStyleFontAndScaling > > list;
+    typedef IfcTemplatedEntityList< IfcCurveStyleFontAndScaling >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: A curve style font pattern is a pair of visible and invisible curve segment length measures in presentation area units. 
 /// 
@@ -6478,9 +6478,9 @@ class IfcCurveStyleFontPattern : public IfcBaseEntity {
 public:
     /// The length of the visible segment in the pattern definition.
     /// 
-    /// NOTEï¿½ For a visible segment representing a point, the value 0. should be assigned.
+    /// NOTE  For a visible segment representing a point, the value 0. should be assigned.
     /// 
-    /// IFC2x Edition 3 CHANGEï¿½ The datatype has been changed to IfcLengthMeasure with upward compatibility for file-based exchange.
+    /// IFC2x Edition 3 CHANGE  The datatype has been changed to IfcLengthMeasure with upward compatibility for file-based exchange.
     IfcLengthMeasure VisibleSegmentLength();
     /// The length of the invisible segment in the pattern definition.
     IfcPositiveLengthMeasure InvisibleSegmentLength();
@@ -6493,8 +6493,8 @@ public:
     static Type::Enum Class();
     IfcCurveStyleFontPattern (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCurveStyleFontPattern* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurveStyleFontPattern> > list;
-    typedef IfcTemplatedEntityList<IfcCurveStyleFontPattern>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCurveStyleFontPattern > > list;
+    typedef IfcTemplatedEntityList< IfcCurveStyleFontPattern >::it it;
 };
 class IfcDateAndTime : public IfcBaseEntity {
 public:
@@ -6509,8 +6509,8 @@ public:
     static Type::Enum Class();
     IfcDateAndTime (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDateAndTime* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDateAndTime> > list;
-    typedef IfcTemplatedEntityList<IfcDateAndTime>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDateAndTime > > list;
+    typedef IfcTemplatedEntityList< IfcDateAndTime >::it it;
 };
 /// Definition from ISO/CD 10303-41:1992: A derived unit is an expression of units.
 /// 
@@ -6522,7 +6522,7 @@ public:
 class IfcDerivedUnit : public IfcBaseEntity {
 public:
     /// The group of units and their exponents that define the derived unit.
-    SHARED_PTR< IfcTemplatedEntityList<IfcDerivedUnitElement> > Elements();
+    SHARED_PTR< IfcTemplatedEntityList< IfcDerivedUnitElement > > Elements();
     /// Name of the derived unit chosen from an enumeration of derived unit types for use in IFC models.
     IfcDerivedUnitEnum::IfcDerivedUnitEnum UnitType();
     /// Whether the optional attribute UserDefinedType is defined for this IfcDerivedUnit
@@ -6537,8 +6537,8 @@ public:
     static Type::Enum Class();
     IfcDerivedUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDerivedUnit* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDerivedUnit> > list;
-    typedef IfcTemplatedEntityList<IfcDerivedUnit>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDerivedUnit > > list;
+    typedef IfcTemplatedEntityList< IfcDerivedUnit >::it it;
 };
 /// Definition from ISO/CD 10303-41:1992: A derived unit element is one of the unit quantities 
 /// which makes up a derived unit.
@@ -6564,8 +6564,8 @@ public:
     static Type::Enum Class();
     IfcDerivedUnitElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDerivedUnitElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDerivedUnitElement> > list;
-    typedef IfcTemplatedEntityList<IfcDerivedUnitElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDerivedUnitElement > > list;
+    typedef IfcTemplatedEntityList< IfcDerivedUnitElement >::it it;
 };
 /// Definition from ISO/CD 10303-41:1992: The dimensionality of any quantity can be expressed as a product of powers of the dimensions of base quantities. 
 /// The dimensional exponents entity defines the powers of the dimensions of the base quantities. All the physical 
@@ -6609,8 +6609,8 @@ public:
     static Type::Enum Class();
     IfcDimensionalExponents (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDimensionalExponents* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDimensionalExponents> > list;
-    typedef IfcTemplatedEntityList<IfcDimensionalExponents>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDimensionalExponents > > list;
+    typedef IfcTemplatedEntityList< IfcDimensionalExponents >::it it;
 };
 /// IfcDocumentElectronicFormat captures the type of document being referenced as an external source, and for which metadata is specified by IfcDocumentInformation. 
 /// 
@@ -6638,8 +6638,8 @@ public:
     static Type::Enum Class();
     IfcDocumentElectronicFormat (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDocumentElectronicFormat* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDocumentElectronicFormat> > list;
-    typedef IfcTemplatedEntityList<IfcDocumentElectronicFormat>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDocumentElectronicFormat > > list;
+    typedef IfcTemplatedEntityList< IfcDocumentElectronicFormat >::it it;
 };
 /// IfcDocumentInformation captures "metadata" of an external document. The actual content of the document is not defined in IFC; instead, it can be found following the reference given to IfcDocumentReference. 
 /// 
@@ -6656,7 +6656,7 @@ public:
     IfcText Description();
     /// Whether the optional attribute DocumentReferences is defined for this IfcDocumentInformation
     bool hasDocumentReferences();
-    SHARED_PTR< IfcTemplatedEntityList<IfcDocumentReference> > DocumentReferences();
+    SHARED_PTR< IfcTemplatedEntityList< IfcDocumentReference > > DocumentReferences();
     /// Whether the optional attribute Purpose is defined for this IfcDocumentInformation
     bool hasPurpose();
     /// Purpose for this document.
@@ -6680,7 +6680,7 @@ public:
     /// Whether the optional attribute Editors is defined for this IfcDocumentInformation
     bool hasEditors();
     /// The persons and/or organizations who have created this document or contributed to it.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Editors();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > Editors();
     /// Whether the optional attribute CreationTime is defined for this IfcDocumentInformation
     bool hasCreationTime();
     /// Date and time stamp when the document was originally created.
@@ -6725,21 +6725,21 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; case 2: return Argument_STRING; case 3: return Argument_ENTITY_LIST; case 4: return Argument_STRING; case 5: return Argument_STRING; case 6: return Argument_STRING; case 7: return Argument_STRING; case 8: return Argument_ENTITY; case 9: return Argument_ENTITY_LIST; case 10: return Argument_ENTITY; case 11: return Argument_ENTITY; case 12: return Argument_ENTITY; case 13: return Argument_ENTITY; case 14: return Argument_ENTITY; case 15: return Argument_ENUMERATION; case 16: return Argument_ENUMERATION; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DocumentId"; case 1: return "Name"; case 2: return "Description"; case 3: return "DocumentReferences"; case 4: return "Purpose"; case 5: return "IntendedUse"; case 6: return "Scope"; case 7: return "Revision"; case 8: return "DocumentOwner"; case 9: return "Editors"; case 10: return "CreationTime"; case 11: return "LastRevisionTime"; case 12: return "ElectronicFormat"; case 13: return "ValidFrom"; case 14: return "ValidUntil"; case 15: return "Confidentiality"; case 16: return "Status"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformationRelationship> > IsPointedTo(); // INVERSE IfcDocumentInformationRelationship::RelatedDocuments
-    SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformationRelationship> > IsPointer(); // INVERSE IfcDocumentInformationRelationship::RelatingDocument
+    SHARED_PTR< IfcTemplatedEntityList< IfcDocumentInformationRelationship > > IsPointedTo(); // INVERSE IfcDocumentInformationRelationship::RelatedDocuments
+    SHARED_PTR< IfcTemplatedEntityList< IfcDocumentInformationRelationship > > IsPointer(); // INVERSE IfcDocumentInformationRelationship::RelatingDocument
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcDocumentInformation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDocumentInformation* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformation> > list;
-    typedef IfcTemplatedEntityList<IfcDocumentInformation>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDocumentInformation > > list;
+    typedef IfcTemplatedEntityList< IfcDocumentInformation >::it it;
 };
 /// An IfcDocumentInformationRelationship is a relationship class that enables a document to have the ability to reference other documents.
 /// 
-/// HISTORYï¿½ New entity in Release IFC2x.
+/// HISTORY  New entity in Release IFC2x.
 /// 
-/// IFC2x4 CHANGEï¿½ Subtyped from IfcResourceLevelRelationship, order of attributes changed.
+/// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship, order of attributes changed.
 /// 
 /// Use definitions
 /// This class can be used to describe relationships in which one document may reference one or more other sub documents or where a document is used as a replacement for another document (but where both the original and the replacing document need to be retained).
@@ -6748,7 +6748,7 @@ public:
     /// The document that acts as the parent, referencing or original document in a relationship.
     IfcDocumentInformation* RelatingDocument();
     /// The document that acts as the child, referenced or replacing document in a relationship.
-    SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformation> > RelatedDocuments();
+    SHARED_PTR< IfcTemplatedEntityList< IfcDocumentInformation > > RelatedDocuments();
     /// Whether the optional attribute RelationshipType is defined for this IfcDocumentInformationRelationship
     bool hasRelationshipType();
     /// Describes the type of relationship between documents. This could be sub-document, replacement etc. The interpretation has to be established in an application context.
@@ -6762,8 +6762,8 @@ public:
     static Type::Enum Class();
     IfcDocumentInformationRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDocumentInformationRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformationRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcDocumentInformationRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDocumentInformationRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcDocumentInformationRelationship >::it it;
 };
 class IfcDraughtingCalloutRelationship : public IfcBaseEntity {
 public:
@@ -6784,8 +6784,8 @@ public:
     static Type::Enum Class();
     IfcDraughtingCalloutRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDraughtingCalloutRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingCalloutRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcDraughtingCalloutRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDraughtingCalloutRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcDraughtingCalloutRelationship >::it it;
 };
 class IfcEnvironmentalImpactValue : public IfcAppliedValue {
 public:
@@ -6803,8 +6803,8 @@ public:
     static Type::Enum Class();
     IfcEnvironmentalImpactValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEnvironmentalImpactValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEnvironmentalImpactValue> > list;
-    typedef IfcTemplatedEntityList<IfcEnvironmentalImpactValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEnvironmentalImpactValue > > list;
+    typedef IfcTemplatedEntityList< IfcEnvironmentalImpactValue >::it it;
 };
 /// An IfcExternalReference is the identification of information that is not explicitly represented in the current model or in the project database (as an implementation of the current model). Such information may be contained in classifications, documents or libraries. The IfcExternalReference identifies a particular item, such as a
 /// dictionary entry, a classification notation, or a document reference within the external source.
@@ -6821,7 +6821,7 @@ public:
     bool hasLocation();
     /// Location, where the external source (classification, document or library) can be accessed by electronic means. The electronic location is provided as an URI, and would normally be given as an URL location string.
     /// 
-    /// IFC2x4 CHANGEï¿½ The data type has been changed from IfcLabel to IfcURIReference.
+    /// IFC2x4 CHANGE  The data type has been changed from IfcLabel to IfcURIReference.
     IfcLabel Location();
     /// Whether the optional attribute ItemReference is defined for this IfcExternalReference
     bool hasItemReference();
@@ -6839,8 +6839,8 @@ public:
     static Type::Enum Class();
     IfcExternalReference (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcExternalReference* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcExternalReference> > list;
-    typedef IfcTemplatedEntityList<IfcExternalReference>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcExternalReference > > list;
+    typedef IfcTemplatedEntityList< IfcExternalReference >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The externally defined hatch style is an entity which makes an external reference to a hatching style.
 /// 
@@ -6861,16 +6861,16 @@ public:
     static Type::Enum Class();
     IfcExternallyDefinedHatchStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcExternallyDefinedHatchStyle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcExternallyDefinedHatchStyle> > list;
-    typedef IfcTemplatedEntityList<IfcExternallyDefinedHatchStyle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcExternallyDefinedHatchStyle > > list;
+    typedef IfcTemplatedEntityList< IfcExternallyDefinedHatchStyle >::it it;
 };
 /// IfcExternallyDefinedSurfaceStyle is a definition of a surface style through referencing an external source, such as a material library for rendering information.
 /// 
-/// NOTEï¿½ In order to achieve expected results, the externally defined surface style should normally only be given in addition to an explicitly defined surface styles.
+/// NOTE  In order to achieve expected results, the externally defined surface style should normally only be given in addition to an explicitly defined surface styles.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE ï¿½The spelling has been corrected from IfcExternallyDefinedSufaceStyle with no upward compatibility.
+/// IFC2x3 CHANGE  The spelling has been corrected from IfcExternallyDefinedSufaceStyle with no upward compatibility.
 class IfcExternallyDefinedSurfaceStyle : public IfcExternalReference {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
@@ -6882,8 +6882,8 @@ public:
     static Type::Enum Class();
     IfcExternallyDefinedSurfaceStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcExternallyDefinedSurfaceStyle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcExternallyDefinedSurfaceStyle> > list;
-    typedef IfcTemplatedEntityList<IfcExternallyDefinedSurfaceStyle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcExternallyDefinedSurfaceStyle > > list;
+    typedef IfcTemplatedEntityList< IfcExternallyDefinedSurfaceStyle >::it it;
 };
 /// An externally defined symbol is a symbol that gets its shape information by an agreed reference to an external source.
 /// 
@@ -6905,16 +6905,16 @@ public:
     static Type::Enum Class();
     IfcExternallyDefinedSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcExternallyDefinedSymbol* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcExternallyDefinedSymbol> > list;
-    typedef IfcTemplatedEntityList<IfcExternallyDefinedSymbol>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcExternallyDefinedSymbol > > list;
+    typedef IfcTemplatedEntityList< IfcExternallyDefinedSymbol >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The externally defined text font is an external reference to a text font 
 /// 
-/// NOTEï¿½ Restrictions of the font source and font names to be used may be exposed by implementation guidelines.
+/// NOTE  Restrictions of the font source and font names to be used may be exposed by implementation guidelines.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: externally_defined_text_font. Please refer to ISO/IS 10303-46:1994, p. 137 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: externally_defined_text_font. Please refer to ISO/IS 10303-46:1994, p. 137 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcExternallyDefinedTextFont : public IfcExternalReference {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
@@ -6926,12 +6926,12 @@ public:
     static Type::Enum Class();
     IfcExternallyDefinedTextFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcExternallyDefinedTextFont* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcExternallyDefinedTextFont> > list;
-    typedef IfcTemplatedEntityList<IfcExternallyDefinedTextFont>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcExternallyDefinedTextFont > > list;
+    typedef IfcTemplatedEntityList< IfcExternallyDefinedTextFont >::it it;
 };
 /// An individual axis, IfcGridAxis, is defined in the context of a design grid.  The axis definition is based on a curve of dimensionality 2. The grid axis is positioned within the XY plane of the position coordinate system defined by the IfcDesignGrid.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.0
+/// HISTORY  New entity in IFC Release 1.0
 /// 
 /// Geometry use definitions
 /// The standard geometric representation of IfcGridAxis is
@@ -6966,17 +6966,17 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_ENTITY; case 2: return Argument_BOOL; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "AxisTag"; case 1: return "AxisCurve"; case 2: return "SameSense"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcGrid> > PartOfW(); // INVERSE IfcGrid::WAxes
-    SHARED_PTR< IfcTemplatedEntityList<IfcGrid> > PartOfV(); // INVERSE IfcGrid::VAxes
-    SHARED_PTR< IfcTemplatedEntityList<IfcGrid> > PartOfU(); // INVERSE IfcGrid::UAxes
-    SHARED_PTR< IfcTemplatedEntityList<IfcVirtualGridIntersection> > HasIntersections(); // INVERSE IfcVirtualGridIntersection::IntersectingAxes
+    SHARED_PTR< IfcTemplatedEntityList< IfcGrid > > PartOfW(); // INVERSE IfcGrid::WAxes
+    SHARED_PTR< IfcTemplatedEntityList< IfcGrid > > PartOfV(); // INVERSE IfcGrid::VAxes
+    SHARED_PTR< IfcTemplatedEntityList< IfcGrid > > PartOfU(); // INVERSE IfcGrid::UAxes
+    SHARED_PTR< IfcTemplatedEntityList< IfcVirtualGridIntersection > > HasIntersections(); // INVERSE IfcVirtualGridIntersection::IntersectingAxes
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcGridAxis (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcGridAxis* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > list;
-    typedef IfcTemplatedEntityList<IfcGridAxis>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcGridAxis > > list;
+    typedef IfcTemplatedEntityList< IfcGridAxis >::it it;
 };
 /// The IfcIrregularTimeSeriesValue describes a value (or set of values) at a particular time point. 
 /// 
@@ -6986,7 +6986,7 @@ public:
     /// The specification of the time point.
     IfcDateTimeSelect TimeStamp();
     /// A list of time-series values. At least one value is required.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > ListValues();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > ListValues();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TimeStamp"; case 1: return "ListValues"; } throw IfcException("argument out of range"); }
@@ -6996,17 +6996,17 @@ public:
     static Type::Enum Class();
     IfcIrregularTimeSeriesValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcIrregularTimeSeriesValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcIrregularTimeSeriesValue> > list;
-    typedef IfcTemplatedEntityList<IfcIrregularTimeSeriesValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcIrregularTimeSeriesValue > > list;
+    typedef IfcTemplatedEntityList< IfcIrregularTimeSeriesValue >::it it;
 };
 /// An IfcLibraryInformation describes a library where a library is a structured store of information, normally organized in a manner which allows information lookup through an index or reference value. IfcLibraryInformation provides the library Name and optional Version, VersionDate and Publisher attributes. A Location may be added for electronic access to the library.
 /// 
-/// NOTEï¿½ The complete definition of the information in an external library is out of scope in this IFC release.
+/// NOTE  The complete definition of the information in an external library is out of scope in this IFC release.
 /// 
-/// HISTORYï¿½ New
+/// HISTORY  New
 /// Entity in IFC2x.
 /// 
-/// IFC2x4 CHANGEï¿½ Location attribute added, HasLibraryReferences inverse attribute added (previous LibraryReference changed to inverse).
+/// IFC2x4 CHANGE  Location attribute added, HasLibraryReferences inverse attribute added (previous LibraryReference changed to inverse).
 class IfcLibraryInformation : public IfcBaseEntity {
 public:
     /// The name which is used to identify the library.
@@ -7023,11 +7023,11 @@ public:
     bool hasVersionDate();
     /// Date of the referenced version of the library.
     /// 
-    /// IFC2x4 CHANGEï¿½ The data type has been changed to IfcDate, the date string according to ISO8601.
+    /// IFC2x4 CHANGE  The data type has been changed to IfcDate, the date string according to ISO8601.
     IfcCalendarDate* VersionDate();
     /// Whether the optional attribute LibraryReference is defined for this IfcLibraryInformation
     bool hasLibraryReference();
-    SHARED_PTR< IfcTemplatedEntityList<IfcLibraryReference> > LibraryReference();
+    SHARED_PTR< IfcTemplatedEntityList< IfcLibraryReference > > LibraryReference();
  virtual unsigned int getArgumentCount() const { return 5; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; case 2: return Argument_ENTITY; case 3: return Argument_ENTITY; case 4: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Version"; case 2: return "Publisher"; case 3: return "VersionDate"; case 4: return "LibraryReference"; } throw IfcException("argument out of range"); }
@@ -7037,30 +7037,30 @@ public:
     static Type::Enum Class();
     IfcLibraryInformation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLibraryInformation* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLibraryInformation> > list;
-    typedef IfcTemplatedEntityList<IfcLibraryInformation>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLibraryInformation > > list;
+    typedef IfcTemplatedEntityList< IfcLibraryInformation >::it it;
 };
 /// An IfcLibraryReference is a reference into a library of information by Location (provided as a URI). It also provides an optional inherited Identification key to allow more specific references to library sections or tables. The inherited Name attribute allows for a human interpretable identification of the library item. Also, general information on the library from which the reference is taken, is given by the ReferencedLibrary relation which identifies the relevant occurrence of IfcLibraryInformation.
 /// 
 /// The ifcLibraryReference additionally provides the capability to handle multilingual library entries. The Language attribute then holds the language tag for the language used by the strings kept in the Name and the Description attribute.
 /// 
-/// HISTORYï¿½ New Entity in IFC2.0.
+/// HISTORY  New Entity in IFC2.0.
 /// 
-/// IFC2x4 CHANGEï¿½ Description and Language attribute added; ReferencedLibrary attribute added (reversing previous ReferenceIntoLibrary inverse relationship).
+/// IFC2x4 CHANGE  Description and Language attribute added; ReferencedLibrary attribute added (reversing previous ReferenceIntoLibrary inverse relationship).
 class IfcLibraryReference : public IfcExternalReference {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcExternalReference::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcExternalReference::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcLibraryInformation> > ReferenceIntoLibrary(); // INVERSE IfcLibraryInformation::LibraryReference
+    SHARED_PTR< IfcTemplatedEntityList< IfcLibraryInformation > > ReferenceIntoLibrary(); // INVERSE IfcLibraryInformation::LibraryReference
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcLibraryReference (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLibraryReference* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLibraryReference> > list;
-    typedef IfcTemplatedEntityList<IfcLibraryReference>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLibraryReference > > list;
+    typedef IfcTemplatedEntityList< IfcLibraryReference >::it it;
 };
 /// IfcLightDistributionData defines the luminous intensity of a light source given at a particular main plane angle. It is based on some standardized light distribution curves; the MainPlaneAngle is either the 
 /// 
@@ -7084,9 +7084,9 @@ public:
     /// The list of secondary plane angles (the &#945;, &#946; or &#947; angles) according to the light distribution curve chosen.
     /// 
     /// NOTE: The SecondaryPlaneAngle and LuminousIntensity lists are corresponding lists.
-    std::vector<IfcPlaneAngleMeasure> /*[1:?]*/ SecondaryPlaneAngle();
+    std::vector< IfcPlaneAngleMeasure > /*[1:?]*/ SecondaryPlaneAngle();
     /// The luminous intensity distribution measure for this pair of main and secondary plane angles according to the light distribution curve chosen.
-    std::vector<IfcLuminousIntensityDistributionMeasure> /*[1:?]*/ LuminousIntensity();
+    std::vector< IfcLuminousIntensityDistributionMeasure > /*[1:?]*/ LuminousIntensity();
  virtual unsigned int getArgumentCount() const { return 3; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_DOUBLE; case 1: return Argument_VECTOR_DOUBLE; case 2: return Argument_VECTOR_DOUBLE; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MainPlaneAngle"; case 1: return "SecondaryPlaneAngle"; case 2: return "LuminousIntensity"; } throw IfcException("argument out of range"); }
@@ -7096,8 +7096,8 @@ public:
     static Type::Enum Class();
     IfcLightDistributionData (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLightDistributionData* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightDistributionData> > list;
-    typedef IfcTemplatedEntityList<IfcLightDistributionData>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLightDistributionData > > list;
+    typedef IfcTemplatedEntityList< IfcLightDistributionData >::it it;
 };
 /// IfcLightIntensityDistribution defines the the luminous intensity of a light source that changes according to the direction of the ray. It is based on some standardized light distribution curves, which are defined by the LightDistributionCurve attribute. 
 /// 
@@ -7107,7 +7107,7 @@ public:
     /// Standardized  light distribution curve used to define the luminous intensity of the light in all directions.
     IfcLightDistributionCurveEnum::IfcLightDistributionCurveEnum LightDistributionCurve();
     /// Light distribution data applied to the light source. It is defined by a list of main plane angles (B or C according to the light distribution curve chosen) that includes (for each B or C angle) a second list of secondary plane angles (the &#946; or &#947; angles) and the according luminous intensity distribution measures.
-    SHARED_PTR< IfcTemplatedEntityList<IfcLightDistributionData> > DistributionData();
+    SHARED_PTR< IfcTemplatedEntityList< IfcLightDistributionData > > DistributionData();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENUMERATION; case 1: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "LightDistributionCurve"; case 1: return "DistributionData"; } throw IfcException("argument out of range"); }
@@ -7117,8 +7117,8 @@ public:
     static Type::Enum Class();
     IfcLightIntensityDistribution (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLightIntensityDistribution* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightIntensityDistribution> > list;
-    typedef IfcTemplatedEntityList<IfcLightIntensityDistribution>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLightIntensityDistribution > > list;
+    typedef IfcTemplatedEntityList< IfcLightIntensityDistribution >::it it;
 };
 class IfcLocalTime : public IfcBaseEntity {
 public:
@@ -7144,8 +7144,8 @@ public:
     static Type::Enum Class();
     IfcLocalTime (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLocalTime* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLocalTime> > list;
-    typedef IfcTemplatedEntityList<IfcLocalTime>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLocalTime > > list;
+    typedef IfcTemplatedEntityList< IfcLocalTime >::it it;
 };
 /// IfcMaterial is a homogeneous or inhomogeneous
 /// substance that can be used to form elements (physical products or
@@ -7171,9 +7171,9 @@ public:
 /// styles, hatching definitions or surface coloring/rendering
 /// information to a material.
 /// 
-/// HISTORYï¿½New entity in IFC2x4
+/// HISTORYÿNew entity in IFC2x4
 /// 
-/// IFC2x4 CHANGEï¿½ The attributes Description and Category have been added.
+/// IFC2x4 CHANGEÿ The attributes Description and Category have been added.
 class IfcMaterial : public IfcBaseEntity {
 public:
     /// Name of the material. 
@@ -7186,25 +7186,25 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcMaterialDefinitionRepresentation> > HasRepresentation(); // INVERSE IfcMaterialDefinitionRepresentation::RepresentedMaterial
-    SHARED_PTR< IfcTemplatedEntityList<IfcMaterialClassificationRelationship> > ClassifiedAs(); // INVERSE IfcMaterialClassificationRelationship::ClassifiedMaterial
+    SHARED_PTR< IfcTemplatedEntityList< IfcMaterialDefinitionRepresentation > > HasRepresentation(); // INVERSE IfcMaterialDefinitionRepresentation::RepresentedMaterial
+    SHARED_PTR< IfcTemplatedEntityList< IfcMaterialClassificationRelationship > > ClassifiedAs(); // INVERSE IfcMaterialClassificationRelationship::ClassifiedMaterial
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcMaterial (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMaterial* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterial> > list;
-    typedef IfcTemplatedEntityList<IfcMaterial>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMaterial > > list;
+    typedef IfcTemplatedEntityList< IfcMaterial >::it it;
 };
 /// IfcMaterialClassificationRelationship is a relationship assigning classifications to materials.
 /// 
-/// HISTORYï¿½ New entity in IFC2x.
+/// HISTORYÿ New entity in IFC2x.
 /// 
-/// IFC2x4 CHANGEï¿½ The entity IfcMaterialClassificationRelationship is deprecated since IFC2x4 and shall no longer be used. Use IfcExternalReferenceRelationship instead.
+/// IFC2x4 CHANGEÿ The entity IfcMaterialClassificationRelationship is deprecated since IFC2x4 and shall no longer be used. Use IfcExternalReferenceRelationship instead.
 class IfcMaterialClassificationRelationship : public IfcBaseEntity {
 public:
     /// The material classifications identifying the type of material.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > MaterialClassifications();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > MaterialClassifications();
     /// Material being classified.
     IfcMaterial* ClassifiedMaterial();
  virtual unsigned int getArgumentCount() const { return 2; }
@@ -7216,12 +7216,12 @@ public:
     static Type::Enum Class();
     IfcMaterialClassificationRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMaterialClassificationRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialClassificationRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcMaterialClassificationRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMaterialClassificationRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcMaterialClassificationRelationship >::it it;
 };
 /// IfcMaterialLayer is a single and identifiable part of an element which is constructed of a number of layers (one or more). Each IfcMaterialLayer has a constant thickness and is located relative to the referencing IfcMaterialLayerSet along the MlsBase.
 /// 
-/// EXAMPLEï¿½ A cavity wall with brick masonry used with
+/// EXAMPLE  A cavity wall with brick masonry used with
 /// an air gap in between would be modeled using three
 /// IfcMaterialLayer's: [1] Brick, [2] Air gap, [3] Brick. The
 /// inner layer "Brick" would have a Name = "Brick", an
@@ -7234,14 +7234,14 @@ public:
 /// that might be different to the IfcMaterial name
 /// referenced.
 /// 
-/// EXAMPLEï¿½ The IfcMaterialLayer name of an
+/// EXAMPLE  The IfcMaterialLayer name of an
 /// insulation layer can be "Insulation", whereas the
 /// IfcMaterial name is "polystyrene insulating
 /// boards".
 /// 
-/// HISTORYï¿½ New entity in IFC 1.5
+/// HISTORY  New entity in IFC 1.5
 /// 
-/// IFC2x4 CHANGEï¿½ The attributes Name, Description, Category, Priority have been added at the end of attribute list. Data type of LayerThickness relaxed to IfcNonNegativeLengthMeasure.
+/// IFC2x4 CHANGE  The attributes Name, Description, Category, Priority have been added at the end of attribute list. Data type of LayerThickness relaxed to IfcNonNegativeLengthMeasure.
 class IfcMaterialLayer : public IfcBaseEntity {
 public:
     /// Whether the optional attribute Material is defined for this IfcMaterialLayer
@@ -7250,9 +7250,9 @@ public:
     IfcMaterial* Material();
     /// The thickness of the material layer. The dimension is measured along the positive MlsDirection as specified in IfcMaterialLayerSet (that is mapped to AXIS-2, as specified in IfcMaterialLayerSetUsage for element occurrences supporting IfcMaterialLayerSetUsage.
     /// 
-    /// NOTEï¿½ The attribute value can be 0. for material thicknesses very close to zero, such as for a membrane. Material layers with thickess 0. shall not be rendered in the geometric representation.
+    /// NOTE  The attribute value can be 0. for material thicknesses very close to zero, such as for a membrane. Material layers with thickess 0. shall not be rendered in the geometric representation.
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute datatype has been changed to IfcNonNegativeLengthMeasure allowing for 0. as thickness.
+    /// IFC2x4 CHANGE  The attribute datatype has been changed to IfcNonNegativeLengthMeasure allowing for 0. as thickness.
     IfcPositiveLengthMeasure LayerThickness();
     /// Whether the optional attribute IsVentilated is defined for this IfcMaterialLayer
     bool hasIsVentilated();
@@ -7266,14 +7266,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_DOUBLE; case 2: return Argument_BOOL; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Material"; case 1: return "LayerThickness"; case 2: return "IsVentilated"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcMaterialLayerSet> > ToMaterialLayerSet(); // INVERSE IfcMaterialLayerSet::MaterialLayers
+    SHARED_PTR< IfcTemplatedEntityList< IfcMaterialLayerSet > > ToMaterialLayerSet(); // INVERSE IfcMaterialLayerSet::MaterialLayers
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcMaterialLayer (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMaterialLayer* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialLayer> > list;
-    typedef IfcTemplatedEntityList<IfcMaterialLayer>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMaterialLayer > > list;
+    typedef IfcTemplatedEntityList< IfcMaterialLayer >::it it;
 };
 /// IfcMaterialLayerSet is a designation by which materials of an element constructed of a number of material layers is known and through which the relative positioning of individual layers can be expressed.
 /// 
@@ -7294,9 +7294,9 @@ public:
 /// gap is identified, using the IsVentilated flag at
 /// IfcMaterialLayer.
 /// 
-/// HISTORYï¿½ New entity in IFC 1.0
+/// HISTORY  New entity in IFC 1.0
 /// 
-/// IFC2x4 CHANGEï¿½ Subtyped from IfcMaterialDefinition, the attribute Description
+/// IFC2x4 CHANGE  Subtyped from IfcMaterialDefinition, the attribute Description
 /// has been added at the end of attribute list.
 /// 
 /// Attribute use definition
@@ -7311,7 +7311,7 @@ public:
 class IfcMaterialLayerSet : public IfcBaseEntity {
 public:
     /// Identification of the layers from which the material layer set is composed.
-    SHARED_PTR< IfcTemplatedEntityList<IfcMaterialLayer> > MaterialLayers();
+    SHARED_PTR< IfcTemplatedEntityList< IfcMaterialLayer > > MaterialLayers();
     /// Whether the optional attribute LayerSetName is defined for this IfcMaterialLayerSet
     bool hasLayerSetName();
     /// The name by which the material layer set is known.
@@ -7325,8 +7325,8 @@ public:
     static Type::Enum Class();
     IfcMaterialLayerSet (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMaterialLayerSet* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialLayerSet> > list;
-    typedef IfcTemplatedEntityList<IfcMaterialLayerSet>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMaterialLayerSet > > list;
+    typedef IfcTemplatedEntityList< IfcMaterialLayerSet >::it it;
 };
 /// IfcMaterialLayerSetUsage determines the usage of
 /// IfcMaterialLayerSet in terms of its location and
@@ -7336,7 +7336,7 @@ public:
 /// the element geometry). The rules to ensure the compatibility
 /// depend on the type of the building element.
 /// 
-/// EXAMPLE ï¿½For a cavity brick wall with shape
+/// EXAMPLE ÿFor a cavity brick wall with shape
 /// representation SweptSolid, the
 /// IfcMaterialLayerSet.TotalThickness shall be equal to the
 /// wall thickness. Also the OffsetFromReferenceLine shall
@@ -7346,7 +7346,7 @@ public:
 /// RepresentationIdentifier="Axis" and
 /// RepresentationIdentifier="Body".
 /// 
-/// NOTE ï¿½Refer to the implementation guide and agreements for
+/// NOTE ÿRefer to the implementation guide and agreements for
 /// more information on matching between building element geometry
 /// and material layer set usage.
 /// 
@@ -7357,7 +7357,7 @@ public:
 /// objects. If the element type is available (i.e. the relevant
 /// subtype of IfcElementType, then the
 /// IfcMaterialLayerSet can be assigned to the type object.
-/// The assignment between aï¿½subtype of IfcElement and the
+/// The assignment between aÿsubtype of IfcElement and the
 /// IfcMaterialLayerSetUsage is handled by
 /// IfcRelAssociatesMaterial.
 /// 
@@ -7370,27 +7370,27 @@ public:
 /// material layer thicknesses are constant.
 /// Generally, an element may be layered in any of its primary
 /// directions, denoted by its x, y or z axis. The geometry use
-/// definitions at eachï¿½specific types of building element will
-/// determine the applicableï¿½LayerSetDirection.
+/// definitions at eachÿspecific types of building element will
+/// determine the applicableÿLayerSetDirection.
 /// 
 /// The following examples illustrate how the IfcMaterialLayerSetUsage attributes (LayerSetDirection, DirectionSense, OffsetFromReferenceLine) can
 /// be used in different cases. The normative material use definitions are documented at each element (how these shall be used).
 /// 
 /// Figure 286 shows an example of the use of IfcMaterialLayerSetUsage aligned to the axis of a wall.
 /// 
-/// EXAMPLEï¿½ For a standard wall with extruded
+/// EXAMPLE  For a standard wall with extruded
 /// geometric representation (vertical extrusion), the layer set
 /// direction will be perpendicular to extrusion direction,
-/// andï¿½can be derived from the direction of the wall
+/// andÿcan be derived from the direction of the wall
 /// axis. With the DirectionSense(positive in
 /// this example) the individual IfcMaterialLayers are
 /// assigned consecutively right-to-left or left-to-right. For a
 /// curved wall, "direction denoting the wall thickness" can be
 /// derived from the direction of the wall axis, and it will remain
 /// perpendicular to the wall path. The
-/// DirectionSenseï¿½applies as well.
+/// DirectionSenseÿapplies as well.
 /// 
-/// NOTEï¿½ According to the IfcWallStandardCase material use
+/// NOTE  According to the IfcWallStandardCase material use
 /// definition the LayerSetDirection for
 /// IfcWallStandardCase is always AXIS2 (i.e. along the
 /// y-axis), as shown in this example.
@@ -7399,17 +7399,17 @@ public:
 /// 
 /// Figure 287 shows an example of the use of IfcMaterialLayerSetUsage aligned to a slab.
 /// 
-/// EXAMPLEï¿½ï¿½For a slab with perpendicular
+/// EXAMPLE ÿFor a slab with perpendicular
 /// extruded geometric representation, the LayerSetDirection
 /// will coincide with the extrusion direction (in positive or
 /// negative sense). In this example, the material layer set base is
 /// the extruded profile and consistent with the
-/// IfcExtrudedAreaSolid.Position,ï¿½with the
+/// IfcExtrudedAreaSolid.Position,ÿwith the
 /// DirectionSensebeing positive, the
 /// individual IfcMaterialLayers are built up from the base
 /// towards positive z direction in this case.
 /// 
-/// NOTE ï¿½According to the IfcSlabStandardCase
+/// NOTE ÿAccording to the IfcSlabStandardCase
 /// material use definition the LayerSetDirection for
 /// IfcSlabStandardCase is always AXIS3 (i.e. along the
 /// z-axis).
@@ -7418,7 +7418,7 @@ public:
 /// 
 /// Figure 288 shows an example of the use of IfcMaterialLayerSetUsage aligned to a roof slab with non-perpendicular extrusion.
 /// 
-/// EXAMPLEï¿½ï¿½For a slab with non-perpendicular
+/// EXAMPLE ÿFor a slab with non-perpendicular
 /// extruded geometric representation, the guidelines above apply as
 /// well. The material layer thickness and the
 /// OffsetFromReferenceLine is always measured
@@ -7434,14 +7434,14 @@ public:
     IfcMaterialLayerSet* ForLayerSet();
     /// Orientation of the material layer set relative to element reference geometry. The meaning of the value of this attribute shall be specified in the geometry use section for each element. For extruded shape representation, direction can be given along the extrusion path (e.g. for slabs) or perpendicular to it (e.g. for walls).
     /// 
-    /// NOTEï¿½ the LayerSetDirection for IfcWallStandardCase shall be AXIS2 (i.e. the y-axis) and for IfcSlabStandardCase and IfcPlateStandardCase it shall be AXIS3 (i.e. the z-axis).
+    /// NOTE  the LayerSetDirection for IfcWallStandardCase shall be AXIS2 (i.e. the y-axis) and for IfcSlabStandardCase and IfcPlateStandardCase it shall be AXIS3 (i.e. the z-axis).
     /// 
     /// Whether the material layers of the set being used shall 'grow' into the positive or negative direction of the given axis, shall be deifned by DirectionSense attribute.
     IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum LayerSetDirection();
     /// Denotion whether the material layer set is oriented in positive or negative sense along the specified axis (defined by LayerSetDirection). "Positive" means that the consecutive layers (the IfcMaterialLayer instances in the list of  IfcMaterialLayerSet.MaterialLayers) are placed face-by-face in the direction of the positive axis as established by LayerSetDirection: for AXIS2 it would be in +y, for AXIS3 it would be +z. "Negative" means that the layers are placed face-by-face in the direction of the negative LayerSetDirection. In both cases,  starting at the material layer set base line.
-    /// NOTEï¿½ the material layer set base line (MlsBase) is located by OffsetFromReferenceLine, and may be on the positive or negative side of the element reference line (or plane); positive or negative for MlsBase placement does not depend on the DirectionSense attribute, but on the relevant element axis.
+    /// NOTE  the material layer set base line (MlsBase) is located by OffsetFromReferenceLine, and may be on the positive or negative side of the element reference line (or plane); positive or negative for MlsBase placement does not depend on the DirectionSense attribute, but on the relevant element axis.
     IfcDirectionSenseEnum::IfcDirectionSenseEnum DirectionSense();
-    /// Offset of the material layer set base line (MlsBase) from reference geometry (line or plane) of element. The offset can be positive or negative, unless restricted for a particular building element type in its use definition or by implementer agreement. A positive value means, that the MlsBase is placed on the positive side of the reference line or plane, on the axis established by LayerSetDirection (in case of AXIS2 into the direction of +y, or in case of AXIS2 into the direction of +z). A negative value means that the MlsBase is placed on the negative side, as established by LayerSetDirection (in case of AXIS2 into the direction of -y). NOTEï¿½ the positive or negative sign in the offset only affects the MlsBase placement, it does not have any effect on the application of DirectionSense for orientation of the material layers; also DirectionSense does not change the MlsBase placement.
+    /// Offset of the material layer set base line (MlsBase) from reference geometry (line or plane) of element. The offset can be positive or negative, unless restricted for a particular building element type in its use definition or by implementer agreement. A positive value means, that the MlsBase is placed on the positive side of the reference line or plane, on the axis established by LayerSetDirection (in case of AXIS2 into the direction of +y, or in case of AXIS2 into the direction of +z). A negative value means that the MlsBase is placed on the negative side, as established by LayerSetDirection (in case of AXIS2 into the direction of -y). NOTE  the positive or negative sign in the offset only affects the MlsBase placement, it does not have any effect on the application of DirectionSense for orientation of the material layers; also DirectionSense does not change the MlsBase placement.
     IfcLengthMeasure OffsetFromReferenceLine();
  virtual unsigned int getArgumentCount() const { return 4; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_ENUMERATION; case 2: return Argument_ENUMERATION; case 3: return Argument_DOUBLE; } throw IfcException("argument out of range"); }
@@ -7452,8 +7452,8 @@ public:
     static Type::Enum Class();
     IfcMaterialLayerSetUsage (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMaterialLayerSetUsage* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialLayerSetUsage> > list;
-    typedef IfcTemplatedEntityList<IfcMaterialLayerSetUsage>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMaterialLayerSetUsage > > list;
+    typedef IfcTemplatedEntityList< IfcMaterialLayerSetUsage >::it it;
 };
 /// IfcMaterialList is a list of the different materials
 /// that are used in an element.
@@ -7470,12 +7470,12 @@ public:
 /// of a single identifiable material (for example, to represent anisotropic
 /// material).
 /// 
-/// IFC2x4 CHANGEï¿½ The entity IfcMaterialList is deprecated and shall no longer
+/// IFC2x4 CHANGEÿ The entity IfcMaterialList is deprecated and shall no longer
 /// be used. Use IfcMaterialConstituentSet instead.
 class IfcMaterialList : public IfcBaseEntity {
 public:
     /// Materials used in a composition of substances.
-    SHARED_PTR< IfcTemplatedEntityList<IfcMaterial> > Materials();
+    SHARED_PTR< IfcTemplatedEntityList< IfcMaterial > > Materials();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Materials"; } throw IfcException("argument out of range"); }
@@ -7485,8 +7485,8 @@ public:
     static Type::Enum Class();
     IfcMaterialList (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMaterialList* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialList> > list;
-    typedef IfcTemplatedEntityList<IfcMaterialList>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMaterialList > > list;
+    typedef IfcTemplatedEntityList< IfcMaterialList >::it it;
 };
 /// IfcMaterialProperties is defined as an abstract
 /// supertype for entities that apply material properties to material
@@ -7494,7 +7494,7 @@ public:
 /// individual material definiton may be identified by a Name
 /// and a Description.
 /// 
-/// NOTEï¿½ The set of material properties can be assigned
+/// NOTE  The set of material properties can be assigned
 /// to an individual IfcMaterial, a set or composite of
 /// materials (IfcMaterialConstituent,
 /// IfcMaterialConstituentSet), or set or individual material
@@ -7507,9 +7507,9 @@ public:
 /// material properties defined in this IFC specification and those
 /// defined as user-defined extended material properties.
 /// 
-/// HISTORYï¿½ New Entity in IFC 2x.
+/// HISTORY  New Entity in IFC 2x.
 /// 
-/// IFC2x4 CHANGEï¿½ The subtypes that represented a fixed list of statically defined material properties, IfcMechanicalMaterialProperties, IfcThermalMaterialProperties, IfcHygroscopicMaterialProperties, IfcGeneralMaterialProperties, IfcOpticalMaterialProperties, IfcWaterProperties, IfcFuelProperties, IfcProductsOfCombustionProperties have been deleted, use the generic IfcExtendedMaterialProperties instead.
+/// IFC2x4 CHANGE  The subtypes that represented a fixed list of statically defined material properties, IfcMechanicalMaterialProperties, IfcThermalMaterialProperties, IfcHygroscopicMaterialProperties, IfcGeneralMaterialProperties, IfcOpticalMaterialProperties, IfcWaterProperties, IfcFuelProperties, IfcProductsOfCombustionProperties have been deleted, use the generic IfcExtendedMaterialProperties instead.
 class IfcMaterialProperties : public IfcBaseEntity {
 public:
     /// Reference to the material definition to which the set of properties is assigned.
@@ -7525,8 +7525,8 @@ public:
     static Type::Enum Class();
     IfcMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMaterialProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialProperties> > list;
-    typedef IfcTemplatedEntityList<IfcMaterialProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMaterialProperties > > list;
+    typedef IfcTemplatedEntityList< IfcMaterialProperties >::it it;
 };
 /// Definition from ISO/CD 10303-41:1992: A measure with unit is the specification of a physical quantity  as defined in ISO 31 (clause 2).
 /// 
@@ -7553,8 +7553,8 @@ public:
     static Type::Enum Class();
     IfcMeasureWithUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMeasureWithUnit* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMeasureWithUnit> > list;
-    typedef IfcTemplatedEntityList<IfcMeasureWithUnit>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMeasureWithUnit > > list;
+    typedef IfcTemplatedEntityList< IfcMeasureWithUnit >::it it;
 };
 class IfcMechanicalMaterialProperties : public IfcMaterialProperties {
 public:
@@ -7582,8 +7582,8 @@ public:
     static Type::Enum Class();
     IfcMechanicalMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMechanicalMaterialProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMechanicalMaterialProperties> > list;
-    typedef IfcTemplatedEntityList<IfcMechanicalMaterialProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMechanicalMaterialProperties > > list;
+    typedef IfcTemplatedEntityList< IfcMechanicalMaterialProperties >::it it;
 };
 class IfcMechanicalSteelMaterialProperties : public IfcMechanicalMaterialProperties {
 public:
@@ -7607,7 +7607,7 @@ public:
     IfcPositiveRatioMeasure PlasticStrain();
     /// Whether the optional attribute Relaxations is defined for this IfcMechanicalSteelMaterialProperties
     bool hasRelaxations();
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelaxation> > Relaxations();
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelaxation > > Relaxations();
  virtual unsigned int getArgumentCount() const { return 13; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return Argument_DOUBLE; case 7: return Argument_DOUBLE; case 8: return Argument_DOUBLE; case 9: return Argument_DOUBLE; case 10: return Argument_DOUBLE; case 11: return Argument_DOUBLE; case 12: return Argument_ENTITY_LIST; } return IfcMechanicalMaterialProperties::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "YieldStress"; case 7: return "UltimateStress"; case 8: return "UltimateStrain"; case 9: return "HardeningModule"; case 10: return "ProportionalStress"; case 11: return "PlasticStrain"; case 12: return "Relaxations"; } return IfcMechanicalMaterialProperties::getArgumentName(i); }
@@ -7617,8 +7617,8 @@ public:
     static Type::Enum Class();
     IfcMechanicalSteelMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMechanicalSteelMaterialProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMechanicalSteelMaterialProperties> > list;
-    typedef IfcTemplatedEntityList<IfcMechanicalSteelMaterialProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMechanicalSteelMaterialProperties > > list;
+    typedef IfcTemplatedEntityList< IfcMechanicalSteelMaterialProperties >::it it;
 };
 /// An IfcMetric is used to capture quantitative resultant metrics that can be applied to objectives. 
 /// 
@@ -7691,8 +7691,8 @@ public:
     static Type::Enum Class();
     IfcMetric (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMetric* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMetric> > list;
-    typedef IfcTemplatedEntityList<IfcMetric>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMetric > > list;
+    typedef IfcTemplatedEntityList< IfcMetric >::it it;
 };
 /// IfcMonetaryUnit is a unit to define currency for money.
 /// 
@@ -7712,8 +7712,8 @@ public:
     static Type::Enum Class();
     IfcMonetaryUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMonetaryUnit* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMonetaryUnit> > list;
-    typedef IfcTemplatedEntityList<IfcMonetaryUnit>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMonetaryUnit > > list;
+    typedef IfcTemplatedEntityList< IfcMonetaryUnit >::it it;
 };
 /// Definition from ISO/CD 10303-41:1992: A named unit is a unit quantity associated with the word, or group of words, by which the unit is identified.
 /// 
@@ -7735,8 +7735,8 @@ public:
     static Type::Enum Class();
     IfcNamedUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcNamedUnit* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcNamedUnit> > list;
-    typedef IfcTemplatedEntityList<IfcNamedUnit>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcNamedUnit > > list;
+    typedef IfcTemplatedEntityList< IfcNamedUnit >::it it;
 };
 /// IfcObjectPlacement is an abstract supertype for the special types defining the object coordinate system. The
 /// IfcObjectPlacement has to be provided for each product that has a shape representation.
@@ -7755,15 +7755,15 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > PlacesObject(); // INVERSE IfcProduct::ObjectPlacement
-    SHARED_PTR< IfcTemplatedEntityList<IfcLocalPlacement> > ReferencedByPlacements(); // INVERSE IfcLocalPlacement::PlacementRelTo
+    SHARED_PTR< IfcTemplatedEntityList< IfcProduct > > PlacesObject(); // INVERSE IfcProduct::ObjectPlacement
+    SHARED_PTR< IfcTemplatedEntityList< IfcLocalPlacement > > ReferencedByPlacements(); // INVERSE IfcLocalPlacement::PlacementRelTo
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcObjectPlacement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcObjectPlacement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcObjectPlacement> > list;
-    typedef IfcTemplatedEntityList<IfcObjectPlacement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcObjectPlacement > > list;
+    typedef IfcTemplatedEntityList< IfcObjectPlacement >::it it;
 };
 /// An IfcObjective captures qualitative information for an objective-based constraint. 
 /// 
@@ -7799,8 +7799,8 @@ public:
     static Type::Enum Class();
     IfcObjective (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcObjective* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcObjective> > list;
-    typedef IfcTemplatedEntityList<IfcObjective>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcObjective > > list;
+    typedef IfcTemplatedEntityList< IfcObjective >::it it;
 };
 class IfcOpticalMaterialProperties : public IfcMaterialProperties {
 public:
@@ -7840,8 +7840,8 @@ public:
     static Type::Enum Class();
     IfcOpticalMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOpticalMaterialProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOpticalMaterialProperties> > list;
-    typedef IfcTemplatedEntityList<IfcOpticalMaterialProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOpticalMaterialProperties > > list;
+    typedef IfcTemplatedEntityList< IfcOpticalMaterialProperties >::it it;
 };
 /// A named and structured grouping with a corporate identity.
 /// 
@@ -7865,26 +7865,26 @@ public:
     /// Whether the optional attribute Roles is defined for this IfcOrganization
     bool hasRoles();
     /// Roles played by the organization.
-    SHARED_PTR< IfcTemplatedEntityList<IfcActorRole> > Roles();
+    SHARED_PTR< IfcTemplatedEntityList< IfcActorRole > > Roles();
     /// Whether the optional attribute Addresses is defined for this IfcOrganization
     bool hasAddresses();
     /// Postal and telecom addresses of an organization.
     /// NOTE: There may be several addresses related to an organization.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAddress> > Addresses();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAddress > > Addresses();
  virtual unsigned int getArgumentCount() const { return 5; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; case 2: return Argument_STRING; case 3: return Argument_ENTITY_LIST; case 4: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Id"; case 1: return "Name"; case 2: return "Description"; case 3: return "Roles"; case 4: return "Addresses"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcOrganizationRelationship> > IsRelatedBy(); // INVERSE IfcOrganizationRelationship::RelatedOrganizations
-    SHARED_PTR< IfcTemplatedEntityList<IfcOrganizationRelationship> > Relates(); // INVERSE IfcOrganizationRelationship::RelatingOrganization
-    SHARED_PTR< IfcTemplatedEntityList<IfcPersonAndOrganization> > Engages(); // INVERSE IfcPersonAndOrganization::TheOrganization
+    SHARED_PTR< IfcTemplatedEntityList< IfcOrganizationRelationship > > IsRelatedBy(); // INVERSE IfcOrganizationRelationship::RelatedOrganizations
+    SHARED_PTR< IfcTemplatedEntityList< IfcOrganizationRelationship > > Relates(); // INVERSE IfcOrganizationRelationship::RelatingOrganization
+    SHARED_PTR< IfcTemplatedEntityList< IfcPersonAndOrganization > > Engages(); // INVERSE IfcPersonAndOrganization::TheOrganization
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcOrganization (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOrganization* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOrganization> > list;
-    typedef IfcTemplatedEntityList<IfcOrganization>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOrganization > > list;
+    typedef IfcTemplatedEntityList< IfcOrganization >::it it;
 };
 /// Definition: establishes an association between one relating organization and one or more related organizations.
 /// 
@@ -7903,7 +7903,7 @@ public:
     /// Organization which is the relating part of the relationship between organizations.
     IfcOrganization* RelatingOrganization();
     /// The other, possibly dependent, organizations which are the related parts of the relationship between organizations.
-    SHARED_PTR< IfcTemplatedEntityList<IfcOrganization> > RelatedOrganizations();
+    SHARED_PTR< IfcTemplatedEntityList< IfcOrganization > > RelatedOrganizations();
  virtual unsigned int getArgumentCount() const { return 4; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; case 2: return Argument_ENTITY; case 3: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingOrganization"; case 3: return "RelatedOrganizations"; } throw IfcException("argument out of range"); }
@@ -7913,14 +7913,14 @@ public:
     static Type::Enum Class();
     IfcOrganizationRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOrganizationRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOrganizationRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcOrganizationRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOrganizationRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcOrganizationRelationship >::it it;
 };
 /// IfcOwnerHistory defines all history and identification related information. In order to provide fast access it is directly attached to all independent objects, relationships and properties.
 /// 
 /// IfcOwnerHistory is used to identify the creating and owning application and user for the associated object, as well as capture the last modifying application and user.
 /// 
-/// HISTORYï¿½ New entity in IFC R1.0. Modified in IFC R2x4.
+/// HISTORY  New entity in IFC R1.0. Modified in IFC R2x4.
 /// 
 /// Informal propositions
 /// 
@@ -7961,8 +7961,8 @@ public:
     static Type::Enum Class();
     IfcOwnerHistory (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOwnerHistory* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOwnerHistory> > list;
-    typedef IfcTemplatedEntityList<IfcOwnerHistory>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOwnerHistory > > list;
+    typedef IfcTemplatedEntityList< IfcOwnerHistory >::it it;
 };
 /// Definition: an individual human being.
 /// 
@@ -7994,36 +7994,36 @@ public:
     /// NOTE: Middle names are not normally used in familiar communication but may be asserted to provide additional 
     /// identification of a particular person if necessary. They may be particularly useful in situations where the person concerned has a 
     /// family name that occurs commonly in the geographical region.
-    std::vector<IfcLabel> /*[1:?]*/ MiddleNames();
+    std::vector< IfcLabel > /*[1:?]*/ MiddleNames();
     /// Whether the optional attribute PrefixTitles is defined for this IfcPerson
     bool hasPrefixTitles();
     /// The word, or group of words, which specify the person's social and/or professional standing and appear before his/her names.
-    std::vector<IfcLabel> /*[1:?]*/ PrefixTitles();
+    std::vector< IfcLabel > /*[1:?]*/ PrefixTitles();
     /// Whether the optional attribute SuffixTitles is defined for this IfcPerson
     bool hasSuffixTitles();
     /// The word, or group of words, which specify the person's social and/or professional standing and appear after his/her names.
-    std::vector<IfcLabel> /*[1:?]*/ SuffixTitles();
+    std::vector< IfcLabel > /*[1:?]*/ SuffixTitles();
     /// Whether the optional attribute Roles is defined for this IfcPerson
     bool hasRoles();
     /// Roles played by the person.
-    SHARED_PTR< IfcTemplatedEntityList<IfcActorRole> > Roles();
+    SHARED_PTR< IfcTemplatedEntityList< IfcActorRole > > Roles();
     /// Whether the optional attribute Addresses is defined for this IfcPerson
     bool hasAddresses();
     /// Postal and telecommunication addresses of a person.
     /// NOTE - A person may have several addresses.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAddress> > Addresses();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAddress > > Addresses();
  virtual unsigned int getArgumentCount() const { return 8; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; case 2: return Argument_STRING; case 3: return Argument_VECTOR_STRING; case 4: return Argument_VECTOR_STRING; case 5: return Argument_VECTOR_STRING; case 6: return Argument_ENTITY_LIST; case 7: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Id"; case 1: return "FamilyName"; case 2: return "GivenName"; case 3: return "MiddleNames"; case 4: return "PrefixTitles"; case 5: return "SuffixTitles"; case 6: return "Roles"; case 7: return "Addresses"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcPersonAndOrganization> > EngagedIn(); // INVERSE IfcPersonAndOrganization::ThePerson
+    SHARED_PTR< IfcTemplatedEntityList< IfcPersonAndOrganization > > EngagedIn(); // INVERSE IfcPersonAndOrganization::ThePerson
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcPerson (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPerson* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPerson> > list;
-    typedef IfcTemplatedEntityList<IfcPerson>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPerson > > list;
+    typedef IfcTemplatedEntityList< IfcPerson >::it it;
 };
 /// Definition: Identification of a person within an organization.
 /// 
@@ -8039,7 +8039,7 @@ public:
     /// Whether the optional attribute Roles is defined for this IfcPersonAndOrganization
     bool hasRoles();
     /// Roles played by the person within the context of an organization.  These may differ from the roles in ThePerson.Roles which may be asserted without organizational context.
-    SHARED_PTR< IfcTemplatedEntityList<IfcActorRole> > Roles();
+    SHARED_PTR< IfcTemplatedEntityList< IfcActorRole > > Roles();
  virtual unsigned int getArgumentCount() const { return 3; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_ENTITY; case 2: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ThePerson"; case 1: return "TheOrganization"; case 2: return "Roles"; } throw IfcException("argument out of range"); }
@@ -8049,14 +8049,14 @@ public:
     static Type::Enum Class();
     IfcPersonAndOrganization (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPersonAndOrganization* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPersonAndOrganization> > list;
-    typedef IfcTemplatedEntityList<IfcPersonAndOrganization>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPersonAndOrganization > > list;
+    typedef IfcTemplatedEntityList< IfcPersonAndOrganization >::it it;
 };
 /// The physical quantity, IfcPhysicalQuantity, is an abstract entity that holds a complex or simple quantity measure together with a semantic definition of the usage for the single or several measure value. 
 /// 
 /// The Name attribute defines the actual usage or kind of measure. The interpretation of the name label has to be established within the actual exchange context. In addition an informative text may be associated to each quantity by the Description attribute. 
 /// 
-/// HISTORYï¿½ New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
+/// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
 class IfcPhysicalQuantity : public IfcBaseEntity {
 public:
     /// Name of the element quantity or measure. The name attribute has to be made recognizable by further agreements.
@@ -8069,24 +8069,24 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalComplexQuantity> > PartOfComplex(); // INVERSE IfcPhysicalComplexQuantity::HasQuantities
+    SHARED_PTR< IfcTemplatedEntityList< IfcPhysicalComplexQuantity > > PartOfComplex(); // INVERSE IfcPhysicalComplexQuantity::HasQuantities
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcPhysicalQuantity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPhysicalQuantity* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalQuantity> > list;
-    typedef IfcTemplatedEntityList<IfcPhysicalQuantity>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPhysicalQuantity > > list;
+    typedef IfcTemplatedEntityList< IfcPhysicalQuantity >::it it;
 };
 /// The physical quantity, IfcPhysicalSimpleQuantity, is an entity that holds a single quantity measure value (as defined at the subtypes of IfcPhysicalSimpleQuantity) together with a semantic definition of the usage for the measure value. 
 /// 
-/// EXAMPLEï¿½ An element, like a wall, may have several area measures, like footprint area, left wall face area, right wall face area. These areas would be given by three instances of the area quantity subtype, with different Name string values.
+/// EXAMPLE  An element, like a wall, may have several area measures, like footprint area, left wall face area, right wall face area. These areas would be given by three instances of the area quantity subtype, with different Name string values.
 /// 
 /// A section "Quantity Use Definition" at individual entities as subtypes of IfcBuildingElement gives guidance to the usage of the Name attribute to characterize the individual quantities. If the Unit attribute is given, the value attribute (introduced at the level of subtypes of IfcPhysicalSimpleQuantity) are given as quantities of this unit, otherwise the global unit definitions (given by IfcUnitAssignment) are used.
 /// 
 /// HISTORY New entity in IFC2x2 Addendum 1.
 /// 
-/// IFC2x2 ADDENDUM 1 CHANGEï¿½ The abstract entity IfcPhysicalSimpleQuantity has been added. Upward compatibility for file based exchange is guaranteed.
+/// IFC2x2 ADDENDUM 1 CHANGE  The abstract entity IfcPhysicalSimpleQuantity has been added. Upward compatibility for file based exchange is guaranteed.
 class IfcPhysicalSimpleQuantity : public IfcPhysicalQuantity {
 public:
     /// Whether the optional attribute Unit is defined for this IfcPhysicalSimpleQuantity
@@ -8102,8 +8102,8 @@ public:
     static Type::Enum Class();
     IfcPhysicalSimpleQuantity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPhysicalSimpleQuantity* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalSimpleQuantity> > list;
-    typedef IfcTemplatedEntityList<IfcPhysicalSimpleQuantity>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPhysicalSimpleQuantity > > list;
+    typedef IfcTemplatedEntityList< IfcPhysicalSimpleQuantity >::it it;
 };
 /// Definition: The address for delivery of paper based mail.
 /// 
@@ -8122,7 +8122,7 @@ public:
     /// A location within a building (e.g. 3rd Floor) Building name (e.g. Interoperability House) Street number 
     /// (e.g. 6400) Street name (e.g. Alliance Boulevard). Typical content of address lines may vary in different 
     /// countries.
-    std::vector<IfcLabel> /*[1:?]*/ AddressLines();
+    std::vector< IfcLabel > /*[1:?]*/ AddressLines();
     /// Whether the optional attribute PostalBox is defined for this IfcPostalAddress
     bool hasPostalBox();
     /// An address that is implied by an identifiable mail drop.
@@ -8153,16 +8153,16 @@ public:
     static Type::Enum Class();
     IfcPostalAddress (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPostalAddress* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPostalAddress> > list;
-    typedef IfcTemplatedEntityList<IfcPostalAddress>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPostalAddress > > list;
+    typedef IfcTemplatedEntityList< IfcPostalAddress >::it it;
 };
 /// A pre defined item is a qualified name given to a style or font which is determined within the data exchange specification by convention on using the Name attribute value (in contrary to externally defined items, which are agreed by an external source).
 /// 
-/// NOTEï¿½ The convention on using the Name value is defined at the subtypes of IfcPreDefinedItem and is part of the specification.
+/// NOTE  The convention on using the Name value is defined at the subtypes of IfcPreDefinedItem and is part of the specification.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: pre_defined_item. Please refer to ISO/IS 10303-41:1994, page 137 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: pre_defined_item. Please refer to ISO/IS 10303-41:1994, page 137 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcPreDefinedItem : public IfcBaseEntity {
 public:
     /// The string by which the pre defined item is identified. Allowable values for the string are declared at the level of subtypes.
@@ -8176,8 +8176,8 @@ public:
     static Type::Enum Class();
     IfcPreDefinedItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPreDefinedItem* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedItem> > list;
-    typedef IfcTemplatedEntityList<IfcPreDefinedItem>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPreDefinedItem > > list;
+    typedef IfcTemplatedEntityList< IfcPreDefinedItem >::it it;
 };
 /// A predefined symbol is a symbol that gets its shape information by a conforming name that is specified within subtypes of the entity.
 /// 
@@ -8197,8 +8197,8 @@ public:
     static Type::Enum Class();
     IfcPreDefinedSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPreDefinedSymbol* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedSymbol> > list;
-    typedef IfcTemplatedEntityList<IfcPreDefinedSymbol>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPreDefinedSymbol > > list;
+    typedef IfcTemplatedEntityList< IfcPreDefinedSymbol >::it it;
 };
 class IfcPreDefinedTerminatorSymbol : public IfcPreDefinedSymbol {
 public:
@@ -8211,8 +8211,8 @@ public:
     static Type::Enum Class();
     IfcPreDefinedTerminatorSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPreDefinedTerminatorSymbol* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedTerminatorSymbol> > list;
-    typedef IfcTemplatedEntityList<IfcPreDefinedTerminatorSymbol>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPreDefinedTerminatorSymbol > > list;
+    typedef IfcTemplatedEntityList< IfcPreDefinedTerminatorSymbol >::it it;
 };
 /// The pre defined text font determines those qualified names which can be used for fonts that are in scope of the current data exchange specification (in contrary to externally defined text fonts). There are two choices:
 /// 
@@ -8220,11 +8220,11 @@ public:
 /// 
 /// IfcTextStyleFontModel for definitions from Cascading Style Sheets, level 1, W3C Recommendation 17 Dec 1996, revised 11 Jan 1999, CSS1, for all true type text. The use of the CSS1 definitions is the preferred way to represent text fonts.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: pre_defined_text_font. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: pre_defined_text_font. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ The IfcTextStyleFontModel has been added as new subtype.
+/// IFC2x3 CHANGE  The IfcTextStyleFontModel has been added as new subtype.
 class IfcPreDefinedTextFont : public IfcPreDefinedItem {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
@@ -8236,18 +8236,18 @@ public:
     static Type::Enum Class();
     IfcPreDefinedTextFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPreDefinedTextFont* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedTextFont> > list;
-    typedef IfcTemplatedEntityList<IfcPreDefinedTextFont>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPreDefinedTextFont > > list;
+    typedef IfcTemplatedEntityList< IfcPreDefinedTextFont >::it it;
 };
 /// The presentation layer assignment provides the layer name (and optionally a description and an identifier) for a collection of geometric representation items. The IfcPresentationLayerAssignment corresponds to the term "CAD Layer" and is used mainly for grouping and visibility control.
 /// 
-/// NOTEï¿½ The use of presentation layer shall be restricted to simple grouping and displaying purposes.
+/// NOTE  The use of presentation layer shall be restricted to simple grouping and displaying purposes.
 /// 
 /// Visibility and access control and layer style assignment (colour, line style, line width) is handled by the subtype IfcPresentationLayerAssignmentWithStyle.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: presentation layer assignment. Please refer to ISO/IS 10303-46:1994, p. 36 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: presentation layer assignment. Please refer to ISO/IS 10303-46:1994, p. 36 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// Attribute use definition
 /// 
@@ -8263,7 +8263,7 @@ public:
     /// Additional description of the layer.
     IfcText Description();
     /// The set of layered items, which are assigned to this layer.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > AssignedItems();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > AssignedItems();
     /// Whether the optional attribute Identifier is defined for this IfcPresentationLayerAssignment
     bool hasIdentifier();
     /// An (internal) identifier assigned to the layer.
@@ -8277,22 +8277,22 @@ public:
     static Type::Enum Class();
     IfcPresentationLayerAssignment (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPresentationLayerAssignment* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPresentationLayerAssignment> > list;
-    typedef IfcTemplatedEntityList<IfcPresentationLayerAssignment>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPresentationLayerAssignment > > list;
+    typedef IfcTemplatedEntityList< IfcPresentationLayerAssignment >::it it;
 };
 /// An IfcPresentationLayerAssignmentWithStyle extends the presentation layer assignment with capabilities to define visibility control, access control and common style information.
 /// 
 /// The visibility control allows to define a layer to be either 'on' or 'off', and/or 'frozen' or 'not frozen'. The access control allows to block graphical entities from manipulations by setting a layer to be either 'blocked' or 'not blocked'. Common style information can be given to the layer.
 /// 
-/// NOTE ï¿½Style information assigned to layers is often restricted to 'layer colour', 'curve font', and/or 'curve width'. These styles are assigned by using the IfcCurveStyle within the LayerStyles.
+/// NOTE  Style information assigned to layers is often restricted to 'layer colour', 'curve font', and/or 'curve width'. These styles are assigned by using the IfcCurveStyle within the LayerStyles.
 /// 
 /// NOTE: If a styled item is assigned to a layer using the IfcPresentationLayerAssignmentWithStyle, it inherits the style information from the layer. In this case, it should omit its own style information. If the styled item has style information assigned (such as by IfcCurveStyle, IfcFillAreaStyle, IfcTextStyle, IfcSurfaceStyle, IfcSymbolStyle), then it overrides the style provided by the IfcPresentationLayerAssignmentWithStyle.
 /// 
-/// NOTEï¿½ The IfcPresentationLayerAssignmentWithStyle extends the presentation_layer_assignment entity as defined in ISO/IS 10303-46:1994, p. 36.
+/// NOTE  The IfcPresentationLayerAssignmentWithStyle extends the presentation_layer_assignment entity as defined in ISO/IS 10303-46:1994, p. 36.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE ï¿½The attributes have been modified without upward compatibility.
+/// IFC2x3 CHANGE  The attributes have been modified without upward compatibility.
 class IfcPresentationLayerWithStyle : public IfcPresentationLayerAssignment {
 public:
     /// A logical setting, TRUE indicates that the layer is set to 'On', FALSE that the layer is set to 'Off', UNKNOWN that such information is not available.
@@ -8303,10 +8303,10 @@ public:
     bool LayerBlocked();
     /// Assignment of presentation styles to the layer to provide a default style for representation items.
     /// 
-    /// NOTEï¿½ In most cases the assignment of styles to a layer is restricted to an IfcCurveStyle representing the layer curve colour, layer curve thickness, and layer curve type.
+    /// NOTE  In most cases the assignment of styles to a layer is restricted to an IfcCurveStyle representing the layer curve colour, layer curve thickness, and layer curve type.
     /// 
-    /// IFC2x4 CHANGEï¿½ The data type has been changed from IfcPresentationStyleSelect (now deprecated) to IfcPresentationStyle.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > LayerStyles();
+    /// IFC2x4 CHANGE  The data type has been changed from IfcPresentationStyleSelect (now deprecated) to IfcPresentationStyle.
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > LayerStyles();
  virtual unsigned int getArgumentCount() const { return 8; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_BOOL; case 5: return Argument_BOOL; case 6: return Argument_BOOL; case 7: return Argument_ENTITY_LIST; } return IfcPresentationLayerAssignment::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "LayerOn"; case 5: return "LayerFrozen"; case 6: return "LayerBlocked"; case 7: return "LayerStyles"; } return IfcPresentationLayerAssignment::getArgumentName(i); }
@@ -8316,14 +8316,14 @@ public:
     static Type::Enum Class();
     IfcPresentationLayerWithStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPresentationLayerWithStyle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPresentationLayerWithStyle> > list;
-    typedef IfcTemplatedEntityList<IfcPresentationLayerWithStyle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPresentationLayerWithStyle > > list;
+    typedef IfcTemplatedEntityList< IfcPresentationLayerWithStyle >::it it;
 };
 /// IfcPresentationStyle is an abstract generalization of style table for presentation information assigned to geometric representation items. It includes styles for curves, areas, surfaces, text and symbols. Style information may include colour, hatching, rendering, and text fonts.
 /// 
-/// Each subtype ofï¿½ IfcPresentationStyle can be assigned to IfcGeometricRepresentationItem's via the IfcPresentationStyleAssignment through an intermediate IfcStyledItem or one of its subtypes.
+/// Each subtype of  IfcPresentationStyle can be assigned to IfcGeometricRepresentationItem's via the IfcPresentationStyleAssignment through an intermediate IfcStyledItem or one of its subtypes.
 /// 
-/// HISTORYï¿½ New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 class IfcPresentationStyle : public IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcPresentationStyle
@@ -8339,8 +8339,8 @@ public:
     static Type::Enum Class();
     IfcPresentationStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPresentationStyle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPresentationStyle> > list;
-    typedef IfcTemplatedEntityList<IfcPresentationStyle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPresentationStyle > > list;
+    typedef IfcTemplatedEntityList< IfcPresentationStyle >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The presentation style assignment is a set of styles which are assigned to styled items for the purpose of presenting these styled items. 
 /// 
@@ -8350,7 +8350,7 @@ public:
 class IfcPresentationStyleAssignment : public IfcBaseEntity {
 public:
     /// A set of presentation styles that are assigned to styled items.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Styles();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > Styles();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Styles"; } throw IfcException("argument out of range"); }
@@ -8360,8 +8360,8 @@ public:
     static Type::Enum Class();
     IfcPresentationStyleAssignment (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPresentationStyleAssignment* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPresentationStyleAssignment> > list;
-    typedef IfcTemplatedEntityList<IfcPresentationStyleAssignment>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPresentationStyleAssignment > > list;
+    typedef IfcTemplatedEntityList< IfcPresentationStyleAssignment >::it it;
 };
 /// IfcProductRepresentation defines a representation of a
 /// product, including its (geometric or topological) representation.
@@ -8377,9 +8377,9 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 2.0
 /// 
-/// IFC2x3 NOTEï¿½ï¿½Users should not instantiate the entity from IFC2x Edition 3 onwards.
+/// IFC2x3 NOTE ÿUsers should not instantiate the entity from IFC2x Edition 3 onwards.
 /// 
-/// IFC2x4 CHANGEï¿½ Entity made abstract.
+/// IFC2x4 CHANGE  Entity made abstract.
 class IfcProductRepresentation : public IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcProductRepresentation
@@ -8391,7 +8391,7 @@ public:
     /// The word or group of words that characterize the product representation. It can be used to add additional meaning to the name of the product representation.
     IfcText Description();
     /// Contained list of representations (including shape representations). Each member defines a valid representation of a particular type within a particular representation context.
-    SHARED_PTR< IfcTemplatedEntityList<IfcRepresentation> > Representations();
+    SHARED_PTR< IfcTemplatedEntityList< IfcRepresentation > > Representations();
  virtual unsigned int getArgumentCount() const { return 3; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; case 2: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "Representations"; } throw IfcException("argument out of range"); }
@@ -8401,8 +8401,8 @@ public:
     static Type::Enum Class();
     IfcProductRepresentation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProductRepresentation* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProductRepresentation> > list;
-    typedef IfcTemplatedEntityList<IfcProductRepresentation>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProductRepresentation > > list;
+    typedef IfcTemplatedEntityList< IfcProductRepresentation >::it it;
 };
 class IfcProductsOfCombustionProperties : public IfcMaterialProperties {
 public:
@@ -8427,8 +8427,8 @@ public:
     static Type::Enum Class();
     IfcProductsOfCombustionProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProductsOfCombustionProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProductsOfCombustionProperties> > list;
-    typedef IfcTemplatedEntityList<IfcProductsOfCombustionProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProductsOfCombustionProperties > > list;
+    typedef IfcTemplatedEntityList< IfcProductsOfCombustionProperties >::it it;
 };
 /// IfcProfileDef
 /// is the supertype of all definitions of standard and arbitrary profiles
@@ -8447,11 +8447,11 @@ public:
 ///   profiles can be defined, which include two or more profile definitions
 ///   to define the resulting profile.
 /// 
-/// HISTORYï¿½ New class in IFC Release 1.5, the capabilities have been extended in IFC Release 2x.
+/// HISTORY  New class in IFC Release 1.5, the capabilities have been extended in IFC Release 2x.
 /// Profiles can now support swept surfaces and swept area solids with
 /// inner boundaries. It had been renamed from IfcAttDrivenProfileDef.
 /// 
-/// IFC2x4 CHANGEï¿½ Changed from ABSTRACT to non-abstract for uses which do not
+/// IFC2x4 CHANGE  Changed from ABSTRACT to non-abstract for uses which do not
 /// require an explicitly defined geometry.  Added inverse attributes HasProperties and HasExternalReference.
 /// 
 /// Use in material association
@@ -8492,7 +8492,7 @@ public:
 /// on transformations of the start profile and thus maintaining the
 /// identity of vertices and edges.
 /// 
-/// NOTEï¿½ Subtypes of the IfcProfileDef
+/// NOTE  Subtypes of the IfcProfileDef
 /// contain parameterized profiles (as subtypes of IfcParameterizedProfileDef)
 /// which establish their own 2D position coordinate system, profiles given
 /// by explicit curve geometry (either open or closed profiles) and two
@@ -8526,7 +8526,7 @@ public:
 /// Sweeping
 /// 
 /// In the later use of the IfcProfileDef
-/// within the swept surface or swept area solid,ï¿½ e.g. the IfcExtrudedAreaSolid
+/// within the swept surface or swept area solid,  e.g. the IfcExtrudedAreaSolid
 /// (here used as an example), the profile boundaries (here based on the 2D
 /// position coordinate system of IfcParameterizedProfileDef)
 /// are placed within the xy plane of the 3D position coordinate system of
@@ -8617,8 +8617,8 @@ public:
     static Type::Enum Class();
     IfcProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcProfileDef >::it it;
 };
 /// This is a collection of properties applicable to section profile definitions.
 /// 
@@ -8628,9 +8628,9 @@ public:
 /// properties for precast concrete double-T sections
 /// properties for precast concrete hollow core sections
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x4 CHANGEï¿½ Entity made non-abstract.  Subtypes IfcGeneralProfileProperties, IfcStructuralProfileProperties, and IfcStructuralSteelProfileProperties deleted. Attribute ProfileName deleted, use ProfileDefinition.ProfileName instead. Attribute ProfileDefinition made mandatory. Attributes Name, Description, and HasProperties added.
+/// IFC2x4 CHANGE  Entity made non-abstract.  Subtypes IfcGeneralProfileProperties, IfcStructuralProfileProperties, and IfcStructuralSteelProfileProperties deleted. Attribute ProfileName deleted, use ProfileDefinition.ProfileName instead. Attribute ProfileDefinition made mandatory. Attributes Name, Description, and HasProperties added.
 class IfcProfileProperties : public IfcBaseEntity {
 public:
     /// Whether the optional attribute ProfileName is defined for this IfcProfileProperties
@@ -8649,12 +8649,12 @@ public:
     static Type::Enum Class();
     IfcProfileProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProfileProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProfileProperties> > list;
-    typedef IfcTemplatedEntityList<IfcProfileProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProfileProperties > > list;
+    typedef IfcTemplatedEntityList< IfcProfileProperties >::it it;
 };
 /// IfcProperty is an abstract generalization for all types of properties that can be associated with IFC objects through the property set mechanism. 
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.0.
+/// HISTORY  New entity in IFC Release 1.0.
 class IfcProperty : public IfcBaseEntity {
 public:
     /// Name for this property. This label is the significant name string that defines the semantic meaning for the property.
@@ -8667,21 +8667,21 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcPropertyDependencyRelationship> > PropertyForDependance(); // INVERSE IfcPropertyDependencyRelationship::DependingProperty
-    SHARED_PTR< IfcTemplatedEntityList<IfcPropertyDependencyRelationship> > PropertyDependsOn(); // INVERSE IfcPropertyDependencyRelationship::DependantProperty
-    SHARED_PTR< IfcTemplatedEntityList<IfcComplexProperty> > PartOfComplex(); // INVERSE IfcComplexProperty::HasProperties
+    SHARED_PTR< IfcTemplatedEntityList< IfcPropertyDependencyRelationship > > PropertyForDependance(); // INVERSE IfcPropertyDependencyRelationship::DependingProperty
+    SHARED_PTR< IfcTemplatedEntityList< IfcPropertyDependencyRelationship > > PropertyDependsOn(); // INVERSE IfcPropertyDependencyRelationship::DependantProperty
+    SHARED_PTR< IfcTemplatedEntityList< IfcComplexProperty > > PartOfComplex(); // INVERSE IfcComplexProperty::HasProperties
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcProperty (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProperty* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > list;
-    typedef IfcTemplatedEntityList<IfcProperty>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProperty > > list;
+    typedef IfcTemplatedEntityList< IfcProperty >::it it;
 };
 class IfcPropertyConstraintRelationship : public IfcBaseEntity {
 public:
     IfcConstraint* RelatingConstraint();
-    SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > RelatedProperties();
+    SHARED_PTR< IfcTemplatedEntityList< IfcProperty > > RelatedProperties();
     /// Whether the optional attribute Name is defined for this IfcPropertyConstraintRelationship
     bool hasName();
     IfcLabel Name();
@@ -8697,14 +8697,14 @@ public:
     static Type::Enum Class();
     IfcPropertyConstraintRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPropertyConstraintRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyConstraintRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcPropertyConstraintRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPropertyConstraintRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcPropertyConstraintRelationship >::it it;
 };
 /// An IfcPropertyDependencyRelationship describes an identified dependency between the value of one property and that of another.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2
+/// HISTORY  New entity in IFC2x2
 /// 
-/// IFC2x4 CHANGEï¿½ Made subtype of IfcResourceLevelRelationship (attribute order changed).
+/// IFC2x4 CHANGE  Made subtype of IfcResourceLevelRelationship (attribute order changed).
 /// 
 /// Use Definition
 /// Whilst the IfcPropertyDependencyRelationship may be used to describe the dependency, and it may do so in terms of the expression of how the dependency operates, it is not possible through the current IFC model for the value of the related property to be actually derived from the value of the relating property. The determination of value according to the dependency is required to be performed by an application that can then use the Expression attribute to flag the form of the dependency.
@@ -8733,8 +8733,8 @@ public:
     static Type::Enum Class();
     IfcPropertyDependencyRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPropertyDependencyRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyDependencyRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcPropertyDependencyRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPropertyDependencyRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcPropertyDependencyRelationship >::it it;
 };
 /// IfcPropertyEnumeration is a collection of simple
 /// or measure values that define a prescribed set of alternatives from
@@ -8766,28 +8766,28 @@ public:
 ///   IfcString
 ///   -
 /// 
-/// ï¿½
+///  
 ///   Opposed
 ///   IfcString
-///   ï¿½
+///    
 /// 
-/// ï¿½
+///  
 ///   Other
 ///   IfcString
-///   ï¿½
+///    
 /// 
-/// ï¿½
+///  
 ///   Unset
 ///   IfcString
-///   ï¿½
+///    
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 2.0, capabilities enhanced in IFC Release 2x. Entity has been renamed from IfcEnumeration in IFC Release 2x.
+/// HISTORY  New Entity in IFC Release 2.0, capabilities enhanced in IFC Release 2x. Entity has been renamed from IfcEnumeration in IFC Release 2x.
 class IfcPropertyEnumeration : public IfcBaseEntity {
 public:
     /// Name of this enumeration.
     IfcLabel Name();
     /// List of values that form the enumeration.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > EnumerationValues();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > EnumerationValues();
     /// Whether the optional attribute Unit is defined for this IfcPropertyEnumeration
     bool hasUnit();
     /// Unit for the enumerator values, if not given, the default value for the measure type (given by the TYPE of nominal value) is used as defined by the global unit assignment at IfcProject.
@@ -8801,14 +8801,14 @@ public:
     static Type::Enum Class();
     IfcPropertyEnumeration (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPropertyEnumeration* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyEnumeration> > list;
-    typedef IfcTemplatedEntityList<IfcPropertyEnumeration>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPropertyEnumeration > > list;
+    typedef IfcTemplatedEntityList< IfcPropertyEnumeration >::it it;
 };
 /// IfcQuantityArea is a physical quantity that defines a derived area measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
 /// 
-/// EXAMPLEï¿½ An opening may have an opening area used to deduct it from the wall surface area. The actual size of the area depends on the method of measurement used.
+/// EXAMPLE  An opening may have an opening area used to deduct it from the wall surface area. The actual size of the area depends on the method of measurement used.
 /// 
-/// HISTORYï¿½ New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
+/// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
 class IfcQuantityArea : public IfcPhysicalSimpleQuantity {
 public:
     /// Area measure value of this quantity.
@@ -8822,14 +8822,14 @@ public:
     static Type::Enum Class();
     IfcQuantityArea (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcQuantityArea* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcQuantityArea> > list;
-    typedef IfcTemplatedEntityList<IfcQuantityArea>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcQuantityArea > > list;
+    typedef IfcTemplatedEntityList< IfcQuantityArea >::it it;
 };
 /// IfcQuantityCount is a physical quantity that defines a derived count measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement.
 /// 
-/// EXAMPLEï¿½ An radiator may be measured according to its number of coils. The actual counting method depends on the method of measurement used.
+/// EXAMPLE  An radiator may be measured according to its number of coils. The actual counting method depends on the method of measurement used.
 /// 
-/// HISTORYï¿½ New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
+/// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
 class IfcQuantityCount : public IfcPhysicalSimpleQuantity {
 public:
     /// Count measure value of this quantity.
@@ -8843,14 +8843,14 @@ public:
     static Type::Enum Class();
     IfcQuantityCount (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcQuantityCount* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcQuantityCount> > list;
-    typedef IfcTemplatedEntityList<IfcQuantityCount>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcQuantityCount > > list;
+    typedef IfcTemplatedEntityList< IfcQuantityCount >::it it;
 };
 /// IfcQuantityLength is a physical quantity that defines a derived length measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement.
 /// 
-/// EXAMPLEï¿½ A rafter within a roof construction may be measured according to its length (taking a common cross section into account). The actual size of the length depends on the method of measurement used.
+/// EXAMPLE  A rafter within a roof construction may be measured according to its length (taking a common cross section into account). The actual size of the length depends on the method of measurement used.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 2.x. It replaces the calcXxx attributes used in previous IFC Releases.
+/// HISTORY  New entity in IFC Release 2.x. It replaces the calcXxx attributes used in previous IFC Releases.
 class IfcQuantityLength : public IfcPhysicalSimpleQuantity {
 public:
     /// Length measure value of this quantity.
@@ -8864,14 +8864,14 @@ public:
     static Type::Enum Class();
     IfcQuantityLength (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcQuantityLength* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcQuantityLength> > list;
-    typedef IfcTemplatedEntityList<IfcQuantityLength>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcQuantityLength > > list;
+    typedef IfcTemplatedEntityList< IfcQuantityLength >::it it;
 };
 /// IfcQuantityTime is an element quantity that defines a time measure to provide an property of time related to an element. It is normally given by the recipe information of the element under the specific measure rules given by a method of measurement.
 /// 
-/// EXAMPLEï¿½ The amount of time needed to pour concrete for a wall is given as a time quantity for the labor part of the recipe information.
+/// EXAMPLE  The amount of time needed to pour concrete for a wall is given as a time quantity for the labor part of the recipe information.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcQuantityTime : public IfcPhysicalSimpleQuantity {
 public:
     /// Time measure value of this quantity.
@@ -8885,12 +8885,12 @@ public:
     static Type::Enum Class();
     IfcQuantityTime (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcQuantityTime* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcQuantityTime> > list;
-    typedef IfcTemplatedEntityList<IfcQuantityTime>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcQuantityTime > > list;
+    typedef IfcTemplatedEntityList< IfcQuantityTime >::it it;
 };
 /// IfcQuantityVolume is a physical quantity that defines a derived volume measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
 /// 
-/// EXAMPLEï¿½ A thick brick wall may be measured according to its volume. The actual size of the volume depends on the method of measurement used.
+/// EXAMPLE  A thick brick wall may be measured according to its volume. The actual size of the volume depends on the method of measurement used.
 /// 
 /// HISTORY New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
 class IfcQuantityVolume : public IfcPhysicalSimpleQuantity {
@@ -8906,14 +8906,14 @@ public:
     static Type::Enum Class();
     IfcQuantityVolume (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcQuantityVolume* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcQuantityVolume> > list;
-    typedef IfcTemplatedEntityList<IfcQuantityVolume>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcQuantityVolume > > list;
+    typedef IfcTemplatedEntityList< IfcQuantityVolume >::it it;
 };
 /// IfcQuantityWeight is a physical element quantity that defines a derived weight measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
 /// 
-/// EXAMPLEï¿½ The amount of reinforcement used within a building element may be measured according to its weight. The actual size of the weight depends on the method of measurement used.
+/// EXAMPLE  The amount of reinforcement used within a building element may be measured according to its weight. The actual size of the weight depends on the method of measurement used.
 /// 
-/// HISTORYï¿½ New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
+/// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
 class IfcQuantityWeight : public IfcPhysicalSimpleQuantity {
 public:
     /// Mass measure value of this quantity.
@@ -8927,13 +8927,13 @@ public:
     static Type::Enum Class();
     IfcQuantityWeight (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcQuantityWeight* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcQuantityWeight> > list;
-    typedef IfcTemplatedEntityList<IfcQuantityWeight>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcQuantityWeight > > list;
+    typedef IfcTemplatedEntityList< IfcQuantityWeight >::it it;
 };
 class IfcReferencesValueDocument : public IfcBaseEntity {
 public:
     IfcDocumentSelect ReferencedDocument();
-    SHARED_PTR< IfcTemplatedEntityList<IfcAppliedValue> > ReferencingValues();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAppliedValue > > ReferencingValues();
     /// Whether the optional attribute Name is defined for this IfcReferencesValueDocument
     bool hasName();
     IfcLabel Name();
@@ -8949,12 +8949,12 @@ public:
     static Type::Enum Class();
     IfcReferencesValueDocument (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcReferencesValueDocument* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcReferencesValueDocument> > list;
-    typedef IfcTemplatedEntityList<IfcReferencesValueDocument>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcReferencesValueDocument > > list;
+    typedef IfcTemplatedEntityList< IfcReferencesValueDocument >::it it;
 };
 /// IfcReinforcementProperties defines the set of properties for a specific combination of reinforcement bar steel grade, bar type and effective depth. 
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// The total cross section area for the specific steel grade is always provided. Additionally also general reinforcing bar configurations as a count of bars may be provided as defined in attribute BarCount. In this case the nominal bar diameter should be identical for all given bars as defined in attribute NominalBarDiameter.
 class IfcReinforcementBarProperties : public IfcBaseEntity {
@@ -8988,8 +8988,8 @@ public:
     static Type::Enum Class();
     IfcReinforcementBarProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcReinforcementBarProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcReinforcementBarProperties> > list;
-    typedef IfcTemplatedEntityList<IfcReinforcementBarProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcReinforcementBarProperties > > list;
+    typedef IfcTemplatedEntityList< IfcReinforcementBarProperties >::it it;
 };
 class IfcRelaxation : public IfcBaseEntity {
 public:
@@ -9004,8 +9004,8 @@ public:
     static Type::Enum Class();
     IfcRelaxation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelaxation* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelaxation> > list;
-    typedef IfcTemplatedEntityList<IfcRelaxation>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelaxation > > list;
+    typedef IfcTemplatedEntityList< IfcRelaxation >::it it;
 };
 /// Definition from ISO/CD 10303-43:1992: A
 ///   representation is one or more representation items that are
@@ -9038,19 +9038,19 @@ public:
 ///   IfcElement, or in view definitions / implementer
 ///   agreements.
 /// 
-/// NOTEï¿½ï¿½The definition of this
+/// NOTE ÿThe definition of this
 ///   entity relates to the ISO 10303 entity representation. Please
 ///   refer to ISO/IS 10303-43:1994 for the final definition of
 ///   the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 2.0
+/// HISTORY  New entity in IFC Release 2.0
 /// 
-/// IFC2x3 CHANGEï¿½ The
+/// IFC2x3 CHANGE  The
 ///   inverse attributes LayerAssignments
 ///   andRepresentationMap have been added with upward
 ///   compatibility.
 /// 
-/// IFC2x4 CHANGEï¿½ Entity
+/// IFC2x4 CHANGE  Entity
 ///   IfcRepresentation has been changed into an ABSTRACT
 ///   supertype.
 class IfcRepresentation : public IfcBaseEntity {
@@ -9067,29 +9067,29 @@ public:
     /// The supported values for context type are to be specified by implementers agreements.
     IfcLabel RepresentationType();
     /// Set of geometric representation items that are defined for this representation.
-    SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationItem> > Items();
+    SHARED_PTR< IfcTemplatedEntityList< IfcRepresentationItem > > Items();
  virtual unsigned int getArgumentCount() const { return 4; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_STRING; case 2: return Argument_STRING; case 3: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ContextOfItems"; case 1: return "RepresentationIdentifier"; case 2: return "RepresentationType"; case 3: return "Items"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationMap> > RepresentationMap(); // INVERSE IfcRepresentationMap::MappedRepresentation
-    SHARED_PTR< IfcTemplatedEntityList<IfcPresentationLayerAssignment> > LayerAssignments(); // INVERSE IfcPresentationLayerAssignment::AssignedItems
-    SHARED_PTR< IfcTemplatedEntityList<IfcProductRepresentation> > OfProductRepresentation(); // INVERSE IfcProductRepresentation::Representations
+    SHARED_PTR< IfcTemplatedEntityList< IfcRepresentationMap > > RepresentationMap(); // INVERSE IfcRepresentationMap::MappedRepresentation
+    SHARED_PTR< IfcTemplatedEntityList< IfcPresentationLayerAssignment > > LayerAssignments(); // INVERSE IfcPresentationLayerAssignment::AssignedItems
+    SHARED_PTR< IfcTemplatedEntityList< IfcProductRepresentation > > OfProductRepresentation(); // INVERSE IfcProductRepresentation::Representations
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcRepresentation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRepresentation* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRepresentation> > list;
-    typedef IfcTemplatedEntityList<IfcRepresentation>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRepresentation > > list;
+    typedef IfcTemplatedEntityList< IfcRepresentation >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A representation context is a context in which a set of representation items are related.
 /// 
 /// The IfcRepresentationContext defines the context to which the IfcRepresentation of a product is related.
 /// 
-/// NOTEï¿½ The definition of this class relates to the ISO 10303 entity representation_context. Please refer to ISO/IS 10303-43:1994 for the final definition of the formal standard.
+/// NOTE  The definition of this class relates to the ISO 10303 entity representation_context. Please refer to ISO/IS 10303-43:1994 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5.
+/// HISTORY  New entity in IFC Release 1.5.
 /// 
 /// IFC2x4 CHANGE Entity made abstract, had been deprecated from instantiation since
 /// IFC2x2.
@@ -9107,14 +9107,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ContextIdentifier"; case 1: return "ContextType"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRepresentation> > RepresentationsInContext(); // INVERSE IfcRepresentation::ContextOfItems
+    SHARED_PTR< IfcTemplatedEntityList< IfcRepresentation > > RepresentationsInContext(); // INVERSE IfcRepresentation::ContextOfItems
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcRepresentationContext (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRepresentationContext* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationContext> > list;
-    typedef IfcTemplatedEntityList<IfcRepresentationContext>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRepresentationContext > > list;
+    typedef IfcTemplatedEntityList< IfcRepresentationContext >::it it;
 };
 /// Definition from ISO/CD
 /// 10303-43:1992: A representation item is an element of
@@ -9124,57 +9124,57 @@ public:
 /// representation item when it is referenced by that representation
 /// item.
 /// 
-/// NOTEï¿½ Corresponding entity in ISO 10303-43:1994: representation_item. Please refer to ISO/IS 10303-43:1994, for the final definition of the formal standard. The following changes have been made: The attribute 'name' and the WR1 have not been incorporated.
+/// NOTE  Corresponding entity in ISO 10303-43:1994: representation_item. Please refer to ISO/IS 10303-43:1994, for the final definition of the formal standard. The following changes have been made: The attribute 'name' and the WR1 have not been incorporated.
 /// 
 /// The IfcRepresentationItem is used within an IfcRepresentation (directly or indirectly through other IfcRepresentationItem's) to represent an IfcProductRepresentation. Most commonly these IfcRepresentationItem's are geometric or topological representation items, that can (but not need to) have presentation style infomation assigned.
 /// 
-/// NOTEï¿½ The assignment of a style is only applicable
+/// NOTE  The assignment of a style is only applicable
 /// to the subtypes IfcGeometricRepresentationItem, IfcMappedItem and some selected subtypes of IfcTopologicalRepresentationItem (IfcVertexPoint, IfcEdgeCurve, IfcFaceSurface).
 /// 
 /// In case that presentation style information is applied, it can be either applied by an IfcStyledItem, or by an assignment to an IfcPresentationLayerWithStyle. If both are present, and both style assignments include the same subtype of IfcPresentationStyle, then the style assigned by IfcStyledItem takes priority.
 /// 
 /// Figure 281 shows an instance diagram explaining the use of IfcStyledItem and IfcPresentationLayerWithStyle to apply presentation styles.
 /// 
-/// EXAMPLEï¿½ The assignment of style information by a styled item and a presentation layer with style. Since the presentation styles are different, IfcCurveStyle and IfcSurfaceStyle, both are applied to the geometric representation item.
+/// EXAMPLE  The assignment of style information by a styled item and a presentation layer with style. Since the presentation styles are different, IfcCurveStyle and IfcSurfaceStyle, both are applied to the geometric representation item.
 /// 
 /// Figure 281 &#8212; Representation item style
 /// 
 /// Figure 282 shows in instance diagram explaining the override of IfcPresentationLayerWithStyle by IfcStyledItem to apply presentation styles.
 /// 
-/// EXAMPLEï¿½ The assignment of style information by a styled item and a presentation layer with style. Since the presentation styles for curve style are aprovided by both, the IfcCurveStyle provided by the IfcStyledItem overrides the IfcCurveStyle provided by the IfcPresentationLayerWithStyle
+/// EXAMPLE  The assignment of style information by a styled item and a presentation layer with style. Since the presentation styles for curve style are aprovided by both, the IfcCurveStyle provided by the IfcStyledItem overrides the IfcCurveStyle provided by the IfcPresentationLayerWithStyle
 /// 
 /// Figure 282 &#8212; Representation item style override
 /// 
-/// HISTORYï¿½ New entity in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 2x.
 /// 
-/// IFC2x3 CHANGEï¿½ The inverse attributes StyledByItem and LayerAssignments have been added. Upward compatibility for file based exchange is guaranteed.
+/// IFC2x3 CHANGE  The inverse attributes StyledByItem and LayerAssignments have been added. Upward compatibility for file based exchange is guaranteed.
 class IfcRepresentationItem : public IfcBaseEntity {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
  virtual ArgumentType getArgumentType(unsigned int i) const { throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcPresentationLayerAssignment> > LayerAssignments(); // INVERSE IfcPresentationLayerAssignment::AssignedItems
-    SHARED_PTR< IfcTemplatedEntityList<IfcStyledItem> > StyledByItem(); // INVERSE IfcStyledItem::Item
+    SHARED_PTR< IfcTemplatedEntityList< IfcPresentationLayerAssignment > > LayerAssignments(); // INVERSE IfcPresentationLayerAssignment::AssignedItems
+    SHARED_PTR< IfcTemplatedEntityList< IfcStyledItem > > StyledByItem(); // INVERSE IfcStyledItem::Item
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcRepresentationItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRepresentationItem* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationItem> > list;
-    typedef IfcTemplatedEntityList<IfcRepresentationItem>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRepresentationItem > > list;
+    typedef IfcTemplatedEntityList< IfcRepresentationItem >::it it;
 };
 /// Definition from ISO/CD 10303-43:1992: A representation map is the identification of a representation and a representation item in that representation for the purpose of mapping. The representation item defines the origin of the mapping. The representation map is used as the source of a mapping by a mapped item.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: representation_map. Please refer to ISO/IS 10303-43:1994, for the final definition of the formal standard. The following changes have been made: The mapping_origin (MappingOrigin) is constrained to be of type axis2_placement (IfcAxis2Placement).
+/// NOTE  Corresponding ISO 10303 entity: representation_map. Please refer to ISO/IS 10303-43:1994, for the final definition of the formal standard. The following changes have been made: The mapping_origin (MappingOrigin) is constrained to be of type axis2_placement (IfcAxis2Placement).
 /// 
 /// An IfcRepresentationMap defines the base definition (also referred to as block, cell or macro) called MappedRepresentation within the MappingOrigin. The MappingOrigin defines the coordinate system in which the MappedRepresentation is defined.
 /// 
 /// The RepresentationMap is used through an IfcMappeditem in one or several IfcShapeRepresentation's. An Cartesian transformation operator can be applied to transform the MappedRepresentation into the placement coordinate system of the shape representation. The transformation of the representation map is restricted to be a Cartesian transformation mapping (translation, rotation, mirroring and scaling).
 /// 
-/// NOTEï¿½ The definition of a mapping which is used to specify a new representation item comprises a representation map and a mapped item entity. Without both entities, the mapping is not fully defined. Two entities are specified to allow the same source representation to be mapped into multiple new representations.
+/// NOTE  The definition of a mapping which is used to specify a new representation item comprises a representation map and a mapped item entity. Without both entities, the mapping is not fully defined. Two entities are specified to allow the same source representation to be mapped into multiple new representations.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 2x.
 class IfcRepresentationMap : public IfcBaseEntity {
 public:
     /// An axis2 placement that defines the position about which the mapped
@@ -9186,14 +9186,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_ENTITY; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MappingOrigin"; case 1: return "MappedRepresentation"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcMappedItem> > MapUsage(); // INVERSE IfcMappedItem::MappingSource
+    SHARED_PTR< IfcTemplatedEntityList< IfcMappedItem > > MapUsage(); // INVERSE IfcMappedItem::MappingSource
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcRepresentationMap (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRepresentationMap* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationMap> > list;
-    typedef IfcTemplatedEntityList<IfcRepresentationMap>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRepresentationMap > > list;
+    typedef IfcTemplatedEntityList< IfcRepresentationMap >::it it;
 };
 class IfcRibPlateProfileProperties : public IfcProfileProperties {
 public:
@@ -9219,8 +9219,8 @@ public:
     static Type::Enum Class();
     IfcRibPlateProfileProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRibPlateProfileProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRibPlateProfileProperties> > list;
-    typedef IfcTemplatedEntityList<IfcRibPlateProfileProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRibPlateProfileProperties > > list;
+    typedef IfcTemplatedEntityList< IfcRibPlateProfileProperties >::it it;
 };
 /// IfcRoot is the most abstract and root class for all IFC entity definitions that roots in the kernel or in subsequent layers of the IFC object model. It is therefore the common supertype of all IFC entities, beside those defined in an IFC resource schema. All entities that are subtypes of IfcRoot can be used independently, whereas resource schema entities, that are not subtypes of IfcRoot, are not supposed to be independent entities.
 /// 
@@ -9239,7 +9239,7 @@ public:
     /// 
     /// NOTE only the last modification in stored - either as addition, deletion or modification.
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute has been changed to be OPTIONAL.
+    /// IFC2x4 CHANGE  The attribute has been changed to be OPTIONAL.
     IfcOwnerHistory* OwnerHistory();
     /// Whether the optional attribute Name is defined for this IfcRoot
     bool hasName();
@@ -9258,8 +9258,8 @@ public:
     static Type::Enum Class();
     IfcRoot (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRoot* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRoot> > list;
-    typedef IfcTemplatedEntityList<IfcRoot>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRoot > > list;
+    typedef IfcTemplatedEntityList< IfcRoot >::it it;
 };
 /// Definition from ISO/CD 10303-41:1992: An SI unit is the fixed quantity used as a standard in terms of which items are measured as defined by ISO 1000 (clause 2).
 /// 
@@ -9276,7 +9276,7 @@ public:
     IfcSIPrefix::IfcSIPrefix Prefix();
     /// The word, or group of words, by which the SI unit is referred to.
     /// 
-    /// NOTEï¿½ Even though the SI system's base unit for mass is kilogram, the IfcSIUnit for mass is gram if no Prefix is asserted.
+    /// NOTE  Even though the SI system's base unit for mass is kilogram, the IfcSIUnit for mass is gram if no Prefix is asserted.
     IfcSIUnitName::IfcSIUnitName Name();
  virtual unsigned int getArgumentCount() const { return 4; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return Argument_ENUMERATION; case 3: return Argument_ENUMERATION; } return IfcNamedUnit::getArgumentType(i); }
@@ -9287,12 +9287,12 @@ public:
     static Type::Enum Class();
     IfcSIUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSIUnit* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSIUnit> > list;
-    typedef IfcTemplatedEntityList<IfcSIUnit>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSIUnit > > list;
+    typedef IfcTemplatedEntityList< IfcSIUnit >::it it;
 };
 /// IfcSectionProperties defines the cross section properties for a single longitudinal piece of a cross section.  It is a special-purpose helper class for IfcSectionReinforcementProperties.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// The section piece may be either uniform or tapered. In the latter case an end profile should also be provided. The start and end profiles are assumed to be of the same profile type. Generally only rectangular or circular cross section profiles are assumed to be used.
 class IfcSectionProperties : public IfcBaseEntity {
@@ -9314,12 +9314,12 @@ public:
     static Type::Enum Class();
     IfcSectionProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSectionProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSectionProperties> > list;
-    typedef IfcTemplatedEntityList<IfcSectionProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSectionProperties > > list;
+    typedef IfcTemplatedEntityList< IfcSectionProperties >::it it;
 };
 /// IfcSectionReinforcementProperties defines the cross section properties of reinforcement for a single longitudinal piece of a cross section with a specific reinforcement usage type.  
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// Several sets of cross section reinforcement properties represented by instances of IfcReinforcementProperties may be attached to the section reinforcement properties
 /// (IfcReinforcementDefinitionProperties of IfcStructuralElementsDomain schema),
@@ -9339,7 +9339,7 @@ public:
     /// Definition of the cross section profile and longitudinal section type.
     IfcSectionProperties* SectionDefinition();
     /// The set of reinforcment properties attached to a section reinforcement properties definition.
-    SHARED_PTR< IfcTemplatedEntityList<IfcReinforcementBarProperties> > CrossSectionReinforcementDefinitions();
+    SHARED_PTR< IfcTemplatedEntityList< IfcReinforcementBarProperties > > CrossSectionReinforcementDefinitions();
  virtual unsigned int getArgumentCount() const { return 6; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_DOUBLE; case 1: return Argument_DOUBLE; case 2: return Argument_DOUBLE; case 3: return Argument_ENUMERATION; case 4: return Argument_ENTITY; case 5: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "LongitudinalStartPosition"; case 1: return "LongitudinalEndPosition"; case 2: return "TransversePosition"; case 3: return "ReinforcementRole"; case 4: return "SectionDefinition"; case 5: return "CrossSectionReinforcementDefinitions"; } throw IfcException("argument out of range"); }
@@ -9349,8 +9349,8 @@ public:
     static Type::Enum Class();
     IfcSectionReinforcementProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSectionReinforcementProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSectionReinforcementProperties> > list;
-    typedef IfcTemplatedEntityList<IfcSectionReinforcementProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSectionReinforcementProperties > > list;
+    typedef IfcTemplatedEntityList< IfcSectionReinforcementProperties >::it it;
 };
 /// Definition from ISO/CD 10303-41:1992: The shape
 ///   aspect is an identifiable element of the shape of a
@@ -9363,14 +9363,14 @@ public:
 ///   product shape represent a distinctive part to a product
 ///   that can be explicitly addressed.
 /// 
-/// NOTEï¿½ï¿½The definition of
+/// NOTE ÿThe definition of
 ///   this class relates to the ISO 10303 entity shape_aspect. Please
 ///   refer to ISO/IS 10303-41:1994 for the final definition of
 ///   the formal standard.
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 2.0
+/// HISTORY  New Entity in IFC Release 2.0
 /// 
-/// IFC 2x4 CHANGEï¿½ Attribute
+/// IFC 2x4 CHANGE  Attribute
 ///   PartOfProductDefinitionShape declared OPTIONAL with 
 ///   upward compatibility for file based exchange.
 /// 
@@ -9382,9 +9382,9 @@ public:
 ///   PartOfProductDefinitionShape must refer to this
 ///   instance of IfcProductDefinitionShape.
 /// 
-/// NOTEï¿½ PartOfProductDefinitionShape is
+/// NOTEÿ PartOfProductDefinitionShape is
 ///   only to be omitted if the shape representations are
-///   attached to an IfcRepresentationMap. ï¿½This
+///   attached to an IfcRepresentationMap. ÿThis
 ///   enables the use of IfcShapeAspect with
 ///   IfcRepresentationMap's that are used by an
 ///   IfcTypeProduct through the
@@ -9392,8 +9392,8 @@ public:
 class IfcShapeAspect : public IfcBaseEntity {
 public:
     /// List of shape representations. Each member defines a valid representation of a particular type within a particular representation context as being an aspect (or part) of a product definition.
-    /// IFC2x Edition 3 CHANGEï¿½ The data type has been changed from IfcShapeRepresentation to IfcShapeModel with upward compatibility
-    SHARED_PTR< IfcTemplatedEntityList<IfcShapeModel> > ShapeRepresentations();
+    /// IFC2x Edition 3 CHANGE  The data type has been changed from IfcShapeRepresentation to IfcShapeModel with upward compatibility
+    SHARED_PTR< IfcTemplatedEntityList< IfcShapeModel > > ShapeRepresentations();
     /// Whether the optional attribute Name is defined for this IfcShapeAspect
     bool hasName();
     /// The word or group of words by which the shape aspect is known. It is a tag to indicate the particular semantic of a component within the product definition shape, used to provide meaning. Example: use the tag "Glazing" to define which component of a window shape defines the glazing area.
@@ -9418,8 +9418,8 @@ public:
     static Type::Enum Class();
     IfcShapeAspect (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcShapeAspect* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcShapeAspect> > list;
-    typedef IfcTemplatedEntityList<IfcShapeAspect>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcShapeAspect > > list;
+    typedef IfcTemplatedEntityList< IfcShapeAspect >::it it;
 };
 /// IfcShapeModel represents
 /// the concept of a particular geometric and/or topological
@@ -9435,24 +9435,24 @@ public:
 /// The IfcShapeModel can be a shape representation
 /// (geometric and/or topologogical) of a product (via
 /// IfcProductDefinitionShape), or a shape representation
-/// (geometric and/or topologogical) ï¿½of a component of a product
+/// (geometric and/or topologogical)  of a component of a product
 /// shape (via IfcShapeAspect).
 /// 
-/// HISTORYï¿½ New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 class IfcShapeModel : public IfcRepresentation {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRepresentation::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcRepresentation::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcShapeAspect> > OfShapeAspect(); // INVERSE IfcShapeAspect::ShapeRepresentations
+    SHARED_PTR< IfcTemplatedEntityList< IfcShapeAspect > > OfShapeAspect(); // INVERSE IfcShapeAspect::ShapeRepresentations
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcShapeModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcShapeModel* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcShapeModel> > list;
-    typedef IfcTemplatedEntityList<IfcShapeModel>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcShapeModel > > list;
+    typedef IfcTemplatedEntityList< IfcShapeModel >::it it;
 };
 /// The IfcShapeRepresentation represents the concept of a
 /// particular geometric representation of a product or a product
@@ -9584,11 +9584,11 @@ public:
 /// Table 1: string values for the inherited attribute
 /// 'RepresentationType'.
 /// 
-/// NOTEï¿½ The definition of this entity relates to the ISO 10303 entity shape_representation. Please refer to ISO/IS 10303-41:1994 for the final definition of the formal standard.
+/// NOTE  The definition of this entity relates to the ISO 10303 entity shape_representation. Please refer to ISO/IS 10303-41:1994 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5.
+/// HISTORY  New entity in IFC Release 1.5.
 /// 
-/// IFC2x4 CHANGEï¿½ The RepresentationType's 'Curve3D', 'Surface2D', 'Surface3D', 'AdvancedBrep', 'LightSource', and the RepresentationIdentifier 'Lighting' have been added.
+/// IFC2x4 CHANGE  The RepresentationType's 'Curve3D', 'Surface2D', 'Surface3D', 'AdvancedBrep', 'LightSource', and the RepresentationIdentifier 'Lighting' have been added.
 class IfcShapeRepresentation : public IfcShapeModel {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
@@ -9600,12 +9600,12 @@ public:
     static Type::Enum Class();
     IfcShapeRepresentation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcShapeRepresentation* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcShapeRepresentation> > list;
-    typedef IfcTemplatedEntityList<IfcShapeRepresentation>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcShapeRepresentation > > list;
+    typedef IfcTemplatedEntityList< IfcShapeRepresentation >::it it;
 };
 /// IfcSimpleProperty is a generalization of a single property object. The various subtypes of IfcSimpleProperty establish different ways in which a property value can be set. 
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 1.0, definition changed in IFC Release 2x.
+/// HISTORY  New Entity in IFC Release 1.0, definition changed in IFC Release 2x.
 class IfcSimpleProperty : public IfcProperty {
 public:
  virtual unsigned int getArgumentCount() const { return 2; }
@@ -9617,8 +9617,8 @@ public:
     static Type::Enum Class();
     IfcSimpleProperty (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSimpleProperty* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSimpleProperty> > list;
-    typedef IfcTemplatedEntityList<IfcSimpleProperty>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSimpleProperty > > list;
+    typedef IfcTemplatedEntityList< IfcSimpleProperty >::it it;
 };
 /// Definition from IAI: Describe more rarely needed connection properties.
 /// 
@@ -9638,8 +9638,8 @@ public:
     static Type::Enum Class();
     IfcStructuralConnectionCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralConnectionCondition* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralConnectionCondition> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralConnectionCondition>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralConnectionCondition > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralConnectionCondition >::it it;
 };
 /// Definition from IAI: The abstract entity IfcStructuralLoadOrResult is the supertype of all loads (actions or reactions) or of certain requirements resulting from structural analysis, or certain provisions which influence structural analysis.
 /// 
@@ -9659,8 +9659,8 @@ public:
     static Type::Enum Class();
     IfcStructuralLoad (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralLoad* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoad> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralLoad>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoad > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralLoad >::it it;
 };
 /// Definition from IAI: The abstract entity IfcStructuralLoadStatic is the supertype of all static loads (actions or reactions) which can be defined.  Within scope are single i.e. concentrated forces and moments, linear i.e. one-dimensionally distributed forces and moments, planar i.e. two-dimensionally distributed forces, furthermore displacements and temperature loads.
 /// 
@@ -9676,12 +9676,12 @@ public:
     static Type::Enum Class();
     IfcStructuralLoadStatic (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralLoadStatic* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadStatic> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralLoadStatic>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoadStatic > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralLoadStatic >::it it;
 };
 /// An instance of the entity IfcStructuralLoadTemperature shall be used to define actions which are caused by a temperature change. As shown in Figure 332, the change of temperature is given with a constant value which is applied to the complete section and values for temperature differences between outer fibres of the section.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2. 
+/// HISTORY  New entity in IFC2x2. 
 /// 
 /// Figure 332 &#8212; Structural load temperature
 class IfcStructuralLoadTemperature : public IfcStructuralLoadStatic {
@@ -9704,14 +9704,14 @@ public:
     static Type::Enum Class();
     IfcStructuralLoadTemperature (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralLoadTemperature* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadTemperature> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralLoadTemperature>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoadTemperature > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralLoadTemperature >::it it;
 };
 /// IfcStyleModel represents the concept of a particular presentation style defined for a material (or other characteristic) of a product or a product component within a representation context. This representation context may (but has not to be) a geometric representation context.
 /// 
 /// IfcStyleModel can be a style representation (presentation style) of a material (via IfcMaterialDefinitionRepresentation), potentially differentiated for different representation contexts (for example, different material hatching depending on the scale of the target representation context).
 /// 
-/// HISTORYï¿½ New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 class IfcStyleModel : public IfcRepresentation {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
@@ -9723,21 +9723,21 @@ public:
     static Type::Enum Class();
     IfcStyleModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStyleModel* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStyleModel> > list;
-    typedef IfcTemplatedEntityList<IfcStyleModel>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStyleModel > > list;
+    typedef IfcTemplatedEntityList< IfcStyleModel >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The styled item is an assignment of style for presentation to a geometric representation item as it is used in a representation.
 /// 
-/// NOTE ï¿½Corresponding ISO 10303 name: styled_item. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: styled_item. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// The IfcStyledItem holds presentation style information for products, either explicitly for an IfcGeometricRepresentationItem being part of an IfcShapeRepresentation assigned to a product, or by assigning presentation information to IfcMaterial being assigned as other representation for a product.
 /// 
 /// If the IfcStyledItem is used within a reference from an IfcProductDefinitionShape then one Item shall be provided.
 /// If the IfcStyledItem is used within a reference from an IfcMaterialDefinitionRepresentation then no Item shall be provided.
 /// 
-/// HISTORY ï¿½New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x2 Addendum 1 CHANGEï¿½ The entity IfcStyledItem has been made non abstract and the attribute Name added.
+/// IFC2x2 Addendum 1 CHANGE  The entity IfcStyledItem has been made non abstract and the attribute Name added.
 /// 
 /// IFC2x3 CHANGE The attribute Item has been made optional, upward compatibility for file
 /// based exchange is guaranteed.
@@ -9751,7 +9751,7 @@ public:
 /// As a presentation for a geometric representation item
 /// As a presentation for a material definition
 /// 
-/// NOTEï¿½ The new IfcStyleAssignmentSelect allows the direct assignment styles, such as IfcCurveStyle, IfcSurfaceStyle without using the intermediate IfcPresentationStyleAssignment
+/// NOTE  The new IfcStyleAssignmentSelect allows the direct assignment styles, such as IfcCurveStyle, IfcSurfaceStyle without using the intermediate IfcPresentationStyleAssignment
 /// 
 /// Figure 293 &#8212; Styled item
 class IfcStyledItem : public IfcRepresentationItem {
@@ -9768,7 +9768,7 @@ public:
     /// for file based exchange.
     /// 
     /// NOTE  Only the select item IfcPresentationStyle shall be used from IFC2x4 onwards, the IfcPresentationStyleAssignment has been deprecated.
-    SHARED_PTR< IfcTemplatedEntityList<IfcPresentationStyleAssignment> > Styles();
+    SHARED_PTR< IfcTemplatedEntityList< IfcPresentationStyleAssignment > > Styles();
     /// Whether the optional attribute Name is defined for this IfcStyledItem
     bool hasName();
     /// The word, or group of words, by which the styled item is referred to.
@@ -9782,16 +9782,16 @@ public:
     static Type::Enum Class();
     IfcStyledItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStyledItem* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStyledItem> > list;
-    typedef IfcTemplatedEntityList<IfcStyledItem>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStyledItem > > list;
+    typedef IfcTemplatedEntityList< IfcStyledItem >::it it;
 };
 /// The IfcStyledRepresentation represents the concept of a styled presentation being a representation of a product or a product component, like material. within a representation context. This representation context does not need to be (but may be) a geometric representation context.
 /// 
-/// NOTEï¿½ Current usage of IfcStyledRepresentation is restricted to the assignment of presentation information to an material. The IfcStyledRepresentation includes only presentation styles (IfcCurveStyle, FillAreaStyle, IfcSurfaceStyle) that define how a material should be presented within a particular (eventually view and scale dependent) representation context. All instances of IfcStyledRepresentation are referenced by IfcMaterialDefinitionRepresentation, and assigned to IfcMaterial by IfcMaterialDefinitionRepresentation.RepresentedMaterial.
+/// NOTE  Current usage of IfcStyledRepresentation is restricted to the assignment of presentation information to an material. The IfcStyledRepresentation includes only presentation styles (IfcCurveStyle, FillAreaStyle, IfcSurfaceStyle) that define how a material should be presented within a particular (eventually view and scale dependent) representation context. All instances of IfcStyledRepresentation are referenced by IfcMaterialDefinitionRepresentation, and assigned to IfcMaterial by IfcMaterialDefinitionRepresentation.RepresentedMaterial.
 /// 
 /// A styled representation has to include one or several styled items with the associated style information (curve, symbol, text, fill area, or surface styles). It shall not contain the geometric representation items that are styled.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcStyledRepresentation : public IfcStyleModel {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
@@ -9803,8 +9803,8 @@ public:
     static Type::Enum Class();
     IfcStyledRepresentation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStyledRepresentation* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStyledRepresentation> > list;
-    typedef IfcTemplatedEntityList<IfcStyledRepresentation>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStyledRepresentation > > list;
+    typedef IfcTemplatedEntityList< IfcStyledRepresentation >::it it;
 };
 /// IfcSurfaceStyle is an assignment of one or many surface style elements to a surface, defined by subtypes of IfcSurface, IfcFaceBasedSurfaceModel, IfcShellBasedSurfaceModel, or by subtypes of IfcSolidModel. The positive direction of the surface normal relates to the positive side. In case of solids the outside of the solid is to be taken as positive side. 
 /// 
@@ -9818,7 +9818,7 @@ public:
     /// An indication of which side of the surface to apply the style.
     IfcSurfaceSide::IfcSurfaceSide Side();
     /// A collection of different surface styles.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Styles();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > Styles();
  virtual unsigned int getArgumentCount() const { return 3; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return Argument_ENUMERATION; case 2: return Argument_ENTITY_LIST; } return IfcPresentationStyle::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "Side"; case 2: return "Styles"; } return IfcPresentationStyle::getArgumentName(i); }
@@ -9828,8 +9828,8 @@ public:
     static Type::Enum Class();
     IfcSurfaceStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSurfaceStyle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceStyle> > list;
-    typedef IfcTemplatedEntityList<IfcSurfaceStyle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSurfaceStyle > > list;
+    typedef IfcTemplatedEntityList< IfcSurfaceStyle >::it it;
 };
 /// IfcSurfaceStyleLighting is a container class for properties for calculation of physically exact illuminance related to a particular surface style.
 /// 
@@ -9839,9 +9839,9 @@ public:
 /// 
 /// All these factors can be measured physically and are ratios for the red, green and blue part of the light. These properties are defined in the model as Type IfcColorRGB with a factor for each colour. 
 /// 
-/// EXAMPLEï¿½ A green glass transmits only green light, so its transmission factor is 0.0 for red, between 0.0 and 1.0 for green and 0.0 for blue. A green surface reflects only green light, so the reflectance factor is 0.0 for red, between 0.0 and 1.0 for green and 0.0 for blue.
+/// EXAMPLE  A green glass transmits only green light, so its transmission factor is 0.0 for red, between 0.0 and 1.0 for green and 0.0 for blue. A green surface reflects only green light, so the reflectance factor is 0.0 for red, between 0.0 and 1.0 for green and 0.0 for blue.
 /// 
-/// HISTORYï¿½ New entity in IFC 2x2.
+/// HISTORY  New entity in IFC 2x2.
 class IfcSurfaceStyleLighting : public IfcBaseEntity {
 public:
     /// The degree of diffusion of the transmitted light. In the case of completely transparent materials there is no diffusion. The greater the diffusing power, the smaller the direct component of the transmitted light, up to the point where only diffuse light is produced.A value of 1 means totally diffuse for that colour part of the light.
@@ -9865,8 +9865,8 @@ public:
     static Type::Enum Class();
     IfcSurfaceStyleLighting (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSurfaceStyleLighting* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceStyleLighting> > list;
-    typedef IfcTemplatedEntityList<IfcSurfaceStyleLighting>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSurfaceStyleLighting > > list;
+    typedef IfcTemplatedEntityList< IfcSurfaceStyleLighting >::it it;
 };
 /// IfcSurfaceStyleRefraction extends the surface style lighting, or the surface style rendering definition for properties for calculation of physically exact illuminance by adding seldomly used properties. Currently this includes the refraction index (by which the light ray refracts when passing through a prism) and the dispersion factor (or Abbe constant) which takes into account the wavelength dependency of the refraction.
 /// 
@@ -9892,8 +9892,8 @@ public:
     static Type::Enum Class();
     IfcSurfaceStyleRefraction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSurfaceStyleRefraction* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceStyleRefraction> > list;
-    typedef IfcTemplatedEntityList<IfcSurfaceStyleRefraction>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSurfaceStyleRefraction > > list;
+    typedef IfcTemplatedEntityList< IfcSurfaceStyleRefraction >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The surface style rendering allows the realistic visualization of surfaces referring to rendering techniques based on the laws of physics and mathematics. 
 /// 
@@ -9915,8 +9915,8 @@ public:
     static Type::Enum Class();
     IfcSurfaceStyleShading (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSurfaceStyleShading* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceStyleShading> > list;
-    typedef IfcTemplatedEntityList<IfcSurfaceStyleShading>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSurfaceStyleShading > > list;
+    typedef IfcTemplatedEntityList< IfcSurfaceStyleShading >::it it;
 };
 /// The entity IfcSurfaceStyleWithTextures allows to include image textures in surface styles. These image textures can be applied repeating across the surface or mapped with a particular scale upon the surface.
 /// 
@@ -9931,15 +9931,15 @@ public:
 /// 
 /// Only one instance of IfcSurfaceStyleWithTextures shall be referenced by an IfcStyledItem and be assigned to an IfcGeometricRepresentationItem
 /// 
-/// NOTEï¿½ The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
+/// NOTE  The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ inverse attribute HasTextureCoordinates deleted.
+/// IFC2x3 CHANGE  inverse attribute HasTextureCoordinates deleted.
 class IfcSurfaceStyleWithTextures : public IfcBaseEntity {
 public:
     /// The textures applied to the surface. In case of more than one surface texture is included, the IfcSurfaceStyleWithTexture defines a multi texture.
-    SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceTexture> > Textures();
+    SHARED_PTR< IfcTemplatedEntityList< IfcSurfaceTexture > > Textures();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Textures"; } throw IfcException("argument out of range"); }
@@ -9949,8 +9949,8 @@ public:
     static Type::Enum Class();
     IfcSurfaceStyleWithTextures (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSurfaceStyleWithTextures* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceStyleWithTextures> > list;
-    typedef IfcTemplatedEntityList<IfcSurfaceStyleWithTextures>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSurfaceStyleWithTextures > > list;
+    typedef IfcTemplatedEntityList< IfcSurfaceStyleWithTextures >::it it;
 };
 /// An IfcSurfaceTexture provides a 2-dimensional
 /// image-based texture map. It can either be given by referencing an
@@ -9981,7 +9981,7 @@ public:
 /// Full RGB textures (three-component)
 /// Full RGB plus alpha opacity textures (four-component)
 /// 
-/// NOTEï¿½ Image formats specify an alpha opacity, not transparency (where alpha = 1 - transparency).
+/// NOTE  Image formats specify an alpha opacity, not transparency (where alpha = 1 - transparency).
 /// 
 /// Figure 295 illustrates the texture coordinate system.
 /// 
@@ -9989,7 +9989,7 @@ public:
 /// 
 /// The following definitions from ISO/IEC 19775-1 X3D Architecture and base components (X3D Specification) on texture coordinates apply:
 /// 
-/// Texture maps are defined in a 2D coordinate system (s,ï¿½t) that ranges from [0.0, 1.0] in both directions. The bottom edge of the image corresponds to the S-axis of the texture map, and left edge of the image corresponds to the T-axis of the texture map. The lower-left pixel of the image corresponds to s=0, t=0, and the top-right pixel of the image corresponds to s=1, t=1. Texture maps may be viewed as two dimensional colour functions that, given an (s,ï¿½t) coordinate, return a colour value colour(s,ï¿½t).
+/// Texture maps are defined in a 2D coordinate system (s, t) that ranges from [0.0, 1.0] in both directions. The bottom edge of the image corresponds to the S-axis of the texture map, and left edge of the image corresponds to the T-axis of the texture map. The lower-left pixel of the image corresponds to s=0, t=0, and the top-right pixel of the image corresponds to s=1, t=1. Texture maps may be viewed as two dimensional colour functions that, given an (s, t) coordinate, return a colour value colour(s, t).
 /// 
 /// If multiple surface textures are included in the
 /// IfcSurfaceStyleWithTextures applying them to a geometric
@@ -10039,11 +10039,11 @@ public:
 /// scale S = TextureTransform.Scale
 /// scale T = TextureTransform.Scale2
 /// 
-/// NOTEï¿½ The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
+/// NOTE  The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
 /// 
-/// HISTORYï¿½ New entity in IFC 2x2.
+/// HISTORY  New entity in IFC 2x2.
 /// 
-/// IFC2x4 CHANGEï¿½ Attribute TextureType replaces by Mode, attributes Parameter and MapsTo aded, new inverse attribute UsedInStyle.
+/// IFC2x4 CHANGE  Attribute TextureType replaces by Mode, attributes Parameter and MapsTo aded, new inverse attribute UsedInStyle.
 class IfcSurfaceTexture : public IfcBaseEntity {
 public:
     /// The RepeatS field specifies how the texture wraps in the S direction. If RepeatS is TRUE (the default), the texture map is repeated outside the [0.0, 1.0] texture coordinate range in the S direction so that it fills the shape. If RepeatS is FALSE, the texture coordinates are clamped in the S direction to lie within the [0.0, 1.0] range.
@@ -10066,8 +10066,8 @@ public:
     static Type::Enum Class();
     IfcSurfaceTexture (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSurfaceTexture* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceTexture> > list;
-    typedef IfcTemplatedEntityList<IfcSurfaceTexture>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSurfaceTexture > > list;
+    typedef IfcTemplatedEntityList< IfcSurfaceTexture >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The symbol style is the presentation style that indicates the presentation of annotation symbols. 
 /// 
@@ -10087,8 +10087,8 @@ public:
     static Type::Enum Class();
     IfcSymbolStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSymbolStyle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSymbolStyle> > list;
-    typedef IfcTemplatedEntityList<IfcSymbolStyle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSymbolStyle > > list;
+    typedef IfcTemplatedEntityList< IfcSymbolStyle >::it it;
 };
 /// An IfcTable is a data structure for the provision of information in the form of rows and columns. Each instance may have IfcTableColumn instances that define the name, description and units for each column. The rows of information are stored as a list of IfcTableRow objects. 
 /// 
@@ -10102,15 +10102,15 @@ public:
 /// 
 /// Figure 336 &#8212; Table use alternative
 /// 
-/// HISTORYï¿½ New entity in IFC R1.5.
+/// HISTORY  New entity in IFC R1.5.
 /// 
-/// IFC2x4 CHANGEï¿½ Columns attribute added.
+/// IFC2x4 CHANGE  Columns attribute added.
 class IfcTable : public IfcBaseEntity {
 public:
     /// A unique name which is intended to describe the usage of the Table.
     std::string Name();
     /// Reference to information content of rows.
-    SHARED_PTR< IfcTemplatedEntityList<IfcTableRow> > Rows();
+    SHARED_PTR< IfcTemplatedEntityList< IfcTableRow > > Rows();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Rows"; } throw IfcException("argument out of range"); }
@@ -10120,8 +10120,8 @@ public:
     static Type::Enum Class();
     IfcTable (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTable* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTable> > list;
-    typedef IfcTemplatedEntityList<IfcTable>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTable > > list;
+    typedef IfcTemplatedEntityList< IfcTable >::it it;
 };
 /// IfcTableRow contains data for a single row within an IfcTable. 
 /// 
@@ -10135,25 +10135,25 @@ public:
 /// 
 /// Figure 338 &#8212; Table row use alternative
 /// 
-/// HISTORYï¿½ New entity in IFC R1.5.
+/// HISTORY  New entity in IFC R1.5.
 class IfcTableRow : public IfcBaseEntity {
 public:
     /// The data value of the table cell..
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > RowCells();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > RowCells();
     /// Flag which identifies if the row is a heading row or a row which contains row values. NOTE - If the row is a heading, the flag takes the value = TRUE.
     bool IsHeading();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; case 1: return Argument_BOOL; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RowCells"; case 1: return "IsHeading"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcTable> > OfTable(); // INVERSE IfcTable::Rows
+    SHARED_PTR< IfcTemplatedEntityList< IfcTable > > OfTable(); // INVERSE IfcTable::Rows
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcTableRow (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTableRow* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTableRow> > list;
-    typedef IfcTemplatedEntityList<IfcTableRow>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTableRow > > list;
+    typedef IfcTemplatedEntityList< IfcTableRow >::it it;
 };
 /// Definition: Address to which telephone, electronic mail and other forms of telecommunications should be addressed.
 /// 
@@ -10166,11 +10166,11 @@ public:
     /// Whether the optional attribute TelephoneNumbers is defined for this IfcTelecomAddress
     bool hasTelephoneNumbers();
     /// The list of telephone numbers at which telephone messages may be received.
-    std::vector<IfcLabel> /*[1:?]*/ TelephoneNumbers();
+    std::vector< IfcLabel > /*[1:?]*/ TelephoneNumbers();
     /// Whether the optional attribute FacsimileNumbers is defined for this IfcTelecomAddress
     bool hasFacsimileNumbers();
     /// The list of fax numbers at which fax messages may be received.
-    std::vector<IfcLabel> /*[1:?]*/ FacsimileNumbers();
+    std::vector< IfcLabel > /*[1:?]*/ FacsimileNumbers();
     /// Whether the optional attribute PagerNumber is defined for this IfcTelecomAddress
     bool hasPagerNumber();
     /// The pager number at which paging messages may be received.
@@ -10178,7 +10178,7 @@ public:
     /// Whether the optional attribute ElectronicMailAddresses is defined for this IfcTelecomAddress
     bool hasElectronicMailAddresses();
     /// The list of Email addresses at which Email messages may be received.
-    std::vector<IfcLabel> /*[1:?]*/ ElectronicMailAddresses();
+    std::vector< IfcLabel > /*[1:?]*/ ElectronicMailAddresses();
     /// Whether the optional attribute WWWHomePageURL is defined for this IfcTelecomAddress
     bool hasWWWHomePageURL();
     /// The world wide web address at which the preliminary page of information for the person or organization can be located.
@@ -10195,8 +10195,8 @@ public:
     static Type::Enum Class();
     IfcTelecomAddress (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTelecomAddress* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTelecomAddress> > list;
-    typedef IfcTemplatedEntityList<IfcTelecomAddress>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTelecomAddress > > list;
+    typedef IfcTemplatedEntityList< IfcTelecomAddress >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The text style is a presentation style for annotation text.
 /// 
@@ -10219,13 +10219,13 @@ public:
 /// 
 /// An IfcTextStyle can be assigned to IfcTextLiteral via the IfcPresentationStyleAssignment through an intermediate IfcAnnotationTextOccurrence.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: text_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard. In order to avoid ANDOR subtype relationships, the IfcTextBlockStyleSelect has been introduced that allows the combination of a text style as having box characteristic, and/or having spacing, or having none of those additional properties.
+/// NOTE  Corresponding ISO 10303 name: text_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard. In order to avoid ANDOR subtype relationships, the IfcTextBlockStyleSelect has been introduced that allows the combination of a text style as having box characteristic, and/or having spacing, or having none of those additional properties.
 /// 
-/// NOTEï¿½ Corresponding CSS1 definitions are: Font properties (font-family, font-style, font-variant, font-weight, font-size), Color and background properties (color, background-color) and Text properties (word-spacing, letter-spacing, text-decoration, text-transform, text-align, text-indent, line-height).
+/// NOTE  Corresponding CSS1 definitions are: Font properties (font-family, font-style, font-variant, font-weight, font-size), Color and background properties (color, background-color) and Text properties (word-spacing, letter-spacing, text-decoration, text-transform, text-align, text-indent, line-height).
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ The IfcTextStyle has been changed by adding TextFontStyle and different data types for TextStyle and IfcCharacterStyleSelect.
+/// IFC2x3 CHANGE  The IfcTextStyle has been changed by adding TextFontStyle and different data types for TextStyle and IfcCharacterStyleSelect.
 class IfcTextStyle : public IfcPresentationStyle {
 public:
     /// Whether the optional attribute TextCharacterAppearance is defined for this IfcTextStyle
@@ -10237,7 +10237,7 @@ public:
     /// The style applied to the text block for its visual appearance.
     /// It defines the text block characteristics, either for vector based or monospace text fonts (see select item IfcTextStyleWithBoxCharacteristics), or for true type text fonts (see select item IfcTextStyleTextModel.
     /// 
-    /// IFC2x Edition 3 CHANGEï¿½ The attribute TextBlockStyle has been changed from SET[1:?] to a non-aggregated optional, it has been renamed from TextStyles.
+    /// IFC2x Edition 3 CHANGE  The attribute TextBlockStyle has been changed from SET[1:?] to a non-aggregated optional, it has been renamed from TextStyles.
     IfcTextStyleSelect TextStyle();
     /// The style applied to the text font for its visual appearance.
     /// It defines the font family, font style, weight and size.
@@ -10253,8 +10253,8 @@ public:
     static Type::Enum Class();
     IfcTextStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTextStyle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextStyle> > list;
-    typedef IfcTemplatedEntityList<IfcTextStyle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTextStyle > > list;
+    typedef IfcTemplatedEntityList< IfcTextStyle >::it it;
 };
 /// Definition from CSS1 (W3C Recommendation): Setting font properties will be among the most common uses of style sheets. Unfortunately, there exists no well-defined and universally accepted taxonomy for classifying fonts, and terms that apply to one font family may not be appropriate for others. For example, 'italic' is commonly used to label slanted text, but slanted text may also be labeled as being Oblique, Slanted, Incline, Cursive or Kursiv. Therefore it is not a simple problem to map typical font selection properties to a specific font.
 /// 
@@ -10284,7 +10284,7 @@ public:
 /// face, but it doesn't contain a glyph
 /// for the current character, and if there is a next alternative
 /// 'font-family' in the font sets, then repeat step 2 with the next
-/// alternative 'font-family'.ï¿½ 
+/// alternative 'font-family'.  
 ///   If there is no font within
 /// the family selected in 2, then use a
 /// UA-dependent default 'font-family' and repeat step 2, using the best
@@ -10318,15 +10318,15 @@ public:
 /// 
 /// The inherited Name attribute is used to define the font name, particularly in cases, where no (list of) font families are provided. 
 /// 
-/// NOTEï¿½ Corresponding CSS1 definitions are Font properties ('font-family', 'font-style', 'font-variant',ï¿½ 'font-weight').
+/// NOTE  Corresponding CSS1 definitions are Font properties ('font-family', 'font-style', 'font-variant',  'font-weight').
 /// 
-/// HISTORYï¿½ New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 class IfcTextStyleFontModel : public IfcPreDefinedTextFont {
 public:
     /// Whether the optional attribute FontFamily is defined for this IfcTextStyleFontModel
     bool hasFontFamily();
     /// The value is a prioritized list of font family names and/or generic family names. The first list entry has the highest priority, if this font fails, the next list item shall be used. The last list item should (if possible) be a generic family.
-    std::vector<IfcTextFontName> /*[1:?]*/ FontFamily();
+    std::vector< IfcTextFontName > /*[1:?]*/ FontFamily();
     /// Whether the optional attribute FontStyle is defined for this IfcTextStyleFontModel
     bool hasFontStyle();
     /// The font style property selects between normal (sometimes referred to as "roman" or "upright"), italic and oblique faces within a font family.
@@ -10334,15 +10334,15 @@ public:
     /// Whether the optional attribute FontVariant is defined for this IfcTextStyleFontModel
     bool hasFontVariant();
     /// The font variant property selects between normal and small-caps.
-    ///   NOTEï¿½ It has been introduced for later compliance to full CSS1 support.
+    ///   NOTE  It has been introduced for later compliance to full CSS1 support.
     IfcFontVariant FontVariant();
     /// Whether the optional attribute FontWeight is defined for this IfcTextStyleFontModel
     bool hasFontWeight();
     /// The font weight property selects the weight of the font.
-    ///   NOTEï¿½ Values other then 'normal' and 'bold' have been introduced for later compliance to full CSS1 support.
+    ///   NOTE  Values other then 'normal' and 'bold' have been introduced for later compliance to full CSS1 support.
     IfcFontWeight FontWeight();
     /// The font size provides the size or height of the text font.
-    ///   NOTEï¿½ The following values are allowed, <IfcLengthMeasure, with positive values, the length unit is globally defined at IfcUnitAssignment.
+    ///   NOTE  The following values are allowed, <IfcLengthMeasure, with positive values, the length unit is globally defined at IfcUnitAssignment.
     IfcSizeSelect FontSize();
  virtual unsigned int getArgumentCount() const { return 6; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return Argument_VECTOR_STRING; case 2: return Argument_STRING; case 3: return Argument_STRING; case 4: return Argument_STRING; case 5: return Argument_ENTITY; } return IfcPreDefinedTextFont::getArgumentType(i); }
@@ -10353,26 +10353,26 @@ public:
     static Type::Enum Class();
     IfcTextStyleFontModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTextStyleFontModel* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextStyleFontModel> > list;
-    typedef IfcTemplatedEntityList<IfcTextStyleFontModel>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTextStyleFontModel > > list;
+    typedef IfcTemplatedEntityList< IfcTextStyleFontModel >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: A text style for defined font is a character glyph style for pre-defined or externally defined text fonts.
 /// 
 /// Definition from CSS1 (W3C Recommendation): These properties describe the color (often called foreground color) and background of an element (i.e. the surface onto which the content is rendered). One can set a background color.
 /// 
-/// NOTEï¿½ The CSS1 definition allows also for a background image. This has not been incorporated into IFC.
+/// NOTE  The CSS1 definition allows also for a background image. This has not been incorporated into IFC.
 /// 
 /// The IfcTextStyleForDefinedFont combines the text font color with an optional background color, that fills the text box, defined by the planar extent given to the text literal.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: text_style_for_defined_font. Please refer to ISO/IS
+/// NOTE  Corresponding ISO 10303 name: text_style_for_defined_font. Please refer to ISO/IS
 /// 10303-46:1994, p.122 for the final definition of the formal standard. The attribute BackgroundColour
 /// has been added.
 /// 
-/// NOTEï¿½ Corresponding CSS1 definitions are Color and background properties (color, background-color).
+/// NOTE  Corresponding CSS1 definitions are Color and background properties (color, background-color).
 /// 
-/// HISTORYï¿½ New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 /// 
-/// IFC2x3 CHANGEï¿½ The IfcTextStyleForDefinedFont has been added and replaces IfcColour at the IfcCharacterStyleSelect.
+/// IFC2x3 CHANGE  The IfcTextStyleForDefinedFont has been added and replaces IfcColour at the IfcCharacterStyleSelect.
 class IfcTextStyleForDefinedFont : public IfcBaseEntity {
 public:
     /// This property describes the text color of an element (often referred to as the foreground color).
@@ -10390,22 +10390,22 @@ public:
     static Type::Enum Class();
     IfcTextStyleForDefinedFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTextStyleForDefinedFont* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextStyleForDefinedFont> > list;
-    typedef IfcTemplatedEntityList<IfcTextStyleForDefinedFont>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTextStyleForDefinedFont > > list;
+    typedef IfcTemplatedEntityList< IfcTextStyleForDefinedFont >::it it;
 };
 /// Definition from CSS1 (W3C Recommendation): The properties defined in the text model affect the visual presentation of characters, spaces, words, and paragraphs.
 /// 
 /// The IfcTextStyleTextModel combines all text style properties, that affect the presentation of a text literal within a given extent. It includes the spacing between characters and words, the horizontal and vertical alignment of the text within the planar box of the extent, decorations (like underline), transformations of the literal (like uppercase), and the height of each text line within a multi-line text block.
 /// 
-/// NOTEï¿½ Corresponding CSS1 definitions are Text properties (word-spacing, letter-spacing, text-decoration, vertical-align, text-transform, text-align, text-indent, line-height).
+/// NOTE  Corresponding CSS1 definitions are Text properties (word-spacing, letter-spacing, text-decoration, vertical-align, text-transform, text-align, text-indent, line-height).
 /// 
-/// HISTORYï¿½ New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 class IfcTextStyleTextModel : public IfcBaseEntity {
 public:
     /// Whether the optional attribute TextIndent is defined for this IfcTextStyleTextModel
     bool hasTextIndent();
     /// The property specifies the indentation that appears before the first formatted line.
-    ///   NOTEï¿½ It has been introduced for later compliance to full CSS1 support.
+    ///   NOTE  It has been introduced for later compliance to full CSS1 support.
     IfcSizeSelect TextIndent();
     /// Whether the optional attribute TextAlign is defined for this IfcTextStyleTextModel
     bool hasTextAlign();
@@ -10418,23 +10418,23 @@ public:
     /// Whether the optional attribute LetterSpacing is defined for this IfcTextStyleTextModel
     bool hasLetterSpacing();
     /// The length unit indicates an addition to the default space between characters. Values can be negative, but there may be implementation-specific limits. The user agent is free to select the exact spacing algorithm. The letter spacing may also be influenced by justification (which is a value of the 'align' property).
-    ///   NOTEï¿½ The following values are allowed, IfcDescriptiveMeasure with value='normal', or IfcLengthMeasure, the length unit is globally defined at IfcUnitAssignment.
+    ///   NOTE  The following values are allowed, IfcDescriptiveMeasure with value='normal', or IfcLengthMeasure, the length unit is globally defined at IfcUnitAssignment.
     IfcSizeSelect LetterSpacing();
     /// Whether the optional attribute WordSpacing is defined for this IfcTextStyleTextModel
     bool hasWordSpacing();
     /// The length unit indicates an addition to the default space between words. Values can be negative, but there may be implementation-specific limits. The user agent is free to select the exact spacing algorithm. The word spacing may also be influenced by justification (which is a value of the 'text-align' property).
-    ///   NOTEï¿½ It has been introduced for later compliance to full CSS1 support.
+    ///   NOTE  It has been introduced for later compliance to full CSS1 support.
     IfcSizeSelect WordSpacing();
     /// Whether the optional attribute TextTransform is defined for this IfcTextStyleTextModel
     bool hasTextTransform();
     /// This property describes how text characters may transform to upper case, lower case, or capitalized case, independent of the character case used in the text literal.
-    ///   NOTEï¿½ It has been introduced for later compliance to full CSS1 support.
+    ///   NOTE  It has been introduced for later compliance to full CSS1 support.
     IfcTextTransformation TextTransform();
     /// Whether the optional attribute LineHeight is defined for this IfcTextStyleTextModel
     bool hasLineHeight();
     /// The property sets the distance between two adjacent lines' baselines.
     /// When a ratio value is specified, the line height is given by the font size of the current element multiplied with the numerical value. A value of 'normal' sets the line height to a reasonable value for the element's font. It is suggested that user agents set the 'normal' value to be a ratio number in the range of 1.0 to 1.2.
-    ///   NOTEï¿½ The following values are allowed: IfcDescriptiveMeasure with value='normal', or 
+    ///   NOTE  The following values are allowed: IfcDescriptiveMeasure with value='normal', or 
     /// IfcLengthMeasure, with non-negative values, the length unit is globally defined at IfcUnitAssignment, or IfcRatioMeasure.
     IfcSizeSelect LineHeight();
  virtual unsigned int getArgumentCount() const { return 7; }
@@ -10446,12 +10446,12 @@ public:
     static Type::Enum Class();
     IfcTextStyleTextModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTextStyleTextModel* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextStyleTextModel> > list;
-    typedef IfcTemplatedEntityList<IfcTextStyleTextModel>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTextStyleTextModel > > list;
+    typedef IfcTemplatedEntityList< IfcTextStyleTextModel >::it it;
 };
 /// The text style with box characteristics allows the presentation of annotated text by specifying the characteristics of the character boxes of the text and the spacing between the character boxes.
 /// 
-/// NOTEï¿½ The IfcTextStyleWithBoxCharacteristics is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation.
+/// NOTE  The IfcTextStyleWithBoxCharacteristics is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation.
 /// 
 /// The IfcTextStyleWithBoxCharacteristics is mainly used to provide some compatibility with ISO10303. Its usage is restricted to monospace text fonts (having uniform character boxes) and simple vector based text fonts. For true text fonts however the use of IfcTextStyleTextModel is required.
 /// 
@@ -10460,12 +10460,12 @@ public:
 /// Figure 296 &#8212; Text style box angles
 ///   Figure 297 &#8212; Text style box attributes
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: text_style_with_box_characteristics. Please refer to ISO/IS 10303-46:1994, p. 123 for the final definition of the formal standard. The four optional attributes BoxHeight, BoxWidth, BoxSlantAngle, BoxRotateAngle are included directly at the entity, and are not handled through the box_characteristic_select selecting box_height, box_width, box_slant_angle, box_rotate_angle, each being defined types.ï¿½
+/// NOTE  Corresponding ISO 10303 name: text_style_with_box_characteristics. Please refer to ISO/IS 10303-46:1994, p. 123 for the final definition of the formal standard. The four optional attributes BoxHeight, BoxWidth, BoxSlantAngle, BoxRotateAngle are included directly at the entity, and are not handled through the box_characteristic_select selecting box_height, box_width, box_slant_angle, box_rotate_angle, each being defined types. 
 /// The CharacterSpacing attribute has been added from ISO/IS 10303-46:1994 entity text_style_with_spacing.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ The attribute item CharacterSpacing has been added.
+/// IFC2x3 CHANGE  The attribute item CharacterSpacing has been added.
 class IfcTextStyleWithBoxCharacteristics : public IfcBaseEntity {
 public:
     /// Whether the optional attribute BoxHeight is defined for this IfcTextStyleWithBoxCharacteristics
@@ -10497,34 +10497,34 @@ public:
     static Type::Enum Class();
     IfcTextStyleWithBoxCharacteristics (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTextStyleWithBoxCharacteristics* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextStyleWithBoxCharacteristics> > list;
-    typedef IfcTemplatedEntityList<IfcTextStyleWithBoxCharacteristics>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTextStyleWithBoxCharacteristics > > list;
+    typedef IfcTemplatedEntityList< IfcTextStyleWithBoxCharacteristics >::it it;
 };
 /// The IfcTextureCoordinate a an abstract supertype of the different kinds to apply texture coordinates to geometries. For vertex based geometries an explicit assignment of 2D texture vertices to the 3D geometry points is supported by the subtype IfcTextureMap, in addition there can be a procedural description of how texture coordinates shall be applied to geometric items. If no IfcTextureCoordinate is provided for the IfcSurfaceTexture, the default mapping shall be used.
 /// 
 /// See relevant subtypes of IfcGeometricRepresentationItem for default texture mapping description.
 /// 
-/// NOTEï¿½ The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
+/// NOTE  The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ The attribute Texture is deleted.
+/// IFC2x3 CHANGE  The attribute Texture is deleted.
 /// 
-/// IFC2x4 CHANGEï¿½ The inverse attribute AnnotatedSurface is deleted, and the inverse AppliesTextures is added.
+/// IFC2x4 CHANGE  The inverse attribute AnnotatedSurface is deleted, and the inverse AppliesTextures is added.
 class IfcTextureCoordinate : public IfcBaseEntity {
 public:
  virtual unsigned int getArgumentCount() const { return 0; }
  virtual ArgumentType getArgumentType(unsigned int i) const { throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationSurface> > AnnotatedSurface(); // INVERSE IfcAnnotationSurface::TextureCoordinates
+    SHARED_PTR< IfcTemplatedEntityList< IfcAnnotationSurface > > AnnotatedSurface(); // INVERSE IfcAnnotationSurface::TextureCoordinates
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcTextureCoordinate (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTextureCoordinate* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextureCoordinate> > list;
-    typedef IfcTemplatedEntityList<IfcTextureCoordinate>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTextureCoordinate > > list;
+    typedef IfcTemplatedEntityList< IfcTextureCoordinate >::it it;
 };
 /// The IfcTextureCoordinateGenerator describes a procedurally defined mapping function with input parameter to map 2D texture coordinates to 3D geometry vertices. The allowable Mode values and input Parameter need to be agreed upon in view definitions and implementer agreements.
 /// 
@@ -10547,21 +10547,21 @@ public:
 /// SPHERE-REFLECT,
 /// SPHERE-REFLECT-LOCAL
 /// 
-/// NOTEï¿½ The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
+/// NOTE  The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
 /// 
 /// HISTORY New entity in IFC2x2.
 /// 
-/// IFC2x2 Addendum 2 CHANGEï¿½ The attribute Texturehas been deleted.
+/// IFC2x2 Addendum 2 CHANGE  The attribute Texturehas been deleted.
 class IfcTextureCoordinateGenerator : public IfcTextureCoordinate {
 public:
     /// The Mode attribute describes the algorithm used to compute texture coordinates.
     /// 
-    /// NOTEï¿½ The applicable values for the Mode attribute are determined by view definitions or implementer agreements. It is recommended to use the modes described in ISO/IES 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1. See 18.4.8 TextureCoordinateGenerator for recommended values.
+    /// NOTE  The applicable values for the Mode attribute are determined by view definitions or implementer agreements. It is recommended to use the modes described in ISO/IES 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1. See 18.4.8 TextureCoordinateGenerator for recommended values.
     IfcLabel Mode();
     /// The parameters used as arguments by the function as specified by Mode.
     /// 
-    /// IFC2x4 CHANGEï¿½ Made optional data type restricted to REAL.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Parameter();
+    /// IFC2x4 CHANGE  Made optional data type restricted to REAL.
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > Parameter();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_ENTITY_LIST; } return IfcTextureCoordinate::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Mode"; case 1: return "Parameter"; } return IfcTextureCoordinate::getArgumentName(i); }
@@ -10571,8 +10571,8 @@ public:
     static Type::Enum Class();
     IfcTextureCoordinateGenerator (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTextureCoordinateGenerator* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextureCoordinateGenerator> > list;
-    typedef IfcTemplatedEntityList<IfcTextureCoordinateGenerator>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTextureCoordinateGenerator > > list;
+    typedef IfcTemplatedEntityList< IfcTextureCoordinateGenerator >::it it;
 };
 /// An IfcTextureMap provides the mapping of the
 /// 2-dimensional texture coordinates to the surface onto which it is
@@ -10606,7 +10606,7 @@ public:
 /// specifies a set of 2D texture coordinates used by vertex-based
 /// geometry nodes to map textures to vertices.
 /// 
-/// NOTEï¿½ In contrary to the
+/// NOTE  In contrary to the
 /// X3D vertext based geometry, for example IndexedFaceSet and
 /// ElevationGrid, the vertext based geometry in IFC may include inner
 /// loops. The areas of inner loops have to be cut-out from the texture
@@ -10616,18 +10616,18 @@ public:
 /// 
 /// Figure 301 &#8212; Texture map
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ The attribute Texture is deleted, and the attribute TextureMaps is added.
+/// IFC2x3 CHANGE  The attribute Texture is deleted, and the attribute TextureMaps is added.
 /// 
-/// IFC2x4 CHANGEï¿½ The attribute TextureMap is replaced by Vertices, and the attribute AppliedTo is added.
+/// IFC2x4 CHANGE  The attribute TextureMap is replaced by Vertices, and the attribute AppliedTo is added.
 /// 
 /// Informal propositions:
 /// 
 /// The FaceBound referenced in AppliedTo shall be used by the vertex based geometry, to which this texture map is assigned to by through the IfcStyledItem.
 class IfcTextureMap : public IfcTextureCoordinate {
 public:
-    SHARED_PTR< IfcTemplatedEntityList<IfcVertexBasedTextureMap> > TextureMaps();
+    SHARED_PTR< IfcTemplatedEntityList< IfcVertexBasedTextureMap > > TextureMaps();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } return IfcTextureCoordinate::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TextureMaps"; } return IfcTextureCoordinate::getArgumentName(i); }
@@ -10637,8 +10637,8 @@ public:
     static Type::Enum Class();
     IfcTextureMap (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTextureMap* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextureMap> > list;
-    typedef IfcTemplatedEntityList<IfcTextureMap>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTextureMap > > list;
+    typedef IfcTemplatedEntityList< IfcTextureMap >::it it;
 };
 /// An IfcTextureVertex is a list of 2 (S, T) texture coordinates. 
 /// 
@@ -10656,13 +10656,13 @@ public:
 /// coordinate C (s or t) is mapped into a texture map that has N pixels in
 /// the given direction as follows: 
 /// 
-/// Texture map location = (C - floor(C)) ï¿½ N			 
+/// Texture map location = (C - floor(C)) × N			 
 /// 
 /// If the texture map is not
 /// repeated, the texture coordinates are
 /// clamped to the 0.0 to 1.0 range as follows: 
 /// 
-/// Texture map location = N,     if C > 1.0,                     = 0.0,   if C < 0.0,                     = C ï¿½ N, if 0.0 &#8804; C &#8804; 1.0.
+/// Texture map location = N,     if C > 1.0,                     = 0.0,   if C < 0.0,                     = C × N, if 0.0 &#8804; C &#8804; 1.0.
 /// 
 /// Texture coordinates may be transformed (scaled, rotated, translated) by supplying a TextureTransform as a component of the texture's definition. 
 /// 
@@ -10670,7 +10670,7 @@ public:
 class IfcTextureVertex : public IfcBaseEntity {
 public:
     /// The first coordinate[1] is the S, the second coordinate[2] is the T parameter value.
-    std::vector<IfcParameterValue> /*[2:2]*/ Coordinates();
+    std::vector< IfcParameterValue > /*[2:2]*/ Coordinates();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_VECTOR_DOUBLE; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Coordinates"; } throw IfcException("argument out of range"); }
@@ -10680,8 +10680,8 @@ public:
     static Type::Enum Class();
     IfcTextureVertex (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTextureVertex* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextureVertex> > list;
-    typedef IfcTemplatedEntityList<IfcTextureVertex>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTextureVertex > > list;
+    typedef IfcTemplatedEntityList< IfcTextureVertex >::it it;
 };
 class IfcThermalMaterialProperties : public IfcMaterialProperties {
 public:
@@ -10706,8 +10706,8 @@ public:
     static Type::Enum Class();
     IfcThermalMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcThermalMaterialProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcThermalMaterialProperties> > list;
-    typedef IfcTemplatedEntityList<IfcThermalMaterialProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcThermalMaterialProperties > > list;
+    typedef IfcTemplatedEntityList< IfcThermalMaterialProperties >::it it;
 };
 /// A time series is a set of a time-stamped data entries. It allows a natural association of data collected over intervals of time. Time series can be regular or irregular. In regular time series data arrive predictably at predefined intervals.  In irregular time series  some or all time stamps do not follow a repetitive pattern and unpredictable bursts of data may arrive at unspecified points in time.
 /// 
@@ -10742,19 +10742,19 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_STRING; case 1: return Argument_STRING; case 2: return Argument_ENTITY; case 3: return Argument_ENTITY; case 4: return Argument_ENUMERATION; case 5: return Argument_ENUMERATION; case 6: return Argument_STRING; case 7: return Argument_ENTITY; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "StartTime"; case 3: return "EndTime"; case 4: return "TimeSeriesDataType"; case 5: return "DataOrigin"; case 6: return "UserDefinedDataOrigin"; case 7: return "Unit"; } throw IfcException("argument out of range"); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeriesReferenceRelationship> > DocumentedBy(); // INVERSE IfcTimeSeriesReferenceRelationship::ReferencedTimeSeries
+    SHARED_PTR< IfcTemplatedEntityList< IfcTimeSeriesReferenceRelationship > > DocumentedBy(); // INVERSE IfcTimeSeriesReferenceRelationship::ReferencedTimeSeries
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcTimeSeries (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTimeSeries* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeries> > list;
-    typedef IfcTemplatedEntityList<IfcTimeSeries>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTimeSeries > > list;
+    typedef IfcTemplatedEntityList< IfcTimeSeries >::it it;
 };
 class IfcTimeSeriesReferenceRelationship : public IfcBaseEntity {
 public:
     IfcTimeSeries* ReferencedTimeSeries();
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > TimeSeriesReferences();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > TimeSeriesReferences();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ReferencedTimeSeries"; case 1: return "TimeSeriesReferences"; } throw IfcException("argument out of range"); }
@@ -10764,8 +10764,8 @@ public:
     static Type::Enum Class();
     IfcTimeSeriesReferenceRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTimeSeriesReferenceRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeriesReferenceRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcTimeSeriesReferenceRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTimeSeriesReferenceRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcTimeSeriesReferenceRelationship >::it it;
 };
 /// A time series value is a list of values that comprise the time series. At least one value must be supplied. Applications are expected to normalize values by applying the following three rules:
 /// 
@@ -10775,11 +10775,11 @@ public:
 /// 
 /// Figure 241 &#8212; Time series value 
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcTimeSeriesValue : public IfcBaseEntity {
 public:
     /// A list of time-series values. At least one value is required.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > ListValues();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > ListValues();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ListValues"; } throw IfcException("argument out of range"); }
@@ -10789,12 +10789,12 @@ public:
     static Type::Enum Class();
     IfcTimeSeriesValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTimeSeriesValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeriesValue> > list;
-    typedef IfcTemplatedEntityList<IfcTimeSeriesValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTimeSeriesValue > > list;
+    typedef IfcTemplatedEntityList< IfcTimeSeriesValue >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: The topological representation item is the supertype for all the topological representation items in the geometry resource. 
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: topological_representation_item. Please refer to ISO/IS 10303-42:1994, p.129 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: topological_representation_item. Please refer to ISO/IS 10303-42:1994, p.129 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.5
 class IfcTopologicalRepresentationItem : public IfcRepresentationItem {
@@ -10808,8 +10808,8 @@ public:
     static Type::Enum Class();
     IfcTopologicalRepresentationItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTopologicalRepresentationItem* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTopologicalRepresentationItem> > list;
-    typedef IfcTemplatedEntityList<IfcTopologicalRepresentationItem>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTopologicalRepresentationItem > > list;
+    typedef IfcTemplatedEntityList< IfcTopologicalRepresentationItem >::it it;
 };
 /// IfcTopologyRepresentation
 /// represents the concept of a particular topological representation of a
@@ -10856,18 +10856,18 @@ public:
     static Type::Enum Class();
     IfcTopologyRepresentation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTopologyRepresentation* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTopologyRepresentation> > list;
-    typedef IfcTemplatedEntityList<IfcTopologyRepresentation>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTopologyRepresentation > > list;
+    typedef IfcTemplatedEntityList< IfcTopologyRepresentation >::it it;
 };
 /// IfcUnitAssignment indicates a set of units which may be assigned. Within an IfcUnitAssigment each unit definition shall be unique; that is, there shall be no redundant unit definitions for the same unit type such as length unit or area unit. For currencies, there shall be only a single IfcMonetaryUnit within an IfcUnitAssignment.
 /// 
-/// NOTEï¿½ A project (IfcProject) has a unit assignment which establishes a set of units which will be used globally within the project, if not otherwise defined. Other objects may have local unit assignments if there is a requirement for them to make use of units which do not fall within the project unit assignment.
+/// NOTE  A project (IfcProject) has a unit assignment which establishes a set of units which will be used globally within the project, if not otherwise defined. Other objects may have local unit assignments if there is a requirement for them to make use of units which do not fall within the project unit assignment.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5.1.
+/// HISTORY  New entity in IFC Release 1.5.1.
 class IfcUnitAssignment : public IfcBaseEntity {
 public:
     /// Units to be included within a unit assignment.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Units();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > Units();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Units"; } throw IfcException("argument out of range"); }
@@ -10877,14 +10877,14 @@ public:
     static Type::Enum Class();
     IfcUnitAssignment (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcUnitAssignment* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcUnitAssignment> > list;
-    typedef IfcTemplatedEntityList<IfcUnitAssignment>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcUnitAssignment > > list;
+    typedef IfcTemplatedEntityList< IfcUnitAssignment >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A vertex is the topological construct corresponding to a point. It has dimensionality 0 and extent 0. The domain of a vertex, if present, is a point in m dimensional real space RM; this is represented by the vertex point subtype. 
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: vertex. Please refer to ISO/IS 10303-42:1994, p. 129 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: vertex. Please refer to ISO/IS 10303-42:1994, p. 129 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 2.0
+/// HISTORY  New Entity in IFC Release 2.0
 /// 
 /// Informal proposition:
 /// 
@@ -10901,13 +10901,13 @@ public:
     static Type::Enum Class();
     IfcVertex (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcVertex* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcVertex> > list;
-    typedef IfcTemplatedEntityList<IfcVertex>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcVertex > > list;
+    typedef IfcTemplatedEntityList< IfcVertex >::it it;
 };
 class IfcVertexBasedTextureMap : public IfcBaseEntity {
 public:
-    SHARED_PTR< IfcTemplatedEntityList<IfcTextureVertex> > TextureVertices();
-    SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > TexturePoints();
+    SHARED_PTR< IfcTemplatedEntityList< IfcTextureVertex > > TextureVertices();
+    SHARED_PTR< IfcTemplatedEntityList< IfcCartesianPoint > > TexturePoints();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; case 1: return Argument_ENTITY_LIST; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TextureVertices"; case 1: return "TexturePoints"; } throw IfcException("argument out of range"); }
@@ -10917,14 +10917,14 @@ public:
     static Type::Enum Class();
     IfcVertexBasedTextureMap (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcVertexBasedTextureMap* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcVertexBasedTextureMap> > list;
-    typedef IfcTemplatedEntityList<IfcVertexBasedTextureMap>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcVertexBasedTextureMap > > list;
+    typedef IfcTemplatedEntityList< IfcVertexBasedTextureMap >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A vertex point is a vertex which has its geometry defined as a point.  
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: vertex_point. Please refer to ISO/IS 10303-42:1994, p. 130 for the final definition of the formal standard. Due to the general IFC model specification rule not to use multiple inheritance, the subtype relationship to geometric_representation_item is not included.
+/// NOTE  Corresponding ISO 10303 entity: vertex_point. Please refer to ISO/IS 10303-42:1994, p. 130 for the final definition of the formal standard. Due to the general IFC model specification rule not to use multiple inheritance, the subtype relationship to geometric_representation_item is not included.
 /// 
-/// HISTORYï¿½ New Entity in IFC2x.
+/// HISTORY  New Entity in IFC2x.
 /// 
 /// Informal proposition: 
 /// 
@@ -10942,8 +10942,8 @@ public:
     static Type::Enum Class();
     IfcVertexPoint (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcVertexPoint* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcVertexPoint> > list;
-    typedef IfcTemplatedEntityList<IfcVertexPoint>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcVertexPoint > > list;
+    typedef IfcTemplatedEntityList< IfcVertexPoint >::it it;
 };
 /// IfcVirtualGridIntersection defines the derived location of the intersection between two grid axes. Offset values may be given to set an offset distance to the grid axis for the calculation of the virtual grid intersection.
 /// 
@@ -10960,7 +10960,7 @@ public:
 /// of IntersectingAxes[1] and the orthogonal complement of the IntersectingAxes[1] (which is the positive or negative
 /// direction of the z axis of the design grid position).
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5. The entity name was changed from IfcConstraintRelIntersection in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 1.5. The entity name was changed from IfcConstraintRelIntersection in IFC Release 2x.
 /// 
 /// Informal Propositions:
 /// 
@@ -11007,9 +11007,9 @@ public:
 class IfcVirtualGridIntersection : public IfcBaseEntity {
 public:
     /// Two grid axes which intersects at exactly one intersection (see also informal proposition at IfcGrid). If attribute OffsetDistances is omitted, the intersection defines the placement or ref direction of a grid placement directly. If OffsetDistances are given, the intersection is defined by the offset curves to the grid axes.
-    SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > IntersectingAxes();
+    SHARED_PTR< IfcTemplatedEntityList< IfcGridAxis > > IntersectingAxes();
     /// Offset distances to the grid axes. If given, it defines virtual offset curves to the grid axes. The intersection of the offset curves specify the virtual grid intersection.
-    std::vector<IfcLengthMeasure> /*[2:3]*/ OffsetDistances();
+    std::vector< IfcLengthMeasure > /*[2:3]*/ OffsetDistances();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; case 1: return Argument_VECTOR_DOUBLE; } throw IfcException("argument out of range"); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "IntersectingAxes"; case 1: return "OffsetDistances"; } throw IfcException("argument out of range"); }
@@ -11019,8 +11019,8 @@ public:
     static Type::Enum Class();
     IfcVirtualGridIntersection (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcVirtualGridIntersection* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcVirtualGridIntersection> > list;
-    typedef IfcTemplatedEntityList<IfcVirtualGridIntersection>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcVirtualGridIntersection > > list;
+    typedef IfcTemplatedEntityList< IfcVirtualGridIntersection >::it it;
 };
 class IfcWaterProperties : public IfcMaterialProperties {
 public:
@@ -11054,8 +11054,8 @@ public:
     static Type::Enum Class();
     IfcWaterProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcWaterProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcWaterProperties> > list;
-    typedef IfcTemplatedEntityList<IfcWaterProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcWaterProperties > > list;
+    typedef IfcTemplatedEntityList< IfcWaterProperties >::it it;
 };
 class IfcAnnotationOccurrence : public IfcStyledItem {
 public:
@@ -11068,8 +11068,8 @@ public:
     static Type::Enum Class();
     IfcAnnotationOccurrence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAnnotationOccurrence* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationOccurrence> > list;
-    typedef IfcTemplatedEntityList<IfcAnnotationOccurrence>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAnnotationOccurrence > > list;
+    typedef IfcTemplatedEntityList< IfcAnnotationOccurrence >::it it;
 };
 class IfcAnnotationSurfaceOccurrence : public IfcAnnotationOccurrence {
 public:
@@ -11082,8 +11082,8 @@ public:
     static Type::Enum Class();
     IfcAnnotationSurfaceOccurrence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAnnotationSurfaceOccurrence* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationSurfaceOccurrence> > list;
-    typedef IfcTemplatedEntityList<IfcAnnotationSurfaceOccurrence>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAnnotationSurfaceOccurrence > > list;
+    typedef IfcTemplatedEntityList< IfcAnnotationSurfaceOccurrence >::it it;
 };
 class IfcAnnotationSymbolOccurrence : public IfcAnnotationOccurrence {
 public:
@@ -11096,8 +11096,8 @@ public:
     static Type::Enum Class();
     IfcAnnotationSymbolOccurrence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAnnotationSymbolOccurrence* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationSymbolOccurrence> > list;
-    typedef IfcTemplatedEntityList<IfcAnnotationSymbolOccurrence>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAnnotationSymbolOccurrence > > list;
+    typedef IfcTemplatedEntityList< IfcAnnotationSymbolOccurrence >::it it;
 };
 class IfcAnnotationTextOccurrence : public IfcAnnotationOccurrence {
 public:
@@ -11110,8 +11110,8 @@ public:
     static Type::Enum Class();
     IfcAnnotationTextOccurrence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAnnotationTextOccurrence* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationTextOccurrence> > list;
-    typedef IfcTemplatedEntityList<IfcAnnotationTextOccurrence>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAnnotationTextOccurrence > > list;
+    typedef IfcTemplatedEntityList< IfcAnnotationTextOccurrence >::it it;
 };
 /// The closed profile IfcArbitraryClosedProfileDef defines an arbitrary two-dimensional profile for the use within the swept surface geometry, the swept area solid or a sectioned spine. It is given by an outer boundary from which the surface or solid can be constructed. 
 /// 
@@ -11144,12 +11144,12 @@ public:
     static Type::Enum Class();
     IfcArbitraryClosedProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcArbitraryClosedProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcArbitraryClosedProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcArbitraryClosedProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcArbitraryClosedProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcArbitraryClosedProfileDef >::it it;
 };
 /// The open profile IfcArbitraryOpenProfileDef defines an arbitrary two-dimensional open profile for the use within the swept surface geometry. It is given by an open boundary from with the surface can be constructed. 
 /// 
-/// HISTORYï¿½ New entity in IFC2x.
+/// HISTORY  New entity in IFC2x.
 /// 
 /// Informal proposition:
 /// 
@@ -11175,12 +11175,12 @@ public:
     static Type::Enum Class();
     IfcArbitraryOpenProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcArbitraryOpenProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcArbitraryOpenProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcArbitraryOpenProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcArbitraryOpenProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcArbitraryOpenProfileDef >::it it;
 };
 /// The IfcArbitraryProfileDefWithVoids defines an arbitrary closed two-dimensional profile with holes defined for the use for the swept area solid or a sectioned spine. It is given by an outer boundary and inner boundaries from with the solid the can be constructed.
 /// 
-/// HISTORYï¿½ New entity in IFC2x.
+/// HISTORY  New entity in IFC2x.
 /// 
 /// Informal propositions:
 /// 
@@ -11200,7 +11200,7 @@ public:
 class IfcArbitraryProfileDefWithVoids : public IfcArbitraryClosedProfileDef {
 public:
     /// Set of bounded curves, defining the inner boundaries of the arbitrary profile.
-    SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > InnerCurves();
+    SHARED_PTR< IfcTemplatedEntityList< IfcCurve > > InnerCurves();
  virtual unsigned int getArgumentCount() const { return 4; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return Argument_ENTITY_LIST; } return IfcArbitraryClosedProfileDef::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "InnerCurves"; } return IfcArbitraryClosedProfileDef::getArgumentName(i); }
@@ -11210,18 +11210,18 @@ public:
     static Type::Enum Class();
     IfcArbitraryProfileDefWithVoids (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcArbitraryProfileDefWithVoids* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcArbitraryProfileDefWithVoids> > list;
-    typedef IfcTemplatedEntityList<IfcArbitraryProfileDefWithVoids>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcArbitraryProfileDefWithVoids > > list;
+    typedef IfcTemplatedEntityList< IfcArbitraryProfileDefWithVoids >::it it;
 };
 /// An IfcBlobTexture provides a 2-dimensional distribution of the lighting parameters of a surface onto which it is mapped. The texture itself is given as a single binary blob, representing the content of a pixel format file. The file format of the pixel file is given by the RasterFormat attribute and allowable formats are guided by where rule SupportedRasterFormat.
 /// 
-/// NOTEï¿½ Toolbox specific implementations of the binary datatype may restrict the maximum length of the binary blob to capture the raster file content.
+/// NOTE  Toolbox specific implementations of the binary datatype may restrict the maximum length of the binary blob to capture the raster file content.
 /// 
 /// For interpretation of the texture nodes see IfcImageTexture definition.
 /// 
-/// HISTORYï¿½ New class in IFC2x3.
+/// HISTORY  New class in IFC2x3.
 /// 
-/// IFC2x4 CHANGEï¿½ Data type of RasterCode has been corrected to BINARY.
+/// IFC2x4 CHANGE  Data type of RasterCode has been corrected to BINARY.
 class IfcBlobTexture : public IfcSurfaceTexture {
 public:
     /// The format of the RasterCode often using a compression.
@@ -11237,8 +11237,8 @@ public:
     static Type::Enum Class();
     IfcBlobTexture (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBlobTexture* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBlobTexture> > list;
-    typedef IfcTemplatedEntityList<IfcBlobTexture>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBlobTexture > > list;
+    typedef IfcTemplatedEntityList< IfcBlobTexture >::it it;
 };
 /// The profile IfcCenterLineProfileDef defines an arbitrary two-dimensional open, not self intersecting profile for the use within the swept solid geometry. It is given by an area defined by applying a constant thickness to a centerline, generating an area from which the solid can be constructed.
 /// 
@@ -11255,7 +11255,7 @@ public:
 /// 
 /// or a combination of them.  See IfcProfileDef for guidance on external references for profiles.
 /// 
-/// HISTORYï¿½ New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 /// 
 /// Informal proposition: 
 /// 
@@ -11282,8 +11282,8 @@ public:
     static Type::Enum Class();
     IfcCenterLineProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCenterLineProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCenterLineProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcCenterLineProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCenterLineProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcCenterLineProfileDef >::it it;
 };
 /// An IfcClassificationReference is a reference into a classification system or source (see IfcClassification) for a specific classification key (or notation).
 /// 
@@ -11321,30 +11321,30 @@ public:
     static Type::Enum Class();
     IfcClassificationReference (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcClassificationReference* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcClassificationReference> > list;
-    typedef IfcTemplatedEntityList<IfcClassificationReference>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcClassificationReference > > list;
+    typedef IfcTemplatedEntityList< IfcClassificationReference >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: A colour rgb as a subtype of colour specifications is defined by three colour component values for red, green, and blue in the RGB colour model.
 /// 
-/// NOTEï¿½ In contrary to the usual value range of colour components being integer from 0...255, the definition from ISO10303-46 defines the colour components as real from 0.0 ... 1.0. Applications need to execute this conversion before populating the colour RGB values.
+/// NOTE  In contrary to the usual value range of colour components being integer from 0...255, the definition from ISO10303-46 defines the colour components as real from 0.0 ... 1.0. Applications need to execute this conversion before populating the colour RGB values.
 /// 
-/// NOTEï¿½ Corresponding STEP name: colour_rgb. The name attribute has been omitted, the data type for the reg, green and blue parts is IfcNormalizedRatioMeasure, that already includes the range restrictions for the values. Please
+/// NOTE  Corresponding STEP name: colour_rgb. The name attribute has been omitted, the data type for the reg, green and blue parts is IfcNormalizedRatioMeasure, that already includes the range restrictions for the values. Please
 /// refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcColourRgb : public IfcColourSpecification {
 public:
     /// The intensity of the red colour component.
     /// 
-    /// NOTEï¿½ The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.
+    /// NOTE  The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.
     IfcNormalisedRatioMeasure Red();
     /// The intensity of the green colour component.
     /// 
-    /// NOTEï¿½ The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.
+    /// NOTE  The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.
     IfcNormalisedRatioMeasure Green();
     /// The intensity of the blue colour component.
     /// 
-    /// NOTEï¿½ The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.
+    /// NOTE  The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.
     IfcNormalisedRatioMeasure Blue();
  virtual unsigned int getArgumentCount() const { return 4; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return Argument_DOUBLE; case 2: return Argument_DOUBLE; case 3: return Argument_DOUBLE; } return IfcColourSpecification::getArgumentType(i); }
@@ -11355,12 +11355,12 @@ public:
     static Type::Enum Class();
     IfcColourRgb (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcColourRgb* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcColourRgb> > list;
-    typedef IfcTemplatedEntityList<IfcColourRgb>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcColourRgb > > list;
+    typedef IfcTemplatedEntityList< IfcColourRgb >::it it;
 };
 /// IfcComplexProperty is used to define complex properties to be handled completely within a property set. The included set of properties may be a mixed or consistent collection of IfcProperty subtypes. This enables the definition of a set of properties to be included as a single 'property' entry in an IfcPropertySet. The definition of such an IfcComplexProperty can be reused in many different IfcPropertySet's.
 /// 
-/// NOTEï¿½ Since an IfcComplexProperty may contain other complex properties, sets of properties can be nested. This nesting may be restricted by view definitions and implementer agreements.
+/// NOTE  Since an IfcComplexProperty may contain other complex properties, sets of properties can be nested. This nesting may be restricted by view definitions and implementer agreements.
 /// 
 /// HISTORY New Entity in IFC Release 2.0, capabilities enhanced in IFC Release 2x.
 class IfcComplexProperty : public IfcProperty {
@@ -11369,7 +11369,7 @@ public:
     ///   NOTE: Consider a complex property for glazing properties. The Name attribute of the IfcComplexProperty could be Pset_GlazingProperties, and the UsageName attribute could be OuterGlazingPane.
     IfcIdentifier UsageName();
     /// Set of properties that can be used within this complex property (may include other complex properties).
-    SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > HasProperties();
+    SHARED_PTR< IfcTemplatedEntityList< IfcProperty > > HasProperties();
  virtual unsigned int getArgumentCount() const { return 4; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return Argument_STRING; case 3: return Argument_ENTITY_LIST; } return IfcProperty::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "UsageName"; case 3: return "HasProperties"; } return IfcProperty::getArgumentName(i); }
@@ -11379,8 +11379,8 @@ public:
     static Type::Enum Class();
     IfcComplexProperty (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcComplexProperty* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcComplexProperty> > list;
-    typedef IfcTemplatedEntityList<IfcComplexProperty>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcComplexProperty > > list;
+    typedef IfcTemplatedEntityList< IfcComplexProperty >::it it;
 };
 /// The IfcCompositeProfileDef
 /// defines the profile by composition of other profiles. The composition
@@ -11388,7 +11388,7 @@ public:
 /// profile definition (except for another composite profile) can be used
 /// to construct the composite. 
 /// 
-/// HISTORYï¿½ New entity in IFC2x.
+/// HISTORY  New entity in IFC2x.
 /// 
 /// Figure 314 illustrates the composite profile definition. The IfcCompositeProfileDef does not define an own position coordinate system, it is directly defined in the underlying coordinate system. The underlying coordinate system is defined by the swept surface or swept area solid that uses the profile definition. It is the xy plane of either:
 /// 
@@ -11400,7 +11400,7 @@ public:
 /// In case of parameterized profile definitions, the Position attribute of those standard profiles is used to place the profiles relatively to each other.
 ///   In case of arbitrary profile definitions, each Cartesian coordinate is given directly within the underlying coordinate system.
 /// 
-/// NOTEï¿½ The black coordinate axes show the underlying coordinate system of the swept surface or swept area solid.
+/// NOTE  The black coordinate axes show the underlying coordinate system of the swept surface or swept area solid.
 /// 
 /// Figure 314
 /// 
@@ -11410,18 +11410,18 @@ public:
 /// only be specified once. It is then included into the composite profile directly
 /// and additionally indirectly via IfcMirroredProfileDef. For example, a
 /// double angle made of two L100x10 with 10mm air gap between them, i.e. a
-/// _|ï¿½|_ shape, can be modeled as
+/// _| |_ shape, can be modeled as
 /// 
 /// single_L : IfcLShapeProfileDef := IfcLShapeProfileDef(AREA, 'L100X100X10',
-/// ï¿½ï¿½ï¿½ï¿½IfcAxis2Placement2D(IfcCartesianPoint(((.100+.010)/2., .0)), ?),
-/// ï¿½ï¿½ï¿½ï¿½.100, .100, .010, .012, ?, 0., ?, ?);
-/// ï¿½
+///     IfcAxis2Placement2D(IfcCartesianPoint(((.100+.010)/2., .0)), ?),
+///     .100, .100, .010, .012, ?, 0., ?, ?);
+///  
 /// double_L : IfcCompositeProfileDef := IfcCompositeProfileDef(AREA, 'double angle',
-/// ï¿½ï¿½ï¿½ï¿½(single_L, IfcMirroredProfileDef(AREA, ?, single_L, ?)), 'twin profile');
+///     (single_L, IfcMirroredProfileDef(AREA, ?, single_L, ?)), 'twin profile');
 class IfcCompositeProfileDef : public IfcProfileDef {
 public:
     /// The profiles which are used to define the composite profile.
-    SHARED_PTR< IfcTemplatedEntityList<IfcProfileDef> > Profiles();
+    SHARED_PTR< IfcTemplatedEntityList< IfcProfileDef > > Profiles();
     /// Whether the optional attribute Label is defined for this IfcCompositeProfileDef
     bool hasLabel();
     /// The name by which the composition may be referred to. The actual meaning of the name has to be defined in the context of applications.
@@ -11435,14 +11435,14 @@ public:
     static Type::Enum Class();
     IfcCompositeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCompositeProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCompositeProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcCompositeProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCompositeProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcCompositeProfileDef >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A connected_face_set is a set of faces such that the domain of faces together with their bounding edges and vertices is connected.  
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: connected_face_set, the subtype closed_shell is included as IfcClosedShell and the subtype open_shell is included as IfcOpenShell. Please refer to ISO/IS 10303-42:1994, p. 144 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: connected_face_set, the subtype closed_shell is included as IfcClosedShell and the subtype open_shell is included as IfcOpenShell. Please refer to ISO/IS 10303-42:1994, p. 144 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 /// 
 /// Informal proposition: 
 /// 
@@ -11450,7 +11450,7 @@ public:
 class IfcConnectedFaceSet : public IfcTopologicalRepresentationItem {
 public:
     /// The set of faces arcwise connected along common edges or vertices.
-    SHARED_PTR< IfcTemplatedEntityList<IfcFace> > CfsFaces();
+    SHARED_PTR< IfcTemplatedEntityList< IfcFace > > CfsFaces();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "CfsFaces"; } return IfcTopologicalRepresentationItem::getArgumentName(i); }
@@ -11460,19 +11460,19 @@ public:
     static Type::Enum Class();
     IfcConnectedFaceSet (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConnectedFaceSet* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectedFaceSet> > list;
-    typedef IfcTemplatedEntityList<IfcConnectedFaceSet>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConnectedFaceSet > > list;
+    typedef IfcTemplatedEntityList< IfcConnectedFaceSet >::it it;
 };
 /// IfcConnectionCurveGeometry is used to describe the geometric constraints that facilitate the physical connection of two objects at a curve or at an edge with curve geometry associated. It is envisioned as a control that applies to the element connection relationships. 
 /// 
-/// EXAMPLEï¿½ The connection relationship between two walls has a geometric constraint which describes the end caps (or cut-off of the wall ends) by a CurveOnRelatingElement for the first wall and a CurveOnRelatedElement for the second wall. The exact usage of the IfcConnectionCurveGeometry is further defined in the geometry use sections of the elements that use it.
+/// EXAMPLE  The connection relationship between two walls has a geometric constraint which describes the end caps (or cut-off of the wall ends) by a CurveOnRelatingElement for the first wall and a CurveOnRelatedElement for the second wall. The exact usage of the IfcConnectionCurveGeometry is further defined in the geometry use sections of the elements that use it.
 /// 
 /// The available geometry for the connection constraint may be further restricted to only allow straight segments by applying IfcPolyline
-/// only. Such an usage constraint is provided at the object definition of the IfcElement subtype, utilizing the element connection by referring to the subtype of IfcRelConnects with the associatedï¿½IfcConnectionCurveGeometry.
+/// only. Such an usage constraint is provided at the object definition of the IfcElement subtype, utilizing the element connection by referring to the subtype of IfcRelConnects with the associated IfcConnectionCurveGeometry.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5, has been renamed from IfcLineConnectionGeometry in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 1.5, has been renamed from IfcLineConnectionGeometry in IFC Release 2x.
 /// 
-/// IFC2x Edition 3 CHANGEï¿½ The provision of topology with associated geometry, IfcEdgeCurve, is enabled by using the IfcCurveOrEdgeCurve.
+/// IFC2x Edition 3 CHANGE  The provision of topology with associated geometry, IfcEdgeCurve, is enabled by using the IfcCurveOrEdgeCurve.
 /// 
 /// Geometry use definitions
 /// The IfcCurve (or the IfcEdgeCurve with an associated IfcCurve) at the CurveOnRelatingElement attribute defines the curve where the basic geometry items of the connected elements connects. The curve geometry and coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnects Subtype that utilizes the IfcConnectionCurveGeometry. Optionally, the same curve geometry and coordinates can also be provided within the local coordinate system of the RelatedElement by using the CurveOnRelatedElement attribute.
@@ -11493,17 +11493,17 @@ public:
     static Type::Enum Class();
     IfcConnectionCurveGeometry (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConnectionCurveGeometry* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectionCurveGeometry> > list;
-    typedef IfcTemplatedEntityList<IfcConnectionCurveGeometry>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConnectionCurveGeometry > > list;
+    typedef IfcTemplatedEntityList< IfcConnectionCurveGeometry >::it it;
 };
 /// IfcConnectionPointEccentricity is used to describe the geometric constraints that facilitate the physical connection of two objects at a point or vertex point with associated point coordinates. There is a physical distance, or eccentricity, etween the connection points of both object. The eccentricity can be either given by:
 /// 
-/// providing the PointOnRelatingElement and the PointOnRelatedElement, where bothï¿½point coordinates are not identical within a common parent coordinate system (latestly within the world coordinate system),
+/// providing the PointOnRelatingElement and the PointOnRelatedElement, where bothÿpoint coordinates are not identical within a common parent coordinate system (latestly within the world coordinate system),
 /// providing the PointOnRelatingElement and the three distance measures, EccentricityInX, EccentricityInY, and EccentricityInZ (or only EccentricityInX, and EccentricityInY if the
 /// underlying coordinate system is two-dimensional), or
 /// providing both.
 /// 
-/// NOTEï¿½ If both, PointOnRelatedElement, and EccentricityInX, EccentricityInY, (EccentricityInZ) are provided, the values should be consistent. In case of any non-consistency, the calculated distance between PointOnRelatingElement and PointOnRelatedElement takes precedence.
+/// NOTEÿ If both, PointOnRelatedElement, and EccentricityInX, EccentricityInY, (EccentricityInZ) are provided, the values should be consistent. In case of any non-consistency, the calculated distance between PointOnRelatingElement and PointOnRelatedElement takes precedence.
 /// 
 /// The explicit values for EccentricityInX, EccentricityInY, and EccentricityInZ are always
 /// measured in the following direction and coordinate system (defining when the value is positive or negative):
@@ -11511,7 +11511,7 @@ public:
 /// from the PointOnRelatedElement to PointOnRelatingElement within the coordinate system of the RelatingElement.
 /// in addition: when used to specify connections in structural analysis models, the IfcStructuralMember is to be used as the RelatingElement of the relationship object utilizing IfcConnectionPointEccentricity, and the IfcStructuralConnection is the RelatedElement.
 /// 
-/// HISTORYï¿½ New entity in IFC 2x Edition 3.
+/// HISTORYÿ New entity in IFC 2x Edition 3.
 /// 
 /// Geometry use definitions
 /// The IfcPoint (or the IfcVertexPoint with an associated IfcPoint) at the PointOnRelatingElement attribute defines the point where the basic geometry items of the connected elements connects. The point coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnects subtype that utilizes the IfcConnectionPointGeometry. Optionally, the same point coordinates can also be provided within the local coordinate system of the RelatedElement by using the PointOnRelatedElement attribute, otherwise the distance to the point at the RelatedElement has to be given by the three eccentricity values.
@@ -11538,8 +11538,8 @@ public:
     static Type::Enum Class();
     IfcConnectionPointEccentricity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConnectionPointEccentricity* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConnectionPointEccentricity> > list;
-    typedef IfcTemplatedEntityList<IfcConnectionPointEccentricity>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConnectionPointEccentricity > > list;
+    typedef IfcTemplatedEntityList< IfcConnectionPointEccentricity >::it it;
 };
 /// Definition from ISO/CD 10303-41:1992: A context dependent unit is a unit which is not related to the SI system.
 /// 
@@ -11561,8 +11561,8 @@ public:
     static Type::Enum Class();
     IfcContextDependentUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcContextDependentUnit* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcContextDependentUnit> > list;
-    typedef IfcTemplatedEntityList<IfcContextDependentUnit>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcContextDependentUnit > > list;
+    typedef IfcTemplatedEntityList< IfcContextDependentUnit >::it it;
 };
 /// Definition from ISO/CD 10303-41:1992: A conversion based unit is a unit that is defined based on a measure with unit.
 /// 
@@ -11626,8 +11626,8 @@ public:
     static Type::Enum Class();
     IfcConversionBasedUnit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConversionBasedUnit* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConversionBasedUnit> > list;
-    typedef IfcTemplatedEntityList<IfcConversionBasedUnit>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConversionBasedUnit > > list;
+    typedef IfcTemplatedEntityList< IfcConversionBasedUnit >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: A curve style specifies the visual appearance of curves.
 /// 
@@ -11635,17 +11635,17 @@ public:
 /// 
 /// Styles are intended to be shared by multiple IfcStyledItem's, assigning the style to occurrences of (subtypes of) IfcGeometricRepresentationItem's. Measures given to a font pattern or a curve width are given in global drawing length units.
 /// 
-/// NOTEï¿½ global units are defined at the single IfcProject instance, given by UnitsInContext:IfcUnitAssignment, the same units are used for the geometric representation items and for the style definitions.
+/// NOTE  global units are defined at the single IfcProject instance, given by UnitsInContext:IfcUnitAssignment, the same units are used for the geometric representation items and for the style definitions.
 /// 
 /// The measure values for font pattern and curve width apply to the model space with a target plot scale provided for the correct appearance in the default plot scale.. For different scale and projection dependent curve styles a different instance of IfcCurveStyle needs to be used by IfcPresentationStyleAssignment for different IfcGeometricRepresentationSubContext dependent representations.
 /// 
-/// NOTEï¿½ the target plot scale is given by IfcGeometricRepresentationSubContext.TargetScale.
+/// NOTE  the target plot scale is given by IfcGeometricRepresentationSubContext.TargetScale.
 /// 
 /// An IfcCurveStyle can be assigned to IfcGeometricRepresentationItem's via the IfcPresentationStyleAssignment through an intermediate IfcStyledItem or IfcAnnotationCurveOccurrence.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: curve_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: curve_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcCurveStyle : public IfcPresentationStyle {
 public:
     /// Whether the optional attribute CurveFont is defined for this IfcCurveStyle
@@ -11669,8 +11669,8 @@ public:
     static Type::Enum Class();
     IfcCurveStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCurveStyle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurveStyle> > list;
-    typedef IfcTemplatedEntityList<IfcCurveStyle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCurveStyle > > list;
+    typedef IfcTemplatedEntityList< IfcCurveStyle >::it it;
 };
 /// IfcDerivedProfileDef defines the profile by transformation from the parent profile. The transformation is given by a two dimensional transformation operator. Transformation includes translation, rotation, mirror and scaling. The latter can be uniform or non uniform. The derived profiles may be used to define swept surfaces, swept area solids or sectioned spines.
 /// 
@@ -11717,7 +11717,7 @@ public:
 /// Axis1 = NIL (defaults to 1.,0.)
 ///   Axis2 = NIL (defaults to 0.,1.)
 ///   LocalOrigin = IfcCartesianPoint(0.,<1/2 YDim)
-///   Scaleï¿½ = 1.
+///   Scale  = 1.
 ///   Scale2 = 2.
 /// 
 /// Note: The ParentProfile has a Position
@@ -11775,8 +11775,8 @@ public:
     static Type::Enum Class();
     IfcDerivedProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDerivedProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDerivedProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcDerivedProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDerivedProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcDerivedProfileDef >::it it;
 };
 class IfcDimensionCalloutRelationship : public IfcDraughtingCalloutRelationship {
 public:
@@ -11789,8 +11789,8 @@ public:
     static Type::Enum Class();
     IfcDimensionCalloutRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDimensionCalloutRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDimensionCalloutRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcDimensionCalloutRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDimensionCalloutRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcDimensionCalloutRelationship >::it it;
 };
 class IfcDimensionPair : public IfcDraughtingCalloutRelationship {
 public:
@@ -11803,8 +11803,8 @@ public:
     static Type::Enum Class();
     IfcDimensionPair (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDimensionPair* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDimensionPair> > list;
-    typedef IfcTemplatedEntityList<IfcDimensionPair>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDimensionPair > > list;
+    typedef IfcTemplatedEntityList< IfcDimensionPair >::it it;
 };
 /// An IfcDocumentReference is a reference 
 /// to the location of a document. The reference is given by a system 
@@ -11823,14 +11823,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcExternalReference::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcExternalReference::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcDocumentInformation> > ReferenceToDocument(); // INVERSE IfcDocumentInformation::DocumentReferences
+    SHARED_PTR< IfcTemplatedEntityList< IfcDocumentInformation > > ReferenceToDocument(); // INVERSE IfcDocumentInformation::DocumentReferences
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcDocumentReference (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDocumentReference* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDocumentReference> > list;
-    typedef IfcTemplatedEntityList<IfcDocumentReference>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDocumentReference > > list;
+    typedef IfcTemplatedEntityList< IfcDocumentReference >::it it;
 };
 /// The draughting pre defined text font is a pre defined text font for the purpose to identify a font by name. Allowable names are:
 /// 
@@ -11839,9 +11839,9 @@ public:
 /// 
 /// The ISO 3098-1 font A is the text font as denoted as Letterng A in clause 3 of ISO 3098-1, the ISO 3098-1 font B is the text font as denoted as Letterng B in clause 3 of ISO 3098-1.
 /// 
-/// NOTEï¿½ The IfcDraughtingPreDefinedTextFont is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 202: Application protocol: Associative draughting. Corresponding ISO 10303 name: draughting_pre_defined_text_font. Please refer to ISO/IS 10303-202:1994 page 196 for the final definition of the formal standard.
+/// NOTE  The IfcDraughtingPreDefinedTextFont is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 202: Application protocol: Associative draughting. Corresponding ISO 10303 name: draughting_pre_defined_text_font. Please refer to ISO/IS 10303-202:1994 page 196 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcDraughtingPreDefinedTextFont : public IfcPreDefinedTextFont {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
@@ -11853,8 +11853,8 @@ public:
     static Type::Enum Class();
     IfcDraughtingPreDefinedTextFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDraughtingPreDefinedTextFont* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingPreDefinedTextFont> > list;
-    typedef IfcTemplatedEntityList<IfcDraughtingPreDefinedTextFont>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDraughtingPreDefinedTextFont > > list;
+    typedef IfcTemplatedEntityList< IfcDraughtingPreDefinedTextFont >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: An edge is the
 /// topological construct corresponding to the connection of two
@@ -11897,9 +11897,9 @@ public:
 /// 
 /// Figure 333 &#8212; Edge representation
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: edge. Please refer to ISO/IS 10303-42:1994, p. 130 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: edge. Please refer to ISO/IS 10303-42:1994, p. 130 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 2.0
+/// HISTORY  New Entity in IFC Release 2.0
 /// 
 /// Informal propositions:
 /// 
@@ -11920,8 +11920,8 @@ public:
     static Type::Enum Class();
     IfcEdge (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEdge* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEdge> > list;
-    typedef IfcTemplatedEntityList<IfcEdge>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEdge > > list;
+    typedef IfcTemplatedEntityList< IfcEdge >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: An edge curve is
 /// a special subtype of edge which has its geometry fully defined.
@@ -11939,11 +11939,11 @@ public:
 /// 
 /// Figure 334 &#8212; Edge curve
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: edge_curve. Please refer to ISO/IS 10303-42:1994, p. 132
+/// NOTE  Corresponding ISO 10303 entity: edge_curve. Please refer to ISO/IS 10303-42:1994, p. 132
 /// for the final definition of the formal standard. Due to the general IFC model specification rule not to use multiple inheritance, the subtype relationship to geometric_representation_item is not included.
 /// 
 /// <blockquote class="history"
-/// HISTORYï¿½ New Entity in IFC2x.
+/// HISTORY  New Entity in IFC2x.
 /// 
 /// Informal propositions:
 /// 
@@ -11971,8 +11971,8 @@ public:
     static Type::Enum Class();
     IfcEdgeCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEdgeCurve* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEdgeCurve> > list;
-    typedef IfcTemplatedEntityList<IfcEdgeCurve>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEdgeCurve > > list;
+    typedef IfcTemplatedEntityList< IfcEdgeCurve >::it it;
 };
 /// The IfcExtendedMaterialProperties assign a set of
 /// defined material properties to associated material definitions.
@@ -11986,9 +11986,9 @@ public:
 /// The IfcProperty (instantiable subtypes) is used to
 /// express the individual material properties.
 /// 
-/// HISTORYï¿½ New entity in Release IFC2x.
+/// HISTORY  New entity in Release IFC2x.
 /// 
-/// IFC2x4 CHANGEï¿½ The attributes Name and Description are promoted to supertype,
+/// IFC2x4 CHANGE  The attributes Name and Description are promoted to supertype,
 /// attribute ExtendedProperties has been renamed to Properties.
 /// 
 /// Extended property use definitions
@@ -12011,7 +12011,7 @@ public:
 /// General Energy Calculation Properties
 class IfcExtendedMaterialProperties : public IfcMaterialProperties {
 public:
-    SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > ExtendedProperties();
+    SHARED_PTR< IfcTemplatedEntityList< IfcProperty > > ExtendedProperties();
     /// Whether the optional attribute Description is defined for this IfcExtendedMaterialProperties
     bool hasDescription();
     IfcText Description();
@@ -12025,8 +12025,8 @@ public:
     static Type::Enum Class();
     IfcExtendedMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcExtendedMaterialProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcExtendedMaterialProperties> > list;
-    typedef IfcTemplatedEntityList<IfcExtendedMaterialProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcExtendedMaterialProperties > > list;
+    typedef IfcTemplatedEntityList< IfcExtendedMaterialProperties >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A face is a topological
 ///   entity of dimensionality 2 corresponding to the intuitive notion of a piece of
@@ -12056,13 +12056,13 @@ public:
 /// where Gli is the graph genus of the
 ///   i th loop. 
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: face. No subtypes of face have been incorporated
+/// NOTE  Corresponding ISO 10303 entity: face. No subtypes of face have been incorporated
 ///   into this IFC Release. Please refer to ISO/IS 10303-42:1994, p. 140 for the
 ///   final definition of the formal standard. The WR1 has not been incorporated,
 ///   since it is always satisfied, due to the fact that only poly loops exist for
 ///   face bounds.
 /// 
-/// HISTORYï¿½ New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 /// 
 /// Informal propositions: 
 /// 
@@ -12075,7 +12075,7 @@ public:
 class IfcFace : public IfcTopologicalRepresentationItem {
 public:
     /// Boundaries of the face.
-    SHARED_PTR< IfcTemplatedEntityList<IfcFaceBound> > Bounds();
+    SHARED_PTR< IfcTemplatedEntityList< IfcFaceBound > > Bounds();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Bounds"; } return IfcTopologicalRepresentationItem::getArgumentName(i); }
@@ -12085,14 +12085,14 @@ public:
     static Type::Enum Class();
     IfcFace (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFace* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFace> > list;
-    typedef IfcTemplatedEntityList<IfcFace>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFace > > list;
+    typedef IfcTemplatedEntityList< IfcFace >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A face bound is a loop which is intended to be used for bounding a face.  
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: face_bound. Please refer to ISO/IS 10303-42:1994, p. 139 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: face_bound. Please refer to ISO/IS 10303-42:1994, p. 139 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 class IfcFaceBound : public IfcTopologicalRepresentationItem {
 public:
     /// The loop which will be used as a face boundary.
@@ -12108,8 +12108,8 @@ public:
     static Type::Enum Class();
     IfcFaceBound (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFaceBound* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFaceBound> > list;
-    typedef IfcTemplatedEntityList<IfcFaceBound>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFaceBound > > list;
+    typedef IfcTemplatedEntityList< IfcFaceBound >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A face outer bound is a special subtype of face bound which carries the additional semantics of defining an outer boundary on the face. No more than one boundary of a face shall be of this type.  
 /// 
@@ -12127,8 +12127,8 @@ public:
     static Type::Enum Class();
     IfcFaceOuterBound (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFaceOuterBound* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFaceOuterBound> > list;
-    typedef IfcTemplatedEntityList<IfcFaceOuterBound>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFaceOuterBound > > list;
+    typedef IfcTemplatedEntityList< IfcFaceOuterBound >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A face surface
 ///   (IfcFaceSurface) is a subtype of face in which the geometry is defined by an
@@ -12144,13 +12144,13 @@ public:
 ///   all the vertex points and edge curves are contained in the face geometry
 ///   surface. A surface may be referenced by more than one face surface. 
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity:
+/// NOTE  Corresponding ISO 10303 entity:
 ///   face_surface. Please refer to ISO/IS 10303-42:1994, p. 204 for the final
 ///   definition of the formal standard. Due to the general IFC model specification
 ///   rule not to use multiple inheritance, the subtype relationship to
 ///   geometric_representation_item is not included.
 /// 
-/// HISTORYï¿½ New class in IFC2x
+/// HISTORY  New class in IFC2x
 /// 
 /// Informal propositions: 
 /// 
@@ -12181,8 +12181,8 @@ public:
     static Type::Enum Class();
     IfcFaceSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFaceSurface* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFaceSurface> > list;
-    typedef IfcTemplatedEntityList<IfcFaceSurface>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFaceSurface > > list;
+    typedef IfcTemplatedEntityList< IfcFaceSurface >::it it;
 };
 /// Definition from IAI: Defines forces at which a support or connection fails.
 /// 
@@ -12226,8 +12226,8 @@ public:
     static Type::Enum Class();
     IfcFailureConnectionCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFailureConnectionCondition* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFailureConnectionCondition> > list;
-    typedef IfcTemplatedEntityList<IfcFailureConnectionCondition>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFailureConnectionCondition > > list;
+    typedef IfcTemplatedEntityList< IfcFailureConnectionCondition >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The style for filling visible curve segments, annotation fill areas or surfaces with tiles or hatches.
 /// 
@@ -12235,38 +12235,38 @@ public:
 /// 
 /// Solid fill for areas and surfaces by only assigning IfcColour to the set of FillStyles. It then provides the background colour for the filled area or surface.
 /// 
-/// NOTEï¿½ Color information of surfaces for rendering is assigned by using IfcSurfaceStyle, not by using IfcFillAreaStyle.
+/// NOTE  Color information of surfaces for rendering is assigned by using IfcSurfaceStyle, not by using IfcFillAreaStyle.
 /// 
 /// Vector based hatching for areas and surfaces based on a single row of hatch lines by assigning a single instance of IfcFillAreaStyleHatching to the set of FillStyles.  If an instance of IfcColour is assigned in addition to the set of FillStyles, it provides the background colour for the hatching.  Vector based hatching for areas and surfaces based on two (potentially crossing) rows of hatch lines by assigning two instances of IfcFillAreaStyleHatching to the set of FillStyles. 
 /// 
 /// If an instance of IfcColour is assigned in addition to the set of FillStyles, it provides the background colour for the hatching. 
 /// 
-/// NOTEï¿½ Assigning more then two instances of IfcFillAreaStyleHatching to define three or more rows of hatch lines is not encouraged.
+/// NOTE  Assigning more then two instances of IfcFillAreaStyleHatching to define three or more rows of hatch lines is not encouraged.
 /// 
 /// Tiling for areas and surfaces by assigning a single instance of IfcFillAreaStyleTiles to the set of FillStyles.  If an instance of IfcColour is assigned in addition to the set of FillStyles, it provides the background colour for the tiling. 
 /// 
-/// IFC2x3 NOTEï¿½ The use of IfcFillAreaStyleTiles is discouraged., as its definition might change is future releases.
+/// IFC2x3 NOTE  The use of IfcFillAreaStyleTiles is discouraged., as its definition might change is future releases.
 /// 
 /// Externally defined hatch style by assigning a single instance of IfcExternallyDefinedHatchStyle to the set of FillStyles. 
 ///   If an instance of IfcColour is assigned in addition to the set of FillStyles, it provides the background colour for the hatching.
 /// 
 /// Measures given to a hatch or tile pattern are given in global drawing length units.
 /// 
-/// NOTEï¿½ Global units are defined at the single IfcProject instance, given by UnitsInContext:IfcUnitAssignment, the same units are used for the geometric representation items and for the style definitions.
+/// NOTE  Global units are defined at the single IfcProject instance, given by UnitsInContext:IfcUnitAssignment, the same units are used for the geometric representation items and for the style definitions.
 /// 
 /// The measure values for hatch or tile pattern apply to the model space with a target plot scale provided for the correct appearance in the default plot scale. For different scale and projection dependent fill area styles a different instance of IfcFillAreaStyle needs to be used by IfcPresentationStyleAssignment for different IfcGeometricRepresentationSubContext dependent representations.
 /// 
-/// NOTEï¿½ the target plot scale is given by IfcGeometricRepresentationSubContext.TargetScale.
+/// NOTE  the target plot scale is given by IfcGeometricRepresentationSubContext.TargetScale.
 /// 
 /// An IfcFillAreaStyle can be assigned to IfcFillArea via the IfcPresentationStyleAssignment through an intermediate IfcStyledItem or subtype IfcAnnotationFillAreaOccurrence.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: fill_area_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: fill_area_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcFillAreaStyle : public IfcPresentationStyle {
 public:
     /// The set of fill area styles to use in presenting visible curve segments, annotation fill areas or surfaces.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > FillStyles();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > FillStyles();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return Argument_ENTITY_LIST; } return IfcPresentationStyle::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "FillStyles"; } return IfcPresentationStyle::getArgumentName(i); }
@@ -12276,8 +12276,8 @@ public:
     static Type::Enum Class();
     IfcFillAreaStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFillAreaStyle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFillAreaStyle> > list;
-    typedef IfcTemplatedEntityList<IfcFillAreaStyle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFillAreaStyle > > list;
+    typedef IfcTemplatedEntityList< IfcFillAreaStyle >::it it;
 };
 class IfcFuelProperties : public IfcMaterialProperties {
 public:
@@ -12302,8 +12302,8 @@ public:
     static Type::Enum Class();
     IfcFuelProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFuelProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFuelProperties> > list;
-    typedef IfcTemplatedEntityList<IfcFuelProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFuelProperties > > list;
+    typedef IfcTemplatedEntityList< IfcFuelProperties >::it it;
 };
 class IfcGeneralMaterialProperties : public IfcMaterialProperties {
 public:
@@ -12325,8 +12325,8 @@ public:
     static Type::Enum Class();
     IfcGeneralMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcGeneralMaterialProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeneralMaterialProperties> > list;
-    typedef IfcTemplatedEntityList<IfcGeneralMaterialProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcGeneralMaterialProperties > > list;
+    typedef IfcTemplatedEntityList< IfcGeneralMaterialProperties >::it it;
 };
 class IfcGeneralProfileProperties : public IfcProfileProperties {
 public:
@@ -12354,8 +12354,8 @@ public:
     static Type::Enum Class();
     IfcGeneralProfileProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcGeneralProfileProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeneralProfileProperties> > list;
-    typedef IfcTemplatedEntityList<IfcGeneralProfileProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcGeneralProfileProperties > > list;
+    typedef IfcTemplatedEntityList< IfcGeneralProfileProperties >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A geometric
 /// representation context is a representation context in which the
@@ -12378,7 +12378,7 @@ public:
 /// 
 /// Figure 329 &#8212; Geometric representation context true north
 /// 
-/// NOTEï¿½ï¿½The inherited attribute
+/// NOTE ÿThe inherited attribute
 /// ContextType shall have one of the following recognized
 /// values: 'Sketch', 'Outline', 'Design', 'Detail',
 /// 'Model', 'Plan',
@@ -12399,11 +12399,11 @@ public:
 /// 
 /// Figure 330 &#8212; Geometric representation context use
 /// 
-/// NOTEï¿½ The definition of this class relates to the ISO 10303 entity geometric_representation_context. Please refer to ISO/IS 10303-42:1994 for the final definition of the formal standard.
+/// NOTE  The definition of this class relates to the ISO 10303 entity geometric_representation_context. Please refer to ISO/IS 10303-42:1994 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ï¿½New Entity in IFC Release 2.0
+/// HISTORY ÿNew Entity in IFC Release 2.0
 /// 
-/// IFC2x3 CHANGEï¿½ï¿½Applicable values for ContextType are only 'Model',ï¿½ 'Plan', andï¿½'NotDefined'. All other sub contexts are now handled by the new subtype in IFC2x Edition 2 IfcGeometricRepresentationSubContext. Upward compatibility for file based exchange is guaranteed.
+/// IFC2x3 CHANGE ÿApplicable values for ContextType are only 'Model',ÿ 'Plan', andÿ'NotDefined'. All other sub contexts are now handled by the new subtype in IFC2x Edition 2 IfcGeometricRepresentationSubContext. Upward compatibility for file based exchange is guaranteed.
 class IfcGeometricRepresentationContext : public IfcRepresentationContext {
 public:
     /// The integer dimension count of the coordinate space modeled in a geometric representation context.
@@ -12414,7 +12414,7 @@ public:
     double Precision();
     /// Establishment of the engineering coordinate system (often referred to as the world coordinate system in CAD) for all representation contexts used by the project. 
     /// 
-    /// Noteï¿½ it can be used to provide better numeric stability if the placement of the building(s) is far away from the origin. In most cases however it would be set to origin: (0.,0.,0.) and directions x(1.,0.,0.), y(0.,1.,0.), z(0.,0.,1.).
+    /// Note  it can be used to provide better numeric stability if the placement of the building(s) is far away from the origin. In most cases however it would be set to origin: (0.,0.,0.) and directions x(1.,0.,0.), y(0.,1.,0.), z(0.,0.,1.).
     IfcAxis2Placement WorldCoordinateSystem();
     /// Whether the optional attribute TrueNorth is defined for this IfcGeometricRepresentationContext
     bool hasTrueNorth();
@@ -12424,14 +12424,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return Argument_INT; case 3: return Argument_DOUBLE; case 4: return Argument_ENTITY; case 5: return Argument_ENTITY; } return IfcRepresentationContext::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "CoordinateSpaceDimension"; case 3: return "Precision"; case 4: return "WorldCoordinateSystem"; case 5: return "TrueNorth"; } return IfcRepresentationContext::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcGeometricRepresentationSubContext> > HasSubContexts(); // INVERSE IfcGeometricRepresentationSubContext::ParentContext
+    SHARED_PTR< IfcTemplatedEntityList< IfcGeometricRepresentationSubContext > > HasSubContexts(); // INVERSE IfcGeometricRepresentationSubContext::ParentContext
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcGeometricRepresentationContext (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcGeometricRepresentationContext* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeometricRepresentationContext> > list;
-    typedef IfcTemplatedEntityList<IfcGeometricRepresentationContext>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcGeometricRepresentationContext > > list;
+    typedef IfcTemplatedEntityList< IfcGeometricRepresentationContext >::it it;
 };
 /// Definition from ISO/CD 10303-43:1992: An geometric representation item is a representation item that has the additional meaning of having geometric position or orientation or both. This meaning is present by virtue of:  
 /// 
@@ -12463,22 +12463,22 @@ public:
     static Type::Enum Class();
     IfcGeometricRepresentationItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcGeometricRepresentationItem* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeometricRepresentationItem> > list;
-    typedef IfcTemplatedEntityList<IfcGeometricRepresentationItem>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcGeometricRepresentationItem > > list;
+    typedef IfcTemplatedEntityList< IfcGeometricRepresentationItem >::it it;
 };
 /// IfcGeometricRepresentationSubContext defines the context that applies to several shape representations of a product being a sub context, sharing the WorldCoordinateSystem, CoordinateSpaceDimension, Precision and TrueNorth attributes with the parent IfcGeometricRepresentationContext.
 /// 
 /// The IfcGeometricRepresentationSubContext is used to define semantically distinguished representation types for different information content, dependent on the representation view and the target scale. It can be used to control the level of detail of the shape representation that is most applicable to this geometric representation context. addition the sub context is used to control the later appearance of the IfcShapeRepresentation within a plot view.
 /// 
-/// NOTEï¿½ If the IfcShapeRepresentation using this sub context has IfcStyledItem's assigned to the Items, the presentation style information (e.g. IfcCurveStyle, IfcTextStyle) associated with the IfcStyledItem is given in target plot dimensions. For example, a line thickness (IfcCurveStyle.CurveWidth) is given by a thickness measure relating to the thickness for a plot within the (range of) target scale.
+/// NOTE  If the IfcShapeRepresentation using this sub context has IfcStyledItem's assigned to the Items, the presentation style information (e.g. IfcCurveStyle, IfcTextStyle) associated with the IfcStyledItem is given in target plot dimensions. For example, a line thickness (IfcCurveStyle.CurveWidth) is given by a thickness measure relating to the thickness for a plot within the (range of) target scale.
 /// 
 /// Each IfcProduct can then have several instances of subtypes of IfcRepresentation, each being assigned to a different geometric representation context (IfcGeometricRepresentationContext or IfcGeometricRepresentationSubContext). The application can then choose the most appropriate representation for showing the geometric shape of the product, depending on the target view and scale.
 /// 
-/// NOTEï¿½ The provision of a model view (IfcGeometricRepresentationContext.ContextType = 'Model') is mandatory. Instances of IfcGeometricRepresentationSubContext relate to it as its ParentContext.
+/// NOTE  The provision of a model view (IfcGeometricRepresentationContext.ContextType = 'Model') is mandatory. Instances of IfcGeometricRepresentationSubContext relate to it as its ParentContext.
 /// 
-/// EXAMPLEï¿½ Instances of IfcGeometricRepresentationSubContext can be used to handle the multi-view blocks or macros, which are used in CAD programs to store several scale and/or view dependent geometric representations of the same object.
+/// EXAMPLE  Instances of IfcGeometricRepresentationSubContext can be used to handle the multi-view blocks or macros, which are used in CAD programs to store several scale and/or view dependent geometric representations of the same object.
 /// 
-/// HISTORYï¿½ New entity in Release IFC 2x2.
+/// HISTORY  New entity in Release IFC 2x2.
 class IfcGeometricRepresentationSubContext : public IfcGeometricRepresentationContext {
 public:
     /// Parent context from which the sub context derives its world coordinate system, precision, space coordinate dimension and true north.
@@ -12512,8 +12512,8 @@ public:
     static Type::Enum Class();
     IfcGeometricRepresentationSubContext (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcGeometricRepresentationSubContext* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeometricRepresentationSubContext> > list;
-    typedef IfcTemplatedEntityList<IfcGeometricRepresentationSubContext>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcGeometricRepresentationSubContext > > list;
+    typedef IfcTemplatedEntityList< IfcGeometricRepresentationSubContext >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: This entity is intended for the transfer of models when a topological structure is not available. 
 /// 
@@ -12525,7 +12525,7 @@ public:
 class IfcGeometricSet : public IfcGeometricRepresentationItem {
 public:
     /// The geometric elements which make up the geometric set, these may be points, curves or surfaces; but are required to be of the same coordinate space dimensionality.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Elements();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > Elements();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } return IfcGeometricRepresentationItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Elements"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
@@ -12535,8 +12535,8 @@ public:
     static Type::Enum Class();
     IfcGeometricSet (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcGeometricSet* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeometricSet> > list;
-    typedef IfcTemplatedEntityList<IfcGeometricSet>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcGeometricSet > > list;
+    typedef IfcTemplatedEntityList< IfcGeometricSet >::it it;
 };
 /// IfcGridPlacement provides a specialization of IfcObjectPlacement in which
 /// the placement and axis direction of the object coordinate system is defined by a reference to the design grid as defined in IfcGrid.
@@ -12549,14 +12549,14 @@ public:
 /// PlacementRefDirection = IfcDirection: by the explicitly provided direction information;
 /// PlacementRefDirection = IfcVirtualGridIntersection: by the tangent between the virtual grid intersection of PlacementLocation and the virtual grid intersection of PlacementRefDirection. Offsets as potentially provided in the IfcVirtualGridIntersection's of PlacementLocation and PlacementRefDirection have to be taken into account.
 /// 
-/// The direction of the y-axis of the IfcGridPlacement is the orthogonal complement to the x-axis. The plane defined by the x and y axis shall be co-planar to the xy plane of the local placement of the IfcGrid.ï¿½ 
+/// The direction of the y-axis of the IfcGridPlacement is the orthogonal complement to the x-axis. The plane defined by the x and y axis shall be co-planar to the xy plane of the local placement of the IfcGrid.ÿ 
 /// The direction of the z-axis is the orientation of the cross product of the x-axis and the y-axis, i.e. the z-axis of the IfcGridPlacement shall be co-linear to the z-axis of the local placement of the IfcGrid.
 /// 
 /// NOTE The IfcGrid local placement, that can be provided relative to the local placement of another spatial structure element, has to be taken into account for calculating the absolute placement of the virtual grid intersection.
 /// 
 /// NOTE The PlacementLocation.OffsetDistances[3] and the PlacementRefDirection.OffsetDistances[3] shall either not be assigned or should have the same z offset value.
 /// 
-/// HISTORY ï¿½New entity in IFC Release 1.5. The entity name was changed from IfcConstrainedPlacement in IFC Release 2x.
+/// HISTORY ÿNew entity in IFC Release 1.5. The entity name was changed from IfcConstrainedPlacement in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE Attribute data type of PlacementRefDirection has been changed to IfcGridPlacementDirectionSelect.
 /// 
@@ -12602,8 +12602,8 @@ public:
     static Type::Enum Class();
     IfcGridPlacement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcGridPlacement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcGridPlacement> > list;
-    typedef IfcTemplatedEntityList<IfcGridPlacement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcGridPlacement > > list;
+    typedef IfcTemplatedEntityList< IfcGridPlacement >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A half space solid is defined by the half space which is the regular subset of the domain which lies on one side of an unbounded surface. The side of the surface which is in the half space is determined by the surface normal and the agreement flag. If the agreement flag is TRUE, then the subset is the one the normal points away from. If the agreement flag is FALSE, then the subset is the one the normal points into. For a valid half space solid the surface shall divide the domain into exactly two subsets. Also, within the domain the surface shall be manifold and all surface normals shall point into the same subset.  
 /// 
@@ -12635,8 +12635,8 @@ public:
     static Type::Enum Class();
     IfcHalfSpaceSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcHalfSpaceSolid* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcHalfSpaceSolid> > list;
-    typedef IfcTemplatedEntityList<IfcHalfSpaceSolid>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcHalfSpaceSolid > > list;
+    typedef IfcTemplatedEntityList< IfcHalfSpaceSolid >::it it;
 };
 class IfcHygroscopicMaterialProperties : public IfcMaterialProperties {
 public:
@@ -12664,8 +12664,8 @@ public:
     static Type::Enum Class();
     IfcHygroscopicMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcHygroscopicMaterialProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcHygroscopicMaterialProperties> > list;
-    typedef IfcTemplatedEntityList<IfcHygroscopicMaterialProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcHygroscopicMaterialProperties > > list;
+    typedef IfcTemplatedEntityList< IfcHygroscopicMaterialProperties >::it it;
 };
 /// An IfcImageTexture provides a 2-dimensional texture that can be applied to a surface of an geometric item and that provides lighting parameters of a surface onto which it is mapped. The texture is provided as an image file at an external location for which an URL is provided.
 /// 
@@ -12697,11 +12697,11 @@ public:
 /// 
 /// The Uniform Resource Locator (URL) is a form of an URI and specified in RFC1738 by IETF. It supports resources located on a particular server being accessed by a particular protocol (usually http), and resources located at a local machine.
 /// 
-/// NOTEï¿½ Exchange files following the ifcZIP convention may include a sub directory structure for image resources to be stored together with the product data set.
+/// NOTE  Exchange files following the ifcZIP convention may include a sub directory structure for image resources to be stored together with the product data set.
 /// 
-/// NOTEï¿½ The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
+/// NOTE  The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
 /// 
-/// HISTORYï¿½ New entity in Release IFC2x2.
+/// HISTORY  New entity in Release IFC2x2.
 class IfcImageTexture : public IfcSurfaceTexture {
 public:
     IfcIdentifier UrlReference();
@@ -12714,8 +12714,8 @@ public:
     static Type::Enum Class();
     IfcImageTexture (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcImageTexture* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcImageTexture> > list;
-    typedef IfcTemplatedEntityList<IfcImageTexture>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcImageTexture > > list;
+    typedef IfcTemplatedEntityList< IfcImageTexture >::it it;
 };
 /// In an irregular time series, unpredictable bursts of data arrive at unspecified points in time, or most time stamps cannot be characterized by a repeating pattern.
 /// 
@@ -12725,7 +12725,7 @@ public:
 class IfcIrregularTimeSeries : public IfcTimeSeries {
 public:
     /// The collection of time series values.
-    SHARED_PTR< IfcTemplatedEntityList<IfcIrregularTimeSeriesValue> > Values();
+    SHARED_PTR< IfcTemplatedEntityList< IfcIrregularTimeSeriesValue > > Values();
  virtual unsigned int getArgumentCount() const { return 9; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return Argument_ENTITY_LIST; } return IfcTimeSeries::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 8: return "Values"; } return IfcTimeSeries::getArgumentName(i); }
@@ -12735,8 +12735,8 @@ public:
     static Type::Enum Class();
     IfcIrregularTimeSeries (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcIrregularTimeSeries* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcIrregularTimeSeries> > list;
-    typedef IfcTemplatedEntityList<IfcIrregularTimeSeries>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcIrregularTimeSeries > > list;
+    typedef IfcTemplatedEntityList< IfcIrregularTimeSeries >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The light source entity is determined by the reflectance specified in the surface style rendering. Lighting is applied on a surface by surface basis: no interactions between surfaces such as shadows or reflections are defined. 
 /// 
@@ -12771,8 +12771,8 @@ public:
     static Type::Enum Class();
     IfcLightSource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLightSource* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightSource> > list;
-    typedef IfcTemplatedEntityList<IfcLightSource>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLightSource > > list;
+    typedef IfcTemplatedEntityList< IfcLightSource >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The light source ambient entity is a subtype of light source. It lights a surface independent of the surface's orientation and position. 
 /// 
@@ -12792,8 +12792,8 @@ public:
     static Type::Enum Class();
     IfcLightSourceAmbient (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLightSourceAmbient* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightSourceAmbient> > list;
-    typedef IfcTemplatedEntityList<IfcLightSourceAmbient>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLightSourceAmbient > > list;
+    typedef IfcTemplatedEntityList< IfcLightSourceAmbient >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The light source directional is a subtype of light source. This entity has a light source direction. With a conceptual origin at infinity, all the rays of the light are parallel to this direction. This kind of light source lights a surface based on the surface's orientation, but not position. 
 /// 
@@ -12818,8 +12818,8 @@ public:
     static Type::Enum Class();
     IfcLightSourceDirectional (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLightSourceDirectional* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightSourceDirectional> > list;
-    typedef IfcTemplatedEntityList<IfcLightSourceDirectional>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLightSourceDirectional > > list;
+    typedef IfcTemplatedEntityList< IfcLightSourceDirectional >::it it;
 };
 /// IfcLightSourceGoniometric defines a light source for which exact lighting data is available. It specifies the type of a light emitter, defines the position and orientation of a light distribution curve and the data concerning lamp and photometric information. 
 /// 
@@ -12853,8 +12853,8 @@ public:
     static Type::Enum Class();
     IfcLightSourceGoniometric (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLightSourceGoniometric* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightSourceGoniometric> > list;
-    typedef IfcTemplatedEntityList<IfcLightSourceGoniometric>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLightSourceGoniometric > > list;
+    typedef IfcTemplatedEntityList< IfcLightSourceGoniometric >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The light source positional entity is a subtype of light source. This entity has a light source position and attenuation coefficients. A positional light source affects a surface based on the surface's orientation and position. 
 /// 
@@ -12862,7 +12862,7 @@ public:
 /// 
 /// Point light node's illumination falls off with distance as specified by three attenuation coefficients. The attenuation factor is  
 /// 
-/// 1/max(attenuation[0] + attenuation[1] ï¿½ r + attenuation[2] ï¿½ r 2 , 1), 
+/// 1/max(attenuation[0] + attenuation[1] × r + attenuation[2] × r 2 , 1), 
 /// 
 /// where r is the distance from the light to the surface being illuminated. The default is no attenuation. An attenuation value of (0, 0, 0) is identical to (1, 0, 0). Attenuation values shall be greater than or equal to zero.  
 /// 
@@ -12894,12 +12894,12 @@ public:
     static Type::Enum Class();
     IfcLightSourcePositional (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLightSourcePositional* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightSourcePositional> > list;
-    typedef IfcTemplatedEntityList<IfcLightSourcePositional>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLightSourcePositional > > list;
+    typedef IfcTemplatedEntityList< IfcLightSourcePositional >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The light source spot entity is a subtype of light source. Spot light source entities have a light source colour, position, direction, attenuation coefficients, concentration exponent, and spread angle. If a point lies outside the cone of influence of a light source of this type as determined by the light source position, direction and spread angle its colour is not affected by that light source. 
 /// 
-/// NOTEï¿½ The IfcLightSourceSpot adds the BeamWidthAngle which defines the inner cone in which the light source emits light at uniform full intensity. The light source's emission intensity drops off from the inner solid angle (BeamWidthAngle) to the outer solid angle (SpreadAngle).
+/// NOTE  The IfcLightSourceSpot adds the BeamWidthAngle which defines the inner cone in which the light source emits light at uniform full intensity. The light source's emission intensity drops off from the inner solid angle (BeamWidthAngle) to the outer solid angle (SpreadAngle).
 /// 
 /// Definition from ISO/IEC 14772-1:1997: The Spot light node defines a light source that emits light from a specific point along a specific direction vector and constrained within a solid angle. Spot lights may illuminate geometry nodes that respond to light sources and intersect the solid angle defined by the Spot light. Spot light nodes are specified in the local coordinate system and are affected by ancestors' transformations. 
 /// 
@@ -12907,11 +12907,11 @@ public:
 /// 
 /// Figure 304 &#8212; Light source spot
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: light_source_spot. Please refer to ISO/IS 10303-46:1994, p. 33 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: light_source_spot. Please refer to ISO/IS 10303-46:1994, p. 33 for the final definition of the formal standard.
 /// 
-/// NOTEï¿½ In addition to the attributes as defined in ISO10303-46 the additional property from ISO/IEC 14772-1:1997 (VRML) Radius, BeamWidth, and QuadricAttenuation are added to this subtype and the AmbientIntensity and Intensity are inherited from the supertype.
+/// NOTE  In addition to the attributes as defined in ISO10303-46 the additional property from ISO/IEC 14772-1:1997 (VRML) Radius, BeamWidth, and QuadricAttenuation are added to this subtype and the AmbientIntensity and Intensity are inherited from the supertype.
 /// 
-/// HISTORYï¿½ This is a new entity in IFC 2x, renamed and enhanced in IFC2x2.
+/// HISTORY  This is a new entity in IFC 2x, renamed and enhanced in IFC2x2.
 class IfcLightSourceSpot : public IfcLightSourcePositional {
 public:
     /// Definition from ISO/CD 10303-46:1992: This is the direction of the axis of the cone of the light source specified in the coordinate space of the representation being projected..
@@ -12936,8 +12936,8 @@ public:
     static Type::Enum Class();
     IfcLightSourceSpot (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLightSourceSpot* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightSourceSpot> > list;
-    typedef IfcTemplatedEntityList<IfcLightSourceSpot>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLightSourceSpot > > list;
+    typedef IfcTemplatedEntityList< IfcLightSourceSpot >::it it;
 };
 /// IfcLocalPlacement defines the relative placement of a product in relation to the
 /// placement of another product or the absolute placement of a product within the geometric representation context of the project. 
@@ -13008,8 +13008,8 @@ public:
     static Type::Enum Class();
     IfcLocalPlacement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLocalPlacement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLocalPlacement> > list;
-    typedef IfcTemplatedEntityList<IfcLocalPlacement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLocalPlacement > > list;
+    typedef IfcTemplatedEntityList< IfcLocalPlacement >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A loop is a topological
 ///   entity constructed from a single vertex, or by stringing together connected
@@ -13029,9 +13029,9 @@ public:
 /// where V and El are the number of unique
 ///   vertices and oriented edges in the loop and Gl is the genus
 ///   of the loop.  
-///   NOTEï¿½ Corresponding ISO 10303 entity: loop, the following subtypes have been incorporated into IFC: poly_loop as IfcPolyLoop, vertex_loop as IfcVertexLoop, edge_loop as IfcEdgeLoop. Please refer to ISO/IS 10303-42:1994, p. 136 for the final definition of the formal standard. 
+///   NOTE  Corresponding ISO 10303 entity: loop, the following subtypes have been incorporated into IFC: poly_loop as IfcPolyLoop, vertex_loop as IfcVertexLoop, edge_loop as IfcEdgeLoop. Please refer to ISO/IS 10303-42:1994, p. 136 for the final definition of the formal standard. 
 /// 
-/// HISTORYï¿½ New Entity in IFC2x. 
+/// HISTORY  New Entity in IFC2x. 
 ///   Informal propositions: 
 /// 
 /// A loop has a finite extent. 
@@ -13048,8 +13048,8 @@ public:
     static Type::Enum Class();
     IfcLoop (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLoop* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLoop> > list;
-    typedef IfcTemplatedEntityList<IfcLoop>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLoop > > list;
+    typedef IfcTemplatedEntityList< IfcLoop >::it it;
 };
 /// Definition from ISO/CD 10303-43:1992: A mapped item is the use of an existing representation (the mapping source - mapped representation) as a representation item in a second representation. 
 /// 
@@ -13058,13 +13058,13 @@ public:
 /// The IfcMappedItem is the inserted instance of a source definition (to be compared with a
 /// block / shared cell / macro definition). The instance is inserted by applying a Cartesian transformation operator as the MappingTarget.
 /// 
-/// EXAMPLEï¿½ An IfcMappedItem can reuse other mapped items (ako nested blocks), doing so the IfcRepresentationMap is based on an IfcShapeRepresentation including one or more IfcMappedItem's.
+/// EXAMPLE  An IfcMappedItem can reuse other mapped items (ako nested blocks), doing so the IfcRepresentationMap is based on an IfcShapeRepresentation including one or more IfcMappedItem's.
 /// 
-/// NOTE ï¿½ Corresponding ISO 10303 entity: mapped_item. Please refer to ISO/IS
+/// NOTE   Corresponding ISO 10303 entity: mapped_item. Please refer to ISO/IS
 /// 10303-43:1994, for the final definition of the formal standard. The definition of mapping_target (MappingTarget) has been restricted to be of the type cartesian_transformation_operator
 /// (IfcCartesianTransformationOperator).
 /// 
-/// HISTORYï¿½ New entity in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 2x.
 /// 
 /// Informal Propositions
 /// 
@@ -13085,12 +13085,12 @@ public:
     static Type::Enum Class();
     IfcMappedItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMappedItem* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMappedItem> > list;
-    typedef IfcTemplatedEntityList<IfcMappedItem>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMappedItem > > list;
+    typedef IfcTemplatedEntityList< IfcMappedItem >::it it;
 };
 /// IfcMaterialDefinitionRepresentation defines presentation information relating to IfcMaterial. It allows for multiple presentations of the same material for different geometric representation contexts.
 /// 
-/// NOTEï¿½ The IfcMaterialDefinitionRepresentation is currently only used
+/// NOTE  The IfcMaterialDefinitionRepresentation is currently only used
 /// to define presentation information to material used at element
 /// occurrences, defined as subtypes of IfcElement, or at
 /// element types, defined as subtypes of IfcElementType. The
@@ -13107,11 +13107,11 @@ public:
 /// different presentation styles for different representation contexts, for example, a different style for sketch view, model view or plan view, or for different target scales,
 /// for each representation context is can apply curve style, fill area style (hatching), symbol, text and surface style.
 /// 
-/// HISTORYï¿½ New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 /// 
-/// IFC2x3 CHANGEï¿½ The entity IfcMaterialDefinitionRepresentation has been added. Upward compatibility for file based exchange is guaranteed.
+/// IFC2x3 CHANGE  The entity IfcMaterialDefinitionRepresentation has been added. Upward compatibility for file based exchange is guaranteed.
 /// 
-/// IFC2x4 CHANGEï¿½ The assignment of curve, surface and other styles to an IfcStyledItem has been simplified by IfcStyleAssignmentSelect. The use of intermediate IfcPresentationStyleAssignment is deprecated.
+/// IFC2x4 CHANGE  The assignment of curve, surface and other styles to an IfcStyledItem has been simplified by IfcStyleAssignmentSelect. The use of intermediate IfcPresentationStyleAssignment is deprecated.
 /// 
 /// Use definition
 /// 
@@ -13131,8 +13131,8 @@ public:
     static Type::Enum Class();
     IfcMaterialDefinitionRepresentation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMaterialDefinitionRepresentation* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMaterialDefinitionRepresentation> > list;
-    typedef IfcTemplatedEntityList<IfcMaterialDefinitionRepresentation>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMaterialDefinitionRepresentation > > list;
+    typedef IfcTemplatedEntityList< IfcMaterialDefinitionRepresentation >::it it;
 };
 class IfcMechanicalConcreteMaterialProperties : public IfcMechanicalMaterialProperties {
 public:
@@ -13163,8 +13163,8 @@ public:
     static Type::Enum Class();
     IfcMechanicalConcreteMaterialProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMechanicalConcreteMaterialProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMechanicalConcreteMaterialProperties> > list;
-    typedef IfcTemplatedEntityList<IfcMechanicalConcreteMaterialProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMechanicalConcreteMaterialProperties > > list;
+    typedef IfcTemplatedEntityList< IfcMechanicalConcreteMaterialProperties >::it it;
 };
 /// An IfcObjectDefinition is the generalization of any
 /// semantically treated thing or process, either being a type or an
@@ -13206,7 +13206,7 @@ public:
 /// It applies the units, representation context and other context
 /// information to this object definition and all dependent ones.
 /// 
-/// EXCEPTIONï¿½ The link
+/// EXCEPTION  The link
 /// between the uppermost object in the spatial structure tree, that is
 /// IfcSite or ifcBuilding, and the context provided
 /// by IfcProject is created using the
@@ -13222,21 +13222,21 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRoot::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcRoot::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelAssigns> > HasAssignments(); // INVERSE IfcRelAssigns::RelatedObjects
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelDecomposes> > IsDecomposedBy(); // INVERSE IfcRelDecomposes::RelatingObject
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelDecomposes> > Decomposes(); // INVERSE IfcRelDecomposes::RelatedObjects
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociates> > HasAssociations(); // INVERSE IfcRelAssociates::RelatedObjects
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelAssigns > > HasAssignments(); // INVERSE IfcRelAssigns::RelatedObjects
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelDecomposes > > IsDecomposedBy(); // INVERSE IfcRelDecomposes::RelatingObject
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelDecomposes > > Decomposes(); // INVERSE IfcRelDecomposes::RelatedObjects
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelAssociates > > HasAssociations(); // INVERSE IfcRelAssociates::RelatedObjects
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcObjectDefinition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcObjectDefinition* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcObjectDefinition> > list;
-    typedef IfcTemplatedEntityList<IfcObjectDefinition>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcObjectDefinition > > list;
+    typedef IfcTemplatedEntityList< IfcObjectDefinition >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: A one time repeat factor is a vector used in the fill area style hatching and fill area style tiles entities for determining the origin of the repeated hatch line relative to the origin of the previous hatch line, Given the initial position of any hatch line, the one direction repeat factor determines two new positions according to the equation: 
 /// 
-/// I + k * R ï¿½ï¿½ï¿½k X{-1,1}
+/// I + k * R    k X{-1,1}
 /// 
 /// NOTE: Corresponding ISO 10303 name: one_direction_repeat_factor. Please refer to ISO/IS 10303-46:1994, p. 112 for the final definition of the formal standard.
 /// 
@@ -13254,8 +13254,8 @@ public:
     static Type::Enum Class();
     IfcOneDirectionRepeatFactor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOneDirectionRepeatFactor* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOneDirectionRepeatFactor> > list;
-    typedef IfcTemplatedEntityList<IfcOneDirectionRepeatFactor>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOneDirectionRepeatFactor > > list;
+    typedef IfcTemplatedEntityList< IfcOneDirectionRepeatFactor >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: An open shell is a shell of
 ///   the dimensionality 2. Its domain, if present, is a finite, connected, oriented,
@@ -13283,7 +13283,7 @@ public:
 ///   vertices. The domain of an open shell, if present, contains all edges and
 ///   vertices of its faces. 
 /// 
-/// NOTEï¿½ Note that this is slightly different from the
+/// NOTE  Note that this is slightly different from the
 ///   definition of a face domain, which includes none of its bounds. For example, a
 ///   face domain may exclude an isolated point or line segment. An open shell domain
 ///   may not. (See the algorithm for computing below.) 
@@ -13293,11 +13293,11 @@ public:
 ///   further specification, including the Euler formulas to be satisfied, please
 ///   refer to ISO 10303-42:1994. 
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity:
+/// NOTE  Corresponding ISO 10303 entity:
 ///   open_shell, please refer to ISO/IS 10303-42:1994, p.148 for the final
 ///   definition of the formal standard.
 /// 
-/// HISTORYï¿½ New class in IFC2x.
+/// HISTORY  New class in IFC2x.
 /// 
 /// Informal propositions: 
 /// 
@@ -13327,16 +13327,16 @@ public:
     static Type::Enum Class();
     IfcOpenShell (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOpenShell* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOpenShell> > list;
-    typedef IfcTemplatedEntityList<IfcOpenShell>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOpenShell > > list;
+    typedef IfcTemplatedEntityList< IfcOpenShell >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: An oriented edge is an edge constructed from another edge and contains a BOOLEAN direction flag to indicate whether or not the orientation of the constructed edge agrees with the orientation of the original edge. Except for perhaps orientation, the oriented edge is equivalent to the original edge.  
 /// 
-/// NOTEï¿½ A common practice is solid modelling systems is to have an entity that represents the "use" or "traversal" of an edge. This "use" entity explicitly represents the requirement in a manifold solid that each edge must be traversed exactly twice, once in each direction. The "use" functionality is provided by the edge subtype oriented edge.
+/// NOTE  A common practice is solid modelling systems is to have an entity that represents the "use" or "traversal" of an edge. This "use" entity explicitly represents the requirement in a manifold solid that each edge must be traversed exactly twice, once in each direction. The "use" functionality is provided by the edge subtype oriented edge.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: oriented_edge. Please refer to ISO/IS 10303-42:1994, p. 133 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: oriented_edge. Please refer to ISO/IS 10303-42:1994, p. 133 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 2.0.
+/// HISTORY  New Entity in IFC Release 2.0.
 class IfcOrientedEdge : public IfcEdge {
 public:
     /// Edge entity used to construct this oriented edge.
@@ -13352,8 +13352,8 @@ public:
     static Type::Enum Class();
     IfcOrientedEdge (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOrientedEdge* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOrientedEdge> > list;
-    typedef IfcTemplatedEntityList<IfcOrientedEdge>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOrientedEdge > > list;
+    typedef IfcTemplatedEntityList< IfcOrientedEdge >::it it;
 };
 /// The parameterized profile definition
 /// defines a 2D position coordinate system to which the parameters of the
@@ -13382,19 +13382,19 @@ public:
 /// is given; see guidance at IfcProfileDef), or estimate them, or
 /// simply assume zero values.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x Platform CHANGEï¿½ The IfcParameterizedProfileDef
+/// IFC2x Platform CHANGE  The IfcParameterizedProfileDef
 /// is introduced as an intermediate new abstract entity that unifies the
 /// definition and usage of the position coordinate system for all
 /// parameterized profiles. The Position attribute has been removed at all
 /// subtypes (like IfcRectangleProfileDef, IfcCircleProfileDef,
 /// etc.).
 /// 
-/// IFC2x3 CHANGEï¿½ All profile origins are now in the center
+/// IFC2x3 CHANGE  All profile origins are now in the center
 /// of the bounding box.
 /// 
-/// IFC2x4 CHANGEï¿½ Position attribute made optional (default: identity transformation).
+/// IFC2x4 CHANGE  Position attribute made optional (default: identity transformation).
 /// Several radius parameters in subtypes have been changed from optional IfcPositiveLengthMeasure (assumed default: 0.) to optional IfcNonNegativeLengthMeasure (default: unspecified).  This change allows to explicitly specify zero radius.  Sending systems shall export 0. values if parameters are known to be 0.
 /// Subtypes IfcCraneRailAShapeProfileDef and IfcCraneRailFShapeProfileDef deleted.  Rail profiles shall be modeled as IfcArbitraryClosedProfileDef or as IfcAsymmetricIShapeProfileDef together with appropriate external reference.
 class IfcParameterizedProfileDef : public IfcProfileDef {
@@ -13410,16 +13410,16 @@ public:
     static Type::Enum Class();
     IfcParameterizedProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcParameterizedProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcParameterizedProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcParameterizedProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcParameterizedProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcParameterizedProfileDef >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A path is a topological entity consisting of an ordered collection of oriented edges, such that the edge start vertex of each edge coincides with the edge end of its predecessor. The path is ordered from the edge start of the first oriented edge to the edge end of the last edge. The BOOLEAN value sense in the oriented edge indicates whether the edge direction agrees with the direction of the path (TRUE) or is the opposite direction (FALSE).  
 /// 
 /// An individual edge can only be referenced once by an individual path. An edge can be referenced by multiple paths. An edge can exist independently of a path.  
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: path. Please refer to ISO/IS 10303-42:1994, p. 133 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: path. Please refer to ISO/IS 10303-42:1994, p. 133 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 2.0
+/// HISTORY  New Entity in IFC Release 2.0
 /// 
 /// Informal proposition:
 /// 
@@ -13430,7 +13430,7 @@ public:
 class IfcPath : public IfcTopologicalRepresentationItem {
 public:
     /// The list of oriented edges which are concatenated together to form this path.
-    SHARED_PTR< IfcTemplatedEntityList<IfcOrientedEdge> > EdgeList();
+    SHARED_PTR< IfcTemplatedEntityList< IfcOrientedEdge > > EdgeList();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "EdgeList"; } return IfcTopologicalRepresentationItem::getArgumentName(i); }
@@ -13440,8 +13440,8 @@ public:
     static Type::Enum Class();
     IfcPath (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPath* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPath> > list;
-    typedef IfcTemplatedEntityList<IfcPath>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPath > > list;
+    typedef IfcTemplatedEntityList< IfcPath >::it it;
 };
 /// The complex physical quantity, IfcPhysicalComplexQuantity, is an entity that holds a set of single quantity measure value (as defined at the subtypes of IfcPhysicalSimpleQuantity), that all apply to a given component or aspect of the element. 
 /// 
@@ -13449,13 +13449,13 @@ public:
 /// 
 /// A section "Quantity Use Definition" at individual entities as subtypes of IfcBuildingElement gives guidance to the usage of the Name and Discrimination attribute to characterize the complex quantities.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2 Addendum 1.
+/// HISTORY  New entity in IFC2x2 Addendum 1.
 /// 
-/// IFC2x2 ADDENDUM 1 CHANGEï¿½ The entity IfcPhysicalComplexQuantity has been added. Upward compatibility for file based exchange is guaranteed.
+/// IFC2x2 ADDENDUM 1 CHANGE  The entity IfcPhysicalComplexQuantity has been added. Upward compatibility for file based exchange is guaranteed.
 class IfcPhysicalComplexQuantity : public IfcPhysicalQuantity {
 public:
     /// Set of physical quantities that are grouped by this complex physical quantity according to a given discrimination.
-    SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalQuantity> > HasQuantities();
+    SHARED_PTR< IfcTemplatedEntityList< IfcPhysicalQuantity > > HasQuantities();
     /// Identification of the discrimination by which this physical complex property is distinguished. Examples of discriminations are 'layer', 'steel bar diameter', etc.
     IfcLabel Discrimination();
     /// Whether the optional attribute Quality is defined for this IfcPhysicalComplexQuantity
@@ -13475,8 +13475,8 @@ public:
     static Type::Enum Class();
     IfcPhysicalComplexQuantity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPhysicalComplexQuantity* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalComplexQuantity> > list;
-    typedef IfcTemplatedEntityList<IfcPhysicalComplexQuantity>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPhysicalComplexQuantity > > list;
+    typedef IfcTemplatedEntityList< IfcPhysicalComplexQuantity >::it it;
 };
 /// An IfcPixelTexture provides a 2D image-based texture map as an explicit array of pixel values (list of Pixel binary attributes). In contrary to the IfcImageTexture the IfcPixelTexture holds a 2 dimensional list of pixel color
 /// (and opacity) directly, instead of referencing to an URL.
@@ -13485,7 +13485,7 @@ public:
 /// 
 /// The PixelTexture node defines a 2D image-based texture map as an explicit array of pixel values (image field) and parameters controlling tiling repetition of the texture onto geometry.
 /// Texture maps are defined in a 2D coordinate system (s, t) that ranges from 0.0 to 1.0 in both directions. The bottom edge of the pixel image corresponds to the S-axis of the texture map, and left edge of the pixel image corresponds to the T-axis of the texture map. The lower-left pixel of the pixel image corresponds to s=0.0, t=0.0, and the top-right pixel of the image corresponds to s = 1.0, t = 1.0.
-/// The Image field specifies a single uncompressed 2-dimensional pixel image. Image fields contain three integers representing the width, height and number of components in the image, followed by widthï¿½height hexadecimal values representing the pixels in the image. Pixel values are limited to 256 levels of intensity (that is, 0x00-0xFF hexadecimal).
+/// The Image field specifies a single uncompressed 2-dimensional pixel image. Image fields contain three integers representing the width, height and number of components in the image, followed by width×height hexadecimal values representing the pixels in the image. Pixel values are limited to 256 levels of intensity (that is, 0x00-0xFF hexadecimal).
 /// 
 /// A one-component image specifies one-byte hexadecimal value representing the intensity of the image. For example, 0xFF is full intensity in hexadecimal (255 in decimal), 0x00 is no intensity (0 in decimal).
 /// A two-component image specifies the intensity in the first
@@ -13506,8 +13506,8 @@ public:
     IfcInteger ColourComponents();
     /// Flat list of hexadecimal values, each describing one pixel by 1, 2, 3, or 4 components.
     /// 
-    /// IFC2x Edition 3 CHANGEï¿½ The data type has been changed from STRING to BINARY.
-    std::vector<char[32]> /*[1:?]*/ Pixel();
+    /// IFC2x Edition 3 CHANGE  The data type has been changed from STRING to BINARY.
+    std::vector< char[32] > /*[1:?]*/ Pixel();
  virtual unsigned int getArgumentCount() const { return 8; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_INT; case 5: return Argument_INT; case 6: return Argument_INT; case 7: return Argument_UNKNOWN; } return IfcSurfaceTexture::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "Width"; case 5: return "Height"; case 6: return "ColourComponents"; case 7: return "Pixel"; } return IfcSurfaceTexture::getArgumentName(i); }
@@ -13517,8 +13517,8 @@ public:
     static Type::Enum Class();
     IfcPixelTexture (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPixelTexture* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPixelTexture> > list;
-    typedef IfcTemplatedEntityList<IfcPixelTexture>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPixelTexture > > list;
+    typedef IfcTemplatedEntityList< IfcPixelTexture >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A placement entity defines the local environment for the definition of a geometry item. It locates the item to be defined and, in the case of the axis placement subtypes, gives its orientation. 
 /// 
@@ -13542,14 +13542,14 @@ public:
     static Type::Enum Class();
     IfcPlacement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPlacement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPlacement> > list;
-    typedef IfcTemplatedEntityList<IfcPlacement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPlacement > > list;
+    typedef IfcTemplatedEntityList< IfcPlacement >::it it;
 };
 /// The planar extent defines the extent along the two axes of the two-dimensional coordinate system, independently of its position.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: planar_extent. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: planar_extent. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcPlanarExtent : public IfcGeometricRepresentationItem {
 public:
     /// The extent in the direction of the x-axis.
@@ -13565,8 +13565,8 @@ public:
     static Type::Enum Class();
     IfcPlanarExtent (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPlanarExtent* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPlanarExtent> > list;
-    typedef IfcTemplatedEntityList<IfcPlanarExtent>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPlanarExtent > > list;
+    typedef IfcTemplatedEntityList< IfcPlanarExtent >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A point is a location in some real Cartesian coordinate space Rm, for m = 1, 2 or 3.  
 /// 
@@ -13584,8 +13584,8 @@ public:
     static Type::Enum Class();
     IfcPoint (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPoint* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPoint> > list;
-    typedef IfcTemplatedEntityList<IfcPoint>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPoint > > list;
+    typedef IfcTemplatedEntityList< IfcPoint >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A point on curve is a point which lies on a curve. The point is determined by evaluating the curve at a specific parameter value. The coordinate space dimensionality of the point is that of the basis curve. 
 /// 
@@ -13611,8 +13611,8 @@ public:
     static Type::Enum Class();
     IfcPointOnCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPointOnCurve* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPointOnCurve> > list;
-    typedef IfcTemplatedEntityList<IfcPointOnCurve>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPointOnCurve > > list;
+    typedef IfcTemplatedEntityList< IfcPointOnCurve >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A point on surface is a point which lies on a parametric surface. The point is determined by evaluating the surface at a particular pair of parameter values. 
 /// 
@@ -13640,8 +13640,8 @@ public:
     static Type::Enum Class();
     IfcPointOnSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPointOnSurface* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPointOnSurface> > list;
-    typedef IfcTemplatedEntityList<IfcPointOnSurface>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPointOnSurface > > list;
+    typedef IfcTemplatedEntityList< IfcPointOnSurface >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A
 /// poly loop is a loop with straight edges bounding a planar region in
@@ -13649,11 +13649,11 @@ public:
 /// by an ordered coplanar collection of points forming the vertices of the
 /// loop. The loop is composed of straight line segments joining a point in
 /// the collection to the succeeding point in the collection. The closing
-/// segment is from the last to the first point in the collection.ï¿½
+/// segment is from the last to the first point in the collection. 
 /// The direction of the loop is in the direction of the line
 /// segments. 
 /// 
-/// NOTE ï¿½This entity exists primarily to facilitate the efficient communication of faceted B-rep models.
+/// NOTE  This entity exists primarily to facilitate the efficient communication of faceted B-rep models.
 /// 
 /// A poly loop shall conform to the following topological
 /// constraints:
@@ -13666,17 +13666,17 @@ public:
 /// in the list of Polygon's to the first IfcCartesianPoint.
 /// Therefore the first point shall not be repeated at the end of the list,
 /// neither by referencing the same instance, nor by using an additional
-/// instance ofï¿½IfcCartesianPoint having the
+/// instance of IfcCartesianPoint having the
 /// coordinates as the first point.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: poly_loop. Please refer to ISO/IS
+/// NOTE  Corresponding ISO 10303 entity: poly_loop. Please refer to ISO/IS
 /// 10303-42:1994, p. 138 for the final definition of the formal standard.
 /// Due to the general IFC model specification rule not to use multiple
 /// inheritance, the subtype relationship to geometric_representation_item
 /// is not included. The derived attribute Dim has been
 /// added at this level.
 /// 
-/// HISTORY ï¿½ New class in IFC Release 1.0
+/// HISTORY   New class in IFC Release 1.0
 /// 
 /// Informal propositions: 
 /// 
@@ -13685,7 +13685,7 @@ public:
 class IfcPolyLoop : public IfcLoop {
 public:
     /// List of points defining the loop. There are no repeated points in the list.
-    SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > Polygon();
+    SHARED_PTR< IfcTemplatedEntityList< IfcCartesianPoint > > Polygon();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } return IfcLoop::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Polygon"; } return IfcLoop::getArgumentName(i); }
@@ -13695,8 +13695,8 @@ public:
     static Type::Enum Class();
     IfcPolyLoop (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPolyLoop* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPolyLoop> > list;
-    typedef IfcTemplatedEntityList<IfcPolyLoop>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPolyLoop > > list;
+    typedef IfcTemplatedEntityList< IfcPolyLoop >::it it;
 };
 /// The polygonal bounded
 /// half space is a special subtype of a half space solid, where the
@@ -13704,7 +13704,7 @@ public:
 /// polygonal boundary. The base
 /// surface of the half space is positioned by its normal relativeto the
 /// object coordinate system
-/// (as defined at the supertype IfcHalfSpaceSolid),ï¿½and
+/// (as defined at the supertype IfcHalfSpaceSolid), and
 /// its polygonal (with or without arc segments) boundary is defined in the
 /// XY plane of the position
 /// coordinate system established by the Position
@@ -13720,9 +13720,9 @@ public:
 /// one the normal points away from. If the agreement flag is FALSE, then
 /// the subset is the one the normal points into. 
 /// 
-/// NOTEï¿½ A polygonal bounded half space is not a subtype of IfcSolidModel, half space solids are only useful as operands in Boolean expressions.
+/// NOTE  A polygonal bounded half space is not a subtype of IfcSolidModel, half space solids are only useful as operands in Boolean expressions.
 /// 
-/// HISTORYï¿½ New class in IFC Release 2x.
+/// HISTORY  New class in IFC Release 2x.
 /// 
 /// Informal propositions:
 /// 
@@ -13731,7 +13731,7 @@ public:
 /// shall be closed.
 ///   If the PolygonalBoundary
 /// is given by an IfcCompositeCurve, it shall only
-/// haveï¿½IfcCompositeCurveSegment's of type IfcPolyline,
+/// have IfcCompositeCurveSegment's of type IfcPolyline,
 /// or IfcTrimmedCurve (having a BasisCurve
 /// of type IfcLine, or IfcCircle)
 /// 
@@ -13760,7 +13760,7 @@ public:
     IfcAxis2Placement3D* Position();
     /// Two-dimensional polyline bounded curve, defined in the xy plane of the position coordinate system.
     /// 
-    /// IFC2x Edition 3 CHANGEï¿½ The attribute type has been changed from IfcPolyline to its supertype IfcBoundedCurve with upward compatibility for file based exchange.
+    /// IFC2x Edition 3 CHANGE  The attribute type has been changed from IfcPolyline to its supertype IfcBoundedCurve with upward compatibility for file based exchange.
     IfcBoundedCurve* PolygonalBoundary();
  virtual unsigned int getArgumentCount() const { return 4; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return Argument_ENTITY; case 3: return Argument_ENTITY; } return IfcHalfSpaceSolid::getArgumentType(i); }
@@ -13771,14 +13771,14 @@ public:
     static Type::Enum Class();
     IfcPolygonalBoundedHalfSpace (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPolygonalBoundedHalfSpace* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPolygonalBoundedHalfSpace> > list;
-    typedef IfcTemplatedEntityList<IfcPolygonalBoundedHalfSpace>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPolygonalBoundedHalfSpace > > list;
+    typedef IfcTemplatedEntityList< IfcPolygonalBoundedHalfSpace >::it it;
 };
 /// The pre defined colour determines those qualified names which can be used to identify a colour that is in scope of the current data exchange specification (in contrary to colour specification which defines the colour directly by its colour components).
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: pre_defined_colour. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: pre_defined_colour. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcPreDefinedColour : public IfcPreDefinedItem {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
@@ -13790,8 +13790,8 @@ public:
     static Type::Enum Class();
     IfcPreDefinedColour (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPreDefinedColour* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedColour> > list;
-    typedef IfcTemplatedEntityList<IfcPreDefinedColour>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPreDefinedColour > > list;
+    typedef IfcTemplatedEntityList< IfcPreDefinedColour >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The predefined curve font type is an abstract supertype provided to define an application specific curve font. The name label shall be constrained in the application protocol to values that are given specific meaning for curve fonts in that application protocol.
 /// 
@@ -13811,8 +13811,8 @@ public:
     static Type::Enum Class();
     IfcPreDefinedCurveFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPreDefinedCurveFont* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedCurveFont> > list;
-    typedef IfcTemplatedEntityList<IfcPreDefinedCurveFont>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPreDefinedCurveFont > > list;
+    typedef IfcTemplatedEntityList< IfcPreDefinedCurveFont >::it it;
 };
 class IfcPreDefinedDimensionSymbol : public IfcPreDefinedSymbol {
 public:
@@ -13825,8 +13825,8 @@ public:
     static Type::Enum Class();
     IfcPreDefinedDimensionSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPreDefinedDimensionSymbol* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedDimensionSymbol> > list;
-    typedef IfcTemplatedEntityList<IfcPreDefinedDimensionSymbol>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPreDefinedDimensionSymbol > > list;
+    typedef IfcTemplatedEntityList< IfcPreDefinedDimensionSymbol >::it it;
 };
 class IfcPreDefinedPointMarkerSymbol : public IfcPreDefinedSymbol {
 public:
@@ -13839,8 +13839,8 @@ public:
     static Type::Enum Class();
     IfcPreDefinedPointMarkerSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPreDefinedPointMarkerSymbol* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPreDefinedPointMarkerSymbol> > list;
-    typedef IfcTemplatedEntityList<IfcPreDefinedPointMarkerSymbol>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPreDefinedPointMarkerSymbol > > list;
+    typedef IfcTemplatedEntityList< IfcPreDefinedPointMarkerSymbol >::it it;
 };
 /// The IfcProductDefinitionShape defines all shape relevant information about an IfcProduct. It allows for multiple geometric shape representations of the same product. The shape relevant information includes:
 /// 
@@ -13851,24 +13851,24 @@ public:
 /// 
 /// or the topological representation items for connectivity systems (vertex, edge, face representations) that may include geometric representation items (vertex points, edge curves, face surfaces)
 /// 
-/// NOTEï¿½ The definition of this entity relates to the ISO 10303 entity product_definition_shape. Please refer to ISO/IS 10303-41:1994 for the final definition of the formal standard.
+/// NOTE  The definition of this entity relates to the ISO 10303 entity product_definition_shape. Please refer to ISO/IS 10303-41:1994 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 1.5
+/// HISTORY  New Entity in IFC Release 1.5
 class IfcProductDefinitionShape : public IfcProductRepresentation {
 public:
  virtual unsigned int getArgumentCount() const { return 3; }
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcProductRepresentation::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcProductRepresentation::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > ShapeOfProduct(); // INVERSE IfcProduct::Representation
-    SHARED_PTR< IfcTemplatedEntityList<IfcShapeAspect> > HasShapeAspects(); // INVERSE IfcShapeAspect::PartOfProductDefinitionShape
+    SHARED_PTR< IfcTemplatedEntityList< IfcProduct > > ShapeOfProduct(); // INVERSE IfcProduct::Representation
+    SHARED_PTR< IfcTemplatedEntityList< IfcShapeAspect > > HasShapeAspects(); // INVERSE IfcShapeAspect::PartOfProductDefinitionShape
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcProductDefinitionShape (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProductDefinitionShape* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProductDefinitionShape> > list;
-    typedef IfcTemplatedEntityList<IfcProductDefinitionShape>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProductDefinitionShape > > list;
+    typedef IfcTemplatedEntityList< IfcProductDefinitionShape >::it it;
 };
 /// A property with a bounded
 ///   value, IfcPropertyBoundedValue, defines a property
@@ -13877,7 +13877,7 @@ public:
 ///   and the second value specifying the lower bound. It defines
 ///   a property - value bound (min-max) combination for which
 ///   the property Name, an optional
-///   Description,ï¿½the optional UpperBoundValue
+///   Description,ÿthe optional UpperBoundValue
 ///   with measure type, the optional LowerBoundValue with
 ///   measure type, and the optional Unit is given.
 /// 
@@ -13906,7 +13906,7 @@ public:
 ///   LowerBoundValue or the UpperBoundValue is
 ///   included in the interval.
 /// 
-/// NOTEï¿½ An IfcPropertyBoundedValue may be
+/// NOTE  An IfcPropertyBoundedValue may be
 ///   exchanged with no values assigned yet. In this case the
 ///   LowerBoundValue and the UpperBoundValue are
 ///   set to NIL.
@@ -13963,11 +13963,11 @@ public:
 /// 
 /// kg
 /// 
-/// HISTORYï¿½ï¿½New entity in IFC Release 2x.
+/// HISTORY ÿNew entity in IFC Release 2x.
 /// 
-/// IFC2x2 CHANGEï¿½ The attribute type of the attribute UpperBoundValue and LowerBoundValue has been changed from mandatory to optional with upward compatibility for file based exchange.
+/// IFC2x2 CHANGE  The attribute type of the attribute UpperBoundValue and LowerBoundValue has been changed from mandatory to optional with upward compatibility for file based exchange.
 /// 
-/// IFC2x4 CHANGEï¿½ The attribute SetPointValue has been added.
+/// IFC2x4 CHANGE  The attribute SetPointValue has been added.
 /// 
 /// Informal proposition:
 /// 
@@ -13997,8 +13997,8 @@ public:
     static Type::Enum Class();
     IfcPropertyBoundedValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPropertyBoundedValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyBoundedValue> > list;
-    typedef IfcTemplatedEntityList<IfcPropertyBoundedValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPropertyBoundedValue > > list;
+    typedef IfcTemplatedEntityList< IfcPropertyBoundedValue >::it it;
 };
 /// IfcPropertyDefinition defines the generalization of
 /// all characteristics (i.e. a grouping of individual properties),
@@ -14022,12 +14022,12 @@ public:
 /// values, measure types and units, and are associated to an object
 /// occurrence or object type.
 /// 
-/// NOTE 1ï¿½ The subtype hierarchy of IfcPropertyDefinition also includes statically defined property sets as IfcPreDefinedPropertySet. Those are rarely used collections of fixed attributes combined in an entity definition. The IfcPreDefinedPropertySet can not be determined by an IfcPropertySetTemplate.
+/// NOTE 1  The subtype hierarchy of IfcPropertyDefinition also includes statically defined property sets as IfcPreDefinedPropertySet. Those are rarely used collections of fixed attributes combined in an entity definition. The IfcPreDefinedPropertySet can not be determined by an IfcPropertySetTemplate.
 /// 
-/// NOTE 2ï¿½ Individual properties, (subtypes of IfcProperty), are currently not included in the subtype hierarchy of IfcPropertyDefinition. This anomaly is due to upward compatibility reasons with earlier releases of this
+/// NOTE 2  Individual properties, (subtypes of IfcProperty), are currently not included in the subtype hierarchy of IfcPropertyDefinition. This anomaly is due to upward compatibility reasons with earlier releases of this
 /// standard.
 /// 
-/// HISTORYï¿½ New Entity in IFC2.0
+/// HISTORY  New Entity in IFC2.0
 /// 
 /// Relationship use definition
 /// Property definitions define information that is shared among
@@ -14056,24 +14056,24 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcRoot::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcRoot::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociates> > HasAssociations(); // INVERSE IfcRelAssociates::RelatedObjects
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelAssociates > > HasAssociations(); // INVERSE IfcRelAssociates::RelatedObjects
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertyDefinition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPropertyDefinition* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyDefinition> > list;
-    typedef IfcTemplatedEntityList<IfcPropertyDefinition>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPropertyDefinition > > list;
+    typedef IfcTemplatedEntityList< IfcPropertyDefinition >::it it;
 };
 /// A property with an enumerated
 /// value, IfcPropertyEnumeratedValue, defines a property
 /// object which has a value assigned that is chosen from an
 /// enumeration. It defines a property - value combination for which
-/// theï¿½property Name, an optional Description,ï¿½the
+/// theÿproperty Name, an optional Description,ÿthe
 /// optional EnumerationValues
 /// with measure type and optionally an Unit is given.
 /// 
-/// NOTEï¿½ Multiple choices from the property enumeration are supported.
+/// NOTE  Multiple choices from the property enumeration are supported.
 /// 
 /// The unit is handled by the Unit attribute of the
 /// IfcPropertyEnumeration:
@@ -14093,18 +14093,18 @@ public:
 /// (see IfcPropertyEnumeration). This enables applications to
 /// use an enumeration value as a property within a property set
 /// (IfcPropertySet) including the allowed list of
-/// values.ï¿½
+/// values.ÿ
 /// 
-/// NOTEï¿½ An IfcPropertyEnumeratedValue may be exchanged with no values assigned yet. In this case the EnumerationValues are set to NIL.
+/// NOTE  An IfcPropertyEnumeratedValue may be exchanged with no values assigned yet. In this case the EnumerationValues are set to NIL.
 /// 
 /// Examples of a property with enumerated value are:
 /// 
-/// Nameï¿½
+/// Nameÿ
 /// Value (EnumerationValue)
 /// Type (through
 /// IfcValue)
 /// ref.IfcPropertyEnumeration
-/// (Name)ï¿½
+/// (Name)ÿ
 /// 
 /// BladeAction
 /// Opposed
@@ -14137,7 +14137,7 @@ public:
 /// referenced by multiple instances of
 /// IfcPropertyEnumeratedValue.
 /// 
-/// HISTORYï¿½ï¿½New Entity in IFC Release 2.0, capabilities enhanced in IFC2x. The entity has
+/// HISTORY ÿNew Entity in IFC Release 2.0, capabilities enhanced in IFC2x. The entity has
 /// been renamed from IfcEnumeratedProperty in IFC2x.
 /// 
 /// IFC2x4 CHANGE Attribute EnumerationValues has been made OPTIONAL with upward
@@ -14146,8 +14146,8 @@ class IfcPropertyEnumeratedValue : public IfcSimpleProperty {
 public:
     /// Enumeration values, which shall be listed in the referenced IfcPropertyEnumeration, if such a reference is provided.
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute has been made optional with upward compatibility for file based exchange.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > EnumerationValues();
+    /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > EnumerationValues();
     /// Whether the optional attribute EnumerationReference is defined for this IfcPropertyEnumeratedValue
     bool hasEnumerationReference();
     /// Enumeration from which a enumeration value has been selected. The referenced enumeration also establishes the unit of the enumeration value.
@@ -14161,15 +14161,15 @@ public:
     static Type::Enum Class();
     IfcPropertyEnumeratedValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPropertyEnumeratedValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyEnumeratedValue> > list;
-    typedef IfcTemplatedEntityList<IfcPropertyEnumeratedValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPropertyEnumeratedValue > > list;
+    typedef IfcTemplatedEntityList< IfcPropertyEnumeratedValue >::it it;
 };
 /// An IfcPropertyListValue
 ///   defines a property that has several (numeric or
 ///   descriptive) values assigned, these values are given by an
-///   ordered list.ï¿½It defines a property - list value
+///   ordered list.ÿIt defines a property - list value
 ///   combination for which the property Name, an optional
-///   Description,ï¿½the optional ListValues with measure
+///   Description,ÿthe optional ListValues with measure
 ///   type and optionally an Unit is given.
 /// 
 /// An IfcPropertyListValue is a list of values. The
@@ -14226,15 +14226,15 @@ public:
 /// 
 /// -
 /// 
-/// HISTORYï¿½ New Entity in Release IFC 2x Edition 2.
+/// HISTORY  New Entity in Release IFC 2x Edition 2.
 /// 
-/// IFC2x4 CHANGEï¿½ Attribute ListValues has been made OPTIONAL with upward compatibility for file based exchange.
+/// IFC2x4 CHANGE  Attribute ListValues has been made OPTIONAL with upward compatibility for file based exchange.
 class IfcPropertyListValue : public IfcSimpleProperty {
 public:
     /// List of property values.
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute has been made optional with upward compatibility for file based exchange.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > ListValues();
+    /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > ListValues();
     /// Whether the optional attribute Unit is defined for this IfcPropertyListValue
     bool hasUnit();
     /// Unit for the list values, if not given, the default value for the measure type (given by the TYPE of nominal value) is used as defined by the global unit assignment at IfcProject.
@@ -14248,8 +14248,8 @@ public:
     static Type::Enum Class();
     IfcPropertyListValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPropertyListValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyListValue> > list;
-    typedef IfcTemplatedEntityList<IfcPropertyListValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPropertyListValue > > list;
+    typedef IfcTemplatedEntityList< IfcPropertyListValue >::it it;
 };
 /// IfcPropertyReferenceValue allows a property value to
 ///   be given by referencing other entities within the resource
@@ -14259,11 +14259,11 @@ public:
 ///   entities to be used as value references are given by the
 ///   IfcObjectReferenceSelect.
 /// 
-/// HISTORYï¿½ New entity in IFC
+/// HISTORY  New entity in IFC
 ///   Release 1.5. Entity has been renamed from
 ///   IfcObjectReference in IFC Release 2x.
 /// 
-/// IFC2x4 CHANGEï¿½ Attribute
+/// IFC2x4 CHANGE  Attribute
 ///   PropertyReference has been made OPTIONAL with upward
 ///   compatibility for file based exchange.
 class IfcPropertyReferenceValue : public IfcSimpleProperty {
@@ -14274,7 +14274,7 @@ public:
     IfcLabel UsageName();
     /// Reference to another property entity through one of the select types in the IfcObjectReferenceSelect.
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute has been made optional with upward compatibility for file based exchange.
+    /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
     IfcObjectReferenceSelect PropertyReference();
  virtual unsigned int getArgumentCount() const { return 4; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return Argument_STRING; case 3: return Argument_ENTITY; } return IfcSimpleProperty::getArgumentType(i); }
@@ -14285,8 +14285,8 @@ public:
     static Type::Enum Class();
     IfcPropertyReferenceValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPropertyReferenceValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyReferenceValue> > list;
-    typedef IfcTemplatedEntityList<IfcPropertyReferenceValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPropertyReferenceValue > > list;
+    typedef IfcTemplatedEntityList< IfcPropertyReferenceValue >::it it;
 };
 /// IfcPropertySetDefinition is a generalization of all
 /// individual property sets that can be assigned to an object or type
@@ -14309,9 +14309,9 @@ public:
 /// the meaning of the properties is defined by the name and data type
 /// of the explicit attribute representing it.
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 2x
+/// HISTORY  New Entity in IFC Release 2x
 /// 
-/// IFC2x4 CHANGEï¿½ The subtype IfcPreDefinedPropertySet has been added.
+/// IFC2x4 CHANGE  The subtype IfcPreDefinedPropertySet has been added.
 /// 
 /// Relationship use definition
 /// Property set definitions define information that is shared among
@@ -14329,28 +14329,28 @@ public:
 /// IfcRelDefinesByProperties that applies the property set,
 /// with all included properties, to the object occurrence.
 /// 
-/// NOTEï¿½ Properties assigned to object occurrences may override properties assigned to the object type. See IfcRelDefinesByType for further information.
+/// NOTE  Properties assigned to object occurrences may override properties assigned to the object type. See IfcRelDefinesByType for further information.
 class IfcPropertySetDefinition : public IfcPropertyDefinition {
 public:
  virtual unsigned int getArgumentCount() const { return 4; }
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcPropertyDefinition::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcPropertyDefinition::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelDefinesByProperties> > PropertyDefinitionOf(); // INVERSE IfcRelDefinesByProperties::RelatingPropertyDefinition
-    SHARED_PTR< IfcTemplatedEntityList<IfcTypeObject> > DefinesType(); // INVERSE IfcTypeObject::HasPropertySets
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelDefinesByProperties > > PropertyDefinitionOf(); // INVERSE IfcRelDefinesByProperties::RelatingPropertyDefinition
+    SHARED_PTR< IfcTemplatedEntityList< IfcTypeObject > > DefinesType(); // INVERSE IfcTypeObject::HasPropertySets
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcPropertySetDefinition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPropertySetDefinition* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertySetDefinition> > list;
-    typedef IfcTemplatedEntityList<IfcPropertySetDefinition>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPropertySetDefinition > > list;
+    typedef IfcTemplatedEntityList< IfcPropertySetDefinition >::it it;
 };
 /// The property with a single value
 /// IfcPropertySingleValue defines a property object which has
 /// a single (numeric or descriptive) value assigned. It defines a
 /// property - single value combination for which the property
-/// Name, an optional Description,ï¿½and an optional
+/// Name, an optional Description,ÿand an optional
 /// NominalValue with measure type is provided. In addition,
 /// the default unit as specified within the project unit context can
 /// be overriden by assigning an Unit.
@@ -14387,18 +14387,18 @@ public:
 /// IfcThermalTransmittanceMeasure
 /// W/(m2K)
 /// 
-/// HISTORYï¿½ï¿½New entity in IFC Release 1.0. The entity has been renamed from IfcSimpleProperty in IFC Release 2x.
+/// HISTORY ÿNew entity in IFC Release 1.0. The entity has been renamed from IfcSimpleProperty in IFC Release 2x.
 /// 
-/// IFC2x3 CHANGEï¿½ï¿½Attribute NominalValue has been made OPTIONAL with upward compatibility for file based exchange.
+/// IFC2x3 CHANGE ÿAttribute NominalValue has been made OPTIONAL with upward compatibility for file based exchange.
 class IfcPropertySingleValue : public IfcSimpleProperty {
 public:
     /// Whether the optional attribute NominalValue is defined for this IfcPropertySingleValue
     bool hasNominalValue();
     /// Value and measure type of this property. 
     /// 
-    /// NOTEï¿½ By virtue of the defined data type, that is selected from the SELECT IfcValue, the appropriate unit can be found within the IfcUnitAssignment, defined for the project if no value for the unit attribute is given.
+    /// NOTE  By virtue of the defined data type, that is selected from the SELECT IfcValue, the appropriate unit can be found within the IfcUnitAssignment, defined for the project if no value for the unit attribute is given.
     /// 
-    /// IFC2x3 CHANGEï¿½ The attribute has been made optional with upward compatibility for file based exchange.
+    /// IFC2x3 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
     IfcValue NominalValue();
     /// Whether the optional attribute Unit is defined for this IfcPropertySingleValue
     bool hasUnit();
@@ -14413,8 +14413,8 @@ public:
     static Type::Enum Class();
     IfcPropertySingleValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPropertySingleValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertySingleValue> > list;
-    typedef IfcTemplatedEntityList<IfcPropertySingleValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPropertySingleValue > > list;
+    typedef IfcTemplatedEntityList< IfcPropertySingleValue >::it it;
 };
 /// A property with a range value
 ///   (IfcPropertyTableValue) defines a property object
@@ -14484,7 +14484,7 @@ public:
 /// 
 /// dB
 /// 
-/// ï¿½
+/// ÿ
 /// 
 /// 200
 /// 
@@ -14494,11 +14494,11 @@ public:
 /// 
 /// IfcNumericMeasure
 /// 
-/// ï¿½
+/// ÿ
 /// 
-/// ï¿½
+/// ÿ
 /// 
-/// ï¿½
+/// ÿ
 /// 
 /// 400
 /// 
@@ -14508,11 +14508,11 @@ public:
 /// 
 /// IfcNumericMeasure
 /// 
-/// ï¿½
+/// ÿ
 /// 
-/// ï¿½
+/// ÿ
 /// 
-/// ï¿½
+/// ÿ
 /// 
 /// 800
 /// 
@@ -14522,11 +14522,11 @@ public:
 /// 
 /// IfcNumericMeasure
 /// 
-/// ï¿½
+/// ÿ
 /// 
-/// ï¿½
+/// ÿ
 /// 
-/// ï¿½
+/// ÿ
 /// 
 /// 1600
 /// 
@@ -14536,11 +14536,11 @@ public:
 /// 
 /// IfcNumericMeasure
 /// 
-/// ï¿½
+/// ÿ
 /// 
-/// ï¿½
+/// ÿ
 /// 
-/// ï¿½
+/// ÿ
 /// 
 /// 3200
 /// 
@@ -14550,13 +14550,13 @@ public:
 /// 
 /// IfcNumericMeasure
 /// 
-/// ï¿½
+/// ÿ
 /// 
-/// ï¿½
+/// ÿ
 /// 
 /// HISTORY: New entity in IFC2x.
 /// 
-/// IFC2x4 CHANGEï¿½ Attributes DefiningValues and DefinedValues have been made OPTIONAL with upward compatibility for file based exchange. The attribute CurveInterpolation has been added..
+/// IFC2x4 CHANGE  Attributes DefiningValues and DefinedValues have been made OPTIONAL with upward compatibility for file based exchange. The attribute CurveInterpolation has been added..
 /// 
 /// Informal propositions:
 /// 
@@ -14566,12 +14566,12 @@ class IfcPropertyTableValue : public IfcSimpleProperty {
 public:
     /// List of defining values, which determine the defined values. This list shall have unique values only.
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute has been made optional with upward compatibility for file based exchange.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > DefiningValues();
+    /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > DefiningValues();
     /// Defined values which are applicable for the scope as defined by the defining values.
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute has been made optional with upward compatibility for file based exchange.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > DefinedValues();
+    /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > DefinedValues();
     /// Whether the optional attribute Expression is defined for this IfcPropertyTableValue
     bool hasExpression();
     /// Expression for the derivation of defined values from the defining values, the expression is given for information only, i.e. no automatic processing can be expected from the expression.
@@ -14593,8 +14593,8 @@ public:
     static Type::Enum Class();
     IfcPropertyTableValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPropertyTableValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertyTableValue> > list;
-    typedef IfcTemplatedEntityList<IfcPropertyTableValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPropertyTableValue > > list;
+    typedef IfcTemplatedEntityList< IfcPropertyTableValue >::it it;
 };
 /// IfcRectangleProfileDef defines a rectangle as the profile definition used by the swept surface geometry or the swept area solid. It is given by its X extent and its Y extent, and placed within the 2D position coordinate system, established by the Position attribute. It is placed centric within the position coordinate system. 
 /// 
@@ -14645,8 +14645,8 @@ public:
     static Type::Enum Class();
     IfcRectangleProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRectangleProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRectangleProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcRectangleProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRectangleProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcRectangleProfileDef >::it it;
 };
 /// In a regular time series, the data arrives predictably at predefined intervals. In a regular time series there is no need to store multiple time stamps and the algorithms for analyzing the time series are therefore significantly simpler.  Using the start time provided in the supertype, the time step is used to identify the frequency of the occurrences of the list of values.
 /// 
@@ -14658,7 +14658,7 @@ public:
     /// A duration of time intervals between values.
     IfcTimeMeasure TimeStep();
     /// The collection of time series values.
-    SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeriesValue> > Values();
+    SHARED_PTR< IfcTemplatedEntityList< IfcTimeSeriesValue > > Values();
  virtual unsigned int getArgumentCount() const { return 10; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return Argument_DOUBLE; case 9: return Argument_ENTITY_LIST; } return IfcTimeSeries::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 8: return "TimeStep"; case 9: return "Values"; } return IfcTimeSeries::getArgumentName(i); }
@@ -14668,8 +14668,8 @@ public:
     static Type::Enum Class();
     IfcRegularTimeSeries (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRegularTimeSeries* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRegularTimeSeries> > list;
-    typedef IfcTemplatedEntityList<IfcRegularTimeSeries>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRegularTimeSeries > > list;
+    typedef IfcTemplatedEntityList< IfcRegularTimeSeries >::it it;
 };
 /// Definition from IAI: An
 ///   IfcReinforcementDefinitionProperties defines the cross section
@@ -14704,7 +14704,7 @@ public:
     /// Descriptive type name applied to reinforcement definition properties.
     IfcLabel DefinitionType();
     /// The list of section reinforcement properties attached to the reinforcement definition properties.
-    SHARED_PTR< IfcTemplatedEntityList<IfcSectionReinforcementProperties> > ReinforcementSectionDefinitions();
+    SHARED_PTR< IfcTemplatedEntityList< IfcSectionReinforcementProperties > > ReinforcementSectionDefinitions();
  virtual unsigned int getArgumentCount() const { return 6; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_STRING; case 5: return Argument_ENTITY_LIST; } return IfcPropertySetDefinition::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "DefinitionType"; case 5: return "ReinforcementSectionDefinitions"; } return IfcPropertySetDefinition::getArgumentName(i); }
@@ -14714,8 +14714,8 @@ public:
     static Type::Enum Class();
     IfcReinforcementDefinitionProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcReinforcementDefinitionProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcReinforcementDefinitionProperties> > list;
-    typedef IfcTemplatedEntityList<IfcReinforcementDefinitionProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcReinforcementDefinitionProperties > > list;
+    typedef IfcTemplatedEntityList< IfcReinforcementDefinitionProperties >::it it;
 };
 /// IfcRelationship is the abstract generalization of all objectified relationships in IFC. Objectified relationships are the preferred way to handle relationships among objects. This allows to keep relationship specific properties directly at the relationship and opens the possibility to later handle relationship specific behavior.  
 /// 
@@ -14736,14 +14736,14 @@ public:
     static Type::Enum Class();
     IfcRelationship (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelationship* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelationship> > list;
-    typedef IfcTemplatedEntityList<IfcRelationship>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelationship > > list;
+    typedef IfcTemplatedEntityList< IfcRelationship >::it it;
 };
 /// IfcRoundedRectangleProfileDef defines a rectangle with equally rounded corners as the profile definition used by the swept surface geometry or the swept area solid. It is given by the X extent, the Y extent, and the radius for the rounded corners, and placed within the 2D position coordinate system, established by the Position attribute. It is placed centric within the position coordinate system, that is, in the center of the bounding box.
 /// 
-/// HISTORYï¿½ New class in IFC2x.
+/// HISTORY  New class in IFC2x.
 /// 
-/// IFC2x PLATFORM CHANGEï¿½ The IfcRoundedRectangleProfileDef is now subtyped from IfcRectangleProfileDef. The XDim and YDim attributes have been removed (now inherited from supertype).
+/// IFC2x PLATFORM CHANGE  The IfcRoundedRectangleProfileDef is now subtyped from IfcRectangleProfileDef. The XDim and YDim attributes have been removed (now inherited from supertype).
 /// 
 /// Figure 324 illustrates parameters of the rounded rectangle profile definition.
 /// 
@@ -14789,8 +14789,8 @@ public:
     static Type::Enum Class();
     IfcRoundedRectangleProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRoundedRectangleProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRoundedRectangleProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcRoundedRectangleProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRoundedRectangleProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcRoundedRectangleProfileDef >::it it;
 };
 /// Definition from ISO 10303-42:1999: A sectioned
 /// spine is a representation of the shape of a three dimensional
@@ -14850,9 +14850,9 @@ public:
     /// A single composite curve, that defines the spine curve. Each of the composite curve segments correspond to the part between two cross-sections.
     IfcCompositeCurve* SpineCurve();
     /// A list of at least two cross sections, each defined within the xy plane of the position coordinate system of the cross section. The position coordinate system is given by the corresponding list CrossSectionPositions.
-    SHARED_PTR< IfcTemplatedEntityList<IfcProfileDef> > CrossSections();
+    SHARED_PTR< IfcTemplatedEntityList< IfcProfileDef > > CrossSections();
     /// Position coordinate systems for the cross sections that form the sectioned spine. The profiles defining the cross sections are positioned within the xy plane of the corresponding position coordinate system.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAxis2Placement3D> > CrossSectionPositions();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAxis2Placement3D > > CrossSectionPositions();
  virtual unsigned int getArgumentCount() const { return 3; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_ENTITY_LIST; case 2: return Argument_ENTITY_LIST; } return IfcGeometricRepresentationItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SpineCurve"; case 1: return "CrossSections"; case 2: return "CrossSectionPositions"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
@@ -14862,8 +14862,8 @@ public:
     static Type::Enum Class();
     IfcSectionedSpine (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSectionedSpine* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSectionedSpine> > list;
-    typedef IfcTemplatedEntityList<IfcSectionedSpine>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSectionedSpine > > list;
+    typedef IfcTemplatedEntityList< IfcSectionedSpine >::it it;
 };
 class IfcServiceLifeFactor : public IfcPropertySetDefinition {
 public:
@@ -14884,8 +14884,8 @@ public:
     static Type::Enum Class();
     IfcServiceLifeFactor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcServiceLifeFactor* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcServiceLifeFactor> > list;
-    typedef IfcTemplatedEntityList<IfcServiceLifeFactor>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcServiceLifeFactor > > list;
+    typedef IfcTemplatedEntityList< IfcServiceLifeFactor >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A shell based surface model is described by a set of open or closed shells of dimensionality 2. The shells shall not intersect except at edges and vertices. In particular, distinct faces may not intersect. A complete face of one shell may be shared with another shell. Coincident portions of shells shall both reference the same faces, edges and vertices defining the coincident region. There shall be at least one shell. 
 /// 
@@ -14901,7 +14901,7 @@ public:
 /// The shells shall not overlap or intersect except at common faces, edges or vertices.
 class IfcShellBasedSurfaceModel : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > SbsmBoundary();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > SbsmBoundary();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } return IfcGeometricRepresentationItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SbsmBoundary"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
@@ -14911,8 +14911,8 @@ public:
     static Type::Enum Class();
     IfcShellBasedSurfaceModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcShellBasedSurfaceModel* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcShellBasedSurfaceModel> > list;
-    typedef IfcTemplatedEntityList<IfcShellBasedSurfaceModel>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcShellBasedSurfaceModel > > list;
+    typedef IfcTemplatedEntityList< IfcShellBasedSurfaceModel >::it it;
 };
 /// Definition from IAI: Describes slippage in support conditions or connection conditions.  Slippage means that a relative displacement may occur in a support or connection before support or connection reactions are awoken.
 /// 
@@ -14946,8 +14946,8 @@ public:
     static Type::Enum Class();
     IfcSlippageConnectionCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSlippageConnectionCondition* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSlippageConnectionCondition> > list;
-    typedef IfcTemplatedEntityList<IfcSlippageConnectionCondition>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSlippageConnectionCondition > > list;
+    typedef IfcTemplatedEntityList< IfcSlippageConnectionCondition >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A solid model is a complete representation of the nominal shape of a product such that all points in the interior are connected. Any point can be classified as being inside, outside, or on the boundary of a solid. There are several different types of solid model representations. 
 /// 
@@ -14965,8 +14965,8 @@ public:
     static Type::Enum Class();
     IfcSolidModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSolidModel* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSolidModel> > list;
-    typedef IfcTemplatedEntityList<IfcSolidModel>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSolidModel > > list;
+    typedef IfcTemplatedEntityList< IfcSolidModel >::it it;
 };
 class IfcSoundProperties : public IfcPropertySetDefinition {
 public:
@@ -14974,7 +14974,7 @@ public:
     /// Whether the optional attribute SoundScale is defined for this IfcSoundProperties
     bool hasSoundScale();
     IfcSoundScaleEnum::IfcSoundScaleEnum SoundScale();
-    SHARED_PTR< IfcTemplatedEntityList<IfcSoundValue> > SoundValues();
+    SHARED_PTR< IfcTemplatedEntityList< IfcSoundValue > > SoundValues();
  virtual unsigned int getArgumentCount() const { return 7; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_BOOL; case 5: return Argument_ENUMERATION; case 6: return Argument_ENTITY_LIST; } return IfcPropertySetDefinition::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "IsAttenuating"; case 5: return "SoundScale"; case 6: return "SoundValues"; } return IfcPropertySetDefinition::getArgumentName(i); }
@@ -14984,8 +14984,8 @@ public:
     static Type::Enum Class();
     IfcSoundProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSoundProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSoundProperties> > list;
-    typedef IfcTemplatedEntityList<IfcSoundProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSoundProperties > > list;
+    typedef IfcTemplatedEntityList< IfcSoundProperties >::it it;
 };
 class IfcSoundValue : public IfcPropertySetDefinition {
 public:
@@ -15005,8 +15005,8 @@ public:
     static Type::Enum Class();
     IfcSoundValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSoundValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSoundValue> > list;
-    typedef IfcTemplatedEntityList<IfcSoundValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSoundValue > > list;
+    typedef IfcTemplatedEntityList< IfcSoundValue >::it it;
 };
 class IfcSpaceThermalLoadProperties : public IfcPropertySetDefinition {
 public:
@@ -15041,8 +15041,8 @@ public:
     static Type::Enum Class();
     IfcSpaceThermalLoadProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSpaceThermalLoadProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpaceThermalLoadProperties> > list;
-    typedef IfcTemplatedEntityList<IfcSpaceThermalLoadProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSpaceThermalLoadProperties > > list;
+    typedef IfcTemplatedEntityList< IfcSpaceThermalLoadProperties >::it it;
 };
 /// Definition from IAI: An instance of the entity
 ///   IfcStructuralLoadLinearForce shall be used to define actions on curves.
@@ -15084,8 +15084,8 @@ public:
     static Type::Enum Class();
     IfcStructuralLoadLinearForce (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralLoadLinearForce* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadLinearForce> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralLoadLinearForce>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoadLinearForce > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralLoadLinearForce >::it it;
 };
 /// Definition from IAI: An instance of the entity
 ///   IfcStructuralLoadPlanarForce shall be used to define actions on faces.
@@ -15115,8 +15115,8 @@ public:
     static Type::Enum Class();
     IfcStructuralLoadPlanarForce (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralLoadPlanarForce* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadPlanarForce> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralLoadPlanarForce>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoadPlanarForce > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralLoadPlanarForce >::it it;
 };
 /// Definition from IAI: Instances of the entity
 ///   IfcStructuralLoadSingleDisplacement shall be used to define displacements.
@@ -15158,8 +15158,8 @@ public:
     static Type::Enum Class();
     IfcStructuralLoadSingleDisplacement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralLoadSingleDisplacement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadSingleDisplacement> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralLoadSingleDisplacement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoadSingleDisplacement > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralLoadSingleDisplacement >::it it;
 };
 /// Definition from IAI: Defines a displacement with warping.
 /// 
@@ -15179,8 +15179,8 @@ public:
     static Type::Enum Class();
     IfcStructuralLoadSingleDisplacementDistortion (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralLoadSingleDisplacementDistortion* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadSingleDisplacementDistortion> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralLoadSingleDisplacementDistortion>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoadSingleDisplacementDistortion > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralLoadSingleDisplacementDistortion >::it it;
 };
 /// Definition from IAI: Instances of the entity
 ///   IfcStructuralLoadSingleForce shall be used to define the forces and
@@ -15223,8 +15223,8 @@ public:
     static Type::Enum Class();
     IfcStructuralLoadSingleForce (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralLoadSingleForce* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadSingleForce> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralLoadSingleForce>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoadSingleForce > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralLoadSingleForce >::it it;
 };
 /// Definition from IAI: Instances of the entity
 ///   IfcStructuralLoadSingleForceWarping, as a subtype of
@@ -15249,8 +15249,8 @@ public:
     static Type::Enum Class();
     IfcStructuralLoadSingleForceWarping (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralLoadSingleForceWarping* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadSingleForceWarping> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralLoadSingleForceWarping>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoadSingleForceWarping > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralLoadSingleForceWarping >::it it;
 };
 class IfcStructuralProfileProperties : public IfcGeneralProfileProperties {
 public:
@@ -15311,8 +15311,8 @@ public:
     static Type::Enum Class();
     IfcStructuralProfileProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralProfileProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralProfileProperties> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralProfileProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralProfileProperties > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralProfileProperties >::it it;
 };
 class IfcStructuralSteelProfileProperties : public IfcStructuralProfileProperties {
 public:
@@ -15337,8 +15337,8 @@ public:
     static Type::Enum Class();
     IfcStructuralSteelProfileProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralSteelProfileProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralSteelProfileProperties> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralSteelProfileProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralSteelProfileProperties > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralSteelProfileProperties >::it it;
 };
 /// Definition from ISO/DIS 10303-42:1999(E): A subedge is an edge whose domain is a connected portion of the domain of an existing edge. The topological constraints on a subedge are the same as those on an edge. 
 /// 
@@ -15347,9 +15347,9 @@ public:
 /// The domain of the subedge is formally defined to be the domain of the parent edge, as trimmed by the subedge start vertex and subedge end vertex. 
 /// The start vertex and end vertex shall be within the union of the domains of the vertices of the parent edge and the domain of the parent edge. 
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: subedge. Please refer to ISO/DIS 10303-42:1999(E), p. 194 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: subedge. Please refer to ISO/DIS 10303-42:1999(E), p. 194 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcSubedge : public IfcEdge {
 public:
     /// The Edge, or Subedge, which contains the Subedge.
@@ -15363,8 +15363,8 @@ public:
     static Type::Enum Class();
     IfcSubedge (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSubedge* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSubedge> > list;
-    typedef IfcTemplatedEntityList<IfcSubedge>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSubedge > > list;
+    typedef IfcTemplatedEntityList< IfcSubedge >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A surface can be envisioned as a set of connected points in 3-dimensional space which is always locally 2-dimensional, but need not be a manifold.  
 /// 
@@ -15387,8 +15387,8 @@ public:
     static Type::Enum Class();
     IfcSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSurface* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurface> > list;
-    typedef IfcTemplatedEntityList<IfcSurface>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSurface > > list;
+    typedef IfcTemplatedEntityList< IfcSurface >::it it;
 };
 /// IfcSurfaceStyleRendering holds the properties for visualization related to a particular surface side style.  
 /// 
@@ -15487,8 +15487,8 @@ public:
     static Type::Enum Class();
     IfcSurfaceStyleRendering (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSurfaceStyleRendering* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceStyleRendering> > list;
-    typedef IfcTemplatedEntityList<IfcSurfaceStyleRendering>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSurfaceStyleRendering > > list;
+    typedef IfcTemplatedEntityList< IfcSurfaceStyleRendering >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: The swept area
 ///   solid entity collects the entities which are defined
@@ -15523,8 +15523,8 @@ public:
     static Type::Enum Class();
     IfcSweptAreaSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSweptAreaSolid* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSweptAreaSolid> > list;
-    typedef IfcTemplatedEntityList<IfcSweptAreaSolid>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSweptAreaSolid > > list;
+    typedef IfcTemplatedEntityList< IfcSweptAreaSolid >::it it;
 };
 /// Definition from ISO 10303-42:2002: A swept
 /// disk solid is the solid produced by sweeping a circular disk
@@ -15556,15 +15556,15 @@ public:
 /// and end default to start and end of the bounded curve of the
 /// Directrix
 /// 
-/// NOTEï¿½ Although the example shows a Directrix as a composite curve on a planar reference surface, the definition of IfcSweptDiskSolid is not restricted to be based on planer curves. However view definitions or implementer agreements may provide restrictions.
+/// NOTE  Although the example shows a Directrix as a composite curve on a planar reference surface, the definition of IfcSweptDiskSolid is not restricted to be based on planer curves. However view definitions or implementer agreements may provide restrictions.
 /// 
 /// Figure 272 &#8212; Swept disk solid geometry
 /// 
-/// NOTEï¿½ Corresponding ISO 10303-42 entity: swept_disk_solid. Please refer to ISO/FDIS 10303-42:2002, p. 282 for the definition of the formal standard.
+/// NOTE  Corresponding ISO 10303-42 entity: swept_disk_solid. Please refer to ISO/FDIS 10303-42:2002, p. 282 for the definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 2x2.
+/// HISTORY  New entity in IFC Release 2x2.
 /// 
-/// IFC2x4 CHANGEï¿½ The attribute StartParam and EndParam have been made optional.
+/// IFC2x4 CHANGE  The attribute StartParam and EndParam have been made optional.
 /// 
 /// Informal proposition
 /// 
@@ -15591,11 +15591,11 @@ public:
     IfcPositiveLengthMeasure InnerRadius();
     /// The parameter value on the Directrix at which the sweeping operation commences. If no value is provided the start of the sweeping operation is at the start of the Directrix..
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
+    /// IFC2x4 CHANGE  The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
     IfcParameterValue StartParam();
     /// The parameter value on the Directrix at which the sweeping operation ends. If no value is provided the end of the sweeping operation is at the end of the Directrix..
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
+    /// IFC2x4 CHANGE  The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
     IfcParameterValue EndParam();
  virtual unsigned int getArgumentCount() const { return 5; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_DOUBLE; case 2: return Argument_DOUBLE; case 3: return Argument_DOUBLE; case 4: return Argument_DOUBLE; } return IfcSolidModel::getArgumentType(i); }
@@ -15606,8 +15606,8 @@ public:
     static Type::Enum Class();
     IfcSweptDiskSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSweptDiskSolid* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSweptDiskSolid> > list;
-    typedef IfcTemplatedEntityList<IfcSweptDiskSolid>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSweptDiskSolid > > list;
+    typedef IfcTemplatedEntityList< IfcSweptDiskSolid >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A swept surface is one that is constructed by sweeping a curve along another curve.  
 /// 
@@ -15629,8 +15629,8 @@ public:
     static Type::Enum Class();
     IfcSweptSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSweptSurface* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSweptSurface> > list;
-    typedef IfcTemplatedEntityList<IfcSweptSurface>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSweptSurface > > list;
+    typedef IfcTemplatedEntityList< IfcSweptSurface >::it it;
 };
 /// IfcTShapeProfileDef defines
 /// a section profile that provides the defining parameters of a T-shaped
@@ -15639,11 +15639,11 @@ public:
 /// the following illustration. The centre of the position coordinate
 /// system is in the profile's centre of the bounding box.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ All profile origins are now in the center of the bounding box.
+/// IFC2x3 CHANGE  All profile origins are now in the center of the bounding box.
 /// 
-/// IFC2x4 CHANGEï¿½ Type of FilletRadius, FlangeEdgeRadius, and WebEdgeRadius relaxed to allow for zero radius. Trailing attribute CentreOfGravityInY deleted, use respective property in IfcExtendedProfileProperties instead.
+/// IFC2x4 CHANGE  Type of FilletRadius, FlangeEdgeRadius, and WebEdgeRadius relaxed to allow for zero radius. Trailing attribute CentreOfGravityInY deleted, use respective property in IfcExtendedProfileProperties instead.
 /// 
 /// Figure 326 illustrates parameters of the T-shape profile definition.
 /// 
@@ -15702,8 +15702,8 @@ public:
     static Type::Enum Class();
     IfcTShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTShapeProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTShapeProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcTShapeProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTShapeProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcTShapeProfileDef >::it it;
 };
 class IfcTerminatorSymbol : public IfcAnnotationSymbolOccurrence {
 public:
@@ -15717,19 +15717,19 @@ public:
     static Type::Enum Class();
     IfcTerminatorSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTerminatorSymbol* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTerminatorSymbol> > list;
-    typedef IfcTemplatedEntityList<IfcTerminatorSymbol>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTerminatorSymbol > > list;
+    typedef IfcTemplatedEntityList< IfcTerminatorSymbol >::it it;
 };
 /// The text literal is a geometric representation item which describes a text string using a string literal and additional position and path information.
 /// 
-/// NOTEï¿½ The IfcTextLiteral is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange.
+/// NOTE  The IfcTextLiteral is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: text_literal. Please refer to ISO/IS 10303-46:1994 for the
+/// NOTE  Corresponding ISO 10303 name: text_literal. Please refer to ISO/IS 10303-46:1994 for the
 /// final definition of the formal standard. The attributes font and alignment have been removed as those should be handled by the text style.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ The IfcTextLiteral has been changed by removing Font and Alignment.
+/// IFC2x3 CHANGE  The IfcTextLiteral has been changed by removing Font and Alignment.
 class IfcTextLiteral : public IfcGeometricRepresentationItem {
 public:
     /// The text literal to be presented.
@@ -15748,18 +15748,18 @@ public:
     static Type::Enum Class();
     IfcTextLiteral (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTextLiteral* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextLiteral> > list;
-    typedef IfcTemplatedEntityList<IfcTextLiteral>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTextLiteral > > list;
+    typedef IfcTemplatedEntityList< IfcTextLiteral >::it it;
 };
 /// The text literal with extent is a text literal with the additional explicit information of the planar extent (or surrounding text box). An alignment attribute defines, how the text box is aligned to the placement and how it may expand.
 /// 
-/// NOTEï¿½ The IfcTextLiteralWithExtent is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation. 
+/// NOTE  The IfcTextLiteralWithExtent is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation. 
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: text_literal_with_extent. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: text_literal_with_extent. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE ï¿½The IfcTextLiteralWithExtent has been changed by adding BoxAlignment.
+/// IFC2x3 CHANGE  The IfcTextLiteralWithExtent has been changed by adding BoxAlignment.
 class IfcTextLiteralWithExtent : public IfcTextLiteral {
 public:
     /// The extent in the x and y direction of the text literal.
@@ -15775,12 +15775,12 @@ public:
     static Type::Enum Class();
     IfcTextLiteralWithExtent (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTextLiteralWithExtent* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTextLiteralWithExtent> > list;
-    typedef IfcTemplatedEntityList<IfcTextLiteralWithExtent>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTextLiteralWithExtent > > list;
+    typedef IfcTemplatedEntityList< IfcTextLiteralWithExtent >::it it;
 };
 /// IfcTrapeziumProfileDef defines a trapezium as the profile definition used by the swept surface geometry or the swept area solid. It is given by its Top X and Bottom X extent and its Y extent as well as by the offset of the Top X extend, and placed within the 2D position coordinate system, established by the Position attribute. It is placed centric within the position coordinate system, that is, in the center of the bounding box. 
 /// 
-/// HISTORYï¿½ New class in IFC 1.5. The use definition has changed in IFC2x.
+/// HISTORY  New class in IFC 1.5. The use definition has changed in IFC2x.
 /// 
 /// Figure 325 illustrates parameters of the trapezium profile definition.
 /// 
@@ -15835,13 +15835,13 @@ public:
     static Type::Enum Class();
     IfcTrapeziumProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTrapeziumProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTrapeziumProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcTrapeziumProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTrapeziumProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcTrapeziumProfileDef >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: A two direction repeat factor combines two vectors which are used in the fill area style tiles entity for determining the shape and relative location of tiles. Given the initial position of any tile, the two direction repeat factor determines eight new positions according to the equation:
 /// 
 /// k1* R1 + k2* R2
-///   ï¿½ï¿½ï¿½ï¿½ï¿½k X{-1,1}ï¿½
+///        k X{-1,1} 
 /// 
 /// NOTE Corresponding ISO 10303 name: two_direction_repeat_factor. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
@@ -15859,8 +15859,8 @@ public:
     static Type::Enum Class();
     IfcTwoDirectionRepeatFactor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTwoDirectionRepeatFactor* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTwoDirectionRepeatFactor> > list;
-    typedef IfcTemplatedEntityList<IfcTwoDirectionRepeatFactor>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTwoDirectionRepeatFactor > > list;
+    typedef IfcTemplatedEntityList< IfcTwoDirectionRepeatFactor >::it it;
 };
 /// The object type defines the
 /// specific information about a type, being common to all
@@ -15909,48 +15909,48 @@ public:
     bool hasHasPropertySets();
     /// Set list of unique property sets, that are associated with the object type and are common to all object occurrences referring to this object type.
     /// 
-    /// IFC2x3 CHANGEï¿½ The attribute aggregate type has been changed from LIST to SET.
-    SHARED_PTR< IfcTemplatedEntityList<IfcPropertySetDefinition> > HasPropertySets();
+    /// IFC2x3 CHANGE  The attribute aggregate type has been changed from LIST to SET.
+    SHARED_PTR< IfcTemplatedEntityList< IfcPropertySetDefinition > > HasPropertySets();
  virtual unsigned int getArgumentCount() const { return 6; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_STRING; case 5: return Argument_ENTITY_LIST; } return IfcObjectDefinition::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "ApplicableOccurrence"; case 5: return "HasPropertySets"; } return IfcObjectDefinition::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelDefinesByType> > ObjectTypeOf(); // INVERSE IfcRelDefinesByType::RelatingType
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelDefinesByType > > ObjectTypeOf(); // INVERSE IfcRelDefinesByType::RelatingType
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcTypeObject (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTypeObject* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTypeObject> > list;
-    typedef IfcTemplatedEntityList<IfcTypeObject>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTypeObject > > list;
+    typedef IfcTemplatedEntityList< IfcTypeObject >::it it;
 };
 /// IfcTypeProduct defines a type
 /// definition of a product without being already inserted into a
 /// project structure (without having a placement), and not being
 /// included into the geometric representation context of the
-/// project.ï¿½It is used to define a product specification, that is, the
+/// project.ÿIt is used to define a product specification, that is, the
 /// specific product information that is common to all occurrences
 /// of that product type.
 /// 
 /// An IfcTypeProduct may have a list of property set
 /// attached and an optional set of product representations. Values
 /// of these properties and the representation maps are common to all
-/// occurrencesï¿½of that product type.ï¿½The type occurrence
+/// occurrencesÿof that product type.ÿThe type occurrence
 /// relationship is realized using the objectified relationship
 /// IfcRelDefinesByType.
 /// 
-/// NOTE 1ï¿½ The product representations are
+/// NOTE 1ÿ The product representations are
 /// defined as representation maps, which gets assigned by a product
 /// instance through the representation item(s) being an
 /// IfcShapeRepresentation and having Items of
-/// typeï¿½IfcMappedItem.
-/// NOTE 2 ï¿½The representations at the occurrence
+/// typeÿIfcMappedItem.
+/// NOTE 2 ÿThe representations at the occurrence
 /// level (represented by subtypes of IfcProduct) can override
-/// the specific representations at the type level, ï¿½
+/// the specific representations at the type level, ÿ
 /// 
 /// for geometric representations: a Cartesian
 /// transformation operator can be applied at the occurrence level,
-/// andï¿½
+/// andÿ
 /// for property sets: A property within an occurrence
 /// property set, assigned at the product occurrence, overrides the
 /// same property assigned to the product type.
@@ -15995,7 +15995,7 @@ public:
     /// Whether the optional attribute RepresentationMaps is defined for this IfcTypeProduct
     bool hasRepresentationMaps();
     /// List of unique representation maps. Each representation map describes a block definition of the shape of the product style. By providing more than one representation map, a multi-view block definition can be given.
-    SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationMap> > RepresentationMaps();
+    SHARED_PTR< IfcTemplatedEntityList< IfcRepresentationMap > > RepresentationMaps();
     /// Whether the optional attribute Tag is defined for this IfcTypeProduct
     bool hasTag();
     /// The tag (or label) identifier at the particular type of a product, e.g. the article number (like the EAN). It is the identifier at the specific level.
@@ -16009,8 +16009,8 @@ public:
     static Type::Enum Class();
     IfcTypeProduct (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTypeProduct* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTypeProduct> > list;
-    typedef IfcTemplatedEntityList<IfcTypeProduct>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTypeProduct > > list;
+    typedef IfcTemplatedEntityList< IfcTypeProduct >::it it;
 };
 /// IfcUShapeProfileDef defines
 /// a section profile that provides the defining parameters of a U-shape
@@ -16019,11 +16019,11 @@ public:
 /// according to the following illustration. The centre of the position
 /// coordinate system is in the profile's centre of the bounding box.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ All profile origins are now in the center of the bounding box.
+/// IFC2x3 CHANGE  All profile origins are now in the center of the bounding box.
 /// 
-/// IFC2x4 CHANGEï¿½ Type of FilletRadius and EdgeRadius relaxed to allow for zero radius.
+/// IFC2x4 CHANGE  Type of FilletRadius and EdgeRadius relaxed to allow for zero radius.
 /// Trailing attribute CentreOfGravityInX deleted, use respective property in IfcExtendedProfileProperties instead.
 /// 
 /// Figure 327 illustrates parameters of the U-shape profile definition.
@@ -16074,8 +16074,8 @@ public:
     static Type::Enum Class();
     IfcUShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcUShapeProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcUShapeProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcUShapeProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcUShapeProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcUShapeProfileDef >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: The vector is defined in terms of the direction and magnitude of the vector. The value of the magnitude attribute defines the magnitude of the vector. 
 /// 
@@ -16099,8 +16099,8 @@ public:
     static Type::Enum Class();
     IfcVector (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcVector* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcVector> > list;
-    typedef IfcTemplatedEntityList<IfcVector>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcVector > > list;
+    typedef IfcTemplatedEntityList< IfcVector >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A vertex_loop is a loop of
 ///   zero genus consisting of a single vertex. A vertex can exist independently of a
@@ -16111,9 +16111,9 @@ public:
 /// A vertex loop has zero extent and dimensionality. 
 ///   The vertex loop has genus 0. 
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: vertex_loop. Please refer to ISO/IS 10303-42:1994, p. 121 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: vertex_loop. Please refer to ISO/IS 10303-42:1994, p. 121 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New Entity in IFC2x2.
+/// HISTORY  New Entity in IFC2x2.
 class IfcVertexLoop : public IfcLoop {
 public:
     /// The vertex which defines the entire loop.
@@ -16127,8 +16127,8 @@ public:
     static Type::Enum Class();
     IfcVertexLoop (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcVertexLoop* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcVertexLoop> > list;
-    typedef IfcTemplatedEntityList<IfcVertexLoop>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcVertexLoop > > list;
+    typedef IfcTemplatedEntityList< IfcVertexLoop >::it it;
 };
 /// The window lining is the outer
 /// frame which enables the window to be fixed in position. The
@@ -16136,7 +16136,7 @@ public:
 /// casements. The parameter of the IfcWindowLiningProperties
 /// define the geometrically relevant parameter of the lining.
 /// 
-/// NOTEï¿½ The IfcWindowLiningProperties
+/// NOTEÿ The IfcWindowLiningProperties
 /// shall only be applied to construct the 3D shape of a window, if
 /// the attribute IfcWindowStyle.ParameterTakesPrecedence is
 /// set TRUE.
@@ -16150,7 +16150,7 @@ public:
 /// HISTORY New Entity in IFC Release 2.0. Has been renamed from IfcWindowLining in
 /// IFC Release 2x.
 /// 
-/// IFC2x4 CHANGEï¿½ The following attributes have been added LiningOffset,
+/// IFC2x4 CHANGEÿ The following attributes have been added LiningOffset,
 /// LiningToPanelOffsetX, LiningToPanelOffsetY. The
 /// attribute ShapeAspectStyle is deprecated and shall no
 /// longer be used. Supertype changed to new
@@ -16277,8 +16277,8 @@ public:
     static Type::Enum Class();
     IfcWindowLiningProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcWindowLiningProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcWindowLiningProperties> > list;
-    typedef IfcTemplatedEntityList<IfcWindowLiningProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcWindowLiningProperties > > list;
+    typedef IfcTemplatedEntityList< IfcWindowLiningProperties >::it it;
 };
 /// A window panel is a casement, that is, a component, fixed or opening,
 /// consisting essentially of a frame and the infilling. The
@@ -16354,8 +16354,8 @@ public:
     static Type::Enum Class();
     IfcWindowPanelProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcWindowPanelProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcWindowPanelProperties> > list;
-    typedef IfcTemplatedEntityList<IfcWindowPanelProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcWindowPanelProperties > > list;
+    typedef IfcTemplatedEntityList< IfcWindowPanelProperties >::it it;
 };
 /// Definition: The window style defines a particular style of windows, which may be included into the spatial context of the building model through instances of IfcWindow. A window style defines the overall parameter of the window style and refers to the particular parameter of the lining and one (or several) panels through IfcWindowLiningProperties and IfcWindowPanelProperties.
 /// 
@@ -16394,8 +16394,8 @@ public:
     static Type::Enum Class();
     IfcWindowStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcWindowStyle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcWindowStyle> > list;
-    typedef IfcTemplatedEntityList<IfcWindowStyle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcWindowStyle > > list;
+    typedef IfcTemplatedEntityList< IfcWindowStyle >::it it;
 };
 /// IfcZShapeProfileDef defines
 /// a section profile that provides the defining parameters of a Z-shape
@@ -16404,9 +16404,9 @@ public:
 /// the following illustration. The centre of the position coordinate
 /// system is in the profile's centre of the bounding box.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x Edition 4 CHANGEï¿½ Type of FilletRadius and EdgeRadius relaxed to allow for zero radius.
+/// IFC2x Edition 4 CHANGE  Type of FilletRadius and EdgeRadius relaxed to allow for zero radius.
 /// 
 /// Figure 328 illustrates parameters of the Z-shape profile definition.
 /// 
@@ -16449,8 +16449,8 @@ public:
     static Type::Enum Class();
     IfcZShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcZShapeProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcZShapeProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcZShapeProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcZShapeProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcZShapeProfileDef >::it it;
 };
 class IfcAnnotationCurveOccurrence : public IfcAnnotationOccurrence {
 public:
@@ -16463,8 +16463,8 @@ public:
     static Type::Enum Class();
     IfcAnnotationCurveOccurrence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAnnotationCurveOccurrence* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationCurveOccurrence> > list;
-    typedef IfcTemplatedEntityList<IfcAnnotationCurveOccurrence>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAnnotationCurveOccurrence > > list;
+    typedef IfcTemplatedEntityList< IfcAnnotationCurveOccurrence >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: An annotation fill area is a set of curves that may be filled with hatching, colour or tiling. The annotation fill are is described by boundaries which consist of non-intersecting, non-self-intersecting closed curves. These curves form the boundary of planar areas to be filled according to the style for the annotation fill area.
 /// 
@@ -16474,7 +16474,7 @@ public:
 /// 
 /// Figure 300 &#8212; Annotation fill area
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: annotation_fill_area. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: annotation_fill_area. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// The IfcAnnotationFillArea defines an area by a definite OuterBoundary, that might include InnerBoundaries. The areas defined by the InnerBoundaries are excluded from applying the fill area style.
 /// 
@@ -16483,21 +16483,21 @@ public:
 /// Any curve that describes an inner boundary shall not intersect with, nor include, another curve defining an inner boundary.
 ///   The curve defining the outer boundary shall not intersect with any curve defining an inner boundary, nor shall it be surrounded by a curve defining an inner boundary.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ The two attributes OuterBoundary and InnerBoundaries are added and replace the previous single boundary.
+/// IFC2x3 CHANGE  The two attributes OuterBoundary and InnerBoundaries are added and replace the previous single boundary.
 class IfcAnnotationFillArea : public IfcGeometricRepresentationItem {
 public:
     /// A closed curve that defines the outer boundary of the fill area. The areas defined by the outer boundary (minus potentially defined inner boundaries) is filled by the fill area style.
     /// 
-    /// IFC2x Edition 3 CHANGEï¿½ The two new attributes OuterBoundary and InnerBoundaries replace the old single attribute Boundaries.
+    /// IFC2x Edition 3 CHANGE  The two new attributes OuterBoundary and InnerBoundaries replace the old single attribute Boundaries.
     IfcCurve* OuterBoundary();
     /// Whether the optional attribute InnerBoundaries is defined for this IfcAnnotationFillArea
     bool hasInnerBoundaries();
     /// A set of inner curves that define the inner boundaries of the fill area. The areas defined by the inner boundaries are excluded from applying the fill area style.
     /// 
-    /// IFC2x Edition 3 CHANGEï¿½ The two new attributes OuterBoundary and InnerBoundaries replace the old single attribute Boundaries.
-    SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > InnerBoundaries();
+    /// IFC2x Edition 3 CHANGE  The two new attributes OuterBoundary and InnerBoundaries replace the old single attribute Boundaries.
+    SHARED_PTR< IfcTemplatedEntityList< IfcCurve > > InnerBoundaries();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_ENTITY_LIST; } return IfcGeometricRepresentationItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "OuterBoundary"; case 1: return "InnerBoundaries"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
@@ -16507,8 +16507,8 @@ public:
     static Type::Enum Class();
     IfcAnnotationFillArea (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAnnotationFillArea* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationFillArea> > list;
-    typedef IfcTemplatedEntityList<IfcAnnotationFillArea>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAnnotationFillArea > > list;
+    typedef IfcTemplatedEntityList< IfcAnnotationFillArea >::it it;
 };
 class IfcAnnotationFillAreaOccurrence : public IfcAnnotationOccurrence {
 public:
@@ -16527,8 +16527,8 @@ public:
     static Type::Enum Class();
     IfcAnnotationFillAreaOccurrence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAnnotationFillAreaOccurrence* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationFillAreaOccurrence> > list;
-    typedef IfcTemplatedEntityList<IfcAnnotationFillAreaOccurrence>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAnnotationFillAreaOccurrence > > list;
+    typedef IfcTemplatedEntityList< IfcAnnotationFillAreaOccurrence >::it it;
 };
 class IfcAnnotationSurface : public IfcGeometricRepresentationItem {
 public:
@@ -16545,14 +16545,14 @@ public:
     static Type::Enum Class();
     IfcAnnotationSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAnnotationSurface* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotationSurface> > list;
-    typedef IfcTemplatedEntityList<IfcAnnotationSurface>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAnnotationSurface > > list;
+    typedef IfcTemplatedEntityList< IfcAnnotationSurface >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: The direction and location in three dimensional space of a single axis. An axis1_placement is defined in terms of a locating point (inherited from placement supertype) and an axis direction: this is either the direction of axis or defaults to (0.0,0.0,1.0). The actual direction for the axis placement is given by the derived attribute z (Z).  
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: axis1_placement, please refer to ISO/IS 10303-42:1994, p. 28 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: axis1_placement, please refer to ISO/IS 10303-42:1994, p. 28 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5
+/// HISTORY  New entity in IFC Release 1.5
 /// 
 /// Figure 274 illustrates the definition of the IfcAxis1Placement within the three-dimensional coordinate system.
 /// 
@@ -16572,16 +16572,16 @@ public:
     static Type::Enum Class();
     IfcAxis1Placement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAxis1Placement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAxis1Placement> > list;
-    typedef IfcTemplatedEntityList<IfcAxis1Placement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAxis1Placement > > list;
+    typedef IfcTemplatedEntityList< IfcAxis1Placement >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: The location and orientation in two dimensional space of two mutually perpendicular axes. An axis2_placement_2d is defined in terms of a point, (inherited from the placement supertype), and an axis. It can be used to locate and originate an object in two dimensional space and to define a placement coordinate system. The class includes a point which forms the origin of the placement coordinate system. A direction vector is required to complete the definition of the placement coordinate system. The reference direction defines the placement X axis direction, the placement Y axis is derived from this.  
 /// 
 /// If the RefDirection attribute is not given, the placement defaults to P[1] (x-axis) as [1.,0.] and P[2] (y-axis) as [0.,1.].  
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: axis2_placement_2d, please refer to ISO/IS 10303-42:1994, p. 28 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: axis2_placement_2d, please refer to ISO/IS 10303-42:1994, p. 28 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5.
+/// HISTORY  New entity in IFC Release 1.5.
 /// 
 /// Figure 275 illustrates the definition of the IfcAxis2Placement2D within the two-dimensional coordinate system. 
 /// 
@@ -16601,8 +16601,8 @@ public:
     static Type::Enum Class();
     IfcAxis2Placement2D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAxis2Placement2D* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAxis2Placement2D> > list;
-    typedef IfcTemplatedEntityList<IfcAxis2Placement2D>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAxis2Placement2D > > list;
+    typedef IfcTemplatedEntityList< IfcAxis2Placement2D >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: The location and orientation in three dimensional space of three mutually perpendicular axes. An axis2_placement_3D is defined in terms of a point (inherited from placement supertype) and two (ideally orthogonal) axes. It can be used to locate and originate an object in three dimensional space and to define a placement coordinate system. The entity includes a point which forms the origin of the placement coordinate system. Two direction vectors are required to complete the definition of the placement coordinate system. The axis is the placement Z axis direction and the ref_direction is an approximation to the placement X axis direction.
 /// 
@@ -16610,9 +16610,9 @@ public:
 /// are not given, the placement defaults to P[1] (x-axis) as [1.,0.,0.],
 /// P[2] (y-axis) as [0.,1.,0.] and P[3] (z-axis) as [0.,0.,1.].
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: axis2_placement_3d, please refer to ISO/IS 10303-42:1994 for the final definition of the formal standard. The WR5 is added to ensure that either both attributes Axis and RefDirection are given, or both are omitted.
+/// NOTE  Corresponding ISO 10303 name: axis2_placement_3d, please refer to ISO/IS 10303-42:1994 for the final definition of the formal standard. The WR5 is added to ensure that either both attributes Axis and RefDirection are given, or both are omitted.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5.
+/// HISTORY  New entity in IFC Release 1.5.
 /// 
 /// Figure 276 illustrates the definition of the IfcAxis2Placement3D within the three-dimensional coordinate system.
 /// 
@@ -16636,8 +16636,8 @@ public:
     static Type::Enum Class();
     IfcAxis2Placement3D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAxis2Placement3D* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAxis2Placement3D> > list;
-    typedef IfcTemplatedEntityList<IfcAxis2Placement3D>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAxis2Placement3D > > list;
+    typedef IfcTemplatedEntityList< IfcAxis2Placement3D >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A Boolean result
 /// is the result of a regularized operation on two solids to create
@@ -16682,8 +16682,8 @@ public:
     static Type::Enum Class();
     IfcBooleanResult (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBooleanResult* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBooleanResult> > list;
-    typedef IfcTemplatedEntityList<IfcBooleanResult>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBooleanResult > > list;
+    typedef IfcTemplatedEntityList< IfcBooleanResult >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A bounded surface is a surface of finite area with identifiable boundaries.
 /// 
@@ -16708,8 +16708,8 @@ public:
     static Type::Enum Class();
     IfcBoundedSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBoundedSurface* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundedSurface> > list;
-    typedef IfcTemplatedEntityList<IfcBoundedSurface>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBoundedSurface > > list;
+    typedef IfcTemplatedEntityList< IfcBoundedSurface >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A box domain
 ///   is an orthogonal box parallel to the axes of the geometric
@@ -16752,12 +16752,12 @@ public:
     static Type::Enum Class();
     IfcBoundingBox (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBoundingBox* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundingBox> > list;
-    typedef IfcTemplatedEntityList<IfcBoundingBox>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBoundingBox > > list;
+    typedef IfcTemplatedEntityList< IfcBoundingBox >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: This entity is a subtype of the half space solid which is trimmed by a surrounding rectangular box. The box has its edges parallel to the coordinate axes of the geometric coordinate system.
 /// 
-/// NOTEï¿½ The purpose of the box is to facilitate CSG computations by producing a solid of finite size.
+/// NOTE  The purpose of the box is to facilitate CSG computations by producing a solid of finite size.
 /// 
 /// The IfcBoxedHalfSpace is
 /// used (as its supertype IfcHalfSpaceSolid) only within
@@ -16776,9 +16776,9 @@ public:
 /// 
 /// NOTE Corresponding ISO 10303-42 entity: boxed_half_space, please refer to ISO/IS 10303-42:1994, p. 185 for the final definition of the formal standard. The IFC class IfcBoundingBox is used for the definition of the enclosure, providing the same definition as box_domain.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5.1, improved documentation available in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 1.5.1, improved documentation available in IFC Release 2x.
 /// 
-/// IFC2x4 CHANGEï¿½ Usage correct, position coordinate system for Enclosure is the object coordinate system.
+/// IFC2x4 CHANGE  Usage correct, position coordinate system for Enclosure is the object coordinate system.
 /// 
 /// The IfcBoundingBox (relating to ISO 10303-42:1994 box_domain) that provides the enclosure is given for the convenience of the receiving application to enable the use of size box comparison for efficiency (for example, to check first whether size boxes intersect, if not no calculations has to be done to check whether the solids of the entities intersect).
 /// 
@@ -16798,8 +16798,8 @@ public:
     static Type::Enum Class();
     IfcBoxedHalfSpace (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBoxedHalfSpace* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoxedHalfSpace> > list;
-    typedef IfcTemplatedEntityList<IfcBoxedHalfSpace>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBoxedHalfSpace > > list;
+    typedef IfcTemplatedEntityList< IfcBoxedHalfSpace >::it it;
 };
 /// IfcCShapeProfileDef defines
 /// a section profile that provides the defining parameters of a C-shaped
@@ -16809,11 +16809,11 @@ public:
 /// illustration. The centre of the position coordinate system is in the
 /// profile's centre of the bounding box.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ All profile origins are now in the center of the bounding box.
+/// IFC2x3 CHANGE  All profile origins are now in the center of the bounding box.
 /// 
-/// IFC2x4 CHANGEï¿½ Type of InternalFilletRadius relaxed to allow for zero radius.
+/// IFC2x4 CHANGE  Type of InternalFilletRadius relaxed to allow for zero radius.
 /// Trailing attribute CentreOfGravityInX deleted, use respective property in IfcExtendedProfileProperties instead.
 /// 
 /// Figure 315 illustrates parameters of the C-shape profile definition. The parameterized profile defines its own position coordinate system. The underlying coordinate system is defined by the swept area solid that uses the profile definition. It is the xy plane of:
@@ -16849,8 +16849,8 @@ public:
     static Type::Enum Class();
     IfcCShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCShapeProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCShapeProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcCShapeProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCShapeProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcCShapeProfileDef >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A point defined by its coordinates in a two or three dimensional rectangular Cartesian coordinate system, or in a two dimensional parameter space. The entity is defined in a two or three dimensional space.  
 /// 
@@ -16862,7 +16862,7 @@ public:
 class IfcCartesianPoint : public IfcPoint {
 public:
     /// The first, second, and third coordinate of the point location. If placed in a two or three dimensional rectangular Cartesian coordinate system, Coordinates[1] is the X coordinate, Coordinates[2] is the Y coordinate, and Coordinates[3] is the Z coordinate.
-    std::vector<IfcLengthMeasure> /*[1:3]*/ Coordinates();
+    std::vector< IfcLengthMeasure > /*[1:3]*/ Coordinates();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_VECTOR_DOUBLE; } return IfcPoint::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Coordinates"; } return IfcPoint::getArgumentName(i); }
@@ -16872,8 +16872,8 @@ public:
     static Type::Enum Class();
     IfcCartesianPoint (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCartesianPoint* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > list;
-    typedef IfcTemplatedEntityList<IfcCartesianPoint>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCartesianPoint > > list;
+    typedef IfcTemplatedEntityList< IfcCartesianPoint >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A Cartesian transformation operator defines a geometric transformation composed of translation, rotation, mirroring and uniform scaling. The list of normalized vectors u defines the columns of an orthogonal matrix T. These vectors are computed, by the base axis function, from the direction attributes axis1, axis2 and, in Cartesian transformation operator 3d, axis3. If |T|= -1, the transformation includes mirroring. The local origin point A, the scale value S and the matrix T together define a transformation.  
 /// 
@@ -16930,8 +16930,8 @@ public:
     static Type::Enum Class();
     IfcCartesianTransformationOperator (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCartesianTransformationOperator* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCartesianTransformationOperator> > list;
-    typedef IfcTemplatedEntityList<IfcCartesianTransformationOperator>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCartesianTransformationOperator > > list;
+    typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A Cartesian transformation operator 2d defines a geometric transformation in two-dimensional space composed of translation, rotation, mirroring and uniform scaling. The list of normalized vectors u defines the columns of an orthogonal matrix T. These vectors are computed from the direction attributes axis1 and axis2 by the base axis function. If |T|= -1, the transformation includes mirroring.  
 /// 
@@ -16949,8 +16949,8 @@ public:
     static Type::Enum Class();
     IfcCartesianTransformationOperator2D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCartesianTransformationOperator2D* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCartesianTransformationOperator2D> > list;
-    typedef IfcTemplatedEntityList<IfcCartesianTransformationOperator2D>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCartesianTransformationOperator2D > > list;
+    typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator2D >::it it;
 };
 /// A Cartesian transformation operator 2d non uniform defines a geometric transformation in two-dimensional space composed of translation, rotation, mirroring and non uniform scaling. Non uniform scaling is given by two different scaling factors: 
 /// 
@@ -16977,8 +16977,8 @@ public:
     static Type::Enum Class();
     IfcCartesianTransformationOperator2DnonUniform (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCartesianTransformationOperator2DnonUniform* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCartesianTransformationOperator2DnonUniform> > list;
-    typedef IfcTemplatedEntityList<IfcCartesianTransformationOperator2DnonUniform>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCartesianTransformationOperator2DnonUniform > > list;
+    typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator2DnonUniform >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A Cartesian transformation operator 3d defines a geometric transformation in three-dimensional space composed of translation, rotation, mirroring and uniform scaling. The list of normalized vectors u defines the columns of an orthogonal matrix T. These vectors are computed from the direction attributes axis1, axis2 and axis3 by the base axis function. If |T|= -1, the transformation includes mirroring.  
 /// 
@@ -17000,8 +17000,8 @@ public:
     static Type::Enum Class();
     IfcCartesianTransformationOperator3D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCartesianTransformationOperator3D* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCartesianTransformationOperator3D> > list;
-    typedef IfcTemplatedEntityList<IfcCartesianTransformationOperator3D>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCartesianTransformationOperator3D > > list;
+    typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator3D >::it it;
 };
 /// A Cartesian transformation operator 3d non uniform defines a geometric transformation in three-dimensional space composed of translation, rotation, mirroring and non uniform scaling. Non uniform scaling is given by three different scaling factors:
 /// 
@@ -17033,12 +17033,12 @@ public:
     static Type::Enum Class();
     IfcCartesianTransformationOperator3DnonUniform (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCartesianTransformationOperator3DnonUniform* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCartesianTransformationOperator3DnonUniform> > list;
-    typedef IfcTemplatedEntityList<IfcCartesianTransformationOperator3DnonUniform>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCartesianTransformationOperator3DnonUniform > > list;
+    typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator3DnonUniform >::it it;
 };
 /// IfcCircleProfileDef defines a circle as the profile definition used by the swept surface geometry or by the swept area solid. It is given by its Radius attribute and placed within the 2D position coordinate system, established by the Position attribute. 
 /// 
-/// HISTORYï¿½ New class in IFC 1.5.
+/// HISTORY  New class in IFC 1.5.
 /// 
 /// Figure 313 illustrates parameters for the circle profile definition. The parameterized profile defines its own position coordinate system. The underlying coordinate system is defined by the swept surface or swept area solid that uses the profile definition. It is the xy plane of either: 
 /// 
@@ -17061,8 +17061,8 @@ public:
     static Type::Enum Class();
     IfcCircleProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCircleProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCircleProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcCircleProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCircleProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcCircleProfileDef >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A closed shell is a shell
 ///   of the dimensionality 2 which typically serves as a bound for a region in R3. A
@@ -17083,14 +17083,14 @@ public:
 ///   with a closed shell is a closed, orientable manifold. The domain of a closed
 ///   shell, if present, is a connected, closed, oriented 2-manifold. It is always
 ///   topologically equivalent to an H-fold torus for some H
-///   ï¿½ 0. The number H is referred to as the
+///   ³ 0. The number H is referred to as the
 ///   surface genus of the shell. If a shell of genus H has a domain within
 ///   coordinate space R3, then the finite region of space inside
 ///   it is topologically equivalent to a solid ball with H tunnels drilled
 ///   through it. 
 ///   The Euler equation (7) applies with B=0, because in this case
 ///   there are no holes. As in the case of open shells, the surface genus H
-///   may not be known a priori, but shall be an integer ï¿½ 0. Thus a necessary, but not sufficient, condition
+///   may not be known a priori, but shall be an integer ³ 0. Thus a necessary, but not sufficient, condition
 ///   for a well-formed closed shell is the following: 
 /// 
 /// In the current IFC Release only poly loops
@@ -17099,7 +17099,7 @@ public:
 /// 
 /// NOTE: Corresponding ISO 10303 entity: closed_shell, please refer to ISO/IS 10303-42:1994, p.149 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 /// 
 /// Informal propositions: 
 /// 
@@ -17124,8 +17124,8 @@ public:
     static Type::Enum Class();
     IfcClosedShell (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcClosedShell* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcClosedShell> > list;
-    typedef IfcTemplatedEntityList<IfcClosedShell>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcClosedShell > > list;
+    typedef IfcTemplatedEntityList< IfcClosedShell >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A composite curve segment is a bounded curve together with transition information which is used to construct a composite curve (IfcCompositeCurve).
 /// 
@@ -17140,7 +17140,7 @@ public:
     IfcTransitionCode::IfcTransitionCode Transition();
     /// An indicator of whether or not the sense of the segment agrees with, or opposes, that of the parent curve. If SameSense is false, the point with highest parameter value is taken as the first point of the segment.
     /// 
-    /// NOTEï¿½ If the datatype of ParentCurve is IfcTrimmedCurve, the value of SameSense overrides the value of IfcTrimmedCurve.SenseAgreement
+    /// NOTE  If the datatype of ParentCurve is IfcTrimmedCurve, the value of SameSense overrides the value of IfcTrimmedCurve.SenseAgreement
     bool SameSense();
     /// The bounded curve which defines the geometry of the segment.
     IfcCurve* ParentCurve();
@@ -17148,14 +17148,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENUMERATION; case 1: return Argument_BOOL; case 2: return Argument_ENTITY; } return IfcGeometricRepresentationItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Transition"; case 1: return "SameSense"; case 2: return "ParentCurve"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcCompositeCurve> > UsingCurves(); // INVERSE IfcCompositeCurve::Segments
+    SHARED_PTR< IfcTemplatedEntityList< IfcCompositeCurve > > UsingCurves(); // INVERSE IfcCompositeCurve::Segments
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcCompositeCurveSegment (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCompositeCurveSegment* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCompositeCurveSegment> > list;
-    typedef IfcTemplatedEntityList<IfcCompositeCurveSegment>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCompositeCurveSegment > > list;
+    typedef IfcTemplatedEntityList< IfcCompositeCurveSegment >::it it;
 };
 class IfcCraneRailAShapeProfileDef : public IfcParameterizedProfileDef {
 public:
@@ -17184,8 +17184,8 @@ public:
     static Type::Enum Class();
     IfcCraneRailAShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCraneRailAShapeProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCraneRailAShapeProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcCraneRailAShapeProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCraneRailAShapeProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcCraneRailAShapeProfileDef >::it it;
 };
 class IfcCraneRailFShapeProfileDef : public IfcParameterizedProfileDef {
 public:
@@ -17211,14 +17211,14 @@ public:
     static Type::Enum Class();
     IfcCraneRailFShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCraneRailFShapeProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCraneRailFShapeProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcCraneRailFShapeProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCraneRailFShapeProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcCraneRailFShapeProfileDef >::it it;
 };
 /// IfcCsgPrimitive3D is an abstract supertype of all three dimensional primitives used as either tree root item, or as Boolean results within a CSG solid model. All 3D CSG primitives are defined within a three-dimensional placement coordinate system.
 /// 
-/// NOTEï¿½ No directly corresponding ISO 10303-42 entity, the select type primitive_3d covers the same individual 3D CSG primitives, the position attribute has been added to apply equally to all subtypes. Please refer to ISO/IS 10303-42:1994, p. 234 for the final definition of the formal standard.
+/// NOTEÿ No directly corresponding ISO 10303-42 entity, the select type primitive_3d covers the same individual 3D CSG primitives, the position attribute has been added to apply equally to all subtypes. Please refer to ISO/IS 10303-42:1994, p. 234 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x3.
+/// HISTORYÿ New entity in IFC2x3.
 class IfcCsgPrimitive3D : public IfcGeometricRepresentationItem {
 public:
     /// The placement coordinate system to which the parameters of each individual CSG primitive apply.
@@ -17232,8 +17232,8 @@ public:
     static Type::Enum Class();
     IfcCsgPrimitive3D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCsgPrimitive3D* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCsgPrimitive3D> > list;
-    typedef IfcTemplatedEntityList<IfcCsgPrimitive3D>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCsgPrimitive3D > > list;
+    typedef IfcTemplatedEntityList< IfcCsgPrimitive3D >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A solid
 ///   represented as a CSG model is defined by a collection of
@@ -17289,8 +17289,8 @@ public:
     static Type::Enum Class();
     IfcCsgSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCsgSolid* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCsgSolid> > list;
-    typedef IfcTemplatedEntityList<IfcCsgSolid>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCsgSolid > > list;
+    typedef IfcTemplatedEntityList< IfcCsgSolid >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A curve can be envisioned as the path of a point moving in its coordinate space.  
 /// 
@@ -17313,8 +17313,8 @@ public:
     static Type::Enum Class();
     IfcCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCurve* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > list;
-    typedef IfcTemplatedEntityList<IfcCurve>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCurve > > list;
+    typedef IfcTemplatedEntityList< IfcCurve >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: The curve bounded surface is a parametric surface with curved boundaries defined by one or more boundary curves. The bounded surface is defined to be the portion of the basis surface in the direction of N x T from any point on the boundary, where N is the surface normal and T the boundary curve tangent vector at this point. The region so defined shall be arcwise connected. 
 /// 
@@ -17326,7 +17326,7 @@ public:
 /// 
 /// NOTE Corresponding ISO 10303 entity curve_bounded_surface has been changed to meet the specific requirements of an easy representation of curve bounded planes.
 /// 
-/// HISTORY ï¿½New entity in IFC Release 1.5
+/// HISTORY  New entity in IFC Release 1.5
 /// 
 /// IFC2x PLATFORM CHANGE: The data type of the attribute OuterBoundary and InnerBoundaries has been changed from Ifc2DCompositeCurve to its supertype IfcCurve with upward compatibility for file based exchange.
 class IfcCurveBoundedPlane : public IfcBoundedSurface {
@@ -17336,7 +17336,7 @@ public:
     /// The outer boundary of the surface.
     IfcCurve* OuterBoundary();
     /// An optional set of inner boundaries. They shall not intersect each other or the outer boundary.
-    SHARED_PTR< IfcTemplatedEntityList<IfcCurve> > InnerBoundaries();
+    SHARED_PTR< IfcTemplatedEntityList< IfcCurve > > InnerBoundaries();
  virtual unsigned int getArgumentCount() const { return 3; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY; case 1: return Argument_ENTITY; case 2: return Argument_ENTITY_LIST; } return IfcBoundedSurface::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisSurface"; case 1: return "OuterBoundary"; case 2: return "InnerBoundaries"; } return IfcBoundedSurface::getArgumentName(i); }
@@ -17346,8 +17346,8 @@ public:
     static Type::Enum Class();
     IfcCurveBoundedPlane (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCurveBoundedPlane* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurveBoundedPlane> > list;
-    typedef IfcTemplatedEntityList<IfcCurveBoundedPlane>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCurveBoundedPlane > > list;
+    typedef IfcTemplatedEntityList< IfcCurveBoundedPlane >::it it;
 };
 /// A defined symbol is a symbolic representation that gets its shape information by an established convention, either through a predefined symbol, or an externally defined symbol.
 /// 
@@ -17371,8 +17371,8 @@ public:
     static Type::Enum Class();
     IfcDefinedSymbol (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDefinedSymbol* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDefinedSymbol> > list;
-    typedef IfcTemplatedEntityList<IfcDefinedSymbol>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDefinedSymbol > > list;
+    typedef IfcTemplatedEntityList< IfcDefinedSymbol >::it it;
 };
 class IfcDimensionCurve : public IfcAnnotationCurveOccurrence {
 public:
@@ -17380,14 +17380,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcAnnotationCurveOccurrence::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcAnnotationCurveOccurrence::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcTerminatorSymbol> > AnnotatedBySymbols(); // INVERSE IfcTerminatorSymbol::AnnotatedCurve
+    SHARED_PTR< IfcTemplatedEntityList< IfcTerminatorSymbol > > AnnotatedBySymbols(); // INVERSE IfcTerminatorSymbol::AnnotatedCurve
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcDimensionCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDimensionCurve* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDimensionCurve> > list;
-    typedef IfcTemplatedEntityList<IfcDimensionCurve>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDimensionCurve > > list;
+    typedef IfcTemplatedEntityList< IfcDimensionCurve >::it it;
 };
 class IfcDimensionCurveTerminator : public IfcTerminatorSymbol {
 public:
@@ -17401,8 +17401,8 @@ public:
     static Type::Enum Class();
     IfcDimensionCurveTerminator (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDimensionCurveTerminator* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDimensionCurveTerminator> > list;
-    typedef IfcTemplatedEntityList<IfcDimensionCurveTerminator>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDimensionCurveTerminator > > list;
+    typedef IfcTemplatedEntityList< IfcDimensionCurveTerminator >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: This entity defines a general direction vector in two or three dimensional space. The actual magnitudes of the components have no effect upon the direction being defined, only the ratios X:Y:Z or X:Y are significant.  
 /// 
@@ -17414,7 +17414,7 @@ public:
 class IfcDirection : public IfcGeometricRepresentationItem {
 public:
     /// The components in the direction of X axis (DirectionRatios[1]), of Y axis (DirectionRatios[2]), and of Z axis (DirectionRatios[3])
-    std::vector<double> /*[2:3]*/ DirectionRatios();
+    std::vector< double > /*[2:3]*/ DirectionRatios();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_VECTOR_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DirectionRatios"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
@@ -17424,8 +17424,8 @@ public:
     static Type::Enum Class();
     IfcDirection (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDirection* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDirection> > list;
-    typedef IfcTemplatedEntityList<IfcDirection>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDirection > > list;
+    typedef IfcTemplatedEntityList< IfcDirection >::it it;
 };
 /// The door lining is the frame which
 /// enables the door leaf to be fixed in position. The door lining is
@@ -17433,7 +17433,7 @@ public:
 /// (IfcDoorLiningProperties) define the geometrically
 /// relevant parameter of the lining.
 /// 
-/// NOTEï¿½ The IfcDoorLiningProperties
+/// NOTEÿ The IfcDoorLiningProperties
 /// shall only be applied to construct the 3D shape of a door, if the
 /// attribute IfcDoorStyle.ParameterTakesPrecedence is set
 /// TRUE.
@@ -17446,7 +17446,7 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 2.0. Has been renamed from IfcDoorLining in IFC Release 2x.
 /// 
-/// IFC2x4 CHANGEï¿½ The following attributes have been added LiningToPanelOffsetX, LiningToPanelOffsetY. The attribute ShapeAspectStyle is deprecated and shall no longer be used. Supertype changed to new IfcPreDefinedPropertySet.
+/// IFC2x4 CHANGEÿ The following attributes have been added LiningToPanelOffsetX, LiningToPanelOffsetY. The attribute ShapeAspectStyle is deprecated and shall no longer be used. Supertype changed to new IfcPreDefinedPropertySet.
 /// 
 /// Geometry use definitions
 /// The IfcDoorLiningProperties does not hold its own
@@ -17480,7 +17480,7 @@ public:
 /// LiningOffset : given if lining edge has an offset to
 /// the x axis of the local placement.
 /// 
-/// NOTE ï¿½In addition to theï¿½LiningOffset,
+/// NOTE ÿIn addition to theÿLiningOffset,
 /// the local placement of the IfcDoor can already have an
 /// offset to the wall edge and thereby shift the lining along the y
 /// axis. The actual position of the lining is calculated from the
@@ -17579,8 +17579,8 @@ public:
     static Type::Enum Class();
     IfcDoorLiningProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDoorLiningProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDoorLiningProperties> > list;
-    typedef IfcTemplatedEntityList<IfcDoorLiningProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDoorLiningProperties > > list;
+    typedef IfcTemplatedEntityList< IfcDoorLiningProperties >::it it;
 };
 /// A door panel is normally a door leaf that opens to allow people or
 /// goods to pass. The parameters of the door panel define the
@@ -17603,7 +17603,7 @@ public:
 /// included in the same list of the IfcDoorStyle using the
 /// IfcPropertySet for dynamic extensions.
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 2.0.
+/// HISTORYÿ New Entity in IFC Release 2.0.
 /// 
 /// IFC2x4 CHANGE Supertype changed to new IfcPreDefinedPropertySet.
 /// 
@@ -17656,8 +17656,8 @@ public:
     static Type::Enum Class();
     IfcDoorPanelProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDoorPanelProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDoorPanelProperties> > list;
-    typedef IfcTemplatedEntityList<IfcDoorPanelProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDoorPanelProperties > > list;
+    typedef IfcTemplatedEntityList< IfcDoorPanelProperties >::it it;
 };
 /// Definition: The door style, IfcDoorStyle, defines a particular style of doors, which may be included into the spatial context of the building model through instances of IfcDoor. A door style defines the overall parameter of the door style and refers to the particular parameter of the lining and one (or several) panels through the IfcDoorLiningProperties and the IfcDoorPanelProperties.
 /// 
@@ -17666,7 +17666,7 @@ public:
 /// is related by the inverse relationship IsDefinedBy pointing to IfcRelDefinedByType. The IfcDoorStyle
 /// also defines the particular attributes for the lining, IfcDoorLiningProperties, and panels, IfcDoorPanelProperties.
 /// 
-/// HISTORYï¿½New entity in IFC Release 2x.
+/// HISTORYÿNew entity in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE The entity is deprecated and shall not be used. The new entity
 /// IfcDoorType shall be used instead.
@@ -17682,7 +17682,7 @@ public:
 /// The IfcDoorStyleOperationTypeEnum defines the general layout of the door style. Depending on the enumerator, the
 /// appropriate instances of IfcDoorLiningProperties and IfcDoorPanelProperties are attached in the list of
 /// HasPropertySets. The IfcDoorStyleOperationTypeEnum mainly determines the hinge side (left hung, or right hung), the
-/// operation (swinging, sliding, folding, etc.)ï¿½and the number of panels.
+/// operation (swinging, sliding, folding, etc.)ÿand the number of panels.
 /// 
 /// See geometry use definitions at IfcDoorStyleOperationTypeEnum for the correct usage of opening symbols for different operation types.
 class IfcDoorStyle : public IfcTypeProduct {
@@ -17704,25 +17704,25 @@ public:
     static Type::Enum Class();
     IfcDoorStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDoorStyle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDoorStyle> > list;
-    typedef IfcTemplatedEntityList<IfcDoorStyle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDoorStyle > > list;
+    typedef IfcTemplatedEntityList< IfcDoorStyle >::it it;
 };
 class IfcDraughtingCallout : public IfcGeometricRepresentationItem {
 public:
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Contents();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > Contents();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } return IfcGeometricRepresentationItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Contents"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingCalloutRelationship> > IsRelatedFromCallout(); // INVERSE IfcDraughtingCalloutRelationship::RelatedDraughtingCallout
-    SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingCalloutRelationship> > IsRelatedToCallout(); // INVERSE IfcDraughtingCalloutRelationship::RelatingDraughtingCallout
+    SHARED_PTR< IfcTemplatedEntityList< IfcDraughtingCalloutRelationship > > IsRelatedFromCallout(); // INVERSE IfcDraughtingCalloutRelationship::RelatedDraughtingCallout
+    SHARED_PTR< IfcTemplatedEntityList< IfcDraughtingCalloutRelationship > > IsRelatedToCallout(); // INVERSE IfcDraughtingCalloutRelationship::RelatingDraughtingCallout
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcDraughtingCallout (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDraughtingCallout* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingCallout> > list;
-    typedef IfcTemplatedEntityList<IfcDraughtingCallout>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDraughtingCallout > > list;
+    typedef IfcTemplatedEntityList< IfcDraughtingCallout >::it it;
 };
 /// The draughting pre defined colour is a pre defined colour for the purpose to identify a colour by name. Allowable names are:
 /// 
@@ -17736,7 +17736,7 @@ public:
 /// 'white',
 /// 'by layer'
 /// 
-/// NOTEï¿½ï¿½The IfcDraughtingPreDefinedColour is an entity that had been adopted from ISO 10303-202, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 202: Application protocol: Associative draughting.
+/// NOTE ÿThe IfcDraughtingPreDefinedColour is an entity that had been adopted from ISO 10303-202, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 202: Application protocol: Associative draughting.
 /// 
 /// The following table states the RGB values associated with the names given by the IfcDraughtingPreDefinedColour.
 /// 
@@ -17789,9 +17789,9 @@ public:
 /// colour values obtained from
 /// IfcPresentationLayerWithStyle.
 /// 
-/// NOTEï¿½ï¿½Corresponding ISO 10303 name: draughting_pre_defined_colour. Please refer to ISO/IS 10303-202:1994 page 194 for the final definition of the formal standard.
+/// NOTE ÿCorresponding ISO 10303 name: draughting_pre_defined_colour. Please refer to ISO/IS 10303-202:1994 page 194 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ï¿½New entity in IFC2x2.
+/// HISTORY ÿNew entity in IFC2x2.
 /// 
 /// Informal proposition
 /// 
@@ -17807,22 +17807,22 @@ public:
     static Type::Enum Class();
     IfcDraughtingPreDefinedColour (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDraughtingPreDefinedColour* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingPreDefinedColour> > list;
-    typedef IfcTemplatedEntityList<IfcDraughtingPreDefinedColour>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDraughtingPreDefinedColour > > list;
+    typedef IfcTemplatedEntityList< IfcDraughtingPreDefinedColour >::it it;
 };
 /// The draughting predefined curve font type defines a selection of widely used curve fonts for draughting purposes by name. 
 /// 
-/// NOTEï¿½ The IfcDraughtingPreDefinedCurveFont is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#151;Product data representation and exchange, Part 46 Technical Corrigendum 2: Integrated generic resources: Visual presentation.
+/// NOTE  The IfcDraughtingPreDefinedCurveFont is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#151;Product data representation and exchange, Part 46 Technical Corrigendum 2: Integrated generic resources: Visual presentation.
 /// 
 /// Figure 291 (from ISO 10303-46 TC2) illustrates predefined curve fonts.
 /// 
 /// Figure 291 &#8212; Draughting predefined curve font
 /// 
-/// NOTEï¿½ If the IfcDraughtingPreDefinedCurveFont is used within an IfcCurveStyleFontAndScaling then the segment and space lengths that are given in the table are as such for the scale factor 1.0
+/// NOTE  If the IfcDraughtingPreDefinedCurveFont is used within an IfcCurveStyleFontAndScaling then the segment and space lengths that are given in the table are as such for the scale factor 1.0
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: pre_defined_curve_font. Please refer to ISO/IS 10303-46:1994 TC2, page 12 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: pre_defined_curve_font. Please refer to ISO/IS 10303-46:1994 TC2, page 12 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcDraughtingPreDefinedCurveFont : public IfcPreDefinedCurveFont {
 public:
  virtual unsigned int getArgumentCount() const { return 1; }
@@ -17834,8 +17834,8 @@ public:
     static Type::Enum Class();
     IfcDraughtingPreDefinedCurveFont (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDraughtingPreDefinedCurveFont* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDraughtingPreDefinedCurveFont> > list;
-    typedef IfcTemplatedEntityList<IfcDraughtingPreDefinedCurveFont>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDraughtingPreDefinedCurveFont > > list;
+    typedef IfcTemplatedEntityList< IfcDraughtingPreDefinedCurveFont >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: An edge_loop is a loop with nonzero extent. It is a path in which the start and end vertices are the same. Its domain, if present, is a closed curve. An edge_loop may overlap itself.
 /// 
@@ -17845,13 +17845,13 @@ public:
 /// The Euler formula shall be satisfied:(number of vertices) + genus - (number of edges) = 1; 
 /// No edge may be referenced more than once by the same IfcEdgeLoop with the same sense. For this purpose, an edge which is not an oriented edge is considered to be referenced with the sense TRUE. 
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: edge_loop. Please refer to ISO/IS 10303-42:1994, p. 122 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: edge_loop. Please refer to ISO/IS 10303-42:1994, p. 122 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New Entity in IFC2x2.
+/// HISTORY  New Entity in IFC2x2.
 class IfcEdgeLoop : public IfcLoop {
 public:
     /// A list of oriented edge entities which are concatenated together to form this path.
-    SHARED_PTR< IfcTemplatedEntityList<IfcOrientedEdge> > EdgeList();
+    SHARED_PTR< IfcTemplatedEntityList< IfcOrientedEdge > > EdgeList();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } return IfcLoop::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "EdgeList"; } return IfcLoop::getArgumentName(i); }
@@ -17861,8 +17861,8 @@ public:
     static Type::Enum Class();
     IfcEdgeLoop (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEdgeLoop* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEdgeLoop> > list;
-    typedef IfcTemplatedEntityList<IfcEdgeLoop>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEdgeLoop > > list;
+    typedef IfcTemplatedEntityList< IfcEdgeLoop >::it it;
 };
 /// Definition from IAI: An IfcElementQuantity
 /// defines a set of derived measures of an element's physical
@@ -17894,13 +17894,13 @@ public:
 /// 
 /// EXAMPLE1 To exchange the net floor area of spaces in
 /// the German region (as IfcSpace), the name might be
-/// 'Netto-Grundflï¿½che' (net floor area), and the method of
+/// 'Netto-Grundfläche' (net floor area), and the method of
 /// measurement might be accordingly 'DIN277-2' (German industry norm
 /// no. 277 edition 2)
 /// 
 /// EXAMPLE2 The same instance of IfcSpace may have
 /// a different area measure assigned in the German region according
-/// to a housing regulation, the name would be 'Wohnflï¿½che' and
+/// to a housing regulation, the name would be 'Wohnfläche' and
 /// the method of measurement would be '2.BV'. It would be attached
 /// to the IfcSpace by a separate
 /// IfcRelDefinesByProperties relationship.
@@ -17950,7 +17950,7 @@ public:
     /// IFC2x2 Addendum 1 change: The attribute has been changed to be optional
     IfcLabel MethodOfMeasurement();
     /// The individual quantities for the element, can be a set of length, area, volume, weight or count based quantities.
-    SHARED_PTR< IfcTemplatedEntityList<IfcPhysicalQuantity> > Quantities();
+    SHARED_PTR< IfcTemplatedEntityList< IfcPhysicalQuantity > > Quantities();
  virtual unsigned int getArgumentCount() const { return 6; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_STRING; case 5: return Argument_ENTITY_LIST; } return IfcPropertySetDefinition::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "MethodOfMeasurement"; case 5: return "Quantities"; } return IfcPropertySetDefinition::getArgumentName(i); }
@@ -17960,8 +17960,8 @@ public:
     static Type::Enum Class();
     IfcElementQuantity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElementQuantity* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElementQuantity> > list;
-    typedef IfcTemplatedEntityList<IfcElementQuantity>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElementQuantity > > list;
+    typedef IfcTemplatedEntityList< IfcElementQuantity >::it it;
 };
 /// Definition from IAI: The IfcElementType
 ///   defines a list of commonly shared property set definitions
@@ -18000,8 +18000,8 @@ public:
     static Type::Enum Class();
     IfcElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElementType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElementType> > list;
-    typedef IfcTemplatedEntityList<IfcElementType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElementType > > list;
+    typedef IfcTemplatedEntityList< IfcElementType >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: An elementary surface (IfcElementarySurface) is a simple analytic surface with defined parametric representation. 
 /// 
@@ -18021,13 +18021,13 @@ public:
     static Type::Enum Class();
     IfcElementarySurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElementarySurface* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElementarySurface> > list;
-    typedef IfcTemplatedEntityList<IfcElementarySurface>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElementarySurface > > list;
+    typedef IfcTemplatedEntityList< IfcElementarySurface >::it it;
 };
 /// IfcEllipseProfileDef defines an ellipse as the profile definition used by the swept surface geometry
 /// or the swept area solid. It is given by its semi axis attributes and placed within the 2D position coordinate system, established by the Position attribute. 
 /// 
-/// HISTORYï¿½ New entity in IFC2x
+/// HISTORY  New entity in IFC2x
 /// 
 /// Figure 317 illustrates parameters for the ellipse profile definition. The parameterized profile defines its own position coordinate system.
 /// The underlying coordinate system is defined by the swept surface or swept area solid that uses the profile definition. It is the xy plane of either: 
@@ -18037,7 +18037,7 @@ public:
 /// 
 /// Or in case of sectioned spines it is the xy plane of each list member of IfcSectionedSpine.CrossSectionPositions. By using offsets of the position location, the parameterized profile can be positioned centric (using x,y offsets = 0.), or at any position relative to the profile. Explicit coordinate offsets are used to define cardinal points (for example, upper-left bound). The location of the position coordinate system defines the center of the ellipse. The SemiAxis1 attribute defines the first radius of the ellipse in the direction of the X axis, the SemiAxis2 attribute defines the second radius of the ellipse in the direction of the Y axis.
 /// 
-/// NOTEï¿½ The semi axes of the ellipse are rectangular to each other by definition.
+/// NOTE  The semi axes of the ellipse are rectangular to each other by definition.
 /// 
 /// Figure 317 &#8212; Ellipse profile
 class IfcEllipseProfileDef : public IfcParameterizedProfileDef {
@@ -18055,8 +18055,8 @@ public:
     static Type::Enum Class();
     IfcEllipseProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEllipseProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEllipseProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcEllipseProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEllipseProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcEllipseProfileDef >::it it;
 };
 class IfcEnergyProperties : public IfcPropertySetDefinition {
 public:
@@ -18075,8 +18075,8 @@ public:
     static Type::Enum Class();
     IfcEnergyProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEnergyProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEnergyProperties> > list;
-    typedef IfcTemplatedEntityList<IfcEnergyProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEnergyProperties > > list;
+    typedef IfcTemplatedEntityList< IfcEnergyProperties >::it it;
 };
 /// The IfcExtrudedAreaSolid is defined by sweeping a cross
 /// section provided by a profile definition. The direction of the
@@ -18110,9 +18110,9 @@ public:
 /// 
 /// Figure 255 &#8212; Extruded area solid geometry
 /// 
-/// NOTEï¿½ Corresponding ISO 10303-42 entity: extruded_area_solid. Please refer to ISO/IS 10303-42:1994, p. 183 for the final definition of the formal standard. The data type of the inherited SweptArea attribute is different, i.e. of type IfcProfileDef. The Position attribute has been added to position the cross section used for the linear extrusion.
+/// NOTE  Corresponding ISO 10303-42 entity: extruded_area_solid. Please refer to ISO/IS 10303-42:1994, p. 183 for the final definition of the formal standard. The data type of the inherited SweptArea attribute is different, i.e. of type IfcProfileDef. The Position attribute has been added to position the cross section used for the linear extrusion.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5, capabilities of this entity have been enhanced in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 1.5, capabilities of this entity have been enhanced in IFC Release 2x.
 /// 
 /// Texture use definition
 /// For side faces, textures are aligned facing upright continuously
@@ -18162,8 +18162,8 @@ public:
     static Type::Enum Class();
     IfcExtrudedAreaSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcExtrudedAreaSolid* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcExtrudedAreaSolid> > list;
-    typedef IfcTemplatedEntityList<IfcExtrudedAreaSolid>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcExtrudedAreaSolid > > list;
+    typedef IfcTemplatedEntityList< IfcExtrudedAreaSolid >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A face based surface model is described by a set of connected face sets of dimensionality 2. The connected face sets shall not intersect except at edges and vertices, except that a face in one connected face set may overlap a face in another connected face set, provided the face boundaries are identical. There shall be at least one connected face set.  
 /// 
@@ -18180,7 +18180,7 @@ public:
 class IfcFaceBasedSurfaceModel : public IfcGeometricRepresentationItem {
 public:
     /// The set of connected face sets comprising the face based surface model.
-    SHARED_PTR< IfcTemplatedEntityList<IfcConnectedFaceSet> > FbsmFaces();
+    SHARED_PTR< IfcTemplatedEntityList< IfcConnectedFaceSet > > FbsmFaces();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } return IfcGeometricRepresentationItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "FbsmFaces"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
@@ -18190,20 +18190,20 @@ public:
     static Type::Enum Class();
     IfcFaceBasedSurfaceModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFaceBasedSurfaceModel* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFaceBasedSurfaceModel> > list;
-    typedef IfcTemplatedEntityList<IfcFaceBasedSurfaceModel>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFaceBasedSurfaceModel > > list;
+    typedef IfcTemplatedEntityList< IfcFaceBasedSurfaceModel >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The fill area style hatching defines a styled pattern of curves for hatching an annotation fill area or a surface.
 /// 
 /// The IfcFillAreaStyleHatching is used to define simple, vector-based hatching patterns, based on styled straight lines. The curve font, color and thickness is given by the HatchLineAppearance, the angle by the HatchLineAngle and the distance to the next hatch line by StartOfNextHatchLine, being either an offset distance or a vector.
 /// 
-/// NOTEï¿½ If the hatch pattern involves two (potentially crossing) rows of hatch lines, then two instances of IfcFillAreaStyleHatching should be assigned to the IfcFillAreaStyle. Both share the same (virtual) point of origin of the hatching that is used by the reference hatch line (or the PointOfReferenceHatchLine if there is an offset).
+/// NOTE  If the hatch pattern involves two (potentially crossing) rows of hatch lines, then two instances of IfcFillAreaStyleHatching should be assigned to the IfcFillAreaStyle. Both share the same (virtual) point of origin of the hatching that is used by the reference hatch line (or the PointOfReferenceHatchLine if there is an offset).
 /// 
-/// For better control of the hatching appearance, when using hatch lines with other fonts then continuous, the PatternStart allows to offset the start of the curve font pattern along the reference hatch line (if not given, the PatternStart is at zero distance from the virtual point of origin). If the reference hatch line does not go through the origin (of the virtual hatching coordinate system), it can be offset by using theï¿½PatternStartï¿½PointOfReferenceHatchLine.
+/// For better control of the hatching appearance, when using hatch lines with other fonts then continuous, the PatternStart allows to offset the start of the curve font pattern along the reference hatch line (if not given, the PatternStart is at zero distance from the virtual point of origin). If the reference hatch line does not go through the origin (of the virtual hatching coordinate system), it can be offset by using the PatternStart PointOfReferenceHatchLine.
 /// 
-/// NOTEï¿½ The coordinates of the PatternStart and the PointOfReferenceHatchLine are given relative to the assumed 0., 0. virtual point of origin at which the hatch pattern is later positioned by the FillStyleTarget point at IfcAnnotationFillAreaOccurrence. The measure values are given in global drawing length units and apply to the target plot scale for the scale depended representation subcontext.
+/// NOTE  The coordinates of the PatternStart and the PointOfReferenceHatchLine are given relative to the assumed 0., 0. virtual point of origin at which the hatch pattern is later positioned by the FillStyleTarget point at IfcAnnotationFillAreaOccurrence. The measure values are given in global drawing length units and apply to the target plot scale for the scale depended representation subcontext.
 /// 
-/// NOTE ï¿½The use of PointOfReferenceHatchLine is deprecated.
+/// NOTE  The use of PointOfReferenceHatchLine is deprecated.
 /// 
 /// Figure 292 illustrates hatch attributes.
 /// 
@@ -18235,25 +18235,25 @@ public:
 /// 
 /// Figure 292 &#8212; Fill area style hatching
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: fill_area_style_hatching. Please refer to ISO/IS 10303-46:1994, p. 108 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: fill_area_style_hatching. Please refer to ISO/IS 10303-46:1994, p. 108 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ The IfcFillAreaStyleHatching has been changed by making the attributes PatternStart and PointOfReferenceHatchLine OPTIONAL. The attribute StartOfNextHatchLine has changed to a SELECT with the additional choice of IfcPositiveLengthMeasure. Upward compatibility for file based exchange is guaranteed.
+/// IFC2x3 CHANGE  The IfcFillAreaStyleHatching has been changed by making the attributes PatternStart and PointOfReferenceHatchLine OPTIONAL. The attribute StartOfNextHatchLine has changed to a SELECT with the additional choice of IfcPositiveLengthMeasure. Upward compatibility for file based exchange is guaranteed.
 class IfcFillAreaStyleHatching : public IfcGeometricRepresentationItem {
 public:
     /// The curve style of the hatching lines. Any curve style pattern shall start at the origin of each hatch line.
     IfcCurveStyle* HatchLineAppearance();
     /// A repetition factor that determines the distance between adjacent hatch lines.
     /// 
-    /// IFC2x Edition 3 CHANGEï¿½ The attribute type of StartOfNextHatchLine has changed to a SELECT of IfcPositiveLengthMeasure (new) and IfcOneDirectionRepeatFactor.
+    /// IFC2x Edition 3 CHANGE  The attribute type of StartOfNextHatchLine has changed to a SELECT of IfcPositiveLengthMeasure (new) and IfcOneDirectionRepeatFactor.
     IfcHatchLineDistanceSelect StartOfNextHatchLine();
     /// Whether the optional attribute PointOfReferenceHatchLine is defined for this IfcFillAreaStyleHatching
     bool hasPointOfReferenceHatchLine();
     /// A Cartesian point which defines the offset of the reference hatch line from the origin of the (virtual) hatching coordinate system. The origin is used for mapping the fill area style hatching onto an annotation fill area or surface. The reference hatch line would then appear with this offset from the fill style target point.
     /// If not given the reference hatch lines goes through the origin of the (virtual) hatching coordinate system.
     /// 
-    /// IFC2x Edition 3 CHANGEï¿½ The usage of the attribute PointOfReferenceHatchLine has changed to not provide the Cartesian point which is the origin for mapping, but to provide an offset to the origin for the mapping. The attribute has been made OPTIONAL.
+    /// IFC2x Edition 3 CHANGE  The usage of the attribute PointOfReferenceHatchLine has changed to not provide the Cartesian point which is the origin for mapping, but to provide an offset to the origin for the mapping. The attribute has been made OPTIONAL.
     IfcCartesianPoint* PointOfReferenceHatchLine();
     /// Whether the optional attribute PatternStart is defined for this IfcFillAreaStyleHatching
     bool hasPatternStart();
@@ -18273,8 +18273,8 @@ public:
     static Type::Enum Class();
     IfcFillAreaStyleHatching (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFillAreaStyleHatching* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFillAreaStyleHatching> > list;
-    typedef IfcTemplatedEntityList<IfcFillAreaStyleHatching>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFillAreaStyleHatching > > list;
+    typedef IfcTemplatedEntityList< IfcFillAreaStyleHatching >::it it;
 };
 /// The fill area style tile symbol with style is a symbol that is used as a tile within an annotated tiling. 
 /// 
@@ -18300,8 +18300,8 @@ public:
     static Type::Enum Class();
     IfcFillAreaStyleTileSymbolWithStyle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFillAreaStyleTileSymbolWithStyle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFillAreaStyleTileSymbolWithStyle> > list;
-    typedef IfcTemplatedEntityList<IfcFillAreaStyleTileSymbolWithStyle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFillAreaStyleTileSymbolWithStyle > > list;
+    typedef IfcTemplatedEntityList< IfcFillAreaStyleTileSymbolWithStyle >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: The fill area style tiles defines a two dimensional tile to be used for the filling of annotation fill areas or other closed regions. The content of a tile is defined by the tile set, and the placement of each tile determined by the filling pattern which indicates how to place tiles next to each other. Tiles or parts of tiles outside of the annotation fill area or closed region shall be clipped at the of the area or region. 
 /// 
@@ -18313,7 +18313,7 @@ public:
     /// A two direction repeat factor defining the shape and relative positioning of the tiles.
     IfcOneDirectionRepeatFactor* TilingPattern();
     /// A set of constituents of the tile.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Tiles();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > Tiles();
     /// The scale factor applied to each tile as it is placed in the annotation fill area.
     IfcPositiveRatioMeasure TilingScale();
  virtual unsigned int getArgumentCount() const { return 3; }
@@ -18325,8 +18325,8 @@ public:
     static Type::Enum Class();
     IfcFillAreaStyleTiles (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFillAreaStyleTiles* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFillAreaStyleTiles> > list;
-    typedef IfcTemplatedEntityList<IfcFillAreaStyleTiles>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFillAreaStyleTiles > > list;
+    typedef IfcTemplatedEntityList< IfcFillAreaStyleTiles >::it it;
 };
 class IfcFluidFlowProperties : public IfcPropertySetDefinition {
 public:
@@ -18380,8 +18380,8 @@ public:
     static Type::Enum Class();
     IfcFluidFlowProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFluidFlowProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFluidFlowProperties> > list;
-    typedef IfcTemplatedEntityList<IfcFluidFlowProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFluidFlowProperties > > list;
+    typedef IfcTemplatedEntityList< IfcFluidFlowProperties >::it it;
 };
 /// Definition from IAI: The
 /// IfcFurnishingElementType defines a list of commonly shared
@@ -18389,7 +18389,7 @@ public:
 /// product representations. It is used to define an element
 /// specification (i.e. the specific product information, that is
 /// common to all occurrences of that product type).
-/// NOTEï¿½ The product representations are defined
+/// NOTEÿ The product representations are defined
 /// as representation maps (at the level of the supertype
 /// IfcTypeProduct, which gets assigned by an element
 /// occurrence instance through the
@@ -18404,7 +18404,7 @@ public:
 /// The occurrences of the IfcFurnishingElementType are
 /// represented by instances of IfcFurnishingElement (or its
 /// subtypes).
-/// HISTORYï¿½New entity in
+/// HISTORYÿNew entity in
 /// Release IFC2x Edition 2.
 /// IFC2x3 CHANGE The entity has been
 /// made non-abstract
@@ -18422,8 +18422,8 @@ public:
     static Type::Enum Class();
     IfcFurnishingElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFurnishingElementType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFurnishingElementType> > list;
-    typedef IfcTemplatedEntityList<IfcFurnishingElementType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFurnishingElementType > > list;
+    typedef IfcTemplatedEntityList< IfcFurnishingElementType >::it it;
 };
 /// The furnishing element type IfcFurnitureType defines commonly shared information for occurrences of furnitures.  The set of shared information may include: 
 /// 
@@ -18475,8 +18475,8 @@ public:
     static Type::Enum Class();
     IfcFurnitureType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFurnitureType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFurnitureType> > list;
-    typedef IfcTemplatedEntityList<IfcFurnitureType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFurnitureType > > list;
+    typedef IfcTemplatedEntityList< IfcFurnitureType >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A geometric curve set is a collection of two or three dimensional points and curves.
 /// 
@@ -18496,8 +18496,8 @@ public:
     static Type::Enum Class();
     IfcGeometricCurveSet (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcGeometricCurveSet* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcGeometricCurveSet> > list;
-    typedef IfcTemplatedEntityList<IfcGeometricCurveSet>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcGeometricCurveSet > > list;
+    typedef IfcTemplatedEntityList< IfcGeometricCurveSet >::it it;
 };
 /// IfcIShapeProfileDef
 /// defines a section profile that provides the defining parameters of a
@@ -18514,9 +18514,9 @@ public:
 /// external document or library.  See IfcProfileDef for guidance on
 /// external references for profile definitions.
 /// 
-/// HISTORYï¿½ New entity in IFC2x.
+/// HISTORY  New entity in IFC2x.
 /// 
-/// IFC2x4 CHANGEï¿½ Type of FilletRadius relaxed to allow for zero radius.
+/// IFC2x4 CHANGE  Type of FilletRadius relaxed to allow for zero radius.
 /// 
 /// Figure 318 illustrates parameters of the I-shape profile definition.
 /// 
@@ -18585,8 +18585,8 @@ public:
     static Type::Enum Class();
     IfcIShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcIShapeProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcIShapeProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcIShapeProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcIShapeProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcIShapeProfileDef >::it it;
 };
 /// IfcLShapeProfileDef
 /// defines a section profile that provides the defining parameters of an
@@ -18599,11 +18599,11 @@ public:
 /// position coordinate system is in the profiles centre
 /// of the bounding box.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGEï¿½ All profile origins are now in the center of the bounding box.
+/// IFC2x3 CHANGE  All profile origins are now in the center of the bounding box.
 /// 
-/// IFC2x4 CHANGEï¿½ Width changed from OPTIONAL to mandatory.  The previously informal rule that the longer leg is the Depth has been formalized.  Types of FilletRadius and EdgeRadius were relaxed to allow for zero values.  Trailing attributes CentreOfGravityInX and CentreOfGravityInY deleted, use respective properties in IfcExtendedProfileProperties instead.  WHERE rule which required Width <= Depth removed.
+/// IFC2x4 CHANGE  Width changed from OPTIONAL to mandatory.  The previously informal rule that the longer leg is the Depth has been formalized.  Types of FilletRadius and EdgeRadius were relaxed to allow for zero values.  Trailing attributes CentreOfGravityInX and CentreOfGravityInY deleted, use respective properties in IfcExtendedProfileProperties instead.  WHERE rule which required Width <= Depth removed.
 /// 
 /// Figure 319 illustrates parameters of equal-sided and non-equal sided L-shaped section definitions.
 /// 
@@ -18632,8 +18632,8 @@ public:
 /// are:
 /// 
 /// Location = IfcCartesianPoint(
-/// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½+|CentreOfGravityInX|,
-/// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½+|CentreOfGravityInY|)
+///               +|CentreOfGravityInX|,
+///               +|CentreOfGravityInY|)
 /// RefDirection = NIL (defaults to 1.,0.)
 /// 
 /// In the illustrated example, the x and y value of Position.Location, i.e. the measures |CentreOfGravityInX| and |CentreOfGravityInY| are both positive.  On the other hand, the properties named 'CentreOfGravityInX' and 'CentreOfGravityInY' in IfcExtendedProfileProperties, if provided, must both be set to 0 now because the centre of gravity of the resulting profile definition is located in the coordinate origin.
@@ -18676,8 +18676,8 @@ public:
     static Type::Enum Class();
     IfcLShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLShapeProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLShapeProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcLShapeProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLShapeProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcLShapeProfileDef >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A line is an unbounded curve with constant tangent direction. A line is defined by a point and a direction. The positive direction of the line is in the direction of the Dir vector. The line is parameterized as follows:
 /// 
@@ -18707,8 +18707,8 @@ public:
     static Type::Enum Class();
     IfcLine (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLine* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLine> > list;
-    typedef IfcTemplatedEntityList<IfcLine>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLine > > list;
+    typedef IfcTemplatedEntityList< IfcLine >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A manifold solid
 /// B-rep is a finite, arcwise connected volume bounded by one or
@@ -18786,8 +18786,8 @@ public:
     static Type::Enum Class();
     IfcManifoldSolidBrep (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcManifoldSolidBrep* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcManifoldSolidBrep> > list;
-    typedef IfcTemplatedEntityList<IfcManifoldSolidBrep>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcManifoldSolidBrep > > list;
+    typedef IfcTemplatedEntityList< IfcManifoldSolidBrep >::it it;
 };
 /// An IfcObject is the
 /// generalization of any semantically treated thing or process.
@@ -18881,14 +18881,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_STRING; } return IfcObjectDefinition::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "ObjectType"; } return IfcObjectDefinition::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelDefines> > IsDefinedBy(); // INVERSE IfcRelDefines::RelatedObjects
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelDefines > > IsDefinedBy(); // INVERSE IfcRelDefines::RelatedObjects
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcObject (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcObject* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcObject> > list;
-    typedef IfcTemplatedEntityList<IfcObject>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcObject > > list;
+    typedef IfcTemplatedEntityList< IfcObject >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: An offset curve 2d (IfcOffsetCurve2d) is a curve at a constant distance from a basis curve in two-dimensional space. This entity defines a simple plane-offset curve by offsetting by distance along the normal to basis curve in the plane of basis curve. The underlying curve shall have a well-defined tangent direction at every point. In the case of a composite curve, the transition code between each segment shall be cont same gradient or cont same gradient same curvature. 
 /// 
@@ -18918,8 +18918,8 @@ public:
     static Type::Enum Class();
     IfcOffsetCurve2D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOffsetCurve2D* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOffsetCurve2D> > list;
-    typedef IfcTemplatedEntityList<IfcOffsetCurve2D>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOffsetCurve2D > > list;
+    typedef IfcTemplatedEntityList< IfcOffsetCurve2D >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: An offset curve 3d is a curve at a constant distance from a basis curve in three-dimensional space. The underlying curve shall have a well-defined tangent direction at every point. In the case of a composite curve the transition code between each segment shall be cont same gradient or cont same gradient same curvature. The offset curve at any point (parameter) on the basis curve is in the direction V x T where V is the fixed reference direction and T is the unit tangent to the basis curve. For the offset direction to be well defined, T shall not at any point of the curve be in the same, or opposite, direction as V. 
 /// 
@@ -18955,8 +18955,8 @@ public:
     static Type::Enum Class();
     IfcOffsetCurve3D (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOffsetCurve3D* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOffsetCurve3D> > list;
-    typedef IfcTemplatedEntityList<IfcOffsetCurve3D>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOffsetCurve3D > > list;
+    typedef IfcTemplatedEntityList< IfcOffsetCurve3D >::it it;
 };
 /// This entity is a description of a panel within a
 /// door or window (as fillers for opening) which allows for air
@@ -19016,19 +19016,19 @@ public:
     static Type::Enum Class();
     IfcPermeableCoveringProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPermeableCoveringProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPermeableCoveringProperties> > list;
-    typedef IfcTemplatedEntityList<IfcPermeableCoveringProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPermeableCoveringProperties > > list;
+    typedef IfcTemplatedEntityList< IfcPermeableCoveringProperties >::it it;
 };
 /// Definition from ISO/CD 10303-46:1992: A planar box specifies an arbitrary rectangular box and its location in a two dimensional Cartesian coordinate system.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 name: planar_box. Please refer to
+/// NOTE  Corresponding ISO 10303 name: planar_box. Please refer to
 /// ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IfcPlanarBox : public IfcPlanarExtent {
 public:
     /// The IfcAxis2Placement positions a local coordinate system for the definition of the rectangle. The origin of this local coordinate system serves as the lower left corner of the rectangular box.
-    ///   NOTEï¿½ In case of a 3D placement by IfcAxisPlacement3D the IfcPlanarBox is defined within the xy plane of the definition coordinate system.
+    ///   NOTE  In case of a 3D placement by IfcAxisPlacement3D the IfcPlanarBox is defined within the xy plane of the definition coordinate system.
     IfcAxis2Placement Placement();
  virtual unsigned int getArgumentCount() const { return 3; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return Argument_ENTITY; } return IfcPlanarExtent::getArgumentType(i); }
@@ -19039,8 +19039,8 @@ public:
     static Type::Enum Class();
     IfcPlanarBox (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPlanarBox* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPlanarBox> > list;
-    typedef IfcTemplatedEntityList<IfcPlanarBox>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPlanarBox > > list;
+    typedef IfcTemplatedEntityList< IfcPlanarBox >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A plane is an unbounded surface with a constant normal. A plane is defined by a point on the plane and the normal direction to the plane. The data is to be interpreted as follows:
 /// 
@@ -19089,8 +19089,8 @@ public:
     static Type::Enum Class();
     IfcPlane (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPlane* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPlane> > list;
-    typedef IfcTemplatedEntityList<IfcPlane>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPlane > > list;
+    typedef IfcTemplatedEntityList< IfcPlane >::it it;
 };
 /// Definition from ISO9000: A process is a set of
 /// activities that are interrelated or that interact with one
@@ -19138,16 +19138,16 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcObject::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcObject::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProcess> > OperatesOn(); // INVERSE IfcRelAssignsToProcess::RelatingProcess
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelSequence> > IsSuccessorFrom(); // INVERSE IfcRelSequence::RelatedProcess
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelSequence> > IsPredecessorTo(); // INVERSE IfcRelSequence::RelatingProcess
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToProcess > > OperatesOn(); // INVERSE IfcRelAssignsToProcess::RelatingProcess
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelSequence > > IsSuccessorFrom(); // INVERSE IfcRelSequence::RelatedProcess
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelSequence > > IsPredecessorTo(); // INVERSE IfcRelSequence::RelatingProcess
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcProcess (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProcess* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProcess> > list;
-    typedef IfcTemplatedEntityList<IfcProcess>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProcess > > list;
+    typedef IfcTemplatedEntityList< IfcProcess >::it it;
 };
 /// Any object that relates to a
 /// geometric or spatial context. Subtypes of IfcProduct
@@ -19254,14 +19254,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return Argument_ENTITY; case 6: return Argument_ENTITY; } return IfcObject::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "ObjectPlacement"; case 6: return "Representation"; } return IfcObject::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProduct> > ReferencedBy(); // INVERSE IfcRelAssignsToProduct::RelatingProduct
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToProduct > > ReferencedBy(); // INVERSE IfcRelAssignsToProduct::RelatingProduct
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcProduct (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProduct* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > list;
-    typedef IfcTemplatedEntityList<IfcProduct>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProduct > > list;
+    typedef IfcTemplatedEntityList< IfcProduct >::it it;
 };
 /// IfcProject indicates the undertaking of some design, engineering, construction, or
 /// maintenance activities leading towards a product. The project establishes the context for information to be exchanged or shared, and it may represent a construction project but does not have to.  The IfcProject's main purpose in an exchange structure is to provide the root instance and the context for all other information items included.
@@ -19275,9 +19275,9 @@ public:
 /// the precision used within the geometric representations, and
 /// optionally the indication of the true north relative to the world coordinate system
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 1.0
+/// HISTORY  New Entity in IFC Release 1.0
 /// 
-/// IFC2x4 CHANGEï¿½ The attributes RepresentationContexts and UnitsInContext are made optional and are promoted to supertype IfcContext.
+/// IFC2x4 CHANGE  The attributes RepresentationContexts and UnitsInContext are made optional and are promoted to supertype IfcContext.
 /// 
 /// Relationship use definition
 /// The IfcProject is used to reference the root of the spatial structure of a building (that serves as the primary project breakdown and is required to be hierarchical). The spatial structure elements are linked together, and to the IfcProject, by using the objectified relationship IfcRelAggregates. The IfcProject references them by its inverse relationship:
@@ -19293,10 +19293,10 @@ public:
 /// The IfcProject is also the context for other information about the construction project such as a work plan. Non-product structures are assigned by their first level object to IfcProject using the IfcRelDeclares relationship.
 /// 
 /// The IfcProject provides the context for spatial elements and the associated products, and for work plans (or other non-product based) descriptions of the construction project. It is handled by two distinct relationship objects as shown in Figure 3.
-/// NOTE ï¿½ The spatial structure and the schedule structure can be decomposed. For example the IfcBuilding can be decomposed into IfcBuildingStorey's, and the IfcWorkPlan can be decomposed into IfcWorkSchedule's.
-/// NOTE ï¿½ The products and tasks can be decomposed further. For example the IfcCurtainWall can be decomposed into IfcMember and IfcPlate, the IfcTask can be decomposed into other IfcTask's.
-/// NOTE ï¿½ The products and tasks can have direct linking relationships. For example the IfcCurtainWall can be assigned to a IfcTask as an input or output for a construction schedule.
-/// NOTE ï¿½ The anomaly to use the composition structure through IfcRelAggregates for assigning the uppermost spatial container to IfcProject is due to upward compatibility reasons with earlier releases of this standard.
+/// NOTE   The spatial structure and the schedule structure can be decomposed. For example the IfcBuilding can be decomposed into IfcBuildingStorey's, and the IfcWorkPlan can be decomposed into IfcWorkSchedule's.
+/// NOTE   The products and tasks can be decomposed further. For example the IfcCurtainWall can be decomposed into IfcMember and IfcPlate, the IfcTask can be decomposed into other IfcTask's.
+/// NOTE   The products and tasks can have direct linking relationships. For example the IfcCurtainWall can be assigned to a IfcTask as an input or output for a construction schedule.
+/// NOTE   The anomaly to use the composition structure through IfcRelAggregates for assigning the uppermost spatial container to IfcProject is due to upward compatibility reasons with earlier releases of this standard.
 /// 
 /// Figure 3 &#8212; Project spatial and work plan structure
 /// 
@@ -19315,7 +19315,7 @@ public:
     /// Whether the optional attribute Phase is defined for this IfcProject
     bool hasPhase();
     IfcLabel Phase();
-    SHARED_PTR< IfcTemplatedEntityList<IfcRepresentationContext> > RepresentationContexts();
+    SHARED_PTR< IfcTemplatedEntityList< IfcRepresentationContext > > RepresentationContexts();
     IfcUnitAssignment* UnitsInContext();
  virtual unsigned int getArgumentCount() const { return 9; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return Argument_STRING; case 6: return Argument_STRING; case 7: return Argument_ENTITY_LIST; case 8: return Argument_ENTITY; } return IfcObject::getArgumentType(i); }
@@ -19326,8 +19326,8 @@ public:
     static Type::Enum Class();
     IfcProject (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProject* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProject> > list;
-    typedef IfcTemplatedEntityList<IfcProject>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProject > > list;
+    typedef IfcTemplatedEntityList< IfcProject >::it it;
 };
 class IfcProjectionCurve : public IfcAnnotationCurveOccurrence {
 public:
@@ -19340,8 +19340,8 @@ public:
     static Type::Enum Class();
     IfcProjectionCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProjectionCurve* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProjectionCurve> > list;
-    typedef IfcTemplatedEntityList<IfcProjectionCurve>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProjectionCurve > > list;
+    typedef IfcTemplatedEntityList< IfcProjectionCurve >::it it;
 };
 /// IfcPropertySet defines all dynamically extensible
 /// properties. The property set is a container class that holds
@@ -19357,11 +19357,11 @@ public:
 /// and the individual properties that maybe included can be assigned
 /// using the property set template.
 /// 
-/// NOTEï¿½ See IfcRelDefinesByType for how to override property sets assigned to an object type within the object occurrence.
+/// NOTE  See IfcRelDefinesByType for how to override property sets assigned to an object type within the object occurrence.
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 1.0
+/// HISTORY  New Entity in IFC Release 1.0
 /// 
-/// IFC2x4 CHANGEï¿½ All statically defined property set entities are no longer subtypes of
+/// IFC2x4 CHANGE  All statically defined property set entities are no longer subtypes of
 /// IfcPropertySet.
 /// 
 /// Relationship use definition
@@ -19384,7 +19384,7 @@ public:
 /// Instances of IfcPropertySet are used to assign named
 /// sets of individual properties (complex or single properties). Each
 /// individual property has a significant name string. Some property
-/// sets are included in the IFC specification and haveï¿½a
+/// sets are included in the IFC specification and have a
 /// predefined set of properties indicated by assigning a significant
 /// name. These property sets are listed under "property sets" main
 /// menu item within this specification and from the object
@@ -19399,7 +19399,7 @@ public:
 class IfcPropertySet : public IfcPropertySetDefinition {
 public:
     /// Contained set of properties. For property sets defined as part of the IFC Object model, the property objects within a property set are defined as part of the standard. If a property is not contained within the set of predefined properties, its value has not been set at this time.
-    SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > HasProperties();
+    SHARED_PTR< IfcTemplatedEntityList< IfcProperty > > HasProperties();
  virtual unsigned int getArgumentCount() const { return 5; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_ENTITY_LIST; } return IfcPropertySetDefinition::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "HasProperties"; } return IfcPropertySetDefinition::getArgumentName(i); }
@@ -19409,25 +19409,25 @@ public:
     static Type::Enum Class();
     IfcPropertySet (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPropertySet* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPropertySet> > list;
-    typedef IfcTemplatedEntityList<IfcPropertySet>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPropertySet > > list;
+    typedef IfcTemplatedEntityList< IfcPropertySet >::it it;
 };
 /// IfcProxy is intended to be a kind of a container for wrapping objects which are defined by associated properties, which may or may not have a geometric representation and placement in space. A proxy may have a semantic meaning, defined by the Name attribute, and property definitions, attached through the property assignment relationship, which definition may be outside of the definitions given by the current release of IFC.
 /// 
 /// The ProxyType may give an indication to which high level semantic breakdown of object the semantic definition of the proxy relates to. the Tag attribute may be used to assign a human or system interpretable identifier (such as a serial number or bar code).
 /// 
-/// NOTE 1ï¿½ Given that only a
+/// NOTE 1  Given that only a
 /// limited number of semantic constructs can be formally defined within
 /// IFC (and it will never be possible to define all), there has to be a
 /// mechanism for capturing those constructs that are not (yet) defined by
 /// IFC. 
 /// 
-/// NOTE 2ï¿½ Product proxies are a
+/// NOTE 2  Product proxies are a
 /// mechanism that allows to exchange data that is part of the project but
 /// not necessarily part of the IFC model. Those proxies may have geometric
 /// representations assigned.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5.
+/// HISTORY  New entity in IFC Release 1.5.
 class IfcProxy : public IfcProduct {
 public:
     /// High level (and only) semantic meaning attached to the IfcProxy, defining the basic construct type behind the Proxy, e.g. Product or Process.
@@ -19445,14 +19445,14 @@ public:
     static Type::Enum Class();
     IfcProxy (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProxy* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProxy> > list;
-    typedef IfcTemplatedEntityList<IfcProxy>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProxy > > list;
+    typedef IfcTemplatedEntityList< IfcProxy >::it it;
 };
 /// IfcRectangleHollowProfileDef defines a section profile that provides the defining parameters of a rectangular (or square) hollow section to be used by the swept surface geometry or the swept area solid. Its parameters and orientation relative to the position coordinate system are according to the following illustration. A square hollow section can be defined by equal values for h and b. The centre of the position coordinate system is in the profiles centre of the bounding box (for symmetric profiles identical with the centre of gravity). Normally, the longer sides are parallel to the y-axis, the shorter sides parallel to the x-axis.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x4 CHANGEï¿½ Types of InnerFilletRadius and OuterFilletRadius relaxed to allow for zero values.
+/// IFC2x4 CHANGE  Types of InnerFilletRadius and OuterFilletRadius relaxed to allow for zero values.
 /// 
 /// Figure 322 illustrates parameters of a rectangular or square hollow profile definition.
 /// 
@@ -19489,8 +19489,8 @@ public:
     static Type::Enum Class();
     IfcRectangleHollowProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRectangleHollowProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRectangleHollowProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcRectangleHollowProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRectangleHollowProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcRectangleHollowProfileDef >::it it;
 };
 /// The IfcRectangularPyramid is a Construction Solid
 /// Geometry (CSG) 3D primitive. It is a solid with a rectangular base and
@@ -19501,7 +19501,7 @@ public:
 /// location and orientation of the pyramid:
 /// 
 /// SELF\IfcCsgPrimitive3D.Position: The location and
-/// orientation of the axis system for the primitive.ï¿½
+/// orientation of the axis system for the primitive. 
 /// SELF\IfcCsgPrimitive3D.Position.Location: The center
 /// of the circular area being the bottom face of the cone.
 /// SELF\IfcCsgPrimitive3D.Position.Position[3]: The
@@ -19515,9 +19515,9 @@ public:
 /// 
 /// Figure 260 &#8212; Rectangular pyramid geometry
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: right_circular_cone, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. No semi_angle attribute, and the radius defines the bottom radius, since only a non-truncated cone is in scope. Please refer to ISO/IS 10303-42:1994, p. 176 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: right_circular_cone, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. No semi_angle attribute, and the radius defines the bottom radius, since only a non-truncated cone is in scope. Please refer to ISO/IS 10303-42:1994, p. 176 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x3
+/// HISTORY  New entity in IFC2x3
 /// 
 /// Texture use definition
 /// 
@@ -19597,8 +19597,8 @@ public:
     static Type::Enum Class();
     IfcRectangularPyramid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRectangularPyramid* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRectangularPyramid> > list;
-    typedef IfcTemplatedEntityList<IfcRectangularPyramid>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRectangularPyramid > > list;
+    typedef IfcTemplatedEntityList< IfcRectangularPyramid >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: The trimmed surface is a simple bounded surface in which the boundaries are the constant parametric lines u1 = u1, u2 = u2, v1 = v1 and v2 = v2. All these values shall be within the parametric range of the referenced surface. Cyclic properties of the parameter range are assumed.
 /// 
@@ -19640,8 +19640,8 @@ public:
     static Type::Enum Class();
     IfcRectangularTrimmedSurface (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRectangularTrimmedSurface* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRectangularTrimmedSurface> > list;
-    typedef IfcTemplatedEntityList<IfcRectangularTrimmedSurface>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRectangularTrimmedSurface > > list;
+    typedef IfcTemplatedEntityList< IfcRectangularTrimmedSurface >::it it;
 };
 /// The assignment relationship, IfcRelAssigns, is a generalization of "link" relationships among instances of IfcObject and its various 1st level subtypes. A link denotes the specific association through which one object (the client) applies the services of other objects (the suppliers), or through which one object may navigate to other objects.
 /// 
@@ -19657,11 +19657,11 @@ public:
 class IfcRelAssigns : public IfcRelationship {
 public:
     /// Related objects, which are assigned to a single object. The type of the single (or relating) object is defined in the subtypes of IfcRelAssigns.
-    SHARED_PTR< IfcTemplatedEntityList<IfcObjectDefinition> > RelatedObjects();
+    SHARED_PTR< IfcTemplatedEntityList< IfcObjectDefinition > > RelatedObjects();
     /// Whether the optional attribute RelatedObjectsType is defined for this IfcRelAssigns
     bool hasRelatedObjectsType();
     /// Particular type of the assignment relationship. It can constrain the applicable object types, used within the role of RelatedObjects.
-    /// IFC2x4 CHANGEï¿½ The attribute is deprecated and shall no longer be used. A NIL value should always be assigned.
+    /// IFC2x4 CHANGE  The attribute is deprecated and shall no longer be used. A NIL value should always be assigned.
     IfcObjectTypeEnum::IfcObjectTypeEnum RelatedObjectsType();
  virtual unsigned int getArgumentCount() const { return 6; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_ENTITY_LIST; case 5: return Argument_ENUMERATION; } return IfcRelationship::getArgumentType(i); }
@@ -19672,8 +19672,8 @@ public:
     static Type::Enum Class();
     IfcRelAssigns (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssigns* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssigns> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssigns>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssigns > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssigns >::it it;
 };
 /// The objectified relationship IfcRelAssignsToActor handles the assignment of objects (subtypes of IfcObject) to an actor (subtypes of IfcActor).
 /// 
@@ -19701,14 +19701,14 @@ public:
     static Type::Enum Class();
     IfcRelAssignsToActor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssignsToActor* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToActor> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssignsToActor>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToActor > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssignsToActor >::it it;
 };
 /// The objectified relationship IfcRelAssignsToControl handles the assignment of a control (represented by subtypes of IfcControl) to other objects (represented by subtypes of IfcObject, with the exception of controls).
 /// 
-/// EXAMPLEï¿½ The assignment of a performance history (as subtype of IfcControl) for a building service element (as subtype of IfcObject) is an application of this generic relationship.
+/// EXAMPLEÿ The assignment of a performance history (as subtype of IfcControl) for a building service element (as subtype of IfcObject) is an application of this generic relationship.
 /// 
-/// HISTORYï¿½ New Entity in IFC Release 2.0. Has been renamed from IfcRelControls in IFC Release 2x.
+/// HISTORYÿ New Entity in IFC Release 2.0. Has been renamed from IfcRelControls in IFC Release 2x.
 class IfcRelAssignsToControl : public IfcRelAssigns {
 public:
     /// Reference to the IfcControl that applies a control upon objects.
@@ -19722,8 +19722,8 @@ public:
     static Type::Enum Class();
     IfcRelAssignsToControl (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssignsToControl* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToControl> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssignsToControl>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToControl > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssignsToControl >::it it;
 };
 /// The objectified relationship IfcRelAssignsToGroup handles the assignment of object definitions (individual object occurrences as subtypes of IfcObject, and object types as subtypes of IfcTypeObject) to a group (subtypes of IfcGroup).
 /// 
@@ -19751,8 +19751,8 @@ public:
     static Type::Enum Class();
     IfcRelAssignsToGroup (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssignsToGroup* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToGroup> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssignsToGroup>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToGroup > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssignsToGroup >::it it;
 };
 /// The objectified relationship IfcRelAssignsToProcess handles the assignment of one or many objects to a process or activity. An object can be a product that is the item the process operates on. Processes and activities can operate on things other than products, and can operate in ways other than input and output.
 /// 
@@ -19795,17 +19795,17 @@ public:
     static Type::Enum Class();
     IfcRelAssignsToProcess (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssignsToProcess* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProcess> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssignsToProcess>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToProcess > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssignsToProcess >::it it;
 };
-/// The objectified relationshipï¿½IfcRelAssignsToProduct handles the assignment of objects (subtypes of IfcObject) to a product (subtypes of IfcProduct). The Name attribute should be used to classify the usage of the IfcRelAssignsToProduct objectified relationship. The following Name values are proposed:
+/// The objectified relationshipÿIfcRelAssignsToProduct handles the assignment of objects (subtypes of IfcObject) to a product (subtypes of IfcProduct). The Name attribute should be used to classify the usage of the IfcRelAssignsToProduct objectified relationship. The following Name values are proposed:
 /// 
-/// 'Context' : Assignment of a context specific representation, such as of structural members to a different context representation (with potentially different decomposition breakdown) such as of building elementsï¿½for a specificï¿½context specific representation.ï¿½
+/// 'Context' : Assignment of a context specific representation, such as of structural members to a different context representation (with potentially different decomposition breakdown) such as of building elementsÿfor a specificÿcontext specific representation.ÿ
 /// 'View' : Assignment of a product (via RelatingProduct) that is decomposed according to a discipline view, to another product (via RelatedObjects) that is decomposed according to a different discipline view. An example is the assignment of the architectural slab to a different decomposition of the pre manufactured sections of a slab (under a precast concrete discipline view).
 /// 
 /// HISTORY New Entity in IFC Release 2x
 /// 
-/// IFC2x3 CHANGE ï¿½The reference of a product within a spatial structure is now handled by a new relationship object IfcRelReferencedInSpatialStructure. The IfcRelAssignsToProduct shall not be used to represent this relation from IFC2x3 onwards.
+/// IFC2x3 CHANGE ÿThe reference of a product within a spatial structure is now handled by a new relationship object IfcRelReferencedInSpatialStructure. The IfcRelAssignsToProduct shall not be used to represent this relation from IFC2x3 onwards.
 class IfcRelAssignsToProduct : public IfcRelAssigns {
 public:
     /// Reference to the product or product type to which the objects are assigned to.
@@ -19821,8 +19821,8 @@ public:
     static Type::Enum Class();
     IfcRelAssignsToProduct (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssignsToProduct* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProduct> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssignsToProduct>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToProduct > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssignsToProduct >::it it;
 };
 class IfcRelAssignsToProjectOrder : public IfcRelAssignsToControl {
 public:
@@ -19835,8 +19835,8 @@ public:
     static Type::Enum Class();
     IfcRelAssignsToProjectOrder (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssignsToProjectOrder* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProjectOrder> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssignsToProjectOrder>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToProjectOrder > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssignsToProjectOrder >::it it;
 };
 /// The objectified relationship IfcRelAssignsToResource handles the assignment of objects
 /// (as subtypes of IfcObject), acting as a resource usage or consumption, to a resource (as subtypes of IfcResource).
@@ -19859,8 +19859,8 @@ public:
     static Type::Enum Class();
     IfcRelAssignsToResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssignsToResource* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToResource> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssignsToResource>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToResource > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssignsToResource >::it it;
 };
 /// The association relationship
 ///   IfcRelAssociates refers to external sources of
@@ -19907,8 +19907,8 @@ class IfcRelAssociates : public IfcRelationship {
 public:
     /// Set of object or property definitions to which the external references or information is associated. It includes object and type objects, property set templates, property templates and property sets and contexts.
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute datatype has been changed from IfcRoot to IfcDefinitionSelect.
-    SHARED_PTR< IfcTemplatedEntityList<IfcRoot> > RelatedObjects();
+    /// IFC2x4 CHANGE  The attribute datatype has been changed from IfcRoot to IfcDefinitionSelect.
+    SHARED_PTR< IfcTemplatedEntityList< IfcRoot > > RelatedObjects();
  virtual unsigned int getArgumentCount() const { return 5; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_ENTITY_LIST; } return IfcRelationship::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatedObjects"; } return IfcRelationship::getArgumentName(i); }
@@ -19918,8 +19918,8 @@ public:
     static Type::Enum Class();
     IfcRelAssociates (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssociates* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociates> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssociates>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssociates > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssociates >::it it;
 };
 class IfcRelAssociatesAppliedValue : public IfcRelAssociates {
 public:
@@ -19933,8 +19933,8 @@ public:
     static Type::Enum Class();
     IfcRelAssociatesAppliedValue (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssociatesAppliedValue* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesAppliedValue> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssociatesAppliedValue>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssociatesAppliedValue > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssociatesAppliedValue >::it it;
 };
 /// The entity IfcRelAssociatesApproval is used to apply approval information defined by IfcApproval, in IfcApprovalResource schema, to subtypes of IfcRoot.
 /// 
@@ -19952,8 +19952,8 @@ public:
     static Type::Enum Class();
     IfcRelAssociatesApproval (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssociatesApproval* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesApproval> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssociatesApproval>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssociatesApproval > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssociatesApproval >::it it;
 };
 /// The objectified relationship
 /// IfcRelAssociatesClassification handles the assignment of a
@@ -19969,7 +19969,7 @@ public:
 /// classification system, or
 /// a reference to the classification system itself
 /// 
-/// NOTEï¿½ The reference to a classification item
+/// NOTE  The reference to a classification item
 /// includes a link to the classification system within which the item
 /// is declared. It assigns the meaning of the classification item to
 /// the object (ocurrence or type). The reference to the classification
@@ -19998,8 +19998,8 @@ public:
     static Type::Enum Class();
     IfcRelAssociatesClassification (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssociatesClassification* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesClassification> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssociatesClassification>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssociatesClassification > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssociatesClassification >::it it;
 };
 /// The entity IfcRelAssociatesConstraint is used to apply constraint information defined by IfcConstraint, in the IfcConstraintResource schema, to subtypes of IfcRoot.
 /// 
@@ -20019,8 +20019,8 @@ public:
     static Type::Enum Class();
     IfcRelAssociatesConstraint (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssociatesConstraint* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesConstraint> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssociatesConstraint>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssociatesConstraint > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssociatesConstraint >::it it;
 };
 /// The objectified relationship (IfcRelAssociatesDocument) handles the assignment of a document information (items of the select IfcDocumentSelect) to objects occurrences (subtypes of IfcObject) or object types (subtypes of IfcTypeObject).
 /// 
@@ -20042,8 +20042,8 @@ public:
     static Type::Enum Class();
     IfcRelAssociatesDocument (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssociatesDocument* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesDocument> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssociatesDocument>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssociatesDocument > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssociatesDocument >::it it;
 };
 /// The objectified relationship (IfcRelAssociatesLibrary) handles the assignment of a library item (items of the select IfcLibrarySelect) to subtypes of IfcObjectDefinition or IfcPropertyDefinition. 
 /// 
@@ -20065,8 +20065,8 @@ public:
     static Type::Enum Class();
     IfcRelAssociatesLibrary (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssociatesLibrary* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesLibrary> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssociatesLibrary>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssociatesLibrary > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssociatesLibrary >::it it;
 };
 /// Definition from IAI: Objectified relationship between a
 /// material definition and elements or element types to which this
@@ -20175,8 +20175,8 @@ public:
     static Type::Enum Class();
     IfcRelAssociatesMaterial (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssociatesMaterial* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesMaterial> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssociatesMaterial>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssociatesMaterial > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssociatesMaterial >::it it;
 };
 class IfcRelAssociatesProfileProperties : public IfcRelAssociates {
 public:
@@ -20196,8 +20196,8 @@ public:
     static Type::Enum Class();
     IfcRelAssociatesProfileProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssociatesProfileProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssociatesProfileProperties> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssociatesProfileProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssociatesProfileProperties > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssociatesProfileProperties >::it it;
 };
 /// IfcRelConnects is a connectivity relationship that connects objects under some criteria. As a general connectivity it does not imply constraints, however subtypes of the relationship define the applicable object types for the connectivity relationship and the semantics of the particular connectivity. 
 /// 
@@ -20213,8 +20213,8 @@ public:
     static Type::Enum Class();
     IfcRelConnects (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelConnects* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnects> > list;
-    typedef IfcTemplatedEntityList<IfcRelConnects>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelConnects > > list;
+    typedef IfcTemplatedEntityList< IfcRelConnects >::it it;
 };
 /// Definition from IAI: The
 ///   IfcRelConnectsElements objectified relationship
@@ -20257,8 +20257,8 @@ public:
     static Type::Enum Class();
     IfcRelConnectsElements (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelConnectsElements* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsElements> > list;
-    typedef IfcTemplatedEntityList<IfcRelConnectsElements>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsElements > > list;
+    typedef IfcTemplatedEntityList< IfcRelConnectsElements >::it it;
 };
 /// The
 /// IfcRelConnectsPathElements relationship provides the connectivity information between two elements, which have path information.
@@ -20286,18 +20286,18 @@ public:
 /// 
 /// Figure 116 illustrates using the IfcRelConnectsPathElements for a "T" type connection between two instances of IfcWallStandardCase.
 /// Figure 117 illustrates using the IfcRelConnectsPathElements for a "L" type connection between two instances of IfcWallStandardCase.
-/// NOTEï¿½ The two wall axes connect in each case.
+/// NOTE  The two wall axes connect in each case.
 /// 
-/// ï¿½
+/// ÿ
 /// 
 /// Figure 116 &#8212; Path connection T-Type
 /// Figure 117 &#8212; Path connection L-Type
 class IfcRelConnectsPathElements : public IfcRelConnectsElements {
 public:
     /// Priorities for connection. It refers to the layers of the RelatingObject.
-    std::vector<int> /*[0:?]*/ RelatingPriorities();
+    std::vector< int > /*[0:?]*/ RelatingPriorities();
     /// Priorities for connection. It refers to the layers of the RelatedObject.
-    std::vector<int> /*[0:?]*/ RelatedPriorities();
+    std::vector< int > /*[0:?]*/ RelatedPriorities();
     /// Indication of the connection type in relation to the path of the RelatingObject.
     IfcConnectionTypeEnum::IfcConnectionTypeEnum RelatedConnectionType();
     /// Indication of the connection type in relation to the path of the RelatingObject.
@@ -20311,8 +20311,8 @@ public:
     static Type::Enum Class();
     IfcRelConnectsPathElements (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelConnectsPathElements* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPathElements> > list;
-    typedef IfcTemplatedEntityList<IfcRelConnectsPathElements>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsPathElements > > list;
+    typedef IfcTemplatedEntityList< IfcRelConnectsPathElements >::it it;
 };
 /// The objectified relationship
 /// IfcRelConnectsPortToElement defines the relationship that
@@ -20335,9 +20335,9 @@ public:
 /// IfcDistributionElement for examples and port use
 /// definition sections.
 /// 
-/// HISTORYï¿½ New
+/// HISTORY  New
 /// entity in Release IFC2x Edition 2.
-/// IFC2x4 CHANGEï¿½ The
+/// IFC2x4 CHANGE  The
 /// definition has been extended to include element types.
 class IfcRelConnectsPortToElement : public IfcRelConnects {
 public:
@@ -20356,8 +20356,8 @@ public:
     static Type::Enum Class();
     IfcRelConnectsPortToElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelConnectsPortToElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPortToElement> > list;
-    typedef IfcTemplatedEntityList<IfcRelConnectsPortToElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsPortToElement > > list;
+    typedef IfcTemplatedEntityList< IfcRelConnectsPortToElement >::it it;
 };
 /// Definition from IAI: An IfcRelConnectsPorts
 ///   defines the relationship that is made between two ports at
@@ -20391,8 +20391,8 @@ public:
     static Type::Enum Class();
     IfcRelConnectsPorts (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelConnectsPorts* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPorts> > list;
-    typedef IfcTemplatedEntityList<IfcRelConnectsPorts>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsPorts > > list;
+    typedef IfcTemplatedEntityList< IfcRelConnectsPorts >::it it;
 };
 /// Definition from IAI: The IfcRelConnectsStructuralActivity relationship connects a structural activity (either an action or reaction) to a structural member, structural connection, or element.
 /// 
@@ -20412,8 +20412,8 @@ public:
     static Type::Enum Class();
     IfcRelConnectsStructuralActivity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelConnectsStructuralActivity* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralActivity> > list;
-    typedef IfcTemplatedEntityList<IfcRelConnectsStructuralActivity>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsStructuralActivity > > list;
+    typedef IfcTemplatedEntityList< IfcRelConnectsStructuralActivity >::it it;
 };
 class IfcRelConnectsStructuralElement : public IfcRelConnects {
 public:
@@ -20428,12 +20428,12 @@ public:
     static Type::Enum Class();
     IfcRelConnectsStructuralElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelConnectsStructuralElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralElement> > list;
-    typedef IfcTemplatedEntityList<IfcRelConnectsStructuralElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsStructuralElement > > list;
+    typedef IfcTemplatedEntityList< IfcRelConnectsStructuralElement >::it it;
 };
 /// The entity IfcRelConnectsStructuralMember defines all needed properties describing the connection between structural members and structural connection objects (nodes or supports).
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// Use Definition
 /// 
@@ -20486,14 +20486,14 @@ public:
     static Type::Enum Class();
     IfcRelConnectsStructuralMember (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelConnectsStructuralMember* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralMember> > list;
-    typedef IfcTemplatedEntityList<IfcRelConnectsStructuralMember>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsStructuralMember > > list;
+    typedef IfcTemplatedEntityList< IfcRelConnectsStructuralMember >::it it;
 };
 /// Definition from IAI: The entity IfcRelConnectsWithEccentricity adds the definition of eccentricity to the connection between a structural member and a structural connection (representing either a node or support).
 /// 
-/// NOTEï¿½  Another eccentricity model is available independently of eccentric connection specification:  The section profile of a curve member may be inserted eccentrically with respect to the member's reference curve, see definitions at IfcStructuralCurveMember.  Whether one or the other or both eccentricity models may be used is subject to information requirements and local agreements.
+/// NOTE   Another eccentricity model is available independently of eccentric connection specification:  The section profile of a curve member may be inserted eccentrically with respect to the member's reference curve, see definitions at IfcStructuralCurveMember.  Whether one or the other or both eccentricity models may be used is subject to information requirements and local agreements.
 /// 
-/// HISTORYï¿½ New entity in IFC 2x3.
+/// HISTORY  New entity in IFC 2x3.
 /// Use definitions changed in IFC 2x4 to always require two topology items.
 /// 
 /// Use Definition
@@ -20519,8 +20519,8 @@ public:
     static Type::Enum Class();
     IfcRelConnectsWithEccentricity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelConnectsWithEccentricity* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsWithEccentricity> > list;
-    typedef IfcTemplatedEntityList<IfcRelConnectsWithEccentricity>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsWithEccentricity > > list;
+    typedef IfcTemplatedEntityList< IfcRelConnectsWithEccentricity >::it it;
 };
 /// Definition from IAI:
 ///   IfcRelConnectsWithRealizingElements defines a
@@ -20548,7 +20548,7 @@ public:
 class IfcRelConnectsWithRealizingElements : public IfcRelConnectsElements {
 public:
     /// Defines the elements that realize a connection relationship.
-    SHARED_PTR< IfcTemplatedEntityList<IfcElement> > RealizingElements();
+    SHARED_PTR< IfcTemplatedEntityList< IfcElement > > RealizingElements();
     /// Whether the optional attribute ConnectionType is defined for this IfcRelConnectsWithRealizingElements
     bool hasConnectionType();
     /// The type of the connection given for informal purposes, it may include labels, like 'joint', 'rigid joint', 'flexible joint', etc.
@@ -20562,8 +20562,8 @@ public:
     static Type::Enum Class();
     IfcRelConnectsWithRealizingElements (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelConnectsWithRealizingElements* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsWithRealizingElements> > list;
-    typedef IfcTemplatedEntityList<IfcRelConnectsWithRealizingElements>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsWithRealizingElements > > list;
+    typedef IfcTemplatedEntityList< IfcRelConnectsWithRealizingElements >::it it;
 };
 /// This objectified relationship,
 ///   IfcRelContainedInSpatialStructure, is used to assign
@@ -20624,15 +20624,15 @@ public:
 /// Containment Use Definition
 ///   Figure 39 shows the use of IfcRelContainedInSpatialStructure to assign a stair and two walls to two different levels within the spatial structure.
 /// 
-/// ï¿½
+/// ÿ
 /// 
 /// Figure 39 &#8212; Relationship for spatial structure containment
 class IfcRelContainedInSpatialStructure : public IfcRelConnects {
 public:
     /// Set of elements products, which are contained within this level of the spatial structure hierarchy.
     /// 
-    /// IFC2x PLATFORM CHANGEï¿½ The data type has been changed from IfcElement to IfcProduct with upward compatibility
-    SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > RelatedElements();
+    /// IFC2x PLATFORM CHANGE  The data type has been changed from IfcElement to IfcProduct with upward compatibility
+    SHARED_PTR< IfcTemplatedEntityList< IfcProduct > > RelatedElements();
     /// Spatial structure element, within which the element is contained. Any element can only be contained within one element of the project spatial structure.
     IfcSpatialStructureElement* RelatingStructure();
  virtual unsigned int getArgumentCount() const { return 6; }
@@ -20644,8 +20644,8 @@ public:
     static Type::Enum Class();
     IfcRelContainedInSpatialStructure (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelContainedInSpatialStructure* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelContainedInSpatialStructure> > list;
-    typedef IfcTemplatedEntityList<IfcRelContainedInSpatialStructure>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelContainedInSpatialStructure > > list;
+    typedef IfcTemplatedEntityList< IfcRelContainedInSpatialStructure >::it it;
 };
 /// Definition from IAI: The
 /// IfcRelCoversBldgElements is an objectified relationship
@@ -20670,7 +20670,7 @@ public:
     /// IFC2x4 CHANGE: The attribute type has been changed from IfcElement to IfcBuildingElement.
     IfcElement* RelatingBuildingElement();
     /// Relationship to the set of coverings at this element.
-    SHARED_PTR< IfcTemplatedEntityList<IfcCovering> > RelatedCoverings();
+    SHARED_PTR< IfcTemplatedEntityList< IfcCovering > > RelatedCoverings();
  virtual unsigned int getArgumentCount() const { return 6; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_ENTITY; case 5: return Argument_ENTITY_LIST; } return IfcRelConnects::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingBuildingElement"; case 5: return "RelatedCoverings"; } return IfcRelConnects::getArgumentName(i); }
@@ -20680,11 +20680,11 @@ public:
     static Type::Enum Class();
     IfcRelCoversBldgElements (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelCoversBldgElements* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelCoversBldgElements> > list;
-    typedef IfcTemplatedEntityList<IfcRelCoversBldgElements>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelCoversBldgElements > > list;
+    typedef IfcTemplatedEntityList< IfcRelCoversBldgElements >::it it;
 };
 /// Definition from IAI: The objectified relationship,
-///   IfcRelCoversSpace, relatesï¿½a space object to one or
+///   IfcRelCoversSpace, relatesÿa space object to one or
 ///   many coverings, which faces (or is assigned to) the space.
 /// 
 /// NOTE Particularly floorings, ceilings and wall
@@ -20707,13 +20707,13 @@ public:
 /// NOTE View definition may determine the necessity
 ///   to use either of the two relationship elements
 /// 
-/// HISTORYï¿½ New Entity in Release
+/// HISTORYÿ New Entity in Release
 ///   IFC 2x Edition 3.
 class IfcRelCoversSpaces : public IfcRelConnects {
 public:
     IfcSpace* RelatedSpace();
     /// Relationship to the set of coverings covering this space.
-    SHARED_PTR< IfcTemplatedEntityList<IfcCovering> > RelatedCoverings();
+    SHARED_PTR< IfcTemplatedEntityList< IfcCovering > > RelatedCoverings();
  virtual unsigned int getArgumentCount() const { return 6; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_ENTITY; case 5: return Argument_ENTITY_LIST; } return IfcRelConnects::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatedSpace"; case 5: return "RelatedCoverings"; } return IfcRelConnects::getArgumentName(i); }
@@ -20723,8 +20723,8 @@ public:
     static Type::Enum Class();
     IfcRelCoversSpaces (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelCoversSpaces* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelCoversSpaces> > list;
-    typedef IfcTemplatedEntityList<IfcRelCoversSpaces>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelCoversSpaces > > list;
+    typedef IfcTemplatedEntityList< IfcRelCoversSpaces >::it it;
 };
 /// The decomposition relationship,
 /// IfcRelDecomposes, defines the general concept of elements
@@ -20759,7 +20759,7 @@ public:
 class IfcRelDecomposes : public IfcRelationship {
 public:
     IfcObjectDefinition* RelatingObject();
-    SHARED_PTR< IfcTemplatedEntityList<IfcObjectDefinition> > RelatedObjects();
+    SHARED_PTR< IfcTemplatedEntityList< IfcObjectDefinition > > RelatedObjects();
  virtual unsigned int getArgumentCount() const { return 6; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_ENTITY; case 5: return Argument_ENTITY_LIST; } return IfcRelationship::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingObject"; case 5: return "RelatedObjects"; } return IfcRelationship::getArgumentName(i); }
@@ -20769,8 +20769,8 @@ public:
     static Type::Enum Class();
     IfcRelDecomposes (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelDecomposes* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelDecomposes> > list;
-    typedef IfcTemplatedEntityList<IfcRelDecomposes>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelDecomposes > > list;
+    typedef IfcTemplatedEntityList< IfcRelDecomposes >::it it;
 };
 /// A generic and abstract relationship which subtypes are used to:
 /// 
@@ -20778,7 +20778,7 @@ public:
 /// assign a property set to an object instance
 /// assign a property set template to a property set
 /// 
-/// EXAMPLE ï¿½Several instances of windows within
+/// EXAMPLE ÿSeveral instances of windows within
 /// the IFC project model may be of the same (catalogue or
 /// manufacturer) type. Thereby they share the same properties. This
 /// relationship is established by the subtype
@@ -20786,7 +20786,7 @@ public:
 /// assigning an IfcWindowStyle to multiple occurrences
 /// IfcWindow.
 /// 
-/// EXAMPLE ï¿½The (same) property set, e.g.ï¿½
+/// EXAMPLE ÿThe (same) property set, e.g.ÿ
 /// Pset_ProductManufacturerInfo, keeping the manufacturer name,
 /// label and production year of a product, can be assigned to one,
 /// or many instances of furnishing. This relationship is established
@@ -20801,7 +20801,7 @@ public:
 /// IfcRelDefinesByType.
 class IfcRelDefines : public IfcRelationship {
 public:
-    SHARED_PTR< IfcTemplatedEntityList<IfcObject> > RelatedObjects();
+    SHARED_PTR< IfcTemplatedEntityList< IfcObject > > RelatedObjects();
  virtual unsigned int getArgumentCount() const { return 5; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_ENTITY_LIST; } return IfcRelationship::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatedObjects"; } return IfcRelationship::getArgumentName(i); }
@@ -20811,8 +20811,8 @@ public:
     static Type::Enum Class();
     IfcRelDefines (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelDefines* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelDefines> > list;
-    typedef IfcTemplatedEntityList<IfcRelDefines>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelDefines > > list;
+    typedef IfcTemplatedEntityList< IfcRelDefines >::it it;
 };
 /// The objectified relationship
 /// IfcRelDefinesByProperties defines the relationships
@@ -20842,8 +20842,8 @@ public:
     static Type::Enum Class();
     IfcRelDefinesByProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelDefinesByProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelDefinesByProperties> > list;
-    typedef IfcTemplatedEntityList<IfcRelDefinesByProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelDefinesByProperties > > list;
+    typedef IfcTemplatedEntityList< IfcRelDefinesByProperties >::it it;
 };
 /// The objectified relationship
 /// IfcRelDefinesByType defines the relationship between an
@@ -20903,18 +20903,18 @@ public:
 /// 
 /// Pset_WallCommon
 /// Pset_WallCommon
-/// ï¿½
+/// ÿ
 /// 
-/// ï¿½-ï¿½ExtendToStructure = TRUE
-/// ï¿½
+/// ÿ-ÿExtendToStructure = TRUE
+/// ÿ
 /// TRUE
 /// 
-/// ï¿½
-/// ï¿½-ï¿½ThermalTransmittance = 0.375
+/// ÿ
+/// ÿ-ÿThermalTransmittance = 0.375
 /// 0.375
 /// 
-/// ï¿½-ï¿½ExtendToStructure = FALSE
-/// ï¿½-ï¿½ExtendToStructure = TRUE
+/// ÿ-ÿExtendToStructure = FALSE
+/// ÿ-ÿExtendToStructure = TRUE
 /// FALSE
 class IfcRelDefinesByType : public IfcRelDefines {
 public:
@@ -20929,8 +20929,8 @@ public:
     static Type::Enum Class();
     IfcRelDefinesByType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelDefinesByType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelDefinesByType> > list;
-    typedef IfcTemplatedEntityList<IfcRelDefinesByType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelDefinesByType > > list;
+    typedef IfcTemplatedEntityList< IfcRelDefinesByType >::it it;
 };
 /// IfcRelFillsElement is an objectified relationship between an opening element and an element that fills (or partially fills) the opening element. It is an one-to-one relationship.
 /// 
@@ -20958,8 +20958,8 @@ public:
     static Type::Enum Class();
     IfcRelFillsElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelFillsElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelFillsElement> > list;
-    typedef IfcTemplatedEntityList<IfcRelFillsElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelFillsElement > > list;
+    typedef IfcTemplatedEntityList< IfcRelFillsElement >::it it;
 };
 /// Objectified relationship between a distribution flow element occurrence instance and one-to-many control element occurrence instances indicating that the control element(s) sense or control some aspect of the flow element. It is applied to IfcDistributionFlowElement and IfcDistributionControlElement.
 /// 
@@ -20971,7 +20971,7 @@ public:
 class IfcRelFlowControlElements : public IfcRelConnects {
 public:
     /// References control elements which may be used to impart control on the Distribution Element.
-    SHARED_PTR< IfcTemplatedEntityList<IfcDistributionControlElement> > RelatedControlElements();
+    SHARED_PTR< IfcTemplatedEntityList< IfcDistributionControlElement > > RelatedControlElements();
     /// Relationship to a distribution flow element
     IfcDistributionFlowElement* RelatingFlowElement();
  virtual unsigned int getArgumentCount() const { return 6; }
@@ -20983,8 +20983,8 @@ public:
     static Type::Enum Class();
     IfcRelFlowControlElements (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelFlowControlElements* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelFlowControlElements> > list;
-    typedef IfcTemplatedEntityList<IfcRelFlowControlElements>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelFlowControlElements > > list;
+    typedef IfcTemplatedEntityList< IfcRelFlowControlElements >::it it;
 };
 class IfcRelInteractionRequirements : public IfcRelConnects {
 public:
@@ -21008,8 +21008,8 @@ public:
     static Type::Enum Class();
     IfcRelInteractionRequirements (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelInteractionRequirements* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelInteractionRequirements> > list;
-    typedef IfcTemplatedEntityList<IfcRelInteractionRequirements>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelInteractionRequirements > > list;
+    typedef IfcTemplatedEntityList< IfcRelInteractionRequirements >::it it;
 };
 /// The nesting relationship
 /// IfcRelNests is a special type of the general
@@ -21047,8 +21047,8 @@ public:
     static Type::Enum Class();
     IfcRelNests (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelNests* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelNests> > list;
-    typedef IfcTemplatedEntityList<IfcRelNests>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelNests > > list;
+    typedef IfcTemplatedEntityList< IfcRelNests >::it it;
 };
 class IfcRelOccupiesSpaces : public IfcRelAssignsToActor {
 public:
@@ -21061,12 +21061,12 @@ public:
     static Type::Enum Class();
     IfcRelOccupiesSpaces (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelOccupiesSpaces* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelOccupiesSpaces> > list;
-    typedef IfcTemplatedEntityList<IfcRelOccupiesSpaces>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelOccupiesSpaces > > list;
+    typedef IfcTemplatedEntityList< IfcRelOccupiesSpaces >::it it;
 };
 class IfcRelOverridesProperties : public IfcRelDefinesByProperties {
 public:
-    SHARED_PTR< IfcTemplatedEntityList<IfcProperty> > OverridingProperties();
+    SHARED_PTR< IfcTemplatedEntityList< IfcProperty > > OverridingProperties();
  virtual unsigned int getArgumentCount() const { return 7; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return Argument_ENTITY_LIST; } return IfcRelDefinesByProperties::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "OverridingProperties"; } return IfcRelDefinesByProperties::getArgumentName(i); }
@@ -21076,8 +21076,8 @@ public:
     static Type::Enum Class();
     IfcRelOverridesProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelOverridesProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelOverridesProperties> > list;
-    typedef IfcTemplatedEntityList<IfcRelOverridesProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelOverridesProperties > > list;
+    typedef IfcTemplatedEntityList< IfcRelOverridesProperties >::it it;
 };
 /// The IfcRelProjectsElement is an objectified relationship
 /// between an element and one projection element that creates a
@@ -21089,7 +21089,7 @@ public:
 /// relationship between the main element and a sub ordinary addition
 /// feature.
 /// 
-/// NOTEï¿½ In contrary the
+/// NOTE  In contrary the
 /// IfcRelAggregates relationship established an aggregation
 /// of equal parts to a whole.
 /// 
@@ -21109,7 +21109,7 @@ public:
 /// 
 /// HISTORY New entity in
 /// Release IFC2x Edition 2.
-/// IFC2x4 CHANGEï¿½
+/// IFC2x4 CHANGE 
 /// Supertype changed to IfcRelDecomposes.
 class IfcRelProjectsElement : public IfcRelConnects {
 public:
@@ -21126,20 +21126,20 @@ public:
     static Type::Enum Class();
     IfcRelProjectsElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelProjectsElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelProjectsElement> > list;
-    typedef IfcTemplatedEntityList<IfcRelProjectsElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelProjectsElement > > list;
+    typedef IfcTemplatedEntityList< IfcRelProjectsElement >::it it;
 };
 /// The objectified relationship,
 ///   IfcRelReferencedInSpatialStructure is used to
 ///   assign elements in addition to those levels of the project
-///   spatialï¿½structure, in which they are referenced, but not
-///   primarily contained.ï¿½
+///   spatialÿstructure, in which they are referenced, but not
+///   primarily contained.ÿ
 /// 
-/// NOTE ï¿½The primary containment relationship between
+/// NOTE ÿThe primary containment relationship between
 ///   an element and the spatial structure is handled
-///   byï¿½IfcRelContainsInSpatialStructure.
+///   byÿIfcRelContainsInSpatialStructure.
 /// 
-/// Any element can be referencedï¿½to zero, one or several
+/// Any element can be referencedÿto zero, one or several
 ///   levels of the spatial structure. Whereas the
 ///   IfcRelContainsInSpatialStructure relationship is
 ///   required to be hierarchical (an element can only be
@@ -21172,20 +21172,20 @@ public:
 ///   structure elements depending on the context.
 /// 
 /// HISTORY New entity
-///   inï¿½Release IFC2x Edition 3.
+///   inÿRelease IFC2x Edition 3.
 /// 
 /// Use Definition
-/// Figure 41 shows the use of IfcRelContainedInSpatialStructure and IfcRelReferencedInSpatialStructure to assign an IfcCurtainWallï¿½to two different levels within the spatial structure. It is primarily contained within the ground floor, and additionally referenced within the first and second floor.
+/// Figure 41 shows the use of IfcRelContainedInSpatialStructure and IfcRelReferencedInSpatialStructure to assign an IfcCurtainWallÿto two different levels within the spatial structure. It is primarily contained within the ground floor, and additionally referenced within the first and second floor.
 /// 
 /// Figure 41 &#8212; Relationship for spatial structure referencing
 class IfcRelReferencedInSpatialStructure : public IfcRelConnects {
 public:
     /// Set of products, which are referenced within this level of the spatial structure hierarchy.
-    /// NOTEï¿½ Referenced elements are contained elsewhere within the spatial structure, they are referenced additionally by this spatial structure element, e.g., because they span several stories.
-    SHARED_PTR< IfcTemplatedEntityList<IfcProduct> > RelatedElements();
+    /// NOTE  Referenced elements are contained elsewhere within the spatial structure, they are referenced additionally by this spatial structure element, e.g., because they span several stories.
+    SHARED_PTR< IfcTemplatedEntityList< IfcProduct > > RelatedElements();
     /// Spatial structure element, within which the element is referenced. Any element can be contained within zero, one or many elements of the project spatial and zoning structure.
     /// 
-    /// IFC2x Edition 4 CHANGEï¿½ The attribute relatingStructure as been promoted to the new supertype IfcSpatialElement with upward compatibility for file based exchange.
+    /// IFC2x Edition 4 CHANGE  The attribute relatingStructure as been promoted to the new supertype IfcSpatialElement with upward compatibility for file based exchange.
     IfcSpatialStructureElement* RelatingStructure();
  virtual unsigned int getArgumentCount() const { return 6; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_ENTITY_LIST; case 5: return Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
@@ -21196,8 +21196,8 @@ public:
     static Type::Enum Class();
     IfcRelReferencedInSpatialStructure (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelReferencedInSpatialStructure* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelReferencedInSpatialStructure> > list;
-    typedef IfcTemplatedEntityList<IfcRelReferencedInSpatialStructure>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelReferencedInSpatialStructure > > list;
+    typedef IfcTemplatedEntityList< IfcRelReferencedInSpatialStructure >::it it;
 };
 class IfcRelSchedulesCostItems : public IfcRelAssignsToControl {
 public:
@@ -21210,8 +21210,8 @@ public:
     static Type::Enum Class();
     IfcRelSchedulesCostItems (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelSchedulesCostItems* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelSchedulesCostItems> > list;
-    typedef IfcTemplatedEntityList<IfcRelSchedulesCostItems>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelSchedulesCostItems > > list;
+    typedef IfcTemplatedEntityList< IfcRelSchedulesCostItems >::it it;
 };
 /// IfcRelSequence is a
 ///   sequential relationship between processes where one process
@@ -21227,9 +21227,9 @@ public:
 ///   relationship; therefore it assigns one predecessor to one
 ///   successor.
 /// 
-/// HISTORYï¿½ New entity in IFC 1.0.
+/// HISTORY  New entity in IFC 1.0.
 /// 
-/// IFC2x4 CHANGEï¿½ Relocated to IfcProcessExtension schema.
+/// IFC2x4 CHANGE  Relocated to IfcProcessExtension schema.
 ///   TimeLag and SequenceType made optional.
 ///   USERDEFINED added to the IfcSequenceType
 ///   enumeration. UserDefinedSequenceType attribute
@@ -21288,8 +21288,8 @@ public:
     static Type::Enum Class();
     IfcRelSequence (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelSequence* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelSequence> > list;
-    typedef IfcTemplatedEntityList<IfcRelSequence>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelSequence > > list;
+    typedef IfcTemplatedEntityList< IfcRelSequence >::it it;
 };
 /// Definition from IAI: An objectified relationship
 ///   that defines the relationship between a system and the
@@ -21305,12 +21305,12 @@ public:
 /// HISTORY New entity in IFC
 ///   Release 1.0
 /// 
-/// IFC2x PLATFORM CHANGEï¿½ The
+/// IFC2x PLATFORM CHANGEÿ The
 ///   data type of the attributeRelatedBuildings has been
 ///   changed from IfcBuilding to its supertype
 ///   IfcSpatialStructureElement with upward compatibility
 ///   for file based exchange. The name
-///   IfcRelServicesBuildings is a knownï¿½anomaly, as the
+///   IfcRelServicesBuildings is a knownÿanomaly, as the
 ///   relationship is not restricted to buildings anymore.
 class IfcRelServicesBuildings : public IfcRelConnects {
 public:
@@ -21318,10 +21318,10 @@ public:
     IfcSystem* RelatingSystem();
     /// Spatial structure elements (including site, building, storeys) that are serviced by the system.
     /// 
-    /// IFC2x PLATFORM CHANGEï¿½ The data type has been changed from IfcBuilding to IfcSpatialStructureElement with upward compatibility for file based exchange.
+    /// IFC2x PLATFORM CHANGE  The data type has been changed from IfcBuilding to IfcSpatialStructureElement with upward compatibility for file based exchange.
     /// 
-    /// IFC2x Edition 4 CHANGEï¿½ The data type has been changed from IfcSpatialStructureElement to IfcSpatialElement with upward compatibility for file based exchange.
-    SHARED_PTR< IfcTemplatedEntityList<IfcSpatialStructureElement> > RelatedBuildings();
+    /// IFC2x Edition 4 CHANGE  The data type has been changed from IfcSpatialStructureElement to IfcSpatialElement with upward compatibility for file based exchange.
+    SHARED_PTR< IfcTemplatedEntityList< IfcSpatialStructureElement > > RelatedBuildings();
  virtual unsigned int getArgumentCount() const { return 6; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return Argument_ENTITY; case 5: return Argument_ENTITY_LIST; } return IfcRelConnects::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingSystem"; case 5: return "RelatedBuildings"; } return IfcRelConnects::getArgumentName(i); }
@@ -21331,8 +21331,8 @@ public:
     static Type::Enum Class();
     IfcRelServicesBuildings (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelServicesBuildings* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelServicesBuildings> > list;
-    typedef IfcTemplatedEntityList<IfcRelServicesBuildings>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelServicesBuildings > > list;
+    typedef IfcTemplatedEntityList< IfcRelServicesBuildings >::it it;
 };
 /// The space boundary defines the
 /// physical or virtual delimiter of a space by the relationship
@@ -21504,15 +21504,15 @@ public:
     bool hasRelatedBuildingElement();
     /// Reference to Building Element, that defines the Space Boundaries.
     /// 
-    /// IFC2x PLATFORM CHANGEï¿½ The data type has been changed from IfcBuildingElement to IfcElement with upward compatibility for file based exchange.
+    /// IFC2x PLATFORM CHANGE  The data type has been changed from IfcBuildingElement to IfcElement with upward compatibility for file based exchange.
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute has been changed to be mandatory.
+    /// IFC2x4 CHANGE  The attribute has been changed to be mandatory.
     IfcElement* RelatedBuildingElement();
     /// Whether the optional attribute ConnectionGeometry is defined for this IfcRelSpaceBoundary
     bool hasConnectionGeometry();
     /// Physical representation of the space boundary. Provided as a curve or surface given within the LCS of the space.
     /// 
-    /// IFC2x PLATFORM CHANGEï¿½ The data type has been changed from IfcConnectionSurfaceGeometry to IfcConnectionGeometry with upward compatibility for file based exchange.
+    /// IFC2x PLATFORM CHANGE  The data type has been changed from IfcConnectionSurfaceGeometry to IfcConnectionGeometry with upward compatibility for file based exchange.
     IfcConnectionGeometry* ConnectionGeometry();
     /// Defines, whether the Space Boundary is physical (Physical) or virtual (Virtual).
     IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtualEnum PhysicalOrVirtualBoundary();
@@ -21527,8 +21527,8 @@ public:
     static Type::Enum Class();
     IfcRelSpaceBoundary (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelSpaceBoundary* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelSpaceBoundary> > list;
-    typedef IfcTemplatedEntityList<IfcRelSpaceBoundary>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelSpaceBoundary > > list;
+    typedef IfcTemplatedEntityList< IfcRelSpaceBoundary >::it it;
 };
 /// IfcRelVoidsElement is an objectified relationship between a building element and one opening element that creates a void in the element. It is a one-to-one relationship. This relationship implies a Boolean operation of subtraction between the geometric bodies of the element and the opening.
 /// 
@@ -21550,8 +21550,8 @@ public:
     static Type::Enum Class();
     IfcRelVoidsElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelVoidsElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelVoidsElement> > list;
-    typedef IfcTemplatedEntityList<IfcRelVoidsElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelVoidsElement > > list;
+    typedef IfcTemplatedEntityList< IfcRelVoidsElement >::it it;
 };
 /// IfcResource contains the information needed to represent the costs, schedule, and other impacts from the use of a thing in a process. It is not intended to use IfcResource to model the general properties of the things themselves, while an optional linkage from IfcResource to the things to be used can be specified (specifically, the relationship from subtypes of IfcResource to IfcProduct through the IfcRelAssignsToResource relationship).  
 /// 
@@ -21572,14 +21572,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcObject::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcObject::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToResource> > ResourceOf(); // INVERSE IfcRelAssignsToResource::RelatingResource
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToResource > > ResourceOf(); // INVERSE IfcRelAssignsToResource::RelatingResource
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcResource* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcResource> > list;
-    typedef IfcTemplatedEntityList<IfcResource>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcResource > > list;
+    typedef IfcTemplatedEntityList< IfcResource >::it it;
 };
 /// An IfcRevolvedAreaSolid is a solid created by revolving
 /// a cross section provided by a profile definition about an axis. The
@@ -21612,9 +21612,9 @@ public:
 /// 
 /// Figure 262 &#8212; Revolved area solid geometry
 /// 
-/// NOTEï¿½ Corresponding ISO 10303-42 entity: revolved_area_solid. Please refer to ISO/IS 10303-42:1994, p. 184 for the final definition of the formal standard. The data type of the inherited SweptArea attribute is different, i.e. of type IfcProfileDef. The position attribute has been added to position the cross section used for the revolution.
+/// NOTE  Corresponding ISO 10303-42 entity: revolved_area_solid. Please refer to ISO/IS 10303-42:1994, p. 184 for the final definition of the formal standard. The data type of the inherited SweptArea attribute is different, i.e. of type IfcProfileDef. The position attribute has been added to position the cross section used for the revolution.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.5, capabilities of this entity have been enhanced in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 1.5, capabilities of this entity have been enhanced in IFC Release 2x.
 /// 
 /// Informal propositions:
 /// 
@@ -21624,7 +21624,7 @@ public:
 /// The AxisLine shall not intersect the interior of the
 /// SweptArea (as defined at supertype
 /// IfcSweptAreaSolid).
-/// The Angle shall be between 0ï¿½ and 360ï¿½, or 0
+/// The Angle shall be between 0° and 360°, or 0
 /// and 2&#960; (depending on the unit type for
 /// IfcPlaneAngleMeasure).
 /// 
@@ -21672,8 +21672,8 @@ public:
     static Type::Enum Class();
     IfcRevolvedAreaSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRevolvedAreaSolid* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRevolvedAreaSolid> > list;
-    typedef IfcTemplatedEntityList<IfcRevolvedAreaSolid>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRevolvedAreaSolid > > list;
+    typedef IfcTemplatedEntityList< IfcRevolvedAreaSolid >::it it;
 };
 /// The IfcRightCircularCone is a Construction Solid
 /// Geometry (CSG) 3D primitive. It is a solid with a circular base and
@@ -21684,7 +21684,7 @@ public:
 /// location and orientation of the cone:
 /// 
 /// SELF\IfcCsgPrimitive3D.Position: The location and
-/// orientation of the axis system for the primitive.ï¿½
+/// orientation of the axis system for the primitive. 
 /// SELF\IfcCsgPrimitive3D.Position.Location: The center
 /// of the circular area being the bottom face of the cone.
 /// SELF\IfcCsgPrimitive3D.Position.Position[3]: The
@@ -21698,9 +21698,9 @@ public:
 /// 
 /// Figure 264 &#8212; Right circular cone geometry
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: right_circular_cone, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. No semi_angle attribute, and the radius defines the bottom radius, since only a non-truncated cone is in scope. Please refer to ISO/IS 10303-42:1994, p. 176 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: right_circular_cone, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. No semi_angle attribute, and the radius defines the bottom radius, since only a non-truncated cone is in scope. Please refer to ISO/IS 10303-42:1994, p. 176 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x3
+/// HISTORY  New entity in IFC2x3
 /// 
 /// Texture use definition
 /// On the circular side, textures are aligned facing upright with
@@ -21755,8 +21755,8 @@ public:
     static Type::Enum Class();
     IfcRightCircularCone (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRightCircularCone* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRightCircularCone> > list;
-    typedef IfcTemplatedEntityList<IfcRightCircularCone>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRightCircularCone > > list;
+    typedef IfcTemplatedEntityList< IfcRightCircularCone >::it it;
 };
 /// The IfcRightCircularCylinder is a Construction Solid
 /// Geometry (CSG) 3D primitive. It is a solid with a circular base and
@@ -21788,9 +21788,9 @@ public:
 /// 
 /// Figure 266 &#8212; Right circular cylinder geometry
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: right_circular_cyclinder, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. Please refer to ISO/IS 10303-42:1994, p. 177 for the definition in the international standard.
+/// NOTE  Corresponding ISO 10303 entity: right_circular_cyclinder, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. Please refer to ISO/IS 10303-42:1994, p. 177 for the definition in the international standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 /// 
 /// Texture use definition
 /// On the circular side, textures are aligned facing upright with
@@ -21854,8 +21854,8 @@ public:
     static Type::Enum Class();
     IfcRightCircularCylinder (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRightCircularCylinder* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRightCircularCylinder> > list;
-    typedef IfcTemplatedEntityList<IfcRightCircularCylinder>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRightCircularCylinder > > list;
+    typedef IfcTemplatedEntityList< IfcRightCircularCylinder >::it it;
 };
 /// A spatial structure element
 /// (IfcSpatialStructureElement) is the generalization of all
@@ -21945,16 +21945,16 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return Argument_STRING; case 8: return Argument_ENUMERATION; } return IfcProduct::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "LongName"; case 8: return "CompositionType"; } return IfcProduct::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelReferencedInSpatialStructure> > ReferencesElements(); // INVERSE IfcRelReferencedInSpatialStructure::RelatingStructure
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelServicesBuildings> > ServicedBySystems(); // INVERSE IfcRelServicesBuildings::RelatedBuildings
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelContainedInSpatialStructure> > ContainsElements(); // INVERSE IfcRelContainedInSpatialStructure::RelatingStructure
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelReferencedInSpatialStructure > > ReferencesElements(); // INVERSE IfcRelReferencedInSpatialStructure::RelatingStructure
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelServicesBuildings > > ServicedBySystems(); // INVERSE IfcRelServicesBuildings::RelatedBuildings
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelContainedInSpatialStructure > > ContainsElements(); // INVERSE IfcRelContainedInSpatialStructure::RelatingStructure
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcSpatialStructureElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSpatialStructureElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpatialStructureElement> > list;
-    typedef IfcTemplatedEntityList<IfcSpatialStructureElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSpatialStructureElement > > list;
+    typedef IfcTemplatedEntityList< IfcSpatialStructureElement >::it it;
 };
 /// Definition from IAI: The element type
 ///   (IfcSpatialStructureElementType) defines a list of
@@ -21964,7 +21964,7 @@ public:
 ///   specification (i.e. the specific element information, that
 ///   is common to all occurrences of that element type).
 /// 
-/// NOTE ï¿½The product representations are defined as
+/// NOTE ÿThe product representations are defined as
 ///   representation maps (at the level of the supertype
 ///   IfcTypeProduct, which gets assigned by an element
 ///   occurrence instance through the
@@ -21973,22 +21973,22 @@ public:
 /// 
 /// A spatial structure element type is used to define the
 ///   common properties of a certain type of a spatial structure
-///   element that may be applied to many instances of thatï¿½type
+///   element that may be applied to many instances of thatÿtype
 ///   to assign a specific style. Spatial structure element types
 ///   (i.e. the instantiable subtypes) may be exchanged without
 ///   being already assigned to occurrences.
 /// 
-/// NOTE ï¿½The spatial structure element types are
+/// NOTE ÿThe spatial structure element types are
 ///   often used to represent catalogues of predefined spatial
 ///   types for shared attributes, less so for sharing a common
 ///   representation map.
 /// 
 /// The occurrences of subtypes of the
-///   abstractï¿½IfcSpatialStructureElementType are
+///   abstractÿIfcSpatialStructureElementType are
 ///   represented by instances of subtypes of
 ///   IfcSpatialStructureElement.
 /// 
-/// HISTORY ï¿½New entity in
+/// HISTORY ÿNew entity in
 ///   Release IFC2x Edition 3.
 class IfcSpatialStructureElementType : public IfcElementType {
 public:
@@ -22001,8 +22001,8 @@ public:
     static Type::Enum Class();
     IfcSpatialStructureElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSpatialStructureElementType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpatialStructureElementType> > list;
-    typedef IfcTemplatedEntityList<IfcSpatialStructureElementType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSpatialStructureElementType > > list;
+    typedef IfcTemplatedEntityList< IfcSpatialStructureElementType >::it it;
 };
 /// The IfcSphere is a Construction Solid Geometry (CSG) 3D
 /// primitive. It is a solid where all points at the surface have the
@@ -22011,7 +22011,7 @@ public:
 /// and provides:
 /// 
 /// SELF\IfcCsgPrimitive3D.Position: The location and
-/// orientation of the axis system for the primitive.ï¿½
+/// orientation of the axis system for the primitive. 
 /// SELF\IfcCsgPrimitive3D.Position.Location: The center
 /// of the sphere.
 /// SELF\IfcCsgPrimitive3D.Position.Position[3]: The z
@@ -22028,9 +22028,9 @@ public:
 /// 
 /// Figure 270 &#8212; Sphere geometry
 /// 
-/// NOTEï¿½ Corresponding STEP entity: sphere, the position attribute, including the centre point,ï¿½ has been promoted to the immediate supertype IfcCsgPrimitive3D. Please refer to ISO/IS 10303-42:1994, p. 175 for the final definition of the formal standard.
+/// NOTE  Corresponding STEP entity: sphere, the position attribute, including the centre point,  has been promoted to the immediate supertype IfcCsgPrimitive3D. Please refer to ISO/IS 10303-42:1994, p. 175 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 /// 
 /// Texture Use Definition
 /// Textures are aligned facing upright with origin at the back (+Y direction) revolving counter-clockwise. Textures are stretched or repeated to the extent of the circumference at the equator according to RepeatS and RepeatT.
@@ -22067,16 +22067,16 @@ public:
     static Type::Enum Class();
     IfcSphere (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSphere* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSphere> > list;
-    typedef IfcTemplatedEntityList<IfcSphere>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSphere > > list;
+    typedef IfcTemplatedEntityList< IfcSphere >::it it;
 };
 /// Definition from IAI: The abstract entity IfcStructuralActivity combines the definition of actions (such as forces, displacements, etc.) and reactions (support reactions, internal forces, deflections, etc.) which are specified by using the basic load definitions from the IfcStructuralLoadResource.
 /// 
 /// The differentiation between actions and reactions is realized by instantiating objects either from subclasses of IfcStructuralAction or IfcStructuralReaction respectively.  They inherit commonly needed attributes from the abstract superclass IfcStructuralActivity, notably the relationship which connects actions or reactions with connections, analysis members, or elements (subtypes of IfcStructuralItem or IfcElement).
 /// 
-/// NOTEï¿½ Instances of IfcStructuralActivity which are connected with an IfcElement are subject to agreements outside the scope of this specification.
+/// NOTE  Instances of IfcStructuralActivity which are connected with an IfcElement are subject to agreements outside the scope of this specification.
 /// 
-/// NOTEï¿½ The semantics of IfcStructuralActivity are only fully defined
+/// NOTE  The semantics of IfcStructuralActivity are only fully defined
 /// if an activity instance is connected with exactly one structural item.  The inverse attribute
 /// AssignedToStructuralItem can only be empty in incomplete models or in conceptual models
 /// which are not yet ready for analysis.
@@ -22150,7 +22150,7 @@ public:
 /// RepresentationIdentifier: 'Reference'
 ///   RepresentationType: 'Edge'
 /// 
-/// NOTEï¿½ While an IfcEdge (or IfcOrientedEdge with underlying IfcEdge) does not provide an explicit underlying curve geometry, it may be used to imply an underlying straight line as reference curve with the origin of the curve parameter at the start vertex point.
+/// NOTE  While an IfcEdge (or IfcOrientedEdge with underlying IfcEdge) does not provide an explicit underlying curve geometry, it may be used to imply an underlying straight line as reference curve with the origin of the curve parameter at the start vertex point.
 /// 
 /// Instances of IfcStructuralActivity which act on a single point on a curve or surface item shall have a topology representation given by an IfcVertexPoint, which should be the single item of IfcTopologyRepresentation.Items.  The point geometry shall be compatible with the curve or surface geometry of the connected item.  The local coordinate system of the activity is oriented by the curve or surface geometry of the connected item as described above for activities with edge or face topology.
 /// 
@@ -22191,14 +22191,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return Argument_ENTITY; case 8: return Argument_ENUMERATION; } return IfcProduct::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "AppliedLoad"; case 8: return "GlobalOrLocal"; } return IfcProduct::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralActivity> > AssignedToStructuralItem(); // INVERSE IfcRelConnectsStructuralActivity::RelatedStructuralActivity
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsStructuralActivity > > AssignedToStructuralItem(); // INVERSE IfcRelConnectsStructuralActivity::RelatedStructuralActivity
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralActivity (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralActivity* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralActivity> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralActivity>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralActivity > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralActivity >::it it;
 };
 /// Definition from IAI: The abstract entity IfcStructuralItem is the generalization of structural members and structural connections, i.e. analysis idealizations of elements in the building model.  It defines the relation between structural members and connections with structural activities (actions and reactions).
 /// 
@@ -22247,7 +22247,7 @@ public:
 /// RepresentationIdentifier: 'Reference'
 ///   RepresentationType: 'Edge'
 /// 
-/// NOTEï¿½ While an IfcEdge (or IfcOrientedEdge with underlying
+/// NOTE  While an IfcEdge (or IfcOrientedEdge with underlying
 ///   IfcEdge) does not provide an explicit underlying curve geometry, it may be used to imply an
 ///   underlying straight line as reference curve with the origin of the curve parameter at the start vertex
 ///   point.
@@ -22284,23 +22284,23 @@ public:
 /// 
 /// The ObjectPlacements of all structural items which are grouped into the same instance of IfcStructuralAnalysisModel shall refer to the same instance of IfcObjectPlacement.
 /// 
-/// NOTEï¿½ This rule is necessary to achieve consistent topology representations.  The topology representations of structural items in an analysis model are meant to share vertices and edges und must therefore have the same object placement.
+/// NOTE  This rule is necessary to achieve consistent topology representations.  The topology representations of structural items in an analysis model are meant to share vertices and edges und must therefore have the same object placement.
 /// 
-/// NOTEï¿½ A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
+/// NOTE  A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
 class IfcStructuralItem : public IfcProduct {
 public:
  virtual unsigned int getArgumentCount() const { return 7; }
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcProduct::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcProduct::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralActivity> > AssignedStructuralActivity(); // INVERSE IfcRelConnectsStructuralActivity::RelatingElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsStructuralActivity > > AssignedStructuralActivity(); // INVERSE IfcRelConnectsStructuralActivity::RelatingElement
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralItem* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralItem> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralItem>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralItem > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralItem >::it it;
 };
 /// Definition from IAI: The abstract entity IfcStructuralMember is the superclass of all structural items which represent the idealized structural behavior of building elements.
 /// 
@@ -22312,21 +22312,21 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcStructuralItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralElement> > ReferencesElement(); // INVERSE IfcRelConnectsStructuralElement::RelatedStructuralMember
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralMember> > ConnectedBy(); // INVERSE IfcRelConnectsStructuralMember::RelatingStructuralMember
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsStructuralElement > > ReferencesElement(); // INVERSE IfcRelConnectsStructuralElement::RelatedStructuralMember
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsStructuralMember > > ConnectedBy(); // INVERSE IfcRelConnectsStructuralMember::RelatingStructuralMember
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralMember (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralMember* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralMember> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralMember>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralMember > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralMember >::it it;
 };
 /// Definition from IAI: A structural reaction is a structural activity that results from a
 /// structural action imposed to a structural item or building element.  Examples are support reactions,
 /// internal forces, and deflections.
 /// 
-/// HISTORYï¿½ New entity in IFC 2x2.
+/// HISTORY  New entity in IFC 2x2.
 /// 
 /// IFC 2x4 change:  Inverse attribute Causes deleted; use IfcRelAssignsToProduct via HasAssignments instead.
 /// 
@@ -22348,14 +22348,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralActivity::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcStructuralActivity::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcStructuralAction> > Causes(); // INVERSE IfcStructuralAction::CausedBy
+    SHARED_PTR< IfcTemplatedEntityList< IfcStructuralAction > > Causes(); // INVERSE IfcStructuralAction::CausedBy
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralReaction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralReaction* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralReaction> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralReaction>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralReaction > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralReaction >::it it;
 };
 /// Definition from IAI: Instances of IfcStructuralSurfaceMember describe face members, i.e. structural analysis idealizations of slabs, walls, shells, etc..  Surface members may be planar or curved.
 /// 
@@ -22394,12 +22394,12 @@ public:
     static Type::Enum Class();
     IfcStructuralSurfaceMember (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralSurfaceMember* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralSurfaceMember> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralSurfaceMember>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralSurfaceMember > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralSurfaceMember >::it it;
 };
 /// Definition from IAI: Describes surface members with varying section properties.  The properties are provided by means of a property set and IfcRelDefinesByProperties or by means of aggregation:  An instance of IfcStructuralSurfaceMemberVarying may be composed of two or more instances of IfcStructuralSurfaceMember with differing section properties.  These subordinate members relate to the instance of IfcStructuralSurfaceMemberVarying by IfcRelAggregates.
 /// 
-/// NOTEï¿½  It is recommended that structural activities (actions or reactions) are not connected with aggregated IfcStructuralSurfaceMemberVarying but only with the IfcStructuralSurfaceMembers in the aggregation.  That way, difficulties in interpretation of local coordinates are avoided.
+/// NOTE   It is recommended that structural activities (actions or reactions) are not connected with aggregated IfcStructuralSurfaceMemberVarying but only with the IfcStructuralSurfaceMembers in the aggregation.  That way, difficulties in interpretation of local coordinates are avoided.
 /// 
 /// HISTORY: New entity in IFC 2x2.
 /// Use definition changed and attributes deleted in IFC 2x4.
@@ -22417,7 +22417,7 @@ public:
 /// In case of aggregation, instances of IfcStructuralSurfaceMemberVarying may have a topology representation which contains a single IfcConnectedFaceSet, based upon the faces of the parts.  Otherwise, definitions at IfcStructuralSurfaceMember apply.
 class IfcStructuralSurfaceMemberVarying : public IfcStructuralSurfaceMember {
 public:
-    std::vector<IfcPositiveLengthMeasure> /*[2:?]*/ SubsequentThickness();
+    std::vector< IfcPositiveLengthMeasure > /*[2:?]*/ SubsequentThickness();
     IfcShapeAspect* VaryingThicknessLocation();
  virtual unsigned int getArgumentCount() const { return 11; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return Argument_VECTOR_DOUBLE; case 10: return Argument_ENTITY; } return IfcStructuralSurfaceMember::getArgumentType(i); }
@@ -22428,8 +22428,8 @@ public:
     static Type::Enum Class();
     IfcStructuralSurfaceMemberVarying (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralSurfaceMemberVarying* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralSurfaceMemberVarying> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralSurfaceMemberVarying>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralSurfaceMemberVarying > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralSurfaceMemberVarying >::it it;
 };
 class IfcStructuredDimensionCallout : public IfcDraughtingCallout {
 public:
@@ -22442,8 +22442,8 @@ public:
     static Type::Enum Class();
     IfcStructuredDimensionCallout (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuredDimensionCallout* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuredDimensionCallout> > list;
-    typedef IfcTemplatedEntityList<IfcStructuredDimensionCallout>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuredDimensionCallout > > list;
+    typedef IfcTemplatedEntityList< IfcStructuredDimensionCallout >::it it;
 };
 /// The IfcSurfaceCurveSweptAreaSolid is the result of
 /// sweeping an area along a directrix that lies on a reference
@@ -22487,7 +22487,7 @@ public:
 /// transformation matrix T(u), which varies with the
 /// Directrix parameter u.
 /// 
-/// NOTEï¿½ The
+/// NOTE  The
 /// geometric shape of the solid is not dependent upon the curve
 /// parameterization; the volume depends upon the area swept and the
 /// length of the Directrix.
@@ -22498,9 +22498,9 @@ public:
 /// and the ReferenceSurface are positioned within the 3D
 /// Position coordinate system.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303-42 entity: surface_curve_swept_area_solid. Please refer to ISO 10303-42 ed.2:1999, p. 274 for the definition in the international standard.
+/// NOTE  Corresponding ISO 10303-42 entity: surface_curve_swept_area_solid. Please refer to ISO 10303-42 ed.2:1999, p. 274 for the definition in the international standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// Informal propositions:
 /// 
@@ -22513,11 +22513,11 @@ public:
     IfcCurve* Directrix();
     /// The parameter value on the Directrix at which the sweeping operation commences. If no value is provided the start of the sweeping operation is at the start of the Directrix..
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
+    /// IFC2x4 CHANGE  The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
     IfcParameterValue StartParam();
     /// The parameter value on the Directrix at which the sweeping operation ends. If no value is provided the end of the sweeping operation is at the end of the Directrix..
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
+    /// IFC2x4 CHANGE  The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
     IfcParameterValue EndParam();
     /// The surface containing the Directrix.
     IfcSurface* ReferenceSurface();
@@ -22530,14 +22530,14 @@ public:
     static Type::Enum Class();
     IfcSurfaceCurveSweptAreaSolid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSurfaceCurveSweptAreaSolid* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceCurveSweptAreaSolid> > list;
-    typedef IfcTemplatedEntityList<IfcSurfaceCurveSweptAreaSolid>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSurfaceCurveSweptAreaSolid > > list;
+    typedef IfcTemplatedEntityList< IfcSurfaceCurveSweptAreaSolid >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: This surface is a simple swept surface or a generalized cylinder obtained by sweeping a curve in a given direction. The parameterization is as follows where the curve has a parameterization l(u): 
 /// 
 /// V = ExtrusionAxis 
 /// 
-/// The parameterization range for v is -ï¿½ < v < ï¿½ and for u it is defined by the curve parameterization. 
+/// The parameterization range for v is -¥ < v < ¥ and for u it is defined by the curve parameterization. 
 /// 
 /// NOTE: Corresponding ISO 10303 entity: surface_of_linear_extrusion. Please refer to ISO/IS 10303-42:1994, p.76 for the final definition of the formal standard. The following adaption has been made. The ExtrusionAxis and the Direction are defined as two separate attributes in correlation to the definition of the extruded_area_solid, and not as a single vector attribute. The vector is derived as ExtrusionAxis.
 /// 
@@ -22561,8 +22561,8 @@ public:
     static Type::Enum Class();
     IfcSurfaceOfLinearExtrusion (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSurfaceOfLinearExtrusion* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceOfLinearExtrusion> > list;
-    typedef IfcTemplatedEntityList<IfcSurfaceOfLinearExtrusion>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSurfaceOfLinearExtrusion > > list;
+    typedef IfcTemplatedEntityList< IfcSurfaceOfLinearExtrusion >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A surface of revolution (IfcSurfaceOfRevolution) is the surface obtained by rotating a curve one complete revolution about an axis. The data shall be interpreted as below. 
 /// 
@@ -22594,8 +22594,8 @@ public:
     static Type::Enum Class();
     IfcSurfaceOfRevolution (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSurfaceOfRevolution* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSurfaceOfRevolution> > list;
-    typedef IfcTemplatedEntityList<IfcSurfaceOfRevolution>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSurfaceOfRevolution > > list;
+    typedef IfcTemplatedEntityList< IfcSurfaceOfRevolution >::it it;
 };
 /// The furnishing element type IfcSystemFurnitureElementType defines commonly shared information for occurrences of furniture elements.  The set of shared information may include: 
 /// 
@@ -22638,8 +22638,8 @@ public:
     static Type::Enum Class();
     IfcSystemFurnitureElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSystemFurnitureElementType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSystemFurnitureElementType> > list;
-    typedef IfcTemplatedEntityList<IfcSystemFurnitureElementType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSystemFurnitureElementType > > list;
+    typedef IfcTemplatedEntityList< IfcSystemFurnitureElementType >::it it;
 };
 /// An IfcTask is an identifiable unit of work to be
 ///   carried out in a construction project.
@@ -22651,9 +22651,9 @@ public:
 ///   design, construction and operation related activities as
 ///   well.
 /// 
-/// HISTORYï¿½ New entity in IFC 1.0. Renamed from IfcWorkTask in IFC 2x.
+/// HISTORY  New entity in IFC 1.0. Renamed from IfcWorkTask in IFC 2x.
 /// 
-/// IFC2x4 CHANGEï¿½ Attributes TaskTime and PredefinedType added.  IfcMove and IfcOrderRequest has been removed in IFC2x4 and are now represented by IfcTask. Further information can be found in the description below.
+/// IFC2x4 CHANGE  Attributes TaskTime and PredefinedType added.  IfcMove and IfcOrderRequest has been removed in IFC2x4 and are now represented by IfcTask. Further information can be found in the description below.
 /// 
 /// Type use definition
 /// 
@@ -22928,8 +22928,8 @@ public:
     static Type::Enum Class();
     IfcTask (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTask* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTask> > list;
-    typedef IfcTemplatedEntityList<IfcTask>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTask > > list;
+    typedef IfcTemplatedEntityList< IfcTask >::it it;
 };
 /// Definition from IAI: The element type
 /// IfcTransportElementType defines commonly shared
@@ -23007,8 +23007,8 @@ public:
     static Type::Enum Class();
     IfcTransportElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTransportElementType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTransportElementType> > list;
-    typedef IfcTemplatedEntityList<IfcTransportElementType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTransportElementType > > list;
+    typedef IfcTemplatedEntityList< IfcTransportElementType >::it it;
 };
 /// The IfcActor defines all actors or human agents involved in a project during its full life cycle. It facilitates the use of person and organization definitions in the resource part of the IFC object model. This includes name, address, telecommunication addresses, and roles.
 /// 
@@ -23033,14 +23033,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return Argument_ENTITY; } return IfcObject::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "TheActor"; } return IfcObject::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToActor> > IsActingUpon(); // INVERSE IfcRelAssignsToActor::RelatingActor
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToActor > > IsActingUpon(); // INVERSE IfcRelAssignsToActor::RelatingActor
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcActor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcActor* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcActor> > list;
-    typedef IfcTemplatedEntityList<IfcActor>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcActor > > list;
+    typedef IfcTemplatedEntityList< IfcActor >::it it;
 };
 /// Definition from IAI: An annotation is a graphical
 ///   representation within the geometric (and spatial) context
@@ -23221,14 +23221,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcProduct::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcProduct::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelContainedInSpatialStructure> > ContainedInStructure(); // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelContainedInSpatialStructure > > ContainedInStructure(); // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcAnnotation (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAnnotation* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAnnotation> > list;
-    typedef IfcTemplatedEntityList<IfcAnnotation>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAnnotation > > list;
+    typedef IfcTemplatedEntityList< IfcAnnotation >::it it;
 };
 /// IfcAsymmetricIShapeProfileDef
 /// defines a section profile that provides the defining parameters of a
@@ -23253,11 +23253,11 @@ public:
 /// to an external document or library should be provided to further define the
 /// profile as described at IfcProfileDef.
 /// 
-/// HISTORYï¿½ New entity in Release IFC2x Edition 2.
+/// HISTORY  New entity in Release IFC2x Edition 2.
 /// 
-/// IFC2x3 CHANGEï¿½ All profile origins are now in the center of the bounding box. The attribute CentreOfGravityInY has been made OPTIONAL.
+/// IFC2x3 CHANGE  All profile origins are now in the center of the bounding box. The attribute CentreOfGravityInY has been made OPTIONAL.
 /// 
-/// IFC2x4 CHANGEï¿½ Bottom flange is not necessarily wider than top flange. TopFlangeThickness changed from OPTIONAL to mandatory. Type of TopFlangeFilletRadius relaxed to allow for zero radius. Trailing attribute CentreOfGravityInY deleted, use respective property in IfcExtendedProfileProperties instead.
+/// IFC2x4 CHANGE  Bottom flange is not necessarily wider than top flange. TopFlangeThickness changed from OPTIONAL to mandatory. Type of TopFlangeFilletRadius relaxed to allow for zero radius. Trailing attribute CentreOfGravityInY deleted, use respective property in IfcExtendedProfileProperties instead.
 /// 
 /// Figure 310 illustrates parameters of the asymmetric I-shaped section definition. The parameterized profile defines its own position coordinate system. The underlying coordinate system is defined by the swept area solid that uses the profile definition. It is the xy plane of:
 /// 
@@ -23291,8 +23291,8 @@ public:
     static Type::Enum Class();
     IfcAsymmetricIShapeProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAsymmetricIShapeProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAsymmetricIShapeProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcAsymmetricIShapeProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAsymmetricIShapeProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcAsymmetricIShapeProfileDef >::it it;
 };
 /// The IfcBlock is a Construction Solid Geometry (CSG) 3D
 /// primitive. It is defined by a position and a positve distance along
@@ -23322,9 +23322,9 @@ public:
 /// 
 /// Figure 250 &#8212; Block geometry
 /// 
-/// NOTEï¿½ Corresponding ISO 10303-42 entity: block, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. Please refer to ISO 10303-42:1994, p. 244 for the definition in the international standard.
+/// NOTE  Corresponding ISO 10303-42 entity: block, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. Please refer to ISO 10303-42:1994, p. 244 for the definition in the international standard.
 /// 
-/// HISTORYï¿½ New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 /// 
 /// Texture use definition
 /// On each side face, textures are aligned facing upright. On the
@@ -23408,8 +23408,8 @@ public:
     static Type::Enum Class();
     IfcBlock (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBlock* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBlock> > list;
-    typedef IfcTemplatedEntityList<IfcBlock>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBlock > > list;
+    typedef IfcTemplatedEntityList< IfcBlock >::it it;
 };
 /// A clipping result is defined as a special subtype of the general Boolean result (IfcBooleanResult). It constrains the operands and the operator of the Boolean result. 
 /// 
@@ -23429,8 +23429,8 @@ public:
     static Type::Enum Class();
     IfcBooleanClippingResult (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBooleanClippingResult* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBooleanClippingResult> > list;
-    typedef IfcTemplatedEntityList<IfcBooleanClippingResult>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBooleanClippingResult > > list;
+    typedef IfcTemplatedEntityList< IfcBooleanClippingResult >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A bounded curve is a curve of finite arc length with identifiable end points. 
 /// 
@@ -23453,8 +23453,8 @@ public:
     static Type::Enum Class();
     IfcBoundedCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBoundedCurve* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoundedCurve> > list;
-    typedef IfcTemplatedEntityList<IfcBoundedCurve>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBoundedCurve > > list;
+    typedef IfcTemplatedEntityList< IfcBoundedCurve >::it it;
 };
 /// Definition from ISO 6707-1:1989: Construction work that
 /// has the provision of shelter for its occupants or contents as one
@@ -23532,13 +23532,13 @@ public:
 /// IfcBuilding.IsDecomposedBy -- referencing
 /// (IfcBuilding || IfcBuildingStorey) by
 /// IfcRelAggregates.RelatedObjects. If it refers to another
-/// instance ofï¿½IfcBuilding, the referenced IfcBuilding
+/// instance ofÿIfcBuilding, the referenced IfcBuilding
 /// needs to have a different and lower CompositionType, i.e. ELEMENT
 /// (if the other IfcBuilding has COMPLEX), or PARTIAL (if the
 /// other IfcBuilding has ELEMENT).
 /// 
 /// If there are building elements and/or other elements directly
-/// related to the IfcBuildingï¿½(like a curtain wall spanning
+/// related to the IfcBuildingÿ(like a curtain wall spanning
 /// several stories), they are associated with the IfcBuilding
 /// by using the objectified relationship
 /// IfcRelContainedInSpatialStructure. The IfcBuilding
@@ -23572,7 +23572,7 @@ public:
 /// total height of building, also referred to as ridge height (top of roof structure, e.g the ridge against terrain): provided by BaseQuantity with Name="TotalHeight"
 /// eaves height of building (base of roof structure, e.g the eaves against terrain): provided by BaseQuantity with Name="EavesHeight"
 /// 
-/// ï¿½
+/// ÿ
 /// Figure 21 &#8212; Building elevations
 /// 
 /// Geometry Use Definitions
@@ -23654,8 +23654,8 @@ public:
     static Type::Enum Class();
     IfcBuilding (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBuilding* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuilding> > list;
-    typedef IfcTemplatedEntityList<IfcBuilding>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBuilding > > list;
+    typedef IfcTemplatedEntityList< IfcBuilding >::it it;
 };
 /// Definition from IAI: The element type
 ///   (IfcBuildingElementType) defines a list of commonly
@@ -23697,8 +23697,8 @@ public:
     static Type::Enum Class();
     IfcBuildingElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBuildingElementType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingElementType> > list;
-    typedef IfcTemplatedEntityList<IfcBuildingElementType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBuildingElementType > > list;
+    typedef IfcTemplatedEntityList< IfcBuildingElementType >::it it;
 };
 /// The building storey has an
 /// elevation and typically represents a (nearly) horizontal
@@ -23757,7 +23757,7 @@ public:
 /// IfcBuildingStorey.Decomposes -- referencing
 /// (IfcBuilding || IfcBuildingStorey) by
 /// IfcRelAggregates.RelatingObject, If it refers to another
-/// instance ofï¿½IfcBuildingStorey, the referenced
+/// instance ofÿIfcBuildingStorey, the referenced
 /// IfcBuildingStorey needs to have a different and higher
 /// CompositionType, i.e. COMPLEX (if the other
 /// IfcBuildingStorey has ELEMENT), or ELEMENT (if the other
@@ -23765,7 +23765,7 @@ public:
 /// IfcBuildingStorey.IsDecomposedBy -- referencing
 /// (IfcBuildingStorey || IfcSpace) by
 /// IfcRelAggregates.RelatedObjects. If it refers to another
-/// instance ofï¿½IfcBuildingStorey, the referenced
+/// instance ofÿIfcBuildingStorey, the referenced
 /// IfcBuildingStorey needs to have a different and lower
 /// CompositionType, i.e. ELEMENT (if the other
 /// IfcBuildingStorey has COMPLEX), or PARTIAL (if the other
@@ -23892,8 +23892,8 @@ public:
     static Type::Enum Class();
     IfcBuildingStorey (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBuildingStorey* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingStorey> > list;
-    typedef IfcTemplatedEntityList<IfcBuildingStorey>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBuildingStorey > > list;
+    typedef IfcTemplatedEntityList< IfcBuildingStorey >::it it;
 };
 /// IfcCircleHollowProfileDef
 /// defines a section profile that provides the defining parameters of a
@@ -23904,7 +23904,7 @@ public:
 /// profile's centre of the bounding box (for symmetric profiles identical
 /// with the centre of gravity).
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// Figure 312 illustrates parameters of the circular hollow profile definition. The parameterized profile defines its own position coordinate system. The underlying coordinate system is defined by the swept area solid that uses the profile definition. It is the xy plane of:
 /// 
@@ -23926,8 +23926,8 @@ public:
     static Type::Enum Class();
     IfcCircleHollowProfileDef (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCircleHollowProfileDef* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCircleHollowProfileDef> > list;
-    typedef IfcTemplatedEntityList<IfcCircleHollowProfileDef>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCircleHollowProfileDef > > list;
+    typedef IfcTemplatedEntityList< IfcCircleHollowProfileDef >::it it;
 };
 /// Definition from IAI: The element type
 /// IfcColumnType defines commonly shared information for
@@ -24040,8 +24040,8 @@ public:
     static Type::Enum Class();
     IfcColumnType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcColumnType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcColumnType> > list;
-    typedef IfcTemplatedEntityList<IfcColumnType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcColumnType > > list;
+    typedef IfcTemplatedEntityList< IfcColumnType >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A composite
 ///   curve is a collection of curves joined end-to-end. The
@@ -24112,7 +24112,7 @@ public:
 class IfcCompositeCurve : public IfcBoundedCurve {
 public:
     /// The component bounded curves, their transitions and senses. The transition attribute for the last segment defines the transition between the end of the last segment and the start of the first; this transition attribute may take the value discontinuous, which indicates an open curve.
-    SHARED_PTR< IfcTemplatedEntityList<IfcCompositeCurveSegment> > Segments();
+    SHARED_PTR< IfcTemplatedEntityList< IfcCompositeCurveSegment > > Segments();
     /// Indication of whether the curve intersects itself or not; this is for information only.
     bool SelfIntersect();
  virtual unsigned int getArgumentCount() const { return 2; }
@@ -24124,8 +24124,8 @@ public:
     static Type::Enum Class();
     IfcCompositeCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCompositeCurve* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCompositeCurve> > list;
-    typedef IfcTemplatedEntityList<IfcCompositeCurve>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCompositeCurve > > list;
+    typedef IfcTemplatedEntityList< IfcCompositeCurve >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A conic (IfcConic) is a planar curve which could be produced by intersecting a plane with a cone. A conic is defined in terms of its intrinsic geometric properties rather than being described in terms of other geometry. A conic class always has a placement coordinate system defined by a two or three dimensional placement. The parametric representation is defined in terms of this placement coordinate system.
 /// 
@@ -24145,8 +24145,8 @@ public:
     static Type::Enum Class();
     IfcConic (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConic* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConic> > list;
-    typedef IfcTemplatedEntityList<IfcConic>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConic > > list;
+    typedef IfcTemplatedEntityList< IfcConic >::it it;
 };
 /// IfcConstructionResource is an abstract generalization of the different resources used in
 /// construction projects, mainly labor, material, equipment and product resources, plus subcontracted resources and aggregations such as a crew resource.
@@ -24155,9 +24155,9 @@ public:
 /// represents a pool of items having limited availability such as general labor or an equipment fleet. A resource can represent either a generic resource pool (not having any task assignment) or a task-specific resource allocation (having an IfcTask
 /// assignment).
 /// 
-/// HISTORYï¿½ New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x4 CHANGEï¿½ Modified in to promote ResourceIdentifer and ResourceGroup (renamed to LongDescription) to supertype IfcResource and add attributes as described.
+/// IFC2x4 CHANGE  Modified in to promote ResourceIdentifer and ResourceGroup (renamed to LongDescription) to supertype IfcResource and add attributes as described.
 /// 
 /// Type use definition
 /// IfcConstructionResource defines the occurrence of any construction resource; common information about construction resource types is handled by IfcConstructionResourceType. The IfcConstructionResourceType (if present) may establish the common type name, common properties, common cost rates, and common productivities applied to specific task types. The IfcConstructionResourceType is attached using the IfcRelDefinesByType.RelatingType objectified relationship and is accessible by the inverse IsTypedBy attribute as shown in Figure 186.
@@ -24244,8 +24244,8 @@ public:
     static Type::Enum Class();
     IfcConstructionResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConstructionResource* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstructionResource> > list;
-    typedef IfcTemplatedEntityList<IfcConstructionResource>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConstructionResource > > list;
+    typedef IfcTemplatedEntityList< IfcConstructionResource >::it it;
 };
 /// IfcControl is the abstract generalization of all concepts that control or constrain the utilization of products, processes, or resources in general. It can be seen as a regulation, cost schedule, request or order, or other requirements applied to a product, process or resource whose requirements and provisions must be fulfilled.
 /// 
@@ -24263,14 +24263,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcObject::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcObject::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToControl> > Controls(); // INVERSE IfcRelAssignsToControl::RelatingControl
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToControl > > Controls(); // INVERSE IfcRelAssignsToControl::RelatingControl
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcControl (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcControl* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcControl> > list;
-    typedef IfcTemplatedEntityList<IfcControl>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcControl > > list;
+    typedef IfcTemplatedEntityList< IfcControl >::it it;
 };
 /// An IfcCostItem describes a cost or financial value together with descriptive information that describes its context in a form that enables it to be used within a cost schedule. An IfcCostItem can be used to represent the cost of goods and services, the execution of works by a process, lifecycle cost and more.
 /// 
@@ -24319,8 +24319,8 @@ public:
     static Type::Enum Class();
     IfcCostItem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCostItem* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCostItem> > list;
-    typedef IfcTemplatedEntityList<IfcCostItem>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCostItem > > list;
+    typedef IfcTemplatedEntityList< IfcCostItem >::it it;
 };
 /// An IfcCostSchedule brings together instances of IfcCostItem either for the purpose of identifying purely cost information as in an estimate for constructions costs or for including cost information within another presentation form such as a work order.
 /// 
@@ -24371,7 +24371,7 @@ public:
     IfcLabel Status();
     /// Whether the optional attribute TargetUsers is defined for this IfcCostSchedule
     bool hasTargetUsers();
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > TargetUsers();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > TargetUsers();
     /// Whether the optional attribute UpdateDate is defined for this IfcCostSchedule
     bool hasUpdateDate();
     /// The date and time that this cost schedule is updated; this allows tracking the schedule history.
@@ -24392,8 +24392,8 @@ public:
     static Type::Enum Class();
     IfcCostSchedule (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCostSchedule* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCostSchedule> > list;
-    typedef IfcTemplatedEntityList<IfcCostSchedule>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCostSchedule > > list;
+    typedef IfcTemplatedEntityList< IfcCostSchedule >::it it;
 };
 /// Definition from IAI: The element type
 /// IfcCoveringType defines commonly shared information for
@@ -24487,8 +24487,8 @@ public:
     static Type::Enum Class();
     IfcCoveringType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCoveringType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCoveringType> > list;
-    typedef IfcTemplatedEntityList<IfcCoveringType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCoveringType > > list;
+    typedef IfcTemplatedEntityList< IfcCoveringType >::it it;
 };
 /// IfcCrewResource represents a collection of internal resources used in construction processes. 
 /// 
@@ -24511,8 +24511,8 @@ public:
     static Type::Enum Class();
     IfcCrewResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCrewResource* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCrewResource> > list;
-    typedef IfcTemplatedEntityList<IfcCrewResource>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCrewResource > > list;
+    typedef IfcTemplatedEntityList< IfcCrewResource >::it it;
 };
 /// Definition from IAI: The element type (IfcCurtainWallType)
 /// defines a list of commonly shared property set definitions of a curtain
@@ -24548,8 +24548,8 @@ public:
     static Type::Enum Class();
     IfcCurtainWallType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCurtainWallType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurtainWallType> > list;
-    typedef IfcTemplatedEntityList<IfcCurtainWallType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCurtainWallType > > list;
+    typedef IfcTemplatedEntityList< IfcCurtainWallType >::it it;
 };
 class IfcDimensionCurveDirectedCallout : public IfcDraughtingCallout {
 public:
@@ -24562,8 +24562,8 @@ public:
     static Type::Enum Class();
     IfcDimensionCurveDirectedCallout (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDimensionCurveDirectedCallout* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDimensionCurveDirectedCallout> > list;
-    typedef IfcTemplatedEntityList<IfcDimensionCurveDirectedCallout>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDimensionCurveDirectedCallout > > list;
+    typedef IfcTemplatedEntityList< IfcDimensionCurveDirectedCallout >::it it;
 };
 /// Definition from IAI: The
 /// IfcDistributionElementType defines a list of commonly
@@ -24571,7 +24571,7 @@ public:
 /// of product representations. It is used to define an element
 /// specification (i.e. the specific product information, that is
 /// common to all occurrences of that product type).
-/// NOTEï¿½ The product representations are defined
+/// NOTEÿ The product representations are defined
 /// as representation maps (at the level of the supertype
 /// IfcTypeProduct, which gets assigned by an element
 /// occurrence instance through the
@@ -24586,9 +24586,9 @@ public:
 /// The occurrences of the IfcDistributionElementType are
 /// represented by instances of IfcDistributionElement (or its
 /// subtypes).
-/// HISTORYï¿½ New entity in
+/// HISTORYÿ New entity in
 /// Release IFC2x Edition 2.
-/// IFC2x3 CHANGEï¿½ The entity has been made
+/// IFC2x3 CHANGEÿ The entity has been made
 /// non-abstract
 /// IFC2x4 CHANGE The entity is marked
 /// as deprecated for instantiation - will be made ABSTRACT after
@@ -24604,8 +24604,8 @@ public:
     static Type::Enum Class();
     IfcDistributionElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDistributionElementType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionElementType> > list;
-    typedef IfcTemplatedEntityList<IfcDistributionElementType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDistributionElementType > > list;
+    typedef IfcTemplatedEntityList< IfcDistributionElementType >::it it;
 };
 /// The element type IfcDistributionFlowElementType defines a list of commonly shared property set definitions of an element and an optional set of product representations.  It is used to define an element specification (the specific product information that is common to all occurrences of that product type). 
 /// 
@@ -24683,8 +24683,8 @@ public:
     static Type::Enum Class();
     IfcDistributionFlowElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDistributionFlowElementType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionFlowElementType> > list;
-    typedef IfcTemplatedEntityList<IfcDistributionFlowElementType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDistributionFlowElementType > > list;
+    typedef IfcTemplatedEntityList< IfcDistributionFlowElementType >::it it;
 };
 class IfcElectricalBaseProperties : public IfcEnergyProperties {
 public:
@@ -24715,8 +24715,8 @@ public:
     static Type::Enum Class();
     IfcElectricalBaseProperties (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElectricalBaseProperties* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricalBaseProperties> > list;
-    typedef IfcTemplatedEntityList<IfcElectricalBaseProperties>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElectricalBaseProperties > > list;
+    typedef IfcTemplatedEntityList< IfcElectricalBaseProperties >::it it;
 };
 /// Definition from IAI: Generalization of all components
 /// that make up an AEC product. Those elements can be logically
@@ -24781,25 +24781,25 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return Argument_STRING; } return IfcProduct::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "Tag"; } return IfcProduct::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralElement> > HasStructuralMember(); // INVERSE IfcRelConnectsStructuralElement::RelatingElement
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelFillsElement> > FillsVoids(); // INVERSE IfcRelFillsElement::RelatedBuildingElement
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsElements> > ConnectedTo(); // INVERSE IfcRelConnectsElements::RelatingElement
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelCoversBldgElements> > HasCoverings(); // INVERSE IfcRelCoversBldgElements::RelatingBuildingElement
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelProjectsElement> > HasProjections(); // INVERSE IfcRelProjectsElement::RelatingElement
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelReferencedInSpatialStructure> > ReferencedInStructures(); // INVERSE IfcRelReferencedInSpatialStructure::RelatedElements
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPortToElement> > HasPorts(); // INVERSE IfcRelConnectsPortToElement::RelatedElement
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelVoidsElement> > HasOpenings(); // INVERSE IfcRelVoidsElement::RelatingBuildingElement
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsWithRealizingElements> > IsConnectionRealization(); // INVERSE IfcRelConnectsWithRealizingElements::RealizingElements
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelSpaceBoundary> > ProvidesBoundaries(); // INVERSE IfcRelSpaceBoundary::RelatedBuildingElement
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsElements> > ConnectedFrom(); // INVERSE IfcRelConnectsElements::RelatedElement
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelContainedInSpatialStructure> > ContainedInStructure(); // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsStructuralElement > > HasStructuralMember(); // INVERSE IfcRelConnectsStructuralElement::RelatingElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelFillsElement > > FillsVoids(); // INVERSE IfcRelFillsElement::RelatedBuildingElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsElements > > ConnectedTo(); // INVERSE IfcRelConnectsElements::RelatingElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelCoversBldgElements > > HasCoverings(); // INVERSE IfcRelCoversBldgElements::RelatingBuildingElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelProjectsElement > > HasProjections(); // INVERSE IfcRelProjectsElement::RelatingElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelReferencedInSpatialStructure > > ReferencedInStructures(); // INVERSE IfcRelReferencedInSpatialStructure::RelatedElements
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsPortToElement > > HasPorts(); // INVERSE IfcRelConnectsPortToElement::RelatedElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelVoidsElement > > HasOpenings(); // INVERSE IfcRelVoidsElement::RelatingBuildingElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsWithRealizingElements > > IsConnectionRealization(); // INVERSE IfcRelConnectsWithRealizingElements::RealizingElements
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelSpaceBoundary > > ProvidesBoundaries(); // INVERSE IfcRelSpaceBoundary::RelatedBuildingElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsElements > > ConnectedFrom(); // INVERSE IfcRelConnectsElements::RelatedElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelContainedInSpatialStructure > > ContainedInStructure(); // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElement> > list;
-    typedef IfcTemplatedEntityList<IfcElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElement > > list;
+    typedef IfcTemplatedEntityList< IfcElement >::it it;
 };
 /// The IfcElementAssembly
 /// represents complex element assemblies aggregated from several
@@ -24852,7 +24852,7 @@ public:
 /// SELF\IfcObjectDefinition.IsDecomposedBy. Components of an
 /// assembly are described by instances of subtypes of
 /// IfcElement.
-/// In this case, the containedï¿½subtypes of IfcElement
+/// In this case, the containedÿsubtypes of IfcElement
 /// shall not be additionally contained in the project spatial
 /// hierarchy, i.e. the inverse attribute
 /// SELF\IfcElement.ContainedInStructure of those
@@ -24886,7 +24886,7 @@ public:
 /// have an explicit geometric representation. In some cases it may
 /// be useful to also expose an own explicit representation of the
 /// aggregate.
-/// NOTEï¿½ View definitions or implementer
+/// NOTEÿ View definitions or implementer
 /// agreements may further constrain the applicability of certain
 /// shape representations at the IfcElementAssembly in respect
 /// of the shape representations of its parts.
@@ -24903,7 +24903,7 @@ public:
     IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum AssemblyPlace();
     /// Predefined generic types for a element assembly that are specified in an enumeration. There might be property sets defined specifically for each predefined type.
     /// 
-    /// IFC2x4 CHANGEï¿½ The attribute has been changed to be optional.
+    /// IFC2x4 CHANGE  The attribute has been changed to be optional.
     IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum PredefinedType();
  virtual unsigned int getArgumentCount() const { return 10; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return Argument_ENUMERATION; case 9: return Argument_ENUMERATION; } return IfcElement::getArgumentType(i); }
@@ -24914,8 +24914,8 @@ public:
     static Type::Enum Class();
     IfcElementAssembly (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElementAssembly* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElementAssembly> > list;
-    typedef IfcTemplatedEntityList<IfcElementAssembly>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElementAssembly > > list;
+    typedef IfcTemplatedEntityList< IfcElementAssembly >::it it;
 };
 /// An element component is a representation for minor items included in, added to or connecting to or between
 ///   elements, which usually are not of interest from the overall building structure viewpoint.
@@ -25005,8 +25005,8 @@ public:
     static Type::Enum Class();
     IfcElementComponent (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElementComponent* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElementComponent> > list;
-    typedef IfcTemplatedEntityList<IfcElementComponent>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElementComponent > > list;
+    typedef IfcTemplatedEntityList< IfcElementComponent >::it it;
 };
 /// Definition from IAI:
 ///   The element type (IfcElementComponentType) represents the supertype for element 
@@ -25028,8 +25028,8 @@ public:
     static Type::Enum Class();
     IfcElementComponentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElementComponentType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElementComponentType> > list;
-    typedef IfcTemplatedEntityList<IfcElementComponentType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElementComponentType > > list;
+    typedef IfcTemplatedEntityList< IfcElementComponentType >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: An ellipse (IfcEllipse) is a conic section defined by the lengths of the semi-major and semi-minor diameters and the position (center or mid point of the line joining the foci) and orientation of the curve. Interpretation of the data shall be as follows:
 /// 
@@ -25041,9 +25041,9 @@ public:
 ///   R2 = SemiAxis2 
 ///   and the ellipse is parameterized as:  
 /// 
-/// The parameterization range is 0 ï¿½
-///   u ï¿½ 2p (or 0
-///   ï¿½ u ï¿½
+/// The parameterization range is 0 £
+///   u £ 2p (or 0
+///   £ u £
 ///   360 degree). In the placement coordinate system defined above, the ellipse is
 ///   the equation C = 0, where 
 /// 
@@ -25051,9 +25051,9 @@ public:
 /// 
 /// The inherited Position.Location from IfcConic is the center of the IfcEllipse, and the inherited Position.P[1] from IfcConic the direction of the SemiAxis1.  
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: ellipse. Please refer to ISO/IS 10303-42:1994, p. 39 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: ellipse. Please refer to ISO/IS 10303-42:1994, p. 39 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 /// 
 /// Figure 280 illustrates the definition of the IfcEllipse within the (in this case three-dimensional) position coordinate system. 
 /// 
@@ -25073,8 +25073,8 @@ public:
     static Type::Enum Class();
     IfcEllipse (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEllipse* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEllipse> > list;
-    typedef IfcTemplatedEntityList<IfcEllipse>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEllipse > > list;
+    typedef IfcTemplatedEntityList< IfcEllipse >::it it;
 };
 /// The element type IfcEnergyConversionType defines a list of commonly shared property
 ///   set definitions of an energy conversion device and an optional set of product representations.
@@ -25110,8 +25110,8 @@ public:
     static Type::Enum Class();
     IfcEnergyConversionDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEnergyConversionDeviceType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEnergyConversionDeviceType> > list;
-    typedef IfcTemplatedEntityList<IfcEnergyConversionDeviceType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEnergyConversionDeviceType > > list;
+    typedef IfcTemplatedEntityList< IfcEnergyConversionDeviceType >::it it;
 };
 class IfcEquipmentElement : public IfcElement {
 public:
@@ -25124,8 +25124,8 @@ public:
     static Type::Enum Class();
     IfcEquipmentElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEquipmentElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEquipmentElement> > list;
-    typedef IfcTemplatedEntityList<IfcEquipmentElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEquipmentElement > > list;
+    typedef IfcTemplatedEntityList< IfcEquipmentElement >::it it;
 };
 class IfcEquipmentStandard : public IfcControl {
 public:
@@ -25138,8 +25138,8 @@ public:
     static Type::Enum Class();
     IfcEquipmentStandard (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEquipmentStandard* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEquipmentStandard> > list;
-    typedef IfcTemplatedEntityList<IfcEquipmentStandard>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEquipmentStandard > > list;
+    typedef IfcTemplatedEntityList< IfcEquipmentStandard >::it it;
 };
 /// The energy conversion device type IfcEvaporativeCoolerType defines commonly shared information for occurrences of evaporative coolers.  The set of shared information may include: 
 /// 
@@ -25180,8 +25180,8 @@ public:
     static Type::Enum Class();
     IfcEvaporativeCoolerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEvaporativeCoolerType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEvaporativeCoolerType> > list;
-    typedef IfcTemplatedEntityList<IfcEvaporativeCoolerType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEvaporativeCoolerType > > list;
+    typedef IfcTemplatedEntityList< IfcEvaporativeCoolerType >::it it;
 };
 /// The energy conversion device type IfcEvaporatorType defines commonly shared information for occurrences of evaporators.  The set of shared information may include: 
 /// 
@@ -25222,8 +25222,8 @@ public:
     static Type::Enum Class();
     IfcEvaporatorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEvaporatorType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEvaporatorType> > list;
-    typedef IfcTemplatedEntityList<IfcEvaporatorType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEvaporatorType > > list;
+    typedef IfcTemplatedEntityList< IfcEvaporatorType >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A faceted B-rep
 /// is a simple form of boundary representation model in which all
@@ -25237,7 +25237,7 @@ public:
 /// 
 /// NOTE Corresponding ISO 10303-42 entity: faceted_brep. Please refer to ISO/IS 10303-42:1994, p. 173 for the final definition of the formal standard. In the current IFC Release faceted B-rep with voids is represented by an own subtype and not defined via an implicit ANDOR supertype constraint as in ISO/IS 10303-42:1994. This change has been made due to the fact, that only ONEOF supertype constraint is allowed within the IFC data schema.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.0
+/// HISTORY  New entity in IFC Release 1.0
 /// 
 /// Informal proposition:
 /// 
@@ -25260,8 +25260,8 @@ public:
     static Type::Enum Class();
     IfcFacetedBrep (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFacetedBrep* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFacetedBrep> > list;
-    typedef IfcTemplatedEntityList<IfcFacetedBrep>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFacetedBrep > > list;
+    typedef IfcTemplatedEntityList< IfcFacetedBrep >::it it;
 };
 /// The IfcFacetedBrepWithVoids
 /// is a specialization of a faceted B-rep which contains one or more
@@ -25269,11 +25269,11 @@ public:
 /// which are defined so that the shell normal point into the
 /// void.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303-42 entity: brep_with_voids (see note above). Please refer to ISO/IS 10303-42:1994, p. 173 for the final definition of the formal standard. In IFC faceted B-rep with voids is represented by this subtype IfcFacetedBrepWithVoids and not defined via an implicit ANDOR supertype constraint as in ISO/IS 10303-42:1994 between an instance of faceted_brep AND brep_with_voids. This change has been made due to the fact, that only ONEOF supertype constraint is allowed within the IFC object model.
+/// NOTEÿ Corresponding ISO 10303-42 entity: brep_with_voids (see note above). Please refer to ISO/IS 10303-42:1994, p. 173 for the final definition of the formal standard. In IFC faceted B-rep with voids is represented by this subtype IfcFacetedBrepWithVoids and not defined via an implicit ANDOR supertype constraint as in ISO/IS 10303-42:1994 between an instance of faceted_brep AND brep_with_voids. This change has been made due to the fact, that only ONEOF supertype constraint is allowed within the IFC object model.
 /// 
-/// HISTORYï¿½ New entity in IFC Release 1.0
+/// HISTORYÿ New entity in IFC Release 1.0
 /// 
-/// IFC2x4 CHANGEï¿½ Subtyping changed from IfcManifoldSolidBrep to IfcFacetedBrep with upward compatibility for file based exchange.
+/// IFC2x4 CHANGEÿ Subtyping changed from IfcManifoldSolidBrep to IfcFacetedBrep with upward compatibility for file based exchange.
 /// 
 /// Informal propositions:
 /// 
@@ -25290,7 +25290,7 @@ public:
 class IfcFacetedBrepWithVoids : public IfcManifoldSolidBrep {
 public:
     /// Set of closed shells defining voids within the solid.
-    SHARED_PTR< IfcTemplatedEntityList<IfcClosedShell> > Voids();
+    SHARED_PTR< IfcTemplatedEntityList< IfcClosedShell > > Voids();
  virtual unsigned int getArgumentCount() const { return 2; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return Argument_ENTITY_LIST; } return IfcManifoldSolidBrep::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "Voids"; } return IfcManifoldSolidBrep::getArgumentName(i); }
@@ -25300,8 +25300,8 @@ public:
     static Type::Enum Class();
     IfcFacetedBrepWithVoids (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFacetedBrepWithVoids* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFacetedBrepWithVoids> > list;
-    typedef IfcTemplatedEntityList<IfcFacetedBrepWithVoids>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFacetedBrepWithVoids > > list;
+    typedef IfcTemplatedEntityList< IfcFacetedBrepWithVoids >::it it;
 };
 /// Definition from IAI:
 ///   Representations of fixing parts which are used as fasteners to connect or join elements with 
@@ -25322,8 +25322,8 @@ public:
     static Type::Enum Class();
     IfcFastener (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFastener* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFastener> > list;
-    typedef IfcTemplatedEntityList<IfcFastener>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFastener > > list;
+    typedef IfcTemplatedEntityList< IfcFastener >::it it;
 };
 /// Definition from IAI:
 ///   The element type (IfcFastenerType) defines a list of commonly shared
@@ -25359,8 +25359,8 @@ public:
     static Type::Enum Class();
     IfcFastenerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFastenerType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFastenerType> > list;
-    typedef IfcTemplatedEntityList<IfcFastenerType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFastenerType > > list;
+    typedef IfcTemplatedEntityList< IfcFastenerType >::it it;
 };
 /// Definition from IAI: Generalization of all existence
 /// dependent elements which modify the shape and appearance of the
@@ -25467,8 +25467,8 @@ public:
     static Type::Enum Class();
     IfcFeatureElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFeatureElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFeatureElement> > list;
-    typedef IfcTemplatedEntityList<IfcFeatureElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFeatureElement > > list;
+    typedef IfcTemplatedEntityList< IfcFeatureElement >::it it;
 };
 /// Definition from IAI: A specialization of the general
 ///   feature element, that represents an existence dependent
@@ -25531,14 +25531,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcFeatureElement::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcFeatureElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelProjectsElement> > ProjectsElements(); // INVERSE IfcRelProjectsElement::RelatedFeatureElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelProjectsElement > > ProjectsElements(); // INVERSE IfcRelProjectsElement::RelatedFeatureElement
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcFeatureElementAddition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFeatureElementAddition* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFeatureElementAddition> > list;
-    typedef IfcTemplatedEntityList<IfcFeatureElementAddition>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFeatureElementAddition > > list;
+    typedef IfcTemplatedEntityList< IfcFeatureElementAddition >::it it;
 };
 /// The IfcFeatureElementSubtraction is specialization of
 /// the general feature element, that represents an existence dependent
@@ -25596,14 +25596,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcFeatureElement::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcFeatureElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelVoidsElement> > VoidsElements(); // INVERSE IfcRelVoidsElement::RelatedOpeningElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelVoidsElement > > VoidsElements(); // INVERSE IfcRelVoidsElement::RelatedOpeningElement
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcFeatureElementSubtraction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFeatureElementSubtraction* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFeatureElementSubtraction> > list;
-    typedef IfcTemplatedEntityList<IfcFeatureElementSubtraction>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFeatureElementSubtraction > > list;
+    typedef IfcTemplatedEntityList< IfcFeatureElementSubtraction >::it it;
 };
 /// The element type IfcFlowControllerType defines a list of commonly shared property
 ///   set definitions of a flow controller and an optional set of product representations.
@@ -25638,8 +25638,8 @@ public:
     static Type::Enum Class();
     IfcFlowControllerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowControllerType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowControllerType> > list;
-    typedef IfcTemplatedEntityList<IfcFlowControllerType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowControllerType > > list;
+    typedef IfcTemplatedEntityList< IfcFlowControllerType >::it it;
 };
 /// The element type IfcFlowFittingType defines a list of commonly shared property
 ///   set definitions of a flow fitting and an optional set of product representations.
@@ -25675,8 +25675,8 @@ public:
     static Type::Enum Class();
     IfcFlowFittingType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowFittingType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowFittingType> > list;
-    typedef IfcTemplatedEntityList<IfcFlowFittingType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowFittingType > > list;
+    typedef IfcTemplatedEntityList< IfcFlowFittingType >::it it;
 };
 /// The flow controller type IfcFlowMeterType defines commonly shared information for occurrences of flow meters.  The set of shared information may include: 
 /// 
@@ -25723,8 +25723,8 @@ public:
     static Type::Enum Class();
     IfcFlowMeterType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowMeterType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowMeterType> > list;
-    typedef IfcTemplatedEntityList<IfcFlowMeterType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowMeterType > > list;
+    typedef IfcTemplatedEntityList< IfcFlowMeterType >::it it;
 };
 /// The element type IfcFlowMovingDeviceType defines a list of commonly shared property
 ///   set definitions of a flow moving device and an optional set of product representations.
@@ -25759,8 +25759,8 @@ public:
     static Type::Enum Class();
     IfcFlowMovingDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowMovingDeviceType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowMovingDeviceType> > list;
-    typedef IfcTemplatedEntityList<IfcFlowMovingDeviceType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowMovingDeviceType > > list;
+    typedef IfcTemplatedEntityList< IfcFlowMovingDeviceType >::it it;
 };
 /// The element type IfcFlowSegmentType defines a list of commonly shared property
 ///   set definitions of a flow segment and an optional set of product representations.
@@ -25804,8 +25804,8 @@ public:
     static Type::Enum Class();
     IfcFlowSegmentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowSegmentType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowSegmentType> > list;
-    typedef IfcTemplatedEntityList<IfcFlowSegmentType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowSegmentType > > list;
+    typedef IfcTemplatedEntityList< IfcFlowSegmentType >::it it;
 };
 /// The element type IfcFlowStorageDeviceType defines a list of commonly shared property set definitions of a flow storage device and an optional set of product representations.  It is used to define a flow storage device specification (the specific product information that is common to all occurrences of that product type). 
 /// 
@@ -25825,8 +25825,8 @@ public:
     static Type::Enum Class();
     IfcFlowStorageDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowStorageDeviceType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowStorageDeviceType> > list;
-    typedef IfcTemplatedEntityList<IfcFlowStorageDeviceType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowStorageDeviceType > > list;
+    typedef IfcTemplatedEntityList< IfcFlowStorageDeviceType >::it it;
 };
 /// The element type IfcFlowTerminalType defines a list of commonly shared property set definitions of a flow terminal and an optional set of product representations.  It is used to define a flow terminal specification (the specific product information that is common to all occurrences of that product type). 
 /// 
@@ -25846,8 +25846,8 @@ public:
     static Type::Enum Class();
     IfcFlowTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowTerminalType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowTerminalType> > list;
-    typedef IfcTemplatedEntityList<IfcFlowTerminalType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowTerminalType > > list;
+    typedef IfcTemplatedEntityList< IfcFlowTerminalType >::it it;
 };
 /// The element type IfcFlowTreatmentDeviceType defines a list of commonly shared property set definitions of a flow treatment device and an optional set of product representations. It is used to define a flow treatment device specification (the specific product information that is common to all occurrences of that product type). 
 /// 
@@ -25868,8 +25868,8 @@ public:
     static Type::Enum Class();
     IfcFlowTreatmentDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowTreatmentDeviceType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowTreatmentDeviceType> > list;
-    typedef IfcTemplatedEntityList<IfcFlowTreatmentDeviceType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowTreatmentDeviceType > > list;
+    typedef IfcTemplatedEntityList< IfcFlowTreatmentDeviceType >::it it;
 };
 /// Definition from IAI: Generalization of all furniture
 /// related objects. Furnishing objects are characterized as
@@ -25986,8 +25986,8 @@ public:
     static Type::Enum Class();
     IfcFurnishingElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFurnishingElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFurnishingElement> > list;
-    typedef IfcTemplatedEntityList<IfcFurnishingElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFurnishingElement > > list;
+    typedef IfcTemplatedEntityList< IfcFurnishingElement >::it it;
 };
 class IfcFurnitureStandard : public IfcControl {
 public:
@@ -26000,8 +26000,8 @@ public:
     static Type::Enum Class();
     IfcFurnitureStandard (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFurnitureStandard* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFurnitureStandard> > list;
-    typedef IfcTemplatedEntityList<IfcFurnitureStandard>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFurnitureStandard > > list;
+    typedef IfcTemplatedEntityList< IfcFurnitureStandard >::it it;
 };
 class IfcGasTerminalType : public IfcFlowTerminalType {
 public:
@@ -26015,8 +26015,8 @@ public:
     static Type::Enum Class();
     IfcGasTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcGasTerminalType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcGasTerminalType> > list;
-    typedef IfcTemplatedEntityList<IfcGasTerminalType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcGasTerminalType > > list;
+    typedef IfcTemplatedEntityList< IfcGasTerminalType >::it it;
 };
 /// IfcGrid ia a planar design
 /// grid defined in 3D space used as an aid in locating structural and
@@ -26030,7 +26030,7 @@ public:
 /// curve).
 /// The inherited attributes Name and Description can
 /// be used to define a descriptive name of the grid and to indicate
-/// the grid's purpose.ï¿½A grid is defined by (normally) two, or
+/// the grid's purpose. A grid is defined by (normally) two, or
 /// (in case of a triangular grid) three lists of grid axes. The
 /// following table shows some examples.
 /// A grid may support a rectangular layout (Figure 28), a radial layout (Figure 29), or a triangular layout (Figure 30).
@@ -26098,7 +26098,7 @@ public:
 /// IfcCurve, each representing a grid axis. Applicable subtypes
 /// of IfcCurve are: IfcPolyline, IfcCircle,
 /// IfcTrimmedCurve (based on BaseCurve referencing
-/// IfcLine or IfcCircle).ï¿½
+/// IfcLine or IfcCircle). 
 /// Each subtype of IfcCurve may have a curve style
 /// assigned, using IfcAnnotationCurveOccurrence referencing
 /// IfcCurveStyle.
@@ -26107,35 +26107,35 @@ public:
 /// using IfcAnnotationTextOccurrence referencing
 /// IfcTextStyle.
 /// 
-/// As shown in Figure 32, the IfcGrid defines a placement coordinate system using the ObjectPlacement. The XY plane of the coordinate system is used to place the 2D grid axes. The Representation of IfcGrid is defined using IfcProductRepresentation, referencing an IfcShapeRepresentation, that includesï¿½IfcGeometricCurveSet as Items. All grid axes are added as IfcPolyline to the IfcGeometricCurveSet.
+/// As shown in Figure 32, the IfcGrid defines a placement coordinate system using the ObjectPlacement. The XY plane of the coordinate system is used to place the 2D grid axes. The Representation of IfcGrid is defined using IfcProductRepresentation, referencing an IfcShapeRepresentation, that includes IfcGeometricCurveSet as Items. All grid axes are added as IfcPolyline to the IfcGeometricCurveSet.
 /// 
 /// Figure 32 &#8212; Grid layout
 /// 
-/// As shown in Figure 33, the attributes UAxes and VAxes define lists of IfcGridAxis within the context of theï¿½grid. Each instance of IfcGridAxis refers to the same instance of IfcCurve (here the subtype IfcPolyline) that is contained within the IfcGeometricCurveSet that represents the IfcGrid.
+/// As shown in Figure 33, the attributes UAxes and VAxes define lists of IfcGridAxis within the context of the grid. Each instance of IfcGridAxis refers to the same instance of IfcCurve (here the subtype IfcPolyline) that is contained within the IfcGeometricCurveSet that represents the IfcGrid.
 /// 
 /// Figure 33 &#8212; Grid representation
 class IfcGrid : public IfcProduct {
 public:
     /// List of grid axes defining the first row of grid lines.
-    SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > UAxes();
+    SHARED_PTR< IfcTemplatedEntityList< IfcGridAxis > > UAxes();
     /// List of grid axes defining the second row of grid lines.
-    SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > VAxes();
+    SHARED_PTR< IfcTemplatedEntityList< IfcGridAxis > > VAxes();
     /// Whether the optional attribute WAxes is defined for this IfcGrid
     bool hasWAxes();
     /// List of grid axes defining the third row of grid lines. It may be given in the case of a triangular grid.
-    SHARED_PTR< IfcTemplatedEntityList<IfcGridAxis> > WAxes();
+    SHARED_PTR< IfcTemplatedEntityList< IfcGridAxis > > WAxes();
  virtual unsigned int getArgumentCount() const { return 10; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return Argument_ENTITY_LIST; case 8: return Argument_ENTITY_LIST; case 9: return Argument_ENTITY_LIST; } return IfcProduct::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "UAxes"; case 8: return "VAxes"; case 9: return "WAxes"; } return IfcProduct::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelContainedInSpatialStructure> > ContainedInStructure(); // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelContainedInSpatialStructure > > ContainedInStructure(); // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcGrid (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcGrid* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcGrid> > list;
-    typedef IfcTemplatedEntityList<IfcGrid>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcGrid > > list;
+    typedef IfcTemplatedEntityList< IfcGrid >::it it;
 };
 /// IfcGroup is an generalization of any arbitrary group. A group is a logical collection of objects. It does not have its own position, nor can it hold its own shape representation. Therefore a group is an aggregation under some non-geometrical / topological grouping aspects.
 /// 
@@ -26143,7 +26143,7 @@ public:
 /// 
 /// EXAMPLE An example for a group is a system, since it groups elements under the aspect of their role, regardless of their position in a building.
 /// 
-/// A group can hold any collection of objects (beingï¿½products, processes, controls, resources, actors or other groups). Thus groups can be nested. An object can be part of zero, one, or many groups. Grouping relationships are not required to be hierarchical nor do they imply a dependency.
+/// A group can hold any collection of objects (beingÿproducts, processes, controls, resources, actors or other groups). Thus groups can be nested. An object can be part of zero, one, or many groups. Grouping relationships are not required to be hierarchical nor do they imply a dependency.
 /// 
 /// NOTE Use IfcRelDecomposes together with the appropriate subtypes of IfcProduct to define an hierarchical aggregation of products.
 /// 
@@ -26173,14 +26173,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcObject::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcObject::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToGroup> > IsGroupedBy(); // INVERSE IfcRelAssignsToGroup::RelatingGroup
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToGroup > > IsGroupedBy(); // INVERSE IfcRelAssignsToGroup::RelatingGroup
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcGroup (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcGroup* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcGroup> > list;
-    typedef IfcTemplatedEntityList<IfcGroup>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcGroup > > list;
+    typedef IfcTemplatedEntityList< IfcGroup >::it it;
 };
 /// The energy conversion device type IfcHeatExchangerType defines commonly shared information for occurrences of heat exchangers.  The set of shared information may include: 
 /// 
@@ -26224,8 +26224,8 @@ public:
     static Type::Enum Class();
     IfcHeatExchangerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcHeatExchangerType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcHeatExchangerType> > list;
-    typedef IfcTemplatedEntityList<IfcHeatExchangerType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcHeatExchangerType > > list;
+    typedef IfcTemplatedEntityList< IfcHeatExchangerType >::it it;
 };
 /// The energy conversion device type IfcHumidifierType defines commonly shared information for occurrences of humidifiers.  The set of shared information may include: 
 /// 
@@ -26266,8 +26266,8 @@ public:
     static Type::Enum Class();
     IfcHumidifierType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcHumidifierType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcHumidifierType> > list;
-    typedef IfcTemplatedEntityList<IfcHumidifierType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcHumidifierType > > list;
+    typedef IfcTemplatedEntityList< IfcHumidifierType >::it it;
 };
 /// An inventory is a list of items within an enterprise. 
 /// 
@@ -26286,7 +26286,7 @@ public:
     /// The organizational unit to which the inventory is applicable.
     IfcActorSelect Jurisdiction();
     /// Persons who are responsible for the inventory.
-    SHARED_PTR< IfcTemplatedEntityList<IfcPerson> > ResponsiblePersons();
+    SHARED_PTR< IfcTemplatedEntityList< IfcPerson > > ResponsiblePersons();
     /// The date on which the last update of the inventory was carried out.
     /// 
     /// IFC2x4 CHANGE Type changed from IfcDateTimeSelect.
@@ -26308,8 +26308,8 @@ public:
     static Type::Enum Class();
     IfcInventory (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcInventory* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcInventory> > list;
-    typedef IfcTemplatedEntityList<IfcInventory>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcInventory > > list;
+    typedef IfcTemplatedEntityList< IfcInventory >::it it;
 };
 /// The flow fitting type IfcJunctionBoxType defines commonly shared information for occurrences of junction boxs.  The set of shared information may include: 
 /// 
@@ -26351,8 +26351,8 @@ public:
     static Type::Enum Class();
     IfcJunctionBoxType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcJunctionBoxType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcJunctionBoxType> > list;
-    typedef IfcTemplatedEntityList<IfcJunctionBoxType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcJunctionBoxType > > list;
+    typedef IfcTemplatedEntityList< IfcJunctionBoxType >::it it;
 };
 /// An IfcLaborResource is used in construction with particular skills or crafts required to perform certain types of construction or management related work.  
 /// 
@@ -26392,8 +26392,8 @@ public:
     static Type::Enum Class();
     IfcLaborResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLaborResource* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLaborResource> > list;
-    typedef IfcTemplatedEntityList<IfcLaborResource>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLaborResource > > list;
+    typedef IfcTemplatedEntityList< IfcLaborResource >::it it;
 };
 /// The flow terminal type IfcLampType defines commonly shared information for occurrences of lamps.  The set of shared information may include: 
 /// 
@@ -26437,8 +26437,8 @@ public:
     static Type::Enum Class();
     IfcLampType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLampType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLampType> > list;
-    typedef IfcTemplatedEntityList<IfcLampType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLampType > > list;
+    typedef IfcTemplatedEntityList< IfcLampType >::it it;
 };
 /// The flow terminal type IfcLightFixtureType defines commonly shared information for occurrences of light fixtures.  The set of shared information may include: 
 /// 
@@ -26484,8 +26484,8 @@ public:
     static Type::Enum Class();
     IfcLightFixtureType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLightFixtureType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLightFixtureType> > list;
-    typedef IfcTemplatedEntityList<IfcLightFixtureType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLightFixtureType > > list;
+    typedef IfcTemplatedEntityList< IfcLightFixtureType >::it it;
 };
 class IfcLinearDimension : public IfcDimensionCurveDirectedCallout {
 public:
@@ -26498,8 +26498,8 @@ public:
     static Type::Enum Class();
     IfcLinearDimension (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcLinearDimension* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcLinearDimension> > list;
-    typedef IfcTemplatedEntityList<IfcLinearDimension>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcLinearDimension > > list;
+    typedef IfcTemplatedEntityList< IfcLinearDimension >::it it;
 };
 /// Definition from IAI: Fasteners connecting building elements mechanically.  A single instance of this class may represent one or many of actual mechanical fasteners, for example an array of bolts or a row of nails.
 /// 
@@ -26547,8 +26547,8 @@ public:
     static Type::Enum Class();
     IfcMechanicalFastener (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMechanicalFastener* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMechanicalFastener> > list;
-    typedef IfcTemplatedEntityList<IfcMechanicalFastener>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMechanicalFastener > > list;
+    typedef IfcTemplatedEntityList< IfcMechanicalFastener >::it it;
 };
 /// Definition from IAI: The element type (IfcMechanicalFastenerType) defines a list of commonly shared property set definitions of a fastener and an optional set of product representations. It is used to define mechanical fasteners mainly within structural and building services domains (i.e. the specific type information common to all occurrences of that type). 
 /// 
@@ -26596,8 +26596,8 @@ public:
     static Type::Enum Class();
     IfcMechanicalFastenerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMechanicalFastenerType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMechanicalFastenerType> > list;
-    typedef IfcTemplatedEntityList<IfcMechanicalFastenerType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMechanicalFastenerType > > list;
+    typedef IfcTemplatedEntityList< IfcMechanicalFastenerType >::it it;
 };
 /// Definition from IAI: The element type
 /// IfcMemberType defines commonly shared information for
@@ -26713,8 +26713,8 @@ public:
     static Type::Enum Class();
     IfcMemberType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMemberType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMemberType> > list;
-    typedef IfcTemplatedEntityList<IfcMemberType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMemberType > > list;
+    typedef IfcTemplatedEntityList< IfcMemberType >::it it;
 };
 /// The energy conversion device type IfcMotorConnectionType defines commonly shared information for occurrences of motor connections.  The set of shared information may include: 
 /// 
@@ -26756,8 +26756,8 @@ public:
     static Type::Enum Class();
     IfcMotorConnectionType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMotorConnectionType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMotorConnectionType> > list;
-    typedef IfcTemplatedEntityList<IfcMotorConnectionType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMotorConnectionType > > list;
+    typedef IfcTemplatedEntityList< IfcMotorConnectionType >::it it;
 };
 class IfcMove : public IfcTask {
 public:
@@ -26765,7 +26765,7 @@ public:
     IfcSpatialStructureElement* MoveTo();
     /// Whether the optional attribute PunchList is defined for this IfcMove
     bool hasPunchList();
-    std::vector<IfcText> /*[1:?]*/ PunchList();
+    std::vector< IfcText > /*[1:?]*/ PunchList();
  virtual unsigned int getArgumentCount() const { return 13; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 10: return Argument_ENTITY; case 11: return Argument_ENTITY; case 12: return Argument_VECTOR_STRING; } return IfcTask::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 10: return "MoveFrom"; case 11: return "MoveTo"; case 12: return "PunchList"; } return IfcTask::getArgumentName(i); }
@@ -26775,8 +26775,8 @@ public:
     static Type::Enum Class();
     IfcMove (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMove* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMove> > list;
-    typedef IfcTemplatedEntityList<IfcMove>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMove > > list;
+    typedef IfcTemplatedEntityList< IfcMove >::it it;
 };
 /// An occupant is a type of actor that defines the form of occupancy of a property. 
 /// 
@@ -26800,8 +26800,8 @@ public:
     static Type::Enum Class();
     IfcOccupant (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOccupant* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOccupant> > list;
-    typedef IfcTemplatedEntityList<IfcOccupant>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOccupant > > list;
+    typedef IfcTemplatedEntityList< IfcOccupant >::it it;
 };
 /// The opening element stands for
 /// opening, recess or chase, all reflecting voids. It represents a
@@ -26994,7 +26994,7 @@ public:
 /// IfcArbitraryClosedProfileDef shall be supported.
 /// Extrusion: The profile shall be extruded vertically,
 /// i.e. for wall openings along the extrusion direction of the
-/// voided element.ï¿½ If multiple instances of
+/// voided element.ÿ If multiple instances of
 /// IfcExtrudedAreaSolid are used, the extrusion direction
 /// should be equal.
 /// 
@@ -27011,14 +27011,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcFeatureElementSubtraction::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcFeatureElementSubtraction::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelFillsElement> > HasFillings(); // INVERSE IfcRelFillsElement::RelatingOpeningElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelFillsElement > > HasFillings(); // INVERSE IfcRelFillsElement::RelatingOpeningElement
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcOpeningElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOpeningElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOpeningElement> > list;
-    typedef IfcTemplatedEntityList<IfcOpeningElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOpeningElement > > list;
+    typedef IfcTemplatedEntityList< IfcOpeningElement >::it it;
 };
 class IfcOrderAction : public IfcTask {
 public:
@@ -27032,8 +27032,8 @@ public:
     static Type::Enum Class();
     IfcOrderAction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOrderAction* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOrderAction> > list;
-    typedef IfcTemplatedEntityList<IfcOrderAction>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOrderAction > > list;
+    typedef IfcTemplatedEntityList< IfcOrderAction >::it it;
 };
 /// The flow terminal type IfcOutletType defines commonly shared information for occurrences of outlets.  The set of shared information may include: 
 /// 
@@ -27077,8 +27077,8 @@ public:
     static Type::Enum Class();
     IfcOutletType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcOutletType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcOutletType> > list;
-    typedef IfcTemplatedEntityList<IfcOutletType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcOutletType > > list;
+    typedef IfcTemplatedEntityList< IfcOutletType >::it it;
 };
 /// IfcPerformanceHistory is used to document the actual performance of an occurrence instance over time. In practice, performance-related data are generally not easy to obtain as they can originate from different sources (predicted, simulated, or measured) and occur during different stages of the building life-cycle. Such time-related data cover a large spectrum, including meteorological data, schedules, operational status measurements, trend reports, etc.
 /// 
@@ -27098,8 +27098,8 @@ public:
     static Type::Enum Class();
     IfcPerformanceHistory (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPerformanceHistory* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPerformanceHistory> > list;
-    typedef IfcTemplatedEntityList<IfcPerformanceHistory>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPerformanceHistory > > list;
+    typedef IfcTemplatedEntityList< IfcPerformanceHistory >::it it;
 };
 /// A permit is a permission to perform work in places and on artifacts where regulatory, security or other access restrictions apply. 
 /// 
@@ -27150,8 +27150,8 @@ public:
     static Type::Enum Class();
     IfcPermit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPermit* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPermit> > list;
-    typedef IfcTemplatedEntityList<IfcPermit>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPermit > > list;
+    typedef IfcTemplatedEntityList< IfcPermit >::it it;
 };
 /// The flow fitting type IfcPipeFittingType defines commonly shared information for occurrences of pipe fittings.  The set of shared information may include: 
 /// 
@@ -27195,8 +27195,8 @@ public:
     static Type::Enum Class();
     IfcPipeFittingType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPipeFittingType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPipeFittingType> > list;
-    typedef IfcTemplatedEntityList<IfcPipeFittingType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPipeFittingType > > list;
+    typedef IfcTemplatedEntityList< IfcPipeFittingType >::it it;
 };
 /// The flow segment type IfcPipeSegmentType defines commonly shared information for occurrences of pipe segments.  The set of shared information may include: 
 /// 
@@ -27244,8 +27244,8 @@ public:
     static Type::Enum Class();
     IfcPipeSegmentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPipeSegmentType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPipeSegmentType> > list;
-    typedef IfcTemplatedEntityList<IfcPipeSegmentType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPipeSegmentType > > list;
+    typedef IfcTemplatedEntityList< IfcPipeSegmentType >::it it;
 };
 /// The element type IfcPlateType defines commonly shared
 /// information for occurrences of plates. The set of shared
@@ -27275,7 +27275,7 @@ public:
 /// IfcMaterialLayerSet; otherwise they are represented by
 /// instances of IfcPlate.
 /// 
-/// HISTORYï¿½ New
+/// HISTORY  New
 /// entity in Release IFC2x2.
 /// 
 /// Informal proposition:
@@ -27337,27 +27337,27 @@ public:
     static Type::Enum Class();
     IfcPlateType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPlateType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPlateType> > list;
-    typedef IfcTemplatedEntityList<IfcPlateType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPlateType > > list;
+    typedef IfcTemplatedEntityList< IfcPlateType >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A polyline
 ///   is a bounded curve of n - 1 linear segments, defined by a
 ///   list of n points, P1, P2 ... Pn. 
 ///   The ith segment of the curve is parameterized as follows:
 /// 
-/// ï¿½ï¿½ï¿½
+///    
 ///   for 1 &#8804; i &#8804; n - 1
 /// 
 /// where i - 1 &#8804; u &#8804; i and
 ///   with parametric range of 0 <&#8804; u &#8804; n - 1.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: polyline. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: polyline. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 class IfcPolyline : public IfcBoundedCurve {
 public:
     /// The points defining the polyline.
-    SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > Points();
+    SHARED_PTR< IfcTemplatedEntityList< IfcCartesianPoint > > Points();
  virtual unsigned int getArgumentCount() const { return 1; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return Argument_ENTITY_LIST; } return IfcBoundedCurve::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Points"; } return IfcBoundedCurve::getArgumentName(i); }
@@ -27367,8 +27367,8 @@ public:
     static Type::Enum Class();
     IfcPolyline (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPolyline* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPolyline> > list;
-    typedef IfcTemplatedEntityList<IfcPolyline>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPolyline > > list;
+    typedef IfcTemplatedEntityList< IfcPolyline >::it it;
 };
 /// Definition from IAI: An IfcPort provides the
 ///   means for an element to connect to other elements.
@@ -27429,24 +27429,24 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcProduct::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcProduct::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPortToElement> > ContainedIn(); // INVERSE IfcRelConnectsPortToElement::RelatingPort
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPorts> > ConnectedFrom(); // INVERSE IfcRelConnectsPorts::RelatedPort
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsPorts> > ConnectedTo(); // INVERSE IfcRelConnectsPorts::RelatingPort
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsPortToElement > > ContainedIn(); // INVERSE IfcRelConnectsPortToElement::RelatingPort
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsPorts > > ConnectedFrom(); // INVERSE IfcRelConnectsPorts::RelatedPort
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsPorts > > ConnectedTo(); // INVERSE IfcRelConnectsPorts::RelatingPort
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcPort (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPort* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPort> > list;
-    typedef IfcTemplatedEntityList<IfcPort>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPort > > list;
+    typedef IfcTemplatedEntityList< IfcPort >::it it;
 };
 /// An IfcProcedure is a
 ///   logical set of actions to be taken in response to an event
 ///   or to cause an event to occur.
 /// 
-/// HISTORYï¿½ New entity in IFC2x2
+/// HISTORY  New entity in IFC2x2
 /// 
-/// IFC2x4 CHANGEï¿½ ProcedureType renamed to PredefinedType and made optional (upward compatible).  Where rules WR1 and WR2 have been removed.
+/// IFC2x4 CHANGE  ProcedureType renamed to PredefinedType and made optional (upward compatible).  Where rules WR1 and WR2 have been removed.
 /// 
 /// Use definitions
 /// 
@@ -27560,8 +27560,8 @@ public:
     static Type::Enum Class();
     IfcProcedure (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProcedure* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProcedure> > list;
-    typedef IfcTemplatedEntityList<IfcProcedure>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProcedure > > list;
+    typedef IfcTemplatedEntityList< IfcProcedure >::it it;
 };
 /// A project order is a directive to purchase products and/or perform work, such as for construction or facilities management. 
 /// 
@@ -27634,12 +27634,12 @@ public:
     static Type::Enum Class();
     IfcProjectOrder (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProjectOrder* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProjectOrder> > list;
-    typedef IfcTemplatedEntityList<IfcProjectOrder>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProjectOrder > > list;
+    typedef IfcTemplatedEntityList< IfcProjectOrder >::it it;
 };
 class IfcProjectOrderRecord : public IfcControl {
 public:
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsToProjectOrder> > Records();
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsToProjectOrder > > Records();
     IfcProjectOrderRecordTypeEnum::IfcProjectOrderRecordTypeEnum PredefinedType();
  virtual unsigned int getArgumentCount() const { return 7; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return Argument_ENTITY_LIST; case 6: return Argument_ENUMERATION; } return IfcControl::getArgumentType(i); }
@@ -27650,8 +27650,8 @@ public:
     static Type::Enum Class();
     IfcProjectOrderRecord (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProjectOrderRecord* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProjectOrderRecord> > list;
-    typedef IfcTemplatedEntityList<IfcProjectOrderRecord>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProjectOrderRecord > > list;
+    typedef IfcTemplatedEntityList< IfcProjectOrderRecord >::it it;
 };
 /// The projection element is a
 /// specialization of the general feature element to represent
@@ -27744,9 +27744,9 @@ public:
 /// IfcExtrudedAreaSolid.Depth is interpreted as projection
 /// depth
 /// 
-/// NOTE ï¿½Rectangles are now defined centric, the placement location has to be set:
+/// NOTE  Rectangles are now defined centric, the placement location has to be set:
 /// IfcCartesianPoint(XDim/2,YDim/2)
-/// NOTE ï¿½The local placement directions for the IfcProjectionElement are only given as an example, other directions are valid as well.
+/// NOTE  The local placement directions for the IfcProjectionElement are only given as an example, other directions are valid as well.
 /// 
 /// Figure 38 &#8212; Projection representation
 /// 
@@ -27771,8 +27771,8 @@ public:
     static Type::Enum Class();
     IfcProjectionElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProjectionElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProjectionElement> > list;
-    typedef IfcTemplatedEntityList<IfcProjectionElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProjectionElement > > list;
+    typedef IfcTemplatedEntityList< IfcProjectionElement >::it it;
 };
 /// The flow controller type IfcProtectiveDeviceType defines commonly shared information for occurrences of protective devices.  The set of shared information may include: 
 /// 
@@ -27822,8 +27822,8 @@ public:
     static Type::Enum Class();
     IfcProtectiveDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcProtectiveDeviceType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcProtectiveDeviceType> > list;
-    typedef IfcTemplatedEntityList<IfcProtectiveDeviceType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcProtectiveDeviceType > > list;
+    typedef IfcTemplatedEntityList< IfcProtectiveDeviceType >::it it;
 };
 /// The flow moving device type IfcPumpType defines commonly shared information for occurrences of pumps.  The set of shared information may include: 
 /// 
@@ -27866,8 +27866,8 @@ public:
     static Type::Enum Class();
     IfcPumpType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPumpType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPumpType> > list;
-    typedef IfcTemplatedEntityList<IfcPumpType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPumpType > > list;
+    typedef IfcTemplatedEntityList< IfcPumpType >::it it;
 };
 class IfcRadiusDimension : public IfcDimensionCurveDirectedCallout {
 public:
@@ -27880,8 +27880,8 @@ public:
     static Type::Enum Class();
     IfcRadiusDimension (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRadiusDimension* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRadiusDimension> > list;
-    typedef IfcTemplatedEntityList<IfcRadiusDimension>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRadiusDimension > > list;
+    typedef IfcTemplatedEntityList< IfcRadiusDimension >::it it;
 };
 /// Definition from IAI: The element type (IfcRailingType)
 ///   defines a list of commonly shared property set definitions of a railing element
@@ -27916,8 +27916,8 @@ public:
     static Type::Enum Class();
     IfcRailingType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRailingType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRailingType> > list;
-    typedef IfcTemplatedEntityList<IfcRailingType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRailingType > > list;
+    typedef IfcTemplatedEntityList< IfcRailingType >::it it;
 };
 /// Definition from IAI: The element type (IfcRampFlightType)
 ///   defines a list of commonly shared property set definitions of a ramp flight and
@@ -27952,8 +27952,8 @@ public:
     static Type::Enum Class();
     IfcRampFlightType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRampFlightType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRampFlightType> > list;
-    typedef IfcTemplatedEntityList<IfcRampFlightType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRampFlightType > > list;
+    typedef IfcTemplatedEntityList< IfcRampFlightType >::it it;
 };
 /// The aggregation relationship
 /// IfcRelAggregates is a special type of the general
@@ -27988,8 +27988,8 @@ public:
     static Type::Enum Class();
     IfcRelAggregates (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAggregates* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAggregates> > list;
-    typedef IfcTemplatedEntityList<IfcRelAggregates>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAggregates > > list;
+    typedef IfcTemplatedEntityList< IfcRelAggregates >::it it;
 };
 class IfcRelAssignsTasks : public IfcRelAssignsToControl {
 public:
@@ -28005,8 +28005,8 @@ public:
     static Type::Enum Class();
     IfcRelAssignsTasks (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRelAssignsTasks* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsTasks> > list;
-    typedef IfcTemplatedEntityList<IfcRelAssignsTasks>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsTasks > > list;
+    typedef IfcTemplatedEntityList< IfcRelAssignsTasks >::it it;
 };
 /// The flow terminal type IfcSanitaryTerminalType defines commonly shared information for occurrences of sanitary terminals.  The set of shared information may include: 
 /// 
@@ -28058,8 +28058,8 @@ public:
     static Type::Enum Class();
     IfcSanitaryTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSanitaryTerminalType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSanitaryTerminalType> > list;
-    typedef IfcTemplatedEntityList<IfcSanitaryTerminalType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSanitaryTerminalType > > list;
+    typedef IfcTemplatedEntityList< IfcSanitaryTerminalType >::it it;
 };
 class IfcScheduleTimeControl : public IfcControl {
 public:
@@ -28121,14 +28121,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return Argument_ENTITY; case 6: return Argument_ENTITY; case 7: return Argument_ENTITY; case 8: return Argument_ENTITY; case 9: return Argument_ENTITY; case 10: return Argument_ENTITY; case 11: return Argument_ENTITY; case 12: return Argument_ENTITY; case 13: return Argument_DOUBLE; case 14: return Argument_DOUBLE; case 15: return Argument_DOUBLE; case 16: return Argument_DOUBLE; case 17: return Argument_DOUBLE; case 18: return Argument_BOOL; case 19: return Argument_ENTITY; case 20: return Argument_DOUBLE; case 21: return Argument_DOUBLE; case 22: return Argument_DOUBLE; } return IfcControl::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "ActualStart"; case 6: return "EarlyStart"; case 7: return "LateStart"; case 8: return "ScheduleStart"; case 9: return "ActualFinish"; case 10: return "EarlyFinish"; case 11: return "LateFinish"; case 12: return "ScheduleFinish"; case 13: return "ScheduleDuration"; case 14: return "ActualDuration"; case 15: return "RemainingTime"; case 16: return "FreeFloat"; case 17: return "TotalFloat"; case 18: return "IsCritical"; case 19: return "StatusTime"; case 20: return "StartFloat"; case 21: return "FinishFloat"; case 22: return "Completion"; } return IfcControl::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelAssignsTasks> > ScheduleTimeControlAssigned(); // INVERSE IfcRelAssignsTasks::TimeForTask
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelAssignsTasks > > ScheduleTimeControlAssigned(); // INVERSE IfcRelAssignsTasks::TimeForTask
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcScheduleTimeControl (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcScheduleTimeControl* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcScheduleTimeControl> > list;
-    typedef IfcTemplatedEntityList<IfcScheduleTimeControl>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcScheduleTimeControl > > list;
+    typedef IfcTemplatedEntityList< IfcScheduleTimeControl >::it it;
 };
 class IfcServiceLife : public IfcControl {
 public:
@@ -28143,8 +28143,8 @@ public:
     static Type::Enum Class();
     IfcServiceLife (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcServiceLife* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcServiceLife> > list;
-    typedef IfcTemplatedEntityList<IfcServiceLife>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcServiceLife > > list;
+    typedef IfcTemplatedEntityList< IfcServiceLife >::it it;
 };
 /// Definition from ISO 6707-1:1989: Area where construction
 /// works are undertaken.
@@ -28183,7 +28183,7 @@ public:
 /// ELEMENT = site
 /// PARTIAL = site section
 /// 
-/// HISTORY ï¿½New entity in IFC Release 1.0.
+/// HISTORY  New entity in IFC Release 1.0.
 /// 
 /// Property Set Use Definition
 /// The property sets relating to the IfcSite are defined by
@@ -28259,7 +28259,7 @@ public:
 /// the reference height of each building situated at the site is given againt the same height datum used at this location.
 /// the elevations of each storey belonging to each building are given as local height relative to the reference height of the building.
 /// 
-/// ï¿½
+///  
 /// Figure 52 &#8212; Site elevations
 /// 
 /// Geometry Use Definitions
@@ -28320,7 +28320,7 @@ public:
 /// Figure 55 &#8212; Site breaklines
 /// Figure 56 &#8212; Site breaklines facetation
 /// 
-/// NOTEï¿½ The geometric representation of the site has been based on the ARM level description of the site_shape_representation given within the ISO 10303-225 "Building Elements using explicit shape representation".
+/// NOTE  The geometric representation of the site has been based on the ARM level description of the site_shape_representation given within the ISO 10303-225 "Building Elements using explicit shape representation".
 /// 
 /// Body Representation
 /// The body representation of IfcSite is defined using a
@@ -28369,8 +28369,8 @@ public:
     static Type::Enum Class();
     IfcSite (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSite* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSite> > list;
-    typedef IfcTemplatedEntityList<IfcSite>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSite > > list;
+    typedef IfcTemplatedEntityList< IfcSite >::it it;
 };
 /// The element type IfcSlabType defines commonly shared
 /// information for occurrences of slabs. The set of shared information
@@ -28400,7 +28400,7 @@ public:
 /// IfcMaterialLayerSet; otherwise they are represented by
 /// instances of IfcSlab, or IfcSlabElementedCase.
 /// 
-/// HISTORYï¿½ New
+/// HISTORY  New
 /// entity in Release IFC2x2.
 /// 
 /// Informal proposition:
@@ -28462,8 +28462,8 @@ public:
     static Type::Enum Class();
     IfcSlabType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSlabType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSlabType> > list;
-    typedef IfcTemplatedEntityList<IfcSlabType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSlabType > > list;
+    typedef IfcTemplatedEntityList< IfcSlabType >::it it;
 };
 /// A space represents an area or volume
 /// bounded actually or theoretically. Spaces are areas or volumes that
@@ -28529,7 +28529,7 @@ public:
 /// set for all types of spaces to capture the thermal
 /// requirements
 /// Pset_SpaceThermalDesign: common property set
-/// for allï¿½all types of spaces to capture building service design
+/// for all all types of spaces to capture building service design
 /// values
 /// 
 /// Quantity Use Definition
@@ -28558,7 +28558,7 @@ public:
 /// IfcSpace.Decomposes -- referencing (IfcSite ||
 /// IfcBuildingStorey || IfcSpace) by
 /// IfcRelAggregates.RelatingObject, If it refers to another
-/// instance ofï¿½IfcSpace, the referenced IfcSpace
+/// instance of IfcSpace, the referenced IfcSpace
 /// needs to have a different and higher CompositionType, i.e.
 /// COMPLEX (if the other IfcSpace has ELEMENT), or ELEMENT (if
 /// the other IfcSpace has PARTIAL).
@@ -28570,7 +28570,7 @@ public:
 /// other IfcSpace has ELEMENT).
 /// 
 /// If there are building elements and/or other elements directly
-/// related to the IfcSpaceï¿½(like most furniture and
+/// related to the IfcSpace (like most furniture and
 /// distribution elements), they are associated with the
 /// IfcSpace by using the objectified relationship
 /// IfcRelContainedInSpatialStructure. The IfcSpace
@@ -28703,7 +28703,7 @@ public:
 /// 
 /// 'Brep' representation
 /// The fallback advanced geometric representation of
-/// IfcSpace is defined using the Brep solid geometry.ï¿½may
+/// IfcSpace is defined using the Brep solid geometry. may
 /// be represented as a single or multiple instances of
 /// IfcFacetedBrep or IfcFacetedBrepWithVoids. The Brep
 /// representation allows for the representation of complex element
@@ -28726,15 +28726,15 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return Argument_ENUMERATION; case 10: return Argument_DOUBLE; } return IfcSpatialStructureElement::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 9: return "InteriorOrExteriorSpace"; case 10: return "ElevationWithFlooring"; } return IfcSpatialStructureElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelCoversSpaces> > HasCoverings(); // INVERSE IfcRelCoversSpaces::RelatedSpace
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelSpaceBoundary> > BoundedBy(); // INVERSE IfcRelSpaceBoundary::RelatingSpace
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelCoversSpaces > > HasCoverings(); // INVERSE IfcRelCoversSpaces::RelatedSpace
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelSpaceBoundary > > BoundedBy(); // INVERSE IfcRelSpaceBoundary::RelatingSpace
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcSpace (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSpace* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpace> > list;
-    typedef IfcTemplatedEntityList<IfcSpace>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSpace > > list;
+    typedef IfcTemplatedEntityList< IfcSpace >::it it;
 };
 /// The energy conversion device type IfcSpaceHeaterType defines commonly shared information for occurrences of space heaters.  The set of shared information may include: 
 /// 
@@ -28779,8 +28779,8 @@ public:
     static Type::Enum Class();
     IfcSpaceHeaterType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSpaceHeaterType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpaceHeaterType> > list;
-    typedef IfcTemplatedEntityList<IfcSpaceHeaterType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSpaceHeaterType > > list;
+    typedef IfcTemplatedEntityList< IfcSpaceHeaterType >::it it;
 };
 class IfcSpaceProgram : public IfcControl {
 public:
@@ -28799,15 +28799,15 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return Argument_STRING; case 6: return Argument_DOUBLE; case 7: return Argument_DOUBLE; case 8: return Argument_ENTITY; case 9: return Argument_DOUBLE; } return IfcControl::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "SpaceProgramIdentifier"; case 6: return "MaxRequiredArea"; case 7: return "MinRequiredArea"; case 8: return "RequestedLocation"; case 9: return "StandardRequiredArea"; } return IfcControl::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelInteractionRequirements> > HasInteractionReqsFrom(); // INVERSE IfcRelInteractionRequirements::RelatedSpaceProgram
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelInteractionRequirements> > HasInteractionReqsTo(); // INVERSE IfcRelInteractionRequirements::RelatingSpaceProgram
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelInteractionRequirements > > HasInteractionReqsFrom(); // INVERSE IfcRelInteractionRequirements::RelatedSpaceProgram
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelInteractionRequirements > > HasInteractionReqsTo(); // INVERSE IfcRelInteractionRequirements::RelatingSpaceProgram
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcSpaceProgram (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSpaceProgram* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpaceProgram> > list;
-    typedef IfcTemplatedEntityList<IfcSpaceProgram>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSpaceProgram > > list;
+    typedef IfcTemplatedEntityList< IfcSpaceProgram >::it it;
 };
 /// Definition from IAI: A space represents an area or
 /// volume bounded actually or theoretically. Spaces are areas or
@@ -28823,7 +28823,7 @@ public:
 /// space information, that is common to all occurrences of that
 /// space type. Space types may be exchanged without being already
 /// assigned to occurrences.
-/// NOTE ï¿½The space types are often used to
+/// NOTE ÿThe space types are often used to
 /// represent space catalogues, less so for sharing a common
 /// representation map. Space types in a space catalogue share same
 /// space classification and a common set of space requirement
@@ -28831,7 +28831,7 @@ public:
 /// The occurrences of IfcSpaceType are represented by
 /// instances of IfcSpace.
 /// 
-/// HISTORY ï¿½New entity in
+/// HISTORY ÿNew entity in
 /// IFC2x3.
 /// 
 /// Property Set Use Definition:
@@ -28868,7 +28868,7 @@ public:
 /// property set for all types of spaces to capture the thermal
 /// requirements
 /// Pset_SpaceThermalDesign: common property set
-/// for allï¿½all types of spaces to capture building service design
+/// for allÿall types of spaces to capture building service design
 /// values
 /// 
 /// Geometry Use Definition:
@@ -28879,7 +28879,7 @@ public:
 /// representations (e.g. with IfcShaperepresentation's having
 /// an RepresentationIdentifier 'Box', 'FootPrint', or 'Body').
 /// 
-/// NOTE ï¿½The product representations are defined as
+/// NOTE ÿThe product representations are defined as
 /// representation maps (at the level of the supertype
 /// IfcTypeProduct, which gets assigned by an element
 /// occurrence instance through the
@@ -28903,8 +28903,8 @@ public:
     static Type::Enum Class();
     IfcSpaceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSpaceType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSpaceType> > list;
-    typedef IfcTemplatedEntityList<IfcSpaceType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSpaceType > > list;
+    typedef IfcTemplatedEntityList< IfcSpaceType >::it it;
 };
 /// The flow terminal type IfcStackTerminalType defines commonly shared information for occurrences of stack terminals.  The set of shared information may include: 
 /// 
@@ -28945,8 +28945,8 @@ public:
     static Type::Enum Class();
     IfcStackTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStackTerminalType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStackTerminalType> > list;
-    typedef IfcTemplatedEntityList<IfcStackTerminalType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStackTerminalType > > list;
+    typedef IfcTemplatedEntityList< IfcStackTerminalType >::it it;
 };
 /// Definition from IAI: The element type (IfcStairFlightType)
 ///   defines a list of commonly shared property set definitions of a stair flight
@@ -28981,13 +28981,13 @@ public:
     static Type::Enum Class();
     IfcStairFlightType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStairFlightType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStairFlightType> > list;
-    typedef IfcTemplatedEntityList<IfcStairFlightType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStairFlightType > > list;
+    typedef IfcTemplatedEntityList< IfcStairFlightType >::it it;
 };
 /// Definition from IAI: A structural action is a structural activity that acts upon
 /// a structural item or building element.
 /// 
-/// HISTORYï¿½ New entity in IFC 2x2.
+/// HISTORY  New entity in IFC 2x2.
 /// IFC 2x4 change:  Attribute DestabilizingLoad made optional.  Attribute CausedBy deleted; use IfcRelAssignsToProduct via ReferencedBy instead.
 /// 
 /// Structural actions are grouped into either an IfcStructuralLoadGroup of predefined
@@ -29019,8 +29019,8 @@ public:
     static Type::Enum Class();
     IfcStructuralAction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralAction* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralAction> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralAction>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralAction > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralAction >::it it;
 };
 /// Definition from IAI: An IfcStructuralConnection represents a structural connection object (node i.e. vertex connection, or edge connection, or surface connection) or supports.
 /// 
@@ -29035,14 +29035,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return Argument_ENTITY; } return IfcStructuralItem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "AppliedCondition"; } return IfcStructuralItem::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelConnectsStructuralMember> > ConnectsStructuralMembers(); // INVERSE IfcRelConnectsStructuralMember::RelatedStructuralConnection
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelConnectsStructuralMember > > ConnectsStructuralMembers(); // INVERSE IfcRelConnectsStructuralMember::RelatedStructuralConnection
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralConnection (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralConnection* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralConnection> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralConnection>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralConnection > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralConnection >::it it;
 };
 /// Definition from IAI: Instances of IfcStructuralCurveConnection describe edge 'nodes', i.e. edges where two or more surface members are joined, or edge supports.  Edge curves may be straight or curved.
 /// 
@@ -29072,8 +29072,8 @@ public:
     static Type::Enum Class();
     IfcStructuralCurveConnection (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralCurveConnection* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralCurveConnection> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralCurveConnection>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralCurveConnection > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralCurveConnection >::it it;
 };
 /// Definition from IAI: Instances of IfcStructuralCurveMember describe edge members, i.e. structural analysis idealizations of beams, columns, rods etc..  Curve members may be straight or curved.
 /// 
@@ -29095,7 +29095,7 @@ public:
 /// 
 /// An IfcProfileDef is a two-dimensional geometric object with a xp,yp coordinate system.  The profile is inserted into the curve member model thus that the origin of xp,yp is located at the member's reference curve and that xp,yp are parallel with and directed like the local y,z.
 /// 
-/// NOTEï¿½  Due to convention in structural mechanics, axis names of IfcStructuralCurveMember differ from axis names of building elements like IfcBeamStandardCase:  The extrusion axis of IfcStructuralCurveMember is called x while the extrusion axis of IfcBeamStandardCase is called z.  Hence x,y,z of IfcStructuralCurveMember correspond with z,x,y of IfcBeamStandardCase.
+/// NOTE   Due to convention in structural mechanics, axis names of IfcStructuralCurveMember differ from axis names of building elements like IfcBeamStandardCase:  The extrusion axis of IfcStructuralCurveMember is called x while the extrusion axis of IfcBeamStandardCase is called z.  Hence x,y,z of IfcStructuralCurveMember correspond with z,x,y of IfcBeamStandardCase.
 /// 
 /// If the profile is meant to be inserted centrically in terms of structural section properties, it is necessary that the origin of xp,yp is identical with the geometric centroid of the profile (commonly also called centre of gravity).  If subtypes of IfcParameterizedProfileDef are used which are only singly symmetric or are asymmetric, an explicit translation by IfcParameterizedProfileDef.Position.Location is required then.
 /// 
@@ -29103,7 +29103,7 @@ public:
 /// 
 /// Otherwise, the profile is inserted eccentrically and a different cardinal point should be set accordingly.
 /// 
-/// NOTEï¿½  Another eccentricity model is available independently of eccentric profile specification:  The reference curve of the member may be located eccentrically relative to the reference points of the connected IfcStructuralPointConnections.  The connection relationship is then established by IfcRelConnectsWithEccentricity.  Whether one or the other or both eccentricity models may be used is subject to information requirements and local agreements.
+/// NOTE   Another eccentricity model is available independently of eccentric profile specification:  The reference curve of the member may be located eccentrically relative to the reference points of the connected IfcStructuralPointConnections.  The connection relationship is then established by IfcRelConnectsWithEccentricity.  Whether one or the other or both eccentricity models may be used is subject to information requirements and local agreements.
 /// 
 /// Topology Use Definitions:
 /// 
@@ -29125,14 +29125,14 @@ public:
     static Type::Enum Class();
     IfcStructuralCurveMember (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralCurveMember* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralCurveMember> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralCurveMember>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralCurveMember > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralCurveMember >::it it;
 };
 /// Definition from IAI: Describes edge members with varying profile properties.  Each instance of IfcStructuralCurveMemberVarying is composed of two or more instances of IfcStructuralCurveMember with differing profile properties.  These subordinate members relate to the instance of IfcStructuralCurveMemberVarying by IfcRelAggregates.
 /// 
-/// NOTEï¿½  A curve member whose variation of profile properties can be sufficiently described by a start profile and an end profile (e.g. tapers) shall be modeled as a single direct instance of the supertype IfcStructuralCurveMember.
+/// NOTE   A curve member whose variation of profile properties can be sufficiently described by a start profile and an end profile (e.g. tapers) shall be modeled as a single direct instance of the supertype IfcStructuralCurveMember.
 /// 
-/// NOTEï¿½  It is recommended that structural activities (actions or reactions) are not connected with aggregated IfcStructuralCurveMemberVarying but only with the IfcStructuralCurveMembers in the aggregation.  That way, difficulties in interpretation of local coordinates are avoided.
+/// NOTE   It is recommended that structural activities (actions or reactions) are not connected with aggregated IfcStructuralCurveMemberVarying but only with the IfcStructuralCurveMembers in the aggregation.  That way, difficulties in interpretation of local coordinates are avoided.
 /// 
 /// HISTORY: New entity in IFC 2x2.
 /// Use definition changed in IFC 2x4.
@@ -29159,8 +29159,8 @@ public:
     static Type::Enum Class();
     IfcStructuralCurveMemberVarying (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralCurveMemberVarying* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralCurveMemberVarying> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralCurveMemberVarying>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralCurveMemberVarying > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralCurveMemberVarying >::it it;
 };
 /// Definition from IAI: Defines an action with constant value which is distributed over a curve.
 /// 
@@ -29168,7 +29168,7 @@ public:
 /// 
 /// IFC 2x4 change:  Intermediate supertype IfcStructuralCurveAction inserted.  Derived attribute PredefinedType added.
 /// 
-/// NOTEï¿½ Like its supertype IfcStructuralCurveAction, this action type may also act on curved edges.
+/// NOTE  Like its supertype IfcStructuralCurveAction, this action type may also act on curved edges.
 class IfcStructuralLinearAction : public IfcStructuralAction {
 public:
     IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum ProjectedOrTrue();
@@ -29181,13 +29181,13 @@ public:
     static Type::Enum Class();
     IfcStructuralLinearAction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralLinearAction* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLinearAction> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralLinearAction>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLinearAction > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralLinearAction >::it it;
 };
 class IfcStructuralLinearActionVarying : public IfcStructuralLinearAction {
 public:
     IfcShapeAspect* VaryingAppliedLoadLocation();
-    SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoad> > SubsequentAppliedLoads();
+    SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoad > > SubsequentAppliedLoads();
  virtual unsigned int getArgumentCount() const { return 14; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 12: return Argument_ENTITY; case 13: return Argument_ENTITY_LIST; } return IfcStructuralLinearAction::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 12: return "VaryingAppliedLoadLocation"; case 13: return "SubsequentAppliedLoads"; } return IfcStructuralLinearAction::getArgumentName(i); }
@@ -29197,8 +29197,8 @@ public:
     static Type::Enum Class();
     IfcStructuralLinearActionVarying (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralLinearActionVarying* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLinearActionVarying> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralLinearActionVarying>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLinearActionVarying > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralLinearActionVarying >::it it;
 };
 /// Definition from IAI: The entity IfcStructuralLoadGroup is used to structure the
 /// physical impacts.  By using the grouping features inherited from IfcGroup, instances of
@@ -29253,15 +29253,15 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return Argument_ENUMERATION; case 6: return Argument_ENUMERATION; case 7: return Argument_ENUMERATION; case 8: return Argument_DOUBLE; case 9: return Argument_STRING; } return IfcGroup::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "PredefinedType"; case 6: return "ActionType"; case 7: return "ActionSource"; case 8: return "Coefficient"; case 9: return "Purpose"; } return IfcGroup::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcStructuralResultGroup> > SourceOfResultGroup(); // INVERSE IfcStructuralResultGroup::ResultForLoadGroup
-    SHARED_PTR< IfcTemplatedEntityList<IfcStructuralAnalysisModel> > LoadGroupFor(); // INVERSE IfcStructuralAnalysisModel::LoadedBy
+    SHARED_PTR< IfcTemplatedEntityList< IfcStructuralResultGroup > > SourceOfResultGroup(); // INVERSE IfcStructuralResultGroup::ResultForLoadGroup
+    SHARED_PTR< IfcTemplatedEntityList< IfcStructuralAnalysisModel > > LoadGroupFor(); // INVERSE IfcStructuralAnalysisModel::LoadedBy
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLoadGroup (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralLoadGroup* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadGroup> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralLoadGroup>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoadGroup > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralLoadGroup >::it it;
 };
 /// Definition from IAI: Defines an action with constant value which is distributed over a surface.
 /// 
@@ -29269,7 +29269,7 @@ public:
 /// 
 /// IFC 2x4 change:  Intermediate supertype IfcStructuralSurfaceAction inserted.  Derived attribute PredefinedType added.
 /// 
-/// NOTEï¿½ Like its supertype IfcStructuralSurfaceAction, this action type may also act on curved faces.
+/// NOTE  Like its supertype IfcStructuralSurfaceAction, this action type may also act on curved faces.
 class IfcStructuralPlanarAction : public IfcStructuralAction {
 public:
     IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum ProjectedOrTrue();
@@ -29282,13 +29282,13 @@ public:
     static Type::Enum Class();
     IfcStructuralPlanarAction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralPlanarAction* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralPlanarAction> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralPlanarAction>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralPlanarAction > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralPlanarAction >::it it;
 };
 class IfcStructuralPlanarActionVarying : public IfcStructuralPlanarAction {
 public:
     IfcShapeAspect* VaryingAppliedLoadLocation();
-    SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoad> > SubsequentAppliedLoads();
+    SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoad > > SubsequentAppliedLoads();
  virtual unsigned int getArgumentCount() const { return 14; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 12: return Argument_ENTITY; case 13: return Argument_ENTITY_LIST; } return IfcStructuralPlanarAction::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 12: return "VaryingAppliedLoadLocation"; case 13: return "SubsequentAppliedLoads"; } return IfcStructuralPlanarAction::getArgumentName(i); }
@@ -29298,8 +29298,8 @@ public:
     static Type::Enum Class();
     IfcStructuralPlanarActionVarying (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralPlanarActionVarying* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralPlanarActionVarying> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralPlanarActionVarying>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralPlanarActionVarying > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralPlanarActionVarying >::it it;
 };
 /// Definition from IAI: Defines an action which acts on a point.
 /// A point action is typically connected with a point connection.
@@ -29357,8 +29357,8 @@ public:
     static Type::Enum Class();
     IfcStructuralPointAction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralPointAction* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralPointAction> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralPointAction>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralPointAction > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralPointAction >::it it;
 };
 /// Definition from IAI: Instances of IfcStructuralPointConnection describe structural nodes or point supports.
 /// 
@@ -29384,8 +29384,8 @@ public:
     static Type::Enum Class();
     IfcStructuralPointConnection (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralPointConnection* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralPointConnection> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralPointConnection>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralPointConnection > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralPointConnection >::it it;
 };
 /// Definition from IAI: Defines a reaction which occurs at a point.
 /// A point reaction is typically connected with a point connection.
@@ -29441,8 +29441,8 @@ public:
     static Type::Enum Class();
     IfcStructuralPointReaction (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralPointReaction* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralPointReaction> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralPointReaction>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralPointReaction > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralPointReaction >::it it;
 };
 /// Definition from IAI: Instances of the entity IfcStructuralResultGroup are used to group results of structural analysis calculations and to capture the connection to the underlying basic load group.  The basic functionality for grouping inherited from IfcGroup is used to collect instances from IfcStructuralReaction or its respective subclasses.
 /// 
@@ -29462,14 +29462,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return Argument_ENUMERATION; case 6: return Argument_ENTITY; case 7: return Argument_BOOL; } return IfcGroup::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "TheoryType"; case 6: return "ResultForLoadGroup"; case 7: return "IsLinear"; } return IfcGroup::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcStructuralAnalysisModel> > ResultGroupFor(); // INVERSE IfcStructuralAnalysisModel::HasResults
+    SHARED_PTR< IfcTemplatedEntityList< IfcStructuralAnalysisModel > > ResultGroupFor(); // INVERSE IfcStructuralAnalysisModel::HasResults
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralResultGroup (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralResultGroup* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralResultGroup> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralResultGroup>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralResultGroup > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralResultGroup >::it it;
 };
 /// Definition from IAI: Instances of IfcStructuralSurfaceConnection describe face 'nodes', i.e. faces where two or more surface members are joined, or face supports.  Face surfaces may be planar or curved.
 /// 
@@ -29494,8 +29494,8 @@ public:
     static Type::Enum Class();
     IfcStructuralSurfaceConnection (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralSurfaceConnection* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralSurfaceConnection> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralSurfaceConnection>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralSurfaceConnection > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralSurfaceConnection >::it it;
 };
 /// IfcSubContractResource is a construction resource needed in a construction process that represents a sub-contractor.  
 /// 
@@ -29538,8 +29538,8 @@ public:
     static Type::Enum Class();
     IfcSubContractResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSubContractResource* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSubContractResource> > list;
-    typedef IfcTemplatedEntityList<IfcSubContractResource>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSubContractResource > > list;
+    typedef IfcTemplatedEntityList< IfcSubContractResource >::it it;
 };
 /// The flow controller type IfcSwitchingDeviceType defines commonly shared information for occurrences of switching devices.  The set of shared information may include: 
 /// 
@@ -29594,8 +29594,8 @@ public:
     static Type::Enum Class();
     IfcSwitchingDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSwitchingDeviceType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSwitchingDeviceType> > list;
-    typedef IfcTemplatedEntityList<IfcSwitchingDeviceType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSwitchingDeviceType > > list;
+    typedef IfcTemplatedEntityList< IfcSwitchingDeviceType >::it it;
 };
 /// Definition from IAI: Organized combination of
 ///   related parts within an AEC product, composed for a common
@@ -29620,14 +29620,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcGroup::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcGroup::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelServicesBuildings> > ServicesBuildings(); // INVERSE IfcRelServicesBuildings::RelatingSystem
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelServicesBuildings > > ServicesBuildings(); // INVERSE IfcRelServicesBuildings::RelatingSystem
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcSystem (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSystem* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSystem> > list;
-    typedef IfcTemplatedEntityList<IfcSystem>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSystem > > list;
+    typedef IfcTemplatedEntityList< IfcSystem >::it it;
 };
 /// The flow storage device type IfcTankType defines commonly shared information for occurrences of tanks.  The set of shared information may include: 
 /// 
@@ -29674,14 +29674,14 @@ public:
     static Type::Enum Class();
     IfcTankType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTankType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTankType> > list;
-    typedef IfcTemplatedEntityList<IfcTankType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTankType > > list;
+    typedef IfcTemplatedEntityList< IfcTankType >::it it;
 };
 class IfcTimeSeriesSchedule : public IfcControl {
 public:
     /// Whether the optional attribute ApplicableDates is defined for this IfcTimeSeriesSchedule
     bool hasApplicableDates();
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > ApplicableDates();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > ApplicableDates();
     IfcTimeSeriesScheduleTypeEnum::IfcTimeSeriesScheduleTypeEnum TimeSeriesScheduleType();
     IfcTimeSeries* TimeSeries();
  virtual unsigned int getArgumentCount() const { return 8; }
@@ -29693,8 +29693,8 @@ public:
     static Type::Enum Class();
     IfcTimeSeriesSchedule (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTimeSeriesSchedule* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTimeSeriesSchedule> > list;
-    typedef IfcTemplatedEntityList<IfcTimeSeriesSchedule>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTimeSeriesSchedule > > list;
+    typedef IfcTemplatedEntityList< IfcTimeSeriesSchedule >::it it;
 };
 /// The energy conversion device type IfcTransformerType defines commonly shared information for occurrences of transformers.  The set of shared information may include: 
 /// 
@@ -29736,8 +29736,8 @@ public:
     static Type::Enum Class();
     IfcTransformerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTransformerType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTransformerType> > list;
-    typedef IfcTemplatedEntityList<IfcTransformerType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTransformerType > > list;
+    typedef IfcTemplatedEntityList< IfcTransformerType >::it it;
 };
 /// Definition from IAI: Generalization of all transport
 /// related objects that move people, animals or goods within a
@@ -29765,13 +29765,13 @@ public:
 /// device types (or styles) is handled by
 /// IfcTransportElementType. The
 /// IfcTransportElementType (if present) may establish the
-/// commonï¿½type name, usage (or predefined) type, common material
+/// commonÿtype name, usage (or predefined) type, common material
 /// layer set, common set of properties and common shape
 /// representations (using IfcRepresentationMap). The
 /// IfcTransportElementType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsTypedBy attribute.
-/// If no IfcTransportElementType is attachedï¿½(i.e. if only
+/// If no IfcTransportElementType is attachedÿ(i.e. if only
 /// occurrence information is given) the PredefinedType should
 /// be provided. If set to .USERDEFINED. a user defined value can be
 /// provided by the ObjectType attribute.
@@ -29800,7 +29800,7 @@ public:
 /// spatial hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuilding being the default
 /// container.
 /// 
@@ -29877,8 +29877,8 @@ public:
     static Type::Enum Class();
     IfcTransportElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTransportElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTransportElement> > list;
-    typedef IfcTemplatedEntityList<IfcTransportElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTransportElement > > list;
+    typedef IfcTemplatedEntityList< IfcTransportElement >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992:
 /// A trimmed curve is a bounded curve which is created by taking a selected
@@ -29963,9 +29963,9 @@ public:
     /// The curve to be trimmed. For curves with multiple representations any parameter values given as Trim1 or Trim2 refer to the master representation of the BasisCurve only.
     IfcCurve* BasisCurve();
     /// The first trimming point which may be specified as a Cartesian point, as a real parameter or both.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Trim1();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > Trim1();
     /// The second trimming point which may be specified as a Cartesian point, as a real parameter or both.
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Trim2();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > Trim2();
     /// Flag to indicate whether the direction of the trimmed curve agrees with or is opposed to the direction of the basis curve.
     bool SenseAgreement();
     /// Where both parameter and point are present at either end of the curve this indicates the preferred form.
@@ -29979,8 +29979,8 @@ public:
     static Type::Enum Class();
     IfcTrimmedCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTrimmedCurve* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTrimmedCurve> > list;
-    typedef IfcTemplatedEntityList<IfcTrimmedCurve>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTrimmedCurve > > list;
+    typedef IfcTemplatedEntityList< IfcTrimmedCurve >::it it;
 };
 /// The energy conversion device type IfcTubeBundleType defines commonly shared information for occurrences of tube bundles.  The set of shared information may include: 
 /// 
@@ -30024,8 +30024,8 @@ public:
     static Type::Enum Class();
     IfcTubeBundleType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTubeBundleType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTubeBundleType> > list;
-    typedef IfcTemplatedEntityList<IfcTubeBundleType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTubeBundleType > > list;
+    typedef IfcTemplatedEntityList< IfcTubeBundleType >::it it;
 };
 /// The energy conversion device type IfcUnitaryEquipmentType defines commonly shared information for occurrences of unitary equipments.  The set of shared information may include: 
 /// 
@@ -30068,8 +30068,8 @@ public:
     static Type::Enum Class();
     IfcUnitaryEquipmentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcUnitaryEquipmentType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcUnitaryEquipmentType> > list;
-    typedef IfcTemplatedEntityList<IfcUnitaryEquipmentType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcUnitaryEquipmentType > > list;
+    typedef IfcTemplatedEntityList< IfcUnitaryEquipmentType >::it it;
 };
 /// The flow controller type IfcValveType defines commonly shared information for occurrences of valves.  The set of shared information may include: 
 /// 
@@ -30122,8 +30122,8 @@ public:
     static Type::Enum Class();
     IfcValveType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcValveType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcValveType> > list;
-    typedef IfcTemplatedEntityList<IfcValveType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcValveType > > list;
+    typedef IfcTemplatedEntityList< IfcValveType >::it it;
 };
 /// A virtual element is a special element used to provide imaginary boundaries, such as between two adjacent, but not separated, spaces. Virtual elements are usually not displayed and does not have quantities and other measures. Therefore IfcVirtualElement does not have material information and quantities attached.
 /// 
@@ -30222,8 +30222,8 @@ public:
     static Type::Enum Class();
     IfcVirtualElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcVirtualElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcVirtualElement> > list;
-    typedef IfcTemplatedEntityList<IfcVirtualElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcVirtualElement > > list;
+    typedef IfcTemplatedEntityList< IfcVirtualElement >::it it;
 };
 /// Definition from IAI: The element type
 /// IfcWallType defines commonly shared information for
@@ -30322,8 +30322,8 @@ public:
     static Type::Enum Class();
     IfcWallType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcWallType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcWallType> > list;
-    typedef IfcTemplatedEntityList<IfcWallType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcWallType > > list;
+    typedef IfcTemplatedEntityList< IfcWallType >::it it;
 };
 /// The flow terminal type IfcWasteTerminalType defines commonly shared information for occurrences of waste terminals.  The set of shared information may include: 
 /// 
@@ -30374,14 +30374,14 @@ public:
     static Type::Enum Class();
     IfcWasteTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcWasteTerminalType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcWasteTerminalType> > list;
-    typedef IfcTemplatedEntityList<IfcWasteTerminalType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcWasteTerminalType > > list;
+    typedef IfcTemplatedEntityList< IfcWasteTerminalType >::it it;
 };
 /// An IfcWorkControl is an abstract supertype which captures information that is common to both IfcWorkPlan and IfcWorkSchedule.
 /// 
-/// HISTORYï¿½ New class in IFC 2x
+/// HISTORY  New class in IFC 2x
 /// 
-/// CHANGE IFC2x4ï¿½ Corrected assignment of resources to work control in documentation. Assignment of tasks to work control updated based on changes of task time definitions and the introduction of a summary task. Identifier has been renamed (now Identification) and promoted to supertype IfcControl
+/// CHANGE IFC2x4  Corrected assignment of resources to work control in documentation. Assignment of tasks to work control updated based on changes of task time definitions and the introduction of a summary task. Identifier has been renamed (now Identification) and promoted to supertype IfcControl
 /// 
 /// A work control may have resources assigned to it, this is
 ///   handled by the IfcRelAssignsToControl relationship.
@@ -30429,7 +30429,7 @@ public:
     /// Whether the optional attribute Creators is defined for this IfcWorkControl
     bool hasCreators();
     /// The authors of the work plan.
-    SHARED_PTR< IfcTemplatedEntityList<IfcPerson> > Creators();
+    SHARED_PTR< IfcTemplatedEntityList< IfcPerson > > Creators();
     /// Whether the optional attribute Purpose is defined for this IfcWorkControl
     bool hasPurpose();
     /// A description of the purpose of the work schedule.
@@ -30463,8 +30463,8 @@ public:
     static Type::Enum Class();
     IfcWorkControl (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcWorkControl* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcWorkControl> > list;
-    typedef IfcTemplatedEntityList<IfcWorkControl>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcWorkControl > > list;
+    typedef IfcTemplatedEntityList< IfcWorkControl >::it it;
 };
 /// An IfcWorkPlan represents work plans in a construction or a facilities management project.
 /// 
@@ -30502,8 +30502,8 @@ public:
     static Type::Enum Class();
     IfcWorkPlan (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcWorkPlan* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcWorkPlan> > list;
-    typedef IfcTemplatedEntityList<IfcWorkPlan>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcWorkPlan > > list;
+    typedef IfcTemplatedEntityList< IfcWorkPlan >::it it;
 };
 /// An IfcWorkSchedule
 ///   represents a task schedule of a work plan, which in turn
@@ -30556,10 +30556,10 @@ public:
     static Type::Enum Class();
     IfcWorkSchedule (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcWorkSchedule* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcWorkSchedule> > list;
-    typedef IfcTemplatedEntityList<IfcWorkSchedule>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcWorkSchedule > > list;
+    typedef IfcTemplatedEntityList< IfcWorkSchedule >::it it;
 };
-/// Definition from IAI: A zone isï¿½a group of spaces,
+/// Definition from IAI: A zone isÿa group of spaces,
 /// partial spaces or other zones. Zone structures may not be
 /// hierarchical (in contrary to the spatial structure of a project -
 /// see IfcSpatialStructureElement), i.e. one individual
@@ -30568,9 +30568,9 @@ public:
 /// IfcZone by using the objectified relationship
 /// IfcRelAssignsToGroup as specified at the supertype
 /// IfcGroup.
-/// NOTE ï¿½Certain use cases may restrict the
+/// NOTE ÿCertain use cases may restrict the
 /// freedom of non hierarchical relationships. In some building
-/// service use cases the zone denotes aï¿½view based delimited volume
+/// service use cases the zone denotes aÿview based delimited volume
 /// for the purpose of analysis and calculation. This type of zone
 /// cannot overlap with respect to that analysis, but may overlap
 /// otherwise.
@@ -30581,12 +30581,12 @@ public:
 /// and placement. Therefore it cannot be used for spatial zones
 /// having a different shape and size compared to the shape and size
 /// of aggregated spaces.
-/// NOTEï¿½ The IfcZone is regarded as the
+/// NOTEÿ The IfcZone is regarded as the
 /// spatial system (as compared to the building service, electrical,
 /// or analytical system), the name remains IfcZone for
 /// compatibility reasons, instead of using a proper naming
 /// convention, like IfcSpatialSystem.
-/// NOTE ï¿½One of the purposes of a zone is to
+/// NOTE ÿOne of the purposes of a zone is to
 /// define a fire compartmentation. In this case it defines the
 /// geometric information about the fire compartment (through the
 /// contained spaces) and information, whether this compartment is
@@ -30597,7 +30597,7 @@ public:
 /// independent shape has to be provided to the fire compartment,
 /// then the entity IfcSpatialZone shall be
 /// used.
-/// RECOMMENDATIONï¿½ In case of a zone denoting a
+/// RECOMMENDATIONÿ In case of a zone denoting a
 /// (fire) compartment, the following types should be used, if
 /// applicable, as values of the ObjectType attribute:
 /// 
@@ -30616,9 +30616,9 @@ public:
 /// refers to, e.g. to a particular IfcBuildingStorey by using
 /// the IfcRelServicesBuildings relationship, accessible via
 /// the inverse attribute ServicesBuilding.
-/// HISTORYï¿½ New entity in
+/// HISTORYÿ New entity in
 /// IFC Release 1.0
-/// IFC2x4 CHANGEï¿½ The entity is now
+/// IFC2x4 CHANGEÿ The entity is now
 /// subtyped from IfcSystem (not its supertype
 /// IfcGroup) with upward compatibility for file based
 /// exchange.
@@ -30655,8 +30655,8 @@ public:
     static Type::Enum Class();
     IfcZone (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcZone* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcZone> > list;
-    typedef IfcTemplatedEntityList<IfcZone>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcZone > > list;
+    typedef IfcTemplatedEntityList< IfcZone >::it it;
 };
 class Ifc2DCompositeCurve : public IfcCompositeCurve {
 public:
@@ -30669,8 +30669,8 @@ public:
     static Type::Enum Class();
     Ifc2DCompositeCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef Ifc2DCompositeCurve* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<Ifc2DCompositeCurve> > list;
-    typedef IfcTemplatedEntityList<Ifc2DCompositeCurve>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< Ifc2DCompositeCurve > > list;
+    typedef IfcTemplatedEntityList< Ifc2DCompositeCurve >::it it;
 };
 /// A request is the act or instance of asking for something, such as a request for information, bid submission, or performance of work. 
 /// 
@@ -30722,8 +30722,8 @@ public:
     static Type::Enum Class();
     IfcActionRequest (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcActionRequest* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcActionRequest> > list;
-    typedef IfcTemplatedEntityList<IfcActionRequest>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcActionRequest > > list;
+    typedef IfcTemplatedEntityList< IfcActionRequest >::it it;
 };
 /// The flow controller type IfcAirTerminalBoxType defines commonly shared information for occurrences of air boxes.  The set of shared information may include: 
 /// 
@@ -30764,8 +30764,8 @@ public:
     static Type::Enum Class();
     IfcAirTerminalBoxType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAirTerminalBoxType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAirTerminalBoxType> > list;
-    typedef IfcTemplatedEntityList<IfcAirTerminalBoxType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAirTerminalBoxType > > list;
+    typedef IfcTemplatedEntityList< IfcAirTerminalBoxType >::it it;
 };
 /// The flow terminal type IfcAirTerminalType defines commonly shared information for occurrences of air terminals.  The set of shared information may include: 
 /// 
@@ -30805,8 +30805,8 @@ public:
     static Type::Enum Class();
     IfcAirTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAirTerminalType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAirTerminalType> > list;
-    typedef IfcTemplatedEntityList<IfcAirTerminalType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAirTerminalType > > list;
+    typedef IfcTemplatedEntityList< IfcAirTerminalType >::it it;
 };
 /// The energy conversion device type IfcAirToAirHeatRecoveryType defines commonly shared information for occurrences of air-to-air heat recovery devices.  The set of shared information may include: 
 /// 
@@ -30847,8 +30847,8 @@ public:
     static Type::Enum Class();
     IfcAirToAirHeatRecoveryType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAirToAirHeatRecoveryType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAirToAirHeatRecoveryType> > list;
-    typedef IfcTemplatedEntityList<IfcAirToAirHeatRecoveryType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAirToAirHeatRecoveryType > > list;
+    typedef IfcTemplatedEntityList< IfcAirToAirHeatRecoveryType >::it it;
 };
 class IfcAngularDimension : public IfcDimensionCurveDirectedCallout {
 public:
@@ -30861,8 +30861,8 @@ public:
     static Type::Enum Class();
     IfcAngularDimension (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAngularDimension* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAngularDimension> > list;
-    typedef IfcTemplatedEntityList<IfcAngularDimension>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAngularDimension > > list;
+    typedef IfcTemplatedEntityList< IfcAngularDimension >::it it;
 };
 /// An asset is a uniquely identifiable grouping of elements acting as a single entity that has a financial value or that can be operated on as a single unit. 
 /// 
@@ -30920,8 +30920,8 @@ public:
     static Type::Enum Class();
     IfcAsset (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAsset* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAsset> > list;
-    typedef IfcTemplatedEntityList<IfcAsset>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAsset > > list;
+    typedef IfcTemplatedEntityList< IfcAsset >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: A B-spline curve is a piecewise parametric polynomial or rational curve described in terms of control points and basis functions. The B-spline curve has been selected as the most stable format to represent all types of polynomial or rational parametric curves. With appropriate attribute values it is capable of representing single span or spline curves of explicit polynomial, rational, Bezier or B-spline type. 
 /// 
@@ -30969,15 +30969,15 @@ public:
 /// 
 /// Figure 277 &#8212; B-spline curve
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: b_spline_curve. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: b_spline_curve. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New entity in Release IFC2x2.
+/// HISTORY  New entity in Release IFC2x2.
 class IfcBSplineCurve : public IfcBoundedCurve {
 public:
     /// The algebraic degree of the basis functions.
     int Degree();
     /// The list of control points for the curve.
-    SHARED_PTR< IfcTemplatedEntityList<IfcCartesianPoint> > ControlPointsList();
+    SHARED_PTR< IfcTemplatedEntityList< IfcCartesianPoint > > ControlPointsList();
     /// Used to identify particular types of curve; it is for information only.
     IfcBSplineCurveForm::IfcBSplineCurveForm CurveForm();
     /// Indication of whether the curve is closed; it is for information only.
@@ -30993,8 +30993,8 @@ public:
     static Type::Enum Class();
     IfcBSplineCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBSplineCurve* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBSplineCurve> > list;
-    typedef IfcTemplatedEntityList<IfcBSplineCurve>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBSplineCurve > > list;
+    typedef IfcTemplatedEntityList< IfcBSplineCurve >::it it;
 };
 /// Definition from IAI: The element type
 /// IfcBeamType defines commonly shared information for
@@ -31107,8 +31107,8 @@ public:
     static Type::Enum Class();
     IfcBeamType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBeamType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBeamType> > list;
-    typedef IfcTemplatedEntityList<IfcBeamType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBeamType > > list;
+    typedef IfcTemplatedEntityList< IfcBeamType >::it it;
 };
 class IfcBezierCurve : public IfcBSplineCurve {
 public:
@@ -31121,8 +31121,8 @@ public:
     static Type::Enum Class();
     IfcBezierCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBezierCurve* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBezierCurve> > list;
-    typedef IfcTemplatedEntityList<IfcBezierCurve>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBezierCurve > > list;
+    typedef IfcTemplatedEntityList< IfcBezierCurve >::it it;
 };
 /// The energy conversion device type IfcBoilerType defines commonly shared information for occurrences of boilers.  The set of shared information may include: 
 /// 
@@ -31166,8 +31166,8 @@ public:
     static Type::Enum Class();
     IfcBoilerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBoilerType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBoilerType> > list;
-    typedef IfcTemplatedEntityList<IfcBoilerType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBoilerType > > list;
+    typedef IfcTemplatedEntityList< IfcBoilerType >::it it;
 };
 /// Definition from ISO 6707-1:1989: Major functional part
 /// of a building, examples are foundation, floor, roof, wall.
@@ -31543,8 +31543,8 @@ public:
     static Type::Enum Class();
     IfcBuildingElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBuildingElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingElement> > list;
-    typedef IfcTemplatedEntityList<IfcBuildingElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBuildingElement > > list;
+    typedef IfcTemplatedEntityList< IfcBuildingElement >::it it;
 };
 class IfcBuildingElementComponent : public IfcBuildingElement {
 public:
@@ -31557,8 +31557,8 @@ public:
     static Type::Enum Class();
     IfcBuildingElementComponent (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBuildingElementComponent* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingElementComponent> > list;
-    typedef IfcTemplatedEntityList<IfcBuildingElementComponent>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBuildingElementComponent > > list;
+    typedef IfcTemplatedEntityList< IfcBuildingElementComponent >::it it;
 };
 /// Definition from IAI: Layers or major components as subordinate
 /// parts of a building element. Typical usage examples include precast concrete
@@ -31588,8 +31588,8 @@ public:
     static Type::Enum Class();
     IfcBuildingElementPart (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBuildingElementPart* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingElementPart> > list;
-    typedef IfcTemplatedEntityList<IfcBuildingElementPart>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBuildingElementPart > > list;
+    typedef IfcTemplatedEntityList< IfcBuildingElementPart >::it it;
 };
 /// Definition from IAI: The IfcBuildingElementProxy
 /// is a proxy definition that provides the same functionality as an
@@ -31614,9 +31614,9 @@ public:
 /// applications can not provide additional semantic
 /// classification.
 /// 
-/// HISTORYï¿½ New entity
+/// HISTORY  New entity
 /// in IFC Release 2x.
-/// IFC2x4 CHANGEï¿½ The attribute
+/// IFC2x4 CHANGE  The attribute
 /// CompositionType has been replaced by PredefinedType,
 /// being a superset of the enumerators.
 /// Type Use Definition
@@ -31650,7 +31650,7 @@ public:
 /// PredefinedType = ProvisionForVoid.
 /// Material information can also be given at the
 /// IfcBuildingElementProxyType, defining the common attribute
-/// data for all occurrences of the same type.ï¿½It is then
+/// data for all occurrences of the same type. It is then
 /// accessible by the inverse IsTypedBy relationship pointing to
 /// IfcBuildingElementProxyType.HasAssociations and via
 /// IfcRelAssociatesMaterial.RelatingMaterial to
@@ -31673,7 +31673,7 @@ public:
 /// 
 /// Property sets can also be given at the
 /// IfcBuildingElementProxyType, defining the common property
-/// data for all occurrences of the same type.ï¿½It is then
+/// data for all occurrences of the same type. It is then
 /// accessible by the inverse IsTypedBy relationship pointing to
 /// IfcBuildingElementProxyType.HasPropertySets. If both are
 /// given, then the properties directly assigned to
@@ -31685,13 +31685,13 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second (optional) relationship is the aggregation
-/// within anï¿½element assembly.
+/// within an element assembly.
 /// 
 /// The IfcBuildingElementProxy is places within the project
 /// spatial hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid
+/// Subtypes of IfcSpatialStructureElement are valid
 /// spatial containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcBuildingElementProxy may be aggregated into an
@@ -31701,7 +31701,7 @@ public:
 /// IfcElement can be an element assembly, with
 /// IfcElementAssembly as a special focus subtype. In this case
 /// it should not be additionally contained in the project spatial
-/// hierarchy, i.e.ï¿½SELF\IfcElement.ContainedInStructure
+/// hierarchy, i.e. SELF\IfcElement.ContainedInStructure
 /// should be NIL.
 /// 
 /// Geometry Use Definition
@@ -31795,18 +31795,18 @@ public:
     static Type::Enum Class();
     IfcBuildingElementProxy (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBuildingElementProxy* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingElementProxy> > list;
-    typedef IfcTemplatedEntityList<IfcBuildingElementProxy>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBuildingElementProxy > > list;
+    typedef IfcTemplatedEntityList< IfcBuildingElementProxy >::it it;
 };
 /// Definition from IAI:
-///   Theï¿½IfcBuildingElementProxyType defines a list of
+///   TheÿIfcBuildingElementProxyType defines a list of
 ///   commonly shared property set definitions of a building
 ///   element proxy and an optional set of product
 ///   representations. It is used to define an element
 ///   specification (i.e. the specific product information, that
 ///   is common to all occurrences of that product type).
 /// 
-/// NOTEï¿½ The product representations are defined as
+/// NOTEÿ The product representations are defined as
 ///   representation maps (at the level of the supertype
 ///   IfcTypeProduct, which gets assigned by an element
 ///   occurrence instance through the
@@ -31815,8 +31815,8 @@ public:
 /// 
 /// A building element proxy type is used to define the common
 ///   properties of a certain type of a building element proxy
-///   that may be applied to many instances of thatï¿½type to
-///   assign a specific style. Building element proxy typesï¿½may
+///   that may be applied to many instances of thatÿtype to
+///   assign a specific style. Building element proxy typesÿmay
 ///   be exchanged without being already assigned to occurrences.
 /// 
 /// NOTE  Although an building element proxy does not have
@@ -31830,7 +31830,7 @@ public:
 ///   are represented by instances of
 ///   IfcBuildingElementProxy.
 /// 
-/// HISTORYï¿½ New entity in
+/// HISTORYÿ New entity in
 ///   Release IFC2x Edition 3.
 class IfcBuildingElementProxyType : public IfcBuildingElementType {
 public:
@@ -31845,8 +31845,8 @@ public:
     static Type::Enum Class();
     IfcBuildingElementProxyType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBuildingElementProxyType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBuildingElementProxyType> > list;
-    typedef IfcTemplatedEntityList<IfcBuildingElementProxyType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBuildingElementProxyType > > list;
+    typedef IfcTemplatedEntityList< IfcBuildingElementProxyType >::it it;
 };
 /// The flow fitting type IfcCableCarrierFittingType defines commonly shared information for occurrences of cable carrier fittings.  The set of shared information may include: 
 /// 
@@ -31887,8 +31887,8 @@ public:
     static Type::Enum Class();
     IfcCableCarrierFittingType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCableCarrierFittingType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCableCarrierFittingType> > list;
-    typedef IfcTemplatedEntityList<IfcCableCarrierFittingType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCableCarrierFittingType > > list;
+    typedef IfcTemplatedEntityList< IfcCableCarrierFittingType >::it it;
 };
 /// The flow segment type IfcCableCarrierSegmentType defines commonly shared information for occurrences of cable carrier segments.  The set of shared information may include: 
 /// 
@@ -31935,8 +31935,8 @@ public:
     static Type::Enum Class();
     IfcCableCarrierSegmentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCableCarrierSegmentType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCableCarrierSegmentType> > list;
-    typedef IfcTemplatedEntityList<IfcCableCarrierSegmentType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCableCarrierSegmentType > > list;
+    typedef IfcTemplatedEntityList< IfcCableCarrierSegmentType >::it it;
 };
 /// The flow segment type IfcCableSegmentType defines commonly shared information for occurrences of cable segments.  The set of shared information may include: 
 /// 
@@ -31992,8 +31992,8 @@ public:
     static Type::Enum Class();
     IfcCableSegmentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCableSegmentType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCableSegmentType> > list;
-    typedef IfcTemplatedEntityList<IfcCableSegmentType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCableSegmentType > > list;
+    typedef IfcTemplatedEntityList< IfcCableSegmentType >::it it;
 };
 /// The energy conversion device type IfcChillerType defines commonly shared information for occurrences of chillers.  The set of shared information may include: 
 /// 
@@ -32040,8 +32040,8 @@ public:
     static Type::Enum Class();
     IfcChillerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcChillerType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcChillerType> > list;
-    typedef IfcTemplatedEntityList<IfcChillerType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcChillerType > > list;
+    typedef IfcTemplatedEntityList< IfcChillerType >::it it;
 };
 /// Definition from ISO/CD 10303-42:1992: An IfcCircle is defined by a radius and the location and orientation of the circle. Interpretation of data should be as follows: 
 /// 
@@ -32053,19 +32053,19 @@ public:
 /// 
 /// and the circle is parameterized as  
 /// 
-/// The parameterization range is 0 ï¿½
-///   u ï¿½2p (or 0
-///   ï¿½u ï¿½
+/// The parameterization range is 0 £
+///   u £2p (or 0
+///   £u £
 ///   360 degree). In the placement coordinate system defined above, the circle is
 ///   the equation C = 0, where 
 /// 
 /// The positive sense of the circle at any point is in the tangent direction, T, to the curve at the point, where 
 /// 
-/// NOTEï¿½ A circular arc is defined by using the trimmed curve (IfcTrimmedCurve) entity in conjunction with the circle (IfcCircle) entity as the BasisCurve.
+/// NOTE  A circular arc is defined by using the trimmed curve (IfcTrimmedCurve) entity in conjunction with the circle (IfcCircle) entity as the BasisCurve.
 /// 
-/// NOTEï¿½ Corresponding ISO 10303 entity: circle, please refer to ISO/IS 10303-42:1994, p. 38 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: circle, please refer to ISO/IS 10303-42:1994, p. 38 for the final definition of the formal standard.
 /// 
-/// HISTORYï¿½ New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 /// 
 /// Figure 278 illustrates the definition of the IfcCircle within the (in this case three-dimensional) position coordinate system. 
 /// 
@@ -32083,8 +32083,8 @@ public:
     static Type::Enum Class();
     IfcCircle (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCircle* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCircle> > list;
-    typedef IfcTemplatedEntityList<IfcCircle>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCircle > > list;
+    typedef IfcTemplatedEntityList< IfcCircle >::it it;
 };
 /// The energy conversion device type IfcCoilType defines commonly shared information for occurrences of coils.  The set of shared information may include: 
 /// 
@@ -32126,8 +32126,8 @@ public:
     static Type::Enum Class();
     IfcCoilType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCoilType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCoilType> > list;
-    typedef IfcTemplatedEntityList<IfcCoilType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCoilType > > list;
+    typedef IfcTemplatedEntityList< IfcCoilType >::it it;
 };
 /// Definition from ISO 6707-1:1989: Structural member of
 /// slender form, usually vertical, that transmits to its base the
@@ -32144,7 +32144,7 @@ public:
 /// IfcStructuralCurveMember being part of an
 /// IfcStructuralAnalysisModel.
 /// 
-/// NOTE ï¿½For any longitudial structural member, not
+/// NOTE ÿFor any longitudial structural member, not
 /// constrained to be predominately horizontal nor vertical, or where
 /// this semantic information is irrelevant, the entity
 /// IfcMember exists.
@@ -32162,7 +32162,7 @@ public:
 /// geometry based on the swept solid), if a 3D geometric
 /// representation is assigned. In addition they have to have a
 /// corresponding IfcMaterialProfileSetUsage assigned.
-/// NOTEï¿½ View definitions and implementer
+/// NOTEÿ View definitions and implementer
 /// agreements may further constrain the applicable geometry types,
 /// e.g. by excluding tapering from an IfcColumnStandardCase
 /// implementation.
@@ -32178,13 +32178,13 @@ public:
 /// IfcColumn defines the occuurence of any column, common
 /// information about column types (or styles) is handled by
 /// IfcColumnType. The IfcColumnType (if present) may
-/// establish the commonï¿½type name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common material layer set, common set of properties and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcColumnType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsTypedBy attribute.
-/// If no IfcColumnType is attachedï¿½(i.e. if only
+/// If no IfcColumnType is attachedÿ(i.e. if only
 /// occurrence information is given) the PredefinedType should
 /// be provided. If set to .USERDEFINED. a user defined value can be
 /// provided by the ObjectType attribute.
@@ -32201,7 +32201,7 @@ public:
 /// concept.
 /// Material information can also be given at the
 /// IfcColumnType, defining the common attribute data for all
-/// occurrences of the same type.ï¿½It is then accessible by the
+/// occurrences of the same type.ÿIt is then accessible by the
 /// inverse IsTypedBy
 /// relationship pointing to
 /// IfcColumnType.HasAssociations and via
@@ -32222,7 +32222,7 @@ public:
 /// 
 /// Property sets can also be given at the IfcColumnType,
 /// defining the common property data for all occurrences of the same
-/// type.ï¿½It is then accessible by the inverse IsTypedBy relationship pointing to
+/// type.ÿIt is then accessible by the inverse IsTypedBy relationship pointing to
 /// IfcColumnType.HasPropertySets. If both are given, then the
 /// properties directly assigned to IfcColumn overrides the
 /// properties assigned to IfcColumnType.
@@ -32247,13 +32247,13 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anï¿½element assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcColumn, is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcColumn, may be aggregated into an element
@@ -32264,7 +32264,7 @@ public:
 /// IfcElementAssembly as a special focus subtype. In this
 /// case it should not be additionally contained in the project
 /// spatial hierarchy,
-/// i.e.ï¿½SELF\IfcElement.ContainedInStructure should be
+/// i.e.ÿSELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
 /// Geometry Use Definition
@@ -32323,8 +32323,8 @@ public:
 /// Solid: IfcExtrudedAreaSolid,
 /// IfcRevolvedAreaSolid shall be supported
 /// Profile: all subtypes of IfcProfileDef (with
-/// exception of IfcArbitraryOpenProfileDef)ï¿½
-/// Extrusion:ï¿½All extrusion directions shall be
+/// exception of IfcArbitraryOpenProfileDef)ÿ
+/// Extrusion:ÿAll extrusion directions shall be
 /// supported
 /// 
 /// Figure 81 illustrates a 'SweptSolid' geometric representation. There are no restrictions or conventions on
@@ -32383,7 +32383,7 @@ public:
 /// 
 /// Profile: see 'SweptSolid' geometric
 /// representation
-/// Extrusion:ï¿½not applicable
+/// Extrusion:ÿnot applicable
 /// 
 /// MappedRepresentation Representation Type
 /// The 'MappedRepresentation' representation type is supported as
@@ -32395,7 +32395,7 @@ public:
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'MappedRepresentation'
 /// 
-/// The same constraints, as given for theï¿½ 'SweptSolid',
+/// The same constraints, as given for theÿ 'SweptSolid',
 /// 'Clipping', 'AdvancedSweptSolid', 'SurfaceModel' and 'Bre'
 /// geometric representation, shall apply to the
 /// MappedRepresentation of the
@@ -32411,8 +32411,8 @@ public:
     static Type::Enum Class();
     IfcColumn (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcColumn* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcColumn> > list;
-    typedef IfcTemplatedEntityList<IfcColumn>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcColumn > > list;
+    typedef IfcTemplatedEntityList< IfcColumn >::it it;
 };
 /// The flow moving device type IfcCompressorType defines commonly shared information for occurrences of compressors.  The set of shared information may include: 
 /// 
@@ -32454,8 +32454,8 @@ public:
     static Type::Enum Class();
     IfcCompressorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCompressorType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCompressorType> > list;
-    typedef IfcTemplatedEntityList<IfcCompressorType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCompressorType > > list;
+    typedef IfcTemplatedEntityList< IfcCompressorType >::it it;
 };
 /// The energy conversion device type IfcCondenserType defines commonly shared information for occurrences of condensers.  The set of shared information may include: 
 /// 
@@ -32497,8 +32497,8 @@ public:
     static Type::Enum Class();
     IfcCondenserType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCondenserType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCondenserType> > list;
-    typedef IfcTemplatedEntityList<IfcCondenserType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCondenserType > > list;
+    typedef IfcTemplatedEntityList< IfcCondenserType >::it it;
 };
 class IfcCondition : public IfcGroup {
 public:
@@ -32511,8 +32511,8 @@ public:
     static Type::Enum Class();
     IfcCondition (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCondition* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCondition> > list;
-    typedef IfcTemplatedEntityList<IfcCondition>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCondition > > list;
+    typedef IfcTemplatedEntityList< IfcCondition >::it it;
 };
 class IfcConditionCriterion : public IfcControl {
 public:
@@ -32527,8 +32527,8 @@ public:
     static Type::Enum Class();
     IfcConditionCriterion (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConditionCriterion* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConditionCriterion> > list;
-    typedef IfcTemplatedEntityList<IfcConditionCriterion>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConditionCriterion > > list;
+    typedef IfcTemplatedEntityList< IfcConditionCriterion >::it it;
 };
 /// IfcConstructionEquipmentResource is usage of construction equipment to assist in the performance of construction. Construction Equipment resources are wholly or partially consumed or occupied in the performance of construction.
 /// 
@@ -32563,8 +32563,8 @@ public:
     static Type::Enum Class();
     IfcConstructionEquipmentResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConstructionEquipmentResource* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstructionEquipmentResource> > list;
-    typedef IfcTemplatedEntityList<IfcConstructionEquipmentResource>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConstructionEquipmentResource > > list;
+    typedef IfcTemplatedEntityList< IfcConstructionEquipmentResource >::it it;
 };
 /// IfcConstructionMaterialResource identifies a material resource type in a construction project. 
 /// 
@@ -32596,7 +32596,7 @@ class IfcConstructionMaterialResource : public IfcConstructionResource {
 public:
     /// Whether the optional attribute Suppliers is defined for this IfcConstructionMaterialResource
     bool hasSuppliers();
-    SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> > Suppliers();
+    SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > > Suppliers();
     /// Whether the optional attribute UsageRatio is defined for this IfcConstructionMaterialResource
     bool hasUsageRatio();
     IfcRatioMeasure UsageRatio();
@@ -32609,8 +32609,8 @@ public:
     static Type::Enum Class();
     IfcConstructionMaterialResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConstructionMaterialResource* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstructionMaterialResource> > list;
-    typedef IfcTemplatedEntityList<IfcConstructionMaterialResource>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConstructionMaterialResource > > list;
+    typedef IfcTemplatedEntityList< IfcConstructionMaterialResource >::it it;
 };
 /// IfcConstructionProductResource defines the role of a product that is consumed (wholly or partially), or occupied in the performance of construction. 
 /// 
@@ -32638,8 +32638,8 @@ public:
     static Type::Enum Class();
     IfcConstructionProductResource (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcConstructionProductResource* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcConstructionProductResource> > list;
-    typedef IfcTemplatedEntityList<IfcConstructionProductResource>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcConstructionProductResource > > list;
+    typedef IfcTemplatedEntityList< IfcConstructionProductResource >::it it;
 };
 /// The energy conversion device type IfcCooledBeamType defines commonly shared information for occurrences of cooled beams.  The set of shared information may include: 
 /// 
@@ -32683,8 +32683,8 @@ public:
     static Type::Enum Class();
     IfcCooledBeamType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCooledBeamType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCooledBeamType> > list;
-    typedef IfcTemplatedEntityList<IfcCooledBeamType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCooledBeamType > > list;
+    typedef IfcTemplatedEntityList< IfcCooledBeamType >::it it;
 };
 /// The energy conversion device type IfcCoolingTowerType defines commonly shared information for occurrences of cooling towers.  The set of shared information may include: 
 /// 
@@ -32732,8 +32732,8 @@ public:
     static Type::Enum Class();
     IfcCoolingTowerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCoolingTowerType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCoolingTowerType> > list;
-    typedef IfcTemplatedEntityList<IfcCoolingTowerType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCoolingTowerType > > list;
+    typedef IfcTemplatedEntityList< IfcCoolingTowerType >::it it;
 };
 /// Definition from ISO 6707-1:1989: term used: Finishing -
 /// final coverings and treatments of surfaces and their
@@ -32791,7 +32791,7 @@ public:
 /// representation and the space has defined space boundaries, then
 /// the covering, which relates to that space, may be assigned to the
 /// space boundaries using the link
-/// toï¿½IfcRelSpaceBoundary,
+/// toÿIfcRelSpaceBoundary,
 /// if the covering does not relate to a space, then the covering
 /// should be assigned to the building element or a distribution
 /// element using the IfcRelCoversBldgElements
@@ -32806,7 +32806,7 @@ public:
 /// The IfcCovering defines the occuurence of any covering,
 /// common information about covering types (or styles) is handled by
 /// IfcCoveringType. The IfcCoveringType (if present)
-/// may establish the commonï¿½type name, usage (or predefined) type,
+/// may establish the commonÿtype name, usage (or predefined) type,
 /// common set of properties, common material layer set, and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcCoveringType is attached using the
@@ -32817,7 +32817,7 @@ public:
 /// slabs with constant thickness along the extrusion direction), the
 /// IfcCoveringType should have a unique
 /// IfcMaterialLayerSet, that is referenced by
-/// theï¿½IfcMaterialLayerSetUsage assigned to all occurrences
+/// theÿIfcMaterialLayerSetUsage assigned to all occurrences
 /// of this covering type.
 /// 
 /// Figure 91 illustrates assignment of IfcMaterialLayerSetUsage and IfcMaterialLayerSet to the covering type and the covering occurrence.
@@ -32907,7 +32907,7 @@ public:
 /// 
 /// GeometricSet Representation
 /// The 'GeometricSet' geometric representation of
-/// IfcCovering supports area definitions as 3D surfaces.ï¿½
+/// IfcCovering supports area definitions as 3D surfaces.ÿ
 /// 
 /// RepresentationIdentifier : 'Surface'
 /// RepresentationType : 'GeometricSet'
@@ -32935,7 +32935,7 @@ public:
 /// 
 /// SweptSolid Representation
 /// The 'SweptSolid' geometric representation of
-/// IfcCovering supports volume definitions as 3D solids.ï¿½
+/// IfcCovering supports volume definitions as 3D solids.ÿ
 /// 
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'SweptSolid'
@@ -32969,15 +32969,15 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return Argument_ENUMERATION; } return IfcBuildingElement::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 8: return "PredefinedType"; } return IfcBuildingElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelCoversSpaces> > CoversSpaces(); // INVERSE IfcRelCoversSpaces::RelatedCoverings
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelCoversBldgElements> > Covers(); // INVERSE IfcRelCoversBldgElements::RelatedCoverings
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelCoversSpaces > > CoversSpaces(); // INVERSE IfcRelCoversSpaces::RelatedCoverings
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelCoversBldgElements > > Covers(); // INVERSE IfcRelCoversBldgElements::RelatedCoverings
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcCovering (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCovering* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCovering> > list;
-    typedef IfcTemplatedEntityList<IfcCovering>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCovering > > list;
+    typedef IfcTemplatedEntityList< IfcCovering >::it it;
 };
 /// Definition from ISO 6707-1:1989: Non load bearing wall
 /// positioned on the outside of a building and enclosing it.
@@ -32994,14 +32994,14 @@ public:
 /// wall, common information about curtain wall types (or styles) is
 /// handled by IfcCurtainWallType. The
 /// IfcCurtainWallType (if present) may establish the
-/// commonï¿½type name, usage (or predefined) type, common material
+/// commonÿtype name, usage (or predefined) type, common material
 /// information, common set of properties and common shape
 /// representations (using IfcRepresentationMap). The
 /// IfcCurtainWallType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsDefinedBy
 /// attribute.
-/// If no IfcCurtainWallType is attachedï¿½(i.e. if only
+/// If no IfcCurtainWallType is attachedÿ(i.e. if only
 /// occurrence information is given) the predefined type may be given
 /// by using the ObjectType attribute.
 /// NOTE Since the IfcCurtainWall might be
@@ -33128,8 +33128,8 @@ public:
     static Type::Enum Class();
     IfcCurtainWall (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcCurtainWall* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcCurtainWall> > list;
-    typedef IfcTemplatedEntityList<IfcCurtainWall>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcCurtainWall > > list;
+    typedef IfcTemplatedEntityList< IfcCurtainWall >::it it;
 };
 /// The flow controller type IfcDamperType defines commonly shared information for occurrences of dampers.  The set of shared information may include: 
 /// 
@@ -33178,8 +33178,8 @@ public:
     static Type::Enum Class();
     IfcDamperType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDamperType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDamperType> > list;
-    typedef IfcTemplatedEntityList<IfcDamperType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDamperType > > list;
+    typedef IfcTemplatedEntityList< IfcDamperType >::it it;
 };
 class IfcDiameterDimension : public IfcDimensionCurveDirectedCallout {
 public:
@@ -33192,8 +33192,8 @@ public:
     static Type::Enum Class();
     IfcDiameterDimension (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDiameterDimension* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDiameterDimension> > list;
-    typedef IfcTemplatedEntityList<IfcDiameterDimension>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDiameterDimension > > list;
+    typedef IfcTemplatedEntityList< IfcDiameterDimension >::it it;
 };
 /// Definition from IAI: Representation of different kinds of
 ///   accessories included in or added to elements.  
@@ -33379,8 +33379,8 @@ public:
     static Type::Enum Class();
     IfcDiscreteAccessory (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDiscreteAccessory* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDiscreteAccessory> > list;
-    typedef IfcTemplatedEntityList<IfcDiscreteAccessory>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDiscreteAccessory > > list;
+    typedef IfcTemplatedEntityList< IfcDiscreteAccessory >::it it;
 };
 /// Definition from IAI: The element type
 ///   (IfcDiscreteAccessoryType) defines a list of commonly shared property
@@ -33581,8 +33581,8 @@ public:
     static Type::Enum Class();
     IfcDiscreteAccessoryType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDiscreteAccessoryType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDiscreteAccessoryType> > list;
-    typedef IfcTemplatedEntityList<IfcDiscreteAccessoryType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDiscreteAccessoryType > > list;
+    typedef IfcTemplatedEntityList< IfcDiscreteAccessoryType >::it it;
 };
 /// The distribution flow element type IfcDistributionChamberElementType defines commonly shared information for occurrences of distribution chamber elements.  The set of shared information may include:
 /// 
@@ -33634,8 +33634,8 @@ public:
     static Type::Enum Class();
     IfcDistributionChamberElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDistributionChamberElementType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionChamberElementType> > list;
-    typedef IfcTemplatedEntityList<IfcDistributionChamberElementType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDistributionChamberElementType > > list;
+    typedef IfcTemplatedEntityList< IfcDistributionChamberElementType >::it it;
 };
 /// The element type IfcDistributionControlElementType defines a list of commonly shared property set definitions of an element and an optional set of product representations.  It is used to define an element specification (the specific product information that is common to all occurrences of that product type). 
 /// 
@@ -33702,8 +33702,8 @@ public:
     static Type::Enum Class();
     IfcDistributionControlElementType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDistributionControlElementType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionControlElementType> > list;
-    typedef IfcTemplatedEntityList<IfcDistributionControlElementType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDistributionControlElementType > > list;
+    typedef IfcTemplatedEntityList< IfcDistributionControlElementType >::it it;
 };
 /// Definition from IAI: Generalization of all elements
 /// that participate in a distribution system. Typical examples of
@@ -33768,13 +33768,13 @@ public:
 /// different containment relationships. The first (and in most
 /// implementation scenarios mandatory) relationship is the
 /// hierachical spatial containment, the second (optional)
-/// relationship is the aggregation within anï¿½element assembly.
+/// relationship is the aggregation within anÿelement assembly.
 /// 
 /// The IfcDistributionElement is places within the
 /// project spatial hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, referring to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcSpace being the default
 /// container.
 /// The IfcDistributionElement may be aggregated into an
@@ -33785,7 +33785,7 @@ public:
 /// IfcElementAssembly as a special focus subtype. In this
 /// case it should not be additionally contained in the project
 /// spatial hierarchy,
-/// i.e.ï¿½SELF\IfcElement.ContainedInStructure should be
+/// i.e.ÿSELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
 /// Geometry Use Definitions
@@ -33878,8 +33878,8 @@ public:
     static Type::Enum Class();
     IfcDistributionElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDistributionElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionElement> > list;
-    typedef IfcTemplatedEntityList<IfcDistributionElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDistributionElement > > list;
+    typedef IfcTemplatedEntityList< IfcDistributionElement >::it it;
 };
 /// The distribution element IfcDistributionFlowElement defines occurrence elements of a distribution system that facilitate the distribution of energy or matter, such as air, water or power.
 /// 
@@ -33955,14 +33955,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionElement::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { return IfcDistributionElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelFlowControlElements> > HasControlElements(); // INVERSE IfcRelFlowControlElements::RelatingFlowElement
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelFlowControlElements > > HasControlElements(); // INVERSE IfcRelFlowControlElements::RelatingFlowElement
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcDistributionFlowElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDistributionFlowElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionFlowElement> > list;
-    typedef IfcTemplatedEntityList<IfcDistributionFlowElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDistributionFlowElement > > list;
+    typedef IfcTemplatedEntityList< IfcDistributionFlowElement >::it it;
 };
 /// A distribution port is an inlet or outlet of a product through which a particular substance may flow.
 /// 
@@ -34061,8 +34061,8 @@ public:
     static Type::Enum Class();
     IfcDistributionPort (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDistributionPort* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionPort> > list;
-    typedef IfcTemplatedEntityList<IfcDistributionPort>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDistributionPort > > list;
+    typedef IfcTemplatedEntityList< IfcDistributionPort >::it it;
 };
 /// Definition from ISO 6707-1:1989: Construction for
 /// closing an opening, intended primarily for access with hinged,
@@ -34079,7 +34079,7 @@ public:
 /// IfcRelFillsElement relationship, then the IfcDoor
 /// has an inverse attribute FillsVoids provided,
 /// 
-/// NOTEï¿½ View definitions or
+/// NOTEÿ View definitions or
 /// implementer agreements may restrict the relationship to only
 /// include one window (or door) into one opening.
 /// 
@@ -34101,7 +34101,7 @@ public:
 /// that references one IfcDoorLiningProperties and on to many
 /// IfcDoorPanelProperties.
 /// 
-/// NOTEï¿½ see
+/// NOTEÿ see
 /// IfcDoorStandardCase for all specific constraints imposed
 /// by this subtype.
 /// 
@@ -34134,7 +34134,7 @@ public:
 /// the construction material type
 /// the particular attributes for the lining by the
 /// IfcDoorLiningProperties
-/// the particular attributes for the panels by theï¿½
+/// the particular attributes for the panels by theÿ
 /// IfcDoorPanelProperties
 /// 
 /// HISTORY New entity in IFC Release 1.0.
@@ -34199,13 +34199,13 @@ public:
 /// containment relationships as shown in Figure 96. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anï¿½element assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcDoor is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcDoor may be aggregated into an element assembly
@@ -34214,7 +34214,7 @@ public:
 /// SELF\IfcObjectDefinition.Decomposes. Doors may be part of
 /// an IfcCurtainWall as a special focus subtype. In this case
 /// it should not be additionally contained in the project spatial
-/// hierarchy, i.e.ï¿½SELF\IfcElement.ContainedInStructure
+/// hierarchy, i.e.ÿSELF\IfcElement.ContainedInStructure
 /// should be NIL.
 /// 
 /// NOTE The containment shall be defined independently of the
@@ -34255,12 +34255,12 @@ public:
 /// is defined within the world coordinate system.
 /// 
 /// Geometric Representation
-/// Theï¿½geometric representation of IfcDoor is defined
-/// using the following (potentiallyï¿½multiple)
+/// Theÿgeometric representation of IfcDoor is defined
+/// using the following (potentiallyÿmultiple)
 /// IfcShapeRepresentation's for its
 /// IfcProductDefinitionShape:
 /// 
-/// Profile: Aï¿½'Curve3D'
+/// Profile: Aÿ'Curve3D'
 /// consisting of a single losed curve defining the outer boundary of
 /// the door (lining). The door parametric representation uses this
 /// profile in order to apply the door lining and panel parameter. If
@@ -34277,11 +34277,11 @@ public:
 /// IfcDoorPanelProperties. The purpose of the parameter is
 /// described at those entities and below (door opening operation by
 /// door type).
-/// Profile -ï¿½'Curve3D' representation
+/// Profile -ÿ'Curve3D' representation
 /// The door profile is represented by a three-dimensional closed
 /// curve within a particular shape representation. The profile is
 /// used to apply the parameter of the parametric door
-/// representation.ï¿½The following attribute values for the
+/// representation.ÿThe following attribute values for the
 /// IfcShapeRepresentation holding this geometric
 /// representation shall be used:
 /// 
@@ -34295,18 +34295,18 @@ public:
 /// a parametric representation shall be applied to the door
 /// AND
 /// 
-/// theï¿½door is 'free standing', or
-/// the opening into which theï¿½door is inserted is not extruded
+/// theÿdoor is 'free standing', or
+/// the opening into which theÿdoor is inserted is not extruded
 /// horizontally (i.e. where the opening profile does not match
-/// theï¿½door profile)
+/// theÿdoor profile)
 /// 
-/// FootPrint -ï¿½'GeometricCurveSet' or 'Annotation2D'
+/// FootPrint -ÿ'GeometricCurveSet' or 'Annotation2D'
 /// representation
 /// The door foot print is represented by a set of
-/// two-dimensionalï¿½curves (or in case of 'Annotation2D' additional
+/// two-dimensionalÿcurves (or in case of 'Annotation2D' additional
 /// hatching and text) within a particular shape representation. The
 /// foot print is used for the planview representation of the
-/// door.ï¿½The following attribute values for the
+/// door.ÿThe following attribute values for the
 /// IfcShapeRepresentation holding this geometric
 /// representation shall be used:
 /// 
@@ -34320,7 +34320,7 @@ public:
 /// parametric representation) or by explicit 3D shape. The 3D shape
 /// is given by using extrusion geometry, or surface models, or Brep
 /// models within a particular shape representation. The body is used
-/// for the model view representation of the door.ï¿½The following
+/// for the model view representation of the door.ÿThe following
 /// attribute values for the IfcShapeRepresentation holding
 /// this geometric representation shall be used:
 /// 
@@ -34338,7 +34338,7 @@ public:
 /// RepresentationIdentifier : 'FootPrint', 'Body'
 /// RepresentationType : 'MappedRepresentation'
 /// 
-/// The same constraints, as given for theï¿½ 'FootPrint', 'Body'
+/// The same constraints, as given for theÿ 'FootPrint', 'Body'
 /// representation identifiers, shall apply to the
 /// MappedRepresentation of the
 /// IfcRepresentationMap.
@@ -34357,13 +34357,13 @@ public:
 /// relatioship, having a horizontal extrusion (along the y-axis of
 /// the IfcDoor), the overall size is determined by the
 /// extrusion profile of the IfcOpeningElement.
-/// NOTE ï¿½The OverallWidth and
+/// NOTE ÿThe OverallWidth and
 /// OverallHeight parameters are for informational purpose
 /// only.
 /// The opening direction is determined by the local placement of
 /// IfcDoor and the OperationType of the door
 /// style as shown in Figure 97.
-/// NOTE ï¿½There are different definitions in
+/// NOTE ÿThere are different definitions in
 /// various countries on what a left opening or left hung or left
 /// swing door is (same for right). Therefore the IFC definition may
 /// derivate from the local standard and need to be mapped
@@ -34381,7 +34381,7 @@ public:
 /// placement. The determination of whether the door opens to the
 /// left or to the right is done at the level of the
 /// IfcDoorType. Here it is a left side opening door given
-/// byï¿½IfcDoorType.OperationType =
+/// byÿIfcDoorType.OperationType =
 /// SingleSwingLeft
 /// refered to as LEFT HAND (LH) in US *
 /// 
@@ -34400,7 +34400,7 @@ public:
 /// opens to the right, a separate door style needs to be used (here
 /// IfcDoorTypee.OperationType = SingleSwingRight) and it
 /// always opens into the direction of the positive Y axis of the
-/// local placement.ï¿½
+/// local placement.ÿ
 /// refered to as RIGHT HAND (RH) in US *
 /// 
 /// refered to as DIN-L (left hung) in Germany
@@ -34426,13 +34426,13 @@ public:
     bool hasOverallHeight();
     /// Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the body of the door opening. If omitted, the OverallHeight should be taken from the geometric representation of the IfcOpening in which the door is inserted. 
     /// 
-    /// NOTEï¿½ The body of the door might be taller then the door opening (e.g. in cases where the door lining includes a casing). In these cases the OverallHeight shall still be given as the door opening height, and not as the total height of the door lining.
+    /// NOTE  The body of the door might be taller then the door opening (e.g. in cases where the door lining includes a casing). In these cases the OverallHeight shall still be given as the door opening height, and not as the total height of the door lining.
     IfcPositiveLengthMeasure OverallHeight();
     /// Whether the optional attribute OverallWidth is defined for this IfcDoor
     bool hasOverallWidth();
     /// Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the body of the door opening. If omitted, the OverallWidth should be taken from the geometric representation of the IfcOpening in which the door is inserted. 
     /// 
-    /// NOTEï¿½ The body of the door might be wider then the door opening (e.g. in cases where the door lining includes a casing). In these cases the OverallWidth shall still be given as the door opening width, and not as the total width of the door lining.
+    /// NOTE  The body of the door might be wider then the door opening (e.g. in cases where the door lining includes a casing). In these cases the OverallWidth shall still be given as the door opening width, and not as the total width of the door lining.
     IfcPositiveLengthMeasure OverallWidth();
  virtual unsigned int getArgumentCount() const { return 10; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return Argument_DOUBLE; case 9: return Argument_DOUBLE; } return IfcBuildingElement::getArgumentType(i); }
@@ -34443,8 +34443,8 @@ public:
     static Type::Enum Class();
     IfcDoor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDoor* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDoor> > list;
-    typedef IfcTemplatedEntityList<IfcDoor>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDoor > > list;
+    typedef IfcTemplatedEntityList< IfcDoor >::it it;
 };
 /// The flow fitting type IfcDuctFittingType defines commonly shared information for occurrences of duct fittings.  The set of shared information may include: 
 /// 
@@ -34488,8 +34488,8 @@ public:
     static Type::Enum Class();
     IfcDuctFittingType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDuctFittingType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDuctFittingType> > list;
-    typedef IfcTemplatedEntityList<IfcDuctFittingType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDuctFittingType > > list;
+    typedef IfcTemplatedEntityList< IfcDuctFittingType >::it it;
 };
 /// The flow segment type IfcDuctSegmentType defines commonly shared information for occurrences of duct segments.  The set of shared information may include: 
 /// 
@@ -34533,8 +34533,8 @@ public:
     static Type::Enum Class();
     IfcDuctSegmentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDuctSegmentType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDuctSegmentType> > list;
-    typedef IfcTemplatedEntityList<IfcDuctSegmentType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDuctSegmentType > > list;
+    typedef IfcTemplatedEntityList< IfcDuctSegmentType >::it it;
 };
 /// The flow treatment device type IfcDuctSilencerType defines commonly shared information for occurrences of duct silencers.  The set of shared information may include: 
 /// 
@@ -34575,8 +34575,8 @@ public:
     static Type::Enum Class();
     IfcDuctSilencerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDuctSilencerType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDuctSilencerType> > list;
-    typedef IfcTemplatedEntityList<IfcDuctSilencerType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDuctSilencerType > > list;
+    typedef IfcTemplatedEntityList< IfcDuctSilencerType >::it it;
 };
 class IfcEdgeFeature : public IfcFeatureElementSubtraction {
 public:
@@ -34592,8 +34592,8 @@ public:
     static Type::Enum Class();
     IfcEdgeFeature (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEdgeFeature* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEdgeFeature> > list;
-    typedef IfcTemplatedEntityList<IfcEdgeFeature>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEdgeFeature > > list;
+    typedef IfcTemplatedEntityList< IfcEdgeFeature >::it it;
 };
 /// The flow terminal type IfcElectricApplianceType defines commonly shared information for occurrences of electric appliances.  The set of shared information may include: 
 /// 
@@ -34637,8 +34637,8 @@ public:
     static Type::Enum Class();
     IfcElectricApplianceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElectricApplianceType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricApplianceType> > list;
-    typedef IfcTemplatedEntityList<IfcElectricApplianceType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElectricApplianceType > > list;
+    typedef IfcTemplatedEntityList< IfcElectricApplianceType >::it it;
 };
 /// The flow storage device type IfcElectricFlowStorageDeviceType defines commonly shared information for occurrences of electric flow storage devices.  The set of shared information may include: 
 /// 
@@ -34680,8 +34680,8 @@ public:
     static Type::Enum Class();
     IfcElectricFlowStorageDeviceType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElectricFlowStorageDeviceType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricFlowStorageDeviceType> > list;
-    typedef IfcTemplatedEntityList<IfcElectricFlowStorageDeviceType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElectricFlowStorageDeviceType > > list;
+    typedef IfcTemplatedEntityList< IfcElectricFlowStorageDeviceType >::it it;
 };
 /// The energy conversion device type IfcElectricGeneratorType defines commonly shared information for occurrences of electric generators.  The set of shared information may include: 
 /// 
@@ -34728,8 +34728,8 @@ public:
     static Type::Enum Class();
     IfcElectricGeneratorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElectricGeneratorType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricGeneratorType> > list;
-    typedef IfcTemplatedEntityList<IfcElectricGeneratorType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElectricGeneratorType > > list;
+    typedef IfcTemplatedEntityList< IfcElectricGeneratorType >::it it;
 };
 class IfcElectricHeaterType : public IfcFlowTerminalType {
 public:
@@ -34743,8 +34743,8 @@ public:
     static Type::Enum Class();
     IfcElectricHeaterType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElectricHeaterType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricHeaterType> > list;
-    typedef IfcTemplatedEntityList<IfcElectricHeaterType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElectricHeaterType > > list;
+    typedef IfcTemplatedEntityList< IfcElectricHeaterType >::it it;
 };
 /// The energy conversion device type IfcElectricMotorType defines commonly shared information for occurrences of electric motors.  The set of shared information may include: 
 /// 
@@ -34786,8 +34786,8 @@ public:
     static Type::Enum Class();
     IfcElectricMotorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElectricMotorType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricMotorType> > list;
-    typedef IfcTemplatedEntityList<IfcElectricMotorType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElectricMotorType > > list;
+    typedef IfcTemplatedEntityList< IfcElectricMotorType >::it it;
 };
 /// The flow controller type IfcElectricTimeControlType defines commonly shared information for occurrences of electric time controls.  The set of shared information may include: 
 /// 
@@ -34829,8 +34829,8 @@ public:
     static Type::Enum Class();
     IfcElectricTimeControlType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElectricTimeControlType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricTimeControlType> > list;
-    typedef IfcTemplatedEntityList<IfcElectricTimeControlType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElectricTimeControlType > > list;
+    typedef IfcTemplatedEntityList< IfcElectricTimeControlType >::it it;
 };
 class IfcElectricalCircuit : public IfcSystem {
 public:
@@ -34843,8 +34843,8 @@ public:
     static Type::Enum Class();
     IfcElectricalCircuit (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElectricalCircuit* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricalCircuit> > list;
-    typedef IfcTemplatedEntityList<IfcElectricalCircuit>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElectricalCircuit > > list;
+    typedef IfcTemplatedEntityList< IfcElectricalCircuit >::it it;
 };
 class IfcElectricalElement : public IfcElement {
 public:
@@ -34857,8 +34857,8 @@ public:
     static Type::Enum Class();
     IfcElectricalElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElectricalElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricalElement> > list;
-    typedef IfcTemplatedEntityList<IfcElectricalElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElectricalElement > > list;
+    typedef IfcTemplatedEntityList< IfcElectricalElement >::it it;
 };
 /// The distribution flow element IfcEnergyConversionDevice defines 
 ///   the occurrence of a device used to perform
@@ -34880,8 +34880,8 @@ public:
     static Type::Enum Class();
     IfcEnergyConversionDevice (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcEnergyConversionDevice* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcEnergyConversionDevice> > list;
-    typedef IfcTemplatedEntityList<IfcEnergyConversionDevice>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcEnergyConversionDevice > > list;
+    typedef IfcTemplatedEntityList< IfcEnergyConversionDevice >::it it;
 };
 /// The flow moving device type IfcFanType defines commonly shared information for occurrences of fans.  The set of shared information may include: 
 /// 
@@ -34924,8 +34924,8 @@ public:
     static Type::Enum Class();
     IfcFanType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFanType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFanType> > list;
-    typedef IfcTemplatedEntityList<IfcFanType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFanType > > list;
+    typedef IfcTemplatedEntityList< IfcFanType >::it it;
 };
 /// The flow treatment device type IfcFilterType defines commonly shared information for occurrences of filters.  The set of shared information may include: 
 /// 
@@ -34969,8 +34969,8 @@ public:
     static Type::Enum Class();
     IfcFilterType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFilterType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFilterType> > list;
-    typedef IfcTemplatedEntityList<IfcFilterType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFilterType > > list;
+    typedef IfcTemplatedEntityList< IfcFilterType >::it it;
 };
 /// The flow terminal type IfcFireSuppressionTerminalType defines commonly shared information for occurrences of fire suppression terminals.  The set of shared information may include: 
 /// 
@@ -35018,8 +35018,8 @@ public:
     static Type::Enum Class();
     IfcFireSuppressionTerminalType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFireSuppressionTerminalType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFireSuppressionTerminalType> > list;
-    typedef IfcTemplatedEntityList<IfcFireSuppressionTerminalType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFireSuppressionTerminalType > > list;
+    typedef IfcTemplatedEntityList< IfcFireSuppressionTerminalType >::it it;
 };
 /// The distribution flow element IfcFlowController defines
 ///   the occurrence of elements of a distribution system that 
@@ -35041,8 +35041,8 @@ public:
     static Type::Enum Class();
     IfcFlowController (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowController* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowController> > list;
-    typedef IfcTemplatedEntityList<IfcFlowController>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowController > > list;
+    typedef IfcTemplatedEntityList< IfcFlowController >::it it;
 };
 /// The distribution flow element IfcFlowFitting defines the occurrence of a junction or transition in a flow distribution system, such as an elbow or tee. Its type is defined by IfcFlowFittingType or its subtypes.
 /// 
@@ -35060,8 +35060,8 @@ public:
     static Type::Enum Class();
     IfcFlowFitting (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowFitting* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowFitting> > list;
-    typedef IfcTemplatedEntityList<IfcFlowFitting>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowFitting > > list;
+    typedef IfcTemplatedEntityList< IfcFlowFitting >::it it;
 };
 /// The distribution control element type IfcFlowInstrumentType defines commonly shared information for occurrences of flow instruments.  The set of shared information may include: 
 /// 
@@ -35106,8 +35106,8 @@ public:
     static Type::Enum Class();
     IfcFlowInstrumentType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowInstrumentType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowInstrumentType> > list;
-    typedef IfcTemplatedEntityList<IfcFlowInstrumentType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowInstrumentType > > list;
+    typedef IfcTemplatedEntityList< IfcFlowInstrumentType >::it it;
 };
 /// The distribution flow element IfcFlowMovingDevice defines the occurrence of an apparatus used to distribute, circulate or perform conveyance of fluids, including liquids and gases (such as a pump or fan), and typically participates in a flow distribution system. Its type is defined by IfcFlowMovingDeviceType or its subtypes.
 /// 
@@ -35125,8 +35125,8 @@ public:
     static Type::Enum Class();
     IfcFlowMovingDevice (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowMovingDevice* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowMovingDevice> > list;
-    typedef IfcTemplatedEntityList<IfcFlowMovingDevice>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowMovingDevice > > list;
+    typedef IfcTemplatedEntityList< IfcFlowMovingDevice >::it it;
 };
 /// The distribution flow element IfcFlowSegment defines the occurrence of a segment of a flow distribution system.
 /// 
@@ -35162,8 +35162,8 @@ public:
     static Type::Enum Class();
     IfcFlowSegment (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowSegment* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowSegment> > list;
-    typedef IfcTemplatedEntityList<IfcFlowSegment>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowSegment > > list;
+    typedef IfcTemplatedEntityList< IfcFlowSegment >::it it;
 };
 /// The distribution flow element IfcFlowStorageDevice defines
 ///   the occurrence of a device that participates in a distribution
@@ -35185,8 +35185,8 @@ public:
     static Type::Enum Class();
     IfcFlowStorageDevice (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowStorageDevice* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowStorageDevice> > list;
-    typedef IfcTemplatedEntityList<IfcFlowStorageDevice>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowStorageDevice > > list;
+    typedef IfcTemplatedEntityList< IfcFlowStorageDevice >::it it;
 };
 /// The distribution flow element IfcFlowTerminal defines the
 ///   occurrence of a permanently attached element that acts as a terminus or 
@@ -35210,8 +35210,8 @@ public:
     static Type::Enum Class();
     IfcFlowTerminal (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowTerminal* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowTerminal> > list;
-    typedef IfcTemplatedEntityList<IfcFlowTerminal>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowTerminal > > list;
+    typedef IfcTemplatedEntityList< IfcFlowTerminal >::it it;
 };
 /// The distribution flow element IfcFlowTreatmentDevice defines the occurrence of a device typically used to remove unwanted matter from a fluid, either liquid or gas, and typically participates in a flow distribution system.  Its type is defined by IfcFlowTreatmentDeviceType or its subtypes.
 /// 
@@ -35229,8 +35229,8 @@ public:
     static Type::Enum Class();
     IfcFlowTreatmentDevice (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFlowTreatmentDevice* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFlowTreatmentDevice> > list;
-    typedef IfcTemplatedEntityList<IfcFlowTreatmentDevice>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFlowTreatmentDevice > > list;
+    typedef IfcTemplatedEntityList< IfcFlowTreatmentDevice >::it it;
 };
 /// A footing is a part of the foundation of a structure that spreads and transmits the load to the soil, either directly or via piles.
 /// 
@@ -35258,7 +35258,7 @@ class IfcFooting : public IfcBuildingElement {
 public:
     /// The generic type of the footing.
     /// 
-    /// IFC 2x4 change:ï¿½ Attribute made optional.  Type information can be provided by IfcRelDefinesByType and IfcFootingType.
+    /// IFC 2x4 change:  Attribute made optional.  Type information can be provided by IfcRelDefinesByType and IfcFootingType.
     IfcFootingTypeEnum::IfcFootingTypeEnum PredefinedType();
  virtual unsigned int getArgumentCount() const { return 9; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return Argument_ENUMERATION; } return IfcBuildingElement::getArgumentType(i); }
@@ -35269,8 +35269,8 @@ public:
     static Type::Enum Class();
     IfcFooting (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcFooting* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcFooting> > list;
-    typedef IfcTemplatedEntityList<IfcFooting>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcFooting > > list;
+    typedef IfcTemplatedEntityList< IfcFooting >::it it;
 };
 /// An IfcMember is a
 /// structural member designed to carry loads between or beyond
@@ -35300,7 +35300,7 @@ public:
 /// geometry based on the swept solid), if a 3D geometric
 /// representation is assigned. In addition they have to have a
 /// corresponding IfcMaterialProfileSetUsage assigned.
-/// NOTEï¿½ View definitions and implementer
+/// NOTEÿ View definitions and implementer
 /// agreements may further constrain the applicable geometry types,
 /// e.g. by excluding tapering from an IfcMemberStandardCase
 /// implementation.
@@ -35316,13 +35316,13 @@ public:
 /// IfcMember defines the occuurence of any member, common
 /// information about member types (or styles) is handled by
 /// IfcMemberType. The IfcMemberType (if present) may
-/// establish the commonï¿½type name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common material profile set, common set of properties and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcMemberType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsTypedBy attribute.
-/// If no IfcMemberType is attachedï¿½(i.e. if only
+/// If no IfcMemberType is attachedÿ(i.e. if only
 /// occurrence information is given) the PredefinedType should
 /// be provided. If set to .USERDEFINED. a user defined value can be
 /// provided by the ObjectType attribute.
@@ -35333,14 +35333,14 @@ public:
 /// IfcRelAssociatesMaterial.RelatingMaterial. It is
 /// accessible by the inverse HasAssociations relationship.
 /// Material information can also be given at
-/// theï¿½IfcMemberType, defining the common attribute data for
-/// all occurrences of the same type.ï¿½It is then accessible by the
+/// theÿIfcMemberType, defining the common attribute data for
+/// all occurrences of the same type.ÿIt is then accessible by the
 /// inverse <IsTypedBy
 /// relationship pointing to IfcMemberType.HasAssociations and
 /// via IfcRelAssociatesMaterial.RelatingMaterial to
 /// IfcMaterialProfileSet or IfcMaterial. If both are
 /// given, then the material directly assigned to IfcMember
-/// overrides the material assigned toï¿½IfcMemberType.
+/// overrides the material assigned toÿIfcMemberType.
 /// Property Set Use Definition
 /// The property sets relating to the IfcMember are defined
 /// by the IfcPropertySet and attached by the
@@ -35374,13 +35374,13 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anï¿½element assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcMember is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcMember may be aggregated into an element
@@ -35450,7 +35450,7 @@ public:
 /// Solid: IfcExtrudedAreaSolid,
 /// IfcRevolvedAreaSolid shall be supported
 /// Profile: all subtypes of IfcProfileDef (with
-/// exception of IfcArbitraryOpenProfileDef)ï¿½
+/// exception of IfcArbitraryOpenProfileDef)ÿ
 /// Extrusion: All extrusion directions shall be
 /// supported.
 /// 
@@ -35473,7 +35473,7 @@ public:
 /// Solid: see 'SweptSolid' geometric representation
 /// Profile: see 'SweptSolid' geometric
 /// representation
-/// Extrusion:ï¿½see 'SweptSolid' geometric
+/// Extrusion:ÿsee 'SweptSolid' geometric
 /// representation
 /// Boolean result: The IfcBooleanClippingResult
 /// shall be supported, allowing for Boolean differences between the
@@ -35505,7 +35505,7 @@ public:
 /// 
 /// Profile: see 'SweptSolid' geometric
 /// representation
-/// Extrusion:ï¿½not applicable
+/// Extrusion:ÿnot applicable
 /// 
 /// MappedRepresentation Representation Type
 /// The 'MappedRepresentation' representation type is supported as
@@ -35517,7 +35517,7 @@ public:
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'MappedRepresentation'
 /// 
-/// The same constraints, as given for theï¿½ 'SweptSolid',
+/// The same constraints, as given for theÿ 'SweptSolid',
 /// 'Clipping', 'AdvancedSweptSolid', 'SurfaceModel' and 'Bre'
 /// geometric representation, shall apply to the
 /// MappedRepresentation of the
@@ -35533,8 +35533,8 @@ public:
     static Type::Enum Class();
     IfcMember (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcMember* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcMember> > list;
-    typedef IfcTemplatedEntityList<IfcMember>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcMember > > list;
+    typedef IfcTemplatedEntityList< IfcMember >::it it;
 };
 /// A pile is a slender timber, concrete, or steel structural element, driven, jetted, or otherwise embedded on end in the ground for the purpose of supporting a load.
 /// 
@@ -35558,13 +35558,13 @@ class IfcPile : public IfcBuildingElement {
 public:
     /// The predefined generic type of the pile according to function.
     /// 
-    /// IFC 2x4 change:ï¿½ Attribute made optional.  Type information can be provided by IfcRelDefinesByType and IfcPileType.
+    /// IFC 2x4 change:  Attribute made optional.  Type information can be provided by IfcRelDefinesByType and IfcPileType.
     IfcPileTypeEnum::IfcPileTypeEnum PredefinedType();
     /// Whether the optional attribute ConstructionType is defined for this IfcPile
     bool hasConstructionType();
     /// General designator for how the pile is constructed.
     /// 
-    /// IFC 2x4 change:ï¿½ Material profile association capability by means of IfcRelAssociatesMaterial has been added.  The attribute ConstructionType should not be used whenever its information can be provided by a material profile set, either associated with the IfcPile object or, if present, with a corresponding instance of IfcPileType.
+    /// IFC 2x4 change:  Material profile association capability by means of IfcRelAssociatesMaterial has been added.  The attribute ConstructionType should not be used whenever its information can be provided by a material profile set, either associated with the IfcPile object or, if present, with a corresponding instance of IfcPileType.
     IfcPileConstructionEnum::IfcPileConstructionEnum ConstructionType();
  virtual unsigned int getArgumentCount() const { return 10; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return Argument_ENUMERATION; case 9: return Argument_ENUMERATION; } return IfcBuildingElement::getArgumentType(i); }
@@ -35575,28 +35575,28 @@ public:
     static Type::Enum Class();
     IfcPile (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPile* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPile> > list;
-    typedef IfcTemplatedEntityList<IfcPile>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPile > > list;
+    typedef IfcTemplatedEntityList< IfcPile >::it it;
 };
 /// Definition from IAI: An IfcPlate is a planar and
 /// often flat part with constant thickness. A plate can be a
 /// structural part carrying loads between or beyond points of
-/// support, however it is not required to be load bearing.ï¿½The
+/// support, however it is not required to be load bearing.ÿThe
 /// location of the plate (being horizontal, vertical or sloped) is
 /// not relevant to its definition (in contrary to IfcWall and
-/// IfcSlab (as floor slab)).ï¿½
-/// NOTE ï¿½Plates areï¿½normally made of steel, other
+/// IfcSlab (as floor slab)).ÿ
+/// NOTE ÿPlates areÿnormally made of steel, other
 /// metallic material, or by glass panels. However the definition of
 /// IfcPlate is material independent and specific material
 /// information shall be handled by using
 /// IfcAssociatesMaterial to assign a material specification
-/// to the IfcPlate.ï¿½
+/// to the IfcPlate.ÿ
 /// 
-/// NOTE ï¿½Although not necessarily, plates are often add-on
+/// NOTE ÿAlthough not necessarily, plates are often add-on
 /// parts. This is represented by the IfcRelAggregates
 /// decomposition mechanism used to aggregate parts, such as
 /// IfcPlate, into a container element, e.g.
-/// IfcElementAssembly, or IfcCurtainWall.ï¿½
+/// IfcElementAssembly, or IfcCurtainWall.ÿ
 /// 
 /// NOTE The representation of a plate in a structural
 /// analysis model is provided by IfcStructuralSurfaceMember
@@ -35636,13 +35636,13 @@ public:
 /// The IfcPlate defines the occuurence of any plate,
 /// common information about plate types (or styles) is handled by
 /// IfcPlateType. The IfcPlateType (if present) may
-/// establish the commonï¿½type name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common set of properties, common material layer set, and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcPlateType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsTypedBy attribute.
-/// If no IfcPlateType is attachedï¿½(i.e. if only occurrence
+/// If no IfcPlateType is attachedÿ(i.e. if only occurrence
 /// information is given) the PredefinedType should be
 /// provided. If set to .USERDEFINED. a user defined value can be
 /// provided by the ObjectType attribute.
@@ -35658,7 +35658,7 @@ public:
 /// concept.
 /// Material information can also be given at the
 /// IfcPlateType, defining the common attribute data for all
-/// occurrences of the same type.ï¿½It is then accessible by the
+/// occurrences of the same type.ÿIt is then accessible by the
 /// inverse IsTypedBy
 /// relationship pointing to IfcPlateType.HasAssociations and
 /// via IfcRelAssociatesMaterial.RelatingMaterial.
@@ -35695,23 +35695,23 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second relationship is the aggregation within
-/// anï¿½element assembly.
+/// anÿelement assembly.
 /// 
-/// Theï¿½IfcPlate is places within the project spatial
+/// TheÿIfcPlate is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, referring to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
-/// Theï¿½IfcPlate may be aggregated into an element
+/// TheÿIfcPlate may be aggregated into an element
 /// assembly using the objectified relationship
 /// IfcRelAggregates, referring to it by its inverse attribute
 /// SELF\IfcObjectDefinition.Decomposes. Any subtype of
 /// IfcElement can be an element assembly, with
 /// IfcElementAssembly as a special focus subtype. In this
 /// case, no additional relationship to the spatial hierarchy shall
-/// be given (i.e.ï¿½SELF\IfcElement.ContainedInStructure =
+/// be given (i.e.ÿSELF\IfcElement.ContainedInStructure =
 /// NIL), the relationship to the spatial container is handled by the
 /// element assembly.
 /// 
@@ -35817,8 +35817,8 @@ public:
     static Type::Enum Class();
     IfcPlate (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcPlate* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcPlate> > list;
-    typedef IfcTemplatedEntityList<IfcPlate>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcPlate > > list;
+    typedef IfcTemplatedEntityList< IfcPlate >::it it;
 };
 /// Definition of IAI: The railing is a frame assembly
 /// adjacent to human circulation spaces and at some space boundaries
@@ -35831,7 +35831,7 @@ public:
 /// IfcRailing defines the occuurence of any railing,
 /// common information about railing types (or styles) is handled by
 /// IfcRailingType. The IfcRailingType (if present) may
-/// establish the commonï¿½type name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common material, common set of properties and common shape
 /// representations (using IfcRepresentationMap). The
 /// IfcRailingType is attached using the
@@ -35846,7 +35846,7 @@ public:
 /// relationship.
 /// Material information can also be given at the
 /// IfcRailingType, defining the common attribute data for all
-/// occurrences of the same type.ï¿½It is then accessible by the
+/// occurrences of the same type.ÿIt is then accessible by the
 /// inverse IsDefinedBy relationship pointing to
 /// IfcRailingType.HasAssociations and via
 /// IfcRelAssociatesMaterial.RelatingMaterial to
@@ -35884,13 +35884,13 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anï¿½element assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcRailing is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcRailing may be aggregated into an element
@@ -35901,7 +35901,7 @@ public:
 /// IfcStair, or IfcRamp as a special focus subtypes.
 /// In this case it should not be additionally contained in the
 /// project spatial hierarchy,
-/// i.e.ï¿½SELF\IfcElement.ContainedInStructure should be
+/// i.e.ÿSELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
 /// Geometry Use Definition
@@ -35969,8 +35969,8 @@ public:
     static Type::Enum Class();
     IfcRailing (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRailing* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRailing> > list;
-    typedef IfcTemplatedEntityList<IfcRailing>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRailing > > list;
+    typedef IfcTemplatedEntityList< IfcRailing >::it it;
 };
 /// Definition from ISO 6707-1:1989: Inclined way or floor
 /// joining two surfaces at different levels.
@@ -35995,7 +35995,7 @@ public:
 /// IfcRamp defines the occuurence of any ramp, common
 /// information about ramp types (or styles) is handled by
 /// IfcRampType. The IfcRampType (if present) may
-/// establish the commonï¿½type name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common material, common set of properties and common shape
 /// representations (using IfcRepresentationMap). The
 /// IfcRampType is attached using the
@@ -36016,7 +36016,7 @@ public:
 /// relationship.
 /// Material information can also be given at the
 /// IfcRampType, defining the common attribute data for all
-/// occurrences of the same type.ï¿½It is then accessible by the
+/// occurrences of the same type.ÿIt is then accessible by the
 /// inverse IsDefinedBy relationship pointing to
 /// IfcRampType.HasAssociations and via
 /// IfcRelAssociatesMaterial.RelatingMaterial to
@@ -36117,8 +36117,8 @@ public:
     static Type::Enum Class();
     IfcRamp (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRamp* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRamp> > list;
-    typedef IfcTemplatedEntityList<IfcRamp>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRamp > > list;
+    typedef IfcTemplatedEntityList< IfcRamp >::it it;
 };
 /// A ramp is an inclined slab segment, normally
 /// providing a human circulation link between two landings, floors or
@@ -36138,7 +36138,7 @@ public:
 /// IfcRampFlight defines the occurrence of any ramp flight,
 /// common information about ramp flight types (or styles) is handled
 /// by IfcRampFlightType. The IfcRampFlightType (if
-/// present) may establish the commonï¿½type name, usage (or
+/// present) may establish the common type name, usage (or
 /// predefined) type, common material layer set, common set of
 /// properties and common shape representations (using
 /// IfcRepresentationMap). The IfcRampFlightType is
@@ -36181,13 +36181,13 @@ public:
 /// IfcBuildingElement, may participate in two different
 /// containment relationships. The first relationship is the
 /// hierachical spatial containment, the second relationship is the
-/// aggregation within anï¿½element assembly.
+/// aggregation within an element assembly.
 /// 
 /// The IfcRampFlight is placed within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid
+/// Subtypes of IfcSpatialStructureElement are valid
 /// spatial containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcRampFlight may be aggregated into an element
@@ -36197,7 +36197,7 @@ public:
 /// IfcElement can be an element assembly, with IfcRamp
 /// as a special focus subtype. In this case it should not be
 /// additionally contained in the project spatial hierarchy,
-/// i.e.ï¿½SELF\IfcElement.ContainedInStructure should be
+/// i.e. SELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
 /// Geometry Use Definition
@@ -36319,12 +36319,12 @@ public:
     static Type::Enum Class();
     IfcRampFlight (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRampFlight* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRampFlight> > list;
-    typedef IfcTemplatedEntityList<IfcRampFlight>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRampFlight > > list;
+    typedef IfcTemplatedEntityList< IfcRampFlight >::it it;
 };
 class IfcRationalBezierCurve : public IfcBezierCurve {
 public:
-    std::vector<double> /*[2:?]*/ WeightsData();
+    std::vector< double > /*[2:?]*/ WeightsData();
  virtual unsigned int getArgumentCount() const { return 6; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return Argument_VECTOR_DOUBLE; } return IfcBezierCurve::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "WeightsData"; } return IfcBezierCurve::getArgumentName(i); }
@@ -36334,8 +36334,8 @@ public:
     static Type::Enum Class();
     IfcRationalBezierCurve (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRationalBezierCurve* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRationalBezierCurve> > list;
-    typedef IfcTemplatedEntityList<IfcRationalBezierCurve>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRationalBezierCurve > > list;
+    typedef IfcTemplatedEntityList< IfcRationalBezierCurve >::it it;
 };
 /// Definition from IAI: Bars, wires, strands, meshes, tendons, and other components embedded in concrete in such a manner that the reinforcement and the concrete act together in resisting forces.
 /// 
@@ -36359,8 +36359,8 @@ public:
     static Type::Enum Class();
     IfcReinforcingElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcReinforcingElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcReinforcingElement> > list;
-    typedef IfcTemplatedEntityList<IfcReinforcingElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcReinforcingElement > > list;
+    typedef IfcTemplatedEntityList< IfcReinforcingElement >::it it;
 };
 /// Definition from IAI: A series of longitudinal and transverse wires or bars of various gauges, arranged at right angles to each other and welded at all points of intersection; usually used for concrete slab reinforcement. Also known as welded wire fabric.
 /// 
@@ -36409,8 +36409,8 @@ public:
     static Type::Enum Class();
     IfcReinforcingMesh (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcReinforcingMesh* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcReinforcingMesh> > list;
-    typedef IfcTemplatedEntityList<IfcReinforcingMesh>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcReinforcingMesh > > list;
+    typedef IfcTemplatedEntityList< IfcReinforcingMesh >::it it;
 };
 /// Definition from ISO 6707-1:1989: Construction enclosing the building from above.
 /// The IfcRoof is a description of the total roof. It acts as a container entity, that aggregates all components of the roof, it represents. The aggregation is handled via the IfcRelAggregates relationship, relating an IfcRoof with the related roof elements, like slabs (represented by IfcSlab), rafters and purlins (represented by IfcBeam), or other included roofs, such as dormers (represented by IfcRoof).
@@ -36471,7 +36471,7 @@ public:
 /// spatial hierarchy, i.e.
 /// SELF\IfcElement.ContainedInStructure should be NIL.
 /// 
-/// NOTEï¿½ A roof contained in another roof could
+/// NOTEÿ A roof contained in another roof could
 /// be the representation of a dormer.
 /// The IfcRoof may be an aggregate i.e. being composed by
 /// other elements and acting as an assembly using the objectified
@@ -36499,7 +36499,7 @@ public:
 /// aggregate. If defined as an aggregate, the geometric
 /// representation is the sum of the representation of the components
 /// within the aggregate.
-/// NOTEï¿½ View definitions and implementer
+/// NOTEÿ View definitions and implementer
 /// agreements may restrict the IfcRoof to not have an
 /// independent geometry, but to always require aggregated elements
 /// to represent the shape of the roof.
@@ -36569,8 +36569,8 @@ public:
     static Type::Enum Class();
     IfcRoof (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRoof* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRoof> > list;
-    typedef IfcTemplatedEntityList<IfcRoof>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRoof > > list;
+    typedef IfcTemplatedEntityList< IfcRoof >::it it;
 };
 class IfcRoundedEdgeFeature : public IfcEdgeFeature {
 public:
@@ -36586,8 +36586,8 @@ public:
     static Type::Enum Class();
     IfcRoundedEdgeFeature (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcRoundedEdgeFeature* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcRoundedEdgeFeature> > list;
-    typedef IfcTemplatedEntityList<IfcRoundedEdgeFeature>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcRoundedEdgeFeature > > list;
+    typedef IfcTemplatedEntityList< IfcRoundedEdgeFeature >::it it;
 };
 /// The distribution control element type IfcSensorType defines commonly shared information for occurrences of sensors.  The set of shared information may include: 
 /// 
@@ -36650,8 +36650,8 @@ public:
     static Type::Enum Class();
     IfcSensorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSensorType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSensorType> > list;
-    typedef IfcTemplatedEntityList<IfcSensorType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSensorType > > list;
+    typedef IfcTemplatedEntityList< IfcSensorType >::it it;
 };
 /// A slab is a component of the
 /// construction that normally encloses a space vertically. The slab
@@ -36668,7 +36668,7 @@ public:
 /// IfcStructuralMember being part of the
 /// IfcStructuralAnalysisModel.
 /// 
-/// NOTE ï¿½An arbitrary planar element to which this semantic
+/// NOTE ÿAn arbitrary planar element to which this semantic
 /// information is not applicable or irrelevant shall be modeled as
 /// IfcPlate.
 /// A slab may have openings, such as floor openings, or recesses.
@@ -36702,13 +36702,13 @@ public:
 /// The IfcSlab defines the occurrence of any slab, common
 /// information about slab types (or styles) is handled by
 /// IfcSlabType. The IfcSlabType (if present) may
-/// establish the commonï¿½type name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common set of properties, common material layer set, and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcSlabType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsTypedBy attribute.
-/// If no IfcSlabType is attachedï¿½(i.e. if only occurrence
+/// If no IfcSlabType is attachedÿ(i.e. if only occurrence
 /// information is given) the PredefinedType should be
 /// provided. Values of the enumeration are .FLOOR. (the default),
 /// .ROOF., .LANDING., .BASESLAB. If set to .USERDEFINED. a user
@@ -36730,12 +36730,12 @@ public:
 /// the slab is extruded along the slab thickness, are exchanged as
 /// IfcSlabStandardCase, The material for
 /// IfcSlabStandardCase shall be defined
-/// byï¿½IfcMaterialLayerSetUsage. Multi-layer slabs can be
+/// byÿIfcMaterialLayerSetUsage. Multi-layer slabs can be
 /// represented by referring to several IfcMaterialLayer's
-/// within the IfcMaterialLayerSet.ï¿½
+/// within the IfcMaterialLayerSet.ÿ
 /// Material information can also be given at the
 /// IfcSlabType, defining the common attribute data for all
-/// occurrences of the same type.ï¿½It is then accessible by the
+/// occurrences of the same type.ÿIt is then accessible by the
 /// inverse IsTypedBy
 /// relationship pointing to IfcSlabType.HasAssociations and
 /// via IfcRelAssociatesMaterial.RelatingMaterial.
@@ -36752,7 +36752,7 @@ public:
 /// 
 /// Property sets can also be given at the IfcSlabType,
 /// defining the common property data for all occurrences of the same
-/// type.ï¿½It is then accessible by the inverse IsTypedBy relationship pointing to
+/// type.ÿIt is then accessible by the inverse IsTypedBy relationship pointing to
 /// IfcSlabType.HasPropertySets. If both are given, then the
 /// properties directly assigned to IfcSlab overrides the
 /// properties assigned to IfcSlabType.
@@ -36778,16 +36778,16 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierarchical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anï¿½element assembly.
+/// aggregation within anÿelement assembly.
 /// 
-/// Theï¿½IfcSlab is places within the project spatial
+/// TheÿIfcSlab is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, referring to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
-/// Theï¿½IfcSlab may be aggregated into an element assembly
+/// TheÿIfcSlab may be aggregated into an element assembly
 /// using the objectified relationship IfcRelAggregates,
 /// referring to it by its inverse attribute
 /// SELF\IfcObjectDefinition.Decomposes. Any subtype of
@@ -36795,10 +36795,10 @@ public:
 /// IfcElementAssembly as a special focus subtype.
 /// In this case it should not be additionally contained in the
 /// project spatial hierarchy,
-/// i.e.ï¿½SELF\IfcElement.ContainedInStructure should be
+/// i.e.ÿSELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
-/// The IfcSlabï¿½may also be an aggregate i.e. being
+/// The IfcSlabÿmay also be an aggregate i.e. being
 /// composed by other elements and acting as an assembly using the
 /// objectified relationship IfcRelAggregates, referring to it
 /// by its inverse attribute
@@ -36902,8 +36902,8 @@ public:
 /// representation:
 /// 
 /// Solid: see 'SweptSolid' shape representation,
-/// Profile:ï¿½see 'SweptSolid' shape representation,
-/// Extrusion:ï¿½see 'SweptSolid' shape representation,
+/// Profile:ÿsee 'SweptSolid' shape representation,
+/// Extrusion:ÿsee 'SweptSolid' shape representation,
 /// Boolean result: The IfcBooleanClippingResult
 /// shall be supported, allowing for Boolean differences between the
 /// swept solid (here IfcExtrudedAreaSolid) and one or several
@@ -36931,8 +36931,8 @@ public:
     static Type::Enum Class();
     IfcSlab (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcSlab* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcSlab> > list;
-    typedef IfcTemplatedEntityList<IfcSlab>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcSlab > > list;
+    typedef IfcTemplatedEntityList< IfcSlab >::it it;
 };
 /// Definition from ISO 6707-1:1989: Construction comprising
 /// a succession of horizontal stages (steps or landings) that make it
@@ -37054,7 +37054,7 @@ public:
 /// RepresentationIdentifier : 'Axis'
 /// RepresentationType : 'Curve2D'
 /// 
-/// NOTEï¿½ The 'Axis' representation of IfcStair
+/// NOTE  The 'Axis' representation of IfcStair
 /// may be provided even if the IfcStair has components with own
 /// shape representations.
 /// 
@@ -37067,7 +37067,7 @@ public:
 /// RepresentationIdentifier : 'FootPrint'
 /// RepresentationType : 'GeometricCurveSet'
 /// 
-/// NOTEï¿½ The 'Footprint' representation of
+/// NOTE  The 'Footprint' representation of
 /// IfcStair may be provided even if the IfcStair has
 /// components with own shape representations.
 /// 
@@ -37111,8 +37111,8 @@ public:
     static Type::Enum Class();
     IfcStair (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStair* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStair> > list;
-    typedef IfcTemplatedEntityList<IfcStair>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStair > > list;
+    typedef IfcTemplatedEntityList< IfcStair >::it it;
 };
 /// A stair flight is an assembly of
 /// building components in a single "run" of stair steps (not
@@ -37136,7 +37136,7 @@ public:
 /// flight, common information about stair flight types (or styles)
 /// is handled by IfcStairFlightType. The
 /// IfcStairFlightType (if present) may establish the
-/// commonï¿½type name, usage (or predefined) type, common material
+/// commonÿtype name, usage (or predefined) type, common material
 /// layer set, common set of properties and common shape
 /// representations (using IfcRepresentationMap). The
 /// IfcStairFlightType is attached using the
@@ -37180,13 +37180,13 @@ public:
 /// IfcBuildingElement, may participate in two different
 /// containment relationships. The first relationship is the
 /// hierachical spatial containment, the second relationship is the
-/// aggregation within anï¿½element assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcStairFlight is placed within the project
 /// spatial hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcStairFlight may be aggregated into an element
@@ -37196,7 +37196,7 @@ public:
 /// IfcElement can be an element assembly, with
 /// IfcStair as a special focus subtype. In this case it
 /// shall not be additionally contained in the project spatial
-/// hierarchy, i.e.ï¿½SELF\IfcElement.ContainedInStructure
+/// hierarchy, i.e.ÿSELF\IfcElement.ContainedInStructure
 /// shall be NIL.
 /// 
 /// Geometry Use Definition
@@ -37316,8 +37316,8 @@ public:
     static Type::Enum Class();
     IfcStairFlight (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStairFlight* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStairFlight> > list;
-    typedef IfcTemplatedEntityList<IfcStairFlight>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStairFlight > > list;
+    typedef IfcTemplatedEntityList< IfcStairFlight >::it it;
 };
 /// Definition from IAI: The IfcStructuralAnalysisModel is used to assemble all information needed to represent a structural analysis model.  It encompasses certain general properties (such as analysis type), references to all contained structural members, structural supports or connections, as well as loads and the respective load results.
 /// 
@@ -37339,9 +37339,9 @@ public:
 /// If one or more structural item (instance of a subtype of IfcStructuralItem) is grouped into an IfcStructuralAnalysisModel, the attribute SharedPlacement shall be provided with a value.
 ///   The ObjectPlacements of all structural items which are grouped into the same instance of IfcStructuralAnalysisModel shall refer to the same instance of IfcObjectPlacement as IfcStructuralAnalysisModel.SharedPlacement.
 /// 
-/// NOTEï¿½ This rule is necessary to achieve consistent topology representations.  The topology representations of structural items in an analysis model are meant to share vertices and edges und must therefore have the same object placement.
+/// NOTE  This rule is necessary to achieve consistent topology representations.  The topology representations of structural items in an analysis model are meant to share vertices and edges und must therefore have the same object placement.
 /// 
-/// NOTEï¿½ A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
+/// NOTE  A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
 class IfcStructuralAnalysisModel : public IfcSystem {
 public:
     /// Defines the type of the structural analysis model.
@@ -37362,11 +37362,11 @@ public:
     /// Whether the optional attribute LoadedBy is defined for this IfcStructuralAnalysisModel
     bool hasLoadedBy();
     /// References to all load groups to be analyzed.
-    SHARED_PTR< IfcTemplatedEntityList<IfcStructuralLoadGroup> > LoadedBy();
+    SHARED_PTR< IfcTemplatedEntityList< IfcStructuralLoadGroup > > LoadedBy();
     /// Whether the optional attribute HasResults is defined for this IfcStructuralAnalysisModel
     bool hasHasResults();
     /// References to all result groups available for this structural analysis model.
-    SHARED_PTR< IfcTemplatedEntityList<IfcStructuralResultGroup> > HasResults();
+    SHARED_PTR< IfcTemplatedEntityList< IfcStructuralResultGroup > > HasResults();
  virtual unsigned int getArgumentCount() const { return 9; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return Argument_ENUMERATION; case 6: return Argument_ENTITY; case 7: return Argument_ENTITY_LIST; case 8: return Argument_ENTITY_LIST; } return IfcSystem::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "PredefinedType"; case 6: return "OrientationOf2DPlane"; case 7: return "LoadedBy"; case 8: return "HasResults"; } return IfcSystem::getArgumentName(i); }
@@ -37376,8 +37376,8 @@ public:
     static Type::Enum Class();
     IfcStructuralAnalysisModel (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcStructuralAnalysisModel* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcStructuralAnalysisModel> > list;
-    typedef IfcTemplatedEntityList<IfcStructuralAnalysisModel>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcStructuralAnalysisModel > > list;
+    typedef IfcTemplatedEntityList< IfcStructuralAnalysisModel >::it it;
 };
 class IfcTendon : public IfcReinforcingElement {
 public:
@@ -37408,8 +37408,8 @@ public:
     static Type::Enum Class();
     IfcTendon (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTendon* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTendon> > list;
-    typedef IfcTemplatedEntityList<IfcTendon>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTendon > > list;
+    typedef IfcTemplatedEntityList< IfcTendon >::it it;
 };
 class IfcTendonAnchor : public IfcReinforcingElement {
 public:
@@ -37422,8 +37422,8 @@ public:
     static Type::Enum Class();
     IfcTendonAnchor (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcTendonAnchor* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcTendonAnchor> > list;
-    typedef IfcTemplatedEntityList<IfcTendonAnchor>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcTendonAnchor > > list;
+    typedef IfcTemplatedEntityList< IfcTendonAnchor >::it it;
 };
 /// The element component type IfcVibrationIsolatorType defines commonly shared information for occurrences of vibration isolators.  The set of shared information may include: 
 /// 
@@ -37460,8 +37460,8 @@ public:
     static Type::Enum Class();
     IfcVibrationIsolatorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcVibrationIsolatorType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcVibrationIsolatorType> > list;
-    typedef IfcTemplatedEntityList<IfcVibrationIsolatorType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcVibrationIsolatorType > > list;
+    typedef IfcTemplatedEntityList< IfcVibrationIsolatorType >::it it;
 };
 /// Definition from ISO 6707-1:1989: Vertical construction
 /// usually in masonry or in concrete which bounds or subdivides a
@@ -37470,7 +37470,7 @@ public:
 /// Definition from IAI: The wall represents a vertical
 /// construction that bounds or subdivides spaces. Wall are usually
 /// vertical, or nearly vertical, planar elements, often designed to
-/// bear structural loads. A wall is howeverï¿½not required to be load
+/// bear structural loads. A wall is howeverÿnot required to be load
 /// bearing.
 /// NOTE NOTE There is a representation of walls
 /// for structural analysis provided by a proper subtype of
@@ -37489,7 +37489,7 @@ public:
 /// The IFC specification provides two entities for wall
 /// occurrences:
 /// 
-/// IfcWallStandardCase ï¿½used for all occurrences of
+/// IfcWallStandardCase ÿused for all occurrences of
 /// walls, that have a non-changing thickness along the wall path and
 /// where the thickness parameter can be fully described by a
 /// material layer set. These walls are always represented
@@ -37502,7 +37502,7 @@ public:
 /// which are aggregated from subordinate elements, following
 /// specific decomposition rules expressed by the mandatory use of
 /// IfcRelAggregates relationship.
-/// IfcWall ï¿½used for all other occurrences of wall,
+/// IfcWall ÿused for all other occurrences of wall,
 /// particularly for walls with changing thickness along the wall
 /// path (e.g. polygonal walls), or walls with a non-rectangular
 /// cross sections (e.g. L-shaped retaining walls), and walls having
@@ -37514,15 +37514,15 @@ public:
 /// IFC Release 1.0
 /// Type Use Definition
 /// IfcWall defines the occurrence of any wall, common
-/// information aboutï¿½wall types (or styles) is handled by
+/// information aboutÿwall types (or styles) is handled by
 /// IfcWallType. The IfcWallType (if present) may
-/// establish the commonï¿½type name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common material layer set, common set of properties and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcWallType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsTypedBy attribute.
-/// If no IfcWallType is attachedï¿½(i.e. if only occurrence
+/// If no IfcWallType is attachedÿ(i.e. if only occurrence
 /// information is given) the PredefinedType should be
 /// provided. If set to .USERDEFINED. a user defined value can be
 /// provided by the ObjectType attribute.
@@ -37533,14 +37533,14 @@ public:
 /// accessible by the inverse HasAssociations relationship.
 /// Multi-layer walls can be represented by referring to several
 /// IfcMaterialLayer's within the
-/// IfcMaterialLayerSet.ï¿½
+/// IfcMaterialLayerSet.ÿ
 /// Note: It is illegal to assign an
 /// IfcMaterialLayerSetUsage to an IfcWall. Only the
 /// subtype IfcWallStandardCase supports this
 /// concept.
 /// Material information can also be given at the
 /// IfcWallType, defining the common attribute data for all
-/// occurrences of the same type.ï¿½It is then in addition accessible
+/// occurrences of the same type.ÿIt is then in addition accessible
 /// by the inverse IsTypedBy
 /// relationship pointing to IfcWallType.HasAssociations and
 /// via IfcRelAssociatesMaterial.RelatingMaterial.
@@ -37557,7 +37557,7 @@ public:
 /// 
 /// Property sets can also be given at the IfcWallType,
 /// defining the common property data for all occurrences of the same
-/// type.ï¿½It is then accessible by the inverse IsTypedBy relationship pointing to
+/// type.ÿIt is then accessible by the inverse IsTypedBy relationship pointing to
 /// IfcWallType.HasPropertySets. If both are given, then the
 /// properties directly assigned to IfcWall overrides the
 /// properties assigned to IfcWallType.
@@ -37584,16 +37584,16 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierarchical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anï¿½element assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcWall is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, referring to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
-/// Theï¿½IfcWall may be aggregated into an element assembly
+/// TheÿIfcWall may be aggregated into an element assembly
 /// using the objectified relationship IfcRelAggregates,
 /// referring to it by its inverse attribute
 /// SELF\IfcObjectDefinition.Decomposes. Any subtype of
@@ -37601,17 +37601,17 @@ public:
 /// IfcElementAssembly as a special focus subtype.
 /// In this case the wall should not be additionally contained in the
 /// project spatial hierarchy,
-/// i.e.ï¿½SELF\IfcElement.ContainedInStructure should be
+/// i.e.ÿSELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
-/// Theï¿½IfcWallï¿½may also be an aggregate i.e. being
+/// TheÿIfcWallÿmay also be an aggregate i.e. being
 /// composed by other elements and acting as an assembly using the
 /// objectified relationship IfcRelAggregates, referring to it
 /// by its inverse attribute
 /// SELF\IfcObjectDefinition.IsDecomposedBy. Components of a
 /// wall are described by instances of IfcBuildingElementPart
 /// that are aggregated to form a complex wall.
-/// In this case, the containedï¿½IfcBuildingElementPart's
+/// In this case, the containedÿIfcBuildingElementPart's
 /// should not be additionally contained in the project spatial
 /// hierarchy, i.e. the inverse attribute
 /// SELF\IfcElement.ContainedInStructure of
@@ -37686,7 +37686,7 @@ public:
 /// Solid: IfcExtrudedAreaSolid is required,
 /// Profile: IfcArbitraryClosedProfileDef is
 /// required.
-/// Extrusion:ï¿½All extrusion directions shall be
+/// Extrusion:ÿAll extrusion directions shall be
 /// supported.
 /// 
 /// Clipping Representation Type
@@ -37716,8 +37716,8 @@ public:
     static Type::Enum Class();
     IfcWall (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcWall* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcWall> > list;
-    typedef IfcTemplatedEntityList<IfcWall>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcWall > > list;
+    typedef IfcTemplatedEntityList< IfcWall >::it it;
 };
 /// The IfcWallStandardCase defines a wall with certain
 /// constraints for the provision of parameters and with certain
@@ -37772,7 +37772,7 @@ public:
 /// IfcWall. As an additional use agreement for standard
 /// walls, the IfcWallType should have a unique
 /// IfcMaterialLayerSet, that is referenced by
-/// theï¿½IfcMaterialLayerSetUsage assigned to all
+/// the IfcMaterialLayerSetUsage assigned to all
 /// occurrences of this IfcWallType.
 /// 
 /// Figure 134 illustrates assignment of IfcMaterialLayerSetUsage and IfcMaterialLayerSet to the wall type and the wall occurrence.
@@ -37787,10 +37787,10 @@ public:
 /// Multi-layer walls can be represented by refering to several
 /// IfcMaterialLayer's within the IfcMaterialLayerSet
 /// that is referenced from the
-/// IfcMaterialLayerSetUsage.ï¿½
+/// IfcMaterialLayerSetUsage. 
 /// Material information can also be given at the
 /// IfcWallType, defining the common attribute data for all
-/// occurrences of the same type.ï¿½It is then accessible by the
+/// occurrences of the same type. It is then accessible by the
 /// inverse IsDefinedBy relationship pointing to
 /// IfcSlabType.HasAssociations and via
 /// IfcRelAssociatesMaterial.RelatingMaterial. See Type Use
@@ -37835,7 +37835,7 @@ public:
 /// Body: A Swept Solid Representation or a CSG
 /// representation defining the 3D shape of the standard wall
 /// 
-/// NOTEï¿½ It is invalid to exhange a
+/// NOTE  It is invalid to exhange a
 /// 'SurfaceModel', or 'Brep' or 'MappedRepresentation' representation
 /// for the 'Body' shape representation of an
 /// IfcWallStandardCase.
@@ -37932,8 +37932,8 @@ public:
     static Type::Enum Class();
     IfcWallStandardCase (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcWallStandardCase* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcWallStandardCase> > list;
-    typedef IfcTemplatedEntityList<IfcWallStandardCase>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcWallStandardCase > > list;
+    typedef IfcTemplatedEntityList< IfcWallStandardCase >::it it;
 };
 /// Definition form ISO 6707-1:1989: Construction for
 /// closing a vertical or near vertical opening in a wall or pitched
@@ -37952,7 +37952,7 @@ public:
 /// IfcRelFillsElement relationship, , then the IfcDoor
 /// has an inverse attribute FillsVoids provided,
 /// 
-/// NOTEï¿½ View definitions or
+/// NOTEÿ View definitions or
 /// implementer agreements may restrict the relationship to only
 /// include one window (or door) into one opening.
 /// 
@@ -37975,7 +37975,7 @@ public:
 /// IfcWindowLiningProperties and on to many
 /// IfcWindowPanelProperties.
 /// 
-/// NOTEï¿½ see
+/// NOTEÿ see
 /// IfcWindowStandardCase for all specific constraints imposed
 /// by this subtype.
 /// 
@@ -38010,7 +38010,7 @@ public:
 /// the construction material type
 /// the particular attributes for the lining by the
 /// IfcWindowLiningProperties
-/// the particular attributes for the panels by theï¿½
+/// the particular attributes for the panels by theÿ
 /// IfcWindowPanelProperties
 /// 
 /// HISTORY New entity in IFC Release 1.0.
@@ -38076,13 +38076,13 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anï¿½element assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcWindow is placed within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofï¿½IfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcWindow may be aggregated into an element
@@ -38092,7 +38092,7 @@ public:
 /// of an IfcCurtainWall as a special focus subtype. In this
 /// case it should not be additionally contained in the project
 /// spatial hierarchy,
-/// i.e.ï¿½SELF\IfcElement.ContainedInStructure should be
+/// i.e.ÿSELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
 /// Figure 141 illustrates window containment.
@@ -38131,34 +38131,34 @@ public:
 /// is defined within the world coordinate system.
 /// 
 /// Geometric Representation
-/// Theï¿½geometric representation of IfcWindow is defined
-/// using the following (potentiallyï¿½multiple)
+/// Theÿgeometric representation of IfcWindow is defined
+/// using the following (potentiallyÿmultiple)
 /// IfcShapeRepresentation's for its
 /// IfcProductDefinitionShape:
 /// 
-/// Profile: Aï¿½'Curve3D'
+/// Profile: Aÿ'Curve3D'
 /// consisting of a single losed curve defining the outer boundary of
-/// the window (lining). Theï¿½window parametric representation uses
-/// this profile in order to apply theï¿½window lining and panel
+/// the window (lining). Theÿwindow parametric representation uses
+/// this profile in order to apply theÿwindow lining and panel
 /// parameter. If not provided, the profile of the
 /// IfcOpeningElement is taken.
 /// FootPrint: A 'GeometricCurveSet', or 'Annotation2D'
-/// representation defining the 2D shape of theï¿½window
+/// representation defining the 2D shape of theÿwindow
 /// Body: A 'SweptSolid', 'SurfaceModel', or 'Brep'
-/// representation defining the 3D shape of theï¿½window.
+/// representation defining the 3D shape of theÿwindow.
 /// 
 /// In addition the parametric representation of a
-/// (limited)ï¿½window shape is available by applying the parameters
-/// fromï¿½IfcWindowType
-/// referencingï¿½IfcWindowLiningProperties
-/// andï¿½IfcWindowPanelProperties. The purpose of the parameter
+/// (limited)ÿwindow shape is available by applying the parameters
+/// fromÿIfcWindowType
+/// referencingÿIfcWindowLiningProperties
+/// andÿIfcWindowPanelProperties. The purpose of the parameter
 /// is described at those entities and below (parametric
 /// representation).
-/// Profile -ï¿½'Curve3D' representation
-/// Theï¿½window profile is represented by a three-dimensional
+/// Profile -ÿ'Curve3D' representation
+/// Theÿwindow profile is represented by a three-dimensional
 /// closed curve within a particular shape representation. The
-/// profile is used to apply the parameter of the parametricï¿½window
-/// representation.ï¿½The following attribute values for the
+/// profile is used to apply the parameter of the parametricÿwindow
+/// representation.ÿThe following attribute values for the
 /// IfcShapeRepresentation holding this geometric
 /// representation shall be used:
 /// 
@@ -38170,20 +38170,20 @@ public:
 /// A 'Profile' representation has to be provided if:
 /// 
 /// a parametric representation shall be applied to the
-/// windowï¿½AND
+/// windowÿAND
 /// 
 /// the window is 'free standing', or
 /// the opening into which the window is inserted is not extruded
 /// horizontally (i.e. where the opening profile does not match the
 /// window profile)
 /// 
-/// FootPrint -ï¿½'GeometricCurveSet' or 'Annotation2D'
+/// FootPrint -ÿ'GeometricCurveSet' or 'Annotation2D'
 /// representation
-/// Theï¿½window foot print is represented by a set of
-/// two-dimensionalï¿½curves (or in case of 'Annotation2D' additional
+/// Theÿwindow foot print is represented by a set of
+/// two-dimensionalÿcurves (or in case of 'Annotation2D' additional
 /// hatching and text) within a particular shape representation. The
 /// foot print is used for the plan view representation of
-/// theï¿½window.ï¿½The following attribute values for the
+/// theÿwindow.ÿThe following attribute values for the
 /// IfcShapeRepresentation holding this geometric
 /// representation shall be used:
 /// 
@@ -38193,11 +38193,11 @@ public:
 /// 
 /// Body - 'SweptSolid', 'SurfaceModel', or 'Brep'
 /// representation
-/// Theï¿½window body is either represented parameterically (see
+/// Theÿwindow body is either represented parameterically (see
 /// parametric representation) or by explicit 3D shape. The 3D shape
 /// is given by using extrusion geometry, or surface models, or Brep
 /// models within a particular shape representation. The body is used
-/// for the model view representation of theï¿½window.ï¿½The following
+/// for the model view representation of theÿwindow.ÿThe following
 /// attribute values for the IfcShapeRepresentation holding
 /// this geometric representation shall be used:
 /// 
@@ -38207,7 +38207,7 @@ public:
 /// 
 /// MappedRepresentation
 /// The 'FootPrint' and 'Body' geometric representation
-/// ofï¿½IfcWindow can be shared among several identicalï¿½windows
+/// ofÿIfcWindow can be shared among several identicalÿwindows
 /// using the 'MappedRepresentation'. The following attribute values
 /// for the IfcShapeRepresentation holding this geometric
 /// representation shall be used:
@@ -38215,7 +38215,7 @@ public:
 /// RepresentationIdentifier : 'FootPrint', 'Body'
 /// RepresentationType : 'MappedRepresentation'
 /// 
-/// The same constraints, as given for theï¿½ 'FootPrint', 'Body'
+/// The same constraints, as given for theÿ 'FootPrint', 'Body'
 /// representation identifiers, shall apply to the
 /// MappedRepresentation of the
 /// IfcRepresentationMap.
@@ -38251,14 +38251,14 @@ public:
 /// IfcWindow only defines the local placement which
 /// determines the opening direction of the window. The overall
 /// layout of the IfcWindow is determined by
-/// itsï¿½IfcWindowType.PartitioningType. Each window panel has
+/// itsÿIfcWindowType.PartitioningType. Each window panel has
 /// its own operation type, provided by
 /// IfcWindowPanelProperties.OperationType. All window panels
 /// are assumed to open into the same direction (if relevant for the
 /// particular window panel operation. The hindge side (whether a
 /// window opens to the left or to the right) is determined by the
 /// IfcWindowPanelProperties.OperationType.
-/// NOTE ï¿½There are different conventions in
+/// NOTE ÿThere are different conventions in
 /// different countries on how to show the symbolic presentation of
 /// the window panel operation (the "triangles"). Either as seen from
 /// the exterior, or from the interior side. The following figures
@@ -38272,24 +38272,24 @@ public:
 /// The determination of whether the window opens to the left or to
 /// the right is done at
 /// IfcWindowPanelProperties.OperationType. Here it is a left
-/// side opening window given byï¿½OperationType =
+/// side opening window given byÿOperationType =
 /// SideHungLeftHand.
 /// 
 /// If the window should open to the other side, then the
 /// local placement has to be changed. It is still a left hung
 /// window, given by IfcWindowPanelProperties.OperationType
-/// =ï¿½SideHungLeftHand.
+/// =ÿSideHungLeftHand.
 /// 
 /// If the window panel (for side hung windows) opens to
 /// the right, a separate window panel style needs to be used (here
 /// IfcWindowPanelProperties.OperationType
-/// =ï¿½SideHungRightHand) and it always opens into the direction of
-/// the positive Y axis of the local placement.ï¿½
+/// =ÿSideHungRightHand) and it always opens into the direction of
+/// the positive Y axis of the local placement.ÿ
 /// 
 /// If the window should open to the other side, then the
 /// local placement has to be changed. It is still a right hung
 /// window, given by IfcWindowPanelProperties.OperationType
-/// =ï¿½SideHungRightHand.
+/// =ÿSideHungRightHand.
 /// .
 /// 
 /// Figure 144 &#8212; Window operations
@@ -38299,13 +38299,13 @@ public:
     bool hasOverallHeight();
     /// Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the body of the window opening. If omitted, the OverallHeight should be taken from the geometric representation of the IfcOpening in which the window is inserted. 
     /// 
-    /// NOTEï¿½ The body of the window might be taller then the window opening (e.g. in cases where the window lining includes a casing). In these cases the OverallHeight shall still be given as the window opening height, and not as the total height of the window lining.
+    /// NOTE  The body of the window might be taller then the window opening (e.g. in cases where the window lining includes a casing). In these cases the OverallHeight shall still be given as the window opening height, and not as the total height of the window lining.
     IfcPositiveLengthMeasure OverallHeight();
     /// Whether the optional attribute OverallWidth is defined for this IfcWindow
     bool hasOverallWidth();
     /// Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the body of the window opening. If omitted, the OverallWidth should be taken from the geometric representation of the IfcOpening in which the window is inserted. 
     /// 
-    /// NOTEï¿½ The body of the window might be wider then the window opening (e.g. in cases where the window lining includes a casing). In these cases the OverallWidth shall still be given as the window opening width, and not as the total width of the window lining.
+    /// NOTE  The body of the window might be wider then the window opening (e.g. in cases where the window lining includes a casing). In these cases the OverallWidth shall still be given as the window opening width, and not as the total width of the window lining.
     IfcPositiveLengthMeasure OverallWidth();
  virtual unsigned int getArgumentCount() const { return 10; }
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return Argument_DOUBLE; case 9: return Argument_DOUBLE; } return IfcBuildingElement::getArgumentType(i); }
@@ -38316,8 +38316,8 @@ public:
     static Type::Enum Class();
     IfcWindow (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcWindow* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcWindow> > list;
-    typedef IfcTemplatedEntityList<IfcWindow>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcWindow > > list;
+    typedef IfcTemplatedEntityList< IfcWindow >::it it;
 };
 /// The distribution control element type IfcActuatorType defines commonly shared information for occurrences of actuators.  The set of shared information may include: 
 /// 
@@ -38363,8 +38363,8 @@ public:
     static Type::Enum Class();
     IfcActuatorType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcActuatorType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcActuatorType> > list;
-    typedef IfcTemplatedEntityList<IfcActuatorType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcActuatorType > > list;
+    typedef IfcTemplatedEntityList< IfcActuatorType >::it it;
 };
 /// The distribution control element type IfcAlarmType defines commonly shared information for occurrences of alarms.  The set of shared information may include: 
 /// 
@@ -38405,22 +38405,22 @@ public:
     static Type::Enum Class();
     IfcAlarmType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcAlarmType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcAlarmType> > list;
-    typedef IfcTemplatedEntityList<IfcAlarmType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcAlarmType > > list;
+    typedef IfcTemplatedEntityList< IfcAlarmType >::it it;
 };
 /// Definition from ISO 6707-1:1989: Structural member designed to carry loads between or beyond points of support, usually narrow in relation to its length and horizontal or nearly so.
 /// 
 /// An IfcBeam is a horizontal, or nearly horizontal, structural member that is capable of withstanding load primarily by resisting bending. It represents such a member from an architectural point of view. It is not required to be load bearing.
 /// 
-/// NOTE ï¿½The representation of a beam in a structural analysis model is provided by
+/// NOTE  The representation of a beam in a structural analysis model is provided by
 /// IfcStructuralCurveMember being part of an IfcStructuralAnalysisModel.
 /// 
-/// NOTE ï¿½For any longitudial structural member, not constrained to be predominately horizontal nor vertical, or where this semantic information is irrelevant, the entity IfcMember should be used.
+/// NOTE  For any longitudial structural member, not constrained to be predominately horizontal nor vertical, or where this semantic information is irrelevant, the entity IfcMember should be used.
 /// 
 /// The IFC specification provides two entities for beam occurrences:
 /// 
 /// IfcBeamStandardCase used for all occurrences of beams, that have a profile defined that is swept along a directrix. The profile might be changed uniformly by a taper definition along the directrix. The profile parameter and its cardinal point of insertion can be fully described by the IfcMaterialProfileSetUsage. These beams are always represented geometricly by an 'Axis' and a 'SweptSolid' or 'AdvancedSweptSolid' shape representation (or by a 'Clipping' geometry based on the swept solid), if a 3D geometric representation is assigned. In addition they have to have a corresponding IfcMaterialProfileSetUsage assigned.
-/// NOTEï¿½ View definitions and implementer agreements may further constrain the applicable geometry types, for example, by excluding tapering from an IfcBeamStandardCase implementation.
+/// NOTE  View definitions and implementer agreements may further constrain the applicable geometry types, for example, by excluding tapering from an IfcBeamStandardCase implementation.
 /// 
 /// IfcBeam used for all other occurrences of beams, particularly for beams with changing profile sizes along the extrusion, or beams defined by non-linear extrusion, or beams having only 'Brep', or 'SurfaceModel' geometry.
 /// 
@@ -38430,7 +38430,7 @@ public:
 /// IfcBeam defines the occuurence of any beam, common
 /// information about beam types (or styles) is handled by
 /// IfcBeamType. The IfcBeamType (if present) may
-/// establish the commonï¿½type name, usage (or predefined) type,
+/// establish the common type name, usage (or predefined) type,
 /// common material layer set, common set of properties and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcBeamType is attached using the
@@ -38574,7 +38574,7 @@ public:
 /// IfcRevolvedAreaSolid shall be supported
 /// Profile: all subtypes of IfcProfileDef (with
 /// exception of IfcArbitraryOpenProfileDef)
-/// Extrusion:ï¿½ All extrusion directions shall be
+/// Extrusion:  All extrusion directions shall be
 /// supported.
 /// 
 /// Figure 71 illustrates the 'SweptSolid' geometric representation.  There are no restrictions or conventions on how to use the local placement (black), solid of extrusion placement (red) and profile placement (green).
@@ -38656,8 +38656,8 @@ public:
     static Type::Enum Class();
     IfcBeam (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcBeam* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcBeam> > list;
-    typedef IfcTemplatedEntityList<IfcBeam>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcBeam > > list;
+    typedef IfcTemplatedEntityList< IfcBeam >::it it;
 };
 class IfcChamferEdgeFeature : public IfcEdgeFeature {
 public:
@@ -38676,8 +38676,8 @@ public:
     static Type::Enum Class();
     IfcChamferEdgeFeature (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcChamferEdgeFeature* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcChamferEdgeFeature> > list;
-    typedef IfcTemplatedEntityList<IfcChamferEdgeFeature>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcChamferEdgeFeature > > list;
+    typedef IfcTemplatedEntityList< IfcChamferEdgeFeature >::it it;
 };
 /// The distribution control element type IfcControllerType defines commonly shared information for occurrences of controllers.  The set of shared information may include: 
 /// 
@@ -38728,8 +38728,8 @@ public:
     static Type::Enum Class();
     IfcControllerType (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcControllerType* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcControllerType> > list;
-    typedef IfcTemplatedEntityList<IfcControllerType>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcControllerType > > list;
+    typedef IfcTemplatedEntityList< IfcControllerType >::it it;
 };
 /// A distribution chamber element defines a place at which distribution systems and their constituent elements may be inspected or through which they may travel.
 /// 
@@ -38773,8 +38773,8 @@ public:
     static Type::Enum Class();
     IfcDistributionChamberElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDistributionChamberElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionChamberElement> > list;
-    typedef IfcTemplatedEntityList<IfcDistributionChamberElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDistributionChamberElement > > list;
+    typedef IfcTemplatedEntityList< IfcDistributionChamberElement >::it it;
 };
 /// The distribution element IfcDistributionControlElement defines occurrence elements of a building automation control system that are used to impart control over elements of a distribution system.
 /// 
@@ -38863,14 +38863,14 @@ public:
  virtual ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return Argument_STRING; } return IfcDistributionElement::getArgumentType(i); }
  virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 8: return "ControlElementId"; } return IfcDistributionElement::getArgumentName(i); }
  virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
-    SHARED_PTR< IfcTemplatedEntityList<IfcRelFlowControlElements> > AssignedToFlowElement(); // INVERSE IfcRelFlowControlElements::RelatedControlElements
+    SHARED_PTR< IfcTemplatedEntityList< IfcRelFlowControlElements > > AssignedToFlowElement(); // INVERSE IfcRelFlowControlElements::RelatedControlElements
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcDistributionControlElement (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcDistributionControlElement* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcDistributionControlElement> > list;
-    typedef IfcTemplatedEntityList<IfcDistributionControlElement>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcDistributionControlElement > > list;
+    typedef IfcTemplatedEntityList< IfcDistributionControlElement >::it it;
 };
 class IfcElectricDistributionPoint : public IfcFlowController {
 public:
@@ -38887,8 +38887,8 @@ public:
     static Type::Enum Class();
     IfcElectricDistributionPoint (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcElectricDistributionPoint* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcElectricDistributionPoint> > list;
-    typedef IfcTemplatedEntityList<IfcElectricDistributionPoint>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcElectricDistributionPoint > > list;
+    typedef IfcTemplatedEntityList< IfcElectricDistributionPoint >::it it;
 };
 /// Definition from IAI: A steel bar, usually with manufactured deformations in the surface,
 /// used in concrete and masonry construction to provide additional strength.  A single instance
@@ -38938,8 +38938,8 @@ public:
     static Type::Enum Class();
     IfcReinforcingBar (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());
     typedef IfcReinforcingBar* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList<IfcReinforcingBar> > list;
-    typedef IfcTemplatedEntityList<IfcReinforcingBar>::it it;
+    typedef SHARED_PTR< IfcTemplatedEntityList< IfcReinforcingBar > > list;
+    typedef IfcTemplatedEntityList< IfcReinforcingBar >::it it;
 };
 void InitStringMap();
 IfcSchemaEntity SchemaEntity(IfcAbstractEntityPtr e = 0);

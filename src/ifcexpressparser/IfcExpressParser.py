@@ -122,11 +122,11 @@ class ArrayType:
         self.lower = l[1]
     def __str__(self):
         if self.type in entity_names:
-            return "SHARED_PTR< IfcTemplatedEntityList<%s> >"%self.type
+            return "SHARED_PTR< IfcTemplatedEntityList< %s > >"%self.type
         elif self.type in selections:
-            return "SHARED_PTR< IfcTemplatedEntityList<IfcAbstractSelect> >"
+            return "SHARED_PTR< IfcTemplatedEntityList< IfcAbstractSelect > >"
         else:
-            return "std::vector<%(type)s> /*[%(lower)s:%(upper)s]*/"%self.__dict__
+            return "std::vector< %(type)s > /*[%(lower)s:%(upper)s]*/"%self.__dict__
     def type_enum(self):
         if self.type in simple_types:
             t = simple_types[self.type].type_enum()
@@ -167,7 +167,7 @@ class EnumType:
         elif generator_mode == 'SOURCE_TO':
             return '{ "%s" }'%'","'.join([v1 for v1,v2 in self.v])
         elif generator_mode == 'SOURCE_FROM':
-            return "".join(['    if(s=="%s"%s) return %s::%s;\n'%(v1.upper()," "*(self.maxlen-len(v1)),"%(name)s",v2) for v1,v2 in self.v])            
+            return "".join(['    if(s=="%s"%s) return ::%s::%s::%s;\n'%(v1.upper()," "*(self.maxlen-len(v1)),schema_version,"%(name)s",v2) for v1,v2 in self.v])
     def __len__(self): return len(self.v)
     def type_enum(self):
         return "Argument_ENUMERATION"
@@ -292,7 +292,7 @@ class InverseList:
         s = ""
         for i in self.l:
             if generator_mode == 'HEADER':
-                s += "\n    SHARED_PTR< IfcTemplatedEntityList<%s> > %s(); // INVERSE %s::%s"%(i.type.type,i.name,i.type.type,i.reference)
+                s += "\n    SHARED_PTR< IfcTemplatedEntityList< %s > > %s(); // INVERSE %s::%s"%(i.type.type,i.name,i.type.type,i.reference)
             elif generator_mode == 'SOURCE':
                 s += "\n%s::list %s::%s() { RETURN_INVERSE(%s) }"%(i.type.type,"%(class_name)s",i.name,i.type.type)
         return s
@@ -317,8 +317,8 @@ class Classdef:
                 "\n    static Type::Enum Class();"+
                 "\n    %(class_name)s (IfcAbstractEntityPtr e = IfcAbstractEntityPtr());"+
                 "\n    typedef %(class_name)s* ptr;"+
-                "\n    typedef SHARED_PTR< IfcTemplatedEntityList<%(class_name)s> > list;"+
-                "\n    typedef IfcTemplatedEntityList<%(class_name)s>::it it;")%self.__dict__
+                "\n    typedef SHARED_PTR< IfcTemplatedEntityList< %(class_name)s > > list;"+
+                "\n    typedef IfcTemplatedEntityList< %(class_name)s >::it it;")%self.__dict__
             )
         elif generator_mode == 'SOURCE':
             self.arguments.argstart = argument_start(self.class_name)
