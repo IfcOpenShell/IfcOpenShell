@@ -23,6 +23,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#include <cassert>
+
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 #include <gp_Dir.hxx>
@@ -88,9 +90,9 @@
 
 bool IfcGeom::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
 	BRepOffsetAPI_Sewing builder;
-	builder.SetTolerance(POINT_EQUALITY_TOLERANCE);
-	builder.SetMaxTolerance(POINT_EQUALITY_TOLERANCE);
-	builder.SetMinTolerance(POINT_EQUALITY_TOLERANCE);
+	builder.SetTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMaxTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMinTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
 	TopExp_Explorer exp(compound,TopAbs_FACE);
 	if ( ! exp.More() ) return false;
 	for ( ; exp.More(); exp.Next() ) {
@@ -101,7 +103,7 @@ bool IfcGeom::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Sh
 	shape = builder.SewedShape();
 	try {
 	ShapeFix_Solid sf_solid;
-	sf_solid.LimitTolerance(POINT_EQUALITY_TOLERANCE);
+	sf_solid.LimitTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
 	shape = sf_solid.SolidFromShell(TopoDS::Shell(shape));
 	} catch(...) {}
 	return true;
@@ -369,8 +371,8 @@ bool IfcGeom::is_convex(const TopoDS_Wire& wire) {
 				edge_points.push_back(P2);
 			}
 			if ( edge_points.size() != 2 ) continue;
-			if ( edge_points[0].IsEqual(P1,POINT_EQUALITY_TOLERANCE)) neighbors.push_back(edge_points[1]);
-			else if ( edge_points[1].IsEqual(P1,POINT_EQUALITY_TOLERANCE)) neighbors.push_back(edge_points[0]);
+			if ( edge_points[0].IsEqual(P1,GetValue(GV_POINT_EQUALITY_TOLERANCE))) neighbors.push_back(edge_points[1]);
+			else if ( edge_points[1].IsEqual(P1, GetValue(GV_POINT_EQUALITY_TOLERANCE))) neighbors.push_back(edge_points[0]);
 		}
 		// There should be two of these
 		if ( neighbors.size() != 2 ) return false;
@@ -379,10 +381,10 @@ bool IfcGeom::is_convex(const TopoDS_Wire& wire) {
 		for ( TopExp_Explorer exp2(wire,TopAbs_VERTEX); exp2.More(); exp2.Next() ) {
 			TopoDS_Vertex V2 = TopoDS::Vertex(exp2.Current());
 			gp_Pnt P2 = BRep_Tool::Pnt(V2);
-			if ( P1.IsEqual(P2,POINT_EQUALITY_TOLERANCE) ) continue;
+			if ( P1.IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) continue;
 			bool found = false;
 			for( std::vector<gp_Pnt>::const_iterator it = neighbors.begin(); it != neighbors.end(); ++ it ) {
-				if ( (*it).IsEqual(P2,POINT_EQUALITY_TOLERANCE) ) { found = true; break; }
+				if ( (*it).IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) { found = true; break; }
 			}
 			if ( ! found ) non_neighbors.push_back(P2);
 		}
@@ -421,4 +423,43 @@ gp_Pnt IfcGeom::point_above_plane(const gp_Pln& pln, bool agree) {
 	} else {
 		return pln.Location().Translated(-pln.Axis().Direction());
 	}
+}
+
+static double deflection_tolerance = 0.001;
+static double wire_creation_tolerance = 0.0001;
+static double minimal_face_area = 0.000001;
+static double point_equality_tolerance = 0.00001;
+static double max_faces_to_sew = 1000;
+
+void IfcGeom::SetValue(GeomValue var, double value) {
+	switch (var) {
+	case GV_DEFLECTION_TOLERANCE:
+		deflection_tolerance = value;
+	case GV_WIRE_CREATION_TOLERANCE:
+		wire_creation_tolerance = value;
+	case GV_MINIMAL_FACE_AREA:
+		minimal_face_area = value;
+	case GV_POINT_EQUALITY_TOLERANCE:
+		point_equality_tolerance = value;
+	case GV_MAX_FACES_TO_SEW:
+		max_faces_to_sew = value;
+	}
+	assert(!"never reach here");
+}
+
+double IfcGeom::GetValue(GeomValue var) {
+	switch (var) {
+	case GV_DEFLECTION_TOLERANCE:
+		return deflection_tolerance;
+	case GV_WIRE_CREATION_TOLERANCE:
+		return wire_creation_tolerance;
+	case GV_MINIMAL_FACE_AREA:
+		return minimal_face_area;
+	case GV_POINT_EQUALITY_TOLERANCE:
+		return point_equality_tolerance;
+	case GV_MAX_FACES_TO_SEW:
+		return max_faces_to_sew;
+	}
+	assert(!"never reach here");
+	return 0;
 }

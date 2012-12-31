@@ -294,14 +294,14 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 	Ifc2x3::IfcFace::list faces = l->CfsFaces();
 	bool facesAdded = false;
 	const unsigned int num_faces = faces->Size();
-	if ( Ifc::SewShells && num_faces < MAX_FACES_TO_SEW ) {
+	if ( Ifc::SewShells && num_faces < GetValue(GV_MAX_FACES_TO_SEW) ) {
 		BRepOffsetAPI_Sewing builder;
-		builder.SetTolerance(POINT_EQUALITY_TOLERANCE);
-		builder.SetMaxTolerance(POINT_EQUALITY_TOLERANCE);
-		builder.SetMinTolerance(POINT_EQUALITY_TOLERANCE);
+		builder.SetTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
+		builder.SetMaxTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
+		builder.SetMinTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
 		for( Ifc2x3::IfcFace::it it = faces->begin(); it != faces->end(); ++ it ) {
 			TopoDS_Face face;
-			if ( IfcGeom::convert_face(*it,face) && face_area(face) > MINIMAL_FACE_AREA ) {
+			if ( IfcGeom::convert_face(*it,face) && face_area(face) > GetValue(GV_MINIMAL_FACE_AREA) ) {
 				builder.Add(face);
 				facesAdded = true;
 			} else {
@@ -313,7 +313,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 		shape = builder.SewedShape();
 		try {
 			ShapeFix_Solid solid;
-			solid.LimitTolerance(POINT_EQUALITY_TOLERANCE);
+			solid.LimitTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
 			shape = solid.SolidFromShell(TopoDS::Shell(shape));
 		} catch(...) {}
 	} else {
@@ -322,7 +322,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 		builder.MakeCompound(compound);
 		for( Ifc2x3::IfcFace::it it = faces->begin(); it != faces->end(); ++ it ) {
 			TopoDS_Face face;
-			if ( IfcGeom::convert_face(*it,face) && face_area(face) > MINIMAL_FACE_AREA ) {
+			if ( IfcGeom::convert_face(*it,face) && face_area(face) > GetValue(GV_MINIMAL_FACE_AREA) ) {
 				builder.Add(compound,face);
 				facesAdded = true;
 			} else {
