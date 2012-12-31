@@ -158,7 +158,7 @@ namespace IfcGeomObjects {
 	int Progress();
 	const IfcObject* GetObject(int id);
 	std::string GetLog();
-
+  IfcParse::IfcFile* GetFile();
 }
 
 #endif
