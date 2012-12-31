@@ -1,4 +1,4 @@
-#include "IfcRegisterUndef.h"
+﻿#include "IfcRegisterUndef.h"
 #define SHAPES(T) \
 	if ( l->is(T::Class()) ) { \
 		try { \

@@ -1,4 +1,4 @@
-#include "IfcRegisterUndef.h"
+﻿#include "IfcRegisterUndef.h"
 #define CLASS(T,V) bool convert(const T::ptr L, V& r);
 #define SHAPES(T) CLASS(T,ShapeList)
 #define SHAPE(T) CLASS(T,TopoDS_Shape)
