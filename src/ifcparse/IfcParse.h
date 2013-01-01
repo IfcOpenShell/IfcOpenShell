@@ -27,7 +27,7 @@
 #ifndef IFCPARSE_H
 #define IFCPARSE_H
 
-#define IFCOPENSHELL_VERSION "0.3.0-rc3"
+#define IFCOPENSHELL_VERSION "0.4.0-dev"
 
 #include <string>
 #include <sstream>
