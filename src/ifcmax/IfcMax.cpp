@@ -17,9 +17,9 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "Max.h"
-#include "stdmat.h"
-#include "istdplug.h"
+#include <Max.h>
+#include <stdmat.h>
+#include <istdplug.h>
 
 #include "../ifcmax/IfcMax.h"
 #include "../ifcmax/MaxMaterials.h"
@@ -103,13 +103,21 @@ DWORD WINAPI fn(LPVOID arg) { return 0; }
 
 int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, BOOL suppressPrompts) {
 
-	itfc->ProgressStart("Importing file...", TRUE, fn, NULL);
-
 	IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS,false);
 	IfcGeomObjects::Settings(IfcGeomObjects::WELD_VERTICES,true);
 	IfcGeomObjects::Settings(IfcGeomObjects::SEW_SHELLS,true);
 
-	if ( ! IfcGeomObjects::Init((char*)name,0,0) ) return false;
+#ifdef _UNICODE
+	int fn_buffer_size = WideCharToMultiByte(CP_UTF8, 0, name, -1, 0, 0, 0, 0);
+	char* fn_mb = new char[fn_buffer_size];
+	WideCharToMultiByte(CP_UTF8, 0, name, -1, fn_mb, fn_buffer_size, 0, 0);
+#else
+	const char* fn_mb = name;
+#endif
+
+	if ( ! IfcGeomObjects::Init(fn_mb,0,0) ) return false;
+
+	itfc->ProgressStart(_T("Importing file..."), TRUE, fn, NULL);
 
 	//std::map<int, TriObject*> dict;
 	MtlBaseLib* mats = itfc->GetSceneMtls();
@@ -117,14 +125,25 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 
 	do{
 
-		const IfcGeomObjects::IfcGeomObject* o = IfcGeomObjects::Get();
+		const IfcGeomObjects::IfcGeomObject* o = IfcGeomObjects::Get();		
 		
+#if MAX_RELEASE > MAX_RELEASE_R14
+		TSTR o_type = TSTR::FromCStr(o->type.c_str());
+		TSTR o_guid = TSTR::FromCStr(o->guid.c_str());
+#elif defined(_UNICODE)
+		TSTR o_type = WStr(o->type.c_str());
+		TSTR o_guid = WStr(o->guid.c_str());
+#else
+		TSTR o_type = CStr(o->type.c_str());
+		TSTR o_guid = CStr(o->guid.c_str());
+#endif
+
 		Mtl *m;
-		const int matIndex = mats->FindMtlByName(MSTR(o->type.c_str()));
+		const int matIndex = mats->FindMtlByName(o_type);
 		if ( matIndex == -1 ) {
 			StdMat2* stdm = GetMaterial(o->type);
 			m = stdm;
-			m->SetName(o->type.c_str());
+			m->SetName(o_type);
 			mats->Add(m);
 			itfc->PutMtlToMtlEditor(m,slot++);
 		} else {
@@ -169,13 +188,13 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 
 		ImpNode* node = impitfc->CreateNode();
 		node->Reference(tri);
-		node->SetName(o->guid.c_str());
+		node->SetName(o_guid);
 		node->GetINode()->SetMtl(m);
 		node->SetTransform(0,Matrix3 ( Point3(o->matrix[0],o->matrix[1],o->matrix[2]),Point3(o->matrix[3],o->matrix[4],o->matrix[5]),
 			Point3(o->matrix[6],o->matrix[7],o->matrix[8]),Point3(o->matrix[9],o->matrix[10],o->matrix[11]) ));
 		impitfc->AddNodeToScene(node);
 
-		itfc->ProgressUpdate(IfcGeomObjects::Progress(),true,"");
+		itfc->ProgressUpdate(IfcGeomObjects::Progress(),true,_T(""));
 
 	} while ( IfcGeomObjects::Next() );
 
