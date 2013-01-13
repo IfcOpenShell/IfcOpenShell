@@ -127,7 +127,7 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 
 		const IfcGeomObjects::IfcGeomObject* o = IfcGeomObjects::Get();		
 		
-#if MAX_RELEASE > MAX_RELEASE_R14
+#if MAX_RELEASE > 14000
 		TSTR o_type = TSTR::FromCStr(o->type.c_str());
 		TSTR o_guid = TSTR::FromCStr(o->guid.c_str());
 #elif defined(_UNICODE)
