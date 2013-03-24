@@ -100,6 +100,10 @@ namespace IfcGeomObjects {
     // Disables the subtraction of IfcOpeningElement representations from
     // the related building element representations.
     const int DISABLE_OPENING_SUBTRACTIONS = 8;
+	// Disables the triangulation of the topological representations. Useful if
+	// the client application understands Open Cascade's native format. Note
+	// that this setting is implied by the USE_BREP_DATA setting.
+    const int DISABLE_TRIANGULATION = 9;
 
 	// End of settings enumeration.
 
@@ -111,17 +115,49 @@ namespace IfcGeomObjects {
 	typedef std::map<VertKey,int> VertKeyMap;
 	typedef std::pair<int,int> Edge;
 
-	class IfcMesh {
+	class IfcRepresentationShapeModel {
+	private:
+		unsigned int id;
+		bool owns_shapes;
+		const IfcGeom::ShapeList shapes;
+		IfcRepresentationShapeModel(const IfcRepresentationShapeModel& other);
+		IfcRepresentationShapeModel& operator=(const IfcRepresentationShapeModel& other);
+	public:
+		IfcRepresentationShapeModel(unsigned int id, const IfcGeom::ShapeList& shapes, bool owns_shapes = false)
+			: id(id)
+			, shapes(shapes)
+			, owns_shapes(owns_shapes)
+		{}
+		~IfcRepresentationShapeModel() {
+			for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+				delete it->first;
+				if (owns_shapes) {
+					delete it->second;
+				}
+			}
+		}
+		IfcGeom::ShapeList::const_iterator begin() const { return shapes.begin(); }
+		IfcGeom::ShapeList::const_iterator end() const { return shapes.end(); }
+		const unsigned int& getId() const { return id; }
+	};
+
+	class IfcRepresentationBrepData {
+	public:
+		int id;
+		std::string brep_data;
+		IfcRepresentationBrepData(const IfcRepresentationShapeModel& s);
+	};
+
+	class IfcRepresentationTriangulation {
 	public:
 		int id;
 		std::vector<float> verts;
 		std::vector<int> faces;
 		std::vector<int> edges;
 		std::vector<float> normals;
-		std::string brep_data;
 		VertKeyMap welds;
 		
-		IfcMesh(int i, const IfcGeom::ShapeList& s);
+		IfcRepresentationTriangulation(const IfcRepresentationShapeModel& s);
 	private:
 		int addvert(const gp_XYZ& p);
 		inline void addedge(int n1, int n2, std::map<std::pair<int,int>,int>& edgecount, std::vector<std::pair<int,int> >& edges_temp) {
@@ -129,7 +165,7 @@ namespace IfcGeomObjects {
 			if ( edgecount.find(e) == edgecount.end() ) edgecount[e] = 1;
 			else edgecount[e] ++;
 			edges_temp.push_back(e);
-		}
+		}		
 	};
 
 	class IfcObject {
@@ -140,28 +176,68 @@ namespace IfcGeomObjects {
 		std::string type;
 		std::string guid;
 		std::vector<float> matrix;
-		IfcObject(int my_id, int p_id, const std::string& n, const std::string& t, const std::string& g, const gp_Trsf& trsf);
+		gp_Trsf trsf;
+		IfcObject(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const gp_Trsf& trsf);
+		virtual ~IfcObject() {}
+	};
+
+	class IfcGeomShapeModelObject : public IfcObject {
+	public:
+		IfcRepresentationShapeModel* mesh;
+		IfcGeomShapeModelObject(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const gp_Trsf& trsf, IfcRepresentationShapeModel* mesh);
+		virtual ~IfcGeomShapeModelObject() {
+			delete mesh;
+		}
+	private:
+		IfcGeomShapeModelObject(const IfcGeomShapeModelObject& other);
+		IfcGeomShapeModelObject& operator=(const IfcGeomShapeModelObject& other);
+		
 	};
 
 	class IfcGeomObject : public IfcObject {
 	public:
-		IfcMesh* mesh;
-		IfcGeomObject(int my_id, int p_id, const std::string& n, const std::string& t, const std::string& g, const gp_Trsf& trsf, IfcMesh* m);
+		IfcRepresentationTriangulation* mesh;
+		IfcGeomObject(const IfcGeomShapeModelObject& shape_model);
+		virtual ~IfcGeomObject() {
+			delete mesh;
+		}
+	private:
+		IfcGeomObject(const IfcGeomObject& other);
+		IfcGeomObject& operator=(const IfcGeomObject& other);
 	};
 
-	void InitUnits();
+	class IfcGeomBrepDataObject : public IfcObject {
+	public:
+		IfcRepresentationBrepData* mesh;
+		IfcGeomBrepDataObject(const IfcGeomShapeModelObject& shape_model);
+		virtual ~IfcGeomBrepDataObject() {
+			delete mesh;
+		}
+	private:
+		IfcGeomBrepDataObject(const IfcGeomBrepDataObject& other);
+		IfcGeomBrepDataObject& operator=(const IfcGeomBrepDataObject& other);
+	};
+
 	bool Init(const std::string fn);
 	bool Init(void* data, int len);
 	bool Init(const std::string fn, std::ostream* log1= 0, std::ostream* log2= 0);
 	bool Init(std::istream& f, int len, std::ostream* log1= 0, std::ostream* log2= 0);
+	
 	void Settings(int setting, bool value);
-	bool CleanUp();
+	void InitUnits();
+	
 	const IfcGeomObject* Get();
-	bool Next();	
-	int Progress();
 	const IfcObject* GetObject(int id);
+	const IfcGeomBrepDataObject* GetBrepData();
+	const IfcGeomShapeModelObject* GetShapeModel();
+	
+	bool Next();
+	int Progress();
+	
 	std::string GetLog();
-  IfcParse::IfcFile* GetFile();
+	IfcParse::IfcFile* GetFile();
+
+	bool CleanUp();
 }
 
 #endif

@@ -212,6 +212,7 @@ public:
 	/// Log a message to the output stream
 	static void Message(Severity type, const std::string& message, const IfcAbstractEntityPtr entity=0);
 	static void Status(const std::string& message, bool new_line=true);
+	static void ProgressBar(int progress);
 	static std::string GetLog();
 };
 

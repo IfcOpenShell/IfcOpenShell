@@ -125,9 +125,14 @@ TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
 LINK_DIRECTORIES (${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}) 
 
-ADD_EXECUTABLE(IfcObj ../src/ifcobj/IfcObj.cpp)
+ADD_EXECUTABLE(IfcConvert 
+    ../src/ifcconvert/ColladaSerializer.cpp
+    ../src/ifcconvert/IfcConvert.cpp
+    ../src/ifcconvert/OpenCascadeBasedSerializer.cpp
+    ../src/ifcconvert/WavefrontObjSerializer.cpp   
+)
 
-TARGET_LINK_LIBRARIES (IfcObj IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet)
+TARGET_LINK_LIBRARIES (IfcConvert IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES)
 
 # Build python wrapper using separate CMakeLists.txt
 ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
@@ -171,5 +176,5 @@ SET(include_files_parse
 )
 INSTALL(FILES ${include_files_geom} DESTINATION include/ifcgeom)
 INSTALL(FILES ${include_files_parse} DESTINATION include/ifcparse)
-INSTALL(TARGETS IfcObj DESTINATION bin)
+INSTALL(TARGETS IfcConvert DESTINATION bin)
 INSTALL(TARGETS IfcParse IfcGeom DESTINATION lib)

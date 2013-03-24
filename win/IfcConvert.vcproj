@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="IfcObj"
+	Name="IfcConvert"
 	ProjectGUID="{5B0BAAB3-9FC4-4C0C-9D38-8BF4B07F4A85}"
-	RootNamespace="IfcObj"
+	RootNamespace="IfcConvert"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="TKerneld.lib TKMathd.lib TKBRepd.lib TKGeomBased.lib TKGeomAlgod.lib TKG3dd.lib TKG2dd.lib TKShHealingd.lib TKTopAlgod.lib TKMeshd.lib TKPrimd.lib TKBoold.lib TKBOd.lib TKFilletd.lib"
+				AdditionalDependencies="TKerneld.lib TKMathd.lib TKBRepd.lib TKGeomBased.lib TKGeomAlgod.lib TKG3dd.lib TKG2dd.lib TKShHealingd.lib TKTopAlgod.lib TKMeshd.lib TKPrimd.lib TKBoold.lib TKBOd.lib TKFilletd.lib TKSTEPd.lib TKSTEPBased.lib TKSTEPAttrd.lib TKXSBased.lib TKSTEP209d.lib TKIGESd.lib"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -130,7 +130,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="TKernel.lib TKMath.lib TKBRep.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKShHealing.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKBool.lib TKBO.lib TKFillet.lib"
+				AdditionalDependencies="TKernel.lib TKMath.lib TKBRep.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKShHealing.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKBool.lib TKBO.lib TKFillet.lib TKSTEP.lib TKSTEPBase.lib TKSTEPAttr.lib TKXSBase.lib TKSTEP209.lib TKIGES.lib"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -168,7 +168,19 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\src\ifcobj\IfcObj.cpp"
+				RelativePath="..\src\ifcconvert\ColladaSerializer.cpp"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcconvert\IfcConvert.cpp"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcconvert\OpenCascadeBasedSerializer.cpp"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcconvert\WavefrontObjSerializer.cpp"
 				>
 			</File>
 		</Filter>
@@ -178,7 +190,31 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\src\ifcobj\ObjMaterials.h"
+				RelativePath="..\src\ifcconvert\ColladaSerializer.h"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcconvert\GeometrySerializer.h"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcconvert\IgesSerializer.h"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcconvert\OpenCascadeBasedSerializer.h"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcconvert\StepSerializer.h"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcconvert\SurfaceStyle.h"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcconvert\WavefrontObjSerializer.h"
 				>
 			</File>
 		</Filter>

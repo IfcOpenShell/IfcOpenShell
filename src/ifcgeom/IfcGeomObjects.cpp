@@ -51,8 +51,9 @@ bool weld_vertices = true;
 bool convert_back_units = false;
 bool use_faster_booleans = false;
 bool disable_subtractions = false;
+bool disable_triangulation = false;
 
-int IfcGeomObjects::IfcMesh::addvert(const gp_XYZ& p) {
+int IfcGeomObjects::IfcRepresentationTriangulation::addvert(const gp_XYZ& p) {
 	const float X = convert_back_units ? (float) (p.X() / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT)) : (float)p.X();
 	const float Y = convert_back_units ? (float) (p.Y() / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT)) : (float)p.Y();
 	const float Z = convert_back_units ? (float) (p.Z() / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT)) : (float)p.Z();
@@ -75,10 +76,10 @@ bool use_brep_data = false;
 
 static IfcParse::IfcFile* ifc_file = 0;
 
-IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
-	id = i;
-
-	if ( use_brep_data ) {
+IfcGeomObjects::IfcRepresentationBrepData::IfcRepresentationBrepData(const IfcRepresentationShapeModel& shapes)
+	: id(shapes.getId()) 
+{
+	try {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
@@ -98,18 +99,25 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
 		std::stringstream sstream;
 		BRepTools::Write(compound,sstream);
 		brep_data = sstream.str();
-	} else
+	} catch(...) {
+		Logger::Message(Logger::LOG_ERROR,"Failed to serialize shape:",ifc_file->EntityById(id)->entity);
+	}
+}
+
+IfcGeomObjects::IfcRepresentationTriangulation::IfcRepresentationTriangulation(const IfcRepresentationShapeModel& shapes)
+	: id(shapes.getId()) 
+{
 	for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 
-		const TopoDS_Shape& s = *(*it).second;
-		const gp_GTrsf& trsf = *(*it).first;
+		const TopoDS_Shape& s = *it->second;
+		const gp_GTrsf& trsf = *it->first;
 
 		// Triangulate the shape
 		try {
 			// BRepTools::Clean(s);
 			BRepMesh::Mesh(s, IfcGeom::GetValue(IfcGeom::GV_DEFLECTION_TOLERANCE));
 		} catch(...) {
-			Logger::Message(Logger::LOG_ERROR,"Failed to triangulate mesh:",ifc_file->EntityById(i)->entity);
+			Logger::Message(Logger::LOG_ERROR,"Failed to triangulate shape:",ifc_file->EntityById(id)->entity);
 			continue;
 		}
 		TopExp_Explorer exp;
@@ -193,46 +201,62 @@ IfcGeomObjects::IfcMesh::IfcMesh(int i, const IfcGeom::ShapeList& shapes) {
 	}
 }
 
-IfcGeomObjects::IfcObject::IfcObject(int my_id, 
-		int p_id, 
-		const std::string& n, 
-		const std::string& t, 
-		const std::string& g, 
-		const gp_Trsf& trsf) {
-
+IfcGeomObjects::IfcObject::IfcObject(
+	int id, 
+	int parent_id, 
+	const std::string& name, 
+	const std::string& type, 
+	const std::string& guid, 
+	const gp_Trsf& trsf)
+		: id(id)
+		, parent_id(parent_id)
+		, name(name)
+		, type(type)
+		, guid(guid)
+		, trsf(trsf)
+{
 	// Convert the gp_Trsf into a 4x3 Matrix
 	for( int i = 1; i < 5; ++ i )
 		for ( int j = 1; j < 4; ++ j )
 			matrix.push_back((float)trsf.Value(j,i));
-
-	id = my_id;
-	parent_id = p_id;
-	name = n;
-	type = t;
-	guid = g;
 }
 
-IfcGeomObjects::IfcGeomObject::IfcGeomObject(int my_id, 
-		int p_id, 
-		const std::string& n, 
-		const std::string& t, 
-		const std::string& g,
-		const gp_Trsf& trsf, 
-		IfcMesh* m) : IfcObject(my_id,p_id,n,t,g,trsf) {	
+IfcGeomObjects::IfcGeomShapeModelObject::IfcGeomShapeModelObject(
+	int id, 
+	int parent_id, 
+	const std::string& name, 
+	const std::string& type, 
+	const std::string& guid,
+	const gp_Trsf& trsf, 
+	IfcRepresentationShapeModel* shapes) 
+		: IfcObject(id,parent_id,name,type,guid,trsf)
+		, mesh(shapes)
+{}
 
-	mesh = m;
-}
+IfcGeomObjects::IfcGeomBrepDataObject::IfcGeomBrepDataObject(
+	const IfcGeomShapeModelObject& shape_model)
+		: IfcObject(shape_model)
+		, mesh(new IfcRepresentationBrepData(*shape_model.mesh))
+{}
+
+IfcGeomObjects::IfcGeomObject::IfcGeomObject(
+	const IfcGeomShapeModelObject& shape_model)
+		: IfcObject(shape_model)
+		, mesh(new IfcRepresentationTriangulation(*shape_model.mesh))
+{}
 
 // A container and iterator for IfcShapeRepresentations
 Ifc2x3::IfcShapeRepresentation::list shapereps;
-Ifc2x3::IfcShapeRepresentation::it outer;
+Ifc2x3::IfcShapeRepresentation::it shaperep_iterator;
 
 // The object is fetched beforehand to be positive an entity actually exists
-IfcGeomObjects::IfcGeomObject* current_geom_obj;
+IfcGeomObjects::IfcGeomObject* current_geom_obj = 0;
+IfcGeomObjects::IfcGeomShapeModelObject* current_shape_model_obj = 0;
+IfcGeomObjects::IfcGeomBrepDataObject* current_brep_data_obj = 0;
 
-// A container and iterator for IfcBuildingElements for the current IfcShapeRepresentation referenced by *outer
+// A container and iterator for IfcBuildingElements for the current IfcShapeRepresentation referenced by *shaperep_iterator
 Ifc2x3::IfcProduct::list entities;
-Ifc2x3::IfcProduct::it inner;
+Ifc2x3::IfcProduct::it ifcproduct_iterator;
 
 int done;
 int total;
@@ -240,7 +264,7 @@ int total;
 // Move the the next IfcShapeRepresentation
 void _nextShape() {
 	entities.reset();
-	++ outer;
+	++ shaperep_iterator;
 	++ done;
 }
 
@@ -289,17 +313,16 @@ int _getParentId(const Ifc2x3::IfcProduct::ptr ifc_product) {
 	return parent_id;
 }
 
-// Returns the current IfcGeomObject*
-IfcGeomObjects::IfcGeomObject* _get() {
+IfcGeomObjects::IfcGeomShapeModelObject* create_shape_model_for_next_entity() {
 	while ( true ) {
 		Ifc2x3::IfcShapeRepresentation::ptr shaperep;
 
 		// Have we reached the end of our list of representations?
-		if ( outer == shapereps->end() ) {
+		if ( shaperep_iterator == shapereps->end() ) {
 			shapereps.reset();
 			return 0;
 		}
-		shaperep = *outer;
+		shaperep = *shaperep_iterator;
 
 		// Has the list of IfcProducts for this representation been initialized?
 		if ( ! entities ) {
@@ -337,15 +360,15 @@ IfcGeomObjects::IfcGeomObject* _get() {
 				_nextShape();
 				continue;
 			}
-			inner = entities->begin();
+			ifcproduct_iterator = entities->begin();
 		}
 		// Have we reached the end of our list of IfcProducts?
-		if ( inner == entities->end() ) {
+		if ( ifcproduct_iterator == entities->end() ) {
 			_nextShape();
 			continue;
 		}
 		
-		IfcGeomObjects::IfcMesh* shape;
+		IfcGeomObjects::IfcRepresentationShapeModel* shape;
 		IfcGeom::ShapeList shapes;
 
 		if ( !IfcGeom::convert_shapes(shaperep,shapes) ) {
@@ -353,7 +376,7 @@ IfcGeomObjects::IfcGeomObject* _get() {
 			continue;
 		}
 
-		Ifc2x3::IfcProduct::ptr ifc_product = *inner;
+		Ifc2x3::IfcProduct::ptr ifc_product = *ifcproduct_iterator;
 
 		int parent_id = -1;
 		try {
@@ -413,56 +436,74 @@ IfcGeomObjects::IfcGeomObject* _get() {
 				}
 				trsf = gp_Trsf();
 			}
-			shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),opened_shapes);
-			for ( IfcGeom::ShapeList::const_iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
+			shape = new IfcGeomObjects::IfcRepresentationShapeModel(shaperep->entity->id(),opened_shapes,true);
+			for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 				delete it->first;
-				delete it->second;
 			}
 		} else if ( use_world_coords ) {
 			for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 				it->first->PreMultiply(trsf);
 			}
 			trsf = gp_Trsf();
-			shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),shapes);
+			shape = new IfcGeomObjects::IfcRepresentationShapeModel(shaperep->entity->id(),shapes);
 		} else {
-			shape = new IfcGeomObjects::IfcMesh(shaperep->entity->id(),shapes);
+			shape = new IfcGeomObjects::IfcRepresentationShapeModel(shaperep->entity->id(),shapes);
 		}
 
-		IfcGeomObjects::IfcGeomObject* geom_obj = new IfcGeomObjects::IfcGeomObject(ifc_product->entity->id(), parent_id, name, 
+		return new IfcGeomObjects::IfcGeomShapeModelObject(ifc_product->entity->id(), parent_id, name, 
 			Ifc2x3::Type::ToString(ifc_product->type()), guid, trsf, shape);
-
-		for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
-			delete it->first;
-		}
-
-		return geom_obj;
 	}	
 }
 
-bool IfcGeomObjects::Next() {
-	if ( current_geom_obj ) {
-		delete current_geom_obj->mesh;
-		delete current_geom_obj;
-	}
-	if ( entities ) {
-		++inner;
-	}
-	current_geom_obj = _get();
-	if ( ! current_geom_obj ) {
+bool try_and_create_representations_for_current_entity() {
+	current_shape_model_obj = create_shape_model_for_next_entity();
+	if (current_shape_model_obj == 0) {
 		return false;
-	} else {
-		return true;
 	}
+	
+	if (use_brep_data) {
+		current_brep_data_obj = new IfcGeomObjects::IfcGeomBrepDataObject(*current_shape_model_obj);
+		if (current_brep_data_obj == 0) {
+			return false;
+		}
+	}
+
+	if (!disable_triangulation) {
+		current_geom_obj = new IfcGeomObjects::IfcGeomObject(*current_shape_model_obj);
+		if (current_geom_obj == 0) {
+			return false;
+		}
+	}
+
+	return true;
 }
+
+bool IfcGeomObjects::Next() {
+	// Free all possible representations of the current geometrical entity
+	delete current_geom_obj;
+	delete current_brep_data_obj;
+	delete current_shape_model_obj;
+	current_geom_obj = 0;
+	current_brep_data_obj = 0;
+	current_shape_model_obj = 0;
+
+	// Increment the iterator over the list of products using the current
+	// shape representation
+	if (entities) {
+		++ifcproduct_iterator;
+	}
+
+	return try_and_create_representations_for_current_entity();
+}
+
 std::vector<IfcGeomObjects::IfcObject*> returned_objects;
 bool IfcGeomObjects::CleanUp() {
 	// TODO: Correctly implement destructor for IfcFile
 	delete ifc_file;
 	IfcGeom::Cache::Purge();
-	for ( std::vector<IfcGeomObjects::IfcObject*>::const_iterator it = returned_objects.begin();
-		it != returned_objects.end(); 
-		++ it ) {
-			delete *it;			
+	std::vector<IfcGeomObjects::IfcObject*>::const_iterator it;
+	for (it = returned_objects.begin(); it != returned_objects.end(); ++ it ) {
+		delete *it;
 	}
 	returned_objects.clear();
 	return true;
@@ -492,6 +533,12 @@ const IfcGeomObjects::IfcObject* IfcGeomObjects::GetObject(int id) {
 }
 const IfcGeomObjects::IfcGeomObject* IfcGeomObjects::Get() {
 	return current_geom_obj;
+}
+const IfcGeomObjects::IfcGeomShapeModelObject* IfcGeomObjects::GetShapeModel() {
+	return current_shape_model_obj;
+}
+const IfcGeomObjects::IfcGeomBrepDataObject* IfcGeomObjects::GetBrepData() {
+	return current_brep_data_obj;
 }
 double UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v ) {
 	if ( v == Ifc2x3::IfcSIPrefix::IfcSIPrefix_EXA   ) return (double) 1e18;
@@ -582,11 +629,12 @@ bool _Init() {
 	shapereps = ifc_file->EntitiesByType<Ifc2x3::IfcShapeRepresentation>();
 	if ( ! shapereps ) return false;
 	
-	outer = shapereps->begin();
+	shaperep_iterator = shapereps->begin();
 	entities.reset();
-	current_geom_obj = _get();
-	
-	if ( ! current_geom_obj ) return false;
+
+	if (!try_and_create_representations_for_current_entity()) {
+		return false;
+	}
 
 	done = 0;
 	total = shapereps->Size();
@@ -635,6 +683,9 @@ void IfcGeomObjects::Settings(int setting, bool value) {
 		break;
     case DISABLE_OPENING_SUBTRACTIONS:
         disable_subtractions = value;
+        break;
+	case DISABLE_TRIANGULATION:
+        disable_triangulation = value;
         break;
 	}
 }

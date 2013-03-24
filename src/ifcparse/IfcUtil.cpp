@@ -83,6 +83,11 @@ void Logger::Status(const std::string& message, bool new_line) {
 		else (*log1) << std::flush;
 	}
 }
+void Logger::ProgressBar(int progress) {
+	if ( log1 ) {
+		Status("\r[" + std::string(progress,'#') + std::string(50 - progress,' ') + "]", false);
+	}
+}
 std::string Logger::GetLog() {
 	return log_stream.str();
 }

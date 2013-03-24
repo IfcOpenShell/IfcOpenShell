@@ -19,46 +19,60 @@
 
 /********************************************************************************
  *                                                                              *
- * This file defines materials in .mtl format for several IFC datatypes         *
+ * This file defines default materials for several IFC datatypes                *
  *                                                                              *
  ********************************************************************************/
+
+#ifndef SURFACESTYLE_H
+#define SURFACESTYLE_H
 
 #include <string>
 #include <sstream>
 
-class ObjMaterial {
-private:
-	std::string data;
+#include <array>
+
+class SurfaceStyle {
 public:
-	ObjMaterial(const std::string& name,
-		double Kd_r = 0.7f,double Kd_g = 0.7f,double Kd_b = 0.7f,
-		double Ks_r = 0.2f,double Ks_g = 0.2f,double Ks_b = 0.2f, 
-		double Ka_r = 0.1f,double Ka_g = 0.1f,double Ka_b = 0.1f,
-		double Ns = 10.0f, double Tr = 1.0f) {
-			std::stringstream ss;
-			ss << "newmtl " << name << std::endl;
-			ss << "Kd " << Kd_r << " " << Kd_g << " " << Kd_b << std::endl;
-			ss << "Ks " << Ks_r << " " << Ks_g << " " << Ks_b << std::endl;
-			ss << "Ka " << Ka_r << " " << Ka_g << " " << Ka_b << std::endl;
-			ss << "Ns " << Ns << std::endl;
-			ss << "Tr " << Tr << std::endl;
-			ss << "d " << Tr << std::endl;
-			ss << "D " << Tr << std::endl;
-			data = ss.str();
-	}
-	friend ostream& operator<<(ostream& o, const ObjMaterial& m) {o << m.data; return o;}
+	class ColorComponent {
+	private:
+		std::array<double, 3> data;
+	public:
+		ColorComponent(double r, double g, double b) {
+			data[0] = r; data[1] = g; data[2] = b;
+		}
+		const double& R() const { return data[0]; }
+		const double& G() const { return data[1]; }
+		const double& B() const { return data[2]; }
+		double& R() { return data[0]; }
+		double& G() { return data[1]; }
+		double& B() { return data[2]; }
+	};
+private:
+	std::string name;
+	ColorComponent diffuse, specular, ambient;
+	double transparency;
+	double specularity;
+public:
+	SurfaceStyle(const std::string& name,
+				 double dr = 0.7,  double dg = 0.7, double db = 0.7,
+			 	 double sr = 0.2,  double sg = 0.2, double sb = 0.2, 
+			 	 double ar = 0.1,  double ag = 0.1, double ab = 0.1,
+				 double Ns = 10.0, double Tr = 1.0)
+		: name(name) 
+		, diffuse(dr, dg, db)
+		, specular(sr, sg, sb)
+		, ambient(ar, ag, ab)
+		, transparency(Tr)
+		, specularity(Ns)
+	{}
+	const std::string& Name() const { return name; }
+	const ColorComponent& Diffuse() const { return diffuse; }
+	const ColorComponent& Specular() const { return specular; }
+	const ColorComponent& Ambient() const { return ambient; }
+	double Transparency() const { return transparency; }
+	double Specularity() const { return specularity; }
 };
 
-ObjMaterial GetMaterial(const std::string& s) {
-	if ( s == "IfcSite" ) { return ObjMaterial("IfcSite",0.75f,0.8f,0.65f); }
-	if ( s == "IfcSlab" ) { return ObjMaterial("IfcSlab",0.4f,0.4f,0.4f); }
-	if ( s == "IfcWallStandardCase" ) { return ObjMaterial("IfcWallStandardCase",0.9f,0.9f,0.9f); }
-	if ( s == "IfcWall" ) { return ObjMaterial("IfcWall",0.9f,0.9f,0.9f); }
-	if ( s == "IfcWindow" ) { return ObjMaterial("IfcWindow",0.75f,0.8f,0.75f,1.0f,1.0f,1.0f,0.0f,0.0f,0.0f,500.0f,0.3f); }
-	if ( s == "IfcDoor" ) { return ObjMaterial("IfcDoor",0.55f,0.3f,0.15f); }
-	if ( s == "IfcBeam" ) { return ObjMaterial("IfcBeam",0.75f,0.7f,0.7f); }
-	if ( s == "IfcRailing" ) { return ObjMaterial("IfcRailing",0.65f,0.6f,0.6f); }
-	if ( s == "IfcMember" ) { return ObjMaterial("IfcMember",0.65f,0.6f,0.6f); }
-	if ( s == "IfcPlate" ) { return ObjMaterial("IfcPlate",0.8f,0.8f,0.8f); }
-	return ObjMaterial(s);
-}
+SurfaceStyle GetDefaultMaterial(const std::string& s);
+
+#endif
