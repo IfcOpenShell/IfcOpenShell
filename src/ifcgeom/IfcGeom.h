@@ -40,7 +40,7 @@
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcUtil.h"
 
-#include "../ifcgeom/IfcShapeList.h"
+#include "../ifcgeom/IfcRepresentationShapeItem.h"
 
 namespace IfcGeom {
 
@@ -76,14 +76,15 @@ namespace IfcGeom {
 	};
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
-	bool convert_shapes(const IfcUtil::IfcBaseClass* L, ShapeList& result);
+	bool convert_shapes(const IfcUtil::IfcBaseClass* L, IfcRepresentationShapeItems& result);
 	bool is_shape_collection(const IfcUtil::IfcBaseClass* L);
-	const TopoDS_Shape* convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
+	bool convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
 	bool convert_wire(const IfcUtil::IfcBaseClass* L, TopoDS_Wire& result);
 	bool convert_curve(const IfcUtil::IfcBaseClass* L, Handle(Geom_Curve)& result);
 	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Face& result);
-	bool convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, const ShapeList& entity_shapes, const gp_Trsf& entity_trsf, ShapeList& cut_shapes);
-	bool convert_openings_fast(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, const ShapeList& entity_shapes, const gp_Trsf& entity_trsf, ShapeList& cut_shapes);
+	bool convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
+	bool convert_openings_fast(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
+	Ifc2x3::IfcSurfaceStyleShading* get_surface_style(Ifc2x3::IfcRepresentationItem* item);	
 	bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid);
 	bool is_compound(const TopoDS_Shape& shape);
 	bool is_convex(const TopoDS_Wire& wire);
@@ -97,6 +98,8 @@ namespace IfcGeom {
 	void SetValue(GeomValue var, double value);
 	double GetValue(GeomValue var);
 	Ifc2x3::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntities es);
+
+	
 	
 	namespace Cache {
 		void Purge();

@@ -112,6 +112,7 @@ ADD_LIBRARY(IfcGeom STATIC
   ../src/ifcgeom/IfcGeomFunctions.cpp
   ../src/ifcgeom/IfcGeomHelpers.cpp
   ../src/ifcgeom/IfcGeomObjects.cpp
+  ../src/ifcgeom/IfcGeomRenderStyles.cpp
   ../src/ifcgeom/IfcGeomShapes.cpp
   ../src/ifcgeom/IfcGeomWires.cpp
   ../src/ifcgeom/IfcRegister.cpp

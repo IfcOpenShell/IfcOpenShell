@@ -53,13 +53,13 @@ bool use_faster_booleans = false;
 bool disable_subtractions = false;
 bool disable_triangulation = false;
 
-int IfcGeomObjects::IfcRepresentationTriangulation::addvert(const gp_XYZ& p) {
+int IfcGeomObjects::IfcRepresentationTriangulation::addvert(int material_index, const gp_XYZ& p) {
 	const float X = convert_back_units ? (float) (p.X() / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT)) : (float)p.X();
 	const float Y = convert_back_units ? (float) (p.Y() / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT)) : (float)p.Y();
 	const float Z = convert_back_units ? (float) (p.Z() / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT)) : (float)p.Z();
 	int i = (int) verts.size() / 3;
 	if ( weld_vertices ) {
-		const VertKey key = VertKey(X,std::pair<float,float>(Y,Z));
+		const VertKey key = std::make_pair(material_index, std::make_pair(X, std::make_pair(Y, Z)));
 		VertKeyMap::const_iterator it = welds.find(key);
 		if ( it != welds.end() ) return it->second;
 		i = (int) welds.size();
@@ -83,9 +83,9 @@ IfcGeomObjects::IfcRepresentationBrepData::IfcRepresentationBrepData(const IfcRe
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
-		for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
-			const TopoDS_Shape& s = *(*it).second;
-			const gp_GTrsf& trsf = *(*it).first;
+		for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+			const TopoDS_Shape& s = it->Shape();
+			const gp_GTrsf& trsf = it->Placement();
 			bool trsf_valid = false;
 			gp_Trsf _trsf;
 			try {
@@ -107,10 +107,21 @@ IfcGeomObjects::IfcRepresentationBrepData::IfcRepresentationBrepData(const IfcRe
 IfcGeomObjects::IfcRepresentationTriangulation::IfcRepresentationTriangulation(const IfcRepresentationShapeModel& shapes)
 	: id(shapes.getId()) 
 {
-	for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 
-		const TopoDS_Shape& s = *it->second;
-		const gp_GTrsf& trsf = *it->first;
+		int surface_style_id = -1;
+		if (it->hasStyle()) {
+			std::vector<const IfcGeom::SurfaceStyle*>::const_iterator jt = std::find(surface_styles.begin(), surface_styles.end(), &it->Style());
+			if (jt == surface_styles.end()) {
+				surface_style_id = surface_styles.size();
+				surface_styles.push_back(&it->Style());
+			} else {
+				surface_style_id = jt - surface_styles.begin();
+			}
+		}
+
+		const TopoDS_Shape& s = it->Shape();
+		const gp_GTrsf& trsf = it->Placement();
 
 		// Triangulate the shape
 		try {
@@ -150,7 +161,7 @@ IfcGeomObjects::IfcRepresentationTriangulation::IfcRepresentationTriangulation(c
 				for( int i = 1; i <= nodes.Length(); ++ i ) {
 					coords.push_back(nodes(i).Transformed(loc).XYZ());
 					trsf.Transforms(*coords.rbegin());
-					dict[i] = addvert(*coords.rbegin());
+					dict[i] = addvert(surface_style_id, *coords.rbegin());
 					
 					if ( calculate_normals ) {
 						const gp_Pnt2d& uv = uvs(i);
@@ -188,6 +199,8 @@ IfcGeomObjects::IfcRepresentationTriangulation::IfcRepresentationTriangulation(c
 					faces.push_back(dict[n1]);
 					faces.push_back(dict[n2]);
 					faces.push_back(dict[n3]);
+
+					materials.push_back(surface_style_id);
 
 					addedge(n1,n2,edgecount,edges_temp);
 					addedge(n2,n3,edgecount,edges_temp);
@@ -369,7 +382,7 @@ IfcGeomObjects::IfcGeomShapeModelObject* create_shape_model_for_next_entity() {
 		}
 		
 		IfcGeomObjects::IfcRepresentationShapeModel* shape;
-		IfcGeom::ShapeList shapes;
+		IfcGeom::IfcRepresentationShapeItems shapes;
 
 		if ( !IfcGeom::convert_shapes(shaperep,shapes) ) {
 			_nextShape();
@@ -412,15 +425,11 @@ IfcGeomObjects::IfcGeomShapeModelObject* create_shape_model_for_next_entity() {
 		}
 
 		if ( !disable_subtractions && openings && openings->Size() ) {
-			IfcGeom::ShapeList opened_shapes;
+			IfcGeom::IfcRepresentationShapeItems opened_shapes;
 			try {
 				if ( use_faster_booleans ) {
 					bool succes = IfcGeom::convert_openings_fast(ifc_product,openings,shapes,trsf,opened_shapes);
 					if ( ! succes ) {
-						for ( IfcGeom::ShapeList::const_iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
-							delete it->first;
-							delete it->second;
-						}
 						opened_shapes.clear();
 						IfcGeom::convert_openings(ifc_product,openings,shapes,trsf,opened_shapes);
 					}
@@ -431,18 +440,15 @@ IfcGeomObjects::IfcGeomShapeModelObject* create_shape_model_for_next_entity() {
 				Logger::Message(Logger::LOG_ERROR,"Error processing openings for:",ifc_product->entity); 
 			}
 			if ( use_world_coords ) {
-				for ( IfcGeom::ShapeList::const_iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
-					it->first->PreMultiply(trsf);
+				for ( IfcGeom::IfcRepresentationShapeItems::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
+					it->move(trsf);
 				}
 				trsf = gp_Trsf();
 			}
 			shape = new IfcGeomObjects::IfcRepresentationShapeModel(shaperep->entity->id(),opened_shapes,true);
-			for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
-				delete it->first;
-			}
 		} else if ( use_world_coords ) {
-			for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
-				it->first->PreMultiply(trsf);
+			for ( IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+				it->move(trsf);
 			}
 			trsf = gp_Trsf();
 			shape = new IfcGeomObjects::IfcRepresentationShapeModel(shaperep->entity->id(),shapes);

@@ -4,7 +4,7 @@
 		try { \
 			if ( convert((T*)l,r) ) { \
 				Cache::Shape[id] = r; \
-				return &(Cache::Shape[id]); \
+				return true; \
 			} \
 		} catch(...) {  } \
 		Logger::Message(Logger::LOG_ERROR,"Failed to convert:",l->entity); \

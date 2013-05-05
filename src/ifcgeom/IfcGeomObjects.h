@@ -63,7 +63,7 @@
 #include <gp_Trsf2d.hxx>
 
 #include "../ifcparse/IfcParse.h"
-#include "../ifcgeom/IfcShapeList.h"
+#include "../ifcgeom/IfcRepresentationShapeItem.h"
 
 namespace IfcGeomObjects {
 
@@ -107,11 +107,9 @@ namespace IfcGeomObjects {
 
 	// End of settings enumeration.
 
-	// Some typedefs for convenience
-	typedef std::vector<int>::const_iterator IntIt;
-	typedef std::vector<float>::const_iterator FltIt;
-	// A nested pair of doubles to be able to store an XYZ coordinate in a map.
-	typedef std::pair< float,std::pair<float,float> > VertKey;
+	// A nested pair of floats and a material index to be able to store an XYZ coordinate in a map.
+	// TODO: Make this a std::tuple when compilers add support for that.
+	typedef std::pair<int, std::pair<float,std::pair<float,float> > > VertKey;
 	typedef std::map<VertKey,int> VertKeyMap;
 	typedef std::pair<int,int> Edge;
 
@@ -119,25 +117,18 @@ namespace IfcGeomObjects {
 	private:
 		unsigned int id;
 		bool owns_shapes;
-		const IfcGeom::ShapeList shapes;
+		const IfcGeom::IfcRepresentationShapeItems shapes;
 		IfcRepresentationShapeModel(const IfcRepresentationShapeModel& other);
 		IfcRepresentationShapeModel& operator=(const IfcRepresentationShapeModel& other);
 	public:
-		IfcRepresentationShapeModel(unsigned int id, const IfcGeom::ShapeList& shapes, bool owns_shapes = false)
+		IfcRepresentationShapeModel(unsigned int id, const IfcGeom::IfcRepresentationShapeItems& shapes, bool owns_shapes = false)
 			: id(id)
 			, shapes(shapes)
 			, owns_shapes(owns_shapes)
 		{}
-		~IfcRepresentationShapeModel() {
-			for ( IfcGeom::ShapeList::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
-				delete it->first;
-				if (owns_shapes) {
-					delete it->second;
-				}
-			}
-		}
-		IfcGeom::ShapeList::const_iterator begin() const { return shapes.begin(); }
-		IfcGeom::ShapeList::const_iterator end() const { return shapes.end(); }
+		virtual ~IfcRepresentationShapeModel() {}
+		IfcGeom::IfcRepresentationShapeItems::const_iterator begin() const { return shapes.begin(); }
+		IfcGeom::IfcRepresentationShapeItems::const_iterator end() const { return shapes.end(); }
 		const unsigned int& getId() const { return id; }
 	};
 
@@ -146,6 +137,7 @@ namespace IfcGeomObjects {
 		int id;
 		std::string brep_data;
 		IfcRepresentationBrepData(const IfcRepresentationShapeModel& s);
+		virtual ~IfcRepresentationBrepData() {}
 	};
 
 	class IfcRepresentationTriangulation {
@@ -155,11 +147,14 @@ namespace IfcGeomObjects {
 		std::vector<int> faces;
 		std::vector<int> edges;
 		std::vector<float> normals;
+		std::vector<int> materials;
+		std::vector<const IfcGeom::SurfaceStyle*> surface_styles;
 		VertKeyMap welds;
 		
 		IfcRepresentationTriangulation(const IfcRepresentationShapeModel& s);
+		virtual ~IfcRepresentationTriangulation() {}
 	private:
-		int addvert(const gp_XYZ& p);
+		int addvert(int material_index, const gp_XYZ& p);
 		inline void addedge(int n1, int n2, std::map<std::pair<int,int>,int>& edgecount, std::vector<std::pair<int,int> >& edges_temp) {
 			const Edge e = Edge( (std::min)(n1,n2),(std::max)(n1,n2) );
 			if ( edgecount.find(e) == edgecount.end() ) edgecount[e] = 1;

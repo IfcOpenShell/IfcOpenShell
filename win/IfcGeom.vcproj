@@ -171,6 +171,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\ifcgeom\IfcGeomRenderStyles.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ifcgeom\IfcGeomShapes.cpp"
 				>
 			</File>
@@ -194,6 +198,10 @@
 			</File>
 			<File
 				RelativePath="..\src\ifcgeom\IfcGeomObjects.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcgeom\IfcGeomRenderStyles.h"
 				>
 			</File>
 			<File
@@ -234,6 +242,10 @@
 			</File>
 			<File
 				RelativePath="..\src\ifcgeom\IfcRegisterUndef.h"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcgeom\IfcRepresentationShapeItem.h"
 				>
 			</File>
 		</Filter>

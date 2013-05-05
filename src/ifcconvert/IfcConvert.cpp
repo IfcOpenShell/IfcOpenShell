@@ -35,7 +35,6 @@
 
 #include "../ifcgeom/IfcGeomObjects.h"
 
-#include "../ifcconvert/SurfaceStyle.h"
 #include "../ifcconvert/ColladaSerializer.h"
 #include "../ifcconvert/IgesSerializer.h"
 #include "../ifcconvert/StepSerializer.h"
@@ -271,18 +270,4 @@ int main(int argc, char** argv) {
 	time(&end);
 	int dif = (int) difftime (end,start);	
 	printf ("\nConversion took %d seconds\n", dif );
-}
-
-SurfaceStyle GetDefaultMaterial(const std::string& s) {
-	if (s == "IfcSite"            ) { return SurfaceStyle("IfcSite",            0.75,0.8,0.65); }
-	if (s == "IfcSlab"            ) { return SurfaceStyle("IfcSlab",            0.4, 0.4,0.4 ); }
-	if (s == "IfcWallStandardCase") { return SurfaceStyle("IfcWallStandardCase",0.9, 0.9,0.9 ); }
-	if (s == "IfcWall"            ) { return SurfaceStyle("IfcWall",            0.9, 0.9,0.9 ); }
-	if (s == "IfcWindow"          ) { return SurfaceStyle("IfcWindow",          0.75,0.8,0.75, 1.0,1.0,1.0, 0.0,0.0,0.0, 500.0, 0.3); }
-	if (s == "IfcDoor"            ) { return SurfaceStyle("IfcDoor",            0.55,0.3,0.15); }
-	if (s == "IfcBeam"            ) { return SurfaceStyle("IfcBeam",            0.75,0.7,0.7 ); }
-	if (s == "IfcRailing"         ) { return SurfaceStyle("IfcRailing",         0.65,0.6,0.6 ); }
-	if (s == "IfcMember"          ) { return SurfaceStyle("IfcMember",          0.65,0.6,0.6 ); }
-	if (s == "IfcPlate"           ) { return SurfaceStyle("IfcPlate",           0.8, 0.8,0.8 ); }
-	return SurfaceStyle(s);
 }

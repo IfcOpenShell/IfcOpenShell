@@ -36,7 +36,6 @@
 #include "../ifcgeom/IfcGeomObjects.h"
 
 #include "../ifcconvert/GeometrySerializer.h"
-#include "../ifcconvert/SurfaceStyle.h"
 
 class ColladaSerializer : public GeometrySerializer
 {
@@ -51,7 +50,7 @@ private:
 				: COLLADASW::LibraryGeometries(&stream)
 			{}
 			void addFloatSource(const std::string& mesh_id, const std::string& suffix, const std::vector<float>& floats, const char* coords = "XYZ");
-			void write(const std::string mesh_id, const std::vector<float>& positions, const std::vector<float>& normals, const std::vector<int>& indices);
+			void write(const std::string mesh_id, const std::string& default_material_name, const std::vector<float>& positions, const std::vector<float>& normals, const std::vector<int>& indices, const std::vector<int> material_ids, const std::vector<const IfcGeom::SurfaceStyle*>& materials);
 			void close();
 		};
 		class ColladaScene : public COLLADASW::LibraryVisualScenes
@@ -65,7 +64,7 @@ private:
 				, scene_id(scene_id)
 				, scene_opened(false)			
 			{}
-			void add(const std::string& node_id, const std::string& node_name, const std::string& geom_id, const std::string& material_id, const std::vector<float>& matrix);
+			void add(const std::string& node_id, const std::string& node_name, const std::string& geom_name, const std::vector<std::string>& material_ids, const std::vector<float>& matrix);
 			void write();
 		};
 		class ColladaMaterials : public COLLADASW::LibraryMaterials
@@ -77,37 +76,47 @@ private:
 				explicit ColladaEffects(COLLADASW::StreamWriter& stream)
 					: COLLADASW::LibraryEffects(&stream)
 				{}
-				void write(const SurfaceStyle& style);
+				void write(const IfcGeom::SurfaceStyle* style);
 				void close();
 			};
-			std::vector<SurfaceStyle> surface_styles;
+			std::vector<const IfcGeom::SurfaceStyle*> surface_styles;
 			ColladaEffects effects;
 		public:
 			explicit ColladaMaterials(COLLADASW::StreamWriter& stream)
 				: COLLADASW::LibraryMaterials(&stream)
 				, effects(stream)
 			{}
-			void add(const SurfaceStyle& style);
-			bool contains(const std::string& name);
+			void add(const IfcGeom::SurfaceStyle* style);
+			bool contains(const IfcGeom::SurfaceStyle* style);
 			void write();
 		};
-		class DeferedObject {
+		class DeferredObject {
 		public:
-			const std::string type;
+			const std::string guid, name, type;
 			int obj_id;
 			const std::vector<float> matrix;
 			const std::vector<float> vertices;
 			const std::vector<float> normals;
 			const std::vector<int> indices;
-			DeferedObject(const std::string& type, int obj_id, const std::vector<float>& matrix, const std::vector<float>& vertices,
-				const std::vector<float>& normals, const std::vector<int>& indices)
-				: type(type)
+			const std::vector<int> material_ids;
+			const std::vector<const IfcGeom::SurfaceStyle*> materials;
+			const std::vector<std::string> material_references;
+			DeferredObject(const std::string& guid, const std::string& name, const std::string& type, int obj_id, const std::vector<float>& matrix, const std::vector<float>& vertices,
+				const std::vector<float>& normals, const std::vector<int>& indices, const std::vector<int>& material_ids, 
+				const std::vector<const IfcGeom::SurfaceStyle*>& materials, const std::vector<std::string>& material_references)
+				: guid(guid)
+				, name(name)
+				, type(type)
 				, obj_id(obj_id)
 				, matrix(matrix)
 				, vertices(vertices)
 				, normals(normals)
 				, indices(indices)
+				, material_ids(material_ids)
+				, materials(materials)
+				, material_references(material_references)
 			{}
+			const std::string Name() const;
 		};
 		COLLADABU::NativeString filename;
 		COLLADASW::StreamWriter stream;
@@ -122,10 +131,10 @@ private:
 			, scene(scene_name, stream)
 			, materials(stream)
 		{}
-		std::vector<DeferedObject> deferreds;
+		std::vector<DeferredObject> deferreds;
 		virtual ~ColladaExporter() {}
 		void startDocument();
-		void writeTesselated(const std::string& type, int obj_id, const std::vector<float>& matrix, const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<int>& indices);
+		void writeTesselated(const std::string& guid, const std::string& name, const std::string& type, int obj_id, const std::vector<float>& matrix, const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<int>& indices, const std::vector<int>& material_ids, const std::vector<const IfcGeom::SurfaceStyle*>& materials);
 		void endDocument();
 	};
 	ColladaExporter exporter;

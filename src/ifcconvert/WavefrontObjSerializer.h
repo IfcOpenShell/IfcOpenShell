@@ -25,7 +25,6 @@
 #include <fstream>
 
 #include "../ifcconvert/GeometrySerializer.h"
-#include "../ifcconvert/SurfaceStyle.h"
 
 class WaveFrontOBJSerializer : public GeometrySerializer {
 private:
@@ -45,7 +44,7 @@ public:
 	virtual ~WaveFrontOBJSerializer() {}
 	bool ready();
 	void writeHeader();
-	void writeMaterial(const SurfaceStyle& style);
+	void writeMaterial(const IfcGeom::SurfaceStyle& style);
 	void writeTesselated(const IfcGeomObjects::IfcGeomObject* o);
 	void writeShapeModel(const IfcGeomObjects::IfcGeomShapeModelObject* o) {}
 	void finalize() {}

@@ -23,7 +23,6 @@
 #include "../ifcgeom/IfcGeomObjects.h"
 
 #include "../ifcconvert/GeometrySerializer.h"
-#include "../ifcconvert/SurfaceStyle.h"
 
 class OpenCascadeBasedSerializer : public GeometrySerializer {
 protected:
@@ -35,7 +34,7 @@ public:
 	{}
 	virtual ~OpenCascadeBasedSerializer() {}
 	void writeHeader() {}
-	void writeMaterial(const SurfaceStyle& style) {}
+	void writeMaterial(const IfcGeom::SurfaceStyle& style) {}
 	bool ready();
 	virtual void writeShape(const TopoDS_Shape& shape) = 0;
 	void writeTesselated(const IfcGeomObjects::IfcGeomObject* o) {}

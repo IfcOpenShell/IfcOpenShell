@@ -35,10 +35,10 @@ bool OpenCascadeBasedSerializer::ready() {
 }
 
 void OpenCascadeBasedSerializer::writeShapeModel(const IfcGeomObjects::IfcGeomShapeModelObject* o) {		
-	for (IfcGeom::ShapeList::const_iterator it = o->mesh->begin(); it != o->mesh->end(); ++ it) {
-		gp_GTrsf gtrsf = *it->first;
+	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->mesh->begin(); it != o->mesh->end(); ++ it) {
+		gp_GTrsf gtrsf = it->Placement();
 		gtrsf.PreMultiply(o->trsf);
-		const TopoDS_Shape& s = *it->second;			
+		const TopoDS_Shape& s = it->Shape();			
 			
 		bool trsf_valid = false;
 		gp_Trsf trsf;

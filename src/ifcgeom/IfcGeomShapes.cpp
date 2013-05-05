@@ -92,20 +92,22 @@ bool IfcGeom::convert(const Ifc2x3::IfcExtrudedAreaSolid::ptr l, TopoDS_Shape& s
 	shape.Move(trsf);
 	return ! shape.IsNull();
 }
-bool IfcGeom::convert(const Ifc2x3::IfcFacetedBrep::ptr l, ShapeList& shape) {
+bool IfcGeom::convert(const Ifc2x3::IfcFacetedBrep::ptr l, IfcRepresentationShapeItems& shape) {
 	TopoDS_Shape s;
-	if ( const TopoDS_Shape* shape_id = IfcGeom::convert_shape(l->Outer(),s) ) {
-		shape.push_back(LocationShape(new gp_GTrsf(),shape_id));
+	if (IfcGeom::convert_shape(l->Outer(),s) ) {
+		shape.push_back(IfcRepresentationShapeItem(s, get_style(l->Outer())));
 		return true;
 	}
 	return false;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcFaceBasedSurfaceModel::ptr l, ShapeList& shapes) {
+bool IfcGeom::convert(const Ifc2x3::IfcFaceBasedSurfaceModel::ptr l, IfcRepresentationShapeItems& shapes) {
 	Ifc2x3::IfcConnectedFaceSet::list facesets = l->FbsmFaces();
+	const SurfaceStyle* collective_style = get_style(l);
 	for( Ifc2x3::IfcConnectedFaceSet::it it = facesets->begin(); it != facesets->end(); ++ it ) {
 		TopoDS_Shape s;
-		if ( const TopoDS_Shape* shape_id = IfcGeom::convert_shape(*it,s) ) {
-			shapes.push_back(LocationShape(new gp_GTrsf(),shape_id));
+		const SurfaceStyle* shell_style = get_style(*it);
+		if (IfcGeom::convert_shape(*it,s)) {
+			shapes.push_back(IfcRepresentationShapeItem(s, shell_style ? shell_style : collective_style));
 		}
 	}
 	return true;
@@ -135,12 +137,17 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr l, TopoDS_
 	shape = BRepAlgoAPI_Common(halfspace,prism);
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcShellBasedSurfaceModel::ptr l, ShapeList& shapes) {
+bool IfcGeom::convert(const Ifc2x3::IfcShellBasedSurfaceModel::ptr l, IfcRepresentationShapeItems& shapes) {
 	IfcUtil::IfcAbstractSelect::list shells = l->SbsmBoundary();
+	const SurfaceStyle* collective_style = get_style(l);
 	for( IfcUtil::IfcAbstractSelect::it it = shells->begin(); it != shells->end(); ++ it ) {
 		TopoDS_Shape s;
-		if ( const TopoDS_Shape* shape_id = IfcGeom::convert_shape(*it,s) ) {
-			shapes.push_back(LocationShape(new gp_GTrsf(),shape_id));
+		const SurfaceStyle* shell_style = 0;
+		if ((*it)->is(Ifc2x3::Type::IfcRepresentationItem)) {
+			shell_style = get_style((Ifc2x3::IfcRepresentationItem*)*it);
+		}
+		if (IfcGeom::convert_shape(*it,s)) {
+			shapes.push_back(IfcRepresentationShapeItem(s, shell_style ? shell_style : collective_style));
 		}
 	}
 	return true;
@@ -334,7 +341,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 	}
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, ShapeList& shapes) {
+bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, IfcRepresentationShapeItems& shapes) {
 	gp_GTrsf gtrsf;
 	Ifc2x3::IfcCartesianTransformationOperator::ptr transform = l->MappingTarget();
 	if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
@@ -367,19 +374,22 @@ bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, ShapeList& shapes) {
 	const unsigned int previous_size = (const unsigned int) shapes.size();
 	bool b = IfcGeom::convert_shapes(map->MappedRepresentation(),shapes);
 	for ( unsigned int i = previous_size; i < shapes.size(); ++ i ) {
-		shapes[i].first->Multiply(gtrsf);
+		shapes[i].move(gtrsf);
 	}
 	return b;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcShapeRepresentation::ptr l, ShapeList& shapes) {
+
+bool IfcGeom::convert(const Ifc2x3::IfcShapeRepresentation::ptr l, IfcRepresentationShapeItems& shapes) {
 	Ifc2x3::IfcRepresentationItem::list items = l->Items();
 	if ( ! items->Size() ) return false;
 	for ( Ifc2x3::IfcRepresentationItem::it it = items->begin(); it != items->end(); ++ it ) {
-		if ( IfcGeom::is_shape_collection(*it) ) IfcGeom::convert_shapes(*it,shapes);
+		Ifc2x3::IfcRepresentationItem* representation_item = *it;
+		if ( IfcGeom::is_shape_collection(representation_item) ) IfcGeom::convert_shapes(*it,shapes);
 		else {
 			TopoDS_Shape s;
-			if ( const TopoDS_Shape* shape_id = IfcGeom::convert_shape(*it,s))
-				shapes.push_back(LocationShape(new gp_GTrsf(),shape_id));
+			if (IfcGeom::convert_shape(representation_item,s)) {
+				shapes.push_back(IfcRepresentationShapeItem(s, get_style(representation_item)));
+			}
 		}
 	}
 	return true;
