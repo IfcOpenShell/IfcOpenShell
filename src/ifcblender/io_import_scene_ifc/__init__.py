@@ -80,7 +80,9 @@ def import_ifc(filename, use_names, process_relations):
  
         f = ob.mesh.faces
         v = ob.mesh.verts
-        m = ob.matrix
+        mats = ob.mesh.materials
+        matids = ob.mesh.material_ids
+        m = ob.matrix        
         t = ob.type[0:21]
         nm = ob.name if len(ob.name) and use_names else ob.guid
 
@@ -91,12 +93,29 @@ def import_ifc(filename, use_names, process_relations):
 
         me = bpy.data.meshes.new('mesh%d' % ob.mesh.id)
         me.from_pydata(verts, [], faces)
-        if t in bpy.data.materials:
-            mat = bpy.data.materials[t]
-            mat.use_fake_user = True
-        else:
-            mat = bpy.data.materials.new(t)
-        me.materials.append(mat)
+        
+        def add_material(mname, props):
+            if mname in bpy.data.materials:
+                mat = bpy.data.materials[mname]
+                mat.use_fake_user = True
+            else:
+                mat = bpy.data.materials.new(mname)
+                for k,v in props.items():
+                    setattr(mat, k, v)
+            me.materials.append(mat)
+                
+        needs_default = -1 in matids
+        if needs_default: add_material(t, {})
+        
+        for mat in mats:
+            props = {}
+            if mat.has_diffuse: props['diffuse_color'] = mat.diffuse
+            if mat.has_specular: props['specular_color'] = mat.specular
+            if mat.has_transparency and mat.transparency > 0:
+                props['alpha'] = 1.0 - mat.transparency
+                props['use_transparency'] = True
+            if mat.has_specularity: props['specular_hardness'] = mat.specularity
+            add_material(mat.name, props)
 
         bob = bpy.data.objects.new(nm, me)
         mat = mathutils.Matrix(([m[0], m[1], m[2], 0],
@@ -127,6 +146,11 @@ def import_ifc(filename, use_names, process_relations):
 
         if ob.parent_id > 0:
             id_to_parent[ob.id] = ob.parent_id
+            
+        me.calc_tessface()
+        
+        for face, matid in zip(me.tessfaces, matids):
+            face.material_index = matid + (1 if needs_default else 0)
             
         progress = IfcImport.Progress() // 2
         if progress > old_progress:

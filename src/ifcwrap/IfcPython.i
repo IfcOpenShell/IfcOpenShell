@@ -115,6 +115,7 @@
 			specular = property(specular)
 			transparency = property(transparency)
 			specularity = property(specularity)
+			name = property(name)
 		def __repr__(self): return "Material"
     %}
 };
