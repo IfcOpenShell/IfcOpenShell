@@ -270,7 +270,8 @@ void ColladaSerializer::writeHeader() {
 }
 
 void ColladaSerializer::writeTesselated(const IfcGeomObjects::IfcGeomObject* o) {
-	exporter.writeTesselated(o->guid, o->name, o->type, o->id, o->matrix, o->mesh->verts, o->mesh->normals, o->mesh->faces, o->mesh->materials, o->mesh->surface_styles);
+	const IfcGeomObjects::IfcRepresentationTriangulation& mesh = o->mesh();
+	exporter.writeTesselated(o->guid(), o->name(), o->type(), o->id(), o->matrix(), mesh.verts(), mesh.normals(), mesh.faces(), mesh.materials(), mesh.surface_styles());
 }
 
 void ColladaSerializer::finalize() {

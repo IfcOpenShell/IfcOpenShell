@@ -17,6 +17,11 @@
  *                                                                              *
  ********************************************************************************/
 
+namespace IfcGeom {
+	class SurfaceStyle {
+	};
+}
+
 namespace IfcGeomObjects {
 
 	const int WELD_VERTICES = 1;
@@ -28,37 +33,102 @@ namespace IfcGeomObjects {
 	const int FORCE_CCW_FACE_ORIENTATION = 7;
     const int DISABLE_OPENING_SUBTRACTIONS = 8;
 
-	class IfcMesh {
+	class IfcRepresentationTriangulation {
+	private:
+		int _id;
+		std::vector<float> _verts;
+		std::vector<int> _faces;
+		std::vector<int> _edges;
+		std::vector<float> _normals;
+		std::vector<int> _materials;
+		std::vector<const IfcGeom::SurfaceStyle*> _surface_styles;
+
+		IfcRepresentationTriangulation();
+		IfcRepresentationTriangulation(const IfcRepresentationTriangulation&);
+		IfcRepresentationTriangulation& operator=(const IfcRepresentationTriangulation&);
+		virtual ~IfcRepresentationTriangulation();
 	public:
-		int id;
-		std::vector<float> verts;
-		std::vector<int> faces;
-		std::vector<int> edges;
-		std::vector<float> normals;
-		std::string brep_data;
+		int id() const;
+		const std::vector<float>& verts() const;
+		const std::vector<int>& faces() const;
+		const std::vector<int>& edges() const;
+		const std::vector<float>& normals() const;
+		const std::vector<int>& materials() const;
+	};
+
+	class IfcRepresentationBrepData {
+	private:
+		int _id;
+		std::string _brep_data;
+
+		IfcRepresentationBrepData();
+		IfcRepresentationBrepData(const IfcRepresentationBrepData&);
+		IfcRepresentationBrepData& operator=(const IfcRepresentationBrepData&);
+		virtual ~IfcRepresentationBrepData();
+	public:
+		int id() const;
+		const std::string& brep_data() const;
 	};
 
 	class IfcObject {
+	private:
+		int _id;
+		int _parent_id;
+		std::string _name;
+		std::string _type;
+		std::string _guid;
+		std::vector<float> _matrix;
+
+		IfcObject();
+		IfcObject(const IfcObject& other);
+		IfcObject& operator=(const IfcObject& other);
+		virtual ~IfcObject() {}
 	public:
-		int id;
-		int parent_id;
-		std::string name;
-		std::string type;
-		std::string guid;
-		std::vector<float> matrix;
+		int id() const;
+		int parent_id() const;
+		const std::string& name() const;
+		const std::string& type() const;
+		const std::string& guid() const;
+		const std::vector<float>& matrix() const;
 	};
 
 	class IfcGeomObject : public IfcObject {
+	private:
+		IfcRepresentationTriangulation* _mesh;
+
+		IfcGeomObject();
+		IfcGeomObject(const IfcGeomObject& other);
+		IfcGeomObject& operator=(const IfcGeomObject& other);
+		virtual ~IfcGeomObject();
 	public:
-		IfcMesh* mesh;
+		const IfcRepresentationTriangulation& mesh() const;
 	};
 
-	bool Next();
-	const IfcGeomObject* Get();
-	bool Init(const std::string fn);
+	class IfcGeomBrepDataObject : public IfcObject {
+	private:
+		IfcRepresentationBrepData* _mesh;
+
+		IfcGeomBrepDataObject();
+		IfcGeomBrepDataObject(const IfcGeomBrepDataObject& other);
+		IfcGeomBrepDataObject& operator=(const IfcGeomBrepDataObject& other);
+		virtual ~IfcGeomBrepDataObject();
+	public:
+		const IfcRepresentationBrepData& mesh() const;
+	};
+
 	void Settings(int setting, bool value);
-	int Progress();
+	
+	bool Init(const std::string fn);
+	
+	const IfcGeomObject* Get();
+	const IfcGeomBrepDataObject* GetBrepData();
+	
 	const IfcObject* GetObject(int id);
-	bool CleanUp();
-	std::string GetLog();
+
+	bool Next();
+	
+	int Progress();
+
+	const std::string GetLog();
+	bool CleanUp();	
 };

@@ -64,18 +64,20 @@ void WaveFrontOBJSerializer::writeMaterial(const IfcGeom::SurfaceStyle& style) {
 	}
 }
 void WaveFrontOBJSerializer::writeTesselated(const IfcGeomObjects::IfcGeomObject* o) {
-	const std::string name = o->name.empty() ? o->guid : o->name;
+	const std::string name = o->name().empty() ? o->guid() : o->name();
 	obj_stream << "g " << name << std::endl;
 	obj_stream << "s 1" << std::endl;
+
+	const IfcGeomObjects::IfcRepresentationTriangulation& mesh = o->mesh();
 	
-	const int vcount = o->mesh->verts.size() / 3;
-	for ( std::vector<float>::const_iterator it = o->mesh->verts.begin(); it != o->mesh->verts.end(); ) {
+	const int vcount = mesh.verts().size() / 3;
+	for ( std::vector<float>::const_iterator it = mesh.verts().begin(); it != mesh.verts().end(); ) {
 		const double x = *(it++);
 		const double y = *(it++);
 		const double z = *(it++);
 		obj_stream << "v " << x << " " << y << " " << z << std::endl;
 	}
-	for ( std::vector<float>::const_iterator it = o->mesh->normals.begin(); it != o->mesh->normals.end(); ) {
+	for ( std::vector<float>::const_iterator it = mesh.normals().begin(); it != mesh.normals().end(); ) {
 		const double x = *(it++);
 		const double y = *(it++);
 		const double z = *(it++);
@@ -83,17 +85,17 @@ void WaveFrontOBJSerializer::writeTesselated(const IfcGeomObjects::IfcGeomObject
 	}
 
 	int previous_material_id = -2;
-	std::vector<int>::const_iterator material_it = o->mesh->materials.begin();
+	std::vector<int>::const_iterator material_it = mesh.materials().begin();
 
-	for ( std::vector<int>::const_iterator it = o->mesh->faces.begin(); it != o->mesh->faces.end(); ) {
+	for ( std::vector<int>::const_iterator it = mesh.faces().begin(); it != mesh.faces().end(); ) {
 		
 		const int material_id = *(material_it++);
 		if (material_id != previous_material_id) {
 			const IfcGeom::SurfaceStyle* material_style = 0;
 			if (material_id >= 0) {
-				material_style = o->mesh->surface_styles[material_id];
+				material_style = mesh.surface_styles()[material_id];
 			} else {
-				material_style = IfcGeom::get_default_style(o->type);
+				material_style = IfcGeom::get_default_style(o->type());
 			}
 			const std::string material_name = material_style->Name();
 			obj_stream << "usemtl " << material_name << std::endl;

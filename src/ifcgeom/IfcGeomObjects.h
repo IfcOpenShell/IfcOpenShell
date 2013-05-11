@@ -116,15 +116,13 @@ namespace IfcGeomObjects {
 	class IfcRepresentationShapeModel {
 	private:
 		unsigned int id;
-		bool owns_shapes;
 		const IfcGeom::IfcRepresentationShapeItems shapes;
 		IfcRepresentationShapeModel(const IfcRepresentationShapeModel& other);
 		IfcRepresentationShapeModel& operator=(const IfcRepresentationShapeModel& other);
 	public:
-		IfcRepresentationShapeModel(unsigned int id, const IfcGeom::IfcRepresentationShapeItems& shapes, bool owns_shapes = false)
+		IfcRepresentationShapeModel(unsigned int id, const IfcGeom::IfcRepresentationShapeItems& shapes)
 			: id(id)
 			, shapes(shapes)
-			, owns_shapes(owns_shapes)
 		{}
 		virtual ~IfcRepresentationShapeModel() {}
 		IfcGeom::IfcRepresentationShapeItems::const_iterator begin() const { return shapes.begin(); }
@@ -133,24 +131,38 @@ namespace IfcGeomObjects {
 	};
 
 	class IfcRepresentationBrepData {
+	private:
+		int _id;
+		std::string _brep_data;
 	public:
-		int id;
-		std::string brep_data;
+		int id() const;
+		const std::string& brep_data() const;
 		IfcRepresentationBrepData(const IfcRepresentationShapeModel& s);
 		virtual ~IfcRepresentationBrepData() {}
+	private:
+		IfcRepresentationBrepData();
+		IfcRepresentationBrepData(const IfcRepresentationBrepData&);
+		IfcRepresentationBrepData& operator=(const IfcRepresentationBrepData&);
 	};
 
 	class IfcRepresentationTriangulation {
-	public:
-		int id;
-		std::vector<float> verts;
-		std::vector<int> faces;
-		std::vector<int> edges;
-		std::vector<float> normals;
-		std::vector<int> materials;
-		std::vector<const IfcGeom::SurfaceStyle*> surface_styles;
+	private:
+		int _id;
+		std::vector<float> _verts;
+		std::vector<int> _faces;
+		std::vector<int> _edges;
+		std::vector<float> _normals;
+		std::vector<int> _materials;
+		std::vector<const IfcGeom::SurfaceStyle*> _surface_styles;
 		VertKeyMap welds;
-		
+	public:
+		int id() const;
+		const std::vector<float>& verts() const;
+		const std::vector<int>& faces() const;
+		const std::vector<int>& edges() const;
+		const std::vector<float>& normals() const;
+		const std::vector<int>& materials() const;
+		const std::vector<const IfcGeom::SurfaceStyle*>& surface_styles() const;
 		IfcRepresentationTriangulation(const IfcRepresentationShapeModel& s);
 		virtual ~IfcRepresentationTriangulation() {}
 	private:
@@ -160,41 +172,53 @@ namespace IfcGeomObjects {
 			if ( edgecount.find(e) == edgecount.end() ) edgecount[e] = 1;
 			else edgecount[e] ++;
 			edges_temp.push_back(e);
-		}		
+		}
+		IfcRepresentationTriangulation();
+		IfcRepresentationTriangulation(const IfcRepresentationTriangulation&);
+		IfcRepresentationTriangulation& operator=(const IfcRepresentationTriangulation&);
 	};
 
 	class IfcObject {
+	private:
+		int _id;
+		int _parent_id;
+		std::string _name;
+		std::string _type;
+		std::string _guid;
+		std::vector<float> _matrix;
 	public:
-		int id;
-		int parent_id;
-		std::string name;
-		std::string type;
-		std::string guid;
-		std::vector<float> matrix;
-		gp_Trsf trsf;
+		int id() const;
+		int parent_id() const;
+		const std::string& name() const;
+		const std::string& type() const;
+		const std::string& guid() const;
+		const std::vector<float>& matrix() const;
 		IfcObject(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const gp_Trsf& trsf);
 		virtual ~IfcObject() {}
 	};
 
 	class IfcGeomShapeModelObject : public IfcObject {
+	private:
+		IfcRepresentationShapeModel* _mesh;
 	public:
-		IfcRepresentationShapeModel* mesh;
+		const IfcRepresentationShapeModel& mesh() const;
 		IfcGeomShapeModelObject(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const gp_Trsf& trsf, IfcRepresentationShapeModel* mesh);
 		virtual ~IfcGeomShapeModelObject() {
-			delete mesh;
+			delete _mesh;
 		}
 	private:
 		IfcGeomShapeModelObject(const IfcGeomShapeModelObject& other);
-		IfcGeomShapeModelObject& operator=(const IfcGeomShapeModelObject& other);
-		
+		IfcGeomShapeModelObject& operator=(const IfcGeomShapeModelObject& other);		
 	};
 
 	class IfcGeomObject : public IfcObject {
+	private:
+		IfcRepresentationTriangulation* _mesh;
 	public:
-		IfcRepresentationTriangulation* mesh;
+		const IfcRepresentationTriangulation& mesh() const;
 		IfcGeomObject(const IfcGeomShapeModelObject& shape_model);
 		virtual ~IfcGeomObject() {
-			delete mesh;
+			delete _mesh;
 		}
 	private:
 		IfcGeomObject(const IfcGeomObject& other);
@@ -202,11 +226,13 @@ namespace IfcGeomObjects {
 	};
 
 	class IfcGeomBrepDataObject : public IfcObject {
+	private:
+		IfcRepresentationBrepData* _mesh;
 	public:
-		IfcRepresentationBrepData* mesh;
+		const IfcRepresentationBrepData& mesh() const;
 		IfcGeomBrepDataObject(const IfcGeomShapeModelObject& shape_model);
 		virtual ~IfcGeomBrepDataObject() {
-			delete mesh;
+			delete _mesh;
 		}
 	private:
 		IfcGeomBrepDataObject(const IfcGeomBrepDataObject& other);
@@ -229,7 +255,7 @@ namespace IfcGeomObjects {
 	bool Next();
 	int Progress();
 	
-	std::string GetLog();
+	const std::string GetLog();
 	IfcParse::IfcFile* GetFile();
 
 	bool CleanUp();

@@ -237,7 +237,7 @@ int main(int argc, char** argv) {
 			geom_object = IfcGeomObjects::GetShapeModel();
 		}
 
-		std::string lowercase_type = geom_object->type;
+		std::string lowercase_type = geom_object->type();
 		for (std::string::iterator c = lowercase_type.begin(); c != lowercase_type.end(); ++c) {
 			*c = tolower(*c);
 		}
