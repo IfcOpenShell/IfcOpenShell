@@ -19,12 +19,30 @@
 
 %include "std_vector.i"
 %include "std_string.i"
+%include "exception.i"
+
+%typemap(out) const double* {
+	// This is only used for RGB colours, hence the size of 3
+	$result = PyTuple_New(3);
+	for (int i = 0; i < 3; ++i) {
+		PyTuple_SetItem($result, i, PyFloat_FromDouble($1[i]));
+	}
+}
+
+%exception {
+	try {
+		$action
+	} catch(std::runtime_error& e) {
+		SWIG_exception(SWIG_RuntimeError, e.what());
+	} catch(...) {
+		SWIG_exception(SWIG_RuntimeError, "An unknown error occurred");
+	}
+}
 
 %include "Interface.h"
 
 %module IfcImport %{
 	#include "Interface.h"
-	using namespace IfcGeom;
 	using namespace IfcGeomObjects;
 %}
 
@@ -37,6 +55,7 @@
 			faces = property(faces)
 			edges = property(edges)
 			normals = property(normals)
+			material_ids = property(material_ids)
 			materials = property(materials)
 		def __repr__(self): return "RepresentationTriangulation #%d"%self.id
     %}
@@ -84,7 +103,24 @@
     %}
 };
 
+%extend IfcGeomObjects::Material {
+	%pythoncode %{
+		if _newclass:
+			# Hide the getters with read-only property implementations
+			has_diffuse = property(hasDiffuse)
+			has_specular = property(hasSpecular)
+			has_transparency = property(hasTransparency)
+			has_specularity = property(hasSpecularity)
+			diffuse = property(diffuse)
+			specular = property(specular)
+			transparency = property(transparency)
+			specularity = property(specularity)
+		def __repr__(self): return "Material"
+    %}
+};
+
 namespace std {
 	%template(IntVector) vector<int>;
 	%template(FloatVector) vector<float>;
+	%template(MaterialVector) vector<IfcGeomObjects::Material>;
 };

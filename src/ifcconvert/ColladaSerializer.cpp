@@ -49,7 +49,7 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::addFloatSource(const
 	source.finish();
 }
 			
-void ColladaSerializer::ColladaExporter::ColladaGeometries::write(const std::string mesh_id, const std::string& default_material_name, const std::vector<float>& positions, const std::vector<float>& normals, const std::vector<int>& indices, const std::vector<int> material_ids, const std::vector<const IfcGeom::SurfaceStyle*>& materials) {
+void ColladaSerializer::ColladaExporter::ColladaGeometries::write(const std::string mesh_id, const std::string& default_material_name, const std::vector<float>& positions, const std::vector<float>& normals, const std::vector<int>& indices, const std::vector<int> material_ids, const std::vector<IfcGeomObjects::Material>& materials) {
 	openMesh(mesh_id);
 
 	// The normals vector can be empty for example when the WELD_VERTICES setting is used.
@@ -78,7 +78,7 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(const std::str
 			COLLADASW::Triangles triangles(mSW);
 			triangles.setMaterial(collada_id(previous_material_id == -1
 				? default_material_name
-				: materials[previous_material_id]->Name()));
+				: materials[previous_material_id].name()));
 			triangles.setCount(num_triangles);
 			int offset = 0;
 			triangles.getInputList().push_back(COLLADASW::Input(COLLADASW::InputSemantic::VERTEX,"#" + mesh_id + COLLADASW::LibraryGeometries::VERTICES_ID_SUFFIX, offset++ ) );
@@ -153,23 +153,23 @@ void ColladaSerializer::ColladaExporter::ColladaScene::write() {
 	}
 }
 		
-void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write(const IfcGeom::SurfaceStyle* style) {
-	openEffect(collada_id(style->Name()) + "-fx");
+void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write(const IfcGeomObjects::Material& material) {
+	openEffect(collada_id(material.name()) + "-fx");
 	COLLADASW::EffectProfile effect(mSW);
 	effect.setShaderType(COLLADASW::EffectProfile::LAMBERT);
-	if (style->Diffuse()) {
-		const IfcGeom::SurfaceStyle::ColorComponent& diffuse = *style->Diffuse();
-		effect.setDiffuse(COLLADASW::ColorOrTexture(COLLADASW::Color(diffuse.R(),diffuse.G(),diffuse.B())));
+	if (material.hasDiffuse()) {
+		const double* diffuse = material.diffuse();
+		effect.setDiffuse(COLLADASW::ColorOrTexture(COLLADASW::Color(diffuse[0],diffuse[1],diffuse[2])));
 	}
-	if (style->Specular()) {
-		const IfcGeom::SurfaceStyle::ColorComponent& specular = *style->Specular();
-		effect.setSpecular(COLLADASW::ColorOrTexture(COLLADASW::Color(specular.R(),specular.G(),specular.B())));
+	if (material.hasSpecular()) {
+		const double* specular = material.specular();
+		effect.setSpecular(COLLADASW::ColorOrTexture(COLLADASW::Color(specular[0],specular[1],specular[2])));
 	}
-	if (style->Specularity()) {
-		effect.setShininess(*style->Specularity());
+	if (material.hasSpecularity()) {
+		effect.setShininess(material.specularity());
 	}
-	if (style->Transparency()) {
-		const double transparency = *style->Transparency();
+	if (material.hasTransparency()) {
+		const double transparency = material.transparency();
 		if (transparency > 0) {
 			effect.setTransparency(transparency);
 		}
@@ -182,21 +182,21 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::close
 	closeLibrary();
 }
 			
-void ColladaSerializer::ColladaExporter::ColladaMaterials::add(const IfcGeom::SurfaceStyle* style) {
-	if (!contains(style)) {
-		effects.write(style);
-		surface_styles.push_back(style);
+void ColladaSerializer::ColladaExporter::ColladaMaterials::add(const IfcGeomObjects::Material& material) {
+	if (!contains(material)) {
+		effects.write(material);
+		materials.push_back(material);
 	}
 }
 
-bool ColladaSerializer::ColladaExporter::ColladaMaterials::contains(const IfcGeom::SurfaceStyle* style) {
-	return std::find(surface_styles.begin(), surface_styles.end(), style) != surface_styles.end();
+bool ColladaSerializer::ColladaExporter::ColladaMaterials::contains(const IfcGeomObjects::Material& material) {
+	return std::find(materials.begin(), materials.end(), material) != materials.end();
 }
 
 void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
 	effects.close();
-	for (auto it = surface_styles.begin(); it != surface_styles.end(); ++it) {
-		const std::string& material_name = collada_id((*it)->Name());
+	for (auto it = materials.begin(); it != materials.end(); ++it) {
+		const std::string& material_name = collada_id((*it).name());
 		openMaterial(material_name);
 		addInstanceEffect("#" + material_name + "-fx");
 		closeLibrary();
@@ -214,22 +214,22 @@ void ColladaSerializer::ColladaExporter::startDocument() {
 	asset.add();
 }
 
-void ColladaSerializer::ColladaExporter::writeTesselated(const std::string& guid, const std::string& name, const std::string& type, int obj_id, const std::vector<float>& matrix, const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<int>& indices, const std::vector<int>& material_ids, const std::vector<const IfcGeom::SurfaceStyle*>& _materials) {
-	const IfcGeom::SurfaceStyle* default_for_type = IfcGeom::get_default_style(type);
+void ColladaSerializer::ColladaExporter::writeTesselated(const std::string& guid, const std::string& name, const std::string& type, int obj_id, const std::vector<float>& matrix, const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<int>& indices, const std::vector<int>& material_ids, const std::vector<IfcGeomObjects::Material>& _materials) {
+	const IfcGeomObjects::Material default_for_type = IfcGeomObjects::Material(IfcGeom::get_default_style(type));
 	std::vector<std::string> material_references;
 	const bool needs_default = std::find(material_ids.begin(), material_ids.end(), -1) != material_ids.end();
 	if (needs_default) {
 		if (!materials.contains(default_for_type)) {
 			materials.add(default_for_type);
 		}
-		material_references.push_back(collada_id(default_for_type->Name()));
+		material_references.push_back(collada_id(default_for_type.name()));
 	}	
-	for (std::vector<const IfcGeom::SurfaceStyle*>::const_iterator it = _materials.begin(); it != _materials.end(); ++it) {
-		const IfcGeom::SurfaceStyle* const surface_style_pointer = *it;
-		if (!materials.contains(surface_style_pointer)) {
-			materials.add(surface_style_pointer);
+	for (std::vector<IfcGeomObjects::Material>::const_iterator it = _materials.begin(); it != _materials.end(); ++it) {
+		const IfcGeomObjects::Material& material = *it;
+		if (!materials.contains(material)) {
+			materials.add(material);
 		}
-		material_references.push_back(collada_id(surface_style_pointer->Name()));
+		material_references.push_back(collada_id(material.name()));
 	}
 	deferreds.push_back(DeferredObject(guid, name, type, obj_id, matrix, vertices, normals, indices, material_ids, _materials, material_references));
 }
@@ -271,7 +271,7 @@ void ColladaSerializer::writeHeader() {
 
 void ColladaSerializer::writeTesselated(const IfcGeomObjects::IfcGeomObject* o) {
 	const IfcGeomObjects::IfcRepresentationTriangulation& mesh = o->mesh();
-	exporter.writeTesselated(o->guid(), o->name(), o->type(), o->id(), o->matrix(), mesh.verts(), mesh.normals(), mesh.faces(), mesh.materials(), mesh.surface_styles());
+	exporter.writeTesselated(o->guid(), o->name(), o->type(), o->id(), o->matrix(), mesh.verts(), mesh.normals(), mesh.faces(), mesh.material_ids(), mesh.materials());
 }
 
 void ColladaSerializer::finalize() {

@@ -46,12 +46,12 @@
 #include "../ifcgeom/IfcGeom.h"
 
 // Welds vertices that belong to different faces
-bool weld_vertices = true;
+static bool weld_vertices = true;
 
-bool convert_back_units = false;
-bool use_faster_booleans = false;
-bool disable_subtractions = false;
-bool disable_triangulation = false;
+static bool convert_back_units = false;
+static bool use_faster_booleans = false;
+static bool disable_subtractions = false;
+static bool disable_triangulation = false;
 
 int IfcGeomObjects::IfcRepresentationTriangulation::addvert(int material_index, const gp_XYZ& p) {
 	const float X = convert_back_units ? (float) (p.X() / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT)) : (float)p.X();
@@ -71,8 +71,8 @@ int IfcGeomObjects::IfcRepresentationTriangulation::addvert(int material_index, 
 	return i;
 }
 
-bool use_world_coords = false;
-bool use_brep_data = false;
+static bool use_world_coords = false;
+static bool use_brep_data = false;
 
 static IfcParse::IfcFile* ifc_file = 0;
 
@@ -111,12 +111,13 @@ IfcGeomObjects::IfcRepresentationTriangulation::IfcRepresentationTriangulation(c
 
 		int surface_style_id = -1;
 		if (it->hasStyle()) {
-			std::vector<const IfcGeom::SurfaceStyle*>::const_iterator jt = std::find(_surface_styles.begin(), _surface_styles.end(), &it->Style());
-			if (jt == _surface_styles.end()) {
-				surface_style_id = _surface_styles.size();
-				_surface_styles.push_back(&it->Style());
+			Material adapter(&it->Style());
+			std::vector<Material>::const_iterator jt = std::find(_materials.begin(), _materials.end(), adapter);
+			if (jt == _materials.end()) {
+				surface_style_id = _materials.size();
+				_materials.push_back(adapter);
 			} else {
-				surface_style_id = jt - _surface_styles.begin();
+				surface_style_id = jt - _materials.begin();
 			}
 		}
 
@@ -200,7 +201,7 @@ IfcGeomObjects::IfcRepresentationTriangulation::IfcRepresentationTriangulation(c
 					_faces.push_back(dict[n2]);
 					_faces.push_back(dict[n3]);
 
-					_materials.push_back(surface_style_id);
+					_material_ids.push_back(surface_style_id);
 
 					addedge(n1,n2,edgecount,edges_temp);
 					addedge(n2,n3,edgecount,edges_temp);
@@ -258,20 +259,20 @@ IfcGeomObjects::IfcGeomObject::IfcGeomObject(
 {}
 
 // A container and iterator for IfcShapeRepresentations
-Ifc2x3::IfcShapeRepresentation::list shapereps;
-Ifc2x3::IfcShapeRepresentation::it shaperep_iterator;
+static Ifc2x3::IfcShapeRepresentation::list shapereps;
+static Ifc2x3::IfcShapeRepresentation::it shaperep_iterator;
 
 // The object is fetched beforehand to be positive an entity actually exists
-IfcGeomObjects::IfcGeomObject* current_geom_obj = 0;
-IfcGeomObjects::IfcGeomShapeModelObject* current_shape_model_obj = 0;
-IfcGeomObjects::IfcGeomBrepDataObject* current_brep_data_obj = 0;
+static IfcGeomObjects::IfcGeomObject* current_geom_obj = 0;
+static IfcGeomObjects::IfcGeomShapeModelObject* current_shape_model_obj = 0;
+static IfcGeomObjects::IfcGeomBrepDataObject* current_brep_data_obj = 0;
 
 // A container and iterator for IfcBuildingElements for the current IfcShapeRepresentation referenced by *shaperep_iterator
-Ifc2x3::IfcProduct::list entities;
-Ifc2x3::IfcProduct::it ifcproduct_iterator;
+static Ifc2x3::IfcProduct::list entities;
+static Ifc2x3::IfcProduct::it ifcproduct_iterator;
 
-int done;
-int total;
+static int done;
+static int total;
 
 // Move the the next IfcShapeRepresentation
 void _nextShape() {
@@ -501,7 +502,7 @@ bool IfcGeomObjects::Next() {
 	return try_and_create_representations_for_current_entity();
 }
 
-std::vector<IfcGeomObjects::IfcObject*> returned_objects;
+static std::vector<IfcGeomObjects::IfcObject*> returned_objects;
 bool IfcGeomObjects::CleanUp() {
 	// TODO: Correctly implement destructor for IfcFile
 	delete ifc_file;
@@ -537,12 +538,18 @@ const IfcGeomObjects::IfcObject* IfcGeomObjects::GetObject(int id) {
 	return ifc_object;
 }
 const IfcGeomObjects::IfcGeomObject* IfcGeomObjects::Get() {
+	if (disable_triangulation) {
+		throw std::runtime_error("No triangulation available");
+	}
 	return current_geom_obj;
 }
 const IfcGeomObjects::IfcGeomShapeModelObject* IfcGeomObjects::GetShapeModel() {
 	return current_shape_model_obj;
 }
 const IfcGeomObjects::IfcGeomBrepDataObject* IfcGeomObjects::GetBrepData() {
+	if (!use_brep_data) {
+		throw std::runtime_error("No BRep data available");
+	}
 	return current_brep_data_obj;
 }
 double UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v ) {
@@ -676,6 +683,7 @@ void IfcGeomObjects::Settings(int setting, bool value) {
 		break;
 	case USE_BREP_DATA:
 		use_brep_data = value;
+		disable_triangulation = value;
 		break;
 	case FASTER_BOOLEANS:
 		use_faster_booleans = value;
@@ -706,6 +714,20 @@ IfcParse::IfcFile* IfcGeomObjects::GetFile() {
   return ifc_file;
 }
 
+static double black[3] = {0,0,0};
+
+IfcGeomObjects::Material::Material(const IfcGeom::SurfaceStyle* style) : style(style) {}
+bool IfcGeomObjects::Material::hasDiffuse() const { return style->Diffuse(); }
+bool IfcGeomObjects::Material::hasSpecular() const { return style->Specular(); }
+bool IfcGeomObjects::Material::hasTransparency() const { return style->Transparency(); }
+bool IfcGeomObjects::Material::hasSpecularity() const { return style->Specularity(); }
+const double* IfcGeomObjects::Material::diffuse() const { if (hasDiffuse()) return &((*style->Diffuse()).R()); else return black; }
+const double* IfcGeomObjects::Material::specular() const { if (hasSpecular()) return &((*style->Specular()).R()); else return black; }
+double IfcGeomObjects::Material::transparency() const { if (hasTransparency()) return *style->Transparency(); else return 0; }
+double IfcGeomObjects::Material::specularity() const { if (hasSpecularity()) return *style->Specularity(); else return 0; }
+const std::string IfcGeomObjects::Material::name() const { return style->Name(); }
+bool IfcGeomObjects::Material::operator==(const IfcGeomObjects::Material& other) const { return style == other.style; }
+
 int IfcGeomObjects::IfcRepresentationBrepData::id() const { return _id; }
 const std::string& IfcGeomObjects::IfcRepresentationBrepData::brep_data() const { return _brep_data; }
 
@@ -714,8 +736,8 @@ const std::vector<float>& IfcGeomObjects::IfcRepresentationTriangulation::verts(
 const std::vector<int>& IfcGeomObjects::IfcRepresentationTriangulation::faces() const { return _faces; }
 const std::vector<int>& IfcGeomObjects::IfcRepresentationTriangulation::edges() const { return _edges; }
 const std::vector<float>& IfcGeomObjects::IfcRepresentationTriangulation::normals() const { return _normals; }
-const std::vector<int>& IfcGeomObjects::IfcRepresentationTriangulation::materials() const { return _materials; }
-const std::vector<const IfcGeom::SurfaceStyle*>& IfcGeomObjects::IfcRepresentationTriangulation::surface_styles() const { return _surface_styles; }
+const std::vector<int>& IfcGeomObjects::IfcRepresentationTriangulation::material_ids() const { return _material_ids; }
+const std::vector<IfcGeomObjects::Material>& IfcGeomObjects::IfcRepresentationTriangulation::materials() const { return _materials; }
 
 int IfcGeomObjects::IfcObject::id() const { return _id; }
 int IfcGeomObjects::IfcObject::parent_id() const { return _parent_id; }
@@ -727,3 +749,4 @@ const std::vector<float>& IfcGeomObjects::IfcObject::matrix() const { return _ma
 const IfcGeomObjects::IfcRepresentationShapeModel& IfcGeomObjects::IfcGeomShapeModelObject::mesh() const { return *_mesh; }
 const IfcGeomObjects::IfcRepresentationTriangulation& IfcGeomObjects::IfcGeomObject::mesh() const { return *_mesh; }
 const IfcGeomObjects::IfcRepresentationBrepData& IfcGeomObjects::IfcGeomBrepDataObject::mesh() const { return *_mesh; }
+

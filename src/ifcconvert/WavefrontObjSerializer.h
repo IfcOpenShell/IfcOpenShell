@@ -44,7 +44,7 @@ public:
 	virtual ~WaveFrontOBJSerializer() {}
 	bool ready();
 	void writeHeader();
-	void writeMaterial(const IfcGeom::SurfaceStyle& style);
+	void writeMaterial(const IfcGeomObjects::Material& style);
 	void writeTesselated(const IfcGeomObjects::IfcGeomObject* o);
 	void writeShapeModel(const IfcGeomObjects::IfcGeomShapeModelObject* o) {}
 	void finalize() {}

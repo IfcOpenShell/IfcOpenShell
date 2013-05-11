@@ -17,11 +17,6 @@
  *                                                                              *
  ********************************************************************************/
 
-namespace IfcGeom {
-	class SurfaceStyle {
-	};
-}
-
 namespace IfcGeomObjects {
 
 	const int WELD_VERTICES = 1;
@@ -33,6 +28,21 @@ namespace IfcGeomObjects {
 	const int FORCE_CCW_FACE_ORIENTATION = 7;
     const int DISABLE_OPENING_SUBTRACTIONS = 8;
 
+	class Material {
+	private:
+		void* style;
+	public:
+		bool hasDiffuse() const;
+		bool hasSpecular() const;
+		bool hasTransparency() const;
+		bool hasSpecularity() const;
+		const double* diffuse() const;
+		const double* specular() const;
+		double transparency() const;
+		double specularity() const;
+		const std::string name() const;
+	};
+
 	class IfcRepresentationTriangulation {
 	private:
 		int _id;
@@ -40,8 +50,8 @@ namespace IfcGeomObjects {
 		std::vector<int> _faces;
 		std::vector<int> _edges;
 		std::vector<float> _normals;
-		std::vector<int> _materials;
-		std::vector<const IfcGeom::SurfaceStyle*> _surface_styles;
+		std::vector<int> _material_ids;
+		std::vector<Material> _materials;
 
 		IfcRepresentationTriangulation();
 		IfcRepresentationTriangulation(const IfcRepresentationTriangulation&);
@@ -53,7 +63,8 @@ namespace IfcGeomObjects {
 		const std::vector<int>& faces() const;
 		const std::vector<int>& edges() const;
 		const std::vector<float>& normals() const;
-		const std::vector<int>& materials() const;
+		const std::vector<int>& material_ids() const;
+		const std::vector<Material>& materials() const;
 	};
 
 	class IfcRepresentationBrepData {

@@ -113,6 +113,25 @@ namespace IfcGeomObjects {
 	typedef std::map<VertKey,int> VertKeyMap;
 	typedef std::pair<int,int> Edge;
 
+	class Material {
+	private:
+		const IfcGeom::SurfaceStyle* style;
+	public:
+		explicit Material(const IfcGeom::SurfaceStyle* style);
+		// Material(const Material& other);
+		// Material& operator=(const Material& other);
+		bool hasDiffuse() const;
+		bool hasSpecular() const;
+		bool hasTransparency() const;
+		bool hasSpecularity() const;
+		const double* diffuse() const;
+		const double* specular() const;
+		double transparency() const;
+		double specularity() const;
+		const std::string name() const;
+		bool operator==(const Material& other) const;
+	};
+
 	class IfcRepresentationShapeModel {
 	private:
 		unsigned int id;
@@ -152,8 +171,8 @@ namespace IfcGeomObjects {
 		std::vector<int> _faces;
 		std::vector<int> _edges;
 		std::vector<float> _normals;
-		std::vector<int> _materials;
-		std::vector<const IfcGeom::SurfaceStyle*> _surface_styles;
+		std::vector<int> _material_ids;
+		std::vector<Material> _materials;
 		VertKeyMap welds;
 	public:
 		int id() const;
@@ -161,8 +180,8 @@ namespace IfcGeomObjects {
 		const std::vector<int>& faces() const;
 		const std::vector<int>& edges() const;
 		const std::vector<float>& normals() const;
-		const std::vector<int>& materials() const;
-		const std::vector<const IfcGeom::SurfaceStyle*>& surface_styles() const;
+		const std::vector<int>& material_ids() const;
+		const std::vector<Material>& materials() const;
 		IfcRepresentationTriangulation(const IfcRepresentationShapeModel& s);
 		virtual ~IfcRepresentationTriangulation() {}
 	private:
