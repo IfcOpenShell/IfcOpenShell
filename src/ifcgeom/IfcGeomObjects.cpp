@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include <map>
+#include <stdexcept>
 
 #include <gp_Mat.hxx>
 #include <gp_Mat2d.hxx>

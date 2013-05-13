@@ -20,7 +20,7 @@
 #ifndef IFCGEOMRENDERSTYLES_H
 #define IFCGEOMRENDERSTYLES_H
 
-#include <array>
+#include <tr1/array>
 
 #include "../ifcparse/Ifc2x3.h"
 
@@ -29,7 +29,7 @@ namespace IfcGeom {
 	public:
 		class ColorComponent {
 		private:
-			std::array<double, 3> data;
+			std::tr1::array<double, 3> data;
 		public:
 			ColorComponent(double r, double g, double b) {
 				data[0] = r; data[1] = g; data[2] = b;

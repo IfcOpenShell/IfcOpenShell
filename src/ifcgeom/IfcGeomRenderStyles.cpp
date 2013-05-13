@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include <map>
-#include <array>
+#include <tr1/array>
 
 #include "IfcGeomRenderStyles.h"
 
@@ -31,7 +31,7 @@ namespace IfcGeom {
 	}
 }
 
-bool process_colour(Ifc2x3::IfcColourRgb* colour, std::array<double, 3>& rgb) {
+bool process_colour(Ifc2x3::IfcColourRgb* colour, std::tr1::array<double, 3>& rgb) {
 	if (colour != 0) {
 		rgb[0] = colour->Red();
 		rgb[1] = colour->Green();
@@ -40,7 +40,7 @@ bool process_colour(Ifc2x3::IfcColourRgb* colour, std::array<double, 3>& rgb) {
 	return colour != 0;
 }
 
-bool process_colour(IfcUtil::IfcArgumentSelect* factor, std::array<double, 3>& rgb) {
+bool process_colour(IfcUtil::IfcArgumentSelect* factor, std::tr1::array<double, 3>& rgb) {
 	if (factor != 0) {
 		const double f = *factor->wrappedValue();
 		rgb[0] = rgb[1] = rgb[2] = f;
@@ -48,7 +48,7 @@ bool process_colour(IfcUtil::IfcArgumentSelect* factor, std::array<double, 3>& r
 	return factor != 0;
 }
 
-bool process_colour(Ifc2x3::IfcColourOrFactor colour_or_factor, std::array<double, 3>& rgb) {
+bool process_colour(Ifc2x3::IfcColourOrFactor colour_or_factor, std::tr1::array<double, 3>& rgb) {
 	if (colour_or_factor == 0) {
 		return false;
 	} else if (colour_or_factor->is(Ifc2x3::Type::IfcColourRgb)) {
@@ -76,7 +76,7 @@ const IfcGeom::SurfaceStyle* IfcGeom::get_style(Ifc2x3::IfcRepresentationItem* i
 	} else {
 		surface_style = SurfaceStyle(surface_style_id);
 	}
-	std::array<double, 3> rgb;
+	std::tr1::array<double, 3> rgb;
 	if (process_colour(shading_styles.second->SurfaceColour(), rgb)) {
 		surface_style.Diffuse().reset(SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
 	}
