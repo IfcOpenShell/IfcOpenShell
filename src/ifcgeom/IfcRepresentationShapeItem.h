@@ -23,8 +23,28 @@
 #include <gp_GTrsf.hxx>
 #include <TopoDS_Shape.hxx>
 
-namespace IfcGeom {
-	typedef std::pair<gp_GTrsf*,const TopoDS_Shape*> LocationShape;
-	typedef std::vector<LocationShape> ShapeList;
+#include "../ifcgeom/IfcGeomRenderStyles.h"
+
+namespace IfcGeom {	
+	class IfcRepresentationShapeItem {
+	private:
+		gp_GTrsf placement;
+		TopoDS_Shape shape;
+		const SurfaceStyle* style;
+	public:
+		IfcRepresentationShapeItem(const gp_GTrsf& placement, const TopoDS_Shape& shape, const SurfaceStyle* style)
+			: placement(placement), shape(shape), style(style) {}
+		IfcRepresentationShapeItem(const gp_GTrsf& placement, const TopoDS_Shape& shape)
+			: placement(placement), shape(shape) {}
+		IfcRepresentationShapeItem(const TopoDS_Shape& shape, const SurfaceStyle* style)
+			: shape(shape), style(style) {}
+		IfcRepresentationShapeItem(const TopoDS_Shape& shape) : shape(shape) {}
+		void move(const gp_GTrsf& trsf) { placement.Multiply(trsf); }
+		const TopoDS_Shape& Shape() const { return shape; }
+		const gp_GTrsf& Placement() const { return placement; }
+		bool hasStyle() const { return style != 0; }
+		const SurfaceStyle& Style() const { return *style; }
+	};
+	typedef std::vector<IfcRepresentationShapeItem> IfcRepresentationShapeItems;
 }
 #endif
