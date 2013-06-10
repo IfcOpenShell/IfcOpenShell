@@ -114,6 +114,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcLine::ptr l, Handle(Geom_Curve)& curve) {
 	gp_Pnt pnt;gp_Vec vec;
 	IfcGeom::convert(l->Pnt(),pnt);
 	IfcGeom::convert(l->Dir(),vec);	
+	// See note at IfcGeomWires.cpp:237
 	curve = new Geom_Line(pnt,vec);
 	return true;
 }

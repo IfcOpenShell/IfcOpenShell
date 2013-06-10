@@ -234,6 +234,15 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 		}
 	}
 	if ( (!trim_cartesian || trim_cartesian_failed) && (has_flts[0] && has_flts[1]) ) {
+		// The Geom_Line is constructed from a gp_Pnt and gp_Dir, whereas the IfcLine
+		// is defined by an IfcCartesianPoint and an IfcVector with Magnitude. Because
+		// the vector is normalised when passed to Geom_Line constructor the magnitude
+		// needs to be factored in with the IfcParameterValue here.
+		if ( basis_curve->is(Ifc2x3::Type::IfcLine) ) {
+			Ifc2x3::IfcLine* line = static_cast<Ifc2x3::IfcLine*>(basis_curve);
+			const double magnitude = line->Dir()->Magnitude();
+			flts[0] *= magnitude; flts[1] *= magnitude;
+		}
 		if ( isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],(double)(M_PI*2.0)),0.0f) ) {
 			w.Add(BRepBuilderAPI_MakeEdge(curve));
 		} else {
