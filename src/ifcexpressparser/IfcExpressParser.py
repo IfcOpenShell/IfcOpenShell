@@ -543,7 +543,7 @@ using boost::optional;
 namespace %(schema)s {
 """%{'schema_upper':schema_version.upper(),'schema':schema_version}
 
-simple_enumerations = sorted(selectable_simple_types)
+simple_enumerations = sorted(simple_types)
 entity_enumerations = sorted(entity_names)
 all_enumerations = simple_enumerations + entity_enumerations
 
@@ -613,11 +613,6 @@ while True:
             print >>h_file, c
 
 print >>h_file, "void InitStringMap();"
-print >>h_file, "void InitAttributeCountMap();"
-print >>h_file, "void InitAttributeIndexMap();"
-print >>h_file, "void InitAttributeTypeMap();"
-print >>h_file, "void InitAttributeNameMap();"
-print >>h_file, "void InitAttributeOptionalMap();"
 print >>h_file, "IfcSchemaEntity SchemaEntity(IfcAbstractEntityPtr e = 0);"
 
 print >>h_file, "}\n\n#endif"
@@ -666,6 +661,10 @@ maxlen = max([len(e) for e in all_enumerations])
 string_map,attribute_count_map,attribute_index_map,attribute_name_map,attribute_optional_map,attribute_type_map = [""]*6
 print >>cpp2_file, "void InitDescriptorMap() {"
 print >>cpp2_file, "    IfcEntityDescriptor* current;"
+for k,v in simple_types.items():
+    if k in enumerations or k in selections: continue
+    print >>cpp2_file, "    current = entity_descriptor_map[Type::%s] = new IfcEntityDescriptor(Type::%s,0);"%(k,k)
+    print >>cpp2_file, "    current->add(\"wrappedValue\",false,%s);"%(v.type_enum())
 rt_entities = set()
 while True:
     todo = [e for e in entities if e.class_name not in rt_entities]

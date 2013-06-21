@@ -3,6 +3,8 @@
 #include <map>
 #include <fstream>
 
+namespace Ifc { class IfcUntypedEntity; }
+
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/Ifc2x3.h"
 
