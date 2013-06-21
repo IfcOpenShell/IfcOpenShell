@@ -42,7 +42,7 @@
 %rename("Entity") IfcUntypedEntity;
 
 %typemap(out) IfcEntities {
-	const unsigned size = $1 ? $1->Size() : 0;
+	const unsigned size = $1->Size();
 	$result = PyList_New(size);
 	for (unsigned i = 0; i < size; ++i) {
 		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*$1)[i]), SWIGTYPE_p_Ifc__IfcUntypedEntity, 0);
@@ -144,7 +144,7 @@
 		$self->AddEntity(e);
 	}
 	void write(const std::string& fn) {
-		std::ofstream f(fn);
+		std::ofstream f(fn.c_str());
 		f << (*$self);
 	}
 }
