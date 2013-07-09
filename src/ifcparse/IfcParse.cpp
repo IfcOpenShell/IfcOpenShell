@@ -375,7 +375,6 @@ ArgumentList::ArgumentList(Tokens* t, std::vector<unsigned int>& ids) {
 				} catch ( IfcException& e ) {
 					Logger::Message(Logger::LOG_ERROR,e.what());
 				}
-				t->Next();
 			} else {
 				Push ( new TokenArgument(next) );
 			}
