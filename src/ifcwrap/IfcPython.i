@@ -42,7 +42,7 @@
 %rename("Entity") IfcUntypedEntity;
 
 %typemap(out) IfcEntities {
-	const unsigned size = $1->Size();
+	const unsigned size = $1 ? $1->Size() : 0;
 	$result = PyList_New(size);
 	for (unsigned i = 0; i < size; ++i) {
 		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*$1)[i]), SWIGTYPE_p_Ifc__IfcUntypedEntity, 0);
