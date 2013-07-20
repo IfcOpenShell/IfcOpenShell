@@ -37,7 +37,7 @@
 %rename("get_argument_type") getArgumentType;
 %rename("get_argument_name") getArgumentName;
 %rename("get_argument_index") getArgumentIndex;
-%rename("set_argument") setArgument;
+%rename("_set_argument") setArgument;
 %rename("__repr__") toString;
 %rename("Entity") IfcUntypedEntity;
 
@@ -144,11 +144,16 @@
 		$self->AddEntity(e);
 	}
 	void write(const std::string& fn) {
-		std::ofstream f(fn.c_str());
+		std::ofstream f(fn);
 		f << (*$self);
 	}
 }
 
+%extend Ifc::IfcUntypedEntity {
+	%pythoncode %{
+	set_argument = lambda self,x,y: self._set_argument(x) if y is None else self._set_argument(x,y)
+	%}
+}
 
 namespace std {
    %template(Ints) vector<int>;
