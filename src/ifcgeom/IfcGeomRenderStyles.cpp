@@ -18,7 +18,6 @@
  ********************************************************************************/
 
 #include <map>
-#include <tr1/array>
 
 #include "IfcGeomRenderStyles.h"
 

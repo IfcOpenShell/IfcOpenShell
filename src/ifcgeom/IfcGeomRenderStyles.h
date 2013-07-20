@@ -20,7 +20,11 @@
 #ifndef IFCGEOMRENDERSTYLES_H
 #define IFCGEOMRENDERSTYLES_H
 
+#ifdef __GNUC__
 #include <tr1/array>
+#else
+#include <array>
+#endif
 
 #include "../ifcparse/Ifc2x3.h"
 
