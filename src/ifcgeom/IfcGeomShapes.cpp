@@ -374,7 +374,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, IfcRepresentationShape
 	const unsigned int previous_size = (const unsigned int) shapes.size();
 	bool b = IfcGeom::convert_shapes(map->MappedRepresentation(),shapes);
 	for ( unsigned int i = previous_size; i < shapes.size(); ++ i ) {
-		shapes[i].move(gtrsf);
+		shapes[i].append(gtrsf);
 	}
 	return b;
 }

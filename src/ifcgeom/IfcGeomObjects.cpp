@@ -442,14 +442,14 @@ IfcGeomObjects::IfcGeomShapeModelObject* create_shape_model_for_next_entity() {
 			}
 			if ( use_world_coords ) {
 				for ( IfcGeom::IfcRepresentationShapeItems::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
-					it->move(trsf);
+					it->prepend(trsf);
 				}
 				trsf = gp_Trsf();
 			}
 			shape = new IfcGeomObjects::IfcRepresentationShapeModel(shaperep->entity->id(),opened_shapes);
 		} else if ( use_world_coords ) {
 			for ( IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
-				it->move(trsf);
+				it->prepend(trsf);
 			}
 			trsf = gp_Trsf();
 			shape = new IfcGeomObjects::IfcRepresentationShapeModel(shaperep->entity->id(),shapes);

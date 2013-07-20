@@ -156,7 +156,7 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x
 
 			const unsigned int current_size = (const unsigned int) opening_shapes.size();
 			for ( unsigned int i = last_size; i < current_size; ++ i ) {
-				opening_shapes[i].move(opening_trsf);
+				opening_shapes[i].prepend(opening_trsf);
 			}
 			last_size = current_size;
 		}

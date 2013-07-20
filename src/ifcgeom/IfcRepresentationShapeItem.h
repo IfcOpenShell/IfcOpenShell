@@ -40,7 +40,8 @@ namespace IfcGeom {
 			: shape(shape), style(style) {}
 		IfcRepresentationShapeItem(const TopoDS_Shape& shape)
 			: shape(shape), style(0) {}
-		void move(const gp_GTrsf& trsf) { placement.Multiply(trsf); }
+		void append(const gp_GTrsf& trsf) { placement.Multiply(trsf); }
+		void prepend(const gp_GTrsf& trsf) { placement.PreMultiply(trsf); }
 		const TopoDS_Shape& Shape() const { return shape; }
 		const gp_GTrsf& Placement() const { return placement; }
 		bool hasStyle() const { return style != 0; }
