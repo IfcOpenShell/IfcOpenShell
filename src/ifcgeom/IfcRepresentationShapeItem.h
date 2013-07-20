@@ -35,10 +35,11 @@ namespace IfcGeom {
 		IfcRepresentationShapeItem(const gp_GTrsf& placement, const TopoDS_Shape& shape, const SurfaceStyle* style)
 			: placement(placement), shape(shape), style(style) {}
 		IfcRepresentationShapeItem(const gp_GTrsf& placement, const TopoDS_Shape& shape)
-			: placement(placement), shape(shape) {}
+			: placement(placement), shape(shape), style(0) {}
 		IfcRepresentationShapeItem(const TopoDS_Shape& shape, const SurfaceStyle* style)
 			: shape(shape), style(style) {}
-		IfcRepresentationShapeItem(const TopoDS_Shape& shape) : shape(shape) {}
+		IfcRepresentationShapeItem(const TopoDS_Shape& shape)
+			: shape(shape), style(0) {}
 		void move(const gp_GTrsf& trsf) { placement.Multiply(trsf); }
 		const TopoDS_Shape& Shape() const { return shape; }
 		const gp_GTrsf& Placement() const { return placement; }
