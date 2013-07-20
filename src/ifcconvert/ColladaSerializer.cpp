@@ -76,7 +76,7 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(const std::str
 		const int num_triangles = std::distance(index_range_start, it) / 3;
 		if ((previous_material_id != current_material_id && num_triangles > 0) || (it == indices.end())) {
 			COLLADASW::Triangles triangles(mSW);
-			triangles.setMaterial(collada_id(previous_material_id == -1
+			triangles.setMaterial(collada_id(previous_material_id < 0
 				? default_material_name
 				: materials[previous_material_id].name()));
 			triangles.setCount(num_triangles);
