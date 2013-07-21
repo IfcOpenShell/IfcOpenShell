@@ -144,7 +144,7 @@
 		$self->AddEntity(e);
 	}
 	void write(const std::string& fn) {
-		std::ofstream f(fn);
+		std::ofstream f(fn.c_str());
 		f << (*$self);
 	}
 }
