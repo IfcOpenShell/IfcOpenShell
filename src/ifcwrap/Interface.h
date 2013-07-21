@@ -3,6 +3,8 @@
 #include <map>
 #include <fstream>
 
+namespace Ifc { class IfcUntypedEntity; }
+
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/Ifc2x3.h"
 
@@ -26,6 +28,7 @@ namespace Ifc {
 		const char* getArgumentName(unsigned int i) const;
 		unsigned getArgumentIndex(const std::string& a) const;
 
+		void setArgument(unsigned int i);
 		void setArgument(unsigned int i, int v);
 		void setArgument(unsigned int i, bool v);
 		void setArgument(unsigned int i, double v);

@@ -37,12 +37,12 @@
 %rename("get_argument_type") getArgumentType;
 %rename("get_argument_name") getArgumentName;
 %rename("get_argument_index") getArgumentIndex;
-%rename("set_argument") setArgument;
+%rename("_set_argument") setArgument;
 %rename("__repr__") toString;
 %rename("Entity") IfcUntypedEntity;
 
 %typemap(out) IfcEntities {
-	const unsigned size = $1->Size();
+	const unsigned size = $1 ? $1->Size() : 0;
 	$result = PyList_New(size);
 	for (unsigned i = 0; i < size; ++i) {
 		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*$1)[i]), SWIGTYPE_p_Ifc__IfcUntypedEntity, 0);
@@ -149,6 +149,11 @@
 	}
 }
 
+%extend Ifc::IfcUntypedEntity {
+	%pythoncode %{
+	set_argument = lambda self,x,y: self._set_argument(x) if y is None else self._set_argument(x,y)
+	%}
+}
 
 namespace std {
    %template(Ints) vector<int>;

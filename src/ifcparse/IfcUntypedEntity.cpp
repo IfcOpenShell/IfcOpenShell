@@ -61,6 +61,12 @@ void Ifc::IfcUntypedEntity::invalid_argument(unsigned int i, const std::string& 
 	const std::string arg_name = Ifc2x3::Type::GetAttributeName(_type,i);
 	throw IfcException(t + " is not a valid type for '" + arg_name + "'");
 }
+void Ifc::IfcUntypedEntity::setArgument(unsigned int i) {
+	bool is_optional = Ifc2x3::Type::GetAttributeOptional(_type, i);
+	if (is_optional) {
+		writable_entity()->setArgument(i);
+	} else invalid_argument(i,"NONE");
+}
 void Ifc::IfcUntypedEntity::setArgument(unsigned int i, int v) {
 	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_INT) {

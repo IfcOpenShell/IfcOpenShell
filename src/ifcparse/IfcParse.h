@@ -162,7 +162,7 @@ namespace IfcParse {
 	///                        =====================   =====================
 	class EntityArgument : public Argument {
 	private:		
-		IfcUtil::IfcArgumentSelect* entity;		
+		Ifc::IfcUntypedEntity* entity;		
 	public:
 		EntityArgument(Ifc2x3::Type::Enum ty, const Token& t);
 		~EntityArgument();
