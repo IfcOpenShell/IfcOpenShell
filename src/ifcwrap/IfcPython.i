@@ -54,6 +54,7 @@
 	const Argument& arg = *($1.second);
 	const ArgumentType type = $1.first;
 	if (arg.isNull()) {
+		Py_INCREF(Py_None);
 		$result = Py_None;
 	} else {
 	switch(type) {
