@@ -357,7 +357,7 @@ class Classdef:
         entity_map[self.class_name] = self
     def get_attributes(self, get_parent=True):
         s = entity_map[self.parent_class].get_attributes() if get_parent and self.parent_class else []
-        s += [(a.name,not not a.optional,a.type.type_enum()) for a in self.arguments.l]
+        s += [(a.name,not not a.optional,a.type.type_enum(),a.type.type if a.is_enum() else None) for a in self.arguments.l]
         return s
     def get_constructor_args(self):
         s = entity_map[self.parent_class].get_constructor_args() if self.parent_class else []
@@ -580,6 +580,8 @@ namespace Type {
     IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
     const std::string& GetAttributeName(Enum t, unsigned char a);
     bool GetAttributeOptional(Enum t, unsigned char a);
+    std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
+    Enum GetAttributeEnumerationClass(Enum t, unsigned char a);
 }}
 
 #endif
@@ -657,6 +659,7 @@ print >>cpp_file
 
 print >>cpp_file, "std::map<std::string,Type::Enum> string_map;"
 print >>cpp2_file, "std::map<Type::Enum,IfcEntityDescriptor*> entity_descriptor_map;"
+print >>cpp2_file, "std::map<Type::Enum,IfcEnumerationDescriptor*> enumeration_descriptor_map;"
 maxlen = max([len(e) for e in all_enumerations])
 string_map,attribute_count_map,attribute_index_map,attribute_name_map,attribute_optional_map,attribute_type_map = [""]*6
 print >>cpp2_file, "void InitDescriptorMap() {"
@@ -676,9 +679,19 @@ while True:
         parent_descriptor = ("entity_descriptor_map.find(Type::%s)->second"%e.parent_class) if e.parent_class else "0" 
         print >>cpp2_file, "    current = entity_descriptor_map[Type::%s] = new IfcEntityDescriptor(Type::%s,%s);"%(e.class_name,e.class_name,parent_descriptor)
         for a,i in zip(args,range(len(args))):
-            name,optional,type = a
-            print >>cpp2_file, "    current->add(\"%s\",%s,%s);"%(name,"true" if optional else "false",type)
-        
+            name,optional,type,enum_class = a
+            if enum_class:
+                print >>cpp2_file, "    current->add(\"%s\",%s,%s,Type::%s);"%(name,"true" if optional else "false",type,enum_class)
+            else:
+                print >>cpp2_file, "    current->add(\"%s\",%s,%s);"%(name,"true" if optional else "false",type)
+print >>cpp2_file, "    // Enumerations"
+print >>cpp2_file, "    IfcEnumerationDescriptor* current_enum;"
+print >>cpp2_file, "    std::vector<std::string> values;"
+for e, name in [(e, name) for name, e in simple_types.items() if name in enumerations]:
+    print >>cpp2_file, "    values.clear(); values.reserve(128);"
+    for value in e.type.v:
+        print >>cpp2_file, "    values.push_back(\"%s\");"%value[0]
+    print >>cpp2_file, "    current_enum = enumeration_descriptor_map[Type::%s] = new IfcEnumerationDescriptor(Type::%s, values);"%(name,name)
 print >>cpp2_file, "}"
         
 for e in all_enumerations:
@@ -744,5 +757,23 @@ bool Type::GetAttributeOptional(Enum t, unsigned char a) {
     std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
     if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
     else return i->second->getArgumentOptional(a);
+}
+
+std::pair<const char*, int> Type::GetEnumerationIndex(Enum t, const std::string& a) {
+    if (enumeration_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEnumerationDescriptor*>::const_iterator i = enumeration_descriptor_map.find(t);
+    if ( i == enumeration_descriptor_map.end() ) throw IfcException("Value not found");
+    else return i->second->getIndex(a);
+}
+
+Type::Enum Type::GetAttributeEnumerationClass(Enum t, unsigned char a) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else {
+        Type::Enum t = i->second->getArgumentEnumerationClass(a);
+        if ( t == Type::ALL ) throw IfcException("Not an enumeration");
+        else return t;
+    }
 }
 """

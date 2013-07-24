@@ -90,7 +90,8 @@ void Ifc::IfcUntypedEntity::setArgument(unsigned int i, const std::string& a) {
 	if (arg_type == Argument_STRING) {
 		writable_entity()->setArgument(i,a);	
 	} else if (arg_type == Argument_ENUMERATION) {
-		writable_entity()->setArgument(i,a);
+		std::pair<const char*, int> enum_data = Ifc2x3::Type::GetEnumerationIndex(Ifc2x3::Type::GetAttributeEnumerationClass(_type, i), a);
+		writable_entity()->setArgument(i, enum_data.second, enum_data.first);
 	} else invalid_argument(i,"STRING");
 }
 void Ifc::IfcUntypedEntity::setArgument(unsigned int i, const std::vector<int>& v) {

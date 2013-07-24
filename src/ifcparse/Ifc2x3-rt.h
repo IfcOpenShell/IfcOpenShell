@@ -36,6 +36,8 @@ namespace Type {
     IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
     const std::string& GetAttributeName(Enum t, unsigned char a);
     bool GetAttributeOptional(Enum t, unsigned char a);
+    std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
+    Enum GetAttributeEnumerationClass(Enum t, unsigned char a);
 }}
 
 #endif

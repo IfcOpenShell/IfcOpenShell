@@ -24,6 +24,7 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 #include "../ifcparse/SharedPointer.h"
 #include "../ifcparse/Ifc2x3enum.h"
@@ -52,6 +53,29 @@ inline T* reinterpret_pointer_cast(F* from) {
 
 namespace IfcUtil {
 
+	class IfcEnumerationDescriptor {
+	private:
+		Ifc2x3::Type::Enum type;
+		std::vector<std::string> values;
+	public:
+		IfcEnumerationDescriptor(Ifc2x3::Type::Enum type, const std::vector<std::string>& values)
+			: type(type), values(values) {}
+		std::pair<const char*, int> getIndex(const std::string& value) const {
+			std::vector<std::string>::const_iterator it = std::find(values.begin(), values.end(), value);
+			if (it != values.end()) {
+				return std::make_pair(it->c_str(), std::distance(it, values.begin()));
+			} else {
+				throw IfcParse::IfcException("Invalid enumeration value");
+			}
+		}
+		const std::vector<std::string>& getValues() {
+			return values;
+		}
+		Ifc2x3::Type::Enum getType() {
+			return type;
+		}
+	};
+
 	class IfcEntityDescriptor {
 	public:
 		class IfcArgumentDescriptor
@@ -59,49 +83,56 @@ namespace IfcUtil {
 		public:
 			std::string name;
 			bool optional;
-			ArgumentType type;
-			IfcArgumentDescriptor(const std::string& name, bool optional, ArgumentType type)
-				: name(name), optional(optional), type(type) {}
+			ArgumentType argument_type;
+			Ifc2x3::Type::Enum data_type;
+			IfcArgumentDescriptor(const std::string& name, bool optional, ArgumentType argument_type, Ifc2x3::Type::Enum data_type)
+				: name(name), optional(optional), argument_type(argument_type), data_type(data_type) {}
 		};
 	private:
 		Ifc2x3::Type::Enum type;
 		IfcEntityDescriptor* parent;
 		std::vector<IfcArgumentDescriptor> arguments;
-		unsigned argument_start() {
+		unsigned argument_start() const {
 			return parent ? parent->getArgumentCount() : 0;
 		}
-		IfcArgumentDescriptor& get_argument(unsigned i) {
+		const IfcArgumentDescriptor& get_argument(unsigned i) const {
 			if (i < arguments.size()) return arguments[i];
 			else throw IfcParse::IfcException("Argument out of range");
 		}
 	public:
 		IfcEntityDescriptor(Ifc2x3::Type::Enum type, IfcEntityDescriptor* parent)
 			: type(type), parent(parent) {}
-		void add(const std::string& name, bool optional, ArgumentType type) {
-			arguments.push_back(IfcArgumentDescriptor(name, optional, type));
+		void add(const std::string& name, bool optional, ArgumentType argument_type, Ifc2x3::Type::Enum data_type = Ifc2x3::Type::ALL) {
+			arguments.push_back(IfcArgumentDescriptor(name, optional, argument_type, data_type));
 		}
-		unsigned getArgumentCount() {
+		unsigned getArgumentCount() const {
 			return (parent ? parent->getArgumentCount() : 0) + arguments.size();
 		}
-		std::string& getArgumentName(unsigned i) {
+		const std::string& getArgumentName(unsigned i) const {
 			const unsigned a = argument_start();
 			return i < a
 				? parent->getArgumentName(i)
 				: get_argument(i-a).name;
 		}
-		ArgumentType getArgumentType(unsigned i) {
+		ArgumentType getArgumentType(unsigned i) const {
 			const unsigned a = argument_start();
 			return i < a
 				? parent->getArgumentType(i)
-				: get_argument(i-a).type;
+				: get_argument(i-a).argument_type;
 		}
-		bool getArgumentOptional(unsigned i) {
+		bool getArgumentOptional(unsigned i) const {
 			const unsigned a = argument_start();
 			return i < a
 				? parent->getArgumentOptional(i)
 				: get_argument(i-a).optional;
 		}
-		unsigned getArgumentIndex(const std::string& s) {
+		Ifc2x3::Type::Enum getArgumentEnumerationClass(unsigned i) const {
+			const unsigned a = argument_start();
+			return i < a
+				? parent->getArgumentEnumerationClass(i)
+				: get_argument(i-a).data_type;
+		}
+		unsigned getArgumentIndex(const std::string& s) const {
 			unsigned a = argument_start();
 			for(std::vector<IfcArgumentDescriptor>::const_iterator i = arguments.begin(); i != arguments.end(); ++i) {
 				if (i->name == s) return a;
