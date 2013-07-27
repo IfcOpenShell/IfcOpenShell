@@ -41,6 +41,30 @@
 %rename("__repr__") toString;
 %rename("Entity") IfcUntypedEntity;
 
+%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) IfcEntities {
+   $1 = (PySequence_Check($input) && !PyUnicode_Check($input) && !PyString_Check($input)) ? 1 : 0;
+}
+
+%typemap(in) IfcEntities {
+	if (PySequence_Check($input)) {
+		$1 = std::make_shared<IfcEntityList>();
+		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
+			PyObject* obj = PySequence_GetItem($input, i);
+			if (obj) {
+				void *arg = 0;
+				int res = SWIG_ConvertPtr(obj, &arg, SWIGTYPE_p_Ifc__IfcUntypedEntity, 0);
+				if (!SWIG_IsOK(res)) {
+					SWIG_exception_fail(SWIG_ArgError(res), "in method '" "Entity__set_argument" "', argument " "3"" of type '" "Ifc::IfcUntypedEntity *""'"); 
+				} else {
+					$1->push(reinterpret_cast<Ifc::IfcUntypedEntity*>(arg));
+				}
+			}
+		}
+	} else {
+		SWIG_exception(SWIG_RuntimeError,"Unknown argument type");
+	}
+}
+
 %typemap(out) IfcEntities {
 	const unsigned size = $1 ? $1->Size() : 0;
 	$result = PyList_New(size);

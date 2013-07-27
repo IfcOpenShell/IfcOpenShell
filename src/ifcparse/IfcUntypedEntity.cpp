@@ -65,7 +65,7 @@ void Ifc::IfcUntypedEntity::setArgument(unsigned int i) {
 	bool is_optional = Ifc2x3::Type::GetAttributeOptional(_type, i);
 	if (is_optional) {
 		writable_entity()->setArgument(i);
-	} else invalid_argument(i,"NONE");
+	} else invalid_argument(i,"NULL");
 }
 void Ifc::IfcUntypedEntity::setArgument(unsigned int i, int v) {
 	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);

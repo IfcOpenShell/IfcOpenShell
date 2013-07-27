@@ -190,7 +190,11 @@ std::string IfcWriteEntityListArgument::toString(bool upper)  const {
 		if ( Ifc2x3::Type::IsSimple(e->type()) ) {
 			ss << e->toString(upper);
 		} else {
-			ss << "#" << e->id();
+			if (e->file) {
+				ss << "#" << e->id();
+			} else {
+				ss << "#?";
+			}
 		}
 	}
 	ss << ")";
@@ -323,7 +327,11 @@ std::string IfcWriteIntegralArgument::toString(bool upper) const {
 		if ( Ifc2x3::Type::IsSimple(e->type()) ) {
 			ss << e->toString(upper);
 		} else {
-			ss << "#" << e->id();
+			if (e->file) {
+				ss << "#" << e->id();
+			} else {
+				ss << "#?";
+			}
 		}}
 		break;
 	default: throw IfcParse::IfcException("Invalid cast");
