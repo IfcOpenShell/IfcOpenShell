@@ -47,7 +47,7 @@
 
 %typemap(in) IfcEntities {
 	if (PySequence_Check($input)) {
-		$1 = std::make_shared<IfcEntityList>();
+		$1 = SHARED_PTR<IfcEntityList>(new IfcEntityList());
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* obj = PySequence_GetItem($input, i);
 			if (obj) {
