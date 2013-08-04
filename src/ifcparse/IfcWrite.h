@@ -28,22 +28,92 @@
 #ifndef IFCWRITE_H
 #define IFCWRITE_H
 
+#include <boost/variant.hpp>
+#include <boost/optional.hpp>
+
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcParse.h"
 
 namespace IfcWrite {
 
-	/// A placeholder class for grouping functionality geared towards writing IFC files
+	/// This class is a writable container for attributes. A fundamental
+	/// difference with the attribute types counterparts defined in the 
+	/// IfcParse namespace is that this class has a Boost.Variant member
+	/// for storing its value, whereas the IfcParse classes only contain
+	/// lazy references to byte offsets in the IFC-SPF file.
 	class IfcWriteArgument : public Argument {
-	protected:
+	public:
+		class EnumerationReference {
+		public:
+			int data;
+			const char* enumeration_value;
+			EnumerationReference(int data, const char* enumeration_value)
+				: data(data), enumeration_value(enumeration_value) {}
+		};		
+		class Derived {};
+	private:
 		IfcAbstractEntity* entity;
+		boost::variant<
+			// A null argument, it will always serialize to $
+			boost::none_t,
+			// A derived argument, it will always serialize to *
+			Derived,
+			// An integer argument, e.g. 123  
+			int, 
+			// A boolean argument, it will serialize to either .T. or .F.
+			bool, 
+			// A floating point argument, e.g. 12.3
+			double,
+			// A character string argument, e.g. 'IfcOpenShell'
+			std::string, 
+			// A list of integers, e.g. (1,2,3)
+			std::vector<int>,
+			// A list of floats, e.g. (12.3,4.) 
+			std::vector<double>,
+			// A list of strings, e.g. ('Ifc','Open','Shell')
+			std::vector<std::string>,
+			// An enumeration argument, e.g. .USERDEFINED. 
+			// To initialize the argument a string representation
+			// has to be explicitely passed of the enumeration value
+			// which is stored internally as an integer. The argument
+			// itself does not keep track of what schema enumeration
+			// type is represented.
+			EnumerationReference,
+			// An entity instance argument. It will either serialize to
+			// e.g. #123 or datatype identifier for simple types, e.g. 
+			// IFCREAL(12.3)
+			IfcUtil::IfcSchemaEntity,
+			// An entity list argument. It will either serialize to
+			// e.g. (#1,#2,#3) or datatype identifier for simple types,
+			// e.g. (IFCREAL(1.2),IFCINTEGER(3.))
+			IfcEntities
+		> container;
+	public:
+		enum argument_type {
+			argument_type_null,
+			argument_type_derived,
+			argument_type_int, 
+			argument_type_bool, 
+			argument_type_double, 
+			argument_type_string, 
+			argument_type_vector_int,
+			argument_type_vector_double,
+			argument_type_vector_string,
+			argument_type_enumeration,
+			argument_type_schema_entity,
+			argument_type_entities
+		};
 		IfcWriteArgument(IfcAbstractEntity* e) : entity(e) {}
-	};
-
-	/// A null argument. It will always serialize to $
-	class IfcWriteNullArgument : public IfcWriteArgument {
-	public:
-		IfcWriteNullArgument(IfcAbstractEntity* e) : IfcWriteArgument(e) {};
+		template <typename T> const T& as() const {
+			if (const T* val = boost::get<T>(&container)) {
+				return *val;
+			} else {
+				throw IfcParse::IfcException("Invalid cast");
+			}
+		}
+		template <typename T> void set(const T& t) {
+			container = t;
+		}
 		operator int() const;
 		operator bool() const;
 		operator double() const;
@@ -57,107 +127,7 @@ namespace IfcWrite {
 		ArgumentPtr operator [] (unsigned int i) const;
 		std::string toString(bool upper=false) const;
 		unsigned int Size() const;
-	};
-
-	/// A derived argument. It will always serialize to *
-	class IfcWriteDerivedArgument : public IfcWriteArgument {
-	public:
-		IfcWriteDerivedArgument(IfcAbstractEntity* e) : IfcWriteArgument(e) {};
-		operator int() const;
-		operator bool() const;
-		operator double() const;
-		operator std::string() const;
-		operator std::vector<double>() const;
-		operator std::vector<int>() const;
-		operator std::vector<std::string>() const;
-		operator IfcUtil::IfcSchemaEntity() const;
-		operator IfcEntities() const;
-		bool isNull() const;
-		ArgumentPtr operator [] (unsigned int i) const;
-		std::string toString(bool upper=false) const;
-		unsigned int Size() const;
-	};
-	
-	/// An entity list argument. It will serialize to (#1,#2,#3)
-	/// with possibly a datatype identifier for SELECT types, e.g:
-	/// (IFCREAL(1.0),IFCINTEGER(1))
-	class IfcWriteEntityListArgument : public IfcWriteArgument {
-	private:
-		IfcEntities value;
-	public:
-		IfcWriteEntityListArgument(IfcAbstractEntity* e, const IfcEntities& v);
-		operator int() const;
-		operator bool() const;
-		operator double() const;
-		operator std::string() const;
-		operator std::vector<double>() const;
-		operator std::vector<int>() const;
-		operator std::vector<std::string>() const;
-		operator IfcUtil::IfcSchemaEntity() const;
-		operator IfcEntities() const;
-		bool isNull() const;
-		unsigned int Size() const;
-		ArgumentPtr operator [] (unsigned int i) const;
-		std::string toString(bool upper=false) const;
-	};
-
-	/// An enumeration argument. It will serialize to e.g:
-	/// .USERDEFINED. To initialize the argument a string representation
-	/// has to be explicitely passed of the enumeration value which
-	/// is stored internally as an integer. The argument itself
-	/// does not keep track of what schema enumeration type is
-	/// represented.
-	class IfcWriteEnumerationArgument : public IfcWriteArgument {
-	private:
-		int data;
-		const char* enumeration_value;
-	public:
-		IfcWriteEnumerationArgument(IfcAbstractEntity* e, int v, const char* c);
-		operator int() const;
-		operator bool() const;
-		operator double() const;
-		operator std::string() const;
-		operator std::vector<double>() const;
-		operator std::vector<int>() const;
-		operator std::vector<std::string>() const;
-		operator IfcUtil::IfcSchemaEntity() const;
-		operator IfcEntities() const;
-		bool isNull() const;
-		ArgumentPtr operator [] (unsigned int i) const;
-		std::string toString(bool upper=false) const;
-		unsigned int Size() const;
-	};
-	
-	/// An argument for all remaining types of arguments. For example:
-	/// #123 | 1 | 'Value' | (1.0,2.0,3.0). All data is casted to a 
-	/// void pointer.
-	class IfcWriteIntegralArgument : public IfcWriteArgument {
-	private:
-		void* data;
-		IfcUtil::ArgumentType type;
-	public:
-		IfcWriteIntegralArgument(IfcAbstractEntity* e, int v);
-		IfcWriteIntegralArgument(IfcAbstractEntity* e, bool v);
-		IfcWriteIntegralArgument(IfcAbstractEntity* e, double v);
-		IfcWriteIntegralArgument(IfcAbstractEntity* e, const std::string& v);
-		IfcWriteIntegralArgument(IfcAbstractEntity* e, const std::vector<int> v);
-		IfcWriteIntegralArgument(IfcAbstractEntity* e, const std::vector<double> v);
-		IfcWriteIntegralArgument(IfcAbstractEntity* e, const std::vector<std::string> v);
-		IfcWriteIntegralArgument(IfcAbstractEntity* e, IfcUtil::IfcSchemaEntity v);
-		~IfcWriteIntegralArgument();
-		operator int() const;
-		operator bool() const;
-		operator double() const;
-		operator std::string() const;
-		operator std::vector<double>() const;
-		operator std::vector<int>() const;
-		operator std::vector<std::string>() const;
-		operator IfcUtil::IfcSchemaEntity() const;
-		operator IfcEntities() const;
-		bool isNull() const;
-		unsigned int Size() const;
-		ArgumentPtr operator [] (unsigned int i) const;
-		std::string toString(bool upper=false) const;
+		argument_type argumentType() const;
 	};
 
 	/// An entity to help with passing of SELECT arguments that
@@ -199,8 +169,6 @@ namespace IfcWrite {
 	};
 	
 	/// A helper class for the creation of IFC GlobalIds.
-	/// At this moment an actual UUID is not generated according to
-	/// the ISO standard, but merely a sequence of random characters.
 	class IfcGuidHelper {
 	private:
 		std::string data;

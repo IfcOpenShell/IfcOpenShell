@@ -92,15 +92,15 @@ private:
 		};
 		class DeferredObject {
 		public:
-			const std::string guid, name, type;
+			std::string guid, name, type;
 			int obj_id;
-			const std::vector<float> matrix;
-			const std::vector<float> vertices;
-			const std::vector<float> normals;
-			const std::vector<int> indices;
-			const std::vector<int> material_ids;
-			const std::vector<IfcGeomObjects::Material> materials;
-			const std::vector<std::string> material_references;
+			std::vector<float> matrix;
+			std::vector<float> vertices;
+			std::vector<float> normals;
+			std::vector<int> indices;
+			std::vector<int> material_ids;
+			std::vector<IfcGeomObjects::Material> materials;
+			std::vector<std::string> material_references;
 			DeferredObject(const std::string& guid, const std::string& name, const std::string& type, int obj_id, const std::vector<float>& matrix, const std::vector<float>& vertices,
 				const std::vector<float>& normals, const std::vector<int>& indices, const std::vector<int>& material_ids, 
 				const std::vector<IfcGeomObjects::Material>& materials, const std::vector<std::string>& material_references)

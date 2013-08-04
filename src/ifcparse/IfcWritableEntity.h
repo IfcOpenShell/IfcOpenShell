@@ -44,8 +44,10 @@ namespace IfcWrite {
 		int* _id;
 		bool arg_writable(int i);
 		void arg_writable(int i, bool b);
+		template <typename T> void _setArgument(int i, const T&);
 	public:
 		IfcWritableEntity(Ifc2x3::Type::Enum t);
+		~IfcWritableEntity();
 		int setId(int i=-1);
 		IfcWritableEntity(IfcAbstractEntity* e);
 		IfcEntities getInverse(Ifc2x3::Type::Enum c = Ifc2x3::Type::ALL);
