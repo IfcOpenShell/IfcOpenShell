@@ -133,7 +133,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr l, TopoDS_
 	convert(l->Position(),trsf);
 	TopoDS_Shape prism = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,200));
 	gp_Trsf down; down.SetTranslation(gp_Vec(0,0,-100.0));
-	prism.Move(down*trsf);
+	prism.Move(trsf*down);
 	shape = BRepAlgoAPI_Common(halfspace,prism);
 	return true;
 }
@@ -155,9 +155,21 @@ bool IfcGeom::convert(const Ifc2x3::IfcShellBasedSurfaceModel::ptr l, IfcReprese
 bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shape& shape) {
 	TopoDS_Shape s1, s2;
 	TopoDS_Wire boundary_wire;
+	Ifc2x3::IfcBooleanOperand operand1 = l->FirstOperand();
 	Ifc2x3::IfcBooleanOperand operand2 = l->SecondOperand();
 	bool is_halfspace = operand2->is(Ifc2x3::Type::IfcHalfSpaceSolid);
 	bool is_bounded = operand2->is(Ifc2x3::Type::IfcPolygonalBoundedHalfSpace);
+
+	// The rationale of this elaborate processing of bounded halfspace subtractions
+	// is that occasionally we have encountered bounded halfspaces of which the
+	// boundary coincides roughly with the footprint of the first operand solid and
+	// subtracting this naively resulted in precision artefacts. However, when the
+	// final subtraction result is the outcome of multiple successive bounded 
+	// halfspace subtractions the added complexity of this scheme can potentially
+	// produce wrong results too. Hence this check.
+	bool parent_is_bounded_halfspace = operand1->is(Ifc2x3::Type::IfcBooleanClippingResult) &&
+		((Ifc2x3::IfcBooleanClippingResult*) operand1)->SecondOperand()->is(Ifc2x3::Type::IfcPolygonalBoundedHalfSpace);
+
 	bool is_convex_bound = false;
 
 	if ( ! IfcGeom::convert_shape(l->FirstOperand(),s1) )
@@ -187,7 +199,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 	}
 
 	bool valid_cut = false;
-	if ( !is_bounded || !is_convex_bound ) {
+	if ( !is_bounded || !is_convex_bound || parent_is_bounded_halfspace) {
 		BRepAlgoAPI_Cut brep_cut(s1,s2);
 		if ( brep_cut.IsDone() ) {
 			TopoDS_Shape result = brep_cut;
@@ -269,8 +281,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 				if ( is_valid && subtraction_volume_difference > minimal_substraction_difference ) {
 					subtraction_volume = brep_common_shape;
 					subtraction_volume_volume = new_subtraction_volume_volume;
+					}
 				}
-			}
 			exp.Next();
 		}
 
