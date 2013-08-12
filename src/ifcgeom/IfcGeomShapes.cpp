@@ -172,7 +172,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 
 	bool is_convex_bound = false;
 
-	if ( ! IfcGeom::convert_shape(l->FirstOperand(),s1) )
+	if ( ! IfcGeom::convert_shape(operand1,s1) )
 		return false;
 
 	const double first_operand_volume = shape_volume(s1);
@@ -281,8 +281,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 				if ( is_valid && subtraction_volume_difference > minimal_substraction_difference ) {
 					subtraction_volume = brep_common_shape;
 					subtraction_volume_volume = new_subtraction_volume_volume;
-					}
 				}
+			}
 			exp.Next();
 		}
 
