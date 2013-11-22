@@ -49,9 +49,11 @@ void printUsage(const boost::program_options::options_description& generic_optio
 	std::cerr << "Usage: IfcConvert [options] <input.ifc> [<output>]" << std::endl
 	          << std::endl
 	          << "Converts the geometry in an IFC file into one of the following formats:" << std::endl
-	          << "  .obj   WaveFront OBJ  (a .mtl file is also created)" << std::endl
-	          << "  .dae   Collada        Digital Assets Exchange" << std::endl
-	          << "  .stp   STEP           Standard for the Exchange of Product Data" << std::endl
+	          << "  .obj   WaveFront OBJ  (a .mtl file is also created)" << std::endl;
+#ifdef WITH_OPENCOLLADA	          
+	std::cerr << "  .dae   Collada        Digital Assets Exchange" << std::endl;
+#endif
+	std::cerr << "  .stp   STEP           Standard for the Exchange of Product Data" << std::endl
 	          << "  .igs   IGES           Initial Graphics Exchange Specification" << std::endl
 	          << std::endl
 	          << "Command line options" << std::endl << generic_options << std::endl
@@ -181,8 +183,10 @@ int main(int argc, char** argv) {
 			IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS, true);
 		}
 		serializer = new WaveFrontOBJSerializer(output_filename, mtl_filename);
+#ifdef WITH_OPENCOLLADA
 	} else if (output_extension == ".dae") {
 		serializer = new ColladaSerializer(output_filename);
+#endif
 	} else if (output_extension == ".stp") {
 		serializer = new StepSerializer(output_filename);
 	} else if (output_extension == ".igs") {

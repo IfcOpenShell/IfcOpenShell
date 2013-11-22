@@ -17,6 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef WITH_OPENCOLLADA
+
 #include <string>
 
 #include "ColladaSerializer.h"
@@ -278,3 +280,4 @@ void ColladaSerializer::finalize() {
 	exporter.endDocument();
 }
 
+#endif

@@ -17,6 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef WITH_OPENCOLLADA
+
 #ifndef COLLADASERIALIZER_H
 #define COLLADASERIALIZER_H
 
@@ -150,5 +152,7 @@ public:
 	void finalize();
 	bool isTesselated() const { return true; }
 };
+
+#endif
 
 #endif
