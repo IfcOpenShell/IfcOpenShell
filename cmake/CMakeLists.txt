@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project (IfcOpenShell)
 
-FIND_PACKAGE(Boost REQUIRED)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS program_options)
 MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
@@ -133,7 +133,7 @@ ADD_EXECUTABLE(IfcConvert
     ../src/ifcconvert/WavefrontObjSerializer.cpp   
 )
 
-TARGET_LINK_LIBRARIES (IfcConvert IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES)
+TARGET_LINK_LIBRARIES (IfcConvert IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES ${Boost_LIBRARIES})
 
 # Build python wrapper using separate CMakeLists.txt
 ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
