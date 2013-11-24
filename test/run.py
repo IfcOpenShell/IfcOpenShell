@@ -206,6 +206,9 @@ TestFile("acad2010_objects.ifc")
 # Various half space configuration to test cutting tolerances
 TestFile("ifcopenshell_halfspaces.ifc")
 
+# Several IfcPolygonalBoundedHalfSpaces cutting a single solid
+TestFile("revit2014_multiple_bounded_halfspaces.ifc")
+
 for test in test_cases:
     succes = test()
     if not succes:
