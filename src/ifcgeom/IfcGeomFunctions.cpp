@@ -423,6 +423,11 @@ gp_Pnt IfcGeom::point_above_plane(const gp_Pln& pln, bool agree) {
 	}
 }
 
+void IfcGeom::apply_tolerance(TopoDS_Shape& s, double t) {
+	ShapeFix_ShapeTolerance tol;
+	tol.SetTolerance(s, t);
+}
+
 static double deflection_tolerance = 0.001;
 static double wire_creation_tolerance = 0.0001;
 static double minimal_face_area = 0.000001;
@@ -431,6 +436,7 @@ static double max_faces_to_sew = -1.0;
 static double ifc_length_unit = 1.0;
 static double ifc_planeangle_unit = -1.0;
 static double force_ccw_face_orientation = -1.0;
+static double modelling_precision = 0.00001;
 
 void IfcGeom::SetValue(GeomValue var, double value) {
 	switch (var) {
@@ -458,6 +464,9 @@ void IfcGeom::SetValue(GeomValue var, double value) {
 	case GV_FORCE_CCW_FACE_ORIENTATION:
 		force_ccw_face_orientation = value;
 		break;
+	case GV_PRECISION:
+		modelling_precision = value;
+		break;
 	default:
 		assert(!"never reach here");
 	}
@@ -483,6 +492,9 @@ double IfcGeom::GetValue(GeomValue var) {
 		break;
 	case GV_FORCE_CCW_FACE_ORIENTATION:
 		return force_ccw_face_orientation;
+		break;
+	case GV_PRECISION:
+		return modelling_precision;
 		break;
 	}
 	assert(!"never reach here");

@@ -265,6 +265,7 @@ namespace IfcGeomObjects {
 	
 	void Settings(int setting, bool value);
 	void InitUnits();
+	void InitPrecision();
 	
 	const IfcGeomObject* Get();
 	const IfcObject* GetObject(int id);

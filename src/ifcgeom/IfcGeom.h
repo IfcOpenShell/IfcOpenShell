@@ -73,6 +73,10 @@ namespace IfcGeom {
 		// the interpretation of IfcParamaterValues of IfcTrimmedCurves
 		// Default: -1.0 (= not set, fist try degrees, then radians)
 		GV_PLANEANGLE_UNIT,
+		// The precision used in boolean operations, setting this value too low results
+		// in artefacts and potentially modelling failures
+		// Default: 0.00001 (obtained from IfcGeometricRepresentationContext if available)
+		GV_PRECISION
 	};
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
@@ -95,6 +99,7 @@ namespace IfcGeom {
 	bool profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
 	double shape_volume(const TopoDS_Shape& s);
 	double face_area(const TopoDS_Face& f);
+	void apply_tolerance(TopoDS_Shape& s, double t);
 	void SetValue(GeomValue var, double value);
 	double GetValue(GeomValue var);
 	Ifc2x3::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntities es);

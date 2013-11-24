@@ -158,19 +158,6 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 	Ifc2x3::IfcBooleanOperand operand1 = l->FirstOperand();
 	Ifc2x3::IfcBooleanOperand operand2 = l->SecondOperand();
 	bool is_halfspace = operand2->is(Ifc2x3::Type::IfcHalfSpaceSolid);
-	bool is_bounded = operand2->is(Ifc2x3::Type::IfcPolygonalBoundedHalfSpace);
-
-	// The rationale of this elaborate processing of bounded halfspace subtractions
-	// is that occasionally we have encountered bounded halfspaces of which the
-	// boundary coincides roughly with the footprint of the first operand solid and
-	// subtracting this naively resulted in precision artefacts. However, when the
-	// final subtraction result is the outcome of multiple successive bounded 
-	// halfspace subtractions the added complexity of this scheme can potentially
-	// produce wrong results too. Hence this check.
-	bool parent_is_bounded_halfspace = operand1->is(Ifc2x3::Type::IfcBooleanClippingResult) &&
-		((Ifc2x3::IfcBooleanClippingResult*) operand1)->SecondOperand()->is(Ifc2x3::Type::IfcPolygonalBoundedHalfSpace);
-
-	bool is_convex_bound = false;
 
 	if ( ! IfcGeom::convert_shape(operand1,s1) )
 		return false;
@@ -185,13 +172,6 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 		return true;
 	}
 
-	if ( is_bounded ) {
-		Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr ifc_bounded_halfspace = 
-			(Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr) operand2;		
-		IfcGeom::convert_wire(ifc_bounded_halfspace->PolygonalBoundary(),boundary_wire);
-		is_convex_bound = is_convex(boundary_wire);
-	}
-
 	if ( ! is_halfspace ) {
 		const double second_operand_volume = shape_volume(s2);
 		if ( second_operand_volume <= ALMOST_ZERO )
@@ -199,102 +179,19 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 	}
 
 	bool valid_cut = false;
-	if ( !is_bounded || !is_convex_bound || parent_is_bounded_halfspace) {
-		BRepAlgoAPI_Cut brep_cut(s1,s2);
-		if ( brep_cut.IsDone() ) {
-			TopoDS_Shape result = brep_cut;
-			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
-			if ( is_valid ) {
-				shape = result;
-				valid_cut = true;
-			} 
-		}
-		if ( !valid_cut && !is_bounded ) {
-			Ifc2x3::IfcHalfSpaceSolid::ptr ifc_halfspace = (Ifc2x3::IfcHalfSpaceSolid::ptr) operand2;
-			Ifc2x3::IfcSurface::ptr surface = ifc_halfspace->BaseSurface();
-			if ( surface->is(Ifc2x3::Type::IfcPlane) ) {
-				gp_Pln pln;
-				IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcSurface,Ifc2x3::IfcPlane>(surface),pln);
-				gp_Pnt pnt = pln.Location();
-				bool reverse = ifc_halfspace->AgreementFlag();
-				gp_Vec direction = pln.Axis().Direction();
-				if ( reverse ) direction *= -1;
-				pnt.Translate(direction);
-				pln.SetLocation(pln.Location().Translated(direction * -0.0001));
-				TopoDS_Shape halfspace = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln),pnt).Solid();
+	BRepAlgoAPI_Cut brep_cut(s1,s2);
+	if ( brep_cut.IsDone() ) {
+		TopoDS_Shape result = brep_cut;
 
-				BRepAlgoAPI_Cut brep_cut(s1,halfspace);
-				if ( brep_cut.IsDone() ) {
-					TopoDS_Shape result = brep_cut;
-					bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
-					if ( is_valid ) {
-						shape = result;
-						valid_cut = true;
-						Logger::Message(Logger::LOG_WARNING,"Slightly nudged the SecondOperand of:",l->entity);
-					} 
-				}
-			}
-		}
-	} else {
-		Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr ifc_bounded_halfspace = 
-			(Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr) operand2;
-		gp_Trsf trsf;
-		convert(ifc_bounded_halfspace->Position(),trsf);
-		TopoDS_Shape face = BRepBuilderAPI_MakeFace(boundary_wire).Face();
-		TopoDS_Shape prism = BRepPrimAPI_MakePrism (boundary_wire,gp_Vec(0,0,1),1);
-		prism.Move(trsf);
-		face.Move(trsf);
-
-		gp_Pln pln = plane_from_face(TopoDS::Face(face));
-		gp_Pnt pnt = point_above_plane(pln,ifc_bounded_halfspace->AgreementFlag());
-
-		TopoDS_Shape halfspace;
-		Ifc2x3::IfcHalfSpaceSolid::ptr ifc_halfspace = (Ifc2x3::IfcHalfSpaceSolid::ptr) operand2;
-		if ( ! IfcGeom::convert(ifc_halfspace,halfspace) ) return false;
-
-		TopoDS_Shape subtraction_volume = s1;
-		double subtraction_volume_volume = shape_volume(subtraction_volume);
-
-		const double minimal_substraction_difference = subtraction_volume_volume * 0.0001;
-
-		BRepAlgoAPI_Common brep_common(subtraction_volume,halfspace);
-		if ( brep_common.IsDone() ) {
-			TopoDS_Shape brep_common_shape = brep_common;
-			bool is_valid = BRepCheck_Analyzer(brep_common_shape).IsValid() != 0;
-			double new_subtraction_volume_volume = shape_volume(brep_common_shape);
-			double subtraction_volume_difference = subtraction_volume_volume - new_subtraction_volume_volume;
-			if ( is_valid && subtraction_volume_difference > minimal_substraction_difference ) {
-				subtraction_volume = brep_common_shape;
-				subtraction_volume_volume = new_subtraction_volume_volume;
-			}
-		}
-
-		TopExp_Explorer exp(prism,TopAbs_FACE);
-		while ( exp.More() ) {
-			TopoDS_Shape halfspace = halfspace_from_plane(plane_from_face(TopoDS::Face(exp.Current())),pnt);
-			BRepAlgoAPI_Common brep_common(subtraction_volume,halfspace);
-			if ( brep_common.IsDone() ) {
-				TopoDS_Shape brep_common_shape = brep_common;
-				bool is_valid = BRepCheck_Analyzer(brep_common_shape).IsValid() != 0;
-				double new_subtraction_volume_volume = shape_volume(brep_common_shape);
-				double subtraction_volume_difference = subtraction_volume_volume - new_subtraction_volume_volume;
-				if ( is_valid && subtraction_volume_difference > minimal_substraction_difference ) {
-					subtraction_volume = brep_common_shape;
-					subtraction_volume_volume = new_subtraction_volume_volume;
-				}
-			}
-			exp.Next();
-		}
-
-		BRepAlgoAPI_Cut brep_cut(s1,subtraction_volume);
-		if ( brep_cut.IsDone() ) {
-			TopoDS_Shape result = brep_cut;
-			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
-			if ( is_valid ) {
-				shape = result;
-				valid_cut = true;
-			} 
-		}
+		ShapeFix_Shape fix(result);
+		fix.Perform();
+		result = fix.Shape();
+		
+		bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+		if ( is_valid ) {
+			shape = result;
+			valid_cut = true;
+		} 
 	}
 
 	if ( valid_cut ) {
@@ -307,7 +204,6 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 	}
 
 	return true;
-
 }
 bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& shape) {
 	Ifc2x3::IfcFace::list faces = l->CfsFaces();

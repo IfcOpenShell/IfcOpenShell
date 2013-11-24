@@ -1,14 +1,16 @@
 ﻿#include "IfcRegisterUndef.h"
 #define SHAPE(T) \
-	if ( l->is(T::Class()) ) { \
+	if ( !processed && l->is(T::Class()) ) { \
+		processed = true; \
 		try { \
 			if ( convert((T*)l,r) ) { \
-				Cache::Shape[id] = r; \
-				return true; \
+				success = true; \
 			} \
 		} catch(...) {  } \
-		Logger::Message(Logger::LOG_ERROR,"Failed to convert:",l->entity); \
-		return 0; \
+		if ( !success) { \
+			Logger::Message(Logger::LOG_ERROR,"Failed to convert:",l->entity); \
+			return false; \
+		} \
 	}
 #include "IfcRegisterDef.h"
 

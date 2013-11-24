@@ -42,11 +42,19 @@ bool IfcGeom::is_shape_collection(const IfcBaseClass* l) {
 }
 bool IfcGeom::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
 	const unsigned int id = l->entity->id();
+	bool success = false;
+	bool processed = false;
 	std::map<int,TopoDS_Shape>::const_iterator it = Cache::Shape.find(id);
 	if ( it != Cache::Shape.end() ) { r = it->second; return true; }
 #include "IfcRegisterConvertShape.h"
-	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
-	return 0;
+	if ( processed ) { 
+		const double precision = IfcGeom::GetValue(GV_PRECISION);
+		IfcGeom::apply_tolerance(r, precision);
+		Cache::Shape[id] = r;
+	} else {
+		Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
+	}
+	return success;
 }
 bool IfcGeom::convert_wire(const IfcBaseClass* l, TopoDS_Wire& r) {
 #include "IfcRegisterConvertWire.h"
