@@ -19,6 +19,7 @@
 
 #include <map>
 #include <stdexcept>
+#include <limits>
 
 #include <gp_Mat.hxx>
 #include <gp_Mat2d.hxx>
