@@ -19,7 +19,9 @@
 
 #include "../ifcgeom/IfcGeomRenderStyles.h"
 
-#include "WavefrontOBJSerializer.h"
+#include "WavefrontObjSerializer.h"
+
+#include <iomanip>
 
 bool WaveFrontOBJSerializer::ready() {
 	return obj_stream.is_open() && mtl_stream.is_open();
@@ -64,7 +66,11 @@ void WaveFrontOBJSerializer::writeMaterial(const IfcGeomObjects::Material& style
 	}
 }
 void WaveFrontOBJSerializer::writeTesselated(const IfcGeomObjects::IfcGeomObject* o) {
-	const std::string name = o->name().empty() ? o->guid() : o->name();
+
+	std::string tmp = o->name().empty() ? o->guid() : o->name();
+
+	std::replace( tmp.begin(), tmp.end(), ' ', '_');
+	const std::string name = tmp;
 	obj_stream << "g " << name << std::endl;
 	obj_stream << "s 1" << std::endl;
 
