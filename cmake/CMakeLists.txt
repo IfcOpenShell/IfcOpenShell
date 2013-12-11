@@ -159,7 +159,7 @@ SET(include_files_geom
     ../src/ifcgeom/IfcRegisterIsShapeCollection.h
     ../src/ifcgeom/IfcRegisterPurgeCache.h
     ../src/ifcgeom/IfcRegisterUndef.h
-    ../src/ifcgeom/IfcShapeList.h
+    ../src/ifcgeom/IfcRepresentationShapeItem.h
 )
 SET(include_files_parse
     ../src/ifcparse/Ifc2x3.h
