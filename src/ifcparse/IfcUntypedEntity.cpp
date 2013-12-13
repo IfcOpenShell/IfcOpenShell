@@ -71,7 +71,9 @@ void Ifc::IfcUntypedEntity::setArgument(unsigned int i, int v) {
 	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_INT) {
 		writable_entity()->setArgument(i,v);	
-	} else invalid_argument(i,"INT");
+	} else if ( (arg_type == Argument_BOOL) && ( (v == 0) || (v == 1) ) ) {
+        writable_entity()->setArgument(i, (bool) v);
+    } else invalid_argument(i,"INT");
 }
 void Ifc::IfcUntypedEntity::setArgument(unsigned int i, bool v) {
 	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);
