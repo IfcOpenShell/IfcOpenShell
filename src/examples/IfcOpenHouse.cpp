@@ -169,7 +169,12 @@ int main(int argc, char** argv) {
 	// The west wall is assigned an opening element we created for the south wall, opening elements are
 	// not shared accross building elements, even if they share the same representation. Hence, the east
 	// wall will not feature this opening.
-	file.AddEntity(new Ifc2x3::IfcRelVoidsElement(guid(), file.getSingle<Ifc2x3::IfcOwnerHistory>(), null, null, west_wall, west_opening));
+	// NB: an Opening Element can only be used to create a single void within a single Element, as per:
+	// http://www.buildingsmart-tech.org/ifc/IFC2x3/TC1/html/ifcproductextension/lexical/ifcfeatureelementsubtraction.htm
+	Ifc2x3::IfcOpeningElement* west_opening_copy = new Ifc2x3::IfcOpeningElement(guid(), file.getSingle<Ifc2x3::IfcOwnerHistory>(),
+		null, null, null, west_opening->ObjectPlacement(), west_opening->Representation(), null);
+	file.AddEntity(west_opening_copy);
+	file.AddEntity(new Ifc2x3::IfcRelVoidsElement(guid(), file.getSingle<Ifc2x3::IfcOwnerHistory>(), null, null, west_wall, west_opening_copy));
 	
 	// Up until now we have only used simple extrusions for the creation of the geometry. For the 
 	// ground mesh of the IfcSite we will use a Nurbs surface created in Open Cascade. The surface 
