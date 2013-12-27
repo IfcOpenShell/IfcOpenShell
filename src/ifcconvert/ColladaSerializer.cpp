@@ -173,7 +173,9 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write
 	if (material.hasTransparency()) {
 		const double transparency = material.transparency();
 		if (transparency > 0) {
-			effect.setTransparency(transparency);
+			// The default opacity mode for Collada is A_ONE, which apparently indicates a
+			// transparency value of 1 to be fully opaque. Hence transparency is inverted.
+			effect.setTransparency(1.0 - transparency);
 		}
 	}
 	addEffectProfile(effect);
@@ -201,8 +203,9 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
 		const std::string& material_name = collada_id((*it).name());
 		openMaterial(material_name);
 		addInstanceEffect("#" + material_name + "-fx");
-		closeLibrary();
+		closeMaterial();
 	}
+	closeLibrary();
 }
 		
 void ColladaSerializer::ColladaExporter::startDocument() {
