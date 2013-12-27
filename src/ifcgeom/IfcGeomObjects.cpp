@@ -87,7 +87,12 @@ IfcGeomObjects::IfcRepresentationBrepData::IfcRepresentationBrepData(const IfcRe
 		builder.MakeCompound(compound);
 		for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 			const TopoDS_Shape& s = it->Shape();
-			const gp_GTrsf& trsf = it->Placement();
+			gp_GTrsf trsf = it->Placement();
+			if (convert_back_units) {
+				gp_Trsf scale;
+				scale.SetScaleFactor(1.0 / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT));
+				trsf.PreMultiply(scale);
+			}
 			bool trsf_valid = false;
 			gp_Trsf _trsf;
 			try {
