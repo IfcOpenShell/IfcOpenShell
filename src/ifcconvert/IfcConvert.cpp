@@ -169,7 +169,11 @@ int main(int argc, char** argv) {
 
 	IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS, use_world_coords);
 	IfcGeomObjects::Settings(IfcGeomObjects::WELD_VERTICES, weld_vertices);
-	IfcGeomObjects::Settings(IfcGeomObjects::SEW_SHELLS, sew_shells);	
+	IfcGeomObjects::Settings(IfcGeomObjects::SEW_SHELLS, sew_shells);
+	IfcGeomObjects::Settings(IfcGeomObjects::CONVERT_BACK_UNITS, convert_back_units);
+	IfcGeomObjects::Settings(IfcGeomObjects::FASTER_BOOLEANS, merge_boolean_operands);
+	IfcGeomObjects::Settings(IfcGeomObjects::FORCE_CCW_FACE_ORIENTATION, force_ccw_face_orientation);
+	IfcGeomObjects::Settings(IfcGeomObjects::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
 
 	std::string output_extension = output_filename.substr(output_filename.size()-4);
 	for (std::string::iterator c = output_extension.begin(); c != output_extension.end(); ++c) {
