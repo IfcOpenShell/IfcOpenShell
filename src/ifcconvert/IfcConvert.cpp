@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
 		("sew-shells", "Specifies whether to sew the faces of IfcConnectedFaceSets together. This is a "
 					   "potentially time consuming operation, but guarantees a consistent orientation "
 					   "of surface normals, even if the faces are not properly oriented in the IFC file.")
-		("merge-boolean-operands", "Specifies whether to merge all IfcOpening operands into a single"
+		("merge-boolean-operands", "Specifies whether to merge all IfcOpeningElement operands into a single "
 								   "operand before applying the subtraction operation. This may "
 								   "introduce a performance improvement at the risk of failing, in "
 								   "which case the subtraction is applied one-by-one.")
@@ -108,7 +108,8 @@ int main(int argc, char** argv) {
 		("disable-opening-subtractions", "Specifies whether to disable the boolean subtraction of "
 										 "IfcOpeningElement Representations from their RelatingElements.")
 		("ignore-types", boost::program_options::value< std::vector<std::string> >(&ignore_types_vector)->multitoken(), 
-			"A list of IFC datatype keywords that should not be included in the geometrical output");
+			"A list of IFC datatype keywords that should not be included in the geometrical output. "
+			"Defaults to IfcOpeningElement and IfcSpace");
 	
 	boost::program_options::options_description cmdline_options;
 	cmdline_options.add(generic_options).add(fileio_options).add(geom_options);
@@ -122,11 +123,11 @@ int main(int argc, char** argv) {
 			  options(cmdline_options).positional(positional_options).run(), vmap);
 	boost::program_options::notify(vmap);
 
-	if (vmap.count("help") || !vmap.count("input-file")) {
-		printUsage(generic_options, geom_options);
-		return 1;
-	} else if (vmap.count("version")) {
+	if (vmap.count("version")) {
 		printVersion();
+		return 1;
+	} else if (vmap.count("help") || !vmap.count("input-file")) {
+		printUsage(generic_options, geom_options);
 		return 1;
 	}
 
@@ -137,7 +138,7 @@ int main(int argc, char** argv) {
 	const bool sew_shells = vmap.count("sew-shells") != 0;
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
 	const bool force_ccw_face_orientation = vmap.count("force-ccw-face-orientation") != 0;
-	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;	
+	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
 
 	// Gets the set ifc types to be ignored from the command line. 
 	std::set<std::string> ignore_types;
@@ -179,7 +180,7 @@ int main(int argc, char** argv) {
 	if (output_extension == ".obj") {
 		const std::string mtl_filename = output_filename.substr(0,output_filename.size()-3) + "mtl";
 		if (!use_world_coords) {
-			Logger::Message(Logger::LOG_WARNING, "Use world coord settings ignored for WaveFront OBJ files");
+			Logger::Message(Logger::LOG_WARNING, "Use world coords settings ignored for WaveFront OBJ files");
 			IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS, true);
 		}
 		serializer = new WaveFrontOBJSerializer(output_filename, mtl_filename);
