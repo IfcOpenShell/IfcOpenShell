@@ -22,6 +22,7 @@
 
 #include <IGESControl_Controller.hxx>
 #include <IGESControl_Writer.hxx>
+#include <Interface_Static.hxx>
 
 #include "../ifcgeom/IfcGeomObjects.h"
 
@@ -41,6 +42,12 @@ public:
 	}
 	void finalize() {
 		writer.Write(out_filename.c_str());
+	}
+	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {
+		const char* symbol = getSymbolForUnitMagnitude(magnitude);
+		if (symbol) {
+			Interface_Static::SetCVal("write.iges.unit", symbol);
+		}
 	}
 };
 

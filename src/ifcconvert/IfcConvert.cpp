@@ -69,6 +69,9 @@ std::string change_extension(const std::string& fn, const std::string& ext) {
 	}
 }
 
+static std::stringstream log_stream;
+void write_log();
+
 int main(int argc, char** argv) {
 	boost::program_options::options_description generic_options;
 	generic_options.add_options()
@@ -180,11 +183,13 @@ int main(int argc, char** argv) {
 		*c = tolower(*c);
 	}
 
+	Logger::SetOutput(&std::cout, &log_stream);
+
 	GeometrySerializer* serializer;
 	if (output_extension == ".obj") {
 		const std::string mtl_filename = output_filename.substr(0,output_filename.size()-3) + "mtl";
 		if (!use_world_coords) {
-			Logger::Message(Logger::LOG_WARNING, "Use world coords settings ignored for WaveFront OBJ files");
+			Logger::Message(Logger::LOG_NOTICE, "Using world coords when writing WaveFront OBJ files");
 			IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS, true);
 		}
 		serializer = new WaveFrontOBJSerializer(output_filename, mtl_filename);
@@ -201,6 +206,7 @@ int main(int argc, char** argv) {
 		serializer = new IgesSerializer(output_filename);
 	} else {
 		Logger::Message(Logger::LOG_ERROR, "Unknown output filename extension");
+		write_log();
 		printUsage(generic_options, geom_options);
 		return 1;
 	}
@@ -209,23 +215,31 @@ int main(int argc, char** argv) {
 
 	if (!serializer->ready()) {
 		Logger::Message(Logger::LOG_ERROR, "Unable to open output file for writing");
+		write_log();
 		return 1;
 	}
-
-	serializer->writeHeader();
 
 	if (!serializer->isTesselated()) {
 		IfcGeomObjects::Settings(IfcGeomObjects::DISABLE_TRIANGULATION, true);
+		if (weld_vertices) {
+			Logger::Message(Logger::LOG_NOTICE, "Weld vertices setting ignored when writing STEP or IGES files");
+		}
 	}
-
-	// Stream for log messages, we don't want to interupt our new progress bar...
-	std::stringstream ss;
 
 	// Parse the file supplied in argv[1]. Returns true on succes.
-	if ( ! IfcGeomObjects::Init(input_filename,&std::cout,&ss) ) {
+	if ( ! IfcGeomObjects::Init(input_filename, &std::cout, &log_stream) ) {
 		Logger::Message(Logger::LOG_ERROR, "Unable to parse .ifc file or no geometrical entities found");
+		write_log();
 		return 1;
 	}
+
+	if (convert_back_units) {
+		serializer->setUnitNameAndMagnitude(IfcGeomObjects::GetUnitName(), IfcGeomObjects::GetUnitMagnitude());
+	} else {
+		serializer->setUnitNameAndMagnitude("METER", 1.0f);
+	}
+
+	serializer->writeHeader();
 
 	std::set<std::string> materials;
 
@@ -269,14 +283,17 @@ int main(int argc, char** argv) {
 
 	Logger::Status("\rDone creating geometry                                ");
 
-	// Writes the material settings, defined in Materials.h
-	std::string log = ss.str();
-	if (!log.empty()) {
-		std::cerr << std::endl << "Log:" << std::endl;
-		std::cerr << ss.str();
-	}
+	write_log();
 
 	time(&end);
 	int dif = (int) difftime (end,start);	
 	printf ("\nConversion took %d seconds\n", dif );
+}
+
+void write_log() {
+	std::string log = log_stream.str();
+	if (!log.empty()) {
+		std::cerr << std::endl << "Log:" << std::endl;
+		std::cerr << log << std::endl;
+	}
 }

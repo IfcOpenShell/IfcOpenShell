@@ -31,6 +31,7 @@ public:
 	virtual ~GeometrySerializer() {} 
 	virtual void writeTesselated(const IfcGeomObjects::IfcGeomObject* o) = 0;
 	virtual void writeShapeModel(const IfcGeomObjects::IfcGeomShapeModelObject* o) = 0;
+	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
 };
 
 #endif

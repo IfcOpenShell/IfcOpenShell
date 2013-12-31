@@ -22,6 +22,7 @@
 
 #include <STEPControl_Controller.hxx>
 #include <STEPControl_Writer.hxx>
+#include <Interface_Static.hxx>
 
 #include "../ifcgeom/IfcGeomObjects.h"
 
@@ -37,10 +38,22 @@ public:
 	{}
 	virtual ~StepSerializer() {}
 	void writeShape(const TopoDS_Shape& shape) {
+		std::stringstream ss;
+		std::streambuf *sb = std::cout.rdbuf(ss.rdbuf());
 		writer.Transfer(shape, STEPControl_AsIs);
+		std::cout.rdbuf(sb);
 	}
 	void finalize() {
+		std::stringstream ss;
+		std::streambuf *sb = std::cout.rdbuf(ss.rdbuf());
 		writer.Write(out_filename.c_str());
+		std::cout.rdbuf(sb);
+	}
+	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {
+		const char* symbol = getSymbolForUnitMagnitude(magnitude);
+		if (symbol) {
+			Interface_Static::SetCVal("write.step.unit", symbol);
+		}
 	}
 };
 

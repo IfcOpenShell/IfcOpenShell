@@ -27,6 +27,7 @@
 class OpenCascadeBasedSerializer : public GeometrySerializer {
 protected:
 	const std::string& out_filename;
+	const char* getSymbolForUnitMagnitude(float mag);
 public:
 	explicit OpenCascadeBasedSerializer(const std::string& out_filename)
 		: GeometrySerializer()

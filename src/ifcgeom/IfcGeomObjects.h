@@ -274,6 +274,9 @@ namespace IfcGeomObjects {
 	
 	bool Next();
 	int Progress();
+
+	const std::string& GetUnitName();
+	const float GetUnitMagnitude();
 	
 	const std::string GetLog();
 	IfcParse::IfcFile* GetFile();

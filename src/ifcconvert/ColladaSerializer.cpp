@@ -208,13 +208,12 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
 	closeLibrary();
 }
 		
-void ColladaSerializer::ColladaExporter::startDocument() {
+void ColladaSerializer::ColladaExporter::startDocument(const std::string& unit_name, float unit_magnitude) {
 	stream.startDocument();
 
 	COLLADASW::Asset asset(&stream);
 	asset.getContributor().mAuthoringTool = std::string("IfcOpenShell ") + IFCOPENSHELL_VERSION;
-	// TODO: Get the appropriate unit from the IFC file.
-	asset.setUnit("meter", 1.0);
+	asset.setUnit(unit_name, unit_magnitude);
 	asset.setUpAxisType(COLLADASW::Asset::Z_UP);
 	asset.add();
 }
@@ -271,7 +270,7 @@ bool ColladaSerializer::ready() {
 }
 
 void ColladaSerializer::writeHeader() {
-	exporter.startDocument();
+	exporter.startDocument(unit_name, unit_magnitude);
 }
 
 void ColladaSerializer::writeTesselated(const IfcGeomObjects::IfcGeomObject* o) {

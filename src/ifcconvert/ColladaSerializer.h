@@ -135,11 +135,13 @@ private:
 		{}
 		std::vector<DeferredObject> deferreds;
 		virtual ~ColladaExporter() {}
-		void startDocument();
+		void startDocument(const std::string& unit_name, float unit_magnitude);
 		void writeTesselated(const std::string& guid, const std::string& name, const std::string& type, int obj_id, const std::vector<float>& matrix, const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<int>& indices, const std::vector<int>& material_ids, const std::vector<IfcGeomObjects::Material>& materials);
 		void endDocument();
 	};
 	ColladaExporter exporter;
+	std::string unit_name;
+	float unit_magnitude;
 public:
 	ColladaSerializer(const std::string& dae_filename)
 		: GeometrySerializer()
@@ -151,6 +153,10 @@ public:
 	void writeShapeModel(const IfcGeomObjects::IfcGeomShapeModelObject* o) {}
 	void finalize();
 	bool isTesselated() const { return true; }
+	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {
+		unit_name = name;
+		unit_magnitude = magnitude;
+	}
 };
 
 #endif

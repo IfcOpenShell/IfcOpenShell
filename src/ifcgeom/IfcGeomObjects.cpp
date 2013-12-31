@@ -605,6 +605,9 @@ void IfcGeomObjects::InitPrecision() {
 	}
 }
 
+static std::string unit_name = "METER";
+static float unit_magnitude = 1.0f;
+
 void IfcGeomObjects::InitUnits() {
 	// Set default units, set length to meters, angles to undefined
 	IfcGeom::SetValue(IfcGeom::GV_LENGTH_UNIT,1.0);
@@ -631,11 +634,13 @@ void IfcGeomObjects::InitUnits() {
 	}
 	try {
 		for ( IfcUtil::IfcAbstractSelect::it it = units->begin(); it != units->end(); ++ it ) {
+			std::string current_unit_name = "";
 			const IfcUtil::IfcAbstractSelect::ptr base = *it;
 			Ifc2x3::IfcSIUnit::ptr unit = Ifc2x3::IfcSIUnit::ptr();
 			double value = 1.0f;
 			if ( base->is(Ifc2x3::Type::IfcConversionBasedUnit) ) {
 				const Ifc2x3::IfcConversionBasedUnit::ptr u = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcConversionBasedUnit>(base);
+				current_unit_name = u->Name();
 				const Ifc2x3::IfcMeasureWithUnit::ptr u2 = u->ConversionFactor();
 				Ifc2x3::IfcUnit u3 = u2->UnitComponent();
 				if ( u3->is(Ifc2x3::Type::IfcSIUnit) ) {
@@ -655,6 +660,14 @@ void IfcGeomObjects::InitUnits() {
 				Ifc2x3::IfcUnitEnum::IfcUnitEnum type = unit->UnitType();
 				if ( type == Ifc2x3::IfcUnitEnum::IfcUnit_LENGTHUNIT ) {
 					IfcGeom::SetValue(IfcGeom::GV_LENGTH_UNIT,value);
+					if (current_unit_name.empty()) {
+						if (unit->hasPrefix()) {
+							current_unit_name = Ifc2x3::IfcSIPrefix::ToString(unit->Prefix());
+						}
+						current_unit_name += Ifc2x3::IfcSIUnitName::ToString(unit->Name());
+					}
+					unit_magnitude = value;
+					unit_name = current_unit_name;
 				} else if ( type == Ifc2x3::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT ) {
 					IfcGeom::SetValue(IfcGeom::GV_PLANEANGLE_UNIT,value);
 				}
@@ -738,6 +751,14 @@ void IfcGeomObjects::Settings(int setting, bool value) {
 }
 int IfcGeomObjects::Progress() {
 	return 100 * done / total;
+}
+
+const std::string& IfcGeomObjects::GetUnitName() {
+	return unit_name;
+}
+
+const float IfcGeomObjects::GetUnitMagnitude() {
+	return unit_magnitude;
 }
 
 const std::string IfcGeomObjects::GetLog() {

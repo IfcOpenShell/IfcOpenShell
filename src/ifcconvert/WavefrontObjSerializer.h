@@ -49,6 +49,7 @@ public:
 	void writeShapeModel(const IfcGeomObjects::IfcGeomShapeModelObject* o) {}
 	void finalize() {}
 	bool isTesselated() const { return true; }
+	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {}
 };
 
 #endif
