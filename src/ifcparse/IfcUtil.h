@@ -106,7 +106,6 @@ public:
 	inline void push(SHARED_PTR< IfcTemplatedEntityList<T> > t) { for ( typename T::it it = t->begin(); it != t->end(); ++it ) push(*it); }
 	inline it begin() { return ls.begin(); }
 	inline it end() { return ls.end(); }
-	inline T operator[] (int i) { return ls[i]; }
 	inline unsigned int Size() const { return (unsigned int) ls.size(); }
 	IfcEntities generalize() {
 		IfcEntities r (new IfcEntityList());
