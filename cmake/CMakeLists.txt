@@ -54,10 +54,39 @@ ENDIF()
 FIND_LIBRARY(icu "icuuc" /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR})
 
 IF(icu)
-	MESSAGE(STATUS "ICU libraries found")
+    MESSAGE(STATUS "ICU libraries found")
     ADD_DEFINITIONS(-DHAVE_ICU)
 ELSE()
-	MESSAGE(STATUS "Unable to find ICU library files, continuing")	
+    MESSAGE(STATUS "Unable to find ICU library files, continuing")	
+ENDIF()
+
+IF("$ENV{OPENCOLLADA_INCLUDE_DIR}" STREQUAL "")
+    MESSAGE(STATUS "No OpenCOLLADA include directory specified")
+    SET(OPENCOLLADA_INCLUDE_DIR "/usr/local/include/opencollada" CACHE FILEPATH "OpenCOLLADA header files")
+ElSE()
+    SET(OPENCOLLADA_INCLUDE_DIR "$ENV{OPENCOLLADA_INCLUDE_DIR}" CACHE FILEPATH "OpenCOLLADA header files")
+ENDIF()
+
+IF("$ENV{OPENCOLLADA_LIBRARY_DIR}" STREQUAL "")
+    MESSAGE(STATUS "No OpenCOLLADA library directory specified")
+    SET(OPENCOLLADA_LIBRARY_DIR "/usr/local/lib/opencollada" CACHE FILEPATH "OpenCOLLADA library files")
+ElSE()
+    SET(OPENCOLLADA_LIBRARY_DIR "$ENV{OPENCOLLADA_LIBRARY_DIR}" CACHE FILEPATH "OpenCOLLADA library files")
+ENDIF()
+
+SET(OPENCOLLADA_INCLUDE_DIRS "${OPENCOLLADA_INCLUDE_DIR}/COLLADABaseUtils" "${OPENCOLLADA_INCLUDE_DIR}/COLLADAStreamWriter")
+
+FIND_FILE(COLLADASWStreamWriter_h "COLLADASWStreamWriter.h" ${OPENCOLLADA_INCLUDE_DIRS})
+IF(COLLADASWStreamWriter_h)
+    MESSAGE(STATUS "OpenCOLLADA header files found")
+    ADD_DEFINITIONS(-DWITH_OPENCOLLADA)
+    SET(OPENCOLLADA_LIBRARIES 
+        GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils
+        OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
+        OpenCOLLADAStreamWriter UTF buffer ftoa pcre
+    )
+ELSE()
+    MESSAGE(STATUS "OpenCOLLADA header files not found, continuing without COLLADA support")
 ENDIF()
 
 INCLUDE(CheckIncludeFileCXX)
@@ -92,7 +121,7 @@ ElSE(MSVC)
     ADD_DEFINITIONS(-fPIC -Wno-non-virtual-dtor)
 ENDIF(MSVC)
 
-INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} /usr/inc /usr/local/inc /usr/local/include/oce ${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS} /usr/inc /usr/local/inc /usr/local/include/oce ${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
 ADD_LIBRARY(IfcParse STATIC 
   ../src/ifcparse/Ifc2x3.cpp
@@ -124,7 +153,7 @@ ENDIF()
 
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
-LINK_DIRECTORIES (${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}) 
+LINK_DIRECTORIES (${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} ${OPENCOLLADA_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}) 
 
 ADD_EXECUTABLE(IfcConvert 
     ../src/ifcconvert/ColladaSerializer.cpp
@@ -133,7 +162,7 @@ ADD_EXECUTABLE(IfcConvert
     ../src/ifcconvert/WavefrontObjSerializer.cpp   
 )
 
-TARGET_LINK_LIBRARIES (IfcConvert IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES ${Boost_LIBRARIES})
+TARGET_LINK_LIBRARIES (IfcConvert IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
 
 # Build python wrapper using separate CMakeLists.txt
 ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
