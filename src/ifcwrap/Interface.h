@@ -26,7 +26,8 @@ namespace IfcGeomObjects {
 	const int SEW_SHELLS = 5;
 	const int FASTER_BOOLEANS = 6;
 	const int FORCE_CCW_FACE_ORIENTATION = 7;
-    const int DISABLE_OPENING_SUBTRACTIONS = 8;
+	const int DISABLE_OPENING_SUBTRACTIONS = 8;
+	const int DISABLE_TRIANGULATION = 9;
 
 	class Material {
 	private:

@@ -730,7 +730,6 @@ void IfcGeomObjects::Settings(int setting, bool value) {
 		break;
 	case USE_BREP_DATA:
 		use_brep_data = value;
-		disable_triangulation = value;
 		break;
 	case FASTER_BOOLEANS:
 		use_faster_booleans = value;

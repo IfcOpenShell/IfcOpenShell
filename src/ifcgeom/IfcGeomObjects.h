@@ -101,8 +101,7 @@ namespace IfcGeomObjects {
     // the related building element representations.
     const int DISABLE_OPENING_SUBTRACTIONS = 8;
 	// Disables the triangulation of the topological representations. Useful if
-	// the client application understands Open Cascade's native format. Note
-	// that this setting is implied by the USE_BREP_DATA setting.
+	// the client application understands Open Cascade's native format.
     const int DISABLE_TRIANGULATION = 9;
 
 	// End of settings enumeration.
