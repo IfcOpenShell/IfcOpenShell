@@ -199,7 +199,7 @@ bool ColladaSerializer::ColladaExporter::ColladaMaterials::contains(const IfcGeo
 
 void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
 	effects.close();
-	for (auto it = materials.begin(); it != materials.end(); ++it) {
+	for (std::vector<IfcGeomObjects::Material>::const_iterator it = materials.begin(); it != materials.end(); ++it) {
 		const std::string& material_name = collada_id((*it).name());
 		openMaterial(material_name);
 		addInstanceEffect("#" + material_name + "-fx");
@@ -252,12 +252,12 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	// In fact due the XML based nature of Collada and its dependency on library nodes,
 	// only at this point all objects are written to the stream.
 	materials.write();
-	for (auto it = deferreds.begin(); it != deferreds.end(); ++it) {
+	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		const std::string object_name = it->Name();
 		geometries.write(object_name, it->type, it->vertices, it->normals, it->indices, it->material_ids, it->materials);
 	}
 	geometries.close();
-	for (auto it = deferreds.begin(); it != deferreds.end(); ++it) {
+	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		const std::string object_name = it->Name();
 		scene.add(object_name, object_name, object_name, it->material_references, it->matrix);
 	}
