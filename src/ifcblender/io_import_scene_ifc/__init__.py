@@ -147,10 +147,10 @@ def import_ifc(filename, use_names, process_relations):
         if ob.parent_id > 0:
             id_to_parent[ob.id] = ob.parent_id
             
-        me.calc_tessface()
-        
-        for face, matid in zip(me.tessfaces, matids):
-            face.material_index = matid + (1 if needs_default else 0)
+        faces = me.polygons if hasattr(me, 'polygons') else me.faces
+        if len(faces) == len(matids):
+            for face, matid in zip(faces, matids):
+                face.material_index = matid + (1 if needs_default else 0)
             
         progress = IfcImport.Progress() // 2
         if progress > old_progress:
