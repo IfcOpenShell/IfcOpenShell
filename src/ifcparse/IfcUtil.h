@@ -25,7 +25,12 @@
 #include <sstream>
 
 #include "../ifcparse/SharedPointer.h"
+
+#ifdef USE_IFC4
+#include "../ifcparse/Ifc4enum.h"
+#else
 #include "../ifcparse/Ifc2x3enum.h"
+#endif
 
 class IfcAbstractEntity;
 //typedef SHARED_PTR<IfcAbstractEntity> IfcAbstractEntityPtr;
@@ -48,7 +53,7 @@ inline T* reinterpret_pointer_cast(F* from) {
 
 namespace IfcUtil {
     enum ArgumentType {
-        Argument_INT, Argument_BOOL, Argument_DOUBLE, Argument_STRING, Argument_VECTOR_INT, Argument_VECTOR_DOUBLE, Argument_VECTOR_STRING, Argument_ENTITY, Argument_ENTITY_LIST, Argument_ENUMERATION, Argument_UNKNOWN
+        Argument_INT, Argument_BOOL, Argument_DOUBLE, Argument_STRING, Argument_VECTOR_INT, Argument_VECTOR_DOUBLE, Argument_VECTOR_STRING, Argument_ENTITY, Argument_ENTITY_LIST, Argument_ENTITY_LIST_LIST, Argument_ENUMERATION, Argument_UNKNOWN
     };
 }
 
@@ -57,8 +62,8 @@ namespace IfcUtil {
 class IfcBaseClass {
 public:
     IfcAbstractEntityPtr entity;
-    virtual bool is(Ifc2x3::Type::Enum v) const = 0;
-    virtual Ifc2x3::Type::Enum type() const = 0;
+    virtual bool is(IfcSchema::Type::Enum v) const = 0;
+    virtual IfcSchema::Type::Enum type() const = 0;
 };
 
 class IfcBaseEntity : public IfcBaseClass {
@@ -81,8 +86,8 @@ class IfcEntityList {
 	std::vector<IfcUtil::IfcSchemaEntity> ls;
 public:
 	typedef std::vector<IfcUtil::IfcSchemaEntity>::const_iterator it;
-	IfcEntities getInverse(Ifc2x3::Type::Enum c = Ifc2x3::Type::ALL);
-	IfcEntities getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a);
+	IfcEntities getInverse(IfcSchema::Type::Enum c = IfcSchema::Type::ALL);
+	IfcEntities getInverse(IfcSchema::Type::Enum c, int i, const std::string& a);
 	void push(IfcUtil::IfcSchemaEntity l);
 	void push(IfcEntities l);
 	it begin();
@@ -134,20 +139,20 @@ namespace IfcUtil {
 		IfcEntitySelect(IfcSchemaEntity b);
 		IfcEntitySelect(IfcAbstractEntityPtr e);
 		~IfcEntitySelect();
-		bool is(Ifc2x3::Type::Enum v) const;
-		Ifc2x3::Type::Enum type() const;
+		bool is(IfcSchema::Type::Enum v) const;
+		IfcSchema::Type::Enum type() const;
 		bool isSimpleType();
 	};
 	class IfcArgumentSelect : public IfcAbstractSelect {
-		Ifc2x3::Type::Enum _type;
+		IfcSchema::Type::Enum _type;
 		ArgumentPtr arg;
 	public:
 		typedef IfcArgumentSelect* ptr;
-		IfcArgumentSelect(Ifc2x3::Type::Enum t, ArgumentPtr a);
+		IfcArgumentSelect(IfcSchema::Type::Enum t, ArgumentPtr a);
 		~IfcArgumentSelect();
 		ArgumentPtr wrappedValue();
-		bool is(Ifc2x3::Type::Enum v) const;
-		Ifc2x3::Type::Enum type() const;
+		bool is(IfcSchema::Type::Enum v) const;
+		IfcSchema::Type::Enum type() const;
 		bool isSimpleType();
 	};
 }
@@ -180,14 +185,14 @@ public:
 class IfcAbstractEntity {
 public:
 	IfcParse::IfcFile* file;
-	virtual IfcEntities getInverse(Ifc2x3::Type::Enum c = Ifc2x3::Type::ALL) = 0;
-	virtual IfcEntities getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a) = 0;
+	virtual IfcEntities getInverse(IfcSchema::Type::Enum c = IfcSchema::Type::ALL) = 0;
+	virtual IfcEntities getInverse(IfcSchema::Type::Enum c, int i, const std::string& a) = 0;
 	virtual std::string datatype() = 0;
 	virtual ArgumentPtr getArgument (unsigned int i) = 0;
 	virtual unsigned int getArgumentCount() = 0;
 	virtual ~IfcAbstractEntity() {};
-	virtual Ifc2x3::Type::Enum type() const = 0;
-	virtual bool is(Ifc2x3::Type::Enum v) const = 0;
+	virtual IfcSchema::Type::Enum type() const = 0;
+	virtual bool is(IfcSchema::Type::Enum v) const = 0;
 	virtual std::string toString(bool upper=false) = 0;
 	virtual unsigned int id() = 0;
 	virtual bool isWritable() = 0;

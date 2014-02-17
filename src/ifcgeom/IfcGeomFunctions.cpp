@@ -130,15 +130,15 @@ const TopoDS_Shape& IfcGeom::ensure_fit_for_subtraction(const TopoDS_Shape& shap
 	return solid;
 }
 
-bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, 
+bool IfcGeom::convert_openings(const IfcSchema::IfcProduct::ptr entity, const IfcSchema::IfcRelVoidsElement::list& openings, 
 							   const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes) {
 	// Iterate over IfcOpeningElements
 	IfcGeom::IfcRepresentationShapeItems opening_shapes;
 	unsigned int last_size = 0;
-	for ( Ifc2x3::IfcRelVoidsElement::it it = openings->begin(); it != openings->end(); ++ it ) {
-		Ifc2x3::IfcRelVoidsElement::ptr v = *it;
-		Ifc2x3::IfcFeatureElementSubtraction::ptr fes = v->RelatedOpeningElement();
-		if ( fes->is(Ifc2x3::Type::IfcOpeningElement) ) {
+	for ( IfcSchema::IfcRelVoidsElement::it it = openings->begin(); it != openings->end(); ++ it ) {
+		IfcSchema::IfcRelVoidsElement::ptr v = *it;
+		IfcSchema::IfcFeatureElementSubtraction::ptr fes = v->RelatedOpeningElement();
+		if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
@@ -147,10 +147,10 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
 
-			Ifc2x3::IfcProductRepresentation::ptr prodrep = fes->Representation();
-			Ifc2x3::IfcRepresentation::list reps = prodrep->Representations();
+			IfcSchema::IfcProductRepresentation::ptr prodrep = fes->Representation();
+			IfcSchema::IfcRepresentation::list reps = prodrep->Representations();
 						
-			for ( Ifc2x3::IfcRepresentation::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
+			for ( IfcSchema::IfcRepresentation::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
 				IfcGeom::convert_shapes(*it2,opening_shapes);
 			}
 
@@ -224,7 +224,7 @@ bool IfcGeom::convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x
 	return true;
 }
 
-bool IfcGeom::convert_openings_fast(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, 
+bool IfcGeom::convert_openings_fast(const IfcSchema::IfcProduct::ptr entity, const IfcSchema::IfcRelVoidsElement::list& openings, 
 							   const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes) {
 	
 	// Create a compound of all opening shapes in order to speed up the boolean operations
@@ -232,10 +232,10 @@ bool IfcGeom::convert_openings_fast(const Ifc2x3::IfcProduct::ptr entity, const 
 	BRep_Builder builder;
 	builder.MakeCompound(opening_compound);
 
-	for ( Ifc2x3::IfcRelVoidsElement::it it = openings->begin(); it != openings->end(); ++ it ) {
-		Ifc2x3::IfcRelVoidsElement::ptr v = *it;
-		Ifc2x3::IfcFeatureElementSubtraction::ptr fes = v->RelatedOpeningElement();
-		if ( fes->is(Ifc2x3::Type::IfcOpeningElement) ) {
+	for ( IfcSchema::IfcRelVoidsElement::it it = openings->begin(); it != openings->end(); ++ it ) {
+		IfcSchema::IfcRelVoidsElement::ptr v = *it;
+		IfcSchema::IfcFeatureElementSubtraction::ptr fes = v->RelatedOpeningElement();
+		if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
@@ -244,12 +244,12 @@ bool IfcGeom::convert_openings_fast(const Ifc2x3::IfcProduct::ptr entity, const 
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
 
-			Ifc2x3::IfcProductRepresentation::ptr prodrep = fes->Representation();
-			Ifc2x3::IfcRepresentation::list reps = prodrep->Representations();
+			IfcSchema::IfcProductRepresentation::ptr prodrep = fes->Representation();
+			IfcSchema::IfcRepresentation::list reps = prodrep->Representations();
 
 			IfcGeom::IfcRepresentationShapeItems opening_shapes;
 						
-			for ( Ifc2x3::IfcRepresentation::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
+			for ( IfcSchema::IfcRepresentation::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
 				IfcGeom::convert_shapes(*it2,opening_shapes);
 			}
 
@@ -501,10 +501,10 @@ double IfcGeom::GetValue(GeomValue var) {
 	return 0;
 }
 
-Ifc2x3::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, double deflection, IfcEntities es) {
+IfcSchema::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, double deflection, IfcEntities es) {
 	BRepMesh::Mesh(shape, deflection);
 
-	Ifc2x3::IfcFace::list faces (new IfcTemplatedEntityList<Ifc2x3::IfcFace>());
+	IfcSchema::IfcFace::list faces (new IfcTemplatedEntityList<IfcSchema::IfcFace>());
 
 	for (TopExp_Explorer exp(shape, TopAbs_FACE); exp.More(); exp.Next()) {
 		const TopoDS_Face& face = TopoDS::Face(exp.Current());
@@ -513,11 +513,11 @@ Ifc2x3::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, doubl
 
 		if (! tri.IsNull()) {
 			const TColgp_Array1OfPnt& nodes = tri->Nodes();
-			std::vector<Ifc2x3::IfcCartesianPoint*> vertices;
+			std::vector<IfcSchema::IfcCartesianPoint*> vertices;
 			for (int i = 1; i <= nodes.Length(); ++i) {
 				const gp_Pnt& pnt = nodes(i);
 				std::vector<double> xyz; xyz.push_back(pnt.X()); xyz.push_back(pnt.Y()); xyz.push_back(pnt.Z());
-				Ifc2x3::IfcCartesianPoint* cpnt = new Ifc2x3::IfcCartesianPoint(xyz);
+				IfcSchema::IfcCartesianPoint* cpnt = new IfcSchema::IfcCartesianPoint(xyz);
 				vertices.push_back(cpnt);
 				es->push(cpnt);
 			}
@@ -525,15 +525,15 @@ Ifc2x3::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, doubl
 			for (int i = 1; i <= triangles.Length(); ++ i) {
 				int n1, n2, n3;
 				triangles(i).Get(n1, n2, n3);
-				Ifc2x3::IfcCartesianPoint::list points (new IfcTemplatedEntityList<Ifc2x3::IfcCartesianPoint>());
+				IfcSchema::IfcCartesianPoint::list points (new IfcTemplatedEntityList<IfcSchema::IfcCartesianPoint>());
 				points->push(vertices[n1-1]);
 				points->push(vertices[n2-1]);
 				points->push(vertices[n3-1]);
-				Ifc2x3::IfcPolyLoop* loop = new Ifc2x3::IfcPolyLoop(points);
-				Ifc2x3::IfcFaceOuterBound* bound = new Ifc2x3::IfcFaceOuterBound(loop, face.Orientation() != TopAbs_REVERSED);
-				Ifc2x3::IfcFaceBound::list bounds (new IfcTemplatedEntityList<Ifc2x3::IfcFaceBound>());
+				IfcSchema::IfcPolyLoop* loop = new IfcSchema::IfcPolyLoop(points);
+				IfcSchema::IfcFaceOuterBound* bound = new IfcSchema::IfcFaceOuterBound(loop, face.Orientation() != TopAbs_REVERSED);
+				IfcSchema::IfcFaceBound::list bounds (new IfcTemplatedEntityList<IfcSchema::IfcFaceBound>());
 				bounds->push(bound);
-				Ifc2x3::IfcFace* face = new Ifc2x3::IfcFace(bounds);
+				IfcSchema::IfcFace* face = new IfcSchema::IfcFace(bounds);
 				es->push(loop);
 				es->push(bound);
 				es->push(face);
@@ -541,21 +541,21 @@ Ifc2x3::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, doubl
 			}
 		}
 	}
-	Ifc2x3::IfcOpenShell* shell = new Ifc2x3::IfcOpenShell(faces);
-	Ifc2x3::IfcConnectedFaceSet::list shells (new IfcTemplatedEntityList<Ifc2x3::IfcConnectedFaceSet>());
+	IfcSchema::IfcOpenShell* shell = new IfcSchema::IfcOpenShell(faces);
+	IfcSchema::IfcConnectedFaceSet::list shells (new IfcTemplatedEntityList<IfcSchema::IfcConnectedFaceSet>());
 	shells->push(shell);
-	Ifc2x3::IfcFaceBasedSurfaceModel* surface_model = new Ifc2x3::IfcFaceBasedSurfaceModel(shells);
+	IfcSchema::IfcFaceBasedSurfaceModel* surface_model = new IfcSchema::IfcFaceBasedSurfaceModel(shells);
 
-	Ifc2x3::IfcRepresentation::list reps (new IfcTemplatedEntityList<Ifc2x3::IfcRepresentation>());
-	Ifc2x3::IfcRepresentationItem::list items (new IfcTemplatedEntityList<Ifc2x3::IfcRepresentationItem>());
+	IfcSchema::IfcRepresentation::list reps (new IfcTemplatedEntityList<IfcSchema::IfcRepresentation>());
+	IfcSchema::IfcRepresentationItem::list items (new IfcTemplatedEntityList<IfcSchema::IfcRepresentationItem>());
 
 	items->push(surface_model);
 
-	Ifc2x3::IfcShapeRepresentation* rep = new Ifc2x3::IfcShapeRepresentation(
+	IfcSchema::IfcShapeRepresentation* rep = new IfcSchema::IfcShapeRepresentation(
 		0, std::string("Facetation"), std::string("SurfaceModel"), items);
 
 	reps->push(rep);
-	Ifc2x3::IfcProductDefinitionShape* shapedef = new Ifc2x3::IfcProductDefinitionShape(0, 0, reps);
+	IfcSchema::IfcProductDefinitionShape* shapedef = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
 
 	es->push(shell);
 	es->push(surface_model);

@@ -28,7 +28,11 @@
 #ifndef IFCHIERARCHYHELPER_H
 #define IFCHIERARCHYHELPER_H
 
+#ifdef USE_IFC4
+#include "../ifcparse/Ifc4.h"
+#else
 #include "../ifcparse/Ifc2x3.h"
+#endif
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcWrite.h"
 
@@ -57,27 +61,27 @@ public:
 		return *ts->begin();
 	}
 	
-	Ifc2x3::IfcAxis2Placement3D* addPlacement3d(double ox=0.0, double oy=0.0, double oz=0.0,
+	IfcSchema::IfcAxis2Placement3D* addPlacement3d(double ox=0.0, double oy=0.0, double oz=0.0,
 		double zx=0.0, double zy=0.0, double zz=1.0,
 		double xx=1.0, double xy=0.0, double xz=0.0);
 
-	Ifc2x3::IfcAxis2Placement2D* addPlacement2d(double ox=0.0, double oy=0.0,
+	IfcSchema::IfcAxis2Placement2D* addPlacement2d(double ox=0.0, double oy=0.0,
 		double xx=1.0, double xy=0.0);
 
-	Ifc2x3::IfcLocalPlacement* addLocalPlacement(double ox=0.0, double oy=0.0, double oz=0.0,
+	IfcSchema::IfcLocalPlacement* addLocalPlacement(double ox=0.0, double oy=0.0, double oz=0.0,
 		double zx=0.0, double zy=0.0, double zz=1.0,
 		double xx=1.0, double xy=0.0, double xz=0.0);
 
 	template <class T>
-	void addRelatedObject(Ifc2x3::IfcObjectDefinition* related_object, 
-		Ifc2x3::IfcObjectDefinition* relating_object, Ifc2x3::IfcOwnerHistory* owner_hist = 0)
+	void addRelatedObject(IfcSchema::IfcObjectDefinition* related_object, 
+		IfcSchema::IfcObjectDefinition* relating_object, IfcSchema::IfcOwnerHistory* owner_hist = 0)
 	{
 		typename T::list li = EntitiesByType<T>();
 		bool found = false;
 		for (typename T::it i = li->begin(); i != li->end(); ++i) {
 			T* rel = *i;
 			if (rel->RelatingObject() == relating_object) {
-				Ifc2x3::IfcObjectDefinition::list products = rel->RelatedObjects();
+				IfcSchema::IfcObjectDefinition::list products = rel->RelatedObjects();
 				products->push(related_object);
 				rel->setRelatedObjects(products);
 				found = true;
@@ -86,67 +90,67 @@ public:
 		}
 		if (! found) {
 			if (! owner_hist) {
-				owner_hist = getSingle<Ifc2x3::IfcOwnerHistory>();
+				owner_hist = getSingle<IfcSchema::IfcOwnerHistory>();
 			}
 			if (! owner_hist) {
 				owner_hist = addOwnerHistory();
 			}
-			Ifc2x3::IfcObjectDefinition::list relating_objects (new IfcTemplatedEntityList<Ifc2x3::IfcObjectDefinition>());
+			IfcSchema::IfcObjectDefinition::list relating_objects (new IfcTemplatedEntityList<IfcSchema::IfcObjectDefinition>());
 			relating_objects->push(relating_object);
 			T* t = new T(IfcWrite::IfcGuidHelper(), owner_hist, boost::none, boost::none, related_object, relating_objects);
 			AddEntity(t);
 		}
 	}
 
-	Ifc2x3::IfcOwnerHistory* addOwnerHistory();	
-	Ifc2x3::IfcProject* addProject(Ifc2x3::IfcOwnerHistory* owner_hist = 0);
-	void relatePlacements(Ifc2x3::IfcProduct* parent, Ifc2x3::IfcProduct* product);	
-	Ifc2x3::IfcSite* addSite(Ifc2x3::IfcProject* proj = 0, Ifc2x3::IfcOwnerHistory* owner_hist = 0);	
-	Ifc2x3::IfcBuilding* addBuilding(Ifc2x3::IfcSite* site = 0, Ifc2x3::IfcOwnerHistory* owner_hist = 0);
+	IfcSchema::IfcOwnerHistory* addOwnerHistory();	
+	IfcSchema::IfcProject* addProject(IfcSchema::IfcOwnerHistory* owner_hist = 0);
+	void relatePlacements(IfcSchema::IfcProduct* parent, IfcSchema::IfcProduct* product);	
+	IfcSchema::IfcSite* addSite(IfcSchema::IfcProject* proj = 0, IfcSchema::IfcOwnerHistory* owner_hist = 0);	
+	IfcSchema::IfcBuilding* addBuilding(IfcSchema::IfcSite* site = 0, IfcSchema::IfcOwnerHistory* owner_hist = 0);
 
-	Ifc2x3::IfcBuildingStorey* addBuildingStorey(Ifc2x3::IfcBuilding* building = 0, 
-		Ifc2x3::IfcOwnerHistory* owner_hist = 0);
+	IfcSchema::IfcBuildingStorey* addBuildingStorey(IfcSchema::IfcBuilding* building = 0, 
+		IfcSchema::IfcOwnerHistory* owner_hist = 0);
 
-	Ifc2x3::IfcBuildingStorey* addBuildingProduct(Ifc2x3::IfcProduct* product, 
-		Ifc2x3::IfcBuildingStorey* storey = 0, Ifc2x3::IfcOwnerHistory* owner_hist = 0);
+	IfcSchema::IfcBuildingStorey* addBuildingProduct(IfcSchema::IfcProduct* product, 
+		IfcSchema::IfcBuildingStorey* storey = 0, IfcSchema::IfcOwnerHistory* owner_hist = 0);
 
-	void addExtrudedPolyline(Ifc2x3::IfcShapeRepresentation* rep, const std::vector<std::pair<double, double> >& points, double h, 
-		Ifc2x3::IfcAxis2Placement2D* place=0, Ifc2x3::IfcAxis2Placement3D* place2=0, 
-		Ifc2x3::IfcDirection* dir=0, Ifc2x3::IfcRepresentationContext* context=0);
+	void addExtrudedPolyline(IfcSchema::IfcShapeRepresentation* rep, const std::vector<std::pair<double, double> >& points, double h, 
+		IfcSchema::IfcAxis2Placement2D* place=0, IfcSchema::IfcAxis2Placement3D* place2=0, 
+		IfcSchema::IfcDirection* dir=0, IfcSchema::IfcRepresentationContext* context=0);
 
-	Ifc2x3::IfcProductDefinitionShape* addExtrudedPolyline(const std::vector<std::pair<double, double> >& points, double h, 
-		Ifc2x3::IfcAxis2Placement2D* place=0, Ifc2x3::IfcAxis2Placement3D* place2=0, Ifc2x3::IfcDirection* dir=0, 
-		Ifc2x3::IfcRepresentationContext* context=0);
+	IfcSchema::IfcProductDefinitionShape* addExtrudedPolyline(const std::vector<std::pair<double, double> >& points, double h, 
+		IfcSchema::IfcAxis2Placement2D* place=0, IfcSchema::IfcAxis2Placement3D* place2=0, IfcSchema::IfcDirection* dir=0, 
+		IfcSchema::IfcRepresentationContext* context=0);
 
-	void addBox(Ifc2x3::IfcShapeRepresentation* rep, double w, double d, double h, 
-		Ifc2x3::IfcAxis2Placement2D* place=0, Ifc2x3::IfcAxis2Placement3D* place2=0, 
-		Ifc2x3::IfcDirection* dir=0, Ifc2x3::IfcRepresentationContext* context=0);
+	void addBox(IfcSchema::IfcShapeRepresentation* rep, double w, double d, double h, 
+		IfcSchema::IfcAxis2Placement2D* place=0, IfcSchema::IfcAxis2Placement3D* place2=0, 
+		IfcSchema::IfcDirection* dir=0, IfcSchema::IfcRepresentationContext* context=0);
 
-	Ifc2x3::IfcProductDefinitionShape* addBox(double w, double d, double h, Ifc2x3::IfcAxis2Placement2D* place=0, 
-		Ifc2x3::IfcAxis2Placement3D* place2=0, Ifc2x3::IfcDirection* dir=0, Ifc2x3::IfcRepresentationContext* context=0);
+	IfcSchema::IfcProductDefinitionShape* addBox(double w, double d, double h, IfcSchema::IfcAxis2Placement2D* place=0, 
+		IfcSchema::IfcAxis2Placement3D* place2=0, IfcSchema::IfcDirection* dir=0, IfcSchema::IfcRepresentationContext* context=0);
 
-	void clipRepresentation(Ifc2x3::IfcProductRepresentation* shape, 
-		Ifc2x3::IfcAxis2Placement3D* place, bool agree);
+	void clipRepresentation(IfcSchema::IfcProductRepresentation* shape, 
+		IfcSchema::IfcAxis2Placement3D* place, bool agree);
 
-	Ifc2x3::IfcPresentationStyleAssignment* setSurfaceColour(Ifc2x3::IfcProductRepresentation* shape, 
+	IfcSchema::IfcPresentationStyleAssignment* setSurfaceColour(IfcSchema::IfcProductRepresentation* shape, 
 		double r, double g, double b, double a=1.0);
 
-	void setSurfaceColour(Ifc2x3::IfcProductRepresentation* shape, 
-		Ifc2x3::IfcPresentationStyleAssignment* style_assignment);
+	void setSurfaceColour(IfcSchema::IfcProductRepresentation* shape, 
+		IfcSchema::IfcPresentationStyleAssignment* style_assignment);
 
 };
 
 template <>
-inline void IfcHierarchyHelper::addRelatedObject <Ifc2x3::IfcRelContainedInSpatialStructure> (Ifc2x3::IfcObjectDefinition* related_object, 
-	Ifc2x3::IfcObjectDefinition* relating_object, Ifc2x3::IfcOwnerHistory* owner_hist)
+inline void IfcHierarchyHelper::addRelatedObject <IfcSchema::IfcRelContainedInSpatialStructure> (IfcSchema::IfcObjectDefinition* related_object, 
+	IfcSchema::IfcObjectDefinition* relating_object, IfcSchema::IfcOwnerHistory* owner_hist)
 {
-	Ifc2x3::IfcRelContainedInSpatialStructure::list li = EntitiesByType<Ifc2x3::IfcRelContainedInSpatialStructure>();
+	IfcSchema::IfcRelContainedInSpatialStructure::list li = EntitiesByType<IfcSchema::IfcRelContainedInSpatialStructure>();
 	bool found = false;
-	for (Ifc2x3::IfcRelContainedInSpatialStructure::it i = li->begin(); i != li->end(); ++i) {
-		Ifc2x3::IfcRelContainedInSpatialStructure* rel = *i;
+	for (IfcSchema::IfcRelContainedInSpatialStructure::it i = li->begin(); i != li->end(); ++i) {
+		IfcSchema::IfcRelContainedInSpatialStructure* rel = *i;
 		if (rel->RelatingStructure() == relating_object) {
-			Ifc2x3::IfcProduct::list products = rel->RelatedElements();
-			products->push((Ifc2x3::IfcProduct*)related_object);
+			IfcSchema::IfcProduct::list products = rel->RelatedElements();
+			products->push((IfcSchema::IfcProduct*)related_object);
 			rel->setRelatedElements(products);
 			found = true;
 			break;
@@ -154,15 +158,15 @@ inline void IfcHierarchyHelper::addRelatedObject <Ifc2x3::IfcRelContainedInSpati
 	}
 	if (! found) {
 		if (! owner_hist) {
-			owner_hist = getSingle<Ifc2x3::IfcOwnerHistory>();
+			owner_hist = getSingle<IfcSchema::IfcOwnerHistory>();
 		}
 		if (! owner_hist) {
 			owner_hist = addOwnerHistory();
 		}
-		Ifc2x3::IfcProduct::list relating_objects (new IfcTemplatedEntityList<Ifc2x3::IfcProduct>());
-		relating_objects->push((Ifc2x3::IfcProduct*)relating_object);
-		Ifc2x3::IfcRelContainedInSpatialStructure* t = new Ifc2x3::IfcRelContainedInSpatialStructure(IfcWrite::IfcGuidHelper(), owner_hist, 
-			boost::none, boost::none, relating_objects, (Ifc2x3::IfcSpatialStructureElement*)related_object);
+		IfcSchema::IfcProduct::list relating_objects (new IfcTemplatedEntityList<IfcSchema::IfcProduct>());
+		relating_objects->push((IfcSchema::IfcProduct*)relating_object);
+		IfcSchema::IfcRelContainedInSpatialStructure* t = new IfcSchema::IfcRelContainedInSpatialStructure(IfcWrite::IfcGuidHelper(), owner_hist, 
+			boost::none, boost::none, relating_objects, (IfcSchema::IfcSpatialStructureElement*)related_object);
 
 		AddEntity(t);
 	}

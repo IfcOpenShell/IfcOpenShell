@@ -30,7 +30,7 @@ namespace IfcGeom {
 	}
 }
 
-bool process_colour(Ifc2x3::IfcColourRgb* colour, std::tr1::array<double, 3>& rgb) {
+bool process_colour(IfcSchema::IfcColourRgb* colour, std::tr1::array<double, 3>& rgb) {
 	if (colour != 0) {
 		rgb[0] = colour->Red();
 		rgb[1] = colour->Green();
@@ -47,20 +47,20 @@ bool process_colour(IfcUtil::IfcArgumentSelect* factor, std::tr1::array<double, 
 	return factor != 0;
 }
 
-bool process_colour(Ifc2x3::IfcColourOrFactor colour_or_factor, std::tr1::array<double, 3>& rgb) {
+bool process_colour(IfcSchema::IfcColourOrFactor colour_or_factor, std::tr1::array<double, 3>& rgb) {
 	if (colour_or_factor == 0) {
 		return false;
-	} else if (colour_or_factor->is(Ifc2x3::Type::IfcColourRgb)) {
-		return process_colour(static_cast<Ifc2x3::IfcColourRgb*>(colour_or_factor), rgb);
-	} else if (colour_or_factor->is(Ifc2x3::Type::IfcNormalisedRatioMeasure)) {
+	} else if (colour_or_factor->is(IfcSchema::Type::IfcColourRgb)) {
+		return process_colour(static_cast<IfcSchema::IfcColourRgb*>(colour_or_factor), rgb);
+	} else if (colour_or_factor->is(IfcSchema::Type::IfcNormalisedRatioMeasure)) {
 		return process_colour(static_cast<IfcUtil::IfcArgumentSelect*>(colour_or_factor), rgb);
 	} else {
 		return false;
 	}
 }
 
-const IfcGeom::SurfaceStyle* IfcGeom::get_style(Ifc2x3::IfcRepresentationItem* item) {
-	std::pair<Ifc2x3::IfcSurfaceStyle*, Ifc2x3::IfcSurfaceStyleShading*> shading_styles = get_surface_style<Ifc2x3::IfcSurfaceStyleShading>(item);
+const IfcGeom::SurfaceStyle* IfcGeom::get_style(IfcSchema::IfcRepresentationItem* item) {
+	std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*> shading_styles = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(item);
 	if (shading_styles.second == 0) {
 		return 0;
 	}
@@ -79,8 +79,8 @@ const IfcGeom::SurfaceStyle* IfcGeom::get_style(Ifc2x3::IfcRepresentationItem* i
 	if (process_colour(shading_styles.second->SurfaceColour(), rgb)) {
 		surface_style.Diffuse().reset(SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
 	}
-	if (shading_styles.second->is(Ifc2x3::Type::IfcSurfaceStyleRendering)) {
-		Ifc2x3::IfcSurfaceStyleRendering* rendering_style = static_cast<Ifc2x3::IfcSurfaceStyleRendering*>(shading_styles.second);
+	if (shading_styles.second->is(IfcSchema::Type::IfcSurfaceStyleRendering)) {
+		IfcSchema::IfcSurfaceStyleRendering* rendering_style = static_cast<IfcSchema::IfcSurfaceStyleRendering*>(shading_styles.second);
 		if (rendering_style->hasDiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {
 			SurfaceStyle::ColorComponent diffuse = surface_style.Diffuse().get_value_or(SurfaceStyle::ColorComponent(1,1,1));
 			surface_style.Diffuse().reset(SurfaceStyle::ColorComponent(diffuse.R() * rgb[0], diffuse.G() * rgb[1], diffuse.B() * rgb[2]));
@@ -96,12 +96,12 @@ const IfcGeom::SurfaceStyle* IfcGeom::get_style(Ifc2x3::IfcRepresentationItem* i
 		}
 		if (rendering_style->hasSpecularHighlight()) {
 			IfcUtil::IfcArgumentSelect* highlight = static_cast<IfcUtil::IfcArgumentSelect*>(rendering_style->SpecularHighlight());
-			if (highlight->is(Ifc2x3::Type::IfcSpecularRoughness)) {
+			if (highlight->is(IfcSchema::Type::IfcSpecularRoughness)) {
 				double roughness = *highlight->wrappedValue();
 				if (roughness >= 1e-9) {
 					surface_style.Specularity().reset(1.0 / roughness);
 				}
-			} else if (highlight->is(Ifc2x3::Type::IfcSpecularRoughness)) {
+			} else if (highlight->is(IfcSchema::Type::IfcSpecularRoughness)) {
 				surface_style.Specularity().reset(*highlight->wrappedValue());
 			}
 		}

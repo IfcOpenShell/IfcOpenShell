@@ -125,6 +125,7 @@ INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCL
 
 ADD_LIBRARY(IfcParse STATIC 
   ../src/ifcparse/Ifc2x3.cpp
+  ../src/ifcparse/Ifc4.cpp
   ../src/ifcparse/IfcUtil.cpp
   ../src/ifcparse/IfcParse.cpp
   ../src/ifcparse/IfcCharacterDecoder.cpp

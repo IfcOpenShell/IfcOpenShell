@@ -24,7 +24,7 @@
 
 using namespace IfcWrite;
 
-IfcWritableEntity::IfcWritableEntity(Ifc2x3::Type::Enum t) {
+IfcWritableEntity::IfcWritableEntity(IfcSchema::Type::Enum t) {
 	_type = t;
 	_id = 0;
 	file = 0;
@@ -49,19 +49,19 @@ IfcWritableEntity::IfcWritableEntity(IfcAbstractEntity* e)
 	}
 }
 // TODO: Reove redundancy with IfcParse::Entity
-IfcEntities IfcWritableEntity::getInverse(Ifc2x3::Type::Enum c) {
+IfcEntities IfcWritableEntity::getInverse(IfcSchema::Type::Enum c) {
 	IfcEntities l = IfcEntities(new IfcEntityList());
 	int id = _id ? *_id : setId();
 	IfcEntities all = file->EntitiesByReference(id);
 	if ( ! all ) return l;
 	for( IfcEntityList::it it = all->begin(); it != all->end();++  it  ) {
-		if ( c == Ifc2x3::Type::ALL || (*it)->is(c) ) {
+		if ( c == IfcSchema::Type::ALL || (*it)->is(c) ) {
 			l->push(*it);
 		}
 	}
 	return l;
 }
-IfcEntities IfcWritableEntity::getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a) {
+IfcEntities IfcWritableEntity::getInverse(IfcSchema::Type::Enum c, int i, const std::string& a) {
 	IfcEntities l = IfcEntities(new IfcEntityList());
 	IfcEntities all = getInverse(c);
 	for( IfcEntityList::it it = all->begin(); it != all->end();++ it  ) {
@@ -73,11 +73,11 @@ IfcEntities IfcWritableEntity::getInverse(Ifc2x3::Type::Enum c, int i, const std
 	return l;
 }
 
-std::string IfcWritableEntity::datatype() { return Ifc2x3::Type::ToString(_type); }
+std::string IfcWritableEntity::datatype() { return IfcSchema::Type::ToString(_type); }
 ArgumentPtr IfcWritableEntity::getArgument (unsigned int i) { if ( i >= getArgumentCount() ) throw IfcParse::IfcException("Argument not set"); return args[i]; }
 unsigned int IfcWritableEntity::getArgumentCount() {return args.size(); }
-Ifc2x3::Type::Enum IfcWritableEntity::type() const { return _type; }
-bool IfcWritableEntity::is(Ifc2x3::Type::Enum v) const { return _type == v; }
+IfcSchema::Type::Enum IfcWritableEntity::type() const { return _type; }
+bool IfcWritableEntity::is(IfcSchema::Type::Enum v) const { return _type == v; }
 std::string IfcWritableEntity::toString(bool upper) {
 	std::stringstream ss;
 	std::string dt = datatype();
@@ -243,7 +243,7 @@ public:
 	}
 	void operator()(const IfcUtil::IfcSchemaEntity& i) { 
 		IfcAbstractEntity* e = i->entity;
-		if ( Ifc2x3::Type::IsSimple(e->type()) ) {
+		if ( IfcSchema::Type::IsSimple(e->type()) ) {
 			data << e->toString(upper);
 		} else {
 			data << "#" << e->id();
@@ -290,16 +290,16 @@ IfcWriteArgument::argument_type IfcWriteArgument::argumentType() const {
 	return static_cast<argument_type>(container.which());
 }
 
-IfcEntities IfcSelectHelperEntity::getInverse(Ifc2x3::Type::Enum,int,const std::string &) {throw IfcParse::IfcException("Invalid cast");}
-IfcEntities IfcSelectHelperEntity::getInverse(Ifc2x3::Type::Enum) {throw IfcParse::IfcException("Invalid cast");}
-std::string IfcSelectHelperEntity::datatype() { return Ifc2x3::Type::ToString(_type); }
+IfcEntities IfcSelectHelperEntity::getInverse(IfcSchema::Type::Enum,int,const std::string &) {throw IfcParse::IfcException("Invalid cast");}
+IfcEntities IfcSelectHelperEntity::getInverse(IfcSchema::Type::Enum) {throw IfcParse::IfcException("Invalid cast");}
+std::string IfcSelectHelperEntity::datatype() { return IfcSchema::Type::ToString(_type); }
 ArgumentPtr IfcSelectHelperEntity::getArgument(unsigned int i) {
 	if ( i != 0 ) throw IfcParse::IfcException("Invalid cast");
 	return arg;
 }
 unsigned int IfcSelectHelperEntity::getArgumentCount() { return 1; }
-Ifc2x3::Type::Enum IfcSelectHelperEntity::type() const { return _type; }
-bool IfcSelectHelperEntity::is(Ifc2x3::Type::Enum t) const { return _type == t; }
+IfcSchema::Type::Enum IfcSelectHelperEntity::type() const { return _type; }
+bool IfcSelectHelperEntity::is(IfcSchema::Type::Enum t) const { return _type == t; }
 std::string IfcSelectHelperEntity::toString(bool upper) {
 	std::stringstream ss;
 	std::string dt = datatype();
@@ -312,33 +312,33 @@ std::string IfcSelectHelperEntity::toString(bool upper) {
 unsigned int IfcSelectHelperEntity::id() { throw IfcParse::IfcException("Invalid cast"); }
 bool IfcSelectHelperEntity::isWritable() { throw IfcParse::IfcException("Invalid cast"); }
 
-IfcSelectHelper::IfcSelectHelper(const std::string& v, Ifc2x3::Type::Enum t) {
+IfcSelectHelper::IfcSelectHelper(const std::string& v, IfcSchema::Type::Enum t) {
 	IfcWriteArgument* a = new IfcWriteArgument(0);
 	a->set(v);
 	this->entity = new IfcSelectHelperEntity(t,a);
 }
-IfcSelectHelper::IfcSelectHelper(const char* const v, Ifc2x3::Type::Enum t) {
+IfcSelectHelper::IfcSelectHelper(const char* const v, IfcSchema::Type::Enum t) {
 	IfcWriteArgument* a = new IfcWriteArgument(0);
 	a->set<std::string>(v);
 	this->entity = new IfcSelectHelperEntity(t,a);
 }
-IfcSelectHelper::IfcSelectHelper(int v, Ifc2x3::Type::Enum t) {
+IfcSelectHelper::IfcSelectHelper(int v, IfcSchema::Type::Enum t) {
 	IfcWriteArgument* a = new IfcWriteArgument(0);
 	a->set(v);
 	this->entity = new IfcSelectHelperEntity(t,a);
 }
-IfcSelectHelper::IfcSelectHelper(double v, Ifc2x3::Type::Enum t) {
+IfcSelectHelper::IfcSelectHelper(double v, IfcSchema::Type::Enum t) {
 	IfcWriteArgument* a = new IfcWriteArgument(0);
 	a->set(v);
 	this->entity = new IfcSelectHelperEntity(t,a);
 }
-IfcSelectHelper::IfcSelectHelper(bool v, Ifc2x3::Type::Enum t) {
+IfcSelectHelper::IfcSelectHelper(bool v, IfcSchema::Type::Enum t) {
 	IfcWriteArgument* a = new IfcWriteArgument(0);
 	a->set(v);
 	this->entity = new IfcSelectHelperEntity(t,a);
 }
-bool IfcSelectHelper::is(Ifc2x3::Type::Enum t) const { return entity->is(t); }
-Ifc2x3::Type::Enum IfcSelectHelper::type() const { return entity->type(); } 
+bool IfcSelectHelper::is(IfcSchema::Type::Enum t) const { return entity->is(t); }
+IfcSchema::Type::Enum IfcSelectHelper::type() const { return entity->type(); } 
 
 EntityBuffer* EntityBuffer::i = 0;
 EntityBuffer* EntityBuffer::instance() {

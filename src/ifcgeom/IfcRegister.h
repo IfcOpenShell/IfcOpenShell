@@ -41,7 +41,7 @@
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcParse.h"
 
-using namespace Ifc2x3;
+using namespace IfcSchema;
 
 SHAPES(IfcShellBasedSurfaceModel);
 SHAPES(IfcFaceBasedSurfaceModel);

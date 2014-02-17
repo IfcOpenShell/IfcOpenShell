@@ -36,7 +36,7 @@ name_to_oid = {}
 oid_to_desc = {}
 oid_to_name = {}
 oid_to_pid = {}
-regices = list(zip([re.compile(s,re.M) for s in [r'<[\w\n=" \-/\.;_\t:%#,\?\(\)]+>',r'(\n[\t ]*){2,}',r'^[\t ]+','^']],['','\n\n','  ','/// ']))
+regices = list(zip([re.compile(s,re.M) for s in [r'<[\w\n=" \-/\.;_\t:%#,\?\(\)]+>',r'(\n[\t ]*){2,}',r'^[\t ]+']],['','\n\n','  ']))
 
 definition_files = ['DocEntity.csv', 'DocEnumeration.csv', 'DocDefined.csv', 'DocSelect.csv']
 for fn in definition_files:
@@ -49,23 +49,22 @@ for fn in definition_files:
 with open('DocEntityAttributes.csv') as f:
     for pid, x, oid in csv.reader(f, delimiter=';', quotechar='"'):
         oid_to_pid[oid] = pid
-        
+
 with open('DocAttribute.csv') as f:
     for oid, name, desc in csv.reader(f, delimiter=';', quotechar='"'):
         pid = oid_to_pid[oid]
         pname = oid_to_name[pid]
         name_to_oid[(pname, name)] = oid
         oid_to_desc[oid] = desc
-        
+
 def description(item):
     global name_to_oid, oid_to_desc, oid_to_name, oid_to_pid
     oid = name_to_oid.get(item,0)
-    desc = oid_to_desc.get(oid,None)
+    desc = oid_to_desc.get(oid, None)
     if desc:
         for a,b in entitydefs.items(): desc = desc.replace("&%s;"%a,b)
         desc = desc.replace("\r","")
-        for r,s in regices[:-1]: desc = r.sub(s,desc)
+        for r,s in regices: desc = r.sub(s,desc)
         desc = desc.strip()
-        r,s = regices[-1]
-        desc = r.sub(s,desc)
-    return desc
+        return desc.split("\n")
+    else: return []

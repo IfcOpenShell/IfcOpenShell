@@ -161,6 +161,18 @@
 					/>
 				</FileConfiguration>
 			</File>
+            <File
+				RelativePath="..\src\ifcparse\Ifc4.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalOptions="/bigobj"
+					/>
+				</FileConfiguration>
+			</File>
 			<File
 				RelativePath="..\src\ifcparse\IfcCharacterDecoder.cpp"
 				>

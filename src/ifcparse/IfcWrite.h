@@ -136,18 +136,18 @@ namespace IfcWrite {
 	/// Proper memory management is difficult for now, so beware.
 	class IfcSelectHelperEntity : public IfcAbstractEntity {
 	private:
-		Ifc2x3::Type::Enum _type;
+		IfcSchema::Type::Enum _type;
 		IfcWriteArgument* arg;
 	public:
 		// FIXME: Make this a non-pointer argument and implement a copy constructor
-		IfcSelectHelperEntity(Ifc2x3::Type::Enum t, IfcWriteArgument* a) : _type(t), arg(a) {}
-		IfcEntities getInverse(Ifc2x3::Type::Enum,int,const std::string &);
-		IfcEntities getInverse(Ifc2x3::Type::Enum);
+		IfcSelectHelperEntity(IfcSchema::Type::Enum t, IfcWriteArgument* a) : _type(t), arg(a) {}
+		IfcEntities getInverse(IfcSchema::Type::Enum,int,const std::string &);
+		IfcEntities getInverse(IfcSchema::Type::Enum);
 		std::string datatype();
 		ArgumentPtr getArgument(unsigned int i);
 		unsigned int getArgumentCount();
-		Ifc2x3::Type::Enum type() const;
-		bool is(Ifc2x3::Type::Enum t) const;
+		IfcSchema::Type::Enum type() const;
+		bool is(IfcSchema::Type::Enum t) const;
 		std::string toString(bool upper = false);
 		unsigned int id();
 		bool isWritable();
@@ -159,13 +159,13 @@ namespace IfcWrite {
 	/// Proper memory management is difficult for now, so beware.
 	class IfcSelectHelper : public IfcUtil::IfcBaseClass {
 	public:
-		IfcSelectHelper(const std::string& v, Ifc2x3::Type::Enum t=Ifc2x3::Type::IfcText);
-		IfcSelectHelper(const char* const v, Ifc2x3::Type::Enum t=Ifc2x3::Type::IfcText);
-		IfcSelectHelper(int v, Ifc2x3::Type::Enum t=Ifc2x3::Type::IfcInteger);
-		IfcSelectHelper(double v, Ifc2x3::Type::Enum t=Ifc2x3::Type::IfcReal);
-		IfcSelectHelper(bool v, Ifc2x3::Type::Enum t=Ifc2x3::Type::IfcBoolean);
-		bool is(Ifc2x3::Type::Enum t) const;
-		Ifc2x3::Type::Enum type() const;
+		IfcSelectHelper(const std::string& v, IfcSchema::Type::Enum t=IfcSchema::Type::IfcText);
+		IfcSelectHelper(const char* const v, IfcSchema::Type::Enum t=IfcSchema::Type::IfcText);
+		IfcSelectHelper(int v, IfcSchema::Type::Enum t=IfcSchema::Type::IfcInteger);
+		IfcSelectHelper(double v, IfcSchema::Type::Enum t=IfcSchema::Type::IfcReal);
+		IfcSelectHelper(bool v, IfcSchema::Type::Enum t=IfcSchema::Type::IfcBoolean);
+		bool is(IfcSchema::Type::Enum t) const;
+		IfcSchema::Type::Enum type() const;
 	};
 	
 	/// A helper class for the creation of IFC GlobalIds.

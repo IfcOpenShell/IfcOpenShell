@@ -78,7 +78,7 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
-bool IfcGeom::convert(const Ifc2x3::IfcExtrudedAreaSolid::ptr l, TopoDS_Shape& shape) {
+bool IfcGeom::convert(const IfcSchema::IfcExtrudedAreaSolid::ptr l, TopoDS_Shape& shape) {
 	TopoDS_Face face;
 	if ( ! IfcGeom::convert_face(l->SweptArea(),face) ) return false;
 	const double height = l->Depth() * IfcGeom::GetValue(GV_LENGTH_UNIT);
@@ -92,7 +92,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcExtrudedAreaSolid::ptr l, TopoDS_Shape& s
 	shape.Move(trsf);
 	return ! shape.IsNull();
 }
-bool IfcGeom::convert(const Ifc2x3::IfcFacetedBrep::ptr l, IfcRepresentationShapeItems& shape) {
+bool IfcGeom::convert(const IfcSchema::IfcFacetedBrep::ptr l, IfcRepresentationShapeItems& shape) {
 	TopoDS_Shape s;
 	if (IfcGeom::convert_shape(l->Outer(),s) ) {
 		shape.push_back(IfcRepresentationShapeItem(s, get_style(l->Outer())));
@@ -100,10 +100,10 @@ bool IfcGeom::convert(const Ifc2x3::IfcFacetedBrep::ptr l, IfcRepresentationShap
 	}
 	return false;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcFaceBasedSurfaceModel::ptr l, IfcRepresentationShapeItems& shapes) {
-	Ifc2x3::IfcConnectedFaceSet::list facesets = l->FbsmFaces();
+bool IfcGeom::convert(const IfcSchema::IfcFaceBasedSurfaceModel::ptr l, IfcRepresentationShapeItems& shapes) {
+	IfcSchema::IfcConnectedFaceSet::list facesets = l->FbsmFaces();
 	const SurfaceStyle* collective_style = get_style(l);
-	for( Ifc2x3::IfcConnectedFaceSet::it it = facesets->begin(); it != facesets->end(); ++ it ) {
+	for( IfcSchema::IfcConnectedFaceSet::it it = facesets->begin(); it != facesets->end(); ++ it ) {
 		TopoDS_Shape s;
 		const SurfaceStyle* shell_style = get_style(*it);
 		if (IfcGeom::convert_shape(*it,s)) {
@@ -112,21 +112,21 @@ bool IfcGeom::convert(const Ifc2x3::IfcFaceBasedSurfaceModel::ptr l, IfcRepresen
 	}
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcHalfSpaceSolid::ptr l, TopoDS_Shape& shape) {
-	Ifc2x3::IfcSurface::ptr surface = l->BaseSurface();
-	if ( ! surface->is(Ifc2x3::Type::IfcPlane) ) {
+bool IfcGeom::convert(const IfcSchema::IfcHalfSpaceSolid::ptr l, TopoDS_Shape& shape) {
+	IfcSchema::IfcSurface::ptr surface = l->BaseSurface();
+	if ( ! surface->is(IfcSchema::Type::IfcPlane) ) {
 		// Not implemented
 		return false;
 	}
 	gp_Pln pln;
-	IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcSurface,Ifc2x3::IfcPlane>(surface),pln);
+	IfcGeom::convert(reinterpret_pointer_cast<IfcSchema::IfcSurface,IfcSchema::IfcPlane>(surface),pln);
 	const gp_Pnt pnt = pln.Location().Translated( l->AgreementFlag() ? -pln.Axis().Direction() : pln.Axis().Direction());
 	shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln),pnt).Solid();
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr l, TopoDS_Shape& shape) {
+bool IfcGeom::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace::ptr l, TopoDS_Shape& shape) {
 	TopoDS_Shape halfspace;
-	if ( ! IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcPolygonalBoundedHalfSpace,Ifc2x3::IfcHalfSpaceSolid>(l),halfspace) ) return false;	
+	if ( ! IfcGeom::convert(reinterpret_pointer_cast<IfcSchema::IfcPolygonalBoundedHalfSpace,IfcSchema::IfcHalfSpaceSolid>(l),halfspace) ) return false;	
 	TopoDS_Wire wire;
 	if ( ! IfcGeom::convert_wire(l->PolygonalBoundary(),wire) || ! wire.Closed() ) return false;	
 	gp_Trsf trsf;
@@ -137,14 +137,14 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolygonalBoundedHalfSpace::ptr l, TopoDS_
 	shape = BRepAlgoAPI_Common(halfspace,prism);
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcShellBasedSurfaceModel::ptr l, IfcRepresentationShapeItems& shapes) {
+bool IfcGeom::convert(const IfcSchema::IfcShellBasedSurfaceModel::ptr l, IfcRepresentationShapeItems& shapes) {
 	IfcUtil::IfcAbstractSelect::list shells = l->SbsmBoundary();
 	const SurfaceStyle* collective_style = get_style(l);
 	for( IfcUtil::IfcAbstractSelect::it it = shells->begin(); it != shells->end(); ++ it ) {
 		TopoDS_Shape s;
 		const SurfaceStyle* shell_style = 0;
-		if ((*it)->is(Ifc2x3::Type::IfcRepresentationItem)) {
-			shell_style = get_style((Ifc2x3::IfcRepresentationItem*)*it);
+		if ((*it)->is(IfcSchema::Type::IfcRepresentationItem)) {
+			shell_style = get_style((IfcSchema::IfcRepresentationItem*)*it);
 		}
 		if (IfcGeom::convert_shape(*it,s)) {
 			shapes.push_back(IfcRepresentationShapeItem(s, shell_style ? shell_style : collective_style));
@@ -152,12 +152,12 @@ bool IfcGeom::convert(const Ifc2x3::IfcShellBasedSurfaceModel::ptr l, IfcReprese
 	}
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shape& shape) {
+bool IfcGeom::convert(const IfcSchema::IfcBooleanClippingResult::ptr l, TopoDS_Shape& shape) {
 	TopoDS_Shape s1, s2;
 	TopoDS_Wire boundary_wire;
-	Ifc2x3::IfcBooleanOperand operand1 = l->FirstOperand();
-	Ifc2x3::IfcBooleanOperand operand2 = l->SecondOperand();
-	bool is_halfspace = operand2->is(Ifc2x3::Type::IfcHalfSpaceSolid);
+	IfcSchema::IfcBooleanOperand operand1 = l->FirstOperand();
+	IfcSchema::IfcBooleanOperand operand2 = l->SecondOperand();
+	bool is_halfspace = operand2->is(IfcSchema::Type::IfcHalfSpaceSolid);
 
 	if ( ! IfcGeom::convert_shape(operand1,s1) )
 		return false;
@@ -205,8 +205,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcBooleanClippingResult::ptr l, TopoDS_Shap
 
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& shape) {
-	Ifc2x3::IfcFace::list faces = l->CfsFaces();
+bool IfcGeom::convert(const IfcSchema::IfcConnectedFaceSet::ptr l, TopoDS_Shape& shape) {
+	IfcSchema::IfcFace::list faces = l->CfsFaces();
 	bool facesAdded = false;
 	const unsigned int num_faces = faces->Size();
 	if ( num_faces < GetValue(GV_MAX_FACES_TO_SEW) ) {
@@ -214,7 +214,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 		builder.SetTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
 		builder.SetMaxTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
 		builder.SetMinTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
-		for( Ifc2x3::IfcFace::it it = faces->begin(); it != faces->end(); ++ it ) {
+		for( IfcSchema::IfcFace::it it = faces->begin(); it != faces->end(); ++ it ) {
 			TopoDS_Face face;
 			if ( IfcGeom::convert_face(*it,face) && face_area(face) > GetValue(GV_MINIMAL_FACE_AREA) ) {
 				builder.Add(face);
@@ -235,7 +235,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
-		for( Ifc2x3::IfcFace::it it = faces->begin(); it != faces->end(); ++ it ) {
+		for( IfcSchema::IfcFace::it it = faces->begin(); it != faces->end(); ++ it ) {
 			TopoDS_Face face;
 			if ( IfcGeom::convert_face(*it,face) && face_area(face) > GetValue(GV_MINIMAL_FACE_AREA) ) {
 				builder.Add(compound,face);
@@ -249,33 +249,33 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 	}
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, IfcRepresentationShapeItems& shapes) {
+bool IfcGeom::convert(const IfcSchema::IfcMappedItem::ptr l, IfcRepresentationShapeItems& shapes) {
 	gp_GTrsf gtrsf;
-	Ifc2x3::IfcCartesianTransformationOperator::ptr transform = l->MappingTarget();
-	if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
-		IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcCartesianTransformationOperator,
-			Ifc2x3::IfcCartesianTransformationOperator3DnonUniform>(transform),gtrsf);
-	} else if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
+	IfcSchema::IfcCartesianTransformationOperator::ptr transform = l->MappingTarget();
+	if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
+		IfcGeom::convert(reinterpret_pointer_cast<IfcSchema::IfcCartesianTransformationOperator,
+			IfcSchema::IfcCartesianTransformationOperator3DnonUniform>(transform),gtrsf);
+	} else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
 		return false;
-	} else if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator3D) ) {
+	} else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3D) ) {
 		gp_Trsf trsf;
-		IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcCartesianTransformationOperator,
-			Ifc2x3::IfcCartesianTransformationOperator3D>(transform),trsf);
+		IfcGeom::convert(reinterpret_pointer_cast<IfcSchema::IfcCartesianTransformationOperator,
+			IfcSchema::IfcCartesianTransformationOperator3D>(transform),trsf);
 		gtrsf = trsf;
-	} else if ( transform->is(Ifc2x3::Type::IfcCartesianTransformationOperator2D) ) {
+	} else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2D) ) {
 		gp_Trsf2d trsf_2d;
-		IfcGeom::convert(reinterpret_pointer_cast<Ifc2x3::IfcCartesianTransformationOperator,
-			Ifc2x3::IfcCartesianTransformationOperator2D>(transform),trsf_2d);
+		IfcGeom::convert(reinterpret_pointer_cast<IfcSchema::IfcCartesianTransformationOperator,
+			IfcSchema::IfcCartesianTransformationOperator2D>(transform),trsf_2d);
 		gtrsf = (gp_Trsf) trsf_2d;
 	}
-	Ifc2x3::IfcRepresentationMap::ptr map = l->MappingSource();
-	Ifc2x3::IfcAxis2Placement placement = map->MappingOrigin();
+	IfcSchema::IfcRepresentationMap::ptr map = l->MappingSource();
+	IfcSchema::IfcAxis2Placement placement = map->MappingOrigin();
 	gp_Trsf trsf;
-	if (placement->is(Ifc2x3::Type::IfcAxis2Placement3D)) {
-		IfcGeom::convert((Ifc2x3::IfcAxis2Placement3D*)placement,trsf);
+	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
+		IfcGeom::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
 		gp_Trsf2d trsf_2d;
-		IfcGeom::convert((Ifc2x3::IfcAxis2Placement2D*)placement,trsf_2d);
+		IfcGeom::convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf_2d);
 		trsf = trsf_2d;
 	}
 	gtrsf.Multiply(trsf);
@@ -287,11 +287,11 @@ bool IfcGeom::convert(const Ifc2x3::IfcMappedItem::ptr l, IfcRepresentationShape
 	return b;
 }
 
-bool IfcGeom::convert(const Ifc2x3::IfcShapeRepresentation::ptr l, IfcRepresentationShapeItems& shapes) {
-	Ifc2x3::IfcRepresentationItem::list items = l->Items();
+bool IfcGeom::convert(const IfcSchema::IfcShapeRepresentation::ptr l, IfcRepresentationShapeItems& shapes) {
+	IfcSchema::IfcRepresentationItem::list items = l->Items();
 	if ( ! items->Size() ) return false;
-	for ( Ifc2x3::IfcRepresentationItem::it it = items->begin(); it != items->end(); ++ it ) {
-		Ifc2x3::IfcRepresentationItem* representation_item = *it;
+	for ( IfcSchema::IfcRepresentationItem::it it = items->begin(); it != items->end(); ++ it ) {
+		IfcSchema::IfcRepresentationItem* representation_item = *it;
 		if ( IfcGeom::is_shape_collection(representation_item) ) IfcGeom::convert_shapes(*it,shapes);
 		else {
 			TopoDS_Shape s;

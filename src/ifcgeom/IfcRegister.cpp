@@ -28,7 +28,7 @@ namespace IfcGeom {
 	}
 }
 
-using namespace Ifc2x3;
+using namespace IfcSchema;
 using namespace IfcUtil;
 
 bool IfcGeom::convert_shapes(const IfcBaseClass* l, IfcRepresentationShapeItems& r) {

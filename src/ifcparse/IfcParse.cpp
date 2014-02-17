@@ -363,7 +363,7 @@ TokenArgument::TokenArgument(const Token& t) {
 	token = t;
 }
 
-EntityArgument::EntityArgument(Ifc2x3::Type::Enum ty, const Token& t) {
+EntityArgument::EntityArgument(IfcSchema::Type::Enum ty, const Token& t) {
 	entity = new IfcUtil::IfcArgumentSelect(ty,new TokenArgument(t));
 }
 
@@ -382,7 +382,7 @@ ArgumentList::ArgumentList(Tokens* t, std::vector<unsigned int>& ids) {
 			if ( TokenFunc::isDatatype(next) ) {
 				t->Next();
 				try {
-					Push ( new EntityArgument(Ifc2x3::Type::FromString(TokenFunc::asString(next)),t->Next()) );
+					Push ( new EntityArgument(IfcSchema::Type::FromString(TokenFunc::asString(next)),t->Next()) );
 				} catch ( IfcException& e ) {
 					Logger::Message(Logger::LOG_ERROR,e.what());
 				}
@@ -511,7 +511,7 @@ std::string EntityArgument::toString(bool upper) const {
 		? TokenFunc::asString(token_arg->token) 
 		: TokenFunc::toString(token_arg->token))
 		: std::string();
-	std::string dt = Ifc2x3::Type::ToString(entity->type());
+	std::string dt = IfcSchema::Type::ToString(entity->type());
 	if ( upper ) {
 		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
 		if (is_string) token_string = IfcWrite::IfcCharacterEncoder(token_string);
@@ -532,7 +532,7 @@ Entity::Entity(unsigned int i, IfcFile* f) { //: file(f) {
 	file = f;
 	Token datatype = f->tokens->Next();
 	if ( ! TokenFunc::isDatatype(datatype)) throw IfcException("Unexpected token while parsing entity");
-	_type = Ifc2x3::Type::FromString(TokenFunc::asString(datatype));
+	_type = IfcSchema::Type::FromString(TokenFunc::asString(datatype));
 	_id = i;
 	args = ArgumentPtr();
 	offset = datatype.second;
@@ -576,7 +576,7 @@ void Entity::Load(std::vector<unsigned int>& ids, bool seek) {
 		file->tokens->stream->Seek(offset);
 		Token datatype = file->tokens->Next();
 		if ( ! TokenFunc::isDatatype(datatype)) throw IfcException("Unexpected token while parsing entity");
-		_type = Ifc2x3::Type::FromString(TokenFunc::asString(datatype));
+		_type = IfcSchema::Type::FromString(TokenFunc::asString(datatype));
 	}
 	Token open = file->tokens->Next();
 	args = new ArgumentList(file->tokens, ids);
@@ -585,7 +585,7 @@ void Entity::Load(std::vector<unsigned int>& ids, bool seek) {
 	if ( ! TokenFunc::isOperator(semilocon,';') ) file->tokens->stream->Seek(old_offset);
 }
 
-Ifc2x3::Type::Enum Entity::type() const {
+IfcSchema::Type::Enum Entity::type() const {
 	return _type;
 }
 
@@ -593,7 +593,7 @@ Ifc2x3::Type::Enum Entity::type() const {
 // Returns the CamelCase string representation of the datatype as it is defined in the schema
 //
 std::string Entity::datatype() {
-	return Ifc2x3::Type::ToString(_type);
+	return IfcSchema::Type::ToString(_type);
 }
 
 //
@@ -621,18 +621,18 @@ Entity::~Entity() {
 //
 // Returns the entities of type c that have this entity in their ArgumentList
 //
-IfcEntities Entity::getInverse(Ifc2x3::Type::Enum c) {
+IfcEntities Entity::getInverse(IfcSchema::Type::Enum c) {
 	IfcEntities l = IfcEntities(new IfcEntityList());
 	IfcEntities all = file->EntitiesByReference(_id);
 	if ( ! all ) return l;
 	for( IfcEntityList::it it = all->begin(); it != all->end();++  it  ) {
-		if ( c == Ifc2x3::Type::ALL || (*it)->is(c) ) {
+		if ( c == IfcSchema::Type::ALL || (*it)->is(c) ) {
 			l->push(*it);
 		}
 	}
 	return l;
 }
-IfcEntities Entity::getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a) {
+IfcEntities Entity::getInverse(IfcSchema::Type::Enum c, int i, const std::string& a) {
 	IfcEntities l = IfcEntities(new IfcEntityList());
 	IfcEntities all = getInverse(c);
 	for( IfcEntityList::it it = all->begin(); it != all->end();++ it  ) {
@@ -643,7 +643,7 @@ IfcEntities Entity::getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a
 	}
 	return l;
 }
-bool Entity::is(Ifc2x3::Type::Enum v) const {	return _type == v; }
+bool Entity::is(IfcSchema::Type::Enum v) const {	return _type == v; }
 unsigned int Entity::id() { return _id; }
 
 bool Entity::isWritable() {
@@ -673,7 +673,7 @@ bool IfcFile::Init(void* data, int len) {
 	return IfcFile::Init(new IfcSpfStream(data,len));
 }
 bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
-	Ifc2x3::InitStringMap();
+	IfcSchema::InitStringMap();
 	file = f;
 	if ( ! file->valid ) return false;
 	tokens = new Tokens (file,this);
@@ -689,7 +689,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
 		if ( currentId ) {
 			try {
 				e = new Entity(currentId,this);
-				entity = Ifc2x3::SchemaEntity(e);
+				entity = IfcSchema::SchemaEntity(e);
 			} catch (IfcException ex) {
 				currentId = 0;
 				Logger::Message(Logger::LOG_ERROR,ex.what());
@@ -700,8 +700,8 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
 				std::stringstream ss; ss << "\r#" << currentId;
 				Logger::Status(ss.str(), false);
 			}
-			if ( entity->is(Ifc2x3::Type::IfcRoot) ) {
-				Ifc2x3::IfcRoot::ptr ifc_root = (Ifc2x3::IfcRoot::ptr) entity;
+			if ( entity->is(IfcSchema::Type::IfcRoot) ) {
+				IfcSchema::IfcRoot::ptr ifc_root = (IfcSchema::IfcRoot::ptr) entity;
 				try {
 					const std::string guid = ifc_root->GlobalId();
 					if ( byguid.find(guid) != byguid.end() ) {
@@ -714,7 +714,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
 					Logger::Message(Logger::LOG_ERROR,ex.what());
 				}
 			}
-			Ifc2x3::Type::Enum ty = entity->type();
+			IfcSchema::Type::Enum ty = entity->type();
 			do {
 				IfcEntities L = EntitiesByType(ty);
 				if ( L == 0 ) {
@@ -722,7 +722,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
 					bytype[ty] = L;
 				}
 				L->push(entity);
-				ty = Ifc2x3::Type::Parent(ty);
+				ty = IfcSchema::Type::Parent(ty);
 			} while ( ty > -1 );
 			if ( byid.find(currentId) != byid.end() ) {
 				std::stringstream ss;
@@ -761,8 +761,8 @@ void IfcFile::AddEntities(IfcEntities es) {
 	}
 }
 void IfcFile::AddEntity(IfcUtil::IfcSchemaEntity entity) {
-	if ( entity->is(Ifc2x3::Type::IfcRoot) ) {
-		Ifc2x3::IfcRoot::ptr ifc_root = (Ifc2x3::IfcRoot::ptr) entity;
+	if ( entity->is(IfcSchema::Type::IfcRoot) ) {
+		IfcSchema::IfcRoot::ptr ifc_root = (IfcSchema::IfcRoot::ptr) entity;
 		try {
 			const std::string guid = ifc_root->GlobalId();
 			if ( byguid.find(guid) != byguid.end() ) {
@@ -775,7 +775,7 @@ void IfcFile::AddEntity(IfcUtil::IfcSchemaEntity entity) {
 			Logger::Message(Logger::LOG_ERROR,ex.what());
 		}
 	}
-	Ifc2x3::Type::Enum ty = entity->type();
+	IfcSchema::Type::Enum ty = entity->type();
 	do {
 		IfcEntities L = EntitiesByType(ty);
 		if ( L == 0 ) {
@@ -783,7 +783,7 @@ void IfcFile::AddEntity(IfcUtil::IfcSchemaEntity entity) {
 			bytype[ty] = L;
 		}
 		L->push(entity);
-		ty = Ifc2x3::Type::Parent(ty);
+		ty = IfcSchema::Type::Parent(ty);
 	} while ( ty > -1 );
 	int new_id = -1;
 	// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
@@ -802,14 +802,14 @@ void IfcFile::AddEntity(IfcUtil::IfcSchemaEntity entity) {
 	byid[new_id] = entity;
 
 }
-IfcEntities IfcFile::EntitiesByType(Ifc2x3::Type::Enum t) {
+IfcEntities IfcFile::EntitiesByType(IfcSchema::Type::Enum t) {
 	MapEntitiesByType::const_iterator it = bytype.find(t);
 	return (it == bytype.end()) ? IfcEntities() : it->second;
 }
 IfcEntities IfcFile::EntitiesByType(const std::string& t) {
 	std::string ty = t;
 	for (std::string::iterator p = ty.begin(); p != ty.end(); ++p ) *p = toupper(*p);
-	return EntitiesByType(Ifc2x3::Type::FromString(ty));
+	return EntitiesByType(IfcSchema::Type::FromString(ty));
 }
 IfcEntities IfcFile::EntitiesByReference(int t) {
 	MapEntitiesByRef::const_iterator it = byref.find(t);
@@ -822,13 +822,13 @@ IfcUtil::IfcSchemaEntity IfcFile::EntityById(int id) {
 		if ( it2 == offsets.end() ) throw IfcException("Entity not found");
 		const unsigned int offset = (*it2).second;
 		EntityPtr e = EntityPtr(new Entity(id,this,offset));
-		IfcUtil::IfcSchemaEntity entity = Ifc2x3::SchemaEntity(e);
+		IfcUtil::IfcSchemaEntity entity = IfcSchema::SchemaEntity(e);
 		byid[id] = entity;
 		return entity;
 	}
 	return it->second;
 }
-Ifc2x3::IfcRoot::ptr IfcFile::EntityByGuid(const std::string& guid) {
+IfcSchema::IfcRoot::ptr IfcFile::EntityByGuid(const std::string& guid) {
 	MapEntityByGuid::const_iterator it = byguid.find(guid);
 	if ( it == byguid.end() ) {
 		throw IfcException("Entity not found");
@@ -871,7 +871,11 @@ std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f) {
 		<< "),'IfcOpenShell " << IFCOPENSHELL_VERSION 
 		<< "','IfcOpenShell " << IFCOPENSHELL_VERSION 
 		<< "','');" << std::endl;
+#ifdef USE_IFC4
+	os << "FILE_SCHEMA(('IFC4'));" << std::endl;
+#else
 	os << "FILE_SCHEMA(('IFC2X3'));" << std::endl;
+#endif
 	os << "ENDSEC;" << std::endl;
 	os << "DATA;" << std::endl;
 

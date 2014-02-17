@@ -26,7 +26,11 @@
 #include <array>
 #endif
 
+#ifdef USE_IFC4
+#include "../ifcparse/Ifc4.h"
+#else
 #include "../ifcparse/Ifc2x3.h"
+#endif
 
 namespace IfcGeom {
 	class SurfaceStyle {
@@ -97,19 +101,29 @@ namespace IfcGeom {
 		boost::optional<double>& Specularity() { return specularity; }
 	};
 
-	template <typename T> std::pair<Ifc2x3::IfcSurfaceStyle*, T*> get_surface_style(Ifc2x3::IfcRepresentationItem* representation_item) {
-		Ifc2x3::IfcStyledItem::list styled_items = representation_item->StyledByItem();
-		for (Ifc2x3::IfcStyledItem::it jt = styled_items->begin(); jt != styled_items->end(); ++jt) {
-			Ifc2x3::IfcPresentationStyleAssignment::list style_assignments = (*jt)->Styles();
-			for (Ifc2x3::IfcPresentationStyleAssignment::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-				IfcAbstractSelect::list styles = (*kt)->Styles();
-				for (IfcAbstractSelect::it lt = styles->begin(); lt != styles->end(); ++lt) {
-					IfcAbstractSelect::ptr style = *lt;
-					if (style->is(Ifc2x3::Type::IfcSurfaceStyle)) {
-						Ifc2x3::IfcSurfaceStyle* surface_style = (Ifc2x3::IfcSurfaceStyle*) style;
-						if (surface_style->Side() != Ifc2x3::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
-							IfcAbstractSelect::list styles_elements = surface_style->Styles();
-							for (IfcAbstractSelect::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
+	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(IfcSchema::IfcRepresentationItem* representation_item) {
+		IfcSchema::IfcStyledItem::list styled_items = representation_item->StyledByItem();
+		for (IfcSchema::IfcStyledItem::it jt = styled_items->begin(); jt != styled_items->end(); ++jt) {
+#ifdef USE_IFC4
+			IfcUtil::IfcAbstractSelect::list style_assignments = (*jt)->Styles();
+			for (IfcUtil::IfcAbstractSelect::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+				if (!(*kt)->is(IfcSchema::Type::IfcPresentationStyleAssignment)) {
+					continue;
+				}
+				IfcSchema::IfcPresentationStyleAssignment::ptr style_assignment = (IfcSchema::IfcPresentationStyleAssignment::ptr) *kt;
+#else
+			IfcSchema::IfcPresentationStyleAssignment::list style_assignments = (*jt)->Styles();
+			for (IfcSchema::IfcPresentationStyleAssignment::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+				IfcSchema::IfcPresentationStyleAssignment::ptr style_assignment = *kt;
+#endif
+				IfcUtil::IfcAbstractSelect::list styles = style_assignment->Styles();
+				for (IfcUtil::IfcAbstractSelect::it lt = styles->begin(); lt != styles->end(); ++lt) {
+					IfcUtil::IfcAbstractSelect::ptr style = *lt;
+					if (style->is(IfcSchema::Type::IfcSurfaceStyle)) {
+						IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
+						if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
+							IfcUtil::IfcAbstractSelect::list styles_elements = surface_style->Styles();
+							for (IfcUtil::IfcAbstractSelect::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
 								if ((*mt)->is(T::Class())) {
 									return std::make_pair(surface_style, (T*) *mt);
 								}
@@ -124,10 +138,10 @@ namespace IfcGeom {
 			break;
 		}
 
-		return std::make_pair<Ifc2x3::IfcSurfaceStyle*, T*>(0,0);
+		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
 	}
 
-	const SurfaceStyle* get_style(Ifc2x3::IfcRepresentationItem* representation_item);
+	const SurfaceStyle* get_style(IfcSchema::IfcRepresentationItem* representation_item);
 	const SurfaceStyle* get_default_style(const std::string& ifc_type);
 	
 	namespace Cache {
