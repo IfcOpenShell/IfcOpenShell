@@ -26,22 +26,16 @@
 
 #include <time.h>
 #include <stdlib.h>
-
-#define HAS_BOOST_UUID
-
-#ifdef HAS_BOOST_UUID
 #include <algorithm>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#endif
 
-#include "IfcWrite.h"
+#include "../ifcparse/IfcWrite.h"
+#include "../ifcparse/IfcException.h"
 
 static const char* chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
-
-#ifdef HAS_BOOST_UUID
 
 // Converts an unsigned integer into a base64 string of length l
 std::string base64(unsigned v, int l) {
@@ -64,7 +58,7 @@ unsigned from_base64(const std::string& s) {
         for ( std::string::const_iterator i = s.begin()+zeros; i != s.end(); ++ i ) {
             r *= 64;
             const char* c = strchr(chars,*i);
-            if ( !c ) throw IfcException("Failed to decode GlobalId");
+            if ( !c ) throw IfcParse::IfcException("Failed to decode GlobalId");
             r += (c-chars);
         }
     return r;
@@ -95,10 +89,7 @@ void expand(const std::string& s, std::vector<unsigned char>& v) {
 // A random number generator for the UUID
 static boost::uuids::basic_random_generator<boost::mt19937> gen;
 
-#endif
-
 IfcWrite::IfcGuidHelper::IfcGuidHelper() {
-#ifdef HAS_BOOST_UUID
     boost::uuids::uuid u = gen();
     std::vector<unsigned char> v(u.size());
     std::copy(u.begin(), u.end(), v.begin());
@@ -108,13 +99,6 @@ IfcWrite::IfcGuidHelper::IfcGuidHelper() {
     expand(data,v2);
     boost::uuids::uuid u2;
     std::copy(v2.begin(), v2.end(), u2.begin());
-#else
-    if ( ! seeded ) { srand((unsigned int)time(0)); seeded = true; }
-	data.resize(length);
-	for ( unsigned int i = 0; i < length; ++ i ) {
-		data[i] = chars[rand()%strlen(chars)];
-	}
-#endif
 }
 IfcWrite::IfcGuidHelper::operator std::string() const {
 	return data;

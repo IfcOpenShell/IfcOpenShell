@@ -1,20 +1,35 @@
+/********************************************************************************
+*                                                                              *
+* This file is part of IfcOpenShell.                                           *
+*                                                                              *
+* IfcOpenShell is free software: you can redistribute it and/or modify         *
+* it under the terms of the Lesser GNU General Public License as published by  *
+* the Free Software Foundation, either version 3.0 of the License, or          *
+* (at your option) any later version.                                          *
+*                                                                              *
+* IfcOpenShell is distributed in the hope that it will be useful,              *
+* but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+* Lesser GNU General Public License for more details.                          *
+*                                                                              *
+* You should have received a copy of the Lesser GNU General Public License     *
+* along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+*                                                                              *
+********************************************************************************/
+
+/********************************************************************************
+ *                                                                              *
+ * This file provides functions for loading an IFC file into memory and access  *
+ * its entities either by ID, by an IfcSchema::Type or by reference             * 
+ *                                                                              *
+ ********************************************************************************/
+
 #ifndef IFCFILE_H
 #define IFCFILE_H
 
-#include <map>
-
-#include "IfcUtil.h"
-#include "IfcParse.h"
+#include "../ifcparse/IfcParse.h"
 
 namespace IfcParse {
-
-typedef IfcUtil::IfcSchemaEntity IfcEntity;
-//typedef IfcEntities IfcEntities;
-typedef std::map<Ifc2x3::Type::Enum,IfcEntities> MapEntitiesByType;
-typedef std::map<unsigned int,IfcEntity> MapEntityById;
-typedef std::map<std::string,Ifc2x3::IfcRoot::ptr> MapEntityByGuid;
-typedef std::map<unsigned int,IfcEntities> MapEntitiesByRef;
-typedef std::map<unsigned int,unsigned int> MapOffsetById;
 
 /// This class provides several static convenience functions and variables
 /// and provide access to the entities in an IFC file
@@ -27,6 +42,12 @@ private:
 	MapOffsetById offsets;
 	unsigned int lastId;
 	unsigned int MaxId;
+	std::string _filename;
+	std::string _timestamp;
+	std::string _author;
+	std::string _author_email;
+	std::string _author_organisation;
+	void initTimestamp();
 public:
 	typedef MapEntityById::const_iterator const_iterator;
 	IfcFile();
@@ -53,7 +74,7 @@ public:
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntities EntitiesByType(Ifc2x3::Type::Enum t);
+	IfcEntities EntitiesByType(IfcSchema::Type::Enum t);
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
@@ -63,7 +84,7 @@ public:
 	/// Returns the entity with the specified id
 	IfcEntity EntityById(int id);
 	/// Returns the entity with the specified GlobalId
-	Ifc2x3::IfcRoot::ptr EntityByGuid(const std::string& guid);
+	IfcSchema::IfcRoot::ptr EntityByGuid(const std::string& guid);
 	bool Init(const std::string& fn);
 	bool Init(std::istream& fn, int len);
 	bool Init(void* data, int len);
@@ -71,8 +92,19 @@ public:
 	unsigned int FreshId() { MaxId ++; return MaxId; }
 	void AddEntity(IfcUtil::IfcSchemaEntity e);
 	void AddEntities(IfcEntities es);
+
+	void filename(const std::string& s);
+	std::string filename() const;
+	void timestamp(const std::string& s);
+	std::string timestamp() const;
+	void author(const std::string& name, const std::string& email, const std::string& organisation);
+	std::string authorName() const;
+	std::string authorEmail() const;
+	std::string authorOrganisation() const;
 };
 
 }
+
+std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);
 
 #endif

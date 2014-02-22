@@ -149,7 +149,7 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
-            <File
+			<File
 				RelativePath="..\src\ifcparse\Ifc2x3-rt.cpp"
 				>
 				<FileConfiguration
@@ -174,18 +174,46 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\ifcparse\Ifc4-rt.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalOptions="/bigobj"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\Ifc4.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalOptions="/bigobj"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\ifcparse\IfcCharacterDecoder.cpp"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcparse\IfcGuidHelper.cpp"
+				>
+			</File> 
+			<File
+				RelativePath="..\src\ifcparse\IfcHierarchyHelper.cpp"
 				>
 			</File> 
 			<File
 				RelativePath="..\src\ifcparse\IfcParse.cpp"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcparse\IfcUntypedEntity.cpp"
 				>
 			</File>
@@ -193,21 +221,17 @@
 				RelativePath="..\src\ifcparse\IfcUtil.cpp"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcparse\IfcWrite.cpp"
 				>
-			</File>    
+			</File>	
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-            <File
-				RelativePath="..\src\ifcparse\ArgumentType.h"
-				>
-			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcparse\Ifc2x3-rt.h"
 				>
 			</File>
@@ -220,14 +244,34 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\ifcparse\Ifc4-rt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\Ifc4.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\Ifc4enum.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcEntityDescriptor.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcHierarchyHelper.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ifcparse\IfcParse.h"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcparse\IfcSpfStream.h"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcparse\IfcUntypedEntity.h"
 				>
 			</File>
@@ -241,6 +285,10 @@
 			</File>
 			<File
 				RelativePath="..\src\ifcparse\SharedPointer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcUntypedEntity.h"
 				>
 			</File>
 			<File

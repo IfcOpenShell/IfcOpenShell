@@ -27,7 +27,11 @@
 #ifndef IFC2X3RT_H
 #define IFC2X3RT_H
 
-#include "../ifcparse/ArgumentType.h"
+#define IfcSchema Ifc2x3
+
+#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcEntityDescriptor.h"
+#include "../ifcparse/IfcWritableEntity.h"
 
 namespace Ifc2x3 {
 namespace Type {
@@ -38,7 +42,7 @@ namespace Type {
     bool GetAttributeOptional(Enum t, unsigned char a);
     std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
     Enum GetAttributeEnumerationClass(Enum t, unsigned char a);
+    void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
 }}
 
 #endif
-

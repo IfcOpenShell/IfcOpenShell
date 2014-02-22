@@ -3,22 +3,22 @@
 
 #include <string>
 
-#include "IfcUtil.h"
-#include "IfcWrite.h"
-#include "IfcWritableEntity.h"
+#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcWrite.h"
+#include "../ifcparse/IfcWritableEntity.h"
 
-namespace Ifc {
+namespace IfcParse {
 	
 	class IfcUntypedEntity : public IfcUtil::IfcBaseEntity {
 	private:
-		Ifc2x3::Type::Enum _type;
+		IfcSchema::Type::Enum _type;
 		IfcWrite::IfcWritableEntity* writable_entity();
 		void invalid_argument(unsigned int i, const std::string& t);
 	public:
 		IfcUntypedEntity(const std::string& s);
 		IfcUntypedEntity(IfcAbstractEntity* e);
-		bool is(Ifc2x3::Type::Enum v) const;
-		Ifc2x3::Type::Enum type() const;	
+		bool is(IfcSchema::Type::Enum v) const;
+		IfcSchema::Type::Enum type() const;	
 		bool is_a(const std::string& s) const;
 		std::string is_a() const;
 		unsigned int getArgumentCount() const;

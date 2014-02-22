@@ -77,13 +77,13 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
-bool IfcGeom::convert(const Ifc2x3::IfcCircle::ptr l, Handle(Geom_Curve)& curve) {
+bool IfcGeom::convert(const IfcSchema::IfcCircle::ptr l, Handle(Geom_Curve)& curve) {
 	const double r = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	if ( r <= 0.0f ) { return false; }
 	gp_Trsf trsf;
-	Ifc2x3::IfcAxis2Placement placement = l->Position();
-	if (placement->is(Ifc2x3::Type::IfcAxis2Placement3D)) {
-		IfcGeom::convert((Ifc2x3::IfcAxis2Placement3D*)placement,trsf);
+	IfcSchema::IfcAxis2Placement placement = l->Position();
+	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
+		IfcGeom::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
 		gp_Trsf2d trsf2d;
 		IfcGeom::convert((IfcAxis2Placement2D*)placement,trsf2d);
@@ -93,27 +93,28 @@ bool IfcGeom::convert(const Ifc2x3::IfcCircle::ptr l, Handle(Geom_Curve)& curve)
 	curve = new Geom_Circle(ax, r);
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcEllipse::ptr l, Handle(Geom_Curve)& curve) {
+bool IfcGeom::convert(const IfcSchema::IfcEllipse::ptr l, Handle(Geom_Curve)& curve) {
 	double x = l->SemiAxis1() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	double y = l->SemiAxis2() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	if ( x == 0.0f || y == 0.0f || y > x ) { return false; }
 	gp_Trsf trsf;
-	Ifc2x3::IfcAxis2Placement placement = l->Position();
-	if (placement->is(Ifc2x3::Type::IfcAxis2Placement3D)) {
-		IfcGeom::convert((Ifc2x3::IfcAxis2Placement3D*)placement,trsf);
+	IfcSchema::IfcAxis2Placement placement = l->Position();
+	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
+		IfcGeom::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
 		gp_Trsf2d trsf2d;
-		IfcGeom::convert((Ifc2x3::IfcAxis2Placement2D*)placement,trsf2d);
+		IfcGeom::convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf2d);
 		trsf = trsf2d;
 	}
 	gp_Ax2 ax = gp_Ax2().Transformed(trsf);
 	curve = new Geom_Ellipse(ax, x, y);
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcLine::ptr l, Handle(Geom_Curve)& curve) {
+bool IfcGeom::convert(const IfcSchema::IfcLine::ptr l, Handle(Geom_Curve)& curve) {
 	gp_Pnt pnt;gp_Vec vec;
 	IfcGeom::convert(l->Pnt(),pnt);
 	IfcGeom::convert(l->Dir(),vec);	
+	// See note at IfcGeomWires.cpp:237
 	curve = new Geom_Line(pnt,vec);
 	return true;
 }

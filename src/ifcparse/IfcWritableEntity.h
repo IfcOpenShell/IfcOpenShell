@@ -40,25 +40,29 @@ namespace IfcWrite {
 	private:
 		std::map<int,bool> writemask;
 		std::map<int,ArgumentPtr> args;
-		Ifc2x3::Type::Enum _type;
+		IfcSchema::Type::Enum _type;
 		int* _id;
 		bool arg_writable(int i);
 		void arg_writable(int i, bool b);
+		template <typename T> void _setArgument(int i, const T&);
 	public:
-		IfcWritableEntity(Ifc2x3::Type::Enum t);
+		IfcWritableEntity(IfcSchema::Type::Enum t);
+		~IfcWritableEntity();
 		int setId(int i=-1);
 		IfcWritableEntity(IfcAbstractEntity* e);
-		IfcEntities getInverse(Ifc2x3::Type::Enum c = Ifc2x3::Type::ALL);
-		IfcEntities getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a);
+		IfcEntities getInverse(IfcSchema::Type::Enum c = IfcSchema::Type::ALL);
+		IfcEntities getInverse(IfcSchema::Type::Enum c, int i, const std::string& a);
 		std::string datatype();
 		ArgumentPtr getArgument (unsigned int i);
 		unsigned int getArgumentCount();
-		Ifc2x3::Type::Enum type() const;
-		bool is(Ifc2x3::Type::Enum v) const;
+		IfcSchema::Type::Enum type() const;
+		bool is(IfcSchema::Type::Enum v) const;
 		std::string toString(bool upper=false);
 		unsigned int id();
 		bool isWritable();
         void setArgument(int i);
+		void setArgumentDerived(int i);
+		void setArgument(int i,bool v);
 		void setArgument(int i,int v);
 		void setArgument(int i,int v, const char* c);
 		void setArgument(int i,const std::string& v);

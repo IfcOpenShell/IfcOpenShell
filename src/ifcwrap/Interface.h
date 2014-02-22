@@ -3,7 +3,7 @@
 #include <map>
 #include <fstream>
 
-namespace Ifc { class IfcUntypedEntity; }
+namespace IfcParse { class IfcUntypedEntity; }
 
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/Ifc2x3.h"
@@ -11,14 +11,14 @@ namespace Ifc { class IfcUntypedEntity; }
 #include "../ifcgeom/IfcGeom.h"
 
 
-namespace Ifc {
+namespace IfcParse {
 	class IfcUntypedEntity : public IfcUtil::IfcBaseEntity {
 	private:
-		Ifc2x3::Type::Enum _type;
+		IfcSchema::Type::Enum _type;
 	public:
 		IfcUntypedEntity(const std::string& s);
-		bool is(Ifc2x3::Type::Enum v) const;
-		Ifc2x3::Type::Enum type() const;	
+		bool is(IfcSchema::Type::Enum v) const;
+		IfcSchema::Type::Enum type() const;	
 		bool is_a(const std::string& s) const;
 		std::string is_a() const;
 		unsigned int getArgumentCount() const;
@@ -49,9 +49,9 @@ namespace Ifc {
 }
 
 typedef IfcUtil::IfcSchemaEntity IfcEntity;
-typedef std::map<Ifc2x3::Type::Enum,IfcEntities> MapEntitiesByType;
+typedef std::map<IfcSchema::Type::Enum,IfcEntities> MapEntitiesByType;
 typedef std::map<unsigned int,IfcEntity> MapEntityById;
-typedef std::map<std::string,Ifc2x3::IfcRoot::ptr> MapEntityByGuid;
+typedef std::map<std::string,IfcSchema::IfcRoot::ptr> MapEntityByGuid;
 typedef std::map<unsigned int,IfcEntities> MapEntitiesByRef;
 typedef std::map<unsigned int,unsigned int> MapOffsetById;
 
@@ -68,13 +68,18 @@ namespace IfcParse {
 		MapOffsetById offsets;
 		unsigned int lastId;
 		unsigned int MaxId;
+		std::string _filename;
+		std::string _timestamp;
+		std::string _author;
+		std::string _author_email;
+		std::string _author_organisation;
+	public:
 		IfcParse::IfcSpfStream* file;
 		IfcParse::Tokens* tokens;
-	public:
 		bool Init(const std::string& fn);
 		IfcEntities EntitiesByType(const std::string& t);
 		IfcEntity EntityById(int id);
-		Ifc2x3::IfcRoot::ptr EntityByGuid(const std::string& guid);
+		IfcSchema::IfcRoot::ptr EntityByGuid(const std::string& guid);
 		void AddEntity(IfcUtil::IfcSchemaEntity e);
 		IfcFile();
 		~IfcFile();
@@ -86,9 +91,9 @@ namespace IfcParse {
 		return f;
 	}
 
-	std::string create_shape(Ifc::IfcUntypedEntity* e) {
-		if (!e->is(Ifc2x3::Type::IfcProduct)) throw IfcException("Entity is not an IfcProduct");
-		Ifc2x3::IfcProduct* ifc_product = (Ifc2x3::IfcProduct*) e;
+	std::string create_shape(IfcParse::IfcUntypedEntity* e) {
+		if (!e->is(IfcSchema::Type::IfcProduct)) throw IfcException("Entity is not an IfcProduct");
+		IfcSchema::IfcProduct* ifc_product = (IfcSchema::IfcProduct*) e;
 		return IfcGeom::create_brep_data(ifc_product);
 	}
 }

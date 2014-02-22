@@ -21,10 +21,10 @@
 %include "std_string.i"
 %include "exception.i"
 
-%ignore Ifc::IfcUntypedEntity::is;
-%ignore Ifc::IfcUntypedEntity::type;
-%ignore Ifc::IfcUntypedEntity::getArgument;
-%ignore Ifc::IfcUntypedEntity::IfcUntypedEntity(IfcAbstractEntity);
+%ignore IfcParse::IfcUntypedEntity::is;
+%ignore IfcParse::IfcUntypedEntity::type;
+%ignore IfcParse::IfcUntypedEntity::getArgument;
+%ignore IfcParse::IfcUntypedEntity::IfcUntypedEntity(IfcAbstractEntity);
 
 %ignore IfcParse::IfcFile::Init;
 %ignore IfcParse::IfcFile::EntityById;
@@ -47,16 +47,17 @@
 
 %typemap(in) IfcEntities {
 	if (PySequence_Check($input)) {
+		// $1 = std::make_shared<IfcEntityList>();
 		$1 = SHARED_PTR<IfcEntityList>(new IfcEntityList());
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* obj = PySequence_GetItem($input, i);
 			if (obj) {
 				void *arg = 0;
-				int res = SWIG_ConvertPtr(obj, &arg, SWIGTYPE_p_Ifc__IfcUntypedEntity, 0);
+				int res = SWIG_ConvertPtr(obj, &arg, SWIGTYPE_p_IfcParse__IfcUntypedEntity, 0);
 				if (!SWIG_IsOK(res)) {
-					SWIG_exception_fail(SWIG_ArgError(res), "in method '" "Entity__set_argument" "', argument " "3"" of type '" "Ifc::IfcUntypedEntity *""'"); 
+					SWIG_exception_fail(SWIG_ArgError(res), "in method '" "Entity__set_argument" "', argument " "3"" of type '" "IfcParse::IfcUntypedEntity *""'"); 
 				} else {
-					$1->push(reinterpret_cast<Ifc::IfcUntypedEntity*>(arg));
+					$1->push(reinterpret_cast<IfcParse::IfcUntypedEntity*>(arg));
 				}
 			}
 		}
@@ -69,34 +70,34 @@
 	const unsigned size = $1 ? $1->Size() : 0;
 	$result = PyList_New(size);
 	for (unsigned i = 0; i < size; ++i) {
-		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*$1)[i]), SWIGTYPE_p_Ifc__IfcUntypedEntity, 0);
+		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*$1)[i]), SWIGTYPE_p_IfcParse__IfcUntypedEntity, 0);
 		PyList_SetItem($result,i,o);
 	}
 }
 
 %typemap(out) std::pair<IfcUtil::ArgumentType,ArgumentPtr> {
 	const Argument& arg = *($1.second);
-	const ArgumentType type = $1.first;
+	const IfcUtil::ArgumentType type = $1.first;
 	if (arg.isNull()) {
 		Py_INCREF(Py_None);
 		$result = Py_None;
 	} else {
 	switch(type) {
-		case Argument_INT:
+		case IfcUtil::Argument_INT:
 			$result = PyInt_FromLong((int)arg);
 		break;
-		case Argument_BOOL:
+		case IfcUtil::Argument_BOOL:
 			$result = PyBool_FromLong((bool)arg);
 		break; 
-		case Argument_DOUBLE:
+		case IfcUtil::Argument_DOUBLE:
 			$result = PyFloat_FromDouble(arg);
 		break;
-		case Argument_ENUMERATION:
-		case Argument_STRING: {
+		case IfcUtil::Argument_ENUMERATION:
+		case IfcUtil::Argument_STRING: {
 			const std::string s = arg;
 			$result = PyString_FromString(s.c_str());
 		break; }
-		case Argument_VECTOR_INT: {
+		case IfcUtil::Argument_VECTOR_INT: {
 			const std::vector<int> v = arg;
 			const unsigned size = v.size();
 			$result = PyList_New(size);
@@ -104,7 +105,7 @@
 				PyList_SetItem($result,i,PyInt_FromLong(v[i]));
 			}
 		break; }
-		case Argument_VECTOR_DOUBLE: {
+		case IfcUtil::Argument_VECTOR_DOUBLE: {
 			const std::vector<double> v = arg;
 			const unsigned size = v.size();
 			$result = PyList_New(size);
@@ -112,7 +113,7 @@
 				PyList_SetItem($result,i,PyFloat_FromDouble(v[i]));
 			}
 		break; }
-		case Argument_VECTOR_STRING: {
+		case IfcUtil::Argument_VECTOR_STRING: {
 			const std::vector<std::string> v = arg;
 			const unsigned size = v.size();
 			$result = PyList_New(size);
@@ -120,20 +121,20 @@
 				PyList_SetItem($result,i,PyString_FromString(v[i].c_str()));
 			}
 		break; }
-		case Argument_ENTITY: {
+		case IfcUtil::Argument_ENTITY: {
 			IfcUtil::IfcSchemaEntity e = arg;
-			$result = SWIG_NewPointerObj(SWIG_as_voidptr(e), SWIGTYPE_p_Ifc__IfcUntypedEntity, 0);
+			$result = SWIG_NewPointerObj(SWIG_as_voidptr(e), SWIGTYPE_p_IfcParse__IfcUntypedEntity, 0);
 		break; }
-		case Argument_ENTITY_LIST: {
+		case IfcUtil::Argument_ENTITY_LIST: {
 			IfcEntities es = arg;
 			const unsigned size = es->Size();
 			$result = PyList_New(size);
 			for (unsigned i = 0; i < size; ++i) {
-				PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*es)[i]), SWIGTYPE_p_Ifc__IfcUntypedEntity, 0);
+				PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*es)[i]), SWIGTYPE_p_IfcParse__IfcUntypedEntity, 0);
 				PyList_SetItem($result,i,o);
 			}
 		break; }
-		case Argument_UNKNOWN:
+		case IfcUtil::Argument_UNKNOWN:
 		default:
 			SWIG_exception(SWIG_RuntimeError,"Unknown argument type");
 		break;
@@ -152,20 +153,19 @@
 %module IfcImport %{
 	#include "../ifcparse/IfcException.h"
 	#include "Interface.h"	
-	using namespace Ifc;
 	using namespace IfcParse;
 %}
 
 %include "Interface.h"
 
 %extend IfcParse::IfcFile {
-	Ifc::IfcUntypedEntity* by_id(unsigned id) {
+	IfcParse::IfcUntypedEntity* by_id(unsigned id) {
 		return (IfcUntypedEntity*) $self->EntityById(id);
 	}
-	Ifc::IfcUntypedEntity* by_guid(const std::string& guid) {
+	IfcParse::IfcUntypedEntity* by_guid(const std::string& guid) {
 		return (IfcUntypedEntity*) $self->EntityByGuid(guid);
 	}
-	void add(Ifc::IfcUntypedEntity* e) {
+	void add(IfcParse::IfcUntypedEntity* e) {
 		$self->AddEntity(e);
 	}
 	void write(const std::string& fn) {
@@ -174,7 +174,7 @@
 	}
 }
 
-%extend Ifc::IfcUntypedEntity {
+%extend IfcParse::IfcUntypedEntity {
 	%pythoncode %{
 	set_argument = lambda self,x,y: self._set_argument(x) if y is None else self._set_argument(x,y)
 	%}

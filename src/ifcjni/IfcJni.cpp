@@ -27,7 +27,7 @@
 #include "org_ifcopenshell_IfcOpenShellModel.h"
 #include "../ifcgeom/IfcGeomObjects.h"
 
-bool has_more = false;
+static bool has_more = false;
 
 JNIEXPORT jobject JNICALL Java_org_ifcopenshell_IfcOpenShellModel_getGeometry (JNIEnv * env, jobject) {
 	if ( ! has_more ) return 0;
@@ -37,19 +37,19 @@ JNIEXPORT jobject JNICALL Java_org_ifcopenshell_IfcOpenShellModel_getGeometry (J
 	if ( ! jconstructor ) return 0;
 	const IfcGeomObjects::IfcGeomObject* o = IfcGeomObjects::Get();
 
-	jstring name = env->NewStringUTF(o->name.c_str());
-	jstring type = env->NewStringUTF(o->type.c_str());
-	jstring guid = env->NewStringUTF(o->guid.c_str());
+	jstring name = env->NewStringUTF(o->name().c_str());
+	jstring type = env->NewStringUTF(o->type().c_str());
+	jstring guid = env->NewStringUTF(o->guid().c_str());
 
-	jintArray indices = env->NewIntArray(o->mesh->faces.size());
-	jfloatArray positions = env->NewFloatArray(o->mesh->verts.size());
-	jfloatArray normals = env->NewFloatArray(o->mesh->normals.size());
+	jintArray indices = env->NewIntArray(o->mesh().faces().size());
+	jfloatArray positions = env->NewFloatArray(o->mesh().verts().size());
+	jfloatArray normals = env->NewFloatArray(o->mesh().normals().size());
 
-	env->SetIntArrayRegion(indices,0,o->mesh->faces.size(),(jint*) &o->mesh->faces[0]);
-	env->SetFloatArrayRegion(positions,0,o->mesh->verts.size(),(jfloat*) &o->mesh->verts[0]);
-	env->SetFloatArrayRegion(normals,0,o->mesh->normals.size(),(jfloat*) &o->mesh->normals[0]);
+	env->SetIntArrayRegion(indices,0,o->mesh().faces().size(),(jint*) &o->mesh().faces()[0]);
+	env->SetFloatArrayRegion(positions,0,o->mesh().verts().size(),(jfloat*) &o->mesh().verts()[0]);
+	env->SetFloatArrayRegion(normals,0,o->mesh().normals().size(),(jfloat*) &o->mesh().normals()[0]);
 
-	jobject return_obj = env->NewObject(class_def, jconstructor, o->id, name, type, guid, indices, positions, normals);
+	jobject return_obj = env->NewObject(class_def, jconstructor, o->id(), name, type, guid, indices, positions, normals);
 
 	env->DeleteLocalRef(name);
 	env->DeleteLocalRef(type);

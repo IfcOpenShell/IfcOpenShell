@@ -19,7 +19,7 @@
 
 #include "../ifcparse/IfcParse.h"
 
-using namespace Ifc2x3;
+using namespace IfcSchema;
 
 int main(int argc, char** argv) {
 

@@ -40,7 +40,7 @@
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcUtil.h"
 
-#include "../ifcgeom/IfcShapeList.h"
+#include "../ifcgeom/IfcRepresentationShapeItem.h"
 
 namespace IfcGeom {
 
@@ -73,17 +73,22 @@ namespace IfcGeom {
 		// the interpretation of IfcParamaterValues of IfcTrimmedCurves
 		// Default: -1.0 (= not set, fist try degrees, then radians)
 		GV_PLANEANGLE_UNIT,
+		// The precision used in boolean operations, setting this value too low results
+		// in artefacts and potentially modelling failures
+		// Default: 0.00001 (obtained from IfcGeometricRepresentationContext if available)
+		GV_PRECISION
 	};
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
-	bool convert_shapes(const IfcUtil::IfcBaseClass* L, ShapeList& result);
+	bool convert_shapes(const IfcUtil::IfcBaseClass* L, IfcRepresentationShapeItems& result);
 	bool is_shape_collection(const IfcUtil::IfcBaseClass* L);
-	const TopoDS_Shape* convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
+	bool convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
 	bool convert_wire(const IfcUtil::IfcBaseClass* L, TopoDS_Wire& result);
 	bool convert_curve(const IfcUtil::IfcBaseClass* L, Handle(Geom_Curve)& result);
 	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Face& result);
-	bool convert_openings(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, const ShapeList& entity_shapes, const gp_Trsf& entity_trsf, ShapeList& cut_shapes);
-	bool convert_openings_fast(const Ifc2x3::IfcProduct::ptr entity, const Ifc2x3::IfcRelVoidsElement::list& openings, const ShapeList& entity_shapes, const gp_Trsf& entity_trsf, ShapeList& cut_shapes);
+	bool convert_openings(const IfcSchema::IfcProduct::ptr entity, const IfcSchema::IfcRelVoidsElement::list& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
+	bool convert_openings_fast(const IfcSchema::IfcProduct::ptr entity, const IfcSchema::IfcRelVoidsElement::list& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
+	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
 	bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid);
 	bool is_compound(const TopoDS_Shape& shape);
 	bool is_convex(const TopoDS_Wire& wire);
@@ -94,9 +99,13 @@ namespace IfcGeom {
 	bool profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
 	double shape_volume(const TopoDS_Shape& s);
 	double face_area(const TopoDS_Face& f);
+	void apply_tolerance(TopoDS_Shape& s, double t);
 	void SetValue(GeomValue var, double value);
 	double GetValue(GeomValue var);
 	std::string create_brep_data(Ifc2x3::IfcProduct* s);
+	IfcSchema::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntities es);
+
+	
 	
 	namespace Cache {
 		void Purge();

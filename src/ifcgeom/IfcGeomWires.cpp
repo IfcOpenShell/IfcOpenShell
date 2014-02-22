@@ -82,7 +82,7 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
-bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire) {
+bool IfcGeom::convert(const IfcSchema::IfcCompositeCurve::ptr l, TopoDS_Wire& wire) {
 	if ( IfcGeom::GetValue(GV_PLANEANGLE_UNIT)<0 ) {
 		Logger::Message(Logger::LOG_WARNING,"Creating a composite curve without unit information:",l->entity);
 
@@ -107,7 +107,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire)
         } catch (...) {}
 
 		// Restore to unknown unit state
-		//IfcGeom::SetValue(GV_PLANEANGLE_UNIT,-1.0);
+		IfcGeom::SetValue(GV_PLANEANGLE_UNIT,-1.0);
 
 		if ( succes_degrees && ! succes_radians ) {
 			use_degrees = true;
@@ -135,12 +135,14 @@ bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire)
 			Logger::Message(Logger::LOG_NOTICE,"Used degrees to create composite curve");
             wire = wire_degrees;
 		}
+
+		return use_radians || use_degrees;
 	}
-	Ifc2x3::IfcCompositeCurveSegment::list segments = l->Segments();
+	IfcSchema::IfcCompositeCurveSegment::list segments = l->Segments();
 	BRepBuilderAPI_MakeWire w;
 	//TopoDS_Vertex last_vertex;
-	for( Ifc2x3::IfcCompositeCurveSegment::it it = segments->begin(); it != segments->end(); ++ it ) {
-		const Ifc2x3::IfcCurve::ptr curve = (*it)->ParentCurve();
+	for( IfcSchema::IfcCompositeCurveSegment::it it = segments->begin(); it != segments->end(); ++ it ) {
+		const IfcSchema::IfcCurve::ptr curve = (*it)->ParentCurve();
 		TopoDS_Wire wire2;
 		if ( ! IfcGeom::convert_wire(curve,wire2) ) {
 			Logger::Message(Logger::LOG_ERROR,"Failed to convert curve:",curve->entity);
@@ -169,13 +171,13 @@ bool IfcGeom::convert(const Ifc2x3::IfcCompositeCurve::ptr l, TopoDS_Wire& wire)
 	wire = w.Wire();
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
-	Ifc2x3::IfcCurve::ptr basis_curve = l->BasisCurve();
-	bool isConic = basis_curve->is(Ifc2x3::Type::IfcConic);
+bool IfcGeom::convert(const IfcSchema::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
+	IfcSchema::IfcCurve::ptr basis_curve = l->BasisCurve();
+	bool isConic = basis_curve->is(IfcSchema::Type::IfcConic);
 	double parameterFactor = isConic ? IfcGeom::GetValue(GV_PLANEANGLE_UNIT) : IfcGeom::GetValue(GV_LENGTH_UNIT);
 	Handle(Geom_Curve) curve;
 	if ( ! IfcGeom::convert_curve(basis_curve,curve) ) return false;
-	bool trim_cartesian = l->MasterRepresentation() == Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN;
+	bool trim_cartesian = l->MasterRepresentation() == IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN;
 	IfcUtil::IfcAbstractSelect::list trims1 = l->Trim1();
 	IfcUtil::IfcAbstractSelect::list trims2 = l->Trim2();
 	bool trimmed1 = false;
@@ -188,22 +190,22 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 	BRepBuilderAPI_MakeWire w;
 	for ( IfcUtil::IfcAbstractSelect::it it = trims1->begin(); it != trims1->end(); it ++ ) {
 		const IfcUtil::IfcAbstractSelect::ptr i = *it;
-		if ( i->is(Ifc2x3::Type::IfcCartesianPoint) ) {
-			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcCartesianPoint>(i), pnts[sense_agreement] );
+		if ( i->is(IfcSchema::Type::IfcCartesianPoint) ) {
+			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcSchema::IfcCartesianPoint>(i), pnts[sense_agreement] );
 			has_pnts[sense_agreement] = true;
-		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) ) {
-			const double value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
+		} else if ( i->is(IfcSchema::Type::IfcParameterValue) ) {
+			const double value = *((IfcUtil::IfcBaseEntity*)i)->entity->getArgument(0);
 			flts[sense_agreement] = value * parameterFactor;
 			has_flts[sense_agreement] = true;
 		}
 	}
 	for ( IfcUtil::IfcAbstractSelect::it it = trims2->begin(); it != trims2->end(); it ++ ) {
 		const IfcUtil::IfcAbstractSelect::ptr i = *it;
-		if ( i->is(Ifc2x3::Type::IfcCartesianPoint) ) {
-			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,Ifc2x3::IfcCartesianPoint>(i), pnts[1-sense_agreement] );
+		if ( i->is(IfcSchema::Type::IfcCartesianPoint) ) {
+			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcSchema::IfcCartesianPoint>(i), pnts[1-sense_agreement] );
 			has_pnts[1-sense_agreement] = true;
-		} else if ( i->is(Ifc2x3::Type::IfcParameterValue) ) {
-			const double value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
+		} else if ( i->is(IfcSchema::Type::IfcParameterValue) ) {
+			const double value = *((IfcUtil::IfcBaseEntity*)i)->entity->getArgument(0);
 			flts[1-sense_agreement] = value * parameterFactor;
 			has_flts[1-sense_agreement] = true;
 		}
@@ -232,6 +234,15 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 		}
 	}
 	if ( (!trim_cartesian || trim_cartesian_failed) && (has_flts[0] && has_flts[1]) ) {
+		// The Geom_Line is constructed from a gp_Pnt and gp_Dir, whereas the IfcLine
+		// is defined by an IfcCartesianPoint and an IfcVector with Magnitude. Because
+		// the vector is normalised when passed to Geom_Line constructor the magnitude
+		// needs to be factored in with the IfcParameterValue here.
+		if ( basis_curve->is(IfcSchema::Type::IfcLine) ) {
+			IfcSchema::IfcLine* line = static_cast<IfcSchema::IfcLine*>(basis_curve);
+			const double magnitude = line->Dir()->Magnitude();
+			flts[0] *= magnitude; flts[1] *= magnitude;
+		}
 		if ( isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],(double)(M_PI*2.0)),0.0f) ) {
 			w.Add(BRepBuilderAPI_MakeEdge(curve));
 		} else {
@@ -248,12 +259,12 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 		return false;
 	}
 }
-bool IfcGeom::convert(const Ifc2x3::IfcPolyline::ptr l, TopoDS_Wire& result) {
-	Ifc2x3::IfcCartesianPoint::list points = l->Points();
+bool IfcGeom::convert(const IfcSchema::IfcPolyline::ptr l, TopoDS_Wire& result) {
+	IfcSchema::IfcCartesianPoint::list points = l->Points();
 
 	BRepBuilderAPI_MakeWire w;
 	gp_Pnt P1;gp_Pnt P2;
-	for( Ifc2x3::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it ) {
+	for( IfcSchema::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it ) {
 		IfcGeom::convert(*it,P2);
 		if ( it != points->begin() && ( !P1.IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) )
 			w.Add(BRepBuilderAPI_MakeEdge(P1,P2));
@@ -263,13 +274,13 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolyline::ptr l, TopoDS_Wire& result) {
 	result = w.Wire();
 	return true;
 }
-bool IfcGeom::convert(const Ifc2x3::IfcPolyLoop::ptr l, TopoDS_Wire& result) {
-	Ifc2x3::IfcCartesianPoint::list points = l->Polygon();
+bool IfcGeom::convert(const IfcSchema::IfcPolyLoop::ptr l, TopoDS_Wire& result) {
+	IfcSchema::IfcCartesianPoint::list points = l->Polygon();
 
 	BRepBuilderAPI_MakeWire w;
 	gp_Pnt P1;gp_Pnt P2;gp_Pnt F;
 	int count = 0;
-	for( Ifc2x3::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it ) {
+	for( IfcSchema::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it ) {
 		IfcGeom::convert(*it,P2);
 		if ( it != points->begin() && ( !P1.IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) ) {
 			w.Add(BRepBuilderAPI_MakeEdge(P1,P2));

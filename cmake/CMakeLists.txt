@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project (IfcOpenShell)
 
-FIND_PACKAGE(Boost REQUIRED)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS program_options)
 MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
@@ -54,10 +54,39 @@ ENDIF()
 FIND_LIBRARY(icu "icuuc" /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR})
 
 IF(icu)
-	MESSAGE(STATUS "ICU libraries found")
+    MESSAGE(STATUS "ICU libraries found")
     ADD_DEFINITIONS(-DHAVE_ICU)
 ELSE()
-	MESSAGE(STATUS "Unable to find ICU library files, continuing")	
+    MESSAGE(STATUS "Unable to find ICU library files, continuing")	
+ENDIF()
+
+IF("$ENV{OPENCOLLADA_INCLUDE_DIR}" STREQUAL "")
+    MESSAGE(STATUS "No OpenCOLLADA include directory specified")
+    SET(OPENCOLLADA_INCLUDE_DIR "/usr/local/include/opencollada" CACHE FILEPATH "OpenCOLLADA header files")
+ElSE()
+    SET(OPENCOLLADA_INCLUDE_DIR "$ENV{OPENCOLLADA_INCLUDE_DIR}" CACHE FILEPATH "OpenCOLLADA header files")
+ENDIF()
+
+IF("$ENV{OPENCOLLADA_LIBRARY_DIR}" STREQUAL "")
+    MESSAGE(STATUS "No OpenCOLLADA library directory specified")
+    SET(OPENCOLLADA_LIBRARY_DIR "/usr/local/lib/opencollada" CACHE FILEPATH "OpenCOLLADA library files")
+ElSE()
+    SET(OPENCOLLADA_LIBRARY_DIR "$ENV{OPENCOLLADA_LIBRARY_DIR}" CACHE FILEPATH "OpenCOLLADA library files")
+ENDIF()
+
+SET(OPENCOLLADA_INCLUDE_DIRS "${OPENCOLLADA_INCLUDE_DIR}/COLLADABaseUtils" "${OPENCOLLADA_INCLUDE_DIR}/COLLADAStreamWriter")
+
+FIND_FILE(COLLADASWStreamWriter_h "COLLADASWStreamWriter.h" ${OPENCOLLADA_INCLUDE_DIRS})
+IF(COLLADASWStreamWriter_h)
+    MESSAGE(STATUS "OpenCOLLADA header files found")
+    ADD_DEFINITIONS(-DWITH_OPENCOLLADA)
+    SET(OPENCOLLADA_LIBRARIES 
+        GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils
+        OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
+        OpenCOLLADAStreamWriter UTF buffer ftoa pcre
+    )
+ELSE()
+    MESSAGE(STATUS "OpenCOLLADA header files not found, continuing without COLLADA support")
 ENDIF()
 
 INCLUDE(CheckIncludeFileCXX)
@@ -92,17 +121,23 @@ ElSE(MSVC)
     ADD_DEFINITIONS(-fPIC -Wno-non-virtual-dtor)
 ENDIF(MSVC)
 
-INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} /usr/inc /usr/local/inc /usr/local/include/oce ${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS} /usr/inc /usr/local/inc /usr/local/include/oce ${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
 ADD_LIBRARY(IfcParse STATIC 
-  ../src/ifcparse/Ifc2x3-rt.cpp
   ../src/ifcparse/Ifc2x3.cpp
-  ../src/ifcparse/IfcCharacterDecoder.cpp
-  ../src/ifcparse/IfcGuidHelper.cpp
+  ../src/ifcparse/Ifc4.cpp
+  ../src/ifcparse/IfcUtil.cpp
   ../src/ifcparse/IfcParse.cpp
+  ../src/ifcparse/IfcCharacterDecoder.cpp
+  
+  ../src/ifcparse/IfcWrite.cpp
+  ../src/ifcparse/IfcGuidHelper.cpp
+  
+  ../src/ifcparse/IfcHierarchyHelper.cpp
+  
+  ../src/ifcparse/Ifc2x3-rt.cpp
+  ../src/ifcparse/Ifc4-rt.cpp
   ../src/ifcparse/IfcUntypedEntity.cpp
-  ../src/ifcparse/IfcUtil.cpp  
-  ../src/ifcparse/IfcWrite.cpp 
 )
 
 ADD_LIBRARY(IfcGeom STATIC
@@ -111,6 +146,7 @@ ADD_LIBRARY(IfcGeom STATIC
   ../src/ifcgeom/IfcGeomFunctions.cpp
   ../src/ifcgeom/IfcGeomHelpers.cpp
   ../src/ifcgeom/IfcGeomObjects.cpp
+  ../src/ifcgeom/IfcGeomRenderStyles.cpp
   ../src/ifcgeom/IfcGeomShapes.cpp
   ../src/ifcgeom/IfcGeomWires.cpp
   ../src/ifcgeom/IfcRegister.cpp
@@ -122,11 +158,16 @@ ENDIF()
 
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
-LINK_DIRECTORIES (${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}) 
+LINK_DIRECTORIES (${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} ${OPENCOLLADA_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}) 
 
-ADD_EXECUTABLE(IfcObj ../src/ifcobj/IfcObj.cpp)
+ADD_EXECUTABLE(IfcConvert 
+    ../src/ifcconvert/ColladaSerializer.cpp
+    ../src/ifcconvert/IfcConvert.cpp
+    ../src/ifcconvert/OpenCascadeBasedSerializer.cpp
+    ../src/ifcconvert/WavefrontObjSerializer.cpp   
+)
 
-TARGET_LINK_LIBRARIES (IfcObj IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet)
+TARGET_LINK_LIBRARIES (IfcConvert IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
 
 # Build python wrapper using separate CMakeLists.txt
 ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
@@ -134,7 +175,7 @@ ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
 # Build IfcParseExamples using separate CMakeLists.txt
 ADD_SUBDIRECTORY(../src/examples examples)
 
-ADD_SUBDIRECTORY(../src/qtviewer qtviewer)
+# ADD_SUBDIRECTORY(../src/qtviewer qtviewer)
 
 # CMake installation targets
 SET(include_files_geom
@@ -152,25 +193,31 @@ SET(include_files_geom
     ../src/ifcgeom/IfcRegisterIsShapeCollection.h
     ../src/ifcgeom/IfcRegisterPurgeCache.h
     ../src/ifcgeom/IfcRegisterUndef.h
-    ../src/ifcgeom/IfcShapeList.h
+    ../src/ifcgeom/IfcGeomRenderStyles.h
+    ../src/ifcgeom/IfcRepresentationShapeItem.h
 )
 SET(include_files_parse
-    ../src/ifcparse/ArgumentType.h
-    ../src/ifcparse/Ifc2x3-rt.h
     ../src/ifcparse/Ifc2x3.h
     ../src/ifcparse/Ifc2x3enum.h
+    ../src/ifcparse/Ifc4.h
+    ../src/ifcparse/Ifc4enum.h
     ../src/ifcparse/IfcCharacterDecoder.h
     ../src/ifcparse/IfcException.h
     ../src/ifcparse/IfcFile.h
+    ../src/ifcparse/IfcHierarchyHelper.h
     ../src/ifcparse/IfcParse.h
-    ../src/ifcparse/IfcSpfStream.h
-    ../src/ifcparse/IfcUntypedEntity.h
     ../src/ifcparse/IfcUtil.h
+    ../src/ifcparse/SharedPointer.h
+    
     ../src/ifcparse/IfcWrite.h
-    ../src/ifcparse/IfcWritableEntity.h    
-    ../src/ifcparse/SharedPointer.h    
+    ../src/ifcparse/IfcWritableEntity.h
+
+    ../src/ifcparse/Ifc2x3-rt.h
+    ../src/ifcparse/Ifc4-rt.h
+    ../src/ifcparse/IfcUntypedEntity.h
+    ../src/ifcparse/IfcEntityDescriptor.h
 )
 INSTALL(FILES ${include_files_geom} DESTINATION include/ifcgeom)
 INSTALL(FILES ${include_files_parse} DESTINATION include/ifcparse)
-INSTALL(TARGETS IfcObj DESTINATION bin)
+INSTALL(TARGETS IfcConvert DESTINATION bin)
 INSTALL(TARGETS IfcParse IfcGeom DESTINATION lib)

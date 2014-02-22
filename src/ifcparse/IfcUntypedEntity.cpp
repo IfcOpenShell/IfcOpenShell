@@ -1,12 +1,16 @@
 #include <sstream>
 
-#include "IfcWritableEntity.h"
+#include "../ifcparse/IfcWritableEntity.h"
 
-#include "IfcUtil.h"
-#include "IfcWrite.h"
-#include "Ifc2x3-rt.h"
+#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcWrite.h"
+#include "../ifcparse/Ifc2x3-rt.h"
 
-IfcWrite::IfcWritableEntity* Ifc::IfcUntypedEntity::writable_entity() {
+#include "IfcUntypedEntity.h"
+
+using namespace IfcUtil;
+
+IfcWrite::IfcWritableEntity* IfcParse::IfcUntypedEntity::writable_entity() {
 	IfcWrite::IfcWritableEntity* e;
 	if (entity->isWritable()) {
 		e = (IfcWrite::IfcWritableEntity*) entity;
@@ -15,130 +19,131 @@ IfcWrite::IfcWritableEntity* Ifc::IfcUntypedEntity::writable_entity() {
 	}
 	return e;
 }
-Ifc::IfcUntypedEntity::IfcUntypedEntity(const std::string& s) {
+IfcParse::IfcUntypedEntity::IfcUntypedEntity(const std::string& s) {
 	std::string S = s;
 	for (std::string::iterator i = S.begin(); i != S.end(); ++i ) *i = toupper(*i);
-	_type = Ifc2x3::Type::FromString(S);
+	_type = IfcSchema::Type::FromString(S);
 	entity = new IfcWrite::IfcWritableEntity(_type);
+	IfcSchema::Type::PopulateDerivedFields(writable_entity());
 }
-Ifc::IfcUntypedEntity::IfcUntypedEntity(IfcAbstractEntity* e) {
+IfcParse::IfcUntypedEntity::IfcUntypedEntity(IfcAbstractEntity* e) {
 	entity = e;
 	_type = e->type();
 }
-bool Ifc::IfcUntypedEntity::is(Ifc2x3::Type::Enum v) const {
-	Ifc2x3::Type::Enum _ty = _type;
+bool IfcParse::IfcUntypedEntity::is(IfcSchema::Type::Enum v) const {
+	IfcSchema::Type::Enum _ty = _type;
 	if (v == _ty) return true;
 	while (_ty != -1) {
-		_ty = Ifc2x3::Type::Parent(_ty);
+		_ty = IfcSchema::Type::Parent(_ty);
 		if (v == _ty) return true;
 	}
 	return false;	
 }
-std::string Ifc::IfcUntypedEntity::is_a() const {
-	return Ifc2x3::Type::ToString(_type);
+std::string IfcParse::IfcUntypedEntity::is_a() const {
+	return IfcSchema::Type::ToString(_type);
 }
-bool Ifc::IfcUntypedEntity::is_a(const std::string& s) const {
+bool IfcParse::IfcUntypedEntity::is_a(const std::string& s) const {
 	std::string S = s;
 	for (std::string::iterator i = S.begin(); i != S.end(); ++i ) *i = toupper(*i);
-	return is(Ifc2x3::Type::FromString(S));
+	return is(IfcSchema::Type::FromString(S));
 }
-Ifc2x3::Type::Enum Ifc::IfcUntypedEntity::type() const {
+IfcSchema::Type::Enum IfcParse::IfcUntypedEntity::type() const {
 	return _type;
 }
-unsigned int Ifc::IfcUntypedEntity::getArgumentCount() const {
-	return Ifc2x3::Type::GetAttributeCount(_type);
+unsigned int IfcParse::IfcUntypedEntity::getArgumentCount() const {
+	return IfcSchema::Type::GetAttributeCount(_type);
 }
-IfcUtil::ArgumentType Ifc::IfcUntypedEntity::getArgumentType(unsigned int i) const {
-	return Ifc2x3::Type::GetAttributeType(_type,i);
+IfcUtil::ArgumentType IfcParse::IfcUntypedEntity::getArgumentType(unsigned int i) const {
+	return IfcSchema::Type::GetAttributeType(_type,i);
 }
-ArgumentPtr Ifc::IfcUntypedEntity::getArgument(unsigned int i) const {
+ArgumentPtr IfcParse::IfcUntypedEntity::getArgument(unsigned int i) const {
 	return entity->getArgument(i);
 }
-const char* Ifc::IfcUntypedEntity::getArgumentName(unsigned int i) const {
-	return Ifc2x3::Type::GetAttributeName(_type,i).c_str();
+const char* IfcParse::IfcUntypedEntity::getArgumentName(unsigned int i) const {
+	return IfcSchema::Type::GetAttributeName(_type,i).c_str();
 }
-void Ifc::IfcUntypedEntity::invalid_argument(unsigned int i, const std::string& t) {
-	const std::string arg_name = Ifc2x3::Type::GetAttributeName(_type,i);
+void IfcParse::IfcUntypedEntity::invalid_argument(unsigned int i, const std::string& t) {
+	const std::string arg_name = IfcSchema::Type::GetAttributeName(_type,i);
 	throw IfcException(t + " is not a valid type for '" + arg_name + "'");
 }
-void Ifc::IfcUntypedEntity::setArgument(unsigned int i) {
-	bool is_optional = Ifc2x3::Type::GetAttributeOptional(_type, i);
+void IfcParse::IfcUntypedEntity::setArgument(unsigned int i) {
+	bool is_optional = IfcSchema::Type::GetAttributeOptional(_type, i);
 	if (is_optional) {
 		writable_entity()->setArgument(i);
 	} else invalid_argument(i,"NULL");
 }
-void Ifc::IfcUntypedEntity::setArgument(unsigned int i, int v) {
-	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);
+void IfcParse::IfcUntypedEntity::setArgument(unsigned int i, int v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_INT) {
 		writable_entity()->setArgument(i,v);	
 	} else if ( (arg_type == Argument_BOOL) && ( (v == 0) || (v == 1) ) ) {
-        writable_entity()->setArgument(i, (bool) v);
-    } else invalid_argument(i,"INT");
+		writable_entity()->setArgument(i, v == 1);
+	} else invalid_argument(i,"INT");
 }
-void Ifc::IfcUntypedEntity::setArgument(unsigned int i, bool v) {
-	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);
+void IfcParse::IfcUntypedEntity::setArgument(unsigned int i, bool v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_BOOL) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"BOOL");
 }
-void Ifc::IfcUntypedEntity::setArgument(unsigned int i, double v) {
-	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);
+void IfcParse::IfcUntypedEntity::setArgument(unsigned int i, double v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_DOUBLE) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"DOUBLE");
 }
-void Ifc::IfcUntypedEntity::setArgument(unsigned int i, const std::string& a) {
-	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);
+void IfcParse::IfcUntypedEntity::setArgument(unsigned int i, const std::string& a) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_STRING) {
 		writable_entity()->setArgument(i,a);	
 	} else if (arg_type == Argument_ENUMERATION) {
-		std::pair<const char*, int> enum_data = Ifc2x3::Type::GetEnumerationIndex(Ifc2x3::Type::GetAttributeEnumerationClass(_type, i), a);
+		std::pair<const char*, int> enum_data = IfcSchema::Type::GetEnumerationIndex(IfcSchema::Type::GetAttributeEnumerationClass(_type, i), a);
 		writable_entity()->setArgument(i, enum_data.second, enum_data.first);
 	} else invalid_argument(i,"STRING");
 }
-void Ifc::IfcUntypedEntity::setArgument(unsigned int i, const std::vector<int>& v) {
-	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);
+void IfcParse::IfcUntypedEntity::setArgument(unsigned int i, const std::vector<int>& v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_VECTOR_INT) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"LIST of INT");
 }
-void Ifc::IfcUntypedEntity::setArgument(unsigned int i, const std::vector<double>& v) {
-	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);
+void IfcParse::IfcUntypedEntity::setArgument(unsigned int i, const std::vector<double>& v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_VECTOR_DOUBLE) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"LIST of DOUBLE");
 }
-void Ifc::IfcUntypedEntity::setArgument(unsigned int i, const std::vector<std::string>& v) {
-	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);
+void IfcParse::IfcUntypedEntity::setArgument(unsigned int i, const std::vector<std::string>& v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_VECTOR_STRING) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"LIST of STRING");
 }
-void Ifc::IfcUntypedEntity::setArgument(unsigned int i, Ifc::IfcUntypedEntity* v) {
-	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);
+void IfcParse::IfcUntypedEntity::setArgument(unsigned int i, IfcParse::IfcUntypedEntity* v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_ENTITY) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"ENTITY");
 }
-void Ifc::IfcUntypedEntity::setArgument(unsigned int i, IfcEntities v) {
-	IfcUtil::ArgumentType arg_type = Ifc2x3::Type::GetAttributeType(_type,i);
+void IfcParse::IfcUntypedEntity::setArgument(unsigned int i, IfcEntities v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_ENTITY_LIST) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"LIST of ENTITY");
 }
-std::pair<IfcUtil::ArgumentType,ArgumentPtr> Ifc::IfcUntypedEntity::get_argument(unsigned i) {
+std::pair<IfcUtil::ArgumentType,ArgumentPtr> IfcParse::IfcUntypedEntity::get_argument(unsigned i) {
 	return std::pair<IfcUtil::ArgumentType,ArgumentPtr>(getArgumentType(i),getArgument(i));
 }
-std::pair<IfcUtil::ArgumentType,ArgumentPtr> Ifc::IfcUntypedEntity::get_argument(const std::string& a) {
-	return get_argument(Ifc2x3::Type::GetAttributeIndex(_type,a));
+std::pair<IfcUtil::ArgumentType,ArgumentPtr> IfcParse::IfcUntypedEntity::get_argument(const std::string& a) {
+	return get_argument(IfcSchema::Type::GetAttributeIndex(_type,a));
 }
-unsigned Ifc::IfcUntypedEntity::getArgumentIndex(const std::string& a) const {
-	return Ifc2x3::Type::GetAttributeIndex(_type,a);
+unsigned IfcParse::IfcUntypedEntity::getArgumentIndex(const std::string& a) const {
+	return IfcSchema::Type::GetAttributeIndex(_type,a);
 }
-std::string Ifc::IfcUntypedEntity::toString() {
+std::string IfcParse::IfcUntypedEntity::toString() {
 	return entity->toString(false);
 }
-bool Ifc::IfcUntypedEntity::is_valid() {
+bool IfcParse::IfcUntypedEntity::is_valid() {
 	const unsigned arg_count = getArgumentCount();
 	bool valid = true;
 	std::ostringstream oss;
@@ -149,7 +154,7 @@ bool Ifc::IfcUntypedEntity::is_valid() {
 			const Argument& arg = *getArgument(i);
 			is_null = arg.isNull();
 		} catch(IfcException) {}
-		if (!Ifc2x3::Type::GetAttributeOptional(_type,i) && is_null) {
+		if (!IfcSchema::Type::GetAttributeOptional(_type,i) && is_null) {
 			if (!valid) {
 				oss << ", ";
 			}

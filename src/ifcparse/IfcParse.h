@@ -20,14 +20,14 @@
 /********************************************************************************
  *                                                                              *
  * This file provides functions for loading an IFC file into memory and access  *
- * its entities either by ID, by an Ifc2x3::Type or by reference                * 
+ * its entities either by ID, by an IfcSchema::Type or by reference             * 
  *                                                                              *
  ********************************************************************************/
 
 #ifndef IFCPARSE_H
 #define IFCPARSE_H
 
-#define IFCOPENSHELL_VERSION "0.3.0-rc3"
+#define IFCOPENSHELL_VERSION "0.5.0-dev"
 
 #include <string>
 #include <sstream>
@@ -40,9 +40,15 @@
 #include "../ifcparse/SharedPointer.h"
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/IfcSpfStream.h"
 #include "../ifcparse/IfcUntypedEntity.h"
+
+#ifdef USE_IFC4
+#include "../ifcparse/Ifc4.h"
+#else
+#include "../ifcparse/Ifc2x3.h"
+#endif
+
+#include "../ifcparse/IfcSpfStream.h"
 
 namespace IfcParse {
 
@@ -162,9 +168,9 @@ namespace IfcParse {
 	///                        =====================   =====================
 	class EntityArgument : public Argument {
 	private:		
-		Ifc::IfcUntypedEntity* entity;		
+		IfcUntypedEntity* entity;		
 	public:
-		EntityArgument(Ifc2x3::Type::Enum ty, const Token& t);
+		EntityArgument(IfcSchema::Type::Enum ty, const Token& t);
 		~EntityArgument();
 		operator int() const;
 		operator bool() const;
@@ -189,7 +195,7 @@ namespace IfcParse {
 	private:
 		//IfcFile* file;
 		ArgumentPtr args;
-		Ifc2x3::Type::Enum _type;
+		IfcSchema::Type::Enum _type;
 	public:
 		/// The EXPRESS ENTITY_INSTANCE_NAME
 		unsigned int _id;
@@ -198,20 +204,28 @@ namespace IfcParse {
 		Entity(unsigned int i, IfcFile* t);
 		Entity(unsigned int i, IfcFile* t, unsigned int o);
 		~Entity();
-		IfcEntities getInverse(Ifc2x3::Type::Enum c = Ifc2x3::Type::ALL);
-		IfcEntities getInverse(Ifc2x3::Type::Enum c, int i, const std::string& a);
+		IfcEntities getInverse(IfcSchema::Type::Enum c = IfcSchema::Type::ALL);
+		IfcEntities getInverse(IfcSchema::Type::Enum c, int i, const std::string& a);
 		void Load(std::vector<unsigned int>& ids, bool seek=false);
 		ArgumentPtr getArgument (unsigned int i);
 		unsigned int getArgumentCount();
 		std::string toString(bool upper=false);
 		std::string datatype();
-		Ifc2x3::Type::Enum type() const;
-		bool is(Ifc2x3::Type::Enum v) const;
+		IfcSchema::Type::Enum type() const;
+		bool is(IfcSchema::Type::Enum v) const;
 		unsigned int id();
 		bool isWritable();
 	};
 
-double UnitPrefixToValue( Ifc2x3::IfcSIPrefix::IfcSIPrefix v );
+typedef IfcUtil::IfcSchemaEntity IfcEntity;
+//typedef IfcEntities IfcEntities;
+typedef std::map<IfcSchema::Type::Enum,IfcEntities> MapEntitiesByType;
+typedef std::map<unsigned int,IfcEntity> MapEntityById;
+typedef std::map<std::string,IfcSchema::IfcRoot::ptr> MapEntityByGuid;
+typedef std::map<unsigned int,IfcEntities> MapEntitiesByRef;
+typedef std::map<unsigned int,unsigned int> MapOffsetById;
+
+double UnitPrefixToValue( IfcSchema::IfcSIPrefix::IfcSIPrefix v );
 
 }
 
