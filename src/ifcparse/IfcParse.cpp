@@ -851,7 +851,7 @@ MapEntityById::const_iterator IfcFile::end() const {
 std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f) {
 	os << "ISO-10303-21;" << std::endl;
 	os << "HEADER;" << std::endl;
-	os << "FILE_DESCRIPTION(('ViewDefinition []'),'2;1');" << std::endl;
+	os << "FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');" << std::endl;
 	os << "FILE_NAME(" 
 		<< static_cast<std::string>(IfcWrite::IfcCharacterEncoder(f.filename())) << "," 
 		<< static_cast<std::string>(IfcWrite::IfcCharacterEncoder(f.timestamp())) << ",(" 
