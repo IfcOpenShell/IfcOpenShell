@@ -33,6 +33,7 @@
 
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcParse.h"
+#include "../ifcparse/IfcException.h"
 
 namespace IfcWrite {
 

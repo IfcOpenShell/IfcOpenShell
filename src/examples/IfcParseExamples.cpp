@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "../ifcparse/IfcParse.h"
+#include "../ifcparse/IfcFile.h"
 
 using namespace IfcSchema;
 
