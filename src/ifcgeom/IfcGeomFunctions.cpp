@@ -572,7 +572,7 @@ std::string IfcGeom::create_brep_data(Ifc2x3::IfcProduct* ifc_product) {
 
 	Ifc2x3::IfcProductRepresentation* prod_rep = ifc_product->Representation();
 	Ifc2x3::IfcRepresentation::list li = prod_rep->Representations();
-	Ifc2x3::IfcShapeRepresentation* shape_rep;
+	Ifc2x3::IfcShapeRepresentation* shape_rep = 0;
 	for (Ifc2x3::IfcRepresentation::it i = li->begin(); i != li->end(); ++i) {
 		const std::string representation_identifier = (*i)->RepresentationIdentifier();
 		if ((*i)->is(Ifc2x3::Type::IfcShapeRepresentation) && (representation_identifier == "Body" || representation_identifier == "Facetation")) {
@@ -580,6 +580,8 @@ std::string IfcGeom::create_brep_data(Ifc2x3::IfcProduct* ifc_product) {
 			break;
 		}
 	}
+
+	if (!shape_rep) return "";
 
 	IfcGeom::IfcRepresentationShapeItems shapes;
 	if (!IfcGeom::convert_shapes(shape_rep,shapes)) {
