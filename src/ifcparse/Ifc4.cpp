@@ -2091,6 +2091,7 @@ void Ifc4::InitStringMap() {
 }
 
 Type::Enum Type::FromString(const std::string& s) {
+    if (string_map.empty()) InitStringMap();
     std::map<std::string,Type::Enum>::const_iterator it = string_map.find(s);
     if ( it == string_map.end() ) throw IfcException("Unable to find find keyword in schema");
     else return it->second;
