@@ -23,6 +23,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#include <algorithm>
+
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 #include <gp_Dir.hxx>
@@ -96,7 +98,12 @@ bool IfcGeom::convert(const IfcSchema::IfcCircle::ptr l, Handle(Geom_Curve)& cur
 bool IfcGeom::convert(const IfcSchema::IfcEllipse::ptr l, Handle(Geom_Curve)& curve) {
 	double x = l->SemiAxis1() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	double y = l->SemiAxis2() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	if ( x == 0.0f || y == 0.0f || y > x ) { return false; }
+	if (x < ALMOST_ZERO || y < ALMOST_ZERO) { return false; }
+	// Open Cascade does not allow ellipses of which the minor radius
+	// is greater than the major radius. Hence, in this case, the
+	// ellipse is rotated. Note that special care needs to be taken
+	// when creating a trimmed curve off of an ellipse like this.
+	const bool rotated = y > x;
 	gp_Trsf trsf;
 	IfcSchema::IfcAxis2Placement placement = l->Position();
 	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
@@ -106,7 +113,12 @@ bool IfcGeom::convert(const IfcSchema::IfcEllipse::ptr l, Handle(Geom_Curve)& cu
 		IfcGeom::convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf2d);
 		trsf = trsf2d;
 	}
-	gp_Ax2 ax = gp_Ax2().Transformed(trsf);
+	gp_Ax2 ax = gp_Ax2();
+	if (rotated) {
+		ax.Rotate(ax.Axis(), M_PI / 2.);
+		std::swap(x, y);
+	}
+	ax.Transform(trsf);
 	curve = new Geom_Ellipse(ax, x, y);
 	return true;
 }

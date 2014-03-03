@@ -243,6 +243,16 @@ bool IfcGeom::convert(const IfcSchema::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire
 			const double magnitude = line->Dir()->Magnitude();
 			flts[0] *= magnitude; flts[1] *= magnitude;
 		}
+		if ( basis_curve->is(IfcSchema::Type::IfcEllipse) ) {
+			IfcSchema::IfcEllipse* ellipse = static_cast<IfcSchema::IfcEllipse*>(basis_curve);
+			double x = ellipse->SemiAxis1() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+			double y = ellipse->SemiAxis2() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+			const bool rotated = y > x;
+			if (rotated) {
+				flts[0] -= M_PI / 2.;
+				flts[1] -= M_PI / 2.;
+			}
+		}
 		if ( isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],(double)(M_PI*2.0)),0.0f) ) {
 			w.Add(BRepBuilderAPI_MakeEdge(curve));
 		} else {
