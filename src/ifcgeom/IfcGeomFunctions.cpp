@@ -336,7 +336,7 @@ bool IfcGeom::profile_helper(int numVerts, double* verts, int numFillets, int* f
 		BRepFilletAPI_MakeFillet2d fillet (face);
 		for ( int i = 0; i < numFillets; i ++ ) {
 			const double radius = filletRadii[i];
-			if ( radius < 1e-7 ) continue;
+			if ( radius < ALMOST_ZERO ) continue;
 			fillet.AddFillet(vertices[filletIndices[i]],radius);
 		}
 		fillet.Build();

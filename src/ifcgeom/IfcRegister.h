@@ -57,12 +57,19 @@ SHAPE(IfcHalfSpaceSolid);
 
 FACE(IfcArbitraryProfileDefWithVoids);
 FACE(IfcArbitraryClosedProfileDef);
+FACE(IfcRoundedRectangleProfileDef);
+FACE(IfcRectangleHollowProfileDef);
 FACE(IfcRectangleProfileDef);
-FACE(IfcIShapeProfileDef);
+FACE(IfcTrapeziumProfileDef)
 FACE(IfcCShapeProfileDef);
+FACE(IfcIShapeProfileDef);
 FACE(IfcLShapeProfileDef);
+FACE(IfcTShapeProfileDef);
+FACE(IfcUShapeProfileDef);
+FACE(IfcZShapeProfileDef);
 FACE(IfcCircleHollowProfileDef);
 FACE(IfcCircleProfileDef);
+FACE(IfcEllipseProfileDef);
 FACE(IfcFace);
 
 WIRE(IfcPolyline);
