@@ -93,10 +93,10 @@ int main(int argc, char** argv) {
 		null, 0,    50.0,    25.0,     5.0,     5.0,     2.0,     2.0,    null,    null));
 	profiles->push(new Ifc2x3::IfcUShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
-		null, 0,    50.0,    25.0,     5.0,     5.0,    null,    null,     0.1,    null));
+		null, 0,    50.0,    25.0,     5.0,     5.0,    null,    null,     4.0,    null));
 	profiles->push(new Ifc2x3::IfcUShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
-		null, 0,    50.0,    25.0,     5.0,     5.0,     1.0,     3.0,     0.1,    null));
+		null, 0,    50.0,    25.0,     5.0,     5.0,     1.0,     3.0,     6.0,    null));
 	create_testcase_for(profiles); }
 	
     { IfcSchema::IfcProfileDef::list profiles (new IfcTemplatedEntityList<IfcSchema::IfcProfileDef>());
@@ -108,10 +108,10 @@ int main(int argc, char** argv) {
 		null, 0,    50.0,    25.0,     5.0,     5.0,     2.0,     2.0,     2.0,    null,    null,    null));
 	profiles->push(new Ifc2x3::IfcTShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
-		null, 0,    50.0,    25.0,     5.0,     5.0,    null,    null,    null,     0.1,     0.1,    null));
+		null, 0,    50.0,    25.0,     5.0,     5.0,    null,    null,    null,     2.0,     2.0,    null));
 	profiles->push(new Ifc2x3::IfcTShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
-		null, 0,    50.0,    25.0,     5.0,     5.0,     1.0,     2.0,     3.0,     0.1,     0.2,    null));
+		null, 0,    50.0,    25.0,     5.0,     5.0,     3.0,     2.0,     1.0,     2.0,     2.0,    null));
 	create_testcase_for(profiles); }
 	
     { IfcSchema::IfcProfileDef::list profiles (new IfcTemplatedEntityList<IfcSchema::IfcProfileDef>());
@@ -126,10 +126,10 @@ int main(int argc, char** argv) {
     { IfcSchema::IfcProfileDef::list profiles (new IfcTemplatedEntityList<IfcSchema::IfcProfileDef>());
 	profiles->push(new Ifc2x3::IfcEllipseProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
-		null, 0,    50.0,    25.0));
+		null, 0,    25.0,    15.0));
 	profiles->push(new Ifc2x3::IfcEllipseProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
-		null, 0,    25.0,    50.0));
+		null, 0,    15.0,    25.0));
 	create_testcase_for(profiles); }
 	
     { IfcSchema::IfcProfileDef::list profiles (new IfcTemplatedEntityList<IfcSchema::IfcProfileDef>());
@@ -150,10 +150,10 @@ int main(int argc, char** argv) {
 		null, 0,    50.0,    25.0,     5.0,     2.0,      2.0,    null,    null,    null));
 	profiles->push(new Ifc2x3::IfcLShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
-		null, 0,    50.0,    25.0,     5.0,     null,    null,     0.1,    null,    null));
+		null, 0,    50.0,    25.0,     5.0,     null,    null,     2.0,    null,    null));
 	profiles->push(new Ifc2x3::IfcLShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
-		null, 0,    50.0,    25.0,     5.0,      1.0,     2.0,     0.3,    null,    null));
+		null, 0,    50.0,    25.0,     5.0,      1.0,     2.0,     2.0,    null,    null));
 	create_testcase_for(profiles); }
 	
     { IfcSchema::IfcProfileDef::list profiles (new IfcTemplatedEntityList<IfcSchema::IfcProfileDef>());
