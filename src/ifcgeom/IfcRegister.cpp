@@ -58,6 +58,10 @@ bool IfcGeom::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
 }
 bool IfcGeom::convert_wire(const IfcBaseClass* l, TopoDS_Wire& r) {
 #include "IfcRegisterConvertWire.h"
+	Handle(Geom_Curve) curve;
+	if (IfcGeom::convert_curve(l, curve)) {
+		return IfcGeom::convert_curve_to_wire(curve, r);
+	}
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
 	return false;
 }

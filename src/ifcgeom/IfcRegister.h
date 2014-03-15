@@ -48,12 +48,16 @@ SHAPES(IfcFaceBasedSurfaceModel);
 SHAPES(IfcShapeRepresentation);
 SHAPES(IfcMappedItem);
 SHAPES(IfcFacetedBrep);
+SHAPES(IfcGeometricSet);
 
 SHAPE(IfcExtrudedAreaSolid);
+SHAPE(IfcRevolvedAreaSolid);
 SHAPE(IfcConnectedFaceSet);
 SHAPE(IfcBooleanClippingResult);
 SHAPE(IfcPolygonalBoundedHalfSpace);
 SHAPE(IfcHalfSpaceSolid);
+SHAPE(IfcSurfaceOfLinearExtrusion);
+SHAPE(IfcSurfaceOfRevolution);
 
 FACE(IfcArbitraryProfileDefWithVoids);
 FACE(IfcArbitraryClosedProfileDef);
@@ -70,12 +74,14 @@ FACE(IfcZShapeProfileDef);
 FACE(IfcCircleHollowProfileDef);
 FACE(IfcCircleProfileDef);
 FACE(IfcEllipseProfileDef);
+FACE(IfcCenterLineProfileDef);
 FACE(IfcFace);
 
 WIRE(IfcPolyline);
 WIRE(IfcPolyLoop);
 WIRE(IfcCompositeCurve);
 WIRE(IfcTrimmedCurve);
+WIRE(IfcArbitraryOpenProfileDef);
 
 CURVE(IfcCircle);
 CURVE(IfcEllipse);
@@ -85,6 +91,7 @@ CLASS(IfcCartesianPoint,gp_Pnt);
 CLASS(IfcDirection,gp_Dir);
 CLASS(IfcAxis2Placement2D,gp_Trsf2d);
 CLASS(IfcAxis2Placement3D,gp_Trsf);
+CLASS(IfcAxis1Placement,gp_Ax1);
 CLASS(IfcCartesianTransformationOperator2DnonUniform,gp_GTrsf2d);
 CLASS(IfcCartesianTransformationOperator3DnonUniform,gp_GTrsf);
 CLASS(IfcCartesianTransformationOperator2D,gp_Trsf2d);

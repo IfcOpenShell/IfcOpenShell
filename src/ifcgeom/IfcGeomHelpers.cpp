@@ -131,6 +131,15 @@ bool IfcGeom::convert(const IfcSchema::IfcAxis2Placement3D::ptr l, gp_Trsf& trsf
 	CACHE(IfcAxis2Placement3D,l,trsf)
 	return true;
 }
+bool IfcGeom::convert(const IfcSchema::IfcAxis1Placement::ptr l, gp_Ax1& ax) {
+	IN_CACHE(IfcAxis1Placement,l,gp_Ax1,ax)
+	gp_Pnt o;gp_Dir axis = gp_Dir(0,0,1);
+	IfcGeom::convert(l->Location(),o);
+	if ( l->hasAxis() ) IfcGeom::convert(l->Axis(), axis);
+	ax = gp_Ax1(o, axis);
+	CACHE(IfcAxis1Placement,l,ax)
+	return true;
+}
 bool IfcGeom::convert(const IfcSchema::IfcCartesianTransformationOperator3D::ptr l, gp_Trsf& trsf) {
 	IN_CACHE(IfcCartesianTransformationOperator3D,l,gp_Trsf,trsf)
 	gp_Pnt origin;
