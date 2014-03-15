@@ -307,3 +307,6 @@ bool IfcGeom::convert(const IfcSchema::IfcPolyLoop::ptr l, TopoDS_Wire& result) 
 	result = w.Wire();
 	return true;
 }
+bool IfcGeom::convert(const IfcSchema::IfcArbitraryOpenProfileDef::ptr l, TopoDS_Wire& result) {
+	return IfcGeom::convert_wire(l->Curve(), result);
+}

@@ -35,6 +35,7 @@
 #include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
+#include <gp_Ax1.hxx>
 #include <gp_Ax3.hxx>
 #include <gp_Ax2d.hxx>
 #include <gp_Pln.hxx>
@@ -62,6 +63,7 @@
 #include <TopExp_Explorer.hxx>
 
 #include <BRepPrimAPI_MakePrism.hxx>
+#include <BRepPrimAPI_MakeRevol.hxx>
 #include <BRepBuilderAPI_MakeShell.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
@@ -92,6 +94,70 @@ bool IfcGeom::convert(const IfcSchema::IfcExtrudedAreaSolid::ptr l, TopoDS_Shape
 	shape.Move(trsf);
 	return ! shape.IsNull();
 }
+
+bool IfcGeom::convert(const IfcSchema::IfcSurfaceOfLinearExtrusion::ptr l, TopoDS_Shape& shape) {
+	TopoDS_Wire wire;
+	if ( !IfcGeom::convert_wire(l->SweptCurve(), wire) ) {
+		TopoDS_Face face;
+		if ( !IfcGeom::convert_face(l->SweptCurve(),face) ) return false;
+		TopExp_Explorer exp(face, TopAbs_WIRE);
+		wire = TopoDS::Wire(exp.Current());
+	}
+	const double height = l->Depth() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	gp_Trsf trsf;
+	IfcGeom::convert(l->Position(),trsf);
+
+	gp_Dir dir;
+	convert(l->ExtrudedDirection(),dir);
+
+	shape = BRepPrimAPI_MakePrism(wire, height*dir);
+	shape.Move(trsf);
+	return !shape.IsNull();
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcSurfaceOfRevolution::ptr l, TopoDS_Shape& shape) {
+	TopoDS_Wire wire;
+	if ( !IfcGeom::convert_wire(l->SweptCurve(), wire) ) {
+		TopoDS_Face face;
+		if ( !IfcGeom::convert_face(l->SweptCurve(),face) ) return false;
+		TopExp_Explorer exp(face, TopAbs_WIRE);
+		wire = TopoDS::Wire(exp.Current());
+	}
+
+	gp_Ax1 ax1;
+	IfcGeom::convert(l->AxisPosition(), ax1);
+
+	gp_Trsf trsf;
+	IfcGeom::convert(l->Position(),trsf);
+	
+	shape = BRepPrimAPI_MakeRevol(wire, ax1);
+
+	shape.Move(trsf);
+	return !shape.IsNull();
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcRevolvedAreaSolid::ptr l, TopoDS_Shape& shape) {
+	const double ang = l->Angle() * IfcGeom::GetValue(GV_PLANEANGLE_UNIT);
+
+	TopoDS_Face face;
+	if ( ! IfcGeom::convert_face(l->SweptArea(),face) ) return false;
+
+	gp_Ax1 ax1;
+	IfcGeom::convert(l->Axis(), ax1);
+
+	gp_Trsf trsf;
+	IfcGeom::convert(l->Position(),trsf);
+
+	if (ang >= M_PI * 2. - ALMOST_ZERO) {
+		shape = BRepPrimAPI_MakeRevol(face, ax1);
+	} else {
+		shape = BRepPrimAPI_MakeRevol(face, ax1, ang);
+	}
+
+	shape.Move(trsf);
+	return !shape.IsNull();
+}
+
 bool IfcGeom::convert(const IfcSchema::IfcFacetedBrep::ptr l, IfcRepresentationShapeItems& shape) {
 	TopoDS_Shape s;
 	if (IfcGeom::convert_shape(l->Outer(),s) ) {
@@ -100,6 +166,7 @@ bool IfcGeom::convert(const IfcSchema::IfcFacetedBrep::ptr l, IfcRepresentationS
 	}
 	return false;
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcFaceBasedSurfaceModel::ptr l, IfcRepresentationShapeItems& shapes) {
 	IfcSchema::IfcConnectedFaceSet::list facesets = l->FbsmFaces();
 	const SurfaceStyle* collective_style = get_style(l);
@@ -112,6 +179,7 @@ bool IfcGeom::convert(const IfcSchema::IfcFaceBasedSurfaceModel::ptr l, IfcRepre
 	}
 	return true;
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcHalfSpaceSolid::ptr l, TopoDS_Shape& shape) {
 	IfcSchema::IfcSurface::ptr surface = l->BaseSurface();
 	if ( ! surface->is(IfcSchema::Type::IfcPlane) ) {
@@ -124,6 +192,7 @@ bool IfcGeom::convert(const IfcSchema::IfcHalfSpaceSolid::ptr l, TopoDS_Shape& s
 	shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln),pnt).Solid();
 	return true;
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace::ptr l, TopoDS_Shape& shape) {
 	TopoDS_Shape halfspace;
 	if ( ! IfcGeom::convert(reinterpret_pointer_cast<IfcSchema::IfcPolygonalBoundedHalfSpace,IfcSchema::IfcHalfSpaceSolid>(l),halfspace) ) return false;	
@@ -137,6 +206,7 @@ bool IfcGeom::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace::ptr l, Topo
 	shape = BRepAlgoAPI_Common(halfspace,prism);
 	return true;
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcShellBasedSurfaceModel::ptr l, IfcRepresentationShapeItems& shapes) {
 	IfcUtil::IfcAbstractSelect::list shells = l->SbsmBoundary();
 	const SurfaceStyle* collective_style = get_style(l);
@@ -152,6 +222,7 @@ bool IfcGeom::convert(const IfcSchema::IfcShellBasedSurfaceModel::ptr l, IfcRepr
 	}
 	return true;
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcBooleanClippingResult::ptr l, TopoDS_Shape& shape) {
 	TopoDS_Shape s1, s2;
 	TopoDS_Wire boundary_wire;
@@ -205,6 +276,7 @@ bool IfcGeom::convert(const IfcSchema::IfcBooleanClippingResult::ptr l, TopoDS_S
 
 	return true;
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcConnectedFaceSet::ptr l, TopoDS_Shape& shape) {
 	IfcSchema::IfcFace::list faces = l->CfsFaces();
 	bool facesAdded = false;
@@ -249,6 +321,7 @@ bool IfcGeom::convert(const IfcSchema::IfcConnectedFaceSet::ptr l, TopoDS_Shape&
 	}
 	return true;
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcMappedItem::ptr l, IfcRepresentationShapeItems& shapes) {
 	gp_GTrsf gtrsf;
 	IfcSchema::IfcCartesianTransformationOperator::ptr transform = l->MappingTarget();
@@ -297,6 +370,24 @@ bool IfcGeom::convert(const IfcSchema::IfcShapeRepresentation::ptr l, IfcReprese
 			TopoDS_Shape s;
 			if (IfcGeom::convert_shape(representation_item,s)) {
 				shapes.push_back(IfcRepresentationShapeItem(s, get_style(representation_item)));
+			}
+		}
+	}
+	return true;
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcGeometricSet::ptr l, IfcRepresentationShapeItems& shapes) {
+	IfcUtil::IfcAbstractSelect::list elements = l->Elements();
+	if ( !elements->Size() ) return false;
+	const IfcGeom::SurfaceStyle* parent_style = get_style(l);
+	for ( IfcUtil::IfcAbstractSelect::it it = elements->begin(); it != elements->end(); ++ it ) {
+		IfcSchema::IfcGeometricSetSelect element = *it;
+		if (element->is(IfcSchema::Type::IfcSurface)) {
+			IfcSchema::IfcSurface* surface = (IfcSchema::IfcSurface*) element;
+			TopoDS_Shape s;
+			if (IfcGeom::convert_shape(surface, s)) {
+				const IfcGeom::SurfaceStyle* style = get_style(surface);
+				shapes.push_back(IfcRepresentationShapeItem(s, style ? style : parent_style));
 			}
 		}
 	}

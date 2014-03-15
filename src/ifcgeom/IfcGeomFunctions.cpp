@@ -317,6 +317,12 @@ bool IfcGeom::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face) {
 	face = mf.Face();
 	return true;
 }
+
+bool IfcGeom::convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire) {
+	wire = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(curve));
+	return true;
+}
+
 bool IfcGeom::profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face) {
 	TopoDS_Vertex* vertices = new TopoDS_Vertex[numVerts];
 	

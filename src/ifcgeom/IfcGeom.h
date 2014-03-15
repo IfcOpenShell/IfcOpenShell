@@ -80,6 +80,7 @@ namespace IfcGeom {
 	};
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
+	bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);
 	bool convert_shapes(const IfcUtil::IfcBaseClass* L, IfcRepresentationShapeItems& result);
 	bool is_shape_collection(const IfcUtil::IfcBaseClass* L);
 	bool convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);

@@ -50,23 +50,27 @@
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <Geom_TrimmedCurve.hxx>
+#include <Geom_OffsetCurve.hxx>
+
+#include <BRepPrimAPI_MakePrism.hxx>
+#include <BRepPrimAPI_MakeHalfSpace.hxx>
 
 #include <BRepOffsetAPI_Sewing.hxx>
+#include <BRepOffsetAPI_MakeOffset.hxx>
+
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
+#include <BRepBuilderAPI_MakeShell.hxx>
+#include <BRepBuilderAPI_MakeSolid.hxx>
 
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopExp_Explorer.hxx>
 
-#include <BRepPrimAPI_MakePrism.hxx>
-#include <BRepBuilderAPI_MakeShell.hxx>
-#include <BRepBuilderAPI_MakeSolid.hxx>
-#include <BRepPrimAPI_MakeHalfSpace.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 
 #include <ShapeFix_Shape.hxx>
@@ -75,6 +79,10 @@
 
 #include <TopLoc_Location.hxx>
 #include <BRepGProp_Face.hxx>
+
+#include <Standard_Failure.hxx>
+
+#include <BRep_Tool.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
 
@@ -183,11 +191,13 @@ bool IfcGeom::convert(const IfcSchema::IfcFace::ptr l, TopoDS_Face& face) {
 	// return face_area(face) > 0.0001;
 	return true;
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcArbitraryClosedProfileDef::ptr l, TopoDS_Face& face) {
 	TopoDS_Wire wire;
 	if ( ! IfcGeom::convert_wire(l->OuterCurve(),wire) ) return false;
 	return IfcGeom::convert_wire_to_face(wire,face);
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids::ptr l, TopoDS_Face& face) {
 	TopoDS_Wire profile;
 	if ( ! IfcGeom::convert_wire(l->OuterCurve(),profile) ) return false;
@@ -204,6 +214,7 @@ bool IfcGeom::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids::ptr l, T
 	face = TopoDS::Face(sfs.Shape());
 	return true;
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcRectangleProfileDef::ptr l, TopoDS_Face& face) {
 	const double x = l->XDim() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double y = l->YDim() / 2.0f  * IfcGeom::GetValue(GV_LENGTH_UNIT);
@@ -218,6 +229,7 @@ bool IfcGeom::convert(const IfcSchema::IfcRectangleProfileDef::ptr l, TopoDS_Fac
 	double coords[8] = {-x,-y,x,-y,x,y,-x,y};
 	return IfcGeom::profile_helper(4,coords,0,0,0,trsf2d,face);
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcRoundedRectangleProfileDef::ptr l, TopoDS_Face& face) {
 	const double x = l->XDim() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double y = l->YDim() / 2.0f  * IfcGeom::GetValue(GV_LENGTH_UNIT);
@@ -235,6 +247,7 @@ bool IfcGeom::convert(const IfcSchema::IfcRoundedRectangleProfileDef::ptr l, Top
 	double radii[4] = {r,r,r,r};
 	return IfcGeom::profile_helper(4,coords,4,fillets,radii,trsf2d,face);
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcRectangleHollowProfileDef::ptr l, TopoDS_Face& face) {
 	const double x = l->XDim() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double y = l->YDim() / 2.0f  * IfcGeom::GetValue(GV_LENGTH_UNIT);
@@ -281,6 +294,7 @@ bool IfcGeom::convert(const IfcSchema::IfcRectangleHollowProfileDef::ptr l, Topo
 	face = TopoDS::Face(sfs.Shape());	
 	return true;
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcTrapeziumProfileDef::ptr l, TopoDS_Face& face) {
 	const double x1 = l->BottomXDim() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double w = l->TopXDim() * IfcGeom::GetValue(GV_LENGTH_UNIT);
@@ -297,6 +311,7 @@ bool IfcGeom::convert(const IfcSchema::IfcTrapeziumProfileDef::ptr l, TopoDS_Fac
 	double coords[8] = {-x1,-y, x1,-y, dx+w-x1,y, dx-x1,y};
 	return IfcGeom::profile_helper(4,coords,0,0,0,trsf2d,face);
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcIShapeProfileDef::ptr l, TopoDS_Face& face) {
 	const double x = l->OverallWidth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double y = l->OverallDepth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
@@ -321,6 +336,7 @@ bool IfcGeom::convert(const IfcSchema::IfcIShapeProfileDef::ptr l, TopoDS_Face& 
 	double radii[4] = {f,f,f,f};
 	return IfcGeom::profile_helper(12,coords,doFillet ? 4 : 0,fillets,radii,trsf2d,face);
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcZShapeProfileDef::ptr l, TopoDS_Face& face) {
 	const double x = l->FlangeWidth() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double y = l->Depth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
@@ -353,6 +369,7 @@ bool IfcGeom::convert(const IfcSchema::IfcZShapeProfileDef::ptr l, TopoDS_Face& 
 	double radii[4] = {f2,f1,f2,f1};
 	return IfcGeom::profile_helper(8,coords,(doFillet || doEdgeFillet) ? 4 : 0,fillets,radii,trsf2d,face);
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcCShapeProfileDef::ptr l, TopoDS_Face& face) {
 	const double y = l->Depth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double x = l->Width() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
@@ -379,6 +396,7 @@ bool IfcGeom::convert(const IfcSchema::IfcCShapeProfileDef::ptr l, TopoDS_Face& 
 	double radii[8] = {f2,f2,f1,f1,f1,f1,f2,f2};
 	return IfcGeom::profile_helper(12,coords,doFillet ? 8 : 0,fillets,radii,trsf2d,face);
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcLShapeProfileDef::ptr l, TopoDS_Face& face) {
 	const bool hasSlope = l->hasLegSlope();
 	const bool doEdgeFillet = l->hasEdgeRadius();
@@ -447,6 +465,7 @@ bool IfcGeom::convert(const IfcSchema::IfcLShapeProfileDef::ptr l, TopoDS_Face& 
 	double radii[3] = {f2,f1,f2};
 	return IfcGeom::profile_helper(6,coords,doFillet ? 3 : 0,fillets,radii,trsf2d,face);
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcUShapeProfileDef::ptr l, TopoDS_Face& face) {
 	const bool doEdgeFillet = l->hasEdgeRadius();
 	const bool doFillet = l->hasFilletRadius();
@@ -488,6 +507,7 @@ bool IfcGeom::convert(const IfcSchema::IfcUShapeProfileDef::ptr l, TopoDS_Face& 
 	double radii[4] = {f2,f1,f1,f2};
 	return IfcGeom::profile_helper(8, coords, (doFillet || doEdgeFillet) ? 4 : 0, fillets, radii, trsf2d, face);
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcTShapeProfileDef::ptr l, TopoDS_Face& face) {
 	const bool doFlangeEdgeFillet = l->hasFlangeEdgeRadius();
 	const bool doWebEdgeFillet = l->hasWebEdgeRadius();
@@ -570,6 +590,7 @@ bool IfcGeom::convert(const IfcSchema::IfcTShapeProfileDef::ptr l, TopoDS_Face& 
 	double radii[6] = {f2,f1,f3,f3,f1,f2};
 	return IfcGeom::profile_helper(8, coords, (doFillet || doWebEdgeFillet || doFlangeEdgeFillet) ? 6 : 0, fillets, radii, trsf2d, face);
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcCircleProfileDef::ptr l, TopoDS_Face& face) {
 	const double r = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	if ( r == 0.0f ) {
@@ -587,6 +608,7 @@ bool IfcGeom::convert(const IfcSchema::IfcCircleProfileDef::ptr l, TopoDS_Face& 
 	w.Add(edge);
 	return IfcGeom::convert_wire_to_face(w,face);
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcCircleHollowProfileDef::ptr l, TopoDS_Face& face) {
 	const double r = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double t = l->WallThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
@@ -615,6 +637,7 @@ bool IfcGeom::convert(const IfcSchema::IfcCircleHollowProfileDef::ptr l, TopoDS_
 	face = TopoDS::Face(sfs.Shape());	
 	return true;		
 }
+
 bool IfcGeom::convert(const IfcSchema::IfcEllipseProfileDef::ptr l, TopoDS_Face& face) {
 	double rx = l->SemiAxis1() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	double ry = l->SemiAxis2() * IfcGeom::GetValue(GV_LENGTH_UNIT);
@@ -640,4 +663,53 @@ bool IfcGeom::convert(const IfcSchema::IfcEllipseProfileDef::ptr l, TopoDS_Face&
 	TopoDS_Edge edge = BRepBuilderAPI_MakeEdge(ellipse);
 	w.Add(edge);
 	return IfcGeom::convert_wire_to_face(w, face);
-} 
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcCenterLineProfileDef::ptr l, TopoDS_Face& face) {
+	const double d = l->Thickness() * IfcGeom::GetValue(GV_LENGTH_UNIT) / 2.;
+
+	TopoDS_Wire wire;
+	if (!IfcGeom::convert_wire(l->Curve(), wire)) return false;
+
+	// BRepOffsetAPI_MakeOffset insists on creating circular arc
+	// segments for joining the curves that constitute the center
+	// line. This is probably not in accordance with the IFC spec.
+	// Although it does not specify a method to join segments
+	// explicitly, it does dictate 'a constant thickness along the
+	// curve'. Therefore for simple singular wires a quick
+	// alternative is provided that uses a straight join.
+
+	TopExp_Explorer exp(wire, TopAbs_EDGE);
+	TopoDS_Edge edge = TopoDS::Edge(exp.Current());
+	exp.Next();
+
+	if (!exp.More()) {
+		double u1, u2;
+		Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, u1, u2);
+
+		Handle(Geom_TrimmedCurve) trim = new Geom_TrimmedCurve(curve, u1, u2);
+
+		Handle(Geom_OffsetCurve) c1 = new Geom_OffsetCurve(trim,  d, gp::DZ());
+		Handle(Geom_OffsetCurve) c2 = new Geom_OffsetCurve(trim, -d, gp::DZ());
+
+		gp_Pnt c1a, c1b, c2a, c2b;
+		c1->D0(c1->FirstParameter(), c1a);
+		c1->D0(c1->LastParameter(), c1b);
+		c2->D0(c2->FirstParameter(), c2a);
+		c2->D0(c2->LastParameter(), c2b);
+
+		BRepBuilderAPI_MakeWire mw;
+		mw.Add(BRepBuilderAPI_MakeEdge(c1));
+		mw.Add(BRepBuilderAPI_MakeEdge(c1a, c2a));
+		mw.Add(BRepBuilderAPI_MakeEdge(c2));
+		mw.Add(BRepBuilderAPI_MakeEdge(c2b, c1b));
+		
+		face = BRepBuilderAPI_MakeFace(mw.Wire());
+	} else {
+		BRepOffsetAPI_MakeOffset offset(BRepBuilderAPI_MakeFace(gp_Pln(gp::Origin(), gp::DZ())));
+		offset.AddWire(wire);
+		offset.Perform(d);
+		face = BRepBuilderAPI_MakeFace(TopoDS::Wire(offset));
+	}
+	return true;
+}
