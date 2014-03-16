@@ -323,7 +323,7 @@ bool IfcGeom::convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire
 	return true;
 }
 
-bool IfcGeom::profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face) {
+bool IfcGeom::profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Shape& face_shape) {
 	TopoDS_Vertex* vertices = new TopoDS_Vertex[numVerts];
 	
 	for ( int i = 0; i < numVerts; i ++ ) {
@@ -336,6 +336,7 @@ bool IfcGeom::profile_helper(int numVerts, double* verts, int numFillets, int* f
 	for ( int i = 0; i < numVerts; i ++ )
 		w.Add(BRepBuilderAPI_MakeEdge(vertices[i],vertices[(i+1)%numVerts]));
 
+	TopoDS_Face face;
 	IfcGeom::convert_wire_to_face(w.Wire(),face);
 
 	if ( numFillets ) {
@@ -348,6 +349,8 @@ bool IfcGeom::profile_helper(int numVerts, double* verts, int numFillets, int* f
 		fillet.Build();
 		face = TopoDS::Face(fillet.Shape());
 	}
+
+	face_shape = face;
 
 	delete[] vertices;
 	return true;
