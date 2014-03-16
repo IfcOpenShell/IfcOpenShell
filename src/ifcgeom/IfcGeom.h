@@ -86,7 +86,7 @@ namespace IfcGeom {
 	bool convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
 	bool convert_wire(const IfcUtil::IfcBaseClass* L, TopoDS_Wire& result);
 	bool convert_curve(const IfcUtil::IfcBaseClass* L, Handle(Geom_Curve)& result);
-	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Face& result);
+	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
 	bool convert_openings(const IfcSchema::IfcProduct::ptr entity, const IfcSchema::IfcRelVoidsElement::list& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
 	bool convert_openings_fast(const IfcSchema::IfcProduct::ptr entity, const IfcSchema::IfcRelVoidsElement::list& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
 	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
@@ -97,7 +97,7 @@ namespace IfcGeom {
 	gp_Pln plane_from_face(const TopoDS_Face& face);
 	gp_Pnt point_above_plane(const gp_Pln& pln, bool agree=true);
 	const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid);
-	bool profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Face& face); 
+	bool profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Shape& face); 
 	double shape_volume(const TopoDS_Shape& s);
 	double face_area(const TopoDS_Face& f);
 	void apply_tolerance(TopoDS_Shape& s, double t);

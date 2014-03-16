@@ -75,6 +75,8 @@ FACE(IfcCircleHollowProfileDef);
 FACE(IfcCircleProfileDef);
 FACE(IfcEllipseProfileDef);
 FACE(IfcCenterLineProfileDef);
+FACE(IfcCompositeProfileDef);
+FACE(IfcDerivedProfileDef);
 FACE(IfcFace);
 
 WIRE(IfcPolyline);

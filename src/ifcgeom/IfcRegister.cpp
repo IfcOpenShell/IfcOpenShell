@@ -65,7 +65,7 @@ bool IfcGeom::convert_wire(const IfcBaseClass* l, TopoDS_Wire& r) {
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
 	return false;
 }
-bool IfcGeom::convert_face(const IfcBaseClass* l, TopoDS_Face& r) {
+bool IfcGeom::convert_face(const IfcBaseClass* l, TopoDS_Shape& r) {
 #include "IfcRegisterConvertFace.h"
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
 	return false;
