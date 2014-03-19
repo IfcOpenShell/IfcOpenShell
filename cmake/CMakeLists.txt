@@ -167,7 +167,7 @@ ADD_EXECUTABLE(IfcConvert
     ../src/ifcconvert/WavefrontObjSerializer.cpp   
 )
 
-TARGET_LINK_LIBRARIES (IfcConvert IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
+TARGET_LINK_LIBRARIES (IfcConvert IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
 
 # Build python wrapper using separate CMakeLists.txt
 ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
