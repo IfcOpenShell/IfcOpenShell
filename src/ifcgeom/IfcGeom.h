@@ -104,6 +104,7 @@ namespace IfcGeom {
 	void SetValue(GeomValue var, double value);
 	double GetValue(GeomValue var);
 	std::string create_brep_data(Ifc2x3::IfcProduct* s);
+    bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
 	IfcSchema::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntities es);
 
 	

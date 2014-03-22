@@ -23,6 +23,7 @@
  *                                                                              *
  ********************************************************************************/
 
+#include <set>
 #include <cassert>
 
 #include <gp_Pnt.hxx>
@@ -93,6 +94,11 @@
 #include <Poly_Array1OfTriangle.hxx>
 
 #include <BRepTools.hxx>
+
+#include <TopExp.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
+#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+#include <TopTools_ListIteratorOfListOfShape.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
 
@@ -574,6 +580,102 @@ IfcSchema::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, do
 	es->push(shapedef);
 
 	return shapedef;
+}
+
+// Returns the vertex part of an TopoDS_Edge edge that is not TopoDS_Vertex vertex
+TopoDS_Vertex find_other(const TopoDS_Edge& edge, const TopoDS_Vertex& vertex) {
+	TopExp_Explorer exp(edge, TopAbs_VERTEX);
+	while (exp.More()) {
+		if (!exp.Current().IsSame(vertex)) {
+			return TopoDS::Vertex(exp.Current());
+		}
+		exp.Next();
+	}
+}
+
+TopoDS_Edge find_next(const TopTools_IndexedMapOfShape& edge_set, const TopTools_IndexedDataMapOfShapeListOfShape& vertex_to_edges, const TopoDS_Vertex& current, const TopoDS_Edge& previous_edge) {
+	const TopTools_ListOfShape& edges = vertex_to_edges.FindFromKey(current);
+	TopTools_ListIteratorOfListOfShape eit;
+	for (eit.Initialize(edges); eit.More(); eit.Next()) {
+		const TopoDS_Edge& edge = TopoDS::Edge(eit.Value());
+		if (edge.IsSame(previous_edge)) continue;
+		if (edge_set.Contains(edge)) {
+			return edge;
+		}
+	}
+}
+
+bool IfcGeom::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape) {
+	BRepOffsetAPI_Sewing sew;
+	sew.Add(shape);
+
+	TopTools_IndexedDataMapOfShapeListOfShape edge_to_faces;
+	TopTools_IndexedDataMapOfShapeListOfShape vertex_to_edges;
+	std::set<int> visited;
+	TopTools_IndexedMapOfShape edge_set;
+
+	TopExp::MapShapesAndAncestors (shape, TopAbs_EDGE, TopAbs_FACE, edge_to_faces);
+
+	const int num_edges = edge_to_faces.Extent();
+	for (int i = 1; i <= num_edges; ++i) {
+		const TopTools_ListOfShape& faces = edge_to_faces.FindFromIndex(i);
+		const int count = faces.Extent();
+		// Find only the non-manifold edges: Edges that are only part of a
+		// single face and therefore part of the wire(s) we want to fill.
+		if (count == 1) {
+			const TopoDS_Shape& edge = edge_to_faces.FindKey(i);
+			TopExp::MapShapesAndAncestors (edge, TopAbs_VERTEX, TopAbs_EDGE, vertex_to_edges);
+			edge_set.Add(edge);
+		}
+	}
+
+	const int num_verts = vertex_to_edges.Extent();
+	TopoDS_Vertex first, current;
+	TopoDS_Edge previous_edge;
+
+	// Now loop over all the vertices that are part of the wire(s) to be filled
+	for (int i = 1; i <= num_verts; ++i) {
+		first = current = TopoDS::Vertex(vertex_to_edges.FindKey(i));
+		const bool isSame = first.IsSame(current);
+		// We keep track of the vertices we already used
+		if (visited.find(vertex_to_edges.FindIndex(current)) != visited.end()) {
+			continue;
+		}
+		// Given these vertices, try to find closed loops and create new
+		// wires out of them.
+		BRepBuilderAPI_MakeWire w;
+		while (true) {
+			visited.insert(vertex_to_edges.FindIndex(current));
+			// Find the edge that the current vertex is part of and points
+			// away from the previous vertex (null for the first vertex).
+			TopoDS_Edge edge = find_next(edge_set, vertex_to_edges, current, previous_edge);
+			if (edge.IsNull()) {
+				return false;
+			}
+			TopoDS_Vertex other = find_other(edge, current);
+			w.Add(edge);
+			// See if the starting point of this loop has been reached. Note that
+			// additional wires after this one potentially will be created.
+			if (other.IsSame(first)) {
+				break;
+			}
+			previous_edge = edge;
+			current = other;
+		}
+		sew.Add(BRepBuilderAPI_MakeFace(w));
+		previous_edge.Nullify();
+	}
+		
+	sew.Perform();
+	shape = sew.SewedShape();
+
+	try {
+		ShapeFix_Solid solid;
+		solid.LimitTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
+		shape = solid.SolidFromShell(TopoDS::Shell(shape));
+	} catch(...) {}
+
+	return true;
 }
 
 std::string IfcGeom::create_brep_data(Ifc2x3::IfcProduct* ifc_product) {
