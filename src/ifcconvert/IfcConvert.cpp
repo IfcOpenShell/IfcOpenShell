@@ -122,8 +122,13 @@ int main(int argc, char** argv) {
 	positional_options.add("output-file", 1);
 
 	boost::program_options::variables_map vmap;
-	boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
-			  options(cmdline_options).positional(positional_options).run(), vmap);
+	try {
+		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
+				  options(cmdline_options).positional(positional_options).run(), vmap);
+	} catch (const boost::program_options::unknown_option& e) {
+		std::cerr << "[Error] Unknown option '" << e.get_option_name() << "'" << std::endl << std::endl;
+		// Usage information will be emitted below
+	}
 	boost::program_options::notify(vmap);
 
 	if (vmap.count("version")) {
@@ -184,6 +189,7 @@ int main(int argc, char** argv) {
 	}
 
 	Logger::SetOutput(&std::cout, &log_stream);
+	Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
 	GeometrySerializer* serializer;
 	if (output_extension == ".obj") {
@@ -210,8 +216,6 @@ int main(int argc, char** argv) {
 		printUsage(generic_options, geom_options);
 		return 1;
 	}
-
-	Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
 	if (!serializer->ready()) {
 		Logger::Message(Logger::LOG_ERROR, "Unable to open output file for writing");
