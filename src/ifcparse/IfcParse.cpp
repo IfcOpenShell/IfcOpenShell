@@ -345,7 +345,11 @@ bool TokenFunc::asBool(const Token& t) {
 }
 double TokenFunc::asFloat(const Token& t) {
 	const std::string str = asString(t);
-	return (double) atof(str.c_str());
+	const char* start = str.c_str();
+	char* end;
+	double result = strtod(start,&end);
+	if ( start == end ) throw IfcException("Token is not a real");
+	return result;
 }
 std::string TokenFunc::asString(const Token& t) {
 	if ( isOperator(t,'$') ) return "";
