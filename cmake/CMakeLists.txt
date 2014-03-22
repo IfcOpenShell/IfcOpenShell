@@ -176,6 +176,7 @@ ADD_SUBDIRECTORY(../src/examples examples)
 SET(include_files_geom
     ../src/ifcgeom/IfcGeom.h
     ../src/ifcgeom/IfcGeomObjects.h
+    ../src/ifcgeom/IfcGeomRenderStyles.h
     ../src/ifcgeom/IfcRegister.h
     ../src/ifcgeom/IfcRegisterConvertCurve.h
     ../src/ifcgeom/IfcRegisterConvertFace.h
