@@ -175,8 +175,11 @@ IfcGeomObjects::IfcRepresentationTriangulation::IfcRepresentationTriangulation(c
 						const gp_Pnt2d& uv = uvs(i);
 						gp_Pnt p;
 						gp_Vec normal_direction;
-						prop.Normal(uv.X(),uv.Y(),p,normal_direction);						
-						gp_Dir normal = gp_Dir(normal_direction.XYZ() * rotation_matrix);
+						prop.Normal(uv.X(),uv.Y(),p,normal_direction);
+						gp_Vec normal(0., 0., 0.);
+						if (normal_direction.Magnitude() > ALMOST_ZERO) {
+							normal = gp_Dir(normal_direction.XYZ() * rotation_matrix);
+						}
 						_normals.push_back((float)normal.X());
 						_normals.push_back((float)normal.Y());
 						_normals.push_back((float)normal.Z());

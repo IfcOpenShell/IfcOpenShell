@@ -103,6 +103,7 @@ namespace IfcGeom {
 	void apply_tolerance(TopoDS_Shape& s, double t);
 	void SetValue(GeomValue var, double value);
 	double GetValue(GeomValue var);
+	bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
 	IfcSchema::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntities es);
 
 	

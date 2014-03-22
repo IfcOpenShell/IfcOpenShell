@@ -45,12 +45,17 @@
 #include <TColgp_Array1OfPnt2d.hxx>
 #include <TColStd_Array1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
+
 #include <Geom_Line.hxx>
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <Geom_TrimmedCurve.hxx>
+#include <Geom_CylindricalSurface.hxx>
 
 #include <BRepOffsetAPI_Sewing.hxx>
+#include <BRepOffsetAPI_MakePipe.hxx>
+#include <BRepOffsetAPI_MakePipeShell.hxx>
+
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
@@ -64,10 +69,20 @@
 
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
+#include <BRepPrimAPI_MakeBox.hxx>
+#include <BRepPrimAPI_MakeCone.hxx>
+#include <BRepPrimAPI_MakeCylinder.hxx>
+#include <BRepPrimAPI_MakeSphere.hxx>
+#include <BRepPrimAPI_MakeWedge.hxx>
+
+#include <BRepBuilderAPI_Transform.hxx>
 #include <BRepBuilderAPI_MakeShell.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
+
 #include <BRepAlgoAPI_Cut.hxx>
+#include <BRepAlgoAPI_Fuse.hxx>
+#include <BRepAlgoAPI_Common.hxx>
 
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
@@ -76,7 +91,6 @@
 #include <TopLoc_Location.hxx>
 
 #include <BRepCheck_Analyzer.hxx>
-#include <BRepAlgoAPI_Common.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
 
@@ -223,7 +237,7 @@ bool IfcGeom::convert(const IfcSchema::IfcShellBasedSurfaceModel::ptr l, IfcRepr
 	return true;
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcBooleanClippingResult::ptr l, TopoDS_Shape& shape) {
+bool IfcGeom::convert(const IfcSchema::IfcBooleanResult::ptr l, TopoDS_Shape& shape) {
 	TopoDS_Shape s1, s2;
 	TopoDS_Wire boundary_wire;
 	IfcSchema::IfcBooleanOperand operand1 = l->FirstOperand();
@@ -249,32 +263,76 @@ bool IfcGeom::convert(const IfcSchema::IfcBooleanClippingResult::ptr l, TopoDS_S
 			Logger::Message(Logger::LOG_WARNING,"Empty solid for:",operand2->entity);
 	}
 
-	bool valid_cut = false;
-	BRepAlgoAPI_Cut brep_cut(s1,s2);
-	if ( brep_cut.IsDone() ) {
-		TopoDS_Shape result = brep_cut;
+	const IfcSchema::IfcBooleanOperator::IfcBooleanOperator op = l->Operator();
 
-		ShapeFix_Shape fix(result);
-		fix.Perform();
-		result = fix.Shape();
+	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
+
+		bool valid_cut = false;
+		BRepAlgoAPI_Cut brep_cut(s1,s2);
+		if ( brep_cut.IsDone() ) {
+			TopoDS_Shape result = brep_cut;
+
+			ShapeFix_Shape fix(result);
+			fix.Perform();
+			result = fix.Shape();
 		
-		bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
-		if ( is_valid ) {
-			shape = result;
-			valid_cut = true;
-		} 
-	}
+			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+			if ( is_valid ) {
+				shape = result;
+				valid_cut = true;
+			} 
+		}
 
-	if ( valid_cut ) {
-		const double volume_after_subtraction = shape_volume(shape);
-		if ( ALMOST_THE_SAME(first_operand_volume,volume_after_subtraction) )
-			Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",l->entity);
+		if ( valid_cut ) {
+			const double volume_after_subtraction = shape_volume(shape);
+			if ( ALMOST_THE_SAME(first_operand_volume,volume_after_subtraction) )
+				Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",l->entity);
+		} else {
+			Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",l->entity);
+			shape = s1;
+		}
+
+		return true;
+
+	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
+
+		BRepAlgoAPI_Fuse brep_fuse(s1,s2);
+		if ( brep_fuse.IsDone() ) {
+			TopoDS_Shape result = brep_fuse;
+
+			ShapeFix_Shape fix(result);
+			fix.Perform();
+			result = fix.Shape();
+		
+			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+			if ( is_valid ) {
+				shape = result;
+			} 
+		}
+
+		return true;
+
+	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
+
+		BRepAlgoAPI_Common brep_common(s1,s2);
+		if ( brep_common.IsDone() ) {
+			TopoDS_Shape result = brep_common;
+
+			ShapeFix_Shape fix(result);
+			fix.Perform();
+			result = fix.Shape();
+		
+			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+			if ( is_valid ) {
+				shape = result;
+			} 
+		}
+
+		return true;
+
 	} else {
-		Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",l->entity);
-		shape = s1;
+		return false;
 	}
-
-	return true;
 }
 
 bool IfcGeom::convert(const IfcSchema::IfcConnectedFaceSet::ptr l, TopoDS_Shape& shape) {
@@ -393,3 +451,181 @@ bool IfcGeom::convert(const IfcSchema::IfcGeometricSet::ptr l, IfcRepresentation
 	}
 	return true;
 }
+
+bool IfcGeom::convert(const IfcSchema::IfcBlock::ptr l, TopoDS_Shape& shape) {
+	const double dx = l->XLength() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	const double dy = l->YLength() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	const double dz = l->ZLength() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+
+	BRepPrimAPI_MakeBox builder(dx, dy, dz);
+	gp_Trsf trsf;
+	IfcGeom::convert(l->Position(),trsf);
+	shape = builder.Solid().Moved(trsf);
+	return true;
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcRectangularPyramid::ptr l, TopoDS_Shape& shape) {
+	const double dx = l->XLength() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	const double dy = l->YLength() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	const double dz = l->Height() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	
+	BRepPrimAPI_MakeWedge builder(dx, dz, dy, dx / 2., dy / 2., dx / 2., dy / 2.);
+	
+	gp_Trsf trsf1, trsf2;
+	trsf2.SetValues(1, 0, 0, 0,
+					0, 0, 1, 0,
+					0, 1, 0, 0, Precision::Confusion(), Precision::Confusion());
+	
+	IfcGeom::convert(l->Position(), trsf1);
+	shape = BRepBuilderAPI_Transform(builder.Solid(), trsf1 * trsf2);
+	return true;
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcRightCircularCylinder::ptr l, TopoDS_Shape& shape) {
+	const double r = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	const double h = l->Height() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+
+	BRepPrimAPI_MakeCylinder builder(r, h);
+	gp_Trsf trsf;
+	IfcGeom::convert(l->Position(),trsf);
+	shape = builder.Solid().Moved(trsf);
+	return true;
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcRightCircularCone::ptr l, TopoDS_Shape& shape) {
+	const double r = l->BottomRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	const double h = l->Height() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+
+	BRepPrimAPI_MakeCone builder(r, 0., h);
+	gp_Trsf trsf;
+	IfcGeom::convert(l->Position(),trsf);
+	shape = builder.Solid().Moved(trsf);
+	return true;
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcSphere::ptr l, TopoDS_Shape& shape) {
+	const double r = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	
+	BRepPrimAPI_MakeSphere builder(r);
+	gp_Trsf trsf;
+	IfcGeom::convert(l->Position(),trsf);
+	shape = builder.Solid().Moved(trsf);
+	return true;
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcCsgSolid::ptr l, TopoDS_Shape& shape) {
+	return IfcGeom::convert_shape(l->TreeRootExpression(), shape);
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcCurveBoundedPlane::ptr l, TopoDS_Shape& face) {
+	gp_Pln pln;
+	IfcGeom::convert(l->BasisSurface(), pln);
+
+	gp_Trsf trsf;
+	trsf.SetTransformation(pln.Position());
+	
+	TopoDS_Wire outer;
+	IfcGeom::convert_wire(l->OuterBoundary(), outer);
+	
+	BRepBuilderAPI_MakeFace mf (outer);
+	mf.Add(outer);
+
+	IfcSchema::IfcCurve::list inner = l->InnerBoundaries();
+
+	for (IfcSchema::IfcCurve::it it = inner->begin(); it != inner->end(); ++it) {
+		TopoDS_Wire inner;
+		IfcGeom::convert_wire(*it, inner);
+		
+		mf.Add(inner);
+	}
+
+	ShapeFix_Shape sfs(mf.Face());
+	sfs.Perform();
+	face = TopoDS::Face(sfs.Shape()).Moved(trsf);
+	
+	return true;
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcRectangularTrimmedSurface::ptr l, TopoDS_Shape& face) {
+	if (!l->BasisSurface()->is(IfcSchema::Type::IfcPlane)) {
+		// Not implemented
+		return false;
+	}
+	gp_Pln pln;
+	IfcGeom::convert((IfcSchema::IfcPlane*) l->BasisSurface(), pln);
+
+	BRepBuilderAPI_MakeFace mf(pln, l->U1(), l->U2(), l->V1(), l->V2());
+
+	face = mf.Face();
+
+	return true;
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid::ptr l, TopoDS_Shape& shape) {
+	gp_Trsf trsf, axis, position;
+	TopoDS_Shape face;
+	TopoDS_Wire wire, section;
+	
+	if (!IfcGeom::convert_face(l->SweptArea(), face)) {
+		return false;
+	}
+
+	if (!IfcGeom::convert_wire(l->Directrix(), wire)) {
+		return false;
+	}
+
+	axis.SetTransformation(gp_Ax3(gp::Origin(), gp::DX(), -gp::DZ()));
+	IfcGeom::convert(l->Position(), position);
+
+	if (!l->ReferenceSurface()->is(IfcSchema::Type::IfcPlane)) {
+		// Not implemented
+		return false;
+	}
+
+	gp_Pln pln;
+	IfcGeom::convert((IfcSchema::IfcPlane*) l->ReferenceSurface(), pln);
+
+	trsf.SetTransformation(pln.Position());
+	trsf.Invert();
+	trsf.Multiply(axis);
+	
+	// NB: Note that StartParam and EndParam param are ignored and the assumption is
+	// made that the parametric range over which to be swept matches the IfcCurve in
+	// its entirety.
+	BRepOffsetAPI_MakePipeShell builder(wire);
+
+	face = BRepBuilderAPI_Transform(face, trsf);
+
+	TopExp_Explorer exp(face, TopAbs_WIRE);
+	section = TopoDS::Wire(exp.Current());
+
+	builder.Add(section);
+	builder.SetTransitionMode(BRepBuilderAPI_RightCorner);
+	builder.Build();
+
+	shape = builder.Shape();
+
+	bool succeeded = false;
+	try {
+		succeeded = IfcGeom::fill_nonmanifold_wires_with_planar_faces(shape);
+	} catch(...) {}
+	if (!succeeded) {
+		Logger::Message(Logger::LOG_WARNING, "Failed to cap solid for:", l->entity);
+	}
+
+	shape.Move(position);
+
+	return true;
+}
+
+#ifdef USE_IFC4
+
+bool IfcGeom::convert(const IfcSchema::IfcCylindricalSurface::ptr l, TopoDS_Shape& face) {
+	gp_Trsf trsf;
+	IfcGeom::convert(l->Position(),trsf);
+	
+	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius()), GetValue(GV_PRECISION)).Face().Moved(trsf);
+	return true;
+}
+
+#endif

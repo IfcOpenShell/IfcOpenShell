@@ -53,11 +53,23 @@ SHAPES(IfcGeometricSet);
 SHAPE(IfcExtrudedAreaSolid);
 SHAPE(IfcRevolvedAreaSolid);
 SHAPE(IfcConnectedFaceSet);
-SHAPE(IfcBooleanClippingResult);
+SHAPE(IfcBooleanResult);
 SHAPE(IfcPolygonalBoundedHalfSpace);
 SHAPE(IfcHalfSpaceSolid);
 SHAPE(IfcSurfaceOfLinearExtrusion);
 SHAPE(IfcSurfaceOfRevolution);
+SHAPE(IfcBlock);
+SHAPE(IfcRectangularPyramid);
+SHAPE(IfcRightCircularCylinder);
+SHAPE(IfcRightCircularCone);
+SHAPE(IfcSphere);
+SHAPE(IfcCsgSolid);
+SHAPE(IfcCurveBoundedPlane);
+SHAPE(IfcRectangularTrimmedSurface);
+SHAPE(IfcSurfaceCurveSweptAreaSolid);
+#ifdef USE_IFC4
+SHAPE(IfcCylindricalSurface);
+#endif
 
 FACE(IfcArbitraryProfileDefWithVoids);
 FACE(IfcArbitraryClosedProfileDef);
