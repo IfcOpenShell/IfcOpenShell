@@ -243,8 +243,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcIShapeProfileDef::ptr l, TopoDS_Face& fac
 	return IfcGeom::profile_helper(12,coords,doFillet ? 4 : 0,fillets,radii,trsf2d,face);
 }
 bool IfcGeom::convert(const Ifc2x3::IfcCShapeProfileDef::ptr l, TopoDS_Face& face) {
-	const double x = l->Depth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double y = l->Width() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	const double y = l->Depth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	const double x = l->Width() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double d1 = l->WallThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double d2 = l->Girth() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	bool doFillet = l->hasInternalFilletRadius();
@@ -269,7 +269,7 @@ bool IfcGeom::convert(const Ifc2x3::IfcCShapeProfileDef::ptr l, TopoDS_Face& fac
 }
 bool IfcGeom::convert(const Ifc2x3::IfcLShapeProfileDef::ptr l, TopoDS_Face& face) {
 	const double y = l->Depth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double x = l->Width() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	const double x = (l->hasWidth() ? l->Width() : l->Depth()) / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double d = l->Thickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	bool doEdgeFillet = l->hasEdgeRadius();
 	bool doFillet = l->hasFilletRadius();
