@@ -532,7 +532,7 @@ IfcSchema::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, do
 			const TColgp_Array1OfPnt& nodes = tri->Nodes();
 			std::vector<IfcSchema::IfcCartesianPoint*> vertices;
 			for (int i = 1; i <= nodes.Length(); ++i) {
-				const gp_Pnt& pnt = nodes(i);
+				gp_Pnt pnt = nodes(i).Transformed(loc);
 				std::vector<double> xyz; xyz.push_back(pnt.X()); xyz.push_back(pnt.Y()); xyz.push_back(pnt.Z());
 				IfcSchema::IfcCartesianPoint* cpnt = new IfcSchema::IfcCartesianPoint(xyz);
 				vertices.push_back(cpnt);
