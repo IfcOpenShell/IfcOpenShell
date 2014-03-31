@@ -230,6 +230,8 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	time_t start,end;
+	time(&start);
 	// Parse the file supplied in argv[1]. Returns true on succes.
 	if ( ! IfcGeomObjects::Init(input_filename, &std::cout, &log_stream) ) {
 		Logger::Message(Logger::LOG_ERROR, "Unable to parse .ifc file or no geometrical entities found");
@@ -247,8 +249,6 @@ int main(int argc, char** argv) {
 
 	std::set<std::string> materials;
 
-	time_t start,end;
-	time(&start);
 	int old_progress = -1;
 	Logger::Status("Creating geometry...");
 
