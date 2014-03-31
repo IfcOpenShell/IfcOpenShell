@@ -562,57 +562,73 @@ bool IfcGeom::convert(const IfcSchema::IfcRectangularTrimmedSurface::ptr l, Topo
 }
 
 bool IfcGeom::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid::ptr l, TopoDS_Shape& shape) {
-	gp_Trsf trsf, axis, position;
+	gp_Trsf directrix, position;
 	TopoDS_Shape face;
 	TopoDS_Wire wire, section;
-	
-	if (!IfcGeom::convert_face(l->SweptArea(), face)) {
-		return false;
-	}
-
-	if (!IfcGeom::convert_wire(l->Directrix(), wire)) {
-		return false;
-	}
-
-	axis.SetTransformation(gp_Ax3(gp::Origin(), gp::DX(), -gp::DZ()));
-	IfcGeom::convert(l->Position(), position);
 
 	if (!l->ReferenceSurface()->is(IfcSchema::Type::IfcPlane)) {
-		// Not implemented
+		Logger::Message(Logger::LOG_WARNING, "Reference surface not supported", l->ReferenceSurface()->entity);
+		return false;
+	}
+	
+	if (!IfcGeom::convert(l->Position(), position)   || 
+		!IfcGeom::convert_face(l->SweptArea(), face) || 
+		!IfcGeom::convert_wire(l->Directrix(), wire)    ) {
 		return false;
 	}
 
 	gp_Pln pln;
+	gp_Pnt directrix_origin;
+	gp_Vec directrix_tangent;
+	bool directrix_on_plane = true;
 	IfcGeom::convert((IfcSchema::IfcPlane*) l->ReferenceSurface(), pln);
 
-	trsf.SetTransformation(pln.Position());
-	trsf.Invert();
-	trsf.Multiply(axis);
-	
+	// As per Informal propositions 2: The Directrix shall lie on the ReferenceSurface.
+	// This is not always the case with the test files in the repository. I am not sure
+	// how to deal with this and whether my interpretation of the propositions is
+	// correct. However, if it has been asserted that the vertices of the directrix do
+	// not conform to the ReferenceSurface, the ReferenceSurface is ignored.
+	{ 
+		for (TopExp_Explorer exp(wire, TopAbs_VERTEX); exp.More(); exp.Next()) {
+			if (pln.Distance(BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()))) > ALMOST_ZERO) {
+				directrix_on_plane = false;
+				Logger::Message(Logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", l->entity);
+				break;
+			}
+		}
+	}
+
+	{ 
+		TopExp_Explorer exp(wire, TopAbs_EDGE);
+		TopoDS_Edge edge = TopoDS::Edge(exp.Current());
+		double u0, u1;
+		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
+		crv->D1(u0, directrix_origin, directrix_tangent);
+	}
+
+	if (pln.Axis().Direction().IsNormal(directrix_tangent, Precision::Approximation()) && directrix_on_plane) {
+		directrix.SetTransformation(gp_Ax3(directrix_origin, directrix_tangent, pln.Axis().Direction()), gp::XOY());
+	} else {
+		directrix.SetTransformation(gp_Ax3(directrix_origin, directrix_tangent), gp::XOY());
+	}
+	face = BRepBuilderAPI_Transform(face, directrix);
+
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
 	BRepOffsetAPI_MakePipeShell builder(wire);
 
-	face = BRepBuilderAPI_Transform(face, trsf);
-
-	TopExp_Explorer exp(face, TopAbs_WIRE);
-	section = TopoDS::Wire(exp.Current());
+	{ TopExp_Explorer exp(face, TopAbs_WIRE);
+	section = TopoDS::Wire(exp.Current()); }
 
 	builder.Add(section);
 	builder.SetTransitionMode(BRepBuilderAPI_RightCorner);
-	builder.Build();
-
-	shape = builder.Shape();
-
-	bool succeeded = false;
-	try {
-		succeeded = IfcGeom::fill_nonmanifold_wires_with_planar_faces(shape);
-	} catch(...) {}
-	if (!succeeded) {
-		Logger::Message(Logger::LOG_WARNING, "Failed to cap solid for:", l->entity);
+	if (directrix_on_plane) {
+		builder.SetMode(pln.Axis().Direction());
 	}
-
+	builder.Build();
+	builder.MakeSolid();
+	shape = builder.Shape();
 	shape.Move(position);
 
 	return true;

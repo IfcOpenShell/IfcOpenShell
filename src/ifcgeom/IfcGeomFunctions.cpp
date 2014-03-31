@@ -589,6 +589,7 @@ TopoDS_Vertex find_other(const TopoDS_Edge& edge, const TopoDS_Vertex& vertex) {
 		}
 		exp.Next();
 	}
+	return TopoDS_Vertex();
 }
 
 TopoDS_Edge find_next(const TopTools_IndexedMapOfShape& edge_set, const TopTools_IndexedDataMapOfShapeListOfShape& vertex_to_edges, const TopoDS_Vertex& current, const TopoDS_Edge& previous_edge) {
@@ -601,6 +602,7 @@ TopoDS_Edge find_next(const TopTools_IndexedMapOfShape& edge_set, const TopTools
 			return edge;
 		}
 	}
+	return TopoDS_Edge();
 }
 
 bool IfcGeom::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape) {
@@ -651,7 +653,16 @@ bool IfcGeom::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape) {
 				return false;
 			}
 			TopoDS_Vertex other = find_other(edge, current);
-			w.Add(edge);
+			if (other.IsNull()) {
+				// Dealing with a conical edge probably, for some reason
+				// this works better than adding the edge directly.
+				double u1, u2;
+				Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u1, u2);
+				w.Add(BRepBuilderAPI_MakeEdge(crv, u1, u2));
+				break;
+			} else {
+				w.Add(edge);
+			}
 			// See if the starting point of this loop has been reached. Note that
 			// additional wires after this one potentially will be created.
 			if (other.IsSame(first)) {
