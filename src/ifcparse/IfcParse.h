@@ -102,6 +102,8 @@ namespace IfcParse {
 	class Tokens {
 	private:
 		IfcCharacterDecoder* decoder;
+		unsigned int skipWhitespace();
+		unsigned int skipComment();
 	public:
 		IfcSpfStream* stream;
 		IfcFile* file;
