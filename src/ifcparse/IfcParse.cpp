@@ -221,6 +221,40 @@ Tokens::~Tokens() {
 	delete decoder;
 }
 
+unsigned int Tokens::skipWhitespace() {
+	unsigned int n = 0;
+	while ( !stream->eof ) {
+		char c = stream->Peek();
+		if ( (c == ' ' || c == '\r' || c == '\n' || c == '\t' ) ) {
+			stream->Inc();
+			++n;
+		}
+		else break;
+	}
+	return n;
+}
+
+unsigned int Tokens::skipComment() {
+	char c = stream->Peek();
+	if (c != '/') return 0;
+	stream->Inc();
+	c = stream->Peek();
+	if (c != '*') {
+		stream->Seek(stream->Tell() - 1);
+		return 0;
+	}
+	unsigned int n = 2;
+	char p = 0;
+	while ( !stream->eof ) {
+		c = stream->Peek();
+		stream->Inc();
+		++ n;
+		if (c == '/' && p == '*') break;
+		p = c;
+	}
+	return n;
+}
+
 //
 // Returns the offset of the current Token and moves cursor to next
 //
@@ -228,21 +262,13 @@ Token Tokens::Next() {
 
 	if ( stream->eof ) return TokenPtr();
 
-	char c;
-
-	// Trim whitespace
-	while ( !stream->eof ) {
-		c = stream->Peek();
-		if ( (c == ' ' || c == '\r' || c == '\n' || c == '\t' ) ) stream->Inc();
-		else break;
-	}
-
+	while (skipWhitespace() || skipComment()) {}
+	
 	if ( stream->eof ) return TokenPtr();
 	unsigned int pos = stream->Tell();
 
-	bool inString = false;
-	bool inComment = false;
-
+	char c = stream->Peek();
+	
 	// If the cursor is at [()=,;$*] we know token consists of single char
 	if ( c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '$' || c == '*' ) {
 		stream->Inc();
@@ -256,18 +282,12 @@ Token Tokens::Next() {
 
 		// Read character and increment pointer if not starting a new token
 		char c = stream->Peek();
-		if ( len && (!inString || inComment) && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' ) ) break;
+		if ( len && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' ) ) break;
 		stream->Inc();
-
-		// Skip whitespace if not in comment or string
-		if ( !inComment && !inString && (c == ' ' || c == '\r' || c == '\n' || c == '\t' ) ) continue;
-
 		len ++;
 
-		// Keep track of whether cursor is inside a string or comment		
-		if ( inComment && p == '*' && c == '/' ) inComment = false;
-		else if ( !inString && !inComment && p == '/' && c == '*' ) inComment = true;
-		else if ( !inComment && c == '\'' ) decoder->dryRun();
+		// If a string is encountered defer processing to the IfcCharacterDecoder
+		if ( c == '\'' ) decoder->dryRun();
 
 		p = c;
 	}
@@ -283,20 +303,16 @@ std::string Tokens::TokenString(unsigned int offset) {
 	const bool was_eof = stream->eof;
 	unsigned int old_offset = stream->Tell();
 	stream->Seek(offset);
-	bool inString = false;
-	bool inComment = false;
 	std::string buffer;
 	buffer.reserve(128);
 	char p = 0;
 	while ( ! stream->eof ) {
 		char c = stream->Peek();
-		if ( buffer.size() && (!inString || inComment) && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' ) ) break;
+		if ( buffer.size() && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' ) ) break;
 		stream->Inc();
-		if ( !inComment && !inString && (c == ' ' || c == '\r' || c == '\n' || c == '\t' ) ) continue;
-		if ( !inComment ) buffer.push_back(c);
-		if ( inComment && p == '*' && c == '/' ) inComment = false;
-		else if ( !inString && !inComment && p == '/' && c == '*' ) inComment = true;
-		else if ( !inComment && c == '\'' ) return *decoder;
+		if ( c == ' ' || c == '\r' || c == '\n' || c == '\t' ) continue;
+		else if ( c == '\'' ) return *decoder;
+		else buffer.push_back(c);
 		p = c;
 	}
 	if ( was_eof ) stream->eof = true;
