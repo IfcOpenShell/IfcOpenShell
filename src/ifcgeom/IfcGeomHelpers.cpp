@@ -294,7 +294,10 @@ bool IfcGeom::convert(const IfcSchema::IfcAxis2Placement2D::ptr l, gp_Trsf2d& tr
 
 bool IfcGeom::convert(const IfcSchema::IfcObjectPlacement::ptr l, gp_Trsf& trsf) {
 	IN_CACHE(IfcObjectPlacement,l,gp_Trsf,trsf)
-	if ( ! l->is(IfcSchema::Type::IfcLocalPlacement) ) return false;
+	if ( ! l->is(IfcSchema::Type::IfcLocalPlacement) ) {
+		Logger::Message(Logger::LOG_ERROR, "Unsupported IfcObjectPlacement:", l->entity);
+		return false; 		
+	}
 	IfcSchema::IfcLocalPlacement::ptr current = reinterpret_pointer_cast<IfcSchema::IfcObjectPlacement,IfcSchema::IfcLocalPlacement>(l);
 	while (1) {
 		gp_Trsf trsf2;

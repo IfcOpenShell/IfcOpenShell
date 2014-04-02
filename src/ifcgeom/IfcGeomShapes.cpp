@@ -197,7 +197,7 @@ bool IfcGeom::convert(const IfcSchema::IfcFaceBasedSurfaceModel::ptr l, IfcRepre
 bool IfcGeom::convert(const IfcSchema::IfcHalfSpaceSolid::ptr l, TopoDS_Shape& shape) {
 	IfcSchema::IfcSurface::ptr surface = l->BaseSurface();
 	if ( ! surface->is(IfcSchema::Type::IfcPlane) ) {
-		// Not implemented
+		Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", surface->entity);
 		return false;
 	}
 	gp_Pln pln;
@@ -387,6 +387,7 @@ bool IfcGeom::convert(const IfcSchema::IfcMappedItem::ptr l, IfcRepresentationSh
 		IfcGeom::convert(reinterpret_pointer_cast<IfcSchema::IfcCartesianTransformationOperator,
 			IfcSchema::IfcCartesianTransformationOperator3DnonUniform>(transform),gtrsf);
 	} else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
+		Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
 		return false;
 	} else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3D) ) {
 		gp_Trsf trsf;
@@ -548,7 +549,7 @@ bool IfcGeom::convert(const IfcSchema::IfcCurveBoundedPlane::ptr l, TopoDS_Shape
 
 bool IfcGeom::convert(const IfcSchema::IfcRectangularTrimmedSurface::ptr l, TopoDS_Shape& face) {
 	if (!l->BasisSurface()->is(IfcSchema::Type::IfcPlane)) {
-		// Not implemented
+		Logger::Message(Logger::LOG_ERROR, "Unsupported BasisSurface:", l->BasisSurface()->entity);
 		return false;
 	}
 	gp_Pln pln;

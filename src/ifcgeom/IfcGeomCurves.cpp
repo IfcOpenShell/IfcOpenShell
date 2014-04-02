@@ -81,7 +81,10 @@
 
 bool IfcGeom::convert(const IfcSchema::IfcCircle::ptr l, Handle(Geom_Curve)& curve) {
 	const double r = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	if ( r <= 0.0f ) { return false; }
+	if ( r < ALMOST_ZERO ) { 
+		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l->entity);
+		return false;
+	}
 	gp_Trsf trsf;
 	IfcSchema::IfcAxis2Placement placement = l->Position();
 	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
@@ -98,7 +101,10 @@ bool IfcGeom::convert(const IfcSchema::IfcCircle::ptr l, Handle(Geom_Curve)& cur
 bool IfcGeom::convert(const IfcSchema::IfcEllipse::ptr l, Handle(Geom_Curve)& curve) {
 	double x = l->SemiAxis1() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	double y = l->SemiAxis2() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	if (x < ALMOST_ZERO || y < ALMOST_ZERO) { return false; }
+	if (x < ALMOST_ZERO || y < ALMOST_ZERO) { 
+		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l->entity);
+		return false;
+	}
 	// Open Cascade does not allow ellipses of which the minor radius
 	// is greater than the major radius. Hence, in this case, the
 	// ellipse is rotated. Note that special care needs to be taken
