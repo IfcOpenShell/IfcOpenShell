@@ -79,7 +79,10 @@
 
 bool IfcGeom::convert(const Ifc2x3::IfcCircle::ptr l, Handle(Geom_Curve)& curve) {
 	const double r = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	if ( r <= 0.0f ) { return false; }
+	if ( r < ALMOST_ZERO ) { 
+		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l->entity);
+		return false;
+	}
 	gp_Trsf trsf;
 	Ifc2x3::IfcAxis2Placement placement = l->Position();
 	if (placement->is(Ifc2x3::Type::IfcAxis2Placement3D)) {
@@ -96,7 +99,14 @@ bool IfcGeom::convert(const Ifc2x3::IfcCircle::ptr l, Handle(Geom_Curve)& curve)
 bool IfcGeom::convert(const Ifc2x3::IfcEllipse::ptr l, Handle(Geom_Curve)& curve) {
 	double x = l->SemiAxis1() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	double y = l->SemiAxis2() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	if ( x == 0.0f || y == 0.0f || y > x ) { return false; }
+	if (x < ALMOST_ZERO || y < ALMOST_ZERO) { 
+		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l->entity);
+		return false;
+	}
+    if (y > x) {
+        Logger::Message(Logger::LOG_ERROR, "Ellipse with SemiAxis2 larger than SemiAxis1 not supported for:", l->entity);
+        return false;
+    }
 	gp_Trsf trsf;
 	Ifc2x3::IfcAxis2Placement placement = l->Position();
 	if (placement->is(Ifc2x3::Type::IfcAxis2Placement3D)) {
