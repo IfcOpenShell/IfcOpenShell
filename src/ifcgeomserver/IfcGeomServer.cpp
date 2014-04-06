@@ -206,7 +206,7 @@ protected:
 		swrite(s, std::string((char*) indices.data(), indices.size() * sizeof(int32_t))); }
 		{ std::vector<float> diffuse_color_array;
 		for (std::vector<IfcGeomObjects::Material>::const_iterator it = geom->mesh().materials().begin(); it != geom->mesh().materials().end(); ++it) {
-			const auto& m = *it;
+			const IfcGeomObjects::Material& m = *it;
 			if (m.hasDiffuse()) {
 				const double* color = m.diffuse();
 				diffuse_color_array.push_back(static_cast<float>(color[0]));
@@ -272,6 +272,8 @@ int main (int argc, char** argv) {
 	bool has_more = false;
 
 	Hello().write(std::cout);
+
+	int exit_code = 0;
 	while (1) {
 		const int32_t msg_type = sread<int32_t>(std::cin);
 		switch (msg_type) {
@@ -288,14 +290,17 @@ int main (int argc, char** argv) {
 
 			has_more = IfcGeomObjects::Init(data, len);
 			More(has_more).write(std::cout);
-			break;
+			continue;
 		}
 		case GET: {
 			Get g; g.read(std::cin);
-			if (!has_more) return 1;
+			if (!has_more) {
+				exit_code = 1;
+				break;
+			}
 			const IfcGeomObjects::IfcGeomObject* geom = IfcGeomObjects::Get();
 			Entity(geom).write(std::cout);
-			break;
+			continue;
 		}
 		case NEXT: {
 			Next n; n.read(std::cin);
@@ -304,18 +309,24 @@ int main (int argc, char** argv) {
 				IfcGeomObjects::CleanUp();
 			}
 			More(has_more).write(std::cout);
-			break;
+			continue;
 		}
 		case GET_LOG: {
 			GetLog gl; gl.read(std::cin);
 			WriteLog(IfcGeomObjects::GetLog()).write(std::cout);
-			break;
+			continue;
 		}
 		case BYE: {
 			Bye().write(std::cout);
-			return 0;
+			exit_code = 0;
+			break;
 		}
-		default: return 1;
+		default: 
+			exit_code = 1; 
+			break;
 		}
+		break;
 	}
+	std::cout.rdbuf(stdout_orig);
+	return exit_code;
 }
