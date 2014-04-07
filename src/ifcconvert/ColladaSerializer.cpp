@@ -259,7 +259,7 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	geometries.close();
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		const std::string object_name = it->Name();
-		scene.add(object_name, object_name, object_name, it->material_references, it->matrix);
+		scene.add(object_name + "-instance", object_name, object_name, it->material_references, it->matrix);
 	}
 	scene.write();
 	stream.endDocument();
