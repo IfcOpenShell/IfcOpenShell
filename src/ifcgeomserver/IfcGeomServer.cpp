@@ -195,7 +195,14 @@ protected:
 		swrite(s, geom->name());
 		swrite(s, geom->type());
 		swrite<int32_t>(s, geom->parent_id());
-		swrite(s, std::string((char*)geom->matrix().data(), 16 * sizeof(float)));
+		const std::vector<float>& m = geom->matrix();
+		const float matrix_array[16] = {
+			m[0], m[3], m[6], m[ 9],
+			m[1], m[4], m[7], m[10],
+			m[2], m[5], m[8], m[11],
+			   0,    0,    0,     1
+		};
+		swrite(s, std::string((char*)matrix_array, 16 * sizeof(float)));
 		swrite<int32_t>(s, geom->mesh().id());
 		swrite(s, std::string((char*)geom->mesh().verts().data(), geom->mesh().verts().size() * sizeof(float)));
 		swrite(s, std::string((char*)geom->mesh().normals().data(), geom->mesh().normals().size() * sizeof(float)));
