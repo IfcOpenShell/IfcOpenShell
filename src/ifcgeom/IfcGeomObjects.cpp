@@ -239,9 +239,19 @@ IfcGeomObjects::IfcObject::IfcObject(
 		, _guid(guid)
 {
 	// Convert the gp_Trsf into a 4x3 Matrix
-	for( int i = 1; i < 5; ++ i )
-		for ( int j = 1; j < 4; ++ j )
-			_matrix.push_back((float)trsf.Value(j,i));
+	// Note that in case the CONVERT_BACK_UNITS setting is enabled
+	// the translation component of the matrix needs to be divided
+	// by the magnitude of the IFC model length unit because
+	// internally in IfcOpenShell everything is measured in meters.
+	for(int i = 1; i < 5; ++i) {
+		for (int j = 1; j < 4; ++j) {
+			const double trsf_value = trsf.Value(j,i);
+			const double matrix_value = i == 4 && convert_back_units
+				? trsf_value / IfcGeom::GetValue(IfcGeom::GV_LENGTH_UNIT)
+				: trsf_value;
+			_matrix.push_back(static_cast<float>(matrix_value));
+		}
+	}
 }
 
 IfcGeomObjects::IfcGeomShapeModelObject::IfcGeomShapeModelObject(
