@@ -174,8 +174,10 @@ bool IfcGeom::convert(const IfcSchema::IfcRevolvedAreaSolid::ptr l, TopoDS_Shape
 
 bool IfcGeom::convert(const IfcSchema::IfcFacetedBrep::ptr l, IfcRepresentationShapeItems& shape) {
 	TopoDS_Shape s;
+	const SurfaceStyle* collective_style = get_style(l);
 	if (IfcGeom::convert_shape(l->Outer(),s) ) {
-		shape.push_back(IfcRepresentationShapeItem(s, get_style(l->Outer())));
+		const SurfaceStyle* indiv_style = get_style(l->Outer());
+		shape.push_back(IfcRepresentationShapeItem(s, indiv_style ? indiv_style : collective_style));
 		return true;
 	}
 	return false;
