@@ -96,6 +96,10 @@ namespace IfcParse {
 		IfcSchema::IfcProduct* ifc_product = (IfcSchema::IfcProduct*) e;
 		return IfcGeom::create_brep_data(ifc_product);
 	}
+
+	void clean() { 
+		IfcGeom::Cache::Purge(); 
+	}
 }
 
 std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);
