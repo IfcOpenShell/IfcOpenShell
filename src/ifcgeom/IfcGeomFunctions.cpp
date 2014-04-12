@@ -629,6 +629,7 @@ std::string IfcGeom::create_brep_data(Ifc2x3::IfcProduct* ifc_product) {
 			it->prepend(trsf);
 		}
 		trsf = gp_Trsf();
+		shapes = opened_shapes;
 	} else {
 		for ( IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 			it->prepend(trsf);
