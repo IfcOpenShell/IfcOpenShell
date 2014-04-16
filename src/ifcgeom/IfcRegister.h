@@ -67,6 +67,7 @@ SHAPE(IfcCsgSolid);
 SHAPE(IfcCurveBoundedPlane);
 SHAPE(IfcRectangularTrimmedSurface);
 SHAPE(IfcSurfaceCurveSweptAreaSolid);
+SHAPE(IfcSweptDiskSolid);
 #ifdef USE_IFC4
 SHAPE(IfcCylindricalSurface);
 #endif
