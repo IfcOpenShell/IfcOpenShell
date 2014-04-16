@@ -637,6 +637,81 @@ bool IfcGeom::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid::ptr l, Top
 	return true;
 }
 
+bool IfcGeom::convert(const IfcSchema::IfcSweptDiskSolid::ptr l, TopoDS_Shape& shape) {
+	TopoDS_Wire wire, section1, section2;
+
+	const bool hasInnerRadius = l->hasInnerRadius();
+
+	if (!IfcGeom::convert_wire(l->Directrix(), wire)) {
+		return false;
+	}
+	
+	gp_Ax2 directrix;
+	{
+		gp_Pnt directrix_origin;
+		gp_Vec directrix_tangent;
+		TopExp_Explorer exp(wire, TopAbs_EDGE);
+		TopoDS_Edge edge = TopoDS::Edge(exp.Current());
+		double u0, u1;
+		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
+		crv->D1(u0, directrix_origin, directrix_tangent);
+		directrix = gp_Ax2(directrix_origin, directrix_tangent);
+	}
+
+	const double r1 = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	Handle(Geom_Circle) circle = new Geom_Circle(directrix, r1);
+	section1 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
+
+	if (hasInnerRadius) {
+		const double r2 = l->InnerRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		Handle(Geom_Circle) circle = new Geom_Circle(directrix, r2);
+		section2 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
+	}
+
+	// NB: Note that StartParam and EndParam param are ignored and the assumption is
+	// made that the parametric range over which to be swept matches the IfcCurve in
+	// its entirety.
+	// NB2: Contrary to IfcSurfaceCurveSweptAreaSolid the transition mode has been
+	// set to create round corners as this has proven to work better with the types
+	// of directrices encountered, which do not necessarily conform to a surface.
+	{ BRepOffsetAPI_MakePipeShell builder(wire);
+	builder.Add(section1);
+	builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
+	builder.Build();
+	builder.MakeSolid();
+	shape = builder.Shape(); }
+
+	if (hasInnerRadius) {
+		BRepOffsetAPI_MakePipeShell builder(wire);
+		builder.Add(section2);
+		builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
+		builder.Build();
+		builder.MakeSolid();
+		TopoDS_Shape inner = builder.Shape();
+
+		BRepAlgoAPI_Cut brep_cut(shape, inner);
+		bool is_valid = false;
+		if (brep_cut.IsDone()) {
+			TopoDS_Shape result = brep_cut;
+
+			ShapeFix_Shape fix(result);
+			fix.Perform();
+			result = fix.Shape();
+		
+			is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+			if (is_valid) {
+				shape = result;
+			}
+		}
+
+		if (!is_valid) {
+			Logger::Message(Logger::LOG_WARNING, "Failed to subtract inner radius void for:", l->entity);
+		}
+	}
+
+	return true;
+}
+
 #ifdef USE_IFC4
 
 bool IfcGeom::convert(const IfcSchema::IfcCylindricalSurface::ptr l, TopoDS_Shape& face) {
