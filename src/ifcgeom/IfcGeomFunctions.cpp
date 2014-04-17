@@ -689,7 +689,10 @@ bool IfcGeom::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape) {
 	return true;
 }
 
-std::string IfcGeom::create_brep_data(Ifc2x3::IfcProduct* ifc_product) {
+std::string IfcGeom::create_brep_data(Ifc2x3::IfcProduct* ifc_product, unsigned int settings) {
+	const bool no_openings = !!(settings & DISABLE_OPENING_SUBTRACTIONS);
+	const bool no_placement = !!(settings & DISABLE_OBJECT_PLACEMENT);
+
 	if (!ifc_product->hasRepresentation()) return "";
 
 	Ifc2x3::IfcProductRepresentation* prod_rep = ifc_product->Representation();
@@ -740,23 +743,20 @@ std::string IfcGeom::create_brep_data(Ifc2x3::IfcProduct* ifc_product) {
 		}
 	}
 
-	if ( openings && openings->Size() ) {
+	if (openings && openings->Size() && !no_openings) {
 		IfcGeom::IfcRepresentationShapeItems opened_shapes;
 		try {
 			IfcGeom::convert_openings(ifc_product,openings,shapes,trsf,opened_shapes);
 		} catch(...) { 
 			Logger::Message(Logger::LOG_ERROR,"Error processing openings for:",ifc_product->entity); 
 		}
-		for ( IfcGeom::IfcRepresentationShapeItems::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
-			it->prepend(trsf);
-		}
-		trsf = gp_Trsf();
 		shapes = opened_shapes;
-	} else {
+	}
+
+	if (!no_placement) {
 		for ( IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 			it->prepend(trsf);
 		}
-		trsf = gp_Trsf();
 	}
 
 	TopoDS_Compound compound;

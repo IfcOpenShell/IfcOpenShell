@@ -79,6 +79,9 @@ namespace IfcGeom {
 		GV_PRECISION
 	};
 
+	const int DISABLE_OPENING_SUBTRACTIONS = 1 << 0;
+	const int DISABLE_OBJECT_PLACEMENT     = 1 << 1;
+	
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
 	bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);
 	bool convert_shapes(const IfcUtil::IfcBaseClass* L, IfcRepresentationShapeItems& result);
@@ -103,7 +106,7 @@ namespace IfcGeom {
 	void apply_tolerance(TopoDS_Shape& s, double t);
 	void SetValue(GeomValue var, double value);
 	double GetValue(GeomValue var);
-	std::string create_brep_data(Ifc2x3::IfcProduct* s);
+	std::string create_brep_data(Ifc2x3::IfcProduct* s, unsigned int settings);
     bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
 	IfcSchema::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntities es);
 

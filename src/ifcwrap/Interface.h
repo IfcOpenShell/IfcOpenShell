@@ -91,15 +91,18 @@ namespace IfcParse {
 		return f;
 	}
 
-	std::string create_shape(IfcParse::IfcUntypedEntity* e) {
+	std::string create_shape(IfcParse::IfcUntypedEntity* e, unsigned int settings = 0) {
 		if (!e->is(IfcSchema::Type::IfcProduct)) throw IfcException("Entity is not an IfcProduct");
 		IfcSchema::IfcProduct* ifc_product = (IfcSchema::IfcProduct*) e;
-		return IfcGeom::create_brep_data(ifc_product);
+		return IfcGeom::create_brep_data(ifc_product, settings);
 	}
 
 	void clean() { 
 		IfcGeom::Cache::Purge(); 
 	}
+
+	const int DISABLE_OPENING_SUBTRACTIONS = 1 << 0;
+	const int DISABLE_OBJECT_PLACEMENT     = 1 << 1;
 }
 
 std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);
