@@ -221,6 +221,7 @@ TestFile("IfcTShapeProfileDef.ifc")
 TestFile("IfcTrapeziumProfileDef.ifc")
 TestFile("IfcUShapeProfileDef.ifc")
 TestFile("IfcZShapeProfileDef.ifc")
+TestFile("IfcReinforcingBar.ifc")
 
 for test in test_cases:
     succes = test()
