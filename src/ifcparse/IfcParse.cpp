@@ -270,7 +270,7 @@ Token Tokens::Next() {
 	char c = stream->Peek();
 	
 	// If the cursor is at [()=,;$*] we know token consists of single char
-	if ( c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '$' || c == '*' ) {
+	if (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '$' || c == '*') {
 		stream->Inc();
 		return TokenPtr(c);
 	}
@@ -282,7 +282,7 @@ Token Tokens::Next() {
 
 		// Read character and increment pointer if not starting a new token
 		char c = stream->Peek();
-		if ( len && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' ) ) break;
+		if ( len && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '/') ) break;
 		stream->Inc();
 		len ++;
 
@@ -308,7 +308,7 @@ std::string Tokens::TokenString(unsigned int offset) {
 	char p = 0;
 	while ( ! stream->eof ) {
 		char c = stream->Peek();
-		if ( buffer.size() && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' ) ) break;
+		if ( buffer.size() && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '/') ) break;
 		stream->Inc();
 		if ( c == ' ' || c == '\r' || c == '\n' || c == '\t' ) continue;
 		else if ( c == '\'' ) return *decoder;
