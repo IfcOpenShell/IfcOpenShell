@@ -1,0 +1,119 @@
+ISO-10303-21;
+HEADER;
+/* NOTE a valid model view name has to be asserted, replacing 'notYetAssigned' ----------------- */
+FILE_DESCRIPTION(
+    ( 'ViewDefinition [notYetAssigned]'
+     ,'Comment [manual creation of example file]'
+	)
+	,'2;1');
+/* NOTE standard header information according to ISO 10303-21 ---------------------------------- */
+FILE_NAME(
+	'IfcBuildingElementProxy_SurfaceModel.ifc',
+	'2011-11-07T18:00:00',
+	('Thomas Liebich'),
+	('buildingSMART International'),
+	'IFC text editor',
+	'IFC text editor',
+	'reference file created for the IFC4 specification');
+/* NOTE schema name to be replaced with 'IFC4' after the final release  ------------------------ */
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+
+DATA;
+/* --------------------------------------------------------------------------------------------- */
+/* general entities required for all IFC data sets, defining the context for the exchange ------ */
+#100= IFCPROJECT('0xScRe4drECQ4DMSqUjd6d',#110,'proxy with surface model',$,$,$,$,(#201),#301);
+
+/* single owner history sufficient if not otherwise required by the view definition ------------ */
+/* provides the person and application creating the data set, and the time it is created ------- */
+#110= IFCOWNERHISTORY(#111,#115,$,.ADDED.,1320688800,$,$,1320688800);
+#111= IFCPERSONANDORGANIZATION(#112,#113,$);
+#112= IFCPERSON($,'Liebich','Thomas',$,$,$,$,$);
+#113= IFCORGANIZATION($,'buildingSMART International',$,$,$);
+#115= IFCAPPLICATION(#113,'1.0','IFC text editor','ifcTE');
+
+/* each IFC data set containing geometry has to define a geometric representation context ------ */
+/* the attribute 'ContextType' has to be 'Model' for 3D model geometry ------------------------- */
+#201= IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.0E-5,#210,$);
+/* the attribute 'ContextIdentifier' has to be 'Body' for the main 3D shape representation ----- */
+#202= IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Body','Model',*,*,*,*,#201,$,.MODEL_VIEW.,$);
+#210= IFCAXIS2PLACEMENT3D(#901,$,$);
+
+/* each IFC data set containing geometry has to define at absolute minimum length and angle ---- */
+/* here length is milli metre as SI unit, and plane angle is 'degree' as non SI unit ----------- */
+#301= IFCUNITASSIGNMENT((#311,#312));
+#311= IFCSIUNIT(*,.LENGTHUNIT.,.MILLI.,.METRE.);
+#312= IFCCONVERSIONBASEDUNIT(#313,.PLANEANGLEUNIT.,'degree',#314);
+#313= IFCDIMENSIONALEXPONENTS(0,0,0,0,0,0,0);
+#314= IFCMEASUREWITHUNIT(IFCPLANEANGLEMEASURE(0.017453293),#315);
+#315= IFCSIUNIT(*,.PLANEANGLEUNIT.,$,.RADIAN.);
+
+/* each IFC data set containing elements in a building context has to include a building ------- */
+/* at absolute minimum (could have a site and stories as well) --------------------------------- */
+#500= IFCBUILDING('2FCZDorxHDT8NI01kdXi8P',$,'Test Building',$,$,#511,$,$,.ELEMENT.,$,$,$);
+/* if the building is the uppermost spatial structure element it defines the absolut position -- */
+#511= IFCLOCALPLACEMENT($,#512);
+/* no rotation - z and x axes set to '$' are therefore identical to "world coordinate system" -- */ 
+#512= IFCAXIS2PLACEMENT3D(#901,$,$);
+/* if the building is the uppermost spatial structure element it is assigned to the project ---- */
+#519= IFCRELAGGREGATES('2YBqaV_8L15eWJ9DA1sGmT',$,$,$,#100,(#500));
+
+/* shared coordinates - it is permissable to share common instances to reduce file size -------- */
+#901= IFCCARTESIANPOINT((0.,0.,0.));
+#902= IFCDIRECTION((1.,0.,0.));
+#903= IFCDIRECTION((0.,1.,0.));
+#904= IFCDIRECTION((0.,0.,1.)); 
+#905= IFCDIRECTION((-1.,0.,0.));
+#906= IFCDIRECTION((0.,-1.,0.));
+#907= IFCDIRECTION((0.,0.,-1.));
+
+/* --------------------------------------------------------------------------------------------- */
+/* proxy element with surface model shape representation, assigned to the building ------------- */
+#1000= IFCBUILDINGELEMENTPROXY('1kTvXnbbzCWw8lcMd1dR4o',$,'P-1','sample proxy',$,#1001,#1010,$,$);
+/* proxy element placement relative to the building -------------------------------------------- */
+#1001= IFCLOCALPLACEMENT(#511,#1002);
+/* set local placement to 1 meter on x-axis, and 0 on y, and 0 on z axes ----------------------- */
+/* no rotation - z and x axes set to '$' are therefore identical to those of building ---------- */ 
+#1002= IFCAXIS2PLACEMENT3D(#1003,$,$);
+#1003= IFCCARTESIANPOINT((1000.,0.,0.));
+/* proxy element shape representation ---------------------------------------------------------- */
+#1010= IFCPRODUCTDEFINITIONSHAPE($,$,(#1020));
+/* a single shape representation of type 'SurfaceModel' is included ---------------------------- */
+#1020= IFCSHAPEREPRESENTATION(#202,'Body','SurfaceModel',(#1021));
+/* face based surface representation ----------------------------------------------------------- */
+/* cube, 1m width, 1m depth, 2m height --------------------------------------------------------- */
+#1021= IFCFACEBASEDSURFACEMODEL ((#1022));
+#1022= IFCCONNECTEDFACESET ((#1110, #1120, #1130, #1140, #1150, #1160));
+#1110= IFCFACE((#1111));
+#1111= IFCFACEOUTERBOUND(#1112,.T.);
+#1112= IFCPOLYLOOP((#1201,#1202,#1206,#1205));
+#1120= IFCFACE((#1121));
+#1121= IFCFACEOUTERBOUND(#1122,.T.);
+#1122= IFCPOLYLOOP((#1206,#1202,#1203,#1207));
+#1130= IFCFACE((#1131));
+#1131= IFCFACEOUTERBOUND(#1132,.T.);
+#1132= IFCPOLYLOOP((#1207,#1203,#1204,#1208));
+#1140= IFCFACE((#1141));
+#1141= IFCFACEOUTERBOUND(#1142,.T.);
+#1142= IFCPOLYLOOP((#1208,#1204,#1201,#1205));
+#1150= IFCFACE((#1151));
+#1151= IFCFACEOUTERBOUND(#1152,.T.);
+#1152= IFCPOLYLOOP((#1201,#1204,#1203,#1202));
+#1160= IFCFACE((#1161));
+#1161= IFCFACEOUTERBOUND(#1162,.T.);
+#1162= IFCPOLYLOOP((#1206,#1207,#1208,#1205));
+/* shared vertices of the faceted boundary representation -------------------------------------- */
+#1201= IFCCARTESIANPOINT((-500.,-500.,0.));
+#1202= IFCCARTESIANPOINT((500.,-500.,0.));
+#1203= IFCCARTESIANPOINT((500.,500.,0.));
+#1204= IFCCARTESIANPOINT((-500.,500.,0.));
+#1205= IFCCARTESIANPOINT((-500.,-500.,2000.));
+#1206= IFCCARTESIANPOINT((500.,-500.,2000.));
+#1207= IFCCARTESIANPOINT((500.,500.,2000.));
+#1208= IFCCARTESIANPOINT((-500.,500.,2000.));
+
+/* proxy element assigned to the building ------------------------------------------------------ */
+#10000=IFCRELCONTAINEDINSPATIALSTRUCTURE('2TnxZkTXT08eDuMuhUUFNy',$,'Physical model',$,(#1000),#500);
+
+ENDSEC;
+END-ISO-10303-21;

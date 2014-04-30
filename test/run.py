@@ -223,6 +223,22 @@ TestFile("IfcUShapeProfileDef.ifc")
 TestFile("IfcZShapeProfileDef.ifc")
 TestFile("IfcReinforcingBar.ifc")
 
+TestFile("advanced_brep.ifc")
+TestFile("basic_shape_Brep.ifc")
+TestFile("basic_shape_CSG.ifc")
+TestFile("basic_shape_SurfaceModel.ifc")
+TestFile("basic_shape_SweptSolid.ifc")
+TestFile("basic_shape_Tessellation.ifc")
+TestFile("building_element_configuration_wall.ifc")
+TestFile("building_service_element_air-terminal-type.ifc")
+TestFile("building_service_element_air-terminal.ifc")
+TestFile("construction_scheduling_task.ifc")
+TestFile("mapped_shape_multiple.ifc")
+TestFile("mapped_shape_representation.ifc")
+TestFile("mapped_shape_transformation.ifc")
+TestFile("standard_case_element_beam.ifc")
+TestFile("structural_analysis_curve.ifc")
+
 for test in test_cases:
     succes = test()
     if not succes:

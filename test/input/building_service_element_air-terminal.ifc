@@ -1,0 +1,228 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION($,'2;1');
+FILE_NAME('building_service_element_air-terminal.ifc','2011-11-11T23:58:37',(''),(''),'Constructivity 0.9.1','Constructivity 0.9.1','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+
+DATA;
+
+/* owner history and application info */
+#1= IFCAPPLICATION(#2,'0.9.1','Constructivity','CONSTRUCTIVITY');
+#2= IFCORGANIZATION($,'Constructivity.com LLC',$,$,$);
+#3= IFCPERSON('Tim',$,$,$,$,$,$,$);
+#4= IFCORGANIZATION($,'Tim-PC',$,$,$);
+#5= IFCPERSONANDORGANIZATION(#3,#4,$);
+
+/* units based on inches */
+#28= IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);
+#29= IFCMEASUREWITHUNIT(IFCLENGTHMEASURE(0.0254),#28);
+#30= IFCDIMENSIONALEXPONENTS(1,0,0,0,0,0,0);
+#31= IFCCONVERSIONBASEDUNIT(#30,.LENGTHUNIT.,'inch',#29);
+#207= IFCUNITASSIGNMENT((#31));
+#208= IFCPROJECT('0lj5XNwQn6O8b3O4i7jK0b',#209,'Project',$,$,$,$,(#212,#215),#207);
+#209= IFCOWNERHISTORY(#5,#1,.READWRITE.,.NOTDEFINED.,$,$,$,1321055806);
+
+/* representation contexts */
+#210= IFCCARTESIANPOINT((0.,0.,0.));
+#211= IFCAXIS2PLACEMENT3D(#210,$,$);
+#212= IFCGEOMETRICREPRESENTATIONCONTEXT('3D','Model',3,1.0E-5,#211,$);
+#213= IFCCARTESIANPOINT((0.,0.,0.));
+#214= IFCAXIS2PLACEMENT3D(#213,$,$);
+#215= IFCGEOMETRICREPRESENTATIONCONTEXT('2D','Plan',2,1.0E-5,#214,$);
+
+/* A library is imported that describes the air terminal type. */
+#216= IFCPROJECTLIBRARY('0lIJEMoxL8yP0B7vq1iIiM',#209,'HVAC Product Type Library Example','Demonstrates an air terminal type which may be instantiated in buildings within referencing files.','ProductLibrary',$,$,(#212),#207);
+#217= IFCRELDECLARES('00ufBkjlf4nOFHXfji7ezF',#209,$,$,#208,(#216));
+#221= IFCLIBRARYINFORMATION('HVAC Product Type Library Example',$,$,'2011-11-11T23:49:28','IfcAirTerminalType.ifc',$);
+#222= IFCRELASSOCIATESLIBRARY('3_6NqfKKH30wqc8leArKAY',#209,$,$,(#216),#221);
+
+/* property sets defined on the air terminal type (imported) */
+#225= IFCPROPERTYSINGLEVALUE('Reference',$,$,$);
+#226= IFCPROPERTYENUMERATION('PEnum_Status',(IFCLABEL('NEW'),IFCLABEL('EXISTING'),IFCLABEL('DEMOLISH'),IFCLABEL('TEMPORARY'),IFCLABEL('OTHER'),IFCLABEL('NOTKNOWN'),IFCLABEL('UNSET')),$);
+#227= IFCPROPERTYENUMERATEDVALUE('Status',$,$,#226);
+#228= IFCPROPERTYENUMERATION('PEnum_AirTerminalShape',(IFCLABEL('ROUND'),IFCLABEL('RECTANGULAR'),IFCLABEL('SQUARE'),IFCLABEL('SLOT'),IFCLABEL('OTHER'),IFCLABEL('NOTKNOWN'),IFCLABEL('UNSET')),$);
+#229= IFCPROPERTYENUMERATEDVALUE('Shape',$,(IFCLABEL('SQUARE')),#228);
+#230= IFCPROPERTYENUMERATION('PEnum_AirTerminalFaceType',(IFCLABEL('FOURWAYPATTERN'),IFCLABEL('SINGLEDEFLECTION'),IFCLABEL('DOUBLEDEFLECTION'),IFCLABEL('SIGHTPROOF'),IFCLABEL('EGGCRATE'),IFCLABEL('PERFORATED'),IFCLABEL('LOUVERED'),IFCLABEL('OTHER'),IFCLABEL('NOTKNOWN'),IFCLABEL('UNSET')),$);
+#231= IFCPROPERTYENUMERATEDVALUE('FaceType',$,$,#230);
+#232= IFCPROPERTYSINGLEVALUE('SlotWidth',$,$,$);
+#233= IFCPROPERTYSINGLEVALUE('SlotLength',$,$,$);
+#234= IFCPROPERTYSINGLEVALUE('NumberOfSlots',$,$,$);
+#235= IFCPROPERTYENUMERATION('PEnum_AirTerminalFlowPattern',(IFCLABEL('LINEARSINGLE'),IFCLABEL('LINEARDOUBLE'),IFCLABEL('LINEARFOURWAY'),IFCLABEL('RADIAL'),IFCLABEL('SWIRL'),IFCLABEL('DISPLACMENT'),IFCLABEL('COMPACTJET'),IFCLABEL('OTHER'),IFCLABEL('NOTKNOWN'),IFCLABEL('UNSET')),$);
+#236= IFCPROPERTYENUMERATEDVALUE('FlowPattern',$,$,#235);
+#237= IFCPROPERTYBOUNDEDVALUE('AirFlowrateRange',$,$,$,$,$);
+#238= IFCPROPERTYBOUNDEDVALUE('TemperatureRange',$,$,$,$,$);
+#239= IFCPROPERTYENUMERATION('PEnum_AirTerminalDischargeDirection',(IFCLABEL('PARALLEL'),IFCLABEL('PERPENDICULAR'),IFCLABEL('ADJUSTABLE'),IFCLABEL('OTHER'),IFCLABEL('NOTKNOWN'),IFCLABEL('UNSET')),$);
+#240= IFCPROPERTYENUMERATEDVALUE('DischargeDirection',$,$,#239);
+#241= IFCPROPERTYSINGLEVALUE('ThrowLength',$,$,$);
+#242= IFCPROPERTYSINGLEVALUE('AirDiffusionPerformanceIndex',$,$,$);
+#243= IFCPROPERTYENUMERATION('PEnum_AirTerminalFinishType',(IFCLABEL('ANNODIZED'),IFCLABEL('PAINTED'),IFCLABEL('NONE'),IFCLABEL('OTHER'),IFCLABEL('NOTKNOWN'),IFCLABEL('UNSET')),$);
+#244= IFCPROPERTYENUMERATEDVALUE('FinishType',$,$,#243);
+#245= IFCPROPERTYSINGLEVALUE('FinishColor',$,$,$);
+#246= IFCPROPERTYENUMERATION('PEnum_AirTerminalMountingType',(IFCLABEL('SURFACE'),IFCLABEL('FLATFLUSH'),IFCLABEL('LAYIN'),IFCLABEL('OTHER'),IFCLABEL('NOTKNOWN'),IFCLABEL('UNSET')),$);
+#247= IFCPROPERTYENUMERATEDVALUE('MountingType',$,$,#246);
+#248= IFCPROPERTYENUMERATION('PEnum_AirTerminalCoreType',(IFCLABEL('SHUTTERBLADE'),IFCLABEL('CURVEDBLADE'),IFCLABEL('REMOVABLE'),IFCLABEL('REVERSIBLE'),IFCLABEL('NONE'),IFCLABEL('OTHER'),IFCLABEL('NOTKNOWN'),IFCLABEL('UNSET')),$);
+#249= IFCPROPERTYENUMERATEDVALUE('CoreType',$,$,#248);
+#250= IFCPROPERTYSINGLEVALUE('CoreSetHorizontal',$,$,$);
+#251= IFCPROPERTYSINGLEVALUE('CoreSetVertical',$,$,$);
+#252= IFCPROPERTYSINGLEVALUE('HasIntegralControl',$,$,$);
+#253= IFCPROPERTYENUMERATION('PEnum_AirTerminalFlowControlType',(IFCLABEL('DAMPER'),IFCLABEL('BELLOWS'),IFCLABEL('NONE'),IFCLABEL('OTHER'),IFCLABEL('NOTKNOWN'),IFCLABEL('UNSET')),$);
+#254= IFCPROPERTYENUMERATEDVALUE('FlowControlType',$,$,#253);
+#255= IFCPROPERTYSINGLEVALUE('HasSoundAttenuator',$,$,$);
+#256= IFCPROPERTYSINGLEVALUE('HasThermalInsulation',$,$,$);
+#257= IFCPROPERTYSINGLEVALUE('NeckArea',$,$,$);
+#258= IFCPROPERTYSINGLEVALUE('EffectiveArea',$,$,$);
+#259= IFCPROPERTYTABLEVALUE('AirFlowrateVersusFlowControlElement',$,$,$,$,$,$,$);
+#260= IFCPROPERTYSET('34RBPXI3v1B9OyUNo6YREP',#209,'Pset_AirTerminalTypeCommon',$,(#225,#227,#229,#231,#232,#233,#234,#236,#237,#238,#240,#241,#242,#244,#245,#247,#249,#250,#251,#252,#254,#255,#256,#257,#258,#259));
+#261= IFCPROPERTYSINGLEVALUE('GlobalTradeItemNumber',$,$,$);
+#262= IFCPROPERTYSINGLEVALUE('ArticleNumber',$,$,$);
+#263= IFCPROPERTYSINGLEVALUE('ModelReference',$,IFCLABEL('1234'),$);
+#264= IFCPROPERTYSINGLEVALUE('ModelLabel',$,IFCLABEL('Ceiling Diffuser'),$);
+#265= IFCPROPERTYSINGLEVALUE('Manufacturer',$,IFCLABEL('Acme'),$);
+#266= IFCPROPERTYSINGLEVALUE('ProductionYear',$,IFCLABEL('2011'),$);
+#267= IFCPROPERTYENUMERATION('PEnum_AssemblyPlace',(IFCLABEL('FACTORY'),IFCLABEL('OFFSITE'),IFCLABEL('SITE'),IFCLABEL('OTHER'),IFCLABEL('NOTKNOWN'),IFCLABEL('UNSET')),$);
+#268= IFCPROPERTYENUMERATEDVALUE('AssemblyPlace',$,(IFCLABEL('FACTORY')),#267);
+#269= IFCPROPERTYSET('2LM02K5dbFiBVTpfUgOnl4',#209,'Pset_ManufacturerTypeInformation',$,(#261,#262,#263,#264,#265,#266,#268));
+
+/* The air terminal type (imported from referenced library) */
+#270= IFCCARTESIANPOINT((0.,0.,0.));
+#271= IFCAXIS2PLACEMENT3D(#270,$,$);
+#275= IFCRECTANGLEHOLLOWPROFILEDEF(.AREA.,$,$,24.,24.,2.,10.,0.);
+#276= IFCCARTESIANPOINT((12.,12.,0.));
+#277= IFCAXIS2PLACEMENT3D(#276,$,$);
+#278= IFCDIRECTION((0.,0.,1.));
+#280= IFCCARTESIANPOINT((0.,0.));
+#281= IFCCARTESIANTRANSFORMATIONOPERATOR2D($,$,#280,0.5);
+#282= IFCDERIVEDPROFILEDEF(.AREA.,$,#275,#281,$);
+#283= IFCEXTRUDEDAREASOLIDTAPERED(#275,#277,#278,4.,#282);
+#284= IFCSHAPEREPRESENTATION(#212,'Body','AdvancedSweptSolid',(#283));
+#285= IFCREPRESENTATIONMAP(#271,#284);
+#286= IFCAIRTERMINALTYPE('1FESQ2M9vC7xYWZpI_LlCh',#209,'Acme Diffuser 1234','Ceiling diffuser',$,(#260,#269),(#285),$,$,.DIFFUSER.);
+
+/* The port of the air terminal type (imported from referenced library) */
+#287= IFCRELNESTS('3AlMGNAK5EXBgBfP5B8O1x',#209,$,$,#286,(#292));
+#289= IFCCARTESIANPOINT((12.,12.,4.));
+#290= IFCAXIS2PLACEMENT3D(#289,$,$);
+#291= IFCLOCALPLACEMENT($,#290);
+#292= IFCDISTRIBUTIONPORT('0lCGSOGtb4mu56WSeYuzNg',#209,'Inlet',$,$,#291,$,.SINK.,.DUCT.,.AIRCONDITIONING.);
+
+/* The property sets of the air terminal type (imported from referenced library) */
+#293= IFCPROPERTYSINGLEVALUE('PortNumber','The port index for logically ordering the port within the containing element or element type.',$,$);
+#294= IFCPROPERTYSINGLEVALUE('ColorCode','Name of a color for identifying the connector, if applicable.',$,$);
+#295= IFCPROPERTYSET('3MdHsbDH1BrQYI$kjaLN5a',#209,'Pset_DistributionPortCommon','Common attributes attached to an instance of IfcDistributionPort.',(#293,#294));
+#296= IFCRELDEFINESBYPROPERTIES('2fGG1Hw_P32hltt4MRMKcF',#209,'Pset_DistributionPortCommon',$,(#292),#295);
+
+/* The property sets of the port on the air terminal type (imported from referenced library) */
+#299= IFCPROPERTYENUMERATION('PEnum_DuctConnectionType',(IFCLABEL('BEADEDSLEEVE'),IFCLABEL('COMPRESSION'),IFCLABEL('CRIMP'),IFCLABEL('DRAWBAND'),IFCLABEL('DRIVESLIP'),IFCLABEL('FLANGED'),IFCLABEL('OUTSIDESLEEVE'),IFCLABEL('SLIPON'),IFCLABEL('SOLDERED'),IFCLABEL('SSLIP'),IFCLABEL('STANDINGSEAM'),IFCLABEL('SWEDGE'),IFCLABEL('WELDED'),IFCLABEL('OTHER'),IFCLABEL('NONE'),IFCLABEL('USERDEFINED'),IFCLABEL('NOTDEFINED')),$);
+#300= IFCPROPERTYENUMERATEDVALUE('ConnectionType',$,(IFCLABEL('OUTSIDESLEEVE')),#299);
+#301= IFCPROPERTYSINGLEVALUE('ConnectionSubType',$,$,$);
+#302= IFCPROPERTYSINGLEVALUE('NominalWidth',$,IFCPOSITIVELENGTHMEASURE(12.),$);
+#303= IFCPROPERTYSINGLEVALUE('NominalHeight',$,IFCPOSITIVELENGTHMEASURE(12.),$);
+#304= IFCPROPERTYBOUNDEDVALUE('DryBulbTemperature',$,$,$,$,$);
+#305= IFCPROPERTYBOUNDEDVALUE('WetBulbTemperature',$,$,$,$,$);
+#306= IFCPROPERTYBOUNDEDVALUE('VolumetricFlowRate',$,$,$,$,$);
+#307= IFCPROPERTYBOUNDEDVALUE('Velocity',$,$,$,$,$);
+#308= IFCPROPERTYBOUNDEDVALUE('Pressure',$,$,$,$,$);
+#309= IFCPROPERTYSET('142LVYnPP62figC7tUlZnT',#209,'Pset_DistributionPortTypeAirConditioning',$,(#300,#301,#302,#303,#304,#305,#306,#307,#308));
+#310= IFCRELDEFINESBYPROPERTIES('3y2BN59aj7eQx9qD9LwNFv',#209,'Pset_DistributionPortTypeAirConditioning',$,(#292),#309);
+
+/* The imported HVAC library declares the air terminal type and another referenced library to IFC property set templates. */
+#314= IFCRELDECLARES('00GZQZ98PAoOtB6V3qDnvW',#209,$,$,#216,(#286,#321));
+#318= IFCLIBRARYREFERENCE($,'1FESQ2M9vC7xYWZpI_LlCh','Acme Diffuser 1234','Ceiling diffuser',$,#221);
+#319= IFCRELASSOCIATESLIBRARY('3Dtpg_FwbBNvhDtSaHoKwc',#209,$,$,(#286),#318);
+
+/* The IFC property template library is referenced indirectly. */
+#321= IFCPROJECTLIBRARY('1rfo$z7PbCaeLf5SOGGJV5',#209,'IFC4',$,$,$,$,$,$);
+#323= IFCLIBRARYREFERENCE($,'1rfo$z7PbCaeLf5SOGGJV5','IFC4',$,$,#221);
+#324= IFCRELASSOCIATESLIBRARY('3kNx28VJP2rflmOknvdyJo',#209,$,$,(#321),#323);
+
+/* The project consists of a single building without any geometry (for brevity), to illustrate an air terminal occurrence connected to a duct segment. */
+#326= IFCBUILDING('1jCJfz2$TF29H$W5cKDgim',#209,$,$,$,$,$,$,.ELEMENT.,$,$,$);
+#328= IFCRELAGGREGATES('3q9yfa16z9wOZHi5h9dr4e',#209,$,$,#208,(#326));
+
+/* The air terminal occurrence is instantiated, with reference to its type. */
+#331= IFCAIRTERMINAL('1mF0_JbLzBtAZ0GUOlCFEx',#209,$,$,$,#376,#336,$,.NOTDEFINED.);
+#333= IFCRELDEFINESBYTYPE('3N14r06YX9o8jZ1KyiNaMP',#209,$,$,(#331),#286);
+
+/* The air terminal occurrence has Body representation mapped from the type. */
+#336= IFCPRODUCTDEFINITIONSHAPE($,$,(#338));
+#338= IFCSHAPEREPRESENTATION(#212,'Body','MappedRepresentation',(#342));
+#340= IFCCARTESIANPOINT((0.,0.,0.));
+#341= IFCCARTESIANTRANSFORMATIONOPERATOR3D($,$,#340,1.,$);
+#342= IFCMAPPEDITEM(#285,#341);
+
+/* The air terminal occurence has a single port, corresponding to the port nested on the air terminal type. */
+#344= IFCCARTESIANPOINT((12.,12.,4.));
+#345= IFCAXIS2PLACEMENT3D(#344,$,$);
+#346= IFCLOCALPLACEMENT(#376,#345);
+#347= IFCDISTRIBUTIONPORT('0VHUOBnvj48fTxWgsnjpHY',#209,'Inlet',$,$,#346,$,.SINK.,.DUCT.,.AIRCONDITIONING.);
+#368= IFCRELDEFINESBYOBJECT('3Ux2bjXUT0dRfUoPfRyE9u',#209,$,$,(#347),#292);
+#371= IFCRELNESTS('3IbS58PVzAf8BjScusxeb6',#209,$,$,#331,(#347));
+
+/* The air terminal occurrence is contained in the building. */
+#374= IFCRELCONTAINEDINSPATIALSTRUCTURE('2srhqEqCX4nA5hKmyLxDOV',#209,$,$,(#331,#381),#326);
+
+/* The air terminal occurrence is placed at the origin. */
+#376= IFCLOCALPLACEMENT($,#378);
+#377= IFCCARTESIANPOINT((0.,0.,0.));
+#378= IFCAXIS2PLACEMENT3D(#377,$,$);
+
+/* A duct segment is is instantiated, without having any type. */
+#381= IFCDUCTSEGMENT('3T2CbFzwP0jP3Q12nB1pFu',#209,'Duct Segment #1',$,$,#388,#395,$,.FLEXIBLESEGMENT.);
+
+/* The duct segment is placed above the air terminal. */
+#384= IFCCARTESIANPOINT((0.,0.,0.));
+#385= IFCDIRECTION((0.,0.,1.));
+#386= IFCDIRECTION((1.,0.,0.));
+#387= IFCAXIS2PLACEMENT3D(#384,#385,#386);
+#388= IFCLOCALPLACEMENT(#346,#387);
+
+/* The duct segment has an Axis representation, for which the Body representation is generated according to a material profile set. */
+#390= IFCCARTESIANPOINT((0.,0.,0.));
+#391= IFCCARTESIANPOINT((24.,0.,0.));
+#392= IFCPOLYLINE((#390,#391));
+#395= IFCPRODUCTDEFINITIONSHAPE($,$,(#397,#492));
+#397= IFCSHAPEREPRESENTATION(#212,'Axis','Curve3D',(#392));
+
+/* The duct segment has two ports; one at each end. */
+#402= IFCDISTRIBUTIONPORT('3FBPFfN1f33wI59qKEjYrA',#209,'In','The end of the duct segment at the flow inlet.',$,#498,$,.SINK.,.DUCT.,.AIRCONDITIONING.);
+#422= IFCDISTRIBUTIONPORT('1RvoZEC65EtPHnpFD43nne',#209,'Out','The end of the duct segment at the flow outlet.',$,#501,$,.SOURCE.,.DUCT.,.AIRCONDITIONING.);
+#423= IFCRELNESTS('2nTJ1FhXn7tf_UMjKfoJ9h',#209,$,$,#381,(#402,#422));
+
+/* The duct segment has a circular hollow profile of 6 inches in diameter and 1/8 inch thickness. */
+#440= IFCCIRCLEHOLLOWPROFILEDEF(.AREA.,$,$,6.,0.125);
+
+/* The duct segment has aluminum material. */
+#441= IFCMATERIAL('Aluminum',$,'Aluminum');
+
+/* The material and profile are brought together and associated with the duct segment. */
+#481= IFCMATERIALPROFILEWITHOFFSETS('Body',$,#441,#440,$,$,(0.,0.));
+#482= IFCMATERIALPROFILESET('Duct Segment',$,(#481),$);
+#483= IFCMATERIALPROFILESETUSAGE(#482,5,96.);
+#484= IFCRELASSOCIATESMATERIAL('1bWT35MPL8ofRppoLEQdoc',#209,'IfcDuctSegment',$,(#381),#483);
+
+/* The duct segment has a Body representation of an extruded area solid generated from the material profile along the Axis representation. */
+#486= IFCCARTESIANPOINT((0.,0.,0.));
+#487= IFCAXIS2PLACEMENT3D(#486,$,$);
+#488= IFCDIRECTION((0.,0.,1.));
+#489= IFCEXTRUDEDAREASOLID(#440,#487,#488,24.);
+#492= IFCSHAPEREPRESENTATION(#212,'Body','SweptSolid',(#489));
+
+/* The duct segment bottom port faces downwards (connected to the air terminal). */
+#494= IFCCARTESIANPOINT((0.,0.,0.));
+#495= IFCDIRECTION((0.,0.,-1.));
+#496= IFCDIRECTION((1.,0.,0.));
+#497= IFCAXIS2PLACEMENT3D(#494,#495,#496);
+#498= IFCLOCALPLACEMENT(#388,#497);
+
+/* The duct segment top port faces upwards (not yet connected). */
+#499= IFCCARTESIANPOINT((0.,0.,24.));
+#500= IFCAXIS2PLACEMENT3D(#499,$,$);
+#501= IFCLOCALPLACEMENT(#388,#500);
+
+/* The outlet port of the duct segment is connected to the inlet port of the air terminal. */
+#503= IFCRELCONNECTSPORTS('0Ydyc8vm11Z9FmKXK3c7CE',#209,$,$,#422,#347,$);
+
+ENDSEC;
+
+END-ISO-10303-21;
