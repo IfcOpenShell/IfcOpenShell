@@ -61,17 +61,26 @@ class Implementation:
                 if not arg['is_inherited'] and not arg['is_derived']:
                     if arg['is_optional']:
                         write_attr(
-                            templates.function,
+                            templates.const_function,
                             class_name  = name,
                             name        = 'has%s'%arg['name'],
                             arguments   = '',
                             return_type = 'bool',
                             body        = templates.optional_attr_stmt % {'index':arg['index']-1}
                         )
+                        
+                    def find_template(arg):
+                        simple = mapping.schema.is_simpletype(arg['list_instance_type'])
+                        express = arg['list_instance_type'] in mapping.express_to_cpp_typemapping
+                        if arg['is_enum']: return templates.get_attr_stmt_enum
+                        elif arg['is_nested']: return templates.get_attr_stmt_nested_array
+                        elif arg['is_array'] and not (simple or express): return templates.get_attr_stmt_array
+                        elif arg['non_optional_type'].endswith('*'): return templates.get_attr_stmt_entity
+                        else: return templates.get_attr_stmt
 
-                    tmpl = templates.get_attr_stmt_enum if arg['is_enum'] else templates.get_attr_stmt_array if arg['is_array'] and not mapping.schema.is_simpletype(arg['list_instance_type']) and arg['list_instance_type'] not in mapping.express_to_cpp_typemapping else templates.get_attr_stmt_entity if arg['non_optional_type'].endswith('*') else templates.get_attr_stmt
+                    tmpl = find_template(arg)
                     write_attr(
-                        templates.function,
+                        templates.const_function,
                         class_name  = name,
                         name        = arg['name'],
                         arguments   = '',
@@ -111,15 +120,15 @@ class Implementation:
                                                             'stmt'  : impl}
                     constructor_implementations.append(impl)
 
-            inverse = [templates.function % {
+            inverse = [templates.const_function % {
                 'class_name'  : name,
                 'name'        : i.name,
                 'arguments'   : '',
-                'return_type' : '%s::list' % i.entity,
+                'return_type' : '%s::list::ptr' % i.entity,
                 'body'        : templates.get_inverse % {'type': i.entity}
             } for i in (type.inverse.elements if type.inverse else [])]
 
-            superclass = "%s((IfcAbstractEntityPtr)0)" % type.supertypes[0] if len(type.supertypes) == 1 else 'IfcUtil::IfcBaseEntity()'
+            superclass = "%s((IfcAbstractEntity*)0)" % type.supertypes[0] if len(type.supertypes) == 1 else 'IfcUtil::IfcBaseEntity()'
 
             write(
                 templates.entity_implementation,

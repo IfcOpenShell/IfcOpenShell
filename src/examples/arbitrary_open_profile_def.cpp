@@ -124,8 +124,8 @@ int main(int argc, char** argv) {
 
 	IfcSchema::IfcEllipse* ellipse = new IfcSchema::IfcEllipse(file.addPlacement2d(), 50., 25.);
 	file.AddEntity(ellipse);
-	IfcEntities trim1(new IfcEntityList());
-	IfcEntities trim2(new IfcEntityList());
+	IfcEntityList::ptr trim1(new IfcEntityList);
+	IfcEntityList::ptr trim2(new IfcEntityList);
 	trim1->push(new IfcWrite::IfcSelectHelper(  0., Ifc2x3::Type::IfcParameterValue));
 	trim2->push(new IfcWrite::IfcSelectHelper(180., Ifc2x3::Type::IfcParameterValue));
 	IfcSchema::IfcTrimmedCurve* trim = new IfcSchema::IfcTrimmedCurve(ellipse, trim1, trim2, true, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);

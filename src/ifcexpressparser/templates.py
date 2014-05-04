@@ -42,7 +42,7 @@ namespace %(schema_name)s {
 
 %(class_definitions)s
 void InitStringMap();
-IfcUtil::IfcSchemaEntity SchemaEntity(IfcAbstractEntityPtr e = 0);
+IfcUtil::IfcBaseClass* SchemaEntity(IfcAbstractEntity* e = 0);
 }
 
 #endif
@@ -81,7 +81,7 @@ using namespace %(schema_name)s;
 using namespace IfcParse;
 using namespace IfcWrite;
 
-IfcUtil::IfcSchemaEntity %(schema_name)s::SchemaEntity(IfcAbstractEntityPtr e) {
+IfcUtil::IfcBaseClass* %(schema_name)s::SchemaEntity(IfcAbstractEntity* e) {
     switch(e->type()) {
 %(schema_entity_statements)s
         default: throw IfcException("Unable to find find keyword in schema"); break;
@@ -117,25 +117,6 @@ bool Type::IsSimple(Enum v) {
 
 %(enumeration_functions)s
 
-#define RETURN_INVERSE(T) \
-    IfcEntities e = entity->getInverse(T::Class()); \
-    SHARED_PTR< IfcTemplatedEntityList<T> > l ( new IfcTemplatedEntityList<T>() ); \
-    for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) { \
-        l->push(reinterpret_pointer_cast<IfcBaseClass,T>(*it)); \
-    } \
-    return l;
-
-#define RETURN_AS_SINGLE(T,a) \
-    return reinterpret_pointer_cast<IfcBaseClass,T>(*entity->getArgument(a));
-
-#define RETURN_AS_LIST(T,a)  \
-    IfcEntities e = *entity->getArgument(a);  \
-    SHARED_PTR< IfcTemplatedEntityList<T> > l ( new IfcTemplatedEntityList<T>() );  \
-    for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {  \
-        l->push(reinterpret_pointer_cast<IfcBaseClass,T>(*it)); \
-    }  \
-    return l;
-
 %(entity_implementations)s
 """
 
@@ -144,7 +125,7 @@ typedef %(type)s %(name)s;
 """
 
 select = """%(documentation)s
-typedef IfcUtil::IfcSchemaEntity %(name)s;
+typedef IfcUtil::IfcBaseClass* %(name)s;
 """
 
 enumeration = """namespace %(name)s {
@@ -161,15 +142,13 @@ public:
 %(attributes)s    virtual unsigned int getArgumentCount() const { return %(argument_count)d; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const {%(argument_type_function_body)s}
     virtual const char* getArgumentName(unsigned int i) const {%(argument_name_function_body)s}
-    virtual ArgumentPtr getArgument(unsigned int i) const { return entity->getArgument(i); }
+    virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
 %(inverse)s    bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
-    %(name)s (IfcAbstractEntityPtr e);
+    %(name)s (IfcAbstractEntity* e);
     %(name)s (%(constructor_arguments)s);
-    typedef %(name)s* ptr;
-    typedef SHARED_PTR< IfcTemplatedEntityList< %(name)s > > list;
-    typedef IfcTemplatedEntityList< %(name)s >::it it;
+    typedef IfcTemplatedEntityList< %(name)s > list;
 };
 """
 
@@ -190,18 +169,20 @@ entity_implementation = """// Function implementations for %(name)s
 %(attributes)s%(inverse)sbool %(name)s::is(Type::Enum v) const { return v == Type::%(name)s%(parent_type_test)s; }
 Type::Enum %(name)s::type() const { return Type::%(name)s; }
 Type::Enum %(name)s::Class() { return Type::%(name)s; }
-%(name)s::%(name)s(IfcAbstractEntityPtr e) : %(superclass)s { if (!e) return; if (!e->is(Type::%(name)s)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
+%(name)s::%(name)s(IfcAbstractEntity* e) : %(superclass)s { if (!e) return; if (!e->is(Type::%(name)s)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
 %(name)s::%(name)s(%(constructor_arguments)s) : %(superclass)s { IfcWritableEntity* e = new IfcWritableEntity(Class());%(constructor_implementation)s entity = e; EntityBuffer::Add(this); }
 """
 
 optional_attribute_description = "/// Whether the optional attribute %s is defined for this %s"
 
 function = "%(return_type)s %(class_name)s::%(name)s(%(arguments)s) { %(body)s }"
+const_function = "%(return_type)s %(class_name)s::%(name)s(%(arguments)s) const { %(body)s }"
 
 array_type = "std::vector< %(instance_type)s > /*[%(lower)s:%(upper)s]*/"
-list_type = "SHARED_PTR< IfcTemplatedEntityList< %(instance_type)s > >"
-untyped_list = "IfcEntities"
-inverse_attr = "SHARED_PTR< IfcTemplatedEntityList< %(entity)s > > %(name)s(); // INVERSE %(entity)s::%(attribute)s"
+list_type = "IfcTemplatedEntityList< %(instance_type)s >::ptr"
+list_list_type = "IfcTemplatedEntityListList< %(instance_type)s >::ptr"
+untyped_list = "IfcEntityList::ptr"
+inverse_attr = "IfcTemplatedEntityList< %(entity)s >::ptr %(name)s() const; // INVERSE %(entity)s::%(attribute)s"
 
 enum_from_string_stmt = '    if (s == "%(value)s") return ::%(schema_name)s::%(name)s::%(short_name)s_%(value)s;'
 
@@ -216,10 +197,11 @@ optional_attr_stmt = "return !entity->getArgument(%(index)d)->isNull();"
 
 get_attr_stmt = "return *entity->getArgument(%(index)d);"
 get_attr_stmt_enum = "return %(type)s::FromString(*entity->getArgument(%(index)d));"
-get_attr_stmt_entity = "return (%(type)s)((IfcUtil::IfcSchemaEntity)(*entity->getArgument(%(index)d)));"
-get_attr_stmt_array = "RETURN_AS_LIST(%(list_instance_type)s,%(index)d)"
+get_attr_stmt_entity = "return (%(type)s)((IfcUtil::IfcBaseClass*)(*entity->getArgument(%(index)d)));"
+get_attr_stmt_array = "IfcEntityList::ptr es = *entity->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
+get_attr_stmt_nested_array = "IfcEntityListList::ptr es = *entity->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
 
-get_inverse = "RETURN_INVERSE(%(type)s)"
+get_inverse = "return entity->getInverse(Type::%(type)s)->as<%(type)s>();"
 
 set_attr_stmt = "if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(%(index)d,v);"
 set_attr_stmt_enum = "if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(%(index)d,v,%(type)s::ToString(v));"

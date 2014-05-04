@@ -50,6 +50,10 @@ SHAPES(IfcMappedItem);
 SHAPES(IfcFacetedBrep);
 SHAPES(IfcGeometricSet);
 
+#ifdef USE_IFC4
+SHAPE(IfcCylindricalSurface);
+SHAPE(IfcAdvancedBrep);
+#endif
 SHAPE(IfcExtrudedAreaSolid);
 SHAPE(IfcRevolvedAreaSolid);
 SHAPE(IfcConnectedFaceSet);
@@ -68,10 +72,10 @@ SHAPE(IfcCurveBoundedPlane);
 SHAPE(IfcRectangularTrimmedSurface);
 SHAPE(IfcSurfaceCurveSweptAreaSolid);
 SHAPE(IfcSweptDiskSolid);
-#ifdef USE_IFC4
-SHAPE(IfcCylindricalSurface);
-#endif
 
+#ifdef USE_IFC4
+FACE(IfcAdvancedFace);
+#endif
 FACE(IfcArbitraryProfileDefWithVoids);
 FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcRoundedRectangleProfileDef);
@@ -92,6 +96,8 @@ FACE(IfcCompositeProfileDef);
 FACE(IfcDerivedProfileDef);
 FACE(IfcFace);
 
+WIRE(IfcEdgeCurve);
+WIRE(IfcEdgeLoop);
 WIRE(IfcPolyline);
 WIRE(IfcPolyLoop);
 WIRE(IfcCompositeCurve);

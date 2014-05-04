@@ -67,8 +67,8 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 	
 	Ifc2x3::IfcEllipse* ellipse = new Ifc2x3::IfcEllipse(file.addPlacement2d(), pie.r1, pie.r2);
 	file.AddEntity(ellipse);
-	IfcEntities trim1(new IfcEntityList());
-	IfcEntities trim2(new IfcEntityList());
+	IfcEntityList::ptr trim1(new IfcEntityList);
+	IfcEntityList::ptr trim2(new IfcEntityList);
 	if (pref == Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER) {
 		trim1->push(new IfcWrite::IfcSelectHelper(pie.t1, Ifc2x3::Type::IfcParameterValue));
 		trim2->push(new IfcWrite::IfcSelectHelper(pie.t2, Ifc2x3::Type::IfcParameterValue));

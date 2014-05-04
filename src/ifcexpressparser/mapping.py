@@ -39,7 +39,8 @@ class Mapping:
             return self.express_to_cpp_typemapping.get(type, type)
         else:
             is_list = self.schema.is_entity(type.type)
-            tmpl = templates.list_type if is_list else templates.array_type
+            is_nested_list = isinstance(type.type, nodes.AggregationType)
+            tmpl = templates.list_list_type if is_nested_list else templates.list_type if is_list else templates.array_type
             return tmpl % {
                 'instance_type' : self.make_type_string(type.type),
                 'lower'         : type.bounds.lower,
@@ -71,9 +72,9 @@ class Mapping:
             elif isinstance(type, nodes.AggregationType):
                 ty = _make_argument_type(type.type)
                 if ty == "UNKNOWN": return "UNKNOWN"
-                return "ENTITY_LIST" if ty == "ENTITY" else ("VECTOR_%s"%ty)
+                return "%s_LIST"%ty if ty.startswith("ENTITY") else ("VECTOR_%s"%ty)
             else: raise ValueError
-        supported = {'INT', 'BOOL', 'DOUBLE', 'STRING', 'VECTOR_INT', 'VECTOR_DOUBLE', 'VECTOR_STRING', 'ENTITY', 'ENTITY_LIST', 'ENUMERATION'}
+        supported = {'INT', 'BOOL', 'DOUBLE', 'STRING', 'VECTOR_INT', 'VECTOR_DOUBLE', 'VECTOR_STRING', 'ENTITY', 'ENTITY_LIST', 'ENTITY_LIST_LIST', 'ENUMERATION'}
         ty = _make_argument_type(attr.type)
         if ty not in supported: ty = 'UNKNOWN'
         return "IfcUtil::Argument_%s" % ty
@@ -90,7 +91,8 @@ class Mapping:
         if self.schema.is_enumeration(attr.type):
             type_str = '%s::%s'%(attr.type, attr.type)
         elif isinstance(type_str, nodes.AggregationType):
-            ty = self.get_parameter_type(attr.type, False, allow_entities, allow_pointer=False)
+            is_nested_list = isinstance(attr.type.type, nodes.AggregationType)
+            ty = self.get_parameter_type(attr.type.type if is_nested_list else attr.type, False, allow_entities, allow_pointer=False)
             if allow_entities and self.schema.is_select(attr.type.type):
                 type_str = templates.untyped_list
             elif self.schema.is_simpletype(ty) or ty in self.express_to_cpp_typemapping.values():
@@ -100,7 +102,8 @@ class Mapping:
                     'upper'         : attr.type.bounds.upper
                 }
             else:
-                type_str = templates.list_type % {
+                tmpl = templates.list_list_type if is_nested_list else templates.list_type
+                type_str = tmpl % {
                     'instance_type': ty
                 }
         elif allow_pointer and self.schema.is_entity(type_str):
@@ -127,11 +130,16 @@ class Mapping:
 
     def list_instance_type(self, attr):
         f = lambda v : 'IfcUtil::IfcAbstractSelect' if self.schema.is_select(v) else v
-        if self.is_array(attr.type) and not isinstance(attr.type, str):
-            return f(attr.type.type)
-        elif self.is_array(attr.type) and isinstance(attr.type, str):
-            return f(attr.type)
-        else: return None
+        if self.is_array(attr.type):
+            if not isinstance(attr.type, str) and self.is_array(attr.type.type):
+                if isinstance(attr.type.type, str):
+                    return f(attr.type.type)
+                else: return f(attr.type.type.type)
+            else:
+                if isinstance(attr.type, str):
+                    return f(attr.type)
+                else: return f(attr.type.type)
+        return None
 
     def is_templated_list(self, attr):
         ty = self.list_instance_type(attr)
@@ -163,6 +171,7 @@ class Mapping:
             'is_inherited'       : i < num_inherited,
             'is_enum'            : attr.type in self.schema.enumerations,
             'is_array'           : self.is_array(attr.type),
+            'is_nested'          : self.is_array(attr.type) and not isinstance(attr.type, str) and self.is_array(attr.type.type),
             'is_derived'         : attr.name in derived,
             'is_templated_list'  : self.is_templated_list(attr)
         } for i, attr in attrs if include(attr)]

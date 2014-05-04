@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
 		std::cout << element->entity->toString() << std::endl;
 		
 		if ( element->is(IfcWindow::Class()) ) {
-			const IfcWindow::ptr window = reinterpret_pointer_cast<IfcBuildingElement,IfcWindow>(element);
+			const IfcWindow::ptr window = (IfcWindow*)element;
 			
 			if ( window->hasOverallWidth() && window->hasOverallHeight() ) {
 				const double area = window->OverallWidth()*window->OverallHeight();

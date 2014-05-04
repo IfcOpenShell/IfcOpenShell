@@ -52,12 +52,9 @@
 namespace IfcParse {
 
 	class Entity;
-	class Entities;
 	class IfcFile;
-	typedef Entity* EntityPtr;
-	typedef SHARED_PTR<Entities> EntitiesPtr;
-
 	class Tokens;
+
 	typedef std::pair<Tokens*,unsigned> Token;
 
 	/// Provides functions to convert Tokens to binary data
@@ -118,8 +115,8 @@ namespace IfcParse {
 	///                 ==========
 	class ArgumentList: public Argument {
 	private:
-		std::vector<ArgumentPtr> list;
-		void Push(ArgumentPtr l);
+		std::vector<Argument*> list;
+		void Push(Argument* l);
 	public:
 		ArgumentList(Tokens* t, std::vector<unsigned int>& ids);
 		~ArgumentList();
@@ -130,11 +127,12 @@ namespace IfcParse {
 		operator std::vector<double>() const;
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
-		operator IfcUtil::IfcSchemaEntity() const;
+		operator IfcUtil::IfcBaseClass*() const;
 		//operator IfcUtil::IfcAbstractSelect::ptr() const;
-		operator IfcEntities() const;
+		operator IfcEntityList::ptr() const;
+        operator IfcEntityListList::ptr() const;
 		unsigned int Size() const;
-		ArgumentPtr operator [] (unsigned int i) const;
+		Argument* operator [] (unsigned int i) const;
 		std::string toString(bool upper=false) const;
 		bool isNull() const;
 	};
@@ -155,11 +153,12 @@ namespace IfcParse {
 		operator std::vector<double>() const;
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
-		operator IfcUtil::IfcSchemaEntity() const;
+		operator IfcUtil::IfcBaseClass*() const;
 		//operator IfcUtil::IfcAbstractSelect::ptr() const;
-		operator IfcEntities() const;
+		operator IfcEntityList::ptr() const;
+        operator IfcEntityListList::ptr() const;
 		unsigned int Size() const;
-		ArgumentPtr operator [] (unsigned int i) const;
+		Argument* operator [] (unsigned int i) const;
 		std::string toString(bool upper=false) const;
 		bool isNull() const;
 	};
@@ -180,11 +179,12 @@ namespace IfcParse {
 		operator std::vector<double>() const;
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
-		operator IfcUtil::IfcSchemaEntity() const;
+		operator IfcUtil::IfcBaseClass*() const;
 		//operator IfcUtil::IfcAbstractSelect::ptr() const;
-		operator IfcEntities() const;
+		operator IfcEntityList::ptr() const;
+        operator IfcEntityListList::ptr() const;
 		unsigned int Size() const;
-		ArgumentPtr operator [] (unsigned int i) const;
+		Argument* operator [] (unsigned int i) const;
 		std::string toString(bool upper=false) const;
 		bool isNull() const;
 	};
@@ -194,9 +194,8 @@ namespace IfcParse {
 	/// ============================
 	class Entity : public IfcAbstractEntity {
 	private:
-		//IfcFile* file;
-		ArgumentPtr args;
-		IfcSchema::Type::Enum _type;
+		mutable Argument* args;
+		mutable IfcSchema::Type::Enum _type;
 	public:
 		/// The EXPRESS ENTITY_INSTANCE_NAME
 		unsigned int _id;
@@ -205,26 +204,24 @@ namespace IfcParse {
 		Entity(unsigned int i, IfcFile* t);
 		Entity(unsigned int i, IfcFile* t, unsigned int o);
 		~Entity();
-		IfcEntities getInverse(IfcSchema::Type::Enum c = IfcSchema::Type::ALL);
-		IfcEntities getInverse(IfcSchema::Type::Enum c, int i, const std::string& a);
-		void Load(std::vector<unsigned int>& ids, bool seek=false);
-		ArgumentPtr getArgument (unsigned int i);
-		unsigned int getArgumentCount();
-		std::string toString(bool upper=false);
-		std::string datatype();
+		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum c = IfcSchema::Type::ALL);
+		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum c, int i, const std::string& a);
+		void Load(std::vector<unsigned int>& ids, bool seek=false) const;
+		Argument* getArgument (unsigned int i);
+		unsigned int getArgumentCount() const;
+		std::string toString(bool upper=false) const;
+		std::string datatype() const;
 		IfcSchema::Type::Enum type() const;
 		bool is(IfcSchema::Type::Enum v) const;
 		unsigned int id();
 		bool isWritable();
 	};
 
-typedef IfcUtil::IfcSchemaEntity IfcEntity;
-//typedef IfcEntities IfcEntities;
-typedef std::map<IfcSchema::Type::Enum,IfcEntities> MapEntitiesByType;
-typedef std::map<unsigned int,IfcEntity> MapEntityById;
-typedef std::map<std::string,IfcSchema::IfcRoot::ptr> MapEntityByGuid;
-typedef std::map<unsigned int,IfcEntities> MapEntitiesByRef;
-typedef std::map<unsigned int,unsigned int> MapOffsetById;
+typedef std::map<IfcSchema::Type::Enum, IfcEntityList::ptr> MapEntitiesByType;
+typedef std::map<unsigned int, IfcUtil::IfcBaseClass*> MapEntityById;
+typedef std::map<std::string, IfcSchema::IfcRoot*> MapEntityByGuid;
+typedef std::map<unsigned int, IfcEntityList::ptr> MapEntitiesByRef;
+typedef std::map<unsigned int, unsigned int> MapOffsetById;
 
 /// This class provides several static convenience functions and variables
 /// and provide access to the entities in an IFC file
@@ -257,36 +254,37 @@ public:
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
 	template <class T>
-	typename T::list EntitiesByType() {
-		IfcEntities e = EntitiesByType(T::Class());
-		typename T::list l ( new IfcTemplatedEntityList<T>() );
-		if ( e && e->Size() )
+	typename T::list::ptr EntitiesByType() {
+		IfcEntityList::ptr e = EntitiesByType(T::Class());
+		typename T::list::ptr l(new typename T::list);
+		if (e && e->Size()) {
 			for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {
-				l->push(reinterpret_pointer_cast<IfcUtil::IfcBaseClass,T>(*it));
+				l->push((T*)*it);
 			}
-			return l;
+		}
+		return l;
 	}
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntities EntitiesByType(IfcSchema::Type::Enum t);
+	IfcEntityList::ptr EntitiesByType(IfcSchema::Type::Enum t);
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntities EntitiesByType(const std::string& t);
+	IfcEntityList::ptr EntitiesByType(const std::string& t);
 	/// Returns all entities in the file that reference the id
-	IfcEntities EntitiesByReference(int id);
+	IfcEntityList::ptr EntitiesByReference(int id);
 	/// Returns the entity with the specified id
-	IfcEntity EntityById(int id);
+	IfcUtil::IfcBaseClass* EntityById(int id);
 	/// Returns the entity with the specified GlobalId
-	IfcSchema::IfcRoot::ptr EntityByGuid(const std::string& guid);
+	IfcSchema::IfcRoot* EntityByGuid(const std::string& guid);
 	bool Init(const std::string& fn);
 	bool Init(std::istream& fn, int len);
 	bool Init(void* data, int len);
 	bool Init(IfcParse::IfcSpfStream* f);
 	unsigned int FreshId() { MaxId ++; return MaxId; }
-	void AddEntity(IfcUtil::IfcSchemaEntity e);
-	void AddEntities(IfcEntities es);
+	void AddEntity(IfcUtil::IfcBaseClass* entity);
+	void AddEntities(IfcEntityList::ptr es);
 
 	void filename(const std::string& s);
 	std::string filename() const;

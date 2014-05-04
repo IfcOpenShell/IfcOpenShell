@@ -79,7 +79,7 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
-bool IfcGeom::convert(const IfcSchema::IfcCircle::ptr l, Handle(Geom_Curve)& curve) {
+bool IfcGeom::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)& curve) {
 	const double r = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	if ( r < ALMOST_ZERO ) { 
 		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l->entity);
@@ -98,7 +98,7 @@ bool IfcGeom::convert(const IfcSchema::IfcCircle::ptr l, Handle(Geom_Curve)& cur
 	curve = new Geom_Circle(ax, r);
 	return true;
 }
-bool IfcGeom::convert(const IfcSchema::IfcEllipse::ptr l, Handle(Geom_Curve)& curve) {
+bool IfcGeom::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)& curve) {
 	double x = l->SemiAxis1() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	double y = l->SemiAxis2() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	if (x < ALMOST_ZERO || y < ALMOST_ZERO) { 
@@ -128,7 +128,7 @@ bool IfcGeom::convert(const IfcSchema::IfcEllipse::ptr l, Handle(Geom_Curve)& cu
 	curve = new Geom_Ellipse(ax, x, y);
 	return true;
 }
-bool IfcGeom::convert(const IfcSchema::IfcLine::ptr l, Handle(Geom_Curve)& curve) {
+bool IfcGeom::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& curve) {
 	gp_Pnt pnt;gp_Vec vec;
 	IfcGeom::convert(l->Pnt(),pnt);
 	IfcGeom::convert(l->Dir(),vec);	

@@ -213,12 +213,12 @@ int main(int argc, char** argv) {
 	// will be tesselated using the deflection specified.
 	TopoDS_Shape shape;
 	createGroundShape(shape);
-	IfcEntities geometrical_entities(new IfcEntityList());
+	IfcEntityList::ptr geometrical_entities(new IfcEntityList);
 	IfcSchema::IfcProductDefinitionShape* ground_representation = IfcGeom::tesselate(shape, 100., geometrical_entities);
 	file.getSingle<IfcSchema::IfcSite>()->setRepresentation(ground_representation);
 	file.AddEntities(geometrical_entities);
-	IfcSchema::IfcShapeRepresentation::list ground_reps = geometrical_entities->as<IfcSchema::IfcShapeRepresentation>();
-	for (IfcSchema::IfcShapeRepresentation::it it = ground_reps->begin(); it != ground_reps->end(); ++it) {
+	IfcSchema::IfcShapeRepresentation::list::ptr ground_reps = geometrical_entities->as<IfcSchema::IfcShapeRepresentation>();
+	for (IfcSchema::IfcShapeRepresentation::list::it it = ground_reps->begin(); it != ground_reps->end(); ++it) {
 		(*it)->setContextOfItems(file.getSingle<IfcSchema::IfcRepresentationContext>());
 	}
 	file.setSurfaceColour(ground_representation, 0.15, 0.25, 0.05);
@@ -246,7 +246,7 @@ int main(int argc, char** argv) {
 		, null
 #endif
 	);
-	IfcSchema::IfcMaterialLayer::list layers (new IfcTemplatedEntityList<IfcSchema::IfcMaterialLayer>());
+	IfcSchema::IfcMaterialLayer::list::ptr layers (new IfcTemplatedEntityList<IfcSchema::IfcMaterialLayer>());
 	layers->push(layer);
 	IfcSchema::IfcMaterialLayerSet* layer_set = new IfcSchema::IfcMaterialLayerSet(
 		layers, 
@@ -324,9 +324,9 @@ int main(int argc, char** argv) {
 #endif
 	);
 	door->setRepresentation(file.addBox(80, 80, 2120, 0, file.addPlacement3d(460, 0, 0)));
-	IfcSchema::IfcRepresentation::list door_representations = door->Representation()->Representations();
+	IfcSchema::IfcRepresentation::list::ptr door_representations = door->Representation()->Representations();
 	IfcSchema::IfcShapeRepresentation* door_body = 0;
-	for (IfcSchema::IfcRepresentation::it i = door_representations->begin(); i != door_representations->end(); ++i) {
+	for (IfcSchema::IfcRepresentation::list::it i = door_representations->begin(); i != door_representations->end(); ++i) {
 		IfcSchema::IfcRepresentation* rep = *i;
 		if (rep->is(IfcSchema::Type::IfcShapeRepresentation) && rep->RepresentationIdentifier() == "Body") {
 			door_body = (IfcSchema::IfcShapeRepresentation*) rep;
@@ -350,7 +350,7 @@ int main(int argc, char** argv) {
 	// Therefore the OverallWidth and OverallHeight of the window attributes will need to
 	// match the bounding box of the representation. Furthermore, the window placement needs
 	// to align with the lowerleft corner of the constituent parts.
-	IfcSchema::IfcProductDefinitionShape::list frame_representations (new IfcTemplatedEntityList<IfcSchema::IfcProductDefinitionShape>());
+	IfcSchema::IfcProductDefinitionShape::list::ptr frame_representations (new IfcTemplatedEntityList<IfcSchema::IfcProductDefinitionShape>());
 	frame_representations->push(file.addBox(1860, 90, 90));
 	frame_representations->push(*frame_representations->begin()); // Add a reference to the shape created above
 	frame_representations->push(file.addBox(90, 90, 1420));
@@ -358,7 +358,7 @@ int main(int argc, char** argv) {
 
 	// The beams all have the same surface style assigned
 	IfcSchema::IfcPresentationStyleAssignment* frame_style = 0;
-	for (IfcSchema::IfcProductDefinitionShape::it i = frame_representations->begin(); i != frame_representations->end(); ++i) {
+	for (IfcSchema::IfcProductDefinitionShape::list::it i = frame_representations->begin(); i != frame_representations->end(); ++i) {
 		if (frame_style) {
 			file.setSurfaceColour(*i, frame_style);
 		} else {
@@ -368,14 +368,14 @@ int main(int argc, char** argv) {
 
 	// This window will be placed at five locations within the building. A list of placements is 
 	// created and is iterated over to create all window instances.
-	IfcSchema::IfcLocalPlacement::list window_placements (new IfcTemplatedEntityList<IfcSchema::IfcLocalPlacement>());
+	IfcSchema::IfcLocalPlacement::list::ptr window_placements (new IfcTemplatedEntityList<IfcSchema::IfcLocalPlacement>());
 	window_placements->push(file.addLocalPlacement(2*-1770-430-930,   -45, 400));
 	window_placements->push(file.addLocalPlacement(  -1770-430-930,   -45, 400));
 	window_placements->push(file.addLocalPlacement(       -430-930,   -45, 400));
 	window_placements->push(file.addLocalPlacement(       3000-930,   -45, 400));
 	window_placements->push(file.addLocalPlacement(      -4855+45, 885-930, 400, 0, 0, 1, 0, 1, 0));
 	
-	for (IfcSchema::IfcLocalPlacement::it it = window_placements->begin(); it != window_placements->end(); ++it) {
+	for (IfcSchema::IfcLocalPlacement::list::it it = window_placements->begin(); it != window_placements->end(); ++it) {
 		
 		// Create the window at the current location
 		IfcSchema::IfcLocalPlacement* place = *it;
@@ -390,19 +390,19 @@ int main(int argc, char** argv) {
 		file.addBuildingProduct(window);		
 
 		// Initalize a list of parts for the window to be composed of
-		IfcSchema::IfcObjectDefinition::list window_parts(new IfcTemplatedEntityList<IfcSchema::IfcObjectDefinition>());
+		IfcSchema::IfcObjectDefinition::list::ptr window_parts(new IfcTemplatedEntityList<IfcSchema::IfcObjectDefinition>());
 
 		// The placements for the beams are not shared accross the different windows because every
 		// beam is placed relative to its parent window entity.
-		IfcSchema::IfcLocalPlacement::list frame_placements (new IfcTemplatedEntityList<IfcSchema::IfcLocalPlacement>());
+		IfcSchema::IfcLocalPlacement::list::ptr frame_placements (new IfcTemplatedEntityList<IfcSchema::IfcLocalPlacement>());
 		frame_placements->push(file.addLocalPlacement( 930,45));
 		frame_placements->push(file.addLocalPlacement( 930, 45, 1510));
 		frame_placements->push(file.addLocalPlacement(-885+930, 45,  90));
 		frame_placements->push(file.addLocalPlacement( 885+930, 45,  90));
 		
 		// Now iterate over the placements and representations of the beam and add them to list of parts
-		IfcSchema::IfcLocalPlacement::it frame_placement;
-		IfcSchema::IfcProductDefinitionShape::it frame_representation;
+		IfcSchema::IfcLocalPlacement::list::it frame_placement;
+		IfcSchema::IfcProductDefinitionShape::list::it frame_representation;
 		for (frame_placement = frame_placements->begin(), frame_representation = frame_representations->begin();
 			frame_placement != frame_placements->end() && frame_representation != frame_representations->end();
 			++frame_placement, ++frame_representation)

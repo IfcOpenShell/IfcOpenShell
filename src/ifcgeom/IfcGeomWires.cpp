@@ -82,7 +82,7 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
-bool IfcGeom::convert(const IfcSchema::IfcCompositeCurve::ptr l, TopoDS_Wire& wire) {
+bool IfcGeom::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire& wire) {
 	if ( IfcGeom::GetValue(GV_PLANEANGLE_UNIT)<0 ) {
 		Logger::Message(Logger::LOG_WARNING,"Creating a composite curve without unit information:",l->entity);
 
@@ -138,11 +138,11 @@ bool IfcGeom::convert(const IfcSchema::IfcCompositeCurve::ptr l, TopoDS_Wire& wi
 
 		return use_radians || use_degrees;
 	}
-	IfcSchema::IfcCompositeCurveSegment::list segments = l->Segments();
+	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = l->Segments();
 	BRepBuilderAPI_MakeWire w;
 	//TopoDS_Vertex last_vertex;
-	for( IfcSchema::IfcCompositeCurveSegment::it it = segments->begin(); it != segments->end(); ++ it ) {
-		const IfcSchema::IfcCurve::ptr curve = (*it)->ParentCurve();
+	for( IfcSchema::IfcCompositeCurveSegment::list::it it = segments->begin(); it != segments->end(); ++ it ) {
+		IfcSchema::IfcCurve* curve = (*it)->ParentCurve();
 		TopoDS_Wire wire2;
 		if ( ! IfcGeom::convert_wire(curve,wire2) ) {
 			Logger::Message(Logger::LOG_ERROR,"Failed to convert curve:",curve->entity);
@@ -171,15 +171,16 @@ bool IfcGeom::convert(const IfcSchema::IfcCompositeCurve::ptr l, TopoDS_Wire& wi
 	wire = w.Wire();
 	return true;
 }
-bool IfcGeom::convert(const IfcSchema::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
-	IfcSchema::IfcCurve::ptr basis_curve = l->BasisCurve();
+
+bool IfcGeom::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& wire) {
+	IfcSchema::IfcCurve* basis_curve = l->BasisCurve();
 	bool isConic = basis_curve->is(IfcSchema::Type::IfcConic);
 	double parameterFactor = isConic ? IfcGeom::GetValue(GV_PLANEANGLE_UNIT) : IfcGeom::GetValue(GV_LENGTH_UNIT);
 	Handle(Geom_Curve) curve;
 	if ( ! IfcGeom::convert_curve(basis_curve,curve) ) return false;
 	bool trim_cartesian = l->MasterRepresentation() == IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN;
-	IfcUtil::IfcAbstractSelect::list trims1 = l->Trim1();
-	IfcUtil::IfcAbstractSelect::list trims2 = l->Trim2();
+	IfcUtil::IfcAbstractSelect::list::ptr trims1 = l->Trim1();
+	IfcUtil::IfcAbstractSelect::list::ptr trims2 = l->Trim2();
 	bool trimmed1 = false;
 	bool trimmed2 = false;
 	unsigned sense_agreement = l->SenseAgreement() ? 0 : 1;
@@ -188,24 +189,24 @@ bool IfcGeom::convert(const IfcSchema::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire
 	bool has_flts[2] = {false,false};
 	bool has_pnts[2] = {false,false};
 	BRepBuilderAPI_MakeWire w;
-	for ( IfcUtil::IfcAbstractSelect::it it = trims1->begin(); it != trims1->end(); it ++ ) {
-		const IfcUtil::IfcAbstractSelect::ptr i = *it;
+	for ( IfcUtil::IfcAbstractSelect::list::it it = trims1->begin(); it != trims1->end(); it ++ ) {
+		IfcUtil::IfcAbstractSelect* i = *it;
 		if ( i->is(IfcSchema::Type::IfcCartesianPoint) ) {
-			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcSchema::IfcCartesianPoint>(i), pnts[sense_agreement] );
+			IfcGeom::convert((IfcSchema::IfcCartesianPoint*)i, pnts[sense_agreement] );
 			has_pnts[sense_agreement] = true;
 		} else if ( i->is(IfcSchema::Type::IfcParameterValue) ) {
-			const double value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
+			const double value = *((IfcUtil::IfcArgumentSelect*)i)->wrappedValue();
 			flts[sense_agreement] = value * parameterFactor;
 			has_flts[sense_agreement] = true;
 		}
 	}
-	for ( IfcUtil::IfcAbstractSelect::it it = trims2->begin(); it != trims2->end(); it ++ ) {
-		const IfcUtil::IfcAbstractSelect::ptr i = *it;
+	for ( IfcUtil::IfcAbstractSelect::list::it it = trims2->begin(); it != trims2->end(); it ++ ) {
+		IfcUtil::IfcAbstractSelect* i = *it;
 		if ( i->is(IfcSchema::Type::IfcCartesianPoint) ) {
-			IfcGeom::convert(reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcSchema::IfcCartesianPoint>(i), pnts[1-sense_agreement] );
+			IfcGeom::convert((IfcSchema::IfcCartesianPoint*)i, pnts[1-sense_agreement] );
 			has_pnts[1-sense_agreement] = true;
 		} else if ( i->is(IfcSchema::Type::IfcParameterValue) ) {
-			const double value = *reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcUtil::IfcArgumentSelect>(i)->wrappedValue();
+			const double value = *((IfcUtil::IfcArgumentSelect*)i)->wrappedValue();
 			flts[1-sense_agreement] = value * parameterFactor;
 			has_flts[1-sense_agreement] = true;
 		}
@@ -269,12 +270,13 @@ bool IfcGeom::convert(const IfcSchema::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire
 		return false;
 	}
 }
-bool IfcGeom::convert(const IfcSchema::IfcPolyline::ptr l, TopoDS_Wire& result) {
-	IfcSchema::IfcCartesianPoint::list points = l->Points();
+
+bool IfcGeom::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& result) {
+	IfcSchema::IfcCartesianPoint::list::ptr points = l->Points();
 
 	BRepBuilderAPI_MakeWire w;
 	gp_Pnt P1;gp_Pnt P2;
-	for( IfcSchema::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it ) {
+	for( IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it ) {
 		IfcGeom::convert(*it,P2);
 		if ( it != points->begin() && ( !P1.IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) )
 			w.Add(BRepBuilderAPI_MakeEdge(P1,P2));
@@ -284,13 +286,14 @@ bool IfcGeom::convert(const IfcSchema::IfcPolyline::ptr l, TopoDS_Wire& result) 
 	result = w.Wire();
 	return true;
 }
-bool IfcGeom::convert(const IfcSchema::IfcPolyLoop::ptr l, TopoDS_Wire& result) {
-	IfcSchema::IfcCartesianPoint::list points = l->Polygon();
+
+bool IfcGeom::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& result) {
+	IfcSchema::IfcCartesianPoint::list::ptr points = l->Polygon();
 
 	BRepBuilderAPI_MakeWire w;
 	gp_Pnt P1;gp_Pnt P2;gp_Pnt F;
 	int count = 0;
-	for( IfcSchema::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it ) {
+	for( IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it ) {
 		IfcGeom::convert(*it,P2);
 		if ( it != points->begin() && ( !P1.IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) ) {
 			w.Add(BRepBuilderAPI_MakeEdge(P1,P2));
@@ -307,6 +310,102 @@ bool IfcGeom::convert(const IfcSchema::IfcPolyLoop::ptr l, TopoDS_Wire& result) 
 	result = w.Wire();
 	return true;
 }
-bool IfcGeom::convert(const IfcSchema::IfcArbitraryOpenProfileDef::ptr l, TopoDS_Wire& result) {
+
+bool IfcGeom::convert(const IfcSchema::IfcArbitraryOpenProfileDef* l, TopoDS_Wire& result) {
 	return IfcGeom::convert_wire(l->Curve(), result);
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcEdgeCurve* l, TopoDS_Wire& result) {
+	IfcSchema::IfcPoint* pnt1 = ((IfcSchema::IfcVertexPoint*) l->EdgeStart())->VertexGeometry();
+	IfcSchema::IfcPoint* pnt2 = ((IfcSchema::IfcVertexPoint*) l->EdgeEnd())->VertexGeometry();
+	if (!pnt1->is(IfcSchema::Type::IfcCartesianPoint) || !pnt2->is(IfcSchema::Type::IfcCartesianPoint)) {
+		Logger::Message(Logger::LOG_ERROR, "Only IfcCartesianPoints are supported for VertexGeometry", l->entity);
+		return false;
+	}
+	
+	gp_Pnt p1, p2;
+	if (!IfcGeom::convert(((IfcSchema::IfcCartesianPoint*)pnt1), p1) ||
+		!IfcGeom::convert(((IfcSchema::IfcCartesianPoint*)pnt2), p2))
+	{
+		return false;
+	}
+	
+	BRepBuilderAPI_MakeWire mw;
+	Handle_Geom_Curve crv;
+
+	// The lack of a clear separation between topological and geometrical entities
+	// is starting to get problematic. If the underlying curve is bounded it is
+	// assumed that a topological wire can be crafted from it. After which an
+	// attempt is made to reconstruct it from the individual curves and the vertices
+	// of the IfcEdgeCurve.
+	const bool is_bounded = l->EdgeGeometry()->is(IfcSchema::Type::IfcBoundedCurve);
+
+	if (!is_bounded && IfcGeom::convert_curve(l->EdgeGeometry(), crv)) {
+		mw.Add(BRepBuilderAPI_MakeEdge(crv, p1, p2));
+		result = mw;
+		return true;
+	} else if (is_bounded && IfcGeom::convert_wire(l->EdgeGeometry(), result)) {
+		if (!l->SameSense()) std::swap(pnt1, pnt2);
+		TopExp_Explorer exp(result, TopAbs_EDGE);
+		bool first = true;
+		while (exp.More()) {
+			const TopoDS_Edge& ed = TopoDS::Edge(exp.Current());
+			Standard_Real u1, u2;
+			Handle(Geom_Curve) ecrv = BRep_Tool::Curve(ed, u1, u2);
+			exp.Next();
+			const bool last = !exp.More();
+			first = false;
+			if (first && last) {
+				mw.Add(BRepBuilderAPI_MakeEdge(ecrv, p1, p2));
+			} else if (first) {
+				gp_Pnt pu;
+				ecrv->D0(u2, pu);
+				mw.Add(BRepBuilderAPI_MakeEdge(ecrv, p1, pu));
+			} else if (last) {
+				gp_Pnt pu;
+				ecrv->D0(u1, pu);
+				mw.Add(BRepBuilderAPI_MakeEdge(ecrv, pu, p2));
+			} else {
+				mw.Add(BRepBuilderAPI_MakeEdge(ecrv, u1, u2));
+			}
+		}
+		result = mw;
+		return true;
+	} else {
+		return false;
+	}
+}
+
+bool IfcGeom::convert(const IfcSchema::IfcEdgeLoop* l, TopoDS_Wire& result) {
+	IfcSchema::IfcOrientedEdge::list::ptr li = l->EdgeList();
+	BRepBuilderAPI_MakeWire mw;
+	for (IfcSchema::IfcOrientedEdge::list::it it = li->begin(); it != li->end(); ++it) {
+		IfcSchema::IfcOrientedEdge* e = *it;
+
+		IfcSchema::IfcPoint* pnt1 = ((IfcSchema::IfcVertexPoint*) e->EdgeStart())->VertexGeometry();
+		IfcSchema::IfcPoint* pnt2 = ((IfcSchema::IfcVertexPoint*) e->EdgeEnd())->VertexGeometry();
+		if (!pnt1->is(IfcSchema::Type::IfcCartesianPoint) || !pnt2->is(IfcSchema::Type::IfcCartesianPoint)) {
+			Logger::Message(Logger::LOG_ERROR, "Only IfcCartesianPoints are supported for VertexGeometry", l->entity);
+			return false;
+		}
+	
+		gp_Pnt p1, p2;
+		if (!IfcGeom::convert(((IfcSchema::IfcCartesianPoint*)pnt1), p1) ||
+			!IfcGeom::convert(((IfcSchema::IfcCartesianPoint*)pnt2), p2))
+		{
+			return false;
+		}
+
+		mw.Add(BRepBuilderAPI_MakeEdge(p1, p2));
+		continue;
+		
+		IfcSchema::IfcEdge* base = e->EdgeElement();
+		TopoDS_Wire w;
+		if (convert_wire(e->EdgeElement(), w)) {
+			if (!e->Orientation()) w.Reverse();
+			mw.Add(w);
+		}
+	}
+	result = mw;
+	return true;
 }

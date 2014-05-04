@@ -87,8 +87,8 @@ namespace IfcGeom {
 	bool convert_wire(const IfcUtil::IfcBaseClass* L, TopoDS_Wire& result);
 	bool convert_curve(const IfcUtil::IfcBaseClass* L, Handle(Geom_Curve)& result);
 	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
-	bool convert_openings(const IfcSchema::IfcProduct::ptr entity, const IfcSchema::IfcRelVoidsElement::list& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
-	bool convert_openings_fast(const IfcSchema::IfcProduct::ptr entity, const IfcSchema::IfcRelVoidsElement::list& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
+	bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
+	bool convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
 	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
 	bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid);
 	bool is_compound(const TopoDS_Shape& shape);
@@ -104,7 +104,7 @@ namespace IfcGeom {
 	void SetValue(GeomValue var, double value);
 	double GetValue(GeomValue var);
 	bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
-	IfcSchema::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntities es);
+	IfcSchema::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es);
 
 	
 	

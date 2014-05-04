@@ -56,7 +56,7 @@ public:
 
 	template <class T>
 	T* getSingle() {
-		typename T::list ts = EntitiesByType<T>();
+		typename T::list::ptr ts = EntitiesByType<T>();
 		if (ts->Size() != 1) return 0;
 		return *ts->begin();
 	}
@@ -76,12 +76,12 @@ public:
 	void addRelatedObject(IfcSchema::IfcObjectDefinition* related_object, 
 		IfcSchema::IfcObjectDefinition* relating_object, IfcSchema::IfcOwnerHistory* owner_hist = 0)
 	{
-		typename T::list li = EntitiesByType<T>();
+		typename T::list::ptr li = EntitiesByType<T>();
 		bool found = false;
-		for (typename T::it i = li->begin(); i != li->end(); ++i) {
+		for (typename T::list::it i = li->begin(); i != li->end(); ++i) {
 			T* rel = *i;
 			if (rel->RelatingObject() == relating_object) {
-				IfcSchema::IfcObjectDefinition::list products = rel->RelatedObjects();
+				IfcSchema::IfcObjectDefinition::list::ptr products = rel->RelatedObjects();
 				products->push(related_object);
 				rel->setRelatedObjects(products);
 				found = true;
@@ -95,7 +95,7 @@ public:
 			if (! owner_hist) {
 				owner_hist = addOwnerHistory();
 			}
-			IfcSchema::IfcObjectDefinition::list relating_objects (new IfcTemplatedEntityList<IfcSchema::IfcObjectDefinition>());
+			IfcSchema::IfcObjectDefinition::list::ptr relating_objects (new IfcTemplatedEntityList<IfcSchema::IfcObjectDefinition>());
 			relating_objects->push(relating_object);
 			T* t = new T(IfcWrite::IfcGuidHelper(), owner_hist, boost::none, boost::none, related_object, relating_objects);
 			AddEntity(t);
@@ -144,12 +144,12 @@ template <>
 inline void IfcHierarchyHelper::addRelatedObject <IfcSchema::IfcRelContainedInSpatialStructure> (IfcSchema::IfcObjectDefinition* related_object, 
 	IfcSchema::IfcObjectDefinition* relating_object, IfcSchema::IfcOwnerHistory* owner_hist)
 {
-	IfcSchema::IfcRelContainedInSpatialStructure::list li = EntitiesByType<IfcSchema::IfcRelContainedInSpatialStructure>();
+	IfcSchema::IfcRelContainedInSpatialStructure::list::ptr li = EntitiesByType<IfcSchema::IfcRelContainedInSpatialStructure>();
 	bool found = false;
-	for (IfcSchema::IfcRelContainedInSpatialStructure::it i = li->begin(); i != li->end(); ++i) {
+	for (IfcSchema::IfcRelContainedInSpatialStructure::list::it i = li->begin(); i != li->end(); ++i) {
 		IfcSchema::IfcRelContainedInSpatialStructure* rel = *i;
 		if (rel->RelatingStructure() == relating_object) {
-			IfcSchema::IfcProduct::list products = rel->RelatedElements();
+			IfcSchema::IfcProduct::list::ptr products = rel->RelatedElements();
 			products->push((IfcSchema::IfcProduct*)related_object);
 			rel->setRelatedElements(products);
 			found = true;
@@ -163,7 +163,7 @@ inline void IfcHierarchyHelper::addRelatedObject <IfcSchema::IfcRelContainedInSp
 		if (! owner_hist) {
 			owner_hist = addOwnerHistory();
 		}
-		IfcSchema::IfcProduct::list relating_objects (new IfcTemplatedEntityList<IfcSchema::IfcProduct>());
+		IfcSchema::IfcProduct::list::ptr relating_objects (new IfcTemplatedEntityList<IfcSchema::IfcProduct>());
 		relating_objects->push((IfcSchema::IfcProduct*)relating_object);
 		IfcSchema::IfcRelContainedInSpatialStructure* t = new IfcSchema::IfcRelContainedInSpatialStructure(IfcWrite::IfcGuidHelper(), owner_hist, 
 			boost::none, boost::none, relating_objects, (IfcSchema::IfcSpatialStructureElement*)related_object);

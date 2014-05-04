@@ -82,11 +82,13 @@ namespace IfcWrite {
 			// An entity instance argument. It will either serialize to
 			// e.g. #123 or datatype identifier for simple types, e.g. 
 			// IFCREAL(12.3)
-			IfcUtil::IfcSchemaEntity,
+			IfcUtil::IfcBaseClass*,
 			// An entity list argument. It will either serialize to
 			// e.g. (#1,#2,#3) or datatype identifier for simple types,
 			// e.g. (IFCREAL(1.2),IFCINTEGER(3.))
-			IfcEntities
+			IfcEntityList::ptr,
+			// A list of list of entities. E.g. ((#1, #2), (#3))
+			IfcEntityListList::ptr
 		> container;
 	public:
 		enum argument_type {
@@ -100,8 +102,9 @@ namespace IfcWrite {
 			argument_type_vector_double,
 			argument_type_vector_string,
 			argument_type_enumeration,
-			argument_type_schema_entity,
-			argument_type_entities
+			argument_type_entity,
+			argument_type_entity_list,
+			argument_type_entity_list_list
 		};
 		IfcWriteArgument(IfcAbstractEntity* e) : entity(e) {}
 		template <typename T> const T& as() const {
@@ -121,10 +124,11 @@ namespace IfcWrite {
 		operator std::vector<double>() const;
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
-		operator IfcUtil::IfcSchemaEntity() const;
-		operator IfcEntities() const;
+		operator IfcUtil::IfcBaseClass*() const;
+		operator IfcEntityList::ptr() const;
+        operator IfcEntityListList::ptr() const;
 		bool isNull() const;
-		ArgumentPtr operator [] (unsigned int i) const;
+		Argument* operator [] (unsigned int i) const;
 		std::string toString(bool upper=false) const;
 		unsigned int Size() const;
 		argument_type argumentType() const;
@@ -141,14 +145,14 @@ namespace IfcWrite {
 	public:
 		// FIXME: Make this a non-pointer argument and implement a copy constructor
 		IfcSelectHelperEntity(IfcSchema::Type::Enum t, IfcWriteArgument* a) : _type(t), arg(a) {}
-		IfcEntities getInverse(IfcSchema::Type::Enum,int,const std::string &);
-		IfcEntities getInverse(IfcSchema::Type::Enum);
-		std::string datatype();
-		ArgumentPtr getArgument(unsigned int i);
-		unsigned int getArgumentCount();
+		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum,int,const std::string &);
+		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum);
+		std::string datatype() const;
+		Argument* getArgument(unsigned int i);
+		unsigned int getArgumentCount() const;
 		IfcSchema::Type::Enum type() const;
 		bool is(IfcSchema::Type::Enum t) const;
-		std::string toString(bool upper = false);
+		std::string toString(bool upper = false) const;
 		unsigned int id();
 		bool isWritable();
 	};
@@ -183,13 +187,13 @@ namespace IfcWrite {
 	// This way they can be added in a single batch to the IfcFile
 	class EntityBuffer {
 	private:
-		IfcEntities buffer;
+		IfcEntityList::ptr buffer;
 		static EntityBuffer* i;
 		static EntityBuffer* instance();
 	public:
-		static IfcEntities Get();
+		static IfcEntityList::ptr Get();
 		static void Clear();
-		static void Add(IfcUtil::IfcSchemaEntity e);
+		static void Add(IfcUtil::IfcBaseClass* e);
 	};
 
 }

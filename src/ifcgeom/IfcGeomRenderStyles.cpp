@@ -59,7 +59,7 @@ bool process_colour(IfcSchema::IfcColourOrFactor colour_or_factor, std::tr1::arr
 	}
 }
 
-const IfcGeom::SurfaceStyle* IfcGeom::get_style(IfcSchema::IfcRepresentationItem* item) {
+const IfcGeom::SurfaceStyle* IfcGeom::get_style(const IfcSchema::IfcRepresentationItem* item) {
 	std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*> shading_styles = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(item);
 	if (shading_styles.second == 0) {
 		return 0;

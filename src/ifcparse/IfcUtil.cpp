@@ -20,10 +20,10 @@
 #include "IfcUtil.h"
 #include <iostream>
 
-void IfcEntityList::push(IfcUtil::IfcSchemaEntity l) {
+void IfcEntityList::push(IfcUtil::IfcBaseClass* l) {
 	if ( l ) ls.push_back(l);
 }
-void IfcEntityList::push(IfcEntities l) {
+void IfcEntityList::push(const IfcEntityList::ptr& l) {
 	for( it i = l->begin(); i != l->end(); ++i  ) {
 		if ( *i ) ls.push_back(*i);
 	}
@@ -31,18 +31,18 @@ void IfcEntityList::push(IfcEntities l) {
 int IfcEntityList::Size() const { return (unsigned int) ls.size(); }
 IfcEntityList::it IfcEntityList::begin() { return ls.begin(); }
 IfcEntityList::it IfcEntityList::end() { return ls.end(); }
-IfcUtil::IfcSchemaEntity IfcEntityList::operator[] (int i) {
+IfcUtil::IfcBaseClass* IfcEntityList::operator[] (int i) {
 	return ls[i];
 }
-IfcEntities IfcEntityList::getInverse(IfcSchema::Type::Enum c) {
-	IfcEntities l = IfcEntities(new IfcEntityList());
+IfcEntityList::ptr IfcEntityList::getInverse(IfcSchema::Type::Enum c) {
+	IfcEntityList::ptr l = IfcEntityList::ptr(new IfcEntityList());
 	for( it i = begin(); i != end(); ++i  ) {
 		l->push((*i)->entity->getInverse(c));
 	}
 	return l;
 }
-IfcEntities IfcEntityList::getInverse(IfcSchema::Type::Enum c, int ar, const std::string& a) {
-	IfcEntities l = IfcEntities(new IfcEntityList());
+IfcEntityList::ptr IfcEntityList::getInverse(IfcSchema::Type::Enum c, int ar, const std::string& a) {
+	IfcEntityList::ptr l = IfcEntityList::ptr(new IfcEntityList());
 	for( it i = begin(); i != end(); ++i  ) {
 		l->push((*i)->entity->getInverse(c,ar,a));
 	}
@@ -51,15 +51,15 @@ IfcEntities IfcEntityList::getInverse(IfcSchema::Type::Enum c, int ar, const std
  
 bool IfcUtil::IfcEntitySelect::is(IfcSchema::Type::Enum v) const { return entity->is(v); }
 IfcSchema::Type::Enum IfcUtil::IfcEntitySelect::type() const { return entity->type(); }
-IfcUtil::IfcEntitySelect::IfcEntitySelect(IfcSchemaEntity b) { entity = b->entity; }
-IfcUtil::IfcEntitySelect::IfcEntitySelect(IfcAbstractEntityPtr e) { entity = e; }
+IfcUtil::IfcEntitySelect::IfcEntitySelect(IfcBaseClass* b) { entity = b->entity; }
+IfcUtil::IfcEntitySelect::IfcEntitySelect(IfcAbstractEntity* e) { entity = e; }
 bool IfcUtil::IfcEntitySelect::isSimpleType() { return false; }
 IfcUtil::IfcEntitySelect::~IfcEntitySelect() { delete entity; }
 
 bool IfcUtil::IfcArgumentSelect::is(IfcSchema::Type::Enum v) const { return _type == v; }
 IfcSchema::Type::Enum IfcUtil::IfcArgumentSelect::type() const { return _type; }
-IfcUtil::IfcArgumentSelect::IfcArgumentSelect(IfcSchema::Type::Enum t, ArgumentPtr a) { _type = t; arg = a; }
-ArgumentPtr IfcUtil::IfcArgumentSelect::wrappedValue() { return arg; }
+IfcUtil::IfcArgumentSelect::IfcArgumentSelect(IfcSchema::Type::Enum t, Argument* a) { _type = t; arg = a; }
+Argument* IfcUtil::IfcArgumentSelect::wrappedValue() { return arg; }
 bool IfcUtil::IfcArgumentSelect::isSimpleType() { return true; }
 IfcUtil::IfcArgumentSelect::~IfcArgumentSelect() { delete arg; }
 
@@ -70,7 +70,7 @@ void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
 		log2 = &log_stream;
 	}
 }
-void Logger::Message(Logger::Severity type, const std::string& message, const IfcAbstractEntityPtr entity) {
+void Logger::Message(Logger::Severity type, const std::string& message, IfcAbstractEntity* entity) {
 	if ( log2 && type >= verbosity ) {
 		(*log2) << "[" << severity_strings[type] << "] " << message << std::endl;
 		if ( entity ) (*log2) << entity->toString() << std::endl;

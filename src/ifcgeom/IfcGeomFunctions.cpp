@@ -136,14 +136,14 @@ const TopoDS_Shape& IfcGeom::ensure_fit_for_subtraction(const TopoDS_Shape& shap
 	return solid;
 }
 
-bool IfcGeom::convert_openings(const IfcSchema::IfcProduct::ptr entity, const IfcSchema::IfcRelVoidsElement::list& openings, 
+bool IfcGeom::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
 							   const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes) {
 	// Iterate over IfcOpeningElements
 	IfcGeom::IfcRepresentationShapeItems opening_shapes;
 	unsigned int last_size = 0;
-	for ( IfcSchema::IfcRelVoidsElement::it it = openings->begin(); it != openings->end(); ++ it ) {
-		IfcSchema::IfcRelVoidsElement::ptr v = *it;
-		IfcSchema::IfcFeatureElementSubtraction::ptr fes = v->RelatedOpeningElement();
+	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
+		IfcSchema::IfcRelVoidsElement* v = *it;
+		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
 		if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
@@ -153,10 +153,10 @@ bool IfcGeom::convert_openings(const IfcSchema::IfcProduct::ptr entity, const If
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
 
-			IfcSchema::IfcProductRepresentation::ptr prodrep = fes->Representation();
-			IfcSchema::IfcRepresentation::list reps = prodrep->Representations();
+			IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
+			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
 						
-			for ( IfcSchema::IfcRepresentation::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
+			for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
 				IfcGeom::convert_shapes(*it2,opening_shapes);
 			}
 
@@ -230,7 +230,7 @@ bool IfcGeom::convert_openings(const IfcSchema::IfcProduct::ptr entity, const If
 	return true;
 }
 
-bool IfcGeom::convert_openings_fast(const IfcSchema::IfcProduct::ptr entity, const IfcSchema::IfcRelVoidsElement::list& openings, 
+bool IfcGeom::convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
 							   const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes) {
 	
 	// Create a compound of all opening shapes in order to speed up the boolean operations
@@ -238,9 +238,9 @@ bool IfcGeom::convert_openings_fast(const IfcSchema::IfcProduct::ptr entity, con
 	BRep_Builder builder;
 	builder.MakeCompound(opening_compound);
 
-	for ( IfcSchema::IfcRelVoidsElement::it it = openings->begin(); it != openings->end(); ++ it ) {
-		IfcSchema::IfcRelVoidsElement::ptr v = *it;
-		IfcSchema::IfcFeatureElementSubtraction::ptr fes = v->RelatedOpeningElement();
+	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
+		IfcSchema::IfcRelVoidsElement* v = *it;
+		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
 		if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
@@ -250,12 +250,12 @@ bool IfcGeom::convert_openings_fast(const IfcSchema::IfcProduct::ptr entity, con
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
 
-			IfcSchema::IfcProductRepresentation::ptr prodrep = fes->Representation();
-			IfcSchema::IfcRepresentation::list reps = prodrep->Representations();
+			IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
+			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
 
 			IfcGeom::IfcRepresentationShapeItems opening_shapes;
 						
-			for ( IfcSchema::IfcRepresentation::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
+			for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
 				IfcGeom::convert_shapes(*it2,opening_shapes);
 			}
 
@@ -516,10 +516,10 @@ double IfcGeom::GetValue(GeomValue var) {
 	return 0;
 }
 
-IfcSchema::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, double deflection, IfcEntities es) {
+IfcSchema::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es) {
 	BRepMesh::Mesh(shape, deflection);
 
-	IfcSchema::IfcFace::list faces (new IfcTemplatedEntityList<IfcSchema::IfcFace>());
+	IfcSchema::IfcFace::list::ptr faces (new IfcSchema::IfcFace::list);
 
 	for (TopExp_Explorer exp(shape, TopAbs_FACE); exp.More(); exp.Next()) {
 		const TopoDS_Face& face = TopoDS::Face(exp.Current());
@@ -540,13 +540,13 @@ IfcSchema::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, do
 			for (int i = 1; i <= triangles.Length(); ++ i) {
 				int n1, n2, n3;
 				triangles(i).Get(n1, n2, n3);
-				IfcSchema::IfcCartesianPoint::list points (new IfcTemplatedEntityList<IfcSchema::IfcCartesianPoint>());
+				IfcSchema::IfcCartesianPoint::list::ptr points (new IfcSchema::IfcCartesianPoint::list);
 				points->push(vertices[n1-1]);
 				points->push(vertices[n2-1]);
 				points->push(vertices[n3-1]);
 				IfcSchema::IfcPolyLoop* loop = new IfcSchema::IfcPolyLoop(points);
 				IfcSchema::IfcFaceOuterBound* bound = new IfcSchema::IfcFaceOuterBound(loop, face.Orientation() != TopAbs_REVERSED);
-				IfcSchema::IfcFaceBound::list bounds (new IfcTemplatedEntityList<IfcSchema::IfcFaceBound>());
+				IfcSchema::IfcFaceBound::list::ptr bounds (new IfcSchema::IfcFaceBound::list);
 				bounds->push(bound);
 				IfcSchema::IfcFace* face = new IfcSchema::IfcFace(bounds);
 				es->push(loop);
@@ -557,12 +557,12 @@ IfcSchema::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, do
 		}
 	}
 	IfcSchema::IfcOpenShell* shell = new IfcSchema::IfcOpenShell(faces);
-	IfcSchema::IfcConnectedFaceSet::list shells (new IfcTemplatedEntityList<IfcSchema::IfcConnectedFaceSet>());
+	IfcSchema::IfcConnectedFaceSet::list::ptr shells (new IfcSchema::IfcConnectedFaceSet::list);
 	shells->push(shell);
 	IfcSchema::IfcFaceBasedSurfaceModel* surface_model = new IfcSchema::IfcFaceBasedSurfaceModel(shells);
 
-	IfcSchema::IfcRepresentation::list reps (new IfcTemplatedEntityList<IfcSchema::IfcRepresentation>());
-	IfcSchema::IfcRepresentationItem::list items (new IfcTemplatedEntityList<IfcSchema::IfcRepresentationItem>());
+	IfcSchema::IfcRepresentation::list::ptr reps (new IfcSchema::IfcRepresentation::list);
+	IfcSchema::IfcRepresentationItem::list::ptr items (new IfcSchema::IfcRepresentationItem::list);
 
 	items->push(surface_model);
 
