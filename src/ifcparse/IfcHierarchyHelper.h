@@ -28,6 +28,8 @@
 #ifndef IFCHIERARCHYHELPER_H
 #define IFCHIERARCHYHELPER_H
 
+#include <map>
+
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4.h"
 #else
@@ -68,7 +70,8 @@ public:
 	IfcSchema::IfcAxis2Placement2D* addPlacement2d(double ox=0.0, double oy=0.0,
 		double xx=1.0, double xy=0.0);
 
-	IfcSchema::IfcLocalPlacement* addLocalPlacement(double ox=0.0, double oy=0.0, double oz=0.0,
+	IfcSchema::IfcLocalPlacement* addLocalPlacement(IfcSchema::IfcObjectPlacement* parent = 0,
+		double ox=0.0, double oy=0.0, double oz=0.0,
 		double zx=0.0, double zy=0.0, double zz=1.0,
 		double xx=1.0, double xy=0.0, double xz=0.0);
 
@@ -129,15 +132,43 @@ public:
 	IfcSchema::IfcProductDefinitionShape* addBox(double w, double d, double h, IfcSchema::IfcAxis2Placement2D* place=0, 
 		IfcSchema::IfcAxis2Placement3D* place2=0, IfcSchema::IfcDirection* dir=0, IfcSchema::IfcRepresentationContext* context=0);
 
+	void addAxis(IfcSchema::IfcShapeRepresentation* rep, double l, IfcSchema::IfcRepresentationContext* context=0);
+
+	IfcSchema::IfcProductDefinitionShape* addAxisBox(double w, double d, double h, IfcSchema::IfcRepresentationContext* context=0);
+
 	void clipRepresentation(IfcSchema::IfcProductRepresentation* shape, 
 		IfcSchema::IfcAxis2Placement3D* place, bool agree);
 
+	void clipRepresentation(IfcSchema::IfcRepresentation* shape, 
+		IfcSchema::IfcAxis2Placement3D* place, bool agree);
+
+	IfcSchema::IfcPresentationStyleAssignment* addStyleAssignment(double r, double g, double b, double a=1.0);
+
 	IfcSchema::IfcPresentationStyleAssignment* setSurfaceColour(IfcSchema::IfcProductRepresentation* shape, 
+		double r, double g, double b, double a=1.0);
+
+	IfcSchema::IfcPresentationStyleAssignment* setSurfaceColour(IfcSchema::IfcRepresentation* shape, 
 		double r, double g, double b, double a=1.0);
 
 	void setSurfaceColour(IfcSchema::IfcProductRepresentation* shape, 
 		IfcSchema::IfcPresentationStyleAssignment* style_assignment);
 
+	void setSurfaceColour(IfcSchema::IfcRepresentation* shape, 
+		IfcSchema::IfcPresentationStyleAssignment* style_assignment);
+
+	IfcSchema::IfcProductDefinitionShape* addMappedItem(IfcSchema::IfcShapeRepresentation*, 
+		IfcSchema::IfcCartesianTransformationOperator3D* transform = 0,
+		IfcSchema::IfcProductDefinitionShape* def = 0);
+
+	IfcSchema::IfcProductDefinitionShape* addMappedItem(IfcSchema::IfcShapeRepresentation::list::ptr, 
+		IfcSchema::IfcCartesianTransformationOperator3D* transform = 0);
+	
+	IfcSchema::IfcShapeRepresentation* addEmptyRepresentation(const std::string& repid = "Body", const std::string& reptype = "SweptSolid");
+
+	IfcSchema::IfcGeometricRepresentationContext* getRepresentationContext(const std::string&);
+
+private:
+	std::map<std::string, IfcSchema::IfcGeometricRepresentationContext*> contexts;
 };
 
 template <>

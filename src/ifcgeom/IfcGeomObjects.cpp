@@ -657,7 +657,7 @@ void IfcGeomObjects::InitUnits() {
 		}
 	} catch (const IfcParse::IfcException&) {}
 
-	if (!units) {
+	if (!units || !units->Size()) {
 		// No units eh... Since tolerances and deflection are specified internally in meters
 		// we will try to find another indication of the model size.
 		IfcSchema::IfcExtrudedAreaSolid::list::ptr extrusions = ifc_file->EntitiesByType<IfcSchema::IfcExtrudedAreaSolid>();

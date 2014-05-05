@@ -834,6 +834,36 @@ void IfcFile::AddEntity(IfcUtil::IfcBaseClass* entity) {
 	}
 	byid[new_id] = entity;
 
+	unsigned arg_count = entity->entity->getArgumentCount();
+	for (unsigned i = 0; i < arg_count; ++i) {
+		Argument* arg = entity->entity->getArgument(i);
+		IfcEntityList::ptr entity_attributes(new IfcEntityList);
+		try {
+			IfcUtil::IfcBaseClass* entity_attribute = *arg;
+			entity_attributes->push(entity_attribute);
+		} catch(IfcParse::IfcException&) {
+			try {
+				IfcEntityList::ptr entity_list_attribute = *arg;
+				entity_attributes->push(entity_list_attribute);
+			} catch(IfcParse::IfcException&) {}
+		}
+		for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
+			IfcUtil::IfcBaseClass* entity_attribute = *it;
+			try {
+				if (entity_attribute->entity->isWritable()) {
+					if ( ! entity_attribute->entity->file ) entity_attribute->entity->file = this;
+					((IfcWrite::IfcWritableEntity*)(entity_attribute->entity))->setId();
+				}
+				unsigned entity_attribute_id = entity_attribute->entity->id();
+				IfcEntityList::ptr refs = EntitiesByReference(entity_attribute_id);
+				if (!refs) {
+					refs = IfcEntityList::ptr(new IfcEntityList);
+					byref[entity_attribute_id] = refs;
+				}
+				refs->push(entity);
+			} catch (IfcParse::IfcException&) {}
+		}
+	}
 }
 IfcEntityList::ptr IfcFile::EntitiesByType(IfcSchema::Type::Enum t) {
 	MapEntitiesByType::const_iterator it = bytype.find(t);

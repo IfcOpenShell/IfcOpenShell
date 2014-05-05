@@ -33,7 +33,16 @@ IfcWritableEntity::~IfcWritableEntity() {
 	delete _id;
 }
 int IfcWritableEntity::setId(int i) {
-	return *(_id = new int(i > 0 ? i : file->FreshId()));
+	if (i > 0) {
+		delete _id;
+		return *(_id = new int(i));
+	} else {
+		if (_id) { return *_id; }
+		else { 
+			delete _id; 
+			return *(_id = new int(file->FreshId())); 
+		}
+	}
 }
 IfcWritableEntity::IfcWritableEntity(IfcAbstractEntity* e) 
 {

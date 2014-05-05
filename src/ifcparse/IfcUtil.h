@@ -77,7 +77,8 @@ public:
 	template <class U>
 	typename U::list::ptr as() {
 		typename U::list::ptr r(new typename U::list);
-		for ( it i = begin(); i != end(); ++ i ) if ((*i)->is(U::Class())) r->push((U*)*i);
+		const bool all = U::Class() == IfcSchema::Type::ALL;
+		for ( it i = begin(); i != end(); ++ i ) if (all || (*i)->is(U::Class())) r->push((U*)*i);
 		return r;
 	}
 };
@@ -101,7 +102,8 @@ public:
 	template <class U> 
 	typename U::list::ptr as() {
 		typename U::list::ptr r(new typename U::list);
-		for ( it i = begin(); i != end(); ++ i ) if ((*i)->is(U::Class())) r->push(*i);
+		const bool all = U::Class() == IfcSchema::Type::ALL;
+		for ( it i = begin(); i != end(); ++ i ) if (all || (*i)->is(U::Class())) r->push(*i);
 		return r;
 	}
 };
