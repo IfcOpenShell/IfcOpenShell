@@ -54,17 +54,17 @@ int main(int argc, char** argv) {
 	// we need to cast them to IfcWindows. Since these properties 
 	// are optional we need to make sure the properties are 
 	// defined for the window in question before accessing them.
-	IfcBuildingElement::list elements = file.EntitiesByType<IfcBuildingElement>();
+	IfcBuildingElement::list::ptr elements = file.EntitiesByType<IfcBuildingElement>();
 
 	std::cout << "Found " << elements->Size() << " elements in " << argv[1] << ":" << std::endl;
 	
-	for ( IfcBuildingElement::it it = elements->begin(); it != elements->end(); ++ it ) {
+	for ( IfcBuildingElement::list::it it = elements->begin(); it != elements->end(); ++ it ) {
 		
-		const IfcBuildingElement::ptr element = *it;
+		const IfcBuildingElement* element = *it;
 		std::cout << element->entity->toString() << std::endl;
 		
 		if ( element->is(IfcWindow::Class()) ) {
-			const IfcWindow::ptr window = (IfcWindow*)element;
+			const IfcWindow* window = (IfcWindow*)element;
 			
 			if ( window->hasOverallWidth() && window->hasOverallHeight() ) {
 				const double area = window->OverallWidth()*window->OverallHeight();
