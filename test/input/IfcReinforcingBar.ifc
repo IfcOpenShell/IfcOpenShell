@@ -1,7 +1,7 @@
 ISO-10303-21;
 HEADER;FILE_DESCRIPTION(('IFC2x3 Coordination View'),'2;1');
 FILE_NAME('export.ifc',
-'2014-04-14T14:30:50','Hahnebach Bernd',
+'2014-04-14T14:30:50',('Hahnebach Bernd'),(''),
 'The EXPRESS Data Manager Version 5.02.0100.02 : 29 May 2013',
 'Allplan 2014.0 23.01.2014 - 15:01:43','');
 FILE_SCHEMA(('IFC2X3'));
