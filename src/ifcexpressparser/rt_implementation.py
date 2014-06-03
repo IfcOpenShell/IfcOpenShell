@@ -88,12 +88,14 @@ class RuntimeTypingImplementation:
         for name, type in mapping.schema.entities.items():
             if type.inverse:
                 for attr in type.inverse.elements:
-                    print (attr)
+                    related_entity = mapping.schema.entities[attr.entity]
+                    related_attrs = [a['name'] for a in mapping.get_assignable_arguments(related_entity, include_derived=True)]
+
                     inverse_implementations.append(templates.inverse_implementation % {
                         'type'         : name,
                         'name'         : attr.name,
                         'related_type' : attr.entity,
-                        'index'        : [i for i, a in enumerate(mapping.schema.entities[attr.entity].attributes) if a.name == attr.attribute][0]
+                        'index'        : related_attrs.index(attr.attribute)
                     })
 
         self.str = templates.rt_implementation % {

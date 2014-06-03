@@ -145,7 +145,15 @@ std::string IfcParse::IfcUntypedEntity::toString() {
 }
 IfcEntities IfcParse::IfcUntypedEntity::get_inverse(const std::string& a) {
 	std::pair<IfcSchema::Type::Enum, unsigned> inv = IfcSchema::Type::GetInverseAttribute(_type, a);
-	return entity->getInverse(inv.first);
+	IfcEntities invs = entity->getInverse(inv.first);
+	IfcEntities filtered(new IfcEntityList());
+	for (auto it = invs->begin(); it != invs->end(); ++it) {
+		try {
+			const int id = *(*it)->entity->getArgument(inv.second);
+			if (id == this->entity->id()) { filtered->push(*it); }
+		} catch (...) {}
+	}
+	return filtered;
 }		
 bool IfcParse::IfcUntypedEntity::is_valid() {
 	const unsigned arg_count = getArgumentCount();
