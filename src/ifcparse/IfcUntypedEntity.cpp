@@ -143,6 +143,10 @@ unsigned IfcParse::IfcUntypedEntity::getArgumentIndex(const std::string& a) cons
 std::string IfcParse::IfcUntypedEntity::toString() {
 	return entity->toString(false);
 }
+IfcEntities IfcParse::IfcUntypedEntity::get_inverse(const std::string& a) {
+	std::pair<IfcSchema::Type::Enum, unsigned> inv = IfcSchema::Type::GetInverseAttribute(_type, a);
+	return entity->getInverse(inv.first);
+}		
 bool IfcParse::IfcUntypedEntity::is_valid() {
 	const unsigned arg_count = getArgumentCount();
 	bool valid = true;

@@ -41,6 +41,7 @@ using namespace IfcUtil;
 
 std::map<Type::Enum,IfcEntityDescriptor*> entity_descriptor_map;
 std::map<Type::Enum,IfcEnumerationDescriptor*> enumeration_descriptor_map;
+std::map<std::pair<Type::Enum, std::string>, std::pair<Type::Enum, int> > inverse_map;
 void InitDescriptorMap() {
     IfcEntityDescriptor* current;
     current = entity_descriptor_map[Type::IfcAbsorbedDoseMeasure] = new IfcEntityDescriptor(Type::IfcAbsorbedDoseMeasure,0);
@@ -4047,6 +4048,124 @@ void InitDescriptorMap() {
     current_enum = enumeration_descriptor_map[Type::IfcWorkControlTypeEnum] = new IfcEnumerationDescriptor(Type::IfcWorkControlTypeEnum, values);
 }
 
+void InitInverseMap() {
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcActor, "IsActingUpon"), std::make_pair(Type::IfcRelAssignsToActor, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcAddress, "OfPerson"), std::make_pair(Type::IfcPerson, 7)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcAddress, "OfOrganization"), std::make_pair(Type::IfcOrganization, 4)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcAnnotation, "ContainedInStructure"), std::make_pair(Type::IfcRelContainedInSpatialStructure, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcAppliedValue, "ValuesReferenced"), std::make_pair(Type::IfcReferencesValueDocument, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcAppliedValue, "ValueOfComponents"), std::make_pair(Type::IfcAppliedValueRelationship, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcAppliedValue, "IsComponentIn"), std::make_pair(Type::IfcAppliedValueRelationship, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcApproval, "Actors"), std::make_pair(Type::IfcApprovalActorRelationship, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcApproval, "IsRelatedWith"), std::make_pair(Type::IfcApprovalRelationship, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcApproval, "Relates"), std::make_pair(Type::IfcApprovalRelationship, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcClassification, "Contains"), std::make_pair(Type::IfcClassificationItem, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcClassificationItem, "IsClassifiedItemIn"), std::make_pair(Type::IfcClassificationItemRelationship, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcClassificationItem, "IsClassifyingItemIn"), std::make_pair(Type::IfcClassificationItemRelationship, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcCompositeCurveSegment, "UsingCurves"), std::make_pair(Type::IfcCompositeCurve, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcConstraint, "ClassifiedAs"), std::make_pair(Type::IfcConstraintClassificationRelationship, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcConstraint, "RelatesConstraints"), std::make_pair(Type::IfcConstraintRelationship, 2)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcConstraint, "IsRelatedWith"), std::make_pair(Type::IfcConstraintRelationship, 3)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcConstraint, "PropertiesForConstraint"), std::make_pair(Type::IfcPropertyConstraintRelationship, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcConstraint, "Aggregates"), std::make_pair(Type::IfcConstraintAggregationRelationship, 2)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcConstraint, "IsAggregatedIn"), std::make_pair(Type::IfcConstraintAggregationRelationship, 3)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcControl, "Controls"), std::make_pair(Type::IfcRelAssignsToControl, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcCovering, "CoversSpaces"), std::make_pair(Type::IfcRelCoversSpaces, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcCovering, "Covers"), std::make_pair(Type::IfcRelCoversBldgElements, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcDimensionCurve, "AnnotatedBySymbols"), std::make_pair(Type::IfcTerminatorSymbol, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcDistributionControlElement, "AssignedToFlowElement"), std::make_pair(Type::IfcRelFlowControlElements, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcDistributionFlowElement, "HasControlElements"), std::make_pair(Type::IfcRelFlowControlElements, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcDocumentInformation, "IsPointedTo"), std::make_pair(Type::IfcDocumentInformationRelationship, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcDocumentInformation, "IsPointer"), std::make_pair(Type::IfcDocumentInformationRelationship, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcDocumentReference, "ReferenceToDocument"), std::make_pair(Type::IfcDocumentInformation, 3)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcDraughtingCallout, "IsRelatedFromCallout"), std::make_pair(Type::IfcDraughtingCalloutRelationship, 3)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcDraughtingCallout, "IsRelatedToCallout"), std::make_pair(Type::IfcDraughtingCalloutRelationship, 2)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcElement, "HasStructuralMember"), std::make_pair(Type::IfcRelConnectsStructuralElement, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcElement, "FillsVoids"), std::make_pair(Type::IfcRelFillsElement, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcElement, "ConnectedTo"), std::make_pair(Type::IfcRelConnectsElements, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcElement, "HasCoverings"), std::make_pair(Type::IfcRelCoversBldgElements, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcElement, "HasProjections"), std::make_pair(Type::IfcRelProjectsElement, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcElement, "ReferencedInStructures"), std::make_pair(Type::IfcRelReferencedInSpatialStructure, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcElement, "HasPorts"), std::make_pair(Type::IfcRelConnectsPortToElement, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcElement, "HasOpenings"), std::make_pair(Type::IfcRelVoidsElement, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcElement, "IsConnectionRealization"), std::make_pair(Type::IfcRelConnectsWithRealizingElements, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcElement, "ProvidesBoundaries"), std::make_pair(Type::IfcRelSpaceBoundary, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcElement, "ConnectedFrom"), std::make_pair(Type::IfcRelConnectsElements, 2)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcElement, "ContainedInStructure"), std::make_pair(Type::IfcRelContainedInSpatialStructure, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcFeatureElementAddition, "ProjectsElements"), std::make_pair(Type::IfcRelProjectsElement, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcFeatureElementSubtraction, "VoidsElements"), std::make_pair(Type::IfcRelVoidsElement, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcGeometricRepresentationContext, "HasSubContexts"), std::make_pair(Type::IfcGeometricRepresentationSubContext, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcGrid, "ContainedInStructure"), std::make_pair(Type::IfcRelContainedInSpatialStructure, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcGridAxis, "PartOfW"), std::make_pair(Type::IfcGrid, 2)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcGridAxis, "PartOfV"), std::make_pair(Type::IfcGrid, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcGridAxis, "PartOfU"), std::make_pair(Type::IfcGrid, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcGridAxis, "HasIntersections"), std::make_pair(Type::IfcVirtualGridIntersection, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcGroup, "IsGroupedBy"), std::make_pair(Type::IfcRelAssignsToGroup, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcLibraryReference, "ReferenceIntoLibrary"), std::make_pair(Type::IfcLibraryInformation, 4)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcMaterial, "HasRepresentation"), std::make_pair(Type::IfcMaterialDefinitionRepresentation, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcMaterial, "ClassifiedAs"), std::make_pair(Type::IfcMaterialClassificationRelationship, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcMaterialLayer, "ToMaterialLayerSet"), std::make_pair(Type::IfcMaterialLayerSet, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcObject, "IsDefinedBy"), std::make_pair(Type::IfcRelDefines, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcObjectDefinition, "HasAssignments"), std::make_pair(Type::IfcRelAssigns, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcObjectDefinition, "IsDecomposedBy"), std::make_pair(Type::IfcRelDecomposes, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcObjectDefinition, "Decomposes"), std::make_pair(Type::IfcRelDecomposes, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcObjectDefinition, "HasAssociations"), std::make_pair(Type::IfcRelAssociates, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcObjectPlacement, "PlacesObject"), std::make_pair(Type::IfcProduct, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcObjectPlacement, "ReferencedByPlacements"), std::make_pair(Type::IfcLocalPlacement, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcOpeningElement, "HasFillings"), std::make_pair(Type::IfcRelFillsElement, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcOrganization, "IsRelatedBy"), std::make_pair(Type::IfcOrganizationRelationship, 3)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcOrganization, "Relates"), std::make_pair(Type::IfcOrganizationRelationship, 2)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcOrganization, "Engages"), std::make_pair(Type::IfcPersonAndOrganization, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcPerson, "EngagedIn"), std::make_pair(Type::IfcPersonAndOrganization, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcPhysicalQuantity, "PartOfComplex"), std::make_pair(Type::IfcPhysicalComplexQuantity, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcPort, "ContainedIn"), std::make_pair(Type::IfcRelConnectsPortToElement, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcPort, "ConnectedFrom"), std::make_pair(Type::IfcRelConnectsPorts, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcPort, "ConnectedTo"), std::make_pair(Type::IfcRelConnectsPorts, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcProcess, "OperatesOn"), std::make_pair(Type::IfcRelAssignsToProcess, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcProcess, "IsSuccessorFrom"), std::make_pair(Type::IfcRelSequence, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcProcess, "IsPredecessorTo"), std::make_pair(Type::IfcRelSequence, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcProduct, "ReferencedBy"), std::make_pair(Type::IfcRelAssignsToProduct, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcProductDefinitionShape, "ShapeOfProduct"), std::make_pair(Type::IfcProduct, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcProductDefinitionShape, "HasShapeAspects"), std::make_pair(Type::IfcShapeAspect, 4)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcProperty, "PropertyForDependance"), std::make_pair(Type::IfcPropertyDependencyRelationship, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcProperty, "PropertyDependsOn"), std::make_pair(Type::IfcPropertyDependencyRelationship, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcProperty, "PartOfComplex"), std::make_pair(Type::IfcComplexProperty, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcPropertyDefinition, "HasAssociations"), std::make_pair(Type::IfcRelAssociates, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcPropertySetDefinition, "PropertyDefinitionOf"), std::make_pair(Type::IfcRelDefinesByProperties, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcPropertySetDefinition, "DefinesType"), std::make_pair(Type::IfcTypeObject, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcRepresentation, "RepresentationMap"), std::make_pair(Type::IfcRepresentationMap, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcRepresentation, "LayerAssignments"), std::make_pair(Type::IfcPresentationLayerAssignment, 2)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcRepresentation, "OfProductRepresentation"), std::make_pair(Type::IfcProductRepresentation, 2)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcRepresentationContext, "RepresentationsInContext"), std::make_pair(Type::IfcRepresentation, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcRepresentationItem, "LayerAssignments"), std::make_pair(Type::IfcPresentationLayerAssignment, 2)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcRepresentationItem, "StyledByItem"), std::make_pair(Type::IfcStyledItem, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcRepresentationMap, "MapUsage"), std::make_pair(Type::IfcMappedItem, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcResource, "ResourceOf"), std::make_pair(Type::IfcRelAssignsToResource, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcScheduleTimeControl, "ScheduleTimeControlAssigned"), std::make_pair(Type::IfcRelAssignsTasks, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcShapeModel, "OfShapeAspect"), std::make_pair(Type::IfcShapeAspect, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcSpace, "HasCoverings"), std::make_pair(Type::IfcRelCoversSpaces, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcSpace, "BoundedBy"), std::make_pair(Type::IfcRelSpaceBoundary, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcSpaceProgram, "HasInteractionReqsFrom"), std::make_pair(Type::IfcRelInteractionRequirements, 3)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcSpaceProgram, "HasInteractionReqsTo"), std::make_pair(Type::IfcRelInteractionRequirements, 4)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcSpatialStructureElement, "ReferencesElements"), std::make_pair(Type::IfcRelReferencedInSpatialStructure, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcSpatialStructureElement, "ServicedBySystems"), std::make_pair(Type::IfcRelServicesBuildings, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcSpatialStructureElement, "ContainsElements"), std::make_pair(Type::IfcRelContainedInSpatialStructure, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcStructuralActivity, "AssignedToStructuralItem"), std::make_pair(Type::IfcRelConnectsStructuralActivity, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcStructuralConnection, "ConnectsStructuralMembers"), std::make_pair(Type::IfcRelConnectsStructuralMember, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcStructuralItem, "AssignedStructuralActivity"), std::make_pair(Type::IfcRelConnectsStructuralActivity, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcStructuralLoadGroup, "SourceOfResultGroup"), std::make_pair(Type::IfcStructuralResultGroup, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcStructuralLoadGroup, "LoadGroupFor"), std::make_pair(Type::IfcStructuralAnalysisModel, 2)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcStructuralMember, "ReferencesElement"), std::make_pair(Type::IfcRelConnectsStructuralElement, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcStructuralMember, "ConnectedBy"), std::make_pair(Type::IfcRelConnectsStructuralMember, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcStructuralReaction, "Causes"), std::make_pair(Type::IfcStructuralAction, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcStructuralResultGroup, "ResultGroupFor"), std::make_pair(Type::IfcStructuralAnalysisModel, 3)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcSystem, "ServicesBuildings"), std::make_pair(Type::IfcRelServicesBuildings, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcTableRow, "OfTable"), std::make_pair(Type::IfcTable, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcTextureCoordinate, "AnnotatedSurface"), std::make_pair(Type::IfcAnnotationSurface, 1)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcTimeSeries, "DocumentedBy"), std::make_pair(Type::IfcTimeSeriesReferenceRelationship, 0)));
+    inverse_map.insert(std::make_pair(std::make_pair(Type::IfcTypeObject, "ObjectTypeOf"), std::make_pair(Type::IfcRelDefinesByType, 0)));
+}
+
 int Type::GetAttributeIndex(Enum t, const std::string& a) {
     if (entity_descriptor_map.empty()) ::InitDescriptorMap();
     std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
@@ -4087,6 +4206,18 @@ std::pair<const char*, int> Type::GetEnumerationIndex(Enum t, const std::string&
     std::map<Type::Enum,IfcEnumerationDescriptor*>::const_iterator i = enumeration_descriptor_map.find(t);
     if ( i == enumeration_descriptor_map.end() ) throw IfcException("Value not found");
     else return i->second->getIndex(a);
+}
+
+std::pair<Type::Enum, unsigned> Type::GetInverseAttribute(Enum t, const std::string& a) {
+	if (inverse_map.empty()) ::InitInverseMap();
+	std::map<std::pair<Type::Enum, std::string>, std::pair<Type::Enum, int> >::const_iterator it;
+    std::pair<Type::Enum, std::string> key = std::make_pair(t, a);
+    while (true) {
+        it = inverse_map.find(key);
+        if (it != inverse_map.end()) return it->second;
+		if ((key.first = Parent(key.first)) == -1) break;
+    }
+    throw IfcException("Attribute not found");
 }
 
 Type::Enum Type::GetAttributeEnumerationClass(Enum t, unsigned char a) {

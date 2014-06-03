@@ -89,6 +89,7 @@ namespace Type {
     const std::string& GetAttributeName(Enum t, unsigned char a);
     bool GetAttributeOptional(Enum t, unsigned char a);
     std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
+    std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
     Enum GetAttributeEnumerationClass(Enum t, unsigned char a);
     void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
 }}
@@ -181,6 +182,7 @@ using namespace IfcUtil;
 
 std::map<Type::Enum,IfcEntityDescriptor*> entity_descriptor_map;
 std::map<Type::Enum,IfcEnumerationDescriptor*> enumeration_descriptor_map;
+std::map<std::pair<Type::Enum, std::string>, std::pair<Type::Enum, int> > inverse_map;
 void InitDescriptorMap() {
     IfcEntityDescriptor* current;
 %(entity_descriptors)s
@@ -188,6 +190,10 @@ void InitDescriptorMap() {
     IfcEnumerationDescriptor* current_enum;
     std::vector<std::string> values;
 %(enumeration_descriptors)s
+}
+
+void InitInverseMap() {
+%(inverse_implementations)s
 }
 
 int Type::GetAttributeIndex(Enum t, const std::string& a) {
@@ -230,6 +236,18 @@ std::pair<const char*, int> Type::GetEnumerationIndex(Enum t, const std::string&
     std::map<Type::Enum,IfcEnumerationDescriptor*>::const_iterator i = enumeration_descriptor_map.find(t);
     if ( i == enumeration_descriptor_map.end() ) throw IfcException("Value not found");
     else return i->second->getIndex(a);
+}
+
+std::pair<Type::Enum, unsigned> Type::GetInverseAttribute(Enum t, const std::string& a) {
+	if (inverse_map.empty()) ::InitInverseMap();
+	std::map<std::pair<Type::Enum, std::string>, std::pair<Type::Enum, int> >::const_iterator it;
+    std::pair<Type::Enum, std::string> key = std::make_pair(t, a);
+    while (true) {
+        it = inverse_map.find(key);
+        if (it != inverse_map.end()) return it->second;
+        if ((key.first = Parent(key.first)) == -1) break;
+    }
+    throw IfcException("Attribute not found");
 }
 
 Type::Enum Type::GetAttributeEnumerationClass(Enum t, unsigned char a) {
@@ -356,6 +374,8 @@ constructor_stmt_enum = " e->setArgument(%(index)d,%(name)s,%(type)s::ToString(%
 constructor_stmt_array = " e->setArgument(%(index)d,(%(name)s)->generalize());"
 constructor_stmt_optional = " if (%(name)s) {%(stmt)s } else { e->setArgument(%(index)d); }"
 constructor_stmt_derived = " e->setArgumentDerived(%(index)d);"
+
+inverse_implementation = "    inverse_map.insert(std::make_pair(std::make_pair(Type::%(type)s, \"%(name)s\"), std::make_pair(Type::%(related_type)s, %(index)d)));"
 
 def multi_line_comment(li):
     return ("/// %s"%("\n/// ".join(li))) if len(li) else ""

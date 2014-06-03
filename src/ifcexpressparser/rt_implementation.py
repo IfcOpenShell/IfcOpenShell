@@ -26,6 +26,7 @@ class RuntimeTypingImplementation:
         entity_descriptors = []
         enumeration_descriptors = []
         derived_field_statements = []
+        inverse_implementations = []
         
         for name, type in mapping.schema.simpletypes.items():
             entity_descriptors.append(templates.entity_descriptor % {
@@ -83,13 +84,25 @@ class RuntimeTypingImplementation:
                     'type'       : name,
                     'statements' : statements
                 })
+                
+        for name, type in mapping.schema.entities.items():
+            if type.inverse:
+                for attr in type.inverse.elements:
+                    print (attr)
+                    inverse_implementations.append(templates.inverse_implementation % {
+                        'type'         : name,
+                        'name'         : attr.name,
+                        'related_type' : attr.entity,
+                        'index'        : [i for i, a in enumerate(mapping.schema.entities[attr.entity].attributes) if a.name == attr.attribute][0]
+                    })
 
         self.str = templates.rt_implementation % {
             'schema_name_upper'        : mapping.schema.name.upper(),
             'schema_name'              : mapping.schema.name.capitalize(),
             'entity_descriptors'       : '\n'.join(entity_descriptors),
             'enumeration_descriptors'  : '\n'.join(enumeration_descriptors),
-            'derived_field_statements' : '\n'.join(derived_field_statements)
+            'derived_field_statements' : '\n'.join(derived_field_statements),
+            'inverse_implementations'  : '\n'.join(inverse_implementations)
         }
 
         self.schema_name = mapping.schema.name.capitalize()
