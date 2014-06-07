@@ -891,7 +891,9 @@ std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f) {
 
 	for ( MapEntityById::const_iterator it = f.begin(); it != f.end(); ++ it ) {
 		const IfcEntity e = it->second;
-		os << e->entity->toString(true) << ";" << std::endl;
+		if (!IfcSchema::Type::IsSimple(e->type())) {
+			os << e->entity->toString(true) << ";" << std::endl;
+		}
 	}
 
 	os << "ENDSEC;" << std::endl;

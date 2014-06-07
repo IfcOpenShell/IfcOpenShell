@@ -84,8 +84,10 @@ std::string IfcWritableEntity::toString(bool upper) {
 	if ( upper ) {
 		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
 	}
-	if ( _id ) ss << "#" << *_id;
-	ss << "=" << dt << "(";
+	if ( _id && !IfcSchema::Type::IsSimple(_type) ) {
+		ss << "#" << *_id << "=";
+	}
+	ss << dt << "(";
 	for ( std::map<int,ArgumentPtr>::const_iterator it = args.begin(); it != args.end(); ++ it ) {
 		if ( it != args.begin() ) ss << ",";
 		const ArgumentPtr a = it->second;
