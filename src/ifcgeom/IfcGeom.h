@@ -81,6 +81,7 @@ namespace IfcGeom {
 
 	const int DISABLE_OPENING_SUBTRACTIONS = 1 << 0;
 	const int DISABLE_OBJECT_PLACEMENT     = 1 << 1;
+	const int SEW_SHELLS                   = 1 << 2;
 	
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
 	bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);

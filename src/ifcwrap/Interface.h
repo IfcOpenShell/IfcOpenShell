@@ -105,6 +105,7 @@ namespace IfcParse {
 
 	const int DISABLE_OPENING_SUBTRACTIONS = 1 << 0;
 	const int DISABLE_OBJECT_PLACEMENT     = 1 << 1;
+	const int SEW_SHELLS                   = 1 << 2;
 }
 
 std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);
