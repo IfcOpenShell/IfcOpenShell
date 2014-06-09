@@ -132,7 +132,13 @@ bool IfcGeom::is_compound(const TopoDS_Shape& shape) {
 const TopoDS_Shape& IfcGeom::ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid) {
 	const bool is_comp = IfcGeom::is_compound(shape);
 	if ( ! is_comp ) return shape;
-	IfcGeom::create_solid_from_compound(shape,solid);
+	IfcGeom::create_solid_from_compound(shape, solid);
+	
+	// If the SEW_SHELLS option had been set this precision had been applied
+	// at the end of the generic IfcGeom::convert_shape() call.
+	const double precision = IfcGeom::GetValue(GV_PRECISION);
+	IfcGeom::apply_tolerance(solid, precision);
+	
 	return solid;
 }
 
