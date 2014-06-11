@@ -170,9 +170,12 @@ bool IfcGeom::convert(const Ifc2x3::IfcFace::ptr l, TopoDS_Face& face) {
 	// as the topological face normal the face orientation is
 	// reversed
 	gp_Vec face_normal2(x,y,z);
-	if ( face_normal1.Dot(face_normal2) < 0 ) {
-		TopAbs_Orientation o = face.Orientation();
-		face.Orientation(o == TopAbs_FORWARD ? TopAbs_REVERSED : TopAbs_FORWARD);
+
+	if (face_normal2.Magnitude() > ALMOST_ZERO) {
+		if ( face_normal1.Dot(face_normal2) < 0 ) {
+			TopAbs_Orientation o = face.Orientation();
+			face.Orientation(o == TopAbs_FORWARD ? TopAbs_REVERSED : TopAbs_FORWARD);
+		}
 	}
 	}
 	
