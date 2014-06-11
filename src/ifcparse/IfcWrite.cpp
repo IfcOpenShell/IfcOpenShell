@@ -17,6 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#include <iomanip> 
+
 #include "../ifcparse/IfcParse.h" 
 #include "../ifcparse/IfcWrite.h"
 #include "../ifcparse/IfcWritableEntity.h"
@@ -211,7 +213,7 @@ private:
 	// REAL = [ SIGN ] DIGIT { DIGIT } "." { DIGIT } [ "E" [ SIGN ] DIGIT { DIGIT } ] .
 	std::string format_double(const double& d) {
 		std::ostringstream oss;
-		oss << d;
+		oss << std::setprecision(16) << d;
 		const std::string str = oss.str();
 		oss.str("");
 		std::string::size_type e = str.find('e');
