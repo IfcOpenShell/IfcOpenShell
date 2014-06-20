@@ -8,69 +8,55 @@ http://IfcOpenShell.org
 About this repository
 =====================
 
-This is an initiative to expose the functionality of IfcOpenShell for parsing and writing IFC files to a Python interface. The creation of a topological representation for building elements using Open Cascade is also wrapped by returning a string serialization of the Open Cascade TopoDS_Shape. Using SWIG a wrapper is obtained for a C++ Class which evaluates its Express attribute names and indices at runtime. The functions created by the SWIG wrapper closely resemble the C++ structure. The idea is to create an additional wrapper around these function in Python that is more idiomatic to Python.
+This is an initiative to expose the functionality of IfcOpenShell for parsing and writing IFC files to a Python interface. The creation of a topological representation for building elements using Open Cascade is also wrapped by returning a string serialization of the Open Cascade TopoDS_Shape. Using SWIG, a wrapper is obtained for a C++ Class which evaluates its Express attribute names at runtime. The functions created by the SWIG wrapper closely resemble the C++ structure. An additional Python wrapper around these functions is created that is more idiomatic to Python.
 
 The following interactive session illustrates its use:
 
-    >>> import IfcImport
-    >>> f = IfcImport.open(filename)
-    >>> f.by_type("ifcwall")
-    [#170=IfcWallStandardCase('0lJANQLbCEHPkU1Xq9w_bk',#13,'Wand-001',$,$,#167,#240,'2F4CA5DA-5653-0E45-9B-9E-061D09EBE96E'), 
-    #288=IfcWallStandardCase('1sFBHOg98nGQTuD1XjjAKK',#13,'Wand-002',$,$,#285,#358,'763CB458-A892-3141-A7-78-34186DB4A514')]
+    >>> import ifc
+    >>> f = ifc.open("Duplex_A_20110907_optimized.ifc")
+    >>> f.by_type("ifcwall")[:2]
+    [#91=IfcWallStandardCase('2O2Fr$t4X7Zf8NOew3FL9r',#1,'Basic Wall:Interior - Partition (92mm Stud):144586',$,'Basic Wall:Interior - Partition (92mm Stud):128360',#5198,#18806,'144586'), #92=IfcWallStandardCase('2O2Fr$t4X7Zf8NOew3FLIE',#1,'Basic Wall:Interior - Partition (92mm Stud):143921',$,'Basic Wall:Interior - Partition (92mm Stud):128360',#5206,#18805,'143921')]
     >>> wall = _[0]
-    >>> brep_data = IfcImport.create_shape(wall)
-    >>> wall.get_argument_count()
+    >>> brep_data = ifc.create_shape(wall, ifc.SEW_SHELLS)
+    >>> len(wall) # number of EXPRESS attributes
     8
-    >>> wall.get_argument('GlobalId')
-    '0lJANQLbCEHPkU1Xq9w_bk'
-    >>> wall.get_argument_index('Name')
-    2
-    >>> wall.set_argument(2,"John")
-    >>> wall.get_argument('Name')
-    'John'
-    >>> wall.get_argument_index("foo")
+    >>> wall.GlobalId
+    '2O2Fr$t4X7Zf8NOew3FL9r'
+    >>> wall.Name = "My wall"
+    >>> wall.NonExistingAttr
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
-      File "IfcImport.py", line 112, in get_argument_index
-        def get_argument_index(self, *args): return _IfcImport.Entity_get_argument_index(self, *args)
-    RuntimeError: Argument foo not found on IfcRoot
-    >>> wall.set_argument(5,"Hi")
+      File ".\ifc.py", line 14, in __getattr__
+        except: raise AttributeError("entity instance of type '%s' has no attribute'%s'"%(self.wrapped_data.is_a(), name)) from None
+    AttributeError: entity instance of type 'IfcWallStandardCase' has no attribute 'NonExistingAttr'
+    >>> wall.GlobalId = 3
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
-      File "IfcImport.py", line 114, in set_argument
-        def set_argument(self, *args): return _IfcImport.Entity_set_argument(self, *args)
-    RuntimeError: STRING is not a valid type for 'ObjectPlacement'
-    >>> e = IfcImport.Entity("IfcJohn")
-    Traceback (most recent call last):
-      File "<stdin>", line 1, in <module>
-      File "IfcImport.py", line 105, in __init__
-        this = _IfcImport.new_Entity(*args)
-    RuntimeError: Unable to find find keyword in schema
-    >>> pnt = IfcImport.Entity("ifccartesianpoint")
-    [60478 refs]
-    >>> pnt.set_argument(0,IfcImport.Doubles([0,0,0]))
-    [60486 refs]
-    >>> pnt
-    =IfcCartesianPoint((0,0,0))
-    >>> f.add(pnt)
+      File ".\ifc.py", line 26, in __setattr__
+        self[self.wrapped_data.get_argument_index(key)] = value
+      File ".\ifc.py", line 30, in __setitem__
+        self.wrapped_data.set_argument(idx, entity_instance.map_value(value))
+      File ".\ifc_wrapper.py", line 118, in <lambda>
+        set_argument = lambda self,x,y: self._set_argument(x) if y is None else self
+    ._set_argument(x,y)
+      File ".\ifc_wrapper.py", line 114, in _set_argument
+        def _set_argument(self, *args): return _ifc_wrapper.entity_instance__set_argument(self, *args)
+    RuntimeError: INT is not a valid type for 'GlobalId'
+    >>> f.createIfcCartesianPoint(Coordinates=(1.0,1.5,2.0))
+    #27530=IfcCartesianPoint((1.,1.5,2.))
+    >>> import uuid
+    >>> ifc.guid.compress(uuid.uuid1().hex)
+    '3x4C8Q_6qHuv$P$FYkANRX'
+    >>> new_guid = _
+    >>> owner_hist = f.by_type("IfcOwnerHistory")[0]
+    >>> new_wall = f.createIfcWallStandardCase(new_guid, owner_hist, None, None, Tag='my_tag')
+    >>> new_wall.ObjectType = ''
+    >>> new_wall.ObjectPlacement = new_wall.Representation = None
+    >>> f[92]
+    #92=IfcWallStandardCase('2O2Fr$t4X7Zf8NOew3FLIE',#1,'Basic Wall:Interior - Partition (92mm Stud):143921',$,'Basic Wall:Interior - Partition (92mm Stud):128360',#5206,#18805,'143921')
+    >>> f['2O2Fr$t4X7Zf8NOew3FLIE']
+    #92=IfcWallStandardCase('2O2Fr$t4X7Zf8NOew3FLIE',#1,'Basic Wall:Interior - Partition (92mm Stud):143921',$,'Basic Wall:Interior - Partition (92mm Stud):128360',#5206,#18805,'143921')
     >>> f.write("out.ifc")
-
-**TODO**: By creating an additional wrapper in Python around these methods some syntactic sugar can be added so one is able to say the following instead:
-
-    d = IfcDocument()
-    my_wall = d.createIfcWallStandardCase("1$gyu8123...",Representation=my_repr)
-
-With a document specifying a 'catch-all' function that creates the ifc entity based on the method being called, perhaps like so:
-
-    class IfcDocument:
-        def create_entity(self,type,*args,**kwargs):
-            e = new IfcEntity(type)
-            # set all attributes in args and kwargs
-            self.add(e)
-            return e
-        def __getattr__(self,attr):
-            if attr[0:5] == 'create': return functools.partial(self.create_entity,attr[5:])
-        ...
 
 
 Compiling on Windows
@@ -120,33 +106,3 @@ If all worked out correctly you can now use IfcOpenShell. For example:
     $ unzip Munkerud_hus6_BE.zip
     $ ./IfcObj Munkerud_hus6_BE.ifc
     $ less Munkerud_hus6_BE.obj
-
-
-Ubuntu Notes
-============
-
-The following sequence of commands has been tested successfully on Ubuntu 14.04.
-
-OCE installation. This step worked OK with cmake 2.8.12.2, gcc 4.8.2, g++ 4.8.2. Also, it might take up to an hour to complete.
-
-    apt-get install git cmake gcc g++ libftgl-dev libtbb2 libtbb-dev libboost-all-dev
-    cd /
-    mkdir git && cd git
-    git clone https://github.com/tpaviot/oce.git
-    mkdir oceBuild && cd oceBuild
-    cmake ../oce
-    make -j4
-    sudo make install
-    
-IfcOpenShell installation. This step worked OK with cmake 2.8.12.2, gcc 4.8.2, g++ 4.8.2.
-
-    apt-get install swig
-    cd /git/
-    git clone https://github.com/aothms/IfcOpenShell.git
-    cd IfcOpenShell/cmake
-    mkdir build && cd build
-    cmake ../
-    make -j4
-    
-Once done, IfcConvert is to be found in the build folder.
-    

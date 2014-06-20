@@ -76,7 +76,7 @@ namespace IfcParse {
 		std::string _author_email;
 		std::string _author_organisation;
 	public:
-		IfcParse::IfcSpfStream* file;
+		IfcParse::IfcSpfStream* stream;
 		IfcParse::Tokens* tokens;
 		bool Init(const std::string& fn);
 		IfcEntities EntitiesByType(const std::string& t);

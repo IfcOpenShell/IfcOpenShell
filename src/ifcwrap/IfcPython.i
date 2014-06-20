@@ -33,13 +33,14 @@
 %ignore operator<<;
 
 %rename("by_type") EntitiesByType;
-%rename("get_argument_count") getArgumentCount;
+%rename("__len__") getArgumentCount;
 %rename("get_argument_type") getArgumentType;
 %rename("get_argument_name") getArgumentName;
 %rename("get_argument_index") getArgumentIndex;
 %rename("_set_argument") setArgument;
 %rename("__repr__") toString;
-%rename("Entity") IfcUntypedEntity;
+%rename("entity_instance") IfcUntypedEntity;
+%rename("file") IfcFile;
 
 %typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) IfcEntities {
    $1 = (PySequence_Check($input) && !PyUnicode_Check($input) && !PyString_Check($input)) ? 1 : 0;
@@ -150,7 +151,7 @@
 	}
 }
 
-%module IfcImport %{
+%module ifc_wrapper %{
 	#include "../ifcparse/IfcException.h"
 	#include "Interface.h"	
 	using namespace IfcParse;
@@ -181,7 +182,7 @@
 }
 
 namespace std {
-   %template(Ints) vector<int>;
-   %template(Doubles) vector<double>;
-   %template(Strings) vector<string>;
+   %template(ints) vector<int>;
+   %template(doubles) vector<double>;
+   %template(strings) vector<string>;
 };
