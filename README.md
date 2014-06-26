@@ -120,3 +120,33 @@ If all worked out correctly you can now use IfcOpenShell. For example:
     $ unzip Munkerud_hus6_BE.zip
     $ ./IfcObj Munkerud_hus6_BE.ifc
     $ less Munkerud_hus6_BE.obj
+
+
+Ubuntu Notes
+============
+
+The following sequence of commands has been tested successfully on Ubuntu 14.04.
+
+OCE installation. This step worked OK with cmake 2.8.12.2, gcc 4.8.2, g++ 4.8.2. Also, it might take up to an hour to complete.
+
+    apt-get install git cmake gcc g++ libftgl-dev libtbb2 libtbb-dev libboost-all-dev
+    cd /
+    mkdir git && cd git
+    git clone https://github.com/tpaviot/oce.git
+    mkdir oceBuild && cd oceBuild
+    cmake ../oce
+    make -j4
+    sudo make install
+    
+IfcOpenShell installation. This step worked OK with cmake 2.8.12.2, gcc 4.8.2, g++ 4.8.2.
+
+    apt-get install swig
+    cd /git/
+    git clone https://github.com/aothms/IfcOpenShell.git
+    cd IfcOpenShell/cmake
+    mkdir build && cd build
+    cmake ../
+    make -j4
+    
+Once done, IfcConvert is to be found in the build folder.
+    
