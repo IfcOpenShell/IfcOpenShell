@@ -8,9 +8,9 @@ class entity_instance:
 	def __init__(self, e):
 		super().__setattr__('wrapped_data', e)
 	def __getattr__(self, name):
-		try: return self.wrapped_data.get_argument(self.wrapped_data.get_argument_index(name))
+		try: return entity_instance.wrap_value(self.wrapped_data.get_argument(self.wrapped_data.get_argument_index(name)))
 		except:
-			try: return self.wrapped_data.get_inverse(name)
+			try: return entity_instance.wrap_value(self.wrapped_data.get_inverse(name))
 			except: raise AttributeError("entity instance of type '%s' has no attribute '%s'"%(self.wrapped_data.is_a(), name))
 	@staticmethod
 	def map_value(v):
@@ -22,10 +22,18 @@ class entity_instance:
 			elif str in classes: return ifc_wrapper.strings(v)
 			elif entity_instance in classes: return list(map(lambda e: e.wrapped_data, v))
 		return v
+	@staticmethod
+	def wrap_value(v):
+		wrap = lambda e: entity_instance(e)
+		if isinstance(v, ifc_wrapper.entity_instance): return wrap(v)
+		elif isinstance(v, (tuple, list)) and len(v):
+			classes = list(map(type, v))
+			if ifc_wrapper.entity_instance in classes: return list(map(wrap, v))
+		return v
 	def __setattr__(self, key, value):
 		self[self.wrapped_data.get_argument_index(key)] = value
 	def __getitem__(self, key):
-		return self.wrapped_data.get_argument(self.wrapped_data.get_argument_index(name))
+		return entity_instance.wrap_value(self.wrapped_data.get_argument(self.wrapped_data.get_argument_index(name)))
 	def __setitem__(self, idx, value):
 		self.wrapped_data.set_argument(idx, entity_instance.map_value(value))
 	def __len__(self): return len(self.wrapped_data)
