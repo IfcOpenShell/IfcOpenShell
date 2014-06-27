@@ -430,11 +430,11 @@ bool IfcGeom::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentationShapeI
 	return b;
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcShapeRepresentation::ptr l, IfcRepresentationShapeItems& shapes) {
-	IfcSchema::IfcRepresentationItem::list items = l->Items();
+bool IfcGeom::convert(const IfcSchema::IfcShapeRepresentation* l, IfcRepresentationShapeItems& shapes) {
+	IfcSchema::IfcRepresentationItem::list::ptr items = l->Items();
 	bool part_succes = false;
 	if ( items->Size() ) {
-		for ( IfcSchema::IfcRepresentationItem::it it = items->begin(); it != items->end(); ++ it ) {
+		for ( IfcSchema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++ it ) {
 			IfcSchema::IfcRepresentationItem* representation_item = *it;
 			if ( IfcGeom::is_shape_collection(representation_item) ) {
 				part_succes |= IfcGeom::convert_shapes(*it, shapes);
