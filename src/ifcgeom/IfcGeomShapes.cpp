@@ -91,6 +91,7 @@
 #include <TopLoc_Location.hxx>
 
 #include <BRepCheck_Analyzer.hxx>
+#include <BRepClass3d_SolidClassifier.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
 
@@ -341,6 +342,7 @@ bool IfcGeom::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& sha
 	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
 	bool facesAdded = false;
 	const unsigned int num_faces = faces->Size();
+	bool valid_shell = false;
 	if ( num_faces < GetValue(GV_MAX_FACES_TO_SEW) ) {
 		BRepOffsetAPI_Sewing builder;
 		builder.SetTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
@@ -358,12 +360,22 @@ bool IfcGeom::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& sha
 		if ( ! facesAdded ) return false;
 		builder.Perform();
 		shape = builder.SewedShape();
-		try {
-			ShapeFix_Solid solid;
-			solid.LimitTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
-			shape = solid.SolidFromShell(TopoDS::Shell(shape));
-		} catch(...) {}
-	} else {
+		valid_shell = BRepCheck_Analyzer(shape).IsValid();
+		if (valid_shell) {
+			try {
+				ShapeFix_Solid solid;
+				solid.LimitTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
+				TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(shape));
+				if (!solid_shape.IsNull()) {
+					try {
+						BRepClass3d_SolidClassifier classifier(solid_shape);
+						shape = solid_shape;
+					} catch (...) {}
+				}
+			} catch(...) {}
+		}
+	}
+	if (!valid_shell) {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
@@ -418,20 +430,24 @@ bool IfcGeom::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentationShapeI
 	return b;
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcShapeRepresentation* l, IfcRepresentationShapeItems& shapes) {
-	IfcSchema::IfcRepresentationItem::list::ptr items = l->Items();
-	if ( ! items->Size() ) return false;
-	for ( IfcSchema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++ it ) {
-		IfcSchema::IfcRepresentationItem* representation_item = *it;
-		if ( IfcGeom::is_shape_collection(representation_item) ) IfcGeom::convert_shapes(*it,shapes);
-		else {
-			TopoDS_Shape s;
-			if (IfcGeom::convert_shape(representation_item,s)) {
-				shapes.push_back(IfcRepresentationShapeItem(s, get_style(representation_item)));
+bool IfcGeom::convert(const IfcSchema::IfcShapeRepresentation::ptr l, IfcRepresentationShapeItems& shapes) {
+	IfcSchema::IfcRepresentationItem::list items = l->Items();
+	bool part_succes = false;
+	if ( items->Size() ) {
+		for ( IfcSchema::IfcRepresentationItem::it it = items->begin(); it != items->end(); ++ it ) {
+			IfcSchema::IfcRepresentationItem* representation_item = *it;
+			if ( IfcGeom::is_shape_collection(representation_item) ) {
+				part_succes |= IfcGeom::convert_shapes(*it, shapes);
+			} else {
+				TopoDS_Shape s;
+				if (IfcGeom::convert_shape(representation_item,s)) {
+					shapes.push_back(IfcRepresentationShapeItem(s, get_style(representation_item)));
+					part_succes |= true;
+				}
 			}
 		}
 	}
-	return true;
+	return part_succes;
 }
 
 bool IfcGeom::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresentationShapeItems& shapes) {
