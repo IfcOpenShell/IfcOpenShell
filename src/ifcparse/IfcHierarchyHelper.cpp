@@ -296,7 +296,7 @@ void IfcHierarchyHelper::addBox(Ifc2x3::IfcShapeRepresentation* rep, double w, d
 		points.push_back(std::pair<double, double>(w/2, -d/2));
 		points.push_back(std::pair<double, double>(w/2, d/2));
 		points.push_back(std::pair<double, double>(-w/2, d/2));
-		points.push_back(*points.begin());
+		// The call to addExtrudedPolyline() closes the polyline
 		addExtrudedPolyline(rep, points, h, place, place2, dir, context);
 	}
 }
