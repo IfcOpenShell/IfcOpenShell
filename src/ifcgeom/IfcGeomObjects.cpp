@@ -692,8 +692,7 @@ void IfcGeomObjects::InitUnits() {
 					unit = (IfcSchema::IfcSIUnit*) u3;
 				}
 				IfcSchema::IfcValue v = u2->ValueComponent();
-				IfcUtil::IfcArgumentSelect* v2 = (IfcUtil::IfcArgumentSelect*) v;
-				const double f = *v2->wrappedValue();
+				const double f = *((IfcUtil::IfcBaseEntity*)v)->entity->getArgument(0);
 				value *= f;
 			} else if ( base->is(IfcSchema::Type::IfcSIUnit) ) {
 				unit = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcSchema::IfcSIUnit>(base);
