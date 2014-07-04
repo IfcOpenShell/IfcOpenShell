@@ -88,6 +88,7 @@ namespace Type {
     IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
     const std::string& GetAttributeName(Enum t, unsigned char a);
     bool GetAttributeOptional(Enum t, unsigned char a);
+    bool GetAttributeDerived(Enum t, unsigned char a);
     std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
     std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
     Enum GetAttributeEnumerationClass(Enum t, unsigned char a);
@@ -167,6 +168,8 @@ bool Type::IsSimple(Enum v) {
 """
 
 rt_implementation = """
+#include <set>
+
 #include "../ifcparse/%(schema_name)s.h"
 #include "../ifcparse/%(schema_name)s-rt.h"
 #include "../ifcparse/IfcException.h"
@@ -183,6 +186,8 @@ using namespace IfcUtil;
 std::map<Type::Enum,IfcEntityDescriptor*> entity_descriptor_map;
 std::map<Type::Enum,IfcEnumerationDescriptor*> enumeration_descriptor_map;
 std::map<std::pair<Type::Enum, std::string>, std::pair<Type::Enum, int> > inverse_map;
+std::map<Type::Enum,std::set<int> > derived_map;
+
 void InitDescriptorMap() {
     IfcEntityDescriptor* current;
 %(entity_descriptors)s
@@ -194,6 +199,10 @@ void InitDescriptorMap() {
 
 void InitInverseMap() {
 %(inverse_implementations)s
+}
+
+void InitDerivedMap() {
+%(derived_field_statements)s
 }
 
 int Type::GetAttributeIndex(Enum t, const std::string& a) {
@@ -231,6 +240,12 @@ bool Type::GetAttributeOptional(Enum t, unsigned char a) {
     else return i->second->getArgumentOptional(a);
 }
 
+bool Type::GetAttributeDerived(Enum t, unsigned char a) {
+    if (derived_map.empty()) ::InitDerivedMap();
+    std::map<Type::Enum,std::set<int> >::const_iterator i = derived_map.find(t);
+    return i != derived_map.end() && i->second.find(a) != i->second.end();
+}
+
 std::pair<const char*, int> Type::GetEnumerationIndex(Enum t, const std::string& a) {
     if (enumeration_descriptor_map.empty()) ::InitDescriptorMap();
     std::map<Type::Enum,IfcEnumerationDescriptor*>::const_iterator i = enumeration_descriptor_map.find(t);
@@ -262,8 +277,12 @@ Type::Enum Type::GetAttributeEnumerationClass(Enum t, unsigned char a) {
 }
 
 void Type::PopulateDerivedFields(IfcWrite::IfcWritableEntity* e) {
-    Type::Enum type = e->type();
-%(derived_field_statements)s
+    std::map<Type::Enum, std::set<int> >::const_iterator i = derived_map.find(e->type());
+	if (i != derived_map.end()) {
+		for (std::set<int>::const_iterator it = i->second.begin(); it != i->second.end(); ++it) {
+			e->setArgumentDerived(*it);
+		}
+	}
 }
 """
 
@@ -280,8 +299,8 @@ enumeration_descriptor = """    values.clear(); values.reserve(128);
 
 enumeration_descriptor_value = '    values.push_back("%(name)s");'
 
-derived_field_statement = '    if (type == Type::%(type)s) { %(statements)s}';
-derived_field_statement_attrs = 'e->setArgumentDerived(%d); '
+derived_field_statement = '    {std::set<int> idxs; %(statements)sderived_map[Type::%(type)s] = idxs;}';
+derived_field_statement_attrs = 'idxs.insert(%d); '
 
 simpletype = """%(documentation)s
 typedef %(type)s %(name)s;

@@ -85,6 +85,15 @@ namespace IfcParse {
 		void AddEntity(IfcUtil::IfcSchemaEntity e);
 		IfcFile();
 		~IfcFile();
+
+		std::vector<int> entity_names() const {
+			std::vector<int> keys;
+			keys.reserve(byid.size());
+			for (MapEntityById::const_iterator it = byid.begin(); it != byid.end(); ++ it) {
+				keys.push_back(it->first);
+			}
+			return keys;	
+		}
 	};
 
 	IfcParse::IfcFile* open(const std::string& s) {

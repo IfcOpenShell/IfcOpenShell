@@ -26,6 +26,8 @@
  
 #ifdef USE_IFC4
 
+#include <set>
+
 #include "../ifcparse/Ifc4.h"
 #include "../ifcparse/Ifc4-rt.h"
 #include "../ifcparse/IfcException.h"
@@ -42,6 +44,8 @@ using namespace IfcUtil;
 std::map<Type::Enum,IfcEntityDescriptor*> entity_descriptor_map;
 std::map<Type::Enum,IfcEnumerationDescriptor*> enumeration_descriptor_map;
 std::map<std::pair<Type::Enum, std::string>, std::pair<Type::Enum, int> > inverse_map;
+std::map<Type::Enum,std::set<int> > derived_map;
+
 void InitDescriptorMap() {
     IfcEntityDescriptor* current;
     current = entity_descriptor_map[Type::IfcAbsorbedDoseMeasure] = new IfcEntityDescriptor(Type::IfcAbsorbedDoseMeasure,0);
@@ -4854,6 +4858,13 @@ void InitInverseMap() {
     inverse_map.insert(std::make_pair(std::make_pair(Type::IfcTypeResource, "ResourceOf"), std::make_pair(Type::IfcRelAssignsToResource, 6)));
 }
 
+void InitDerivedMap() {
+    {std::set<int> idxs; idxs.insert(2); idxs.insert(3); idxs.insert(4); idxs.insert(5); derived_map[Type::IfcGeometricRepresentationSubContext] = idxs;}
+    {std::set<int> idxs; idxs.insert(3); derived_map[Type::IfcMirroredProfileDef] = idxs;}
+    {std::set<int> idxs; idxs.insert(0); idxs.insert(1); derived_map[Type::IfcOrientedEdge] = idxs;}
+    {std::set<int> idxs; idxs.insert(0); derived_map[Type::IfcSIUnit] = idxs;}
+}
+
 int Type::GetAttributeIndex(Enum t, const std::string& a) {
     if (entity_descriptor_map.empty()) ::InitDescriptorMap();
     std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
@@ -4889,6 +4900,12 @@ bool Type::GetAttributeOptional(Enum t, unsigned char a) {
     else return i->second->getArgumentOptional(a);
 }
 
+bool Type::GetAttributeDerived(Enum t, unsigned char a) {
+    if (derived_map.empty()) ::InitDerivedMap();
+    std::map<Type::Enum,std::set<int> >::const_iterator i = derived_map.find(t);
+    return i != derived_map.end() && i->second.find(a) != i->second.end();
+}
+
 std::pair<const char*, int> Type::GetEnumerationIndex(Enum t, const std::string& a) {
     if (enumeration_descriptor_map.empty()) ::InitDescriptorMap();
     std::map<Type::Enum,IfcEnumerationDescriptor*>::const_iterator i = enumeration_descriptor_map.find(t);
@@ -4920,10 +4937,11 @@ Type::Enum Type::GetAttributeEnumerationClass(Enum t, unsigned char a) {
 }
 
 void Type::PopulateDerivedFields(IfcWrite::IfcWritableEntity* e) {
-    Type::Enum type = e->type();
-    if (type == Type::IfcGeometricRepresentationSubContext) { e->setArgumentDerived(2); e->setArgumentDerived(3); e->setArgumentDerived(4); e->setArgumentDerived(5); }
-    if (type == Type::IfcMirroredProfileDef) { e->setArgumentDerived(3); }
-    if (type == Type::IfcOrientedEdge) { e->setArgumentDerived(0); e->setArgumentDerived(1); }
-    if (type == Type::IfcSIUnit) { e->setArgumentDerived(0); }
+    std::map<Type::Enum, std::set<int> >::const_iterator i = derived_map.find(e->type());
+	if (i != derived_map.end()) {
+		for (std::set<int>::const_iterator it = i->second.begin(); it != i->second.end(); ++it) {
+			e->setArgumentDerived(*it);
+		}
+	}
 }
 #endif

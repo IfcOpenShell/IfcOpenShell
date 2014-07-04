@@ -30,10 +30,15 @@ class entity_instance:
 			classes = list(map(type, v))
 			if ifc_wrapper.entity_instance in classes: return list(map(wrap, v))
 		return v
+	def attribute_type(self, attr):
+		attr_idx = attr if isinstance(attr, int) else self.wrapped_data.get_argument_index(attr)
+		return self.wrapped_data.get_argument_type(attr_idx)
+	def attribute_name(self, attr_idx):
+		return self.wrapped_data.get_argument_name(attr_idx)
 	def __setattr__(self, key, value):
 		self[self.wrapped_data.get_argument_index(key)] = value
 	def __getitem__(self, key):
-		return entity_instance.wrap_value(self.wrapped_data.get_argument(self.wrapped_data.get_argument_index(name)))
+		return entity_instance.wrap_value(self.wrapped_data.get_argument(key))
 	def __setitem__(self, idx, value):
 		self.wrapped_data.set_argument(idx, entity_instance.map_value(value))
 	def __len__(self): return len(self.wrapped_data)
@@ -63,6 +68,8 @@ class file:
 		return [entity_instance(e) for e in self.wrapped_data.by_type(type)]
 	def write(self, fn):
 		self.wrapped_data.write(fn)
+	def __iter__(self):
+		return iter(self[id] for id in self.wrapped_data.entity_names())
 
 
 class guid:

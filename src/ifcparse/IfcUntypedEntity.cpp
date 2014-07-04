@@ -54,7 +54,9 @@ unsigned int IfcParse::IfcUntypedEntity::getArgumentCount() const {
 	return IfcSchema::Type::GetAttributeCount(_type);
 }
 IfcUtil::ArgumentType IfcParse::IfcUntypedEntity::getArgumentType(unsigned int i) const {
-	return IfcSchema::Type::GetAttributeType(_type,i);
+	return IfcSchema::Type::GetAttributeDerived(_type, i)
+		? IfcUtil::Argument_DERIVED
+		: IfcSchema::Type::GetAttributeType(_type,i);
 }
 ArgumentPtr IfcParse::IfcUntypedEntity::getArgument(unsigned int i) const {
 	return entity->getArgument(i);

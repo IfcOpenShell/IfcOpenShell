@@ -76,10 +76,15 @@
 	}
 }
 
+%typemap(out) IfcUtil::ArgumentType {
+	const char* strs[] = {"INT", "BOOL", "DOUBLE", "STRING", "VECTOR_INT", "VECTOR_DOUBLE", "VECTOR_STRING", "ENTITY", "ENTITY_LIST", "ENTITY_LIST_LIST", "ENUMERATION", "DERIVED", "UNKNOWN"};
+	$result = SWIG_Python_str_FromChar(strs[$1]);
+}
+
 %typemap(out) std::pair<IfcUtil::ArgumentType,ArgumentPtr> {
 	const Argument& arg = *($1.second);
 	const IfcUtil::ArgumentType type = $1.first;
-	if (arg.isNull()) {
+	if (arg.isNull() || type == IfcUtil::Argument_DERIVED) {
 		Py_INCREF(Py_None);
 		$result = Py_None;
 	} else {
