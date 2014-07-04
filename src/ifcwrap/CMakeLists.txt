@@ -27,8 +27,8 @@ STRING(REPLACE "\r" "" python_package_dir "${python_package_dir}")
 STRING(REPLACE "\n" "" python_package_dir "${python_package_dir}")
 
 INSTALL(FILES 
-		"${CMAKE_BINARY_DIR}/ifcwrap/IfcImport.py" 
-		"${CMAKE_BINARY_DIR}/ifcwrap/_IfcImport.so" 
+		"${CMAKE_BINARY_DIR}/ifcwrap/ifc_wrapper.py" 
+		"${CMAKE_BINARY_DIR}/ifcwrap/_ifc_wrapper.so" 
 	DESTINATION "${python_package_dir}")
 
 ENDIF(PYTHONLIBS_FOUND)
