@@ -242,19 +242,34 @@ bool IfcGeom::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, IfcRepresen
 
 bool IfcGeom::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape& shape) {
 	TopoDS_Shape s1, s2;
+	IfcRepresentationShapeItems items1, items2;
 	TopoDS_Wire boundary_wire;
 	IfcSchema::IfcBooleanOperand operand1 = l->FirstOperand();
 	IfcSchema::IfcBooleanOperand operand2 = l->SecondOperand();
 	bool is_halfspace = operand2->is(IfcSchema::Type::IfcHalfSpaceSolid);
 
-	if ( ! IfcGeom::convert_shape(operand1,s1) )
-		return false;
+	if ( is_shape_collection(operand1) ) {
+		if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
+			return false;
+		}
+	} else {
+		if ( ! IfcGeom::convert_shape(operand1,s1) ) {
+			return false;
+		}
+	}
 
 	const double first_operand_volume = shape_volume(s1);
 	if ( first_operand_volume <= ALMOST_ZERO )
 		Logger::Message(Logger::LOG_WARNING,"Empty solid for:",l->FirstOperand()->entity);
 
-	if ( !IfcGeom::convert_shape(l->SecondOperand(),s2) ) {
+	bool shape2_processed = false;
+	if ( is_shape_collection(operand2) ) {
+		shape2_processed = convert_shapes(operand2, items2) && flatten_shape_list(items2, s2, true);
+	} else {
+		shape2_processed = IfcGeom::convert_shape(operand2,s2);
+	}
+
+	if (!shape2_processed) {
 		shape = s1;
 		Logger::Message(Logger::LOG_ERROR,"Failed to convert SecondOperand of:",l->entity);
 		return true;

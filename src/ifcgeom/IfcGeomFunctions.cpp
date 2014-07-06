@@ -69,6 +69,7 @@
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
+#include <BRepAlgoAPI_Fuse.hxx>
 
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
@@ -692,3 +693,60 @@ bool IfcGeom::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape) {
 
 	return true;
 }
+
+bool IfcGeom::flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& shapes, TopoDS_Shape& result, bool fuse) {
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	builder.MakeCompound(compound);
+
+	result = TopoDS_Shape();
+			
+	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+		TopoDS_Shape merged;
+		const TopoDS_Shape& s = it->Shape();
+		if (fuse) {
+			IfcGeom::ensure_fit_for_subtraction(s, merged);
+		} else {
+			merged = s;
+		}
+		const gp_GTrsf& trsf = it->Placement();
+		bool trsf_valid = false;
+		gp_Trsf _trsf;
+		try {
+			_trsf = trsf.Trsf();
+			trsf_valid = true;
+		} catch (...) {}
+		const TopoDS_Shape moved_shape = trsf_valid ? merged.Moved(_trsf) :
+			BRepBuilderAPI_GTransform(merged,trsf,true).Shape();
+
+		if (shapes.size() == 1) {
+			result = moved_shape;
+			return true;
+		}
+
+		if (fuse) {
+			if (result.IsNull()) {
+				result = moved_shape;
+			} else {
+				BRepAlgoAPI_Fuse brep_fuse(result, moved_shape);
+				if ( brep_fuse.IsDone() ) {
+					TopoDS_Shape fused = brep_fuse;
+
+					ShapeFix_Shape fix(result);
+					fix.Perform();
+					result = fix.Shape();
+		
+					bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+					if ( is_valid ) {
+						result = fused;
+					} 
+				}
+			}
+		} else {
+			builder.Add(compound,moved_shape);
+		}
+	}
+
+	return !result.IsNull();
+}
+	

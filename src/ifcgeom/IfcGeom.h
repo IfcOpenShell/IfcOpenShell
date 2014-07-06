@@ -84,6 +84,7 @@ namespace IfcGeom {
 	bool convert_shapes(const IfcUtil::IfcBaseClass* L, IfcRepresentationShapeItems& result);
 	bool is_shape_collection(const IfcUtil::IfcBaseClass* L);
 	bool convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
+	bool flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& shapes, TopoDS_Shape& result, bool fuse);
 	bool convert_wire(const IfcUtil::IfcBaseClass* L, TopoDS_Wire& result);
 	bool convert_curve(const IfcUtil::IfcBaseClass* L, Handle(Geom_Curve)& result);
 	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
