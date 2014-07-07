@@ -25,6 +25,7 @@
 
 #include <set>
 #include <cassert>
+#include <limits>
 
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
