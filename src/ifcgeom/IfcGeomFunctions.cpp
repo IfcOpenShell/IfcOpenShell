@@ -690,10 +690,11 @@ bool IfcGeom::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape) {
 	return true;
 }
 
-std::string IfcGeom::create_brep_data(Ifc2x3::IfcProduct* ifc_product, unsigned int settings) {
+std::string IfcGeom::create_brep_data(IfcSchema::IfcProduct* ifc_product, unsigned int settings) {
 	const bool no_openings = !!(settings & DISABLE_OPENING_SUBTRACTIONS);
 	const bool no_placement = !!(settings & DISABLE_OBJECT_PLACEMENT);
 	const bool sew_shells = !!(settings & SEW_SHELLS);
+	const bool convert_to_meters = !!(settings & CONVERT_TO_METERS);
 
 	const double old_max_faces_to_sew = GetValue(GV_MAX_FACES_TO_SEW);
 	const double inf = std::numeric_limits<double>::infinity();
@@ -703,13 +704,13 @@ std::string IfcGeom::create_brep_data(Ifc2x3::IfcProduct* ifc_product, unsigned 
 
 	if (ifc_product->hasRepresentation()) {
 
-		Ifc2x3::IfcProductRepresentation* prod_rep = ifc_product->Representation();
-		Ifc2x3::IfcRepresentation::list li = prod_rep->Representations();
-		Ifc2x3::IfcShapeRepresentation* shape_rep = 0;
-		for (Ifc2x3::IfcRepresentation::it i = li->begin(); i != li->end(); ++i) {
+		IfcSchema::IfcProductRepresentation* prod_rep = ifc_product->Representation();
+		IfcSchema::IfcRepresentation::list li = prod_rep->Representations();
+		IfcSchema::IfcShapeRepresentation* shape_rep = 0;
+		for (IfcSchema::IfcRepresentation::it i = li->begin(); i != li->end(); ++i) {
 			const std::string representation_identifier = (*i)->RepresentationIdentifier();
-			if ((*i)->is(Ifc2x3::Type::IfcShapeRepresentation) && (representation_identifier == "Body" || representation_identifier == "Facetation")) {
-				shape_rep = (Ifc2x3::IfcShapeRepresentation*) *i;
+			if ((*i)->is(IfcSchema::Type::IfcShapeRepresentation) && (representation_identifier == "Body" || representation_identifier == "Facetation")) {
+				shape_rep = (IfcSchema::IfcShapeRepresentation*) *i;
 				break;
 			}
 		}
@@ -781,6 +782,11 @@ std::string IfcGeom::create_brep_data(Ifc2x3::IfcProduct* ifc_product, unsigned 
 						BRepBuilderAPI_GTransform(s,trsf,true).Shape();
 					builder.Add(compound,moved_shape);
 				}
+				if (GetValue(GV_LENGTH_UNIT) != 1. && !convert_to_meters) {
+					gp_Trsf length_unit_scale;
+					length_unit_scale.SetScaleFactor(1. / GetValue(GV_LENGTH_UNIT));
+					compound.Move(length_unit_scale);
+				}
 				std::stringstream sstream;
 				BRepTools::Write(compound,sstream);
 				brep_data = sstream.str();
@@ -791,4 +797,124 @@ std::string IfcGeom::create_brep_data(Ifc2x3::IfcProduct* ifc_product, unsigned 
 	SetValue(GV_MAX_FACES_TO_SEW, old_max_faces_to_sew);
 	
 	return brep_data;
+}
+
+double UnitPrefixToValue( IfcSchema::IfcSIPrefix::IfcSIPrefix v ) {
+	if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_EXA   ) return (double) 1e18;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_PETA  ) return (double) 1e15;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_TERA  ) return (double) 1e12;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_GIGA  ) return (double) 1e9;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_MEGA  ) return (double) 1e6;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_KILO  ) return (double) 1e3;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_HECTO ) return (double) 1e2;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_DECA  ) return (double) 1;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_DECI  ) return (double) 1e-1;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_CENTI ) return (double) 1e-2;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_MILLI ) return (double) 1e-3;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_MICRO ) return (double) 1e-6;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_NANO  ) return (double) 1e-9;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_PICO  ) return (double) 1e-12;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_FEMTO ) return (double) 1e-15;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_ATTO  ) return (double) 1e-18;
+	else return 1.0f;
+}
+
+void IfcGeom::initialize_units_and_precision(IfcSchema::IfcProject* proj, double& unit_magnitude, std::string& unit_name) {
+
+	// IfcOpenShell measures internally in meters, therefore a conversion factor
+	// is obtained based on the length unit in the file.
+
+	// Set default units, set length to meters, angles to undefined
+	IfcGeom::SetValue(IfcGeom::GV_LENGTH_UNIT,1.0);
+	IfcGeom::SetValue(IfcGeom::GV_PLANEANGLE_UNIT,-1.0);
+	
+	IfcUtil::IfcAbstractSelect::list units = IfcUtil::IfcAbstractSelect::list();
+	try {
+		IfcSchema::IfcUnitAssignment* unit_assignment = proj->UnitsInContext();
+		units = unit_assignment->Units();
+	} catch (const IfcParse::IfcException&) {}
+
+	try {
+		for ( IfcUtil::IfcAbstractSelect::it it = units->begin(); it != units->end(); ++ it ) {
+			std::string current_unit_name = "";
+			const IfcUtil::IfcAbstractSelect::ptr base = *it;
+			IfcSchema::IfcSIUnit::ptr unit = IfcSchema::IfcSIUnit::ptr();
+			double value = 1.0f;
+			if ( base->is(IfcSchema::Type::IfcConversionBasedUnit) ) {
+				const IfcSchema::IfcConversionBasedUnit::ptr u = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcSchema::IfcConversionBasedUnit>(base);
+				current_unit_name = u->Name();
+				const IfcSchema::IfcMeasureWithUnit::ptr u2 = u->ConversionFactor();
+				IfcSchema::IfcUnit u3 = u2->UnitComponent();
+				if ( u3->is(IfcSchema::Type::IfcSIUnit) ) {
+					unit = (IfcSchema::IfcSIUnit*) u3;
+				}
+				IfcSchema::IfcValue v = u2->ValueComponent();
+				const double f = *((IfcUtil::IfcBaseEntity*)v)->entity->getArgument(0);
+				value *= f;
+			} else if ( base->is(IfcSchema::Type::IfcSIUnit) ) {
+				unit = reinterpret_pointer_cast<IfcUtil::IfcAbstractSelect,IfcSchema::IfcSIUnit>(base);
+			}
+			if ( unit ) {
+				if ( unit->hasPrefix() ) {
+					value *= UnitPrefixToValue(unit->Prefix());
+				}
+				IfcSchema::IfcUnitEnum::IfcUnitEnum type = unit->UnitType();
+				if ( type == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ) {
+					IfcGeom::SetValue(IfcGeom::GV_LENGTH_UNIT,value);
+					if (current_unit_name.empty()) {
+						if (unit->hasPrefix()) {
+							current_unit_name = IfcSchema::IfcSIPrefix::ToString(unit->Prefix());
+						}
+						current_unit_name += IfcSchema::IfcSIUnitName::ToString(unit->Name());
+					}
+					unit_magnitude = value;
+					unit_name = current_unit_name;
+				} else if ( type == IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT ) {
+					IfcGeom::SetValue(IfcGeom::GV_PLANEANGLE_UNIT,value);
+				}
+			}
+		}
+	} catch (const IfcParse::IfcException& ex) {
+		std::stringstream ss;
+		ss << "Failed to determine unit information '" << ex.what() << "'";
+		Logger::Message(Logger::LOG_ERROR, ss.str());
+	}
+
+	// Boolean operations rely on a precision value for vertex and face coincedence. This
+	// value is obtained from the IfcGeometricRepresentationContexts in the file.
+
+	// Set an initial guess in case reading from file fails.
+	IfcGeom::SetValue(IfcGeom::GV_PRECISION, 0.00001);
+
+	try {
+		IfcSchema::IfcRepresentationContext::list rep_contexts = proj->RepresentationContexts();
+		// Currently, IfcGeometricRepresentationContext aren't used as much as they should be
+		// in the evaluation of shape representations, hence, we try to find the one with the
+		// lowest precision. Typically, a value of 1e-5 is encountered. This value is applied
+		// to all TopoDS_Shapes generated by one of the IfcGeom::convert() functions.
+		// TODO: Many of the empirically found tolerances should probably be substituted by
+		// one that is defined in the model file.
+		double lowest_precision_encountered = std::numeric_limits<double>::infinity();
+		bool any_precision_encountered = false;
+		for (IfcSchema::IfcRepresentationContext::it it = rep_contexts->begin(); it != rep_contexts->end(); ++it) {
+			if ((*it)->is(IfcSchema::Type::IfcGeometricRepresentationContext)) {
+				IfcSchema::IfcGeometricRepresentationContext* rep_context = (IfcSchema::IfcGeometricRepresentationContext*)*it;
+				if (rep_context->is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) continue;
+				if (rep_context->hasPrecision()) {
+					const double precision = rep_context->Precision();
+					if (precision < lowest_precision_encountered) {
+						any_precision_encountered = true;
+						lowest_precision_encountered = precision;
+					}
+				}
+			}
+		}
+		if (any_precision_encountered) {
+			IfcGeom::SetValue(IfcGeom::GV_PRECISION, lowest_precision_encountered);
+		}
+	} catch (const IfcParse::IfcException& ex) {
+		std::stringstream ss;
+		ss << "Failed to determine precision value '" << ex.what() << "'";
+		Logger::Message(Logger::LOG_ERROR, ss.str());
+	}
 }

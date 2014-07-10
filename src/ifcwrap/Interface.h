@@ -99,6 +99,12 @@ namespace IfcParse {
 	IfcParse::IfcFile* open(const std::string& s) {
 		IfcParse::IfcFile* f = new IfcParse::IfcFile();
 		f->Init(s);
+		IfcEntities projects = f->EntitiesByType("IfcProject");
+		if (projects->Size() == 1) {
+			double unit_magnitude;
+			std::string unit_name;
+			IfcGeom::initialize_units_and_precision((IfcSchema::IfcProject*)*projects->begin(), unit_magnitude, unit_name);
+		}
 		return f;
 	}
 
@@ -115,6 +121,7 @@ namespace IfcParse {
 	const int DISABLE_OPENING_SUBTRACTIONS = 1 << 0;
 	const int DISABLE_OBJECT_PLACEMENT     = 1 << 1;
 	const int SEW_SHELLS                   = 1 << 2;
+	const int CONVERT_TO_METERS            = 1 << 3;
 }
 
 std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);
