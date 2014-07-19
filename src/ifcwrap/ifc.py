@@ -43,12 +43,14 @@ class entity_instance:
 		self.wrapped_data.set_argument(idx, entity_instance.map_value(value))
 	def __len__(self): return len(self.wrapped_data)
 	def __repr__(self): return repr(self.wrapped_data)
+	def is_a(self, *args): return self.wrapped_data.is_a(*args)
+	def id(self): return self.wrapped_data.id()
 
 
 class file:
 	instances = []
-	def __init__(self, f):
-		self.wrapped_data = f
+	def __init__(self, f=None):
+		self.wrapped_data = f or ifc_wrapper.file()
 	def create_entity(self,type,*args,**kwargs):
 		e = entity_instance(ifc_wrapper.entity_instance(type))
 		attrs = list(enumerate(args)) + \
@@ -94,8 +96,8 @@ class guid:
 		return '{%s-%s-%s-%s-%s}'%(g[:8], g[8:12], g[12:16], g[16:20], g[20:])
 
 
-def open(fn):
-	return file(ifc_wrapper.open(fn))
+def open(fn=None):
+	return file(ifc_wrapper.open(fn)) if fn else file()
 
 def create_shape(inst, settings): return ifc_wrapper.create_shape(inst.wrapped_data, settings)
 

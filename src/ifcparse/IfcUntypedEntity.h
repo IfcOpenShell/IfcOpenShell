@@ -17,10 +17,13 @@ namespace IfcParse {
 	public:
 		IfcUntypedEntity(const std::string& s);
 		IfcUntypedEntity(IfcAbstractEntity* e);
+		
 		bool is(IfcSchema::Type::Enum v) const;
 		IfcSchema::Type::Enum type() const;	
 		bool is_a(const std::string& s) const;
 		std::string is_a() const;
+
+		unsigned int id() const;
 		unsigned int getArgumentCount() const;
 		IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
 		ArgumentPtr getArgument(unsigned int i) const;

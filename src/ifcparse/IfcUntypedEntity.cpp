@@ -30,6 +30,13 @@ IfcParse::IfcUntypedEntity::IfcUntypedEntity(IfcAbstractEntity* e) {
 	entity = e;
 	_type = e->type();
 }
+unsigned int IfcParse::IfcUntypedEntity::id() const {
+	if (entity->file) {
+		return static_cast<unsigned int>(entity->id());
+	} else {
+		throw IfcException("Entity not bound to a file");
+	}
+}
 bool IfcParse::IfcUntypedEntity::is(IfcSchema::Type::Enum v) const {
 	IfcSchema::Type::Enum _ty = _type;
 	if (v == _ty) return true;
