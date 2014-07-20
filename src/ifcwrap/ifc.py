@@ -4,9 +4,9 @@ import ifc_wrapper
 
 if hasattr(functools, 'reduce'): reduce = functools.reduce
 
-class entity_instance:
+class entity_instance(object):
 	def __init__(self, e):
-		super().__setattr__('wrapped_data', e)
+		super(entity_instance,self).__setattr__('wrapped_data', e)
 	def __getattr__(self, name):
 		try: return entity_instance.wrap_value(self.wrapped_data.get_argument(self.wrapped_data.get_argument_index(name)))
 		except:
