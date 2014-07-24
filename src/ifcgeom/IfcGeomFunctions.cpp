@@ -24,6 +24,7 @@
  ********************************************************************************/
 
 #include <cassert>
+#include <algorithm>
 
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
@@ -336,15 +337,19 @@ bool IfcGeom::profile_helper(int numVerts, double* verts, int numFillets, int* f
 
 	IfcGeom::convert_wire_to_face(w.Wire(),face);
 
-	if ( numFillets ) {
+	if ( numFillets && *std::max_element(filletRadii, filletRadii + numFillets) > 1e-7 ) {
 		BRepFilletAPI_MakeFillet2d fillet (face);
 		for ( int i = 0; i < numFillets; i ++ ) {
 			const double radius = filletRadii[i];
-			if ( radius < 1e-7 ) continue;
+			if ( radius <= 1e-7 ) continue;
 			fillet.AddFillet(vertices[filletIndices[i]],radius);
 		}
 		fillet.Build();
-		face = TopoDS::Face(fillet.Shape());
+		if (fillet.IsDone()) {
+			face = TopoDS::Face(fillet.Shape());
+		} else {
+			Logger::Message(Logger::LOG_WARNING, "Failed to process profile fillets");
+		}
 	}
 
 	delete[] vertices;
