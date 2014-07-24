@@ -208,27 +208,65 @@ bool IfcGeom::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSch
 					Logger::Message(Logger::LOG_WARNING,"Empty opening for:",entity->entity);
 				original_shape_volume = shape_volume(entity_shape);
 			}
-			
-			BRepAlgoAPI_Cut brep_cut(entity_shape,opening_shape);
 
-			if ( brep_cut.IsDone() ) {
-				TopoDS_Shape brep_cut_result = brep_cut;
+			if (entity_shape.ShapeType() == TopAbs_COMPSOLID) {
+
+				// For compound solids process the subtraction for the constituent
+				// solids individually and write the result back as a compound solid.
+
+				TopoDS_CompSolid compound;
+				BRep_Builder builder;
+				builder.MakeCompSolid(compound);
+
+				TopExp_Explorer exp(entity_shape, TopAbs_SOLID);
+
+				for (; exp.More(); exp.Next()) {
+					BRepAlgoAPI_Cut brep_cut(exp.Current(), opening_shape);
+					bool added = false;
+					if ( brep_cut.IsDone() ) {
+						TopoDS_Shape brep_cut_result = brep_cut;
+						BRepCheck_Analyzer analyser(brep_cut_result);
+						bool is_valid = analyser.IsValid() != 0;
+						if (is_valid) {
+							TopExp_Explorer exp(brep_cut_result, TopAbs_SOLID);
+							for (; exp.More(); exp.Next()) {
+								builder.Add(compound, exp.Current());
+								added = true;
+							}
+						}
+					}
+					if (!added) {
+						// Add the original in case subtraction fails
+						builder.Add(compound, exp.Current());
+					} else {
+						Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",entity->entity);
+					}
+				}
+
+				entity_shape = compound;
+
+			} else {
+				BRepAlgoAPI_Cut brep_cut(entity_shape,opening_shape);
+
+				if ( brep_cut.IsDone() ) {
+					TopoDS_Shape brep_cut_result = brep_cut;
 				
-				BRepCheck_Analyzer analyser(brep_cut_result);
-				bool is_valid = analyser.IsValid() != 0;
-				if ( is_valid ) {
-					entity_shape = brep_cut;
-					if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
-						const double volume_after_subtraction = shape_volume(entity_shape);
+					BRepCheck_Analyzer analyser(brep_cut_result);
+					bool is_valid = analyser.IsValid() != 0;
+					if ( is_valid ) {
+						entity_shape = brep_cut;
+						if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
+							const double volume_after_subtraction = shape_volume(entity_shape);
 					
-						if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
-							Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",entity->entity);
+							if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
+								Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",entity->entity);
+						}
+					} else {
+						Logger::Message(Logger::LOG_ERROR,"Invalid result from subtraction:",entity->entity);
 					}
 				} else {
-					Logger::Message(Logger::LOG_ERROR,"Invalid result from subtraction:",entity->entity);
+					Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",entity->entity);
 				}
-			} else {
-				Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",entity->entity);
 			}
 
 		}

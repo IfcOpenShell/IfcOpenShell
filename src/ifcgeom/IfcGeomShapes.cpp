@@ -96,8 +96,9 @@
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& shape) {
-	TopoDS_Face face;
+	TopoDS_Shape face;
 	if ( ! IfcGeom::convert_face(l->SweptArea(),face) ) return false;
+
 	const double height = l->Depth() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	gp_Trsf trsf;
 	IfcGeom::convert(l->Position(),trsf);
@@ -105,7 +106,34 @@ bool IfcGeom::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& sh
 	gp_Dir dir;
 	convert(l->ExtrudedDirection(),dir);
 
-	shape = BRepPrimAPI_MakePrism(face,height*dir);
+	shape.Nullify();
+
+	if (face.ShapeType() == TopAbs_COMPOUND) {
+		
+		// For compounds (most likely the result of a IfcCompositeProfileDef) 
+		// create a compound solid shape.
+		
+		TopExp_Explorer exp(face, TopAbs_FACE);
+		
+		TopoDS_CompSolid compound;
+		BRep_Builder builder;
+		builder.MakeCompSolid(compound);
+		
+		int num_faces_extruded = 0;
+		for (; exp.More(); exp.Next(), ++num_faces_extruded) {
+			builder.Add(compound, BRepPrimAPI_MakePrism(exp.Current(), height*dir));
+		}
+
+		if (num_faces_extruded) {
+			shape = compound;
+		}
+
+	}
+	
+	if (shape.IsNull()) {	
+		shape = BRepPrimAPI_MakePrism(face, height*dir);
+	}
+
 	shape.Move(trsf);
 	return ! shape.IsNull();
 }
