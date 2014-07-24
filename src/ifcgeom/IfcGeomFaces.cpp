@@ -271,11 +271,11 @@ bool IfcGeom::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, TopoDS_S
 	const double y = l->YDim() / 2.0f  * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double d = l->WallThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 
-	const bool fr1 = l->hasInnerFilletRadius();
+	const bool fr1 = l->hasOuterFilletRadius();
 	const bool fr2 = l->hasInnerFilletRadius();
 
-	const double r1 = fr2 ? l->OuterFilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT) : 0.;
-	const double r2 = fr1 ? l->InnerFilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT) : 0.;
+	const double r1 = fr1 ? l->OuterFilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT) : 0.;
+	const double r2 = fr2 ? l->InnerFilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT) : 0.;
 	
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
