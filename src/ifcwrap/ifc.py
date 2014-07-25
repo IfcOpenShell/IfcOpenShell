@@ -103,6 +103,13 @@ def create_shape(inst, settings): return ifc_wrapper.create_shape(inst.wrapped_d
 
 def clean(): return ifc_wrapper.clean()
 
+def create_entity(type,*args,**kwargs):
+	e = entity_instance(ifc_wrapper.entity_instance(type))
+	attrs = list(enumerate(args)) + \
+		[(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+	for idx, arg in attrs: e[idx] = arg
+	return e
+
 DISABLE_OPENING_SUBTRACTIONS = ifc_wrapper.DISABLE_OPENING_SUBTRACTIONS
 DISABLE_OBJECT_PLACEMENT = ifc_wrapper.DISABLE_OBJECT_PLACEMENT
 SEW_SHELLS = ifc_wrapper.SEW_SHELLS
