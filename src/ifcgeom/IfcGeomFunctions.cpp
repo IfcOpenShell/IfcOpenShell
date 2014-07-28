@@ -793,3 +793,26 @@ bool IfcGeom::flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& sha
 	return !result.IsNull();
 }
 	
+void IfcGeom::remove_redundant_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol) {
+	if (tol <= 0.) tol = GetValue(GV_POINT_EQUALITY_TOLERANCE);
+	tol *= tol;
+
+	while (true) {
+		bool removed = false;
+		int n = polygon.Length() - (closed ? 0 : 1);
+		for (int i = 1; i <= n; ++i) {
+			// wrap around to the first point in case of a closed loop
+			int j = (i % polygon.Length()) + 1;
+			double dist = polygon.Value(i).SquareDistance(polygon.Value(j));
+			if (dist < tol) {
+				// do not remove the first or last point to
+				// maintain connectivity with other wires
+				if ((closed && j == 1) || (!closed && j == n)) polygon.Remove(i);
+				else polygon.Remove(j);
+				removed = true;
+				break;
+			}
+		}
+		if (!removed) break;
+	}
+}

@@ -47,15 +47,18 @@
 #include <TColgp_Array1OfPnt2d.hxx>
 #include <TColStd_Array1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
+
 #include <Geom_Line.hxx>
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <Geom_TrimmedCurve.hxx>
 
-#include <BRepOffsetAPI_Sewing.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
+#include <BRepBuilderAPI_MakeShell.hxx>
+#include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 
@@ -63,22 +66,20 @@
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopExp_Explorer.hxx>
+#include <TopLoc_Location.hxx>
+#include <TopTools_ListOfShape.hxx>
 
-#include <BRepPrimAPI_MakePrism.hxx>
-#include <BRepBuilderAPI_MakeShell.hxx>
-#include <BRepBuilderAPI_MakeSolid.hxx>
-#include <BRepPrimAPI_MakeHalfSpace.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
+#include <BRepOffsetAPI_Sewing.hxx>
+#include <BRepPrimAPI_MakePrism.hxx>
+#include <BRepPrimAPI_MakeHalfSpace.hxx>
+#include <BRepFilletAPI_MakeFillet2d.hxx>
+
+#include <BRep_Tool.hxx>
 
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Solid.hxx>
-
-#include <BRepFilletAPI_MakeFillet2d.hxx>
-
-#include <TopLoc_Location.hxx>
-
-#include <BRep_Tool.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
 
@@ -274,13 +275,20 @@ bool IfcGeom::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& wire) {
 bool IfcGeom::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& result) {
 	IfcSchema::IfcCartesianPoint::list::ptr points = l->Points();
 
-	BRepBuilderAPI_MakeWire w;
-	gp_Pnt P1;gp_Pnt P2;
-	for( IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it ) {
-		IfcGeom::convert(*it,P2);
-		if ( it != points->begin() && ( !P1.IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) )
-			w.Add(BRepBuilderAPI_MakeEdge(P1,P2));
-		P1 = P2;
+	// Parse and store the points in a sequence
+	TColgp_SequenceOfPnt polygon;
+	for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
+		gp_Pnt pnt;
+		IfcGeom::convert(*it, pnt);
+		polygon.Append(pnt);
+	}
+
+	// Remove points that are too close to one another
+	remove_redundant_points_from_loop(polygon, false);
+	
+	BRepBuilderAPI_MakePolygon w;
+	for (int i = 1; i <= polygon.Length(); ++i) {
+		w.Add(polygon.Value(i));
 	}
 
 	result = w.Wire();
@@ -290,24 +298,42 @@ bool IfcGeom::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& result) {
 bool IfcGeom::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& result) {
 	IfcSchema::IfcCartesianPoint::list::ptr points = l->Polygon();
 
-	BRepBuilderAPI_MakeWire w;
-	gp_Pnt P1;gp_Pnt P2;gp_Pnt F;
-	int count = 0;
-	for( IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it ) {
-		IfcGeom::convert(*it,P2);
-		if ( it != points->begin() && ( !P1.IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) ) {
-			w.Add(BRepBuilderAPI_MakeEdge(P1,P2));
-			count ++;
-		} else if ( ! count ) F = P2;		
-		P1 = P2;
+	// Parse and store the points in a sequence
+	TColgp_SequenceOfPnt polygon;
+	for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
+		gp_Pnt pnt;
+		IfcGeom::convert(*it, pnt);
+		polygon.Append(pnt);
 	}
-	if ( !P1.IsEqual(F,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) {
-		w.Add(BRepBuilderAPI_MakeEdge(P1,F));
-		count ++;
-	}
-	if ( count < 3 ) return false;
 
-	result = w.Wire();
+	// A loop should consist of at least three vertices
+	int original_count = polygon.Length();
+	if (original_count < 3) {
+		Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
+		return false;
+	}
+
+	// Remove points that are too close to one another
+	remove_redundant_points_from_loop(polygon, true);
+
+	int count = polygon.Length();
+	if (original_count - count != 0) {
+		std::stringstream ss; ss << (original_count - count) << " edges removed for:"; 
+		Logger::Message(Logger::LOG_WARNING, ss.str(), l->entity);
+	}
+
+	if (count < 3) {
+		Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
+		return false;
+	}
+
+	BRepBuilderAPI_MakePolygon w;
+	for (int i = 1; i <= polygon.Length(); ++i) {
+		w.Add(polygon.Value(i));
+	}
+	w.Close();
+
+	result = w.Wire();	
 	return true;
 }
 

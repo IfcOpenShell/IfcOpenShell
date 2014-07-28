@@ -36,6 +36,7 @@
 #include <TopoDS_Face.hxx>
 #include <Geom_Curve.hxx>
 #include <gp_Pln.hxx>
+#include <TColgp_SequenceOfPnt.hxx>
 
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcUtil.h"
@@ -106,7 +107,7 @@ namespace IfcGeom {
 	double GetValue(GeomValue var);
 	bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
 	IfcSchema::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es);
-
+	void remove_redundant_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
 	
 	
 	namespace Cache {
