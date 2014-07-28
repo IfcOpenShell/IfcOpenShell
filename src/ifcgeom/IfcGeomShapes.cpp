@@ -221,7 +221,11 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 		builder.SetMinTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
 		for( Ifc2x3::IfcFace::it it = faces->begin(); it != faces->end(); ++ it ) {
 			TopoDS_Face face;
-			if ( IfcGeom::convert_face(*it,face) && face_area(face) > GetValue(GV_MINIMAL_FACE_AREA) ) {
+			bool converted_face = false;
+			try {
+				converted_face = IfcGeom::convert_face(*it,face);
+			} catch (...) {}
+			if ( converted_face && face_area(face) > GetValue(GV_MINIMAL_FACE_AREA) ) {
 				builder.Add(face);
 				facesAdded = true;
 			} else {
@@ -229,9 +233,11 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 			}
 		}
 		if ( ! facesAdded ) return false;
-		builder.Perform();
-		shape = builder.SewedShape();
-		valid_shell = BRepCheck_Analyzer(shape).IsValid();
+		try {
+			builder.Perform();
+			shape = builder.SewedShape();
+			valid_shell = BRepCheck_Analyzer(shape).IsValid();
+		} catch(...) {}
 		if (valid_shell) {
 			try {
 				ShapeFix_Solid solid;
@@ -244,6 +250,8 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 					} catch (...) {}
 				}
 			} catch(...) {}
+		} else {
+			Logger::Message(Logger::LOG_WARNING,"Failed to sew faceset:",l->entity);
 		}
 	}
 	if (!valid_shell) {
@@ -252,7 +260,11 @@ bool IfcGeom::convert(const Ifc2x3::IfcConnectedFaceSet::ptr l, TopoDS_Shape& sh
 		builder.MakeCompound(compound);
 		for( Ifc2x3::IfcFace::it it = faces->begin(); it != faces->end(); ++ it ) {
 			TopoDS_Face face;
-			if ( IfcGeom::convert_face(*it,face) && face_area(face) > GetValue(GV_MINIMAL_FACE_AREA) ) {
+			bool converted_face = false;
+			try {
+				converted_face = IfcGeom::convert_face(*it,face);
+			} catch (...) {}
+			if ( converted_face && face_area(face) > GetValue(GV_MINIMAL_FACE_AREA) ) {
 				builder.Add(compound,face);
 				facesAdded = true;
 			} else {

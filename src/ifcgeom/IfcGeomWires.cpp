@@ -262,13 +262,20 @@ bool IfcGeom::convert(const Ifc2x3::IfcTrimmedCurve::ptr l, TopoDS_Wire& wire) {
 bool IfcGeom::convert(const Ifc2x3::IfcPolyline::ptr l, TopoDS_Wire& result) {
 	Ifc2x3::IfcCartesianPoint::list points = l->Points();
 
-	BRepBuilderAPI_MakeWire w;
-	gp_Pnt P1;gp_Pnt P2;
-	for( Ifc2x3::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it ) {
-		IfcGeom::convert(*it,P2);
-		if ( it != points->begin() && ( !P1.IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) )
-			w.Add(BRepBuilderAPI_MakeEdge(P1,P2));
-		P1 = P2;
+	// Parse and store the points in a sequence
+	TColgp_SequenceOfPnt polygon;
+	for(Ifc2x3::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it) {
+		gp_Pnt pnt;
+		IfcGeom::convert(*it, pnt);
+		polygon.Append(pnt);
+	}
+
+	// Remove points that are too close to one another
+	remove_redundant_points_from_loop(polygon, false);
+
+	BRepBuilderAPI_MakePolygon w;
+	for (int i = 1; i <= polygon.Length(); ++i) {
+		w.Add(polygon.Value(i));
 	}
 
 	result = w.Wire();
@@ -277,23 +284,41 @@ bool IfcGeom::convert(const Ifc2x3::IfcPolyline::ptr l, TopoDS_Wire& result) {
 bool IfcGeom::convert(const Ifc2x3::IfcPolyLoop::ptr l, TopoDS_Wire& result) {
 	Ifc2x3::IfcCartesianPoint::list points = l->Polygon();
 
-	BRepBuilderAPI_MakeWire w;
-	gp_Pnt P1;gp_Pnt P2;gp_Pnt F;
-	int count = 0;
-	for( Ifc2x3::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it ) {
-		IfcGeom::convert(*it,P2);
-		if ( it != points->begin() && ( !P1.IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) ) {
-			w.Add(BRepBuilderAPI_MakeEdge(P1,P2));
-			count ++;
-		} else if ( ! count ) F = P2;		
-		P1 = P2;
+	// Parse and store the points in a sequence
+	TColgp_SequenceOfPnt polygon;
+	for(Ifc2x3::IfcCartesianPoint::it it = points->begin(); it != points->end(); ++ it) {
+		gp_Pnt pnt;
+		IfcGeom::convert(*it, pnt);
+		polygon.Append(pnt);
 	}
-	if ( !P1.IsEqual(F,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) {
-		w.Add(BRepBuilderAPI_MakeEdge(P1,F));
-		count ++;
-	}
-	if ( count < 3 ) return false;
 
-	result = w.Wire();
+	// A loop should consist of at least three vertices
+	int original_count = polygon.Length();
+	if (original_count < 3) {
+		Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
+		return false;
+	}
+
+	// Remove points that are too close to one another
+	remove_redundant_points_from_loop(polygon, true);
+
+	int count = polygon.Length();
+	if (original_count - count != 0) {
+		std::stringstream ss; ss << (original_count - count) << " edges removed for:"; 
+		Logger::Message(Logger::LOG_WARNING, ss.str(), l->entity);
+	}
+
+	if (count < 3) {
+		Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
+		return false;
+	}
+
+	BRepBuilderAPI_MakePolygon w;
+	for (int i = 1; i <= polygon.Length(); ++i) {
+		w.Add(polygon.Value(i));
+	}
+	w.Close();
+
+	result = w.Wire();	
 	return true;
 }
