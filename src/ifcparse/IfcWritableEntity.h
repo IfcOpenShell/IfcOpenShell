@@ -48,6 +48,7 @@ namespace IfcWrite {
 	public:
 		IfcWritableEntity(IfcSchema::Type::Enum t);
 		~IfcWritableEntity();
+
 		int setId(int i=-1);
 		IfcWritableEntity(IfcAbstractEntity* e);
 		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum c = IfcSchema::Type::ALL);
@@ -59,7 +60,8 @@ namespace IfcWrite {
 		bool is(IfcSchema::Type::Enum v) const;
 		std::string toString(bool upper=false) const;
 		unsigned int id();
-		bool isWritable();
+		IfcWritableEntity* isWritable();
+
         void setArgument(int i);
 		void setArgumentDerived(int i);
 		void setArgument(int i,bool v);

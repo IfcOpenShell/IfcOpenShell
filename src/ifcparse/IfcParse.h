@@ -69,12 +69,18 @@ namespace IfcParse {
 		static bool isString(const Token& t);
 		/// Returns whether the token can be interpreted as an identifier
 		static bool isIdentifier(const Token& t);
-		/// Returns whether the token can be interpreted as an syntactical operator
+		/// Returns whether the token can be interpreted as a syntactical operator
 		static bool isOperator(const Token& t, char op = 0);
 		/// Returns whether the token can be interpreted as an enumerated value
 		static bool isEnumeration(const Token& t);
-		/// Returns whether the token can be interpreted as an datatype name
+		/// Returns whether the token can be interpreted as a datatype name
 		static bool isDatatype(const Token& t);
+		/// Returns whether the token can be interpreted as an integer
+		static bool isInt(const Token& t);
+		/// Returns whether the token can be interpreted as a boolean
+		static bool isBool(const Token& t);
+		/// Returns whether the token can be interpreted as a floating point number
+		static bool isFloat(const Token& t);
 		/// Returns the token interpreted as an integer
 		static int asInt(const Token& t);
 		/// Returns the token interpreted as an boolean (.T. or .F.)
@@ -120,6 +126,9 @@ namespace IfcParse {
 	public:
 		ArgumentList(Tokens* t, std::vector<unsigned int>& ids);
 		~ArgumentList();
+
+		IfcUtil::ArgumentType type() const;
+		
 		operator int() const;
 		operator bool() const;
 		operator double() const;
@@ -128,7 +137,6 @@ namespace IfcParse {
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
 		operator IfcUtil::IfcBaseClass*() const;
-		//operator IfcUtil::IfcAbstractSelect::ptr() const;
 		operator IfcEntityList::ptr() const;
         operator IfcEntityListList::ptr() const;
 		unsigned int Size() const;
@@ -146,6 +154,9 @@ namespace IfcParse {
 	public: 
 		Token token;
 		TokenArgument(const Token& t);
+
+		IfcUtil::ArgumentType type() const;
+
 		operator int() const;
 		operator bool() const;
 		operator double() const;
@@ -154,7 +165,6 @@ namespace IfcParse {
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
 		operator IfcUtil::IfcBaseClass*() const;
-		//operator IfcUtil::IfcAbstractSelect::ptr() const;
 		operator IfcEntityList::ptr() const;
         operator IfcEntityListList::ptr() const;
 		unsigned int Size() const;
@@ -172,6 +182,9 @@ namespace IfcParse {
 	public:
 		EntityArgument(IfcSchema::Type::Enum ty, const Token& t);
 		~EntityArgument();
+
+		IfcUtil::ArgumentType type() const;
+
 		operator int() const;
 		operator bool() const;
 		operator double() const;
@@ -180,7 +193,6 @@ namespace IfcParse {
 		operator std::vector<int>() const;
 		operator std::vector<std::string>() const;
 		operator IfcUtil::IfcBaseClass*() const;
-		//operator IfcUtil::IfcAbstractSelect::ptr() const;
 		operator IfcEntityList::ptr() const;
         operator IfcEntityListList::ptr() const;
 		unsigned int Size() const;
@@ -214,7 +226,7 @@ namespace IfcParse {
 		IfcSchema::Type::Enum type() const;
 		bool is(IfcSchema::Type::Enum v) const;
 		unsigned int id();
-		bool isWritable();
+		IfcWrite::IfcWritableEntity* isWritable();
 	};
 
 typedef std::map<IfcSchema::Type::Enum, IfcEntityList::ptr> MapEntitiesByType;

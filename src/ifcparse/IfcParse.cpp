@@ -346,6 +346,27 @@ bool TokenFunc::isEnumeration(const Token& t) {
 bool TokenFunc::isDatatype(const Token& t) {
 	return ! isOperator(t) && startsWith(t, 'I');
 }
+bool TokenFunc::isInt(const Token& t) {
+	if (isOperator(t)) return false;
+	const std::string str = asString(t);
+	const char* start = str.c_str();
+	char* end;
+	long result = strtol(start,&end,10);
+	return ((end - start) == str.length());
+}
+bool TokenFunc::isBool(const Token& t) {
+	if (!isEnumeration(t)) return false;
+	const std::string str = asString(t);
+	return str == "T" || str == "F";
+}
+bool TokenFunc::isFloat(const Token& t) {
+	if (isOperator(t)) return false;
+	const std::string str = asString(t);
+	const char* start = str.c_str();
+	char* end;
+	double result = strtod(start,&end);
+	return ((end - start) == str.length());
+}
 int TokenFunc::asInt(const Token& t) {
 	const std::string str = asString(t);
 	// In case of an ENTITY_INSTANCE_NAME skip the leading #
@@ -412,6 +433,22 @@ ArgumentList::ArgumentList(Tokens* t, std::vector<unsigned int>& ids) {
 			}
 		}
 		next = t->Next();
+	}
+}
+
+IfcUtil::ArgumentType ArgumentList::type() const {
+	if (list.empty()) return IfcUtil::Argument_UNKNOWN;
+	const IfcUtil::ArgumentType elem_type = list[0]->type();
+	if (elem_type == IfcUtil::Argument_INT) {
+		return IfcUtil::Argument_VECTOR_INT;
+	} else if (elem_type == IfcUtil::Argument_DOUBLE) {
+		return IfcUtil::Argument_VECTOR_DOUBLE;
+	} else if (elem_type == IfcUtil::Argument_STRING) {
+		return IfcUtil::Argument_VECTOR_STRING;
+	} else if (elem_type == IfcUtil::Argument_ENTITY) {
+		return IfcUtil::Argument_ENTITY_LIST;
+	} else {
+		return IfcUtil::Argument_UNKNOWN;
 	}
 }
 
@@ -499,6 +536,24 @@ ArgumentList::~ArgumentList() {
 	list.clear();
 }
 
+IfcUtil::ArgumentType TokenArgument::type() const {
+	if (TokenFunc::isInt(token)) {
+		return IfcUtil::Argument_INT;
+	} else if (TokenFunc::isBool(token)) {
+		return IfcUtil::Argument_BOOL;
+	} else if (TokenFunc::isFloat(token)) {
+		return IfcUtil::Argument_DOUBLE;
+	} else if (TokenFunc::isString(token)) {
+		return IfcUtil::Argument_STRING;
+	} else if (TokenFunc::isEnumeration(token)) {
+		return IfcUtil::Argument_ENUMERATION;
+	} else if (TokenFunc::isIdentifier(token)) {
+		return IfcUtil::Argument_ENTITY;
+	} else {
+		return IfcUtil::Argument_UNKNOWN;
+	}
+}
+
 //
 // Functions for casting the TokenArgument to other types
 //
@@ -522,6 +577,11 @@ std::string TokenArgument::toString(bool upper) const {
 	}
 }
 bool TokenArgument::isNull() const { return TokenFunc::isOperator(token,'$'); }
+
+IfcUtil::ArgumentType EntityArgument::type() const {
+	return IfcUtil::Argument_ENTITY;
+}
+
 //
 // Functions for casting the EntityArgument to other types
 //
@@ -679,8 +739,8 @@ IfcEntityList::ptr Entity::getInverse(IfcSchema::Type::Enum c, int i, const std:
 bool Entity::is(IfcSchema::Type::Enum v) const {	return _type == v; }
 unsigned int Entity::id() { return _id; }
 
-bool Entity::isWritable() {
-	return false;
+IfcWrite::IfcWritableEntity* Entity::isWritable() {
+	return 0;
 }
 
 IfcFile::IfcFile() {
@@ -822,7 +882,7 @@ void IfcFile::AddEntity(IfcUtil::IfcBaseClass* entity) {
 	// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
 	if ( entity->entity->isWritable() ) {
 		if ( ! entity->entity->file ) entity->entity->file = this;
-		new_id = ((IfcWrite::IfcWritableEntity*)(entity->entity))->setId();
+		new_id = entity->entity->isWritable()->setId();
 	} else {
 		// TODO: Detect and fix ENTITY_INSTANCE_NAME collisions
 		new_id = entity->entity->id();
@@ -837,22 +897,32 @@ void IfcFile::AddEntity(IfcUtil::IfcBaseClass* entity) {
 	unsigned arg_count = entity->entity->getArgumentCount();
 	for (unsigned i = 0; i < arg_count; ++i) {
 		Argument* arg = entity->entity->getArgument(i);
+
+		// Create a flat list of entity instances referenced by the instance that is being added
 		IfcEntityList::ptr entity_attributes(new IfcEntityList);
-		try {
+		if (arg->type() == IfcUtil::Argument_ENTITY) {
 			IfcUtil::IfcBaseClass* entity_attribute = *arg;
 			entity_attributes->push(entity_attribute);
-		} catch(IfcParse::IfcException&) {
-			try {
-				IfcEntityList::ptr entity_list_attribute = *arg;
-				entity_attributes->push(entity_list_attribute);
-			} catch(IfcParse::IfcException&) {}
+		} else if (arg->type() == IfcUtil::Argument_ENTITY_LIST) {
+			IfcEntityList::ptr entity_list_attribute = *arg;
+			entity_attributes->push(entity_list_attribute);
+		} else if (arg->type() == IfcUtil::Argument_ENTITY_LIST_LIST) {
+			IfcEntityListList::ptr entity_list_attribute = *arg;
+			for (IfcEntityListList::outer_it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
+				for (IfcEntityListList::inner_it jt = it->begin(); jt != it->end(); ++jt) {
+					entity_attributes->push(*jt);
+				}
+			}
 		}
+
 		for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 			IfcUtil::IfcBaseClass* entity_attribute = *it;
 			try {
 				if (entity_attribute->entity->isWritable()) {
-					if ( ! entity_attribute->entity->file ) entity_attribute->entity->file = this;
-					((IfcWrite::IfcWritableEntity*)(entity_attribute->entity))->setId();
+					if ( ! entity_attribute->entity->file ) {
+						entity_attribute->entity->file = this;
+					}
+					entity_attribute->entity->isWritable()->setId();
 				}
 				unsigned entity_attribute_id = entity_attribute->entity->id();
 				IfcEntityList::ptr refs = EntitiesByReference(entity_attribute_id);

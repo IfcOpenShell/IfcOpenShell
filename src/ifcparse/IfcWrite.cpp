@@ -110,7 +110,7 @@ unsigned int IfcWritableEntity::id() {
 	}
 	return *_id; 
 }
-bool IfcWritableEntity::isWritable() { return true; }
+IfcWritableEntity* IfcWritableEntity::isWritable() { return this; }
 bool IfcWritableEntity::arg_writable(int i) {
 	std::map<int,bool>::const_iterator it = writemask.find(i);
 	if ( it == writemask.end() ) return false;
@@ -322,6 +322,16 @@ IfcWriteArgument::argument_type IfcWriteArgument::argumentType() const {
 	return static_cast<argument_type>(container.which());
 }
 
+IfcUtil::ArgumentType IfcWriteArgument::type() const {
+	// TODO: Make these the same enumeration
+	int ty = static_cast<int>(container.which()) - 2;
+	if (ty < 0) {
+		return IfcUtil::Argument_UNKNOWN;
+	} else {
+		static_cast<IfcUtil::ArgumentType>(ty);
+	}
+}
+
 IfcEntityList::ptr IfcSelectHelperEntity::getInverse(IfcSchema::Type::Enum,int,const std::string &) {throw IfcParse::IfcException("Invalid cast");}
 IfcEntityList::ptr IfcSelectHelperEntity::getInverse(IfcSchema::Type::Enum) {throw IfcParse::IfcException("Invalid cast");}
 std::string IfcSelectHelperEntity::datatype() const { return IfcSchema::Type::ToString(_type); }
@@ -342,7 +352,7 @@ std::string IfcSelectHelperEntity::toString(bool upper) const {
 	return ss.str();
 }
 unsigned int IfcSelectHelperEntity::id() { throw IfcParse::IfcException("Invalid cast"); }
-bool IfcSelectHelperEntity::isWritable() { throw IfcParse::IfcException("Invalid cast"); }
+IfcWrite::IfcWritableEntity* IfcSelectHelperEntity::isWritable() { throw IfcParse::IfcException("Invalid cast"); }
 
 IfcSelectHelper::IfcSelectHelper(const std::string& v, IfcSchema::Type::Enum t) {
 	IfcWriteArgument* a = new IfcWriteArgument(0);

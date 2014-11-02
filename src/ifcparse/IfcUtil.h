@@ -36,10 +36,24 @@ class Argument;
 class IfcEntityList;
 class IfcEntityListList;
 class IfcAbstractEntity;
+namespace IfcWrite {
+	class IfcWritableEntity;
+}
 
 namespace IfcUtil {
     enum ArgumentType {
-        Argument_INT, Argument_BOOL, Argument_DOUBLE, Argument_STRING, Argument_VECTOR_INT, Argument_VECTOR_DOUBLE, Argument_VECTOR_STRING, Argument_ENTITY, Argument_ENTITY_LIST, Argument_ENTITY_LIST_LIST, Argument_ENUMERATION, Argument_UNKNOWN
+        Argument_INT,
+		Argument_BOOL,
+		Argument_DOUBLE,
+		Argument_STRING, 
+		Argument_VECTOR_INT, 
+		Argument_VECTOR_DOUBLE, 
+		Argument_VECTOR_STRING, 
+		Argument_ENUMERATION, 
+		Argument_ENTITY, 
+		Argument_ENTITY_LIST, 
+		Argument_ENTITY_LIST_LIST, 
+		Argument_UNKNOWN
     };
 
 	class IfcBaseClass {
@@ -208,8 +222,7 @@ namespace IfcParse {
 
 class Argument {
 public:
-	//void* file;
-//public:
+	virtual IfcUtil::ArgumentType type() const = 0;
 	virtual operator int() const = 0;
 	virtual operator bool() const = 0;
 	virtual operator double() const = 0;
@@ -218,7 +231,6 @@ public:
 	virtual operator std::vector<int>() const = 0;
 	virtual operator std::vector<std::string>() const = 0;
 	virtual operator IfcUtil::IfcBaseClass*() const = 0;
-	//virtual operator IfcUtil::IfcAbstractSelect::ptr() const = 0;
 	virtual operator IfcEntityList::ptr() const = 0;
     virtual operator IfcEntityListList::ptr() const = 0;
 	virtual unsigned int Size() const = 0;
@@ -241,7 +253,7 @@ public:
 	virtual bool is(IfcSchema::Type::Enum v) const = 0;
 	virtual std::string toString(bool upper=false) const = 0;
 	virtual unsigned int id() = 0;
-	virtual bool isWritable() = 0;
+	virtual IfcWrite::IfcWritableEntity* isWritable() = 0;
 };
 
 class Logger {

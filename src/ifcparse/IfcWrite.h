@@ -132,6 +132,7 @@ namespace IfcWrite {
 		std::string toString(bool upper=false) const;
 		unsigned int Size() const;
 		argument_type argumentType() const;
+		IfcUtil::ArgumentType IfcWriteArgument::type() const;
 	};
 
 	/// An entity to help with passing of SELECT arguments that
@@ -154,7 +155,7 @@ namespace IfcWrite {
 		bool is(IfcSchema::Type::Enum t) const;
 		std::string toString(bool upper = false) const;
 		unsigned int id();
-		bool isWritable();
+		IfcWritableEntity* isWritable();
 	};
 
 	/// A helper class for passing of SELECT arguments that
