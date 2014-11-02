@@ -132,7 +132,7 @@ namespace IfcWrite {
 		std::string toString(bool upper=false) const;
 		unsigned int Size() const;
 		argument_type argumentType() const;
-		IfcUtil::ArgumentType IfcWriteArgument::type() const;
+		IfcUtil::ArgumentType type() const;
 	};
 
 	/// An entity to help with passing of SELECT arguments that
