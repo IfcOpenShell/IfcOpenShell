@@ -128,6 +128,8 @@ int main(int argc, char** argv) {
 	} catch (const boost::program_options::unknown_option& e) {
 		std::cerr << "[Error] Unknown option '" << e.get_option_name() << "'" << std::endl << std::endl;
 		// Usage information will be emitted below
+	} catch (...) {
+		// Catch other errors such as invalid command line syntax
 	}
 	boost::program_options::notify(vmap);
 
