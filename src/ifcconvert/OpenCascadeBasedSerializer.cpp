@@ -38,14 +38,17 @@ void OpenCascadeBasedSerializer::writeShapeModel(const IfcGeomObjects::IfcGeomSh
 	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->mesh().begin(); it != o->mesh().end(); ++ it) {
 		gp_GTrsf gtrsf = it->Placement();
 		
-		// TODO:
-		gp_GTrsf o_trsf;
-		int k = 0;
-		for( int i = 1; i < 5; ++ i )
-			for ( int j = 1; j < 4; ++ j )
-				o_trsf.SetValue(j, i, o->matrix()[k++]);
-		
+		// Convert the matrix back into a transformation object. The tolerance values
+		// are taken into consideration to reconstruct the form of the transformation.
+		gp_Trsf o_trsf;
+		o_trsf.SetValues(
+			o->matrix()[0], o->matrix()[3], o->matrix()[6], o->matrix()[ 9],
+			o->matrix()[1], o->matrix()[4], o->matrix()[7], o->matrix()[10], 
+			o->matrix()[2], o->matrix()[5], o->matrix()[8], o->matrix()[11],
+			1e-5, 1e-5
+		);
 		gtrsf.PreMultiply(o_trsf);
+		
 		const TopoDS_Shape& s = it->Shape();			
 			
 		bool trsf_valid = false;
