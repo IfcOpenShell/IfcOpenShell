@@ -734,40 +734,45 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
 					Logger::Message(Logger::LOG_ERROR,ex.what());
 				}
 			}
+
 			Ifc2x3::Type::Enum ty = entity->type();
 			do {
-				IfcEntities L = EntitiesByType(ty);
-				if ( L == 0 ) {
-					L = IfcEntities(new IfcEntityList());
-					bytype[ty] = L;
+				IfcEntities instances_by_type = EntitiesByType(ty);
+				if (!instances_by_type) {
+					instances_by_type = IfcEntities(new IfcEntityList());
+					bytype[ty] = instances_by_type;
 				}
-				L->push(entity);
+				instances_by_type->push(entity);
 				ty = Ifc2x3::Type::Parent(ty);
 			} while ( ty > -1 );
+
 			if ( byid.find(currentId) != byid.end() ) {
 				std::stringstream ss;
 				ss << "Overwriting entity with id " << currentId;
 				Logger::Message(Logger::LOG_WARNING,ss.str());
 			}
 			byid[currentId] = entity;
+
 			MaxId = (std::max)(MaxId,currentId);
 			currentId = 0;
 		} else {
 			try { token = tokens->Next(); }
 			catch (... ) { token = TokenPtr(); }
 		}
+
 		if ( ! (token.second || token.first) ) break;
+
 		if ( (previous.second || previous.first) && TokenFunc::isIdentifier(previous) ) {
 			int id = TokenFunc::asInt(previous);
 			if ( TokenFunc::isOperator(token,'=') ) {
 				currentId = id;
 			} else if (entity) {
-				IfcEntities L = EntitiesByReference(id);
-				if ( L == 0 ) {
-					L = IfcEntities(new IfcEntityList());
-					byref[id] = L;
+				IfcEntities instances_by_ref = EntitiesByReference(id);
+				if (!instances_by_ref) {
+					instances_by_ref = IfcEntities(new IfcEntityList());
+					byref[id] = instances_by_ref;
 				}
-				L->push(entity);
+				instances_by_ref->push(entity);
 			}
 		}
 		previous = token;
@@ -795,16 +800,18 @@ void IfcFile::AddEntity(IfcUtil::IfcSchemaEntity entity) {
 			Logger::Message(Logger::LOG_ERROR,ex.what());
 		}
 	}
+
 	Ifc2x3::Type::Enum ty = entity->type();
 	do {
-		IfcEntities L = EntitiesByType(ty);
-		if ( L == 0 ) {
-			L = IfcEntities(new IfcEntityList());
-			bytype[ty] = L;
+		IfcEntities instances_by_type = EntitiesByType(ty);
+		if (!instances_by_type) {
+			instances_by_type = IfcEntities(new IfcEntityList());
+			bytype[ty] = instances_by_type;
 		}
-		L->push(entity);
+		instances_by_type->push(entity);
 		ty = Ifc2x3::Type::Parent(ty);
 	} while ( ty > -1 );
+
 	int new_id = -1;
 	// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
 	if ( entity->entity->isWritable() ) {
