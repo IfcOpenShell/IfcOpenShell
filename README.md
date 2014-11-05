@@ -12,12 +12,12 @@ This is an initiative to expose the functionality of IfcOpenShell for parsing an
 
 The following interactive session illustrates its use:
 
-    >>> import ifc
-    >>> f = ifc.open("Duplex_A_20110907_optimized.ifc")
+    >>> import ifcopenshell
+    >>> f = ifcopenshell.open("Duplex_A_20110907_optimized.ifc")
     >>> f.by_type("ifcwall")[:2]
     [#91=IfcWallStandardCase('2O2Fr$t4X7Zf8NOew3FL9r',#1,'Basic Wall:Interior - Partition (92mm Stud):144586',$,'Basic Wall:Interior - Partition (92mm Stud):128360',#5198,#18806,'144586'), #92=IfcWallStandardCase('2O2Fr$t4X7Zf8NOew3FLIE',#1,'Basic Wall:Interior - Partition (92mm Stud):143921',$,'Basic Wall:Interior - Partition (92mm Stud):128360',#5206,#18805,'143921')]
     >>> wall = _[0]
-    >>> brep_data = ifc.create_shape(wall, ifc.SEW_SHELLS)
+    >>> brep_data = ifcopenshell.create_shape(wall, ifcopenshell.SEW_SHELLS)
     >>> len(wall) # number of EXPRESS attributes
     8
     >>> wall.GlobalId
@@ -26,15 +26,15 @@ The following interactive session illustrates its use:
     >>> wall.NonExistingAttr
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
-      File ".\ifc.py", line 14, in __getattr__
+      File ".\ifcopenshell.py", line 14, in __getattr__
         except: raise AttributeError("entity instance of type '%s' has no attribute'%s'"%(self.wrapped_data.is_a(), name)) from None
     AttributeError: entity instance of type 'IfcWallStandardCase' has no attribute 'NonExistingAttr'
     >>> wall.GlobalId = 3
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
-      File ".\ifc.py", line 26, in __setattr__
+      File ".\ifcopenshell.py", line 26, in __setattr__
         self[self.wrapped_data.get_argument_index(key)] = value
-      File ".\ifc.py", line 30, in __setitem__
+      File ".\ifcopenshell.py", line 30, in __setitem__
         self.wrapped_data.set_argument(idx, entity_instance.map_value(value))
       File ".\ifc_wrapper.py", line 118, in <lambda>
         set_argument = lambda self,x,y: self._set_argument(x) if y is None else self
@@ -45,7 +45,7 @@ The following interactive session illustrates its use:
     >>> f.createIfcCartesianPoint(Coordinates=(1.0,1.5,2.0))
     #27530=IfcCartesianPoint((1.,1.5,2.))
     >>> import uuid
-    >>> ifc.guid.compress(uuid.uuid1().hex)
+    >>> ifcopenshell.guid.compress(uuid.uuid1().hex)
     '3x4C8Q_6qHuv$P$FYkANRX'
     >>> new_guid = _
     >>> owner_hist = f.by_type("IfcOwnerHistory")[0]
@@ -100,12 +100,6 @@ required.
       $ export OCC_LIBRARY_PATH
     $ cmake ../
     $ make
-
-If all worked out correctly you can now use IfcOpenShell. For example:
-    $ wget ftp://ftp.dds.no/pub/ifc/Munkerud/Munkerud_hus6_BE.zip
-    $ unzip Munkerud_hus6_BE.zip
-    $ ./IfcObj Munkerud_hus6_BE.ifc
-    $ less Munkerud_hus6_BE.obj
 
 
 Ubuntu Notes
