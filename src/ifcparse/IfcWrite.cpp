@@ -328,7 +328,7 @@ IfcUtil::ArgumentType IfcWriteArgument::type() const {
 	if (ty < 0) {
 		return IfcUtil::Argument_UNKNOWN;
 	} else {
-		static_cast<IfcUtil::ArgumentType>(ty);
+		return static_cast<IfcUtil::ArgumentType>(ty);
 	}
 }
 
