@@ -331,17 +331,33 @@ bool IfcGeom::convert(const IfcSchema::IfcTrapeziumProfileDef* l, TopoDS_Shape& 
 }
 
 bool IfcGeom::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Shape& face) {
-	const double x = l->OverallWidth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	const double x1 = l->OverallWidth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double y = l->OverallDepth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	const double d1 = l->WebThickness() / 2.0f  * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double d2 = l->FlangeThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	bool doFillet = l->hasFilletRadius();
-	double f = 0.;
-	if ( doFillet ) {
-		f = l->FilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+	const double dy1 = l->FlangeThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+
+	bool doFillet1 = l->hasFilletRadius();
+	double f1 = 0.;
+	if ( doFillet1 ) {
+		f1 = l->FilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
 	}
 
-	if ( x == 0.0f || y == 0.0f || d1 == 0.0f || d2 == 0.0f ) {
+	bool doFillet2 = doFillet1;
+	double x2 = x1, dy2 = dy1, f2 = f1;
+
+	if (l->is(IfcSchema::Type::IfcAsymmetricIShapeProfileDef)) {
+		IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) l;
+		x2 = assym->TopFlangeWidth() / 2. * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		doFillet2 = assym->hasTopFlangeFilletRadius();
+		if (doFillet2) {
+			f2 = assym->TopFlangeFilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		}
+		if (assym->hasTopFlangeThickness()) {
+			dy2 = assym->TopFlangeThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		}
+	}	
+
+	if ( x1 < ALMOST_ZERO || x2 < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || dy1 < ALMOST_ZERO || dy2 < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
 		return false;
 	}
@@ -349,10 +365,10 @@ bool IfcGeom::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Shape& fac
 	gp_Trsf2d trsf2d;
 	IfcGeom::convert(l->Position(),trsf2d);
 
-	double coords[24] = {-x,-y,x,-y,x,-y+d2,d1,-y+d2,d1,y-d2,x,y-d2,x,y,-x,y,-x,y-d2,-d1,y-d2,-d1,-y+d2,-x,-y+d2};
+	double coords[24] = {-x1,-y, x1,-y, x1,-y+dy1, d1,-y+dy1, d1,y-dy2, x2,y-dy2, x2,y, -x2,y, -x2,y-dy2, -d1,y-dy2, -d1,-y+dy1, -x1,-y+dy1};
 	int fillets[4] = {3,4,9,10};
-	double radii[4] = {f,f,f,f};
-	return IfcGeom::profile_helper(12,coords,doFillet ? 4 : 0,fillets,radii,trsf2d,face);
+	double radii[4] = {f1,f1,f2,f2};
+	return IfcGeom::profile_helper(12,coords,(doFillet1||doFillet2) ? 4 : 0,fillets,radii,trsf2d,face);
 }
 
 bool IfcGeom::convert(const IfcSchema::IfcZShapeProfileDef* l, TopoDS_Shape& face) {

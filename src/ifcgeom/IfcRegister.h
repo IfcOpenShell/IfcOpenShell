@@ -83,6 +83,7 @@ FACE(IfcRectangleHollowProfileDef);
 FACE(IfcRectangleProfileDef);
 FACE(IfcTrapeziumProfileDef)
 FACE(IfcCShapeProfileDef);
+// IfcAsymmetricIShapeProfileDef included
 FACE(IfcIShapeProfileDef);
 FACE(IfcLShapeProfileDef);
 FACE(IfcTShapeProfileDef);
