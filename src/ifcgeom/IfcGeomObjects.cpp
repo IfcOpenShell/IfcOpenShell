@@ -606,6 +606,9 @@ double UnitPrefixToValue( IfcSchema::IfcSIPrefix::IfcSIPrefix v ) {
 	else return 1.0f;
 }
 
+static std::string unit_name = "METER";
+static float unit_magnitude = 1.0f;
+
 void IfcGeomObjects::InitPrecision() {
 	IfcGeom::SetValue(IfcGeom::GV_PRECISION, 0.00001);
 
@@ -631,7 +634,13 @@ void IfcGeomObjects::InitPrecision() {
 			}
 		}
 		if (any_precision_encountered) {
-			IfcGeom::SetValue(IfcGeom::GV_PRECISION, lowest_precision_encountered);
+			lowest_precision_encountered *= unit_magnitude;
+			if (lowest_precision_encountered < 1.e-8) {
+				Logger::Message(Logger::LOG_WARNING, "Precision lower than 0.00000001 meter not enforced");
+				IfcGeom::SetValue(IfcGeom::GV_PRECISION, 1.e-8);
+			} else {
+				IfcGeom::SetValue(IfcGeom::GV_PRECISION, lowest_precision_encountered);
+			}
 		}
 	} catch (const IfcParse::IfcException& ex) {
 		std::stringstream ss;
@@ -639,9 +648,6 @@ void IfcGeomObjects::InitPrecision() {
 		Logger::Message(Logger::LOG_ERROR, ss.str());
 	}
 }
-
-static std::string unit_name = "METER";
-static float unit_magnitude = 1.0f;
 
 void IfcGeomObjects::InitUnits() {
 	// Set default units, set length to meters, angles to undefined
