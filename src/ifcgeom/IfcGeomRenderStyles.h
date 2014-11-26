@@ -103,6 +103,27 @@ namespace IfcGeom {
 
 	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcRepresentationItem* representation_item) {
 		IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
+
+		// Preferably this item-specific logic should not be here, but it easier than somehow associating this information
+		// with a bare TopoDS_Shape. Perhaps the real solution is to 'upgrade' IfcBooleanResult from a SHAPE to SHAPES in
+		// IfcRegister.h so that surface style information can be tied to actual implementation of the conversion function.
+		if (styled_items->Size() == 0 && representation_item->is(IfcSchema::Type::IfcBooleanResult)) {
+			IfcSchema::IfcBooleanResult* boolean_result = (IfcSchema::IfcBooleanResult*) representation_item;
+			while (true) {
+				IfcSchema::IfcRepresentationItem* boolean_op = (IfcSchema::IfcRepresentationItem*) boolean_result->FirstOperand();
+				IfcSchema::IfcStyledItem::list::ptr op_styled_items = boolean_op->StyledByItem();
+				if (op_styled_items->Size() > 0) {
+					styled_items = op_styled_items;
+					break;
+				}
+				if (boolean_op->is(IfcSchema::Type::IfcBooleanResult)) {
+					boolean_result = (IfcSchema::IfcBooleanResult*) boolean_op;
+				} else {
+					break;
+				}
+			}
+		}
+		
 		for (IfcSchema::IfcStyledItem::list::it jt = styled_items->begin(); jt != styled_items->end(); ++jt) {
 #ifdef USE_IFC4
 			IfcUtil::IfcAbstractSelect::list::ptr style_assignments = (*jt)->Styles();
