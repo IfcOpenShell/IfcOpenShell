@@ -925,19 +925,23 @@ void IfcFile::AddEntity(IfcUtil::IfcBaseClass* entity) {
 		for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 			IfcUtil::IfcBaseClass* entity_attribute = *it;
 			try {
-				if (entity_attribute->entity->isWritable()) {
-					if ( ! entity_attribute->entity->file ) {
-						entity_attribute->entity->file = this;
+				if (!IfcSchema::Type::IsSimple(entity_attribute->type())) {
+					// At this point simple types are IfcSelectHelper instances
+					// which are not writable and do not have an instance name.
+					if (entity_attribute->entity->isWritable()) {
+						if ( ! entity_attribute->entity->file ) {
+							entity_attribute->entity->file = this;
+						}
+						entity_attribute->entity->isWritable()->setId();
 					}
-					entity_attribute->entity->isWritable()->setId();
+					unsigned entity_attribute_id = entity_attribute->entity->id();
+					IfcEntityList::ptr refs = EntitiesByReference(entity_attribute_id);
+					if (!refs) {
+						refs = IfcEntityList::ptr(new IfcEntityList);
+						byref[entity_attribute_id] = refs;
+					}
+					refs->push(entity);
 				}
-				unsigned entity_attribute_id = entity_attribute->entity->id();
-				IfcEntityList::ptr refs = EntitiesByReference(entity_attribute_id);
-				if (!refs) {
-					refs = IfcEntityList::ptr(new IfcEntityList);
-					byref[entity_attribute_id] = refs;
-				}
-				refs->push(entity);
 			} catch (IfcParse::IfcException&) {}
 		}
 	}
