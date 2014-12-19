@@ -61,6 +61,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <limits>
 #include <algorithm>
 
 #include <gp_Mat.hxx>
@@ -621,7 +622,7 @@ namespace IfcGeom {
 			// TODO: Correctly implement destructor for IfcFile
 			delete ifc_file;
 
-			std::vector<Element<P>*>::const_iterator it;
+			typename std::vector<Element<P>*>::const_iterator it;
 			for (it = returned_elements.begin(); it != returned_elements.end(); ++ it ) {
 				delete *it;
 			}

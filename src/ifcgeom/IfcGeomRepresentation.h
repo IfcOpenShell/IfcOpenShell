@@ -243,7 +243,7 @@ namespace IfcGeom {
 				int i = (int) _verts.size() / 3;
 				if (settings().weld_vertices()) {
 					const VertexKey key = std::make_pair(material_index, std::make_pair(X, std::make_pair(Y, Z)));
-					VertexKeyMap::const_iterator it = welds.find(key);
+					typename VertexKeyMap::const_iterator it = welds.find(key);
 					if ( it != welds.end() ) return it->second;
 					i = (int) welds.size();
 					welds[key] = i;

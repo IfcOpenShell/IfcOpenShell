@@ -93,7 +93,7 @@ namespace IfcGeom {
 	public:
 		const Representation::BRep& geometry() const { return *_geometry; }
 		ShapeModelElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const gp_Trsf& trsf, Representation::BRep* geometry)
-			: Element(geometry->settings(),id,parent_id,name,type,guid,trsf)
+			: Element<P>(geometry->settings(),id,parent_id,name,type,guid,trsf)
 			, _geometry(geometry)
 		{}
 		virtual ~ShapeModelElement() {
