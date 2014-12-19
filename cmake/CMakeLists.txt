@@ -141,9 +141,11 @@ ADD_LIBRARY(IfcGeom STATIC
   ../src/ifcgeom/IfcGeomFaces.cpp
   ../src/ifcgeom/IfcGeomFunctions.cpp
   ../src/ifcgeom/IfcGeomHelpers.cpp
-  ../src/ifcgeom/IfcGeomObjects.cpp
+  ../src/ifcgeom/IfcGeomMaterial.cpp
   ../src/ifcgeom/IfcGeomRenderStyles.cpp
+  ../src/ifcgeom/IfcGeomRepresentation.cpp
   ../src/ifcgeom/IfcGeomShapes.cpp
+  ../src/ifcgeom/IfcGeomUtils.cpp
   ../src/ifcgeom/IfcGeomWires.cpp
   ../src/ifcgeom/IfcRegister.cpp
 )
@@ -182,8 +184,13 @@ ADD_SUBDIRECTORY(../src/examples examples)
 # CMake installation targets
 SET(include_files_geom
     ../src/ifcgeom/IfcGeom.h
-    ../src/ifcgeom/IfcGeomObjects.h
+    ../src/ifcgeom/IfcGeomElement.h
+    ../src/ifcgeom/IfcGeomIterator.h
+    ../src/ifcgeom/IfcGeomIteratorSettings.h
+    ../src/ifcgeom/IfcGeomMaterial.h
     ../src/ifcgeom/IfcGeomRenderStyles.h
+    ../src/ifcgeom/IfcGeomRepresentation.h
+    ../src/ifcgeom/IfcGeomUtils.h
     ../src/ifcgeom/IfcRegister.h
     ../src/ifcgeom/IfcRegisterConvertCurve.h
     ../src/ifcgeom/IfcRegisterConvertFace.h
