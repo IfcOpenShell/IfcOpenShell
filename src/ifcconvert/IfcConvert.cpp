@@ -33,7 +33,7 @@
 
 #include <boost/program_options.hpp>
 
-#include "../ifcgeom/IfcGeomObjects.h"
+#include "../ifcgeom/IfcGeomIterator.h"
 
 #include "../ifcconvert/ColladaSerializer.h"
 #include "../ifcconvert/IgesSerializer.h"
@@ -177,13 +177,16 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS, use_world_coords);
-	IfcGeomObjects::Settings(IfcGeomObjects::WELD_VERTICES, weld_vertices);
-	IfcGeomObjects::Settings(IfcGeomObjects::SEW_SHELLS, sew_shells);
-	IfcGeomObjects::Settings(IfcGeomObjects::CONVERT_BACK_UNITS, convert_back_units);
-	IfcGeomObjects::Settings(IfcGeomObjects::FASTER_BOOLEANS, merge_boolean_operands);
-	IfcGeomObjects::Settings(IfcGeomObjects::FORCE_CCW_FACE_ORIENTATION, force_ccw_face_orientation);
-	IfcGeomObjects::Settings(IfcGeomObjects::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
+	IfcGeom::IteratorSettings settings;
+
+	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
+	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords);
+	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES,                weld_vertices);
+	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS,                   sew_shells);
+	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS,           convert_back_units);
+	settings.set(IfcGeom::IteratorSettings::FASTER_BOOLEANS,              merge_boolean_operands);
+	settings.set(IfcGeom::IteratorSettings::FORCE_CCW_FACE_ORIENTATION,   force_ccw_face_orientation);
+	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
 
 	std::string output_extension = output_filename.substr(output_filename.size()-4);
 	for (std::string::iterator c = output_extension.begin(); c != output_extension.end(); ++c) {
@@ -198,7 +201,7 @@ int main(int argc, char** argv) {
 		const std::string mtl_filename = output_filename.substr(0,output_filename.size()-3) + "mtl";
 		if (!use_world_coords) {
 			Logger::Message(Logger::LOG_NOTICE, "Using world coords when writing WaveFront OBJ files");
-			IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS, true);
+			settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
 		}
 		serializer = new WaveFrontOBJSerializer(output_filename, mtl_filename);
 #ifdef WITH_OPENCOLLADA
@@ -219,6 +222,8 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
+	IfcGeom::Iterator<double> context_iterator(settings, input_filename);
+
 	if (!serializer->ready()) {
 		Logger::Message(Logger::LOG_ERROR, "Unable to open output file for writing");
 		write_log();
@@ -226,7 +231,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (!serializer->isTesselated()) {
-		IfcGeomObjects::Settings(IfcGeomObjects::DISABLE_TRIANGULATION, true);
+		
 		if (weld_vertices) {
 			Logger::Message(Logger::LOG_NOTICE, "Weld vertices setting ignored when writing STEP or IGES files");
 		}
@@ -235,14 +240,14 @@ int main(int argc, char** argv) {
 	time_t start,end;
 	time(&start);
 	// Parse the file supplied in argv[1]. Returns true on succes.
-	if ( ! IfcGeomObjects::Init(input_filename, &std::cout, &log_stream) ) {
+	if (!context_iterator.findContext()) {
 		Logger::Message(Logger::LOG_ERROR, "Unable to parse .ifc file or no geometrical entities found");
 		write_log();
 		return 1;
 	}
 
 	if (convert_back_units) {
-		serializer->setUnitNameAndMagnitude(IfcGeomObjects::GetUnitName(), IfcGeomObjects::GetUnitMagnitude());
+		serializer->setUnitNameAndMagnitude(context_iterator.getUnitName(), context_iterator.getUnitMagnitude());
 	} else {
 		serializer->setUnitNameAndMagnitude("METER", 1.0f);
 	}
@@ -255,16 +260,10 @@ int main(int argc, char** argv) {
 	Logger::Status("Creating geometry...");
 
 	// The functions IfcGeomObjects::Get() and IfcGeomObjects::Next() wrap an iterator of all geometrical entities in the Ifc file.
-	// IfcGeomObjects::Get() returns an IfcGeomObjects::IfcGeomObject (see IfcGeomObjects.h for definition)
+	// IfcGeomObjects::Get() returns an IfcGeom::TriangulationElement (see IfcGeomIterator.h for definition)
 	// IfcGeomObjects::Next() is used to poll whether more geometrical entities are available    
 	do {
-		const IfcGeomObjects::IfcObject* geom_object;
-		
-		if (serializer->isTesselated()) {
-			geom_object = IfcGeomObjects::Get();
-		} else {
-			geom_object = IfcGeomObjects::GetShapeModel();
-		}
+		const IfcGeom::Element<double>* geom_object = context_iterator.get();
 
 		std::string lowercase_type = geom_object->type();
 		for (std::string::iterator c = lowercase_type.begin(); c != lowercase_type.end(); ++c) {
@@ -273,16 +272,16 @@ int main(int argc, char** argv) {
 		if (ignore_types.find(lowercase_type) != ignore_types.end()) continue;
 
 		if (serializer->isTesselated()) {
-			serializer->writeTesselated(static_cast<const IfcGeomObjects::IfcGeomObject*>(geom_object));
+			serializer->write(static_cast<const IfcGeom::TriangulationElement<double>*>(geom_object));
 		} else {
-			serializer->writeShapeModel(static_cast<const IfcGeomObjects::IfcGeomShapeModelObject*>(geom_object));
+			serializer->write(static_cast<const IfcGeom::ShapeModelElement<double>*>(geom_object));
 		}
-
-		const int progress = IfcGeomObjects::Progress() / 2;
-		if ( old_progress!= progress ) Logger::ProgressBar(progress);
+		
+		const int progress = context_iterator.progress() / 2;
+		if (old_progress!= progress) Logger::ProgressBar(progress);
 		old_progress = progress;
 	
-	} while ( IfcGeomObjects::Next() );
+	} while (context_iterator.next());
 
 	serializer->finalize();
 	delete serializer;

@@ -22,7 +22,7 @@
 #include <istdplug.h>
 
 #include "../ifcmax/IfcMax.h"
-#include "../ifcgeom/IfcGeomObjects.h"
+#include "../ifcgeom/IfcGeomIterator.h"
 
 static const int NUM_MATERIAL_SLOTS = 24;
 
@@ -119,7 +119,7 @@ Mtl* FindMaterialByName(MtlBaseLib* library, const std::string& material_name) {
 	return m;
 }
 
-Mtl* FindOrCreateMaterial(MtlBaseLib* library, Interface* max_interface, int& slot, const IfcGeomObjects::Material& material) {
+Mtl* FindOrCreateMaterial(MtlBaseLib* library, Interface* max_interface, int& slot, const IfcGeom::Material& material) {
 	Mtl* m = FindMaterialByName(library, material.name());
 	if (m == 0) {
 		StdMat2* stdm = NewDefaultStdMat();
@@ -148,7 +148,7 @@ Mtl* FindOrCreateMaterial(MtlBaseLib* library, Interface* max_interface, int& sl
 	return m;
 }
 
-Mtl* ComposeMultiMaterial(std::map<std::vector<std::string>, Mtl*>& multi_mats, MtlBaseLib* library, Interface* max_interface, int& slot, const std::vector<IfcGeomObjects::Material>& materials, const std::string& object_type, const std::vector<int>& material_ids) {
+Mtl* ComposeMultiMaterial(std::map<std::vector<std::string>, Mtl*>& multi_mats, MtlBaseLib* library, Interface* max_interface, int& slot, const std::vector<IfcGeom::Material>& materials, const std::string& object_type, const std::vector<int>& material_ids) {
 	std::vector<std::string> material_names;
 	bool needs_default = std::find(material_ids.begin(), material_ids.end(), -1) != material_ids.end();
 	if (needs_default) {
@@ -200,9 +200,10 @@ Mtl* ComposeMultiMaterial(std::map<std::vector<std::string>, Mtl*>& multi_mats, 
 
 int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, BOOL suppressPrompts) {
 
-	IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS,false);
-	IfcGeomObjects::Settings(IfcGeomObjects::WELD_VERTICES,true);
-	IfcGeomObjects::Settings(IfcGeomObjects::SEW_SHELLS,true);
+	IfcGeom::IteratorSettings settings;
+	settings.use_world_coords() = false;
+	settings.weld_vertices() = true;
+	settings.sew_shells() = true;
 
 #ifdef _UNICODE
 	int fn_buffer_size = WideCharToMultiByte(CP_UTF8, 0, name, -1, 0, 0, 0, 0);
@@ -212,7 +213,9 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 	const char* fn_mb = name;
 #endif
 
-	if ( ! IfcGeomObjects::Init(fn_mb,0,0) ) return false;
+	IfcGeom::Iterator<float> iterator(settings, fn_mb);
+
+	if (!iterator.findContext()) return false;
 
 	itfc->ProgressStart(_T("Importing file..."), TRUE, fn, NULL);
 
@@ -222,30 +225,29 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 	std::map<std::vector<std::string>, Mtl*> material_cache;
 
 	do{
-
-		const IfcGeomObjects::IfcGeomObject* o = IfcGeomObjects::Get();
+		const IfcGeom::TriangulationElement<float>* o = static_cast<const IfcGeom::TriangulationElement<float>*>(iterator.get());
 
 		TSTR o_type = S(o->type());
 		TSTR o_guid = S(o->guid());
 
-		Mtl *m = ComposeMultiMaterial(material_cache, mats, itfc, slot, o->mesh().materials(), o->type(), o->mesh().material_ids());
+		Mtl *m = ComposeMultiMaterial(material_cache, mats, itfc, slot, o->geometry().materials(), o->type(), o->geometry().material_ids());
 
 		TriObject* tri = CreateNewTriObject();
 
-		const int numVerts = o->mesh().verts().size()/3;
+		const int numVerts = o->geometry().verts().size()/3;
 		tri->mesh.setNumVerts(numVerts);
 		for( int i = 0; i < numVerts; i ++ ) {
-			tri->mesh.setVert(i,o->mesh().verts()[3*i+0],o->mesh().verts()[3*i+1],o->mesh().verts()[3*i+2]);
+			tri->mesh.setVert(i,o->geometry().verts()[3*i+0],o->geometry().verts()[3*i+1],o->geometry().verts()[3*i+2]);
 		}
-		const int numFaces = o->mesh().faces().size()/3;
+		const int numFaces = o->geometry().faces().size()/3;
 		tri->mesh.setNumFaces(numFaces);
 
-		bool needs_default = std::find(o->mesh().material_ids().begin(), o->mesh().material_ids().end(), -1) != o->mesh().material_ids().end();
+		bool needs_default = std::find(o->geometry().material_ids().begin(), o->geometry().material_ids().end(), -1) != o->geometry().material_ids().end();
 
 		for( int i = 0; i < numFaces; i ++ ) {
-			tri->mesh.faces[i].setVerts(o->mesh().faces()[3*i+0],o->mesh().faces()[3*i+1],o->mesh().faces()[3*i+2]);
-			tri->mesh.faces[i].setEdgeVisFlags(o->mesh().edges()[3*i+0],o->mesh().edges()[3*i+1],o->mesh().edges()[3*i+2]);
-			MtlID mtlid = o->mesh().material_ids()[i];
+			tri->mesh.faces[i].setVerts(o->geometry().faces()[3*i+0],o->geometry().faces()[3*i+1],o->geometry().faces()[3*i+2]);
+			tri->mesh.faces[i].setEdgeVisFlags(o->geometry().edges()[3*i+0],o->geometry().edges()[3*i+1],o->geometry().edges()[3*i+2]);
+			MtlID mtlid = o->geometry().material_ids()[i];
 			if (needs_default) mtlid ++;
 			tri->mesh.faces[i].setMatID(mtlid);
 		}
@@ -267,15 +269,14 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 		if (m) {
 			node->GetINode()->SetMtl(m);
 		}
-		node->SetTransform(0,Matrix3 ( Point3(o->matrix()[0],o->matrix()[1],o->matrix()[2]),Point3(o->matrix()[3],o->matrix()[4],o->matrix()[5]),
-			Point3(o->matrix()[6],o->matrix()[7],o->matrix()[8]),Point3(o->matrix()[9],o->matrix()[10],o->matrix()[11]) ));
+		const std::vector<float>& matrix_data = o->transformation().matrix().data();
+		node->SetTransform(0,Matrix3 ( Point3(matrix_data[0],matrix_data[1],matrix_data[2]),Point3(matrix_data[3],matrix_data[4],matrix_data[5]),
+			Point3(matrix_data[6],matrix_data[7],matrix_data[8]),Point3(matrix_data[9],matrix_data[10],matrix_data[11]) ));
 		impitfc->AddNodeToScene(node);
 
-		itfc->ProgressUpdate(IfcGeomObjects::Progress(),true,_T(""));
+		itfc->ProgressUpdate(iterator.progress(), true, _T(""));
 
-	} while ( IfcGeomObjects::Next() );
-
-	IfcGeomObjects::CleanUp();
+	} while (iterator.next());
 
 	itfc->ProgressEnd();
 	

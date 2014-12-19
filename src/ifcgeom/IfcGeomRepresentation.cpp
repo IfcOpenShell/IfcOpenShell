@@ -17,39 +17,43 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef WAVEFRONTOBJSERIALIZER_H
-#define WAVEFRONTOBJSERIALIZER_H
+#include <BRep_Tool.hxx>
+#include <BRepTools.hxx>
+#include <BRep_Builder.hxx>
 
-#include <set>
-#include <string>
-#include <fstream>
+#include <TopoDS_Compound.hxx>
+#include <BRepBuilderAPI_GTransform.hxx>
 
-#include "../ifcconvert/GeometrySerializer.h"
+#include "../ifcgeom/IfcGeom.h"
 
-class WaveFrontOBJSerializer : public GeometrySerializer {
-private:
-	const std::string mtl_filename;
-	std::ofstream obj_stream;
-	std::ofstream mtl_stream;
-	unsigned int vcount_total;
-	std::set<std::string> materials;
-public:
-	WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename)
-		: GeometrySerializer()
-		, obj_stream(obj_filename.c_str())
-		, mtl_filename(mtl_filename)
-		, mtl_stream(mtl_filename.c_str())		
-		, vcount_total(1)
-	{}
-	virtual ~WaveFrontOBJSerializer() {}
-	bool ready();
-	void writeHeader();
-	void writeMaterial(const IfcGeom::Material& style);
-	void write(const IfcGeom::TriangulationElement<double>* o);
-	void write(const IfcGeom::ShapeModelElement<double>* o) {}
-	void finalize() {}
-	bool isTesselated() const { return true; }
-	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {}
-};
+#include "IfcGeomRepresentation.h"
 
-#endif
+IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
+	: Representation(brep.settings())
+	, _id(brep.getId())
+{
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	builder.MakeCompound(compound);
+	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it = brep.begin(); it != brep.end(); ++ it ) {
+		const TopoDS_Shape& s = it->Shape();
+		gp_GTrsf trsf = it->Placement();
+		if (convert_back_units) {
+			gp_Trsf scale;
+			scale.SetScaleFactor(1.0 / settings().unit_magnitude());
+			trsf.PreMultiply(scale);
+		}
+		bool trsf_valid = false;
+		gp_Trsf _trsf;
+		try {
+			_trsf = trsf.Trsf();
+			trsf_valid = true;
+		} catch (...) {}
+		const TopoDS_Shape moved_shape = trsf_valid ? s.Moved(_trsf) :
+			BRepBuilderAPI_GTransform(s,trsf,true).Shape();
+		builder.Add(compound,moved_shape);
+	}
+	std::stringstream sstream;
+	BRepTools::Write(compound,sstream);
+	_brep_data = sstream.str();
+}

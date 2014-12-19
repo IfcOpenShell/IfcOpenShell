@@ -17,39 +17,14 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef WAVEFRONTOBJSERIALIZER_H
-#define WAVEFRONTOBJSERIALIZER_H
+#ifndef IFCGEOMUTILS_H
+#define IFCGEOMUTILS_H
 
-#include <set>
-#include <string>
-#include <fstream>
+namespace IfcGeom {
 
-#include "../ifcconvert/GeometrySerializer.h"
-
-class WaveFrontOBJSerializer : public GeometrySerializer {
-private:
-	const std::string mtl_filename;
-	std::ofstream obj_stream;
-	std::ofstream mtl_stream;
-	unsigned int vcount_total;
-	std::set<std::string> materials;
-public:
-	WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename)
-		: GeometrySerializer()
-		, obj_stream(obj_filename.c_str())
-		, mtl_filename(mtl_filename)
-		, mtl_stream(mtl_filename.c_str())		
-		, vcount_total(1)
-	{}
-	virtual ~WaveFrontOBJSerializer() {}
-	bool ready();
-	void writeHeader();
-	void writeMaterial(const IfcGeom::Material& style);
-	void write(const IfcGeom::TriangulationElement<double>* o);
-	void write(const IfcGeom::ShapeModelElement<double>* o) {}
-	void finalize() {}
-	bool isTesselated() const { return true; }
-	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {}
-};
+	namespace Utils {
+		double UnitPrefixToValue(IfcSchema::IfcSIPrefix::IfcSIPrefix v);
+	}
+}
 
 #endif

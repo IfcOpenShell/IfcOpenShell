@@ -19,16 +19,7 @@
 
 #include <map>
 
-#include "IfcGeomRenderStyles.h"
-
-namespace IfcGeom {
-	namespace Cache {
-		std::map<int,SurfaceStyle> Style;
-		void PurgeStyleCache() {
-			Style.clear();
-		}
-	}
-}
+#include "IfcGeom.h"
 
 bool process_colour(IfcSchema::IfcColourRgb* colour, std::tr1::array<double, 3>& rgb) {
 	if (colour != 0) {
@@ -59,14 +50,14 @@ bool process_colour(IfcSchema::IfcColourOrFactor colour_or_factor, std::tr1::arr
 	}
 }
 
-const IfcGeom::SurfaceStyle* IfcGeom::get_style(const IfcSchema::IfcRepresentationItem* item) {
+const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepresentationItem* item) {
 	std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*> shading_styles = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(item);
 	if (shading_styles.second == 0) {
 		return 0;
 	}
 	int surface_style_id = shading_styles.first->entity->id();
-	std::map<int,SurfaceStyle>::const_iterator it = Cache::Style.find(surface_style_id);
-	if (it != Cache::Style.end()) {
+	std::map<int,SurfaceStyle>::const_iterator it = cache.Style.find(surface_style_id);
+	if (it != cache.Style.end()) {
 		return &(it->second);
 	}
 	SurfaceStyle surface_style;
@@ -113,7 +104,7 @@ const IfcGeom::SurfaceStyle* IfcGeom::get_style(const IfcSchema::IfcRepresentati
 			surface_style.Transparency().reset(d);
 		}
 	}
-	return &(Cache::Style[surface_style_id] = surface_style);
+	return &(cache.Style[surface_style_id] = surface_style);
 }
 
 static std::map<std::string, IfcGeom::SurfaceStyle> default_materials;
@@ -161,9 +152,11 @@ void InitDefaultMaterials() {
 const IfcGeom::SurfaceStyle* IfcGeom::get_default_style(const std::string& s) {
 	if (!default_materials_initialized) InitDefaultMaterials();
 	std::map<std::string, IfcGeom::SurfaceStyle>::const_iterator it = default_materials.find(s);
-	if (it == default_materials.end()) return &default_material;
-	else {
-		const IfcGeom::SurfaceStyle& surface_style = it->second;
-		return &surface_style;
+	if (it == default_materials.end()) {
+		default_materials.insert(std::make_pair(s, IfcGeom::SurfaceStyle(s)));
+		default_materials[s].Diffuse().reset(*default_material.Diffuse());
+		it = default_materials.find(s);
 	}
+	const IfcGeom::SurfaceStyle& surface_style = it->second;
+	return &surface_style;
 }

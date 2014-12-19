@@ -308,8 +308,6 @@ public:
 	std::string authorOrganisation() const;
 };
 
-double UnitPrefixToValue( IfcSchema::IfcSIPrefix::IfcSIPrefix v );
-
 }
 
 std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);

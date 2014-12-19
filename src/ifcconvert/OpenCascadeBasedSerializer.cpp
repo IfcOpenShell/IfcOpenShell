@@ -34,17 +34,19 @@ bool OpenCascadeBasedSerializer::ready() {
 	return succeeded;
 }
 
-void OpenCascadeBasedSerializer::writeShapeModel(const IfcGeomObjects::IfcGeomShapeModelObject* o) {		
-	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->mesh().begin(); it != o->mesh().end(); ++ it) {
+void OpenCascadeBasedSerializer::write(const IfcGeom::ShapeModelElement<double>* o) {		
+	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
 		gp_GTrsf gtrsf = it->Placement();
+
+		const std::vector<double>& matrix = o->transformation().matrix().data();
 		
 		// Convert the matrix back into a transformation object. The tolerance values
 		// are taken into consideration to reconstruct the form of the transformation.
 		gp_Trsf o_trsf;
 		o_trsf.SetValues(
-			o->matrix()[0], o->matrix()[3], o->matrix()[6], o->matrix()[ 9],
-			o->matrix()[1], o->matrix()[4], o->matrix()[7], o->matrix()[10], 
-			o->matrix()[2], o->matrix()[5], o->matrix()[8], o->matrix()[11],
+			matrix[0], matrix[3], matrix[6], matrix[ 9],
+			matrix[1], matrix[4], matrix[7], matrix[10], 
+			matrix[2], matrix[5], matrix[8], matrix[11],
 			1e-5, 1e-5
 		);
 		gtrsf.PreMultiply(o_trsf);

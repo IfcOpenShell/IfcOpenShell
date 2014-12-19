@@ -1,5 +1,5 @@
 ﻿#include "IfcRegisterUndef.h"
-#define CLASS(T,V) bool convert(const T* L, V& r);
+#define CLASS(T,V) bool convert(const IfcSchema::T* L, V& r);
 #define SHAPES(T) CLASS(T,IfcRepresentationShapeItems)
 #define SHAPE(T) CLASS(T,TopoDS_Shape)
 #define WIRE(T) CLASS(T,TopoDS_Wire)

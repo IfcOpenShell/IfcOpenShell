@@ -43,8 +43,23 @@
 
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 
+#define IN_CACHE(T,E,t,e) std::map<int,t>::const_iterator it = cache.T.find(E->entity->id());\
+if ( it != cache.T.end() ) { e = it->second; return true; }
+#define CACHE(T,E,e) cache.T[E->entity->id()] = e;
+
 namespace IfcGeom {
 
+class Cache {
+public:
+#include "IfcRegisterCreateCache.h"
+	std::map<int, SurfaceStyle> Style;
+	std::map<int, TopoDS_Shape> Shape;
+};
+
+class Kernel {
+private:
+	Cache cache;
+public:
 	// Tolerances and settings for various geometrical operations:
 	enum GeomValue {
 		// Specifies the deflection of the mesher
@@ -103,17 +118,57 @@ namespace IfcGeom {
 	double shape_volume(const TopoDS_Shape& s);
 	double face_area(const TopoDS_Face& f);
 	void apply_tolerance(TopoDS_Shape& s, double t);
-	void SetValue(GeomValue var, double value);
-	double GetValue(GeomValue var);
+	void setValue(GeomValue var, double value);
+	double getValue(GeomValue var);
 	bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
 	IfcSchema::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es);
 	void remove_redundant_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
+
+	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem* representation_item);
 	
-	
-	namespace Cache {
-		void Purge();
-		void PurgeShapeCache();
+	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcRepresentationItem* representation_item) {
+		IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
+		for (IfcSchema::IfcStyledItem::list::it jt = styled_items->begin(); jt != styled_items->end(); ++jt) {
+#ifdef USE_IFC4
+			IfcUtil::IfcAbstractSelect::list::ptr style_assignments = (*jt)->Styles();
+			for (IfcUtil::IfcAbstractSelect::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+				if (!(*kt)->is(IfcSchema::Type::IfcPresentationStyleAssignment)) {
+					continue;
+				}
+				IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
+#else
+			IfcSchema::IfcPresentationStyleAssignment::list::ptr style_assignments = (*jt)->Styles();
+			for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+				IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
+#endif
+				IfcUtil::IfcAbstractSelect::list::ptr styles = style_assignment->Styles();
+				for (IfcUtil::IfcAbstractSelect::list::it lt = styles->begin(); lt != styles->end(); ++lt) {
+					IfcUtil::IfcAbstractSelect* style = *lt;
+					if (style->is(IfcSchema::Type::IfcSurfaceStyle)) {
+						IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
+						if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
+							IfcUtil::IfcAbstractSelect::list::ptr styles_elements = surface_style->Styles();
+							for (IfcUtil::IfcAbstractSelect::list::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
+								if ((*mt)->is(T::Class())) {
+									return std::make_pair(surface_style, (T*) *mt);
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// StyledByItem is a SET [0:1] OF IfcStyledItem, so we
+			// break after encountering the first IfcStyledItem
+			break;
+		}
+
+		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
 	}
+
 #include "IfcRegisterGeomHeader.h"
+
+};
+
 }
 #endif

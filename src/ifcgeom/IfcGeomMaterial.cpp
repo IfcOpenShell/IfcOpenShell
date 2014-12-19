@@ -1,4 +1,4 @@
-/********************************************************************************
+﻿/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -17,39 +17,18 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef WAVEFRONTOBJSERIALIZER_H
-#define WAVEFRONTOBJSERIALIZER_H
+#include "IfcGeomMaterial.h"
 
-#include <set>
-#include <string>
-#include <fstream>
+static double black[3] = {0.,0.,0.};
 
-#include "../ifcconvert/GeometrySerializer.h"
-
-class WaveFrontOBJSerializer : public GeometrySerializer {
-private:
-	const std::string mtl_filename;
-	std::ofstream obj_stream;
-	std::ofstream mtl_stream;
-	unsigned int vcount_total;
-	std::set<std::string> materials;
-public:
-	WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename)
-		: GeometrySerializer()
-		, obj_stream(obj_filename.c_str())
-		, mtl_filename(mtl_filename)
-		, mtl_stream(mtl_filename.c_str())		
-		, vcount_total(1)
-	{}
-	virtual ~WaveFrontOBJSerializer() {}
-	bool ready();
-	void writeHeader();
-	void writeMaterial(const IfcGeom::Material& style);
-	void write(const IfcGeom::TriangulationElement<double>* o);
-	void write(const IfcGeom::ShapeModelElement<double>* o) {}
-	void finalize() {}
-	bool isTesselated() const { return true; }
-	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {}
-};
-
-#endif
+IfcGeom::Material::Material(const IfcGeom::SurfaceStyle* style) : style(style) {}
+bool IfcGeom::Material::hasDiffuse() const { return style->Diffuse(); }
+bool IfcGeom::Material::hasSpecular() const { return style->Specular(); }
+bool IfcGeom::Material::hasTransparency() const { return style->Transparency(); }
+bool IfcGeom::Material::hasSpecularity() const { return style->Specularity(); }
+const double* IfcGeom::Material::diffuse() const { if (hasDiffuse()) return &((*style->Diffuse()).R()); else return black; }
+const double* IfcGeom::Material::specular() const { if (hasSpecular()) return &((*style->Specular()).R()); else return black; }
+double IfcGeom::Material::transparency() const { if (hasTransparency()) return *style->Transparency(); else return 0; }
+double IfcGeom::Material::specularity() const { if (hasSpecularity()) return *style->Specularity(); else return 0; }
+const std::string IfcGeom::Material::name() const { return style->Name(); }
+bool IfcGeom::Material::operator==(const IfcGeom::Material& other) const { return style == other.style; }

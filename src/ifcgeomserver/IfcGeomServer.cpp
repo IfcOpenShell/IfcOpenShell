@@ -35,7 +35,7 @@
 #include <fcntl.h>
 #endif
 
-#include "../ifcgeom/IfcGeomObjects.h"
+#include "../ifcgeom/IfcGeomIterator.h"
 
 using namespace boost;
 
@@ -186,7 +186,7 @@ public:
 
 class Entity : public Command {
 private:
-	const IfcGeomObjects::IfcGeomObject* geom;
+	const IfcGeom::TriangulationElement<float>* geom;
 protected:
 	void read_content(std::istream& s) {}
 	void write_content(std::ostream& s) {
@@ -195,7 +195,7 @@ protected:
 		swrite(s, geom->name());
 		swrite(s, geom->type());
 		swrite<int32_t>(s, geom->parent_id());
-		const std::vector<float>& m = geom->matrix();
+		const std::vector<float>& m = geom->transformation().matrix().data();
 		const float matrix_array[16] = {
 			m[0], m[3], m[6], m[ 9],
 			m[1], m[4], m[7], m[10],
@@ -203,17 +203,17 @@ protected:
 			   0,    0,    0,     1
 		};
 		swrite(s, std::string((char*)matrix_array, 16 * sizeof(float)));
-		swrite<int32_t>(s, geom->mesh().id());
-		swrite(s, std::string((char*)geom->mesh().verts().data(), geom->mesh().verts().size() * sizeof(float)));
-		swrite(s, std::string((char*)geom->mesh().normals().data(), geom->mesh().normals().size() * sizeof(float)));
+		swrite<int32_t>(s, geom->geometry().id());
+		swrite(s, std::string((char*)geom->geometry().verts().data(), geom->geometry().verts().size() * sizeof(float)));
+		swrite(s, std::string((char*)geom->geometry().normals().data(), geom->geometry().normals().size() * sizeof(float)));
 		{ std::vector<int32_t> indices;
-		for (std::vector<int>::const_iterator it = geom->mesh().faces().begin(); it != geom->mesh().faces().end(); ++it) {
+		for (std::vector<int>::const_iterator it = geom->geometry().faces().begin(); it != geom->geometry().faces().end(); ++it) {
 			indices.push_back(*it);
 		} 
 		swrite(s, std::string((char*) indices.data(), indices.size() * sizeof(int32_t))); }
 		{ std::vector<float> diffuse_color_array;
-		for (std::vector<IfcGeomObjects::Material>::const_iterator it = geom->mesh().materials().begin(); it != geom->mesh().materials().end(); ++it) {
-			const IfcGeomObjects::Material& m = *it;
+		for (std::vector<IfcGeom::Material>::const_iterator it = geom->geometry().materials().begin(); it != geom->geometry().materials().end(); ++it) {
+			const IfcGeom::Material& m = *it;
 			if (m.hasDiffuse()) {
 				const double* color = m.diffuse();
 				diffuse_color_array.push_back(static_cast<float>(color[0]));
@@ -232,13 +232,13 @@ protected:
 		}
 		swrite(s, std::string((char*) diffuse_color_array.data(), diffuse_color_array.size() * sizeof(float))); }
 		{ std::vector<int32_t> material_indices;
-		for (std::vector<int>::const_iterator it = geom->mesh().material_ids().begin(); it != geom->mesh().material_ids().end(); ++it) {
+		for (std::vector<int>::const_iterator it = geom->geometry().material_ids().begin(); it != geom->geometry().material_ids().end(); ++it) {
 			material_indices.push_back(*it);
 		} 
 		swrite(s, std::string((char*) material_indices.data(), material_indices.size() * sizeof(int32_t))); }
 	}
 public:
-	Entity(const IfcGeomObjects::IfcGeomObject* geom) : Command(ENTITY), geom(geom) {};
+	Entity(const IfcGeom::TriangulationElement<float>* geom) : Command(ENTITY), geom(geom) {};
 };
 
 class Next : public Command {
@@ -278,6 +278,8 @@ int main (int argc, char** argv) {
 
 	bool has_more = false;
 
+	IfcGeom::Iterator<float>* iterator = 0;
+
 	Hello().write(std::cout);
 
 	int exit_code = 0;
@@ -290,12 +292,15 @@ int main (int argc, char** argv) {
 			char* data = new char[len];
 			memcpy(data, m.string().c_str(), len);
 
-			IfcGeomObjects::Settings(IfcGeomObjects::USE_WORLD_COORDS, false);
-			IfcGeomObjects::Settings(IfcGeomObjects::WELD_VERTICES, false);
-			IfcGeomObjects::Settings(IfcGeomObjects::CONVERT_BACK_UNITS, true);
-			IfcGeomObjects::Settings(IfcGeomObjects::FORCE_CCW_FACE_ORIENTATION, true);
+			IfcGeom::IteratorSettings settings;
+			settings.use_world_coords() = false;
+			settings.weld_vertices() = false;
+			settings.convert_back_units() = true;
+			settings.force_ccw_face_orientation() = true;
 
-			has_more = IfcGeomObjects::Init(data, len);
+			iterator = new IfcGeom::Iterator<float>(settings, data, len);
+			has_more = iterator->findContext();
+
 			More(has_more).write(std::cout);
 			continue;
 		}
@@ -305,22 +310,23 @@ int main (int argc, char** argv) {
 				exit_code = 1;
 				break;
 			}
-			const IfcGeomObjects::IfcGeomObject* geom = IfcGeomObjects::Get();
+			const IfcGeom::TriangulationElement<float>* geom = static_cast<const IfcGeom::TriangulationElement<float>*>(iterator->get());
 			Entity(geom).write(std::cout);
 			continue;
 		}
 		case NEXT: {
 			Next n; n.read(std::cin);
-			has_more = IfcGeomObjects::Next();
+			has_more = iterator->next();
 			if (!has_more) {
-				IfcGeomObjects::CleanUp();
+				delete iterator;
+				iterator = 0;
 			}
 			More(has_more).write(std::cout);
 			continue;
 		}
 		case GET_LOG: {
 			GetLog gl; gl.read(std::cin);
-			WriteLog(IfcGeomObjects::GetLog()).write(std::cout);
+			WriteLog(iterator->getLog()).write(std::cout);
 			continue;
 		}
 		case BYE: {

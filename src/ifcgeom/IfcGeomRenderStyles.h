@@ -56,10 +56,20 @@ namespace IfcGeom {
 		boost::optional<double> transparency;
 		boost::optional<double> specularity;
 	public:
-		SurfaceStyle() {}
-		SurfaceStyle(int id) : id(id) {}
+		SurfaceStyle() {
+			this->name = "IfcSurfaceStyleShading";
+		}
+		SurfaceStyle(int id) : id(id) {
+			std::stringstream sstr; 
+			sstr << "IfcSurfaceStyleShading_" << id; 
+			this->name = sstr.str(); 
+		}
 		SurfaceStyle(const std::string& name) : name(name) {}
-		SurfaceStyle(int id, const std::string& name) : id(id), name(name) {}
+		SurfaceStyle(int id, const std::string& name) : id(id) {
+			std::stringstream sstr; 
+			sstr << id << "_" << name;
+			this->name = sstr.str(); 
+		}
 		
 		// Not used at this point. In fact, equality testing in the current
 		// architecture can just as easily be accomplished by comparing the
@@ -75,21 +85,7 @@ namespace IfcGeom {
 			}
 		}
 		
-		const std::string Name() const { 
-			if (name && id) {
-				std::stringstream sstr; 
-				sstr << (*id) << "_" << (*name);
-				return sstr.str(); 
-			} else if (name) { 
-				return *name; 
-			} else if (id) { 
-				std::stringstream sstr; 
-				sstr << "IfcSurfaceStyleShading_" << (*id); 
-				return sstr.str(); 
-			} else {
-				return "IfcSurfaceStyleShading";
-			}
-		}
+		const std::string& Name() const { return *name; }
 
 		const boost::optional<ColorComponent>& Diffuse() const { return diffuse; }
 		const boost::optional<ColorComponent>& Specular() const { return specular; }
@@ -101,73 +97,7 @@ namespace IfcGeom {
 		boost::optional<double>& Specularity() { return specularity; }
 	};
 
-	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcRepresentationItem* representation_item) {
-		IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
-
-		// Preferably this item-specific logic should not be here, but it easier than somehow associating this information
-		// with a bare TopoDS_Shape. Perhaps the real solution is to 'upgrade' IfcBooleanResult from a SHAPE to SHAPES in
-		// IfcRegister.h so that surface style information can be tied to actual implementation of the conversion function.
-		if (styled_items->Size() == 0 && representation_item->is(IfcSchema::Type::IfcBooleanResult)) {
-			IfcSchema::IfcBooleanResult* boolean_result = (IfcSchema::IfcBooleanResult*) representation_item;
-			while (true) {
-				IfcSchema::IfcRepresentationItem* boolean_op = (IfcSchema::IfcRepresentationItem*) boolean_result->FirstOperand();
-				IfcSchema::IfcStyledItem::list::ptr op_styled_items = boolean_op->StyledByItem();
-				if (op_styled_items->Size() > 0) {
-					styled_items = op_styled_items;
-					break;
-				}
-				if (boolean_op->is(IfcSchema::Type::IfcBooleanResult)) {
-					boolean_result = (IfcSchema::IfcBooleanResult*) boolean_op;
-				} else {
-					break;
-				}
-			}
-		}
-		
-		for (IfcSchema::IfcStyledItem::list::it jt = styled_items->begin(); jt != styled_items->end(); ++jt) {
-#ifdef USE_IFC4
-			IfcUtil::IfcAbstractSelect::list::ptr style_assignments = (*jt)->Styles();
-			for (IfcUtil::IfcAbstractSelect::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-				if (!(*kt)->is(IfcSchema::Type::IfcPresentationStyleAssignment)) {
-					continue;
-				}
-				IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
-#else
-			IfcSchema::IfcPresentationStyleAssignment::list::ptr style_assignments = (*jt)->Styles();
-			for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-				IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
-#endif
-				IfcUtil::IfcAbstractSelect::list::ptr styles = style_assignment->Styles();
-				for (IfcUtil::IfcAbstractSelect::list::it lt = styles->begin(); lt != styles->end(); ++lt) {
-					IfcUtil::IfcAbstractSelect* style = *lt;
-					if (style->is(IfcSchema::Type::IfcSurfaceStyle)) {
-						IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
-						if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
-							IfcUtil::IfcAbstractSelect::list::ptr styles_elements = surface_style->Styles();
-							for (IfcUtil::IfcAbstractSelect::list::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
-								if ((*mt)->is(T::Class())) {
-									return std::make_pair(surface_style, (T*) *mt);
-								}
-							}
-						}
-					}
-				}
-			}
-
-			// StyledByItem is a SET [0:1] OF IfcStyledItem, so we
-			// break after encountering the first IfcStyledItem
-			break;
-		}
-
-		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
-	}
-
-	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem* representation_item);
 	const SurfaceStyle* get_default_style(const std::string& ifc_type);
-	
-	namespace Cache {
-		void PurgeStyleCache();
-	}
 }
 
 #endif

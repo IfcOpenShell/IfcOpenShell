@@ -41,8 +41,8 @@ bl_info = {
 
 if "bpy" in locals():
     import imp
-    if "IfcImport" in locals():
-        imp.reload(IfcImport)
+    if "ifcopenshell" in locals():
+        imp.reload(ifcopenshell)
 
 import bpy
 import mathutils
@@ -63,11 +63,12 @@ bpy.types.Object.ifc_type = StringProperty(name="IFC Entity Type",
 
 
 def import_ifc(filename, use_names, process_relations):
-    from . import IfcImport
+    from . import ifcopenshell
     print("Reading %s..."%bpy.path.basename(filename))
-    valid_file = IfcImport.Init(filename)
+    settings = ifcopenshell.IteratorSettings()
+    iterator = ifcopenshell.Iterator(settings, filename)
+    valid_file = iterator.findContext()
     if not valid_file:
-        IfcImport.CleanUp()
         return False
     print("Done reading file")
     id_to_object = {}
@@ -76,13 +77,13 @@ def import_ifc(filename, use_names, process_relations):
     old_progress = -1
     print("Creating geometry...")
     while True:
-        ob = IfcImport.Get()
+        ob = iterator.get()
  
-        f = ob.mesh.faces
-        v = ob.mesh.verts
-        mats = ob.mesh.materials
-        matids = ob.mesh.material_ids
-        m = ob.matrix        
+        f = ob.geometry.faces
+        v = ob.geometry.verts
+        mats = ob.geometry.materials
+        matids = ob.geometry.material_ids
+        m = ob.transformation.matrix.data
         t = ob.type[0:21]
         nm = ob.name if len(ob.name) and use_names else ob.guid
 
@@ -91,7 +92,7 @@ def import_ifc(filename, use_names, process_relations):
         faces = [[f[i], f[i + 1], f[i + 2]] \
             for i in range(0, len(f), 3)]
 
-        me = bpy.data.meshes.new('mesh%d' % ob.mesh.id)
+        me = bpy.data.meshes.new('mesh%d' % ob.geometry.id)
         me.from_pydata(verts, [], faces)
         
         def add_material(mname, props):
@@ -152,11 +153,11 @@ def import_ifc(filename, use_names, process_relations):
             for face, matid in zip(faces, matids):
                 face.material_index = matid + (1 if needs_default else 0)
             
-        progress = IfcImport.Progress() // 2
+        progress = iterator.progress() // 2
         if progress > old_progress:
             print("\r[" + "#" * progress + " " * (50 - progress) + "]", end="")
             old_progress = progress
-        if not IfcImport.Next():
+        if not iterator.next():
             break
 
     print("\rDone creating geometry" + " " * 30)
@@ -172,7 +173,7 @@ def import_ifc(filename, use_names, process_relations):
         if parent_id in id_to_object:
             bob = id_to_object[parent_id][0]
         else:
-            parent_ob = IfcImport.GetObject(parent_id)
+            parent_ob = iterator.GetObject(parent_id)
             if parent_ob.id == -1:
                 bob = None
             else:
@@ -220,10 +221,8 @@ def import_ifc(filename, use_names, process_relations):
         print("Done processing relations")
     
     txt = bpy.data.texts.new("%s.log"%bpy.path.basename(filename))
-    txt.from_string(IfcImport.GetLog())
+    txt.from_string(iterator.getLog())
 
-    IfcImport.CleanUp()
-    
     return True
 
 

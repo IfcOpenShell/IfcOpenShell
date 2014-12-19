@@ -79,8 +79,8 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
-bool IfcGeom::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)& curve) {
-	const double r = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)& curve) {
+	const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
 	if ( r < ALMOST_ZERO ) { 
 		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l->entity);
 		return false;
@@ -88,19 +88,19 @@ bool IfcGeom::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)& curve) 
 	gp_Trsf trsf;
 	IfcSchema::IfcAxis2Placement placement = l->Position();
 	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
-		IfcGeom::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
+		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
 		gp_Trsf2d trsf2d;
-		IfcGeom::convert((IfcAxis2Placement2D*)placement,trsf2d);
+		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf2d);
 		trsf = trsf2d;
 	}
 	gp_Ax2 ax = gp_Ax2().Transformed(trsf);
 	curve = new Geom_Circle(ax, r);
 	return true;
 }
-bool IfcGeom::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)& curve) {
-	double x = l->SemiAxis1() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	double y = l->SemiAxis2() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)& curve) {
+	double x = l->SemiAxis1() * getValue(GV_LENGTH_UNIT);
+	double y = l->SemiAxis2() * getValue(GV_LENGTH_UNIT);
 	if (x < ALMOST_ZERO || y < ALMOST_ZERO) { 
 		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l->entity);
 		return false;
@@ -113,10 +113,10 @@ bool IfcGeom::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)& curve)
 	gp_Trsf trsf;
 	IfcSchema::IfcAxis2Placement placement = l->Position();
 	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
-		IfcGeom::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
+		convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
 		gp_Trsf2d trsf2d;
-		IfcGeom::convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf2d);
+		convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf2d);
 		trsf = trsf2d;
 	}
 	gp_Ax2 ax = gp_Ax2();
@@ -128,10 +128,10 @@ bool IfcGeom::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)& curve)
 	curve = new Geom_Ellipse(ax, x, y);
 	return true;
 }
-bool IfcGeom::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& curve) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& curve) {
 	gp_Pnt pnt;gp_Vec vec;
-	IfcGeom::convert(l->Pnt(),pnt);
-	IfcGeom::convert(l->Dir(),vec);	
+	convert(l->Pnt(),pnt);
+	convert(l->Dir(),vec);	
 	// See note at IfcGeomWires.cpp:237
 	curve = new Geom_Line(pnt,vec);
 	return true;

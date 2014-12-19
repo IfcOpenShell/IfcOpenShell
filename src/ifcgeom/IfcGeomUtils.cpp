@@ -17,39 +17,26 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef WAVEFRONTOBJSERIALIZER_H
-#define WAVEFRONTOBJSERIALIZER_H
+#include "../ifcparse/IfcParse.h"
 
-#include <set>
-#include <string>
-#include <fstream>
+#include "IfcGeomUtils.h"
 
-#include "../ifcconvert/GeometrySerializer.h"
-
-class WaveFrontOBJSerializer : public GeometrySerializer {
-private:
-	const std::string mtl_filename;
-	std::ofstream obj_stream;
-	std::ofstream mtl_stream;
-	unsigned int vcount_total;
-	std::set<std::string> materials;
-public:
-	WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename)
-		: GeometrySerializer()
-		, obj_stream(obj_filename.c_str())
-		, mtl_filename(mtl_filename)
-		, mtl_stream(mtl_filename.c_str())		
-		, vcount_total(1)
-	{}
-	virtual ~WaveFrontOBJSerializer() {}
-	bool ready();
-	void writeHeader();
-	void writeMaterial(const IfcGeom::Material& style);
-	void write(const IfcGeom::TriangulationElement<double>* o);
-	void write(const IfcGeom::ShapeModelElement<double>* o) {}
-	void finalize() {}
-	bool isTesselated() const { return true; }
-	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {}
-};
-
-#endif
+double IfcGeom::Utils::UnitPrefixToValue( IfcSchema::IfcSIPrefix::IfcSIPrefix v ) {
+	if      ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_EXA   ) return 1.e18;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_PETA  ) return 1.e15;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_TERA  ) return 1.e12;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_GIGA  ) return 1.e9;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_MEGA  ) return 1.e6;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_KILO  ) return 1.e3;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_HECTO ) return 1.e2;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_DECA  ) return 1.;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_DECI  ) return 1.e-1;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_CENTI ) return 1.e-2;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_MILLI ) return 1.e-3;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_MICRO ) return 1.e-6;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_NANO  ) return 1.e-9;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_PICO  ) return 1.e-12;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_FEMTO ) return 1.e-15;
+	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_ATTO  ) return 1.e-18;
+	else return 1.f;
+}

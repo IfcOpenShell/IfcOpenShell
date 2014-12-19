@@ -97,12 +97,12 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
-bool IfcGeom::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
 	IfcSchema::IfcFaceBound::list::it it = bounds->begin();
 	IfcSchema::IfcLoop* loop = (*it)->Bound();
 	TopoDS_Wire outer_wire;
-	if ( ! IfcGeom::convert_wire(loop,outer_wire) ) return false;
+	if ( ! convert_wire(loop,outer_wire) ) return false;
 	BRepBuilderAPI_MakeFace mf (outer_wire);
 	BRepBuilderAPI_FaceError er = mf.Error();
 	if ( er == BRepBuilderAPI_NotPlanar ) {
@@ -119,7 +119,7 @@ bool IfcGeom::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 		for( ++it; it != bounds->end(); ++ it) {
 			IfcSchema::IfcLoop* loop = (*it)->Bound();
 			TopoDS_Wire wire;
-			if ( ! IfcGeom::convert_wire(loop,wire) ) return false;
+			if ( ! convert_wire(loop,wire) ) return false;
 			mf.Add(wire);
 		}
 		if ( mf.IsDone() ) {
@@ -137,7 +137,7 @@ bool IfcGeom::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 		}
 	}
 
-	if ( IfcGeom::GetValue(GV_FORCE_CCW_FACE_ORIENTATION)>0 ) { 
+	if ( getValue(GV_FORCE_CCW_FACE_ORIENTATION)>0 ) { 
 	// Check the orientation of the face by comparing the 
 	// normal of the topological surface to the Newell's Method's
 	// normal. Newell's Method is used for the normal calculation
@@ -206,24 +206,24 @@ bool IfcGeom::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	return true;
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcArbitraryClosedProfileDef* l, TopoDS_Shape& face) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryClosedProfileDef* l, TopoDS_Shape& face) {
 	TopoDS_Wire wire;
-	if ( ! IfcGeom::convert_wire(l->OuterCurve(),wire) ) return false;
+	if ( ! convert_wire(l->OuterCurve(),wire) ) return false;
 
 	TopoDS_Face f;
-	bool success = IfcGeom::convert_wire_to_face(wire, f);
+	bool success = convert_wire_to_face(wire, f);
 	if (success) face = f;
 	return success;
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* l, TopoDS_Shape& face) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* l, TopoDS_Shape& face) {
 	TopoDS_Wire profile;
-	if ( ! IfcGeom::convert_wire(l->OuterCurve(),profile) ) return false;
+	if ( ! convert_wire(l->OuterCurve(),profile) ) return false;
 	BRepBuilderAPI_MakeFace mf(profile);
 	IfcSchema::IfcCurve::list::ptr voids = l->InnerCurves();
 	for( IfcSchema::IfcCurve::list::it it = voids->begin(); it != voids->end(); ++ it ) {
 		TopoDS_Wire hole;
-		if ( IfcGeom::convert_wire(*it,hole) ) {
+		if ( convert_wire(*it,hole) ) {
 			mf.Add(hole);
 		}
 	}
@@ -233,9 +233,9 @@ bool IfcGeom::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* l, TopoD
 	return true;
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcRectangleProfileDef* l, TopoDS_Shape& face) {
-	const double x = l->XDim() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double y = l->YDim() / 2.0f  * IfcGeom::GetValue(GV_LENGTH_UNIT);
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangleProfileDef* l, TopoDS_Shape& face) {
+	const double x = l->XDim() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
@@ -243,15 +243,15 @@ bool IfcGeom::convert(const IfcSchema::IfcRectangleProfileDef* l, TopoDS_Shape& 
 	}
 
 	gp_Trsf2d trsf2d;
-	IfcGeom::convert(l->Position(),trsf2d);
+	IfcGeom::Kernel::convert(l->Position(),trsf2d);
 	double coords[8] = {-x,-y,x,-y,x,y,-x,y};
-	return IfcGeom::profile_helper(4,coords,0,0,0,trsf2d,face);
+	return profile_helper(4,coords,0,0,0,trsf2d,face);
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcRoundedRectangleProfileDef* l, TopoDS_Shape& face) {
-	const double x = l->XDim() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double y = l->YDim() / 2.0f  * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double r = l->RoundingRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcRoundedRectangleProfileDef* l, TopoDS_Shape& face) {
+	const double x = l->XDim() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
+	const double r = l->RoundingRadius() * getValue(GV_LENGTH_UNIT);
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || r < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
@@ -259,23 +259,23 @@ bool IfcGeom::convert(const IfcSchema::IfcRoundedRectangleProfileDef* l, TopoDS_
 	}
 
 	gp_Trsf2d trsf2d;
-	IfcGeom::convert(l->Position(),trsf2d);
+	IfcGeom::Kernel::convert(l->Position(),trsf2d);
 	double coords[8] = {-x,-y, x,-y, x,y, -x,y};
 	int fillets[4] = {0,1,2,3};
 	double radii[4] = {r,r,r,r};
-	return IfcGeom::profile_helper(4,coords,4,fillets,radii,trsf2d,face);
+	return profile_helper(4,coords,4,fillets,radii,trsf2d,face);
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, TopoDS_Shape& face) {
-	const double x = l->XDim() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double y = l->YDim() / 2.0f  * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double d = l->WallThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, TopoDS_Shape& face) {
+	const double x = l->XDim() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
+	const double d = l->WallThickness() * getValue(GV_LENGTH_UNIT);
 
 	const bool fr1 = l->hasOuterFilletRadius();
 	const bool fr2 = l->hasInnerFilletRadius();
 
-	const double r1 = fr1 ? l->OuterFilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT) : 0.;
-	const double r2 = fr2 ? l->InnerFilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT) : 0.;
+	const double r1 = fr1 ? l->OuterFilletRadius() * getValue(GV_LENGTH_UNIT) : 0.;
+	const double r2 = fr2 ? l->InnerFilletRadius() * getValue(GV_LENGTH_UNIT) : 0.;
 	
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
@@ -286,15 +286,15 @@ bool IfcGeom::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, TopoDS_S
 	TopoDS_Face f2;
 
 	gp_Trsf2d trsf2d;
-	IfcGeom::convert(l->Position(),trsf2d);
+	IfcGeom::Kernel::convert(l->Position(),trsf2d);
 	double coords1[8] = {-x  ,-y,   x  ,-y,   x,  y,   -x,  y  };
 	double coords2[8] = {-x+d,-y+d, x-d,-y+d, x-d,y-d, -x+d,y-d};
 	double radii1[4] = {r1,r1,r1,r1};
 	double radii2[4] = {r2,r2,r2,r2};
 	int fillets[4] = {0,1,2,3};
 
-	bool s1 = IfcGeom::profile_helper(4,coords1,fr1 ? 4 : 0,fillets,radii1,trsf2d,f1);
-	bool s2 = IfcGeom::profile_helper(4,coords2,fr2 ? 4 : 0,fillets,radii2,trsf2d,f2);
+	bool s1 = profile_helper(4,coords1,fr1 ? 4 : 0,fillets,radii1,trsf2d,f1);
+	bool s2 = profile_helper(4,coords2,fr2 ? 4 : 0,fillets,radii2,trsf2d,f2);
 
 	if (!s1 || !s2) return false;
 
@@ -313,11 +313,11 @@ bool IfcGeom::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, TopoDS_S
 	return true;
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcTrapeziumProfileDef* l, TopoDS_Shape& face) {
-	const double x1 = l->BottomXDim() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double w = l->TopXDim() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double dx = l->TopXOffset() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double y = l->YDim() / 2.0f  * IfcGeom::GetValue(GV_LENGTH_UNIT);
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrapeziumProfileDef* l, TopoDS_Shape& face) {
+	const double x1 = l->BottomXDim() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double w = l->TopXDim() * getValue(GV_LENGTH_UNIT);
+	const double dx = l->TopXOffset() * getValue(GV_LENGTH_UNIT);
+	const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
 
 	if ( x1 < ALMOST_ZERO || w < ALMOST_ZERO || y < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
@@ -325,21 +325,21 @@ bool IfcGeom::convert(const IfcSchema::IfcTrapeziumProfileDef* l, TopoDS_Shape& 
 	}
 
 	gp_Trsf2d trsf2d;
-	IfcGeom::convert(l->Position(),trsf2d);
+	IfcGeom::Kernel::convert(l->Position(),trsf2d);
 	double coords[8] = {-x1,-y, x1,-y, dx+w-x1,y, dx-x1,y};
-	return IfcGeom::profile_helper(4,coords,0,0,0,trsf2d,face);
+	return profile_helper(4,coords,0,0,0,trsf2d,face);
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Shape& face) {
-	const double x1 = l->OverallWidth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double y = l->OverallDepth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double d1 = l->WebThickness() / 2.0f  * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double dy1 = l->FlangeThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Shape& face) {
+	const double x1 = l->OverallWidth() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double y = l->OverallDepth() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double d1 = l->WebThickness() / 2.0f  * getValue(GV_LENGTH_UNIT);
+	const double dy1 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
 
 	bool doFillet1 = l->hasFilletRadius();
 	double f1 = 0.;
 	if ( doFillet1 ) {
-		f1 = l->FilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		f1 = l->FilletRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	bool doFillet2 = doFillet1;
@@ -347,13 +347,13 @@ bool IfcGeom::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Shape& fac
 
 	if (l->is(IfcSchema::Type::IfcAsymmetricIShapeProfileDef)) {
 		IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) l;
-		x2 = assym->TopFlangeWidth() / 2. * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		x2 = assym->TopFlangeWidth() / 2. * getValue(GV_LENGTH_UNIT);
 		doFillet2 = assym->hasTopFlangeFilletRadius();
 		if (doFillet2) {
-			f2 = assym->TopFlangeFilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+			f2 = assym->TopFlangeFilletRadius() * getValue(GV_LENGTH_UNIT);
 		}
 		if (assym->hasTopFlangeThickness()) {
-			dy2 = assym->TopFlangeThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+			dy2 = assym->TopFlangeThickness() * getValue(GV_LENGTH_UNIT);
 		}
 	}	
 
@@ -363,19 +363,19 @@ bool IfcGeom::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Shape& fac
 	}
 
 	gp_Trsf2d trsf2d;
-	IfcGeom::convert(l->Position(),trsf2d);
+	convert(l->Position(),trsf2d);
 
 	double coords[24] = {-x1,-y, x1,-y, x1,-y+dy1, d1,-y+dy1, d1,y-dy2, x2,y-dy2, x2,y, -x2,y, -x2,y-dy2, -d1,y-dy2, -d1,-y+dy1, -x1,-y+dy1};
 	int fillets[4] = {3,4,9,10};
 	double radii[4] = {f1,f1,f2,f2};
-	return IfcGeom::profile_helper(12,coords,(doFillet1||doFillet2) ? 4 : 0,fillets,radii,trsf2d,face);
+	return profile_helper(12,coords,(doFillet1||doFillet2) ? 4 : 0,fillets,radii,trsf2d,face);
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcZShapeProfileDef* l, TopoDS_Shape& face) {
-	const double x = l->FlangeWidth() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double y = l->Depth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double dx = l->WebThickness() / 2.0f  * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double dy = l->FlangeThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcZShapeProfileDef* l, TopoDS_Shape& face) {
+	const double x = l->FlangeWidth() * getValue(GV_LENGTH_UNIT);
+	const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double dx = l->WebThickness() / 2.0f  * getValue(GV_LENGTH_UNIT);
+	const double dy = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
 
 	bool doFillet = l->hasFilletRadius();
 	bool doEdgeFillet = l->hasEdgeRadius();
@@ -384,10 +384,10 @@ bool IfcGeom::convert(const IfcSchema::IfcZShapeProfileDef* l, TopoDS_Shape& fac
 	double f2 = 0.;
 
 	if ( doFillet ) {
-		f1 = l->FilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		f1 = l->FilletRadius() * getValue(GV_LENGTH_UNIT);
 	}
 	if ( doEdgeFillet ) {
-		f2 = l->EdgeRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		f2 = l->EdgeRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	if ( x == 0.0f || y == 0.0f || dx == 0.0f || dy == 0.0f ) {
@@ -396,24 +396,24 @@ bool IfcGeom::convert(const IfcSchema::IfcZShapeProfileDef* l, TopoDS_Shape& fac
 	}
 
 	gp_Trsf2d trsf2d;
-	IfcGeom::convert(l->Position(),trsf2d);
+	IfcGeom::Kernel::convert(l->Position(),trsf2d);
 
 	double coords[16] = {-dx,-y, x,-y, x,-y+dy, dx,-y+dy, dx,y, -x,y, -x,y-dy, -dx,y-dy};
 	int fillets[4] = {2,3,6,7};
 	double radii[4] = {f2,f1,f2,f1};
-	return IfcGeom::profile_helper(8,coords,(doFillet || doEdgeFillet) ? 4 : 0,fillets,radii,trsf2d,face);
+	return profile_helper(8,coords,(doFillet || doEdgeFillet) ? 4 : 0,fillets,radii,trsf2d,face);
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcCShapeProfileDef* l, TopoDS_Shape& face) {
-	const double y = l->Depth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double x = l->Width() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double d1 = l->WallThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double d2 = l->Girth() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcCShapeProfileDef* l, TopoDS_Shape& face) {
+	const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double x = l->Width() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double d1 = l->WallThickness() * getValue(GV_LENGTH_UNIT);
+	const double d2 = l->Girth() * getValue(GV_LENGTH_UNIT);
 	bool doFillet = l->hasInternalFilletRadius();
 	double f1 = 0;
 	double f2 = 0;
 	if ( doFillet ) {
-		f1 = l->InternalFilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		f1 = l->InternalFilletRadius() * getValue(GV_LENGTH_UNIT);
 		f2 = f1 + d1;
 	}
 
@@ -423,31 +423,31 @@ bool IfcGeom::convert(const IfcSchema::IfcCShapeProfileDef* l, TopoDS_Shape& fac
 	}
 
 	gp_Trsf2d trsf2d;
-	IfcGeom::convert(l->Position(),trsf2d);
+	IfcGeom::Kernel::convert(l->Position(),trsf2d);
 
 	double coords[24] = {-x,-y,x,-y,x,-y+d2,x-d1,-y+d2,x-d1,-y+d1,-x+d1,-y+d1,-x+d1,y-d1,x-d1,y-d1,x-d1,y-d2,x,y-d2,x,y,-x,y};
 	int fillets[8] = {0,1,4,5,6,7,10,11};
 	double radii[8] = {f2,f2,f1,f1,f1,f1,f2,f2};
-	return IfcGeom::profile_helper(12,coords,doFillet ? 8 : 0,fillets,radii,trsf2d,face);
+	return profile_helper(12,coords,doFillet ? 8 : 0,fillets,radii,trsf2d,face);
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcLShapeProfileDef* l, TopoDS_Shape& face) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcLShapeProfileDef* l, TopoDS_Shape& face) {
 	const bool hasSlope = l->hasLegSlope();
 	const bool doEdgeFillet = l->hasEdgeRadius();
 	const bool doFillet = l->hasFilletRadius();
 
-	const double y = l->Depth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double x = (l->hasWidth() ? l->Width() : l->Depth()) / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double d = l->Thickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double slope = hasSlope ? (l->LegSlope() * IfcGeom::GetValue(GV_PLANEANGLE_UNIT)) : 0.;
+	const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double x = (l->hasWidth() ? l->Width() : l->Depth()) / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double d = l->Thickness() * getValue(GV_LENGTH_UNIT);
+	const double slope = hasSlope ? (l->LegSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
 	
 	double f1 = 0.0f;
 	double f2 = 0.0f;
 	if (doFillet) {
-		f1 = l->FilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		f1 = l->FilletRadius() * getValue(GV_LENGTH_UNIT);
 	}
 	if ( doEdgeFillet) {
-		f2 = l->EdgeRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		f2 = l->EdgeRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d < ALMOST_ZERO ) {
@@ -492,24 +492,24 @@ bool IfcGeom::convert(const IfcSchema::IfcLShapeProfileDef* l, TopoDS_Shape& fac
 	}
 
 	gp_Trsf2d trsf2d;
-	IfcGeom::convert(l->Position(),trsf2d);
+	convert(l->Position(),trsf2d);
 
 	double coords[12] = {-x,-y, x,-y, x,-y+d-dy1, xx, xy, -x+d-dx1,y, -x,y};
 	int fillets[3] = {2,3,4};
 	double radii[3] = {f2,f1,f2};
-	return IfcGeom::profile_helper(6,coords,doFillet ? 3 : 0,fillets,radii,trsf2d,face);
+	return profile_helper(6,coords,doFillet ? 3 : 0,fillets,radii,trsf2d,face);
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcUShapeProfileDef* l, TopoDS_Shape& face) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcUShapeProfileDef* l, TopoDS_Shape& face) {
 	const bool doEdgeFillet = l->hasEdgeRadius();
 	const bool doFillet = l->hasFilletRadius();
 	const bool hasSlope = l->hasFlangeSlope();
 
-	const double y = l->Depth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double x = l->FlangeWidth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double d1 = l->WebThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double d2 = l->FlangeThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double slope = hasSlope ? (l->FlangeSlope() * IfcGeom::GetValue(GV_PLANEANGLE_UNIT)) : 0.;
+	const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double x = l->FlangeWidth() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double d1 = l->WebThickness() * getValue(GV_LENGTH_UNIT);
+	const double d2 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
+	const double slope = hasSlope ? (l->FlangeSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
 	
 	double dy1 = 0.0f;
 	double dy2 = 0.0f;
@@ -517,10 +517,10 @@ bool IfcGeom::convert(const IfcSchema::IfcUShapeProfileDef* l, TopoDS_Shape& fac
 	double f2 = 0.0f;
 
 	if (doFillet) {
-		f1 = l->FilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		f1 = l->FilletRadius() * getValue(GV_LENGTH_UNIT);
 	}
 	if (doEdgeFillet) {
-		f2 = l->EdgeRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		f2 = l->EdgeRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	if (hasSlope) {
@@ -534,27 +534,27 @@ bool IfcGeom::convert(const IfcSchema::IfcUShapeProfileDef* l, TopoDS_Shape& fac
 	}
 
 	gp_Trsf2d trsf2d;
-	IfcGeom::convert(l->Position(),trsf2d);
+	convert(l->Position(),trsf2d);
 
 	double coords[16] = {-x,-y, x,-y, x,-y+d2-dy2, -x+d1,-y+d2+dy1, -x+d1,y-d2-dy1, x,y-d2+dy2, x,y, -x,y};
 	int fillets[4] = {2,3,4,5};
 	double radii[4] = {f2,f1,f1,f2};
-	return IfcGeom::profile_helper(8, coords, (doFillet || doEdgeFillet) ? 4 : 0, fillets, radii, trsf2d, face);
+	return profile_helper(8, coords, (doFillet || doEdgeFillet) ? 4 : 0, fillets, radii, trsf2d, face);
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Shape& face) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Shape& face) {
 	const bool doFlangeEdgeFillet = l->hasFlangeEdgeRadius();
 	const bool doWebEdgeFillet = l->hasWebEdgeRadius();
 	const bool doFillet = l->hasFilletRadius();
 	const bool hasFlangeSlope = l->hasFlangeSlope();
 	const bool hasWebSlope = l->hasWebSlope();
 
-	const double y = l->Depth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double x = l->FlangeWidth() / 2.0f * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double d1 = l->WebThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double d2 = l->FlangeThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double flangeSlope = hasFlangeSlope ? (l->FlangeSlope() * IfcGeom::GetValue(GV_PLANEANGLE_UNIT)) : 0.;
-	const double webSlope = hasWebSlope ? (l->WebSlope() * IfcGeom::GetValue(GV_PLANEANGLE_UNIT)) : 0.;
+	const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double x = l->FlangeWidth() / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double d1 = l->WebThickness() * getValue(GV_LENGTH_UNIT);
+	const double d2 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
+	const double flangeSlope = hasFlangeSlope ? (l->FlangeSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
+	const double webSlope = hasWebSlope ? (l->WebSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || d2 < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
@@ -570,13 +570,13 @@ bool IfcGeom::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Shape& fac
 	double f3 = 0.0f;
 
 	if (doFillet) {
-		f1 = l->FilletRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		f1 = l->FilletRadius() * getValue(GV_LENGTH_UNIT);
 	}
 	if (doWebEdgeFillet) {
-		f2 = l->WebEdgeRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		f2 = l->WebEdgeRadius() * getValue(GV_LENGTH_UNIT);
 	}
 	if (doFlangeEdgeFillet) {
-		f3 = l->FlangeEdgeRadius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+		f3 = l->FlangeEdgeRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	double xx, xy;
@@ -617,23 +617,23 @@ bool IfcGeom::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Shape& fac
 	}
 
 	gp_Trsf2d trsf2d;
-	IfcGeom::convert(l->Position(),trsf2d);
+	convert(l->Position(),trsf2d);
 
 	double coords[16] = {d1/2.-dx2,-y, xx,xy, x,y-d2+dy2, x,y, -x,y, -x,y-d2+dy2, -xx,xy, -d1/2.+dx2,-y};
 	int fillets[6] = {0,1,2,5,6,7};
 	double radii[6] = {f2,f1,f3,f3,f1,f2};
-	return IfcGeom::profile_helper(8, coords, (doFillet || doWebEdgeFillet || doFlangeEdgeFillet) ? 6 : 0, fillets, radii, trsf2d, face);
+	return profile_helper(8, coords, (doFillet || doWebEdgeFillet || doFlangeEdgeFillet) ? 6 : 0, fillets, radii, trsf2d, face);
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcCircleProfileDef* l, TopoDS_Shape& face) {
-	const double r = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircleProfileDef* l, TopoDS_Shape& face) {
+	const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
 	if ( r == 0.0f ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
 		return false;
 	}
 	
 	gp_Trsf2d trsf;	
-	IfcGeom::convert(l->Position(),trsf);
+	convert(l->Position(),trsf);
 
 	BRepBuilderAPI_MakeWire w;
 	gp_Ax2 ax = gp_Ax2().Transformed(trsf);
@@ -642,14 +642,14 @@ bool IfcGeom::convert(const IfcSchema::IfcCircleProfileDef* l, TopoDS_Shape& fac
 	w.Add(edge);
 
 	TopoDS_Face f;
-	bool success = IfcGeom::convert_wire_to_face(w, f);
+	bool success = convert_wire_to_face(w, f);
 	if (success) face = f;
 	return success;
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcCircleHollowProfileDef* l, TopoDS_Shape& face) {
-	const double r = l->Radius() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	const double t = l->WallThickness() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircleHollowProfileDef* l, TopoDS_Shape& face) {
+	const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
+	const double t = l->WallThickness() * getValue(GV_LENGTH_UNIT);
 	
 	if ( r == 0.0f || t == 0.0f ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
@@ -657,7 +657,7 @@ bool IfcGeom::convert(const IfcSchema::IfcCircleHollowProfileDef* l, TopoDS_Shap
 	}
 	
 	gp_Trsf2d trsf;	
-	IfcGeom::convert(l->Position(),trsf);
+	convert(l->Position(),trsf);
 	gp_Ax2 ax = gp_Ax2().Transformed(trsf);
 
 	BRepBuilderAPI_MakeWire outer;	
@@ -676,9 +676,9 @@ bool IfcGeom::convert(const IfcSchema::IfcCircleHollowProfileDef* l, TopoDS_Shap
 	return true;		
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcEllipseProfileDef* l, TopoDS_Shape& face) {
-	double rx = l->SemiAxis1() * IfcGeom::GetValue(GV_LENGTH_UNIT);
-	double ry = l->SemiAxis2() * IfcGeom::GetValue(GV_LENGTH_UNIT);
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipseProfileDef* l, TopoDS_Shape& face) {
+	double rx = l->SemiAxis1() * getValue(GV_LENGTH_UNIT);
+	double ry = l->SemiAxis2() * getValue(GV_LENGTH_UNIT);
 
 	if ( rx < ALMOST_ZERO || ry < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
@@ -687,7 +687,7 @@ bool IfcGeom::convert(const IfcSchema::IfcEllipseProfileDef* l, TopoDS_Shape& fa
 
 	const bool rotated = ry > rx;
 	gp_Trsf2d trsf;	
-	IfcGeom::convert(l->Position(),trsf);
+	convert(l->Position(),trsf);
 
 	gp_Ax2 ax = gp_Ax2();
 	if (rotated) {
@@ -702,16 +702,16 @@ bool IfcGeom::convert(const IfcSchema::IfcEllipseProfileDef* l, TopoDS_Shape& fa
 	w.Add(edge);
 
 	TopoDS_Face f;
-	bool success = IfcGeom::convert_wire_to_face(w, f);
+	bool success = convert_wire_to_face(w, f);
 	if (success) face = f;
 	return success;
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcCenterLineProfileDef* l, TopoDS_Shape& face) {
-	const double d = l->Thickness() * IfcGeom::GetValue(GV_LENGTH_UNIT) / 2.;
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcCenterLineProfileDef* l, TopoDS_Shape& face) {
+	const double d = l->Thickness() * getValue(GV_LENGTH_UNIT) / 2.;
 
 	TopoDS_Wire wire;
-	if (!IfcGeom::convert_wire(l->Curve(), wire)) return false;
+	if (!convert_wire(l->Curve(), wire)) return false;
 
 	// BRepOffsetAPI_MakeOffset insists on creating circular arc
 	// segments for joining the curves that constitute the center
@@ -756,7 +756,7 @@ bool IfcGeom::convert(const IfcSchema::IfcCenterLineProfileDef* l, TopoDS_Shape&
 	return true;
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcCompositeProfileDef* l, TopoDS_Shape& face) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeProfileDef* l, TopoDS_Shape& face) {
 	// BRepBuilderAPI_MakeFace mf;
 
 	TopoDS_Compound compound;
@@ -767,7 +767,7 @@ bool IfcGeom::convert(const IfcSchema::IfcCompositeProfileDef* l, TopoDS_Shape& 
 	bool first = true;
 	for (IfcSchema::IfcProfileDef::list::it it = profiles->begin(); it != profiles->end(); ++it) {
 		TopoDS_Face f;
-		if (IfcGeom::convert_face(*it, f)) {
+		if (convert_face(*it, f)) {
 			builder.Add(compound, f);
 			/* TopExp_Explorer exp(f, TopAbs_WIRE);
 			for (; exp.More(); exp.Next()) {
@@ -786,10 +786,10 @@ bool IfcGeom::convert(const IfcSchema::IfcCompositeProfileDef* l, TopoDS_Shape& 
 	return !face.IsNull();
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcDerivedProfileDef* l, TopoDS_Shape& face) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcDerivedProfileDef* l, TopoDS_Shape& face) {
 	TopoDS_Face f;
 	gp_Trsf2d trsf2d;
-	if (IfcGeom::convert_face(l->ParentProfile(), f) && IfcGeom::convert(l->Operator(), trsf2d)) {
+	if (convert_face(l->ParentProfile(), f) && IfcGeom::Kernel::convert(l->Operator(), trsf2d)) {
 		gp_Trsf trsf = trsf2d;
 		face = TopoDS::Face(BRepBuilderAPI_Transform(f, trsf));
 		return true;
@@ -821,7 +821,7 @@ bool convert_surf(IfcSchema::IfcBSplineSurfaceWithKnots* l, Handle_Geom_Surface&
 		for (IfcTemplatedEntityListList<IfcSchema::IfcCartesianPoint>::inner_it jt = (*it).begin(); jt != (*it).end(); ++jt, ++j) {
 			IfcSchema::IfcCartesianPoint* p = *jt;
 			gp_Pnt pnt;
-			if (!IfcGeom::convert(p, pnt)) return false;
+			if (!convert(p, pnt)) return false;
 			Poles(i, j) = pnt;
 		}
 	}
@@ -847,12 +847,12 @@ bool convert_surf(IfcSchema::IfcBSplineSurfaceWithKnots* l, Handle_Geom_Surface&
 
 bool convert_surf(IfcSchema::IfcPlane* l, Handle_Geom_Surface& surf) {
 	gp_Pln pln;
-	IfcGeom::convert(l, pln);
+	convert(l, pln);
 	surf = new Geom_Plane(pln);
 	return true;
 }
 
-bool IfcGeom::convert(const IfcSchema::IfcAdvancedFace* l, TopoDS_Shape& face) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcAdvancedFace* l, TopoDS_Shape& face) {
 	IfcSchema::IfcSurface* s = l->FaceSurface();
 	Handle_Geom_Surface surf(0);
 	if (s->is(IfcSchema::Type::IfcBSplineSurfaceWithKnots)) {
@@ -868,7 +868,7 @@ bool IfcGeom::convert(const IfcSchema::IfcAdvancedFace* l, TopoDS_Shape& face) {
 	for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
 		IfcSchema::IfcLoop* loop = (*it)->Bound();
 		TopoDS_Wire outer_wire;
-		if (!IfcGeom::convert_wire(loop, outer_wire)) return false;
+		if (!convert_wire(loop, outer_wire)) return false;
 
 		TopoDS_Face temp = BRepBuilderAPI_MakeFace(surf, outer_wire);
 

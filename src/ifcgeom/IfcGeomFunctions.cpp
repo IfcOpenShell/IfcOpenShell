@@ -102,11 +102,11 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
-bool IfcGeom::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
+bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
 	BRepOffsetAPI_Sewing builder;
-	builder.SetTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
-	builder.SetMaxTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
-	builder.SetMinTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 	TopExp_Explorer exp(compound,TopAbs_FACE);
 	if ( ! exp.More() ) return false;
 	for ( ; exp.More(); exp.Next() ) {
@@ -117,13 +117,13 @@ bool IfcGeom::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Sh
 	shape = builder.SewedShape();
 	try {
 	ShapeFix_Solid sf_solid;
-	sf_solid.LimitTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
+	sf_solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 	shape = sf_solid.SolidFromShell(TopoDS::Shell(shape));
 	} catch(...) {}
 	return true;
 }
 
-bool IfcGeom::is_compound(const TopoDS_Shape& shape) {
+bool IfcGeom::Kernel::is_compound(const TopoDS_Shape& shape) {
 	bool has_solids = TopExp_Explorer(shape,TopAbs_SOLID).More() != 0;
 	bool has_shells = TopExp_Explorer(shape,TopAbs_SHELL).More() != 0;
 	bool has_compounds = TopExp_Explorer(shape,TopAbs_COMPOUND).More() != 0;
@@ -131,21 +131,21 @@ bool IfcGeom::is_compound(const TopoDS_Shape& shape) {
 	return has_compounds && has_faces && !has_solids && !has_shells;
 }
 
-const TopoDS_Shape& IfcGeom::ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid) {
-	const bool is_comp = IfcGeom::is_compound(shape);
+const TopoDS_Shape& IfcGeom::Kernel::ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid) {
+	const bool is_comp = is_compound(shape);
 	if ( ! is_comp ) return shape;
-	IfcGeom::create_solid_from_compound(shape, solid);
+	create_solid_from_compound(shape, solid);
 	
 	// If the SEW_SHELLS option had been set this precision had been applied
-	// at the end of the generic IfcGeom::convert_shape() call.
-	const double precision = IfcGeom::GetValue(GV_PRECISION);
-	IfcGeom::apply_tolerance(solid, precision);
+	// at the end of the generic convert_shape() call.
+	const double precision = getValue(GV_PRECISION);
+	apply_tolerance(solid, precision);
 	
 	return solid;
 }
 
-bool IfcGeom::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
-							   const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes) {
+bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
+							   const IfcGeom::IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::IfcRepresentationShapeItems& cut_shapes) {
 	// Iterate over IfcOpeningElements
 	IfcGeom::IfcRepresentationShapeItems opening_shapes;
 	unsigned int last_size = 0;
@@ -156,7 +156,7 @@ bool IfcGeom::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSch
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
-			IfcGeom::convert(fes->ObjectPlacement(),opening_trsf);
+			IfcGeom::Kernel::convert(fes->ObjectPlacement(),opening_trsf);
 
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
@@ -165,7 +165,7 @@ bool IfcGeom::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSch
 			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
 						
 			for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
-				IfcGeom::convert_shapes(*it2,opening_shapes);
+				convert_shapes(*it2,opening_shapes);
 			}
 
 			const unsigned int current_size = (const unsigned int) opening_shapes.size();
@@ -179,7 +179,7 @@ bool IfcGeom::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSch
 	// Iterate over the shapes of the IfcProduct
 	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
 		TopoDS_Shape entity_shape_solid;
-		const TopoDS_Shape& entity_shape_unlocated = IfcGeom::ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
+		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
 		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
 		TopoDS_Shape entity_shape;
 		if ( entity_shape_gtrsf.Form() == gp_Other ) {
@@ -192,7 +192,7 @@ bool IfcGeom::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSch
 		// Iterate over the shapes of the IfcOpeningElements
 		for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it4 = opening_shapes.begin(); it4 != opening_shapes.end(); ++ it4 ) {
 			TopoDS_Shape opening_shape_solid;
-			const TopoDS_Shape& opening_shape_unlocated = IfcGeom::ensure_fit_for_subtraction(it4->Shape(),opening_shape_solid);
+			const TopoDS_Shape& opening_shape_unlocated = ensure_fit_for_subtraction(it4->Shape(),opening_shape_solid);
 			const gp_GTrsf& opening_shape_gtrsf = it4->Placement();
 			if ( opening_shape_gtrsf.Form() == gp_Other ) {
 				Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to opening of:",entity->entity);
@@ -276,8 +276,8 @@ bool IfcGeom::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSch
 	return true;
 }
 
-bool IfcGeom::convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
-							   const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes) {
+bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
+							   const IfcGeom::IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::IfcRepresentationShapeItems& cut_shapes) {
 	
 	// Create a compound of all opening shapes in order to speed up the boolean operations
 	TopoDS_Compound opening_compound;
@@ -291,7 +291,7 @@ bool IfcGeom::convert_openings_fast(const IfcSchema::IfcProduct* entity, const I
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
-			IfcGeom::convert(fes->ObjectPlacement(),opening_trsf);
+			IfcGeom::Kernel::convert(fes->ObjectPlacement(),opening_trsf);
 
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
@@ -302,7 +302,7 @@ bool IfcGeom::convert_openings_fast(const IfcSchema::IfcProduct* entity, const I
 			IfcGeom::IfcRepresentationShapeItems opening_shapes;
 						
 			for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
-				IfcGeom::convert_shapes(*it2,opening_shapes);
+				convert_shapes(*it2,opening_shapes);
 			}
 
 			for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
@@ -320,7 +320,7 @@ bool IfcGeom::convert_openings_fast(const IfcSchema::IfcProduct* entity, const I
 	// Iterate over the shapes of the IfcProduct
 	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
 		TopoDS_Shape entity_shape_solid;
-		const TopoDS_Shape& entity_shape_unlocated = IfcGeom::ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
+		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
 		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
 		TopoDS_Shape entity_shape;
 		if ( entity_shape_gtrsf.Form() == gp_Other ) {
@@ -353,7 +353,7 @@ bool IfcGeom::convert_openings_fast(const IfcSchema::IfcProduct* entity, const I
 	return true;
 }
 
-bool IfcGeom::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face) {
+bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face) {
 	BRepBuilderAPI_MakeFace mf(wire, false);
 	BRepBuilderAPI_FaceError er = mf.Error();
 	if ( er == BRepBuilderAPI_NotPlanar ) {
@@ -368,12 +368,12 @@ bool IfcGeom::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face) {
 	return true;
 }
 
-bool IfcGeom::convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire) {
+bool IfcGeom::Kernel::convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire) {
 	wire = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(curve));
 	return true;
 }
 
-bool IfcGeom::profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Shape& face_shape) {
+bool IfcGeom::Kernel::profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Shape& face_shape) {
 	TopoDS_Vertex* vertices = new TopoDS_Vertex[numVerts];
 	
 	for ( int i = 0; i < numVerts; i ++ ) {
@@ -387,7 +387,7 @@ bool IfcGeom::profile_helper(int numVerts, double* verts, int numFillets, int* f
 		w.Add(BRepBuilderAPI_MakeEdge(vertices[i],vertices[(i+1)%numVerts]));
 
 	TopoDS_Face face;
-	IfcGeom::convert_wire_to_face(w.Wire(),face);
+	convert_wire_to_face(w.Wire(),face);
 
 	if ( numFillets && *std::max_element(filletRadii, filletRadii + numFillets) > ALMOST_ZERO ) {
 		BRepFilletAPI_MakeFillet2d fillet (face);
@@ -409,17 +409,17 @@ bool IfcGeom::profile_helper(int numVerts, double* verts, int numFillets, int* f
 	delete[] vertices;
 	return true;
 }
-double IfcGeom::shape_volume(const TopoDS_Shape& s) {
+double IfcGeom::Kernel::shape_volume(const TopoDS_Shape& s) {
 	GProp_GProps prop;
 	BRepGProp::VolumeProperties(s, prop);
 	return prop.Mass();
 }
-double IfcGeom::face_area(const TopoDS_Face& f) {
+double IfcGeom::Kernel::face_area(const TopoDS_Face& f) {
 	GProp_GProps prop;
 	BRepGProp::SurfaceProperties(f,prop);
 	return prop.Mass();
 }
-bool IfcGeom::is_convex(const TopoDS_Wire& wire) {
+bool IfcGeom::Kernel::is_convex(const TopoDS_Wire& wire) {
 	for ( TopExp_Explorer exp1(wire,TopAbs_VERTEX); exp1.More(); exp1.Next() ) {
 		TopoDS_Vertex V1 = TopoDS::Vertex(exp1.Current());
 		gp_Pnt P1 = BRep_Tool::Pnt(V1);
@@ -434,8 +434,8 @@ bool IfcGeom::is_convex(const TopoDS_Wire& wire) {
 				edge_points.push_back(P2);
 			}
 			if ( edge_points.size() != 2 ) continue;
-			if ( edge_points[0].IsEqual(P1,GetValue(GV_POINT_EQUALITY_TOLERANCE))) neighbors.push_back(edge_points[1]);
-			else if ( edge_points[1].IsEqual(P1, GetValue(GV_POINT_EQUALITY_TOLERANCE))) neighbors.push_back(edge_points[0]);
+			if ( edge_points[0].IsEqual(P1,getValue(GV_POINT_EQUALITY_TOLERANCE))) neighbors.push_back(edge_points[1]);
+			else if ( edge_points[1].IsEqual(P1, getValue(GV_POINT_EQUALITY_TOLERANCE))) neighbors.push_back(edge_points[0]);
 		}
 		// There should be two of these
 		if ( neighbors.size() != 2 ) return false;
@@ -444,10 +444,10 @@ bool IfcGeom::is_convex(const TopoDS_Wire& wire) {
 		for ( TopExp_Explorer exp2(wire,TopAbs_VERTEX); exp2.More(); exp2.Next() ) {
 			TopoDS_Vertex V2 = TopoDS::Vertex(exp2.Current());
 			gp_Pnt P2 = BRep_Tool::Pnt(V2);
-			if ( P1.IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) continue;
+			if ( P1.IsEqual(P2,getValue(GV_POINT_EQUALITY_TOLERANCE)) ) continue;
 			bool found = false;
 			for( std::vector<gp_Pnt>::const_iterator it = neighbors.begin(); it != neighbors.end(); ++ it ) {
-				if ( (*it).IsEqual(P2,GetValue(GV_POINT_EQUALITY_TOLERANCE)) ) { found = true; break; }
+				if ( (*it).IsEqual(P2,getValue(GV_POINT_EQUALITY_TOLERANCE)) ) { found = true; break; }
 			}
 			if ( ! found ) non_neighbors.push_back(P2);
 		}
@@ -465,11 +465,11 @@ bool IfcGeom::is_convex(const TopoDS_Wire& wire) {
 	}
 	return true;
 }
-TopoDS_Shape IfcGeom::halfspace_from_plane(const gp_Pln& pln,const gp_Pnt& cent) {
+TopoDS_Shape IfcGeom::Kernel::halfspace_from_plane(const gp_Pln& pln,const gp_Pnt& cent) {
 	TopoDS_Face face = BRepBuilderAPI_MakeFace(pln).Face();
 	return BRepPrimAPI_MakeHalfSpace(face,cent).Solid();
 }
-gp_Pln IfcGeom::plane_from_face(const TopoDS_Face& face) {
+gp_Pln IfcGeom::Kernel::plane_from_face(const TopoDS_Face& face) {
 	BRepGProp_Face prop(face);
 	Standard_Real u1,u2,v1,v2;
 	prop.Bounds(u1,u2,v1,v2);
@@ -480,7 +480,7 @@ gp_Pln IfcGeom::plane_from_face(const TopoDS_Face& face) {
 	prop.Normal(u,v,p,n);
 	return gp_Pln(p,n);
 }
-gp_Pnt IfcGeom::point_above_plane(const gp_Pln& pln, bool agree) {
+gp_Pnt IfcGeom::Kernel::point_above_plane(const gp_Pln& pln, bool agree) {
 	if ( agree ) {
 		return pln.Location().Translated(pln.Axis().Direction());
 	} else {
@@ -488,7 +488,7 @@ gp_Pnt IfcGeom::point_above_plane(const gp_Pln& pln, bool agree) {
 	}
 }
 
-void IfcGeom::apply_tolerance(TopoDS_Shape& s, double t) {
+void IfcGeom::Kernel::apply_tolerance(TopoDS_Shape& s, double t) {
 	ShapeFix_ShapeTolerance tol;
 	tol.SetTolerance(s, t);
 }
@@ -503,7 +503,7 @@ static double ifc_planeangle_unit = -1.0;
 static double force_ccw_face_orientation = -1.0;
 static double modelling_precision = 0.00001;
 
-void IfcGeom::SetValue(GeomValue var, double value) {
+void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	switch (var) {
 	case GV_DEFLECTION_TOLERANCE:
 		deflection_tolerance = value;
@@ -537,7 +537,7 @@ void IfcGeom::SetValue(GeomValue var, double value) {
 	}
 }
 
-double IfcGeom::GetValue(GeomValue var) {
+double IfcGeom::Kernel::getValue(GeomValue var) {
 	switch (var) {
 	case GV_DEFLECTION_TOLERANCE:
 		return deflection_tolerance;
@@ -566,7 +566,7 @@ double IfcGeom::GetValue(GeomValue var) {
 	return 0;
 }
 
-IfcSchema::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es) {
+IfcSchema::IfcProductDefinitionShape* IfcGeom::Kernel::tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es) {
 	BRepMesh::Mesh(shape, deflection);
 
 	IfcSchema::IfcFace::list::ptr faces (new IfcSchema::IfcFace::list);
@@ -655,7 +655,7 @@ TopoDS_Edge find_next(const TopTools_IndexedMapOfShape& edge_set, const TopTools
 	return TopoDS_Edge();
 }
 
-bool IfcGeom::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape) {
+bool IfcGeom::Kernel::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape) {
 	BRepOffsetAPI_Sewing sew;
 	sew.Add(shape);
 
@@ -730,14 +730,14 @@ bool IfcGeom::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape) {
 
 	try {
 		ShapeFix_Solid solid;
-		solid.LimitTolerance(GetValue(GV_POINT_EQUALITY_TOLERANCE));
+		solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 		shape = solid.SolidFromShell(TopoDS::Shell(shape));
 	} catch(...) {}
 
 	return true;
 }
 
-bool IfcGeom::flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& shapes, TopoDS_Shape& result, bool fuse) {
+bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& shapes, TopoDS_Shape& result, bool fuse) {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
@@ -748,7 +748,7 @@ bool IfcGeom::flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& sha
 		TopoDS_Shape merged;
 		const TopoDS_Shape& s = it->Shape();
 		if (fuse) {
-			IfcGeom::ensure_fit_for_subtraction(s, merged);
+			ensure_fit_for_subtraction(s, merged);
 		} else {
 			merged = s;
 		}
@@ -793,8 +793,8 @@ bool IfcGeom::flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& sha
 	return !result.IsNull();
 }
 	
-void IfcGeom::remove_redundant_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol) {
-	if (tol <= 0.) tol = GetValue(GV_POINT_EQUALITY_TOLERANCE);
+void IfcGeom::Kernel::remove_redundant_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol) {
+	if (tol <= 0.) tol = getValue(GV_POINT_EQUALITY_TOLERANCE);
 	tol *= tol;
 
 	while (true) {

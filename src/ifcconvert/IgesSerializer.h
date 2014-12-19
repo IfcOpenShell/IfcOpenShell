@@ -24,7 +24,7 @@
 #include <IGESControl_Writer.hxx>
 #include <Interface_Static.hxx>
 
-#include "../ifcgeom/IfcGeomObjects.h"
+#include "../ifcgeom/IfcGeomIterator.h"
 
 #include "../ifcconvert/OpenCascadeBasedSerializer.h"
 

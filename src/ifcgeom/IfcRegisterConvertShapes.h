@@ -2,7 +2,7 @@
 #define SHAPES(T) \
 	if ( l->is(T::Class()) ) { \
 		try { \
-			return IfcGeom::convert((T*)l,r); \
+			return convert((T*)l,r); \
 		} catch (...) { } \
 		Logger::Message(Logger::LOG_ERROR,"Failed to convert:",l->entity); \
 		return false; \

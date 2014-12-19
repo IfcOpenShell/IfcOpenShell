@@ -20,7 +20,7 @@
 #ifndef OPENCASCADEBASEDSERIALIZER_H
 #define OPENCASCADEBASEDSERIALIZER_H
 
-#include "../ifcgeom/IfcGeomObjects.h"
+#include "../ifcgeom/IfcGeomIterator.h"
 
 #include "../ifcconvert/GeometrySerializer.h"
 
@@ -38,8 +38,8 @@ public:
 	void writeMaterial(const IfcGeom::SurfaceStyle& style) {}
 	bool ready();
 	virtual void writeShape(const TopoDS_Shape& shape) = 0;
-	void writeTesselated(const IfcGeomObjects::IfcGeomObject* o) {}
-	void writeShapeModel(const IfcGeomObjects::IfcGeomShapeModelObject* o);
+	void write(const IfcGeom::TriangulationElement<double>* o) {}
+	void write(const IfcGeom::ShapeModelElement<double>* o);
 	bool isTesselated() const { return false; }
 };
 

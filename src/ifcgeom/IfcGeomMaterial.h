@@ -17,39 +17,34 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef WAVEFRONTOBJSERIALIZER_H
-#define WAVEFRONTOBJSERIALIZER_H
+#ifndef IFCGEOMMATERIAL_H
+#define IFCGEOMMATERIAL_H
 
-#include <set>
 #include <string>
-#include <fstream>
 
-#include "../ifcconvert/GeometrySerializer.h"
+#include "../ifcgeom/IfcGeom.h"
 
-class WaveFrontOBJSerializer : public GeometrySerializer {
-private:
-	const std::string mtl_filename;
-	std::ofstream obj_stream;
-	std::ofstream mtl_stream;
-	unsigned int vcount_total;
-	std::set<std::string> materials;
-public:
-	WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename)
-		: GeometrySerializer()
-		, obj_stream(obj_filename.c_str())
-		, mtl_filename(mtl_filename)
-		, mtl_stream(mtl_filename.c_str())		
-		, vcount_total(1)
-	{}
-	virtual ~WaveFrontOBJSerializer() {}
-	bool ready();
-	void writeHeader();
-	void writeMaterial(const IfcGeom::Material& style);
-	void write(const IfcGeom::TriangulationElement<double>* o);
-	void write(const IfcGeom::ShapeModelElement<double>* o) {}
-	void finalize() {}
-	bool isTesselated() const { return true; }
-	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {}
-};
+namespace IfcGeom {	
+
+	class Material {
+	private:
+		const IfcGeom::SurfaceStyle* style;
+	public:
+		explicit Material(const IfcGeom::SurfaceStyle* style = 0); // TODO default constructor for vector?
+		// Material(const Material& other);
+		// Material& operator=(const Material& other);
+		bool hasDiffuse() const;
+		bool hasSpecular() const;
+		bool hasTransparency() const;
+		bool hasSpecularity() const;
+		const double* diffuse() const;
+		const double* specular() const;
+		double transparency() const;
+		double specularity() const;
+		const std::string name() const;
+		bool operator==(const Material& other) const;
+	};
+
+}
 
 #endif

@@ -20,7 +20,7 @@
 #ifndef GEOMETRYSERIALIZER_H
 #define GEOMETRYSERIALIZER_H
 
-#include "../ifcgeom/IfcGeomObjects.h"
+#include "../ifcgeom/IfcGeomIterator.h"
 
 class GeometrySerializer {
 public:
@@ -29,8 +29,8 @@ public:
 	virtual void finalize() = 0;
 	virtual bool isTesselated() const = 0;
 	virtual ~GeometrySerializer() {} 
-	virtual void writeTesselated(const IfcGeomObjects::IfcGeomObject* o) = 0;
-	virtual void writeShapeModel(const IfcGeomObjects::IfcGeomShapeModelObject* o) = 0;
+	virtual void write(const IfcGeom::TriangulationElement<double>* o) = 0;
+	virtual void write(const IfcGeom::ShapeModelElement<double>* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
 };
 

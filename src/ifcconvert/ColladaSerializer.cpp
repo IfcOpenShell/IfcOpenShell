@@ -35,7 +35,7 @@ std::string collada_id(const std::string& s) {
 	return id;
 }
 
-void ColladaSerializer::ColladaExporter::ColladaGeometries::addFloatSource(const std::string& mesh_id, const std::string& suffix, const std::vector<float>& floats, const char* coords /* = "XYZ" */) {
+void ColladaSerializer::ColladaExporter::ColladaGeometries::addFloatSource(const std::string& mesh_id, const std::string& suffix, const std::vector<double>& floats, const char* coords /* = "XYZ" */) {
 	COLLADASW::FloatSource source(mSW);
 	source.setId(mesh_id + suffix);
 	source.setArrayId(mesh_id + suffix + COLLADASW::LibraryGeometries::ARRAY_ID_SUFFIX);
@@ -45,13 +45,18 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::addFloatSource(const
 		source.getParameterNameList().push_back(std::string(1, coords[i]));
 	}
 	source.prepareToAppendValues();
-	for (std::vector<float>::const_iterator it = floats.begin(); it != floats.end(); ++it) {
+	for (std::vector<double>::const_iterator it = floats.begin(); it != floats.end(); ++it) {
 		source.appendValues(*it);
 	}
 	source.finish();
 }
 			
-void ColladaSerializer::ColladaExporter::ColladaGeometries::write(const std::string mesh_id, const std::string& default_material_name, const std::vector<float>& positions, const std::vector<float>& normals, const std::vector<int>& indices, const std::vector<int> material_ids, const std::vector<IfcGeomObjects::Material>& materials) {
+void ColladaSerializer::ColladaExporter::ColladaGeometries::write(const std::string mesh_id, const std::string& default_material_name, const std::vector<double>& positions, const std::vector<double>& normals, const std::vector<int>& indices, const std::vector<int> material_ids, const std::vector<IfcGeom::Material>& materials) {
+	// The goal of the IfcGeom::Iterator is to filter out empty geometries, but
+	// since this function would crash trying to deference the material_ids in
+	// that case, a hard return statement is added just in case.
+	if (indices.empty()) return;
+
 	openMesh(mesh_id);
 
 	// The normals vector can be empty for example when the WELD_VERTICES setting is used.
@@ -70,17 +75,13 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(const std::str
 	
 	std::vector<int>::const_iterator index_range_start = indices.begin();
 	std::vector<int>::const_iterator material_it = material_ids.begin();
-	int previous_material_id = -2;
+	int previous_material_id = -1;
 	for (std::vector<int>::const_iterator it = indices.begin(); ; it += 3) {
-		const int current_material_id = material_it == material_ids.end()
-			? -3
-			: *(material_it++);
+		const int current_material_id = *(material_it++);
 		const int num_triangles = std::distance(index_range_start, it) / 3;
 		if ((previous_material_id != current_material_id && num_triangles > 0) || (it == indices.end())) {
 			COLLADASW::Triangles triangles(mSW);
-			triangles.setMaterial(collada_id(previous_material_id < 0
-				? default_material_name
-				: materials[previous_material_id].name()));
+			triangles.setMaterial(materials[previous_material_id].name());
 			triangles.setCount(num_triangles);
 			int offset = 0;
 			triangles.getInputList().push_back(COLLADASW::Input(COLLADASW::InputSemantic::VERTEX,"#" + mesh_id + COLLADASW::LibraryGeometries::VERTICES_ID_SUFFIX, offset++ ) );
@@ -113,7 +114,7 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::close() {
 	closeLibrary();
 }
 			
-void ColladaSerializer::ColladaExporter::ColladaScene::add(const std::string& node_id, const std::string& node_name, const std::string& geom_name, const std::vector<std::string>& material_ids, const std::vector<float>& matrix) {
+void ColladaSerializer::ColladaExporter::ColladaScene::add(const std::string& node_id, const std::string& node_name, const std::string& geom_name, const std::vector<std::string>& material_ids, const std::vector<double>& matrix) {
 	if (!scene_opened) {
 		openVisualScene(scene_id);
 		scene_opened = true;
@@ -155,7 +156,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::write() {
 	}
 }
 		
-void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write(const IfcGeomObjects::Material& material) {
+void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write(const IfcGeom::Material& material) {
 	openEffect(collada_id(material.name()) + "-fx");
 	COLLADASW::EffectProfile effect(mSW);
 	effect.setShaderType(COLLADASW::EffectProfile::LAMBERT);
@@ -186,20 +187,20 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::close
 	closeLibrary();
 }
 			
-void ColladaSerializer::ColladaExporter::ColladaMaterials::add(const IfcGeomObjects::Material& material) {
+void ColladaSerializer::ColladaExporter::ColladaMaterials::add(const IfcGeom::Material& material) {
 	if (!contains(material)) {
 		effects.write(material);
 		materials.push_back(material);
 	}
 }
 
-bool ColladaSerializer::ColladaExporter::ColladaMaterials::contains(const IfcGeomObjects::Material& material) {
+bool ColladaSerializer::ColladaExporter::ColladaMaterials::contains(const IfcGeom::Material& material) {
 	return std::find(materials.begin(), materials.end(), material) != materials.end();
 }
 
 void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
 	effects.close();
-	for (std::vector<IfcGeomObjects::Material>::const_iterator it = materials.begin(); it != materials.end(); ++it) {
+	for (std::vector<IfcGeom::Material>::const_iterator it = materials.begin(); it != materials.end(); ++it) {
 		const std::string& material_name = collada_id((*it).name());
 		openMaterial(material_name);
 		addInstanceEffect("#" + material_name + "-fx");
@@ -218,18 +219,10 @@ void ColladaSerializer::ColladaExporter::startDocument(const std::string& unit_n
 	asset.add();
 }
 
-void ColladaSerializer::ColladaExporter::writeTesselated(const std::string& guid, const std::string& name, const std::string& type, int obj_id, const std::vector<float>& matrix, const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<int>& indices, const std::vector<int>& material_ids, const std::vector<IfcGeomObjects::Material>& _materials) {
-	const IfcGeomObjects::Material default_for_type = IfcGeomObjects::Material(IfcGeom::get_default_style(type));
+void ColladaSerializer::ColladaExporter::write(const std::string& guid, const std::string& name, const std::string& type, int obj_id, const std::vector<double>& matrix, const std::vector<double>& vertices, const std::vector<double>& normals, const std::vector<int>& indices, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& _materials) {
 	std::vector<std::string> material_references;
-	const bool needs_default = std::find(material_ids.begin(), material_ids.end(), -1) != material_ids.end();
-	if (needs_default) {
-		if (!materials.contains(default_for_type)) {
-			materials.add(default_for_type);
-		}
-		material_references.push_back(collada_id(default_for_type.name()));
-	}	
-	for (std::vector<IfcGeomObjects::Material>::const_iterator it = _materials.begin(); it != _materials.end(); ++it) {
-		const IfcGeomObjects::Material& material = *it;
+	for (std::vector<IfcGeom::Material>::const_iterator it = _materials.begin(); it != _materials.end(); ++it) {
+		const IfcGeom::Material& material = *it;
 		if (!materials.contains(material)) {
 			materials.add(material);
 		}
@@ -273,9 +266,9 @@ void ColladaSerializer::writeHeader() {
 	exporter.startDocument(unit_name, unit_magnitude);
 }
 
-void ColladaSerializer::writeTesselated(const IfcGeomObjects::IfcGeomObject* o) {
-	const IfcGeomObjects::IfcRepresentationTriangulation& mesh = o->mesh();
-	exporter.writeTesselated(o->guid(), o->name(), o->type(), o->id(), o->matrix(), mesh.verts(), mesh.normals(), mesh.faces(), mesh.material_ids(), mesh.materials());
+void ColladaSerializer::write(const IfcGeom::TriangulationElement<double>* o) {
+	const IfcGeom::Representation::Triangulation<double>& mesh = o->geometry();
+	exporter.write(o->guid(), o->name(), o->type(), o->id(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(), mesh.faces(), mesh.material_ids(), mesh.materials());
 }
 
 void ColladaSerializer::finalize() {
