@@ -23,6 +23,7 @@
 #include <map>
 
 #include "../ifcparse/IfcParse.h"
+#include "../ifcparse/IfcSpfHeader.h"
 
 namespace IfcParse {
 
@@ -48,6 +49,8 @@ private:
 	unsigned int lastId;
 	unsigned int MaxId;
 
+	IfcSpfHeader _header;
+
 	std::string _filename;
 	std::string _timestamp;
 	std::string _author;
@@ -56,7 +59,7 @@ private:
 
 	void initTimestamp();
 public:
-	IfcParse::Tokens* tokens;
+	IfcParse::IfcSpfLexer* tokens;
 	IfcParse::IfcSpfStream* stream;
 	
 	IfcFile(bool create_latebound_entities = false);
@@ -115,6 +118,8 @@ public:
 	std::string authorName() const;
 	std::string authorEmail() const;
 	std::string authorOrganisation() const;
+
+	const IfcSpfHeader& header() const { return _header; }
 
 	bool create_latebound_entities() const { return _create_latebound_entities; }
 };

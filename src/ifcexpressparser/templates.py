@@ -35,6 +35,8 @@ header = """
 
 namespace %(schema_name)s {
 
+const char* const Identifier = "%(schema_name_upper)s";
+
 // Forward definitions
 %(forward_definitions)s
 

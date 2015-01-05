@@ -28,6 +28,14 @@
 %ignore IfcParse::IfcFile::AddEntity;
 %ignore operator<<;
 
+%ignore IfcParse::FileDescription::FileDescription;
+%ignore IfcParse::FileName::FileName;
+%ignore IfcParse::FileSchema::FileSchema;
+%ignore IfcParse::IfcFile::tokens;
+%ignore IfcParse::IfcSpfHeader::IfcSpfHeader(IfcSpfLexer*);
+%ignore IfcParse::IfcSpfHeader::lexer;
+%ignore IfcParse::IfcSpfHeader::stream;
+
 %rename("by_type") EntitiesByType;
 %rename("__len__") getArgumentCount;
 %rename("get_argument_type") getArgumentType;
@@ -156,6 +164,11 @@
 		std::ofstream f(fn.c_str());
 		f << (*$self);
 	}
+	%pythoncode %{
+		if _newclass:
+			# Hide the getters with read-only property implementations
+			header = property(header)
+    %}
 }
 
 %extend IfcParse::IfcLateBoundEntity {
@@ -164,6 +177,48 @@
 	%}
 }
 
+%extend IfcParse::IfcSpfHeader {
+	%pythoncode %{
+		if _newclass:
+			# Hide the getters with read-only property implementations
+			file_description = property(file_description)
+			file_name = property(file_name)
+			file_schema = property(file_schema)
+    %}
+};
+
+%extend IfcParse::FileDescription {
+	%pythoncode %{
+		if _newclass:
+			# Hide the getters with read-only property implementations
+			description = property(description)
+			implementation_level = property(implementation_level)
+    %}
+};
+
+%extend IfcParse::FileName {
+	%pythoncode %{
+		if _newclass:
+			# Hide the getters with read-only property implementations
+			name = property(name)
+			time_stamp = property(time_stamp)
+			author = property(author)
+			organization = property(organization)
+			preprocessor_version = property(preprocessor_version)
+			originating_system = property(originating_system)
+			authorization = property(authorization)
+    %}
+};
+
+%extend IfcParse::FileSchema {
+	%pythoncode %{
+		if _newclass:
+			# Hide the getters with read-only property implementations
+			schema_identifiers = property(schema_identifiers)
+    %}
+};
+
+%include "../ifcparse/IfcSpfHeader.h"
 %include "../ifcparse/IfcFile.h"
 %include "../ifcparse/IfcLateBoundEntity.h"
 

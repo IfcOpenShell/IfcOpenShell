@@ -53,9 +53,9 @@ namespace IfcParse {
 
 	class Entity;
 	class IfcFile;
-	class Tokens;
+	class IfcSpfLexer;
 
-	typedef std::pair<Tokens*,unsigned> Token;
+	typedef std::pair<IfcSpfLexer*, unsigned> Token;
 
 	/// Provides functions to convert Tokens to binary data
 	/// Tokens are merely offsets to where they can be read in the file
@@ -74,7 +74,7 @@ namespace IfcParse {
 		/// Returns whether the token can be interpreted as an enumerated value
 		static bool isEnumeration(const Token& t);
 		/// Returns whether the token can be interpreted as a datatype name
-		static bool isDatatype(const Token& t);
+		static bool isKeyword(const Token& t);
 		/// Returns whether the token can be interpreted as an integer
 		static bool isInt(const Token& t);
 		/// Returns whether the token can be interpreted as a boolean
@@ -97,12 +97,12 @@ namespace IfcParse {
 	// Functions for creating Tokens from an arbitary file offset
 	// The first 4 bits are reserved for Tokens of type ()=,;$*
 	//
-	Token TokenPtr(Tokens* tokens, unsigned int offset);
+	Token TokenPtr(IfcSpfLexer* tokens, unsigned int offset);
 	Token TokenPtr(char c);	
 	Token TokenPtr();
 
 	/// A stream of tokens to be read from a IfcSpfStream.
-	class Tokens {
+	class IfcSpfLexer {
 	private:
 		IfcCharacterDecoder* decoder;
 		unsigned int skipWhitespace();
@@ -110,9 +110,9 @@ namespace IfcParse {
 	public:
 		IfcSpfStream* stream;
 		IfcFile* file;
-		Tokens(IfcSpfStream* s, IfcFile* f);
+		IfcSpfLexer(IfcSpfStream* s, IfcFile* f);
 		Token Next();
-		~Tokens();
+		~IfcSpfLexer();
 		std::string TokenString(unsigned int offset);
 	};
 
@@ -124,7 +124,7 @@ namespace IfcParse {
 		std::vector<Argument*> list;
 		void Push(Argument* l);
 	public:
-		ArgumentList(Tokens* t, std::vector<unsigned int>& ids);
+		ArgumentList(IfcSpfLexer* t, std::vector<unsigned int>& ids);
 		~ArgumentList();
 
 		IfcUtil::ArgumentType type() const;

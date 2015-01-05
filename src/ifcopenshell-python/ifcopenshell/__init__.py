@@ -80,8 +80,9 @@ class file(object):
 		self.wrapped_data.add(e.wrapped_data)
 		self.instances.append(e)
 		return e
-	def __getattr__(self,attr):
+	def __getattr__(self, attr):
 		if attr[0:6] == 'create': return functools.partial(self.create_entity,attr[6:])
+		else: return getattr(self.wrapped_data, attr)
 	def __getitem__(self, key):
 		if isinstance(key, int):
 			return entity_instance(self.wrapped_data.by_id(key))
@@ -89,8 +90,6 @@ class file(object):
 			return entity_instance(self.wrapped_data.by_guid(key))
 	def by_type(self, type):
 		return [entity_instance(e) for e in self.wrapped_data.by_type(type)]
-	def write(self, fn):
-		self.wrapped_data.write(fn)
 	def __iter__(self):
 		return iter(self[id] for id in self.wrapped_data.entity_names())
 

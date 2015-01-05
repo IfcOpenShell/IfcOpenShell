@@ -210,17 +210,17 @@ void IfcSpfStream::Inc() {
 	if ( current == '\n' || current == '\r' ) IfcSpfStream::Inc();
 }
 
-Tokens::Tokens(IfcParse::IfcSpfStream *s, IfcParse::IfcFile* f) {
+IfcSpfLexer::IfcSpfLexer(IfcParse::IfcSpfStream *s, IfcParse::IfcFile* f) {
 	file = f;
 	stream = s;
 	decoder = new IfcCharacterDecoder(s);
 }
 
-Tokens::~Tokens() {
+IfcSpfLexer::~IfcSpfLexer() {
 	delete decoder;
 }
 
-unsigned int Tokens::skipWhitespace() {
+unsigned int IfcSpfLexer::skipWhitespace() {
 	unsigned int n = 0;
 	while ( !stream->eof ) {
 		char c = stream->Peek();
@@ -233,7 +233,7 @@ unsigned int Tokens::skipWhitespace() {
 	return n;
 }
 
-unsigned int Tokens::skipComment() {
+unsigned int IfcSpfLexer::skipComment() {
 	char c = stream->Peek();
 	if (c != '/') return 0;
 	stream->Inc();
@@ -257,7 +257,7 @@ unsigned int Tokens::skipComment() {
 //
 // Returns the offset of the current Token and moves cursor to next
 //
-Token Tokens::Next() {
+Token IfcSpfLexer::Next() {
 
 	if ( stream->eof ) return TokenPtr();
 
@@ -298,7 +298,7 @@ Token Tokens::Next() {
 // Reads a std::string from the file at specified offset
 // Omits whitespace and comments
 //
-std::string Tokens::TokenString(unsigned int offset) {
+std::string IfcSpfLexer::TokenString(unsigned int offset) {
 	const bool was_eof = stream->eof;
 	unsigned int old_offset = stream->Tell();
 	stream->Seek(offset);
@@ -323,9 +323,9 @@ std::string Tokens::TokenString(unsigned int offset) {
 // Functions for creating Tokens from an arbitary file offset.
 // The first 4 bits are reserved for Tokens of type ()=,;$*
 //
-Token IfcParse::TokenPtr(Tokens* tokens, unsigned int offset) { return Token(tokens,offset); }
-Token IfcParse::TokenPtr(char c) { return Token((Tokens*)0,(unsigned) c); }
-Token IfcParse::TokenPtr() { return Token((Tokens*)0,0); }
+Token IfcParse::TokenPtr(IfcSpfLexer* tokens, unsigned int offset) { return Token(tokens,offset); }
+Token IfcParse::TokenPtr(char c) { return Token((IfcSpfLexer*)0,(unsigned) c); }
+Token IfcParse::TokenPtr() { return Token((IfcSpfLexer*)0,0); }
 
 //
 // Functions to convert Tokens to binary data
@@ -345,8 +345,9 @@ bool TokenFunc::isString(const Token& t) {
 bool TokenFunc::isEnumeration(const Token& t) {
 	return ! isOperator(t) && startsWith(t, '.');
 }
-bool TokenFunc::isDatatype(const Token& t) {
-	return ! isOperator(t) && startsWith(t, 'I');
+bool TokenFunc::isKeyword(const Token& t) {
+	// bool is a subtype of enumeration, no need to test for that
+	return !isOperator(t) && !isIdentifier(t) && !isString(t) && !isEnumeration(t) && !isInt(t) && !isFloat(t);
 }
 bool TokenFunc::isInt(const Token& t) {
 	if (isOperator(t)) return false;
@@ -419,7 +420,7 @@ EntityArgument::EntityArgument(const Token& t) {
 // Reads the arguments from a list of token
 // Aditionally, stores the ids (i.e. #[\d]+) in a vector
 //
-ArgumentList::ArgumentList(Tokens* t, std::vector<unsigned int>& ids) {
+ArgumentList::ArgumentList(IfcSpfLexer* t, std::vector<unsigned int>& ids) {
 	IfcParse::IfcFile* file = t->file;
 	
 	Token next = t->Next();
@@ -429,7 +430,7 @@ ArgumentList::ArgumentList(Tokens* t, std::vector<unsigned int>& ids) {
 		else if ( TokenFunc::isOperator(next,'(') ) Push( new ArgumentList(t,ids) );
 		else {
 			if ( TokenFunc::isIdentifier(next) ) ids.push_back(TokenFunc::asInt(next));
-			if ( TokenFunc::isDatatype(next) ) {
+			if ( TokenFunc::isKeyword(next) ) {
 				t->Next();
 				try {
 					Push ( new EntityArgument(next) );
@@ -619,7 +620,7 @@ EntityArgument::~EntityArgument() { delete entity; }
 Entity::Entity(unsigned int i, IfcFile* f) : _id(i), args(0) {
 	file = f;
 	Token datatype = f->tokens->Next();
-	if ( ! TokenFunc::isDatatype(datatype)) throw IfcException("Unexpected token while parsing entity");
+	if ( ! TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity");
 	_type = IfcSchema::Type::FromString(TokenFunc::asString(datatype));
 	offset = datatype.second;
 }
@@ -661,7 +662,7 @@ void Entity::Load(std::vector<unsigned int>& ids, bool seek) const {
 	if ( seek ) {
 		file->tokens->stream->Seek(offset);
 		Token datatype = file->tokens->Next();
-		if ( ! TokenFunc::isDatatype(datatype)) throw IfcException("Unexpected token while parsing entity");
+		if ( ! TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity");
 		_type = IfcSchema::Type::FromString(TokenFunc::asString(datatype));
 	}
 	Token open = file->tokens->Next();
@@ -760,13 +761,27 @@ bool IfcFile::Init(std::istream& f, int len) {
 bool IfcFile::Init(void* data, int len) {
 	return IfcFile::Init(new IfcSpfStream(data,len));
 }
-bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
-	IfcSchema::InitStringMap();
-	stream = f;
-	if ( ! stream->valid ) return false;
-	tokens = new Tokens (stream,this);
+bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
+	stream = s;
+	if (!stream->valid) {
+		return false;
+	}
+
+	tokens = new IfcSpfLexer(stream, this);
+	_header.lexer(tokens);
+	_header.tryRead();
+
+	std::vector<std::string> schemas;
+	try {
+		schemas = _header.file_schema().schema_identifiers();
+	} catch (...) {}
+	if (schemas.size() != 1 || schemas[0] != IfcSchema::Identifier) {
+		Logger::Message(Logger::LOG_WARNING, std::string("File schema encountered that is different from expected value of '") + IfcSchema::Identifier + "'");
+	}
+
 	Token token = TokenPtr();
 	Token previous = TokenPtr();
+
 	unsigned int currentId = 0;
 	lastId = 0;
 	int x = 0;

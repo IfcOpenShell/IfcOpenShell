@@ -24,6 +24,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef USE_IFC4
+
 #include <set>
 
 #include "../ifcparse/Ifc4.h"
@@ -4943,3 +4945,5 @@ void Type::PopulateDerivedFields(IfcWrite::IfcWritableEntity* e) {
 		}
 	}
 }
+
+#endif

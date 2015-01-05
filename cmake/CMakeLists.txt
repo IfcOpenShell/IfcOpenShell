@@ -133,6 +133,7 @@ ADD_LIBRARY(IfcParse STATIC
   ../src/ifcparse/IfcHierarchyHelper.cpp
   ../src/ifcparse/IfcLateBoundEntity.cpp
   ../src/ifcparse/IfcParse.cpp
+  ../src/ifcparse/IfcSpfHeader.cpp
   ../src/ifcparse/IfcUtil.cpp
   ../src/ifcparse/IfcWrite.cpp
 )
@@ -220,6 +221,7 @@ SET(include_files_parse
     ../src/ifcparse/IfcHierarchyHelper.h
     ../src/ifcparse/IfcLateBoundEntity.h
     ../src/ifcparse/IfcParse.h
+    ../src/ifcparse/IfcSpfHeader.h
     ../src/ifcparse/IfcSpfStream.h
     ../src/ifcparse/IfcUtil.h
     ../src/ifcparse/IfcWritableEntity.h
