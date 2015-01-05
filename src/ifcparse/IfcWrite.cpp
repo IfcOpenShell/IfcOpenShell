@@ -23,6 +23,7 @@
 #include "../ifcparse/IfcWrite.h"
 #include "../ifcparse/IfcWritableEntity.h"
 #include "../ifcparse/IfcCharacterDecoder.h"
+#include "../ifcparse/IfcFile.h"
 
 using namespace IfcWrite;
 
@@ -301,7 +302,7 @@ IfcWriteArgument::operator std::vector<std::string>() const { return as<std::vec
 IfcWriteArgument::operator IfcUtil::IfcBaseClass*() const { return as<IfcUtil::IfcBaseClass*>(); }
 IfcWriteArgument::operator IfcEntityList::ptr() const { return as<IfcEntityList::ptr>(); }
 IfcWriteArgument::operator IfcEntityListList::ptr() const { throw; }
-bool IfcWriteArgument::isNull() const { return argumentType() == argument_type_null; }
+bool IfcWriteArgument::isNull() const { return type() == IfcUtil::Argument_NULL; }
 Argument* IfcWriteArgument::operator [] (unsigned int i) const { throw IfcParse::IfcException("Invalid cast"); }
 std::string IfcWriteArgument::toString(bool upper) const {
 	std::ostringstream str;
@@ -318,18 +319,9 @@ unsigned int IfcWriteArgument::Size() const {
 		return size;
 	}
 }
-IfcWriteArgument::argument_type IfcWriteArgument::argumentType() const {
-	return static_cast<argument_type>(container.which());
-}
 
 IfcUtil::ArgumentType IfcWriteArgument::type() const {
-	// TODO: Make these the same enumeration
-	int ty = static_cast<int>(container.which()) - 2;
-	if (ty < 0) {
-		return IfcUtil::Argument_UNKNOWN;
-	} else {
-		return static_cast<IfcUtil::ArgumentType>(ty);
-	}
+	return static_cast<IfcUtil::ArgumentType>(container.which());
 }
 
 IfcEntityList::ptr IfcSelectHelperEntity::getInverse(IfcSchema::Type::Enum,int,const std::string &) {throw IfcParse::IfcException("Invalid cast");}

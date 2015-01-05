@@ -71,6 +71,33 @@ namespace Type {
 #endif
 """
 
+lb_header = """
+#ifndef %(schema_name_upper)sRT_H
+#define %(schema_name_upper)sRT_H
+
+#define IfcSchema %(schema_name)s
+
+#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcEntityDescriptor.h"
+#include "../ifcparse/IfcWritableEntity.h"
+
+namespace %(schema_name)s {
+namespace Type {
+    int GetAttributeCount(Enum t);
+    int GetAttributeIndex(Enum t, const std::string& a);
+    IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
+    const std::string& GetAttributeName(Enum t, unsigned char a);
+    bool GetAttributeOptional(Enum t, unsigned char a);
+    bool GetAttributeDerived(Enum t, unsigned char a);
+    std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
+    std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
+    Enum GetAttributeEnumerationClass(Enum t, unsigned char a);
+    void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
+}}
+
+#endif
+"""
+
 implementation= """
 #include "../ifcparse/%(schema_name)s.h"
 #include "../ifcparse/IfcException.h"
@@ -100,6 +127,7 @@ void %(schema_name)s::InitStringMap() {
 }
 
 Type::Enum Type::FromString(const std::string& s) {
+    if (string_map.empty()) InitStringMap();
     std::map<std::string,Type::Enum>::const_iterator it = string_map.find(s);
     if ( it == string_map.end() ) throw IfcException("Unable to find find keyword in schema");
     else return it->second;
@@ -117,15 +145,173 @@ bool Type::IsSimple(Enum v) {
 
 %(enumeration_functions)s
 
+%(simple_type_impl)s
+
 %(entity_implementations)s
 """
 
-simpletype = """%(documentation)s
-typedef %(type)s %(name)s;
+lb_implementation = """
+#include <set>
+
+#include "../ifcparse/%(schema_name)s.h"
+#include "../ifcparse/%(schema_name)s-latebound.h"
+#include "../ifcparse/IfcException.h"
+#include "../ifcparse/IfcWrite.h"
+#include "../ifcparse/IfcWritableEntity.h"
+#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcEntityDescriptor.h"
+
+using namespace %(schema_name)s;
+using namespace IfcParse;
+using namespace IfcWrite;
+using namespace IfcUtil;
+
+std::map<Type::Enum,IfcEntityDescriptor*> entity_descriptor_map;
+std::map<Type::Enum,IfcEnumerationDescriptor*> enumeration_descriptor_map;
+std::map<std::pair<Type::Enum, std::string>, std::pair<Type::Enum, int> > inverse_map;
+std::map<Type::Enum,std::set<int> > derived_map;
+
+void InitDescriptorMap() {
+    IfcEntityDescriptor* current;
+%(entity_descriptors)s
+    // Enumerations
+    IfcEnumerationDescriptor* current_enum;
+    std::vector<std::string> values;
+%(enumeration_descriptors)s
+}
+
+void InitInverseMap() {
+%(inverse_implementations)s
+}
+
+void InitDerivedMap() {
+%(derived_field_statements)s
+}
+
+int Type::GetAttributeIndex(Enum t, const std::string& a) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else return i->second->getArgumentIndex(a);
+}
+
+int Type::GetAttributeCount(Enum t) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else return i->second->getArgumentCount();
+}
+
+ArgumentType Type::GetAttributeType(Enum t, unsigned char a) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else return i->second->getArgumentType(a);
+}
+
+const std::string& Type::GetAttributeName(Enum t, unsigned char a) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else return i->second->getArgumentName(a);
+}
+
+bool Type::GetAttributeOptional(Enum t, unsigned char a) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else return i->second->getArgumentOptional(a);
+}
+
+bool Type::GetAttributeDerived(Enum t, unsigned char a) {
+    if (derived_map.empty()) ::InitDerivedMap();
+    std::map<Type::Enum,std::set<int> >::const_iterator i = derived_map.find(t);
+    return i != derived_map.end() && i->second.find(a) != i->second.end();
+}
+
+std::pair<const char*, int> Type::GetEnumerationIndex(Enum t, const std::string& a) {
+    if (enumeration_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEnumerationDescriptor*>::const_iterator i = enumeration_descriptor_map.find(t);
+    if ( i == enumeration_descriptor_map.end() ) throw IfcException("Value not found");
+    else return i->second->getIndex(a);
+}
+
+std::pair<Type::Enum, unsigned> Type::GetInverseAttribute(Enum t, const std::string& a) {
+	if (inverse_map.empty()) ::InitInverseMap();
+	std::map<std::pair<Type::Enum, std::string>, std::pair<Type::Enum, int> >::const_iterator it;
+    std::pair<Type::Enum, std::string> key = std::make_pair(t, a);
+    while (true) {
+        it = inverse_map.find(key);
+        if (it != inverse_map.end()) return it->second;
+        if ((key.first = Parent(key.first)) == -1) break;
+    }
+    throw IfcException("Attribute not found");
+}
+
+Type::Enum Type::GetAttributeEnumerationClass(Enum t, unsigned char a) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else {
+        Type::Enum t = i->second->getArgumentEnumerationClass(a);
+        if ( t == Type::ALL ) throw IfcException("Not an enumeration");
+        else return t;
+    }
+}
+
+void Type::PopulateDerivedFields(IfcWrite::IfcWritableEntity* e) {
+    std::map<Type::Enum, std::set<int> >::const_iterator i = derived_map.find(e->type());
+	if (i != derived_map.end()) {
+		for (std::set<int>::const_iterator it = i->second.begin(); it != i->second.end(); ++it) {
+			e->setArgumentDerived(*it);
+		}
+	}
+}
 """
 
+entity_descriptor = """    current = entity_descriptor_map[Type::%(type)s] = new IfcEntityDescriptor(Type::%(type)s,%(parent_statement)s);
+%(entity_descriptor_attributes)s"""
+
+entity_descriptor_parent = "entity_descriptor_map.find(Type::%(type)s)->second"
+entity_descriptor_attribute = '    current->add("%(name)s",%(optional)s,%(type)s);'
+entity_descriptor_attribute_enum = '    current->add("%(name)s",%(optional)s,%(type)s,Type::%(enum_type)s);'
+
+enumeration_descriptor = """    values.clear(); values.reserve(128);
+%(enumeration_descriptor_values)s
+    current_enum = enumeration_descriptor_map[Type::%(type)s] = new IfcEnumerationDescriptor(Type::%(type)s, values);"""
+
+enumeration_descriptor_value = '    values.push_back("%(name)s");'
+
+derived_field_statement = '    {std::set<int> idxs; %(statements)sderived_map[Type::%(type)s] = idxs;}';
+derived_field_statement_attrs = 'idxs.insert(%d); '
+
+simpletype = """%(documentation)s
+class %(name)s : public %(superclass)s {
+public:
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
+    virtual Argument* getArgument(unsigned int i) const;
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
+    static Type::Enum Class();
+    explicit %(name)s (IfcAbstractEntity* e);
+    %(name)s (%(type)s v);
+    operator %(type)s() const;
+};
+"""
+
+simpletype_impl_comment = "// Function implementations for %(name)s"
+simpletype_impl_argument_type = "if (i == 0) { return %(attr_type)s; } else { throw IfcParse::IfcException(\"argument out of range\"); }"
+simpletype_impl_argument = "return entity->getArgument(i);"
+simpletype_impl_is_with_supertype = "return v == Type::%(class_name)s || %(superclass)s::is(v);"
+simpletype_impl_is_without_supertype = "return v == %(class_name)s::Class();"
+simpletype_impl_type = "return Type::%(class_name)s;"
+simpletype_impl_class = "return Type::%(class_name)s;"
+simpletype_impl_explicit_constructor = "entity = e;"
+simpletype_impl_constructor = "IfcWritableEntity* e = new IfcWritableEntity(Type::%(class_name)s); e->setArgument(0, v); entity = e;"
+simpletype_impl_cast = "return *entity->getArgument(0);"    
+    
 select = """%(documentation)s
-typedef IfcUtil::IfcBaseClass* %(name)s;
+typedef IfcUtil::IfcBaseClass %(name)s;
 """
 
 enumeration = """namespace %(name)s {
@@ -177,6 +363,9 @@ optional_attribute_description = "/// Whether the optional attribute %s is defin
 
 function = "%(return_type)s %(class_name)s::%(name)s(%(arguments)s) { %(body)s }"
 const_function = "%(return_type)s %(class_name)s::%(name)s(%(arguments)s) const { %(body)s }"
+constructor = "%(class_name)s::%(class_name)s(%(arguments)s) { %(body)s }"
+constructor_single_initlist = "%(class_name)s::%(class_name)s(%(arguments)s) : %(superclass)s(%(superclass_init)s) { %(body)s }"
+cast_function = "%(class_name)s::operator %(return_type)s() const { %(body)s }"
 
 array_type = "std::vector< %(instance_type)s > /*[%(lower)s:%(upper)s]*/"
 list_type = "IfcTemplatedEntityList< %(instance_type)s >::ptr"
@@ -212,6 +401,8 @@ constructor_stmt_enum = " e->setArgument(%(index)d,%(name)s,%(type)s::ToString(%
 constructor_stmt_array = " e->setArgument(%(index)d,(%(name)s)->generalize());"
 constructor_stmt_optional = " if (%(name)s) {%(stmt)s } else { e->setArgument(%(index)d); }"
 constructor_stmt_derived = " e->setArgumentDerived(%(index)d);"
+
+inverse_implementation = "    inverse_map.insert(std::make_pair(std::make_pair(Type::%(type)s, \"%(name)s\"), std::make_pair(Type::%(related_type)s, %(index)d)));"
 
 def multi_line_comment(li):
     return ("/// %s"%("\n/// ".join(li))) if len(li) else ""

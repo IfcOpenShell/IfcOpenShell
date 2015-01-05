@@ -123,17 +123,18 @@ ENDIF(MSVC)
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS} /usr/inc /usr/local/inc /usr/local/include/oce ${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
-ADD_LIBRARY(IfcParse STATIC 
+ADD_LIBRARY(IfcParse STATIC
+  ../src/ifcparse/Ifc2x3-latebound.cpp
   ../src/ifcparse/Ifc2x3.cpp
+  ../src/ifcparse/Ifc4-latebound.cpp
   ../src/ifcparse/Ifc4.cpp
-  ../src/ifcparse/IfcUtil.cpp
-  ../src/ifcparse/IfcParse.cpp
   ../src/ifcparse/IfcCharacterDecoder.cpp
-  
-  ../src/ifcparse/IfcWrite.cpp
   ../src/ifcparse/IfcGuidHelper.cpp
-  
-  ../src/ifcparse/IfcHierarchyHelper.cpp  
+  ../src/ifcparse/IfcHierarchyHelper.cpp
+  ../src/ifcparse/IfcLateBoundEntity.cpp
+  ../src/ifcparse/IfcParse.cpp
+  ../src/ifcparse/IfcUtil.cpp
+  ../src/ifcparse/IfcWrite.cpp
 )
 
 ADD_LIBRARY(IfcGeom STATIC
@@ -206,18 +207,24 @@ SET(include_files_geom
     ../src/ifcgeom/IfcRepresentationShapeItem.h
 )
 SET(include_files_parse
+    ../src/ifcparse/Ifc2x3-latebound.h
     ../src/ifcparse/Ifc2x3.h
     ../src/ifcparse/Ifc2x3enum.h
+    ../src/ifcparse/Ifc4-latebound.h
+    ../src/ifcparse/Ifc4.h
+    ../src/ifcparse/Ifc4enum.h
     ../src/ifcparse/IfcCharacterDecoder.h
+    ../src/ifcparse/IfcEntityDescriptor.h
     ../src/ifcparse/IfcException.h
     ../src/ifcparse/IfcFile.h
     ../src/ifcparse/IfcHierarchyHelper.h
+    ../src/ifcparse/IfcLateBoundEntity.h
     ../src/ifcparse/IfcParse.h
+    ../src/ifcparse/IfcSpfStream.h
     ../src/ifcparse/IfcUtil.h
-    ../src/ifcparse/SharedPointer.h
-    
-    ../src/ifcparse/IfcWrite.h
     ../src/ifcparse/IfcWritableEntity.h
+    ../src/ifcparse/IfcWrite.h
+    ../src/ifcparse/SharedPointer.h
 )
 INSTALL(FILES ${include_files_geom} DESTINATION include/ifcgeom)
 INSTALL(FILES ${include_files_parse} DESTINATION include/ifcparse)

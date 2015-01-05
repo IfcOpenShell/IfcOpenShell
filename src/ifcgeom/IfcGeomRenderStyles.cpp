@@ -30,21 +30,21 @@ bool process_colour(IfcSchema::IfcColourRgb* colour, std::tr1::array<double, 3>&
 	return colour != 0;
 }
 
-bool process_colour(IfcUtil::IfcArgumentSelect* factor, std::tr1::array<double, 3>& rgb) {
+bool process_colour(IfcSchema::IfcNormalisedRatioMeasure* factor, std::tr1::array<double, 3>& rgb) {
 	if (factor != 0) {
-		const double f = *factor->wrappedValue();
+		const double f = *factor;
 		rgb[0] = rgb[1] = rgb[2] = f;
 	}
 	return factor != 0;
 }
 
-bool process_colour(IfcSchema::IfcColourOrFactor colour_or_factor, std::tr1::array<double, 3>& rgb) {
+bool process_colour(IfcSchema::IfcColourOrFactor* colour_or_factor, std::tr1::array<double, 3>& rgb) {
 	if (colour_or_factor == 0) {
 		return false;
 	} else if (colour_or_factor->is(IfcSchema::Type::IfcColourRgb)) {
 		return process_colour(static_cast<IfcSchema::IfcColourRgb*>(colour_or_factor), rgb);
 	} else if (colour_or_factor->is(IfcSchema::Type::IfcNormalisedRatioMeasure)) {
-		return process_colour(static_cast<IfcUtil::IfcArgumentSelect*>(colour_or_factor), rgb);
+		return process_colour(static_cast<IfcSchema::IfcNormalisedRatioMeasure*>(colour_or_factor), rgb);
 	} else {
 		return false;
 	}
@@ -86,14 +86,14 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepr
 			surface_style.Specular().reset(SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
 		}
 		if (rendering_style->hasSpecularHighlight()) {
-			IfcUtil::IfcArgumentSelect* highlight = static_cast<IfcUtil::IfcArgumentSelect*>(rendering_style->SpecularHighlight());
+			IfcSchema::IfcSpecularHighlightSelect* highlight = rendering_style->SpecularHighlight();
 			if (highlight->is(IfcSchema::Type::IfcSpecularRoughness)) {
-				double roughness = *highlight->wrappedValue();
+				double roughness = *((IfcSchema::IfcSpecularRoughness*)highlight);
 				if (roughness >= 1e-9) {
 					surface_style.Specularity().reset(1.0 / roughness);
 				}
-			} else if (highlight->is(IfcSchema::Type::IfcSpecularRoughness)) {
-				surface_style.Specularity().reset(*highlight->wrappedValue());
+			} else if (highlight->is(IfcSchema::Type::IfcSpecularExponent)) {
+				surface_style.Specularity().reset(*((IfcSchema::IfcSpecularExponent*)highlight));
 			}
 		}
 		if (rendering_style->hasTransmissionColour()) {

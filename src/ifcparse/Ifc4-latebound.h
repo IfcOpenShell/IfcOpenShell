@@ -17,21 +17,34 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef GEOMETRYSERIALIZER_H
-#define GEOMETRYSERIALIZER_H
+/********************************************************************************
+ *                                                                              *
+ * This file has been generated from IFC4.exp. Do not make modifications        *
+ * but instead modify the python script that has been used to generate this.    *
+ *                                                                              *
+ ********************************************************************************/
 
-#include "../ifcgeom/IfcGeomIterator.h"
+#ifndef IFC4RT_H
+#define IFC4RT_H
 
-class GeometrySerializer {
-public:
-	virtual bool ready() = 0;
-	virtual void writeHeader() = 0;
-	virtual void finalize() = 0;
-	virtual bool isTesselated() const = 0;
-	virtual ~GeometrySerializer() {} 
-	virtual void write(const IfcGeom::TriangulationElement<double>* o) = 0;
-	virtual void write(const IfcGeom::BRepElement<double>* o) = 0;
-	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
-};
+#define IfcSchema Ifc4
+
+#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcEntityDescriptor.h"
+#include "../ifcparse/IfcWritableEntity.h"
+
+namespace Ifc4 {
+namespace Type {
+    int GetAttributeCount(Enum t);
+    int GetAttributeIndex(Enum t, const std::string& a);
+    IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
+    const std::string& GetAttributeName(Enum t, unsigned char a);
+    bool GetAttributeOptional(Enum t, unsigned char a);
+    bool GetAttributeDerived(Enum t, unsigned char a);
+    std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
+    std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
+    Enum GetAttributeEnumerationClass(Enum t, unsigned char a);
+    void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
+}}
 
 #endif

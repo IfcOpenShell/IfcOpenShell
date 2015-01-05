@@ -289,7 +289,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& t
 	IfcSchema::IfcLocalPlacement* current = (IfcSchema::IfcLocalPlacement*)l;
 	while (1) {
 		gp_Trsf trsf2;
-		IfcSchema::IfcAxis2Placement relplacement = current->RelativePlacement();
+		IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
 		if ( relplacement->is(IfcSchema::Type::IfcAxis2Placement3D) ) {
 			IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)relplacement,trsf2);
 			trsf.PreMultiply(trsf2);

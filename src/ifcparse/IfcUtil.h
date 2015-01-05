@@ -42,7 +42,9 @@ namespace IfcWrite {
 
 namespace IfcUtil {
     enum ArgumentType {
-        Argument_INT,
+        Argument_NULL,
+		Argument_DERIVED,
+		Argument_INT,
 		Argument_BOOL,
 		Argument_DOUBLE,
 		Argument_STRING, 
@@ -55,6 +57,8 @@ namespace IfcUtil {
 		Argument_ENTITY_LIST_LIST, 
 		Argument_UNKNOWN
     };
+
+	const char* ArgumentTypeToString(ArgumentType argument_type);
 
 	class IfcBaseClass {
 	public:
@@ -69,6 +73,14 @@ namespace IfcUtil {
 		virtual ArgumentType getArgumentType(unsigned int i) const = 0;
 		virtual Argument* getArgument(unsigned int i) const = 0;
 		virtual const char* getArgumentName(unsigned int i) const = 0;
+	};
+
+	// TODO: Investigate whether these should be template classes instead
+	class IfcBaseType : public IfcBaseEntity {
+	public:
+		virtual unsigned int getArgumentCount() const;
+		virtual Argument* getArgument(unsigned int i) const;
+		virtual const char* getArgumentName(unsigned int i) const;
 	};
 }
 
@@ -184,37 +196,6 @@ public:
 		return r;
 	}
 };
-
-namespace IfcUtil {
-	class IfcAbstractSelect : public IfcBaseClass {
-	public:
-		typedef IfcTemplatedEntityList<IfcAbstractSelect> list;
-		virtual bool isSimpleType() = 0;
-		static IfcSchema::Type::Enum Class() { return IfcSchema::Type::ALL; }
-	};
-	class IfcEntitySelect : public IfcAbstractSelect {
-	public:
-		typedef IfcEntitySelect* ptr;
-		IfcEntitySelect(IfcBaseClass* b);
-		IfcEntitySelect(IfcAbstractEntity* e);
-		~IfcEntitySelect();
-		bool is(IfcSchema::Type::Enum v) const;
-		IfcSchema::Type::Enum type() const;
-		bool isSimpleType();
-	};
-	class IfcArgumentSelect : public IfcAbstractSelect {
-		IfcSchema::Type::Enum _type;
-		Argument* arg;
-	public:
-		typedef IfcArgumentSelect* ptr;
-		IfcArgumentSelect(IfcSchema::Type::Enum t, Argument* a);
-		~IfcArgumentSelect();
-		Argument* wrappedValue();
-		bool is(IfcSchema::Type::Enum v) const;
-		IfcSchema::Type::Enum type() const;
-		bool isSimpleType();
-	};
-}
 
 namespace IfcParse {
 	class IfcFile;

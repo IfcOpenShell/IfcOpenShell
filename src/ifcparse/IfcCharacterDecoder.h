@@ -36,7 +36,7 @@
 typedef unsigned int UChar32;
 #endif
 
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/IfcSpfStream.h"
 
 namespace IfcParse {
 

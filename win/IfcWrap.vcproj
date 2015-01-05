@@ -62,7 +62,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="TKerneld.lib TKMathd.lib TKBRepd.lib TKGeomBased.lib TKGeomAlgod.lib TKG3dd.lib TKG2dd.lib TKShHealingd.lib TKTopAlgod.lib TKMeshd.lib TKPrimd.lib TKBoold.lib TKBOd.lib TKFilletd.lib TKOffsetd.lib"
-				OutputFile="$(OutDir)\_ifcopenshell.pyd"
+				OutputFile="$(OutDir)\_ifcopenshell_wrapper.pyd"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -133,7 +133,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="TKernel.lib TKMath.lib TKBRep.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKShHealing.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKBool.lib TKBO.lib TKFillet.lib TKOffset.lib"
-				OutputFile="$(OutDir)\_ifcopenshell.pyd"
+				OutputFile="$(OutDir)\_ifcopenshell_wrapper.pyd"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -180,10 +180,6 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath="..\src\ifcwrap\Interface.h"
-				>
-			</File>
 		</Filter>
 		<File
 			RelativePath="..\src\ifcwrap\IfcPython.i"
@@ -206,6 +202,14 @@
 					Outputs="$(InputDir)$(InputName)_wrap.cpp"
 				/>
 			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\ifcwrap\IfcGeomWrapper.i"
+			>
+		</File>
+		<File
+			RelativePath="..\src\ifcwrap\IfcParseWrapper.i"
+			>
 		</File>
 	</Files>
 	<Globals>

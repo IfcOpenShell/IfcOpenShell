@@ -41,6 +41,8 @@
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcUtil.h"
 
+#include "../ifcgeom/IfcGeomElement.h" 
+#include "../ifcgeom/IfcGeomRepresentation.h" 
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 
 #define IN_CACHE(T,E,t,e) std::map<int,t>::const_iterator it = cache.T.find(E->entity->id());\
@@ -124,6 +126,13 @@ public:
 	IfcSchema::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es);
 	void remove_redundant_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
 
+	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
+
+	IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
+
+	template <typename P>
+	IfcGeom::BRepElement<P>* create_brep_for_representation_and_product(const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
+
 	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem* representation_item);
 	
 	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcRepresentationItem* representation_item) {
@@ -141,14 +150,14 @@ public:
 			for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
 				IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
 #endif
-				IfcUtil::IfcAbstractSelect::list::ptr styles = style_assignment->Styles();
-				for (IfcUtil::IfcAbstractSelect::list::it lt = styles->begin(); lt != styles->end(); ++lt) {
-					IfcUtil::IfcAbstractSelect* style = *lt;
+				IfcEntityList::ptr styles = style_assignment->Styles();
+				for (IfcEntityList::it lt = styles->begin(); lt != styles->end(); ++lt) {
+					IfcUtil::IfcBaseClass* style = *lt;
 					if (style->is(IfcSchema::Type::IfcSurfaceStyle)) {
 						IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
 						if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
-							IfcUtil::IfcAbstractSelect::list::ptr styles_elements = surface_style->Styles();
-							for (IfcUtil::IfcAbstractSelect::list::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
+							IfcEntityList::ptr styles_elements = surface_style->Styles();
+							for (IfcEntityList::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
 								if ((*mt)->is(T::Class())) {
 									return std::make_pair(surface_style, (T*) *mt);
 								}

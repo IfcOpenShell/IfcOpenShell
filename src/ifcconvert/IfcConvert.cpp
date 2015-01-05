@@ -247,7 +247,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (convert_back_units) {
-		serializer->setUnitNameAndMagnitude(context_iterator.getUnitName(), context_iterator.getUnitMagnitude());
+		serializer->setUnitNameAndMagnitude(context_iterator.getUnitName(), static_cast<const float>(context_iterator.getUnitMagnitude()));
 	} else {
 		serializer->setUnitNameAndMagnitude("METER", 1.0f);
 	}
@@ -274,7 +274,7 @@ int main(int argc, char** argv) {
 		if (serializer->isTesselated()) {
 			serializer->write(static_cast<const IfcGeom::TriangulationElement<double>*>(geom_object));
 		} else {
-			serializer->write(static_cast<const IfcGeom::ShapeModelElement<double>*>(geom_object));
+			serializer->write(static_cast<const IfcGeom::BRepElement<double>*>(geom_object));
 		}
 		
 		const int progress = context_iterator.progress() / 2;

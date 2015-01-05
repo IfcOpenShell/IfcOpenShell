@@ -47,7 +47,7 @@
 #include "../ifcparse/Ifc2x3.h"
 #endif
 
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/IfcSpfStream.h"
 
 namespace IfcParse {
 
@@ -178,9 +178,9 @@ namespace IfcParse {
 	///                        =====================   =====================
 	class EntityArgument : public Argument {
 	private:		
-		IfcUtil::IfcArgumentSelect* entity;		
+		IfcUtil::IfcBaseClass* entity;		
 	public:
-		EntityArgument(IfcSchema::Type::Enum ty, const Token& t);
+		EntityArgument(const Token& t);
 		~EntityArgument();
 
 		IfcUtil::ArgumentType type() const;
@@ -228,85 +228,6 @@ namespace IfcParse {
 		unsigned int id();
 		IfcWrite::IfcWritableEntity* isWritable();
 	};
-
-typedef std::map<IfcSchema::Type::Enum, IfcEntityList::ptr> MapEntitiesByType;
-typedef std::map<unsigned int, IfcUtil::IfcBaseClass*> MapEntityById;
-typedef std::map<std::string, IfcSchema::IfcRoot*> MapEntityByGuid;
-typedef std::map<unsigned int, IfcEntityList::ptr> MapEntitiesByRef;
-typedef std::map<unsigned int, unsigned int> MapOffsetById;
-
-/// This class provides several static convenience functions and variables
-/// and provide access to the entities in an IFC file
-class IfcFile {
-private:
-	MapEntityById byid;
-	MapEntitiesByType bytype;
-	MapEntitiesByRef byref;
-	MapEntityByGuid byguid;
-	MapOffsetById offsets;
-	unsigned int lastId;
-	unsigned int MaxId;
-	std::string _filename;
-	std::string _timestamp;
-	std::string _author;
-	std::string _author_email;
-	std::string _author_organisation;
-	void initTimestamp();
-public:
-	typedef MapEntityById::const_iterator const_iterator;
-	IfcFile();
-	~IfcFile();
-	/// Returns the first entity in the file, this probably is the entity with the lowest id (EXPRESS ENTITY_INSTANCE_NAME)
-	const_iterator begin() const;
-	/// Returns the last entity in the file, this probably is the entity with the highes id (EXPRESS ENTITY_INSTANCE_NAME)
-	const_iterator end() const;
-	IfcParse::IfcSpfStream* file;
-	IfcParse::Tokens* tokens;
-	/// Returns all entities in the file that match the template argument.
-	/// NOTE: This also returns subtypes of the requested type, for example:
-	/// IfcWall will also return IfcWallStandardCase entities
-	template <class T>
-	typename T::list::ptr EntitiesByType() {
-		IfcEntityList::ptr e = EntitiesByType(T::Class());
-		typename T::list::ptr l(new typename T::list);
-		if (e && e->Size()) {
-			for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {
-				l->push((T*)*it);
-			}
-		}
-		return l;
-	}
-	/// Returns all entities in the file that match the positional argument.
-	/// NOTE: This also returns subtypes of the requested type, for example:
-	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntityList::ptr EntitiesByType(IfcSchema::Type::Enum t);
-	/// Returns all entities in the file that match the positional argument.
-	/// NOTE: This also returns subtypes of the requested type, for example:
-	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntityList::ptr EntitiesByType(const std::string& t);
-	/// Returns all entities in the file that reference the id
-	IfcEntityList::ptr EntitiesByReference(int id);
-	/// Returns the entity with the specified id
-	IfcUtil::IfcBaseClass* EntityById(int id);
-	/// Returns the entity with the specified GlobalId
-	IfcSchema::IfcRoot* EntityByGuid(const std::string& guid);
-	bool Init(const std::string& fn);
-	bool Init(std::istream& fn, int len);
-	bool Init(void* data, int len);
-	bool Init(IfcParse::IfcSpfStream* f);
-	unsigned int FreshId() { MaxId ++; return MaxId; }
-	void AddEntity(IfcUtil::IfcBaseClass* entity);
-	void AddEntities(IfcEntityList::ptr es);
-
-	void filename(const std::string& s);
-	std::string filename() const;
-	void timestamp(const std::string& s);
-	std::string timestamp() const;
-	void author(const std::string& name, const std::string& email, const std::string& organisation);
-	std::string authorName() const;
-	std::string authorEmail() const;
-	std::string authorOrganisation() const;
-};
 
 }
 

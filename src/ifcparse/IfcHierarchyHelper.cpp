@@ -397,10 +397,10 @@ void IfcHierarchyHelper::clipRepresentation(IfcSchema::IfcRepresentation* rep,
 IfcSchema::IfcPresentationStyleAssignment* IfcHierarchyHelper::addStyleAssignment(double r, double g, double b, double a) {
 	IfcSchema::IfcColourRgb* colour = new IfcSchema::IfcColourRgb(boost::none, r, g, b);
 	IfcSchema::IfcSurfaceStyleRendering* rendering = a == 1.0
-		? new IfcSchema::IfcSurfaceStyleRendering(colour, boost::none, boost::none, boost::none, boost::none, boost::none, 
-			boost::none, boost::none, IfcSchema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT)
-		: new IfcSchema::IfcSurfaceStyleRendering(colour, 1.0-a, boost::none, boost::none, boost::none, boost::none, 
-			boost::none, boost::none, IfcSchema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT);
+		? new IfcSchema::IfcSurfaceStyleRendering(colour, boost::none, 0, 0, 0, 0, 
+			0, 0, IfcSchema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT)
+		: new IfcSchema::IfcSurfaceStyleRendering(colour, 1.0-a, 0, 0, 0, 0, 
+			0, 0, IfcSchema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT);
 
 	IfcEntityList::ptr styles(new IfcEntityList());
 	styles->push(rendering);

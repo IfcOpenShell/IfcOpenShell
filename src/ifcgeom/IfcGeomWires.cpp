@@ -180,8 +180,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	Handle(Geom_Curve) curve;
 	if ( !convert_curve(basis_curve,curve) ) return false;
 	bool trim_cartesian = l->MasterRepresentation() == IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN;
-	IfcUtil::IfcAbstractSelect::list::ptr trims1 = l->Trim1();
-	IfcUtil::IfcAbstractSelect::list::ptr trims2 = l->Trim2();
+	IfcEntityList::ptr trims1 = l->Trim1();
+	IfcEntityList::ptr trims2 = l->Trim2();
 	bool trimmed1 = false;
 	bool trimmed2 = false;
 	unsigned sense_agreement = l->SenseAgreement() ? 0 : 1;
@@ -190,24 +190,24 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	bool has_flts[2] = {false,false};
 	bool has_pnts[2] = {false,false};
 	BRepBuilderAPI_MakeWire w;
-	for ( IfcUtil::IfcAbstractSelect::list::it it = trims1->begin(); it != trims1->end(); it ++ ) {
-		IfcUtil::IfcAbstractSelect* i = *it;
+	for ( IfcEntityList::it it = trims1->begin(); it != trims1->end(); it ++ ) {
+		IfcUtil::IfcBaseClass* i = *it;
 		if ( i->is(IfcSchema::Type::IfcCartesianPoint) ) {
 			IfcGeom::Kernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[sense_agreement] );
 			has_pnts[sense_agreement] = true;
 		} else if ( i->is(IfcSchema::Type::IfcParameterValue) ) {
-			const double value = *((IfcUtil::IfcArgumentSelect*)i)->wrappedValue();
+			const double value = *((IfcSchema::IfcParameterValue*)i);
 			flts[sense_agreement] = value * parameterFactor;
 			has_flts[sense_agreement] = true;
 		}
 	}
-	for ( IfcUtil::IfcAbstractSelect::list::it it = trims2->begin(); it != trims2->end(); it ++ ) {
-		IfcUtil::IfcAbstractSelect* i = *it;
+	for ( IfcEntityList::it it = trims2->begin(); it != trims2->end(); it ++ ) {
+		IfcUtil::IfcBaseClass* i = *it;
 		if ( i->is(IfcSchema::Type::IfcCartesianPoint) ) {
 			IfcGeom::Kernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[1-sense_agreement] );
 			has_pnts[1-sense_agreement] = true;
 		} else if ( i->is(IfcSchema::Type::IfcParameterValue) ) {
-			const double value = *((IfcUtil::IfcArgumentSelect*)i)->wrappedValue();
+			const double value = *((IfcSchema::IfcParameterValue*)i);
 			flts[1-sense_agreement] = value * parameterFactor;
 			has_flts[1-sense_agreement] = true;
 		}

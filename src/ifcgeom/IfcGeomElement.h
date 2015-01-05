@@ -87,21 +87,21 @@ namespace IfcGeom {
 	};
 
 	template <typename P>
-	class ShapeModelElement : public Element<P> {
+	class BRepElement : public Element<P> {
 	private:
 		Representation::BRep* _geometry;
 	public:
 		const Representation::BRep& geometry() const { return *_geometry; }
-		ShapeModelElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const gp_Trsf& trsf, Representation::BRep* geometry)
+		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const gp_Trsf& trsf, Representation::BRep* geometry)
 			: Element<P>(geometry->settings(),id,parent_id,name,type,guid,trsf)
 			, _geometry(geometry)
 		{}
-		virtual ~ShapeModelElement() {
+		virtual ~BRepElement() {
 			delete _geometry;
 		}
 	private:
-		ShapeModelElement(const ShapeModelElement& other);
-		ShapeModelElement& operator=(const ShapeModelElement& other);		
+		BRepElement(const BRepElement& other);
+		BRepElement& operator=(const BRepElement& other);		
 	};
 
 	template <typename P>
@@ -110,7 +110,7 @@ namespace IfcGeom {
 		Representation::Triangulation<P>* _geometry;
 	public:
 		const Representation::Triangulation<P>& geometry() const { return *_geometry; }
-		TriangulationElement(const ShapeModelElement<P>& shape_model)
+		TriangulationElement(const BRepElement<P>& shape_model)
 			: Element<P>(shape_model)
 			, _geometry(new Representation::Triangulation<P>(shape_model.geometry()))
 		{}
@@ -128,7 +128,7 @@ namespace IfcGeom {
 		Representation::Serialization* _geometry;
 	public:
 		const Representation::Serialization& geometry() const { return *_geometry; }
-		SerializedElement(const ShapeModelElement<P>& shape_model)
+		SerializedElement(const BRepElement<P>& shape_model)
 			: Element<P>(shape_model)
 			, _geometry(new Representation::Serialization(shape_model.geometry()))
 		{}

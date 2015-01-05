@@ -17,22 +17,34 @@
 #                                                                             #
 ###############################################################################
 
-import templates
+import os
+import sys
 
-class EnumHeader:
-    def __init__(self, mapping):
-        enumerable_types = sorted(set([name for name, type in mapping.schema.types.items()] + [name for name, type in mapping.schema.entities.items()]))
-        
-        self.str = templates.enum_header % {
-            'schema_name_upper' : mapping.schema.name.upper(),
-            'schema_name'       : mapping.schema.name.capitalize(),
-            'types'             : ', '.join(enumerable_types)
-        }
-        
-        self.schema_name = mapping.schema.name.capitalize()
-    def __repr__(self):
-        return self.str
-    def emit(self):
-        f = open('%senum.h'%self.schema_name, 'w', encoding='utf-8')
-        f.write(str(self))
-        f.close()
+from .. import ifcopenshell_wrapper
+
+settings = ifcopenshell_wrapper.settings
+
+# Hide templating precision to the user by choosing based on Python's 
+# internal float type. This is probably always going to be a double.
+for ty in (ifcopenshell_wrapper.iterator_single_precision, ifcopenshell_wrapper.iterator_double_precision):
+    if ty.mantissa_size() == sys.float_info.mant_dig: 
+        _iterator = ty
+
+
+# Make sure people are able to use python's platform agnostic paths
+class iterator(_iterator):
+    def __init__(self, settings, filename):
+        _iterator.__init__(self, settings, os.path.abspath(filename))
+
+
+def create_shape(settings, inst): 
+    return ifcopenshell_wrapper.create_shape(settings, inst.wrapped_data)
+
+
+def iterate(settings, filename):
+    it = iterator(settings, filename)
+    if not it.findContext(): return None
+    while True:
+        yield it.get()
+        if not it.next(): break
+

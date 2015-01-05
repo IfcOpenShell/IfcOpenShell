@@ -30,7 +30,7 @@
 
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcException.h"
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/IfcSpfStream.h"
 
 #define FIRST_SOLIDUS						(1 << 1)
 #define PAGE								(1 << 2)

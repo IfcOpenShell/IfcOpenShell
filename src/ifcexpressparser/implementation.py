@@ -71,10 +71,11 @@ class Implementation:
                         
                     def find_template(arg):
                         simple = mapping.schema.is_simpletype(arg['list_instance_type'])
+                        select = arg['list_instance_type'] == "IfcUtil::IfcBaseClass"
                         express = arg['list_instance_type'] in mapping.express_to_cpp_typemapping
                         if arg['is_enum']: return templates.get_attr_stmt_enum
                         elif arg['is_nested']: return templates.get_attr_stmt_nested_array
-                        elif arg['is_array'] and not (simple or express): return templates.get_attr_stmt_array
+                        elif arg['is_array'] and not (select or simple or express): return templates.get_attr_stmt_array
                         elif arg['non_optional_type'].endswith('*'): return templates.get_attr_stmt_entity
                         else: return templates.get_attr_stmt
 
@@ -89,8 +90,16 @@ class Implementation:
                                               'type' : arg['non_optional_type'].split('::')[0],
                                               'list_instance_type' : arg['list_instance_type']}
                     )
+                    
+                    def find_template(arg):
+                        simple = mapping.schema.is_simpletype(arg['list_instance_type'])
+                        select = arg['list_instance_type'] == "IfcUtil::IfcBaseClass"
+                        express = arg['list_instance_type'] in mapping.express_to_cpp_typemapping
+                        if arg['is_enum']: return templates.set_attr_stmt_enum
+                        elif arg['is_array'] and not (select or simple or express): return templates.set_attr_stmt_array
+                        else: return templates.set_attr_stmt
 
-                    tmpl = templates.set_attr_stmt_enum if arg['is_enum'] else templates.set_attr_stmt_array if arg['is_array'] and not mapping.schema.is_simpletype(arg['list_instance_type']) and arg['list_instance_type'] not in mapping.express_to_cpp_typemapping else templates.set_attr_stmt
+                    tmpl = find_template(arg)
                     write_attr(
                         templates.function,
                         class_name  = name,
@@ -142,10 +151,10 @@ class Implementation:
             )
 
         selectable_simple_types = sorted(set(sum([b.values for a,b in mapping.schema.selects.items()], [])) & set(mapping.schema.types.keys()))
-        schema_entity_statements += [templates.schema_simple_stmt%locals() for name in selectable_simple_types]
+        schema_entity_statements += [templates.schema_entity_stmt%locals() for name, type in mapping.schema.simpletypes.items()]
         schema_entity_statements += [templates.schema_entity_stmt%locals() for name, type in mapping.schema.entities.items()]
 
-        enumerable_types = selectable_simple_types + [name for name, type in mapping.schema.entities.items()]
+        enumerable_types = sorted(set([name for name, type in mapping.schema.types.items()] + [name for name, type in mapping.schema.entities.items()]))
         max_len = max(map(len, enumerable_types))
         type_name_strings = catc(map(stringify, enumerable_types))
         string_map_statements = [templates.string_map_statement % {
@@ -160,9 +169,40 @@ class Implementation:
             'padding' : ' ' * (max_len - len(name))
         } for name, type in mapping.schema.entities.items() if type.supertypes and len(type.supertypes) == 1]
 
-        max_id = len(schema_entity_statements)
+        max_id = len(enumerable_types)
 
         simple_type_statements = cator("v == Type::%s"%name for name in selectable_simple_types)
+        
+        simple_type_impl = []
+        for class_name, type in mapping.schema.simpletypes.items():
+            type_str = mapping.make_type_string(mapping.flatten_type_string(type))
+            attr_type = mapping.make_argument_type(type)
+            superclass = mapping.simple_type_parent(class_name)
+            
+            simpletype_impl_is = templates.simpletype_impl_is_with_supertype if superclass \
+                else templates.simpletype_impl_is_without_supertype
+                
+            constructor = templates.constructor_single_initlist if superclass \
+                else templates.constructor
+            
+            def compose(params):
+                class_name, attr_type, superclass, superclass_init, name, tmpl, return_type, args, body = params
+                arguments = ",".join(args)
+                body = body % locals()
+                return tmpl % locals()
+                
+            simple_type_impl.append(templates.simpletype_impl_comment % {'name': class_name})
+            simple_type_impl.extend(map(compose, map(lambda x: (class_name, attr_type, superclass, "(IfcAbstractEntity*)0")+x, (
+                ('getArgumentType', templates.const_function,       'IfcUtil::ArgumentType', ('unsigned int i',),       templates.simpletype_impl_argument_type       ),
+                ('getArgument',     templates.const_function,       'Argument*',             ('unsigned int i',),       templates.simpletype_impl_argument            ),
+                ('is',              templates.const_function,       'bool',                  ('Type::Enum v',),                   simpletype_impl_is                  ),
+                ('type',            templates.const_function,       'Type::Enum',            (),                        templates.simpletype_impl_type                ),
+                ('Class',           templates.function,             'Type::Enum',            (),                        templates.simpletype_impl_class               ),
+                ('',                          constructor,          '',                      ('IfcAbstractEntity* e',), templates.simpletype_impl_explicit_constructor),
+                ('',                          constructor,          '',                      ("%s v" % type_str,),      templates.simpletype_impl_constructor         ),
+                ('',                templates.cast_function,        type_str,                (),                        templates.simpletype_impl_cast                )
+            ))))
+            simple_type_impl.append('')
 
         self.str = templates.implementation % {
             'schema_name_upper'        : mapping.schema.name.upper(),
@@ -174,7 +214,8 @@ class Implementation:
             'string_map_statements'    : catnl(string_map_statements),
             'simple_type_statement'    : simple_type_statements,
             'parent_type_statements'   : catnl(parent_type_statements),
-            'entity_implementations'   : catnl(entity_implementations)
+            'entity_implementations'   : catnl(entity_implementations),
+            'simple_type_impl'         : catnl(simple_type_impl)
         }
 
         self.schema_name = mapping.schema.name.capitalize()

@@ -170,6 +170,8 @@ import mapping
 import header
 import enum_header
 import implementation
+import latebound_header
+import latebound_implementation
 
 syntax.ignore(Regex(r"\((?:\*(?:[^*]*\*+)+?\))"))
 ast = syntax.parseFile(sys.argv[1])
@@ -179,4 +181,6 @@ mapping = mapping.Mapping(schema)
 header.Header(mapping).emit()
 enum_header.EnumHeader(mapping).emit()
 implementation.Implementation(mapping).emit()
+latebound_header.LateBoundHeader(mapping).emit()
+latebound_implementation.LateBoundImplementation(mapping).emit()
 """%('\n'.join(statements)))

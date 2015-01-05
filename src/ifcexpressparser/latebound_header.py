@@ -19,20 +19,17 @@
 
 import templates
 
-class EnumHeader:
+class LateBoundHeader:
     def __init__(self, mapping):
-        enumerable_types = sorted(set([name for name, type in mapping.schema.types.items()] + [name for name, type in mapping.schema.entities.items()]))
-        
-        self.str = templates.enum_header % {
+        self.str = templates.lb_header % {
             'schema_name_upper' : mapping.schema.name.upper(),
-            'schema_name'       : mapping.schema.name.capitalize(),
-            'types'             : ', '.join(enumerable_types)
+            'schema_name'       : mapping.schema.name.capitalize()
         }
         
         self.schema_name = mapping.schema.name.capitalize()
     def __repr__(self):
         return self.str
     def emit(self):
-        f = open('%senum.h'%self.schema_name, 'w', encoding='utf-8')
+        f = open('%s-latebound.h'%self.schema_name, 'w', encoding='utf-8')
         f.write(str(self))
         f.close()

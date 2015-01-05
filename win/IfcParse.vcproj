@@ -150,6 +150,18 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\src\ifcparse\Ifc2x3-latebound.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalOptions="/bigobj"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\ifcparse\Ifc2x3.cpp"
 				>
 				<FileConfiguration
@@ -161,7 +173,19 @@
 					/>
 				</FileConfiguration>
 			</File>
-            <File
+			<File
+				RelativePath="..\src\ifcparse\Ifc4-latebound.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalOptions="/bigobj"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\ifcparse\Ifc4.cpp"
 				>
 				<FileConfiguration
@@ -185,7 +209,7 @@
 				RelativePath="..\src\ifcparse\IfcUtil.cpp"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcparse\IfcWrite.cpp"
 				>
 			</File>
@@ -193,16 +217,24 @@
 				RelativePath="..\src\ifcparse\IfcGuidHelper.cpp"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcparse\IfcHierarchyHelper.cpp"
 				>
-			</File>            
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcLateBoundEntity.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\src\ifcparse\Ifc2x3-latebound.h"
+				>
+			</File>
 			<File
 				RelativePath="..\src\ifcparse\Ifc2x3.h"
 				>
@@ -211,8 +243,40 @@
 				RelativePath="..\src\ifcparse\Ifc2x3enum.h"
 				>
 			</File>
-            <File
+			<File
+				RelativePath="..\src\ifcparse\Ifc4-latebound.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\Ifc4.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\Ifc4enum.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcCharacterDecoder.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcEntityDescriptor.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcException.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcFile.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ifcparse\IfcHierarchyHelper.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcLateBoundEntity.h"
 				>
 			</File>
 			<File
@@ -220,7 +284,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcSchema.h"
+				RelativePath="..\src\ifcparse\IfcSpfStream.h"
 				>
 			</File>
 			<File
@@ -228,7 +292,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\SharedPointer.h"
+				RelativePath="..\src\ifcparse\IfcWritableEntity.h"
 				>
 			</File>
 			<File
@@ -236,7 +300,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcWritableEntity.h"
+				RelativePath="..\src\ifcparse\SharedPointer.h"
 				>
 			</File>
 		</Filter>

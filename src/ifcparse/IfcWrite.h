@@ -91,21 +91,6 @@ namespace IfcWrite {
 			IfcEntityListList::ptr
 		> container;
 	public:
-		enum argument_type {
-			argument_type_null,
-			argument_type_derived,
-			argument_type_int, 
-			argument_type_bool, 
-			argument_type_double, 
-			argument_type_string, 
-			argument_type_vector_int,
-			argument_type_vector_double,
-			argument_type_vector_string,
-			argument_type_enumeration,
-			argument_type_entity,
-			argument_type_entity_list,
-			argument_type_entity_list_list
-		};
 		IfcWriteArgument(IfcAbstractEntity* e) : entity(e) {}
 		template <typename T> const T& as() const {
 			if (const T* val = boost::get<T>(&container)) {
@@ -131,7 +116,6 @@ namespace IfcWrite {
 		Argument* operator [] (unsigned int i) const;
 		std::string toString(bool upper=false) const;
 		unsigned int Size() const;
-		argument_type argumentType() const;
 		IfcUtil::ArgumentType type() const;
 	};
 

@@ -39,7 +39,7 @@ public:
 	bool ready();
 	virtual void writeShape(const TopoDS_Shape& shape) = 0;
 	void write(const IfcGeom::TriangulationElement<double>* o) {}
-	void write(const IfcGeom::ShapeModelElement<double>* o);
+	void write(const IfcGeom::BRepElement<double>* o);
 	bool isTesselated() const { return false; }
 };
 

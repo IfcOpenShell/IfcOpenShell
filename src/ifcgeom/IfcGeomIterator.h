@@ -71,10 +71,9 @@
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
 
-#include "../ifcparse/IfcParse.h"
+#include "../ifcparse/IfcFile.h"
 
 #include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom/IfcGeomUtils.h"
 #include "../ifcgeom/IfcGeomElement.h"
 #include "../ifcgeom/IfcGeomMaterial.h"
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
@@ -90,16 +89,16 @@ namespace IfcGeom {
 
 		IfcParse::IfcFile* ifc_file;
 
-		// A container and iterator for IfcShapeRepresentations
+		// A container and iterator for IfcRepresentations
 		IfcSchema::IfcRepresentation::list::ptr representations;
-		IfcSchema::IfcRepresentation::list::it shaperep_iterator;
+		IfcSchema::IfcRepresentation::list::it representation_iterator;
 
 		// The object is fetched beforehand to be sure that get() returns a valid element
 		TriangulationElement<P>* current_triangulation;
-		ShapeModelElement<P>* current_shape_model;
+		BRepElement<P>* current_shape_model;
 		SerializedElement<P>* current_serialization;
 		
-		// A container and iterator for IfcBuildingElements for the current IfcRepresentation referenced by *shaperep_iterator
+		// A container and iterator for IfcBuildingElements for the current IfcRepresentation referenced by *representation_iterator
 		IfcSchema::IfcProduct::list::ptr entities;
 		IfcSchema::IfcProduct::list::it ifcproduct_iterator;
 
@@ -110,93 +109,18 @@ namespace IfcGeom {
 		// double?
 		P unit_magnitude;
 
-		// Store references to all returned non-geometric elements to be freed when the destructor is called
-		std::vector<Element<P>*> returned_elements;
-
 		void initUnits() {
-			// Set default units, set length to meters, angles to undefined
-			kernel.setValue(IfcGeom::Kernel::GV_LENGTH_UNIT, 1.0);
-			kernel.setValue(IfcGeom::Kernel::GV_PLANEANGLE_UNIT, -1.0);
-			
-			IfcSchema::IfcUnitAssignment::list::ptr unit_assignments = ifc_file->EntitiesByType<IfcSchema::IfcUnitAssignment>();
-			IfcUtil::IfcAbstractSelect::list::ptr units;
-			try {
-				if ( unit_assignments->Size() ) {
-					IfcSchema::IfcUnitAssignment* unit_assignment = *unit_assignments->begin();
-					units = unit_assignment->Units();
-				}
-			} catch (const IfcParse::IfcException&) {}
-
-			if (!units || !units->Size()) {
-				// No units eh... Since tolerances and deflection are specified internally in meters
-				// we will try to find another indication of the model size.
-				IfcSchema::IfcExtrudedAreaSolid::list::ptr extrusions = ifc_file->EntitiesByType<IfcSchema::IfcExtrudedAreaSolid>();
-				if ( ! extrusions->Size() ) return;
-				double max_height = -1.0f;
-				for ( IfcSchema::IfcExtrudedAreaSolid::list::it it = extrusions->begin(); it != extrusions->end(); ++ it ) {
-					try {
-						const double depth = (*it)->Depth();
-						if ( depth > max_height ) max_height = depth;
-					} catch (const IfcParse::IfcException&) {}
-				}
-				if ( max_height > 100.0f ) {
-					kernel.setValue(IfcGeom::Kernel::GV_LENGTH_UNIT, 0.001);
-					Logger::Message(Logger::LOG_NOTICE, "Guessed length unit to be in millimeters based on extrusion depth");
-				}
-				return;
-			}
-
-			try {
-				for ( IfcUtil::IfcAbstractSelect::list::it it = units->begin(); it != units->end(); ++ it ) {
-					std::string current_unit_name = "";
-					IfcUtil::IfcAbstractSelect* base = *it;
-					IfcSchema::IfcSIUnit* unit = 0;
-					double value = 1.f;
-					if ( base->is(IfcSchema::Type::IfcConversionBasedUnit) ) {
-						IfcSchema::IfcConversionBasedUnit* u = (IfcSchema::IfcConversionBasedUnit*)base;
-						current_unit_name = u->Name();
-						IfcSchema::IfcMeasureWithUnit* u2 = u->ConversionFactor();
-						IfcSchema::IfcUnit u3 = u2->UnitComponent();
-						if ( u3->is(IfcSchema::Type::IfcSIUnit) ) {
-							unit = (IfcSchema::IfcSIUnit*) u3;
-						}
-						IfcSchema::IfcValue v = u2->ValueComponent();
-						IfcUtil::IfcArgumentSelect* v2 = (IfcUtil::IfcArgumentSelect*) v;
-						const double f = *v2->wrappedValue();
-						value *= f;
-					} else if ( base->is(IfcSchema::Type::IfcSIUnit) ) {
-						unit = (IfcSchema::IfcSIUnit*)base;
-					}
-					if ( unit ) {
-						if ( unit->hasPrefix() ) {
-							value *= IfcGeom::Utils::UnitPrefixToValue(unit->Prefix());
-						}
-						IfcSchema::IfcUnitEnum::IfcUnitEnum type = unit->UnitType();
-						if ( type == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ) {
-							kernel.setValue(IfcGeom::Kernel::GV_LENGTH_UNIT,value);
-							if (current_unit_name.empty()) {
-								if (unit->hasPrefix()) {
-									current_unit_name = IfcSchema::IfcSIPrefix::ToString(unit->Prefix());
-								}
-								current_unit_name += IfcSchema::IfcSIUnitName::ToString(unit->Name());
-							}
-							unit_magnitude = static_cast<P>(value);
-							unit_name = current_unit_name;
-						} else if ( type == IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT ) {
-							kernel.setValue(IfcGeom::Kernel::GV_PLANEANGLE_UNIT, value);
-						}
-					}
-				}
-			} catch (const IfcParse::IfcException& ex) {
-				std::stringstream ss;
-				ss << "Failed to determine unit information '" << ex.what() << "'";
-				Logger::Message(Logger::LOG_ERROR, ss.str());
+			IfcSchema::IfcProject::list::ptr projects = ifc_file->EntitiesByType<IfcSchema::IfcProject>();
+			if (projects->Size() == 1) {
+				IfcSchema::IfcProject* project = *projects->begin();
+				std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
+				unit_name = length_unit.first;
+				unit_magnitude = static_cast<P>(length_unit.second);
 			}
 		}
 
 	public:
 		bool findContext() {
-
 			try {
 				initUnits();
 			} catch (...) {}
@@ -266,7 +190,7 @@ namespace IfcGeom {
 
 			if (representations->Size() == 0) return false;
 
-			shaperep_iterator = representations->begin();
+			representation_iterator = representations->begin();
 			entities.reset();
 
 			if (!create()) {
@@ -300,82 +224,28 @@ namespace IfcGeom {
 		}
 
 	private:
-		// Move the the next IfcRepresentation
+		// Move to the next IfcRepresentation
 		void _nextShape() {
 			entities.reset();
-			++ shaperep_iterator;
+			++ representation_iterator;
 			++ done;
 		}
 
-		int _getParentId(IfcSchema::IfcProduct* ifc_product) {
-			int parent_id = -1;
-			// In case of an opening element, parent to the RelatingBuildingElement
-			if ( ifc_product->is(IfcSchema::Type::IfcOpeningElement ) ) {
-				IfcSchema::IfcOpeningElement* opening = (IfcSchema::IfcOpeningElement*)ifc_product;
-				IfcSchema::IfcRelVoidsElement::list::ptr voids = opening->VoidsElements();
-				if ( voids->Size() ) {
-					IfcSchema::IfcRelVoidsElement* ifc_void = *voids->begin();
-					parent_id = ifc_void->RelatingBuildingElement()->entity->id();
-				}
-			} else if ( ifc_product->is(IfcSchema::Type::IfcElement ) ) {
-				IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)ifc_product;
-				IfcSchema::IfcRelFillsElement::list::ptr fills = element->FillsVoids();
-				// Incase of a RelatedBuildingElement parent to the opening element
-				if ( fills->Size() ) {
-					for ( IfcSchema::IfcRelFillsElement::list::it it = fills->begin(); it != fills->end(); ++ it ) {
-						IfcSchema::IfcRelFillsElement* fill = *it;
-						IfcSchema::IfcObjectDefinition* ifc_objectdef = fill->RelatingOpeningElement();
-						if ( ifc_product == ifc_objectdef ) continue;
-						parent_id = ifc_objectdef->entity->id();
-					}
-				} 
-				// Else simply parent to the containing structure
-				if ( parent_id == -1 ) {
-					IfcSchema::IfcRelContainedInSpatialStructure::list::ptr parents = element->ContainedInStructure();
-					if ( parents->Size() ) {
-						IfcSchema::IfcRelContainedInSpatialStructure* parent = *parents->begin();
-						parent_id = parent->RelatingStructure()->entity->id();
-					}
-				}
-			}
-			// Parent decompositions to the RelatingObject
-			if ( parent_id == -1 ) {
-				IfcEntityList::ptr parents = ifc_product->entity->getInverse(IfcSchema::Type::IfcRelAggregates);
-				parents->push(ifc_product->entity->getInverse(IfcSchema::Type::IfcRelNests));
-				for ( IfcEntityList::it it = parents->begin(); it != parents->end(); ++ it ) {
-					IfcSchema::IfcRelDecomposes* decompose = (IfcSchema::IfcRelDecomposes*)*it;
-					IfcSchema::IfcObjectDefinition* ifc_objectdef;
-		#ifdef USE_IFC4
-					if (decompose->is(IfcSchema::Type::IfcRelAggregates)) {
-						ifc_objectdef = ((IfcSchema::IfcRelAggregates*)decompose)->RelatingObject();
-					} else {
-						continue;
-					}
-		#else
-					ifc_objectdef = decompose->RelatingObject();
-		#endif
-					if ( ifc_product == ifc_objectdef ) continue;
-					parent_id = ifc_objectdef->entity->id();
-				}
-			}
-			return parent_id;
-		}
-
-		ShapeModelElement<P>* create_shape_model_for_next_entity() {
+		BRepElement<P>* create_shape_model_for_next_entity() {
 			while ( true ) {
-				IfcSchema::IfcRepresentation* shaperep;
+				IfcSchema::IfcRepresentation* representation;
 
 				// Have we reached the end of our list of representations?
-				if ( shaperep_iterator == representations->end() ) {
+				if ( representation_iterator == representations->end() ) {
 					representations.reset();
 					return 0;
 				}
-				shaperep = *shaperep_iterator;
+				representation = *representation_iterator;
 
 				// Has the list of IfcProducts for this representation been initialized?
 				if ( ! entities ) {
 					
-					IfcSchema::IfcProductRepresentation::list::ptr prodreps = shaperep->OfProductRepresentation();
+					IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation->OfProductRepresentation();
 					entities = IfcSchema::IfcProduct::list::ptr(new IfcSchema::IfcProduct::list);
 					for ( IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it ) {
 						if ( (*it)->is(IfcSchema::Type::IfcProductDefinitionShape) ) {
@@ -406,99 +276,17 @@ namespace IfcGeom {
 					_nextShape();
 					continue;
 				}
-						
-				IfcGeom::Representation::BRep* shape;
-				IfcGeom::IfcRepresentationShapeItems shapes;
 
-				if ( !kernel.convert_shapes(shaperep,shapes) ) {
+				IfcSchema::IfcProduct* product = *ifcproduct_iterator;
+
+				BRepElement<P>* element = kernel.create_brep_for_representation_and_product<P>(settings, representation, product);
+
+				if ( !element ) {
 					_nextShape();
 					continue;
 				}
 
-				IfcSchema::IfcProduct* ifc_product = *ifcproduct_iterator;
-
-				int parent_id = -1;
-				try {
-					parent_id = _getParentId(ifc_product);
-				} catch (...) {}
-		
-				const std::string name = ifc_product->hasName() ? ifc_product->Name() : "";
-				const std::string guid = ifc_product->GlobalId();
-		
-				gp_Trsf trsf;
-				try {
-					kernel.convert(ifc_product->ObjectPlacement(),trsf);
-				} catch (...) {}
-
-				// Does the IfcElement have any IfcOpenings?
-				// Note that openings for IfcOpeningElements are not processed
-				IfcSchema::IfcRelVoidsElement::list::ptr openings;
-				if ( ifc_product->is(IfcSchema::Type::IfcElement) && !ifc_product->is(IfcSchema::Type::IfcOpeningElement) ) {
-					IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)ifc_product;
-					openings = element->HasOpenings();
-				}
-				// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
-				if ( ifc_product->is(IfcSchema::Type::IfcBuildingElementPart ) ) {
-					IfcSchema::IfcBuildingElementPart* part = (IfcSchema::IfcBuildingElementPart*)ifc_product;
-		#ifdef USE_IFC4
-					IfcSchema::IfcRelAggregates::list::ptr decomposes = part->Decomposes();
-					for ( IfcSchema::IfcRelAggregates::list::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
-		#else
-					IfcSchema::IfcRelDecomposes::list::ptr decomposes = part->Decomposes();
-					for ( IfcSchema::IfcRelDecomposes::list::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
-		#endif
-						IfcSchema::IfcObjectDefinition* obdef = (*it)->RelatingObject();
-						if ( obdef->is(IfcSchema::Type::IfcElement) ) {
-							IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)obdef;
-							openings->push(element->HasOpenings());
-						}
-					}
-				}
-
-				const std::string product_type = IfcSchema::Type::ToString(ifc_product->type());
-				ElementSettings element_settings(settings, unit_magnitude, product_type);
-
-				if ( !settings.disable_opening_subtractions() && openings && openings->Size() ) {
-					IfcGeom::IfcRepresentationShapeItems opened_shapes;
-					try {
-						if ( settings.faster_booleans() ) {
-							bool succes = kernel.convert_openings_fast(ifc_product,openings,shapes,trsf,opened_shapes);
-							if ( ! succes ) {
-								opened_shapes.clear();
-								kernel.convert_openings(ifc_product,openings,shapes,trsf,opened_shapes);
-							}
-						} else {
-							kernel.convert_openings(ifc_product,openings,shapes,trsf,opened_shapes);
-						}
-					} catch(...) { 
-						Logger::Message(Logger::LOG_ERROR,"Error processing openings for:",ifc_product->entity); 
-					}
-					if ( settings.use_world_coords() ) {
-						for ( IfcGeom::IfcRepresentationShapeItems::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
-							it->prepend(trsf);
-						}
-						trsf = gp_Trsf();
-					}
-					shape = new IfcGeom::Representation::BRep(element_settings, shaperep->entity->id(), opened_shapes);
-				} else if ( settings.use_world_coords() ) {
-					for ( IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
-						it->prepend(trsf);
-					}
-					trsf = gp_Trsf();
-					shape = new IfcGeom::Representation::BRep(element_settings, shaperep->entity->id(), shapes);
-				} else {
-					shape = new IfcGeom::Representation::BRep(element_settings, shaperep->entity->id(), shapes);
-				}
-
-				return new ShapeModelElement<P>(
-					ifc_product->entity->id(),
-					parent_id,
-					name, 
-					product_type,
-					guid,
-					trsf,
-					shape
-				);
+				return element;
 			}	
 		}
 
@@ -508,6 +296,10 @@ namespace IfcGeom {
 			// Free all possible representations of the current geometrical entity
 			delete current_triangulation;
 			current_triangulation = 0;
+			delete current_serialization;
+			current_serialization = 0;
+			delete current_shape_model;
+			current_shape_model = 0;
 			
 			// Increment the iterator over the list of products using the current
 			// shape representation
@@ -541,8 +333,12 @@ namespace IfcGeom {
 					product_guid = ifc_product->GlobalId();
 					product_name = ifc_product->hasName() ? ifc_product->Name() : "";
 					
+					parent_id = -1;
 					try {
-						parent_id = _getParentId(ifc_product);
+						IfcSchema::IfcObjectDefinition* parent_object = kernel.get_decomposing_entity(ifc_product);
+						if (parent_object) {
+							parent_id = parent_object->entity->id();
+						}
 					} catch (...) {}
 					
 					try {
@@ -554,7 +350,6 @@ namespace IfcGeom {
 			ElementSettings element_settings(settings, unit_magnitude, instance_type);
 			Element<P>* ifc_object = new Element<P>(element_settings, id, parent_id, product_name, instance_type, product_guid, trsf);
 			
-			returned_elements.push_back(ifc_object);
 			return ifc_object;
 		}
 
@@ -622,15 +417,14 @@ namespace IfcGeom {
 			// TODO: Correctly implement destructor for IfcFile
 			delete ifc_file;
 
-			typename std::vector<Element<P>*>::const_iterator it;
-			for (it = returned_elements.begin(); it != returned_elements.end(); ++ it ) {
-				delete *it;
-			}
-
-			returned_elements.clear();
+			delete current_triangulation;
+			current_triangulation = 0;
+			delete current_serialization;
+			current_serialization = 0;
+			delete current_shape_model;
+			current_shape_model = 0;
 		}
 	};
 }
-
 
 #endif

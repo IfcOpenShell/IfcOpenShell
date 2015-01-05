@@ -31,6 +31,7 @@
 
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcGeomMaterial.h"
+#include "../ifcgeom/IfcRepresentationShapeItem.h"
 
 namespace IfcGeom {
 
@@ -40,8 +41,11 @@ namespace IfcGeom {
 		protected:
 			const ElementSettings _settings;
 		public:
-			explicit Representation(const ElementSettings& settings) : _settings(settings) {}
+			explicit Representation(const ElementSettings& settings)
+				: _settings(settings) 
+			{}
 			const ElementSettings& settings() const { return _settings; }
+			virtual ~Representation() {}
 		};
 
 		class BRep : public Representation {

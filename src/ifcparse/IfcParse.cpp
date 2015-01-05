@@ -31,8 +31,10 @@
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/IfcSpfStream.h"
 #include "../ifcparse/IfcWritableEntity.h"
+#include "../ifcparse/IfcLateBoundEntity.h"
+#include "../ifcparse/IfcFile.h"
 
 using namespace IfcParse;
 
@@ -404,8 +406,13 @@ TokenArgument::TokenArgument(const Token& t) {
 	token = t;
 }
 
-EntityArgument::EntityArgument(IfcSchema::Type::Enum ty, const Token& t) {
-	entity = new IfcUtil::IfcArgumentSelect(ty,new TokenArgument(t));
+EntityArgument::EntityArgument(const Token& t) {
+	IfcParse::IfcFile* file = t.first->file;
+	if (file->create_latebound_entities()) {
+		entity = new IfcLateBoundEntity(new Entity(0, file, t.second));
+	} else {
+		entity = IfcSchema::SchemaEntity(new Entity(0, file, t.second));
+	}
 }
 
 // 
@@ -413,6 +420,8 @@ EntityArgument::EntityArgument(IfcSchema::Type::Enum ty, const Token& t) {
 // Aditionally, stores the ids (i.e. #[\d]+) in a vector
 //
 ArgumentList::ArgumentList(Tokens* t, std::vector<unsigned int>& ids) {
+	IfcParse::IfcFile* file = t->file;
+	
 	Token next = t->Next();
 	while( next.second || next.first ) {
 		if ( TokenFunc::isOperator(next,',') ) {}
@@ -423,11 +432,10 @@ ArgumentList::ArgumentList(Tokens* t, std::vector<unsigned int>& ids) {
 			if ( TokenFunc::isDatatype(next) ) {
 				t->Next();
 				try {
-					Push ( new EntityArgument(IfcSchema::Type::FromString(TokenFunc::asString(next)),t->Next()) );
+					Push ( new EntityArgument(next) );
 				} catch ( IfcException& e ) {
 					Logger::Message(Logger::LOG_ERROR,e.what());
 				}
-				t->Next();
 			} else {
 				Push ( new TokenArgument(next) );
 			}
@@ -592,29 +600,14 @@ EntityArgument::operator std::string() const { throw IfcException("Argument is n
 EntityArgument::operator std::vector<double>() const { throw IfcException("Argument is not a list of floats"); }
 EntityArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
 EntityArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
-EntityArgument::operator IfcUtil::IfcBaseClass*() const {	return entity; }
+EntityArgument::operator IfcUtil::IfcBaseClass*() const { return entity; }
 //EntityArgument::operator IfcUtil::IfcAbstractSelect::ptr() const { return entity; }
 EntityArgument::operator IfcEntityList::ptr() const { throw IfcException("Argument is not a list of entities"); }
 EntityArgument::operator IfcEntityListList::ptr() const { throw IfcException("Argument is not a list of entity lists"); }
 unsigned int EntityArgument::Size() const { return 1; }
 Argument* EntityArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
 std::string EntityArgument::toString(bool upper) const { 
-	Argument* arg = entity->wrappedValue();
-	IfcParse::TokenArgument* token_arg = dynamic_cast<IfcParse::TokenArgument*>(arg);
-	const bool is_string = TokenFunc::isString(token_arg->token);
-	std::string token_string = token_arg ? (is_string 
-		? TokenFunc::asString(token_arg->token) 
-		: TokenFunc::toString(token_arg->token))
-		: std::string();
-	std::string dt = IfcSchema::Type::ToString(entity->type());
-	if ( upper ) {
-		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
-		if (is_string) token_string = IfcWrite::IfcCharacterEncoder(token_string);
-	} else {
-		token_string.insert(token_string.begin(),'\'');
-		token_string.push_back('\'');
-	}
-	return dt + "(" + token_string + ")";
+	return entity->entity->toString(upper);
 }
 //return entity->entity->toString(); }
 bool EntityArgument::isNull() const { return false; }
@@ -736,15 +729,17 @@ IfcEntityList::ptr Entity::getInverse(IfcSchema::Type::Enum c, int i, const std:
 	}
 	return l;
 }
-bool Entity::is(IfcSchema::Type::Enum v) const {	return _type == v; }
+bool Entity::is(IfcSchema::Type::Enum v) const { return _type == v; }
 unsigned int Entity::id() { return _id; }
 
 IfcWrite::IfcWritableEntity* Entity::isWritable() {
 	return 0;
 }
 
-IfcFile::IfcFile() {
-	file = 0;
+IfcFile::IfcFile(bool create_latebound_entities)
+	: _create_latebound_entities(create_latebound_entities)
+{
+	stream = 0;
 	lastId = 0;
 	tokens = 0;
 	MaxId = 0;
@@ -767,9 +762,9 @@ bool IfcFile::Init(void* data, int len) {
 }
 bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
 	IfcSchema::InitStringMap();
-	file = f;
-	if ( ! file->valid ) return false;
-	tokens = new Tokens (file,this);
+	stream = f;
+	if ( ! stream->valid ) return false;
+	tokens = new Tokens (stream,this);
 	Token token = TokenPtr();
 	Token previous = TokenPtr();
 	unsigned int currentId = 0;
@@ -778,11 +773,15 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
 	Entity* e;
 	IfcUtil::IfcBaseClass* entity = 0; 
 	Logger::Status("Scanning file...");
-	while ( ! file->eof ) {
+	while ( ! stream->eof ) {
 		if ( currentId ) {
 			try {
 				e = new Entity(currentId,this);
-				entity = IfcSchema::SchemaEntity(e);
+				if (this->create_latebound_entities()) {
+					entity = new IfcLateBoundEntity(e);
+				} else {
+					entity = IfcSchema::SchemaEntity(e);
+				}
 			} catch (IfcException ex) {
 				currentId = 0;
 				Logger::Message(Logger::LOG_ERROR,ex.what());
@@ -947,7 +946,7 @@ void IfcFile::AddEntity(IfcUtil::IfcBaseClass* entity) {
 	}
 }
 IfcEntityList::ptr IfcFile::EntitiesByType(IfcSchema::Type::Enum t) {
-	MapEntitiesByType::const_iterator it = bytype.find(t);
+	entities_by_type_t::const_iterator it = bytype.find(t);
 	return (it == bytype.end()) ? IfcEntityList::ptr() : it->second;
 }
 IfcEntityList::ptr IfcFile::EntitiesByType(const std::string& t) {
@@ -956,13 +955,13 @@ IfcEntityList::ptr IfcFile::EntitiesByType(const std::string& t) {
 	return EntitiesByType(IfcSchema::Type::FromString(ty));
 }
 IfcEntityList::ptr IfcFile::EntitiesByReference(int t) {
-	MapEntitiesByRef::const_iterator it = byref.find(t);
+	entities_by_ref_t::const_iterator it = byref.find(t);
 	return (it == byref.end()) ? IfcEntityList::ptr() : it->second;
 }
 IfcUtil::IfcBaseClass* IfcFile::EntityById(int id) {
-	MapEntityById::const_iterator it = byid.find(id);
+	entity_by_id_t::const_iterator it = byid.find(id);
 	if ( it == byid.end() ) {
-		MapOffsetById::const_iterator it2 = offsets.find(id);
+		offset_by_id_t::const_iterator it2 = offsets.find(id);
 		if ( it2 == offsets.end() ) throw IfcException("Entity not found");
 		const unsigned int offset = (*it2).second;
 		Entity* e = new Entity(id,this,offset);
@@ -973,7 +972,7 @@ IfcUtil::IfcBaseClass* IfcFile::EntityById(int id) {
 	return it->second;
 }
 IfcSchema::IfcRoot* IfcFile::EntityByGuid(const std::string& guid) {
-	MapEntityByGuid::const_iterator it = byguid.find(guid);
+	entity_by_guid_t::const_iterator it = byguid.find(guid);
 	if ( it == byguid.end() ) {
 		throw IfcException("Entity not found");
 	} else {
@@ -987,18 +986,18 @@ const char* IfcException::what() const throw() { return error.c_str(); }
 
 // FIXME: Test destructor to delete entity and arg allocations
 IfcFile::~IfcFile() {
-	for( MapEntityById::const_iterator it = byid.begin(); it != byid.end(); ++ it ) {
+	for( entity_by_id_t::const_iterator it = byid.begin(); it != byid.end(); ++ it ) {
 		delete it->second->entity;
 		delete it->second;
 	}
-	delete file;
+	delete stream;
 	delete tokens;
 }
 
-MapEntityById::const_iterator IfcFile::begin() const {
+IfcFile::entity_by_id_t::const_iterator IfcFile::begin() const {
 	return byid.begin();
 }
-MapEntityById::const_iterator IfcFile::end() const {
+IfcFile::entity_by_id_t::const_iterator IfcFile::end() const {
 	return byid.end();
 }
 
@@ -1023,7 +1022,7 @@ std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f) {
 	os << "ENDSEC;" << std::endl;
 	os << "DATA;" << std::endl;
 
-	for ( MapEntityById::const_iterator it = f.begin(); it != f.end(); ++ it ) {
+	for ( IfcFile::entity_by_id_t::const_iterator it = f.begin(); it != f.end(); ++ it ) {
 		const IfcUtil::IfcBaseClass* e = it->second;
 		os << e->entity->toString(true) << ";" << std::endl;
 	}

@@ -34,7 +34,7 @@ bool OpenCascadeBasedSerializer::ready() {
 	return succeeded;
 }
 
-void OpenCascadeBasedSerializer::write(const IfcGeom::ShapeModelElement<double>* o) {		
+void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<double>* o) {		
 	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
 		gp_GTrsf gtrsf = it->Placement();
 

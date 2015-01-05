@@ -253,9 +253,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, 
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, IfcRepresentationShapeItems& shapes) {
-	IfcUtil::IfcAbstractSelect::list::ptr shells = l->SbsmBoundary();
+	IfcEntityList::ptr shells = l->SbsmBoundary();
 	const SurfaceStyle* collective_style = get_style(l);
-	for( IfcUtil::IfcAbstractSelect::list::it it = shells->begin(); it != shells->end(); ++ it ) {
+	for( IfcEntityList::it it = shells->begin(); it != shells->end(); ++ it ) {
 		TopoDS_Shape s;
 		const SurfaceStyle* shell_style = 0;
 		if ((*it)->is(IfcSchema::Type::IfcRepresentationItem)) {
@@ -272,8 +272,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	TopoDS_Shape s1, s2;
 	IfcRepresentationShapeItems items1, items2;
 	TopoDS_Wire boundary_wire;
-	IfcSchema::IfcBooleanOperand operand1 = l->FirstOperand();
-	IfcSchema::IfcBooleanOperand operand2 = l->SecondOperand();
+	IfcSchema::IfcBooleanOperand* operand1 = l->FirstOperand();
+	IfcSchema::IfcBooleanOperand* operand2 = l->SecondOperand();
 	bool is_halfspace = operand2->is(IfcSchema::Type::IfcHalfSpaceSolid);
 
 	if ( is_shape_collection(operand1) ) {
@@ -467,7 +467,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 		gtrsf = (gp_Trsf) trsf_2d;
 	}
 	IfcSchema::IfcRepresentationMap* map = l->MappingSource();
-	IfcSchema::IfcAxis2Placement placement = map->MappingOrigin();
+	IfcSchema::IfcAxis2Placement* placement = map->MappingOrigin();
 	gp_Trsf trsf;
 	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
 		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
@@ -506,12 +506,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShapeRepresentation* l, IfcRep
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresentationShapeItems& shapes) {
-	IfcUtil::IfcAbstractSelect::list::ptr elements = l->Elements();
+	IfcEntityList::ptr elements = l->Elements();
 	if ( !elements->Size() ) return false;
 	bool part_succes = false;
 	const IfcGeom::SurfaceStyle* parent_style = get_style(l);
-	for ( IfcUtil::IfcAbstractSelect::list::it it = elements->begin(); it != elements->end(); ++ it ) {
-		IfcSchema::IfcGeometricSetSelect element = *it;
+	for ( IfcEntityList::it it = elements->begin(); it != elements->end(); ++ it ) {
+		IfcSchema::IfcGeometricSetSelect* element = *it;
 		if (element->is(IfcSchema::Type::IfcSurface)) {
 			IfcSchema::IfcSurface* surface = (IfcSchema::IfcSurface*) element;
 			TopoDS_Shape s;

@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -16,66 +16,109 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
- 
- /********************************************************************************
- *                                                                               *
- * Reads a file in chunks of BUF_SIZE and provides functions to access its       *
- * contents randomly and character by character                                  *
- *                                                                               *
- ********************************************************************************/
- 
+
 #ifndef IFCFILE_H
 #define IFCFILE_H
 
-#include <fstream>
-#include <string>
+#include <map>
 
-// As of IfcOpenShell version 0.3.0 the paging functionality, which
-// loads a file on disk into multiple chunks, has been disabled.
-// It proved to be an inefficient way of working with large files,
-// as often these did not facilitate to be parsed in a sequential 
-// manner efficiently. To enable the paging functionality uncomment
-// the following statement.
-// #define BUF_SIZE (8 * 1024 * 1024)
+#include "../ifcparse/IfcParse.h"
 
 namespace IfcParse {
-	/// The IfcSpfStream class represents a ISO 10303-21 IFC-SPF file in memory.
-	/// The file is interpreted as a sequence of tokens which are lazily
-	/// interpreted only when requested. If the size of the file is
-	/// larger than BUF_SIZE, the file is split into seperate pages, of
-	/// which only one is simultaneously kept in memory, for files
-	/// that define their entities not in a sequential nature, this is
-	/// detrimental for the performance of the parser.
-	class IfcSpfStream {
-	private:
-		FILE* stream;
-		char* buffer;
-		unsigned int ptr;
-		unsigned int len;
-		void ReadBuffer(bool inc=true);
-#ifdef BUF_SIZE
-		unsigned int offset;
-		bool paging;
-#endif
-	public:
-		bool valid;
-		bool eof;
-		unsigned int size;
-		IfcSpfStream(const std::string& fn);
-		IfcSpfStream(std::istream& f, int len);
-		IfcSpfStream(void* data, int len);
-		/// Returns the character at the cursor 
-		char Peek();
-		/// Returns the character at specified offset
-		char Read(unsigned int offset);
-		/// Increment the file cursor and reads new page if necessary
-		void Inc();
-		void Close();
-		/// Moves the file cursor to an arbitrary offset in the file
-		void Seek(unsigned int offset);
-		/// Returns the cursor position
-		unsigned int Tell();
-	};
+
+/// This class provides several static convenience functions and variables
+/// and provide access to the entities in an IFC file
+class IfcFile {
+public:
+	typedef std::map<IfcSchema::Type::Enum, IfcEntityList::ptr> entities_by_type_t;
+	typedef std::map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
+	typedef std::map<std::string, IfcSchema::IfcRoot*> entity_by_guid_t;
+	typedef std::map<unsigned int, IfcEntityList::ptr> entities_by_ref_t;
+	typedef std::map<unsigned int, unsigned int> offset_by_id_t;
+	typedef entity_by_id_t::const_iterator const_iterator;
+private:
+	bool _create_latebound_entities;
+
+	entity_by_id_t byid;
+	entities_by_type_t bytype;
+	entities_by_ref_t byref;
+	entity_by_guid_t byguid;
+	offset_by_id_t offsets;
+
+	unsigned int lastId;
+	unsigned int MaxId;
+
+	std::string _filename;
+	std::string _timestamp;
+	std::string _author;
+	std::string _author_email;
+	std::string _author_organisation;
+
+	void initTimestamp();
+public:
+	IfcParse::Tokens* tokens;
+	IfcParse::IfcSpfStream* stream;
+	
+	IfcFile(bool create_latebound_entities = false);
+	~IfcFile();
+	
+	/// Returns the first entity in the file, this probably is the entity with the lowest id (EXPRESS ENTITY_INSTANCE_NAME)
+	const_iterator begin() const;
+	/// Returns the last entity in the file, this probably is the entity with the highes id (EXPRESS ENTITY_INSTANCE_NAME)
+	const_iterator end() const;
+	
+	/// Returns all entities in the file that match the template argument.
+	/// NOTE: This also returns subtypes of the requested type, for example:
+	/// IfcWall will also return IfcWallStandardCase entities
+	template <class T>
+	typename T::list::ptr EntitiesByType() {
+		IfcEntityList::ptr e = EntitiesByType(T::Class());
+		typename T::list::ptr l(new typename T::list);
+		if (e && e->Size()) {
+			for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {
+				l->push((T*)*it);
+			}
+		}
+		return l;
+	}
+
+	/// Returns all entities in the file that match the positional argument.
+	/// NOTE: This also returns subtypes of the requested type, for example:
+	/// IfcWall will also return IfcWallStandardCase entities
+	IfcEntityList::ptr EntitiesByType(IfcSchema::Type::Enum t);
+	/// Returns all entities in the file that match the positional argument.
+	/// NOTE: This also returns subtypes of the requested type, for example:
+	/// IfcWall will also return IfcWallStandardCase entities
+	IfcEntityList::ptr EntitiesByType(const std::string& t);
+	/// Returns all entities in the file that reference the id
+	IfcEntityList::ptr EntitiesByReference(int id);
+	/// Returns the entity with the specified id
+	IfcUtil::IfcBaseClass* EntityById(int id);
+	/// Returns the entity with the specified GlobalId
+	IfcSchema::IfcRoot* EntityByGuid(const std::string& guid);
+
+	bool Init(const std::string& fn);
+	bool Init(std::istream& fn, int len);
+	bool Init(void* data, int len);
+	bool Init(IfcParse::IfcSpfStream* f);
+
+	unsigned int FreshId() { MaxId ++; return MaxId; }
+
+	void AddEntity(IfcUtil::IfcBaseClass* entity);
+	void AddEntities(IfcEntityList::ptr es);
+
+	void filename(const std::string& s);
+	std::string filename() const;
+	void timestamp(const std::string& s);
+	std::string timestamp() const;
+	void author(const std::string& name, const std::string& email, const std::string& organisation);
+	std::string authorName() const;
+	std::string authorEmail() const;
+	std::string authorOrganisation() const;
+
+	bool create_latebound_entities() const { return _create_latebound_entities; }
+};
+
 }
 
 #endif

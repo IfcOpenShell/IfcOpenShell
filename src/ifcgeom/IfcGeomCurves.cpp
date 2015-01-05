@@ -86,7 +86,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)&
 		return false;
 	}
 	gp_Trsf trsf;
-	IfcSchema::IfcAxis2Placement placement = l->Position();
+	IfcSchema::IfcAxis2Placement* placement = l->Position();
 	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
 		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
@@ -111,7 +111,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)
 	// when creating a trimmed curve off of an ellipse like this.
 	const bool rotated = y > x;
 	gp_Trsf trsf;
-	IfcSchema::IfcAxis2Placement placement = l->Position();
+	IfcSchema::IfcAxis2Placement* placement = l->Position();
 	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
 		convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {

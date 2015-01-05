@@ -62,11 +62,13 @@ bpy.types.Object.ifc_type = StringProperty(name="IFC Entity Type",
     description="The STEP Datatype keyword")
 
 
-def import_ifc(filename, use_names, process_relations):
+def import_ifc(filename, use_names, process_relations, blender_booleans):
     from . import ifcopenshell
+    from .ifcopenshell import geom as ifcopenshell_geom
     print("Reading %s..."%bpy.path.basename(filename))
-    settings = ifcopenshell.IteratorSettings()
-    iterator = ifcopenshell.Iterator(settings, filename)
+    settings = ifcopenshell_geom.settings()
+    settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, blender_booleans)
+    iterator = ifcopenshell_geom.iterator(settings, filename)
     valid_file = iterator.findContext()
     if not valid_file:
         return False
@@ -74,6 +76,7 @@ def import_ifc(filename, use_names, process_relations):
     id_to_object = {}
     id_to_parent = {}
     id_to_matrix = {}
+    openings = []
     old_progress = -1
     print("Creating geometry...")
     while True:
@@ -139,14 +142,19 @@ def import_ifc(filename, use_names, process_relations):
         bob.ifc_id, bob.ifc_guid, bob.ifc_name, bob.ifc_type = \
             ob.id, ob.guid, ob.name, ob.type
 
-        bob.hide = ob.type == 'IfcSpace' or ob.type == 'IfcOpeningElement'
-        bob.hide_render = bob.hide
+        if ob.type == 'IfcSpace' or ob.type == 'IfcOpeningElement':
+            if not (ob.type == 'IfcOpeningElement' and blender_booleans):
+                bob.hide = bob.hide_render = True
+            bob.draw_type = 'WIRE'
         
         if ob.id not in id_to_object: id_to_object[ob.id] = []
         id_to_object[ob.id].append(bob)
 
         if ob.parent_id > 0:
             id_to_parent[ob.id] = ob.parent_id
+            
+        if blender_booleans and ob.type == 'IfcOpeningElement':
+            openings.append(ob.id)
             
         faces = me.polygons if hasattr(me, 'polygons') else me.faces
         if len(faces) == len(matids):
@@ -173,11 +181,11 @@ def import_ifc(filename, use_names, process_relations):
         if parent_id in id_to_object:
             bob = id_to_object[parent_id][0]
         else:
-            parent_ob = iterator.GetObject(parent_id)
+            parent_ob = iterator.getObject(parent_id)
             if parent_ob.id == -1:
                 bob = None
             else:
-                m = parent_ob.matrix
+                m = parent_ob.transformation.matrix.data
                 nm = parent_ob.name if len(parent_ob.name) and use_names \
                     else parent_ob.guid
                 bob = bpy.data.objects.new(nm, None)
@@ -219,7 +227,16 @@ def import_ifc(filename, use_names, process_relations):
             
     if process_relations:
         print("Done processing relations")
-    
+        
+    for opening_id in openings:
+        parent_id = id_to_parent[opening_id]
+        if parent_id in id_to_object:
+            parent_ob = id_to_object[parent_id][0]
+            for opening_ob in id_to_object[opening_id]:
+                mod = parent_ob.modifiers.new("opening", "BOOLEAN")
+                mod.operation = "DIFFERENCE"
+                mod.object = opening_ob
+        
     txt = bpy.data.texts.new("%s.log"%bpy.path.basename(filename))
     txt.from_string(iterator.getLog())
 
@@ -241,9 +258,13 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
             " relations to parenting" \
             " (warning: may be slow on large files)",
         default=False)
+    blender_booleans = BoolProperty(name="Use Blender booleans",
+        description="Use Blender boolean modifiers for opening" \
+            " elements",
+        default=False)
 
     def execute(self, context):
-        if not import_ifc(self.filepath, self.use_names, self.process_relations):
+        if not import_ifc(self.filepath, self.use_names, self.process_relations, self.blender_booleans):
             self.report({'ERROR'},
                 'Unable to parse .ifc file or no geometrical entities found'
             )

@@ -17,8 +17,11 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "IfcUtil.h"
 #include <iostream>
+
+#include "../ifcparse/IfcException.h"
+
+#include "IfcUtil.h"
 
 void IfcEntityList::push(IfcUtil::IfcBaseClass* l) {
 	if ( l ) ls.push_back(l);
@@ -49,19 +52,10 @@ IfcEntityList::ptr IfcEntityList::getInverse(IfcSchema::Type::Enum c, int ar, co
 	return l;
 }
  
-bool IfcUtil::IfcEntitySelect::is(IfcSchema::Type::Enum v) const { return entity->is(v); }
-IfcSchema::Type::Enum IfcUtil::IfcEntitySelect::type() const { return entity->type(); }
-IfcUtil::IfcEntitySelect::IfcEntitySelect(IfcBaseClass* b) { entity = b->entity; }
-IfcUtil::IfcEntitySelect::IfcEntitySelect(IfcAbstractEntity* e) { entity = e; }
-bool IfcUtil::IfcEntitySelect::isSimpleType() { return false; }
-IfcUtil::IfcEntitySelect::~IfcEntitySelect() { delete entity; }
 
-bool IfcUtil::IfcArgumentSelect::is(IfcSchema::Type::Enum v) const { return _type == v; }
-IfcSchema::Type::Enum IfcUtil::IfcArgumentSelect::type() const { return _type; }
-IfcUtil::IfcArgumentSelect::IfcArgumentSelect(IfcSchema::Type::Enum t, Argument* a) { _type = t; arg = a; }
-Argument* IfcUtil::IfcArgumentSelect::wrappedValue() { return arg; }
-bool IfcUtil::IfcArgumentSelect::isSimpleType() { return true; }
-IfcUtil::IfcArgumentSelect::~IfcArgumentSelect() { delete arg; }
+unsigned int IfcUtil::IfcBaseType::getArgumentCount() const { return 1; }
+Argument* IfcUtil::IfcBaseType::getArgument(unsigned int i) const { return entity->getArgument(i); }
+const char* IfcUtil::IfcBaseType::getArgumentName(unsigned int i) const { if (i == 0) { return "wrappedValue"; } else { throw IfcParse::IfcException("argument out of range"); } }
 
 void Logger::SetOutput(std::ostream* l1, std::ostream* l2) { 
 	log1 = l1; 
@@ -99,3 +93,24 @@ std::ostream* Logger::log2 = 0;
 std::stringstream Logger::log_stream;
 Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
 const char* Logger::severity_strings[] = { "Notice","Warning","Error" };
+
+static const char* const argument_type_string[] = {
+	"NULL",
+	"DERIVED",
+	"INT",
+	"BOOL",
+	"DOUBLE",
+	"STRING", 
+	"VECTOR_INT", 
+	"VECTOR_DOUBLE", 
+	"VECTOR_STRING", 
+	"ENUMERATION", 
+	"ENTITY", 
+	"ENTITY_LIST", 
+	"ENTITY_LIST_LIST", 
+	"UNKNOWN"
+};
+
+const char* IfcUtil::ArgumentTypeToString(ArgumentType argument_type) {
+	return argument_type_string[static_cast<int>(argument_type)];
+}
