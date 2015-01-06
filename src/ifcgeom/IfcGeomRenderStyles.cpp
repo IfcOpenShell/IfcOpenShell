@@ -101,7 +101,7 @@ const IfcGeom::SurfaceStyle* IfcGeom::get_style(Ifc2x3::IfcRepresentationItem* i
 				if (roughness >= 1e-9) {
 					surface_style.Specularity().reset(1.0 / roughness);
 				}
-			} else if (highlight->is(Ifc2x3::Type::IfcSpecularRoughness)) {
+			} else if (highlight->is(Ifc2x3::Type::IfcSpecularExponent)) {
 				surface_style.Specularity().reset(*highlight->wrappedValue());
 			}
 		}
