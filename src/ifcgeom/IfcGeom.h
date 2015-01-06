@@ -123,7 +123,6 @@ public:
 	void setValue(GeomValue var, double value);
 	double getValue(GeomValue var);
 	bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
-	IfcSchema::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es);
 	void remove_redundant_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
@@ -178,6 +177,8 @@ public:
 #include "IfcRegisterGeomHeader.h"
 
 };
+
+IfcSchema::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es);
 
 }
 #endif

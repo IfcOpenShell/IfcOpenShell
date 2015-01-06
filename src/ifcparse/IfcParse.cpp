@@ -750,7 +750,6 @@ IfcFile::IfcFile(bool create_latebound_entities)
 //
 // Parses the IFC file in fn
 // Creates the maps
-// Gets the unit definitins from the file
 //
 bool IfcFile::Init(const std::string& fn) {
 	return IfcFile::Init(new IfcSpfStream(fn));

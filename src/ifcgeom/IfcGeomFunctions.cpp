@@ -567,7 +567,7 @@ double IfcGeom::Kernel::getValue(GeomValue var) {
 	return 0;
 }
 
-IfcSchema::IfcProductDefinitionShape* IfcGeom::Kernel::tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es) {
+IfcSchema::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es) {
 	BRepMesh::Mesh(shape, deflection);
 
 	IfcSchema::IfcFace::list::ptr faces (new IfcSchema::IfcFace::list);
