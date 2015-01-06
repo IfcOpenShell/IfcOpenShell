@@ -183,7 +183,16 @@ namespace IfcGeom {
 			}
 
 			if (any_precision_encountered) {
-				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, lowest_precision_encountered);
+				// Some arbitrary factor that has proven to work better for the models in the set of test files.
+				lowest_precision_encountered *= 10.;
+
+				lowest_precision_encountered *= unit_magnitude;
+				if (lowest_precision_encountered < 1.e-7) {
+					Logger::Message(Logger::LOG_WARNING, "Precision lower than 0.0000001 meter not enforced");
+					kernel.setValue(IfcGeom::Kernel::GV_PRECISION, 1.e-7);
+				} else {
+					kernel.setValue(IfcGeom::Kernel::GV_PRECISION, lowest_precision_encountered);
+				}
 			} else {
 				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, 1.e-5);
 			}

@@ -242,12 +242,16 @@
 				context = subcontext->ParentContext();
 			}
 
-			double precision = 1.e-5;
+			double precision = 1.e-6;
 			if (context->hasPrecision()) {
 				precision = context->Precision();
 			}
 			std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 			precision *= length_unit.second;
+
+			// Some arbitrary factor that has proven to work better for the models in the set of test files.
+			precision *= 10.;
+
 			kernel.setValue(IfcGeom::Kernel::GV_PRECISION, precision);
 			
 			IfcGeom::BRepElement<double>* brep = kernel.create_brep_for_representation_and_product<double>(settings, representation, product);
