@@ -43,8 +43,7 @@ def create_shape(settings, inst):
 
 def iterate(settings, filename):
     it = iterator(settings, filename)
-    if not it.findContext(): return None
-    while True:
-        yield it.get()
-        if not it.next(): break
-
+    if it.findContext():
+        while True:
+            yield it.get()
+            if not it.next(): break
