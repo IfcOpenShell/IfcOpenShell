@@ -60,29 +60,14 @@ IfcWritableEntity::IfcWritableEntity(IfcAbstractEntity* e)
 		writemask[i] = false;
 	}
 }
-// TODO: Reove redundancy with IfcParse::Entity
-IfcEntityList::ptr IfcWritableEntity::getInverse(IfcSchema::Type::Enum c) {
-	IfcEntityList::ptr l = IfcEntityList::ptr(new IfcEntityList);
-	int id = _id ? *_id : setId();
-	IfcEntityList::ptr all = file->EntitiesByReference(id);
-	if ( ! all ) return l;
-	for( IfcEntityList::it it = all->begin(); it != all->end();++  it  ) {
-		if ( c == IfcSchema::Type::ALL || (*it)->is(c) ) {
-			l->push(*it);
-		}
+
+IfcEntityList::ptr IfcWritableEntity::getInverse(IfcSchema::Type::Enum type, int attribute_index) {
+	if (file) {
+		int id = _id ? *_id : setId();
+		return file->getInverse(id, type, attribute_index);
+	} else {
+		throw IfcParse::IfcException("Instance not part of a file");
 	}
-	return l;
-}
-IfcEntityList::ptr IfcWritableEntity::getInverse(IfcSchema::Type::Enum c, int i, const std::string& a) {
-	IfcEntityList::ptr l = IfcEntityList::ptr(new IfcEntityList);
-	IfcEntityList::ptr all = getInverse(c);
-	for( IfcEntityList::it it = all->begin(); it != all->end();++ it  ) {
-		const std::string s = *(*it)->entity->getArgument(i);
-		if ( s == a ) {
-			l->push(*it);
-		}
-	}
-	return l;
 }
 
 std::string IfcWritableEntity::datatype() const { return IfcSchema::Type::ToString(_type); }
@@ -194,8 +179,8 @@ public:
 	int operator()(const std::vector<std::string>& i) const { return i.size(); }
 	int operator()(const IfcWriteArgument::EnumerationReference& i) const { return -1; }
 	int operator()(const IfcUtil::IfcBaseClass* const& i) const { return -1; }
-	int operator()(const IfcEntityList::ptr& i) const { return i->Size(); }
-	int operator()(const IfcEntityListList::ptr& i) const { return i->Size(); }
+	int operator()(const IfcEntityList::ptr& i) const { return i->size(); }
+	int operator()(const IfcEntityListList::ptr& i) const { return i->size(); }
 };
 
 class StringBuilderVisitor : public boost::static_visitor<void> {
@@ -310,7 +295,7 @@ std::string IfcWriteArgument::toString(bool upper) const {
 	container.apply_visitor(v);
 	return v;
 }
-unsigned int IfcWriteArgument::Size() const {
+unsigned int IfcWriteArgument::size() const {
 	SizeVisitor v;
 	const int size = container.apply_visitor(v);
 	if (size == -1) {
@@ -324,8 +309,7 @@ IfcUtil::ArgumentType IfcWriteArgument::type() const {
 	return static_cast<IfcUtil::ArgumentType>(container.which());
 }
 
-IfcEntityList::ptr IfcSelectHelperEntity::getInverse(IfcSchema::Type::Enum,int,const std::string &) {throw IfcParse::IfcException("Invalid cast");}
-IfcEntityList::ptr IfcSelectHelperEntity::getInverse(IfcSchema::Type::Enum) {throw IfcParse::IfcException("Invalid cast");}
+IfcEntityList::ptr IfcSelectHelperEntity::getInverse(IfcSchema::Type::Enum, int) {throw IfcParse::IfcException("Invalid cast");}
 std::string IfcSelectHelperEntity::datatype() const { return IfcSchema::Type::ToString(_type); }
 Argument* IfcSelectHelperEntity::getArgument(unsigned int i) {
 	if ( i != 0 ) throw IfcParse::IfcException("Invalid cast");

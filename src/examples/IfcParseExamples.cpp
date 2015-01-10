@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
 	// defined for the window in question before accessing them.
 	IfcBuildingElement::list::ptr elements = file.EntitiesByType<IfcBuildingElement>();
 
-	std::cout << "Found " << elements->Size() << " elements in " << argv[1] << ":" << std::endl;
+	std::cout << "Found " << elements->size() << " elements in " << argv[1] << ":" << std::endl;
 	
 	for ( IfcBuildingElement::list::it it = elements->begin(); it != elements->end(); ++ it ) {
 		

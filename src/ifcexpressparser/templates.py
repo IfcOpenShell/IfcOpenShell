@@ -392,7 +392,7 @@ get_attr_stmt_entity = "return (%(type)s)((IfcUtil::IfcBaseClass*)(*entity->getA
 get_attr_stmt_array = "IfcEntityList::ptr es = *entity->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
 get_attr_stmt_nested_array = "IfcEntityListList::ptr es = *entity->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
 
-get_inverse = "return entity->getInverse(Type::%(type)s)->as<%(type)s>();"
+get_inverse = "return entity->getInverse(Type::%(type)s, %(index)d)->as<%(type)s>();"
 
 set_attr_stmt = "if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(%(index)d,v);"
 set_attr_stmt_enum = "if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(%(index)d,v,%(type)s::ToString(v));"

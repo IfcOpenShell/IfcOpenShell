@@ -75,28 +75,25 @@ public:
 	/// IfcWall will also return IfcWallStandardCase entities
 	template <class T>
 	typename T::list::ptr EntitiesByType() {
-		IfcEntityList::ptr e = EntitiesByType(T::Class());
-		typename T::list::ptr l(new typename T::list);
-		if (e && e->Size()) {
-			for ( IfcEntityList::it it = e->begin(); it != e->end(); ++ it ) {
-				l->push((T*)*it);
-			}
-		}
-		return l;
+		return EntitiesByType(T::Class())->as<T>();
 	}
 
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
 	IfcEntityList::ptr EntitiesByType(IfcSchema::Type::Enum t);
+
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
 	IfcEntityList::ptr EntitiesByType(const std::string& t);
+
 	/// Returns all entities in the file that reference the id
 	IfcEntityList::ptr EntitiesByReference(int id);
+
 	/// Returns the entity with the specified id
 	IfcUtil::IfcBaseClass* EntityById(int id);
+
 	/// Returns the entity with the specified GlobalId
 	IfcSchema::IfcRoot* EntityByGuid(const std::string& guid);
 
@@ -105,7 +102,9 @@ public:
 	bool Init(void* data, int len);
 	bool Init(IfcParse::IfcSpfStream* f);
 
-	unsigned int FreshId() { MaxId ++; return MaxId; }
+	IfcEntityList::ptr getInverse(int instance_id, IfcSchema::Type::Enum type, int attribute_index);
+
+	unsigned int FreshId() { return ++MaxId; }
 
 	void AddEntity(IfcUtil::IfcBaseClass* entity);
 	void AddEntities(IfcEntityList::ptr es);

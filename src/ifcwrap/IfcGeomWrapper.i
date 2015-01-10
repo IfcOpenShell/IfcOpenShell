@@ -203,7 +203,7 @@
 			IfcParse::IfcFile* file = instance->entity->file;
 			
 			IfcSchema::IfcProject::list::ptr projects = file->EntitiesByType<IfcSchema::IfcProject>();
-			if (projects->Size() != 1) {
+			if (projects->size() != 1) {
 				throw IfcParse::IfcException("Not a single IfcProject instance");
 			}
 			IfcSchema::IfcProject* project = *projects->begin();

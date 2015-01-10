@@ -111,7 +111,7 @@ namespace IfcGeom {
 
 		void initUnits() {
 			IfcSchema::IfcProject::list::ptr projects = ifc_file->EntitiesByType<IfcSchema::IfcProject>();
-			if (projects->Size() == 1) {
+			if (projects->size() == 1) {
 				IfcSchema::IfcProject* project = *projects->begin();
 				std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 				unit_name = length_unit.first;
@@ -162,7 +162,7 @@ namespace IfcGeom {
 				}
 			}
 
-			if (filtered_contexts->Size() == 0) {
+			if (filtered_contexts->size() == 0) {
 				filtered_contexts = contexts;
 			}
 
@@ -197,7 +197,7 @@ namespace IfcGeom {
 				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, 1.e-5);
 			}
 
-			if (representations->Size() == 0) return false;
+			if (representations->size() == 0) return false;
 
 			representation_iterator = representations->begin();
 			entities.reset();
@@ -207,7 +207,7 @@ namespace IfcGeom {
 			}
 
 			done = 0;
-			total = representations->Size();
+			total = representations->size();
 
 			return true;
 		}
@@ -267,14 +267,14 @@ namespace IfcGeom {
 
 							// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
 							// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
-							IfcEntityList::ptr products = (*it)->entity->getInverse(IfcSchema::Type::IfcProduct);
+							IfcEntityList::ptr products = (*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1);
 							for ( IfcEntityList::it it = products->begin(); it != products->end(); ++ it ) {
 								entities->push((IfcSchema::IfcProduct*)*it);
 							}
 						}
 					}
 					// Does this representation have any IfcProducts?
-					if ( ! entities->Size() ) {
+					if ( ! entities->size() ) {
 						_nextShape();
 						continue;
 					}

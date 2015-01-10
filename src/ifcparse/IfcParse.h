@@ -139,7 +139,7 @@ namespace IfcParse {
 		operator IfcUtil::IfcBaseClass*() const;
 		operator IfcEntityList::ptr() const;
         operator IfcEntityListList::ptr() const;
-		unsigned int Size() const;
+		unsigned int size() const;
 		Argument* operator [] (unsigned int i) const;
 		std::string toString(bool upper=false) const;
 		bool isNull() const;
@@ -167,7 +167,7 @@ namespace IfcParse {
 		operator IfcUtil::IfcBaseClass*() const;
 		operator IfcEntityList::ptr() const;
         operator IfcEntityListList::ptr() const;
-		unsigned int Size() const;
+		unsigned int size() const;
 		Argument* operator [] (unsigned int i) const;
 		std::string toString(bool upper=false) const;
 		bool isNull() const;
@@ -195,7 +195,7 @@ namespace IfcParse {
 		operator IfcUtil::IfcBaseClass*() const;
 		operator IfcEntityList::ptr() const;
         operator IfcEntityListList::ptr() const;
-		unsigned int Size() const;
+		unsigned int size() const;
 		Argument* operator [] (unsigned int i) const;
 		std::string toString(bool upper=false) const;
 		bool isNull() const;
@@ -216,8 +216,7 @@ namespace IfcParse {
 		Entity(unsigned int i, IfcFile* t);
 		Entity(unsigned int i, IfcFile* t, unsigned int o);
 		~Entity();
-		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum c = IfcSchema::Type::ALL);
-		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum c, int i, const std::string& a);
+		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index);
 		void Load(std::vector<unsigned int>& ids, bool seek=false) const;
 		Argument* getArgument (unsigned int i);
 		unsigned int getArgumentCount() const;

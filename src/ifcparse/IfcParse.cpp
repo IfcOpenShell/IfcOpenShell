@@ -521,7 +521,7 @@ ArgumentList::operator IfcEntityListList::ptr() const {
 	}
 	return l;
 }
-unsigned int ArgumentList::Size() const { return (unsigned int) list.size(); }
+unsigned int ArgumentList::size() const { return (unsigned int) list.size(); }
 Argument* ArgumentList::operator [] (unsigned int i) const {
 	if ( i >= list.size() ) 
 		throw IfcException("Argument index out of range");
@@ -576,7 +576,7 @@ TokenArgument::operator std::vector<std::string>() const { throw IfcException("A
 TokenArgument::operator IfcUtil::IfcBaseClass*() const { return token.first->file->EntityById(TokenFunc::asInt(token)); }
 TokenArgument::operator IfcEntityList::ptr() const { throw IfcException("Argument is not a list of entities"); }
 TokenArgument::operator IfcEntityListList::ptr() const { throw IfcException("Argument is not a list of entity lists"); }
-unsigned int TokenArgument::Size() const { return 1; }
+unsigned int TokenArgument::size() const { return 1; }
 Argument* TokenArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
 std::string TokenArgument::toString(bool upper) const { 
 	if ( upper && TokenFunc::isString(token) ) {
@@ -605,7 +605,7 @@ EntityArgument::operator IfcUtil::IfcBaseClass*() const { return entity; }
 //EntityArgument::operator IfcUtil::IfcAbstractSelect::ptr() const { return entity; }
 EntityArgument::operator IfcEntityList::ptr() const { throw IfcException("Argument is not a list of entities"); }
 EntityArgument::operator IfcEntityListList::ptr() const { throw IfcException("Argument is not a list of entity lists"); }
-unsigned int EntityArgument::Size() const { return 1; }
+unsigned int EntityArgument::size() const { return 1; }
 Argument* EntityArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
 std::string EntityArgument::toString(bool upper) const { 
 	return entity->entity->toString(upper);
@@ -652,7 +652,7 @@ unsigned int Entity::getArgumentCount() const {
 		std::vector<unsigned int> ids;
 		Load(ids, true);
 	}
-	return args->Size();
+	return args->size();
 }
 
 //
@@ -706,30 +706,12 @@ Entity::~Entity() {
 }
 
 //
-// Returns the entities of type c that have this entity in their ArgumentList
+// Returns the entities of Entity type that have this entity in their ArgumentList
 //
-IfcEntityList::ptr Entity::getInverse(IfcSchema::Type::Enum c) {
-	IfcEntityList::ptr l = IfcEntityList::ptr(new IfcEntityList());
-	IfcEntityList::ptr all = file->EntitiesByReference(_id);
-	if ( ! all ) return l;
-	for( IfcEntityList::it it = all->begin(); it != all->end();++  it  ) {
-		if ( c == IfcSchema::Type::ALL || (*it)->is(c) ) {
-			l->push(*it);
-		}
-	}
-	return l;
+IfcEntityList::ptr Entity::getInverse(IfcSchema::Type::Enum type, int attribute_index) {
+	return file->getInverse(_id, type, attribute_index);
 }
-IfcEntityList::ptr Entity::getInverse(IfcSchema::Type::Enum c, int i, const std::string& a) {
-	IfcEntityList::ptr l = IfcEntityList::ptr(new IfcEntityList());
-	IfcEntityList::ptr all = getInverse(c);
-	for( IfcEntityList::it it = all->begin(); it != all->end();++ it  ) {
-		const std::string s = *(*it)->entity->getArgument(i);
-		if ( s == a ) {
-			l->push(*it);
-		}
-	}
-	return l;
-}
+
 bool Entity::is(IfcSchema::Type::Enum v) const { return _type == v; }
 unsigned int Entity::id() { return _id; }
 
@@ -1067,4 +1049,33 @@ void IfcFile::initTimestamp() {
 	if (strftime(buf,255,"%Y-%m-%dT%H:%M:%S",ti)) {
 		_timestamp = std::string(buf);
 	}
+}
+
+IfcEntityList::ptr IfcFile::getInverse(int instance_id, IfcSchema::Type::Enum type, int attribute_index) {
+	IfcUtil::IfcBaseClass* instance = EntityById(instance_id);
+
+	IfcEntityList::ptr l = IfcEntityList::ptr(new IfcEntityList);
+	IfcEntityList::ptr all = EntitiesByReference(instance_id);
+	if (!all) return l;
+
+	for(IfcEntityList::it it = all->begin(); it != all->end(); ++it) {
+		bool valid = type == IfcSchema::Type::ALL || (*it)->is(type);
+		if (valid && attribute_index >= 0) {
+			Argument* arg = (*it)->entity->getArgument(attribute_index);
+			if (arg->type() == IfcUtil::Argument_ENTITY) {
+				valid = instance == *arg;
+			} else if (arg->type() == IfcUtil::Argument_ENTITY_LIST) {
+				IfcEntityList::ptr li = *arg;
+				valid = li->contains(instance);
+			} else if (arg->type() == IfcUtil::Argument_ENTITY_LIST_LIST) {
+				IfcEntityListList::ptr li = *arg;
+				valid = li->contains(instance);
+			}
+		}
+		if (valid) {
+			l->push(*it);
+		}
+	}
+
+	return l;
 }

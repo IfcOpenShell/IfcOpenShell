@@ -128,13 +128,17 @@ class Implementation:
                                                             'index' : arg['index']-1,
                                                             'stmt'  : impl}
                     constructor_implementations.append(impl)
+                    
+            def get_attribute_index(entity, attr_name):
+                related_entity = mapping.schema.entities[entity]
+                return [a['name'] for a in mapping.get_assignable_arguments(related_entity, include_derived=True)].index(attr_name)
 
             inverse = [templates.const_function % {
                 'class_name'  : name,
                 'name'        : i.name,
                 'arguments'   : '',
                 'return_type' : '%s::list::ptr' % i.entity,
-                'body'        : templates.get_inverse % {'type': i.entity}
+                'body'        : templates.get_inverse % {'type': i.entity, 'index':get_attribute_index(i.entity, i.attribute)}
             } for i in (type.inverse.elements if type.inverse else [])]
 
             superclass = "%s((IfcAbstractEntity*)0)" % type.supertypes[0] if len(type.supertypes) == 1 else 'IfcUtil::IfcBaseEntity()'

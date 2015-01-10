@@ -871,7 +871,7 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 	const std::string product_type = IfcSchema::Type::ToString(product->type());
 	ElementSettings element_settings(settings, getValue(GV_LENGTH_UNIT), product_type);
 
-	if ( !settings.disable_opening_subtractions() && openings && openings->Size() ) {
+	if ( !settings.disable_opening_subtractions() && openings && openings->size() ) {
 		IfcGeom::IfcRepresentationShapeItems opened_shapes;
 		try {
 			if ( settings.faster_booleans() ) {
@@ -921,7 +921,7 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 	if ( product->is(IfcSchema::Type::IfcOpeningElement ) ) {
 		IfcSchema::IfcOpeningElement* opening = (IfcSchema::IfcOpeningElement*)product;
 		IfcSchema::IfcRelVoidsElement::list::ptr voids = opening->VoidsElements();
-		if ( voids->Size() ) {
+		if ( voids->size() ) {
 			IfcSchema::IfcRelVoidsElement* ifc_void = *voids->begin();
 			parent = ifc_void->RelatingBuildingElement();
 		}
@@ -929,7 +929,7 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
 		IfcSchema::IfcRelFillsElement::list::ptr fills = element->FillsVoids();
 		// Incase of a RelatedBuildingElement parent to the opening element
-		if ( fills->Size() ) {
+		if ( fills->size() ) {
 			for ( IfcSchema::IfcRelFillsElement::list::it it = fills->begin(); it != fills->end(); ++ it ) {
 				IfcSchema::IfcRelFillsElement* fill = *it;
 				IfcSchema::IfcObjectDefinition* ifc_objectdef = fill->RelatingOpeningElement();
@@ -940,7 +940,7 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 		// Else simply parent to the containing structure
 		if (!parent) {
 			IfcSchema::IfcRelContainedInSpatialStructure::list::ptr parents = element->ContainedInStructure();
-			if ( parents->Size() ) {
+			if ( parents->size() ) {
 				IfcSchema::IfcRelContainedInSpatialStructure* container = *parents->begin();
 				parent = container->RelatingStructure();
 			}
@@ -948,8 +948,8 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 	}
 	// Parent decompositions to the RelatingObject
 	if (!parent) {
-		IfcEntityList::ptr parents = product->entity->getInverse(IfcSchema::Type::IfcRelAggregates);
-		parents->push(product->entity->getInverse(IfcSchema::Type::IfcRelNests));
+		IfcEntityList::ptr parents = product->entity->getInverse(IfcSchema::Type::IfcRelAggregates, -1);
+		parents->push(product->entity->getInverse(IfcSchema::Type::IfcRelNests, -1));
 		for ( IfcEntityList::it it = parents->begin(); it != parents->end(); ++ it ) {
 			IfcSchema::IfcRelDecomposes* decompose = (IfcSchema::IfcRelDecomposes*)*it;
 			IfcSchema::IfcObjectDefinition* ifc_objectdef;
@@ -982,7 +982,7 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 
 	try {
 		IfcEntityList::ptr units = unit_assignment->Units();
-		if (!units || !units->Size()) {
+		if (!units || !units->size()) {
 			Logger::Message(Logger::LOG_ERROR, "No unit information found");
 		} else {
 			for ( IfcEntityList::it it = units->begin(); it != units->end(); ++ it ) {

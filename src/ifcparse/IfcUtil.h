@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <algorithm>
 
 #include "../ifcparse/SharedPointer.h"
 
@@ -92,14 +93,13 @@ class IfcEntityList {
 public:
 	typedef SHARED_PTR<IfcEntityList> ptr;
 	typedef std::vector<IfcUtil::IfcBaseClass*>::const_iterator it;
-	ptr getInverse(IfcSchema::Type::Enum c = IfcSchema::Type::ALL);
-	ptr getInverse(IfcSchema::Type::Enum c, int i, const std::string& a);
 	void push(IfcUtil::IfcBaseClass* l);
 	void push(const ptr& l);
 	it begin();
 	it end();
 	IfcUtil::IfcBaseClass* operator[] (int i);
-	int Size() const;
+	unsigned int size() const;
+	bool contains(IfcUtil::IfcBaseClass*) const;
 	template <class U>
 	typename U::list::ptr as() {
 		typename U::list::ptr r(new typename U::list);
@@ -115,16 +115,17 @@ class IfcTemplatedEntityList {
 public:
 	typedef SHARED_PTR< IfcTemplatedEntityList<T> > ptr;
 	typedef typename std::vector<T*>::const_iterator it;
-	inline void push(T* t) {if (t) ls.push_back(t);}
-	inline void push(ptr t) { for ( typename T::list::it it = t->begin(); it != t->end(); ++it ) push(*it); }
-	inline it begin() { return ls.begin(); }
-	inline it end() { return ls.end(); }
-	inline unsigned int Size() const { return (unsigned int) ls.size(); }
+	void push(T* t) {if (t) ls.push_back(t);}
+	void push(ptr t) { for ( typename T::list::it it = t->begin(); it != t->end(); ++it ) push(*it); }
+	it begin() { return ls.begin(); }
+	it end() { return ls.end(); }
+	unsigned int size() const { return (unsigned int) ls.size(); }
 	IfcEntityList::ptr generalize() {
 		IfcEntityList::ptr r (new IfcEntityList());
 		for ( it i = begin(); i != end(); ++ i ) r->push(*i);
 		return r;
 	}
+	bool contains(T* t) const { return std::find(ls.begin(), ls.end(), t) != ls.end(); }
 	template <class U> 
 	typename U::list::ptr as() {
 		typename U::list::ptr r(new typename U::list);
@@ -153,9 +154,18 @@ public:
 		} 
 		push(li); 
 	}
-	outer_it begin() { return ls.begin(); }
-	outer_it end()  { return ls.end(); }
-	int Size() const  { return ls.size(); }
+	outer_it begin() const { return ls.begin(); }
+	outer_it end() const { return ls.end(); }
+	int size() const { return ls.size(); }
+	bool contains(IfcUtil::IfcBaseClass* instance) const {
+		for (outer_it it = begin(); it != end(); ++it) {
+			const std::vector<IfcUtil::IfcBaseClass*>& inner = *it;
+			if (std::find(inner.begin(), inner.end(), instance) != inner.end()) {
+				return true;
+			}
+		}
+		return false;
+	}
 	template <class U> 
 	typename IfcTemplatedEntityListList<U>::ptr as() {
 		typename IfcTemplatedEntityListList<U>::ptr r(new IfcTemplatedEntityListList<U>);
@@ -182,7 +192,16 @@ public:
 	void push(const std::vector<T*>& t) {ls.push_back(t);}
 	outer_it begin() { return ls.begin(); }
 	outer_it end() { return ls.end(); }
-	unsigned int Size() const { return (unsigned int) ls.size(); }
+	unsigned int size() const { return (unsigned int) ls.size(); }
+	bool contains(T* t) const {
+		for (outer_it it = begin(); it != end(); ++it) {
+			const std::vector<T*>& inner = *it;
+			if (std::find(inner.begin(), inner.end(), t) != inner.end()) {
+				return true;
+			}
+		}
+		return false;
+	}
 	IfcEntityListList::ptr generalize() {
 		IfcEntityListList::ptr r (new IfcEntityListList());
 		for (outer_it outer = begin(); outer != end(); ++ outer) {
@@ -214,7 +233,7 @@ public:
 	virtual operator IfcUtil::IfcBaseClass*() const = 0;
 	virtual operator IfcEntityList::ptr() const = 0;
     virtual operator IfcEntityListList::ptr() const = 0;
-	virtual unsigned int Size() const = 0;
+	virtual unsigned int size() const = 0;
 	virtual Argument* operator [] (unsigned int i) const = 0;
 	virtual std::string toString(bool upper=false) const = 0;
 	virtual bool isNull() const = 0;
@@ -224,8 +243,7 @@ public:
 class IfcAbstractEntity {
 public:
 	IfcParse::IfcFile* file;
-	virtual IfcEntityList::ptr getInverse(IfcSchema::Type::Enum c = IfcSchema::Type::ALL) = 0;
-	virtual IfcEntityList::ptr getInverse(IfcSchema::Type::Enum c, int i, const std::string& a) = 0;
+	virtual IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index) = 0;
 	virtual std::string datatype() const = 0;
 	virtual Argument* getArgument (unsigned int i) = 0;
 	virtual unsigned int getArgumentCount() const = 0;

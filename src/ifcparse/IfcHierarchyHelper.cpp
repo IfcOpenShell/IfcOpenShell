@@ -251,7 +251,7 @@ void IfcHierarchyHelper::addExtrudedPolyline(IfcSchema::IfcShapeRepresentation* 
 	for (std::vector<std::pair<double, double> >::const_iterator i = points.begin(); i != points.end(); ++i) {
 		cartesian_points->push(addDoublet<IfcSchema::IfcCartesianPoint>(i->first, i->second));
 	}
-	if (cartesian_points->Size()) cartesian_points->push(*cartesian_points->begin());
+	if (cartesian_points->size()) cartesian_points->push(*cartesian_points->begin());
 	IfcSchema::IfcPolyline* line = new IfcSchema::IfcPolyline(cartesian_points);
 	IfcSchema::IfcArbitraryClosedProfileDef* profile = new IfcSchema::IfcArbitraryClosedProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, boost::none, line);
@@ -466,7 +466,7 @@ IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addMappedItem(
 {
 	IfcSchema::IfcRepresentationMap::list::ptr maps = rep->RepresentationMap();
 	IfcSchema::IfcRepresentationMap* map;
-	if (maps->Size() == 1) {
+	if (maps->size() == 1) {
 		map = *maps->begin();
 	} else {
 		map = new IfcSchema::IfcRepresentationMap(addPlacement3d(), rep);

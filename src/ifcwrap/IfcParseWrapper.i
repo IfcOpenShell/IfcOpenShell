@@ -71,7 +71,7 @@
 }
 
 %typemap(out) IfcEntityList::ptr {
-	const unsigned size = $1 ? $1->Size() : 0;
+	const unsigned size = $1 ? $1->size() : 0;
 	$result = PyList_New(size);
 	for (unsigned i = 0; i < size; ++i) {
 		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*$1)[i]), SWIGTYPE_p_IfcParse__IfcLateBoundEntity, 0);
@@ -135,7 +135,7 @@
 		break; }
 		case IfcUtil::Argument_ENTITY_LIST: {
 			IfcEntityList::ptr es = arg;
-			const unsigned size = es->Size();
+			const unsigned size = es->size();
 			$result = PyList_New(size);
 			for (unsigned i = 0; i < size; ++i) {
 				PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*es)[i]), SWIGTYPE_p_IfcParse__IfcLateBoundEntity, 0);

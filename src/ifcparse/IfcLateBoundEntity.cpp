@@ -178,15 +178,7 @@ std::string IfcParse::IfcLateBoundEntity::toString() {
 }
 IfcEntityList::ptr IfcParse::IfcLateBoundEntity::get_inverse(const std::string& a) {
 	std::pair<IfcSchema::Type::Enum, unsigned> inv = IfcSchema::Type::GetInverseAttribute(_type, a);
-	IfcEntityList::ptr invs = entity->getInverse(inv.first);
-	IfcEntityList::ptr filtered(new IfcEntityList());
-	for (IfcEntityList::it it = invs->begin(); it != invs->end(); ++it) {
-		try {
-			const int id = *(*it)->entity->getArgument(inv.second);
-			if (id == this->entity->id()) { filtered->push(*it); }
-		} catch (...) {}
-	}
-	return filtered;
+	return entity->getInverse(inv.first, inv.second);
 }		
 bool IfcParse::IfcLateBoundEntity::is_valid() {
 	const unsigned arg_count = getArgumentCount();

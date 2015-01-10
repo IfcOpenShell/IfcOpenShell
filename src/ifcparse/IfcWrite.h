@@ -115,7 +115,7 @@ namespace IfcWrite {
 		bool isNull() const;
 		Argument* operator [] (unsigned int i) const;
 		std::string toString(bool upper=false) const;
-		unsigned int Size() const;
+		unsigned int size() const;
 		IfcUtil::ArgumentType type() const;
 	};
 
@@ -130,8 +130,7 @@ namespace IfcWrite {
 	public:
 		// FIXME: Make this a non-pointer argument and implement a copy constructor
 		IfcSelectHelperEntity(IfcSchema::Type::Enum t, IfcWriteArgument* a) : _type(t), arg(a) {}
-		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum,int,const std::string &);
-		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum);
+		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index);
 		std::string datatype() const;
 		Argument* getArgument(unsigned int i);
 		unsigned int getArgumentCount() const;

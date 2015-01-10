@@ -384,7 +384,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& shape) {
 	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
 	bool facesAdded = false;
-	const unsigned int num_faces = faces->Size();
+	const unsigned int num_faces = faces->size();
 	bool valid_shell = false;
 	if ( num_faces < getValue(GV_MAX_FACES_TO_SEW) ) {
 		BRepOffsetAPI_Sewing builder;
@@ -488,7 +488,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcShapeRepresentation* l, IfcRepresentationShapeItems& shapes) {
 	IfcSchema::IfcRepresentationItem::list::ptr items = l->Items();
 	bool part_succes = false;
-	if ( items->Size() ) {
+	if ( items->size() ) {
 		for ( IfcSchema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++ it ) {
 			IfcSchema::IfcRepresentationItem* representation_item = *it;
 			if ( is_shape_collection(representation_item) ) {
@@ -507,7 +507,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShapeRepresentation* l, IfcRep
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresentationShapeItems& shapes) {
 	IfcEntityList::ptr elements = l->Elements();
-	if ( !elements->Size() ) return false;
+	if ( !elements->size() ) return false;
 	bool part_succes = false;
 	const IfcGeom::SurfaceStyle* parent_style = get_style(l);
 	for ( IfcEntityList::it it = elements->begin(); it != elements->end(); ++ it ) {

@@ -59,7 +59,7 @@ public:
 	template <class T>
 	T* getSingle() {
 		typename T::list::ptr ts = EntitiesByType<T>();
-		if (ts->Size() != 1) return 0;
+		if (ts->size() != 1) return 0;
 		return *ts->begin();
 	}
 	

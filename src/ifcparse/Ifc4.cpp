@@ -7789,7 +7789,7 @@ IfcActionRequest::IfcActionRequest(std::string v1_GlobalId, IfcOwnerHistory* v2_
 // Function implementations for IfcActor
 IfcActorSelect* IfcActor::TheActor() const { return (IfcActorSelect*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(5))); }
 void IfcActor::setTheActor(IfcActorSelect* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(5,v); }
-IfcRelAssignsToActor::list::ptr IfcActor::IsActingUpon() const { return entity->getInverse(Type::IfcRelAssignsToActor)->as<IfcRelAssignsToActor>(); }
+IfcRelAssignsToActor::list::ptr IfcActor::IsActingUpon() const { return entity->getInverse(Type::IfcRelAssignsToActor, 6)->as<IfcRelAssignsToActor>(); }
 bool IfcActor::is(Type::Enum v) const { return v == Type::IfcActor || IfcObject::is(v); }
 Type::Enum IfcActor::type() const { return Type::IfcActor; }
 Type::Enum IfcActor::Class() { return Type::IfcActor; }
@@ -7805,7 +7805,7 @@ void IfcActorRole::setUserDefinedRole(std::string v) { if ( ! entity->isWritable
 bool IfcActorRole::hasDescription() const { return !entity->getArgument(2)->isNull(); }
 std::string IfcActorRole::Description() const { return *entity->getArgument(2); }
 void IfcActorRole::setDescription(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(2,v); }
-IfcExternalReferenceRelationship::list::ptr IfcActorRole::HasExternalReference() const { return entity->getInverse(Type::IfcExternalReferenceRelationship)->as<IfcExternalReferenceRelationship>(); }
+IfcExternalReferenceRelationship::list::ptr IfcActorRole::HasExternalReference() const { return entity->getInverse(Type::IfcExternalReferenceRelationship, 3)->as<IfcExternalReferenceRelationship>(); }
 bool IfcActorRole::is(Type::Enum v) const { return v == Type::IfcActorRole; }
 Type::Enum IfcActorRole::type() const { return Type::IfcActorRole; }
 Type::Enum IfcActorRole::Class() { return Type::IfcActorRole; }
@@ -7841,8 +7841,8 @@ void IfcAddress::setDescription(std::string v) { if ( ! entity->isWritable() ) {
 bool IfcAddress::hasUserDefinedPurpose() const { return !entity->getArgument(2)->isNull(); }
 std::string IfcAddress::UserDefinedPurpose() const { return *entity->getArgument(2); }
 void IfcAddress::setUserDefinedPurpose(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(2,v); }
-IfcPerson::list::ptr IfcAddress::OfPerson() const { return entity->getInverse(Type::IfcPerson)->as<IfcPerson>(); }
-IfcOrganization::list::ptr IfcAddress::OfOrganization() const { return entity->getInverse(Type::IfcOrganization)->as<IfcOrganization>(); }
+IfcPerson::list::ptr IfcAddress::OfPerson() const { return entity->getInverse(Type::IfcPerson, 7)->as<IfcPerson>(); }
+IfcOrganization::list::ptr IfcAddress::OfOrganization() const { return entity->getInverse(Type::IfcOrganization, 4)->as<IfcOrganization>(); }
 bool IfcAddress::is(Type::Enum v) const { return v == Type::IfcAddress; }
 Type::Enum IfcAddress::type() const { return Type::IfcAddress; }
 Type::Enum IfcAddress::Class() { return Type::IfcAddress; }
@@ -7949,7 +7949,7 @@ IfcAlarmType::IfcAlarmType(IfcAbstractEntity* e) : IfcDistributionControlElement
 IfcAlarmType::IfcAlarmType(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcAlarmTypeEnum::IfcAlarmTypeEnum v10_PredefinedType) : IfcDistributionControlElementType((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } if (v5_ApplicableOccurrence) { e->setArgument(4,(*v5_ApplicableOccurrence)); } else { e->setArgument(4); } if (v6_HasPropertySets) { e->setArgument(5,(*v6_HasPropertySets)->generalize()); } else { e->setArgument(5); } if (v7_RepresentationMaps) { e->setArgument(6,(*v7_RepresentationMaps)->generalize()); } else { e->setArgument(6); } if (v8_Tag) { e->setArgument(7,(*v8_Tag)); } else { e->setArgument(7); } if (v9_ElementType) { e->setArgument(8,(*v9_ElementType)); } else { e->setArgument(8); } e->setArgument(9,v10_PredefinedType,IfcAlarmTypeEnum::ToString(v10_PredefinedType)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcAnnotation
-IfcRelContainedInSpatialStructure::list::ptr IfcAnnotation::ContainedInStructure() const { return entity->getInverse(Type::IfcRelContainedInSpatialStructure)->as<IfcRelContainedInSpatialStructure>(); }
+IfcRelContainedInSpatialStructure::list::ptr IfcAnnotation::ContainedInStructure() const { return entity->getInverse(Type::IfcRelContainedInSpatialStructure, 4)->as<IfcRelContainedInSpatialStructure>(); }
 bool IfcAnnotation::is(Type::Enum v) const { return v == Type::IfcAnnotation || IfcProduct::is(v); }
 Type::Enum IfcAnnotation::type() const { return Type::IfcAnnotation; }
 Type::Enum IfcAnnotation::Class() { return Type::IfcAnnotation; }
@@ -8014,7 +8014,7 @@ void IfcAppliedValue::setArithmeticOperator(IfcArithmeticOperatorEnum::IfcArithm
 bool IfcAppliedValue::hasComponents() const { return !entity->getArgument(9)->isNull(); }
 IfcTemplatedEntityList< IfcAppliedValue >::ptr IfcAppliedValue::Components() const { IfcEntityList::ptr es = *entity->getArgument(9); return es->as<IfcAppliedValue>(); }
 void IfcAppliedValue::setComponents(IfcTemplatedEntityList< IfcAppliedValue >::ptr v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(9,v->generalize()); }
-IfcExternalReferenceRelationship::list::ptr IfcAppliedValue::HasExternalReference() const { return entity->getInverse(Type::IfcExternalReferenceRelationship)->as<IfcExternalReferenceRelationship>(); }
+IfcExternalReferenceRelationship::list::ptr IfcAppliedValue::HasExternalReference() const { return entity->getInverse(Type::IfcExternalReferenceRelationship, 3)->as<IfcExternalReferenceRelationship>(); }
 bool IfcAppliedValue::is(Type::Enum v) const { return v == Type::IfcAppliedValue; }
 Type::Enum IfcAppliedValue::type() const { return Type::IfcAppliedValue; }
 Type::Enum IfcAppliedValue::Class() { return Type::IfcAppliedValue; }
@@ -8049,11 +8049,11 @@ void IfcApproval::setRequestingApproval(IfcActorSelect* v) { if ( ! entity->isWr
 bool IfcApproval::hasGivingApproval() const { return !entity->getArgument(8)->isNull(); }
 IfcActorSelect* IfcApproval::GivingApproval() const { return (IfcActorSelect*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(8))); }
 void IfcApproval::setGivingApproval(IfcActorSelect* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(8,v); }
-IfcExternalReferenceRelationship::list::ptr IfcApproval::HasExternalReferences() const { return entity->getInverse(Type::IfcExternalReferenceRelationship)->as<IfcExternalReferenceRelationship>(); }
-IfcRelAssociatesApproval::list::ptr IfcApproval::ApprovedObjects() const { return entity->getInverse(Type::IfcRelAssociatesApproval)->as<IfcRelAssociatesApproval>(); }
-IfcResourceApprovalRelationship::list::ptr IfcApproval::ApprovedResources() const { return entity->getInverse(Type::IfcResourceApprovalRelationship)->as<IfcResourceApprovalRelationship>(); }
-IfcApprovalRelationship::list::ptr IfcApproval::IsRelatedWith() const { return entity->getInverse(Type::IfcApprovalRelationship)->as<IfcApprovalRelationship>(); }
-IfcApprovalRelationship::list::ptr IfcApproval::Relates() const { return entity->getInverse(Type::IfcApprovalRelationship)->as<IfcApprovalRelationship>(); }
+IfcExternalReferenceRelationship::list::ptr IfcApproval::HasExternalReferences() const { return entity->getInverse(Type::IfcExternalReferenceRelationship, 3)->as<IfcExternalReferenceRelationship>(); }
+IfcRelAssociatesApproval::list::ptr IfcApproval::ApprovedObjects() const { return entity->getInverse(Type::IfcRelAssociatesApproval, 5)->as<IfcRelAssociatesApproval>(); }
+IfcResourceApprovalRelationship::list::ptr IfcApproval::ApprovedResources() const { return entity->getInverse(Type::IfcResourceApprovalRelationship, 3)->as<IfcResourceApprovalRelationship>(); }
+IfcApprovalRelationship::list::ptr IfcApproval::IsRelatedWith() const { return entity->getInverse(Type::IfcApprovalRelationship, 3)->as<IfcApprovalRelationship>(); }
+IfcApprovalRelationship::list::ptr IfcApproval::Relates() const { return entity->getInverse(Type::IfcApprovalRelationship, 2)->as<IfcApprovalRelationship>(); }
 bool IfcApproval::is(Type::Enum v) const { return v == Type::IfcApproval; }
 Type::Enum IfcApproval::type() const { return Type::IfcApproval; }
 Type::Enum IfcApproval::Class() { return Type::IfcApproval; }
@@ -8525,7 +8525,7 @@ IfcBuilding::IfcBuilding(IfcAbstractEntity* e) : IfcSpatialStructureElement((Ifc
 IfcBuilding::IfcBuilding(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, boost::optional< IfcElementCompositionEnum::IfcElementCompositionEnum > v9_CompositionType, boost::optional< double > v10_ElevationOfRefHeight, boost::optional< double > v11_ElevationOfTerrain, IfcPostalAddress* v12_BuildingAddress) : IfcSpatialStructureElement((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } if (v5_ObjectType) { e->setArgument(4,(*v5_ObjectType)); } else { e->setArgument(4); } e->setArgument(5,(v6_ObjectPlacement)); e->setArgument(6,(v7_Representation)); if (v8_LongName) { e->setArgument(7,(*v8_LongName)); } else { e->setArgument(7); } if (v9_CompositionType) { e->setArgument(8,*v9_CompositionType,IfcElementCompositionEnum::ToString(*v9_CompositionType)); } else { e->setArgument(8); } if (v10_ElevationOfRefHeight) { e->setArgument(9,(*v10_ElevationOfRefHeight)); } else { e->setArgument(9); } if (v11_ElevationOfTerrain) { e->setArgument(10,(*v11_ElevationOfTerrain)); } else { e->setArgument(10); } e->setArgument(11,(v12_BuildingAddress)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcBuildingElement
-IfcRelCoversBldgElements::list::ptr IfcBuildingElement::HasCoverings() const { return entity->getInverse(Type::IfcRelCoversBldgElements)->as<IfcRelCoversBldgElements>(); }
+IfcRelCoversBldgElements::list::ptr IfcBuildingElement::HasCoverings() const { return entity->getInverse(Type::IfcRelCoversBldgElements, 4)->as<IfcRelCoversBldgElements>(); }
 bool IfcBuildingElement::is(Type::Enum v) const { return v == Type::IfcBuildingElement || IfcElement::is(v); }
 Type::Enum IfcBuildingElement::type() const { return Type::IfcBuildingElement; }
 Type::Enum IfcBuildingElement::Class() { return Type::IfcBuildingElement; }
@@ -8900,8 +8900,8 @@ void IfcClassification::setLocation(std::string v) { if ( ! entity->isWritable()
 bool IfcClassification::hasReferenceTokens() const { return !entity->getArgument(6)->isNull(); }
 std::vector< std::string > /*[1:?]*/ IfcClassification::ReferenceTokens() const { return *entity->getArgument(6); }
 void IfcClassification::setReferenceTokens(std::vector< std::string > /*[1:?]*/ v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(6,v); }
-IfcRelAssociatesClassification::list::ptr IfcClassification::ClassificationForObjects() const { return entity->getInverse(Type::IfcRelAssociatesClassification)->as<IfcRelAssociatesClassification>(); }
-IfcClassificationReference::list::ptr IfcClassification::HasReferences() const { return entity->getInverse(Type::IfcClassificationReference)->as<IfcClassificationReference>(); }
+IfcRelAssociatesClassification::list::ptr IfcClassification::ClassificationForObjects() const { return entity->getInverse(Type::IfcRelAssociatesClassification, 5)->as<IfcRelAssociatesClassification>(); }
+IfcClassificationReference::list::ptr IfcClassification::HasReferences() const { return entity->getInverse(Type::IfcClassificationReference, 3)->as<IfcClassificationReference>(); }
 bool IfcClassification::is(Type::Enum v) const { return v == Type::IfcClassification || IfcExternalInformation::is(v); }
 Type::Enum IfcClassification::type() const { return Type::IfcClassification; }
 Type::Enum IfcClassification::Class() { return Type::IfcClassification; }
@@ -8918,8 +8918,8 @@ void IfcClassificationReference::setDescription(std::string v) { if ( ! entity->
 bool IfcClassificationReference::hasSort() const { return !entity->getArgument(5)->isNull(); }
 std::string IfcClassificationReference::Sort() const { return *entity->getArgument(5); }
 void IfcClassificationReference::setSort(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(5,v); }
-IfcRelAssociatesClassification::list::ptr IfcClassificationReference::ClassificationRefForObjects() const { return entity->getInverse(Type::IfcRelAssociatesClassification)->as<IfcRelAssociatesClassification>(); }
-IfcClassificationReference::list::ptr IfcClassificationReference::HasReferences() const { return entity->getInverse(Type::IfcClassificationReference)->as<IfcClassificationReference>(); }
+IfcRelAssociatesClassification::list::ptr IfcClassificationReference::ClassificationRefForObjects() const { return entity->getInverse(Type::IfcRelAssociatesClassification, 5)->as<IfcRelAssociatesClassification>(); }
+IfcClassificationReference::list::ptr IfcClassificationReference::HasReferences() const { return entity->getInverse(Type::IfcClassificationReference, 3)->as<IfcClassificationReference>(); }
 bool IfcClassificationReference::is(Type::Enum v) const { return v == Type::IfcClassificationReference || IfcExternalReference::is(v); }
 Type::Enum IfcClassificationReference::type() const { return Type::IfcClassificationReference; }
 Type::Enum IfcClassificationReference::Class() { return Type::IfcClassificationReference; }
@@ -9079,7 +9079,7 @@ bool IfcCompositeCurveSegment::SameSense() const { return *entity->getArgument(1
 void IfcCompositeCurveSegment::setSameSense(bool v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(1,v); }
 IfcCurve* IfcCompositeCurveSegment::ParentCurve() const { return (IfcCurve*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(2))); }
 void IfcCompositeCurveSegment::setParentCurve(IfcCurve* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(2,v); }
-IfcCompositeCurve::list::ptr IfcCompositeCurveSegment::UsingCurves() const { return entity->getInverse(Type::IfcCompositeCurve)->as<IfcCompositeCurve>(); }
+IfcCompositeCurve::list::ptr IfcCompositeCurveSegment::UsingCurves() const { return entity->getInverse(Type::IfcCompositeCurve, 0)->as<IfcCompositeCurve>(); }
 bool IfcCompositeCurveSegment::is(Type::Enum v) const { return v == Type::IfcCompositeCurveSegment || IfcGeometricRepresentationItem::is(v); }
 Type::Enum IfcCompositeCurveSegment::type() const { return Type::IfcCompositeCurveSegment; }
 Type::Enum IfcCompositeCurveSegment::Class() { return Type::IfcCompositeCurveSegment; }
@@ -9245,8 +9245,8 @@ void IfcConstraint::setCreationTime(std::string v) { if ( ! entity->isWritable()
 bool IfcConstraint::hasUserDefinedGrade() const { return !entity->getArgument(6)->isNull(); }
 std::string IfcConstraint::UserDefinedGrade() const { return *entity->getArgument(6); }
 void IfcConstraint::setUserDefinedGrade(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(6,v); }
-IfcExternalReferenceRelationship::list::ptr IfcConstraint::HasExternalReferences() const { return entity->getInverse(Type::IfcExternalReferenceRelationship)->as<IfcExternalReferenceRelationship>(); }
-IfcResourceConstraintRelationship::list::ptr IfcConstraint::PropertiesForConstraint() const { return entity->getInverse(Type::IfcResourceConstraintRelationship)->as<IfcResourceConstraintRelationship>(); }
+IfcExternalReferenceRelationship::list::ptr IfcConstraint::HasExternalReferences() const { return entity->getInverse(Type::IfcExternalReferenceRelationship, 3)->as<IfcExternalReferenceRelationship>(); }
+IfcResourceConstraintRelationship::list::ptr IfcConstraint::PropertiesForConstraint() const { return entity->getInverse(Type::IfcResourceConstraintRelationship, 2)->as<IfcResourceConstraintRelationship>(); }
 bool IfcConstraint::is(Type::Enum v) const { return v == Type::IfcConstraint; }
 Type::Enum IfcConstraint::type() const { return Type::IfcConstraint; }
 Type::Enum IfcConstraint::Class() { return Type::IfcConstraint; }
@@ -9355,8 +9355,8 @@ void IfcContext::setRepresentationContexts(IfcTemplatedEntityList< IfcRepresenta
 bool IfcContext::hasUnitsInContext() const { return !entity->getArgument(8)->isNull(); }
 IfcUnitAssignment* IfcContext::UnitsInContext() const { return (IfcUnitAssignment*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(8))); }
 void IfcContext::setUnitsInContext(IfcUnitAssignment* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(8,v); }
-IfcRelDefinesByProperties::list::ptr IfcContext::IsDefinedBy() const { return entity->getInverse(Type::IfcRelDefinesByProperties)->as<IfcRelDefinesByProperties>(); }
-IfcRelDeclares::list::ptr IfcContext::Declares() const { return entity->getInverse(Type::IfcRelDeclares)->as<IfcRelDeclares>(); }
+IfcRelDefinesByProperties::list::ptr IfcContext::IsDefinedBy() const { return entity->getInverse(Type::IfcRelDefinesByProperties, 4)->as<IfcRelDefinesByProperties>(); }
+IfcRelDeclares::list::ptr IfcContext::Declares() const { return entity->getInverse(Type::IfcRelDeclares, 4)->as<IfcRelDeclares>(); }
 bool IfcContext::is(Type::Enum v) const { return v == Type::IfcContext || IfcObjectDefinition::is(v); }
 Type::Enum IfcContext::type() const { return Type::IfcContext; }
 Type::Enum IfcContext::Class() { return Type::IfcContext; }
@@ -9366,7 +9366,7 @@ IfcContext::IfcContext(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory
 // Function implementations for IfcContextDependentUnit
 std::string IfcContextDependentUnit::Name() const { return *entity->getArgument(2); }
 void IfcContextDependentUnit::setName(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(2,v); }
-IfcExternalReferenceRelationship::list::ptr IfcContextDependentUnit::HasExternalReference() const { return entity->getInverse(Type::IfcExternalReferenceRelationship)->as<IfcExternalReferenceRelationship>(); }
+IfcExternalReferenceRelationship::list::ptr IfcContextDependentUnit::HasExternalReference() const { return entity->getInverse(Type::IfcExternalReferenceRelationship, 3)->as<IfcExternalReferenceRelationship>(); }
 bool IfcContextDependentUnit::is(Type::Enum v) const { return v == Type::IfcContextDependentUnit || IfcNamedUnit::is(v); }
 Type::Enum IfcContextDependentUnit::type() const { return Type::IfcContextDependentUnit; }
 Type::Enum IfcContextDependentUnit::Class() { return Type::IfcContextDependentUnit; }
@@ -9377,7 +9377,7 @@ IfcContextDependentUnit::IfcContextDependentUnit(IfcDimensionalExponents* v1_Dim
 bool IfcControl::hasIdentification() const { return !entity->getArgument(5)->isNull(); }
 std::string IfcControl::Identification() const { return *entity->getArgument(5); }
 void IfcControl::setIdentification(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(5,v); }
-IfcRelAssignsToControl::list::ptr IfcControl::Controls() const { return entity->getInverse(Type::IfcRelAssignsToControl)->as<IfcRelAssignsToControl>(); }
+IfcRelAssignsToControl::list::ptr IfcControl::Controls() const { return entity->getInverse(Type::IfcRelAssignsToControl, 6)->as<IfcRelAssignsToControl>(); }
 bool IfcControl::is(Type::Enum v) const { return v == Type::IfcControl || IfcObject::is(v); }
 Type::Enum IfcControl::type() const { return Type::IfcControl; }
 Type::Enum IfcControl::Class() { return Type::IfcControl; }
@@ -9408,7 +9408,7 @@ std::string IfcConversionBasedUnit::Name() const { return *entity->getArgument(2
 void IfcConversionBasedUnit::setName(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(2,v); }
 IfcMeasureWithUnit* IfcConversionBasedUnit::ConversionFactor() const { return (IfcMeasureWithUnit*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(3))); }
 void IfcConversionBasedUnit::setConversionFactor(IfcMeasureWithUnit* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(3,v); }
-IfcExternalReferenceRelationship::list::ptr IfcConversionBasedUnit::HasExternalReference() const { return entity->getInverse(Type::IfcExternalReferenceRelationship)->as<IfcExternalReferenceRelationship>(); }
+IfcExternalReferenceRelationship::list::ptr IfcConversionBasedUnit::HasExternalReference() const { return entity->getInverse(Type::IfcExternalReferenceRelationship, 3)->as<IfcExternalReferenceRelationship>(); }
 bool IfcConversionBasedUnit::is(Type::Enum v) const { return v == Type::IfcConversionBasedUnit || IfcNamedUnit::is(v); }
 Type::Enum IfcConversionBasedUnit::type() const { return Type::IfcConversionBasedUnit; }
 Type::Enum IfcConversionBasedUnit::Class() { return Type::IfcConversionBasedUnit; }
@@ -9537,8 +9537,8 @@ IfcCostValue::IfcCostValue(boost::optional< std::string > v1_Name, boost::option
 bool IfcCovering::hasPredefinedType() const { return !entity->getArgument(8)->isNull(); }
 IfcCoveringTypeEnum::IfcCoveringTypeEnum IfcCovering::PredefinedType() const { return IfcCoveringTypeEnum::FromString(*entity->getArgument(8)); }
 void IfcCovering::setPredefinedType(IfcCoveringTypeEnum::IfcCoveringTypeEnum v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(8,v,IfcCoveringTypeEnum::ToString(v)); }
-IfcRelCoversSpaces::list::ptr IfcCovering::CoversSpaces() const { return entity->getInverse(Type::IfcRelCoversSpaces)->as<IfcRelCoversSpaces>(); }
-IfcRelCoversBldgElements::list::ptr IfcCovering::CoversElements() const { return entity->getInverse(Type::IfcRelCoversBldgElements)->as<IfcRelCoversBldgElements>(); }
+IfcRelCoversSpaces::list::ptr IfcCovering::CoversSpaces() const { return entity->getInverse(Type::IfcRelCoversSpaces, 5)->as<IfcRelCoversSpaces>(); }
+IfcRelCoversBldgElements::list::ptr IfcCovering::CoversElements() const { return entity->getInverse(Type::IfcRelCoversBldgElements, 5)->as<IfcRelCoversBldgElements>(); }
 bool IfcCovering::is(Type::Enum v) const { return v == Type::IfcCovering || IfcBuildingElement::is(v); }
 Type::Enum IfcCovering::type() const { return Type::IfcCovering; }
 Type::Enum IfcCovering::Class() { return Type::IfcCovering; }
@@ -9861,7 +9861,7 @@ IfcDistributionCircuit::IfcDistributionCircuit(IfcAbstractEntity* e) : IfcDistri
 IfcDistributionCircuit::IfcDistributionCircuit(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_LongName, boost::optional< IfcDistributionSystemEnum::IfcDistributionSystemEnum > v7_PredefinedType) : IfcDistributionSystem((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } if (v5_ObjectType) { e->setArgument(4,(*v5_ObjectType)); } else { e->setArgument(4); } if (v6_LongName) { e->setArgument(5,(*v6_LongName)); } else { e->setArgument(5); } if (v7_PredefinedType) { e->setArgument(6,*v7_PredefinedType,IfcDistributionSystemEnum::ToString(*v7_PredefinedType)); } else { e->setArgument(6); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcDistributionControlElement
-IfcRelFlowControlElements::list::ptr IfcDistributionControlElement::AssignedToFlowElement() const { return entity->getInverse(Type::IfcRelFlowControlElements)->as<IfcRelFlowControlElements>(); }
+IfcRelFlowControlElements::list::ptr IfcDistributionControlElement::AssignedToFlowElement() const { return entity->getInverse(Type::IfcRelFlowControlElements, 4)->as<IfcRelFlowControlElements>(); }
 bool IfcDistributionControlElement::is(Type::Enum v) const { return v == Type::IfcDistributionControlElement || IfcDistributionElement::is(v); }
 Type::Enum IfcDistributionControlElement::type() const { return Type::IfcDistributionControlElement; }
 Type::Enum IfcDistributionControlElement::Class() { return Type::IfcDistributionControlElement; }
@@ -9876,7 +9876,7 @@ IfcDistributionControlElementType::IfcDistributionControlElementType(IfcAbstract
 IfcDistributionControlElementType::IfcDistributionControlElementType(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType) : IfcDistributionElementType((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } if (v5_ApplicableOccurrence) { e->setArgument(4,(*v5_ApplicableOccurrence)); } else { e->setArgument(4); } if (v6_HasPropertySets) { e->setArgument(5,(*v6_HasPropertySets)->generalize()); } else { e->setArgument(5); } if (v7_RepresentationMaps) { e->setArgument(6,(*v7_RepresentationMaps)->generalize()); } else { e->setArgument(6); } if (v8_Tag) { e->setArgument(7,(*v8_Tag)); } else { e->setArgument(7); } if (v9_ElementType) { e->setArgument(8,(*v9_ElementType)); } else { e->setArgument(8); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcDistributionElement
-IfcRelConnectsPortToElement::list::ptr IfcDistributionElement::HasPorts() const { return entity->getInverse(Type::IfcRelConnectsPortToElement)->as<IfcRelConnectsPortToElement>(); }
+IfcRelConnectsPortToElement::list::ptr IfcDistributionElement::HasPorts() const { return entity->getInverse(Type::IfcRelConnectsPortToElement, 5)->as<IfcRelConnectsPortToElement>(); }
 bool IfcDistributionElement::is(Type::Enum v) const { return v == Type::IfcDistributionElement || IfcElement::is(v); }
 Type::Enum IfcDistributionElement::type() const { return Type::IfcDistributionElement; }
 Type::Enum IfcDistributionElement::Class() { return Type::IfcDistributionElement; }
@@ -9891,7 +9891,7 @@ IfcDistributionElementType::IfcDistributionElementType(IfcAbstractEntity* e) : I
 IfcDistributionElementType::IfcDistributionElementType(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType) : IfcElementType((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } if (v5_ApplicableOccurrence) { e->setArgument(4,(*v5_ApplicableOccurrence)); } else { e->setArgument(4); } if (v6_HasPropertySets) { e->setArgument(5,(*v6_HasPropertySets)->generalize()); } else { e->setArgument(5); } if (v7_RepresentationMaps) { e->setArgument(6,(*v7_RepresentationMaps)->generalize()); } else { e->setArgument(6); } if (v8_Tag) { e->setArgument(7,(*v8_Tag)); } else { e->setArgument(7); } if (v9_ElementType) { e->setArgument(8,(*v9_ElementType)); } else { e->setArgument(8); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcDistributionFlowElement
-IfcRelFlowControlElements::list::ptr IfcDistributionFlowElement::HasControlElements() const { return entity->getInverse(Type::IfcRelFlowControlElements)->as<IfcRelFlowControlElements>(); }
+IfcRelFlowControlElements::list::ptr IfcDistributionFlowElement::HasControlElements() const { return entity->getInverse(Type::IfcRelFlowControlElements, 5)->as<IfcRelFlowControlElements>(); }
 bool IfcDistributionFlowElement::is(Type::Enum v) const { return v == Type::IfcDistributionFlowElement || IfcDistributionElement::is(v); }
 Type::Enum IfcDistributionFlowElement::type() const { return Type::IfcDistributionFlowElement; }
 Type::Enum IfcDistributionFlowElement::Class() { return Type::IfcDistributionFlowElement; }
@@ -9984,10 +9984,10 @@ void IfcDocumentInformation::setConfidentiality(IfcDocumentConfidentialityEnum::
 bool IfcDocumentInformation::hasStatus() const { return !entity->getArgument(16)->isNull(); }
 IfcDocumentStatusEnum::IfcDocumentStatusEnum IfcDocumentInformation::Status() const { return IfcDocumentStatusEnum::FromString(*entity->getArgument(16)); }
 void IfcDocumentInformation::setStatus(IfcDocumentStatusEnum::IfcDocumentStatusEnum v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(16,v,IfcDocumentStatusEnum::ToString(v)); }
-IfcRelAssociatesDocument::list::ptr IfcDocumentInformation::DocumentInfoForObjects() const { return entity->getInverse(Type::IfcRelAssociatesDocument)->as<IfcRelAssociatesDocument>(); }
-IfcDocumentReference::list::ptr IfcDocumentInformation::HasDocumentReferences() const { return entity->getInverse(Type::IfcDocumentReference)->as<IfcDocumentReference>(); }
-IfcDocumentInformationRelationship::list::ptr IfcDocumentInformation::IsPointedTo() const { return entity->getInverse(Type::IfcDocumentInformationRelationship)->as<IfcDocumentInformationRelationship>(); }
-IfcDocumentInformationRelationship::list::ptr IfcDocumentInformation::IsPointer() const { return entity->getInverse(Type::IfcDocumentInformationRelationship)->as<IfcDocumentInformationRelationship>(); }
+IfcRelAssociatesDocument::list::ptr IfcDocumentInformation::DocumentInfoForObjects() const { return entity->getInverse(Type::IfcRelAssociatesDocument, 5)->as<IfcRelAssociatesDocument>(); }
+IfcDocumentReference::list::ptr IfcDocumentInformation::HasDocumentReferences() const { return entity->getInverse(Type::IfcDocumentReference, 4)->as<IfcDocumentReference>(); }
+IfcDocumentInformationRelationship::list::ptr IfcDocumentInformation::IsPointedTo() const { return entity->getInverse(Type::IfcDocumentInformationRelationship, 3)->as<IfcDocumentInformationRelationship>(); }
+IfcDocumentInformationRelationship::list::ptr IfcDocumentInformation::IsPointer() const { return entity->getInverse(Type::IfcDocumentInformationRelationship, 2)->as<IfcDocumentInformationRelationship>(); }
 bool IfcDocumentInformation::is(Type::Enum v) const { return v == Type::IfcDocumentInformation || IfcExternalInformation::is(v); }
 Type::Enum IfcDocumentInformation::type() const { return Type::IfcDocumentInformation; }
 Type::Enum IfcDocumentInformation::Class() { return Type::IfcDocumentInformation; }
@@ -10015,7 +10015,7 @@ void IfcDocumentReference::setDescription(std::string v) { if ( ! entity->isWrit
 bool IfcDocumentReference::hasReferencedDocument() const { return !entity->getArgument(4)->isNull(); }
 IfcDocumentInformation* IfcDocumentReference::ReferencedDocument() const { return (IfcDocumentInformation*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(4))); }
 void IfcDocumentReference::setReferencedDocument(IfcDocumentInformation* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(4,v); }
-IfcRelAssociatesDocument::list::ptr IfcDocumentReference::DocumentRefForObjects() const { return entity->getInverse(Type::IfcRelAssociatesDocument)->as<IfcRelAssociatesDocument>(); }
+IfcRelAssociatesDocument::list::ptr IfcDocumentReference::DocumentRefForObjects() const { return entity->getInverse(Type::IfcRelAssociatesDocument, 5)->as<IfcRelAssociatesDocument>(); }
 bool IfcDocumentReference::is(Type::Enum v) const { return v == Type::IfcDocumentReference || IfcExternalReference::is(v); }
 Type::Enum IfcDocumentReference::type() const { return Type::IfcDocumentReference; }
 Type::Enum IfcDocumentReference::Class() { return Type::IfcDocumentReference; }
@@ -10369,17 +10369,17 @@ IfcElectricTimeControlType::IfcElectricTimeControlType(std::string v1_GlobalId, 
 bool IfcElement::hasTag() const { return !entity->getArgument(7)->isNull(); }
 std::string IfcElement::Tag() const { return *entity->getArgument(7); }
 void IfcElement::setTag(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(7,v); }
-IfcRelFillsElement::list::ptr IfcElement::FillsVoids() const { return entity->getInverse(Type::IfcRelFillsElement)->as<IfcRelFillsElement>(); }
-IfcRelConnectsElements::list::ptr IfcElement::ConnectedTo() const { return entity->getInverse(Type::IfcRelConnectsElements)->as<IfcRelConnectsElements>(); }
-IfcRelInterferesElements::list::ptr IfcElement::IsInterferedByElements() const { return entity->getInverse(Type::IfcRelInterferesElements)->as<IfcRelInterferesElements>(); }
-IfcRelInterferesElements::list::ptr IfcElement::InterferesElements() const { return entity->getInverse(Type::IfcRelInterferesElements)->as<IfcRelInterferesElements>(); }
-IfcRelProjectsElement::list::ptr IfcElement::HasProjections() const { return entity->getInverse(Type::IfcRelProjectsElement)->as<IfcRelProjectsElement>(); }
-IfcRelReferencedInSpatialStructure::list::ptr IfcElement::ReferencedInStructures() const { return entity->getInverse(Type::IfcRelReferencedInSpatialStructure)->as<IfcRelReferencedInSpatialStructure>(); }
-IfcRelVoidsElement::list::ptr IfcElement::HasOpenings() const { return entity->getInverse(Type::IfcRelVoidsElement)->as<IfcRelVoidsElement>(); }
-IfcRelConnectsWithRealizingElements::list::ptr IfcElement::IsConnectionRealization() const { return entity->getInverse(Type::IfcRelConnectsWithRealizingElements)->as<IfcRelConnectsWithRealizingElements>(); }
-IfcRelSpaceBoundary::list::ptr IfcElement::ProvidesBoundaries() const { return entity->getInverse(Type::IfcRelSpaceBoundary)->as<IfcRelSpaceBoundary>(); }
-IfcRelConnectsElements::list::ptr IfcElement::ConnectedFrom() const { return entity->getInverse(Type::IfcRelConnectsElements)->as<IfcRelConnectsElements>(); }
-IfcRelContainedInSpatialStructure::list::ptr IfcElement::ContainedInStructure() const { return entity->getInverse(Type::IfcRelContainedInSpatialStructure)->as<IfcRelContainedInSpatialStructure>(); }
+IfcRelFillsElement::list::ptr IfcElement::FillsVoids() const { return entity->getInverse(Type::IfcRelFillsElement, 5)->as<IfcRelFillsElement>(); }
+IfcRelConnectsElements::list::ptr IfcElement::ConnectedTo() const { return entity->getInverse(Type::IfcRelConnectsElements, 5)->as<IfcRelConnectsElements>(); }
+IfcRelInterferesElements::list::ptr IfcElement::IsInterferedByElements() const { return entity->getInverse(Type::IfcRelInterferesElements, 5)->as<IfcRelInterferesElements>(); }
+IfcRelInterferesElements::list::ptr IfcElement::InterferesElements() const { return entity->getInverse(Type::IfcRelInterferesElements, 4)->as<IfcRelInterferesElements>(); }
+IfcRelProjectsElement::list::ptr IfcElement::HasProjections() const { return entity->getInverse(Type::IfcRelProjectsElement, 4)->as<IfcRelProjectsElement>(); }
+IfcRelReferencedInSpatialStructure::list::ptr IfcElement::ReferencedInStructures() const { return entity->getInverse(Type::IfcRelReferencedInSpatialStructure, 4)->as<IfcRelReferencedInSpatialStructure>(); }
+IfcRelVoidsElement::list::ptr IfcElement::HasOpenings() const { return entity->getInverse(Type::IfcRelVoidsElement, 4)->as<IfcRelVoidsElement>(); }
+IfcRelConnectsWithRealizingElements::list::ptr IfcElement::IsConnectionRealization() const { return entity->getInverse(Type::IfcRelConnectsWithRealizingElements, 7)->as<IfcRelConnectsWithRealizingElements>(); }
+IfcRelSpaceBoundary::list::ptr IfcElement::ProvidesBoundaries() const { return entity->getInverse(Type::IfcRelSpaceBoundary, 5)->as<IfcRelSpaceBoundary>(); }
+IfcRelConnectsElements::list::ptr IfcElement::ConnectedFrom() const { return entity->getInverse(Type::IfcRelConnectsElements, 6)->as<IfcRelConnectsElements>(); }
+IfcRelContainedInSpatialStructure::list::ptr IfcElement::ContainedInStructure() const { return entity->getInverse(Type::IfcRelContainedInSpatialStructure, 4)->as<IfcRelContainedInSpatialStructure>(); }
 bool IfcElement::is(Type::Enum v) const { return v == Type::IfcElement || IfcProduct::is(v); }
 Type::Enum IfcElement::type() const { return Type::IfcElement; }
 Type::Enum IfcElement::Class() { return Type::IfcElement; }
@@ -10630,7 +10630,7 @@ void IfcExternalReference::setIdentification(std::string v) { if ( ! entity->isW
 bool IfcExternalReference::hasName() const { return !entity->getArgument(2)->isNull(); }
 std::string IfcExternalReference::Name() const { return *entity->getArgument(2); }
 void IfcExternalReference::setName(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(2,v); }
-IfcExternalReferenceRelationship::list::ptr IfcExternalReference::ExternalReferenceForResources() const { return entity->getInverse(Type::IfcExternalReferenceRelationship)->as<IfcExternalReferenceRelationship>(); }
+IfcExternalReferenceRelationship::list::ptr IfcExternalReference::ExternalReferenceForResources() const { return entity->getInverse(Type::IfcExternalReferenceRelationship, 2)->as<IfcExternalReferenceRelationship>(); }
 bool IfcExternalReference::is(Type::Enum v) const { return v == Type::IfcExternalReference; }
 Type::Enum IfcExternalReference::type() const { return Type::IfcExternalReference; }
 Type::Enum IfcExternalReference::Class() { return Type::IfcExternalReference; }
@@ -10652,7 +10652,7 @@ IfcExternalReferenceRelationship::IfcExternalReferenceRelationship(boost::option
 bool IfcExternalSpatialElement::hasPredefinedType() const { return !entity->getArgument(8)->isNull(); }
 IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementTypeEnum IfcExternalSpatialElement::PredefinedType() const { return IfcExternalSpatialElementTypeEnum::FromString(*entity->getArgument(8)); }
 void IfcExternalSpatialElement::setPredefinedType(IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementTypeEnum v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(8,v,IfcExternalSpatialElementTypeEnum::ToString(v)); }
-IfcRelSpaceBoundary::list::ptr IfcExternalSpatialElement::BoundedBy() const { return entity->getInverse(Type::IfcRelSpaceBoundary)->as<IfcRelSpaceBoundary>(); }
+IfcRelSpaceBoundary::list::ptr IfcExternalSpatialElement::BoundedBy() const { return entity->getInverse(Type::IfcRelSpaceBoundary, 4)->as<IfcRelSpaceBoundary>(); }
 bool IfcExternalSpatialElement::is(Type::Enum v) const { return v == Type::IfcExternalSpatialElement || IfcExternalSpatialStructureElement::is(v); }
 Type::Enum IfcExternalSpatialElement::type() const { return Type::IfcExternalSpatialElement; }
 Type::Enum IfcExternalSpatialElement::Class() { return Type::IfcExternalSpatialElement; }
@@ -10710,7 +10710,7 @@ IfcExtrudedAreaSolidTapered::IfcExtrudedAreaSolidTapered(IfcProfileDef* v1_Swept
 // Function implementations for IfcFace
 IfcTemplatedEntityList< IfcFaceBound >::ptr IfcFace::Bounds() const { IfcEntityList::ptr es = *entity->getArgument(0); return es->as<IfcFaceBound>(); }
 void IfcFace::setBounds(IfcTemplatedEntityList< IfcFaceBound >::ptr v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(0,v->generalize()); }
-IfcTextureMap::list::ptr IfcFace::HasTextureMaps() const { return entity->getInverse(Type::IfcTextureMap)->as<IfcTextureMap>(); }
+IfcTextureMap::list::ptr IfcFace::HasTextureMaps() const { return entity->getInverse(Type::IfcTextureMap, 2)->as<IfcTextureMap>(); }
 bool IfcFace::is(Type::Enum v) const { return v == Type::IfcFace || IfcTopologicalRepresentationItem::is(v); }
 Type::Enum IfcFace::type() const { return Type::IfcFace; }
 Type::Enum IfcFace::Class() { return Type::IfcFace; }
@@ -10842,7 +10842,7 @@ IfcFeatureElement::IfcFeatureElement(IfcAbstractEntity* e) : IfcElement((IfcAbst
 IfcFeatureElement::IfcFeatureElement(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag) : IfcElement((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } if (v5_ObjectType) { e->setArgument(4,(*v5_ObjectType)); } else { e->setArgument(4); } e->setArgument(5,(v6_ObjectPlacement)); e->setArgument(6,(v7_Representation)); if (v8_Tag) { e->setArgument(7,(*v8_Tag)); } else { e->setArgument(7); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcFeatureElementAddition
-IfcRelProjectsElement::list::ptr IfcFeatureElementAddition::ProjectsElements() const { return entity->getInverse(Type::IfcRelProjectsElement)->as<IfcRelProjectsElement>(); }
+IfcRelProjectsElement::list::ptr IfcFeatureElementAddition::ProjectsElements() const { return entity->getInverse(Type::IfcRelProjectsElement, 5)->as<IfcRelProjectsElement>(); }
 bool IfcFeatureElementAddition::is(Type::Enum v) const { return v == Type::IfcFeatureElementAddition || IfcFeatureElement::is(v); }
 Type::Enum IfcFeatureElementAddition::type() const { return Type::IfcFeatureElementAddition; }
 Type::Enum IfcFeatureElementAddition::Class() { return Type::IfcFeatureElementAddition; }
@@ -10850,7 +10850,7 @@ IfcFeatureElementAddition::IfcFeatureElementAddition(IfcAbstractEntity* e) : Ifc
 IfcFeatureElementAddition::IfcFeatureElementAddition(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag) : IfcFeatureElement((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } if (v5_ObjectType) { e->setArgument(4,(*v5_ObjectType)); } else { e->setArgument(4); } e->setArgument(5,(v6_ObjectPlacement)); e->setArgument(6,(v7_Representation)); if (v8_Tag) { e->setArgument(7,(*v8_Tag)); } else { e->setArgument(7); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcFeatureElementSubtraction
-IfcRelVoidsElement::list::ptr IfcFeatureElementSubtraction::VoidsElements() const { return entity->getInverse(Type::IfcRelVoidsElement)->as<IfcRelVoidsElement>(); }
+IfcRelVoidsElement::list::ptr IfcFeatureElementSubtraction::VoidsElements() const { return entity->getInverse(Type::IfcRelVoidsElement, 5)->as<IfcRelVoidsElement>(); }
 bool IfcFeatureElementSubtraction::is(Type::Enum v) const { return v == Type::IfcFeatureElementSubtraction || IfcFeatureElement::is(v); }
 Type::Enum IfcFeatureElementSubtraction::type() const { return Type::IfcFeatureElementSubtraction; }
 Type::Enum IfcFeatureElementSubtraction::Class() { return Type::IfcFeatureElementSubtraction; }
@@ -11184,7 +11184,7 @@ void IfcGeometricRepresentationContext::setWorldCoordinateSystem(IfcAxis2Placeme
 bool IfcGeometricRepresentationContext::hasTrueNorth() const { return !entity->getArgument(5)->isNull(); }
 IfcDirection* IfcGeometricRepresentationContext::TrueNorth() const { return (IfcDirection*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(5))); }
 void IfcGeometricRepresentationContext::setTrueNorth(IfcDirection* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(5,v); }
-IfcGeometricRepresentationSubContext::list::ptr IfcGeometricRepresentationContext::HasSubContexts() const { return entity->getInverse(Type::IfcGeometricRepresentationSubContext)->as<IfcGeometricRepresentationSubContext>(); }
+IfcGeometricRepresentationSubContext::list::ptr IfcGeometricRepresentationContext::HasSubContexts() const { return entity->getInverse(Type::IfcGeometricRepresentationSubContext, 6)->as<IfcGeometricRepresentationSubContext>(); }
 bool IfcGeometricRepresentationContext::is(Type::Enum v) const { return v == Type::IfcGeometricRepresentationContext || IfcRepresentationContext::is(v); }
 Type::Enum IfcGeometricRepresentationContext::type() const { return Type::IfcGeometricRepresentationContext; }
 Type::Enum IfcGeometricRepresentationContext::Class() { return Type::IfcGeometricRepresentationContext; }
@@ -11235,7 +11235,7 @@ void IfcGrid::setWAxes(IfcTemplatedEntityList< IfcGridAxis >::ptr v) { if ( ! en
 bool IfcGrid::hasPredefinedType() const { return !entity->getArgument(10)->isNull(); }
 IfcGridTypeEnum::IfcGridTypeEnum IfcGrid::PredefinedType() const { return IfcGridTypeEnum::FromString(*entity->getArgument(10)); }
 void IfcGrid::setPredefinedType(IfcGridTypeEnum::IfcGridTypeEnum v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(10,v,IfcGridTypeEnum::ToString(v)); }
-IfcRelContainedInSpatialStructure::list::ptr IfcGrid::ContainedInStructure() const { return entity->getInverse(Type::IfcRelContainedInSpatialStructure)->as<IfcRelContainedInSpatialStructure>(); }
+IfcRelContainedInSpatialStructure::list::ptr IfcGrid::ContainedInStructure() const { return entity->getInverse(Type::IfcRelContainedInSpatialStructure, 4)->as<IfcRelContainedInSpatialStructure>(); }
 bool IfcGrid::is(Type::Enum v) const { return v == Type::IfcGrid || IfcProduct::is(v); }
 Type::Enum IfcGrid::type() const { return Type::IfcGrid; }
 Type::Enum IfcGrid::Class() { return Type::IfcGrid; }
@@ -11250,10 +11250,10 @@ IfcCurve* IfcGridAxis::AxisCurve() const { return (IfcCurve*)((IfcUtil::IfcBaseC
 void IfcGridAxis::setAxisCurve(IfcCurve* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(1,v); }
 bool IfcGridAxis::SameSense() const { return *entity->getArgument(2); }
 void IfcGridAxis::setSameSense(bool v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(2,v); }
-IfcGrid::list::ptr IfcGridAxis::PartOfW() const { return entity->getInverse(Type::IfcGrid)->as<IfcGrid>(); }
-IfcGrid::list::ptr IfcGridAxis::PartOfV() const { return entity->getInverse(Type::IfcGrid)->as<IfcGrid>(); }
-IfcGrid::list::ptr IfcGridAxis::PartOfU() const { return entity->getInverse(Type::IfcGrid)->as<IfcGrid>(); }
-IfcVirtualGridIntersection::list::ptr IfcGridAxis::HasIntersections() const { return entity->getInverse(Type::IfcVirtualGridIntersection)->as<IfcVirtualGridIntersection>(); }
+IfcGrid::list::ptr IfcGridAxis::PartOfW() const { return entity->getInverse(Type::IfcGrid, 9)->as<IfcGrid>(); }
+IfcGrid::list::ptr IfcGridAxis::PartOfV() const { return entity->getInverse(Type::IfcGrid, 8)->as<IfcGrid>(); }
+IfcGrid::list::ptr IfcGridAxis::PartOfU() const { return entity->getInverse(Type::IfcGrid, 7)->as<IfcGrid>(); }
+IfcVirtualGridIntersection::list::ptr IfcGridAxis::HasIntersections() const { return entity->getInverse(Type::IfcVirtualGridIntersection, 0)->as<IfcVirtualGridIntersection>(); }
 bool IfcGridAxis::is(Type::Enum v) const { return v == Type::IfcGridAxis; }
 Type::Enum IfcGridAxis::type() const { return Type::IfcGridAxis; }
 Type::Enum IfcGridAxis::Class() { return Type::IfcGridAxis; }
@@ -11273,7 +11273,7 @@ IfcGridPlacement::IfcGridPlacement(IfcAbstractEntity* e) : IfcObjectPlacement((I
 IfcGridPlacement::IfcGridPlacement(IfcVirtualGridIntersection* v1_PlacementLocation, IfcGridPlacementDirectionSelect* v2_PlacementRefDirection) : IfcObjectPlacement((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_PlacementLocation)); e->setArgument(1,(v2_PlacementRefDirection)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcGroup
-IfcRelAssignsToGroup::list::ptr IfcGroup::IsGroupedBy() const { return entity->getInverse(Type::IfcRelAssignsToGroup)->as<IfcRelAssignsToGroup>(); }
+IfcRelAssignsToGroup::list::ptr IfcGroup::IsGroupedBy() const { return entity->getInverse(Type::IfcRelAssignsToGroup, 6)->as<IfcRelAssignsToGroup>(); }
 bool IfcGroup::is(Type::Enum v) const { return v == Type::IfcGroup || IfcObject::is(v); }
 Type::Enum IfcGroup::type() const { return Type::IfcGroup; }
 Type::Enum IfcGroup::Class() { return Type::IfcGroup; }
@@ -11569,8 +11569,8 @@ void IfcLibraryInformation::setLocation(std::string v) { if ( ! entity->isWritab
 bool IfcLibraryInformation::hasDescription() const { return !entity->getArgument(5)->isNull(); }
 std::string IfcLibraryInformation::Description() const { return *entity->getArgument(5); }
 void IfcLibraryInformation::setDescription(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(5,v); }
-IfcRelAssociatesLibrary::list::ptr IfcLibraryInformation::LibraryInfoForObjects() const { return entity->getInverse(Type::IfcRelAssociatesLibrary)->as<IfcRelAssociatesLibrary>(); }
-IfcLibraryReference::list::ptr IfcLibraryInformation::HasLibraryReferences() const { return entity->getInverse(Type::IfcLibraryReference)->as<IfcLibraryReference>(); }
+IfcRelAssociatesLibrary::list::ptr IfcLibraryInformation::LibraryInfoForObjects() const { return entity->getInverse(Type::IfcRelAssociatesLibrary, 5)->as<IfcRelAssociatesLibrary>(); }
+IfcLibraryReference::list::ptr IfcLibraryInformation::HasLibraryReferences() const { return entity->getInverse(Type::IfcLibraryReference, 5)->as<IfcLibraryReference>(); }
 bool IfcLibraryInformation::is(Type::Enum v) const { return v == Type::IfcLibraryInformation || IfcExternalInformation::is(v); }
 Type::Enum IfcLibraryInformation::type() const { return Type::IfcLibraryInformation; }
 Type::Enum IfcLibraryInformation::Class() { return Type::IfcLibraryInformation; }
@@ -11587,7 +11587,7 @@ void IfcLibraryReference::setLanguage(std::string v) { if ( ! entity->isWritable
 bool IfcLibraryReference::hasReferencedLibrary() const { return !entity->getArgument(5)->isNull(); }
 IfcLibraryInformation* IfcLibraryReference::ReferencedLibrary() const { return (IfcLibraryInformation*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(5))); }
 void IfcLibraryReference::setReferencedLibrary(IfcLibraryInformation* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(5,v); }
-IfcRelAssociatesLibrary::list::ptr IfcLibraryReference::LibraryRefForObjects() const { return entity->getInverse(Type::IfcRelAssociatesLibrary)->as<IfcRelAssociatesLibrary>(); }
+IfcRelAssociatesLibrary::list::ptr IfcLibraryReference::LibraryRefForObjects() const { return entity->getInverse(Type::IfcRelAssociatesLibrary, 5)->as<IfcRelAssociatesLibrary>(); }
 bool IfcLibraryReference::is(Type::Enum v) const { return v == Type::IfcLibraryReference || IfcExternalReference::is(v); }
 Type::Enum IfcLibraryReference::type() const { return Type::IfcLibraryReference; }
 Type::Enum IfcLibraryReference::Class() { return Type::IfcLibraryReference; }
@@ -11805,9 +11805,9 @@ void IfcMaterial::setDescription(std::string v) { if ( ! entity->isWritable() ) 
 bool IfcMaterial::hasCategory() const { return !entity->getArgument(2)->isNull(); }
 std::string IfcMaterial::Category() const { return *entity->getArgument(2); }
 void IfcMaterial::setCategory(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(2,v); }
-IfcMaterialDefinitionRepresentation::list::ptr IfcMaterial::HasRepresentation() const { return entity->getInverse(Type::IfcMaterialDefinitionRepresentation)->as<IfcMaterialDefinitionRepresentation>(); }
-IfcMaterialRelationship::list::ptr IfcMaterial::IsRelatedWith() const { return entity->getInverse(Type::IfcMaterialRelationship)->as<IfcMaterialRelationship>(); }
-IfcMaterialRelationship::list::ptr IfcMaterial::RelatesTo() const { return entity->getInverse(Type::IfcMaterialRelationship)->as<IfcMaterialRelationship>(); }
+IfcMaterialDefinitionRepresentation::list::ptr IfcMaterial::HasRepresentation() const { return entity->getInverse(Type::IfcMaterialDefinitionRepresentation, 3)->as<IfcMaterialDefinitionRepresentation>(); }
+IfcMaterialRelationship::list::ptr IfcMaterial::IsRelatedWith() const { return entity->getInverse(Type::IfcMaterialRelationship, 3)->as<IfcMaterialRelationship>(); }
+IfcMaterialRelationship::list::ptr IfcMaterial::RelatesTo() const { return entity->getInverse(Type::IfcMaterialRelationship, 2)->as<IfcMaterialRelationship>(); }
 bool IfcMaterial::is(Type::Enum v) const { return v == Type::IfcMaterial || IfcMaterialDefinition::is(v); }
 Type::Enum IfcMaterial::type() const { return Type::IfcMaterial; }
 Type::Enum IfcMaterial::Class() { return Type::IfcMaterial; }
@@ -11840,7 +11840,7 @@ void IfcMaterialConstituent::setFraction(double v) { if ( ! entity->isWritable()
 bool IfcMaterialConstituent::hasCategory() const { return !entity->getArgument(4)->isNull(); }
 std::string IfcMaterialConstituent::Category() const { return *entity->getArgument(4); }
 void IfcMaterialConstituent::setCategory(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(4,v); }
-IfcMaterialConstituentSet::list::ptr IfcMaterialConstituent::ToMaterialConstituentSet() const { return entity->getInverse(Type::IfcMaterialConstituentSet)->as<IfcMaterialConstituentSet>(); }
+IfcMaterialConstituentSet::list::ptr IfcMaterialConstituent::ToMaterialConstituentSet() const { return entity->getInverse(Type::IfcMaterialConstituentSet, 2)->as<IfcMaterialConstituentSet>(); }
 bool IfcMaterialConstituent::is(Type::Enum v) const { return v == Type::IfcMaterialConstituent || IfcMaterialDefinition::is(v); }
 Type::Enum IfcMaterialConstituent::type() const { return Type::IfcMaterialConstituent; }
 Type::Enum IfcMaterialConstituent::Class() { return Type::IfcMaterialConstituent; }
@@ -11864,9 +11864,9 @@ IfcMaterialConstituentSet::IfcMaterialConstituentSet(IfcAbstractEntity* e) : Ifc
 IfcMaterialConstituentSet::IfcMaterialConstituentSet(boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, boost::optional< IfcTemplatedEntityList< IfcMaterialConstituent >::ptr > v3_MaterialConstituents) : IfcMaterialDefinition((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); if (v1_Name) { e->setArgument(0,(*v1_Name)); } else { e->setArgument(0); } if (v2_Description) { e->setArgument(1,(*v2_Description)); } else { e->setArgument(1); } if (v3_MaterialConstituents) { e->setArgument(2,(*v3_MaterialConstituents)->generalize()); } else { e->setArgument(2); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcMaterialDefinition
-IfcRelAssociatesMaterial::list::ptr IfcMaterialDefinition::AssociatedTo() const { return entity->getInverse(Type::IfcRelAssociatesMaterial)->as<IfcRelAssociatesMaterial>(); }
-IfcExternalReferenceRelationship::list::ptr IfcMaterialDefinition::HasExternalReferences() const { return entity->getInverse(Type::IfcExternalReferenceRelationship)->as<IfcExternalReferenceRelationship>(); }
-IfcMaterialProperties::list::ptr IfcMaterialDefinition::HasProperties() const { return entity->getInverse(Type::IfcMaterialProperties)->as<IfcMaterialProperties>(); }
+IfcRelAssociatesMaterial::list::ptr IfcMaterialDefinition::AssociatedTo() const { return entity->getInverse(Type::IfcRelAssociatesMaterial, 5)->as<IfcRelAssociatesMaterial>(); }
+IfcExternalReferenceRelationship::list::ptr IfcMaterialDefinition::HasExternalReferences() const { return entity->getInverse(Type::IfcExternalReferenceRelationship, 3)->as<IfcExternalReferenceRelationship>(); }
+IfcMaterialProperties::list::ptr IfcMaterialDefinition::HasProperties() const { return entity->getInverse(Type::IfcMaterialProperties, 3)->as<IfcMaterialProperties>(); }
 bool IfcMaterialDefinition::is(Type::Enum v) const { return v == Type::IfcMaterialDefinition; }
 Type::Enum IfcMaterialDefinition::type() const { return Type::IfcMaterialDefinition; }
 Type::Enum IfcMaterialDefinition::Class() { return Type::IfcMaterialDefinition; }
@@ -11903,7 +11903,7 @@ void IfcMaterialLayer::setCategory(std::string v) { if ( ! entity->isWritable() 
 bool IfcMaterialLayer::hasPriority() const { return !entity->getArgument(6)->isNull(); }
 double IfcMaterialLayer::Priority() const { return *entity->getArgument(6); }
 void IfcMaterialLayer::setPriority(double v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(6,v); }
-IfcMaterialLayerSet::list::ptr IfcMaterialLayer::ToMaterialLayerSet() const { return entity->getInverse(Type::IfcMaterialLayerSet)->as<IfcMaterialLayerSet>(); }
+IfcMaterialLayerSet::list::ptr IfcMaterialLayer::ToMaterialLayerSet() const { return entity->getInverse(Type::IfcMaterialLayerSet, 0)->as<IfcMaterialLayerSet>(); }
 bool IfcMaterialLayer::is(Type::Enum v) const { return v == Type::IfcMaterialLayer || IfcMaterialDefinition::is(v); }
 Type::Enum IfcMaterialLayer::type() const { return Type::IfcMaterialLayer; }
 Type::Enum IfcMaterialLayer::Class() { return Type::IfcMaterialLayer; }
@@ -11981,7 +11981,7 @@ void IfcMaterialProfile::setPriority(double v) { if ( ! entity->isWritable() ) {
 bool IfcMaterialProfile::hasCategory() const { return !entity->getArgument(5)->isNull(); }
 std::string IfcMaterialProfile::Category() const { return *entity->getArgument(5); }
 void IfcMaterialProfile::setCategory(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(5,v); }
-IfcMaterialProfileSet::list::ptr IfcMaterialProfile::ToMaterialProfileSet() const { return entity->getInverse(Type::IfcMaterialProfileSet)->as<IfcMaterialProfileSet>(); }
+IfcMaterialProfileSet::list::ptr IfcMaterialProfile::ToMaterialProfileSet() const { return entity->getInverse(Type::IfcMaterialProfileSet, 2)->as<IfcMaterialProfileSet>(); }
 bool IfcMaterialProfile::is(Type::Enum v) const { return v == Type::IfcMaterialProfile || IfcMaterialDefinition::is(v); }
 Type::Enum IfcMaterialProfile::type() const { return Type::IfcMaterialProfile; }
 Type::Enum IfcMaterialProfile::Class() { return Type::IfcMaterialProfile; }
@@ -12066,7 +12066,7 @@ IfcMaterialRelationship::IfcMaterialRelationship(IfcAbstractEntity* e) : IfcReso
 IfcMaterialRelationship::IfcMaterialRelationship(boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcMaterial* v3_RelatingMaterial, IfcTemplatedEntityList< IfcMaterial >::ptr v4_RelatedMaterials, boost::optional< std::string > v5_Expression) : IfcResourceLevelRelationship((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); if (v1_Name) { e->setArgument(0,(*v1_Name)); } else { e->setArgument(0); } if (v2_Description) { e->setArgument(1,(*v2_Description)); } else { e->setArgument(1); } e->setArgument(2,(v3_RelatingMaterial)); e->setArgument(3,(v4_RelatedMaterials)->generalize()); if (v5_Expression) { e->setArgument(4,(*v5_Expression)); } else { e->setArgument(4); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcMaterialUsageDefinition
-IfcRelAssociatesMaterial::list::ptr IfcMaterialUsageDefinition::AssociatedTo() const { return entity->getInverse(Type::IfcRelAssociatesMaterial)->as<IfcRelAssociatesMaterial>(); }
+IfcRelAssociatesMaterial::list::ptr IfcMaterialUsageDefinition::AssociatedTo() const { return entity->getInverse(Type::IfcRelAssociatesMaterial, 5)->as<IfcRelAssociatesMaterial>(); }
 bool IfcMaterialUsageDefinition::is(Type::Enum v) const { return v == Type::IfcMaterialUsageDefinition; }
 Type::Enum IfcMaterialUsageDefinition::type() const { return Type::IfcMaterialUsageDefinition; }
 Type::Enum IfcMaterialUsageDefinition::Class() { return Type::IfcMaterialUsageDefinition; }
@@ -12227,10 +12227,10 @@ IfcNamedUnit::IfcNamedUnit(IfcDimensionalExponents* v1_Dimensions, IfcUnitEnum::
 bool IfcObject::hasObjectType() const { return !entity->getArgument(4)->isNull(); }
 std::string IfcObject::ObjectType() const { return *entity->getArgument(4); }
 void IfcObject::setObjectType(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(4,v); }
-IfcRelDefinesByObject::list::ptr IfcObject::IsDeclaredBy() const { return entity->getInverse(Type::IfcRelDefinesByObject)->as<IfcRelDefinesByObject>(); }
-IfcRelDefinesByObject::list::ptr IfcObject::Declares() const { return entity->getInverse(Type::IfcRelDefinesByObject)->as<IfcRelDefinesByObject>(); }
-IfcRelDefinesByType::list::ptr IfcObject::IsTypedBy() const { return entity->getInverse(Type::IfcRelDefinesByType)->as<IfcRelDefinesByType>(); }
-IfcRelDefinesByProperties::list::ptr IfcObject::IsDefinedBy() const { return entity->getInverse(Type::IfcRelDefinesByProperties)->as<IfcRelDefinesByProperties>(); }
+IfcRelDefinesByObject::list::ptr IfcObject::IsDeclaredBy() const { return entity->getInverse(Type::IfcRelDefinesByObject, 4)->as<IfcRelDefinesByObject>(); }
+IfcRelDefinesByObject::list::ptr IfcObject::Declares() const { return entity->getInverse(Type::IfcRelDefinesByObject, 5)->as<IfcRelDefinesByObject>(); }
+IfcRelDefinesByType::list::ptr IfcObject::IsTypedBy() const { return entity->getInverse(Type::IfcRelDefinesByType, 4)->as<IfcRelDefinesByType>(); }
+IfcRelDefinesByProperties::list::ptr IfcObject::IsDefinedBy() const { return entity->getInverse(Type::IfcRelDefinesByProperties, 4)->as<IfcRelDefinesByProperties>(); }
 bool IfcObject::is(Type::Enum v) const { return v == Type::IfcObject || IfcObjectDefinition::is(v); }
 Type::Enum IfcObject::type() const { return Type::IfcObject; }
 Type::Enum IfcObject::Class() { return Type::IfcObject; }
@@ -12238,13 +12238,13 @@ IfcObject::IfcObject(IfcAbstractEntity* e) : IfcObjectDefinition((IfcAbstractEnt
 IfcObject::IfcObject(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType) : IfcObjectDefinition((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } if (v5_ObjectType) { e->setArgument(4,(*v5_ObjectType)); } else { e->setArgument(4); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcObjectDefinition
-IfcRelAssigns::list::ptr IfcObjectDefinition::HasAssignments() const { return entity->getInverse(Type::IfcRelAssigns)->as<IfcRelAssigns>(); }
-IfcRelNests::list::ptr IfcObjectDefinition::Nests() const { return entity->getInverse(Type::IfcRelNests)->as<IfcRelNests>(); }
-IfcRelNests::list::ptr IfcObjectDefinition::IsNestedBy() const { return entity->getInverse(Type::IfcRelNests)->as<IfcRelNests>(); }
-IfcRelDeclares::list::ptr IfcObjectDefinition::HasContext() const { return entity->getInverse(Type::IfcRelDeclares)->as<IfcRelDeclares>(); }
-IfcRelAggregates::list::ptr IfcObjectDefinition::IsDecomposedBy() const { return entity->getInverse(Type::IfcRelAggregates)->as<IfcRelAggregates>(); }
-IfcRelAggregates::list::ptr IfcObjectDefinition::Decomposes() const { return entity->getInverse(Type::IfcRelAggregates)->as<IfcRelAggregates>(); }
-IfcRelAssociates::list::ptr IfcObjectDefinition::HasAssociations() const { return entity->getInverse(Type::IfcRelAssociates)->as<IfcRelAssociates>(); }
+IfcRelAssigns::list::ptr IfcObjectDefinition::HasAssignments() const { return entity->getInverse(Type::IfcRelAssigns, 4)->as<IfcRelAssigns>(); }
+IfcRelNests::list::ptr IfcObjectDefinition::Nests() const { return entity->getInverse(Type::IfcRelNests, 5)->as<IfcRelNests>(); }
+IfcRelNests::list::ptr IfcObjectDefinition::IsNestedBy() const { return entity->getInverse(Type::IfcRelNests, 4)->as<IfcRelNests>(); }
+IfcRelDeclares::list::ptr IfcObjectDefinition::HasContext() const { return entity->getInverse(Type::IfcRelDeclares, 5)->as<IfcRelDeclares>(); }
+IfcRelAggregates::list::ptr IfcObjectDefinition::IsDecomposedBy() const { return entity->getInverse(Type::IfcRelAggregates, 4)->as<IfcRelAggregates>(); }
+IfcRelAggregates::list::ptr IfcObjectDefinition::Decomposes() const { return entity->getInverse(Type::IfcRelAggregates, 5)->as<IfcRelAggregates>(); }
+IfcRelAssociates::list::ptr IfcObjectDefinition::HasAssociations() const { return entity->getInverse(Type::IfcRelAssociates, 4)->as<IfcRelAssociates>(); }
 bool IfcObjectDefinition::is(Type::Enum v) const { return v == Type::IfcObjectDefinition || IfcRoot::is(v); }
 Type::Enum IfcObjectDefinition::type() const { return Type::IfcObjectDefinition; }
 Type::Enum IfcObjectDefinition::Class() { return Type::IfcObjectDefinition; }
@@ -12252,8 +12252,8 @@ IfcObjectDefinition::IfcObjectDefinition(IfcAbstractEntity* e) : IfcRoot((IfcAbs
 IfcObjectDefinition::IfcObjectDefinition(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description) : IfcRoot((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcObjectPlacement
-IfcProduct::list::ptr IfcObjectPlacement::PlacesObject() const { return entity->getInverse(Type::IfcProduct)->as<IfcProduct>(); }
-IfcLocalPlacement::list::ptr IfcObjectPlacement::ReferencedByPlacements() const { return entity->getInverse(Type::IfcLocalPlacement)->as<IfcLocalPlacement>(); }
+IfcProduct::list::ptr IfcObjectPlacement::PlacesObject() const { return entity->getInverse(Type::IfcProduct, 5)->as<IfcProduct>(); }
+IfcLocalPlacement::list::ptr IfcObjectPlacement::ReferencedByPlacements() const { return entity->getInverse(Type::IfcLocalPlacement, 0)->as<IfcLocalPlacement>(); }
 bool IfcObjectPlacement::is(Type::Enum v) const { return v == Type::IfcObjectPlacement; }
 Type::Enum IfcObjectPlacement::type() const { return Type::IfcObjectPlacement; }
 Type::Enum IfcObjectPlacement::Class() { return Type::IfcObjectPlacement; }
@@ -12327,7 +12327,7 @@ IfcOpenShell::IfcOpenShell(IfcTemplatedEntityList< IfcFace >::ptr v1_CfsFaces) :
 bool IfcOpeningElement::hasPredefinedType() const { return !entity->getArgument(8)->isNull(); }
 IfcOpeningElementTypeEnum::IfcOpeningElementTypeEnum IfcOpeningElement::PredefinedType() const { return IfcOpeningElementTypeEnum::FromString(*entity->getArgument(8)); }
 void IfcOpeningElement::setPredefinedType(IfcOpeningElementTypeEnum::IfcOpeningElementTypeEnum v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(8,v,IfcOpeningElementTypeEnum::ToString(v)); }
-IfcRelFillsElement::list::ptr IfcOpeningElement::HasFillings() const { return entity->getInverse(Type::IfcRelFillsElement)->as<IfcRelFillsElement>(); }
+IfcRelFillsElement::list::ptr IfcOpeningElement::HasFillings() const { return entity->getInverse(Type::IfcRelFillsElement, 4)->as<IfcRelFillsElement>(); }
 bool IfcOpeningElement::is(Type::Enum v) const { return v == Type::IfcOpeningElement || IfcFeatureElementSubtraction::is(v); }
 Type::Enum IfcOpeningElement::type() const { return Type::IfcOpeningElement; }
 Type::Enum IfcOpeningElement::Class() { return Type::IfcOpeningElement; }
@@ -12356,9 +12356,9 @@ void IfcOrganization::setRoles(IfcTemplatedEntityList< IfcActorRole >::ptr v) { 
 bool IfcOrganization::hasAddresses() const { return !entity->getArgument(4)->isNull(); }
 IfcTemplatedEntityList< IfcAddress >::ptr IfcOrganization::Addresses() const { IfcEntityList::ptr es = *entity->getArgument(4); return es->as<IfcAddress>(); }
 void IfcOrganization::setAddresses(IfcTemplatedEntityList< IfcAddress >::ptr v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(4,v->generalize()); }
-IfcOrganizationRelationship::list::ptr IfcOrganization::IsRelatedBy() const { return entity->getInverse(Type::IfcOrganizationRelationship)->as<IfcOrganizationRelationship>(); }
-IfcOrganizationRelationship::list::ptr IfcOrganization::Relates() const { return entity->getInverse(Type::IfcOrganizationRelationship)->as<IfcOrganizationRelationship>(); }
-IfcPersonAndOrganization::list::ptr IfcOrganization::Engages() const { return entity->getInverse(Type::IfcPersonAndOrganization)->as<IfcPersonAndOrganization>(); }
+IfcOrganizationRelationship::list::ptr IfcOrganization::IsRelatedBy() const { return entity->getInverse(Type::IfcOrganizationRelationship, 3)->as<IfcOrganizationRelationship>(); }
+IfcOrganizationRelationship::list::ptr IfcOrganization::Relates() const { return entity->getInverse(Type::IfcOrganizationRelationship, 2)->as<IfcOrganizationRelationship>(); }
+IfcPersonAndOrganization::list::ptr IfcOrganization::Engages() const { return entity->getInverse(Type::IfcPersonAndOrganization, 1)->as<IfcPersonAndOrganization>(); }
 bool IfcOrganization::is(Type::Enum v) const { return v == Type::IfcOrganization; }
 Type::Enum IfcOrganization::type() const { return Type::IfcOrganization; }
 Type::Enum IfcOrganization::Class() { return Type::IfcOrganization; }
@@ -12544,7 +12544,7 @@ void IfcPerson::setRoles(IfcTemplatedEntityList< IfcActorRole >::ptr v) { if ( !
 bool IfcPerson::hasAddresses() const { return !entity->getArgument(7)->isNull(); }
 IfcTemplatedEntityList< IfcAddress >::ptr IfcPerson::Addresses() const { IfcEntityList::ptr es = *entity->getArgument(7); return es->as<IfcAddress>(); }
 void IfcPerson::setAddresses(IfcTemplatedEntityList< IfcAddress >::ptr v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(7,v->generalize()); }
-IfcPersonAndOrganization::list::ptr IfcPerson::EngagedIn() const { return entity->getInverse(Type::IfcPersonAndOrganization)->as<IfcPersonAndOrganization>(); }
+IfcPersonAndOrganization::list::ptr IfcPerson::EngagedIn() const { return entity->getInverse(Type::IfcPersonAndOrganization, 0)->as<IfcPersonAndOrganization>(); }
 bool IfcPerson::is(Type::Enum v) const { return v == Type::IfcPerson; }
 Type::Enum IfcPerson::type() const { return Type::IfcPerson; }
 Type::Enum IfcPerson::Class() { return Type::IfcPerson; }
@@ -12588,8 +12588,8 @@ void IfcPhysicalQuantity::setName(std::string v) { if ( ! entity->isWritable() )
 bool IfcPhysicalQuantity::hasDescription() const { return !entity->getArgument(1)->isNull(); }
 std::string IfcPhysicalQuantity::Description() const { return *entity->getArgument(1); }
 void IfcPhysicalQuantity::setDescription(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(1,v); }
-IfcExternalReferenceRelationship::list::ptr IfcPhysicalQuantity::HasExternalReferences() const { return entity->getInverse(Type::IfcExternalReferenceRelationship)->as<IfcExternalReferenceRelationship>(); }
-IfcPhysicalComplexQuantity::list::ptr IfcPhysicalQuantity::PartOfComplex() const { return entity->getInverse(Type::IfcPhysicalComplexQuantity)->as<IfcPhysicalComplexQuantity>(); }
+IfcExternalReferenceRelationship::list::ptr IfcPhysicalQuantity::HasExternalReferences() const { return entity->getInverse(Type::IfcExternalReferenceRelationship, 3)->as<IfcExternalReferenceRelationship>(); }
+IfcPhysicalComplexQuantity::list::ptr IfcPhysicalQuantity::PartOfComplex() const { return entity->getInverse(Type::IfcPhysicalComplexQuantity, 2)->as<IfcPhysicalComplexQuantity>(); }
 bool IfcPhysicalQuantity::is(Type::Enum v) const { return v == Type::IfcPhysicalQuantity; }
 Type::Enum IfcPhysicalQuantity::type() const { return Type::IfcPhysicalQuantity; }
 Type::Enum IfcPhysicalQuantity::Class() { return Type::IfcPhysicalQuantity; }
@@ -12802,9 +12802,9 @@ IfcPolyline::IfcPolyline(IfcAbstractEntity* e) : IfcBoundedCurve((IfcAbstractEnt
 IfcPolyline::IfcPolyline(IfcTemplatedEntityList< IfcCartesianPoint >::ptr v1_Points) : IfcBoundedCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Points)->generalize()); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcPort
-IfcRelConnectsPortToElement::list::ptr IfcPort::ContainedIn() const { return entity->getInverse(Type::IfcRelConnectsPortToElement)->as<IfcRelConnectsPortToElement>(); }
-IfcRelConnectsPorts::list::ptr IfcPort::ConnectedFrom() const { return entity->getInverse(Type::IfcRelConnectsPorts)->as<IfcRelConnectsPorts>(); }
-IfcRelConnectsPorts::list::ptr IfcPort::ConnectedTo() const { return entity->getInverse(Type::IfcRelConnectsPorts)->as<IfcRelConnectsPorts>(); }
+IfcRelConnectsPortToElement::list::ptr IfcPort::ContainedIn() const { return entity->getInverse(Type::IfcRelConnectsPortToElement, 4)->as<IfcRelConnectsPortToElement>(); }
+IfcRelConnectsPorts::list::ptr IfcPort::ConnectedFrom() const { return entity->getInverse(Type::IfcRelConnectsPorts, 5)->as<IfcRelConnectsPorts>(); }
+IfcRelConnectsPorts::list::ptr IfcPort::ConnectedTo() const { return entity->getInverse(Type::IfcRelConnectsPorts, 4)->as<IfcRelConnectsPorts>(); }
 bool IfcPort::is(Type::Enum v) const { return v == Type::IfcPort || IfcProduct::is(v); }
 Type::Enum IfcPort::type() const { return Type::IfcPort; }
 Type::Enum IfcPort::Class() { return Type::IfcPort; }
@@ -12967,9 +12967,9 @@ void IfcProcess::setIdentification(std::string v) { if ( ! entity->isWritable() 
 bool IfcProcess::hasLongDescription() const { return !entity->getArgument(6)->isNull(); }
 std::string IfcProcess::LongDescription() const { return *entity->getArgument(6); }
 void IfcProcess::setLongDescription(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(6,v); }
-IfcRelSequence::list::ptr IfcProcess::IsPredecessorTo() const { return entity->getInverse(Type::IfcRelSequence)->as<IfcRelSequence>(); }
-IfcRelSequence::list::ptr IfcProcess::IsSuccessorFrom() const { return entity->getInverse(Type::IfcRelSequence)->as<IfcRelSequence>(); }
-IfcRelAssignsToProcess::list::ptr IfcProcess::OperatesOn() const { return entity->getInverse(Type::IfcRelAssignsToProcess)->as<IfcRelAssignsToProcess>(); }
+IfcRelSequence::list::ptr IfcProcess::IsPredecessorTo() const { return entity->getInverse(Type::IfcRelSequence, 4)->as<IfcRelSequence>(); }
+IfcRelSequence::list::ptr IfcProcess::IsSuccessorFrom() const { return entity->getInverse(Type::IfcRelSequence, 5)->as<IfcRelSequence>(); }
+IfcRelAssignsToProcess::list::ptr IfcProcess::OperatesOn() const { return entity->getInverse(Type::IfcRelAssignsToProcess, 6)->as<IfcRelAssignsToProcess>(); }
 bool IfcProcess::is(Type::Enum v) const { return v == Type::IfcProcess || IfcObject::is(v); }
 Type::Enum IfcProcess::type() const { return Type::IfcProcess; }
 Type::Enum IfcProcess::Class() { return Type::IfcProcess; }
@@ -12983,7 +12983,7 @@ void IfcProduct::setObjectPlacement(IfcObjectPlacement* v) { if ( ! entity->isWr
 bool IfcProduct::hasRepresentation() const { return !entity->getArgument(6)->isNull(); }
 IfcProductRepresentation* IfcProduct::Representation() const { return (IfcProductRepresentation*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(6))); }
 void IfcProduct::setRepresentation(IfcProductRepresentation* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(6,v); }
-IfcRelAssignsToProduct::list::ptr IfcProduct::ReferencedBy() const { return entity->getInverse(Type::IfcRelAssignsToProduct)->as<IfcRelAssignsToProduct>(); }
+IfcRelAssignsToProduct::list::ptr IfcProduct::ReferencedBy() const { return entity->getInverse(Type::IfcRelAssignsToProduct, 6)->as<IfcRelAssignsToProduct>(); }
 bool IfcProduct::is(Type::Enum v) const { return v == Type::IfcProduct || IfcObject::is(v); }
 Type::Enum IfcProduct::type() const { return Type::IfcProduct; }
 Type::Enum IfcProduct::Class() { return Type::IfcProduct; }
@@ -12991,8 +12991,8 @@ IfcProduct::IfcProduct(IfcAbstractEntity* e) : IfcObject((IfcAbstractEntity*)0) 
 IfcProduct::IfcProduct(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation) : IfcObject((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } if (v5_ObjectType) { e->setArgument(4,(*v5_ObjectType)); } else { e->setArgument(4); } e->setArgument(5,(v6_ObjectPlacement)); e->setArgument(6,(v7_Representation)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcProductDefinitionShape
-IfcProduct::list::ptr IfcProductDefinitionShape::ShapeOfProduct() const { return entity->getInverse(Type::IfcProduct)->as<IfcProduct>(); }
-IfcShapeAspect::list::ptr IfcProductDefinitionShape::HasShapeAspects() const { return entity->getInverse(Type::IfcShapeAspect)->as<IfcShapeAspect>(); }
+IfcProduct::list::ptr IfcProductDefinitionShape::ShapeOfProduct() const { return entity->getInverse(Type::IfcProduct, 6)->as<IfcProduct>(); }
+IfcShapeAspect::list::ptr IfcProductDefinitionShape::HasShapeAspects() const { return entity->getInverse(Type::IfcShapeAspect, 4)->as<IfcShapeAspect>(); }
 bool IfcProductDefinitionShape::is(Type::Enum v) const { return v == Type::IfcProductDefinitionShape || IfcProductRepresentation::is(v); }
 Type::Enum IfcProductDefinitionShape::type() const { return Type::IfcProductDefinitionShape; }
 Type::Enum IfcProductDefinitionShape::Class() { return Type::IfcProductDefinitionShape; }
@@ -13020,8 +13020,8 @@ void IfcProfileDef::setProfileType(IfcProfileTypeEnum::IfcProfileTypeEnum v) { i
 bool IfcProfileDef::hasProfileName() const { return !entity->getArgument(1)->isNull(); }
 std::string IfcProfileDef::ProfileName() const { return *entity->getArgument(1); }
 void IfcProfileDef::setProfileName(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(1,v); }
-IfcExternalReferenceRelationship::list::ptr IfcProfileDef::HasExternalReference() const { return entity->getInverse(Type::IfcExternalReferenceRelationship)->as<IfcExternalReferenceRelationship>(); }
-IfcProfileProperties::list::ptr IfcProfileDef::HasProperties() const { return entity->getInverse(Type::IfcProfileProperties)->as<IfcProfileProperties>(); }
+IfcExternalReferenceRelationship::list::ptr IfcProfileDef::HasExternalReference() const { return entity->getInverse(Type::IfcExternalReferenceRelationship, 3)->as<IfcExternalReferenceRelationship>(); }
+IfcProfileProperties::list::ptr IfcProfileDef::HasProperties() const { return entity->getInverse(Type::IfcProfileProperties, 3)->as<IfcProfileProperties>(); }
 bool IfcProfileDef::is(Type::Enum v) const { return v == Type::IfcProfileDef; }
 Type::Enum IfcProfileDef::type() const { return Type::IfcProfileDef; }
 Type::Enum IfcProfileDef::Class() { return Type::IfcProfileDef; }
@@ -13099,10 +13099,10 @@ void IfcProperty::setName(std::string v) { if ( ! entity->isWritable() ) { entit
 bool IfcProperty::hasDescription() const { return !entity->getArgument(1)->isNull(); }
 std::string IfcProperty::Description() const { return *entity->getArgument(1); }
 void IfcProperty::setDescription(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(1,v); }
-IfcPropertySet::list::ptr IfcProperty::PartOfPset() const { return entity->getInverse(Type::IfcPropertySet)->as<IfcPropertySet>(); }
-IfcPropertyDependencyRelationship::list::ptr IfcProperty::PropertyForDependance() const { return entity->getInverse(Type::IfcPropertyDependencyRelationship)->as<IfcPropertyDependencyRelationship>(); }
-IfcPropertyDependencyRelationship::list::ptr IfcProperty::PropertyDependsOn() const { return entity->getInverse(Type::IfcPropertyDependencyRelationship)->as<IfcPropertyDependencyRelationship>(); }
-IfcComplexProperty::list::ptr IfcProperty::PartOfComplex() const { return entity->getInverse(Type::IfcComplexProperty)->as<IfcComplexProperty>(); }
+IfcPropertySet::list::ptr IfcProperty::PartOfPset() const { return entity->getInverse(Type::IfcPropertySet, 4)->as<IfcPropertySet>(); }
+IfcPropertyDependencyRelationship::list::ptr IfcProperty::PropertyForDependance() const { return entity->getInverse(Type::IfcPropertyDependencyRelationship, 2)->as<IfcPropertyDependencyRelationship>(); }
+IfcPropertyDependencyRelationship::list::ptr IfcProperty::PropertyDependsOn() const { return entity->getInverse(Type::IfcPropertyDependencyRelationship, 3)->as<IfcPropertyDependencyRelationship>(); }
+IfcComplexProperty::list::ptr IfcProperty::PartOfComplex() const { return entity->getInverse(Type::IfcComplexProperty, 3)->as<IfcComplexProperty>(); }
 bool IfcProperty::is(Type::Enum v) const { return v == Type::IfcProperty || IfcPropertyAbstraction::is(v); }
 Type::Enum IfcProperty::type() const { return Type::IfcProperty; }
 Type::Enum IfcProperty::Class() { return Type::IfcProperty; }
@@ -13110,7 +13110,7 @@ IfcProperty::IfcProperty(IfcAbstractEntity* e) : IfcPropertyAbstraction((IfcAbst
 IfcProperty::IfcProperty(std::string v1_Name, boost::optional< std::string > v2_Description) : IfcPropertyAbstraction((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Name)); if (v2_Description) { e->setArgument(1,(*v2_Description)); } else { e->setArgument(1); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcPropertyAbstraction
-IfcExternalReferenceRelationship::list::ptr IfcPropertyAbstraction::HasExternalReferences() const { return entity->getInverse(Type::IfcExternalReferenceRelationship)->as<IfcExternalReferenceRelationship>(); }
+IfcExternalReferenceRelationship::list::ptr IfcPropertyAbstraction::HasExternalReferences() const { return entity->getInverse(Type::IfcExternalReferenceRelationship, 3)->as<IfcExternalReferenceRelationship>(); }
 bool IfcPropertyAbstraction::is(Type::Enum v) const { return v == Type::IfcPropertyAbstraction; }
 Type::Enum IfcPropertyAbstraction::type() const { return Type::IfcPropertyAbstraction; }
 Type::Enum IfcPropertyAbstraction::Class() { return Type::IfcPropertyAbstraction; }
@@ -13137,8 +13137,8 @@ IfcPropertyBoundedValue::IfcPropertyBoundedValue(IfcAbstractEntity* e) : IfcSimp
 IfcPropertyBoundedValue::IfcPropertyBoundedValue(std::string v1_Name, boost::optional< std::string > v2_Description, IfcValue* v3_UpperBoundValue, IfcValue* v4_LowerBoundValue, IfcUnit* v5_Unit, IfcValue* v6_SetPointValue) : IfcSimpleProperty((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Name)); if (v2_Description) { e->setArgument(1,(*v2_Description)); } else { e->setArgument(1); } e->setArgument(2,(v3_UpperBoundValue)); e->setArgument(3,(v4_LowerBoundValue)); e->setArgument(4,(v5_Unit)); e->setArgument(5,(v6_SetPointValue)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcPropertyDefinition
-IfcRelDeclares::list::ptr IfcPropertyDefinition::HasContext() const { return entity->getInverse(Type::IfcRelDeclares)->as<IfcRelDeclares>(); }
-IfcRelAssociates::list::ptr IfcPropertyDefinition::HasAssociations() const { return entity->getInverse(Type::IfcRelAssociates)->as<IfcRelAssociates>(); }
+IfcRelDeclares::list::ptr IfcPropertyDefinition::HasContext() const { return entity->getInverse(Type::IfcRelDeclares, 5)->as<IfcRelDeclares>(); }
+IfcRelAssociates::list::ptr IfcPropertyDefinition::HasAssociations() const { return entity->getInverse(Type::IfcRelAssociates, 4)->as<IfcRelAssociates>(); }
 bool IfcPropertyDefinition::is(Type::Enum v) const { return v == Type::IfcPropertyDefinition || IfcRoot::is(v); }
 Type::Enum IfcPropertyDefinition::type() const { return Type::IfcPropertyDefinition; }
 Type::Enum IfcPropertyDefinition::Class() { return Type::IfcPropertyDefinition; }
@@ -13222,9 +13222,9 @@ IfcPropertySet::IfcPropertySet(IfcAbstractEntity* e) : IfcPropertySetDefinition(
 IfcPropertySet::IfcPropertySet(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcProperty >::ptr v5_HasProperties) : IfcPropertySetDefinition((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } e->setArgument(4,(v5_HasProperties)->generalize()); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcPropertySetDefinition
-IfcTypeObject::list::ptr IfcPropertySetDefinition::DefinesType() const { return entity->getInverse(Type::IfcTypeObject)->as<IfcTypeObject>(); }
-IfcRelDefinesByTemplate::list::ptr IfcPropertySetDefinition::IsDefinedBy() const { return entity->getInverse(Type::IfcRelDefinesByTemplate)->as<IfcRelDefinesByTemplate>(); }
-IfcRelDefinesByProperties::list::ptr IfcPropertySetDefinition::DefinesOccurrence() const { return entity->getInverse(Type::IfcRelDefinesByProperties)->as<IfcRelDefinesByProperties>(); }
+IfcTypeObject::list::ptr IfcPropertySetDefinition::DefinesType() const { return entity->getInverse(Type::IfcTypeObject, 5)->as<IfcTypeObject>(); }
+IfcRelDefinesByTemplate::list::ptr IfcPropertySetDefinition::IsDefinedBy() const { return entity->getInverse(Type::IfcRelDefinesByTemplate, 4)->as<IfcRelDefinesByTemplate>(); }
+IfcRelDefinesByProperties::list::ptr IfcPropertySetDefinition::DefinesOccurrence() const { return entity->getInverse(Type::IfcRelDefinesByProperties, 5)->as<IfcRelDefinesByProperties>(); }
 bool IfcPropertySetDefinition::is(Type::Enum v) const { return v == Type::IfcPropertySetDefinition || IfcPropertyDefinition::is(v); }
 Type::Enum IfcPropertySetDefinition::type() const { return Type::IfcPropertySetDefinition; }
 Type::Enum IfcPropertySetDefinition::Class() { return Type::IfcPropertySetDefinition; }
@@ -13240,7 +13240,7 @@ std::string IfcPropertySetTemplate::ApplicableEntity() const { return *entity->g
 void IfcPropertySetTemplate::setApplicableEntity(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(5,v); }
 IfcTemplatedEntityList< IfcPropertyTemplate >::ptr IfcPropertySetTemplate::HasPropertyTemplates() const { IfcEntityList::ptr es = *entity->getArgument(6); return es->as<IfcPropertyTemplate>(); }
 void IfcPropertySetTemplate::setHasPropertyTemplates(IfcTemplatedEntityList< IfcPropertyTemplate >::ptr v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(6,v->generalize()); }
-IfcRelDefinesByTemplate::list::ptr IfcPropertySetTemplate::Defines() const { return entity->getInverse(Type::IfcRelDefinesByTemplate)->as<IfcRelDefinesByTemplate>(); }
+IfcRelDefinesByTemplate::list::ptr IfcPropertySetTemplate::Defines() const { return entity->getInverse(Type::IfcRelDefinesByTemplate, 5)->as<IfcRelDefinesByTemplate>(); }
 bool IfcPropertySetTemplate::is(Type::Enum v) const { return v == Type::IfcPropertySetTemplate || IfcPropertyTemplateDefinition::is(v); }
 Type::Enum IfcPropertySetTemplate::type() const { return Type::IfcPropertySetTemplate; }
 Type::Enum IfcPropertySetTemplate::Class() { return Type::IfcPropertySetTemplate; }
@@ -13286,8 +13286,8 @@ IfcPropertyTableValue::IfcPropertyTableValue(IfcAbstractEntity* e) : IfcSimplePr
 IfcPropertyTableValue::IfcPropertyTableValue(std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< IfcEntityList::ptr > v3_DefiningValues, boost::optional< IfcEntityList::ptr > v4_DefinedValues, boost::optional< std::string > v5_Expression, IfcUnit* v6_DefiningUnit, IfcUnit* v7_DefinedUnit, boost::optional< IfcCurveInterpolationEnum::IfcCurveInterpolationEnum > v8_CurveInterpolation) : IfcSimpleProperty((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Name)); if (v2_Description) { e->setArgument(1,(*v2_Description)); } else { e->setArgument(1); } if (v3_DefiningValues) { e->setArgument(2,(*v3_DefiningValues)); } else { e->setArgument(2); } if (v4_DefinedValues) { e->setArgument(3,(*v4_DefinedValues)); } else { e->setArgument(3); } if (v5_Expression) { e->setArgument(4,(*v5_Expression)); } else { e->setArgument(4); } e->setArgument(5,(v6_DefiningUnit)); e->setArgument(6,(v7_DefinedUnit)); if (v8_CurveInterpolation) { e->setArgument(7,*v8_CurveInterpolation,IfcCurveInterpolationEnum::ToString(*v8_CurveInterpolation)); } else { e->setArgument(7); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcPropertyTemplate
-IfcComplexPropertyTemplate::list::ptr IfcPropertyTemplate::PartOfComplexTemplate() const { return entity->getInverse(Type::IfcComplexPropertyTemplate)->as<IfcComplexPropertyTemplate>(); }
-IfcPropertySetTemplate::list::ptr IfcPropertyTemplate::PartOfPsetTemplate() const { return entity->getInverse(Type::IfcPropertySetTemplate)->as<IfcPropertySetTemplate>(); }
+IfcComplexPropertyTemplate::list::ptr IfcPropertyTemplate::PartOfComplexTemplate() const { return entity->getInverse(Type::IfcComplexPropertyTemplate, 6)->as<IfcComplexPropertyTemplate>(); }
+IfcPropertySetTemplate::list::ptr IfcPropertyTemplate::PartOfPsetTemplate() const { return entity->getInverse(Type::IfcPropertySetTemplate, 6)->as<IfcPropertySetTemplate>(); }
 bool IfcPropertyTemplate::is(Type::Enum v) const { return v == Type::IfcPropertyTemplate || IfcPropertyTemplateDefinition::is(v); }
 Type::Enum IfcPropertyTemplate::type() const { return Type::IfcPropertyTemplate; }
 Type::Enum IfcPropertyTemplate::Class() { return Type::IfcPropertyTemplate; }
@@ -14322,7 +14322,7 @@ IfcRelSpaceBoundary::IfcRelSpaceBoundary(std::string v1_GlobalId, IfcOwnerHistor
 bool IfcRelSpaceBoundary1stLevel::hasParentBoundary() const { return !entity->getArgument(9)->isNull(); }
 IfcRelSpaceBoundary1stLevel* IfcRelSpaceBoundary1stLevel::ParentBoundary() const { return (IfcRelSpaceBoundary1stLevel*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(9))); }
 void IfcRelSpaceBoundary1stLevel::setParentBoundary(IfcRelSpaceBoundary1stLevel* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(9,v); }
-IfcRelSpaceBoundary1stLevel::list::ptr IfcRelSpaceBoundary1stLevel::InnerBoundaries() const { return entity->getInverse(Type::IfcRelSpaceBoundary1stLevel)->as<IfcRelSpaceBoundary1stLevel>(); }
+IfcRelSpaceBoundary1stLevel::list::ptr IfcRelSpaceBoundary1stLevel::InnerBoundaries() const { return entity->getInverse(Type::IfcRelSpaceBoundary1stLevel, 9)->as<IfcRelSpaceBoundary1stLevel>(); }
 bool IfcRelSpaceBoundary1stLevel::is(Type::Enum v) const { return v == Type::IfcRelSpaceBoundary1stLevel || IfcRelSpaceBoundary::is(v); }
 Type::Enum IfcRelSpaceBoundary1stLevel::type() const { return Type::IfcRelSpaceBoundary1stLevel; }
 Type::Enum IfcRelSpaceBoundary1stLevel::Class() { return Type::IfcRelSpaceBoundary1stLevel; }
@@ -14333,7 +14333,7 @@ IfcRelSpaceBoundary1stLevel::IfcRelSpaceBoundary1stLevel(std::string v1_GlobalId
 bool IfcRelSpaceBoundary2ndLevel::hasCorrespondingBoundary() const { return !entity->getArgument(10)->isNull(); }
 IfcRelSpaceBoundary2ndLevel* IfcRelSpaceBoundary2ndLevel::CorrespondingBoundary() const { return (IfcRelSpaceBoundary2ndLevel*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(10))); }
 void IfcRelSpaceBoundary2ndLevel::setCorrespondingBoundary(IfcRelSpaceBoundary2ndLevel* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(10,v); }
-IfcRelSpaceBoundary2ndLevel::list::ptr IfcRelSpaceBoundary2ndLevel::Corresponds() const { return entity->getInverse(Type::IfcRelSpaceBoundary2ndLevel)->as<IfcRelSpaceBoundary2ndLevel>(); }
+IfcRelSpaceBoundary2ndLevel::list::ptr IfcRelSpaceBoundary2ndLevel::Corresponds() const { return entity->getInverse(Type::IfcRelSpaceBoundary2ndLevel, 10)->as<IfcRelSpaceBoundary2ndLevel>(); }
 bool IfcRelSpaceBoundary2ndLevel::is(Type::Enum v) const { return v == Type::IfcRelSpaceBoundary2ndLevel || IfcRelSpaceBoundary1stLevel::is(v); }
 Type::Enum IfcRelSpaceBoundary2ndLevel::type() const { return Type::IfcRelSpaceBoundary2ndLevel; }
 Type::Enum IfcRelSpaceBoundary2ndLevel::Class() { return Type::IfcRelSpaceBoundary2ndLevel; }
@@ -14378,9 +14378,9 @@ std::string IfcRepresentation::RepresentationType() const { return *entity->getA
 void IfcRepresentation::setRepresentationType(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(2,v); }
 IfcTemplatedEntityList< IfcRepresentationItem >::ptr IfcRepresentation::Items() const { IfcEntityList::ptr es = *entity->getArgument(3); return es->as<IfcRepresentationItem>(); }
 void IfcRepresentation::setItems(IfcTemplatedEntityList< IfcRepresentationItem >::ptr v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(3,v->generalize()); }
-IfcRepresentationMap::list::ptr IfcRepresentation::RepresentationMap() const { return entity->getInverse(Type::IfcRepresentationMap)->as<IfcRepresentationMap>(); }
-IfcPresentationLayerAssignment::list::ptr IfcRepresentation::LayerAssignments() const { return entity->getInverse(Type::IfcPresentationLayerAssignment)->as<IfcPresentationLayerAssignment>(); }
-IfcProductRepresentation::list::ptr IfcRepresentation::OfProductRepresentation() const { return entity->getInverse(Type::IfcProductRepresentation)->as<IfcProductRepresentation>(); }
+IfcRepresentationMap::list::ptr IfcRepresentation::RepresentationMap() const { return entity->getInverse(Type::IfcRepresentationMap, 1)->as<IfcRepresentationMap>(); }
+IfcPresentationLayerAssignment::list::ptr IfcRepresentation::LayerAssignments() const { return entity->getInverse(Type::IfcPresentationLayerAssignment, 2)->as<IfcPresentationLayerAssignment>(); }
+IfcProductRepresentation::list::ptr IfcRepresentation::OfProductRepresentation() const { return entity->getInverse(Type::IfcProductRepresentation, 2)->as<IfcProductRepresentation>(); }
 bool IfcRepresentation::is(Type::Enum v) const { return v == Type::IfcRepresentation; }
 Type::Enum IfcRepresentation::type() const { return Type::IfcRepresentation; }
 Type::Enum IfcRepresentation::Class() { return Type::IfcRepresentation; }
@@ -14394,7 +14394,7 @@ void IfcRepresentationContext::setContextIdentifier(std::string v) { if ( ! enti
 bool IfcRepresentationContext::hasContextType() const { return !entity->getArgument(1)->isNull(); }
 std::string IfcRepresentationContext::ContextType() const { return *entity->getArgument(1); }
 void IfcRepresentationContext::setContextType(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(1,v); }
-IfcRepresentation::list::ptr IfcRepresentationContext::RepresentationsInContext() const { return entity->getInverse(Type::IfcRepresentation)->as<IfcRepresentation>(); }
+IfcRepresentation::list::ptr IfcRepresentationContext::RepresentationsInContext() const { return entity->getInverse(Type::IfcRepresentation, 0)->as<IfcRepresentation>(); }
 bool IfcRepresentationContext::is(Type::Enum v) const { return v == Type::IfcRepresentationContext; }
 Type::Enum IfcRepresentationContext::type() const { return Type::IfcRepresentationContext; }
 Type::Enum IfcRepresentationContext::Class() { return Type::IfcRepresentationContext; }
@@ -14402,8 +14402,8 @@ IfcRepresentationContext::IfcRepresentationContext(IfcAbstractEntity* e) : IfcUt
 IfcRepresentationContext::IfcRepresentationContext(boost::optional< std::string > v1_ContextIdentifier, boost::optional< std::string > v2_ContextType) : IfcUtil::IfcBaseEntity() { IfcWritableEntity* e = new IfcWritableEntity(Class()); if (v1_ContextIdentifier) { e->setArgument(0,(*v1_ContextIdentifier)); } else { e->setArgument(0); } if (v2_ContextType) { e->setArgument(1,(*v2_ContextType)); } else { e->setArgument(1); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcRepresentationItem
-IfcPresentationLayerAssignment::list::ptr IfcRepresentationItem::LayerAssignment() const { return entity->getInverse(Type::IfcPresentationLayerAssignment)->as<IfcPresentationLayerAssignment>(); }
-IfcStyledItem::list::ptr IfcRepresentationItem::StyledByItem() const { return entity->getInverse(Type::IfcStyledItem)->as<IfcStyledItem>(); }
+IfcPresentationLayerAssignment::list::ptr IfcRepresentationItem::LayerAssignment() const { return entity->getInverse(Type::IfcPresentationLayerAssignment, 2)->as<IfcPresentationLayerAssignment>(); }
+IfcStyledItem::list::ptr IfcRepresentationItem::StyledByItem() const { return entity->getInverse(Type::IfcStyledItem, 0)->as<IfcStyledItem>(); }
 bool IfcRepresentationItem::is(Type::Enum v) const { return v == Type::IfcRepresentationItem; }
 Type::Enum IfcRepresentationItem::type() const { return Type::IfcRepresentationItem; }
 Type::Enum IfcRepresentationItem::Class() { return Type::IfcRepresentationItem; }
@@ -14415,8 +14415,8 @@ IfcAxis2Placement* IfcRepresentationMap::MappingOrigin() const { return (IfcAxis
 void IfcRepresentationMap::setMappingOrigin(IfcAxis2Placement* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(0,v); }
 IfcRepresentation* IfcRepresentationMap::MappedRepresentation() const { return (IfcRepresentation*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(1))); }
 void IfcRepresentationMap::setMappedRepresentation(IfcRepresentation* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(1,v); }
-IfcShapeAspect::list::ptr IfcRepresentationMap::HasShapeAspects() const { return entity->getInverse(Type::IfcShapeAspect)->as<IfcShapeAspect>(); }
-IfcMappedItem::list::ptr IfcRepresentationMap::MapUsage() const { return entity->getInverse(Type::IfcMappedItem)->as<IfcMappedItem>(); }
+IfcShapeAspect::list::ptr IfcRepresentationMap::HasShapeAspects() const { return entity->getInverse(Type::IfcShapeAspect, 4)->as<IfcShapeAspect>(); }
+IfcMappedItem::list::ptr IfcRepresentationMap::MapUsage() const { return entity->getInverse(Type::IfcMappedItem, 0)->as<IfcMappedItem>(); }
 bool IfcRepresentationMap::is(Type::Enum v) const { return v == Type::IfcRepresentationMap; }
 Type::Enum IfcRepresentationMap::type() const { return Type::IfcRepresentationMap; }
 Type::Enum IfcRepresentationMap::Class() { return Type::IfcRepresentationMap; }
@@ -14430,7 +14430,7 @@ void IfcResource::setIdentification(std::string v) { if ( ! entity->isWritable()
 bool IfcResource::hasLongDescription() const { return !entity->getArgument(6)->isNull(); }
 std::string IfcResource::LongDescription() const { return *entity->getArgument(6); }
 void IfcResource::setLongDescription(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(6,v); }
-IfcRelAssignsToResource::list::ptr IfcResource::ResourceOf() const { return entity->getInverse(Type::IfcRelAssignsToResource)->as<IfcRelAssignsToResource>(); }
+IfcRelAssignsToResource::list::ptr IfcResource::ResourceOf() const { return entity->getInverse(Type::IfcRelAssignsToResource, 6)->as<IfcRelAssignsToResource>(); }
 bool IfcResource::is(Type::Enum v) const { return v == Type::IfcResource || IfcObject::is(v); }
 Type::Enum IfcResource::type() const { return Type::IfcResource; }
 Type::Enum IfcResource::Class() { return Type::IfcResource; }
@@ -14765,7 +14765,7 @@ IfcShapeAspect::IfcShapeAspect(IfcAbstractEntity* e) : IfcUtil::IfcBaseEntity() 
 IfcShapeAspect::IfcShapeAspect(IfcTemplatedEntityList< IfcShapeModel >::ptr v1_ShapeRepresentations, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, bool v4_ProductDefinitional, IfcProductRepresentationSelect* v5_PartOfProductDefinitionShape) : IfcUtil::IfcBaseEntity() { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_ShapeRepresentations)->generalize()); if (v2_Name) { e->setArgument(1,(*v2_Name)); } else { e->setArgument(1); } if (v3_Description) { e->setArgument(2,(*v3_Description)); } else { e->setArgument(2); } e->setArgument(3,(v4_ProductDefinitional)); e->setArgument(4,(v5_PartOfProductDefinitionShape)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcShapeModel
-IfcShapeAspect::list::ptr IfcShapeModel::OfShapeAspect() const { return entity->getInverse(Type::IfcShapeAspect)->as<IfcShapeAspect>(); }
+IfcShapeAspect::list::ptr IfcShapeModel::OfShapeAspect() const { return entity->getInverse(Type::IfcShapeAspect, 0)->as<IfcShapeAspect>(); }
 bool IfcShapeModel::is(Type::Enum v) const { return v == Type::IfcShapeModel || IfcRepresentation::is(v); }
 Type::Enum IfcShapeModel::type() const { return Type::IfcShapeModel; }
 Type::Enum IfcShapeModel::Class() { return Type::IfcShapeModel; }
@@ -14930,8 +14930,8 @@ void IfcSpace::setPredefinedType(IfcSpaceTypeEnum::IfcSpaceTypeEnum v) { if ( ! 
 bool IfcSpace::hasElevationWithFlooring() const { return !entity->getArgument(10)->isNull(); }
 double IfcSpace::ElevationWithFlooring() const { return *entity->getArgument(10); }
 void IfcSpace::setElevationWithFlooring(double v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(10,v); }
-IfcRelCoversSpaces::list::ptr IfcSpace::HasCoverings() const { return entity->getInverse(Type::IfcRelCoversSpaces)->as<IfcRelCoversSpaces>(); }
-IfcRelSpaceBoundary::list::ptr IfcSpace::BoundedBy() const { return entity->getInverse(Type::IfcRelSpaceBoundary)->as<IfcRelSpaceBoundary>(); }
+IfcRelCoversSpaces::list::ptr IfcSpace::HasCoverings() const { return entity->getInverse(Type::IfcRelCoversSpaces, 4)->as<IfcRelCoversSpaces>(); }
+IfcRelSpaceBoundary::list::ptr IfcSpace::BoundedBy() const { return entity->getInverse(Type::IfcRelSpaceBoundary, 4)->as<IfcRelSpaceBoundary>(); }
 bool IfcSpace::is(Type::Enum v) const { return v == Type::IfcSpace || IfcSpatialStructureElement::is(v); }
 Type::Enum IfcSpace::type() const { return Type::IfcSpace; }
 Type::Enum IfcSpace::Class() { return Type::IfcSpace; }
@@ -14973,9 +14973,9 @@ IfcSpaceType::IfcSpaceType(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHis
 bool IfcSpatialElement::hasLongName() const { return !entity->getArgument(7)->isNull(); }
 std::string IfcSpatialElement::LongName() const { return *entity->getArgument(7); }
 void IfcSpatialElement::setLongName(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(7,v); }
-IfcRelContainedInSpatialStructure::list::ptr IfcSpatialElement::ContainsElements() const { return entity->getInverse(Type::IfcRelContainedInSpatialStructure)->as<IfcRelContainedInSpatialStructure>(); }
-IfcRelServicesBuildings::list::ptr IfcSpatialElement::ServicedBySystems() const { return entity->getInverse(Type::IfcRelServicesBuildings)->as<IfcRelServicesBuildings>(); }
-IfcRelReferencedInSpatialStructure::list::ptr IfcSpatialElement::ReferencesElements() const { return entity->getInverse(Type::IfcRelReferencedInSpatialStructure)->as<IfcRelReferencedInSpatialStructure>(); }
+IfcRelContainedInSpatialStructure::list::ptr IfcSpatialElement::ContainsElements() const { return entity->getInverse(Type::IfcRelContainedInSpatialStructure, 5)->as<IfcRelContainedInSpatialStructure>(); }
+IfcRelServicesBuildings::list::ptr IfcSpatialElement::ServicedBySystems() const { return entity->getInverse(Type::IfcRelServicesBuildings, 5)->as<IfcRelServicesBuildings>(); }
+IfcRelReferencedInSpatialStructure::list::ptr IfcSpatialElement::ReferencesElements() const { return entity->getInverse(Type::IfcRelReferencedInSpatialStructure, 5)->as<IfcRelReferencedInSpatialStructure>(); }
 bool IfcSpatialElement::is(Type::Enum v) const { return v == Type::IfcSpatialElement || IfcProduct::is(v); }
 Type::Enum IfcSpatialElement::type() const { return Type::IfcSpatialElement; }
 Type::Enum IfcSpatialElement::Class() { return Type::IfcSpatialElement; }
@@ -15124,7 +15124,7 @@ IfcStructuralLoad* IfcStructuralActivity::AppliedLoad() const { return (IfcStruc
 void IfcStructuralActivity::setAppliedLoad(IfcStructuralLoad* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(7,v); }
 IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum IfcStructuralActivity::GlobalOrLocal() const { return IfcGlobalOrLocalEnum::FromString(*entity->getArgument(8)); }
 void IfcStructuralActivity::setGlobalOrLocal(IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(8,v,IfcGlobalOrLocalEnum::ToString(v)); }
-IfcRelConnectsStructuralActivity::list::ptr IfcStructuralActivity::AssignedToStructuralItem() const { return entity->getInverse(Type::IfcRelConnectsStructuralActivity)->as<IfcRelConnectsStructuralActivity>(); }
+IfcRelConnectsStructuralActivity::list::ptr IfcStructuralActivity::AssignedToStructuralItem() const { return entity->getInverse(Type::IfcRelConnectsStructuralActivity, 5)->as<IfcRelConnectsStructuralActivity>(); }
 bool IfcStructuralActivity::is(Type::Enum v) const { return v == Type::IfcStructuralActivity || IfcProduct::is(v); }
 Type::Enum IfcStructuralActivity::type() const { return Type::IfcStructuralActivity; }
 Type::Enum IfcStructuralActivity::Class() { return Type::IfcStructuralActivity; }
@@ -15156,7 +15156,7 @@ IfcStructuralAnalysisModel::IfcStructuralAnalysisModel(std::string v1_GlobalId, 
 bool IfcStructuralConnection::hasAppliedCondition() const { return !entity->getArgument(7)->isNull(); }
 IfcBoundaryCondition* IfcStructuralConnection::AppliedCondition() const { return (IfcBoundaryCondition*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(7))); }
 void IfcStructuralConnection::setAppliedCondition(IfcBoundaryCondition* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(7,v); }
-IfcRelConnectsStructuralMember::list::ptr IfcStructuralConnection::ConnectsStructuralMembers() const { return entity->getInverse(Type::IfcRelConnectsStructuralMember)->as<IfcRelConnectsStructuralMember>(); }
+IfcRelConnectsStructuralMember::list::ptr IfcStructuralConnection::ConnectsStructuralMembers() const { return entity->getInverse(Type::IfcRelConnectsStructuralMember, 5)->as<IfcRelConnectsStructuralMember>(); }
 bool IfcStructuralConnection::is(Type::Enum v) const { return v == Type::IfcStructuralConnection || IfcStructuralItem::is(v); }
 Type::Enum IfcStructuralConnection::type() const { return Type::IfcStructuralConnection; }
 Type::Enum IfcStructuralConnection::Class() { return Type::IfcStructuralConnection; }
@@ -15222,7 +15222,7 @@ IfcStructuralCurveReaction::IfcStructuralCurveReaction(IfcAbstractEntity* e) : I
 IfcStructuralCurveReaction::IfcStructuralCurveReaction(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralLoad* v8_AppliedLoad, IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v9_GlobalOrLocal, IfcStructuralCurveActivityTypeEnum::IfcStructuralCurveActivityTypeEnum v10_PredefinedType) : IfcStructuralReaction((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } if (v5_ObjectType) { e->setArgument(4,(*v5_ObjectType)); } else { e->setArgument(4); } e->setArgument(5,(v6_ObjectPlacement)); e->setArgument(6,(v7_Representation)); e->setArgument(7,(v8_AppliedLoad)); e->setArgument(8,v9_GlobalOrLocal,IfcGlobalOrLocalEnum::ToString(v9_GlobalOrLocal)); e->setArgument(9,v10_PredefinedType,IfcStructuralCurveActivityTypeEnum::ToString(v10_PredefinedType)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcStructuralItem
-IfcRelConnectsStructuralActivity::list::ptr IfcStructuralItem::AssignedStructuralActivity() const { return entity->getInverse(Type::IfcRelConnectsStructuralActivity)->as<IfcRelConnectsStructuralActivity>(); }
+IfcRelConnectsStructuralActivity::list::ptr IfcStructuralItem::AssignedStructuralActivity() const { return entity->getInverse(Type::IfcRelConnectsStructuralActivity, 4)->as<IfcRelConnectsStructuralActivity>(); }
 bool IfcStructuralItem::is(Type::Enum v) const { return v == Type::IfcStructuralItem || IfcProduct::is(v); }
 Type::Enum IfcStructuralItem::type() const { return Type::IfcStructuralItem; }
 Type::Enum IfcStructuralItem::Class() { return Type::IfcStructuralItem; }
@@ -15278,8 +15278,8 @@ void IfcStructuralLoadGroup::setCoefficient(double v) { if ( ! entity->isWritabl
 bool IfcStructuralLoadGroup::hasPurpose() const { return !entity->getArgument(9)->isNull(); }
 std::string IfcStructuralLoadGroup::Purpose() const { return *entity->getArgument(9); }
 void IfcStructuralLoadGroup::setPurpose(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(9,v); }
-IfcStructuralResultGroup::list::ptr IfcStructuralLoadGroup::SourceOfResultGroup() const { return entity->getInverse(Type::IfcStructuralResultGroup)->as<IfcStructuralResultGroup>(); }
-IfcStructuralAnalysisModel::list::ptr IfcStructuralLoadGroup::LoadGroupFor() const { return entity->getInverse(Type::IfcStructuralAnalysisModel)->as<IfcStructuralAnalysisModel>(); }
+IfcStructuralResultGroup::list::ptr IfcStructuralLoadGroup::SourceOfResultGroup() const { return entity->getInverse(Type::IfcStructuralResultGroup, 6)->as<IfcStructuralResultGroup>(); }
+IfcStructuralAnalysisModel::list::ptr IfcStructuralLoadGroup::LoadGroupFor() const { return entity->getInverse(Type::IfcStructuralAnalysisModel, 7)->as<IfcStructuralAnalysisModel>(); }
 bool IfcStructuralLoadGroup::is(Type::Enum v) const { return v == Type::IfcStructuralLoadGroup || IfcGroup::is(v); }
 Type::Enum IfcStructuralLoadGroup::type() const { return Type::IfcStructuralLoadGroup; }
 Type::Enum IfcStructuralLoadGroup::Class() { return Type::IfcStructuralLoadGroup; }
@@ -15428,7 +15428,7 @@ IfcStructuralLoadTemperature::IfcStructuralLoadTemperature(IfcAbstractEntity* e)
 IfcStructuralLoadTemperature::IfcStructuralLoadTemperature(boost::optional< std::string > v1_Name, boost::optional< double > v2_DeltaTConstant, boost::optional< double > v3_DeltaTY, boost::optional< double > v4_DeltaTZ) : IfcStructuralLoadStatic((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); if (v1_Name) { e->setArgument(0,(*v1_Name)); } else { e->setArgument(0); } if (v2_DeltaTConstant) { e->setArgument(1,(*v2_DeltaTConstant)); } else { e->setArgument(1); } if (v3_DeltaTY) { e->setArgument(2,(*v3_DeltaTY)); } else { e->setArgument(2); } if (v4_DeltaTZ) { e->setArgument(3,(*v4_DeltaTZ)); } else { e->setArgument(3); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcStructuralMember
-IfcRelConnectsStructuralMember::list::ptr IfcStructuralMember::ConnectedBy() const { return entity->getInverse(Type::IfcRelConnectsStructuralMember)->as<IfcRelConnectsStructuralMember>(); }
+IfcRelConnectsStructuralMember::list::ptr IfcStructuralMember::ConnectedBy() const { return entity->getInverse(Type::IfcRelConnectsStructuralMember, 4)->as<IfcRelConnectsStructuralMember>(); }
 bool IfcStructuralMember::is(Type::Enum v) const { return v == Type::IfcStructuralMember || IfcStructuralItem::is(v); }
 Type::Enum IfcStructuralMember::type() const { return Type::IfcStructuralMember; }
 Type::Enum IfcStructuralMember::Class() { return Type::IfcStructuralMember; }
@@ -15481,7 +15481,7 @@ IfcStructuralLoadGroup* IfcStructuralResultGroup::ResultForLoadGroup() const { r
 void IfcStructuralResultGroup::setResultForLoadGroup(IfcStructuralLoadGroup* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(6,v); }
 bool IfcStructuralResultGroup::IsLinear() const { return *entity->getArgument(7); }
 void IfcStructuralResultGroup::setIsLinear(bool v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(7,v); }
-IfcStructuralAnalysisModel::list::ptr IfcStructuralResultGroup::ResultGroupFor() const { return entity->getInverse(Type::IfcStructuralAnalysisModel)->as<IfcStructuralAnalysisModel>(); }
+IfcStructuralAnalysisModel::list::ptr IfcStructuralResultGroup::ResultGroupFor() const { return entity->getInverse(Type::IfcStructuralAnalysisModel, 8)->as<IfcStructuralAnalysisModel>(); }
 bool IfcStructuralResultGroup::is(Type::Enum v) const { return v == Type::IfcStructuralResultGroup || IfcGroup::is(v); }
 Type::Enum IfcStructuralResultGroup::type() const { return Type::IfcStructuralResultGroup; }
 Type::Enum IfcStructuralResultGroup::Class() { return Type::IfcStructuralResultGroup; }
@@ -15763,8 +15763,8 @@ void IfcSurfaceTexture::setTextureTransform(IfcCartesianTransformationOperator2D
 bool IfcSurfaceTexture::hasParameter() const { return !entity->getArgument(4)->isNull(); }
 std::vector< std::string > /*[1:?]*/ IfcSurfaceTexture::Parameter() const { return *entity->getArgument(4); }
 void IfcSurfaceTexture::setParameter(std::vector< std::string > /*[1:?]*/ v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(4,v); }
-IfcTextureCoordinate::list::ptr IfcSurfaceTexture::IsMappedBy() const { return entity->getInverse(Type::IfcTextureCoordinate)->as<IfcTextureCoordinate>(); }
-IfcSurfaceStyleWithTextures::list::ptr IfcSurfaceTexture::UsedInStyles() const { return entity->getInverse(Type::IfcSurfaceStyleWithTextures)->as<IfcSurfaceStyleWithTextures>(); }
+IfcTextureCoordinate::list::ptr IfcSurfaceTexture::IsMappedBy() const { return entity->getInverse(Type::IfcTextureCoordinate, 0)->as<IfcTextureCoordinate>(); }
+IfcSurfaceStyleWithTextures::list::ptr IfcSurfaceTexture::UsedInStyles() const { return entity->getInverse(Type::IfcSurfaceStyleWithTextures, 0)->as<IfcSurfaceStyleWithTextures>(); }
 bool IfcSurfaceTexture::is(Type::Enum v) const { return v == Type::IfcSurfaceTexture || IfcPresentationItem::is(v); }
 Type::Enum IfcSurfaceTexture::type() const { return Type::IfcSurfaceTexture; }
 Type::Enum IfcSurfaceTexture::Class() { return Type::IfcSurfaceTexture; }
@@ -15845,7 +15845,7 @@ IfcSwitchingDeviceType::IfcSwitchingDeviceType(IfcAbstractEntity* e) : IfcFlowCo
 IfcSwitchingDeviceType::IfcSwitchingDeviceType(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum v10_PredefinedType) : IfcFlowControllerType((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_GlobalId)); e->setArgument(1,(v2_OwnerHistory)); if (v3_Name) { e->setArgument(2,(*v3_Name)); } else { e->setArgument(2); } if (v4_Description) { e->setArgument(3,(*v4_Description)); } else { e->setArgument(3); } if (v5_ApplicableOccurrence) { e->setArgument(4,(*v5_ApplicableOccurrence)); } else { e->setArgument(4); } if (v6_HasPropertySets) { e->setArgument(5,(*v6_HasPropertySets)->generalize()); } else { e->setArgument(5); } if (v7_RepresentationMaps) { e->setArgument(6,(*v7_RepresentationMaps)->generalize()); } else { e->setArgument(6); } if (v8_Tag) { e->setArgument(7,(*v8_Tag)); } else { e->setArgument(7); } if (v9_ElementType) { e->setArgument(8,(*v9_ElementType)); } else { e->setArgument(8); } e->setArgument(9,v10_PredefinedType,IfcSwitchingDeviceTypeEnum::ToString(v10_PredefinedType)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcSystem
-IfcRelServicesBuildings::list::ptr IfcSystem::ServicesBuildings() const { return entity->getInverse(Type::IfcRelServicesBuildings)->as<IfcRelServicesBuildings>(); }
+IfcRelServicesBuildings::list::ptr IfcSystem::ServicesBuildings() const { return entity->getInverse(Type::IfcRelServicesBuildings, 4)->as<IfcRelServicesBuildings>(); }
 bool IfcSystem::is(Type::Enum v) const { return v == Type::IfcSystem || IfcGroup::is(v); }
 Type::Enum IfcSystem::type() const { return Type::IfcSystem; }
 Type::Enum IfcSystem::Class() { return Type::IfcSystem; }
@@ -15947,7 +15947,7 @@ void IfcTableRow::setRowCells(IfcEntityList::ptr v) { if ( ! entity->isWritable(
 bool IfcTableRow::hasIsHeading() const { return !entity->getArgument(1)->isNull(); }
 bool IfcTableRow::IsHeading() const { return *entity->getArgument(1); }
 void IfcTableRow::setIsHeading(bool v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(1,v); }
-IfcTable::list::ptr IfcTableRow::OfTable() const { return entity->getInverse(Type::IfcTable)->as<IfcTable>(); }
+IfcTable::list::ptr IfcTableRow::OfTable() const { return entity->getInverse(Type::IfcTable, 1)->as<IfcTable>(); }
 bool IfcTableRow::is(Type::Enum v) const { return v == Type::IfcTableRow; }
 Type::Enum IfcTableRow::type() const { return Type::IfcTableRow; }
 Type::Enum IfcTableRow::Class() { return Type::IfcTableRow; }
@@ -16175,8 +16175,8 @@ void IfcTessellatedFaceSet::setCoordinates(IfcCartesianPointList3D* v) { if ( ! 
 bool IfcTessellatedFaceSet::hasClosed() const { return !entity->getArgument(2)->isNull(); }
 bool IfcTessellatedFaceSet::Closed() const { return *entity->getArgument(2); }
 void IfcTessellatedFaceSet::setClosed(bool v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(2,v); }
-IfcIndexedColourMap::list::ptr IfcTessellatedFaceSet::HasColours() const { return entity->getInverse(Type::IfcIndexedColourMap)->as<IfcIndexedColourMap>(); }
-IfcIndexedTextureMap::list::ptr IfcTessellatedFaceSet::HasTextures() const { return entity->getInverse(Type::IfcIndexedTextureMap)->as<IfcIndexedTextureMap>(); }
+IfcIndexedColourMap::list::ptr IfcTessellatedFaceSet::HasColours() const { return entity->getInverse(Type::IfcIndexedColourMap, 0)->as<IfcIndexedColourMap>(); }
+IfcIndexedTextureMap::list::ptr IfcTessellatedFaceSet::HasTextures() const { return entity->getInverse(Type::IfcIndexedTextureMap, 1)->as<IfcIndexedTextureMap>(); }
 bool IfcTessellatedFaceSet::is(Type::Enum v) const { return v == Type::IfcTessellatedFaceSet || IfcTessellatedItem::is(v); }
 Type::Enum IfcTessellatedFaceSet::type() const { return Type::IfcTessellatedFaceSet; }
 Type::Enum IfcTessellatedFaceSet::Class() { return Type::IfcTessellatedFaceSet; }
@@ -16371,7 +16371,7 @@ void IfcTimeSeries::setUserDefinedDataOrigin(std::string v) { if ( ! entity->isW
 bool IfcTimeSeries::hasUnit() const { return !entity->getArgument(7)->isNull(); }
 IfcUnit* IfcTimeSeries::Unit() const { return (IfcUnit*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(7))); }
 void IfcTimeSeries::setUnit(IfcUnit* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(7,v); }
-IfcExternalReferenceRelationship::list::ptr IfcTimeSeries::HasExternalReference() const { return entity->getInverse(Type::IfcExternalReferenceRelationship)->as<IfcExternalReferenceRelationship>(); }
+IfcExternalReferenceRelationship::list::ptr IfcTimeSeries::HasExternalReference() const { return entity->getInverse(Type::IfcExternalReferenceRelationship, 3)->as<IfcExternalReferenceRelationship>(); }
 bool IfcTimeSeries::is(Type::Enum v) const { return v == Type::IfcTimeSeries; }
 Type::Enum IfcTimeSeries::type() const { return Type::IfcTimeSeries; }
 Type::Enum IfcTimeSeries::Class() { return Type::IfcTimeSeries; }
@@ -16504,7 +16504,7 @@ void IfcTypeObject::setApplicableOccurrence(std::string v) { if ( ! entity->isWr
 bool IfcTypeObject::hasHasPropertySets() const { return !entity->getArgument(5)->isNull(); }
 IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr IfcTypeObject::HasPropertySets() const { IfcEntityList::ptr es = *entity->getArgument(5); return es->as<IfcPropertySetDefinition>(); }
 void IfcTypeObject::setHasPropertySets(IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(5,v->generalize()); }
-IfcRelDefinesByType::list::ptr IfcTypeObject::Types() const { return entity->getInverse(Type::IfcRelDefinesByType)->as<IfcRelDefinesByType>(); }
+IfcRelDefinesByType::list::ptr IfcTypeObject::Types() const { return entity->getInverse(Type::IfcRelDefinesByType, 5)->as<IfcRelDefinesByType>(); }
 bool IfcTypeObject::is(Type::Enum v) const { return v == Type::IfcTypeObject || IfcObjectDefinition::is(v); }
 Type::Enum IfcTypeObject::type() const { return Type::IfcTypeObject; }
 Type::Enum IfcTypeObject::Class() { return Type::IfcTypeObject; }
@@ -16521,7 +16521,7 @@ void IfcTypeProcess::setLongDescription(std::string v) { if ( ! entity->isWritab
 bool IfcTypeProcess::hasProcessType() const { return !entity->getArgument(8)->isNull(); }
 std::string IfcTypeProcess::ProcessType() const { return *entity->getArgument(8); }
 void IfcTypeProcess::setProcessType(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(8,v); }
-IfcRelAssignsToProcess::list::ptr IfcTypeProcess::OperatesOn() const { return entity->getInverse(Type::IfcRelAssignsToProcess)->as<IfcRelAssignsToProcess>(); }
+IfcRelAssignsToProcess::list::ptr IfcTypeProcess::OperatesOn() const { return entity->getInverse(Type::IfcRelAssignsToProcess, 6)->as<IfcRelAssignsToProcess>(); }
 bool IfcTypeProcess::is(Type::Enum v) const { return v == Type::IfcTypeProcess || IfcTypeObject::is(v); }
 Type::Enum IfcTypeProcess::type() const { return Type::IfcTypeProcess; }
 Type::Enum IfcTypeProcess::Class() { return Type::IfcTypeProcess; }
@@ -16535,7 +16535,7 @@ void IfcTypeProduct::setRepresentationMaps(IfcTemplatedEntityList< IfcRepresenta
 bool IfcTypeProduct::hasTag() const { return !entity->getArgument(7)->isNull(); }
 std::string IfcTypeProduct::Tag() const { return *entity->getArgument(7); }
 void IfcTypeProduct::setTag(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(7,v); }
-IfcRelAssignsToProduct::list::ptr IfcTypeProduct::ReferencedBy() const { return entity->getInverse(Type::IfcRelAssignsToProduct)->as<IfcRelAssignsToProduct>(); }
+IfcRelAssignsToProduct::list::ptr IfcTypeProduct::ReferencedBy() const { return entity->getInverse(Type::IfcRelAssignsToProduct, 6)->as<IfcRelAssignsToProduct>(); }
 bool IfcTypeProduct::is(Type::Enum v) const { return v == Type::IfcTypeProduct || IfcTypeObject::is(v); }
 Type::Enum IfcTypeProduct::type() const { return Type::IfcTypeProduct; }
 Type::Enum IfcTypeProduct::Class() { return Type::IfcTypeProduct; }
@@ -16552,7 +16552,7 @@ void IfcTypeResource::setLongDescription(std::string v) { if ( ! entity->isWrita
 bool IfcTypeResource::hasResourceType() const { return !entity->getArgument(8)->isNull(); }
 std::string IfcTypeResource::ResourceType() const { return *entity->getArgument(8); }
 void IfcTypeResource::setResourceType(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(8,v); }
-IfcRelAssignsToResource::list::ptr IfcTypeResource::ResourceOf() const { return entity->getInverse(Type::IfcRelAssignsToResource)->as<IfcRelAssignsToResource>(); }
+IfcRelAssignsToResource::list::ptr IfcTypeResource::ResourceOf() const { return entity->getInverse(Type::IfcRelAssignsToResource, 6)->as<IfcRelAssignsToResource>(); }
 bool IfcTypeResource::is(Type::Enum v) const { return v == Type::IfcTypeResource || IfcTypeObject::is(v); }
 Type::Enum IfcTypeResource::type() const { return Type::IfcTypeResource; }
 Type::Enum IfcTypeResource::Class() { return Type::IfcTypeResource; }

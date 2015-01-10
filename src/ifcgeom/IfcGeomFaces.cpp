@@ -113,7 +113,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 		er = mf.Error();
 	}
 	if ( er != BRepBuilderAPI_FaceDone ) return false;
-	if ( bounds->Size() == 1 ) {
+	if ( bounds->size() == 1 ) {
 		face = mf.Face();
 	} else {
 		for( ++it; it != bounds->end(); ++ it) {
@@ -807,7 +807,7 @@ bool convert_surf(IfcSchema::IfcBSplineSurfaceWithKnots* l, Handle_Geom_Surface&
 	std::vector<int> umults = l->UMultiplicities();
 	std::vector<int> vmults = l->VMultiplicities();
 
-	TColgp_Array2OfPnt Poles (0, cps->Size() - 1, 0, (*cps->begin()).size() - 1);
+	TColgp_Array2OfPnt Poles (0, cps->size() - 1, 0, (*cps->begin()).size() - 1);
 	TColStd_Array1OfReal UKnots(0, uknots.size() - 1);
 	TColStd_Array1OfReal VKnots(0, vknots.size() - 1);
 	TColStd_Array1OfInteger UMults(0, umults.size() - 1);

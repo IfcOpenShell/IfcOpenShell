@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include <iostream>
+#include <algorithm>
 
 #include "../ifcparse/IfcException.h"
 
@@ -31,27 +32,15 @@ void IfcEntityList::push(const IfcEntityList::ptr& l) {
 		if ( *i ) ls.push_back(*i);
 	}
 }
-int IfcEntityList::Size() const { return (unsigned int) ls.size(); }
+unsigned int IfcEntityList::size() const { return (unsigned int) ls.size(); }
 IfcEntityList::it IfcEntityList::begin() { return ls.begin(); }
 IfcEntityList::it IfcEntityList::end() { return ls.end(); }
 IfcUtil::IfcBaseClass* IfcEntityList::operator[] (int i) {
 	return ls[i];
 }
-IfcEntityList::ptr IfcEntityList::getInverse(IfcSchema::Type::Enum c) {
-	IfcEntityList::ptr l = IfcEntityList::ptr(new IfcEntityList());
-	for( it i = begin(); i != end(); ++i  ) {
-		l->push((*i)->entity->getInverse(c));
-	}
-	return l;
+bool IfcEntityList::contains(IfcUtil::IfcBaseClass* instance) const {
+	return std::find(ls.begin(), ls.end(), instance) != ls.end();
 }
-IfcEntityList::ptr IfcEntityList::getInverse(IfcSchema::Type::Enum c, int ar, const std::string& a) {
-	IfcEntityList::ptr l = IfcEntityList::ptr(new IfcEntityList());
-	for( it i = begin(); i != end(); ++i  ) {
-		l->push((*i)->entity->getInverse(c,ar,a));
-	}
-	return l;
-}
- 
 
 unsigned int IfcUtil::IfcBaseType::getArgumentCount() const { return 1; }
 Argument* IfcUtil::IfcBaseType::getArgument(unsigned int i) const { return entity->getArgument(i); }

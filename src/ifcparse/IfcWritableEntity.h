@@ -51,8 +51,7 @@ namespace IfcWrite {
 
 		int setId(int i=-1);
 		IfcWritableEntity(IfcAbstractEntity* e);
-		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum c = IfcSchema::Type::ALL);
-		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum c, int i, const std::string& a);
+		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index);
 		std::string datatype() const;
 		Argument* getArgument (unsigned int i);
 		unsigned int getArgumentCount() const;
