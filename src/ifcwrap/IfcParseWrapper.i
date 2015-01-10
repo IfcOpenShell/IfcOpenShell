@@ -59,7 +59,7 @@
 				void *arg = 0;
 				int res = SWIG_ConvertPtr(obj, &arg, SWIGTYPE_p_IfcParse__IfcLateBoundEntity, 0);
 				if (!SWIG_IsOK(res)) {
-					SWIG_exception_fail(SWIG_ArgError(res), "in method '" "Entity__set_argument" "', argument " "3"" of type '" "IfcParse::IfcLateBoundEntity *""'"); 
+					SWIG_exception_fail(SWIG_ArgError(res), "Sequence element not of type IfcParse::IfcLateBoundEntity*"); 
 				} else {
 					$1->push(reinterpret_cast<IfcParse::IfcLateBoundEntity*>(arg));
 				}

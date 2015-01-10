@@ -41,6 +41,9 @@
 	#include "../ifcparse/IfcLateBoundEntity.h"
 %}
 
+%include "IfcGeomWrapper.i"
+%include "IfcParseWrapper.i"
+
 namespace std {
 	%template(int_vector) vector<int>;
 	%template(float_vector) vector<float>;
@@ -48,6 +51,3 @@ namespace std {
 	%template(string_vector) vector<std::string>;
 	%template(material_vector) vector<IfcGeom::Material>;
 };
-
-%include "IfcGeomWrapper.i"
-%include "IfcParseWrapper.i"
