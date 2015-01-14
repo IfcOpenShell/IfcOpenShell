@@ -75,7 +75,8 @@ public:
 	/// IfcWall will also return IfcWallStandardCase entities
 	template <class T>
 	typename T::list::ptr EntitiesByType() {
-		return EntitiesByType(T::Class())->as<T>();
+		IfcEntityList::ptr untyped_list = EntitiesByType(T::Class());
+		return untyped_list->as<T>();
 	}
 
 	/// Returns all entities in the file that match the positional argument.
