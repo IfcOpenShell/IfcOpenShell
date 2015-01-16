@@ -22,10 +22,10 @@
 static double black[3] = {0.,0.,0.};
 
 IfcGeom::Material::Material(const IfcGeom::SurfaceStyle* style) : style(style) {}
-bool IfcGeom::Material::hasDiffuse() const { return style->Diffuse(); }
-bool IfcGeom::Material::hasSpecular() const { return style->Specular(); }
-bool IfcGeom::Material::hasTransparency() const { return style->Transparency(); }
-bool IfcGeom::Material::hasSpecularity() const { return style->Specularity(); }
+bool IfcGeom::Material::hasDiffuse() const { return style->Diffuse() ? true : false; }
+bool IfcGeom::Material::hasSpecular() const { return style->Specular() ? true : false; }
+bool IfcGeom::Material::hasTransparency() const { return style->Transparency() ? true : false; }
+bool IfcGeom::Material::hasSpecularity() const { return style->Specularity() ? true : false; }
 const double* IfcGeom::Material::diffuse() const { if (hasDiffuse()) return &((*style->Diffuse()).R()); else return black; }
 const double* IfcGeom::Material::specular() const { if (hasSpecular()) return &((*style->Specular()).R()); else return black; }
 double IfcGeom::Material::transparency() const { if (hasTransparency()) return *style->Transparency(); else return 0; }
