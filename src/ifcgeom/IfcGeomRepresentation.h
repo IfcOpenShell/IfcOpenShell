@@ -20,7 +20,7 @@
 #ifndef IFCGEOMREPRESENTATION_H
 #define IFCGEOMREPRESENTATION_H
 
-#include <BRepMesh.hxx>
+#include <BRepMesh_IncrementalMesh.hxx>
 #include <BRepGProp_Face.hxx>
 
 #include <Poly_Triangulation.hxx>
@@ -143,8 +143,7 @@ namespace IfcGeom {
 
 					// Triangulate the shape
 					try {
-						// BRepTools::Clean(s);
-						BRepMesh::Mesh(s, settings().deflection_tolerance());
+						BRepMesh_IncrementalMesh(s, settings().deflection_tolerance());
 					} catch(...) {
 
 						// TODO: Catch outside
