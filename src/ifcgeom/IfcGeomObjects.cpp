@@ -32,7 +32,7 @@
 #include <BRepTools.hxx>
 #include <BRep_Tool.hxx>
 #include <TopExp_Explorer.hxx>
-#include <BRepMesh.hxx>
+#include <BRepMesh_IncrementalMesh.hxx>
 #include <Poly_Triangulation.hxx>
 #include <Poly_PolygonOnTriangulation.hxx>
 #include <TColgp_Array1OfPnt.hxx>
@@ -133,8 +133,7 @@ IfcGeomObjects::IfcRepresentationTriangulation::IfcRepresentationTriangulation(c
 
 		// Triangulate the shape
 		try {
-			// BRepTools::Clean(s);
-			BRepMesh::Mesh(s, IfcGeom::GetValue(IfcGeom::GV_DEFLECTION_TOLERANCE));
+			BRepMesh_IncrementalMesh(s, IfcGeom::GetValue(IfcGeom::GV_DEFLECTION_TOLERANCE));
 		} catch(...) {
 			Logger::Message(Logger::LOG_ERROR,"Failed to triangulate shape:",ifc_file->EntityById(_id)->entity);
 			continue;
