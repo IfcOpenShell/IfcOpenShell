@@ -122,10 +122,11 @@ namespace IfcParse {
 	class ArgumentList: public Argument {
 	private:
 		std::vector<Argument*> list;
-		void Push(Argument* l);
+		void push(Argument* l);
 	public:
-		ArgumentList(IfcSpfLexer* t, std::vector<unsigned int>& ids);
 		~ArgumentList();
+
+		void read(IfcSpfLexer* t, std::vector<unsigned int>& ids);
 
 		IfcUtil::ArgumentType type() const;
 		
@@ -140,7 +141,10 @@ namespace IfcParse {
 		operator IfcEntityList::ptr() const;
         operator IfcEntityListList::ptr() const;
 		unsigned int size() const;
+
 		Argument* operator [] (unsigned int i) const;
+		void set(unsigned int i, Argument*);
+
 		std::string toString(bool upper=false) const;
 		bool isNull() const;
 	};
@@ -206,7 +210,7 @@ namespace IfcParse {
 	/// ============================
 	class Entity : public IfcAbstractEntity {
 	private:
-		mutable Argument* args;
+		mutable ArgumentList* args;
 		mutable IfcSchema::Type::Enum _type;
 	public:
 		/// The EXPRESS ENTITY_INSTANCE_NAME

@@ -217,14 +217,6 @@ private:
 		}
 		return oss.str();
 	}
-	void serialize_double(const std::vector<double>& i) {
-		data << "(";
-		for (std::vector<double>::const_iterator it = i.begin(); it != i.end(); ++it) {
-			if (it != i.begin()) data << ",";
-			data << format_double(*it);
-		}
-		data << ")";
-	}
 	bool upper;
 public:
 	StringBuilderVisitor(std::ostringstream& stream, bool upper = false) 
@@ -239,9 +231,9 @@ public:
 		if (upper) s = IfcCharacterEncoder(s);
 		data << s; 
 	}
-	void operator()(const std::vector<int>& i) { serialize(i); }
-	void operator()(const std::vector<double>& i) { serialize_double(i); }
-	void operator()(const std::vector<std::string>& i) { serialize(i); }
+	void operator()(const std::vector<int>& i);
+	void operator()(const std::vector<double>& i);
+	void operator()(const std::vector<std::string>& i);
 	void operator()(const IfcWriteArgument::EnumerationReference& i) {
 		data << "." << i.enumeration_value << ".";
 	}
@@ -276,6 +268,36 @@ public:
 	}
 	operator std::string() { return data.str(); }
 };
+
+template <>
+void StringBuilderVisitor::serialize(const std::vector<std::string>& i) {
+	data << "(";
+	for (std::vector<std::string>::const_iterator it = i.begin(); it != i.end(); ++it) {
+		if (it != i.begin()) data << ",";
+		if (upper) {
+			std::string s = IfcCharacterEncoder(*it);
+			data << s;
+		} else {
+			data << *it;
+		}
+	}
+	data << ")";
+}
+
+template <>
+void StringBuilderVisitor::serialize(const std::vector<double>& i) {
+	data << "(";
+	for (std::vector<double>::const_iterator it = i.begin(); it != i.end(); ++it) {
+		if (it != i.begin()) data << ",";
+		data << format_double(*it);
+	}
+	data << ")";
+}
+
+void StringBuilderVisitor::operator()(const std::vector<int>& i) { serialize(i); }
+void StringBuilderVisitor::operator()(const std::vector<double>& i) { serialize(i); }
+void StringBuilderVisitor::operator()(const std::vector<std::string>& i) { serialize(i); }
+	
 
 IfcWriteArgument::operator int() const { return as<int>(); }
 IfcWriteArgument::operator bool() const { return as<bool>(); }

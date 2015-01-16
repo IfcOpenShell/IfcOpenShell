@@ -1,21 +1,34 @@
 /********************************************************************************
- *																		      *
- * This file is part of IfcOpenShell.										   *
- *																		      *
- * IfcOpenShell is free software: you can redistribute it and/or modify		 *
+ *                                                                              *
+ * This file is part of IfcOpenShell.                                           *
+ *                                                                              *
+ * IfcOpenShell is free software: you can redistribute it and/or modify         *
  * it under the terms of the Lesser GNU General Public License as published by  *
- * the Free Software Foundation, either version 3.0 of the License, or		  *
- * (at your option) any later version.										  *
- *																		      *
- * IfcOpenShell is distributed in the hope that it will be useful,		      *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of		       *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the				 *
- * Lesser GNU General Public License for more details.						  *
- *																		      *
+ * the Free Software Foundation, either version 3.0 of the License, or          *
+ * (at your option) any later version.                                          *
+ *                                                                              *
+ * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+ * Lesser GNU General Public License for more details.                          *
+ *                                                                              *
  * You should have received a copy of the Lesser GNU General Public License     *
- * along with this program. If not, see <http://www.gnu.org/licenses/>.		 *
- *																		      *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                              *
  ********************************************************************************/
+
+// Two class declarations to silence SWIG warning about base classes being
+// undefined, the constructors are private so that SWIG does not wrap them
+class IfcAbstractEntity {
+private:
+	IfcAbstractEntity();
+};
+namespace IfcUtil {
+	class IfcBaseEntity {
+	private:
+		IfcBaseEntity();
+	};
+}
 
 %ignore IfcParse::IfcLateBoundEntity::is;
 %ignore IfcParse::IfcLateBoundEntity::type;
@@ -32,9 +45,11 @@
 %ignore IfcParse::FileName::FileName;
 %ignore IfcParse::FileSchema::FileSchema;
 %ignore IfcParse::IfcFile::tokens;
+
 %ignore IfcParse::IfcSpfHeader::IfcSpfHeader(IfcSpfLexer*);
 %ignore IfcParse::IfcSpfHeader::lexer;
 %ignore IfcParse::IfcSpfHeader::stream;
+%ignore IfcParse::HeaderEntity::is;
 
 %rename("by_type") EntitiesByType;
 %rename("__len__") getArgumentCount;
@@ -190,23 +205,41 @@
 %extend IfcParse::FileDescription {
 	%pythoncode %{
 		if _newclass:
-			# Hide the getters with read-only property implementations
-			description = property(description)
-			implementation_level = property(implementation_level)
+			# Hide the getters with read-write property implementations
+			__swig_getmethods__["description"] = description
+			__swig_setmethods__["description"] = description
+			description = property(description, description)
+			__swig_getmethods__["implementation_level"] = implementation_level
+			__swig_setmethods__["implementation_level"] = implementation_level
+			implementation_level = property(implementation_level, implementation_level)
     %}
 };
 
 %extend IfcParse::FileName {
 	%pythoncode %{
 		if _newclass:
-			# Hide the getters with read-only property implementations
-			name = property(name)
-			time_stamp = property(time_stamp)
-			author = property(author)
-			organization = property(organization)
-			preprocessor_version = property(preprocessor_version)
-			originating_system = property(originating_system)
-			authorization = property(authorization)
+			# Hide the getters with read-write property implementations
+			__swig_getmethods__["name"] = name
+			__swig_setmethods__["name"] = name
+			name = property(name, name)
+			__swig_getmethods__["time_stamp"] = time_stamp
+			__swig_setmethods__["time_stamp"] = time_stamp
+			timestamp = property(time_stamp, time_stamp)
+			__swig_getmethods__["author"] = author
+			__swig_setmethods__["author"] = author
+			author = property(author, author)
+			__swig_getmethods__["organization"] = organization
+			__swig_setmethods__["organization"] = organization
+			organization = property(organization, organization)
+			__swig_getmethods__["preprocessor_version"] = preprocessor_version
+			__swig_setmethods__["preprocessor_version"] = preprocessor_version
+			preprocessor_version = property(preprocessor_version, preprocessor_version)
+			__swig_getmethods__["originating_system"] = originating_system
+			__swig_setmethods__["originating_system"] = originating_system
+			originating_system = property(originating_system, originating_system)
+			__swig_getmethods__["authorization"] = authorization
+			__swig_setmethods__["authorization"] = authorization
+			authorization = property(authorization, authorization)
     %}
 };
 
@@ -214,7 +247,9 @@
 	%pythoncode %{
 		if _newclass:
 			# Hide the getters with read-only property implementations
-			schema_identifiers = property(schema_identifiers)
+			__swig_getmethods__["schema_identifiers"] = schema_identifiers
+			__swig_setmethods__["schema_identifiers"] = schema_identifiers
+			schema_identifiers = property(schema_identifiers, schema_identifiers)
     %}
 };
 

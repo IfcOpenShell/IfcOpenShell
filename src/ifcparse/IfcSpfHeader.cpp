@@ -62,14 +62,17 @@ void IfcSpfHeader::read() {
 	readTerminal(HEADER, TRAILING_SEMICOLON);
 
 	readTerminal(FILE_DESCRIPTION, TRAILING_PAREN);
+	delete _file_description;
 	_file_description = new FileDescription(_lexer);
 	readSemicolon();
 
 	readTerminal(FILE_NAME, TRAILING_PAREN);
+	delete _file_name;
 	_file_name = new FileName(_lexer);
 	readSemicolon();
 
 	readTerminal(FILE_SCHEMA, TRAILING_PAREN);
+	delete _file_schema;
 	_file_schema = new FileSchema(_lexer);
 	readSemicolon();
 }
@@ -83,26 +86,65 @@ bool IfcSpfHeader::tryRead() {
 	}		
 }
 
-const FileDescription& IfcSpfHeader::file_description() {
+void IfcSpfHeader::write(std::ostream& os) const {
+	os << ISO_10303_21 << ";" << "\n";
+	os << HEADER << ";" << "\n";
+	os << file_description().toString(true) << "\n";
+	os << file_name().toString(true) << "\n";
+	os << file_schema().toString(true) << "\n";
+	os << ENDSEC << ";" << "\n";
+	os << DATA << ";" << "\n";
+}
+
+
+const FileDescription& IfcSpfHeader::file_description() const {
 	if (_file_description) {
 		return *_file_description; 
 	} else {
-		throw IfcException("File description not read");
+		throw IfcException("File description not set");
 	}
 }
 
-const FileName& IfcSpfHeader::file_name() {
+const FileName& IfcSpfHeader::file_name() const {
 	if (_file_name) {
 		return *_file_name; 
 	} else {
-		throw IfcException("File name not read");
+		throw IfcException("File name not set");
 	}
 }
 
-const FileSchema& IfcSpfHeader::file_schema() {
+const FileSchema& IfcSpfHeader::file_schema() const {
 	if (_file_schema) {
 		return *_file_schema; 
 	} else {
-		throw IfcException("File schema not read");
+		throw IfcException("File schema not set");
 	}
 }
+
+FileDescription& IfcSpfHeader::file_description() {
+	if (_file_description) {
+		return *_file_description; 
+	} else {
+		throw IfcException("File description not set");
+	}
+}
+
+FileName& IfcSpfHeader::file_name() {
+	if (_file_name) {
+		return *_file_name; 
+	} else {
+		throw IfcException("File name not set");
+	}
+}
+
+FileSchema& IfcSpfHeader::file_schema() {
+	if (_file_schema) {
+		return *_file_schema; 
+	} else {
+		throw IfcException("File schema not set");
+	}
+}
+
+FileDescription::FileDescription(IfcSpfLexer* lexer) : HeaderEntity(FILE_DESCRIPTION, lexer) {}
+FileName::FileName(IfcSpfLexer* lexer) : HeaderEntity(FILE_NAME, lexer) {}
+FileSchema::FileSchema(IfcSpfLexer* lexer) : HeaderEntity(FILE_SCHEMA, lexer) {}

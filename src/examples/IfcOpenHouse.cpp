@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 	// The IfcHierarchyHelper is a subclass of the regular IfcFile that provides several
 	// convenience functions for working with geometry in IFC files.
 	IfcHierarchyHelper file;
-	file.filename("IfcOpenHouse.ifc");
+	file.header().file_name().name("IfcOpenHouse.ifc");
 
 	// Start by adding a wall to the file, initially leaving most attributes blank.
 	IfcSchema::IfcWallStandardCase* south_wall = new IfcSchema::IfcWallStandardCase(

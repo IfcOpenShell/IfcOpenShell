@@ -51,13 +51,7 @@ private:
 
 	IfcSpfHeader _header;
 
-	std::string _filename;
-	std::string _timestamp;
-	std::string _author;
-	std::string _author_email;
-	std::string _author_organisation;
-
-	void initTimestamp();
+	void setDefaultHeaderValues();
 public:
 	IfcParse::IfcSpfLexer* tokens;
 	IfcParse::IfcSpfStream* stream;
@@ -76,7 +70,11 @@ public:
 	template <class T>
 	typename T::list::ptr EntitiesByType() {
 		IfcEntityList::ptr untyped_list = EntitiesByType(T::Class());
-		return untyped_list->as<T>();
+		if (untyped_list) {
+			return untyped_list->as<T>();
+		} else {
+			return typename T::list::ptr(new typename T::list);
+		}
 	}
 
 	/// Returns all entities in the file that match the positional argument.
@@ -110,16 +108,10 @@ public:
 	void AddEntity(IfcUtil::IfcBaseClass* entity);
 	void AddEntities(IfcEntityList::ptr es);
 
-	void filename(const std::string& s);
-	std::string filename() const;
-	void timestamp(const std::string& s);
-	std::string timestamp() const;
-	void author(const std::string& name, const std::string& email, const std::string& organisation);
-	std::string authorName() const;
-	std::string authorEmail() const;
-	std::string authorOrganisation() const;
-
 	const IfcSpfHeader& header() const { return _header; }
+	IfcSpfHeader& header() { return _header; }
+
+	std::string createTimestamp() const;
 
 	bool create_latebound_entities() const { return _create_latebound_entities; }
 };
