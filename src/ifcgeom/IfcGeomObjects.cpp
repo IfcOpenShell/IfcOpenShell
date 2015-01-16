@@ -812,10 +812,10 @@ IfcParse::IfcFile* IfcGeomObjects::GetFile() {
 static double black[3] = {0,0,0};
 
 IfcGeomObjects::Material::Material(const IfcGeom::SurfaceStyle* style) : style(style) {}
-bool IfcGeomObjects::Material::hasDiffuse() const { return style->Diffuse(); }
-bool IfcGeomObjects::Material::hasSpecular() const { return style->Specular(); }
-bool IfcGeomObjects::Material::hasTransparency() const { return style->Transparency(); }
-bool IfcGeomObjects::Material::hasSpecularity() const { return style->Specularity(); }
+bool IfcGeomObjects::Material::hasDiffuse() const { return style->Diffuse() ? true : false; }
+bool IfcGeomObjects::Material::hasSpecular() const { return style->Specular() ? true : false; }
+bool IfcGeomObjects::Material::hasTransparency() const { return style->Transparency() ? true : false; }
+bool IfcGeomObjects::Material::hasSpecularity() const { return style->Specularity() ? true : false; }
 const double* IfcGeomObjects::Material::diffuse() const { if (hasDiffuse()) return &((*style->Diffuse()).R()); else return black; }
 const double* IfcGeomObjects::Material::specular() const { if (hasSpecular()) return &((*style->Specular()).R()); else return black; }
 double IfcGeomObjects::Material::transparency() const { if (hasTransparency()) return *style->Transparency(); else return 0; }
