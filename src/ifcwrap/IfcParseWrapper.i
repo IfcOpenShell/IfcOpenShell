@@ -246,7 +246,7 @@ namespace IfcUtil {
 %extend IfcParse::FileSchema {
 	%pythoncode %{
 		if _newclass:
-			# Hide the getters with read-only property implementations
+			# Hide the getters with read-write property implementations
 			__swig_getmethods__["schema_identifiers"] = schema_identifiers
 			__swig_setmethods__["schema_identifiers"] = schema_identifiers
 			schema_identifiers = property(schema_identifiers, schema_identifiers)
