@@ -89,7 +89,7 @@
 
 #include <BRepGProp_Face.hxx>
 
-#include <BRepMesh.hxx>
+#include <BRepMesh_IncrementalMesh.hxx>
 #include <BRepTools.hxx>
 
 #include <Poly_Triangulation.hxx>
@@ -568,7 +568,7 @@ double IfcGeom::Kernel::getValue(GeomValue var) {
 }
 
 IfcSchema::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es) {
-	BRepMesh::Mesh(shape, deflection);
+	BRepMesh_IncrementalMesh(shape, deflection);
 
 	IfcSchema::IfcFace::list::ptr faces (new IfcSchema::IfcFace::list);
 
