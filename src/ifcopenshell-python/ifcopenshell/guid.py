@@ -19,6 +19,8 @@
 
 import string
 
+from functools import reduce
+
 chars = string.digits + string.ascii_uppercase + string.ascii_lowercase + '_$'
 
 def compress(g):

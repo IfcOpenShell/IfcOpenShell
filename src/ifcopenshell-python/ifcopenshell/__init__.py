@@ -20,10 +20,10 @@
 import os
 import functools
 
+from functools import reduce
+
 from . import guid
 from . import ifcopenshell_wrapper
-
-if hasattr(functools, 'reduce'): reduce = functools.reduce
 
 class entity_instance(object):
 	def __init__(self, e):
