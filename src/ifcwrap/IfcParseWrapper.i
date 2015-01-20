@@ -224,7 +224,7 @@ namespace IfcUtil {
 			name = property(name, name)
 			__swig_getmethods__["time_stamp"] = time_stamp
 			__swig_setmethods__["time_stamp"] = time_stamp
-			timestamp = property(time_stamp, time_stamp)
+			time_stamp = property(time_stamp, time_stamp)
 			__swig_getmethods__["author"] = author
 			__swig_setmethods__["author"] = author
 			author = property(author, author)
