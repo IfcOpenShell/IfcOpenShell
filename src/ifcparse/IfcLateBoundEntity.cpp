@@ -95,6 +95,10 @@ Argument* IfcParse::IfcLateBoundEntity::getArgument(unsigned int i) const {
 const char* IfcParse::IfcLateBoundEntity::getArgumentName(unsigned int i) const {
 	return IfcSchema::Type::GetAttributeName(_type,i).c_str();
 }
+bool IfcParse::IfcLateBoundEntity::getArgumentOptionality(unsigned int i) const {
+	return IfcSchema::Type::GetAttributeOptional(_type, i);
+}
+
 void IfcParse::IfcLateBoundEntity::invalid_argument(unsigned int i, const std::string& t) {
 	const std::string arg_name = IfcSchema::Type::GetAttributeName(_type,i);
 	throw IfcException(t + " is not a valid type for '" + arg_name + "'");

@@ -52,6 +52,7 @@ namespace IfcParse {
 		Argument* getArgument(unsigned int i) const;
 		const char* getArgumentName(unsigned int i) const;
 		unsigned getArgumentIndex(const std::string& a) const;
+		bool getArgumentOptionality(unsigned int i) const;
 
 		IfcEntityList::ptr get_inverse(const std::string& a);
 

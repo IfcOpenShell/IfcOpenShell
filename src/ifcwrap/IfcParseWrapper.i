@@ -56,6 +56,7 @@ namespace IfcUtil {
 %rename("get_argument_type") getArgumentType;
 %rename("get_argument_name") getArgumentName;
 %rename("get_argument_index") getArgumentIndex;
+%rename("get_argument_optionality") getArgumentOptionality;
 %rename("_set_argument") setArgument;
 %rename("__repr__") toString;
 %rename("entity_instance") IfcLateBoundEntity;
@@ -178,6 +179,14 @@ namespace IfcUtil {
 	void write(const std::string& fn) {
 		std::ofstream f(fn.c_str());
 		f << (*$self);
+	}
+	std::vector<int> entity_names() const {
+		std::vector<int> keys;
+		keys.reserve(std::distance($self->begin(), $self->end()));
+		for (IfcParse::IfcFile::entity_by_id_t::const_iterator it = $self->begin(); it != $self->end(); ++ it) {
+			keys.push_back(it->first);
+		}
+		return keys;
 	}
 	%pythoncode %{
 		if _newclass:
