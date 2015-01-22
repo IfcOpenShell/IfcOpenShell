@@ -153,12 +153,14 @@ namespace IfcGeom {
 					// by the parent's context inverse attributes.
 					continue;
 				}
-				std::string context_type_lc = context->ContextType();
-				for (std::string::iterator c = context_type_lc.begin(); c != context_type_lc.end(); ++c) {
-					*c = tolower(*c);
-				}
-				if (context->hasContextType() && context_types.find(context_type_lc) != context_types.end()) {
-					filtered_contexts->push(context);
+				if (context->hasContextType()) {
+					std::string context_type_lc = context->ContextType();
+					for (std::string::iterator c = context_type_lc.begin(); c != context_type_lc.end(); ++c) {
+						*c = tolower(*c);
+					}
+					if (context_types.find(context_type_lc) != context_types.end()) {
+						filtered_contexts->push(context);
+					}
 				}
 			}
 
