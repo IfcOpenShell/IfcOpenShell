@@ -221,6 +221,8 @@
 			IfcSchema::IfcProductRepresentation* prodrep = product->Representation();
 			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
 			IfcSchema::IfcRepresentation* representation = 0;
+			
+			// First, try to find a representation with a 'Body' identifier
 			for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
 				IfcSchema::IfcRepresentation* rep = *it;
 				if (rep->RepresentationIdentifier() == "Body") {
@@ -228,6 +230,31 @@
 					break;
 				}
 			}
+
+			// Otherwise, find a representation within the 'Model' context
+			if (!representation) {
+				for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
+					IfcSchema::IfcRepresentation* rep = *it;
+					IfcSchema::IfcRepresentationContext* context = rep->ContextOfItems();
+					
+					// TODO: Remove redundancy with IfcGeomIterator.h
+					if (context->hasContextType()) {
+						std::set<std::string> context_types;
+						context_types.insert("model");
+						context_types.insert("design");
+						context_types.insert("model view");
+
+						std::string context_type_lc = context->ContextType();
+						for (std::string::iterator c = context_type_lc.begin(); c != context_type_lc.end(); ++c) {
+							*c = tolower(*c);
+						}
+						if (context_types.find(context_type_lc) != context_types.end()) {
+							representation = rep;
+						}
+					}
+				}
+			}
+
 			if (!representation) {
 				throw IfcParse::IfcException("No IfcRepresentations with a 'Body' RepresentationIdentifier found");
 			}
