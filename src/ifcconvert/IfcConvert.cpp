@@ -135,10 +135,10 @@ int main(int argc, char** argv) {
 
 	if (vmap.count("version")) {
 		printVersion();
-		return 1;
+		return 0;
 	} else if (vmap.count("help") || !vmap.count("input-file")) {
 		printUsage(generic_options, geom_options);
-		return 1;
+		return vmap.count("help") ? 0 : 1;
 	}
 
 	const bool verbose = vmap.count("verbose") != 0;
