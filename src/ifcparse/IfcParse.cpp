@@ -707,19 +707,23 @@ std::string Entity::datatype() const {
 // Note that this initializes the entity if it is not initialized
 //
 std::string Entity::toString(bool upper) const {
-	if ( ! args ) {
+	if (!args) {
 		std::vector<unsigned int> ids;
 		Load(ids, true);
 	}
+
 	std::stringstream ss;
 	std::string dt = datatype();
-	if ( upper ) {
+	if (upper) {
 		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
 	}
+
 	if (!IfcSchema::Type::IsSimple(type()) || _id != 0) {
 		ss << "#" << _id << "=";
 	}
+
 	ss << dt << args->toString(upper);
+
 	return ss.str();
 }
 
@@ -1024,7 +1028,9 @@ std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f) {
 
 	for ( IfcFile::entity_by_id_t::const_iterator it = f.begin(); it != f.end(); ++ it ) {
 		const IfcUtil::IfcBaseClass* e = it->second;
-		os << e->entity->toString(true) << ";" << std::endl;
+		if (!IfcSchema::Type::IsSimple(e->type())) {
+			os << e->entity->toString(true) << ";" << std::endl;
+		}
 	}
 
 	os << "ENDSEC;" << std::endl;

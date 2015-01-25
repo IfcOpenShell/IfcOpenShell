@@ -51,7 +51,6 @@ IfcWritableEntity::IfcWritableEntity(IfcAbstractEntity* e)
 {
 	file = e->file;
 	_type = e->type();
-	delete _id;
 	_id = new int(e->id());
 
 	const unsigned int count = e->getArgumentCount();
@@ -77,17 +76,23 @@ bool IfcWritableEntity::is(IfcSchema::Type::Enum v) const { return _type == v; }
 std::string IfcWritableEntity::toString(bool upper) const {
 	std::stringstream ss;
 	std::string dt = datatype();
-	if ( upper ) {
+	if (upper) {
 		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
 	}
-	if ( _id ) ss << "#" << *_id;
-	ss << "=" << dt << "(";
-	for ( std::map<int,Argument*>::const_iterator it = args.begin(); it != args.end(); ++ it ) {
+
+	if (_id && !IfcSchema::Type::IsSimple(type())) {
+		ss << "#" << *_id;
+		ss << "=";
+	}
+
+	ss << dt << "(";
+	for (std::map<int,Argument*>::const_iterator it = args.begin(); it != args.end(); ++ it) {
 		if ( it != args.begin() ) ss << ",";
 		const Argument* a = it->second;
 		ss << it->second->toString(upper);
 	}
 	ss << ")";
+
 	return ss.str();
 }
 unsigned int IfcWritableEntity::id() { 
@@ -228,8 +233,11 @@ public:
 	void operator()(const double& i) { data << format_double(i); }
 	void operator()(const std::string& i) { 
 		std::string s = i;
-		if (upper) s = IfcCharacterEncoder(s);
-		data << s; 
+		if (upper) {
+			data << static_cast<std::string>(IfcCharacterEncoder(s));
+		} else {
+			data << '\'' << s << '\'';
+		}
 	}
 	void operator()(const std::vector<int>& i);
 	void operator()(const std::vector<double>& i);
