@@ -41,7 +41,6 @@ IfcWritableEntity::IfcWritableEntity(IfcAbstractEntity* e)
 {
 	file = e->file;
 	_type = e->type();
-	delete _id;
 	_id = new int(e->id());
 
 	const unsigned int count = e->getArgumentCount();
@@ -234,8 +233,11 @@ public:
 	void operator()(const double& i) { data << format_double(i); }
 	void operator()(const std::string& i) { 
 		std::string s = i;
-		if (upper) s = IfcCharacterEncoder(s);
-		data << s; 
+		if (upper) {
+			data << static_cast<std::string>(IfcCharacterEncoder(s));
+		} else {
+			data << '\'' << s << '\'';
+		}
 	}
 	void operator()(const std::vector<int>& i) { serialize(i); }
 	void operator()(const std::vector<double>& i) { serialize_double(i); }
