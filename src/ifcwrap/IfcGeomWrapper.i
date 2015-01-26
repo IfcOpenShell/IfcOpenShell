@@ -282,6 +282,9 @@
 			kernel.setValue(IfcGeom::Kernel::GV_PRECISION, precision);
 			
 			IfcGeom::BRepElement<double>* brep = kernel.create_brep_for_representation_and_product<double>(settings, representation, product);
+			if (!brep) {
+				throw IfcParse::IfcException("Failed to process shape");
+			}
 			if (settings.use_brep_data()) {
 				IfcGeom::SerializedElement<double>* serialization = new IfcGeom::SerializedElement<double>(*brep);
 				delete brep;

@@ -100,6 +100,10 @@ namespace IfcUtil {
 }
 
 %typemap(out) std::pair<IfcUtil::ArgumentType, Argument*> {
+	// The SWIG %exception directive does not take care
+	// of our typemap. So the argument conversion block
+	// is wrapped in a try-catch block manually.
+	try {
 	const Argument& arg = *($1.second);
 	const IfcUtil::ArgumentType type = $1.first;
 	if (arg.isNull() || type == IfcUtil::Argument_DERIVED) {
@@ -163,6 +167,11 @@ namespace IfcUtil {
 			SWIG_exception(SWIG_RuntimeError,"Unknown argument type");
 		break;
 	}
+	}
+	} catch(IfcParse::IfcException& e) {
+		SWIG_exception(SWIG_RuntimeError, e.what());
+	} catch(...) {
+		SWIG_exception(SWIG_RuntimeError, "An unknown error occurred");
 	}
 }
 
