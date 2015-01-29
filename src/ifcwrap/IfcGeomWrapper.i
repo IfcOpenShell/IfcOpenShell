@@ -27,6 +27,15 @@
 	}
 }
 
+// SWIG does not support bool references in a meaningful way, so the
+// IfcGeom::IteratorSettings functions degrade to return a read only value
+%typemap(out) double& {
+	$result = SWIG_From_double(*$1);
+}
+%typemap(out) bool& {
+	$result = PyBool_FromLong(static_cast<long>(*$1));
+}
+
 %include "../ifcgeom/IfcGeomIteratorSettings.h"
 %include "../ifcgeom/IfcGeomElement.h"
 %include "../ifcgeom/IfcGeomMaterial.h"
@@ -74,15 +83,6 @@
 	} else if (serialized_elem) {
 		$result = SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElementT_double_t, SWIG_POINTER_OWN);
 	}
-}
-
-// SWIG does not support bool references in a meaningful way, so the
-// IfcGeom::IteratorSettings functions degrade to return a read only value
-%typemap(out) double& {
-	$result = SWIG_From_double(*$1);
-}
-%typemap(out) bool& {
-	$result = PyBool_FromLong(static_cast<long>(*$1));
 }
 
 // This does not seem to work:
