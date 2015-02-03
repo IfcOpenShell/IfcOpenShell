@@ -380,7 +380,7 @@ namespace IfcGeom {
 				} catch (...) {}
 				return !!current_triangulation;
 			} else {
-				return false;
+				return true;
 			}
 		}
 	private:
