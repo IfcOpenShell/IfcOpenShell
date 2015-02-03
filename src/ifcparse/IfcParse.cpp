@@ -38,6 +38,27 @@
 
 using namespace IfcParse;
 
+// A static locale for the real number parser. strtod() is locale-dependent, causing issues 
+// in locales that have ',' as a decimal separator. Therefore the non standard _strtod_l() / 
+// strtod_l() is used and a reference to the "C" locale is obtained here. The alternative is 
+// to use std::istringstream::imbue(std::locale::classic()), but there are subtleties in 
+// parsing in MSVC2010 and it appears to be much slower. 
+#ifdef _MSC_VER
+static _locale_t locale = (_locale_t) 0;
+void init_locale() {
+	if (locale == (_locale_t) 0) {
+		locale = _create_locale(LC_NUMERIC, "C");
+	}
+}
+#else
+static locale_t locale = (locale_t) 0;
+void init_locale() {
+	if (locale == (_locale_t) 0) {
+		locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t) 0);
+	}
+}
+#endif
+
 // 
 // Opens the file, gets the filesize and reads a chunk in memory
 //
@@ -333,22 +354,28 @@ Token IfcParse::TokenPtr() { return Token((IfcSpfLexer*)0,0); }
 bool TokenFunc::startsWith(const Token& t, char c) {
 	return t.first->stream->Read(t.second) == c;
 }
+
 bool TokenFunc::isOperator(const Token& t, char op) {
 	return (!t.first) && (!op || op == t.second);
 }
+
 bool TokenFunc::isIdentifier(const Token& t) {
 	return ! isOperator(t) && startsWith(t, '#');
 }
+
 bool TokenFunc::isString(const Token& t) {
 	return ! isOperator(t) && startsWith(t, '\'');
 }
+
 bool TokenFunc::isEnumeration(const Token& t) {
 	return ! isOperator(t) && startsWith(t, '.');
 }
+
 bool TokenFunc::isKeyword(const Token& t) {
 	// bool is a subtype of enumeration, no need to test for that
 	return !isOperator(t) && !isIdentifier(t) && !isString(t) && !isEnumeration(t) && !isInt(t) && !isFloat(t);
 }
+
 bool TokenFunc::isInt(const Token& t) {
 	if (isOperator(t)) return false;
 	const std::string str = asString(t);
@@ -357,19 +384,26 @@ bool TokenFunc::isInt(const Token& t) {
 	long result = strtol(start,&end,10);
 	return ((end - start) == str.length());
 }
+
 bool TokenFunc::isBool(const Token& t) {
 	if (!isEnumeration(t)) return false;
 	const std::string str = asString(t);
 	return str == "T" || str == "F";
 }
+
 bool TokenFunc::isFloat(const Token& t) {
 	if (isOperator(t)) return false;
 	const std::string str = asString(t);
 	const char* start = str.c_str();
 	char* end;
-	double result = strtod(start,&end);
+#ifdef _MSC_VER
+	double result = _strtod_l(start,&end,locale);
+#else
+	double result = strtod_l(start,&end,locale);
+#endif
 	return ((end - start) == str.length());
 }
+
 int TokenFunc::asInt(const Token& t) {
 	const std::string str = asString(t);
 	// In case of an ENTITY_INSTANCE_NAME skip the leading #
@@ -379,24 +413,32 @@ int TokenFunc::asInt(const Token& t) {
 	if ( start == end ) throw IfcException("Token is not an integer or identifier");
 	return (int) result;
 }
+
 bool TokenFunc::asBool(const Token& t) {
 	const std::string str = asString(t);
 	return str == "T";
 }
+
 double TokenFunc::asFloat(const Token& t) {
 	const std::string str = asString(t);
 	const char* start = str.c_str();
 	char* end;
-	double result = strtod(start,&end);
+#ifdef _MSC_VER
+	double result = _strtod_l(start,&end,locale);
+#else
+	double result = strtod_l(start,&end,locale);
+#endif
 	if ( start == end ) throw IfcException("Token is not a real");
 	return result;
 }
+
 std::string TokenFunc::asString(const Token& t) {
 	if ( isOperator(t,'$') ) return "";
 	else if ( isOperator(t) ) throw IfcException("Token is not a string");
 	std::string str = t.first->TokenString(t.second);
 	return isString(t) || isEnumeration(t) ? str.substr(1,str.size()-2) : str;
 }
+
 std::string TokenFunc::toString(const Token& t) {
 	if ( isOperator(t) ) return std::string ( (char*) &t.second	, 1 );
 	else return t.first->TokenString(t.second);
@@ -769,6 +811,10 @@ bool IfcFile::Init(void* data, int len) {
 	return IfcFile::Init(new IfcSpfStream(data,len));
 }
 bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
+	// Initialize a "C" locale for locale-independent
+	// number parsing. See comment above on line 41.
+	init_locale();
+
 	stream = s;
 	if (!stream->valid) {
 		return false;
