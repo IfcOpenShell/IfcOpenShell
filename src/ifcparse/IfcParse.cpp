@@ -36,6 +36,27 @@
 
 using namespace IfcParse;
 
+// A static locale for the real number parser. strtod() is locale-dependent, causing issues 
+// in locales that have ',' as a decimal separator. Therefore the non standard _strtod_l() / 
+// strtod_l() is used and a reference to the "C" locale is obtained here. The alternative is 
+// to use std::istringstream::imbue(std::locale::classic()), but there are subtleties in 
+// parsing in MSVC2010 and it appears to be much slower. 
+#ifdef _MSC_VER
+static _locale_t locale = (_locale_t) 0;
+void init_locale() {
+	if (locale == (_locale_t) 0) {
+		locale = _create_locale(LC_NUMERIC, "C");
+	}
+}
+#else
+static locale_t locale = (locale_t) 0;
+void init_locale() {
+	if (locale == (_locale_t) 0) {
+		locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t) 0);
+	}
+}
+#endif
+
 // 
 // Opens the file, gets the filesize and reads a chunk in memory
 //
@@ -363,7 +384,11 @@ double TokenFunc::asFloat(const Token& t) {
 	const std::string str = asString(t);
 	const char* start = str.c_str();
 	char* end;
-	double result = strtod(start,&end);
+#ifdef _MSC_VER
+	double result = _strtod_l(start,&end,locale);
+#else
+	double result = strtod_l(start,&end,locale);
+#endif
 	if ( start == end ) throw IfcException("Token is not a real");
 	return result;
 }
@@ -693,6 +718,10 @@ bool IfcFile::Init(void* data, int len) {
 	return IfcFile::Init(new IfcSpfStream(data,len));
 }
 bool IfcFile::Init(IfcParse::IfcSpfStream* f) {
+	// Initialize a "C" locale for locale-independent
+	// number parsing. See comment above on line 41.
+	init_locale();
+
 	Ifc2x3::InitStringMap();
 	file = f;
 	if ( ! file->valid ) return false;
