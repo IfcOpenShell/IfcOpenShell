@@ -99,7 +99,7 @@ namespace IfcGeom {
 		SerializedElement<P>* current_serialization;
 		
 		// A container and iterator for IfcBuildingElements for the current IfcRepresentation referenced by *representation_iterator
-		IfcSchema::IfcProduct::list::ptr entities;
+		IfcSchema::IfcProduct::list::ptr ifcproducts;
 		IfcSchema::IfcProduct::list::it ifcproduct_iterator;
 
 		int done;
@@ -116,6 +116,29 @@ namespace IfcGeom {
 				std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 				unit_name = length_unit.first;
 				unit_magnitude = static_cast<P>(length_unit.second);
+			}
+		}
+
+		std::set<IfcSchema::Type::Enum> entities_to_include_or_exclude;
+		bool include_entities_in_processing;
+
+		void populate_set(const std::set<std::string>& include_or_ignore) {
+			entities_to_include_or_exclude.clear();
+			for (std::set<std::string>::const_iterator it = include_or_ignore.begin(); it != include_or_ignore.end(); ++it) {
+				std::string uppercase_type = *it;
+				for (std::string::iterator c = uppercase_type.begin(); c != uppercase_type.end(); ++c) {
+					*c = toupper(*c);
+				}
+				IfcSchema::Type::Enum ty;
+				try {
+					ty = IfcSchema::Type::FromString(uppercase_type);
+				} catch (const IfcParse::IfcException&) {
+					std::stringstream ss;
+					ss << "'" << *it << "' does not name a valid IFC entity";
+					throw IfcParse::IfcException(ss.str());
+				}
+				entities_to_include_or_exclude.insert(ty);
+				// TODO: Add child classes so that containment in set can be in O(log n)
 			}
 		}
 
@@ -202,7 +225,7 @@ namespace IfcGeom {
 			if (representations->size() == 0) return false;
 
 			representation_iterator = representations->begin();
-			entities.reset();
+			ifcproducts.reset();
 
 			if (!create()) {
 				return false;
@@ -234,10 +257,20 @@ namespace IfcGeom {
 			return ifc_file;
 		}
 
+		void includeEntities(const std::set<std::string>& entities) {
+			populate_set(entities);
+			include_entities_in_processing = true;
+		}
+
+		void excludeEntities(const std::set<std::string>& entities) {
+			populate_set(entities);
+			include_entities_in_processing = false;
+		}
+
 	private:
 		// Move to the next IfcRepresentation
 		void _nextShape() {
-			entities.reset();
+			ifcproducts.reset();
 			++ representation_iterator;
 			++ done;
 		}
@@ -254,14 +287,16 @@ namespace IfcGeom {
 				representation = *representation_iterator;
 
 				// Has the list of IfcProducts for this representation been initialized?
-				if ( ! entities ) {
+				if (!ifcproducts) {
 					
 					IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation->OfProductRepresentation();
-					entities = IfcSchema::IfcProduct::list::ptr(new IfcSchema::IfcProduct::list);
+					ifcproducts = IfcSchema::IfcProduct::list::ptr(new IfcSchema::IfcProduct::list);
+					IfcSchema::IfcProduct::list::ptr unfiltered_products(new IfcSchema::IfcProduct::list);
+
 					for ( IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it ) {
 						if ( (*it)->is(IfcSchema::Type::IfcProductDefinitionShape) ) {
 							IfcSchema::IfcProductDefinitionShape* pds = (IfcSchema::IfcProductDefinitionShape*)*it;
-							entities->push(pds->ShapeOfProduct());
+							unfiltered_products->push(pds->ShapeOfProduct());
 						} else {
 							// http://buildingsmart-tech.org/ifc/IFC2x3/TC1/html/ifcrepresentationresource/lexical/ifcproductrepresentation.htm
 							// IFC2x Edition 3 NOTE  Users should not instantiate the entity IfcProductRepresentation from IFC2x Edition 3 onwards. 
@@ -269,21 +304,34 @@ namespace IfcGeom {
 
 							// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
 							// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
-							IfcEntityList::ptr products = (*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1);
-							for ( IfcEntityList::it it = products->begin(); it != products->end(); ++ it ) {
-								entities->push((IfcSchema::IfcProduct*)*it);
+							unfiltered_products->push((*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>());
+						}
+
+						// Filter the products based on the set of entities being included or excluded for
+						// processing. The set is iterated over te able to filter on subtypes.
+						for ( IfcSchema::IfcProduct::list::it it = unfiltered_products->begin(); it != unfiltered_products->end(); ++it ) {
+							bool found = false;
+							for (std::set<IfcSchema::Type::Enum>::const_iterator jt = entities_to_include_or_exclude.begin(); jt != entities_to_include_or_exclude.end(); ++jt) {
+								if ((*it)->is(*jt)) {
+									found = true;
+									break;
+								}
+							}
+							if (found == include_entities_in_processing) {
+								ifcproducts->push(*it);
 							}
 						}
+
 					}
 					// Does this representation have any IfcProducts?
-					if ( ! entities->size() ) {
+					if (!ifcproducts->size()) {
 						_nextShape();
 						continue;
 					}
-					ifcproduct_iterator = entities->begin();
+					ifcproduct_iterator = ifcproducts->begin();
 				}
 				// Have we reached the end of our list of IfcProducts?
-				if ( ifcproduct_iterator == entities->end() ) {
+				if ( ifcproduct_iterator == ifcproducts->end() ) {
 					_nextShape();
 					continue;
 				}
@@ -314,7 +362,7 @@ namespace IfcGeom {
 			
 			// Increment the iterator over the list of products using the current
 			// shape representation
-			if (entities) {
+			if (ifcproducts) {
 				++ifcproduct_iterator;
 			}
 

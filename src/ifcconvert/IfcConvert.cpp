@@ -84,35 +84,48 @@ int main(int argc, char** argv) {
 		("input-file", boost::program_options::value<std::string>(), "input IFC file")
 		("output-file", boost::program_options::value<std::string>(), "output geometry file");
 
-	std::vector<std::string> ignore_types_vector;
+	std::vector<std::string> entity_vector;
 	boost::program_options::options_description geom_options;
 	geom_options.add_options()
-		("weld-vertices", "Specifies whether vertices are welded, meaning that the coordinates "
-						  "vector will only contain unique xyz-triplets. This results in a "
-					      "manifold mesh which is useful for modelling applications, but might "
-					      "result in unwanted shading artifacts in rendering applications.")
-		("use-world-coords", "Specifies whether to apply the local placements of building elements "
-						     "directly to the coordinates of the representation mesh rather than "
-						     "to represent the local placement in the 4x3 matrix, which will in that "
-						     "case be the identity matrix.")
-		("convert-back-units", "Specifies whether to convert back geometrical output back to the "
-							   "unit of measure in which it is defined in the IFC file. Default is "
-							   "to use meters.")
-		("sew-shells", "Specifies whether to sew the faces of IfcConnectedFaceSets together. This is a "
-					   "potentially time consuming operation, but guarantees a consistent orientation "
-					   "of surface normals, even if the faces are not properly oriented in the IFC file.")
-		("merge-boolean-operands", "Specifies whether to merge all IfcOpeningElement operands into a single "
-								   "operand before applying the subtraction operation. This may "
-								   "introduce a performance improvement at the risk of failing, in "
-								   "which case the subtraction is applied one-by-one.")
-		("force-ccw-face-orientation", "Recompute topological face normals using Newell's Method to "
-									   "guarantee that face vertices are defined in a Counter Clock "
-									   "Wise order, even if the faces are not part of a closed shell.")
-		("disable-opening-subtractions", "Specifies whether to disable the boolean subtraction of "
-										 "IfcOpeningElement Representations from their RelatingElements.")
-		("ignore-types", boost::program_options::value< std::vector<std::string> >(&ignore_types_vector)->multitoken(), 
-			"A list of IFC datatype keywords that should not be included in the geometrical output. "
-			"Defaults to IfcOpeningElement and IfcSpace");
+		("weld-vertices",
+			"Specifies whether vertices are welded, meaning that the coordinates "
+			"vector will only contain unique xyz-triplets. This results in a "
+			"manifold mesh which is useful for modelling applications, but might "
+			"result in unwanted shading artefacts in rendering applications.")
+		("use-world-coords", 
+			"Specifies whether to apply the local placements of building elements "
+			"directly to the coordinates of the representation mesh rather than "
+			"to represent the local placement in the 4x3 matrix, which will in that "
+			"case be the identity matrix.")
+		("convert-back-units",
+			"Specifies whether to convert back geometrical output back to the "
+			"unit of measure in which it is defined in the IFC file. Default is "
+			"to use meters.")
+		("sew-shells", 
+			"Specifies whether to sew the faces of IfcConnectedFaceSets together. "
+			"This is a potentially time consuming operation, but guarantees a "
+			"consistent orientation of surface normals, even if the faces are not "
+			"properly oriented in the IFC file.")
+		("merge-boolean-operands", 
+			"Specifies whether to merge all IfcOpeningElement operands into a single "
+			"operand before applying the subtraction operation. This may "
+			"introduce a performance improvement at the risk of failing, in "
+			"which case the subtraction is applied one-by-one.")
+		("force-ccw-face-orientation", 
+			"Recompute topological face normals using Newell's Method to "
+			"guarantee that face vertices are defined in a Counter Clock "
+			"Wise order, even if the faces are not part of a closed shell.")
+		("disable-opening-subtractions", 
+			"Specifies whether to disable the boolean subtraction of "
+			"IfcOpeningElement Representations from their RelatingElements.")
+		("include", 
+			"Specifies that the entities listed after --entities are to be included")
+		("exclude", 
+			"Specifies that the entities listed after --entities are to be excluded")
+		("entities", boost::program_options::value< std::vector<std::string> >(&entity_vector)->multitoken(), 
+			"A list of entities that should be included in or excluded from the "
+			"geometrical output, depending on whether --ignore or --include is "
+			"specified. Defaults to IfcOpeningElement and IfcSpace to be excluded.");
 	
 	boost::program_options::options_description cmdline_options;
 	cmdline_options.add(generic_options).add(fileio_options).add(geom_options);
@@ -139,6 +152,10 @@ int main(int argc, char** argv) {
 	} else if (vmap.count("help") || !vmap.count("input-file")) {
 		printUsage(generic_options, geom_options);
 		return vmap.count("help") ? 0 : 1;
+	} else if (vmap.count("include") && vmap.count("exclude")) {
+		std::cerr << "[Error] --include and --ignore can not be specified together" << std::endl;
+		printUsage(generic_options, geom_options);
+		return 1;
 	}
 
 	const bool verbose = vmap.count("verbose") != 0;
@@ -149,20 +166,22 @@ int main(int argc, char** argv) {
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
 	const bool force_ccw_face_orientation = vmap.count("force-ccw-face-orientation") != 0;
 	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
+	const bool include_entities = vmap.count("include") != 0;
 
 	// Gets the set ifc types to be ignored from the command line. 
-	std::set<std::string> ignore_types;
-	for (std::vector<std::string>::const_iterator it = ignore_types_vector.begin(); it != ignore_types_vector.end(); ++it) {
+	std::set<std::string> entities;
+	for (std::vector<std::string>::const_iterator it = entity_vector.begin(); it != entity_vector.end(); ++it) {
 		std::string lowercase_type = *it;
 		for (std::string::iterator c = lowercase_type.begin(); c != lowercase_type.end(); ++c) {
 			*c = tolower(*c);
 		}
-		ignore_types.insert(lowercase_type);
+		entities.insert(lowercase_type);
 	}
-	// If none are specified these are the defaults to skip from output
-	if (ignore_types_vector.empty()) {
-		ignore_types.insert("ifcopeningelement");
-		ignore_types.insert("ifcspace");
+
+	// If no entities are specified these are the defaults to skip from output
+	if (entity_vector.empty()) {
+		entities.insert("ifcopeningelement");
+		entities.insert("ifcspace");
 	}
 	
 	const std::string input_filename = vmap["input-file"].as<std::string>();
@@ -224,6 +243,17 @@ int main(int argc, char** argv) {
 
 	IfcGeom::Iterator<double> context_iterator(settings, input_filename);
 
+	try {
+		if (include_entities) {
+			context_iterator.includeEntities(entities);
+		} else {
+			context_iterator.excludeEntities(entities);
+		}
+	} catch (const IfcParse::IfcException& e) {
+		std::cout << "[Error] " << e.what() << std::endl;
+		return 1;
+	}
+
 	if (!serializer->ready()) {
 		Logger::Message(Logger::LOG_ERROR, "Unable to open output file for writing");
 		write_log();
@@ -231,7 +261,6 @@ int main(int argc, char** argv) {
 	}
 
 	if (!serializer->isTesselated()) {
-		
 		if (weld_vertices) {
 			Logger::Message(Logger::LOG_NOTICE, "Weld vertices setting ignored when writing STEP or IGES files");
 		}
@@ -239,7 +268,7 @@ int main(int argc, char** argv) {
 
 	time_t start,end;
 	time(&start);
-	// Parse the file supplied in argv[1]. Returns true on succes.
+	
 	if (!context_iterator.findContext()) {
 		Logger::Message(Logger::LOG_ERROR, "Unable to parse .ifc file or no geometrical entities found");
 		write_log();
@@ -264,13 +293,7 @@ int main(int argc, char** argv) {
 	// IfcGeomObjects::Next() is used to poll whether more geometrical entities are available    
 	do {
 		const IfcGeom::Element<double>* geom_object = context_iterator.get();
-
-		std::string lowercase_type = geom_object->type();
-		for (std::string::iterator c = lowercase_type.begin(); c != lowercase_type.end(); ++c) {
-			*c = tolower(*c);
-		}
-		if (ignore_types.find(lowercase_type) != ignore_types.end()) continue;
-
+		
 		if (serializer->isTesselated()) {
 			serializer->write(static_cast<const IfcGeom::TriangulationElement<double>*>(geom_object));
 		} else {
