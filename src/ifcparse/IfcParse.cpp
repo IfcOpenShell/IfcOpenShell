@@ -51,7 +51,7 @@ void init_locale() {
 #else
 static locale_t locale = (locale_t) 0;
 void init_locale() {
-	if (locale == (_locale_t) 0) {
+	if (locale == (locale_t) 0) {
 		locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t) 0);
 	}
 }
