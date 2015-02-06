@@ -114,7 +114,7 @@ void descend(A* instance, ptree& tree) {
 // model. The second and third argument require a member function pointer.
 template <typename T, typename U, typename V, typename F, typename G>
 typename V::list::ptr get_related(T* t, F f, G g) {
-	typename U::list::ptr li = (*t.*f)()->as<U>();
+	typename U::list::ptr li = (*t.*f)()->template as<U>();
 	typename V::list::ptr acc(new typename V::list);
 	for (typename U::list::it it = li->begin(); it != li->end(); ++it) {
 		U* u = *it;
