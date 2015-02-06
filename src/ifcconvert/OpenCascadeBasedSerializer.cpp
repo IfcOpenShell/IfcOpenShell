@@ -24,6 +24,8 @@
 #include <BRepBuilderAPI_GTransform.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 
+#include <Standard_Version.hxx>
+
 #include "OpenCascadeBasedSerializer.h"
 
 bool OpenCascadeBasedSerializer::ready() {

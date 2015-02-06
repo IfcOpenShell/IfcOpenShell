@@ -93,6 +93,8 @@
 #include <BRepCheck_Analyzer.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 
+#include <Standard_Version.hxx>
+
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& shape) {
