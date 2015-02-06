@@ -160,11 +160,12 @@ TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
 LINK_DIRECTORIES (${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} ${OPENCOLLADA_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}) 
 
-ADD_EXECUTABLE(IfcConvert 
+ADD_EXECUTABLE(IfcConvert
     ../src/ifcconvert/ColladaSerializer.cpp
     ../src/ifcconvert/IfcConvert.cpp
     ../src/ifcconvert/OpenCascadeBasedSerializer.cpp
-    ../src/ifcconvert/WavefrontObjSerializer.cpp   
+    ../src/ifcconvert/WavefrontObjSerializer.cpp
+    ../src/ifcconvert/XmlSerializer.cpp
 )
 
 TARGET_LINK_LIBRARIES (IfcConvert IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES})

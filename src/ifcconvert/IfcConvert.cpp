@@ -39,6 +39,7 @@
 #include "../ifcconvert/IgesSerializer.h"
 #include "../ifcconvert/StepSerializer.h"
 #include "../ifcconvert/WavefrontObjSerializer.h"
+#include "../ifcconvert/XmlSerializer.h"
 
 void printVersion() {
 	std::cerr << "IfcOpenShell IfcConvert " << IFCOPENSHELL_VERSION << std::endl;
@@ -55,6 +56,7 @@ void printUsage(const boost::program_options::options_description& generic_optio
 #endif
 	std::cerr << "  .stp   STEP           Standard for the Exchange of Product Data" << std::endl
 	          << "  .igs   IGES           Initial Graphics Exchange Specification" << std::endl
+	          << "  .xml   XML            Property definitions and decomposition tree" << std::endl
 	          << std::endl
 	          << "Command line options" << std::endl << generic_options << std::endl
 	          << "Advanced options" << std::endl << geom_options << std::endl;
@@ -196,6 +198,31 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
+	std::string output_extension = output_filename.substr(output_filename.size()-4);
+	for (std::string::iterator c = output_extension.begin(); c != output_extension.end(); ++c) {
+		*c = tolower(*c);
+	}
+
+	Logger::SetOutput(&std::cout, &log_stream);
+	Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
+
+	if (output_extension == ".xml") {
+		int exit_code = 1;
+		try {
+			XmlSerializer s(output_filename);
+			IfcParse::IfcFile f;
+			if (!f.Init(input_filename)) {
+				Logger::Message(Logger::LOG_ERROR, "Unable to parse .ifc file");
+			} else {
+				s.setFile(&f);
+				s.finalize();
+				exit_code = 0;
+			}
+		} catch (...) {}
+		write_log();
+		return exit_code;
+	}
+
 	IfcGeom::IteratorSettings settings;
 
 	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
@@ -206,14 +233,6 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::FASTER_BOOLEANS,              merge_boolean_operands);
 	settings.set(IfcGeom::IteratorSettings::FORCE_CCW_FACE_ORIENTATION,   force_ccw_face_orientation);
 	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
-
-	std::string output_extension = output_filename.substr(output_filename.size()-4);
-	for (std::string::iterator c = output_extension.begin(); c != output_extension.end(); ++c) {
-		*c = tolower(*c);
-	}
-
-	Logger::SetOutput(&std::cout, &log_stream);
-	Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
 	GeometrySerializer* serializer;
 	if (output_extension == ".obj") {
@@ -288,9 +307,16 @@ int main(int argc, char** argv) {
 	int old_progress = -1;
 	Logger::Status("Creating geometry...");
 
-	// The functions IfcGeomObjects::Get() and IfcGeomObjects::Next() wrap an iterator of all geometrical entities in the Ifc file.
-	// IfcGeomObjects::Get() returns an IfcGeom::TriangulationElement (see IfcGeomIterator.h for definition)
-	// IfcGeomObjects::Next() is used to poll whether more geometrical entities are available    
+	// The functions IfcGeom::Iterator::get() and IfcGeom::Iterator::next() 
+	// wrap an iterator of all geometrical products in the Ifc file. 
+	// IfcGeom::Iterator::get() returns an IfcGeom::TriangulationElement or 
+	// -BRepElement pointer, based on current settings. (see IfcGeomIterator.h 
+	// for definition) IfcGeom::Iterator::next() is used to poll whether more 
+	// geometrical entities are available. None of these functions throw 
+	// exceptions, neither for parsing errors or geometrical errors. Upon 
+	// calling next() the entity to be returned has already been processed, a 
+	// true return value guarantees that a successfully processed product is 
+	// available. 
 	do {
 		const IfcGeom::Element<double>* geom_object = context_iterator.get();
 		
@@ -316,6 +342,8 @@ int main(int argc, char** argv) {
 	time(&end);
 	int dif = (int) difftime (end,start);	
 	printf ("\nConversion took %d seconds\n", dif );
+
+	return 0;
 }
 
 void write_log() {

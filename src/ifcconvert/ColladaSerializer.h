@@ -157,6 +157,7 @@ public:
 		unit_name = name;
 		unit_magnitude = magnitude;
 	}
+	void setFile(IfcParse::IfcFile*) {}
 };
 
 #endif

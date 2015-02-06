@@ -41,6 +41,7 @@ public:
 	void write(const IfcGeom::TriangulationElement<double>* o) {}
 	void write(const IfcGeom::BRepElement<double>* o);
 	bool isTesselated() const { return false; }
+	void setFile(IfcParse::IfcFile*) {}
 };
 
 #endif

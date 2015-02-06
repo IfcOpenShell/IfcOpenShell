@@ -50,6 +50,7 @@ public:
 	void finalize() {}
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {}
+	void setFile(IfcParse::IfcFile*) {}
 };
 
 #endif

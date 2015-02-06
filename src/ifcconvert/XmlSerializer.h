@@ -17,20 +17,25 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef GEOMETRYSERIALIZER_H
-#define GEOMETRYSERIALIZER_H
+#ifndef XMLSERIALIZER_H
+#define XMLSERIALIZER_H
 
 #include "../ifcconvert/Serializer.h"
-#include "../ifcgeom/IfcGeomIterator.h"
 
-class GeometrySerializer : public Serializer {
+class XmlSerializer : public Serializer {
+private:
+	IfcParse::IfcFile* file;
+	std::string xml_filename;
 public:
-	virtual ~GeometrySerializer() {} 
+	XmlSerializer(const std::string& xml_filename)
+		: Serializer()
+		, xml_filename(xml_filename)
+	{}
 
-	virtual bool isTesselated() const = 0;
-	virtual void write(const IfcGeom::TriangulationElement<double>* o) = 0;
-	virtual void write(const IfcGeom::BRepElement<double>* o) = 0;
-	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
+	bool ready() { return true; }
+	void writeHeader() {}
+	void finalize();
+	void setFile(IfcParse::IfcFile* f) { file = f; }
 };
 
 #endif

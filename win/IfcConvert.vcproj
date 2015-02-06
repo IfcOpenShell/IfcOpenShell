@@ -183,6 +183,10 @@
 				RelativePath="..\src\ifcconvert\WavefrontObjSerializer.cpp"
 				>
 			</File>
+            <File
+				RelativePath="..\src\ifcconvert\XmlSerializer.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -210,11 +214,19 @@
 				>
 			</File>
             <File
+				RelativePath="..\src\ifcconvert\Serializer.h"
+				>
+			</File>
+            <File
 				RelativePath="..\src\ifcconvert\SurfaceStyle.h"
 				>
 			</File>
             <File
 				RelativePath="..\src\ifcconvert\WavefrontObjSerializer.h"
+				>
+			</File>
+            <File
+				RelativePath="..\src\ifcconvert\XmlSerializer.h"
 				>
 			</File>
 		</Filter>
