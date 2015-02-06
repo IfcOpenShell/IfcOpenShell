@@ -545,9 +545,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangularPyramid* l, TopoDS_
 	BRepPrimAPI_MakeWedge builder(dx, dz, dy, dx / 2., dy / 2., dx / 2., dy / 2.);
 	
 	gp_Trsf trsf1, trsf2;
-	trsf2.SetValues(1, 0, 0, 0,
-					0, 0, 1, 0,
-					0, 1, 0, 0, Precision::Confusion(), Precision::Confusion());
+	trsf2.SetValues(
+		1, 0, 0, 0,
+		0, 0, 1, 0,
+		0, 1, 0, 0
+#if OCC_VERSION_HEX < 0x60800
+		, Precision::Angular(), Precision::Confusion()
+#endif			
+	);
 	
 	IfcGeom::Kernel::convert(l->Position(), trsf1);
 	shape = BRepBuilderAPI_Transform(builder.Solid(), trsf1 * trsf2);

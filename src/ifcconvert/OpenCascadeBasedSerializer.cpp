@@ -46,8 +46,10 @@ void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<double>* o) {
 		o_trsf.SetValues(
 			matrix[0], matrix[3], matrix[6], matrix[ 9],
 			matrix[1], matrix[4], matrix[7], matrix[10], 
-			matrix[2], matrix[5], matrix[8], matrix[11],
-			1e-5, 1e-5
+			matrix[2], matrix[5], matrix[8], matrix[11]
+#if OCC_VERSION_HEX < 0x60800
+			, Precision::Angular(), Precision::Confusion()
+#endif
 		);
 		gtrsf.PreMultiply(o_trsf);
 		
