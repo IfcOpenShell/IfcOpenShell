@@ -765,6 +765,8 @@ bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::IfcRepresentationShapeIt
 
 		if (shapes.size() == 1) {
 			result = moved_shape;
+			const double precision = getValue(GV_PRECISION);
+			apply_tolerance(result, precision);
 			return true;
 		}
 
@@ -791,7 +793,13 @@ bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::IfcRepresentationShapeIt
 		}
 	}
 
-	return !result.IsNull();
+	const bool success = !result.IsNull();
+	if (success) {
+		const double precision = getValue(GV_PRECISION);
+		apply_tolerance(result, precision);
+	}
+
+	return success;
 }
 	
 void IfcGeom::Kernel::remove_redundant_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol) {

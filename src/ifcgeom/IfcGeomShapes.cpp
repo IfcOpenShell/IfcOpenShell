@@ -283,9 +283,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			return false;
 		}
 	} else {
-		if ( ! convert_shape(operand1,s1) ) {
+		if ( ! convert_shape(operand1, s1) ) {
 			return false;
 		}
+		{ TopoDS_Solid temp_solid;
+		s1 = ensure_fit_for_subtraction(s1, temp_solid); }
 	}
 
 	const double first_operand_volume = shape_volume(s1);
@@ -297,6 +299,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		shape2_processed = convert_shapes(operand2, items2) && flatten_shape_list(items2, s2, true);
 	} else {
 		shape2_processed = convert_shape(operand2,s2);
+		if (shape2_processed && !is_halfspace) {
+			TopoDS_Solid temp_solid;
+			s2 = ensure_fit_for_subtraction(s2, temp_solid);
+		}
 	}
 
 	if (!shape2_processed) {
@@ -305,7 +311,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		return true;
 	}
 
-	if ( ! is_halfspace ) {
+	if (!is_halfspace) {
 		const double second_operand_volume = shape_volume(s2);
 		if ( second_operand_volume <= ALMOST_ZERO )
 			Logger::Message(Logger::LOG_WARNING,"Empty solid for:",operand2->entity);
@@ -321,8 +327,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			TopoDS_Shape result = brep_cut;
 
 			ShapeFix_Shape fix(result);
-			fix.Perform();
-			result = fix.Shape();
+			try {
+				fix.Perform();
+				result = fix.Shape();
+			} catch (...) {
+				Logger::Message(Logger::LOG_WARNING, "Shape healing failed on boolean result", l->entity);
+			}
 		
 			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
 			if ( is_valid ) {
@@ -355,10 +365,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
 			if ( is_valid ) {
 				shape = result;
+				return true;
 			} 
-		}
-
-		return true;
+		}	
 
 	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
 
@@ -373,14 +382,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
 			if ( is_valid ) {
 				shape = result;
+				return true;
 			} 
 		}
 
-		return true;
-
-	} else {
-		return false;
 	}
+	return false;
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& shape) {
