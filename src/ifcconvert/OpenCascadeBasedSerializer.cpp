@@ -44,8 +44,10 @@ void OpenCascadeBasedSerializer::writeShapeModel(const IfcGeomObjects::IfcGeomSh
 		o_trsf.SetValues(
 			o->matrix()[0], o->matrix()[3], o->matrix()[6], o->matrix()[ 9],
 			o->matrix()[1], o->matrix()[4], o->matrix()[7], o->matrix()[10], 
-			o->matrix()[2], o->matrix()[5], o->matrix()[8], o->matrix()[11],
-			1e-5, 1e-5
+			o->matrix()[2], o->matrix()[5], o->matrix()[8], o->matrix()[11]
+#if OCC_VERSION_HEX < 0x60800
+			, Precision::Angular(), Precision::Confusion()
+#endif
 		);
 		gtrsf.PreMultiply(o_trsf);
 		
