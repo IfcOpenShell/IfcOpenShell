@@ -73,18 +73,18 @@ void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<double>* o) {
 }
 
 #define RATHER_SMALL (1e-3)
-#define ALMOST_THE_SAME(a,b) (fabs(a-b) < RATHER_SMALL)
+#define APPROXIMATELY_THE_SAME(a,b) (fabs(a-b) < RATHER_SMALL)
 
 const char* OpenCascadeBasedSerializer::getSymbolForUnitMagnitude(float mag) {
-	if (ALMOST_THE_SAME(mag, 0.001f)) {
+	if (APPROXIMATELY_THE_SAME(mag, 0.001f)) {
 		return "MM";
-	} else if (ALMOST_THE_SAME(mag, 0.01f)) {
+	} else if (APPROXIMATELY_THE_SAME(mag, 0.01f)) {
 		return "CM";
-	} else if (ALMOST_THE_SAME(mag, 1.0f)) {
+	} else if (APPROXIMATELY_THE_SAME(mag, 1.0f)) {
 		return "M";
-	} else if (ALMOST_THE_SAME(mag, 0.3048f)) {
+	} else if (APPROXIMATELY_THE_SAME(mag, 0.3048f)) {
 		return "FT";
-	} else if (ALMOST_THE_SAME(mag, 0.0254f)) {
+	} else if (APPROXIMATELY_THE_SAME(mag, 0.0254f)) {
 		return "INCH";
 	} else {
 		return 0;
