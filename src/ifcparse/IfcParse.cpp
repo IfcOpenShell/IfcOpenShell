@@ -829,7 +829,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 		schemas = _header.file_schema().schema_identifiers();
 	} catch (...) {}
 	if (schemas.size() != 1 || schemas[0] != IfcSchema::Identifier) {
-		Logger::Message(Logger::LOG_WARNING, std::string("File schema encountered that is different from expected value of '") + IfcSchema::Identifier + "'");
+		Logger::Message(Logger::LOG_ERROR, std::string("File schema encountered different from expected '") + IfcSchema::Identifier + "'");
 	}
 
 	Token token = TokenPtr();
