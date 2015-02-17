@@ -39,6 +39,9 @@ namespace IfcUtil {
 %ignore IfcParse::IfcFile::EntityById;
 %ignore IfcParse::IfcFile::EntityByGuid;
 %ignore IfcParse::IfcFile::AddEntity;
+%ignore IfcParse::IfcFile::removeEntity;
+%ignore IfcParse::IfcFile::traverse(IfcUtil::IfcBaseClass*, int);
+%ignore IfcParse::IfcFile::traverse(IfcUtil::IfcBaseClass*);
 %ignore operator<<;
 
 %ignore IfcParse::FileDescription::FileDescription;
@@ -182,8 +185,14 @@ namespace IfcUtil {
 	IfcParse::IfcLateBoundEntity* by_guid(const std::string& guid) {
 		return (IfcParse::IfcLateBoundEntity*) $self->EntityByGuid(guid);
 	}
-	void add(IfcParse::IfcLateBoundEntity* e) {
-		$self->AddEntity(e);
+	IfcParse::IfcLateBoundEntity* add(IfcParse::IfcLateBoundEntity* e) {
+		return (IfcParse::IfcLateBoundEntity*) $self->AddEntity(e);
+	}
+	void remove(IfcParse::IfcLateBoundEntity* e) {
+		$self->removeEntity(e);
+	}
+	IfcEntityList::ptr traverse(IfcParse::IfcLateBoundEntity* e, int max_level=-1) {
+		return $self->traverse(e, max_level);
 	}
 	void write(const std::string& fn) {
 		std::ofstream f(fn.c_str());

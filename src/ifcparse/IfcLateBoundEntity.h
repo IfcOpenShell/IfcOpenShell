@@ -49,6 +49,7 @@ namespace IfcParse {
 		unsigned int id() const;
 		unsigned int getArgumentCount() const;
 		IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
+		IfcSchema::Type::Enum getArgumentEntity(unsigned int i) const;
 		Argument* getArgument(unsigned int i) const;
 		const char* getArgumentName(unsigned int i) const;
 		unsigned getArgumentIndex(const std::string& a) const;

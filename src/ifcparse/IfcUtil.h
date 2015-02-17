@@ -20,6 +20,7 @@
 #ifndef IFCUTIL_H
 #define IFCUTIL_H
 
+#include <set>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -66,22 +67,23 @@ namespace IfcUtil {
 		IfcAbstractEntity* entity;
 		virtual bool is(IfcSchema::Type::Enum v) const = 0;
 		virtual IfcSchema::Type::Enum type() const = 0;
-	};
 
-	class IfcBaseEntity : public IfcBaseClass {
-	public:
 		virtual unsigned int getArgumentCount() const = 0;
 		virtual ArgumentType getArgumentType(unsigned int i) const = 0;
+		virtual IfcSchema::Type::Enum getArgumentEntity(unsigned int i) const = 0;
 		virtual Argument* getArgument(unsigned int i) const = 0;
 		virtual const char* getArgumentName(unsigned int i) const = 0;
 	};
 
+	class IfcBaseEntity : public IfcBaseClass {
+	};
+
 	// TODO: Investigate whether these should be template classes instead
 	class IfcBaseType : public IfcBaseEntity {
-	public:
-		virtual unsigned int getArgumentCount() const;
-		virtual Argument* getArgument(unsigned int i) const;
-		virtual const char* getArgumentName(unsigned int i) const;
+		unsigned int getArgumentCount() const;
+		Argument* getArgument(unsigned int i) const;
+		const char* getArgumentName(unsigned int i) const;
+		IfcSchema::Type::Enum getArgumentEntity(unsigned int i) const { return IfcSchema::Type::UNDEFINED; }
 	};
 }
 
@@ -103,10 +105,12 @@ public:
 	template <class U>
 	typename U::list::ptr as() {
 		typename U::list::ptr r(new typename U::list);
-		const bool all = U::Class() == IfcSchema::Type::ALL;
+		const bool all = U::Class() == IfcSchema::Type::UNDEFINED;
 		for ( it i = begin(); i != end(); ++ i ) if (all || (*i)->is(U::Class())) r->push((U*)*i);
 		return r;
 	}
+	void remove(IfcUtil::IfcBaseClass*);
+	IfcEntityList::ptr filtered(const std::set<IfcSchema::Type::Enum>& entities);
 };
 
 template <class T>
@@ -133,6 +137,12 @@ public:
 		for ( it i = begin(); i != end(); ++ i ) if (all || (*i)->is(U::Class())) r->push((U*)*i);
 		return r;
 	}
+	void remove(T* t) {
+		typename std::vector<T*>::const_iterator it;
+		while ((it = std::find(ls.begin(), ls.end(), t)) != ls.end()) {
+			ls.erase(it);
+		}
+	}
 };
 
 template <class T>
@@ -157,6 +167,13 @@ public:
 	outer_it begin() const { return ls.begin(); }
 	outer_it end() const { return ls.end(); }
 	int size() const { return ls.size(); }
+	int totalSize() const { 
+		int accum = 0; 
+		for (outer_it it = begin(); it != end(); ++it) { 
+			accum += it->size(); 
+		} 
+		return accum; 
+	}
 	bool contains(IfcUtil::IfcBaseClass* instance) const {
 		for (outer_it it = begin(); it != end(); ++it) {
 			const std::vector<IfcUtil::IfcBaseClass*>& inner = *it;
@@ -192,7 +209,14 @@ public:
 	void push(const std::vector<T*>& t) {ls.push_back(t);}
 	outer_it begin() { return ls.begin(); }
 	outer_it end() { return ls.end(); }
-	unsigned int size() const { return (unsigned int) ls.size(); }
+	int size() const { return ls.size(); }
+	int totalSize() const { 
+		int accum = 0; 
+		for (outer_it it = begin(); it != end(); ++it) { 
+			accum += it->size(); 
+		} 
+		return accum; 
+	}
 	bool contains(T* t) const {
 		for (outer_it it = begin(); it != end(); ++it) {
 			const std::vector<T*>& inner = *it;

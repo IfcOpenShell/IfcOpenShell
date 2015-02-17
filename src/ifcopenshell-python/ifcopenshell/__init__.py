@@ -88,8 +88,14 @@ class file(object):
 			return entity_instance(self.wrapped_data.by_id(key))
 		elif isinstance(key, str):
 			return entity_instance(self.wrapped_data.by_guid(key))
+	def add(self, inst):
+		return entity_instance(self.wrapped_data.add(inst.wrapped_data))
 	def by_type(self, type):
 		return [entity_instance(e) for e in self.wrapped_data.by_type(type)]
+	def traverse(self, inst):
+		return [entity_instance(e) for e in self.wrapped_data.traverse(inst.wrapped_data)]
+	def remove(self, inst):
+		return self.wrapped_data.remove(inst.wrapped_data)
 	def __iter__(self):
 		return iter(self[id] for id in self.wrapped_data.entity_names())
 

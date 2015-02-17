@@ -103,6 +103,11 @@ class Header:
                     argument_type_function_body_tail = (" return %s::getArgumentType(i); "%type.supertypes[0]) if len(type.supertypes) == 1 else ' throw IfcParse::IfcException("argument out of range"); '
 
                     argument_type_function_body = argument_type_function_body_switch_stmt + argument_type_function_body_tail
+                    
+                    argument_entity_function_body_switch_stmt = " switch (i) {%s}"%("".join(['case %d: return %s; '%(i+argument_start, mapping.make_argument_entity(attr)) for i, attr in enumerate(type.attributes)])) if len(type.attributes) else ""
+                    argument_entity_function_body_tail = (" return %s::getArgumentEntity(i); "%type.supertypes[0]) if len(type.supertypes) == 1 else ' throw IfcParse::IfcException("argument out of range"); '
+
+                    argument_entity_function_body = argument_entity_function_body_switch_stmt + argument_entity_function_body_tail
 
                     constructor_arguments = ", ".join("%(full_type)s v%(index)d_%(name)s"%a for a in mapping.get_assignable_arguments(type))
 

@@ -38,12 +38,12 @@ namespace Type {
     int GetAttributeCount(Enum t);
     int GetAttributeIndex(Enum t, const std::string& a);
     IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
+    Enum GetAttributeEntity(Enum t, unsigned char a);
     const std::string& GetAttributeName(Enum t, unsigned char a);
     bool GetAttributeOptional(Enum t, unsigned char a);
     bool GetAttributeDerived(Enum t, unsigned char a);
     std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
     std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
-    Enum GetAttributeEnumerationClass(Enum t, unsigned char a);
     void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
 }}
 

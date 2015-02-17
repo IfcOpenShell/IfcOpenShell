@@ -32,7 +32,7 @@ class LateBoundImplementation:
             entity_descriptors.append(templates.entity_descriptor % {
                 'type'                         : name,
                 'parent_statement'             : '0',
-                'entity_descriptor_attributes' : templates.entity_descriptor_attribute % {
+                'entity_descriptor_attributes' : templates.entity_descriptor_attribute_without_entity % {
                     'name'     : 'wrappedValue',
                     'optional' : 'false',
                     'type'     : mapping.make_argument_type(mapping.schema.types[name].type)
@@ -49,12 +49,14 @@ class LateBoundImplementation:
                     entity_descriptor_attributes = []
                     for arg in constructor_arguments:
                         if not arg['is_inherited']:
-                            tmpl = templates.entity_descriptor_attribute_enum if arg['argument_type_enum'] == 'IfcUtil::Argument_ENUMERATION' else templates.entity_descriptor_attribute
+                            is_enumeration = arg['argument_type_enum'] == 'IfcUtil::Argument_ENUMERATION'
+                            tmpl = templates.entity_descriptor_attribute_with_entity
+                            entity_name = arg['argument_type'] if is_enumeration else arg['argument_entity'].split('::')[1]
                             entity_descriptor_attributes.append(tmpl % {
-                                'name'      : arg['name'],
-                                'optional'  : 'true' if arg['is_optional'] else 'false',
-                                'type'      : arg['argument_type_enum'],
-                                'enum_type' : arg['argument_type']
+                                'name'       : arg['name'],
+                                'optional'   : 'true' if arg['is_optional'] else 'false',
+                                'type'       : arg['argument_type_enum'],
+                                'entity_name': entity_name
                             })
                         
                     emitted_entities.add(name)

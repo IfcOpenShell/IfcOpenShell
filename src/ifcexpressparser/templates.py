@@ -60,7 +60,7 @@ namespace %(schema_name)s {
 
 namespace Type {
     typedef enum {
-        %(types)s, ALL
+        %(types)s, UNDEFINED
     } Enum;
     Enum Parent(Enum v);
     Enum FromString(const std::string& s);
@@ -88,12 +88,12 @@ namespace Type {
     int GetAttributeCount(Enum t);
     int GetAttributeIndex(Enum t, const std::string& a);
     IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
+    Enum GetAttributeEntity(Enum t, unsigned char a);
     const std::string& GetAttributeName(Enum t, unsigned char a);
     bool GetAttributeOptional(Enum t, unsigned char a);
     bool GetAttributeDerived(Enum t, unsigned char a);
     std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
     std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
-    Enum GetAttributeEnumerationClass(Enum t, unsigned char a);
     void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
 }}
 
@@ -211,6 +211,13 @@ ArgumentType Type::GetAttributeType(Enum t, unsigned char a) {
     else return i->second->getArgumentType(a);
 }
 
+Type::Enum Type::GetAttributeEntity(Enum t, unsigned char a) {
+    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
+    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
+    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
+    else return i->second->getArgumentEntity(a);
+}
+
 const std::string& Type::GetAttributeName(Enum t, unsigned char a) {
     if (entity_descriptor_map.empty()) ::InitDescriptorMap();
     std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
@@ -250,17 +257,6 @@ std::pair<Type::Enum, unsigned> Type::GetInverseAttribute(Enum t, const std::str
     throw IfcException("Attribute not found");
 }
 
-Type::Enum Type::GetAttributeEnumerationClass(Enum t, unsigned char a) {
-    if (entity_descriptor_map.empty()) ::InitDescriptorMap();
-    std::map<Type::Enum,IfcEntityDescriptor*>::const_iterator i = entity_descriptor_map.find(t);
-    if ( i == entity_descriptor_map.end() ) throw IfcException("Type not found");
-    else {
-        Type::Enum t = i->second->getArgumentEnumerationClass(a);
-        if ( t == Type::ALL ) throw IfcException("Not an enumeration");
-        else return t;
-    }
-}
-
 void Type::PopulateDerivedFields(IfcWrite::IfcWritableEntity* e) {
     std::map<Type::Enum, std::set<int> >::const_iterator i = derived_map.find(e->type());
 	if (i != derived_map.end()) {
@@ -275,8 +271,8 @@ entity_descriptor = """    current = entity_descriptor_map[Type::%(type)s] = new
 %(entity_descriptor_attributes)s"""
 
 entity_descriptor_parent = "entity_descriptor_map.find(Type::%(type)s)->second"
-entity_descriptor_attribute = '    current->add("%(name)s",%(optional)s,%(type)s);'
-entity_descriptor_attribute_enum = '    current->add("%(name)s",%(optional)s,%(type)s,Type::%(enum_type)s);'
+entity_descriptor_attribute_without_entity = '    current->add("%(name)s",%(optional)s,%(type)s);'
+entity_descriptor_attribute_with_entity = '    current->add("%(name)s",%(optional)s,%(type)s,Type::%(entity_name)s);'
 
 enumeration_descriptor = """    values.clear(); values.reserve(128);
 %(enumeration_descriptor_values)s
@@ -329,6 +325,7 @@ class %(name)s %(superclass)s{
 public:
 %(attributes)s    virtual unsigned int getArgumentCount() const { return %(argument_count)d; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const {%(argument_type_function_body)s}
+    virtual Type::Enum getArgumentEntity(unsigned int i) const {%(argument_entity_function_body)s}
     virtual const char* getArgumentName(unsigned int i) const {%(argument_name_function_body)s}
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
 %(inverse)s    bool is(Type::Enum v) const;

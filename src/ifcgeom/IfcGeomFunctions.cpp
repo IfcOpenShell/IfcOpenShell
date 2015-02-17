@@ -100,8 +100,8 @@
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopTools_ListIteratorOfListOfShape.hxx>
 
+#include "../ifcparse/IfcSIPrefix.h"
 #include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom/IfcGeomUtils.h"
 
 bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
 	BRepOffsetAPI_Sewing builder;
@@ -1015,7 +1015,7 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 				}
 				if ( unit ) {
 					if ( unit->hasPrefix() ) {
-						value *= IfcGeom::Utils::UnitPrefixToValue(unit->Prefix());
+						value *= IfcParse::IfcSIPrefixToValue(unit->Prefix());
 					}
 					IfcSchema::IfcUnitEnum::IfcUnitEnum type = unit->UnitType();
 					if ( type == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ) {

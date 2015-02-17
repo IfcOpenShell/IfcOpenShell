@@ -99,7 +99,7 @@ IfcSchema::IfcProject* IfcHierarchyHelper::addProject(IfcSchema::IfcOwnerHistory
 	IfcSchema::IfcSIUnit* unit2a = new IfcSchema::IfcSIUnit(IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT, 
 		boost::none, IfcSchema::IfcSIUnitName::IfcSIUnitName_RADIAN);
 	IfcSchema::IfcMeasureWithUnit* unit2b = new IfcSchema::IfcMeasureWithUnit(
-		new IfcWrite::IfcSelectHelper(0.017453293, IfcSchema::Type::IfcPlaneAngleMeasure), unit2a);
+		new IfcSchema::IfcPlaneAngleMeasure(0.017453293), unit2a);
 	IfcSchema::IfcConversionBasedUnit* unit2 = new IfcSchema::IfcConversionBasedUnit(dimexp, 
 		IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT, "Degrees", unit2b);
 

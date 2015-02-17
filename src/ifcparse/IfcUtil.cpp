@@ -41,6 +41,29 @@ IfcUtil::IfcBaseClass* IfcEntityList::operator[] (int i) {
 bool IfcEntityList::contains(IfcUtil::IfcBaseClass* instance) const {
 	return std::find(ls.begin(), ls.end(), instance) != ls.end();
 }
+void IfcEntityList::remove(IfcUtil::IfcBaseClass* instance) {
+	std::vector<IfcUtil::IfcBaseClass*>::const_iterator it;
+	while ((it = std::find(ls.begin(), ls.end(), instance)) != ls.end()) {
+		ls.erase(it);
+	}
+}
+IfcEntityList::ptr IfcEntityList::filtered(const std::set<IfcSchema::Type::Enum>& entities) {
+	IfcEntityList::ptr return_value(new IfcEntityList);
+	for (it it = begin(); it != end(); ++it) {
+		bool contained = false;
+		for (std::set<IfcSchema::Type::Enum>::const_iterator jt = entities.begin(); jt != entities.end(); ++jt) {
+			if ((*it)->is(*jt)) {
+				contained = true;
+				break;
+			}
+		}
+		if (!contained) {
+			return_value->push(*it);
+		}
+	}	
+	return return_value;
+}
+
 
 unsigned int IfcUtil::IfcBaseType::getArgumentCount() const { return 1; }
 Argument* IfcUtil::IfcBaseType::getArgument(unsigned int i) const { return entity->getArgument(i); }

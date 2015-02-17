@@ -341,55 +341,6 @@ IfcUtil::ArgumentType IfcWriteArgument::type() const {
 	return static_cast<IfcUtil::ArgumentType>(container.which());
 }
 
-IfcEntityList::ptr IfcSelectHelperEntity::getInverse(IfcSchema::Type::Enum, int) {throw IfcParse::IfcException("Invalid cast");}
-std::string IfcSelectHelperEntity::datatype() const { return IfcSchema::Type::ToString(_type); }
-Argument* IfcSelectHelperEntity::getArgument(unsigned int i) {
-	if ( i != 0 ) throw IfcParse::IfcException("Invalid cast");
-	return arg;
-}
-unsigned int IfcSelectHelperEntity::getArgumentCount() const { return 1; }
-IfcSchema::Type::Enum IfcSelectHelperEntity::type() const { return _type; }
-bool IfcSelectHelperEntity::is(IfcSchema::Type::Enum t) const { return _type == t; }
-std::string IfcSelectHelperEntity::toString(bool upper) const {
-	std::stringstream ss;
-	std::string dt = datatype();
-	if ( upper ) {
-		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
-	}
-	ss << dt << "(" << arg->toString(upper) << ")";
-	return ss.str();
-}
-unsigned int IfcSelectHelperEntity::id() { throw IfcParse::IfcException("Invalid cast"); }
-IfcWrite::IfcWritableEntity* IfcSelectHelperEntity::isWritable() { throw IfcParse::IfcException("Invalid cast"); }
-
-IfcSelectHelper::IfcSelectHelper(const std::string& v, IfcSchema::Type::Enum t) {
-	IfcWriteArgument* a = new IfcWriteArgument(0);
-	a->set(v);
-	this->entity = new IfcSelectHelperEntity(t,a);
-}
-IfcSelectHelper::IfcSelectHelper(const char* const v, IfcSchema::Type::Enum t) {
-	IfcWriteArgument* a = new IfcWriteArgument(0);
-	a->set<std::string>(v);
-	this->entity = new IfcSelectHelperEntity(t,a);
-}
-IfcSelectHelper::IfcSelectHelper(int v, IfcSchema::Type::Enum t) {
-	IfcWriteArgument* a = new IfcWriteArgument(0);
-	a->set(v);
-	this->entity = new IfcSelectHelperEntity(t,a);
-}
-IfcSelectHelper::IfcSelectHelper(double v, IfcSchema::Type::Enum t) {
-	IfcWriteArgument* a = new IfcWriteArgument(0);
-	a->set(v);
-	this->entity = new IfcSelectHelperEntity(t,a);
-}
-IfcSelectHelper::IfcSelectHelper(bool v, IfcSchema::Type::Enum t) {
-	IfcWriteArgument* a = new IfcWriteArgument(0);
-	a->set(v);
-	this->entity = new IfcSelectHelperEntity(t,a);
-}
-bool IfcSelectHelper::is(IfcSchema::Type::Enum t) const { return entity->is(t); }
-IfcSchema::Type::Enum IfcSelectHelper::type() const { return entity->type(); } 
-
 EntityBuffer* EntityBuffer::i = 0;
 EntityBuffer* EntityBuffer::instance() {
 	if ( ! i ) {

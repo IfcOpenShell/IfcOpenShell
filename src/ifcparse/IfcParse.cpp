@@ -17,6 +17,7 @@
 *                                                                              *
 ********************************************************************************/
 
+#include <set>
 #include <algorithm>
 #include <string>
 #include <stdio.h>
@@ -35,6 +36,7 @@
 #include "../ifcparse/IfcWritableEntity.h"
 #include "../ifcparse/IfcLateBoundEntity.h"
 #include "../ifcparse/IfcFile.h"
+#include "../ifcparse/IfcSIPrefix.h"
 
 using namespace IfcParse;
 
@@ -804,12 +806,15 @@ IfcFile::IfcFile(bool create_latebound_entities)
 bool IfcFile::Init(const std::string& fn) {
 	return IfcFile::Init(new IfcSpfStream(fn));
 }
+
 bool IfcFile::Init(std::istream& f, int len) {
 	return IfcFile::Init(new IfcSpfStream(f,len));
 }
+
 bool IfcFile::Init(void* data, int len) {
 	return IfcFile::Init(new IfcSpfStream(data,len));
 }
+
 bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 	// Initialize a "C" locale for locale-independent
 	// number parsing. See comment above on line 41.
@@ -920,13 +925,142 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 	Logger::Status("\rDone scanning file   ");
 	return true;
 }
+
+void IfcFile::traverse(IfcUtil::IfcBaseClass* instance, std::set<IfcUtil::IfcBaseClass*>& visited, IfcEntityList::ptr list, int level, int max_level) {
+	if (visited.find(instance) != visited.end()) {
+		return;
+	}
+	visited.insert(instance);
+	list->push(instance);
+
+	if (level >= max_level && max_level > 0) return;
+
+	for (unsigned i = 0; i < instance->getArgumentCount(); ++i) {
+		Argument* arg = instance->getArgument(i);
+
+		if (arg->type() == IfcUtil::Argument_ENTITY) {
+			traverse(*arg, visited, list, level + 1, max_level);
+		} else if (arg->type() == IfcUtil::Argument_ENTITY_LIST) {
+			IfcEntityList::ptr entity_list_attribute = *arg;
+			for (IfcEntityList::it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
+				traverse(*it, visited, list, level + 1, max_level);
+			}
+		} else if (arg->type() == IfcUtil::Argument_ENTITY_LIST_LIST) {
+			IfcEntityListList::ptr entity_list_attribute = *arg;
+			for (IfcEntityListList::outer_it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
+				for (IfcEntityListList::inner_it jt = it->begin(); jt != it->end(); ++jt) {
+					traverse(*jt, visited, list, level + 1, max_level);
+				}
+			}
+		}
+	}
+}
+
+IfcEntityList::ptr IfcFile::traverse(IfcUtil::IfcBaseClass* instance, int max_level) {
+	std::set<IfcUtil::IfcBaseClass*> visited;
+	IfcEntityList::ptr return_value(new IfcEntityList);
+	traverse(instance, visited, return_value, 0, max_level);
+	return return_value;
+}
+
 void IfcFile::AddEntities(IfcEntityList::ptr es) {
 	for( IfcEntityList::it i = es->begin(); i != es->end(); ++ i ) {
 		AddEntity(*i);
 	}
 }
-void IfcFile::AddEntity(IfcUtil::IfcBaseClass* entity) {
-	if ( entity->is(IfcSchema::Type::IfcRoot) ) {
+
+IfcUtil::IfcBaseClass* IfcFile::AddEntity(IfcUtil::IfcBaseClass* entity) {
+	// If this instance has been inserted before, return
+	// a reference to the copy that was created from it.
+	entity_entity_map_t::iterator it = entity_file_map.find(entity);
+	if (it != entity_file_map.end()) {
+		return it->second;
+	}
+
+	// Obtain all forward references by a depth-first 
+	// traversal and add them to the file.
+	{ IfcEntityList::ptr entity_attributes = traverse(entity, 1);
+	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
+		if (*it != entity) {
+			entity_file_map.insert(entity_entity_map_t::value_type(*it, AddEntity(*it)));
+		}
+	} }
+
+	// See whether the instance is already part of a file
+	if (entity->entity->file != 0) {
+		if (entity->entity->file == this) {
+			// If it is part of this file
+			// nothing needs to be done.
+			return entity;
+		}
+
+		// An instance is being added from another file. A copy of the
+		// container and entity is created. The attribute references 
+		// need to be updated to point to instances in this file.
+		IfcFile* other_file = entity->entity->file;
+		IfcWrite::IfcWritableEntity* we = new IfcWrite::IfcWritableEntity(entity->entity);
+		if (this->create_latebound_entities()) {
+			entity = new IfcLateBoundEntity(we);
+		} else {
+			entity = IfcSchema::SchemaEntity(we);
+		}
+		
+		// In case an entity is added that contains geometry, the unit
+		// information needs to be accounted for for IfcLengthMeasures.
+		boost::optional<double> conversion_factor;
+
+		for (unsigned i = 0; i < we->getArgumentCount(); ++i) {
+			Argument* attr = we->getArgument(i);
+			IfcUtil::ArgumentType attr_type = attr->type();
+			if (attr_type == IfcUtil::Argument_ENTITY) {
+				we->setArgument(i, entity_file_map[*attr]);
+			} else if (attr_type == IfcUtil::Argument_ENTITY_LIST) {
+				IfcEntityList::ptr instances = *attr;
+				IfcEntityList::ptr new_instances(new IfcEntityList);
+				for (IfcEntityList::it it = instances->begin(); it != instances->end(); ++it) {
+					new_instances->push(entity_file_map[*it]);
+				}
+				we->setArgument(i, new_instances);
+			} else if (attr_type == IfcUtil::Argument_ENTITY_LIST_LIST) {
+				IfcEntityListList::ptr instances = *attr;
+				IfcEntityListList::ptr new_instances(new IfcEntityListList);
+				for (IfcEntityListList::outer_it it = instances->begin(); it != instances->end(); ++it) {
+					std::vector<IfcUtil::IfcBaseClass*> list;
+					for (IfcEntityListList::inner_it jt = it->begin(); jt != it->end(); ++jt) {
+						list.push_back(entity_file_map[*jt]);
+					}
+					new_instances->push(list);
+				}
+				we->setArgument(i, new_instances);
+			} else if (entity->getArgumentEntity(i) == IfcSchema::Type::IfcLengthMeasure ||
+				entity->getArgumentEntity(i) == IfcSchema::Type::IfcPositiveLengthMeasure) 
+			{
+				if (!conversion_factor) {
+					conversion_factor = other_file->getUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT).second / 
+						getUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT).second;
+				}
+				if (attr_type == IfcUtil::Argument_DOUBLE) {
+					double v = *attr;
+					v *= *conversion_factor;
+					we->setArgument(i, v);
+				} else if (attr_type == IfcUtil::Argument_VECTOR_DOUBLE) {
+					std::vector<double> v = *attr;
+					for (std::vector<double>::iterator it = v.begin(); it != v.end(); ++it) {
+						(*it) *= *conversion_factor;
+					}
+					we->setArgument(i, v);
+				}
+			}
+		}
+
+		// A new entity instance name is generated and
+		// the instance is pointed to this file.
+		we->file = this;
+		we->setId(FreshId());
+	}
+
+	// For subtypes of IfcRoot, the GUID mapping needs to be updated.
+	if (entity->is(IfcSchema::Type::IfcRoot)) {
 		IfcSchema::IfcRoot* ifc_root = (IfcSchema::IfcRoot*) entity;
 		try {
 			const std::string guid = ifc_root->GlobalId();
@@ -941,6 +1075,7 @@ void IfcFile::AddEntity(IfcUtil::IfcBaseClass* entity) {
 		}
 	}
 
+	// The mapping by entity type is updated.
 	IfcSchema::Type::Enum ty = entity->type();
 	do {
 		IfcEntityList::ptr instances_by_type = EntitiesByType(ty);
@@ -953,92 +1088,181 @@ void IfcFile::AddEntity(IfcUtil::IfcBaseClass* entity) {
 	} while ( ty > -1 );
 	
 	int new_id = -1;
-	// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
-	if ( entity->entity->isWritable() ) {
-		if ( ! entity->entity->file ) entity->entity->file = this;
+	if (entity->entity->isWritable() && !entity->entity->file) {
+		// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
+		entity->entity->file = this;
 		new_id = entity->entity->isWritable()->setId();
 	} else {
-		// TODO: Detect and fix ENTITY_INSTANCE_NAME collisions
 		new_id = entity->entity->id();
 	}
-	if ( byid.find(new_id) != byid.end() ) {
+
+	if (byid.find(new_id) != byid.end()) {
+		// This should not happen
 		std::stringstream ss;
 		ss << "Overwriting entity with id " << new_id;
-		Logger::Message(Logger::LOG_WARNING,ss.str());
+		Logger::Message(Logger::LOG_WARNING, ss.str());
 	}
+
+	// The mapping by entity instance name is updated.
 	byid[new_id] = entity;
 
-	unsigned arg_count = entity->entity->getArgumentCount();
-	for (unsigned i = 0; i < arg_count; ++i) {
-		Argument* arg = entity->entity->getArgument(i);
+	// The mapping by reference is updated.
+	IfcEntityList::ptr entity_attributes = traverse(entity, 1);
+	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
+		IfcUtil::IfcBaseClass* entity_attribute = *it;
+		try {
+			if (!IfcSchema::Type::IsSimple(entity_attribute->type())) {
+				unsigned entity_attribute_id = entity_attribute->entity->id();
+				IfcEntityList::ptr refs = EntitiesByReference(entity_attribute_id);
+				if (!refs) {
+					refs = IfcEntityList::ptr(new IfcEntityList);
+					byref[entity_attribute_id] = refs;
+				}
+				refs->push(entity);
+			}
+		} catch (IfcParse::IfcException&) {}
+	}
 
-		// Create a flat list of entity instances referenced by the instance that is being added
-		IfcEntityList::ptr entity_attributes(new IfcEntityList);
-		if (arg->type() == IfcUtil::Argument_ENTITY) {
-			IfcUtil::IfcBaseClass* entity_attribute = *arg;
-			entity_attributes->push(entity_attribute);
-		} else if (arg->type() == IfcUtil::Argument_ENTITY_LIST) {
-			IfcEntityList::ptr entity_list_attribute = *arg;
-			entity_attributes->push(entity_list_attribute);
-		} else if (arg->type() == IfcUtil::Argument_ENTITY_LIST_LIST) {
-			IfcEntityListList::ptr entity_list_attribute = *arg;
-			for (IfcEntityListList::outer_it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
-				for (IfcEntityListList::inner_it jt = it->begin(); jt != it->end(); ++jt) {
-					entity_attributes->push(*jt);
+	return entity;
+}
+
+IfcWrite::IfcWritableEntity* make_writable(IfcUtil::IfcBaseClass* instance) {
+	if (instance->entity->isWritable()) {
+		return instance->entity->isWritable();
+	}
+
+	IfcWrite::IfcWritableEntity* return_value;
+	instance->entity = return_value = new IfcWrite::IfcWritableEntity(instance->entity);
+	return return_value;
+}
+
+void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
+	const unsigned id = entity->entity->id();
+	IfcUtil::IfcBaseClass* file_entity = EntityById(id);
+
+	// TODO: Create a set of weak relations. Inverse relations that do not dictate an 
+	// instance to be retained. For example: when deleting an IfcRepresentation, the 
+	// individual IfcRepresentationItems can not be deleted if an IfcStyledItem is 
+	// related. Hence, the IfcRepresentationItem::StyledByItem relation could be 
+	// characterized as weak. 
+	std::set<IfcSchema::Type::Enum> weak_roots;
+
+	if (entity != file_entity) {
+		throw IfcParse::IfcException("Instance not part of this file");
+	}
+
+	std::set<IfcUtil::IfcBaseClass*> deletion_queue;
+	IfcEntityList::ptr references = EntitiesByReference(id);
+
+	// Alter entity instances with INVERSE relations to the entity being 
+	// deleted. This is necessary to maintain a valid IFC file, because 
+	// dangling references to it's entities name should be removed. At this
+	// moment, inversely related instances affected by the removal of the
+	// entity being deleted are not deleted themselves.
+	if (references) {
+		for (IfcEntityList::it it = references->begin(); it != references->end(); ++it) {
+			IfcUtil::IfcBaseEntity* related_instance = (IfcUtil::IfcBaseEntity*) *it;
+			for (unsigned i = 0; i < related_instance->getArgumentCount(); ++i) {
+				Argument* attr = related_instance->getArgument(i);
+				if (attr->isNull()) continue;
+
+				IfcUtil::ArgumentType attr_type = related_instance->getArgumentType(i);
+				switch(attr_type) {
+				case IfcUtil::Argument_ENTITY: {
+					IfcUtil::IfcBaseClass* instance_attribute = *attr;
+					if (instance_attribute == entity) {
+						make_writable(related_instance)->setArgument(i);
+						// deletion_queue.insert(related_instance);
+					} }
+					break;
+				case IfcUtil::Argument_ENTITY_LIST: {
+					IfcEntityList::ptr instance_list = *attr;
+					if (instance_list->contains(entity)) {
+						instance_list->remove(entity);
+						make_writable(related_instance)->setArgument(i, instance_list);
+						/* if (instance_list->size() == 0) {
+							deletion_queue.insert(related_instance);
+						} */
+					} }
+					break;
+				case IfcUtil::Argument_ENTITY_LIST_LIST: {
+					IfcEntityListList::ptr instance_list_list = *attr;
+					if (instance_list_list->contains(entity)) {
+						IfcEntityListList::ptr new_list(new IfcEntityListList);
+						for (IfcEntityListList::outer_it it = instance_list_list->begin(); it != instance_list_list->end(); ++it) {
+							std::vector<IfcUtil::IfcBaseClass*> instances = *it;
+							std::vector<IfcUtil::IfcBaseClass*>::const_iterator jt;
+							while ((jt = std::find(instances.begin(), instances.end(), entity)) != instances.end()) {
+								instances.erase(jt);
+							}
+							new_list->push(instances);
+						}
+						make_writable(related_instance)->setArgument(i, new_list);
+						/* if (new_list->totalSize() == 0) {
+							deletion_queue.insert(related_instance);
+						} */
+					} }
+					break;
+				default: break;
 				}
 			}
 		}
+		byref.erase(byref.find(id));
+	}
 
-		for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
-			IfcUtil::IfcBaseClass* entity_attribute = *it;
-			try {
-				if (!IfcSchema::Type::IsSimple(entity_attribute->type())) {
-					// At this point simple types are IfcSelectHelper instances
-					// which are not writable and do not have an instance name.
-					if (entity_attribute->entity->isWritable()) {
-						if ( ! entity_attribute->entity->file ) {
-							entity_attribute->entity->file = this;
-						}
-						entity_attribute->entity->isWritable()->setId();
-					}
-					unsigned entity_attribute_id = entity_attribute->entity->id();
-					IfcEntityList::ptr refs = EntitiesByReference(entity_attribute_id);
-					if (!refs) {
-						refs = IfcEntityList::ptr(new IfcEntityList);
-						byref[entity_attribute_id] = refs;
-					}
-					refs->push(entity);
-				}
-			} catch (IfcParse::IfcException&) {}
+	IfcEntityList::ptr entity_attributes = traverse(entity, 1);
+	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
+		IfcUtil::IfcBaseClass* entity_attribute = *it;
+		if (entity_attribute == entity) continue;
+		EntitiesByReference(entity_attribute->entity->id())->remove(entity);
+		if (EntitiesByReference(entity_attribute->entity->id())->filtered(weak_roots)->size() == 0) {
+			deletion_queue.insert(entity_attribute);
 		}
 	}
+
+	if (entity->is(IfcSchema::Type::IfcRoot)) {
+		const std::string global_id = ((IfcSchema::IfcRoot*) entity)->GlobalId();
+		byguid.erase(byguid.find(global_id));
+	}
+	
+	byid.erase(byid.find(id));
+	
+	IfcEntityList::ptr instances_of_same_type = EntitiesByType(entity->type());
+	instances_of_same_type->remove(entity);
+
+	while (!deletion_queue.empty()) {
+		removeEntity(*deletion_queue.begin());
+		deletion_queue.erase(deletion_queue.begin());
+	}
+
+	delete entity->entity;
+	delete entity;
 }
+
 IfcEntityList::ptr IfcFile::EntitiesByType(IfcSchema::Type::Enum t) {
 	entities_by_type_t::const_iterator it = bytype.find(t);
 	return (it == bytype.end()) ? IfcEntityList::ptr() : it->second;
 }
+
 IfcEntityList::ptr IfcFile::EntitiesByType(const std::string& t) {
 	std::string ty = t;
 	for (std::string::iterator p = ty.begin(); p != ty.end(); ++p ) *p = toupper(*p);
 	return EntitiesByType(IfcSchema::Type::FromString(ty));
 }
+
 IfcEntityList::ptr IfcFile::EntitiesByReference(int t) {
 	entities_by_ref_t::const_iterator it = byref.find(t);
 	return (it == byref.end()) ? IfcEntityList::ptr() : it->second;
 }
+
 IfcUtil::IfcBaseClass* IfcFile::EntityById(int id) {
 	entity_by_id_t::const_iterator it = byid.find(id);
-	if ( it == byid.end() ) {
-		offset_by_id_t::const_iterator it2 = offsets.find(id);
-		if ( it2 == offsets.end() ) throw IfcException("Entity not found");
-		const unsigned int offset = (*it2).second;
-		Entity* e = new Entity(id,this,offset);
-		IfcUtil::IfcBaseClass* entity = IfcSchema::SchemaEntity(e);
-		byid[id] = entity;
-		return entity;
+	if (it == byid.end()) {
+		throw IfcException("Entity not found");
 	}
 	return it->second;
 }
+
 IfcSchema::IfcRoot* IfcFile::EntityByGuid(const std::string& guid) {
 	entity_by_guid_t::const_iterator it = byguid.find(guid);
 	if ( it == byguid.end() ) {
@@ -1065,6 +1289,7 @@ IfcFile::~IfcFile() {
 IfcFile::entity_by_id_t::const_iterator IfcFile::begin() const {
 	return byid.begin();
 }
+
 IfcFile::entity_by_id_t::const_iterator IfcFile::end() const {
 	return byid.end();
 }
@@ -1109,7 +1334,7 @@ IfcEntityList::ptr IfcFile::getInverse(int instance_id, IfcSchema::Type::Enum ty
 	if (!all) return l;
 
 	for(IfcEntityList::it it = all->begin(); it != all->end(); ++it) {
-		bool valid = type == IfcSchema::Type::ALL || (*it)->is(type);
+		bool valid = type == IfcSchema::Type::UNDEFINED || (*it)->is(type);
 		if (valid && attribute_index >= 0) {
 			Argument* arg = (*it)->entity->getArgument(attribute_index);
 			if (arg->type() == IfcUtil::Argument_ENTITY) {
@@ -1151,3 +1376,38 @@ void IfcFile::setDefaultHeaderValues() {
 	header().file_schema().schema_identifiers(schema_identifiers);
 }
 
+std::pair<IfcSchema::IfcNamedUnit*, double> IfcFile::getUnit(IfcSchema::IfcUnitEnum::IfcUnitEnum type) {
+	std::pair<IfcSchema::IfcNamedUnit*, double> return_value((IfcSchema::IfcNamedUnit*)0, 1.);
+	IfcSchema::IfcProject::list::ptr projects = EntitiesByType<IfcSchema::IfcProject>();
+	if (projects->size() == 1) {
+		IfcSchema::IfcProject* project = *projects->begin();
+		IfcEntityList::ptr units = project->UnitsInContext()->Units();
+		for (IfcEntityList::it it = units->begin(); it != units->end(); ++it) {
+			IfcSchema::IfcUnit* unit = *it;
+			if (unit->is(IfcSchema::Type::IfcNamedUnit)) {
+				IfcSchema::IfcNamedUnit* named_unit = (IfcSchema::IfcNamedUnit*) unit;
+				if (named_unit->UnitType() != type) {
+					continue;
+				}
+				IfcSchema::IfcSIUnit* unit = 0;
+				if (named_unit->is(IfcSchema::Type::IfcConversionBasedUnit)) {
+					IfcSchema::IfcConversionBasedUnit* u = (IfcSchema::IfcConversionBasedUnit*)named_unit;
+					IfcSchema::IfcMeasureWithUnit* mu = u->ConversionFactor();
+					return_value.second *= static_cast<double>(*mu->ValueComponent()->entity->getArgument(0));
+					return_value.first = named_unit;
+					if (mu->UnitComponent()->is(IfcSchema::Type::IfcSIUnit)) {
+						unit = (IfcSchema::IfcSIUnit*) mu->UnitComponent();
+					}
+				} else if (named_unit->is(IfcSchema::Type::IfcSIUnit)) {
+					return_value.first = unit = (IfcSchema::IfcSIUnit*) named_unit;
+				}
+				if (unit) {
+					if (unit->hasPrefix()) {
+						return_value.second *= IfcSIPrefixToValue(unit->Prefix());
+					}
+				}
+			}
+		}
+	}
+	return return_value;
+}

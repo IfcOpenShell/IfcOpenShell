@@ -66,6 +66,12 @@ class Mapping:
             return self.is_array(self.schema.types[type].type.type)
         else:
             return False
+            
+    def make_argument_entity(self, attr):
+        type = attr.type if hasattr(attr, 'type') else attr
+        while isinstance(type, nodes.AggregationType): type = type.type
+        if type in self.express_to_cpp_typemapping or isinstance(type, nodes.BinaryType): return "Type::UNDEFINED"
+        else: return "Type::%s" % type        
 
     def make_argument_type(self, attr):
         def _make_argument_type(type):
@@ -191,6 +197,7 @@ class Mapping:
             'is_derived'         : attr.name in derived,
             'is_templated_list'  : self.is_templated_list(attr),
             'argument_type_enum' : self.make_argument_type(attr),
+            'argument_entity'    : self.make_argument_entity(attr),
             'argument_type'      : attr.type
         } for i, attr in attrs if include(attr)]
 

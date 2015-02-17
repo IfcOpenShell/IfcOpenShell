@@ -119,43 +119,6 @@ namespace IfcWrite {
 		IfcUtil::ArgumentType type() const;
 	};
 
-	/// An entity to help with passing of SELECT arguments that
-	/// consist of simple types, for example useful to initialize
-	/// a new IfcProperty.
-	/// Proper memory management is difficult for now, so beware.
-	class IfcSelectHelperEntity : public IfcAbstractEntity {
-	private:
-		IfcSchema::Type::Enum _type;
-		IfcWriteArgument* arg;
-	public:
-		// FIXME: Make this a non-pointer argument and implement a copy constructor
-		IfcSelectHelperEntity(IfcSchema::Type::Enum t, IfcWriteArgument* a) : _type(t), arg(a) {}
-		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index);
-		std::string datatype() const;
-		Argument* getArgument(unsigned int i);
-		unsigned int getArgumentCount() const;
-		IfcSchema::Type::Enum type() const;
-		bool is(IfcSchema::Type::Enum t) const;
-		std::string toString(bool upper = false) const;
-		unsigned int id();
-		IfcWritableEntity* isWritable();
-	};
-
-	/// A helper class for passing of SELECT arguments that
-	/// consist of simple types, for example useful to initialize
-	/// a new IfcProperty.
-	/// Proper memory management is difficult for now, so beware.
-	class IfcSelectHelper : public IfcUtil::IfcBaseClass {
-	public:
-		IfcSelectHelper(const std::string& v, IfcSchema::Type::Enum t=IfcSchema::Type::IfcText);
-		IfcSelectHelper(const char* const v, IfcSchema::Type::Enum t=IfcSchema::Type::IfcText);
-		IfcSelectHelper(int v, IfcSchema::Type::Enum t=IfcSchema::Type::IfcInteger);
-		IfcSelectHelper(double v, IfcSchema::Type::Enum t=IfcSchema::Type::IfcReal);
-		IfcSelectHelper(bool v, IfcSchema::Type::Enum t=IfcSchema::Type::IfcBoolean);
-		bool is(IfcSchema::Type::Enum t) const;
-		IfcSchema::Type::Enum type() const;
-	};
-	
 	/// A helper class for the creation of IFC GlobalIds.
 	class IfcGuidHelper {
 	private:

@@ -21,6 +21,7 @@
 #define IFCFILE_H
 
 #include <map>
+#include <set>
 
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcSpfHeader.h"
@@ -38,6 +39,8 @@ public:
 	typedef std::map<unsigned int, unsigned int> offset_by_id_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
 private:
+	typedef std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> entity_entity_map_t;
+
 	bool _create_latebound_entities;
 
 	entity_by_id_t byid;
@@ -46,12 +49,15 @@ private:
 	entity_by_guid_t byguid;
 	offset_by_id_t offsets;
 
+	entity_entity_map_t entity_file_map;
+
 	unsigned int lastId;
 	unsigned int MaxId;
 
 	IfcSpfHeader _header;
 
 	void setDefaultHeaderValues();
+	void traverse(IfcUtil::IfcBaseClass*, std::set<IfcUtil::IfcBaseClass*>& visited, IfcEntityList::ptr list, int level, int max_level);
 public:
 	IfcParse::IfcSpfLexer* tokens;
 	IfcParse::IfcSpfStream* stream;
@@ -96,6 +102,11 @@ public:
 	/// Returns the entity with the specified GlobalId
 	IfcSchema::IfcRoot* EntityByGuid(const std::string& guid);
 
+	/// Performs a depth-first traversal, returning all entity instance
+	/// attributes as a flat list. NB: includes the root instance specified
+	/// in the first function argument.
+	IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
+
 	bool Init(const std::string& fn);
 	bool Init(std::istream& fn, int len);
 	bool Init(void* data, int len);
@@ -105,8 +116,10 @@ public:
 
 	unsigned int FreshId() { return ++MaxId; }
 
-	void AddEntity(IfcUtil::IfcBaseClass* entity);
+	IfcUtil::IfcBaseClass* AddEntity(IfcUtil::IfcBaseClass* entity);
 	void AddEntities(IfcEntityList::ptr es);
+
+	void removeEntity(IfcUtil::IfcBaseClass* entity);
 
 	const IfcSpfHeader& header() const { return _header; }
 	IfcSpfHeader& header() { return _header; }
@@ -114,6 +127,8 @@ public:
 	std::string createTimestamp() const;
 
 	bool create_latebound_entities() const { return _create_latebound_entities; }
+
+	std::pair<IfcSchema::IfcNamedUnit*, double> getUnit(IfcSchema::IfcUnitEnum::IfcUnitEnum);
 };
 
 }

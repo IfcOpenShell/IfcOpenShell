@@ -89,6 +89,9 @@ IfcUtil::ArgumentType IfcParse::IfcLateBoundEntity::getArgumentType(unsigned int
 		? IfcUtil::Argument_DERIVED
 		: IfcSchema::Type::GetAttributeType(_type,i);
 }
+IfcSchema::Type::Enum IfcParse::IfcLateBoundEntity::getArgumentEntity(unsigned int i) const {
+	return IfcSchema::Type::GetAttributeEntity(_type, i);
+}
 Argument* IfcParse::IfcLateBoundEntity::getArgument(unsigned int i) const {
 	return entity->getArgument(i);
 }
@@ -134,7 +137,7 @@ void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, const std::string
 	if (arg_type == Argument_STRING) {
 		writable_entity()->setArgument(i,a);	
 	} else if (arg_type == Argument_ENUMERATION) {
-		std::pair<const char*, int> enum_data = IfcSchema::Type::GetEnumerationIndex(IfcSchema::Type::GetAttributeEnumerationClass(_type, i), a);
+		std::pair<const char*, int> enum_data = IfcSchema::Type::GetEnumerationIndex(IfcSchema::Type::GetAttributeEntity(_type, i), a);
 		writable_entity()->setArgument(i, enum_data.second, enum_data.first);
 	} else invalid_argument(i,"STRING");
 }
