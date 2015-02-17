@@ -71,7 +71,8 @@ IfcEntityList::ptr IfcWritableEntity::getInverse(IfcSchema::Type::Enum type, int
 }
 
 std::string IfcWritableEntity::datatype() const { return IfcSchema::Type::ToString(_type); }
-Argument* IfcWritableEntity::getArgument (unsigned int i) { if ( i >= getArgumentCount() ) throw IfcParse::IfcException("Argument not set"); return args[i]; }unsigned int IfcWritableEntity::getArgumentCount() const {return args.size(); }
+Argument* IfcWritableEntity::getArgument (unsigned int i) { if ( i >= getArgumentCount() ) throw IfcParse::IfcException("Argument not set"); return args[i]; }
+unsigned int IfcWritableEntity::getArgumentCount() const {return args.size(); }
 IfcSchema::Type::Enum IfcWritableEntity::type() const { return _type; }
 bool IfcWritableEntity::is(IfcSchema::Type::Enum v) const { return _type == v; }
 std::string IfcWritableEntity::toString(bool upper) const {
@@ -314,7 +315,12 @@ void StringBuilderVisitor::operator()(const std::vector<std::string>& i) { seria
 IfcWriteArgument::operator int() const { return as<int>(); }
 IfcWriteArgument::operator bool() const { return as<bool>(); }
 IfcWriteArgument::operator double() const { return as<double>(); }
-IfcWriteArgument::operator std::string() const { return as<std::string>(); }
+IfcWriteArgument::operator std::string() const { 
+	if (type() == IfcUtil::Argument_ENUMERATION) {
+		return as<EnumerationReference>().enumeration_value;
+	}
+	return as<std::string>(); 
+}
 IfcWriteArgument::operator std::vector<double>() const { return as<std::vector<double> >(); }
 IfcWriteArgument::operator std::vector<int>() const { return as<std::vector<int> >(); }
 IfcWriteArgument::operator std::vector<std::string>() const { return as<std::vector<std::string > >(); }
