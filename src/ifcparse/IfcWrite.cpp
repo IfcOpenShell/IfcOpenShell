@@ -76,6 +76,8 @@ IfcSchema::Type::Enum IfcWritableEntity::type() const { return _type; }
 bool IfcWritableEntity::is(IfcSchema::Type::Enum v) const { return _type == v; }
 std::string IfcWritableEntity::toString(bool upper) const {
 	std::stringstream ss;
+	ss.imbue(std::locale::classic());
+	
 	std::string dt = datatype();
 	if (upper) {
 		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
@@ -323,6 +325,7 @@ bool IfcWriteArgument::isNull() const { return type() == IfcUtil::Argument_NULL;
 Argument* IfcWriteArgument::operator [] (unsigned int i) const { throw IfcParse::IfcException("Invalid cast"); }
 std::string IfcWriteArgument::toString(bool upper) const {
 	std::ostringstream str;
+	str.imbue(std::locale::classic());
 	StringBuilderVisitor v(str, upper);
 	container.apply_visitor(v);
 	return v;

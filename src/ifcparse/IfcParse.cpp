@@ -757,6 +757,8 @@ std::string Entity::toString(bool upper) const {
 	}
 
 	std::stringstream ss;
+	ss.imbue(std::locale::classic());
+	
 	std::string dt = datatype();
 	if (upper) {
 		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
