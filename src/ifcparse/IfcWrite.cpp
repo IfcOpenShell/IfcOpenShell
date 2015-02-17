@@ -271,7 +271,12 @@ public:
 IfcWriteArgument::operator int() const { return as<int>(); }
 IfcWriteArgument::operator bool() const { return as<bool>(); }
 IfcWriteArgument::operator double() const { return as<double>(); }
-IfcWriteArgument::operator std::string() const { return as<std::string>(); }
+IfcWriteArgument::operator std::string() const { 
+	if (argumentType() == argument_type_enumeration) {
+		return as<EnumerationReference>().enumeration_value;
+	}
+	return as<std::string>(); 
+}
 IfcWriteArgument::operator std::vector<double>() const { return as<std::vector<double> >(); }
 IfcWriteArgument::operator std::vector<int>() const { return as<std::vector<int> >(); }
 IfcWriteArgument::operator std::vector<std::string>() const { return as<std::vector<std::string > >(); }
