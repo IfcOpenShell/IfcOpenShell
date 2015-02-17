@@ -38,7 +38,7 @@ namespace IfcUtil {
 %ignore IfcParse::IfcFile::Init;
 %ignore IfcParse::IfcFile::EntityById;
 %ignore IfcParse::IfcFile::EntityByGuid;
-%ignore IfcParse::IfcFile::AddEntity;
+%ignore IfcParse::IfcFile::addEntity;
 %ignore IfcParse::IfcFile::removeEntity;
 %ignore IfcParse::IfcFile::traverse(IfcUtil::IfcBaseClass*, int);
 %ignore IfcParse::IfcFile::traverse(IfcUtil::IfcBaseClass*);
@@ -186,7 +186,7 @@ namespace IfcUtil {
 		return (IfcParse::IfcLateBoundEntity*) $self->EntityByGuid(guid);
 	}
 	IfcParse::IfcLateBoundEntity* add(IfcParse::IfcLateBoundEntity* e) {
-		return (IfcParse::IfcLateBoundEntity*) $self->AddEntity(e);
+		return (IfcParse::IfcLateBoundEntity*) $self->addEntity(e);
 	}
 	void remove(IfcParse::IfcLateBoundEntity* e) {
 		$self->removeEntity(e);

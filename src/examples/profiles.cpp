@@ -61,8 +61,8 @@ void create_testcase_for(IfcSchema::IfcProfileDef::list::ptr profiles) {
 		IfcSchema::IfcExtrudedAreaSolid* solid = new IfcSchema::IfcExtrudedAreaSolid(profile,
 			file.addPlacement3d(), file.addTriplet<IfcSchema::IfcDirection>(0, 0, 1), 20.0);
 
-		file.AddEntity(profile);
-		file.AddEntity(solid);
+		file.addEntity(profile);
+		file.addEntity(solid);
 		
 		IfcSchema::IfcRepresentation::list::ptr reps (new IfcSchema::IfcRepresentation::list);
 		IfcSchema::IfcRepresentationItem::list::ptr items (new IfcSchema::IfcRepresentationItem::list);
@@ -73,8 +73,8 @@ void create_testcase_for(IfcSchema::IfcProfileDef::list::ptr profiles) {
 		reps->push(rep);
 
 		IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
-		file.AddEntity(rep);
-		file.AddEntity(shape);
+		file.addEntity(rep);
+		file.addEntity(shape);
 		
 		product->setRepresentation(shape);
 	}

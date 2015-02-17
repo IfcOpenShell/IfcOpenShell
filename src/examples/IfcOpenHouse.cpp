@@ -127,12 +127,12 @@ int main(int argc, char** argv) {
 		, IfcSchema::IfcOpeningElementTypeEnum::IfcOpeningElementType_OPENING
 #endif
 	);
-	file.AddEntity(west_opening);
+	file.addEntity(west_opening);
 
 	// Relate the opening element to the wall.
 	IfcSchema::IfcRelVoidsElement* void_element = new IfcSchema::IfcRelVoidsElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 		null, null, south_wall, west_opening);
-	file.AddEntity(void_element);
+	file.addEntity(void_element);
 
 	// Now create an additional opening
 	IfcSchema::IfcOpeningElement* south_opening = new IfcSchema::IfcOpeningElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
@@ -142,8 +142,8 @@ int main(int argc, char** argv) {
 		, IfcSchema::IfcOpeningElementTypeEnum::IfcOpeningElementType_OPENING
 #endif
 	);
-	file.AddEntity(south_opening);
-	file.AddEntity(new IfcSchema::IfcRelVoidsElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, south_wall, south_opening));
+	file.addEntity(south_opening);
+	file.addEntity(new IfcSchema::IfcRelVoidsElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, south_wall, south_opening));
 	
 	// Create a roof element that will consist of two slabs:
 	IfcSchema::IfcRoof* roof = new IfcSchema::IfcRoof(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), S("Roof"), null, null,
@@ -177,7 +177,7 @@ int main(int argc, char** argv) {
 	roof_parts->push(north_roof_part);
 	IfcSchema::IfcRelDecomposes* roof_decomposition = new IfcSchema::IfcRelAggregates(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 			null, null, roof, roof_parts);
-	file.AddEntity(roof_decomposition);
+	file.addEntity(roof_decomposition);
 
 	file.addBuildingProduct(south_roof_part);
 	file.addBuildingProduct(north_roof_part);
@@ -247,8 +247,8 @@ int main(int argc, char** argv) {
 		, IfcSchema::IfcOpeningElementTypeEnum::IfcOpeningElementType_OPENING
 #endif	
 	);
-	file.AddEntity(west_opening_copy);
-	file.AddEntity(new IfcSchema::IfcRelVoidsElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, west_wall, west_opening_copy));
+	file.addEntity(west_opening_copy);
+	file.addEntity(new IfcSchema::IfcRelVoidsElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, west_wall, west_opening_copy));
 	
 	// Up until now we have only used simple extrusions for the creation of the geometry. For the 
 	// ground mesh of the IfcSite we will use a Nurbs surface created in Open Cascade. The surface 
@@ -319,11 +319,11 @@ int main(int argc, char** argv) {
 #endif
 		layer_usage);
 
-	file.AddEntity(material);
-	file.AddEntity(layer);
-	file.AddEntity(layer_set);	
-	file.AddEntity(layer_usage);
-	file.AddEntity(associates_material);
+	file.addEntity(material);
+	file.addEntity(layer);
+	file.addEntity(layer_set);	
+	file.addEntity(layer_usage);
+	file.addEntity(associates_material);
 
 	// In addition, another common way to represent geometry in IFC files is to use extrusions of
 	// planar areas bounded by a polygon.
@@ -351,8 +351,8 @@ int main(int argc, char** argv) {
 		, IfcSchema::IfcOpeningElementTypeEnum::IfcOpeningElementType_OPENING
 #endif	
 	);
-	file.AddEntity(door_opening);
-	file.AddEntity(new IfcSchema::IfcRelVoidsElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, east_wall, door_opening));
+	file.addEntity(door_opening);
+	file.addEntity(new IfcSchema::IfcRelVoidsElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, east_wall, door_opening));
 
 	// A single shape representation can contain multiple representiation items. This way a product
 	// can be a composition of multiple solids. The following door will be composed of four boxes
@@ -379,7 +379,7 @@ int main(int argc, char** argv) {
 	file.addBox(door_body, 860, 30, 2120);
 	file.addBuildingProduct(door);
 	file.setSurfaceColour(door->Representation(), 0.9, 0.9, 0.9);
-	file.AddEntity(new IfcSchema::IfcRelFillsElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, door_opening, door));
+	file.addEntity(new IfcSchema::IfcRelFillsElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, door_opening, door));
 
 	// Surface styles are assigned to representation items, hence there is no real limitation to
 	// assign different colours within the same representation. However, some viewers have 
@@ -462,7 +462,7 @@ int main(int argc, char** argv) {
 				, IfcSchema::IfcMemberTypeEnum::IfcMemberType_MULLION
 #endif
 			);
-			file.AddEntity(frame_part);
+			file.addEntity(frame_part);
 			window_parts->push(frame_part);
 			file.relatePlacements(window, frame_part);
 		}
@@ -474,7 +474,7 @@ int main(int argc, char** argv) {
 			, IfcSchema::IfcPlateTypeEnum::IfcPlateType_SHEET
 #endif
 		);
-		file.AddEntity(glass_part);
+		file.addEntity(glass_part);
 		window_parts->push(glass_part);
 		file.relatePlacements(window, glass_part);
 		file.setSurfaceColour(glass_part->Representation(), 0.6, 0.7, 0.75, 0.1);
@@ -483,7 +483,7 @@ int main(int argc, char** argv) {
 		// tools will consider the window a single entity that can be selected as a whole.
 		IfcSchema::IfcRelDecomposes* decomposition = new IfcSchema::IfcRelAggregates(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 			null, null, window, window_parts);
-		file.AddEntity(decomposition);		
+		file.addEntity(decomposition);		
 	}
 
 	// Finally create a file stream for our output and write the IFC file to it.

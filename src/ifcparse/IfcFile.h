@@ -116,7 +116,7 @@ public:
 
 	unsigned int FreshId() { return ++MaxId; }
 
-	IfcUtil::IfcBaseClass* AddEntity(IfcUtil::IfcBaseClass* entity);
+	IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity);
 	void AddEntities(IfcEntityList::ptr es);
 
 	void removeEntity(IfcUtil::IfcBaseClass* entity);

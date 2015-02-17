@@ -65,11 +65,11 @@ int main(int argc, char** argv) {
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, file.addPlacement2d(80.),    50.0,    25.0,     5.0,    10.0,     2.0,    null);
 
-	file.AddEntity(p2);
-	file.AddEntity(p3);
+	file.addEntity(p2);
+	file.addEntity(p3);
 	
-	file.AddEntity(transform1);
-	file.AddEntity(transform2);
+	file.addEntity(transform1);
+	file.addEntity(transform2);
 	
 	IfcSchema::IfcDerivedProfileDef* p5 = new IfcSchema::IfcDerivedProfileDef(IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, null, p2, transform1, null);
 	IfcSchema::IfcDerivedProfileDef* p6 = new IfcSchema::IfcDerivedProfileDef(IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, null, p3, transform2, null);
@@ -95,8 +95,8 @@ int main(int argc, char** argv) {
 	IfcSchema::IfcExtrudedAreaSolid* solid = new IfcSchema::IfcExtrudedAreaSolid(composite,
 		file.addPlacement3d(), file.addTriplet<IfcSchema::IfcDirection>(0, 0, 1), 20.0);
 
-	file.AddEntity(composite);
-	file.AddEntity(solid);
+	file.addEntity(composite);
+	file.addEntity(solid);
 		
 	IfcSchema::IfcRepresentation::list reps (new IfcTemplatedEntityList<IfcSchema::IfcRepresentation>());
 	IfcSchema::IfcRepresentationItem::list items (new IfcTemplatedEntityList<IfcSchema::IfcRepresentationItem>());
@@ -107,8 +107,8 @@ int main(int argc, char** argv) {
 	reps->push(rep);
 
 	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
-	file.AddEntity(rep);
-	file.AddEntity(shape);
+	file.addEntity(rep);
+	file.addEntity(shape);
 		
 	product->setRepresentation(shape);
 

@@ -44,7 +44,7 @@ public:
 	T* addTriplet(double x, double y, double z) {
 		std::vector<double> a; a.push_back(x); a.push_back(y); a.push_back(z);
 		T* t = new T(a);
-		AddEntity(t);
+		addEntity(t);
 		return t;
 	}
 
@@ -52,7 +52,7 @@ public:
 	T* addDoublet(double x, double y) {
 		std::vector<double> a; a.push_back(x); a.push_back(y);
 		T* t = new T(a);
-		AddEntity(t);
+		addEntity(t);
 		return t;
 	}
 
@@ -101,7 +101,7 @@ public:
 			IfcSchema::IfcObjectDefinition::list::ptr relating_objects (new IfcTemplatedEntityList<IfcSchema::IfcObjectDefinition>());
 			relating_objects->push(relating_object);
 			T* t = new T(IfcWrite::IfcGuidHelper(), owner_hist, boost::none, boost::none, related_object, relating_objects);
-			AddEntity(t);
+			addEntity(t);
 		}
 	}
 
@@ -199,7 +199,7 @@ inline void IfcHierarchyHelper::addRelatedObject <IfcSchema::IfcRelContainedInSp
 		IfcSchema::IfcRelContainedInSpatialStructure* t = new IfcSchema::IfcRelContainedInSpatialStructure(IfcWrite::IfcGuidHelper(), owner_hist, 
 			boost::none, boost::none, relating_objects, (IfcSchema::IfcSpatialStructureElement*)related_object);
 
-		AddEntity(t);
+		addEntity(t);
 	}
 }
 

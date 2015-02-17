@@ -127,7 +127,7 @@ public:
 			}
 			my = new IfcSchema::IfcBooleanResult(o, left->serialize(file), right->serialize(file));
 		}
-		file.AddEntity(my);
+		file.addEntity(my);
 		return my;
 	}
 };
@@ -181,8 +181,8 @@ int main(int argc, char** argv) {
 	reps->push(rep);
 
 	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
-	file.AddEntity(rep);
-	file.AddEntity(shape);
+	file.addEntity(rep);
+	file.addEntity(shape);
 		
 	product->setRepresentation(shape);
 

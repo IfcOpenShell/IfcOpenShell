@@ -965,11 +965,11 @@ IfcEntityList::ptr IfcFile::traverse(IfcUtil::IfcBaseClass* instance, int max_le
 
 void IfcFile::AddEntities(IfcEntityList::ptr es) {
 	for( IfcEntityList::it i = es->begin(); i != es->end(); ++ i ) {
-		AddEntity(*i);
+		addEntity(*i);
 	}
 }
 
-IfcUtil::IfcBaseClass* IfcFile::AddEntity(IfcUtil::IfcBaseClass* entity) {
+IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 	// If this instance has been inserted before, return
 	// a reference to the copy that was created from it.
 	entity_entity_map_t::iterator it = entity_file_map.find(entity);
@@ -982,7 +982,7 @@ IfcUtil::IfcBaseClass* IfcFile::AddEntity(IfcUtil::IfcBaseClass* entity) {
 	{ IfcEntityList::ptr entity_attributes = traverse(entity, 1);
 	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 		if (*it != entity) {
-			entity_file_map.insert(entity_entity_map_t::value_type(*it, AddEntity(*it)));
+			entity_file_map.insert(entity_entity_map_t::value_type(*it, addEntity(*it)));
 		}
 	} }
 

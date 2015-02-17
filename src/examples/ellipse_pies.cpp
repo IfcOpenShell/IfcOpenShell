@@ -66,7 +66,7 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 
 	
 	Ifc2x3::IfcEllipse* ellipse = new Ifc2x3::IfcEllipse(file.addPlacement2d(), pie.r1, pie.r2);
-	file.AddEntity(ellipse);
+	file.addEntity(ellipse);
 	IfcEntityList::ptr trim1(new IfcEntityList);
 	IfcEntityList::ptr trim2(new IfcEntityList);
 	if (pref == Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER) {
@@ -77,13 +77,13 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 		trim2->push(p3);
 	}
 	Ifc2x3::IfcTrimmedCurve* trim = new Ifc2x3::IfcTrimmedCurve(ellipse, trim1, trim2, true, pref);
-	file.AddEntity(trim);
+	file.addEntity(trim);
 	
 	Ifc2x3::IfcCompositeCurveSegment::list segments(new IfcTemplatedEntityList<Ifc2x3::IfcCompositeCurveSegment>());
 	Ifc2x3::IfcCompositeCurveSegment* s2 = new Ifc2x3::IfcCompositeCurveSegment(Ifc2x3::IfcTransitionCode::IfcTransitionCode_CONTINUOUS, true, trim);
 	
 	Ifc2x3::IfcPolyline* poly = new Ifc2x3::IfcPolyline(points);	
-	file.AddEntity(poly);
+	file.addEntity(poly);
 	Ifc2x3::IfcCompositeCurveSegment* s1 = new Ifc2x3::IfcCompositeCurveSegment(Ifc2x3::IfcTransitionCode::IfcTransitionCode_CONTINUOUS, true, poly);
 	segments->push(s1);
 	
@@ -92,8 +92,8 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 	
 	Ifc2x3::IfcCompositeCurve* ccurve = new Ifc2x3::IfcCompositeCurve(segments, false);
 	Ifc2x3::IfcArbitraryClosedProfileDef* profile = new Ifc2x3::IfcArbitraryClosedProfileDef(Ifc2x3::IfcProfileTypeEnum::IfcProfileType_AREA, null, ccurve);
-	file.AddEntity(ccurve);
-	file.AddEntity(profile);
+	file.addEntity(ccurve);
+	file.addEntity(profile);
 
 	IfcSchema::IfcBuildingElementProxy* product = new IfcSchema::IfcBuildingElementProxy(
 		guid(), 0, S("profile"), null, null, 0, 0, null, null);
@@ -105,7 +105,7 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 	IfcSchema::IfcExtrudedAreaSolid* solid = new IfcSchema::IfcExtrudedAreaSolid(profile,
 		file.addPlacement3d(), file.addTriplet<IfcSchema::IfcDirection>(0, 0, 1), 20.0);
 
-	file.AddEntity(solid);
+	file.addEntity(solid);
 		
 	IfcSchema::IfcRepresentation::list reps (new IfcTemplatedEntityList<IfcSchema::IfcRepresentation>());
 	IfcSchema::IfcRepresentationItem::list items (new IfcTemplatedEntityList<IfcSchema::IfcRepresentationItem>());
@@ -116,8 +116,8 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 	reps->push(rep);
 
 	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
-	file.AddEntity(rep);
-	file.AddEntity(shape);
+	file.addEntity(rep);
+	file.addEntity(shape);
 		
 	product->setRepresentation(shape);
 }
