@@ -1193,7 +1193,7 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 						IfcEntityListList::ptr new_list(new IfcEntityListList);
 						for (IfcEntityListList::outer_it it = instance_list_list->begin(); it != instance_list_list->end(); ++it) {
 							std::vector<IfcUtil::IfcBaseClass*> instances = *it;
-							std::vector<IfcUtil::IfcBaseClass*>::const_iterator jt;
+							std::vector<IfcUtil::IfcBaseClass*>::iterator jt;
 							while ((jt = std::find(instances.begin(), instances.end(), entity)) != instances.end()) {
 								instances.erase(jt);
 							}

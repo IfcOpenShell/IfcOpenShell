@@ -42,7 +42,7 @@ bool IfcEntityList::contains(IfcUtil::IfcBaseClass* instance) const {
 	return std::find(ls.begin(), ls.end(), instance) != ls.end();
 }
 void IfcEntityList::remove(IfcUtil::IfcBaseClass* instance) {
-	std::vector<IfcUtil::IfcBaseClass*>::const_iterator it;
+	std::vector<IfcUtil::IfcBaseClass*>::iterator it;
 	while ((it = std::find(ls.begin(), ls.end(), instance)) != ls.end()) {
 		ls.erase(it);
 	}

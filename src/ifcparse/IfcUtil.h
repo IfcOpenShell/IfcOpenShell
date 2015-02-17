@@ -138,7 +138,7 @@ public:
 		return r;
 	}
 	void remove(T* t) {
-		typename std::vector<T*>::const_iterator it;
+		typename std::vector<T*>::iterator it;
 		while ((it = std::find(ls.begin(), ls.end(), t)) != ls.end()) {
 			ls.erase(it);
 		}
