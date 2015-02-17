@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
 	IfcSchema::IfcCartesianPoint::list points (new IfcTemplatedEntityList<IfcSchema::IfcCartesianPoint>());
 	points->push(new IfcSchema::IfcCartesianPoint(std::vector<double>(coords1, coords1+2)));
 	points->push(new IfcSchema::IfcCartesianPoint(std::vector<double>(coords2, coords2+2)));
-	file.AddEntities(points->generalize());
+	file.addEntities(points->generalize());
 	IfcSchema::IfcPolyline* poly = new IfcSchema::IfcPolyline(points);
 	file.addEntity(poly);
 

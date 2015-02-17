@@ -65,17 +65,19 @@ public:
 	IfcFile(bool create_latebound_entities = false);
 	~IfcFile();
 	
-	/// Returns the first entity in the file, this probably is the entity with the lowest id (EXPRESS ENTITY_INSTANCE_NAME)
+	/// Returns the first entity in the file, this probably is the entity
+	/// with the lowest id (EXPRESS ENTITY_INSTANCE_NAME)
 	const_iterator begin() const;
-	/// Returns the last entity in the file, this probably is the entity with the highes id (EXPRESS ENTITY_INSTANCE_NAME)
+	/// Returns the last entity in the file, this probably is the entity
+	/// with the highest id (EXPRESS ENTITY_INSTANCE_NAME)
 	const_iterator end() const;
 	
 	/// Returns all entities in the file that match the template argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
 	template <class T>
-	typename T::list::ptr EntitiesByType() {
-		IfcEntityList::ptr untyped_list = EntitiesByType(T::Class());
+	typename T::list::ptr entitiesByType() {
+		IfcEntityList::ptr untyped_list = entitiesByType(T::Class());
 		if (untyped_list) {
 			return untyped_list->as<T>();
 		} else {
@@ -86,21 +88,21 @@ public:
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntityList::ptr EntitiesByType(IfcSchema::Type::Enum t);
+	IfcEntityList::ptr entitiesByType(IfcSchema::Type::Enum t);
 
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntityList::ptr EntitiesByType(const std::string& t);
+	IfcEntityList::ptr entitiesByType(const std::string& t);
 
 	/// Returns all entities in the file that reference the id
-	IfcEntityList::ptr EntitiesByReference(int id);
+	IfcEntityList::ptr entitiesByReference(int id);
 
 	/// Returns the entity with the specified id
-	IfcUtil::IfcBaseClass* EntityById(int id);
+	IfcUtil::IfcBaseClass* entityById(int id);
 
 	/// Returns the entity with the specified GlobalId
-	IfcSchema::IfcRoot* EntityByGuid(const std::string& guid);
+	IfcSchema::IfcRoot* entityByGuid(const std::string& guid);
 
 	/// Performs a depth-first traversal, returning all entity instance
 	/// attributes as a flat list. NB: includes the root instance specified
@@ -117,7 +119,7 @@ public:
 	unsigned int FreshId() { return ++MaxId; }
 
 	IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity);
-	void AddEntities(IfcEntityList::ptr es);
+	void addEntities(IfcEntityList::ptr es);
 
 	void removeEntity(IfcUtil::IfcBaseClass* entity);
 

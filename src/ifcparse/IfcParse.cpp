@@ -635,7 +635,7 @@ TokenArgument::operator std::string() const { return TokenFunc::asString(token);
 TokenArgument::operator std::vector<double>() const { throw IfcException("Argument is not a list of floats"); }
 TokenArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
 TokenArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
-TokenArgument::operator IfcUtil::IfcBaseClass*() const { return token.first->file->EntityById(TokenFunc::asInt(token)); }
+TokenArgument::operator IfcUtil::IfcBaseClass*() const { return token.first->file->entityById(TokenFunc::asInt(token)); }
 TokenArgument::operator IfcEntityList::ptr() const { throw IfcException("Argument is not a list of entities"); }
 TokenArgument::operator IfcEntityListList::ptr() const { throw IfcException("Argument is not a list of entity lists"); }
 unsigned int TokenArgument::size() const { return 1; }
@@ -882,7 +882,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 
 			IfcSchema::Type::Enum ty = entity->type();
 			do {
-				IfcEntityList::ptr instances_by_type = EntitiesByType(ty);
+				IfcEntityList::ptr instances_by_type = entitiesByType(ty);
 				if (!instances_by_type) {
 					instances_by_type = IfcEntityList::ptr(new IfcEntityList());
 					bytype[ty] = instances_by_type;
@@ -912,7 +912,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 			if ( TokenFunc::isOperator(token,'=') ) {
 				currentId = id;
 			} else if (entity) {
-				IfcEntityList::ptr instances_by_ref = EntitiesByReference(id);
+				IfcEntityList::ptr instances_by_ref = entitiesByReference(id);
 				if (!instances_by_ref) {
 					instances_by_ref = IfcEntityList::ptr(new IfcEntityList());
 					byref[id] = instances_by_ref;
@@ -963,7 +963,7 @@ IfcEntityList::ptr IfcFile::traverse(IfcUtil::IfcBaseClass* instance, int max_le
 	return return_value;
 }
 
-void IfcFile::AddEntities(IfcEntityList::ptr es) {
+void IfcFile::addEntities(IfcEntityList::ptr es) {
 	for( IfcEntityList::it i = es->begin(); i != es->end(); ++ i ) {
 		addEntity(*i);
 	}
@@ -1078,7 +1078,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 	// The mapping by entity type is updated.
 	IfcSchema::Type::Enum ty = entity->type();
 	do {
-		IfcEntityList::ptr instances_by_type = EntitiesByType(ty);
+		IfcEntityList::ptr instances_by_type = entitiesByType(ty);
 		if (!instances_by_type) {
 			instances_by_type = IfcEntityList::ptr(new IfcEntityList());
 			bytype[ty] = instances_by_type;
@@ -1113,7 +1113,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		try {
 			if (!IfcSchema::Type::IsSimple(entity_attribute->type())) {
 				unsigned entity_attribute_id = entity_attribute->entity->id();
-				IfcEntityList::ptr refs = EntitiesByReference(entity_attribute_id);
+				IfcEntityList::ptr refs = entitiesByReference(entity_attribute_id);
 				if (!refs) {
 					refs = IfcEntityList::ptr(new IfcEntityList);
 					byref[entity_attribute_id] = refs;
@@ -1138,7 +1138,7 @@ IfcWrite::IfcWritableEntity* make_writable(IfcUtil::IfcBaseClass* instance) {
 
 void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	const unsigned id = entity->entity->id();
-	IfcUtil::IfcBaseClass* file_entity = EntityById(id);
+	IfcUtil::IfcBaseClass* file_entity = entityById(id);
 
 	// TODO: Create a set of weak relations. Inverse relations that do not dictate an 
 	// instance to be retained. For example: when deleting an IfcRepresentation, the 
@@ -1152,7 +1152,7 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	}
 
 	std::set<IfcUtil::IfcBaseClass*> deletion_queue;
-	IfcEntityList::ptr references = EntitiesByReference(id);
+	IfcEntityList::ptr references = entitiesByReference(id);
 
 	// Alter entity instances with INVERSE relations to the entity being 
 	// deleted. This is necessary to maintain a valid IFC file, because 
@@ -1214,8 +1214,8 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 		IfcUtil::IfcBaseClass* entity_attribute = *it;
 		if (entity_attribute == entity) continue;
-		EntitiesByReference(entity_attribute->entity->id())->remove(entity);
-		if (EntitiesByReference(entity_attribute->entity->id())->filtered(weak_roots)->size() == 0) {
+		entitiesByReference(entity_attribute->entity->id())->remove(entity);
+		if (entitiesByReference(entity_attribute->entity->id())->filtered(weak_roots)->size() == 0) {
 			deletion_queue.insert(entity_attribute);
 		}
 	}
@@ -1227,7 +1227,7 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	
 	byid.erase(byid.find(id));
 	
-	IfcEntityList::ptr instances_of_same_type = EntitiesByType(entity->type());
+	IfcEntityList::ptr instances_of_same_type = entitiesByType(entity->type());
 	instances_of_same_type->remove(entity);
 
 	while (!deletion_queue.empty()) {
@@ -1239,23 +1239,23 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	delete entity;
 }
 
-IfcEntityList::ptr IfcFile::EntitiesByType(IfcSchema::Type::Enum t) {
+IfcEntityList::ptr IfcFile::entitiesByType(IfcSchema::Type::Enum t) {
 	entities_by_type_t::const_iterator it = bytype.find(t);
 	return (it == bytype.end()) ? IfcEntityList::ptr() : it->second;
 }
 
-IfcEntityList::ptr IfcFile::EntitiesByType(const std::string& t) {
+IfcEntityList::ptr IfcFile::entitiesByType(const std::string& t) {
 	std::string ty = t;
 	for (std::string::iterator p = ty.begin(); p != ty.end(); ++p ) *p = toupper(*p);
-	return EntitiesByType(IfcSchema::Type::FromString(ty));
+	return entitiesByType(IfcSchema::Type::FromString(ty));
 }
 
-IfcEntityList::ptr IfcFile::EntitiesByReference(int t) {
+IfcEntityList::ptr IfcFile::entitiesByReference(int t) {
 	entities_by_ref_t::const_iterator it = byref.find(t);
 	return (it == byref.end()) ? IfcEntityList::ptr() : it->second;
 }
 
-IfcUtil::IfcBaseClass* IfcFile::EntityById(int id) {
+IfcUtil::IfcBaseClass* IfcFile::entityById(int id) {
 	entity_by_id_t::const_iterator it = byid.find(id);
 	if (it == byid.end()) {
 		throw IfcException("Entity not found");
@@ -1263,7 +1263,7 @@ IfcUtil::IfcBaseClass* IfcFile::EntityById(int id) {
 	return it->second;
 }
 
-IfcSchema::IfcRoot* IfcFile::EntityByGuid(const std::string& guid) {
+IfcSchema::IfcRoot* IfcFile::entityByGuid(const std::string& guid) {
 	entity_by_guid_t::const_iterator it = byguid.find(guid);
 	if ( it == byguid.end() ) {
 		throw IfcException("Entity not found");
@@ -1327,10 +1327,10 @@ std::string IfcFile::createTimestamp() const {
 }
 
 IfcEntityList::ptr IfcFile::getInverse(int instance_id, IfcSchema::Type::Enum type, int attribute_index) {
-	IfcUtil::IfcBaseClass* instance = EntityById(instance_id);
+	IfcUtil::IfcBaseClass* instance = entityById(instance_id);
 
 	IfcEntityList::ptr l = IfcEntityList::ptr(new IfcEntityList);
-	IfcEntityList::ptr all = EntitiesByReference(instance_id);
+	IfcEntityList::ptr all = entitiesByReference(instance_id);
 	if (!all) return l;
 
 	for(IfcEntityList::it it = all->begin(); it != all->end(); ++it) {
@@ -1378,7 +1378,7 @@ void IfcFile::setDefaultHeaderValues() {
 
 std::pair<IfcSchema::IfcNamedUnit*, double> IfcFile::getUnit(IfcSchema::IfcUnitEnum::IfcUnitEnum type) {
 	std::pair<IfcSchema::IfcNamedUnit*, double> return_value((IfcSchema::IfcNamedUnit*)0, 1.);
-	IfcSchema::IfcProject::list::ptr projects = EntitiesByType<IfcSchema::IfcProject>();
+	IfcSchema::IfcProject::list::ptr projects = entitiesByType<IfcSchema::IfcProject>();
 	if (projects->size() == 1) {
 		IfcSchema::IfcProject* project = *projects->begin();
 		IfcEntityList::ptr units = project->UnitsInContext()->Units();

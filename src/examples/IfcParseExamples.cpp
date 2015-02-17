@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 
 	// Lets get a list of IfcBuildingElements, this is the parent
 	// type of things like walls, windows and doors.
-	// EntitiesByType is a templated function and returns a
+	// entitiesByType is a templated function and returns a
 	// templated class that behaves like a std::vector.
 	// Note that the return types are all typedef'ed as members of
 	// the generated classes, ::list for the templated vector class,
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
 	// we need to cast them to IfcWindows. Since these properties 
 	// are optional we need to make sure the properties are 
 	// defined for the window in question before accessing them.
-	IfcBuildingElement::list::ptr elements = file.EntitiesByType<IfcBuildingElement>();
+	IfcBuildingElement::list::ptr elements = file.entitiesByType<IfcBuildingElement>();
 
 	std::cout << "Found " << elements->size() << " elements in " << argv[1] << ":" << std::endl;
 	

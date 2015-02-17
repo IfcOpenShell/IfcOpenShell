@@ -36,8 +36,8 @@ namespace IfcUtil {
 %ignore IfcParse::IfcLateBoundEntity::IfcLateBoundEntity(IfcAbstractEntity*);
 
 %ignore IfcParse::IfcFile::Init;
-%ignore IfcParse::IfcFile::EntityById;
-%ignore IfcParse::IfcFile::EntityByGuid;
+%ignore IfcParse::IfcFile::entityById;
+%ignore IfcParse::IfcFile::entityByGuid;
 %ignore IfcParse::IfcFile::addEntity;
 %ignore IfcParse::IfcFile::removeEntity;
 %ignore IfcParse::IfcFile::traverse(IfcUtil::IfcBaseClass*, int);
@@ -54,7 +54,7 @@ namespace IfcUtil {
 %ignore IfcParse::IfcSpfHeader::stream;
 %ignore IfcParse::HeaderEntity::is;
 
-%rename("by_type") EntitiesByType;
+%rename("by_type") entitiesByType;
 %rename("__len__") getArgumentCount;
 %rename("get_argument_type") getArgumentType;
 %rename("get_argument_name") getArgumentName;
@@ -180,10 +180,10 @@ namespace IfcUtil {
 
 %extend IfcParse::IfcFile {
 	IfcParse::IfcLateBoundEntity* by_id(unsigned id) {
-		return (IfcParse::IfcLateBoundEntity*) $self->EntityById(id);
+		return (IfcParse::IfcLateBoundEntity*) $self->entityById(id);
 	}
 	IfcParse::IfcLateBoundEntity* by_guid(const std::string& guid) {
-		return (IfcParse::IfcLateBoundEntity*) $self->EntityByGuid(guid);
+		return (IfcParse::IfcLateBoundEntity*) $self->entityByGuid(guid);
 	}
 	IfcParse::IfcLateBoundEntity* add(IfcParse::IfcLateBoundEntity* e) {
 		return (IfcParse::IfcLateBoundEntity*) $self->addEntity(e);

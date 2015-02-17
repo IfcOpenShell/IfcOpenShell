@@ -201,7 +201,7 @@ void format_properties(IfcProperty::list::ptr properties, ptree& node) {
 void XmlSerializer::finalize() {
 	argument_name_map.insert(std::make_pair("GlobalId", "id"));
 
-	IfcProject::list::ptr projects = file->EntitiesByType<IfcProject>();
+	IfcProject::list::ptr projects = file->entitiesByType<IfcProject>();
 	if (projects->size() != 1) {
 		Logger::Message(Logger::LOG_ERROR, "Expected a single IfcProject");
 		return;
@@ -234,7 +234,7 @@ void XmlSerializer::finalize() {
 	descend(project, decomposition);
 
 	// Write all property sets and values as XML nodes.
-	IfcPropertySet::list::ptr psets = file->EntitiesByType<IfcPropertySet>();
+	IfcPropertySet::list::ptr psets = file->entitiesByType<IfcPropertySet>();
 	for (IfcPropertySet::list::it it = psets->begin(); it != psets->end(); ++it) {
 		IfcPropertySet* pset = *it;
 		ptree& node = format_entity_instance(pset, properties);

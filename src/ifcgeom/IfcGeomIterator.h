@@ -110,7 +110,7 @@ namespace IfcGeom {
 		P unit_magnitude;
 
 		void initUnits() {
-			IfcSchema::IfcProject::list::ptr projects = ifc_file->EntitiesByType<IfcSchema::IfcProject>();
+			IfcSchema::IfcProject::list::ptr projects = ifc_file->entitiesByType<IfcSchema::IfcProject>();
 			if (projects->size() == 1) {
 				IfcSchema::IfcProject* project = *projects->begin();
 				std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
@@ -165,7 +165,7 @@ namespace IfcGeom {
 			IfcSchema::IfcGeometricRepresentationContext::list::it it;
 			IfcSchema::IfcGeometricRepresentationSubContext::list::it jt;
 			IfcSchema::IfcGeometricRepresentationContext::list::ptr contexts = 
-				ifc_file->EntitiesByType<IfcSchema::IfcGeometricRepresentationContext>();
+				ifc_file->entitiesByType<IfcSchema::IfcGeometricRepresentationContext>();
 
 			IfcSchema::IfcGeometricRepresentationContext::list::ptr filtered_contexts (new IfcSchema::IfcGeometricRepresentationContext::list);
 
@@ -384,7 +384,7 @@ namespace IfcGeom {
 			std::string instance_type, product_name, product_guid;
 			
 			try {
-				const IfcUtil::IfcBaseClass* ifc_entity = ifc_file->EntityById(id);
+				const IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
 				instance_type = IfcSchema::Type::ToString(ifc_entity->type());
 				if ( ifc_entity->is(IfcSchema::Type::IfcProduct) ) {
 					IfcSchema::IfcProduct* ifc_product = (IfcSchema::IfcProduct*)ifc_entity;

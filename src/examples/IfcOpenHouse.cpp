@@ -258,7 +258,7 @@ int main(int argc, char** argv) {
 	IfcEntityList::ptr geometrical_entities(new IfcEntityList);
 	IfcSchema::IfcProductDefinitionShape* ground_representation = IfcGeom::tesselate(shape, 100., geometrical_entities);
 	file.getSingle<IfcSchema::IfcSite>()->setRepresentation(ground_representation);
-	file.AddEntities(geometrical_entities);
+	file.addEntities(geometrical_entities);
 	IfcSchema::IfcShapeRepresentation::list::ptr ground_reps = geometrical_entities->as<IfcSchema::IfcShapeRepresentation>();
 	for (IfcSchema::IfcShapeRepresentation::list::it it = ground_reps->begin(); it != ground_reps->end(); ++it) {
 		(*it)->setContextOfItems(file.getRepresentationContext("Model"));
@@ -313,9 +313,9 @@ int main(int argc, char** argv) {
 		null, 
 		null,
 #ifdef USE_IFC4
-		file.EntitiesByType<IfcSchema::IfcWallStandardCase>()->generalize(),
+		file.entitiesByType<IfcSchema::IfcWallStandardCase>()->generalize(),
 #else
-		file.EntitiesByType<IfcSchema::IfcWallStandardCase>()->as<IfcSchema::IfcRoot>(),
+		file.entitiesByType<IfcSchema::IfcWallStandardCase>()->as<IfcSchema::IfcRoot>(),
 #endif
 		layer_usage);
 

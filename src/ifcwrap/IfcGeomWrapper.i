@@ -202,7 +202,7 @@
 		if (instance->is(IfcSchema::Type::IfcProduct)) {
 			IfcParse::IfcFile* file = instance->entity->file;
 			
-			IfcSchema::IfcProject::list::ptr projects = file->EntitiesByType<IfcSchema::IfcProject>();
+			IfcSchema::IfcProject::list::ptr projects = file->entitiesByType<IfcSchema::IfcProject>();
 			if (projects->size() != 1) {
 				throw IfcParse::IfcException("Not a single IfcProject instance");
 			}

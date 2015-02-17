@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
 	profiles->push(p6);
 	profiles->push(p4);
 
-	file.AddEntities(profiles->generalize());
+	file.addEntities(profiles->generalize());
 
 	IfcSchema::IfcCompositeProfileDef* composite = new IfcSchema::IfcCompositeProfileDef(IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, S("IFC"), profiles, null);
 

@@ -62,7 +62,7 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 	points->push(p3);
 	points->push(p1);
 	points->push(p2);
-	file.AddEntities(points->generalize());
+	file.addEntities(points->generalize());
 
 	
 	Ifc2x3::IfcEllipse* ellipse = new Ifc2x3::IfcEllipse(file.addPlacement2d(), pie.r1, pie.r2);
@@ -88,7 +88,7 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 	segments->push(s1);
 	
 	segments->push(s2);
-	file.AddEntities(segments->generalize());
+	file.addEntities(segments->generalize());
 	
 	Ifc2x3::IfcCompositeCurve* ccurve = new Ifc2x3::IfcCompositeCurve(segments, false);
 	Ifc2x3::IfcArbitraryClosedProfileDef* profile = new Ifc2x3::IfcArbitraryClosedProfileDef(Ifc2x3::IfcProfileTypeEnum::IfcProfileType_AREA, null, ccurve);

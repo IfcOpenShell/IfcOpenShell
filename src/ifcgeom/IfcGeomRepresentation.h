@@ -147,7 +147,7 @@ namespace IfcGeom {
 					} catch(...) {
 
 						// TODO: Catch outside
-						// Logger::Message(Logger::LOG_ERROR,"Failed to triangulate shape:",ifc_file->EntityById(_id)->entity);
+						// Logger::Message(Logger::LOG_ERROR,"Failed to triangulate shape:",ifc_file->entityById(_id)->entity);
 						Logger::Message(Logger::LOG_ERROR,"Failed to triangulate shape");
 						continue;
 					}
