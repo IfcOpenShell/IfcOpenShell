@@ -214,6 +214,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\ifcparse\IfcSIPrefix.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ifcparse\IfcSpfHeader.cpp"
 				>
 			</File>
@@ -285,6 +289,10 @@
 			</File>
 			<File
 				RelativePath="..\src\ifcparse\IfcParse.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcSIPrefix.h"
 				>
 			</File>
 			<File

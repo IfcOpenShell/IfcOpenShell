@@ -183,10 +183,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomUtils.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\src\ifcgeom\IfcGeomWires.cpp"
 				>
 			</File>
@@ -226,10 +222,6 @@
 			</File>
 			<File
 				RelativePath="..\src\ifcgeom\IfcGeomRepresentation.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcGeomUtils.h"
 				>
 			</File>
 			<File

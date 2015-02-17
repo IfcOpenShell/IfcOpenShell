@@ -133,6 +133,7 @@ ADD_LIBRARY(IfcParse STATIC
   ../src/ifcparse/IfcHierarchyHelper.cpp
   ../src/ifcparse/IfcLateBoundEntity.cpp
   ../src/ifcparse/IfcParse.cpp
+  ../src/ifcparse/IfcSIPrefix.cpp
   ../src/ifcparse/IfcSpfHeader.cpp
   ../src/ifcparse/IfcUtil.cpp
   ../src/ifcparse/IfcWrite.cpp
@@ -147,7 +148,6 @@ ADD_LIBRARY(IfcGeom STATIC
   ../src/ifcgeom/IfcGeomRenderStyles.cpp
   ../src/ifcgeom/IfcGeomRepresentation.cpp
   ../src/ifcgeom/IfcGeomShapes.cpp
-  ../src/ifcgeom/IfcGeomUtils.cpp
   ../src/ifcgeom/IfcGeomWires.cpp
   ../src/ifcgeom/IfcRegister.cpp
 )
@@ -193,7 +193,6 @@ SET(include_files_geom
     ../src/ifcgeom/IfcGeomMaterial.h
     ../src/ifcgeom/IfcGeomRenderStyles.h
     ../src/ifcgeom/IfcGeomRepresentation.h
-    ../src/ifcgeom/IfcGeomUtils.h
     ../src/ifcgeom/IfcRegister.h
     ../src/ifcgeom/IfcRegisterConvertCurve.h
     ../src/ifcgeom/IfcRegisterConvertFace.h
@@ -222,6 +221,7 @@ SET(include_files_parse
     ../src/ifcparse/IfcHierarchyHelper.h
     ../src/ifcparse/IfcLateBoundEntity.h
     ../src/ifcparse/IfcParse.h
+    ../src/ifcparse/IfcSIPrefix.h
     ../src/ifcparse/IfcSpfHeader.h
     ../src/ifcparse/IfcSpfStream.h
     ../src/ifcparse/IfcUtil.h
