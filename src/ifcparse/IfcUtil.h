@@ -133,7 +133,7 @@ public:
 	template <class U> 
 	typename U::list::ptr as() {
 		typename U::list::ptr r(new typename U::list);
-		const bool all = U::Class() == IfcSchema::Type::ALL;
+		const bool all = U::Class() == IfcSchema::Type::UNDEFINED;
 		for ( it i = begin(); i != end(); ++ i ) if (all || (*i)->is(U::Class())) r->push((U*)*i);
 		return r;
 	}
@@ -186,7 +186,7 @@ public:
 	template <class U> 
 	typename IfcTemplatedEntityListList<U>::ptr as() {
 		typename IfcTemplatedEntityListList<U>::ptr r(new IfcTemplatedEntityListList<U>);
-		const bool all = U::Class() == IfcSchema::Type::ALL;
+		const bool all = U::Class() == IfcSchema::Type::UNDEFINED;
 		for (outer_it outer = begin(); outer != end(); ++ outer) {
 			const std::vector<IfcUtil::IfcBaseClass*>& from = *outer;
 			typename std::vector<U*> to;
