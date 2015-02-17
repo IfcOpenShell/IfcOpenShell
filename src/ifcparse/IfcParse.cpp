@@ -981,12 +981,14 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 
 	// Obtain all forward references by a depth-first 
 	// traversal and add them to the file.
-	{ IfcEntityList::ptr entity_attributes = traverse(entity, 1);
-	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
-		if (*it != entity) {
-			entity_file_map.insert(entity_entity_map_t::value_type(*it, addEntity(*it)));
+	try {
+		IfcEntityList::ptr entity_attributes = traverse(entity, 1);
+		for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
+			if (*it != entity) {
+				entity_file_map.insert(entity_entity_map_t::value_type(*it, addEntity(*it)));
+			}
 		}
-	} }
+	} catch (...) {}
 
 	// See whether the instance is already part of a file
 	if (entity->entity->file != 0) {
@@ -1109,7 +1111,10 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 	byid[new_id] = entity;
 
 	// The mapping by reference is updated.
-	IfcEntityList::ptr entity_attributes = traverse(entity, 1);
+	IfcEntityList::ptr entity_attributes(new IfcEntityList);
+	try {
+		entity_attributes = traverse(entity, 1);
+	} catch (...) {}
 	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 		IfcUtil::IfcBaseClass* entity_attribute = *it;
 		try {
