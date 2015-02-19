@@ -18,12 +18,25 @@
 ###############################################################################
 
 import os
+import sys
+import platform
 import functools
 
 from functools import reduce
 
 from . import guid
-from . import ifcopenshell_wrapper
+
+python_distribution = os.path.join(platform.system().lower(),
+	platform.architecture()[0],
+	'python%s.%s' % platform.python_version_tuple()[:2])
+sys.path.append(os.path.abspath(os.path.join(
+	os.path.dirname(__file__),
+	'lib', python_distribution)))
+
+try:
+	from . import ifcopenshell_wrapper
+except:
+	raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
 
 class entity_instance(object):
 	def __init__(self, e):
