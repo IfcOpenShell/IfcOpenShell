@@ -436,6 +436,10 @@ namespace IfcGeom {
 			current_triangulation = 0;
 			current_shape_model = 0;
 			current_serialization = 0;
+
+			// Upon initialisation, the (empty) set of entity names,
+			// should be excluded, or no products would be processed.
+			include_entities_in_processing = false;
 		
 			unit_name = "METER";
 			unit_magnitude = 1.f;
