@@ -82,7 +82,6 @@ class entity_instance(object):
 
 
 class file(object):
-	instances = []
 	def __init__(self, f=None):
 		self.wrapped_data = f or ifcopenshell_wrapper.file(True)
 	def create_entity(self,type,*args,**kwargs):
@@ -91,7 +90,7 @@ class file(object):
 			[(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
 		for idx, arg in attrs: e[idx] = arg
 		self.wrapped_data.add(e.wrapped_data)
-		self.instances.append(e)
+		e.wrapped_data.this.disown()
 		return e
 	def __getattr__(self, attr):
 		if attr[0:6] == 'create': return functools.partial(self.create_entity,attr[6:])
@@ -102,6 +101,7 @@ class file(object):
 		elif isinstance(key, str):
 			return entity_instance(self.wrapped_data.by_guid(key))
 	def add(self, inst):
+		inst.wrapped_data.this.disown()
 		return entity_instance(self.wrapped_data.add(inst.wrapped_data))
 	def by_type(self, type):
 		return [entity_instance(e) for e in self.wrapped_data.by_type(type)]
