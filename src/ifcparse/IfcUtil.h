@@ -80,6 +80,7 @@ namespace IfcUtil {
 
 	// TODO: Investigate whether these should be template classes instead
 	class IfcBaseType : public IfcBaseEntity {
+	public:
 		unsigned int getArgumentCount() const;
 		Argument* getArgument(unsigned int i) const;
 		const char* getArgumentName(unsigned int i) const;
