@@ -1117,6 +1117,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 	} catch (...) {}
 	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 		IfcUtil::IfcBaseClass* entity_attribute = *it;
+		if (*it == entity) continue;
 		try {
 			if (!IfcSchema::Type::IsSimple(entity_attribute->type())) {
 				unsigned entity_attribute_id = entity_attribute->entity->id();
