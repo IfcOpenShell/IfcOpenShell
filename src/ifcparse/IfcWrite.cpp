@@ -71,7 +71,12 @@ IfcEntityList::ptr IfcWritableEntity::getInverse(IfcSchema::Type::Enum type, int
 }
 
 std::string IfcWritableEntity::datatype() const { return IfcSchema::Type::ToString(_type); }
-Argument* IfcWritableEntity::getArgument (unsigned int i) { if ( i >= getArgumentCount() ) throw IfcParse::IfcException("Argument not set"); return args[i]; }
+Argument* IfcWritableEntity::getArgument (unsigned int i) {
+	if (args[i] == 0) {
+		_setArgument(i, boost::none);
+	}
+	return args[i];
+}
 unsigned int IfcWritableEntity::getArgumentCount() const {return args.size(); }
 IfcSchema::Type::Enum IfcWritableEntity::type() const { return _type; }
 bool IfcWritableEntity::is(IfcSchema::Type::Enum v) const { return _type == v; }

@@ -48,6 +48,10 @@ IfcParse::IfcLateBoundEntity::IfcLateBoundEntity(const std::string& s) {
 	for (std::string::iterator i = S.begin(); i != S.end(); ++i ) *i = toupper(*i);
 	_type = IfcSchema::Type::FromString(S);
 	entity = new IfcWrite::IfcWritableEntity(_type);
+	for (unsigned i = 0; i < getArgumentCount(); ++i) {
+		// Side effect of this is that a NULL attribute is created.
+		entity->getArgument(i);
+	}
 	IfcSchema::Type::PopulateDerivedFields(writable_entity());
 }
 IfcParse::IfcLateBoundEntity::IfcLateBoundEntity(IfcAbstractEntity* e) {
