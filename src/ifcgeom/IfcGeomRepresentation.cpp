@@ -35,10 +35,10 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
-	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it = brep.begin(); it != brep.end(); ++ it ) {
+	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
 		const TopoDS_Shape& s = it->Shape();
 		gp_GTrsf trsf = it->Placement();
-		if (convert_back_units) {
+		if (settings().convert_back_units()) {
 			gp_Trsf scale;
 			scale.SetScaleFactor(1.0 / settings().unit_magnitude());
 			trsf.PreMultiply(scale);

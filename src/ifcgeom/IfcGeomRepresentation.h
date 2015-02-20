@@ -69,7 +69,6 @@ namespace IfcGeom {
 		class Serialization : public Representation  {
 		private:
 			int _id;
-			bool convert_back_units;
 			std::string _brep_data;
 		public:
 			int id() const { return _id; }
