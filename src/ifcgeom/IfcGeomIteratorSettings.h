@@ -81,6 +81,7 @@ namespace IfcGeom {
 			, _sew_shells(false)
 			, _faster_booleans(false)
 			, _force_ccw_face_orientation(false)
+			, _disable_opening_subtractions(false)
 			, _disable_triangulation(false)
 			, _apply_default_materials(false)
 			// TODO: Make deflection tolerance into a command line argument
