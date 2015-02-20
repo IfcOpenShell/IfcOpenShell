@@ -49,6 +49,9 @@ void init_locale() {
 	}
 }
 #else
+#ifdef __APPLE__
+#include <xlocale.h>
+#endif
 static locale_t locale = (locale_t) 0;
 void init_locale() {
 	if (locale == (locale_t) 0) {
