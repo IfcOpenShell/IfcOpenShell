@@ -44,6 +44,7 @@ class settings(ifcopenshell_wrapper.settings):
             setting, value = args
             if setting == settings.USE_PYTHON_OPENCASCADE:
                 self.set(settings.USE_BREP_DATA, value)
+                self.set(settings.USE_WORLD_COORDS, value)
                 self.set(settings.DISABLE_TRIANGULATION, value)
                 self.use_python_opencascade = value
             else:
