@@ -260,6 +260,13 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
+	if (!serializer->isTesselated()) {
+		if (weld_vertices) {
+			Logger::Message(Logger::LOG_NOTICE, "Weld vertices setting ignored when writing STEP or IGES files");
+		}
+		settings.disable_triangulation() = true;
+	}
+
 	IfcGeom::Iterator<double> context_iterator(settings, input_filename);
 
 	try {
@@ -277,12 +284,6 @@ int main(int argc, char** argv) {
 		Logger::Message(Logger::LOG_ERROR, "Unable to open output file for writing");
 		write_log();
 		return 1;
-	}
-
-	if (!serializer->isTesselated()) {
-		if (weld_vertices) {
-			Logger::Message(Logger::LOG_NOTICE, "Weld vertices setting ignored when writing STEP or IGES files");
-		}
 	}
 
 	time_t start,end;
