@@ -30,13 +30,10 @@ bl_info = {
     "description": "Import files in the "\
         "Industry Foundation Classes (.ifc) file format",
     "author": "Thomas Krijnen, IfcOpenShell",
-    "blender": (2, 6, 5),
-    "api": 52851,
+    "blender": (2, 73, 0),
     "location": "File > Import",
-    "warning": "",
-    "wiki_url": "http://sourceforge.net/apps/"\
-        "mediawiki/ifcopenshell/index.php",
-    "tracker_url": "http://sourceforge.net/tracker/?group_id=543113",
+    "tracker_url": "https://sourceforge.net/p/ifcopenshell/"\
+        "_list/tickets?source=navbar",
     "category": "Import-Export"}
 
 if "bpy" in locals():
