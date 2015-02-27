@@ -60,6 +60,8 @@ namespace IfcUtil {
 %rename("get_argument_name") getArgumentName;
 %rename("get_argument_index") getArgumentIndex;
 %rename("get_argument_optionality") getArgumentOptionality;
+%rename("get_attribute_names") getAttributeNames;
+%rename("get_inverse_attribute_names") getInverseAttributeNames;
 %rename("_set_argument") setArgument;
 %rename("__repr__") toString;
 %rename("entity_instance") IfcLateBoundEntity;

@@ -216,3 +216,19 @@ bool IfcParse::IfcLateBoundEntity::is_valid() {
 	}
 	return valid;
 }
+
+std::vector<std::string> IfcParse::IfcLateBoundEntity::getAttributeNames() const {
+	std::vector<std::string> return_value;
+	return_value.reserve(getArgumentCount());
+	for (unsigned i = 0; i < getArgumentCount(); ++i) {
+		return_value.push_back(getArgumentName(i));
+	}
+	return return_value;
+}
+
+std::vector<std::string> IfcParse::IfcLateBoundEntity::getInverseAttributeNames() const {
+	std::vector<std::string> return_value;
+	std::set<std::string> values = IfcSchema::Type::GetInverseAttributeNames(_type);
+	std::copy(values.begin(), values.end(), std::back_inserter(return_value));
+	return return_value;
+}

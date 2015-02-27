@@ -21,6 +21,7 @@ import os
 import sys
 import platform
 import functools
+import itertools
 
 from functools import reduce
 
@@ -79,6 +80,12 @@ class entity_instance(object):
 	def __repr__(self): return repr(self.wrapped_data)
 	def is_a(self, *args): return self.wrapped_data.is_a(*args)
 	def id(self): return self.wrapped_data.id()
+	def __dir__(self):
+		return sorted(set(itertools.chain(
+			dir(type(self)),
+			self.wrapped_data.get_attribute_names(),
+			self.wrapped_data.get_inverse_attribute_names()
+		)))
 
 
 class file(object):

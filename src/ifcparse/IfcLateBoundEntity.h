@@ -57,6 +57,9 @@ namespace IfcParse {
 
 		IfcEntityList::ptr get_inverse(const std::string& a);
 
+		std::vector<std::string> getAttributeNames() const;
+		std::vector<std::string> getInverseAttributeNames() const;
+
 		void setArgument(unsigned int i);
 		void setArgument(unsigned int i, int v);
 		void setArgument(unsigned int i, bool v);

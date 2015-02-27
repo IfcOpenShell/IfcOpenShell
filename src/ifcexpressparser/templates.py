@@ -94,6 +94,7 @@ namespace Type {
     bool GetAttributeDerived(Enum t, unsigned char a);
     std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
     std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
+    std::set<std::string> GetInverseAttributeNames(Enum t);
     void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
 }}
 
@@ -168,10 +169,15 @@ using namespace IfcParse;
 using namespace IfcWrite;
 using namespace IfcUtil;
 
-std::map<Type::Enum,IfcEntityDescriptor*> entity_descriptor_map;
-std::map<Type::Enum,IfcEnumerationDescriptor*> enumeration_descriptor_map;
-std::map<std::pair<Type::Enum, std::string>, std::pair<Type::Enum, int> > inverse_map;
-std::map<Type::Enum,std::set<int> > derived_map;
+typedef std::map<Type::Enum,IfcEntityDescriptor*> entity_descriptor_map_t;
+typedef std::map<Type::Enum,IfcEnumerationDescriptor*> enumeration_descriptor_map_t;
+typedef std::map<Type::Enum, std::map<std::string, std::pair<Type::Enum, int> > > inverse_map_t;
+typedef std::map<Type::Enum,std::set<int> > derived_map_t;
+
+entity_descriptor_map_t entity_descriptor_map;
+enumeration_descriptor_map_t enumeration_descriptor_map;
+inverse_map_t inverse_map;
+derived_map_t derived_map;
 
 void InitDescriptorMap() {
     IfcEntityDescriptor* current;
@@ -247,14 +253,39 @@ std::pair<const char*, int> Type::GetEnumerationIndex(Enum t, const std::string&
 
 std::pair<Type::Enum, unsigned> Type::GetInverseAttribute(Enum t, const std::string& a) {
 	if (inverse_map.empty()) ::InitInverseMap();
-	std::map<std::pair<Type::Enum, std::string>, std::pair<Type::Enum, int> >::const_iterator it;
-    std::pair<Type::Enum, std::string> key = std::make_pair(t, a);
+	inverse_map_t::const_iterator it;
+	inverse_map_t::mapped_type::const_iterator jt;
     while (true) {
-        it = inverse_map.find(key);
-        if (it != inverse_map.end()) return it->second;
-        if ((key.first = Parent(key.first)) == -1) break;
+        it = inverse_map.find(t);
+        if (it != inverse_map.end()) {
+			jt = it->second.find(a);
+			if (jt != it->second.end()) {
+				return jt->second;
+			}
+		}
+        if ((t = Parent(t)) == -1) break;
     }
     throw IfcException("Attribute not found");
+}
+
+std::set<std::string> Type::GetInverseAttributeNames(Enum t) {
+	if (inverse_map.empty()) ::InitInverseMap();
+	inverse_map_t::const_iterator it;
+	inverse_map_t::mapped_type::const_iterator jt;
+
+	std::set<std::string> return_value;
+
+    while (true) {
+        it = inverse_map.find(t);
+        if (it != inverse_map.end()) {
+			for (jt = it->second.begin(); jt != it->second.end(); ++jt) {
+				return_value.insert(jt->first);
+			}
+		}
+        if ((t = Parent(t)) == -1) break;
+    }
+    
+	return return_value;
 }
 
 void Type::PopulateDerivedFields(IfcWrite::IfcWritableEntity* e) {
@@ -401,7 +432,7 @@ constructor_stmt_array = " e->setArgument(%(index)d,(%(name)s)->generalize());"
 constructor_stmt_optional = " if (%(name)s) {%(stmt)s } else { e->setArgument(%(index)d); }"
 constructor_stmt_derived = " e->setArgumentDerived(%(index)d);"
 
-inverse_implementation = "    inverse_map.insert(std::make_pair(std::make_pair(Type::%(type)s, \"%(name)s\"), std::make_pair(Type::%(related_type)s, %(index)d)));"
+inverse_implementation = "    inverse_map[Type::%(type)s].insert(std::make_pair(\"%(name)s\", std::make_pair(Type::%(related_type)s, %(index)d)));"
 
 def multi_line_comment(li):
     return ("/// %s"%("\n/// ".join(li))) if len(li) else ""
