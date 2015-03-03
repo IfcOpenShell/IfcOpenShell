@@ -724,7 +724,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shape& shape) {
 	TopoDS_Wire wire, section1, section2;
 
-	const bool hasInnerRadius = l->hasInnerRadius();
+	bool hasInnerRadius = l->hasInnerRadius();
 
 	if (!convert_wire(l->Directrix(), wire)) {
 		return false;
@@ -748,8 +748,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 
 	if (hasInnerRadius) {
 		const double r2 = l->InnerRadius() * getValue(GV_LENGTH_UNIT);
-		Handle(Geom_Circle) circle = new Geom_Circle(directrix, r2);
-		section2 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
+		if (r2 < getValue(GV_PRECISION)) {
+			// Subtraction of pipes with small radii is unstable.
+			hasInnerRadius = false;
+		} else {
+			Handle(Geom_Circle) circle = new Geom_Circle(directrix, r2);
+			section2 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
+		}
 	}
 
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
