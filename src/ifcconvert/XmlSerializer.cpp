@@ -3,6 +3,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
+#include <boost/version.hpp>
 
 #include "XmlSerializer.h"
 
@@ -247,6 +248,10 @@ void XmlSerializer::finalize() {
 
 	root.put("ifc.<xmlattr>.xmlns:xlink", "http://www.w3.org/1999/xlink");
 
+#if BOOST_VERSION >= 105600
+	boost::property_tree::xml_writer_settings<ptree::key_type> settings = boost::property_tree::xml_writer_make_settings<ptree::key_type>('\t', 1);
+#else
 	boost::property_tree::xml_writer_settings<char> settings('\t', 1);
+#endif
 	boost::property_tree::write_xml(xml_filename, root, std::locale(), settings);
 }
