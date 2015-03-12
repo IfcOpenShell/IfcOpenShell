@@ -26,6 +26,12 @@
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcFile.h"
 
+#ifdef USE_IFC4
+#include "../ifcparse/Ifc4-latebound.h"
+#else
+#include "../ifcparse/Ifc2x3-latebound.h"
+#endif
+
 using namespace IfcWrite;
 
 IfcWritableEntity::IfcWritableEntity(IfcSchema::Type::Enum t) {
@@ -56,8 +62,7 @@ IfcWritableEntity::IfcWritableEntity(IfcAbstractEntity* e)
 
 	const unsigned int count = e->getArgumentCount();
 	for ( unsigned int i = 0; i < count; ++ i ) {
-		args[i] = e->getArgument(i);
-		writemask[i] = false;
+		this->setArgument(i, e->getArgument(i));
 	}
 }
 
@@ -131,6 +136,76 @@ template <typename T> void IfcWritableEntity::_setArgument(int i, const T& t) {
 void IfcWritableEntity::setArgument(int i) {
 	_setArgument(i, boost::none);
 }
+
+void IfcWritableEntity::setArgument(int i, Argument* a) {
+	IfcWrite::IfcWriteArgument* wa = new IfcWrite::IfcWriteArgument(this);
+	IfcUtil::ArgumentType attr_type = a->type();
+	switch(attr_type) {
+	case IfcUtil::Argument_NULL:
+		this->setArgument(i);
+		break;
+	case IfcUtil::Argument_DERIVED:
+		this->setArgumentDerived(i);
+		break;
+	case IfcUtil::Argument_INT:
+		this->setArgument(i, static_cast<int>(*a));
+		break;
+	case IfcUtil::Argument_BOOL:
+		this->setArgument(i, static_cast<bool>(*a));
+		break;
+	case IfcUtil::Argument_DOUBLE:
+		this->setArgument(i, static_cast<double>(*a));
+		break;
+	case IfcUtil::Argument_STRING:
+		this->setArgument(i, static_cast<std::string>(*a));
+		break; 
+	case IfcUtil::Argument_VECTOR_INT:
+		this->setArgument(i, static_cast< std::vector<int> >(*a));
+		break; 
+	case IfcUtil::Argument_VECTOR_DOUBLE:
+		this->setArgument(i, static_cast< std::vector<double> >(*a));
+		break; 
+	case IfcUtil::Argument_VECTOR_STRING:
+		this->setArgument(i, static_cast< std::vector< std::string > >(*a));
+		break; 
+	case IfcUtil::Argument_ENUMERATION: {
+		IfcSchema::Type::Enum ty = IfcSchema::Type::GetAttributeEntity(_type, i);
+		std::string enum_literal = a->toString();
+		// Remove leading and trailing '.'
+		enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
+		std::pair<const char*, int> enum_ref = IfcSchema::Type::GetEnumerationIndex(ty, enum_literal);
+		this->setArgument(i, enum_ref.second, enum_ref.first); }
+		break; 
+	case IfcUtil::Argument_ENTITY: {
+		this->setArgument(i, static_cast<IfcUtil::IfcBaseClass*>(*a)); }
+		break; 
+	case IfcUtil::Argument_ENTITY_LIST: {
+		IfcEntityList::ptr instances = *a;
+		IfcEntityList::ptr mapped_instances(new IfcEntityList);
+		for (IfcEntityList::it it = instances->begin(); it != instances->end(); ++it) {
+			mapped_instances->push(*it);
+		}
+		this->setArgument(i, mapped_instances); }
+		break; 
+	case IfcUtil::Argument_ENTITY_LIST_LIST: {
+		IfcEntityListList::ptr instances = *a;
+		IfcEntityListList::ptr mapped_instances(new IfcEntityListList);
+		for (IfcEntityListList::outer_it it = instances->begin(); it != instances->end(); ++it) {
+			std::vector<IfcUtil::IfcBaseClass*> inner;
+			for (IfcEntityListList::inner_it jt = it->begin(); jt != it->end(); ++jt) {
+				inner.push_back(*jt);
+			}
+			mapped_instances->push(inner);
+		}		
+		this->setArgument(i, mapped_instances); }
+		break; 
+	case IfcUtil::Argument_UNKNOWN:
+		throw IfcParse::IfcException("Unknown argument encountered");
+		break;
+	}
+}
+
+
 void IfcWritableEntity::setArgumentDerived(int i) {
 	_setArgument(i, IfcWriteArgument::Derived());
 }

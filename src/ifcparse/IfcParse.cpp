@@ -382,7 +382,9 @@ bool TokenFunc::isKeyword(const Token& t) {
 }
 
 bool TokenFunc::isInt(const Token& t) {
-	if (isOperator(t)) return false;
+	if (isOperator(t) || isString(t) || isEnumeration(t)) {
+		return false;
+	}
 	const std::string str = asString(t);
 	const char* start = str.c_str();
 	char* end;
@@ -397,7 +399,9 @@ bool TokenFunc::isBool(const Token& t) {
 }
 
 bool TokenFunc::isFloat(const Token& t) {
-	if (isOperator(t)) return false;
+	if (isOperator(t) || isString(t) || isEnumeration(t)) {
+		return false;
+	}
 	const std::string str = asString(t);
 	const char* start = str.c_str();
 	char* end;
@@ -623,6 +627,10 @@ IfcUtil::ArgumentType TokenArgument::type() const {
 		return IfcUtil::Argument_ENUMERATION;
 	} else if (TokenFunc::isIdentifier(token)) {
 		return IfcUtil::Argument_ENTITY;
+	} else if (TokenFunc::isOperator(token, '$')) {
+		return IfcUtil::Argument_NULL;
+	} else if (TokenFunc::isOperator(token, '*')) {
+		return IfcUtil::Argument_DERIVED;
 	} else {
 		return IfcUtil::Argument_UNKNOWN;
 	}
@@ -991,7 +999,9 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 				entity_file_map.insert(entity_entity_map_t::value_type(*it, addEntity(*it)));
 			}
 		}
-	} catch (...) {}
+	} catch (...) {
+		Logger::Message(Logger::LOG_ERROR, "Failed to visit forward references of", entity->entity);
+	}
 
 	// See whether the instance is already part of a file
 	if (entity->entity->file != 0) {
@@ -1020,12 +1030,16 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 			Argument* attr = we->getArgument(i);
 			IfcUtil::ArgumentType attr_type = attr->type();
 			if (attr_type == IfcUtil::Argument_ENTITY) {
-				we->setArgument(i, entity_file_map[*attr]);
+				entity_entity_map_t::const_iterator eit = entity_file_map.find(*attr);
+				if (eit == entity_file_map.end()) throw IfcParse::IfcException("Unable to map instance to file");
+				we->setArgument(i, eit->second);
 			} else if (attr_type == IfcUtil::Argument_ENTITY_LIST) {
 				IfcEntityList::ptr instances = *attr;
 				IfcEntityList::ptr new_instances(new IfcEntityList);
 				for (IfcEntityList::it it = instances->begin(); it != instances->end(); ++it) {
-					new_instances->push(entity_file_map[*it]);
+					entity_entity_map_t::const_iterator eit = entity_file_map.find(*it);
+					if (eit == entity_file_map.end()) throw IfcParse::IfcException("Unable to map instance to file");
+					new_instances->push(eit->second);
 				}
 				we->setArgument(i, new_instances);
 			} else if (attr_type == IfcUtil::Argument_ENTITY_LIST_LIST) {
@@ -1034,7 +1048,9 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 				for (IfcEntityListList::outer_it it = instances->begin(); it != instances->end(); ++it) {
 					std::vector<IfcUtil::IfcBaseClass*> list;
 					for (IfcEntityListList::inner_it jt = it->begin(); jt != it->end(); ++jt) {
-						list.push_back(entity_file_map[*jt]);
+						entity_entity_map_t::const_iterator eit = entity_file_map.find(*jt);
+						if (eit == entity_file_map.end()) throw IfcParse::IfcException("Unable to map instance to file");
+						list.push_back(eit->second);
 					}
 					new_instances->push(list);
 				}
