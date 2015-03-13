@@ -159,15 +159,18 @@ void IfcWritableEntity::setArgument(int i, Argument* a) {
 	case IfcUtil::Argument_STRING:
 		this->setArgument(i, static_cast<std::string>(*a));
 		break; 
-	case IfcUtil::Argument_VECTOR_INT:
-		this->setArgument(i, static_cast< std::vector<int> >(*a));
-		break; 
-	case IfcUtil::Argument_VECTOR_DOUBLE:
-		this->setArgument(i, static_cast< std::vector<double> >(*a));
-		break; 
-	case IfcUtil::Argument_VECTOR_STRING:
-		this->setArgument(i, static_cast< std::vector< std::string > >(*a));
-		break; 
+	case IfcUtil::Argument_VECTOR_INT: {
+		std::vector<int> attr_value = *a;
+		this->setArgument(i, attr_value); }
+		break;
+	case IfcUtil::Argument_VECTOR_DOUBLE: {
+		std::vector<double> attr_value = *a;
+		this->setArgument(i, attr_value); }
+		break;
+	case IfcUtil::Argument_VECTOR_STRING: {
+		std::vector<std::string> attr_value = *a;
+		this->setArgument(i, attr_value); }
+		break;
 	case IfcUtil::Argument_ENUMERATION: {
 		IfcSchema::Type::Enum ty = IfcSchema::Type::GetAttributeEntity(_type, i);
 		std::string enum_literal = a->toString();
