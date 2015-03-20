@@ -66,8 +66,8 @@ int main(int argc, char** argv) {
 		if ( element->is(IfcWindow::Class()) ) {
 			const IfcWindow* window = (IfcWindow*)element;
 			
-			if ( window->hasOverallWidth() && window->hasOverallHeight() ) {
-				const double area = window->OverallWidth()*window->OverallHeight();
+			if ( window->OverallWidth() && window->OverallHeight() ) {
+				const double area = window->OverallWidth().get() * window->OverallHeight().get();
 				std::cout << "The area of this window is " << area << std::endl;
 			}
 		}

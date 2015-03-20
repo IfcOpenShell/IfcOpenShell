@@ -157,23 +157,27 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
-			IfcGeom::Kernel::convert(fes->ObjectPlacement(),opening_trsf);
+			if (fes->ObjectPlacement()) {
+				IfcGeom::Kernel::convert(*fes->ObjectPlacement(),opening_trsf);
+			}
 
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
 
-			IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
-			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
+			if (fes->Representation()) {
+				IfcSchema::IfcProductRepresentation* prodrep = *fes->Representation();
+				IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
 						
-			for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
-				convert_shapes(*it2,opening_shapes);
-			}
+				for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
+					convert_shapes(*it2,opening_shapes);
+				}
 
-			const unsigned int current_size = (const unsigned int) opening_shapes.size();
-			for ( unsigned int i = last_size; i < current_size; ++ i ) {
-				opening_shapes[i].prepend(opening_trsf);
+				const unsigned int current_size = (const unsigned int) opening_shapes.size();
+				for ( unsigned int i = last_size; i < current_size; ++ i ) {
+					opening_shapes[i].prepend(opening_trsf);
+				}
+				last_size = current_size;
 			}
-			last_size = current_size;
 		}
 	}
 
@@ -292,27 +296,31 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
-			IfcGeom::Kernel::convert(fes->ObjectPlacement(),opening_trsf);
+			if (fes->ObjectPlacement()) {
+				IfcGeom::Kernel::convert(*fes->ObjectPlacement(),opening_trsf);
+			}
 
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
 
-			IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
-			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
+			if (fes->Representation()) {
+				IfcSchema::IfcProductRepresentation* prodrep = *fes->Representation();
+				IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
 
-			IfcGeom::IfcRepresentationShapeItems opening_shapes;
+				IfcGeom::IfcRepresentationShapeItems opening_shapes;
 						
-			for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
-				convert_shapes(*it2,opening_shapes);
-			}
+				for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
+					convert_shapes(*it2,opening_shapes);
+				}
 
-			for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
-				gp_GTrsf gtrsf = opening_shapes[i].Placement();
-				gtrsf.PreMultiply(opening_trsf);
-				const TopoDS_Shape& opening_shape = gtrsf.Form() == gp_Other
-					? BRepBuilderAPI_GTransform(opening_shapes[i].Shape(),gtrsf,true).Shape()
-					: (opening_shapes[i].Shape()).Moved(gtrsf.Trsf());
-				builder.Add(opening_compound,opening_shape);
+				for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
+					gp_GTrsf gtrsf = opening_shapes[i].Placement();
+					gtrsf.PreMultiply(opening_trsf);
+					const TopoDS_Shape& opening_shape = gtrsf.Form() == gp_Other
+						? BRepBuilderAPI_GTransform(opening_shapes[i].Shape(),gtrsf,true).Shape()
+						: (opening_shapes[i].Shape()).Moved(gtrsf.Trsf());
+					builder.Add(opening_compound,opening_shape);
+				}
 			}
 
 		}
@@ -843,12 +851,14 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 		}
 	} catch (...) {}
 		
-	const std::string name = product->hasName() ? product->Name() : "";
+	const std::string name = product->Name().get_value_or("");
 	const std::string guid = product->GlobalId();
 		
 	gp_Trsf trsf;
 	try {
-		convert(product->ObjectPlacement(),trsf);
+		if (product->ObjectPlacement()) {
+			convert(*product->ObjectPlacement(),trsf);
+		}
 	} catch (...) {}
 
 	// Does the IfcElement have any IfcOpenings?
@@ -1014,15 +1024,15 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 					unit = (IfcSchema::IfcSIUnit*)base;
 				}
 				if ( unit ) {
-					if ( unit->hasPrefix() ) {
-						value *= IfcParse::IfcSIPrefixToValue(unit->Prefix());
+					if ( unit->Prefix() ) {
+						value *= IfcParse::IfcSIPrefixToValue(*unit->Prefix());
 					}
 					IfcSchema::IfcUnitEnum::IfcUnitEnum type = unit->UnitType();
 					if ( type == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ) {
 						setValue(IfcGeom::Kernel::GV_LENGTH_UNIT,value);
 						if (current_unit_name.empty()) {
-							if (unit->hasPrefix()) {
-								current_unit_name = IfcSchema::IfcSIPrefix::ToString(unit->Prefix());
+							if (unit->Prefix()) {
+								current_unit_name = IfcSchema::IfcSIPrefix::ToString(*unit->Prefix());
 							}
 							current_unit_name += IfcSchema::IfcSIUnitName::ToString(unit->Name());
 						}

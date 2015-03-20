@@ -412,19 +412,28 @@ parent_type_stmt = '    if(v==%(name)s%(padding)s) { return %(parent)s; }'
 
 parent_type_test = " || %s::is(v)"
 
-optional_attr_stmt = "return !entity->getArgument(%(index)d)->isNull();"
+get_attr_stmt_generic               = "return *entity->getArgument(%(index)d);"
+get_attr_stmt_enum                  = "return %(type)s::FromString(*entity->getArgument(%(index)d));"
+get_attr_stmt_entity                = "return (%(type)s)((IfcUtil::IfcBaseClass*)(*entity->getArgument(%(index)d)));"
+get_attr_stmt_array                 = "IfcEntityList::ptr es = *entity->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
+get_attr_stmt_nested_array          = "IfcEntityListList::ptr es = *entity->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
+get_attr_stmt_optional              = "Argument* arg = entity->getArgument(%%(index)d); if (arg->isNull()) { return boost::none; } else { %s }"
+get_attr_stmt_optional_generic      = get_attr_stmt_optional % "return *arg;"
+get_attr_stmt_optional_enum         = get_attr_stmt_optional % "return %(type)s::FromString(*arg);"
+get_attr_stmt_optional_entity       = get_attr_stmt_optional % "return (%(type)s)((IfcUtil::IfcBaseClass*)(*arg));"
+get_attr_stmt_optional_array        = get_attr_stmt_optional % "IfcEntityList::ptr es = *arg; return es->as<%(list_instance_type)s>();"
+get_attr_stmt_optional_nested_array = get_attr_stmt_optional % "IfcEntityListList::ptr es = *arg; return es->as<%(list_instance_type)s>();"
 
-get_attr_stmt = "return *entity->getArgument(%(index)d);"
-get_attr_stmt_enum = "return %(type)s::FromString(*entity->getArgument(%(index)d));"
-get_attr_stmt_entity = "return (%(type)s)((IfcUtil::IfcBaseClass*)(*entity->getArgument(%(index)d)));"
-get_attr_stmt_array = "IfcEntityList::ptr es = *entity->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
-get_attr_stmt_nested_array = "IfcEntityListList::ptr es = *entity->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
+set_attr_stmt                  = "IfcWritableEntity* w = entity->isWritable(); if (!w) { entity = w = new IfcWritableEntity(entity); } %s;"
+set_attr_stmt_optional         = "IfcWritableEntity* w = entity->isWritable(); if (!w) { entity = w = new IfcWritableEntity(entity); } if (v) { %s; } else { w->setArgument(%%(index)d); }"
+set_attr_stmt_generic          = set_attr_stmt % "w->setArgument(%(index)d,v)"
+set_attr_stmt_enum             = set_attr_stmt % "w->setArgument(%(index)d,v,%(type)s::ToString(v));"
+set_attr_stmt_array            = set_attr_stmt % "w->setArgument(%(index)d,v->generalize());"
+set_attr_stmt_optional_generic = set_attr_stmt_optional % "w->setArgument(%(index)d,*v)"
+set_attr_stmt_optional_enum    = set_attr_stmt_optional % "w->setArgument(%(index)d,*v,%(type)s::ToString(*v));"
+set_attr_stmt_optional_array   = set_attr_stmt_optional % "w->setArgument(%(index)d,(*v)->generalize());"
 
 get_inverse = "return entity->getInverse(Type::%(type)s, %(index)d)->as<%(type)s>();"
-
-set_attr_stmt = "if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(%(index)d,v);"
-set_attr_stmt_enum = "if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(%(index)d,v,%(type)s::ToString(v));"
-set_attr_stmt_array = "if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(%(index)d,v->generalize());"
 
 constructor_stmt = " e->setArgument(%(index)d,(%(name)s));"
 constructor_stmt_enum = " e->setArgument(%(index)d,%(name)s,%(type)s::ToString(%(name)s));"

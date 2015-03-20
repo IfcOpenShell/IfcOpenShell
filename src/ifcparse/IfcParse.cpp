@@ -1429,8 +1429,8 @@ std::pair<IfcSchema::IfcNamedUnit*, double> IfcFile::getUnit(IfcSchema::IfcUnitE
 					return_value.first = unit = (IfcSchema::IfcSIUnit*) named_unit;
 				}
 				if (unit) {
-					if (unit->hasPrefix()) {
-						return_value.second *= IfcSIPrefixToValue(unit->Prefix());
+					if (unit->Prefix()) {
+						return_value.second *= IfcSIPrefixToValue(*unit->Prefix());
 					}
 				}
 			}

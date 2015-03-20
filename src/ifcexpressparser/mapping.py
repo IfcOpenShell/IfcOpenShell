@@ -108,8 +108,6 @@ class Mapping:
         attr_type = self.flatten_type(attr.type)
         type_str = self.express_to_cpp_typemapping.get(str(attr_type), attr_type)
         
-        is_ptr = False
-        
         if self.schema.is_enumeration(attr_type):
             type_str = '%s::%s'%(attr_type, attr_type)
         elif isinstance(type_str, nodes.AggregationType):
@@ -130,11 +128,9 @@ class Mapping:
                 }
         elif allow_pointer and (self.schema.is_entity(type_str) or self.schema.is_select(type_str)):
             type_str += '*'
-            is_ptr = True
         elif not allow_pointer and self.schema.is_select(type_str):
             type_str = "IfcUtil::IfcBaseClass*"
-            is_ptr = True
-        if allow_optional and attr.optional and not is_ptr:
+        if allow_optional and attr.optional:# and not is_ptr:
             type_str = "boost::optional< %s >"%type_str
         return type_str
 

@@ -59,25 +59,23 @@ class Implementation:
             write_attr = lambda str, **kwargs: attributes.append(str%kwargs)
             for arg in constructor_arguments:
                 if not arg['is_inherited'] and not arg['is_derived']:
-                    if arg['is_optional']:
-                        write_attr(
-                            templates.const_function,
-                            class_name  = name,
-                            name        = 'has%s'%arg['name'],
-                            arguments   = '',
-                            return_type = 'bool',
-                            body        = templates.optional_attr_stmt % {'index':arg['index']-1}
-                        )
-                        
+                    
                     def find_template(arg):
                         simple = mapping.schema.is_simpletype(arg['list_instance_type'])
                         select = arg['list_instance_type'] == "IfcUtil::IfcBaseClass"
                         express = arg['list_instance_type'] in mapping.express_to_cpp_typemapping
-                        if arg['is_enum']: return templates.get_attr_stmt_enum
-                        elif arg['is_nested']: return templates.get_attr_stmt_nested_array
-                        elif arg['is_array'] and not (select or simple or express): return templates.get_attr_stmt_array
-                        elif arg['non_optional_type'].endswith('*'): return templates.get_attr_stmt_entity
-                        else: return templates.get_attr_stmt
+                        if arg['is_optional']:
+                            if arg['is_enum']: return templates.get_attr_stmt_optional_enum
+                            elif arg['is_nested']: return templates.get_attr_stmt_optional_nested_array
+                            elif arg['is_array'] and not (select or simple or express): return templates.get_attr_stmt_optional_array
+                            elif arg['non_optional_type'].endswith('*'): return templates.get_attr_stmt_optional_entity
+                            else: return templates.get_attr_stmt_generic
+                        else:
+                            if arg['is_enum']: return templates.get_attr_stmt_enum
+                            elif arg['is_nested']: return templates.get_attr_stmt_nested_array
+                            elif arg['is_array'] and not (select or simple or express): return templates.get_attr_stmt_array
+                            elif arg['non_optional_type'].endswith('*'): return templates.get_attr_stmt_entity
+                            else: return templates.get_attr_stmt_generic
 
                     tmpl = find_template(arg)
                     write_attr(
@@ -85,7 +83,7 @@ class Implementation:
                         class_name  = name,
                         name        = arg['name'],
                         arguments   = '',
-                        return_type = arg['non_optional_type'],
+                        return_type = arg['full_type'],
                         body        = tmpl % {'index': arg['index']-1,
                                               'type' : arg['non_optional_type'].split('::')[0],
                                               'list_instance_type' : arg['list_instance_type']}
@@ -95,16 +93,21 @@ class Implementation:
                         simple = mapping.schema.is_simpletype(arg['list_instance_type'])
                         select = arg['list_instance_type'] == "IfcUtil::IfcBaseClass"
                         express = arg['list_instance_type'] in mapping.express_to_cpp_typemapping
-                        if arg['is_enum']: return templates.set_attr_stmt_enum
-                        elif arg['is_array'] and not (select or simple or express): return templates.set_attr_stmt_array
-                        else: return templates.set_attr_stmt
+                        if arg['is_optional']:
+                            if arg['is_enum']: return templates.set_attr_stmt_optional_enum
+                            elif arg['is_array'] and not (select or simple or express): return templates.set_attr_stmt_optional_array
+                            else: return templates.set_attr_stmt_optional_generic
+                        else:
+                            if arg['is_enum']: return templates.set_attr_stmt_enum
+                            elif arg['is_array'] and not (select or simple or express): return templates.set_attr_stmt_array
+                            else: return templates.set_attr_stmt_generic
 
                     tmpl = find_template(arg)
                     write_attr(
                         templates.function,
                         class_name  = name,
-                        name        = 'set%s'%arg['name'],
-                        arguments   = '%s v'%arg['non_optional_type'],
+                        name        = arg['name'],
+                        arguments   = '%s v'%arg['full_type'],
                         return_type = 'void',
                         body        = tmpl % {'index': arg['index']-1,
                                               'type' : arg['non_optional_type'].split('::')[0]}
@@ -113,9 +116,8 @@ class Implementation:
                 if arg['is_derived']:
                     constructor_implementations.append(templates.constructor_stmt_derived % {'index' : arg['index']-1})
                 else:
-                    is_optional_non_naked_ptr = arg['is_optional'] and not arg['non_optional_type'].endswith('*')
                     arg_name = "v%(index)d_%(name)s"%arg
-                    deref_name = ("*%s"%arg_name) if is_optional_non_naked_ptr else arg_name
+                    deref_name = ("*%s"%arg_name) if arg['is_optional'] else arg_name
 
                     tmpl = templates.constructor_stmt_array if arg['is_templated_list'] \
                         else templates.constructor_stmt_enum if arg['is_enum'] \
@@ -123,7 +125,7 @@ class Implementation:
                     impl = tmpl % {'name'  : deref_name,
                                    'index' : arg['index']-1,
                                    'type'  : arg['non_optional_type'].split('::')[0]}
-                    if is_optional_non_naked_ptr:
+                    if arg['is_optional']:
                         impl = templates.constructor_stmt_optional%{'name'  : arg_name,
                                                             'index' : arg['index']-1,
                                                             'stmt'  : impl}

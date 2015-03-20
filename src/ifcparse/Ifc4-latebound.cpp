@@ -43,7 +43,7 @@ using namespace IfcUtil;
 
 typedef std::map<Type::Enum,IfcEntityDescriptor*> entity_descriptor_map_t;
 typedef std::map<Type::Enum,IfcEnumerationDescriptor*> enumeration_descriptor_map_t;
-typedef std::map<std::pair<Type::Enum, std::string>, std::pair<Type::Enum, int> > inverse_map_t;
+typedef std::map<Type::Enum, std::map<std::string, std::pair<Type::Enum, int> > > inverse_map_t;
 typedef std::map<Type::Enum,std::set<int> > derived_map_t;
 
 entity_descriptor_map_t entity_descriptor_map;

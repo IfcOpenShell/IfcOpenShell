@@ -176,8 +176,8 @@ namespace IfcGeom {
 					// by the parent's context inverse attributes.
 					continue;
 				}
-				if (context->hasContextType()) {
-					std::string context_type_lc = context->ContextType();
+				if (context->ContextType()) {
+					std::string context_type_lc = *context->ContextType();
 					for (std::string::iterator c = context_type_lc.begin(); c != context_type_lc.end(); ++c) {
 						*c = tolower(*c);
 					}
@@ -195,8 +195,8 @@ namespace IfcGeom {
 				IfcSchema::IfcGeometricRepresentationContext* context = *it;
 
 				representations->push(context->RepresentationsInContext());
-				if (context->hasPrecision() && context->Precision() < lowest_precision_encountered) {
-					lowest_precision_encountered = context->Precision();
+				if (context->Precision() && *context->Precision() < lowest_precision_encountered) {
+					lowest_precision_encountered = *context->Precision();
 					any_precision_encountered = true;
 				}
 				IfcSchema::IfcGeometricRepresentationSubContext::list::ptr sub_contexts = context->HasSubContexts();

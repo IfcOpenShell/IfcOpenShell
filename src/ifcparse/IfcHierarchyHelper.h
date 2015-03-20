@@ -86,7 +86,7 @@ public:
 			if (rel->RelatingObject() == relating_object) {
 				IfcSchema::IfcObjectDefinition::list::ptr products = rel->RelatedObjects();
 				products->push(related_object);
-				rel->setRelatedObjects(products);
+				rel->RelatedObjects(products);
 				found = true;
 				break;
 			}
@@ -182,7 +182,7 @@ inline void IfcHierarchyHelper::addRelatedObject <IfcSchema::IfcRelContainedInSp
 		if (rel->RelatingStructure() == relating_object) {
 			IfcSchema::IfcProduct::list::ptr products = rel->RelatedElements();
 			products->push((IfcSchema::IfcProduct*)related_object);
-			rel->setRelatedElements(products);
+			rel->RelatedElements(products);
 			found = true;
 			break;
 		}

@@ -50,8 +50,8 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 				if (e->is(IfcSchema::Type::IfcSIUnit)) {
 					IfcSchema::IfcSIUnit* unit = (IfcSchema::IfcSIUnit*) e;
 					unit_name = IfcSchema::IfcSIUnitName::ToString(unit->Name());
-					if (unit->hasPrefix()) {
-						unit_name = IfcSchema::IfcSIPrefix::ToString(unit->Prefix()) + unit_name;
+					if (unit->Prefix()) {
+						unit_name = IfcSchema::IfcSIPrefix::ToString(*unit->Prefix()) + unit_name;
 					}
 				} else {
 					IfcSchema::IfcConversionBasedUnit* unit = (IfcSchema::IfcConversionBasedUnit*) e;
@@ -124,6 +124,11 @@ typename V::list::ptr get_related(T* t, F f, G g) {
 	return acc;
 }
 
+// Member functions for IFC attributes have identical names for getters and setters. Hence a full member function signature is needed to identify them.
+typedef IfcTemplatedEntityList<IfcProduct>::ptr (IfcRelContainedInSpatialStructure::*get_related_elements) (void) const;
+typedef IfcTemplatedEntityList<IfcObjectDefinition>::ptr (IfcRelDecomposes::*get_related_objects) (void) const;
+typedef IfcPropertySetDefinition* (IfcRelDefinesByProperties::*get_related_properties) (void) const;
+
 // Descends into the tree by recursing into IfcRelContainedInSpatialStructure,
 // IfcRelDecomposes and IfcRelDefinesByProperties relations.
 template <>
@@ -135,7 +140,7 @@ void descend(IfcProduct* product, ptree& tree) {
 
 		IfcProduct::list::ptr elements = get_related
 			<IfcSpatialStructureElement, IfcRelContainedInSpatialStructure, IfcProduct>
-			(structure, &IfcSpatialStructureElement::ContainsElements, &IfcRelContainedInSpatialStructure::RelatedElements);
+			(structure, &IfcSpatialStructureElement::ContainsElements, static_cast<get_related_elements>(&IfcRelContainedInSpatialStructure::RelatedElements));
 	
 		for (IfcProduct::list::it it = elements->begin(); it != elements->end(); ++it) {
 			descend(*it, child);
@@ -144,7 +149,7 @@ void descend(IfcProduct* product, ptree& tree) {
 
 	IfcObjectDefinition::list::ptr structures = get_related
 		<IfcProduct, IfcRelDecomposes, IfcObjectDefinition>
-		(product, &IfcProduct::IsDecomposedBy, &IfcRelDecomposes::RelatedObjects);
+		(product, &IfcProduct::IsDecomposedBy, static_cast<get_related_objects>(&IfcRelDecomposes::RelatedObjects));
 
 	for (IfcObjectDefinition::list::it it = structures->begin(); it != structures->end(); ++it) {
 		IfcObjectDefinition* ob = *it;
@@ -157,7 +162,7 @@ void descend(IfcProduct* product, ptree& tree) {
 
 	IfcPropertySetDefinition::list::ptr property_sets = get_related
 		<IfcProduct, IfcRelDefinesByProperties, IfcPropertySetDefinition>
-		(product, &IfcProduct::IsDefinedBy, &IfcRelDefinesByProperties::RelatingPropertyDefinition);
+		(product, &IfcProduct::IsDefinedBy, static_cast<get_related_properties>(&IfcRelDefinesByProperties::RelatingPropertyDefinition));
 
 	for (IfcPropertySetDefinition::list::it it = property_sets->begin(); it != property_sets->end(); ++it) {
 		IfcPropertySetDefinition* pset = *it;
@@ -174,7 +179,7 @@ void descend(IfcProject* project, ptree& tree) {
 	
 	IfcObjectDefinition::list::ptr structures = get_related
 		<IfcProject, IfcRelDecomposes, IfcObjectDefinition>
-		(project, &IfcProject::IsDecomposedBy, &IfcRelDecomposes::RelatedObjects);
+		(project, &IfcProject::IsDecomposedBy, static_cast<get_related_objects>(&IfcRelDecomposes::RelatedObjects));
 	
 	for (IfcObjectDefinition::list::it it = structures->begin(); it != structures->end(); ++it) {
 		IfcObjectDefinition* ob = *it;

@@ -271,11 +271,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, 
 	const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
 	const double d = l->WallThickness() * getValue(GV_LENGTH_UNIT);
 
-	const bool fr1 = l->hasOuterFilletRadius();
-	const bool fr2 = l->hasInnerFilletRadius();
+	const bool fr1 = l->OuterFilletRadius() ? true : false;
+	const bool fr2 = l->InnerFilletRadius() ? true : false;
 
-	const double r1 = fr1 ? l->OuterFilletRadius() * getValue(GV_LENGTH_UNIT) : 0.;
-	const double r2 = fr2 ? l->InnerFilletRadius() * getValue(GV_LENGTH_UNIT) : 0.;
+	const double r1 = fr1 ? *l->OuterFilletRadius() * getValue(GV_LENGTH_UNIT) : 0.;
+	const double r2 = fr2 ? *l->InnerFilletRadius() * getValue(GV_LENGTH_UNIT) : 0.;
 	
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
@@ -336,10 +336,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	const double d1 = l->WebThickness() / 2.0f  * getValue(GV_LENGTH_UNIT);
 	const double dy1 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
 
-	bool doFillet1 = l->hasFilletRadius();
+	bool doFillet1 = l->FilletRadius() ? true : false;
 	double f1 = 0.;
 	if ( doFillet1 ) {
-		f1 = l->FilletRadius() * getValue(GV_LENGTH_UNIT);
+		f1 = *l->FilletRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	bool doFillet2 = doFillet1;
@@ -348,12 +348,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	if (l->is(IfcSchema::Type::IfcAsymmetricIShapeProfileDef)) {
 		IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) l;
 		x2 = assym->TopFlangeWidth() / 2. * getValue(GV_LENGTH_UNIT);
-		doFillet2 = assym->hasTopFlangeFilletRadius();
+		doFillet2 = assym->TopFlangeFilletRadius() ? true : false;
 		if (doFillet2) {
-			f2 = assym->TopFlangeFilletRadius() * getValue(GV_LENGTH_UNIT);
+			f2 = *assym->TopFlangeFilletRadius() * getValue(GV_LENGTH_UNIT);
 		}
-		if (assym->hasTopFlangeThickness()) {
-			dy2 = assym->TopFlangeThickness() * getValue(GV_LENGTH_UNIT);
+		if (assym->TopFlangeThickness()) {
+			dy2 = *assym->TopFlangeThickness() * getValue(GV_LENGTH_UNIT);
 		}
 	}	
 
@@ -377,17 +377,17 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcZShapeProfileDef* l, TopoDS_Sh
 	const double dx = l->WebThickness() / 2.0f  * getValue(GV_LENGTH_UNIT);
 	const double dy = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
 
-	bool doFillet = l->hasFilletRadius();
-	bool doEdgeFillet = l->hasEdgeRadius();
+	bool doFillet = l->FilletRadius() ? true : false;
+	bool doEdgeFillet = l->EdgeRadius() ? true : false;
 	
 	double f1 = 0.;
 	double f2 = 0.;
 
 	if ( doFillet ) {
-		f1 = l->FilletRadius() * getValue(GV_LENGTH_UNIT);
+		f1 = *l->FilletRadius() * getValue(GV_LENGTH_UNIT);
 	}
 	if ( doEdgeFillet ) {
-		f2 = l->EdgeRadius() * getValue(GV_LENGTH_UNIT);
+		f2 = *l->EdgeRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	if ( x == 0.0f || y == 0.0f || dx == 0.0f || dy == 0.0f ) {
@@ -409,11 +409,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCShapeProfileDef* l, TopoDS_Sh
 	const double x = l->Width() / 2.0f * getValue(GV_LENGTH_UNIT);
 	const double d1 = l->WallThickness() * getValue(GV_LENGTH_UNIT);
 	const double d2 = l->Girth() * getValue(GV_LENGTH_UNIT);
-	bool doFillet = l->hasInternalFilletRadius();
+	bool doFillet = l->InternalFilletRadius() ? true : false;
 	double f1 = 0;
 	double f2 = 0;
 	if ( doFillet ) {
-		f1 = l->InternalFilletRadius() * getValue(GV_LENGTH_UNIT);
+		f1 = *l->InternalFilletRadius() * getValue(GV_LENGTH_UNIT);
 		f2 = f1 + d1;
 	}
 
@@ -432,22 +432,22 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCShapeProfileDef* l, TopoDS_Sh
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcLShapeProfileDef* l, TopoDS_Shape& face) {
-	const bool hasSlope = l->hasLegSlope();
-	const bool doEdgeFillet = l->hasEdgeRadius();
-	const bool doFillet = l->hasFilletRadius();
+	const bool hasSlope = l->LegSlope() ? true : false;
+	const bool doEdgeFillet = l->EdgeRadius() ? true : false;
+	const bool doFillet = l->FilletRadius() ? true : false;
 
 	const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double x = (l->hasWidth() ? l->Width() : l->Depth()) / 2.0f * getValue(GV_LENGTH_UNIT);
+	const double x = (l->Width() ? *l->Width() : l->Depth()) / 2.0f * getValue(GV_LENGTH_UNIT);
 	const double d = l->Thickness() * getValue(GV_LENGTH_UNIT);
-	const double slope = hasSlope ? (l->LegSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
+	const double slope = hasSlope ? (*l->LegSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
 	
 	double f1 = 0.0f;
 	double f2 = 0.0f;
 	if (doFillet) {
-		f1 = l->FilletRadius() * getValue(GV_LENGTH_UNIT);
+		f1 = *l->FilletRadius() * getValue(GV_LENGTH_UNIT);
 	}
 	if ( doEdgeFillet) {
-		f2 = l->EdgeRadius() * getValue(GV_LENGTH_UNIT);
+		f2 = *l->EdgeRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d < ALMOST_ZERO ) {
@@ -501,15 +501,15 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcLShapeProfileDef* l, TopoDS_Sh
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcUShapeProfileDef* l, TopoDS_Shape& face) {
-	const bool doEdgeFillet = l->hasEdgeRadius();
-	const bool doFillet = l->hasFilletRadius();
-	const bool hasSlope = l->hasFlangeSlope();
+	const bool doEdgeFillet = l->EdgeRadius() ? true : false;
+	const bool doFillet = l->FilletRadius() ? true : false;
+	const bool hasSlope = l->FlangeSlope() ? true : false;
 
 	const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
 	const double x = l->FlangeWidth() / 2.0f * getValue(GV_LENGTH_UNIT);
 	const double d1 = l->WebThickness() * getValue(GV_LENGTH_UNIT);
 	const double d2 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
-	const double slope = hasSlope ? (l->FlangeSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
+	const double slope = hasSlope ? (*l->FlangeSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
 	
 	double dy1 = 0.0f;
 	double dy2 = 0.0f;
@@ -517,10 +517,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcUShapeProfileDef* l, TopoDS_Sh
 	double f2 = 0.0f;
 
 	if (doFillet) {
-		f1 = l->FilletRadius() * getValue(GV_LENGTH_UNIT);
+		f1 = *l->FilletRadius() * getValue(GV_LENGTH_UNIT);
 	}
 	if (doEdgeFillet) {
-		f2 = l->EdgeRadius() * getValue(GV_LENGTH_UNIT);
+		f2 = *l->EdgeRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	if (hasSlope) {
@@ -543,18 +543,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcUShapeProfileDef* l, TopoDS_Sh
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Shape& face) {
-	const bool doFlangeEdgeFillet = l->hasFlangeEdgeRadius();
-	const bool doWebEdgeFillet = l->hasWebEdgeRadius();
-	const bool doFillet = l->hasFilletRadius();
-	const bool hasFlangeSlope = l->hasFlangeSlope();
-	const bool hasWebSlope = l->hasWebSlope();
+	const bool doFlangeEdgeFillet = l->FlangeEdgeRadius() ? true : false;
+	const bool doWebEdgeFillet = l->WebEdgeRadius() ? true : false;
+	const bool doFillet = l->FilletRadius() ? true : false;
+	const bool hasFlangeSlope = l->FlangeSlope() ? true : false;
+	const bool hasWebSlope = l->WebSlope() ? true : false;
 
 	const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
 	const double x = l->FlangeWidth() / 2.0f * getValue(GV_LENGTH_UNIT);
 	const double d1 = l->WebThickness() * getValue(GV_LENGTH_UNIT);
 	const double d2 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
-	const double flangeSlope = hasFlangeSlope ? (l->FlangeSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
-	const double webSlope = hasWebSlope ? (l->WebSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
+	const double flangeSlope = hasFlangeSlope ? (*l->FlangeSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
+	const double webSlope = hasWebSlope ? (*l->WebSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || d2 < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
@@ -570,13 +570,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Sh
 	double f3 = 0.0f;
 
 	if (doFillet) {
-		f1 = l->FilletRadius() * getValue(GV_LENGTH_UNIT);
+		f1 = *l->FilletRadius() * getValue(GV_LENGTH_UNIT);
 	}
 	if (doWebEdgeFillet) {
-		f2 = l->WebEdgeRadius() * getValue(GV_LENGTH_UNIT);
+		f2 = *l->WebEdgeRadius() * getValue(GV_LENGTH_UNIT);
 	}
 	if (doFlangeEdgeFillet) {
-		f3 = l->FlangeEdgeRadius() * getValue(GV_LENGTH_UNIT);
+		f3 = *l->FlangeEdgeRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	double xx, xy;
