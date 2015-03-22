@@ -51,6 +51,11 @@ enumeration_descriptor_map_t enumeration_descriptor_map;
 inverse_map_t inverse_map;
 derived_map_t derived_map;
 
+
+#ifdef _MSC_VER
+#  pragma optimize( "", off )
+#endif
+
 void InitDescriptorMap() {
     IfcEntityDescriptor* current;
     current = entity_descriptor_map[Type::IfcAbsorbedDoseMeasure] = new IfcEntityDescriptor(Type::IfcAbsorbedDoseMeasure,0);
@@ -4056,6 +4061,10 @@ void InitDescriptorMap() {
     values.push_back("NOTDEFINED");
     current_enum = enumeration_descriptor_map[Type::IfcWorkControlTypeEnum] = new IfcEnumerationDescriptor(Type::IfcWorkControlTypeEnum, values);
 }
+
+#ifdef _MSC_VER
+#  pragma optimize( "", on )
+#endif
 
 void InitInverseMap() {
     inverse_map[Type::IfcActor].insert(std::make_pair("IsActingUpon", std::make_pair(Type::IfcRelAssignsToActor, 6)));

@@ -179,6 +179,11 @@ enumeration_descriptor_map_t enumeration_descriptor_map;
 inverse_map_t inverse_map;
 derived_map_t derived_map;
 
+
+#ifdef _MSC_VER
+#  pragma optimize( "", off )
+#endif
+
 void InitDescriptorMap() {
     IfcEntityDescriptor* current;
 %(entity_descriptors)s
@@ -187,6 +192,10 @@ void InitDescriptorMap() {
     std::vector<std::string> values;
 %(enumeration_descriptors)s
 }
+
+#ifdef _MSC_VER
+#  pragma optimize( "", on )
+#endif
 
 void InitInverseMap() {
 %(inverse_implementations)s
