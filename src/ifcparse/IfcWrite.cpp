@@ -159,8 +159,9 @@ void IfcWritableEntity::setArgument(int i, Argument* a) {
 	case IfcUtil::Argument_STRING:
 		this->setArgument(i, static_cast<std::string>(*a));
 		break;
-	case IfcUtil::Argument_BINARY:
-		this->setArgument(i, static_cast< boost::dynamic_bitset<> >(*a));
+	case IfcUtil::Argument_BINARY: {
+		boost::dynamic_bitset<> attr_value = *a;
+		this->setArgument(i, attr_value); }
 		break;
 	case IfcUtil::Argument_AGGREGATE_OF_INT: {
 		std::vector<int> attr_value = *a;
