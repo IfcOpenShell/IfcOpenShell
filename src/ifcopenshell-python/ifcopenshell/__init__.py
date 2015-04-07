@@ -43,10 +43,11 @@ class entity_instance(object):
 	def __init__(self, e):
 		super(entity_instance, self).__setattr__('wrapped_data', e)
 	def __getattr__(self, name):
-		try: return entity_instance.wrap_value(self.wrapped_data.get_argument(self.wrapped_data.get_argument_index(name)))
-		except:
-			try: return entity_instance.wrap_value(self.wrapped_data.get_inverse(name))
-			except: raise AttributeError("entity instance of type '%s' has no attribute '%s'"%(self.wrapped_data.is_a(), name))
+		if name in self.wrapped_data.get_attribute_names():
+			return entity_instance.wrap_value(self.wrapped_data.get_argument(self.wrapped_data.get_argument_index(name)))
+		elif name in self.wrapped_data.get_inverse_attribute_names():
+			return entity_instance.wrap_value(self.wrapped_data.get_inverse(name))
+		else: raise AttributeError("entity instance of type '%s' has no attribute '%s'"%(self.wrapped_data.is_a(), name))
 	@staticmethod
 	def map_value(v):
 		if isinstance(v, entity_instance): return v.wrapped_data
