@@ -37,6 +37,8 @@
 #include <cstring>
 #include <map>
 
+#include <boost/dynamic_bitset.hpp>
+
 #include "../ifcparse/SharedPointer.h"
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcUtil.h"
@@ -81,6 +83,8 @@ namespace IfcParse {
 		static bool isBool(const Token& t);
 		/// Returns whether the token can be interpreted as a floating point number
 		static bool isFloat(const Token& t);
+		/// Returns whether the token can be interpreted as a binary type
+		static bool isBinary(const Token& t);
 		/// Returns the token interpreted as an integer
 		static int asInt(const Token& t);
 		/// Returns the token interpreted as an boolean (.T. or .F.)
@@ -89,6 +93,8 @@ namespace IfcParse {
 		static double asFloat(const Token& t);
 		/// Returns the token as a string (without the dot or apostrophe)
 		static std::string asString(const Token& t);
+		/// Returns the token as a string (without the dot or apostrophe)
+		static boost::dynamic_bitset<> asBinary(const Token& t);
 		/// Returns a string representation of the token (including the dot or apostrophe)
 		static std::string toString(const Token& t);
 	};
@@ -134,19 +140,24 @@ namespace IfcParse {
 		operator bool() const;
 		operator double() const;
 		operator std::string() const;
-		operator std::vector<double>() const;
-		operator std::vector<int>() const;
-		operator std::vector<std::string>() const;
+		operator boost::dynamic_bitset<>() const;
 		operator IfcUtil::IfcBaseClass*() const;
+
+		operator std::vector<int>() const;
+		operator std::vector<double>() const;
+		operator std::vector<std::string>() const;
+		operator std::vector<boost::dynamic_bitset<> >() const;
 		operator IfcEntityList::ptr() const;
-        operator IfcEntityListList::ptr() const;
+
+		operator IfcEntityListList::ptr() const;
+
+		bool isNull() const;
 		unsigned int size() const;
 
 		Argument* operator [] (unsigned int i) const;
 		void set(unsigned int i, Argument*);
 
 		std::string toString(bool upper=false) const;
-		bool isNull() const;
 	};
 
 	/// Argument of type scalar or string, e.g.
@@ -165,16 +176,21 @@ namespace IfcParse {
 		operator bool() const;
 		operator double() const;
 		operator std::string() const;
-		operator std::vector<double>() const;
-		operator std::vector<int>() const;
-		operator std::vector<std::string>() const;
+		operator boost::dynamic_bitset<>() const;
 		operator IfcUtil::IfcBaseClass*() const;
+
+		operator std::vector<int>() const;
+		operator std::vector<double>() const;
+		operator std::vector<std::string>() const;
+		operator std::vector<boost::dynamic_bitset<> >() const;
 		operator IfcEntityList::ptr() const;
-        operator IfcEntityListList::ptr() const;
-		unsigned int size() const;
-		Argument* operator [] (unsigned int i) const;
-		std::string toString(bool upper=false) const;
+		operator IfcEntityListList::ptr() const;
+
 		bool isNull() const;
+		unsigned int size() const;
+
+		Argument* operator [] (unsigned int i) const;
+		std::string toString(bool upper=false) const;		
 	};
 
 	/// Argument of an IFC simple type
@@ -182,7 +198,7 @@ namespace IfcParse {
 	///                        =====================   =====================
 	class EntityArgument : public Argument {
 	private:		
-		IfcUtil::IfcBaseClass* entity;		
+		IfcUtil::IfcBaseClass* entity;
 	public:
 		EntityArgument(const Token& t);
 		~EntityArgument();
@@ -193,16 +209,22 @@ namespace IfcParse {
 		operator bool() const;
 		operator double() const;
 		operator std::string() const;
-		operator std::vector<double>() const;
-		operator std::vector<int>() const;
-		operator std::vector<std::string>() const;
+		operator boost::dynamic_bitset<>() const;
 		operator IfcUtil::IfcBaseClass*() const;
+
+		operator std::vector<int>() const;
+		operator std::vector<double>() const;
+		operator std::vector<std::string>() const;
+		operator std::vector<boost::dynamic_bitset<> >() const;
 		operator IfcEntityList::ptr() const;
-        operator IfcEntityListList::ptr() const;
+
+		operator IfcEntityListList::ptr() const;
+
+		bool isNull() const;
 		unsigned int size() const;
+
 		Argument* operator [] (unsigned int i) const;
 		std::string toString(bool upper=false) const;
-		bool isNull() const;
 	};
 
 	/// Entity defined in an IFC file, e.g.

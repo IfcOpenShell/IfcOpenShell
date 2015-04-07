@@ -28,7 +28,14 @@ class Mapping:
         'integer' : 'int',
         'real'    : 'double',
         'number'  : 'double',
-        'string'  : 'std::string'
+        'string'  : 'std::string',
+        'binary'  : 'boost::dynamic_bitset<>'
+    }
+    
+    supported_argument_types = {
+        'INT', 'BOOL', 'DOUBLE', 'STRING', 'BINARY', 'ENUMERATION', 'ENTITY_INSTANCE',
+        'AGGREGATE_OF_INT', 'AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_STRING', 'AGGREGATE_OF_BINARY', 'AGGREGATE_OF_ENTITY_INSTANCE',
+        'AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE'
     }
 
     def __init__(self, schema):
@@ -77,24 +84,21 @@ class Mapping:
         def _make_argument_type(type):
             if type in self.express_to_cpp_typemapping:
                 return self.express_to_cpp_typemapping.get(type, type).split('::')[-1].upper()
-            elif self.schema.is_entity(type):
-                return "ENTITY"
+            elif self.schema.is_entity(type) or isinstance(type, nodes.SelectType):
+                return "ENTITY_INSTANCE"
             elif self.schema.is_type(type):
                 return _make_argument_type(self.schema.types[type].type.type)
             elif isinstance(type, nodes.BinaryType):
-                return "UNKNOWN"
+                return "BINARY"
             elif isinstance(type, nodes.EnumerationType):
                 return "ENUMERATION"
-            elif isinstance(type, nodes.SelectType):
-                return "ENTITY"
             elif isinstance(type, nodes.AggregationType):
                 ty = _make_argument_type(type.type)
                 if ty == "UNKNOWN": return "UNKNOWN"
-                return "%s_LIST"%ty if ty.startswith("ENTITY") else ("VECTOR_%s"%ty)
+                return "AGGREGATE_OF_" + ty
             else: raise ValueError
-        supported = {'INT', 'BOOL', 'DOUBLE', 'STRING', 'VECTOR_INT', 'VECTOR_DOUBLE', 'VECTOR_STRING', 'ENTITY', 'ENTITY_LIST', 'ENTITY_LIST_LIST', 'ENUMERATION'}
         ty = _make_argument_type(attr.type if hasattr(attr, 'type') else attr)
-        if ty not in supported: ty = 'UNKNOWN'
+        if ty not in self.supported_argument_types: ty = 'UNKNOWN'
         return "IfcUtil::Argument_%s" % ty
 
     def get_type_dep(self, type):
@@ -104,7 +108,6 @@ class Mapping:
             return self.get_type_dep(type.type)
 
     def get_parameter_type(self, attr, allow_optional, allow_entities, allow_pointer = True):
-        
         attr_type = self.flatten_type(attr.type)
         type_str = self.express_to_cpp_typemapping.get(str(attr_type), attr_type)
         
@@ -115,7 +118,7 @@ class Mapping:
         elif isinstance(type_str, nodes.AggregationType):
             is_nested_list = isinstance(attr_type.type, nodes.AggregationType)
             ty = self.get_parameter_type(attr_type.type if is_nested_list else attr_type, False, allow_entities, False)
-            if True and self.schema.is_select(attr_type.type):
+            if self.schema.is_select(attr_type.type):
                 type_str = templates.untyped_list
             elif self.schema.is_simpletype(ty) or ty in self.express_to_cpp_typemapping.values():
                 type_str = templates.array_type % {
@@ -151,7 +154,7 @@ class Mapping:
         return c + ([str(s) for s in t.derive.elements] if t.derive else [])
 
     def list_instance_type(self, attr):
-        f = lambda v : 'IfcUtil::IfcBaseClass' if self.schema.is_select(v) else v
+        f = lambda v : 'IfcUtil::IfcBaseClass' if self.schema.is_select(v) else str(v)
         if self.is_array(attr.type):
             if not isinstance(attr.type, str) and self.is_array(attr.type.type):
                 if isinstance(attr.type.type, str):

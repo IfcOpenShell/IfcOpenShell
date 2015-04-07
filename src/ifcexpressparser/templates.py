@@ -415,7 +415,6 @@ inverse_attr = "IfcTemplatedEntityList< %(entity)s >::ptr %(name)s() const; // I
 enum_from_string_stmt = '    if (s == "%(value)s") return ::%(schema_name)s::%(name)s::%(short_name)s_%(value)s;'
 
 schema_entity_stmt = '        case Type::%(name)s: return new %(name)s(e); break;'
-schema_simple_stmt = '        case Type::%(name)s: return new IfcUtil::IfcEntitySelect(e); break;'
 string_map_statement = '    string_map["%(uppercase_name)s"%(padding)s] = Type::%(name)s;'
 parent_type_stmt = '    if(v==%(name)s%(padding)s) { return %(parent)s; }'
 

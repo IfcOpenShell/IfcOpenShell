@@ -23,7 +23,7 @@
  * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
- 
+
 #ifndef IFC2X3ENUM_H
 #define IFC2X3ENUM_H
 

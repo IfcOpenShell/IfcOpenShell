@@ -130,7 +130,13 @@ namespace IfcUtil {
 			const std::string s = arg;
 			$result = PyString_FromString(s.c_str());
 		break; }
-		case IfcUtil::Argument_VECTOR_INT: {
+		case IfcUtil::Argument_BINARY: {
+			const boost::dynamic_bitset<> b = arg;
+			std::string bitstring;
+			boost::to_string(b, bitstring);
+			$result = PyString_FromString(bitstring.c_str());
+		break; }
+		case IfcUtil::Argument_AGGREGATE_OF_INT: {
 			const std::vector<int> v = arg;
 			const unsigned size = v.size();
 			$result = PyList_New(size);
@@ -138,7 +144,7 @@ namespace IfcUtil {
 				PyList_SetItem($result,i,PyInt_FromLong(v[i]));
 			}
 		break; }
-		case IfcUtil::Argument_VECTOR_DOUBLE: {
+		case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
 			const std::vector<double> v = arg;
 			const unsigned size = v.size();
 			$result = PyList_New(size);
@@ -146,7 +152,7 @@ namespace IfcUtil {
 				PyList_SetItem($result,i,PyFloat_FromDouble(v[i]));
 			}
 		break; }
-		case IfcUtil::Argument_VECTOR_STRING: {
+		case IfcUtil::Argument_AGGREGATE_OF_STRING: {
 			const std::vector<std::string> v = arg;
 			const unsigned size = v.size();
 			$result = PyList_New(size);
@@ -154,17 +160,27 @@ namespace IfcUtil {
 				PyList_SetItem($result,i,PyString_FromString(v[i].c_str()));
 			}
 		break; }
-		case IfcUtil::Argument_ENTITY: {
+		case IfcUtil::Argument_ENTITY_INSTANCE: {
 			IfcUtil::IfcBaseClass* e = arg;
 			$result = SWIG_NewPointerObj(SWIG_as_voidptr(e), SWIGTYPE_p_IfcParse__IfcLateBoundEntity, 0);
 		break; }
-		case IfcUtil::Argument_ENTITY_LIST: {
+		case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
 			IfcEntityList::ptr es = arg;
 			const unsigned size = es->size();
 			$result = PyList_New(size);
 			for (unsigned i = 0; i < size; ++i) {
 				PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*es)[i]), SWIGTYPE_p_IfcParse__IfcLateBoundEntity, 0);
 				PyList_SetItem($result,i,o);
+			}
+		break; }
+		case IfcUtil::Argument_AGGREGATE_OF_BINARY: {
+			const std::vector< boost::dynamic_bitset<> > bs = arg;
+			const unsigned size = bs.size();
+			$result = PyList_New(size);
+			for (unsigned int i = 0; i < size; ++i) {
+				std::string bitstring;
+				boost::to_string(bs[i], bitstring);
+				PyList_SetItem($result,i,PyString_FromString(bitstring.c_str()));
 			}
 		break; }
 		case IfcUtil::Argument_UNKNOWN:

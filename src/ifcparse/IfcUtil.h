@@ -26,6 +26,8 @@
 #include <sstream>
 #include <algorithm>
 
+#include <boost/dynamic_bitset.hpp>
+
 #include "../ifcparse/SharedPointer.h"
 
 #ifdef USE_IFC4
@@ -43,22 +45,27 @@ namespace IfcWrite {
 }
 
 namespace IfcUtil {
-    enum ArgumentType {
-        Argument_NULL,
+	enum ArgumentType {
+		Argument_NULL,
 		Argument_DERIVED,
 		Argument_INT,
 		Argument_BOOL,
 		Argument_DOUBLE,
-		Argument_STRING, 
-		Argument_VECTOR_INT, 
-		Argument_VECTOR_DOUBLE, 
-		Argument_VECTOR_STRING, 
+		Argument_STRING,
+		Argument_BINARY,
 		Argument_ENUMERATION, 
-		Argument_ENTITY, 
-		Argument_ENTITY_LIST, 
-		Argument_ENTITY_LIST_LIST, 
+		Argument_ENTITY_INSTANCE,
+
+		Argument_AGGREGATE_OF_INT, 
+		Argument_AGGREGATE_OF_DOUBLE, 
+		Argument_AGGREGATE_OF_STRING,
+		Argument_AGGREGATE_OF_BINARY, 
+		Argument_AGGREGATE_OF_ENTITY_INSTANCE,
+
+		Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE, 
+
 		Argument_UNKNOWN
-    };
+	};
 
 	const char* ArgumentTypeToString(ArgumentType argument_type);
 
@@ -247,21 +254,29 @@ namespace IfcParse {
 
 class Argument {
 public:
-	virtual IfcUtil::ArgumentType type() const = 0;
 	virtual operator int() const = 0;
 	virtual operator bool() const = 0;
 	virtual operator double() const = 0;
 	virtual operator std::string() const = 0;
-	virtual operator std::vector<double>() const = 0;
-	virtual operator std::vector<int>() const = 0;
-	virtual operator std::vector<std::string>() const = 0;
+	virtual operator boost::dynamic_bitset<>() const = 0;
 	virtual operator IfcUtil::IfcBaseClass*() const = 0;
+
+	virtual operator std::vector<int>() const = 0;
+	virtual operator std::vector<double>() const = 0;
+	virtual operator std::vector<std::string>() const = 0;
+	virtual operator std::vector<boost::dynamic_bitset<> >() const = 0;
 	virtual operator IfcEntityList::ptr() const = 0;
-    virtual operator IfcEntityListList::ptr() const = 0;
+
+	virtual operator IfcEntityListList::ptr() const = 0;
+
+
+	virtual bool isNull() const = 0;
 	virtual unsigned int size() const = 0;
+
+	virtual IfcUtil::ArgumentType type() const = 0;
 	virtual Argument* operator [] (unsigned int i) const = 0;
 	virtual std::string toString(bool upper=false) const = 0;
-	virtual bool isNull() const = 0;
+	
 	virtual ~Argument() {};
 };
 

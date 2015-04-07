@@ -23,7 +23,7 @@
  * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
- 
+
 #ifndef IFC2X3_H
 #define IFC2X3_H
 
@@ -6678,7 +6678,7 @@ public:
     std::string ApplicationIdentifier() const;
     void setApplicationIdentifier(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcOrganization; case 1: return Type::IfcLabel; case 2: return Type::IfcLabel; case 3: return Type::IfcIdentifier; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ApplicationDeveloper"; case 1: return "Version"; case 2: return "ApplicationFullName"; case 3: return "ApplicationIdentifier"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -6744,7 +6744,7 @@ public:
     IfcDateTimeSelect* FixedUntilDate() const;
     void setFixedUntilDate(IfcDateTimeSelect* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcAppliedValueSelect; case 3: return Type::IfcMeasureWithUnit; case 4: return Type::IfcDateTimeSelect; case 5: return Type::IfcDateTimeSelect; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "AppliedValue"; case 3: return "UnitBasis"; case 4: return "ApplicableDate"; case 5: return "FixedUntilDate"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -6802,7 +6802,7 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAppliedValue; case 1: return Type::IfcAppliedValue; case 2: return Type::IfcArithmeticOperatorEnum; case 3: return Type::IfcLabel; case 4: return Type::IfcText; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ComponentOfTotal"; case 1: return "Components"; case 2: return "ArithmeticOperator"; case 3: return "Name"; case 4: return "Description"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -6846,7 +6846,7 @@ public:
     std::string Identifier() const;
     void setIdentifier(std::string v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcText; case 1: return Type::IfcDateTimeSelect; case 2: return Type::IfcLabel; case 3: return Type::IfcLabel; case 4: return Type::IfcText; case 5: return Type::IfcLabel; case 6: return Type::IfcIdentifier; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Description"; case 1: return "ApprovalDateTime"; case 2: return "ApprovalStatus"; case 3: return "ApprovalLevel"; case 4: return "ApprovalQualifier"; case 5: return "Name"; case 6: return "Identifier"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -6870,7 +6870,7 @@ public:
     IfcActorRole* Role() const;
     void setRole(IfcActorRole* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcActorSelect; case 1: return Type::IfcApproval; case 2: return Type::IfcActorRole; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Actor"; case 1: return "Approval"; case 2: return "Role"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -6889,7 +6889,7 @@ public:
     IfcApproval* Approval() const;
     void setApproval(IfcApproval* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; case 1: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcProperty; case 1: return Type::IfcApproval; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ApprovedProperties"; case 1: return "Approval"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -6921,7 +6921,7 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcApproval; case 1: return Type::IfcApproval; case 2: return Type::IfcText; case 3: return Type::IfcLabel; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatedApproval"; case 1: return "RelatingApproval"; case 2: return "Description"; case 3: return "Name"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7197,7 +7197,7 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcLabel; case 2: return Type::IfcCalendarDate; case 3: return Type::IfcLabel; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Source"; case 1: return "Edition"; case 2: return "EditionDate"; case 3: return "Name"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7221,7 +7221,7 @@ public:
     std::string Title() const;
     void setTitle(std::string v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClassificationNotationFacet; case 1: return Type::IfcClassification; case 2: return Type::IfcLabel; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Notation"; case 1: return "ItemOf"; case 2: return "Title"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7242,7 +7242,7 @@ public:
     IfcTemplatedEntityList< IfcClassificationItem >::ptr RelatedItems() const;
     void setRelatedItems(IfcTemplatedEntityList< IfcClassificationItem >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClassificationItem; case 1: return Type::IfcClassificationItem; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingItem"; case 1: return "RelatedItems"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7259,7 +7259,7 @@ public:
     IfcTemplatedEntityList< IfcClassificationNotationFacet >::ptr NotationFacets() const;
     void setNotationFacets(IfcTemplatedEntityList< IfcClassificationNotationFacet >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClassificationNotationFacet; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "NotationFacets"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7369,7 +7369,7 @@ public:
     IfcPointOrVertexPoint* PointOnRelatedElement() const;
     void setPointOnRelatedElement(IfcPointOrVertexPoint* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } return IfcConnectionGeometry::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcConnectionGeometry::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPointOrVertexPoint; case 1: return Type::IfcPointOrVertexPoint; } return IfcConnectionGeometry::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "PointOnRelatingElement"; case 1: return "PointOnRelatedElement"; } return IfcConnectionGeometry::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7392,7 +7392,7 @@ public:
     IfcProfileDef* ProfileOfPort() const;
     void setProfileOfPort(IfcProfileDef* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENTITY; } return IfcConnectionGeometry::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcConnectionGeometry::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAxis2Placement; case 1: return Type::IfcAxis2Placement; case 2: return Type::IfcProfileDef; } return IfcConnectionGeometry::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "LocationAtRelatingElement"; case 1: return "LocationAtRelatedElement"; case 2: return "ProfileOfPort"; } return IfcConnectionGeometry::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7422,7 +7422,7 @@ public:
     IfcSurfaceOrFaceSurface* SurfaceOnRelatedElement() const;
     void setSurfaceOnRelatedElement(IfcSurfaceOrFaceSurface* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } return IfcConnectionGeometry::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcConnectionGeometry::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurfaceOrFaceSurface; case 1: return Type::IfcSurfaceOrFaceSurface; } return IfcConnectionGeometry::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SurfaceOnRelatingElement"; case 1: return "SurfaceOnRelatedElement"; } return IfcConnectionGeometry::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7482,7 +7482,7 @@ public:
     std::string UserDefinedGrade() const;
     void setUserDefinedGrade(std::string v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcConstraintEnum; case 3: return Type::IfcLabel; case 4: return Type::IfcActorSelect; case 5: return Type::IfcDateTimeSelect; case 6: return Type::IfcLabel; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "ConstraintGrade"; case 3: return "ConstraintSource"; case 4: return "CreatingActor"; case 5: return "CreationTime"; case 6: return "UserDefinedGrade"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7528,7 +7528,7 @@ public:
     IfcLogicalOperatorEnum::IfcLogicalOperatorEnum LogicalAggregator() const;
     void setLogicalAggregator(IfcLogicalOperatorEnum::IfcLogicalOperatorEnum v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY_LIST; case 4: return IfcUtil::Argument_ENUMERATION; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENUMERATION; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcConstraint; case 3: return Type::IfcConstraint; case 4: return Type::IfcLogicalOperatorEnum; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingConstraint"; case 3: return "RelatedConstraints"; case 4: return "LogicalAggregator"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7547,7 +7547,7 @@ public:
     IfcEntityList::ptr RelatedClassifications() const;
     void setRelatedClassifications(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcConstraint; case 1: return Type::IfcClassificationNotationSelect; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ClassifiedConstraint"; case 1: return "RelatedClassifications"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7584,7 +7584,7 @@ public:
     IfcTemplatedEntityList< IfcConstraint >::ptr RelatedConstraints() const;
     void setRelatedConstraints(IfcTemplatedEntityList< IfcConstraint >::ptr v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcConstraint; case 3: return Type::IfcConstraint; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingConstraint"; case 3: return "RelatedConstraints"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7719,7 +7719,7 @@ public:
     IfcLibraryInformation* RateSource() const;
     void setRateSource(IfcLibraryInformation* v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_ENTITY; case 4: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMonetaryUnit; case 1: return Type::IfcMonetaryUnit; case 2: return Type::IfcPositiveRatioMeasure; case 3: return Type::IfcDateAndTime; case 4: return Type::IfcLibraryInformation; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingMonetaryUnit"; case 1: return "RelatedMonetaryUnit"; case 2: return "ExchangeRate"; case 3: return "RateDateTime"; case 4: return "RateSource"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7746,7 +7746,7 @@ public:
     IfcTemplatedEntityList< IfcCurveStyleFontPattern >::ptr PatternList() const;
     void setPatternList(IfcTemplatedEntityList< IfcCurveStyleFontPattern >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcCurveStyleFontPattern; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "PatternList"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7782,7 +7782,7 @@ public:
     double CurveFontScaling() const;
     void setCurveFontScaling(double v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_DOUBLE; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_DOUBLE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcCurveStyleFontSelect; case 2: return Type::IfcPositiveRatioMeasure; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "CurveFont"; case 2: return "CurveFontScaling"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7830,7 +7830,7 @@ public:
     IfcLocalTime* TimeComponent() const;
     void setTimeComponent(IfcLocalTime* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCalendarDate; case 1: return Type::IfcLocalTime; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DateComponent"; case 1: return "TimeComponent"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7861,7 +7861,7 @@ public:
     std::string UserDefinedType() const;
     void setUserDefinedType(std::string v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; case 1: return IfcUtil::Argument_ENUMERATION; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENUMERATION; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDerivedUnitElement; case 1: return Type::IfcDerivedUnitEnum; case 2: return Type::IfcLabel; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Elements"; case 1: return "UnitType"; case 2: return "UserDefinedType"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -7890,7 +7890,7 @@ public:
     int Exponent() const;
     void setExponent(int v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_INT; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_INT; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcNamedUnit; case 1: return Type::UNDEFINED; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Unit"; case 1: return "Exponent"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8083,7 +8083,7 @@ public:
     IfcDocumentStatusEnum::IfcDocumentStatusEnum Status() const;
     void setStatus(IfcDocumentStatusEnum::IfcDocumentStatusEnum v);
     virtual unsigned int getArgumentCount() const { return 17; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY_LIST; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_STRING; case 8: return IfcUtil::Argument_ENTITY; case 9: return IfcUtil::Argument_ENTITY_LIST; case 10: return IfcUtil::Argument_ENTITY; case 11: return IfcUtil::Argument_ENTITY; case 12: return IfcUtil::Argument_ENTITY; case 13: return IfcUtil::Argument_ENTITY; case 14: return IfcUtil::Argument_ENTITY; case 15: return IfcUtil::Argument_ENUMERATION; case 16: return IfcUtil::Argument_ENUMERATION; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_STRING; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; case 9: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 10: return IfcUtil::Argument_ENTITY_INSTANCE; case 11: return IfcUtil::Argument_ENTITY_INSTANCE; case 12: return IfcUtil::Argument_ENTITY_INSTANCE; case 13: return IfcUtil::Argument_ENTITY_INSTANCE; case 14: return IfcUtil::Argument_ENTITY_INSTANCE; case 15: return IfcUtil::Argument_ENUMERATION; case 16: return IfcUtil::Argument_ENUMERATION; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcLabel; case 2: return Type::IfcText; case 3: return Type::IfcDocumentReference; case 4: return Type::IfcText; case 5: return Type::IfcText; case 6: return Type::IfcText; case 7: return Type::IfcLabel; case 8: return Type::IfcActorSelect; case 9: return Type::IfcActorSelect; case 10: return Type::IfcDateAndTime; case 11: return Type::IfcDateAndTime; case 12: return Type::IfcDocumentElectronicFormat; case 13: return Type::IfcCalendarDate; case 14: return Type::IfcCalendarDate; case 15: return Type::IfcDocumentConfidentialityEnum; case 16: return Type::IfcDocumentStatusEnum; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DocumentId"; case 1: return "Name"; case 2: return "Description"; case 3: return "DocumentReferences"; case 4: return "Purpose"; case 5: return "IntendedUse"; case 6: return "Scope"; case 7: return "Revision"; case 8: return "DocumentOwner"; case 9: return "Editors"; case 10: return "CreationTime"; case 11: return "LastRevisionTime"; case 12: return "ElectronicFormat"; case 13: return "ValidFrom"; case 14: return "ValidUntil"; case 15: return "Confidentiality"; case 16: return "Status"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8118,7 +8118,7 @@ public:
     std::string RelationshipType() const;
     void setRelationshipType(std::string v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDocumentInformation; case 1: return Type::IfcDocumentInformation; case 2: return Type::IfcLabel; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingDocument"; case 1: return "RelatedDocuments"; case 2: return "RelationshipType"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8145,7 +8145,7 @@ public:
     IfcDraughtingCallout* RelatedDraughtingCallout() const;
     void setRelatedDraughtingCallout(IfcDraughtingCallout* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcDraughtingCallout; case 3: return Type::IfcDraughtingCallout; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingDraughtingCallout"; case 3: return "RelatedDraughtingCallout"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8342,7 +8342,7 @@ public:
     bool SameSense() const;
     void setSameSense(bool v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_BOOL; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_BOOL; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcCurve; case 2: return Type::IfcBoolean; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "AxisTag"; case 1: return "AxisCurve"; case 2: return "SameSense"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8369,7 +8369,7 @@ public:
     IfcEntityList::ptr ListValues() const;
     void setListValues(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDateTimeSelect; case 1: return Type::IfcValue; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TimeStamp"; case 1: return "ListValues"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8415,7 +8415,7 @@ public:
     IfcTemplatedEntityList< IfcLibraryReference >::ptr LibraryReference() const;
     void setLibraryReference(IfcTemplatedEntityList< IfcLibraryReference >::ptr v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; case 4: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcLabel; case 2: return Type::IfcOrganization; case 3: return Type::IfcCalendarDate; case 4: return Type::IfcLibraryReference; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Version"; case 2: return "Publisher"; case 3: return "VersionDate"; case 4: return "LibraryReference"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8477,7 +8477,7 @@ public:
     std::vector< double > /*[1:?]*/ LuminousIntensity() const;
     void setLuminousIntensity(std::vector< double > /*[1:?]*/ v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_VECTOR_DOUBLE; case 2: return IfcUtil::Argument_VECTOR_DOUBLE; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; case 2: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPlaneAngleMeasure; case 1: return Type::IfcPlaneAngleMeasure; case 2: return Type::IfcLuminousIntensityDistributionMeasure; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MainPlaneAngle"; case 1: return "SecondaryPlaneAngle"; case 2: return "LuminousIntensity"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8500,7 +8500,7 @@ public:
     IfcTemplatedEntityList< IfcLightDistributionData >::ptr DistributionData() const;
     void setDistributionData(IfcTemplatedEntityList< IfcLightDistributionData >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLightDistributionCurveEnum; case 1: return Type::IfcLightDistributionData; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "LightDistributionCurve"; case 1: return "DistributionData"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8533,7 +8533,7 @@ public:
     int DaylightSavingOffset() const;
     void setDaylightSavingOffset(int v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_INT; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_ENTITY; case 4: return IfcUtil::Argument_INT; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_INT; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_INT; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcHourInDay; case 1: return Type::IfcMinuteInHour; case 2: return Type::IfcSecondInMinute; case 3: return Type::IfcCoordinatedUniversalTimeOffset; case 4: return Type::IfcDaylightSavingHour; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "HourComponent"; case 1: return "MinuteComponent"; case 2: return "SecondComponent"; case 3: return "Zone"; case 4: return "DaylightSavingOffset"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8608,7 +8608,7 @@ public:
     IfcMaterial* ClassifiedMaterial() const;
     void setClassifiedMaterial(IfcMaterial* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; case 1: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClassificationNotationSelect; case 1: return Type::IfcMaterial; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MaterialClassifications"; case 1: return "ClassifiedMaterial"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8666,7 +8666,7 @@ public:
     bool IsVentilated() const;
     void setIsVentilated(bool v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_BOOL; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_BOOL; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterial; case 1: return Type::IfcPositiveLengthMeasure; case 2: return Type::IfcLogical; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Material"; case 1: return "LayerThickness"; case 2: return "IsVentilated"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8722,7 +8722,7 @@ public:
     std::string LayerSetName() const;
     void setLayerSetName(std::string v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; case 1: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterialLayer; case 1: return Type::IfcLabel; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MaterialLayers"; case 1: return "LayerSetName"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8853,7 +8853,7 @@ public:
     double OffsetFromReferenceLine() const;
     void setOffsetFromReferenceLine(double v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENUMERATION; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_DOUBLE; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENUMERATION; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_DOUBLE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterialLayerSet; case 1: return Type::IfcLayerSetDirectionEnum; case 2: return Type::IfcDirectionSenseEnum; case 3: return Type::IfcLengthMeasure; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ForLayerSet"; case 1: return "LayerSetDirection"; case 2: return "DirectionSense"; case 3: return "OffsetFromReferenceLine"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8887,7 +8887,7 @@ public:
     IfcTemplatedEntityList< IfcMaterial >::ptr Materials() const;
     void setMaterials(IfcTemplatedEntityList< IfcMaterial >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterial; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Materials"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8928,7 +8928,7 @@ public:
     IfcMaterial* Material() const;
     void setMaterial(IfcMaterial* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterial; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Material"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -8958,7 +8958,7 @@ public:
     IfcUnit* UnitComponent() const;
     void setUnitComponent(IfcUnit* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcValue; case 1: return Type::IfcUnit; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ValueComponent"; case 1: return "UnitComponent"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9036,7 +9036,7 @@ public:
     IfcTemplatedEntityList< IfcRelaxation >::ptr Relaxations() const;
     void setRelaxations(IfcTemplatedEntityList< IfcRelaxation >::ptr v);
     virtual unsigned int getArgumentCount() const { return 13; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_DOUBLE; case 9: return IfcUtil::Argument_DOUBLE; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_ENTITY_LIST; } return IfcMechanicalMaterialProperties::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_DOUBLE; case 9: return IfcUtil::Argument_DOUBLE; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcMechanicalMaterialProperties::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 6: return Type::IfcPressureMeasure; case 7: return Type::IfcPressureMeasure; case 8: return Type::IfcPositiveRatioMeasure; case 9: return Type::IfcModulusOfElasticityMeasure; case 10: return Type::IfcPressureMeasure; case 11: return Type::IfcPositiveRatioMeasure; case 12: return Type::IfcRelaxation; } return IfcMechanicalMaterialProperties::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "YieldStress"; case 7: return "UltimateStress"; case 8: return "UltimateStrain"; case 9: return "HardeningModule"; case 10: return "ProportionalStress"; case 11: return "PlasticStrain"; case 12: return "Relaxations"; } return IfcMechanicalMaterialProperties::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9113,7 +9113,7 @@ public:
     IfcMetricValueSelect* DataValue() const;
     void setDataValue(IfcMetricValueSelect* v);
     virtual unsigned int getArgumentCount() const { return 10; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_ENUMERATION; case 8: return IfcUtil::Argument_STRING; case 9: return IfcUtil::Argument_ENTITY; } return IfcConstraint::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_ENUMERATION; case 8: return IfcUtil::Argument_STRING; case 9: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcConstraint::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::IfcBenchmarkEnum; case 8: return Type::IfcLabel; case 9: return Type::IfcMetricValueSelect; } return IfcConstraint::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "Benchmark"; case 8: return "ValueSource"; case 9: return "DataValue"; } return IfcConstraint::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9160,7 +9160,7 @@ public:
     IfcUnitEnum::IfcUnitEnum UnitType() const;
     void setUnitType(IfcUnitEnum::IfcUnitEnum v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENUMERATION; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENUMERATION; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDimensionalExponents; case 1: return Type::IfcUnitEnum; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Dimensions"; case 1: return "UnitType"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9228,7 +9228,7 @@ public:
     std::string UserDefinedQualifier() const;
     void setUserDefinedQualifier(std::string v);
     virtual unsigned int getArgumentCount() const { return 11; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_ENTITY; case 8: return IfcUtil::Argument_ENTITY; case 9: return IfcUtil::Argument_ENUMERATION; case 10: return IfcUtil::Argument_STRING; } return IfcConstraint::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; case 9: return IfcUtil::Argument_ENUMERATION; case 10: return IfcUtil::Argument_STRING; } return IfcConstraint::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::IfcMetric; case 8: return Type::IfcMetric; case 9: return Type::IfcObjectiveEnum; case 10: return Type::IfcLabel; } return IfcConstraint::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "BenchmarkValues"; case 8: return "ResultValues"; case 9: return "ObjectiveQualifier"; case 10: return "UserDefinedQualifier"; } return IfcConstraint::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9324,7 +9324,7 @@ public:
     IfcTemplatedEntityList< IfcAddress >::ptr Addresses() const;
     void setAddresses(IfcTemplatedEntityList< IfcAddress >::ptr v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY_LIST; case 4: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcLabel; case 2: return Type::IfcText; case 3: return Type::IfcActorRole; case 4: return Type::IfcAddress; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Id"; case 1: return "Name"; case 2: return "Description"; case 3: return "Roles"; case 4: return "Addresses"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9361,7 +9361,7 @@ public:
     IfcTemplatedEntityList< IfcOrganization >::ptr RelatedOrganizations() const;
     void setRelatedOrganizations(IfcTemplatedEntityList< IfcOrganization >::ptr v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcOrganization; case 3: return Type::IfcOrganization; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingOrganization"; case 3: return "RelatedOrganizations"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9417,7 +9417,7 @@ public:
     int CreationDate() const;
     void setCreationDate(int v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_ENUMERATION; case 4: return IfcUtil::Argument_INT; case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_INT; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_ENUMERATION; case 4: return IfcUtil::Argument_INT; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_INT; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPersonAndOrganization; case 1: return Type::IfcApplication; case 2: return Type::IfcStateEnum; case 3: return Type::IfcChangeActionEnum; case 4: return Type::IfcTimeStamp; case 5: return Type::IfcPersonAndOrganization; case 6: return Type::IfcApplication; case 7: return Type::IfcTimeStamp; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "OwningUser"; case 1: return "OwningApplication"; case 2: return "State"; case 3: return "ChangeAction"; case 4: return "LastModifiedDate"; case 5: return "LastModifyingUser"; case 6: return "LastModifyingApplication"; case 7: return "CreationDate"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9485,7 +9485,7 @@ public:
     IfcTemplatedEntityList< IfcAddress >::ptr Addresses() const;
     void setAddresses(IfcTemplatedEntityList< IfcAddress >::ptr v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_VECTOR_STRING; case 4: return IfcUtil::Argument_VECTOR_STRING; case 5: return IfcUtil::Argument_VECTOR_STRING; case 6: return IfcUtil::Argument_ENTITY_LIST; case 7: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 4: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 5: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 6: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcLabel; case 2: return Type::IfcLabel; case 3: return Type::IfcLabel; case 4: return Type::IfcLabel; case 5: return Type::IfcLabel; case 6: return Type::IfcActorRole; case 7: return Type::IfcAddress; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Id"; case 1: return "FamilyName"; case 2: return "GivenName"; case 3: return "MiddleNames"; case 4: return "PrefixTitles"; case 5: return "SuffixTitles"; case 6: return "Roles"; case 7: return "Addresses"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9516,7 +9516,7 @@ public:
     IfcTemplatedEntityList< IfcActorRole >::ptr Roles() const;
     void setRoles(IfcTemplatedEntityList< IfcActorRole >::ptr v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPerson; case 1: return Type::IfcOrganization; case 2: return Type::IfcActorRole; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ThePerson"; case 1: return "TheOrganization"; case 2: return "Roles"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9572,7 +9572,7 @@ public:
     IfcNamedUnit* Unit() const;
     void setUnit(IfcNamedUnit* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; } return IfcPhysicalQuantity::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPhysicalQuantity::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcNamedUnit; } return IfcPhysicalQuantity::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "Unit"; } return IfcPhysicalQuantity::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9630,7 +9630,7 @@ public:
     std::string Country() const;
     void setCountry(std::string v);
     virtual unsigned int getArgumentCount() const { return 10; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_VECTOR_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_STRING; case 8: return IfcUtil::Argument_STRING; case 9: return IfcUtil::Argument_STRING; } return IfcAddress::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_STRING; case 8: return IfcUtil::Argument_STRING; case 9: return IfcUtil::Argument_STRING; } return IfcAddress::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcLabel; case 4: return Type::IfcLabel; case 5: return Type::IfcLabel; case 6: return Type::IfcLabel; case 7: return Type::IfcLabel; case 8: return Type::IfcLabel; case 9: return Type::IfcLabel; } return IfcAddress::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "InternalLocation"; case 4: return "AddressLines"; case 5: return "PostalBox"; case 6: return "Town"; case 7: return "Region"; case 8: return "PostalCode"; case 9: return "Country"; } return IfcAddress::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9760,7 +9760,7 @@ public:
     std::string Identifier() const;
     void setIdentifier(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_LIST; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcLayeredItem; case 3: return Type::IfcIdentifier; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "AssignedItems"; case 3: return "Identifier"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9803,7 +9803,7 @@ public:
     IfcEntityList::ptr LayerStyles() const;
     void setLayerStyles(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_BOOL; case 5: return IfcUtil::Argument_BOOL; case 6: return IfcUtil::Argument_BOOL; case 7: return IfcUtil::Argument_ENTITY_LIST; } return IfcPresentationLayerAssignment::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_BOOL; case 5: return IfcUtil::Argument_BOOL; case 6: return IfcUtil::Argument_BOOL; case 7: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcPresentationLayerAssignment::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::UNDEFINED; case 5: return Type::UNDEFINED; case 6: return Type::UNDEFINED; case 7: return Type::IfcPresentationStyleSelect; } return IfcPresentationLayerAssignment::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "LayerOn"; case 5: return "LayerFrozen"; case 6: return "LayerBlocked"; case 7: return "LayerStyles"; } return IfcPresentationLayerAssignment::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9849,7 +9849,7 @@ public:
     IfcEntityList::ptr Styles() const;
     void setStyles(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPresentationStyleSelect; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Styles"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -9893,7 +9893,7 @@ public:
     IfcTemplatedEntityList< IfcRepresentation >::ptr Representations() const;
     void setRepresentations(IfcTemplatedEntityList< IfcRepresentation >::ptr v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcRepresentation; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "Representations"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -10150,7 +10150,7 @@ public:
     IfcProfileDef* ProfileDefinition() const;
     void setProfileDefinition(IfcProfileDef* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcProfileDef; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ProfileName"; case 1: return "ProfileDefinition"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -10205,7 +10205,7 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcConstraint; case 1: return Type::IfcProperty; case 2: return Type::IfcLabel; case 3: return Type::IfcText; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingConstraint"; case 1: return "RelatedProperties"; case 2: return "Name"; case 3: return "Description"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -10246,7 +10246,7 @@ public:
     std::string Expression() const;
     void setExpression(std::string v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcProperty; case 1: return Type::IfcProperty; case 2: return Type::IfcLabel; case 3: return Type::IfcText; case 4: return Type::IfcText; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DependingProperty"; case 1: return "DependantProperty"; case 2: return "Name"; case 3: return "Description"; case 4: return "Expression"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -10317,7 +10317,7 @@ public:
     IfcUnit* Unit() const;
     void setUnit(IfcUnit* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_LIST; case 2: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcValue; case 2: return Type::IfcUnit; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "EnumerationValues"; case 2: return "Unit"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -10476,7 +10476,7 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDocumentSelect; case 1: return Type::IfcAppliedValue; case 2: return Type::IfcLabel; case 3: return Type::IfcText; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ReferencedDocument"; case 1: return "ReferencingValues"; case 2: return "Name"; case 3: return "Description"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -10617,7 +10617,7 @@ public:
     IfcTemplatedEntityList< IfcRepresentationItem >::ptr Items() const;
     void setItems(IfcTemplatedEntityList< IfcRepresentationItem >::ptr v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcRepresentationContext; case 1: return Type::IfcLabel; case 2: return Type::IfcLabel; case 3: return Type::IfcRepresentationItem; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ContextOfItems"; case 1: return "RepresentationIdentifier"; case 2: return "RepresentationType"; case 3: return "Items"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -10735,7 +10735,7 @@ public:
     IfcRepresentation* MappedRepresentation() const;
     void setMappedRepresentation(IfcRepresentation* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAxis2Placement; case 1: return Type::IfcRepresentation; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MappingOrigin"; case 1: return "MappedRepresentation"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -10812,7 +10812,7 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcGloballyUniqueId; case 1: return Type::IfcOwnerHistory; case 2: return Type::IfcLabel; case 3: return Type::IfcText; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "GlobalId"; case 1: return "OwnerHistory"; case 2: return "Name"; case 3: return "Description"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -10873,7 +10873,7 @@ public:
     IfcProfileDef* EndProfile() const;
     void setEndProfile(IfcProfileDef* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSectionTypeEnum; case 1: return Type::IfcProfileDef; case 2: return Type::IfcProfileDef; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SectionType"; case 1: return "StartProfile"; case 2: return "EndProfile"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -10914,7 +10914,7 @@ public:
     IfcTemplatedEntityList< IfcReinforcementBarProperties >::ptr CrossSectionReinforcementDefinitions() const;
     void setCrossSectionReinforcementDefinitions(IfcTemplatedEntityList< IfcReinforcementBarProperties >::ptr v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_ENUMERATION; case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_ENUMERATION; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLengthMeasure; case 1: return Type::IfcLengthMeasure; case 2: return Type::IfcLengthMeasure; case 3: return Type::IfcReinforcingBarRoleEnum; case 4: return Type::IfcSectionProperties; case 5: return Type::IfcReinforcementBarProperties; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "LongitudinalStartPosition"; case 1: return "LongitudinalEndPosition"; case 2: return "TransversePosition"; case 3: return "ReinforcementRole"; case 4: return "SectionDefinition"; case 5: return "CrossSectionReinforcementDefinitions"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -10988,7 +10988,7 @@ public:
     IfcProductDefinitionShape* PartOfProductDefinitionShape() const;
     void setPartOfProductDefinitionShape(IfcProductDefinitionShape* v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_BOOL; case 4: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_BOOL; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcShapeModel; case 1: return Type::IfcLabel; case 2: return Type::IfcText; case 3: return Type::UNDEFINED; case 4: return Type::IfcProductDefinitionShape; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ShapeRepresentations"; case 1: return "Name"; case 2: return "Description"; case 3: return "ProductDefinitional"; case 4: return "PartOfProductDefinitionShape"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11360,7 +11360,7 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; case 2: return IfcUtil::Argument_STRING; } return IfcRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; } return IfcRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcRepresentationItem; case 1: return Type::IfcPresentationStyleAssignment; case 2: return Type::IfcLabel; } return IfcRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Item"; case 1: return "Styles"; case 2: return "Name"; } return IfcRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11408,7 +11408,7 @@ public:
     IfcEntityList::ptr Styles() const;
     void setStyles(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENUMERATION; case 2: return IfcUtil::Argument_ENTITY_LIST; } return IfcPresentationStyle::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENUMERATION; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcPresentationStyle::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcSurfaceSide; case 2: return Type::IfcSurfaceStyleElementSelect; } return IfcPresentationStyle::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "Side"; case 2: return "Styles"; } return IfcPresentationStyle::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11449,7 +11449,7 @@ public:
     IfcColourRgb* ReflectanceColour() const;
     void setReflectanceColour(IfcColourRgb* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcColourRgb; case 1: return Type::IfcColourRgb; case 2: return Type::IfcColourRgb; case 3: return Type::IfcColourRgb; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DiffuseTransmissionColour"; case 1: return "DiffuseReflectionColour"; case 2: return "TransmissionColour"; case 3: return "ReflectanceColour"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11502,7 +11502,7 @@ public:
     IfcColourRgb* SurfaceColour() const;
     void setSurfaceColour(IfcColourRgb* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcColourRgb; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SurfaceColour"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11537,7 +11537,7 @@ public:
     IfcTemplatedEntityList< IfcSurfaceTexture >::ptr Textures() const;
     void setTextures(IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurfaceTexture; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Textures"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11658,7 +11658,7 @@ public:
     IfcCartesianTransformationOperator2D* TextureTransform() const;
     void setTextureTransform(IfcCartesianTransformationOperator2D* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_BOOL; case 1: return IfcUtil::Argument_BOOL; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_BOOL; case 1: return IfcUtil::Argument_BOOL; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; case 1: return Type::UNDEFINED; case 2: return Type::IfcSurfaceTextureEnum; case 3: return Type::IfcCartesianTransformationOperator2D; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RepeatS"; case 1: return "RepeatT"; case 2: return "TextureType"; case 3: return "TextureTransform"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11680,7 +11680,7 @@ public:
     IfcSymbolStyleSelect* StyleOfSymbol() const;
     void setStyleOfSymbol(IfcSymbolStyleSelect* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY; } return IfcPresentationStyle::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPresentationStyle::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcSymbolStyleSelect; } return IfcPresentationStyle::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "StyleOfSymbol"; } return IfcPresentationStyle::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11715,7 +11715,7 @@ public:
     IfcTemplatedEntityList< IfcTableRow >::ptr Rows() const;
     void setRows(IfcTemplatedEntityList< IfcTableRow >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; case 1: return Type::IfcTableRow; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Rows"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11748,7 +11748,7 @@ public:
     bool IsHeading() const;
     void setIsHeading(bool v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; case 1: return IfcUtil::Argument_BOOL; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_BOOL; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcValue; case 1: return Type::UNDEFINED; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RowCells"; case 1: return "IsHeading"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11797,7 +11797,7 @@ public:
     std::string WWWHomePageURL() const;
     void setWWWHomePageURL(std::string v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_VECTOR_STRING; case 4: return IfcUtil::Argument_VECTOR_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_VECTOR_STRING; case 7: return IfcUtil::Argument_STRING; } return IfcAddress::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 4: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 7: return IfcUtil::Argument_STRING; } return IfcAddress::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcLabel; case 4: return Type::IfcLabel; case 5: return Type::IfcLabel; case 6: return Type::IfcLabel; case 7: return Type::IfcLabel; } return IfcAddress::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "TelephoneNumbers"; case 4: return "FacsimileNumbers"; case 5: return "PagerNumber"; case 6: return "ElectronicMailAddresses"; case 7: return "WWWHomePageURL"; } return IfcAddress::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11858,7 +11858,7 @@ public:
     IfcTextFontSelect* TextFontStyle() const;
     void setTextFontStyle(IfcTextFontSelect* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; } return IfcPresentationStyle::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPresentationStyle::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcCharacterStyleSelect; case 2: return Type::IfcTextStyleSelect; case 3: return Type::IfcTextFontSelect; } return IfcPresentationStyle::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "TextCharacterAppearance"; case 2: return "TextStyle"; case 3: return "TextFontStyle"; } return IfcPresentationStyle::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11963,7 +11963,7 @@ public:
     IfcSizeSelect* FontSize() const;
     void setFontSize(IfcSizeSelect* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_VECTOR_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_ENTITY; } return IfcPreDefinedTextFont::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPreDefinedTextFont::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcTextFontName; case 2: return Type::IfcFontStyle; case 3: return Type::IfcFontVariant; case 4: return Type::IfcFontWeight; case 5: return Type::IfcSizeSelect; } return IfcPreDefinedTextFont::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "FontFamily"; case 2: return "FontStyle"; case 3: return "FontVariant"; case 4: return "FontWeight"; case 5: return "FontSize"; } return IfcPreDefinedTextFont::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12002,7 +12002,7 @@ public:
     IfcColour* BackgroundColour() const;
     void setBackgroundColour(IfcColour* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcColour; case 1: return Type::IfcColour; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Colour"; case 1: return "BackgroundColour"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12065,7 +12065,7 @@ public:
     IfcSizeSelect* LineHeight() const;
     void setLineHeight(IfcSizeSelect* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY; case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSizeSelect; case 1: return Type::IfcTextAlignment; case 2: return Type::IfcTextDecoration; case 3: return Type::IfcSizeSelect; case 4: return Type::IfcSizeSelect; case 5: return Type::IfcTextTransformation; case 6: return Type::IfcSizeSelect; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TextIndent"; case 1: return "TextAlign"; case 2: return "TextDecoration"; case 3: return "LetterSpacing"; case 4: return "WordSpacing"; case 5: return "TextTransform"; case 6: return "LineHeight"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12121,7 +12121,7 @@ public:
     IfcSizeSelect* CharacterSpacing() const;
     void setCharacterSpacing(IfcSizeSelect* v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPositiveLengthMeasure; case 1: return Type::IfcPositiveLengthMeasure; case 2: return Type::IfcPlaneAngleMeasure; case 3: return Type::IfcPlaneAngleMeasure; case 4: return Type::IfcSizeSelect; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BoxHeight"; case 1: return "BoxWidth"; case 2: return "BoxSlantAngle"; case 3: return "BoxRotateAngle"; case 4: return "CharacterSpacing"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12197,7 +12197,7 @@ public:
     IfcEntityList::ptr Parameter() const;
     void setParameter(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_LIST; } return IfcTextureCoordinate::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcTextureCoordinate::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcSimpleValue; } return IfcTextureCoordinate::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Mode"; case 1: return "Parameter"; } return IfcTextureCoordinate::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12264,7 +12264,7 @@ public:
     IfcTemplatedEntityList< IfcVertexBasedTextureMap >::ptr TextureMaps() const;
     void setTextureMaps(IfcTemplatedEntityList< IfcVertexBasedTextureMap >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } return IfcTextureCoordinate::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcTextureCoordinate::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcVertexBasedTextureMap; } return IfcTextureCoordinate::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TextureMaps"; } return IfcTextureCoordinate::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12308,7 +12308,7 @@ public:
     std::vector< double > /*[2:2]*/ Coordinates() const;
     void setCoordinates(std::vector< double > /*[2:2]*/ v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_VECTOR_DOUBLE; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcParameterValue; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Coordinates"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12388,7 +12388,7 @@ public:
     IfcUnit* Unit() const;
     void setUnit(IfcUnit* v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; case 4: return IfcUtil::Argument_ENUMERATION; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_ENTITY; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENUMERATION; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcDateTimeSelect; case 3: return Type::IfcDateTimeSelect; case 4: return Type::IfcTimeSeriesDataTypeEnum; case 5: return Type::IfcDataOriginEnum; case 6: return Type::IfcLabel; case 7: return Type::IfcUnit; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "StartTime"; case 3: return "EndTime"; case 4: return "TimeSeriesDataType"; case 5: return "DataOrigin"; case 6: return "UserDefinedDataOrigin"; case 7: return "Unit"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12408,7 +12408,7 @@ public:
     IfcEntityList::ptr TimeSeriesReferences() const;
     void setTimeSeriesReferences(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcTimeSeries; case 1: return Type::IfcDocumentSelect; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ReferencedTimeSeries"; case 1: return "TimeSeriesReferences"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12434,7 +12434,7 @@ public:
     IfcEntityList::ptr ListValues() const;
     void setListValues(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcValue; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ListValues"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12523,7 +12523,7 @@ public:
     IfcEntityList::ptr Units() const;
     void setUnits(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcUnit; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Units"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12566,7 +12566,7 @@ public:
     IfcTemplatedEntityList< IfcCartesianPoint >::ptr TexturePoints() const;
     void setTexturePoints(IfcTemplatedEntityList< IfcCartesianPoint >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; case 1: return IfcUtil::Argument_ENTITY_LIST; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcTextureVertex; case 1: return Type::IfcCartesianPoint; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TextureVertices"; case 1: return "TexturePoints"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12592,7 +12592,7 @@ public:
     IfcPoint* VertexGeometry() const;
     void setVertexGeometry(IfcPoint* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; } return IfcVertex::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcVertex::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPoint; } return IfcVertex::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "VertexGeometry"; } return IfcVertex::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12671,7 +12671,7 @@ public:
     std::vector< double > /*[2:3]*/ OffsetDistances() const;
     void setOffsetDistances(std::vector< double > /*[2:3]*/ v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; case 1: return IfcUtil::Argument_VECTOR_DOUBLE; } throw IfcParse::IfcException("argument out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } throw IfcParse::IfcException("argument out of range"); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcGridAxis; case 1: return Type::IfcLengthMeasure; } throw IfcParse::IfcException("argument out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "IntersectingAxes"; case 1: return "OffsetDistances"; } throw IfcParse::IfcException("argument out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12809,7 +12809,7 @@ public:
     IfcCurve* OuterCurve() const;
     void setOuterCurve(IfcCurve* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; } return IfcProfileDef::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcProfileDef::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcCurve; } return IfcProfileDef::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "OuterCurve"; } return IfcProfileDef::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12841,7 +12841,7 @@ public:
     IfcBoundedCurve* Curve() const;
     void setCurve(IfcBoundedCurve* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; } return IfcProfileDef::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcProfileDef::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcBoundedCurve; } return IfcProfileDef::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "Curve"; } return IfcProfileDef::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12877,7 +12877,7 @@ public:
     IfcTemplatedEntityList< IfcCurve >::ptr InnerCurves() const;
     void setInnerCurves(IfcTemplatedEntityList< IfcCurve >::ptr v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_ENTITY_LIST; } return IfcArbitraryClosedProfileDef::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcArbitraryClosedProfileDef::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcCurve; } return IfcArbitraryClosedProfileDef::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "InnerCurves"; } return IfcArbitraryClosedProfileDef::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -12992,7 +12992,7 @@ public:
     IfcClassification* ReferencedSource() const;
     void setReferencedSource(IfcClassification* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_ENTITY; } return IfcExternalReference::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcExternalReference::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcClassification; } return IfcExternalReference::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "ReferencedSource"; } return IfcExternalReference::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13055,7 +13055,7 @@ public:
     IfcTemplatedEntityList< IfcProperty >::ptr HasProperties() const;
     void setHasProperties(IfcTemplatedEntityList< IfcProperty >::ptr v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY_LIST; } return IfcProperty::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcProperty::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcIdentifier; case 3: return Type::IfcProperty; } return IfcProperty::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "UsageName"; case 3: return "HasProperties"; } return IfcProperty::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13113,7 +13113,7 @@ public:
     std::string Label() const;
     void setLabel(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_LIST; case 3: return IfcUtil::Argument_STRING; } return IfcProfileDef::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_STRING; } return IfcProfileDef::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcProfileDef; case 3: return Type::IfcLabel; } return IfcProfileDef::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "Profiles"; case 3: return "Label"; } return IfcProfileDef::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13139,7 +13139,7 @@ public:
     IfcTemplatedEntityList< IfcFace >::ptr CfsFaces() const;
     void setCfsFaces(IfcTemplatedEntityList< IfcFace >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcFace; } return IfcTopologicalRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "CfsFaces"; } return IfcTopologicalRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13174,7 +13174,7 @@ public:
     IfcCurveOrEdgeCurve* CurveOnRelatedElement() const;
     void setCurveOnRelatedElement(IfcCurveOrEdgeCurve* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } return IfcConnectionGeometry::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcConnectionGeometry::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurveOrEdgeCurve; case 1: return Type::IfcCurveOrEdgeCurve; } return IfcConnectionGeometry::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "CurveOnRelatingElement"; case 1: return "CurveOnRelatedElement"; } return IfcConnectionGeometry::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13313,7 +13313,7 @@ public:
     IfcMeasureWithUnit* ConversionFactor() const;
     void setConversionFactor(IfcMeasureWithUnit* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY; } return IfcNamedUnit::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcNamedUnit::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcLabel; case 3: return Type::IfcMeasureWithUnit; } return IfcNamedUnit::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "Name"; case 3: return "ConversionFactor"; } return IfcNamedUnit::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13359,7 +13359,7 @@ public:
     IfcColour* CurveColour() const;
     void setCurveColour(IfcColour* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; } return IfcPresentationStyle::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPresentationStyle::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcCurveFontOrScaledCurveFontSelect; case 2: return Type::IfcSizeSelect; case 3: return Type::IfcColour; } return IfcPresentationStyle::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "CurveFont"; case 2: return "CurveWidth"; case 3: return "CurveColour"; } return IfcPresentationStyle::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13468,7 +13468,7 @@ public:
     std::string Label() const;
     void setLabel(std::string v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; case 4: return IfcUtil::Argument_STRING; } return IfcProfileDef::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_STRING; } return IfcProfileDef::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcProfileDef; case 3: return Type::IfcCartesianTransformationOperator2D; case 4: return Type::IfcLabel; } return IfcProfileDef::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "ParentProfile"; case 3: return "Operator"; case 4: return "Label"; } return IfcProfileDef::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13617,7 +13617,7 @@ public:
     IfcVertex* EdgeEnd() const;
     void setEdgeEnd(IfcVertex* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcVertex; case 1: return Type::IfcVertex; } return IfcTopologicalRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "EdgeStart"; case 1: return "EdgeEnd"; } return IfcTopologicalRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13670,7 +13670,7 @@ public:
     bool SameSense() const;
     void setSameSense(bool v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_BOOL; } return IfcEdge::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_BOOL; } return IfcEdge::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcCurve; case 3: return Type::UNDEFINED; } return IfcEdge::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "EdgeGeometry"; case 3: return "SameSense"; } return IfcEdge::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13727,7 +13727,7 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_LIST; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } return IfcMaterialProperties::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } return IfcMaterialProperties::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcProperty; case 2: return Type::IfcText; case 3: return Type::IfcLabel; } return IfcMaterialProperties::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "ExtendedProperties"; case 2: return "Description"; case 3: return "Name"; } return IfcMaterialProperties::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13788,7 +13788,7 @@ public:
     IfcTemplatedEntityList< IfcFaceBound >::ptr Bounds() const;
     void setBounds(IfcTemplatedEntityList< IfcFaceBound >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcFaceBound; } return IfcTopologicalRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Bounds"; } return IfcTopologicalRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13813,7 +13813,7 @@ public:
     bool Orientation() const;
     void setOrientation(bool v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_BOOL; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_BOOL; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLoop; case 1: return Type::UNDEFINED; } return IfcTopologicalRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Bound"; case 1: return "Orientation"; } return IfcTopologicalRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13888,7 +13888,7 @@ public:
     bool SameSense() const;
     void setSameSense(bool v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_BOOL; } return IfcFace::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_BOOL; } return IfcFace::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcSurface; case 2: return Type::UNDEFINED; } return IfcFace::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "FaceSurface"; case 2: return "SameSense"; } return IfcFace::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13990,7 +13990,7 @@ public:
     IfcEntityList::ptr FillStyles() const;
     void setFillStyles(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_LIST; } return IfcPresentationStyle::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcPresentationStyle::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcFillStyleSelect; } return IfcPresentationStyle::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "FillStyles"; } return IfcPresentationStyle::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14162,7 +14162,7 @@ public:
     IfcDirection* TrueNorth() const;
     void setTrueNorth(IfcDirection* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_INT; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; } return IfcRepresentationContext::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_INT; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRepresentationContext::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcDimensionCount; case 3: return Type::UNDEFINED; case 4: return Type::IfcAxis2Placement; case 5: return Type::IfcDirection; } return IfcRepresentationContext::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "CoordinateSpaceDimension"; case 3: return "Precision"; case 4: return "WorldCoordinateSystem"; case 5: return "TrueNorth"; } return IfcRepresentationContext::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14249,7 +14249,7 @@ public:
     std::string UserDefinedTargetView() const;
     void setUserDefinedTargetView(std::string v);
     virtual unsigned int getArgumentCount() const { return 10; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_ENUMERATION; case 9: return IfcUtil::Argument_STRING; } return IfcGeometricRepresentationContext::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_ENUMERATION; case 9: return IfcUtil::Argument_STRING; } return IfcGeometricRepresentationContext::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 6: return Type::IfcGeometricRepresentationContext; case 7: return Type::IfcPositiveRatioMeasure; case 8: return Type::IfcGeometricProjectionEnum; case 9: return Type::IfcLabel; } return IfcGeometricRepresentationContext::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "ParentContext"; case 7: return "TargetScale"; case 8: return "TargetView"; case 9: return "UserDefinedTargetView"; } return IfcGeometricRepresentationContext::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14273,7 +14273,7 @@ public:
     IfcEntityList::ptr Elements() const;
     void setElements(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcGeometricSetSelect; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Elements"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14342,7 +14342,7 @@ public:
     IfcVirtualGridIntersection* PlacementRefDirection() const;
     void setPlacementRefDirection(IfcVirtualGridIntersection* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } return IfcObjectPlacement::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcObjectPlacement::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcVirtualGridIntersection; case 1: return Type::IfcVirtualGridIntersection; } return IfcObjectPlacement::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "PlacementLocation"; case 1: return "PlacementRefDirection"; } return IfcObjectPlacement::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14377,7 +14377,7 @@ public:
     bool AgreementFlag() const;
     void setAgreementFlag(bool v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_BOOL; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_BOOL; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurface; case 1: return Type::UNDEFINED; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BaseSurface"; case 1: return "AgreementFlag"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14485,7 +14485,7 @@ public:
     IfcTemplatedEntityList< IfcIrregularTimeSeriesValue >::ptr Values() const;
     void setValues(IfcTemplatedEntityList< IfcIrregularTimeSeriesValue >::ptr v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return IfcUtil::Argument_ENTITY_LIST; } return IfcTimeSeries::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcTimeSeries::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 8: return Type::IfcIrregularTimeSeriesValue; } return IfcTimeSeries::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 8: return "Values"; } return IfcTimeSeries::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14525,7 +14525,7 @@ public:
     double Intensity() const;
     void setIntensity(double v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcColourRgb; case 2: return Type::IfcNormalisedRatioMeasure; case 3: return Type::IfcNormalisedRatioMeasure; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "LightColour"; case 2: return "AmbientIntensity"; case 3: return "Intensity"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14573,7 +14573,7 @@ public:
     IfcDirection* Orientation() const;
     void setOrientation(IfcDirection* v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; } return IfcLightSource::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcLightSource::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcDirection; } return IfcLightSource::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "Orientation"; } return IfcLightSource::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14614,7 +14614,7 @@ public:
     IfcLightDistributionDataSourceSelect* LightDistributionDataSource() const;
     void setLightDistributionDataSource(IfcLightDistributionDataSourceSelect* v);
     virtual unsigned int getArgumentCount() const { return 10; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_ENUMERATION; case 9: return IfcUtil::Argument_ENTITY; } return IfcLightSource::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_ENUMERATION; case 9: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcLightSource::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcAxis2Placement3D; case 5: return Type::IfcColourRgb; case 6: return Type::IfcThermodynamicTemperatureMeasure; case 7: return Type::IfcLuminousFluxMeasure; case 8: return Type::IfcLightEmissionSourceEnum; case 9: return Type::IfcLightDistributionDataSourceSelect; } return IfcLightSource::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "Position"; case 5: return "ColourAppearance"; case 6: return "ColourTemperature"; case 7: return "LuminousFlux"; case 8: return "LightEmissionSource"; case 9: return "LightDistributionDataSource"; } return IfcLightSource::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14660,7 +14660,7 @@ public:
     double QuadricAttenuation() const;
     void setQuadricAttenuation(double v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_DOUBLE; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_DOUBLE; } return IfcLightSource::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_DOUBLE; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_DOUBLE; } return IfcLightSource::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcCartesianPoint; case 5: return Type::IfcPositiveLengthMeasure; case 6: return Type::IfcReal; case 7: return Type::IfcReal; case 8: return Type::IfcReal; } return IfcLightSource::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "Position"; case 5: return "Radius"; case 6: return "ConstantAttenuation"; case 7: return "DistanceAttenuation"; case 8: return "QuadricAttenuation"; } return IfcLightSource::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14706,7 +14706,7 @@ public:
     double BeamWidthAngle() const;
     void setBeamWidthAngle(double v);
     virtual unsigned int getArgumentCount() const { return 13; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_ENTITY; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_DOUBLE; } return IfcLightSourcePositional::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_ENTITY_INSTANCE; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_DOUBLE; } return IfcLightSourcePositional::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::IfcDirection; case 10: return Type::IfcReal; case 11: return Type::IfcPositivePlaneAngleMeasure; case 12: return Type::IfcPositivePlaneAngleMeasure; } return IfcLightSourcePositional::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 9: return "Orientation"; case 10: return "ConcentrationExponent"; case 11: return "SpreadAngle"; case 12: return "BeamWidthAngle"; } return IfcLightSourcePositional::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14780,7 +14780,7 @@ public:
     IfcAxis2Placement* RelativePlacement() const;
     void setRelativePlacement(IfcAxis2Placement* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } return IfcObjectPlacement::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcObjectPlacement::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcObjectPlacement; case 1: return Type::IfcAxis2Placement; } return IfcObjectPlacement::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "PlacementRelTo"; case 1: return "RelativePlacement"; } return IfcObjectPlacement::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14859,7 +14859,7 @@ public:
     IfcCartesianTransformationOperator* MappingTarget() const;
     void setMappingTarget(IfcCartesianTransformationOperator* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } return IfcRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcRepresentationMap; case 1: return Type::IfcCartesianTransformationOperator; } return IfcRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MappingSource"; case 1: return "MappingTarget"; } return IfcRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14906,7 +14906,7 @@ public:
     IfcMaterial* RepresentedMaterial() const;
     void setRepresentedMaterial(IfcMaterial* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_ENTITY; } return IfcProductRepresentation::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcProductRepresentation::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcMaterial; } return IfcProductRepresentation::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "RepresentedMaterial"; } return IfcProductRepresentation::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15037,7 +15037,7 @@ public:
     IfcVector* RepeatFactor() const;
     void setRepeatFactor(IfcVector* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcVector; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RepeatFactor"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15137,7 +15137,7 @@ public:
     bool Orientation() const;
     void setOrientation(bool v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_BOOL; } return IfcEdge::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_BOOL; } return IfcEdge::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcEdge; case 3: return Type::UNDEFINED; } return IfcEdge::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "EdgeElement"; case 3: return "Orientation"; } return IfcEdge::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15196,7 +15196,7 @@ public:
     IfcAxis2Placement2D* Position() const;
     void setPosition(IfcAxis2Placement2D* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; } return IfcProfileDef::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcProfileDef::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcAxis2Placement2D; } return IfcProfileDef::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "Position"; } return IfcProfileDef::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15227,7 +15227,7 @@ public:
     IfcTemplatedEntityList< IfcOrientedEdge >::ptr EdgeList() const;
     void setEdgeList(IfcTemplatedEntityList< IfcOrientedEdge >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcOrientedEdge; } return IfcTopologicalRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "EdgeList"; } return IfcTopologicalRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15266,7 +15266,7 @@ public:
     std::string Usage() const;
     void setUsage(std::string v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_LIST; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_STRING; } return IfcPhysicalQuantity::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_STRING; } return IfcPhysicalQuantity::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcPhysicalQuantity; case 3: return Type::IfcLabel; case 4: return Type::IfcLabel; case 5: return Type::IfcLabel; } return IfcPhysicalQuantity::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "HasQuantities"; case 3: return "Discrimination"; case 4: return "Quality"; case 5: return "Usage"; } return IfcPhysicalQuantity::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15309,8 +15309,10 @@ public:
     /// Flat list of hexadecimal values, each describing one pixel by 1, 2, 3, or 4 components.
     /// 
     /// IFC2x Edition 3 CHANGE  The data type has been changed from STRING to BINARY.
+    std::vector< boost::dynamic_bitset<> > /*[1:?]*/ Pixel() const;
+    void setPixel(std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_INT; case 5: return IfcUtil::Argument_INT; case 6: return IfcUtil::Argument_INT; case 7: return IfcUtil::Argument_UNKNOWN; } return IfcSurfaceTexture::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_INT; case 5: return IfcUtil::Argument_INT; case 6: return IfcUtil::Argument_INT; case 7: return IfcUtil::Argument_AGGREGATE_OF_BINARY; } return IfcSurfaceTexture::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcInteger; case 5: return Type::IfcInteger; case 6: return Type::IfcInteger; case 7: return Type::UNDEFINED; } return IfcSurfaceTexture::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "Width"; case 5: return "Height"; case 6: return "ColourComponents"; case 7: return "Pixel"; } return IfcSurfaceTexture::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15318,7 +15320,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcPixelTexture (IfcAbstractEntity* e);
-    IfcPixelTexture (bool v1_RepeatS, bool v2_RepeatT, IfcSurfaceTextureEnum::IfcSurfaceTextureEnum v3_TextureType, IfcCartesianTransformationOperator2D* v4_TextureTransform, int v5_Width, int v6_Height, int v7_ColourComponents);
+    IfcPixelTexture (bool v1_RepeatS, bool v2_RepeatT, IfcSurfaceTextureEnum::IfcSurfaceTextureEnum v3_TextureType, IfcCartesianTransformationOperator2D* v4_TextureTransform, int v5_Width, int v6_Height, int v7_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v8_Pixel);
     typedef IfcTemplatedEntityList< IfcPixelTexture > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A placement entity defines the local environment for the definition of a geometry item. It locates the item to be defined and, in the case of the axis placement subtypes, gives its orientation. 
@@ -15336,7 +15338,7 @@ public:
     IfcCartesianPoint* Location() const;
     void setLocation(IfcCartesianPoint* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCartesianPoint; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Location"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15409,7 +15411,7 @@ public:
     double PointParameter() const;
     void setPointParameter(double v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_DOUBLE; } return IfcPoint::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; } return IfcPoint::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurve; case 1: return Type::IfcParameterValue; } return IfcPoint::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisCurve"; case 1: return "PointParameter"; } return IfcPoint::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15441,7 +15443,7 @@ public:
     double PointParameterV() const;
     void setPointParameterV(double v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; } return IfcPoint::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; } return IfcPoint::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurface; case 1: return Type::IfcParameterValue; case 2: return Type::IfcParameterValue; } return IfcPoint::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisSurface"; case 1: return "PointParameterU"; case 2: return "PointParameterV"; } return IfcPoint::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15497,7 +15499,7 @@ public:
     IfcTemplatedEntityList< IfcCartesianPoint >::ptr Polygon() const;
     void setPolygon(IfcTemplatedEntityList< IfcCartesianPoint >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } return IfcLoop::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcLoop::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCartesianPoint; } return IfcLoop::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Polygon"; } return IfcLoop::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15575,7 +15577,7 @@ public:
     IfcBoundedCurve* PolygonalBoundary() const;
     void setPolygonalBoundary(IfcBoundedCurve* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; } return IfcHalfSpaceSolid::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcHalfSpaceSolid::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcAxis2Placement3D; case 3: return Type::IfcBoundedCurve; } return IfcHalfSpaceSolid::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "Position"; case 3: return "PolygonalBoundary"; } return IfcHalfSpaceSolid::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15806,7 +15808,7 @@ public:
     IfcUnit* Unit() const;
     void setUnit(IfcUnit* v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; case 4: return IfcUtil::Argument_ENTITY; } return IfcSimpleProperty::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSimpleProperty::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcValue; case 3: return Type::IfcValue; case 4: return Type::IfcUnit; } return IfcSimpleProperty::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "UpperBoundValue"; case 3: return "LowerBoundValue"; case 4: return "Unit"; } return IfcSimpleProperty::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15972,7 +15974,7 @@ public:
     IfcPropertyEnumeration* EnumerationReference() const;
     void setEnumerationReference(IfcPropertyEnumeration* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_LIST; case 3: return IfcUtil::Argument_ENTITY; } return IfcSimpleProperty::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSimpleProperty::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcValue; case 3: return Type::IfcPropertyEnumeration; } return IfcSimpleProperty::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "EnumerationValues"; case 3: return "EnumerationReference"; } return IfcSimpleProperty::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -16061,7 +16063,7 @@ public:
     IfcUnit* Unit() const;
     void setUnit(IfcUnit* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_LIST; case 3: return IfcUtil::Argument_ENTITY; } return IfcSimpleProperty::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSimpleProperty::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcValue; case 3: return Type::IfcUnit; } return IfcSimpleProperty::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "ListValues"; case 3: return "Unit"; } return IfcSimpleProperty::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -16100,7 +16102,7 @@ public:
     IfcObjectReferenceSelect* PropertyReference() const;
     void setPropertyReference(IfcObjectReferenceSelect* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY; } return IfcSimpleProperty::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSimpleProperty::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcLabel; case 3: return Type::IfcObjectReferenceSelect; } return IfcSimpleProperty::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "UsageName"; case 3: return "PropertyReference"; } return IfcSimpleProperty::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -16230,7 +16232,7 @@ public:
     IfcUnit* Unit() const;
     void setUnit(IfcUnit* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; } return IfcSimpleProperty::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSimpleProperty::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcValue; case 3: return Type::IfcUnit; } return IfcSimpleProperty::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "NominalValue"; case 3: return "Unit"; } return IfcSimpleProperty::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -16415,7 +16417,7 @@ public:
     IfcUnit* DefinedUnit() const;
     void setDefinedUnit(IfcUnit* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_LIST; case 3: return IfcUtil::Argument_ENTITY_LIST; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; } return IfcSimpleProperty::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSimpleProperty::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcValue; case 3: return Type::IfcValue; case 4: return Type::IfcText; case 5: return Type::IfcUnit; case 6: return Type::IfcUnit; } return IfcSimpleProperty::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "DefiningValues"; case 3: return "DefinedValues"; case 4: return "Expression"; case 5: return "DefiningUnit"; case 6: return "DefinedUnit"; } return IfcSimpleProperty::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -16494,7 +16496,7 @@ public:
     IfcTemplatedEntityList< IfcTimeSeriesValue >::ptr Values() const;
     void setValues(IfcTemplatedEntityList< IfcTimeSeriesValue >::ptr v);
     virtual unsigned int getArgumentCount() const { return 10; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return IfcUtil::Argument_DOUBLE; case 9: return IfcUtil::Argument_ENTITY_LIST; } return IfcTimeSeries::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return IfcUtil::Argument_DOUBLE; case 9: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcTimeSeries::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 8: return Type::IfcTimeMeasure; case 9: return Type::IfcTimeSeriesValue; } return IfcTimeSeries::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 8: return "TimeStep"; case 9: return "Values"; } return IfcTimeSeries::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -16542,7 +16544,7 @@ public:
     IfcTemplatedEntityList< IfcSectionReinforcementProperties >::ptr ReinforcementSectionDefinitions() const;
     void setReinforcementSectionDefinitions(IfcTemplatedEntityList< IfcSectionReinforcementProperties >::ptr v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_ENTITY_LIST; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcLabel; case 5: return Type::IfcSectionReinforcementProperties; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "DefinitionType"; case 5: return "ReinforcementSectionDefinitions"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -16694,7 +16696,7 @@ public:
     IfcTemplatedEntityList< IfcAxis2Placement3D >::ptr CrossSectionPositions() const;
     void setCrossSectionPositions(IfcTemplatedEntityList< IfcAxis2Placement3D >::ptr v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; case 2: return IfcUtil::Argument_ENTITY_LIST; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCompositeCurve; case 1: return Type::IfcProfileDef; case 2: return Type::IfcAxis2Placement3D; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SpineCurve"; case 1: return "CrossSections"; case 2: return "CrossSectionPositions"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -16721,7 +16723,7 @@ public:
     IfcMeasureValue* LowerValue() const;
     void setLowerValue(IfcMeasureValue* v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENUMERATION; case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENUMERATION; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcServiceLifeFactorTypeEnum; case 5: return Type::IfcMeasureValue; case 6: return Type::IfcMeasureValue; case 7: return Type::IfcMeasureValue; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "PredefinedType"; case 5: return "UpperValue"; case 6: return "MostUsedValue"; case 7: return "LowerValue"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -16749,7 +16751,7 @@ public:
     IfcEntityList::ptr SbsmBoundary() const;
     void setSbsmBoundary(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcShell; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SbsmBoundary"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -16829,7 +16831,7 @@ public:
     IfcTemplatedEntityList< IfcSoundValue >::ptr SoundValues() const;
     void setSoundValues(IfcTemplatedEntityList< IfcSoundValue >::ptr v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_BOOL; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_ENTITY_LIST; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_BOOL; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcBoolean; case 5: return Type::IfcSoundScaleEnum; case 6: return Type::IfcSoundValue; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "IsAttenuating"; case 5: return "SoundScale"; case 6: return "SoundValues"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -16854,7 +16856,7 @@ public:
     IfcDerivedMeasureValue* SoundLevelSingleValue() const;
     void setSoundLevelSingleValue(IfcDerivedMeasureValue* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_DOUBLE; case 6: return IfcUtil::Argument_ENTITY; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_DOUBLE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcTimeSeries; case 5: return Type::IfcFrequencyMeasure; case 6: return Type::IfcDerivedMeasureValue; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "SoundLevelTimeSeries"; case 5: return "Frequency"; case 6: return "SoundLevelSingleValue"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -16901,7 +16903,7 @@ public:
     IfcThermalLoadTypeEnum::IfcThermalLoadTypeEnum ThermalLoadType() const;
     void setThermalLoadType(IfcThermalLoadTypeEnum::IfcThermalLoadTypeEnum v);
     virtual unsigned int getArgumentCount() const { return 14; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_ENUMERATION; case 7: return IfcUtil::Argument_STRING; case 8: return IfcUtil::Argument_DOUBLE; case 9: return IfcUtil::Argument_DOUBLE; case 10: return IfcUtil::Argument_ENTITY; case 11: return IfcUtil::Argument_STRING; case 12: return IfcUtil::Argument_STRING; case 13: return IfcUtil::Argument_ENUMERATION; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_ENUMERATION; case 7: return IfcUtil::Argument_STRING; case 8: return IfcUtil::Argument_DOUBLE; case 9: return IfcUtil::Argument_DOUBLE; case 10: return IfcUtil::Argument_ENTITY_INSTANCE; case 11: return IfcUtil::Argument_STRING; case 12: return IfcUtil::Argument_STRING; case 13: return IfcUtil::Argument_ENUMERATION; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcPositiveRatioMeasure; case 5: return Type::IfcThermalLoadSourceEnum; case 6: return Type::IfcPropertySourceEnum; case 7: return Type::IfcText; case 8: return Type::IfcPowerMeasure; case 9: return Type::IfcPowerMeasure; case 10: return Type::IfcTimeSeries; case 11: return Type::IfcLabel; case 12: return Type::IfcLabel; case 13: return Type::IfcThermalLoadTypeEnum; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "ApplicableValueRatio"; case 5: return "ThermalLoadSource"; case 6: return "PropertySource"; case 7: return "SourceDescription"; case 8: return "MaximumValue"; case 9: return "MinimumValue"; case 10: return "ThermalLoadTimeSeriesValues"; case 11: return "UserDefinedThermalLoadSource"; case 12: return "UserDefinedPropertySource"; case 13: return "ThermalLoadType"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -17269,7 +17271,7 @@ public:
     IfcEdge* ParentEdge() const;
     void setParentEdge(IfcEdge* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; } return IfcEdge::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcEdge::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcEdge; } return IfcEdge::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "ParentEdge"; } return IfcEdge::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -17401,7 +17403,7 @@ public:
     IfcReflectanceMethodEnum::IfcReflectanceMethodEnum ReflectanceMethod() const;
     void setReflectanceMethod(IfcReflectanceMethodEnum::IfcReflectanceMethodEnum v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY; case 8: return IfcUtil::Argument_ENUMERATION; } return IfcSurfaceStyleShading::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_ENUMERATION; } return IfcSurfaceStyleShading::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcNormalisedRatioMeasure; case 2: return Type::IfcColourOrFactor; case 3: return Type::IfcColourOrFactor; case 4: return Type::IfcColourOrFactor; case 5: return Type::IfcColourOrFactor; case 6: return Type::IfcColourOrFactor; case 7: return Type::IfcSpecularHighlightSelect; case 8: return Type::IfcReflectanceMethodEnum; } return IfcSurfaceStyleShading::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "Transparency"; case 2: return "DiffuseColour"; case 3: return "TransmissionColour"; case 4: return "DiffuseTransmissionColour"; case 5: return "ReflectionColour"; case 6: return "SpecularColour"; case 7: return "SpecularHighlight"; case 8: return "ReflectanceMethod"; } return IfcSurfaceStyleShading::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -17439,7 +17441,7 @@ public:
     IfcAxis2Placement3D* Position() const;
     void setPosition(IfcAxis2Placement3D* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } return IfcSolidModel::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSolidModel::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcProfileDef; case 1: return Type::IfcAxis2Placement3D; } return IfcSolidModel::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SweptArea"; case 1: return "Position"; } return IfcSolidModel::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -17527,7 +17529,7 @@ public:
     double EndParam() const;
     void setEndParam(double v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_DOUBLE; } return IfcSolidModel::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_DOUBLE; } return IfcSolidModel::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurve; case 1: return Type::IfcPositiveLengthMeasure; case 2: return Type::IfcPositiveLengthMeasure; case 3: return Type::IfcParameterValue; case 4: return Type::IfcParameterValue; } return IfcSolidModel::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Directrix"; case 1: return "Radius"; case 2: return "InnerRadius"; case 3: return "StartParam"; case 4: return "EndParam"; } return IfcSolidModel::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -17552,7 +17554,7 @@ public:
     IfcAxis2Placement3D* Position() const;
     void setPosition(IfcAxis2Placement3D* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } return IfcSurface::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSurface::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcProfileDef; case 1: return Type::IfcAxis2Placement3D; } return IfcSurface::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SweptCurve"; case 1: return "Position"; } return IfcSurface::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -17652,7 +17654,7 @@ public:
     IfcAnnotationCurveOccurrence* AnnotatedCurve() const;
     void setAnnotatedCurve(IfcAnnotationCurveOccurrence* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_ENTITY; } return IfcAnnotationSymbolOccurrence::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcAnnotationSymbolOccurrence::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcAnnotationCurveOccurrence; } return IfcAnnotationSymbolOccurrence::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "AnnotatedCurve"; } return IfcAnnotationSymbolOccurrence::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -17686,7 +17688,7 @@ public:
     IfcTextPath::IfcTextPath Path() const;
     void setPath(IfcTextPath::IfcTextPath v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENUMERATION; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENUMERATION; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPresentableText; case 1: return Type::IfcAxis2Placement; case 2: return Type::IfcTextPath; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Literal"; case 1: return "Placement"; case 2: return "Path"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -17715,7 +17717,7 @@ public:
     std::string BoxAlignment() const;
     void setBoxAlignment(std::string v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_ENTITY; case 4: return IfcUtil::Argument_STRING; } return IfcTextLiteral::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_STRING; } return IfcTextLiteral::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcPlanarExtent; case 4: return Type::IfcBoxAlignment; } return IfcTextLiteral::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "Extent"; case 4: return "BoxAlignment"; } return IfcTextLiteral::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -17804,7 +17806,7 @@ public:
     IfcVector* SecondRepeatFactor() const;
     void setSecondRepeatFactor(IfcVector* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY; } return IfcOneDirectionRepeatFactor::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcOneDirectionRepeatFactor::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcVector; } return IfcOneDirectionRepeatFactor::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "SecondRepeatFactor"; } return IfcOneDirectionRepeatFactor::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -17867,7 +17869,7 @@ public:
     IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr HasPropertySets() const;
     void setHasPropertySets(IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_ENTITY_LIST; } return IfcObjectDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcObjectDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcLabel; case 5: return Type::IfcPropertySetDefinition; } return IfcObjectDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "ApplicableOccurrence"; case 5: return "HasPropertySets"; } return IfcObjectDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -17958,7 +17960,7 @@ public:
     std::string Tag() const;
     void setTag(std::string v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY_LIST; case 7: return IfcUtil::Argument_STRING; } return IfcTypeObject::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_STRING; } return IfcTypeObject::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 6: return Type::IfcRepresentationMap; case 7: return Type::IfcLabel; } return IfcTypeObject::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "RepresentationMaps"; case 7: return "Tag"; } return IfcTypeObject::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18058,7 +18060,7 @@ public:
     double Magnitude() const;
     void setMagnitude(double v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDirection; case 1: return Type::IfcLengthMeasure; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Orientation"; case 1: return "Magnitude"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18087,7 +18089,7 @@ public:
     IfcVertex* LoopVertex() const;
     void setLoopVertex(IfcVertex* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; } return IfcLoop::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcLoop::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcVertex; } return IfcLoop::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "LoopVertex"; } return IfcLoop::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18246,7 +18248,7 @@ public:
     IfcShapeAspect* ShapeAspectStyle() const;
     void setShapeAspectStyle(IfcShapeAspect* v);
     virtual unsigned int getArgumentCount() const { return 13; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_DOUBLE; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_DOUBLE; case 9: return IfcUtil::Argument_DOUBLE; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_ENTITY; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_DOUBLE; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_DOUBLE; case 9: return IfcUtil::Argument_DOUBLE; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcPositiveLengthMeasure; case 5: return Type::IfcPositiveLengthMeasure; case 6: return Type::IfcPositiveLengthMeasure; case 7: return Type::IfcPositiveLengthMeasure; case 8: return Type::IfcNormalisedRatioMeasure; case 9: return Type::IfcNormalisedRatioMeasure; case 10: return Type::IfcNormalisedRatioMeasure; case 11: return Type::IfcNormalisedRatioMeasure; case 12: return Type::IfcShapeAspect; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "LiningDepth"; case 5: return "LiningThickness"; case 6: return "TransomThickness"; case 7: return "MullionThickness"; case 8: return "FirstTransomOffset"; case 9: return "SecondTransomOffset"; case 10: return "FirstMullionOffset"; case 11: return "SecondMullionOffset"; case 12: return "ShapeAspectStyle"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18328,7 +18330,7 @@ public:
     IfcShapeAspect* ShapeAspectStyle() const;
     void setShapeAspectStyle(IfcShapeAspect* v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENUMERATION; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_ENTITY; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENUMERATION; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcWindowPanelOperationEnum; case 5: return Type::IfcWindowPanelPositionEnum; case 6: return Type::IfcPositiveLengthMeasure; case 7: return Type::IfcPositiveLengthMeasure; case 8: return Type::IfcShapeAspect; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "OperationType"; case 5: return "PanelPosition"; case 6: return "FrameDepth"; case 7: return "FrameThickness"; case 8: return "ShapeAspectStyle"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18494,7 +18496,7 @@ public:
     IfcTemplatedEntityList< IfcCurve >::ptr InnerBoundaries() const;
     void setInnerBoundaries(IfcTemplatedEntityList< IfcCurve >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurve; case 1: return Type::IfcCurve; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "OuterBoundary"; case 1: return "InnerBoundaries"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18517,7 +18519,7 @@ public:
     IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum GlobalOrLocal() const;
     void setGlobalOrLocal(IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_ENTITY; case 4: return IfcUtil::Argument_ENUMERATION; } return IfcAnnotationOccurrence::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENUMERATION; } return IfcAnnotationOccurrence::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcPoint; case 4: return Type::IfcGlobalOrLocalEnum; } return IfcAnnotationOccurrence::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "FillStyleTarget"; case 4: return "GlobalOrLocal"; } return IfcAnnotationOccurrence::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18538,7 +18540,7 @@ public:
     IfcTextureCoordinate* TextureCoordinates() const;
     void setTextureCoordinates(IfcTextureCoordinate* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcGeometricRepresentationItem; case 1: return Type::IfcTextureCoordinate; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Item"; case 1: return "TextureCoordinates"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18566,7 +18568,7 @@ public:
     IfcDirection* Axis() const;
     void setAxis(IfcDirection* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY; } return IfcPlacement::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPlacement::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcDirection; } return IfcPlacement::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "Axis"; } return IfcPlacement::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18596,7 +18598,7 @@ public:
     IfcDirection* RefDirection() const;
     void setRefDirection(IfcDirection* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY; } return IfcPlacement::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPlacement::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcDirection; } return IfcPlacement::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "RefDirection"; } return IfcPlacement::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18633,7 +18635,7 @@ public:
     IfcDirection* RefDirection() const;
     void setRefDirection(IfcDirection* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENTITY; } return IfcPlacement::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPlacement::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcDirection; case 2: return Type::IfcDirection; } return IfcPlacement::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "Axis"; case 2: return "RefDirection"; } return IfcPlacement::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18682,7 +18684,7 @@ public:
     IfcBooleanOperand* SecondOperand() const;
     void setSecondOperand(IfcBooleanOperand* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENTITY; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcBooleanOperator; case 1: return Type::IfcBooleanOperand; case 2: return Type::IfcBooleanOperand; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Operator"; case 1: return "FirstOperand"; case 2: return "SecondOperand"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18756,7 +18758,7 @@ public:
     double ZDim() const;
     void setZDim(double v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCartesianPoint; case 1: return Type::IfcPositiveLengthMeasure; case 2: return Type::IfcPositiveLengthMeasure; case 3: return Type::IfcPositiveLengthMeasure; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Corner"; case 1: return "XDim"; case 2: return "YDim"; case 3: return "ZDim"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18803,7 +18805,7 @@ public:
     IfcBoundingBox* Enclosure() const;
     void setEnclosure(IfcBoundingBox* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; } return IfcHalfSpaceSolid::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcHalfSpaceSolid::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcBoundingBox; } return IfcHalfSpaceSolid::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "Enclosure"; } return IfcHalfSpaceSolid::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18884,7 +18886,7 @@ public:
     std::vector< double > /*[1:3]*/ Coordinates() const;
     void setCoordinates(std::vector< double > /*[1:3]*/ v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_VECTOR_DOUBLE; } return IfcPoint::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } return IfcPoint::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLengthMeasure; } return IfcPoint::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Coordinates"; } return IfcPoint::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -18946,7 +18948,7 @@ public:
     double Scale() const;
     void setScale(double v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDirection; case 1: return Type::IfcDirection; case 2: return Type::IfcCartesianPoint; case 3: return Type::UNDEFINED; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Axis1"; case 1: return "Axis2"; case 2: return "LocalOrigin"; case 3: return "Scale"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -19018,7 +19020,7 @@ public:
     IfcDirection* Axis3() const;
     void setAxis3(IfcDirection* v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; } return IfcCartesianTransformationOperator::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcCartesianTransformationOperator::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcDirection; } return IfcCartesianTransformationOperator::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "Axis3"; } return IfcCartesianTransformationOperator::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -19177,7 +19179,7 @@ public:
     IfcCurve* ParentCurve() const;
     void setParentCurve(IfcCurve* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_BOOL; case 2: return IfcUtil::Argument_ENTITY; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_BOOL; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcTransitionCode; case 1: return Type::UNDEFINED; case 2: return Type::IfcCurve; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Transition"; case 1: return "SameSense"; case 2: return "ParentCurve"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -19280,7 +19282,7 @@ public:
     IfcAxis2Placement3D* Position() const;
     void setPosition(IfcAxis2Placement3D* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAxis2Placement3D; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Position"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -19338,7 +19340,7 @@ public:
     IfcCsgSelect* TreeRootExpression() const;
     void setTreeRootExpression(IfcCsgSelect* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; } return IfcSolidModel::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSolidModel::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCsgSelect; } return IfcSolidModel::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TreeRootExpression"; } return IfcSolidModel::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -19398,7 +19400,7 @@ public:
     IfcTemplatedEntityList< IfcCurve >::ptr InnerBoundaries() const;
     void setInnerBoundaries(IfcTemplatedEntityList< IfcCurve >::ptr v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENTITY_LIST; } return IfcBoundedSurface::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcBoundedSurface::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPlane; case 1: return Type::IfcCurve; case 2: return Type::IfcCurve; } return IfcBoundedSurface::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisSurface"; case 1: return "OuterBoundary"; case 2: return "InnerBoundaries"; } return IfcBoundedSurface::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -19425,7 +19427,7 @@ public:
     IfcCartesianTransformationOperator2D* Target() const;
     void setTarget(IfcCartesianTransformationOperator2D* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDefinedSymbolSelect; case 1: return Type::IfcCartesianTransformationOperator2D; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Definition"; case 1: return "Target"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -19482,7 +19484,7 @@ public:
     std::vector< double > /*[2:3]*/ DirectionRatios() const;
     void setDirectionRatios(std::vector< double > /*[2:3]*/ v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_VECTOR_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DirectionRatios"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -19648,7 +19650,7 @@ public:
     IfcShapeAspect* ShapeAspectStyle() const;
     void setShapeAspectStyle(IfcShapeAspect* v);
     virtual unsigned int getArgumentCount() const { return 15; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_DOUBLE; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_DOUBLE; case 9: return IfcUtil::Argument_DOUBLE; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_DOUBLE; case 13: return IfcUtil::Argument_DOUBLE; case 14: return IfcUtil::Argument_ENTITY; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_DOUBLE; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_DOUBLE; case 9: return IfcUtil::Argument_DOUBLE; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_DOUBLE; case 13: return IfcUtil::Argument_DOUBLE; case 14: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcPositiveLengthMeasure; case 5: return Type::IfcPositiveLengthMeasure; case 6: return Type::IfcPositiveLengthMeasure; case 7: return Type::IfcPositiveLengthMeasure; case 8: return Type::IfcPositiveLengthMeasure; case 9: return Type::IfcLengthMeasure; case 10: return Type::IfcLengthMeasure; case 11: return Type::IfcLengthMeasure; case 12: return Type::IfcPositiveLengthMeasure; case 13: return Type::IfcPositiveLengthMeasure; case 14: return Type::IfcShapeAspect; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "LiningDepth"; case 5: return "LiningThickness"; case 6: return "ThresholdDepth"; case 7: return "ThresholdThickness"; case 8: return "TransomThickness"; case 9: return "TransomOffset"; case 10: return "LiningOffset"; case 11: return "ThresholdOffset"; case 12: return "CasingThickness"; case 13: return "CasingDepth"; case 14: return "ShapeAspectStyle"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -19730,7 +19732,7 @@ public:
     IfcShapeAspect* ShapeAspectStyle() const;
     void setShapeAspectStyle(IfcShapeAspect* v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_ENUMERATION; case 8: return IfcUtil::Argument_ENTITY; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_ENUMERATION; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcPositiveLengthMeasure; case 5: return Type::IfcDoorPanelOperationEnum; case 6: return Type::IfcNormalisedRatioMeasure; case 7: return Type::IfcDoorPanelPositionEnum; case 8: return Type::IfcShapeAspect; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "PanelDepth"; case 5: return "PanelOperation"; case 6: return "PanelWidth"; case 7: return "PanelPosition"; case 8: return "ShapeAspectStyle"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -19799,7 +19801,7 @@ public:
     IfcEntityList::ptr Contents() const;
     void setContents(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDraughtingCalloutElement; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Contents"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -19942,7 +19944,7 @@ public:
     IfcTemplatedEntityList< IfcOrientedEdge >::ptr EdgeList() const;
     void setEdgeList(IfcTemplatedEntityList< IfcOrientedEdge >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } return IfcLoop::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcLoop::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcOrientedEdge; } return IfcLoop::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "EdgeList"; } return IfcLoop::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -20043,7 +20045,7 @@ public:
     IfcTemplatedEntityList< IfcPhysicalQuantity >::ptr Quantities() const;
     void setQuantities(IfcTemplatedEntityList< IfcPhysicalQuantity >::ptr v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_ENTITY_LIST; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcLabel; case 5: return Type::IfcPhysicalQuantity; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "MethodOfMeasurement"; case 5: return "Quantities"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -20106,7 +20108,7 @@ public:
     IfcAxis2Placement3D* Position() const;
     void setPosition(IfcAxis2Placement3D* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; } return IfcSurface::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSurface::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAxis2Placement3D; } return IfcSurface::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Position"; } return IfcSurface::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -20254,7 +20256,7 @@ public:
     double Depth() const;
     void setDepth(double v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_DOUBLE; } return IfcSweptAreaSolid::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_DOUBLE; } return IfcSweptAreaSolid::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcDirection; case 3: return Type::IfcPositiveLengthMeasure; } return IfcSweptAreaSolid::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "ExtrudedDirection"; case 3: return "Depth"; } return IfcSweptAreaSolid::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -20283,7 +20285,7 @@ public:
     IfcTemplatedEntityList< IfcConnectedFaceSet >::ptr FbsmFaces() const;
     void setFbsmFaces(IfcTemplatedEntityList< IfcConnectedFaceSet >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcConnectedFaceSet; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "FbsmFaces"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -20371,7 +20373,7 @@ public:
     double HatchLineAngle() const;
     void setHatchLineAngle(double v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_ENTITY; case 4: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurveStyle; case 1: return Type::IfcHatchLineDistanceSelect; case 2: return Type::IfcCartesianPoint; case 3: return Type::IfcCartesianPoint; case 4: return Type::IfcPlaneAngleMeasure; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "HatchLineAppearance"; case 1: return "StartOfNextHatchLine"; case 2: return "PointOfReferenceHatchLine"; case 3: return "PatternStart"; case 4: return "HatchLineAngle"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -20399,7 +20401,7 @@ public:
     IfcAnnotationSymbolOccurrence* Symbol() const;
     void setSymbol(IfcAnnotationSymbolOccurrence* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAnnotationSymbolOccurrence; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Symbol"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -20427,7 +20429,7 @@ public:
     double TilingScale() const;
     void setTilingScale(double v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; case 2: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcOneDirectionRepeatFactor; case 1: return Type::IfcFillAreaStyleTileShapeSelect; case 2: return Type::IfcPositiveRatioMeasure; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TilingPattern"; case 1: return "Tiles"; case 2: return "TilingScale"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -20498,7 +20500,7 @@ public:
     double PressureSingleValue() const;
     void setPressureSingleValue(double v);
     virtual unsigned int getArgumentCount() const { return 19; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENUMERATION; case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY; case 8: return IfcUtil::Argument_ENTITY; case 9: return IfcUtil::Argument_ENTITY; case 10: return IfcUtil::Argument_STRING; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_DOUBLE; case 13: return IfcUtil::Argument_ENTITY; case 14: return IfcUtil::Argument_ENTITY; case 15: return IfcUtil::Argument_ENTITY; case 16: return IfcUtil::Argument_DOUBLE; case 17: return IfcUtil::Argument_DOUBLE; case 18: return IfcUtil::Argument_DOUBLE; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENUMERATION; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; case 9: return IfcUtil::Argument_ENTITY_INSTANCE; case 10: return IfcUtil::Argument_STRING; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_DOUBLE; case 13: return IfcUtil::Argument_ENTITY_INSTANCE; case 14: return IfcUtil::Argument_ENTITY_INSTANCE; case 15: return IfcUtil::Argument_ENTITY_INSTANCE; case 16: return IfcUtil::Argument_DOUBLE; case 17: return IfcUtil::Argument_DOUBLE; case 18: return IfcUtil::Argument_DOUBLE; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcPropertySourceEnum; case 5: return Type::IfcTimeSeries; case 6: return Type::IfcTimeSeries; case 7: return Type::IfcTimeSeries; case 8: return Type::IfcMaterial; case 9: return Type::IfcTimeSeries; case 10: return Type::IfcLabel; case 11: return Type::IfcThermodynamicTemperatureMeasure; case 12: return Type::IfcThermodynamicTemperatureMeasure; case 13: return Type::IfcTimeSeries; case 14: return Type::IfcTimeSeries; case 15: return Type::IfcDerivedMeasureValue; case 16: return Type::IfcPositiveRatioMeasure; case 17: return Type::IfcLinearVelocityMeasure; case 18: return Type::IfcPressureMeasure; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "PropertySource"; case 5: return "FlowConditionTimeSeries"; case 6: return "VelocityTimeSeries"; case 7: return "FlowrateTimeSeries"; case 8: return "Fluid"; case 9: return "PressureTimeSeries"; case 10: return "UserDefinedPropertySource"; case 11: return "TemperatureSingleValue"; case 12: return "WetBulbTemperatureSingleValue"; case 13: return "WetBulbTemperatureTimeSeries"; case 14: return "TemperatureTimeSeries"; case 15: return "FlowrateSingleValue"; case 16: return "FlowConditionSingleValue"; case 17: return "VelocitySingleValue"; case 18: return "PressureSingleValue"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -20841,7 +20843,7 @@ public:
     IfcVector* Dir() const;
     void setDir(IfcVector* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY; } return IfcCurve::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcCurve::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCartesianPoint; case 1: return Type::IfcVector; } return IfcCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Pnt"; case 1: return "Dir"; } return IfcCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -20921,7 +20923,7 @@ public:
     IfcClosedShell* Outer() const;
     void setOuter(IfcClosedShell* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; } return IfcSolidModel::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSolidModel::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClosedShell; } return IfcSolidModel::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Outer"; } return IfcSolidModel::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21057,7 +21059,7 @@ public:
     bool SelfIntersect() const;
     void setSelfIntersect(bool v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_BOOL; } return IfcCurve::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_BOOL; } return IfcCurve::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurve; case 1: return Type::IfcLengthMeasure; case 2: return Type::UNDEFINED; } return IfcCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisCurve"; case 1: return "Distance"; case 2: return "SelfIntersect"; } return IfcCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21098,7 +21100,7 @@ public:
     IfcDirection* RefDirection() const;
     void setRefDirection(IfcDirection* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_BOOL; case 3: return IfcUtil::Argument_ENTITY; } return IfcCurve::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_BOOL; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcCurve::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurve; case 1: return Type::IfcLengthMeasure; case 2: return Type::UNDEFINED; case 3: return Type::IfcDirection; } return IfcCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisCurve"; case 1: return "Distance"; case 2: return "SelfIntersect"; case 3: return "RefDirection"; } return IfcCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21164,7 +21166,7 @@ public:
     IfcShapeAspect* ShapeAspectStyle() const;
     void setShapeAspectStyle(IfcShapeAspect* v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENUMERATION; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_ENTITY; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENUMERATION; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcPermeableCoveringOperationEnum; case 5: return Type::IfcWindowPanelPositionEnum; case 6: return Type::IfcPositiveLengthMeasure; case 7: return Type::IfcPositiveLengthMeasure; case 8: return Type::IfcShapeAspect; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "OperationType"; case 5: return "PanelPosition"; case 6: return "FrameDepth"; case 7: return "FrameThickness"; case 8: return "ShapeAspectStyle"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21188,7 +21190,7 @@ public:
     IfcAxis2Placement* Placement() const;
     void setPlacement(IfcAxis2Placement* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; } return IfcPlanarExtent::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcPlanarExtent::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcAxis2Placement; } return IfcPlanarExtent::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "Placement"; } return IfcPlanarExtent::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21410,7 +21412,7 @@ public:
     IfcProductRepresentation* Representation() const;
     void setRepresentation(IfcProductRepresentation* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; } return IfcObject::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcObject::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcObjectPlacement; case 6: return Type::IfcProductRepresentation; } return IfcObject::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "ObjectPlacement"; case 6: return "Representation"; } return IfcObject::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21481,7 +21483,7 @@ public:
     IfcUnitAssignment* UnitsInContext() const;
     void setUnitsInContext(IfcUnitAssignment* v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_ENTITY_LIST; case 8: return IfcUtil::Argument_ENTITY; } return IfcObject::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcObject::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcLabel; case 6: return Type::IfcLabel; case 7: return Type::IfcRepresentationContext; case 8: return Type::IfcUnitAssignment; } return IfcObject::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "LongName"; case 6: return "Phase"; case 7: return "RepresentationContexts"; case 8: return "UnitsInContext"; } return IfcObject::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21566,7 +21568,7 @@ public:
     IfcTemplatedEntityList< IfcProperty >::ptr HasProperties() const;
     void setHasProperties(IfcTemplatedEntityList< IfcProperty >::ptr v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_LIST; } return IfcPropertySetDefinition::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcPropertySetDefinition::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcProperty; } return IfcPropertySetDefinition::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "HasProperties"; } return IfcPropertySetDefinition::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21812,7 +21814,7 @@ public:
     bool Vsense() const;
     void setVsense(bool v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_BOOL; case 6: return IfcUtil::Argument_BOOL; } return IfcBoundedSurface::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_BOOL; case 6: return IfcUtil::Argument_BOOL; } return IfcBoundedSurface::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurface; case 1: return Type::IfcParameterValue; case 2: return Type::IfcParameterValue; case 3: return Type::IfcParameterValue; case 4: return Type::IfcParameterValue; case 5: return Type::UNDEFINED; case 6: return Type::UNDEFINED; } return IfcBoundedSurface::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisSurface"; case 1: return "U1"; case 2: return "V1"; case 3: return "U2"; case 4: return "V2"; case 5: return "Usense"; case 6: return "Vsense"; } return IfcBoundedSurface::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21846,7 +21848,7 @@ public:
     IfcObjectTypeEnum::IfcObjectTypeEnum RelatedObjectsType() const;
     void setRelatedObjectsType(IfcObjectTypeEnum::IfcObjectTypeEnum v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_LIST; case 5: return IfcUtil::Argument_ENUMERATION; } return IfcRelationship::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENUMERATION; } return IfcRelationship::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcObjectDefinition; case 5: return Type::IfcObjectTypeEnum; } return IfcRelationship::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatedObjects"; case 5: return "RelatedObjectsType"; } return IfcRelationship::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21877,7 +21879,7 @@ public:
     IfcActorRole* ActingRole() const;
     void setActingRole(IfcActorRole* v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY; } return IfcRelAssigns::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssigns::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 6: return Type::IfcActor; case 7: return Type::IfcActorRole; } return IfcRelAssigns::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "RelatingActor"; case 7: return "ActingRole"; } return IfcRelAssigns::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21899,7 +21901,7 @@ public:
     IfcControl* RelatingControl() const;
     void setRelatingControl(IfcControl* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY; } return IfcRelAssigns::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssigns::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 6: return Type::IfcControl; } return IfcRelAssigns::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "RelatingControl"; } return IfcRelAssigns::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21929,7 +21931,7 @@ public:
     IfcGroup* RelatingGroup() const;
     void setRelatingGroup(IfcGroup* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY; } return IfcRelAssigns::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssigns::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 6: return Type::IfcGroup; } return IfcRelAssigns::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "RelatingGroup"; } return IfcRelAssigns::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -21975,7 +21977,7 @@ public:
     IfcMeasureWithUnit* QuantityInProcess() const;
     void setQuantityInProcess(IfcMeasureWithUnit* v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY; } return IfcRelAssigns::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssigns::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 6: return Type::IfcProcess; case 7: return Type::IfcMeasureWithUnit; } return IfcRelAssigns::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "RelatingProcess"; case 7: return "QuantityInProcess"; } return IfcRelAssigns::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22002,7 +22004,7 @@ public:
     IfcProduct* RelatingProduct() const;
     void setRelatingProduct(IfcProduct* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY; } return IfcRelAssigns::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssigns::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 6: return Type::IfcProduct; } return IfcRelAssigns::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "RelatingProduct"; } return IfcRelAssigns::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22042,7 +22044,7 @@ public:
     IfcResource* RelatingResource() const;
     void setRelatingResource(IfcResource* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY; } return IfcRelAssigns::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssigns::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 6: return Type::IfcResource; } return IfcRelAssigns::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "RelatingResource"; } return IfcRelAssigns::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22102,7 +22104,7 @@ public:
     IfcTemplatedEntityList< IfcRoot >::ptr RelatedObjects() const;
     void setRelatedObjects(IfcTemplatedEntityList< IfcRoot >::ptr v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_LIST; } return IfcRelationship::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcRelationship::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcRoot; } return IfcRelationship::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatedObjects"; } return IfcRelationship::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22119,7 +22121,7 @@ public:
     IfcAppliedValue* RelatingAppliedValue() const;
     void setRelatingAppliedValue(IfcAppliedValue* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; } return IfcRelAssociates::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssociates::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcAppliedValue; } return IfcRelAssociates::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "RelatingAppliedValue"; } return IfcRelAssociates::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22139,7 +22141,7 @@ public:
     IfcApproval* RelatingApproval() const;
     void setRelatingApproval(IfcApproval* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; } return IfcRelAssociates::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssociates::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcApproval; } return IfcRelAssociates::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "RelatingApproval"; } return IfcRelAssociates::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22186,7 +22188,7 @@ public:
     IfcClassificationNotationSelect* RelatingClassification() const;
     void setRelatingClassification(IfcClassificationNotationSelect* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; } return IfcRelAssociates::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssociates::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcClassificationNotationSelect; } return IfcRelAssociates::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "RelatingClassification"; } return IfcRelAssociates::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22209,7 +22211,7 @@ public:
     IfcConstraint* RelatingConstraint() const;
     void setRelatingConstraint(IfcConstraint* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_ENTITY; } return IfcRelAssociates::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssociates::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcLabel; case 6: return Type::IfcConstraint; } return IfcRelAssociates::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "Intent"; case 6: return "RelatingConstraint"; } return IfcRelAssociates::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22233,7 +22235,7 @@ public:
     IfcDocumentSelect* RelatingDocument() const;
     void setRelatingDocument(IfcDocumentSelect* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; } return IfcRelAssociates::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssociates::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcDocumentSelect; } return IfcRelAssociates::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "RelatingDocument"; } return IfcRelAssociates::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22257,7 +22259,7 @@ public:
     IfcLibrarySelect* RelatingLibrary() const;
     void setRelatingLibrary(IfcLibrarySelect* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; } return IfcRelAssociates::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssociates::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcLibrarySelect; } return IfcRelAssociates::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "RelatingLibrary"; } return IfcRelAssociates::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22368,7 +22370,7 @@ public:
     IfcMaterialSelect* RelatingMaterial() const;
     void setRelatingMaterial(IfcMaterialSelect* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; } return IfcRelAssociates::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssociates::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcMaterialSelect; } return IfcRelAssociates::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "RelatingMaterial"; } return IfcRelAssociates::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22393,7 +22395,7 @@ public:
     IfcOrientationSelect* ProfileOrientation() const;
     void setProfileOrientation(IfcOrientationSelect* v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY; } return IfcRelAssociates::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssociates::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcProfileProperties; case 6: return Type::IfcShapeAspect; case 7: return Type::IfcOrientationSelect; } return IfcRelAssociates::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "RelatingProfileProperties"; case 6: return "ProfileSectionLocation"; case 7: return "ProfileOrientation"; } return IfcRelAssociates::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22457,7 +22459,7 @@ public:
     IfcElement* RelatedElement() const;
     void setRelatedElement(IfcElement* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcConnectionGeometry; case 5: return Type::IfcElement; case 6: return Type::IfcElement; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "ConnectionGeometry"; case 5: return "RelatingElement"; case 6: return "RelatedElement"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22515,7 +22517,7 @@ public:
     IfcConnectionTypeEnum::IfcConnectionTypeEnum RelatingConnectionType() const;
     void setRelatingConnectionType(IfcConnectionTypeEnum::IfcConnectionTypeEnum v);
     virtual unsigned int getArgumentCount() const { return 11; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_VECTOR_INT; case 8: return IfcUtil::Argument_VECTOR_INT; case 9: return IfcUtil::Argument_ENUMERATION; case 10: return IfcUtil::Argument_ENUMERATION; } return IfcRelConnectsElements::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_AGGREGATE_OF_INT; case 8: return IfcUtil::Argument_AGGREGATE_OF_INT; case 9: return IfcUtil::Argument_ENUMERATION; case 10: return IfcUtil::Argument_ENUMERATION; } return IfcRelConnectsElements::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::UNDEFINED; case 8: return Type::UNDEFINED; case 9: return Type::IfcConnectionTypeEnum; case 10: return Type::IfcConnectionTypeEnum; } return IfcRelConnectsElements::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "RelatingPriorities"; case 8: return "RelatedPriorities"; case 9: return "RelatedConnectionType"; case 10: return "RelatingConnectionType"; } return IfcRelConnectsElements::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22562,7 +22564,7 @@ public:
     IfcElement* RelatedElement() const;
     void setRelatedElement(IfcElement* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcPort; case 5: return Type::IfcElement; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingPort"; case 5: return "RelatedElement"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22600,7 +22602,7 @@ public:
     IfcElement* RealizingElement() const;
     void setRealizingElement(IfcElement* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcPort; case 5: return Type::IfcPort; case 6: return Type::IfcElement; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingPort"; case 5: return "RelatedPort"; case 6: return "RealizingElement"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22623,7 +22625,7 @@ public:
     IfcStructuralActivity* RelatedStructuralActivity() const;
     void setRelatedStructuralActivity(IfcStructuralActivity* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcStructuralActivityAssignmentSelect; case 5: return Type::IfcStructuralActivity; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingElement"; case 5: return "RelatedStructuralActivity"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22642,7 +22644,7 @@ public:
     IfcStructuralMember* RelatedStructuralMember() const;
     void setRelatedStructuralMember(IfcStructuralMember* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcElement; case 5: return Type::IfcStructuralMember; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingElement"; case 5: return "RelatedStructuralMember"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22706,7 +22708,7 @@ public:
     IfcAxis2Placement3D* ConditionCoordinateSystem() const;
     void setConditionCoordinateSystem(IfcAxis2Placement3D* v);
     virtual unsigned int getArgumentCount() const { return 10; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY; case 8: return IfcUtil::Argument_DOUBLE; case 9: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_DOUBLE; case 9: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcStructuralMember; case 5: return Type::IfcStructuralConnection; case 6: return Type::IfcBoundaryCondition; case 7: return Type::IfcStructuralConnectionCondition; case 8: return Type::IfcLengthMeasure; case 9: return Type::IfcAxis2Placement3D; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingStructuralMember"; case 5: return "RelatedStructuralConnection"; case 6: return "AppliedCondition"; case 7: return "AdditionalConditions"; case 8: return "SupportedLength"; case 9: return "ConditionCoordinateSystem"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22740,7 +22742,7 @@ public:
     IfcConnectionGeometry* ConnectionConstraint() const;
     void setConnectionConstraint(IfcConnectionGeometry* v);
     virtual unsigned int getArgumentCount() const { return 11; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 10: return IfcUtil::Argument_ENTITY; } return IfcRelConnectsStructuralMember::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 10: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnectsStructuralMember::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 10: return Type::IfcConnectionGeometry; } return IfcRelConnectsStructuralMember::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 10: return "ConnectionConstraint"; } return IfcRelConnectsStructuralMember::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22785,7 +22787,7 @@ public:
     std::string ConnectionType() const;
     void setConnectionType(std::string v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_ENTITY_LIST; case 8: return IfcUtil::Argument_STRING; } return IfcRelConnectsElements::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_STRING; } return IfcRelConnectsElements::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::IfcElement; case 8: return Type::IfcLabel; } return IfcRelConnectsElements::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "RealizingElements"; case 8: return "ConnectionType"; } return IfcRelConnectsElements::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22869,7 +22871,7 @@ public:
     IfcSpatialStructureElement* RelatingStructure() const;
     void setRelatingStructure(IfcSpatialStructureElement* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_LIST; case 5: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcProduct; case 5: return Type::IfcSpatialStructureElement; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatedElements"; case 5: return "RelatingStructure"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22907,7 +22909,7 @@ public:
     IfcTemplatedEntityList< IfcCovering >::ptr RelatedCoverings() const;
     void setRelatedCoverings(IfcTemplatedEntityList< IfcCovering >::ptr v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY_LIST; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcElement; case 5: return Type::IfcCovering; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingBuildingElement"; case 5: return "RelatedCoverings"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -22952,7 +22954,7 @@ public:
     IfcTemplatedEntityList< IfcCovering >::ptr RelatedCoverings() const;
     void setRelatedCoverings(IfcTemplatedEntityList< IfcCovering >::ptr v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY_LIST; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcSpace; case 5: return Type::IfcCovering; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatedSpace"; case 5: return "RelatedCoverings"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23000,7 +23002,7 @@ public:
     IfcTemplatedEntityList< IfcObjectDefinition >::ptr RelatedObjects() const;
     void setRelatedObjects(IfcTemplatedEntityList< IfcObjectDefinition >::ptr v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY_LIST; } return IfcRelationship::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcRelationship::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcObjectDefinition; case 5: return Type::IfcObjectDefinition; } return IfcRelationship::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingObject"; case 5: return "RelatedObjects"; } return IfcRelationship::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23043,7 +23045,7 @@ public:
     IfcTemplatedEntityList< IfcObject >::ptr RelatedObjects() const;
     void setRelatedObjects(IfcTemplatedEntityList< IfcObject >::ptr v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_LIST; } return IfcRelationship::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcRelationship::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcObject; } return IfcRelationship::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatedObjects"; } return IfcRelationship::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23075,7 +23077,7 @@ public:
     IfcPropertySetDefinition* RelatingPropertyDefinition() const;
     void setRelatingPropertyDefinition(IfcPropertySetDefinition* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; } return IfcRelDefines::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelDefines::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcPropertySetDefinition; } return IfcRelDefines::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "RelatingPropertyDefinition"; } return IfcRelDefines::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23163,7 +23165,7 @@ public:
     IfcTypeObject* RelatingType() const;
     void setRelatingType(IfcTypeObject* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; } return IfcRelDefines::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelDefines::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcTypeObject; } return IfcRelDefines::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "RelatingType"; } return IfcRelDefines::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23194,7 +23196,7 @@ public:
     IfcElement* RelatedBuildingElement() const;
     void setRelatedBuildingElement(IfcElement* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcOpeningElement; case 5: return Type::IfcElement; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingOpeningElement"; case 5: return "RelatedBuildingElement"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23221,7 +23223,7 @@ public:
     IfcDistributionFlowElement* RelatingFlowElement() const;
     void setRelatingFlowElement(IfcDistributionFlowElement* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_LIST; case 5: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcDistributionControlElement; case 5: return Type::IfcDistributionFlowElement; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatedControlElements"; case 5: return "RelatingFlowElement"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23252,7 +23254,7 @@ public:
     IfcSpaceProgram* RelatingSpaceProgram() const;
     void setRelatingSpaceProgram(IfcSpaceProgram* v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_DOUBLE; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY; case 8: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_DOUBLE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcCountMeasure; case 5: return Type::IfcNormalisedRatioMeasure; case 6: return Type::IfcSpatialStructureElement; case 7: return Type::IfcSpaceProgram; case 8: return Type::IfcSpaceProgram; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "DailyInteraction"; case 5: return "ImportanceRating"; case 6: return "LocationOfInteraction"; case 7: return "RelatedSpaceProgram"; case 8: return "RelatingSpaceProgram"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23323,7 +23325,7 @@ public:
     IfcTemplatedEntityList< IfcProperty >::ptr OverridingProperties() const;
     void setOverridingProperties(IfcTemplatedEntityList< IfcProperty >::ptr v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY_LIST; } return IfcRelDefinesByProperties::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcRelDefinesByProperties::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 6: return Type::IfcProperty; } return IfcRelDefinesByProperties::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "OverridingProperties"; } return IfcRelDefinesByProperties::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23375,7 +23377,7 @@ public:
     IfcFeatureElementAddition* RelatedFeatureElement() const;
     void setRelatedFeatureElement(IfcFeatureElementAddition* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcElement; case 5: return Type::IfcFeatureElementAddition; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingElement"; case 5: return "RelatedFeatureElement"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23447,7 +23449,7 @@ public:
     IfcSpatialStructureElement* RelatingStructure() const;
     void setRelatingStructure(IfcSpatialStructureElement* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_LIST; case 5: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcProduct; case 5: return Type::IfcSpatialStructureElement; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatedElements"; case 5: return "RelatingStructure"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23544,7 +23546,7 @@ public:
     IfcSequenceEnum::IfcSequenceEnum SequenceType() const;
     void setSequenceType(IfcSequenceEnum::IfcSequenceEnum v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_ENUMERATION; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_ENUMERATION; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcProcess; case 5: return Type::IfcProcess; case 6: return Type::IfcTimeMeasure; case 7: return Type::IfcSequenceEnum; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingProcess"; case 5: return "RelatedProcess"; case 6: return "TimeLag"; case 7: return "SequenceType"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23589,7 +23591,7 @@ public:
     IfcTemplatedEntityList< IfcSpatialStructureElement >::ptr RelatedBuildings() const;
     void setRelatedBuildings(IfcTemplatedEntityList< IfcSpatialStructureElement >::ptr v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY_LIST; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcSystem; case 5: return Type::IfcSpatialStructureElement; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingSystem"; case 5: return "RelatedBuildings"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23790,7 +23792,7 @@ public:
     IfcInternalOrExternalEnum::IfcInternalOrExternalEnum InternalOrExternalBoundary() const;
     void setInternalOrExternalBoundary(IfcInternalOrExternalEnum::IfcInternalOrExternalEnum v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENUMERATION; case 8: return IfcUtil::Argument_ENUMERATION; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_ENUMERATION; case 8: return IfcUtil::Argument_ENUMERATION; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcSpace; case 5: return Type::IfcElement; case 6: return Type::IfcConnectionGeometry; case 7: return Type::IfcPhysicalOrVirtualEnum; case 8: return Type::IfcInternalOrExternalEnum; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingSpace"; case 5: return "RelatedBuildingElement"; case 6: return "ConnectionGeometry"; case 7: return "PhysicalOrVirtualBoundary"; case 8: return "InternalOrExternalBoundary"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23815,7 +23817,7 @@ public:
     IfcFeatureElementSubtraction* RelatedOpeningElement() const;
     void setRelatedOpeningElement(IfcFeatureElementSubtraction* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY; case 5: return IfcUtil::Argument_ENTITY; } return IfcRelConnects::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelConnects::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcElement; case 5: return Type::IfcFeatureElementSubtraction; } return IfcRelConnects::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "RelatingBuildingElement"; case 5: return "RelatedOpeningElement"; } return IfcRelConnects::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -23939,7 +23941,7 @@ public:
     double Angle() const;
     void setAngle(double v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_DOUBLE; } return IfcSweptAreaSolid::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_DOUBLE; } return IfcSweptAreaSolid::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcAxis1Placement; case 3: return Type::IfcPlaneAngleMeasure; } return IfcSweptAreaSolid::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "Axis"; case 3: return "Angle"; } return IfcSweptAreaSolid::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -24472,7 +24474,7 @@ public:
     IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum GlobalOrLocal() const;
     void setGlobalOrLocal(IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_ENTITY; case 8: return IfcUtil::Argument_ENUMERATION; } return IfcProduct::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_ENUMERATION; } return IfcProduct::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::IfcStructuralLoad; case 8: return Type::IfcGlobalOrLocalEnum; } return IfcProduct::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "AppliedLoad"; case 8: return "GlobalOrLocal"; } return IfcProduct::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -24708,7 +24710,7 @@ public:
     IfcShapeAspect* VaryingThicknessLocation() const;
     void setVaryingThicknessLocation(IfcShapeAspect* v);
     virtual unsigned int getArgumentCount() const { return 11; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_VECTOR_DOUBLE; case 10: return IfcUtil::Argument_ENTITY; } return IfcStructuralSurfaceMember::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; case 10: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcStructuralSurfaceMember::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::IfcPositiveLengthMeasure; case 10: return Type::IfcShapeAspect; } return IfcStructuralSurfaceMember::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 9: return "SubsequentThickness"; case 10: return "VaryingThicknessLocation"; } return IfcStructuralSurfaceMember::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -24815,7 +24817,7 @@ public:
     IfcSurface* ReferenceSurface() const;
     void setReferenceSurface(IfcSurface* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_ENTITY; } return IfcSweptAreaSolid::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSweptAreaSolid::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcCurve; case 3: return Type::IfcParameterValue; case 4: return Type::IfcParameterValue; case 5: return Type::IfcSurface; } return IfcSweptAreaSolid::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "Directrix"; case 3: return "StartParam"; case 4: return "EndParam"; case 5: return "ReferenceSurface"; } return IfcSweptAreaSolid::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -24848,7 +24850,7 @@ public:
     double Depth() const;
     void setDepth(double v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; case 3: return IfcUtil::Argument_DOUBLE; } return IfcSweptSurface::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_DOUBLE; } return IfcSweptSurface::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcDirection; case 3: return Type::IfcLengthMeasure; } return IfcSweptSurface::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "ExtrudedDirection"; case 3: return "Depth"; } return IfcSweptSurface::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -24882,7 +24884,7 @@ public:
     IfcAxis1Placement* AxisPosition() const;
     void setAxisPosition(IfcAxis1Placement* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY; } return IfcSweptSurface::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSweptSurface::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcAxis1Placement; } return IfcSweptSurface::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "AxisPosition"; } return IfcSweptSurface::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -25333,7 +25335,7 @@ public:
     IfcActorSelect* TheActor() const;
     void setTheActor(IfcActorSelect* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; } return IfcObject::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcObject::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcActorSelect; } return IfcObject::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "TheActor"; } return IfcObject::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -25959,7 +25961,7 @@ public:
     IfcPostalAddress* BuildingAddress() const;
     void setBuildingAddress(IfcPostalAddress* v);
     virtual unsigned int getArgumentCount() const { return 12; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_DOUBLE; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_ENTITY; } return IfcSpatialStructureElement::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_DOUBLE; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSpatialStructureElement::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::IfcLengthMeasure; case 10: return Type::IfcLengthMeasure; case 11: return Type::IfcPostalAddress; } return IfcSpatialStructureElement::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 9: return "ElevationOfRefHeight"; case 10: return "ElevationOfTerrain"; case 11: return "BuildingAddress"; } return IfcSpatialStructureElement::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -26434,7 +26436,7 @@ public:
     bool SelfIntersect() const;
     void setSelfIntersect(bool v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; case 1: return IfcUtil::Argument_BOOL; } return IfcBoundedCurve::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_BOOL; } return IfcBoundedCurve::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCompositeCurveSegment; case 1: return Type::UNDEFINED; } return IfcBoundedCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Segments"; case 1: return "SelfIntersect"; } return IfcBoundedCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -26456,7 +26458,7 @@ public:
     IfcAxis2Placement* Position() const;
     void setPosition(IfcAxis2Placement* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; } return IfcCurve::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcCurve::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAxis2Placement; } return IfcCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Position"; } return IfcCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -26559,7 +26561,7 @@ public:
     IfcMeasureWithUnit* BaseQuantity() const;
     void setBaseQuantity(IfcMeasureWithUnit* v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_ENUMERATION; case 8: return IfcUtil::Argument_ENTITY; } return IfcResource::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_ENUMERATION; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcResource::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcIdentifier; case 6: return Type::IfcLabel; case 7: return Type::IfcResourceConsumptionEnum; case 8: return Type::IfcMeasureWithUnit; } return IfcResource::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "ResourceIdentifier"; case 6: return "ResourceGroup"; case 7: return "ResourceConsumption"; case 8: return "BaseQuantity"; } return IfcResource::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -26715,7 +26717,7 @@ public:
     IfcCostScheduleTypeEnum::IfcCostScheduleTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCostScheduleTypeEnum::IfcCostScheduleTypeEnum v);
     virtual unsigned int getArgumentCount() const { return 13; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY; case 8: return IfcUtil::Argument_STRING; case 9: return IfcUtil::Argument_ENTITY_LIST; case 10: return IfcUtil::Argument_ENTITY; case 11: return IfcUtil::Argument_STRING; case 12: return IfcUtil::Argument_ENUMERATION; } return IfcControl::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_STRING; case 9: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 10: return IfcUtil::Argument_ENTITY_INSTANCE; case 11: return IfcUtil::Argument_STRING; case 12: return IfcUtil::Argument_ENUMERATION; } return IfcControl::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcActorSelect; case 6: return Type::IfcActorSelect; case 7: return Type::IfcDateTimeSelect; case 8: return Type::IfcLabel; case 9: return Type::IfcActorSelect; case 10: return Type::IfcDateTimeSelect; case 11: return Type::IfcIdentifier; case 12: return Type::IfcCostScheduleTypeEnum; } return IfcControl::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "SubmittedBy"; case 6: return "PreparedBy"; case 7: return "SubmittedOn"; case 8: return "Status"; case 9: return "TargetUsers"; case 10: return "UpdateDate"; case 11: return "ID"; case 12: return "PredefinedType"; } return IfcControl::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -27647,7 +27649,7 @@ public:
     IfcTemplatedEntityList< IfcClosedShell >::ptr Voids() const;
     void setVoids(IfcTemplatedEntityList< IfcClosedShell >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_LIST; } return IfcManifoldSolidBrep::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcManifoldSolidBrep::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcClosedShell; } return IfcManifoldSolidBrep::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "Voids"; } return IfcManifoldSolidBrep::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -28494,7 +28496,7 @@ public:
     IfcTemplatedEntityList< IfcGridAxis >::ptr WAxes() const;
     void setWAxes(IfcTemplatedEntityList< IfcGridAxis >::ptr v);
     virtual unsigned int getArgumentCount() const { return 10; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_ENTITY_LIST; case 8: return IfcUtil::Argument_ENTITY_LIST; case 9: return IfcUtil::Argument_ENTITY_LIST; } return IfcProduct::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 9: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcProduct::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::IfcGridAxis; case 8: return Type::IfcGridAxis; case 9: return Type::IfcGridAxis; } return IfcProduct::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "UAxes"; case 8: return "VAxes"; case 9: return "WAxes"; } return IfcProduct::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -28677,7 +28679,7 @@ public:
     IfcCostValue* OriginalValue() const;
     void setOriginalValue(IfcCostValue* v);
     virtual unsigned int getArgumentCount() const { return 11; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY_LIST; case 8: return IfcUtil::Argument_ENTITY; case 9: return IfcUtil::Argument_ENTITY; case 10: return IfcUtil::Argument_ENTITY; } return IfcGroup::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; case 9: return IfcUtil::Argument_ENTITY_INSTANCE; case 10: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcGroup::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcInventoryTypeEnum; case 6: return Type::IfcActorSelect; case 7: return Type::IfcPerson; case 8: return Type::IfcCalendarDate; case 9: return Type::IfcCostValue; case 10: return Type::IfcCostValue; } return IfcGroup::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "InventoryType"; case 6: return "Jurisdiction"; case 7: return "ResponsiblePersons"; case 8: return "LastUpdateDate"; case 9: return "CurrentValue"; case 10: return "OriginalValue"; } return IfcGroup::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -29157,7 +29159,7 @@ public:
     std::vector< std::string > /*[1:?]*/ PunchList() const;
     void setPunchList(std::vector< std::string > /*[1:?]*/ v);
     virtual unsigned int getArgumentCount() const { return 13; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 10: return IfcUtil::Argument_ENTITY; case 11: return IfcUtil::Argument_ENTITY; case 12: return IfcUtil::Argument_VECTOR_STRING; } return IfcTask::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 10: return IfcUtil::Argument_ENTITY_INSTANCE; case 11: return IfcUtil::Argument_ENTITY_INSTANCE; case 12: return IfcUtil::Argument_AGGREGATE_OF_STRING; } return IfcTask::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 10: return Type::IfcSpatialStructureElement; case 11: return Type::IfcSpatialStructureElement; case 12: return Type::IfcText; } return IfcTask::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 10: return "MoveFrom"; case 11: return "MoveTo"; case 12: return "PunchList"; } return IfcTask::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -29759,7 +29761,7 @@ public:
     IfcTemplatedEntityList< IfcCartesianPoint >::ptr Points() const;
     void setPoints(IfcTemplatedEntityList< IfcCartesianPoint >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_LIST; } return IfcBoundedCurve::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcBoundedCurve::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCartesianPoint; } return IfcBoundedCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Points"; } return IfcBoundedCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -30051,7 +30053,7 @@ public:
     IfcProjectOrderRecordTypeEnum::IfcProjectOrderRecordTypeEnum PredefinedType() const;
     void setPredefinedType(IfcProjectOrderRecordTypeEnum::IfcProjectOrderRecordTypeEnum v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_LIST; case 6: return IfcUtil::Argument_ENUMERATION; } return IfcControl::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENUMERATION; } return IfcControl::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcRelAssignsToProjectOrder; case 6: return Type::IfcProjectOrderRecordTypeEnum; } return IfcControl::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "Records"; case 6: return "PredefinedType"; } return IfcControl::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -30413,7 +30415,7 @@ public:
     IfcScheduleTimeControl* TimeForTask() const;
     void setTimeForTask(IfcScheduleTimeControl* v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_ENTITY; } return IfcRelAssignsToControl::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRelAssignsToControl::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::IfcScheduleTimeControl; } return IfcRelAssignsToControl::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "TimeForTask"; } return IfcRelAssignsToControl::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -30554,7 +30556,7 @@ public:
     double Completion() const;
     void setCompletion(double v);
     virtual unsigned int getArgumentCount() const { return 23; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY; case 8: return IfcUtil::Argument_ENTITY; case 9: return IfcUtil::Argument_ENTITY; case 10: return IfcUtil::Argument_ENTITY; case 11: return IfcUtil::Argument_ENTITY; case 12: return IfcUtil::Argument_ENTITY; case 13: return IfcUtil::Argument_DOUBLE; case 14: return IfcUtil::Argument_DOUBLE; case 15: return IfcUtil::Argument_DOUBLE; case 16: return IfcUtil::Argument_DOUBLE; case 17: return IfcUtil::Argument_DOUBLE; case 18: return IfcUtil::Argument_BOOL; case 19: return IfcUtil::Argument_ENTITY; case 20: return IfcUtil::Argument_DOUBLE; case 21: return IfcUtil::Argument_DOUBLE; case 22: return IfcUtil::Argument_DOUBLE; } return IfcControl::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; case 9: return IfcUtil::Argument_ENTITY_INSTANCE; case 10: return IfcUtil::Argument_ENTITY_INSTANCE; case 11: return IfcUtil::Argument_ENTITY_INSTANCE; case 12: return IfcUtil::Argument_ENTITY_INSTANCE; case 13: return IfcUtil::Argument_DOUBLE; case 14: return IfcUtil::Argument_DOUBLE; case 15: return IfcUtil::Argument_DOUBLE; case 16: return IfcUtil::Argument_DOUBLE; case 17: return IfcUtil::Argument_DOUBLE; case 18: return IfcUtil::Argument_BOOL; case 19: return IfcUtil::Argument_ENTITY_INSTANCE; case 20: return IfcUtil::Argument_DOUBLE; case 21: return IfcUtil::Argument_DOUBLE; case 22: return IfcUtil::Argument_DOUBLE; } return IfcControl::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcDateTimeSelect; case 6: return Type::IfcDateTimeSelect; case 7: return Type::IfcDateTimeSelect; case 8: return Type::IfcDateTimeSelect; case 9: return Type::IfcDateTimeSelect; case 10: return Type::IfcDateTimeSelect; case 11: return Type::IfcDateTimeSelect; case 12: return Type::IfcDateTimeSelect; case 13: return Type::IfcTimeMeasure; case 14: return Type::IfcTimeMeasure; case 15: return Type::IfcTimeMeasure; case 16: return Type::IfcTimeMeasure; case 17: return Type::IfcTimeMeasure; case 18: return Type::UNDEFINED; case 19: return Type::IfcDateTimeSelect; case 20: return Type::IfcTimeMeasure; case 21: return Type::IfcTimeMeasure; case 22: return Type::IfcPositiveRatioMeasure; } return IfcControl::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "ActualStart"; case 6: return "EarlyStart"; case 7: return "LateStart"; case 8: return "ScheduleStart"; case 9: return "ActualFinish"; case 10: return "EarlyFinish"; case 11: return "LateFinish"; case 12: return "ScheduleFinish"; case 13: return "ScheduleDuration"; case 14: return "ActualDuration"; case 15: return "RemainingTime"; case 16: return "FreeFloat"; case 17: return "TotalFloat"; case 18: return "IsCritical"; case 19: return "StatusTime"; case 20: return "StartFloat"; case 21: return "FinishFloat"; case 22: return "Completion"; } return IfcControl::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -30805,7 +30807,7 @@ public:
     IfcPostalAddress* SiteAddress() const;
     void setSiteAddress(IfcPostalAddress* v);
     virtual unsigned int getArgumentCount() const { return 14; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_VECTOR_INT; case 10: return IfcUtil::Argument_VECTOR_INT; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_STRING; case 13: return IfcUtil::Argument_ENTITY; } return IfcSpatialStructureElement::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_AGGREGATE_OF_INT; case 10: return IfcUtil::Argument_AGGREGATE_OF_INT; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_STRING; case 13: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcSpatialStructureElement::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::IfcCompoundPlaneAngleMeasure; case 10: return Type::IfcCompoundPlaneAngleMeasure; case 11: return Type::IfcLengthMeasure; case 12: return Type::IfcLabel; case 13: return Type::IfcPostalAddress; } return IfcSpatialStructureElement::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 9: return "RefLatitude"; case 10: return "RefLongitude"; case 11: return "RefElevation"; case 12: return "LandTitleNumber"; case 13: return "SiteAddress"; } return IfcSpatialStructureElement::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -31250,7 +31252,7 @@ public:
     double StandardRequiredArea() const;
     void setStandardRequiredArea(double v);
     virtual unsigned int getArgumentCount() const { return 10; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_ENTITY; case 9: return IfcUtil::Argument_DOUBLE; } return IfcControl::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_DOUBLE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; case 9: return IfcUtil::Argument_DOUBLE; } return IfcControl::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcIdentifier; case 6: return Type::IfcAreaMeasure; case 7: return Type::IfcAreaMeasure; case 8: return Type::IfcSpatialStructureElement; case 9: return Type::IfcAreaMeasure; } return IfcControl::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "SpaceProgramIdentifier"; case 6: return "MaxRequiredArea"; case 7: return "MinRequiredArea"; case 8: return "RequestedLocation"; case 9: return "StandardRequiredArea"; } return IfcControl::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -31470,7 +31472,7 @@ public:
     IfcStructuralReaction* CausedBy() const;
     void setCausedBy(IfcStructuralReaction* v);
     virtual unsigned int getArgumentCount() const { return 11; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_BOOL; case 10: return IfcUtil::Argument_ENTITY; } return IfcStructuralActivity::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_BOOL; case 10: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcStructuralActivity::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::UNDEFINED; case 10: return Type::IfcStructuralReaction; } return IfcStructuralActivity::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 9: return "DestabilizingLoad"; case 10: return "CausedBy"; } return IfcStructuralActivity::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -31492,7 +31494,7 @@ public:
     IfcBoundaryCondition* AppliedCondition() const;
     void setAppliedCondition(IfcBoundaryCondition* v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_ENTITY; } return IfcStructuralItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcStructuralItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::IfcBoundaryCondition; } return IfcStructuralItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "AppliedCondition"; } return IfcStructuralItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -31654,7 +31656,7 @@ public:
     IfcTemplatedEntityList< IfcStructuralLoad >::ptr SubsequentAppliedLoads() const;
     void setSubsequentAppliedLoads(IfcTemplatedEntityList< IfcStructuralLoad >::ptr v);
     virtual unsigned int getArgumentCount() const { return 14; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 12: return IfcUtil::Argument_ENTITY; case 13: return IfcUtil::Argument_ENTITY_LIST; } return IfcStructuralLinearAction::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 12: return IfcUtil::Argument_ENTITY_INSTANCE; case 13: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcStructuralLinearAction::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 12: return Type::IfcShapeAspect; case 13: return Type::IfcStructuralLoad; } return IfcStructuralLinearAction::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 12: return "VaryingAppliedLoadLocation"; case 13: return "SubsequentAppliedLoads"; } return IfcStructuralLinearAction::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -31764,7 +31766,7 @@ public:
     IfcTemplatedEntityList< IfcStructuralLoad >::ptr SubsequentAppliedLoads() const;
     void setSubsequentAppliedLoads(IfcTemplatedEntityList< IfcStructuralLoad >::ptr v);
     virtual unsigned int getArgumentCount() const { return 14; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 12: return IfcUtil::Argument_ENTITY; case 13: return IfcUtil::Argument_ENTITY_LIST; } return IfcStructuralPlanarAction::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 12: return IfcUtil::Argument_ENTITY_INSTANCE; case 13: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcStructuralPlanarAction::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 12: return Type::IfcShapeAspect; case 13: return Type::IfcStructuralLoad; } return IfcStructuralPlanarAction::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 12: return "VaryingAppliedLoadLocation"; case 13: return "SubsequentAppliedLoads"; } return IfcStructuralPlanarAction::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -31936,7 +31938,7 @@ public:
     bool IsLinear() const;
     void setIsLinear(bool v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_BOOL; } return IfcGroup::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_BOOL; } return IfcGroup::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcAnalysisTheoryTypeEnum; case 6: return Type::IfcStructuralLoadGroup; case 7: return Type::UNDEFINED; } return IfcGroup::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "TheoryType"; case 6: return "ResultForLoadGroup"; case 7: return "IsLinear"; } return IfcGroup::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -32009,7 +32011,7 @@ public:
     std::string JobDescription() const;
     void setJobDescription(std::string v);
     virtual unsigned int getArgumentCount() const { return 11; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_ENTITY; case 10: return IfcUtil::Argument_STRING; } return IfcConstructionResource::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_ENTITY_INSTANCE; case 10: return IfcUtil::Argument_STRING; } return IfcConstructionResource::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::IfcActorSelect; case 10: return Type::IfcText; } return IfcConstructionResource::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 9: return "SubContractor"; case 10: return "JobDescription"; } return IfcConstructionResource::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -32170,7 +32172,7 @@ public:
     IfcTimeSeries* TimeSeries() const;
     void setTimeSeries(IfcTimeSeries* v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_LIST; case 6: return IfcUtil::Argument_ENUMERATION; case 7: return IfcUtil::Argument_ENTITY; } return IfcControl::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENUMERATION; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcControl::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcDateTimeSelect; case 6: return Type::IfcTimeSeriesScheduleTypeEnum; case 7: return Type::IfcTimeSeries; } return IfcControl::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "ApplicableDates"; case 6: return "TimeSeriesScheduleType"; case 7: return "TimeSeries"; } return IfcControl::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -32465,7 +32467,7 @@ public:
     IfcTrimmingPreference::IfcTrimmingPreference MasterRepresentation() const;
     void setMasterRepresentation(IfcTrimmingPreference::IfcTrimmingPreference v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY; case 1: return IfcUtil::Argument_ENTITY_LIST; case 2: return IfcUtil::Argument_ENTITY_LIST; case 3: return IfcUtil::Argument_BOOL; case 4: return IfcUtil::Argument_ENUMERATION; } return IfcBoundedCurve::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_BOOL; case 4: return IfcUtil::Argument_ENUMERATION; } return IfcBoundedCurve::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurve; case 1: return Type::IfcTrimmingSelect; case 2: return Type::IfcTrimmingSelect; case 3: return Type::UNDEFINED; case 4: return Type::IfcTrimmingPreference; } return IfcBoundedCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisCurve"; case 1: return "Trim1"; case 2: return "Trim2"; case 3: return "SenseAgreement"; case 4: return "MasterRepresentation"; } return IfcBoundedCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -32964,7 +32966,7 @@ public:
     std::string UserDefinedControlType() const;
     void setUserDefinedControlType(std::string v);
     virtual unsigned int getArgumentCount() const { return 15; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY_LIST; case 8: return IfcUtil::Argument_STRING; case 9: return IfcUtil::Argument_DOUBLE; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_ENTITY; case 12: return IfcUtil::Argument_ENTITY; case 13: return IfcUtil::Argument_ENUMERATION; case 14: return IfcUtil::Argument_STRING; } return IfcControl::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_STRING; case 9: return IfcUtil::Argument_DOUBLE; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_ENTITY_INSTANCE; case 12: return IfcUtil::Argument_ENTITY_INSTANCE; case 13: return IfcUtil::Argument_ENUMERATION; case 14: return IfcUtil::Argument_STRING; } return IfcControl::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcIdentifier; case 6: return Type::IfcDateTimeSelect; case 7: return Type::IfcPerson; case 8: return Type::IfcLabel; case 9: return Type::IfcTimeMeasure; case 10: return Type::IfcTimeMeasure; case 11: return Type::IfcDateTimeSelect; case 12: return Type::IfcDateTimeSelect; case 13: return Type::IfcWorkControlTypeEnum; case 14: return Type::IfcLabel; } return IfcControl::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "Identifier"; case 6: return "CreationDate"; case 7: return "Creators"; case 8: return "Purpose"; case 9: return "Duration"; case 10: return "TotalFloat"; case 11: return "StartTime"; case 12: return "FinishTime"; case 13: return "WorkControlType"; case 14: return "UserDefinedControlType"; } return IfcControl::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -33436,7 +33438,7 @@ public:
     IfcCostValue* DepreciatedValue() const;
     void setDepreciatedValue(IfcCostValue* v);
     virtual unsigned int getArgumentCount() const { return 14; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY; case 8: return IfcUtil::Argument_ENTITY; case 9: return IfcUtil::Argument_ENTITY; case 10: return IfcUtil::Argument_ENTITY; case 11: return IfcUtil::Argument_ENTITY; case 12: return IfcUtil::Argument_ENTITY; case 13: return IfcUtil::Argument_ENTITY; } return IfcGroup::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; case 9: return IfcUtil::Argument_ENTITY_INSTANCE; case 10: return IfcUtil::Argument_ENTITY_INSTANCE; case 11: return IfcUtil::Argument_ENTITY_INSTANCE; case 12: return IfcUtil::Argument_ENTITY_INSTANCE; case 13: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcGroup::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcIdentifier; case 6: return Type::IfcCostValue; case 7: return Type::IfcCostValue; case 8: return Type::IfcCostValue; case 9: return Type::IfcActorSelect; case 10: return Type::IfcActorSelect; case 11: return Type::IfcPerson; case 12: return Type::IfcCalendarDate; case 13: return Type::IfcCostValue; } return IfcGroup::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "AssetID"; case 6: return "OriginalValue"; case 7: return "CurrentValue"; case 8: return "TotalReplacementCost"; case 9: return "Owner"; case 10: return "User"; case 11: return "ResponsiblePerson"; case 12: return "IncorporationDate"; case 13: return "DepreciatedValue"; } return IfcGroup::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -33514,7 +33516,7 @@ public:
     bool SelfIntersect() const;
     void setSelfIntersect(bool v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_ENTITY_LIST; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_BOOL; case 4: return IfcUtil::Argument_BOOL; } return IfcBoundedCurve::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_BOOL; case 4: return IfcUtil::Argument_BOOL; } return IfcBoundedCurve::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; case 1: return Type::IfcCartesianPoint; case 2: return Type::IfcBSplineCurveForm; case 3: return Type::UNDEFINED; case 4: return Type::UNDEFINED; } return IfcBoundedCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Degree"; case 1: return "ControlPointsList"; case 2: return "CurveForm"; case 3: return "ClosedCurve"; case 4: return "SelfIntersect"; } return IfcBoundedCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -35066,7 +35068,7 @@ public:
     IfcDateTimeSelect* CriterionDateTime() const;
     void setCriterionDateTime(IfcDateTimeSelect* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY; case 6: return IfcUtil::Argument_ENTITY; } return IfcControl::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcControl::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcConditionCriterionSelect; case 6: return Type::IfcDateTimeSelect; } return IfcControl::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "Criterion"; case 6: return "CriterionDateTime"; } return IfcControl::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -35150,7 +35152,7 @@ public:
     double UsageRatio() const;
     void setUsageRatio(double v);
     virtual unsigned int getArgumentCount() const { return 11; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_ENTITY_LIST; case 10: return IfcUtil::Argument_DOUBLE; } return IfcConstructionResource::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 10: return IfcUtil::Argument_DOUBLE; } return IfcConstructionResource::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::IfcActorSelect; case 10: return Type::IfcRatioMeasure; } return IfcConstructionResource::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 9: return "Suppliers"; case 10: return "UsageRatio"; } return IfcConstructionResource::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -38910,7 +38912,7 @@ public:
     std::vector< double > /*[2:?]*/ WeightsData() const;
     void setWeightsData(std::vector< double > /*[2:?]*/ v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_VECTOR_DOUBLE; } return IfcBezierCurve::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } return IfcBezierCurve::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::UNDEFINED; } return IfcBezierCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "WeightsData"; } return IfcBezierCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -39975,7 +39977,7 @@ public:
     IfcTemplatedEntityList< IfcStructuralResultGroup >::ptr HasResults() const;
     void setHasResults(IfcTemplatedEntityList< IfcStructuralResultGroup >::ptr v);
     virtual unsigned int getArgumentCount() const { return 9; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_ENTITY; case 7: return IfcUtil::Argument_ENTITY_LIST; case 8: return IfcUtil::Argument_ENTITY_LIST; } return IfcSystem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 8: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcSystem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcAnalysisModelTypeEnum; case 6: return Type::IfcAxis2Placement3D; case 7: return Type::IfcStructuralLoadGroup; case 8: return Type::IfcStructuralResultGroup; } return IfcSystem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "PredefinedType"; case 6: return "OrientationOf2DPlane"; case 7: return "LoadedBy"; case 8: return "HasResults"; } return IfcSystem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }

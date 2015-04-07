@@ -122,58 +122,68 @@ void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, int v) {
 		writable_entity()->setArgument(i,v);	
 	} else if ( (arg_type == Argument_BOOL) && ( (v == 0) || (v == 1) ) ) {
 		writable_entity()->setArgument(i, v == 1);
-	} else invalid_argument(i,"INT");
+	} else invalid_argument(i,"INTEGER");
 }
 void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, bool v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_BOOL) {
 		writable_entity()->setArgument(i,v);	
-	} else invalid_argument(i,"BOOL");
+	} else invalid_argument(i,"BOOLEAN");
 }
 void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, double v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_DOUBLE) {
 		writable_entity()->setArgument(i,v);	
-	} else invalid_argument(i,"DOUBLE");
+	} else invalid_argument(i,"REAL");
 }
 void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, const std::string& a) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_STRING) {
-		writable_entity()->setArgument(i,a);	
+		writable_entity()->setArgument(i,a);
 	} else if (arg_type == Argument_ENUMERATION) {
 		std::pair<const char*, int> enum_data = IfcSchema::Type::GetEnumerationIndex(IfcSchema::Type::GetAttributeEntity(_type, i), a);
 		writable_entity()->setArgument(i, enum_data.second, enum_data.first);
+	} else if (arg_type == Argument_BINARY) {
+		boost::dynamic_bitset<> bits(a);
+		writable_entity()->setArgument(i, bits);
 	} else invalid_argument(i,"STRING");
 }
 void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, const std::vector<int>& v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
-	if (arg_type == Argument_VECTOR_INT) {
+	if (arg_type == Argument_AGGREGATE_OF_INT) {
 		writable_entity()->setArgument(i,v);	
-	} else invalid_argument(i,"LIST of INT");
+	} else invalid_argument(i,"AGGREGATE OF INT");
 }
 void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, const std::vector<double>& v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
-	if (arg_type == Argument_VECTOR_DOUBLE) {
+	if (arg_type == Argument_AGGREGATE_OF_DOUBLE) {
 		writable_entity()->setArgument(i,v);	
-	} else invalid_argument(i,"LIST of DOUBLE");
+	} else invalid_argument(i,"AGGREGATE OF DOUBLE");
 }
 void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, const std::vector<std::string>& v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
-	if (arg_type == Argument_VECTOR_STRING) {
+	if (arg_type == Argument_AGGREGATE_OF_STRING) {
 		writable_entity()->setArgument(i,v);	
-	} else invalid_argument(i,"LIST of STRING");
+	} else if (arg_type == Argument_AGGREGATE_OF_BINARY) {
+		std::vector< boost::dynamic_bitset<> > bits;
+		bits.reserve(v.size());
+		for (std::vector<std::string>::const_iterator it = v.begin(); it != v.end(); ++it) {
+			bits.push_back(boost::dynamic_bitset<>(*it));
+		}
+		writable_entity()->setArgument(i, bits);
+	} else invalid_argument(i,"AGGREGATE OF STRING");
 }
 void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, IfcParse::IfcLateBoundEntity* v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
-	if (arg_type == Argument_ENTITY) {
+	if (arg_type == Argument_ENTITY_INSTANCE) {
 		writable_entity()->setArgument(i,v);	
-	} else invalid_argument(i,"ENTITY");
+	} else invalid_argument(i,"ENTITY INSTANCE");
 }
 void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, IfcEntityList::ptr v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
-	if (arg_type == Argument_ENTITY_LIST) {
+	if (arg_type == Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
 		writable_entity()->setArgument(i,v);	
-	} else invalid_argument(i,"LIST of ENTITY");
+	} else invalid_argument(i,"AGGREGATE OF ENTITY INSTANCE");
 }
 std::pair<IfcUtil::ArgumentType,Argument*> IfcParse::IfcLateBoundEntity::get_argument(unsigned i) {
 	return std::pair<IfcUtil::ArgumentType,Argument*>(getArgumentType(i),getArgument(i));

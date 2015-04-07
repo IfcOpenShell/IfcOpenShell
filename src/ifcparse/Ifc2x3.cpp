@@ -23,7 +23,7 @@
  * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
- 
+
 #ifndef USE_IFC4
 
 #include "../ifcparse/Ifc2x3.h"
@@ -10710,11 +10710,13 @@ int IfcPixelTexture::Height() const { return *entity->getArgument(5); }
 void IfcPixelTexture::setHeight(int v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(5,v); }
 int IfcPixelTexture::ColourComponents() const { return *entity->getArgument(6); }
 void IfcPixelTexture::setColourComponents(int v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(6,v); }
+std::vector< boost::dynamic_bitset<> > /*[1:?]*/ IfcPixelTexture::Pixel() const { return *entity->getArgument(7); }
+void IfcPixelTexture::setPixel(std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(7,v); }
 bool IfcPixelTexture::is(Type::Enum v) const { return v == Type::IfcPixelTexture || IfcSurfaceTexture::is(v); }
 Type::Enum IfcPixelTexture::type() const { return Type::IfcPixelTexture; }
 Type::Enum IfcPixelTexture::Class() { return Type::IfcPixelTexture; }
 IfcPixelTexture::IfcPixelTexture(IfcAbstractEntity* e) : IfcSurfaceTexture((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcPixelTexture)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-IfcPixelTexture::IfcPixelTexture(bool v1_RepeatS, bool v2_RepeatT, IfcSurfaceTextureEnum::IfcSurfaceTextureEnum v3_TextureType, IfcCartesianTransformationOperator2D* v4_TextureTransform, int v5_Width, int v6_Height, int v7_ColourComponents) : IfcSurfaceTexture((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_RepeatS)); e->setArgument(1,(v2_RepeatT)); e->setArgument(2,v3_TextureType,IfcSurfaceTextureEnum::ToString(v3_TextureType)); e->setArgument(3,(v4_TextureTransform)); e->setArgument(4,(v5_Width)); e->setArgument(5,(v6_Height)); e->setArgument(6,(v7_ColourComponents)); entity = e; EntityBuffer::Add(this); }
+IfcPixelTexture::IfcPixelTexture(bool v1_RepeatS, bool v2_RepeatT, IfcSurfaceTextureEnum::IfcSurfaceTextureEnum v3_TextureType, IfcCartesianTransformationOperator2D* v4_TextureTransform, int v5_Width, int v6_Height, int v7_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v8_Pixel) : IfcSurfaceTexture((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_RepeatS)); e->setArgument(1,(v2_RepeatT)); e->setArgument(2,v3_TextureType,IfcSurfaceTextureEnum::ToString(v3_TextureType)); e->setArgument(3,(v4_TextureTransform)); e->setArgument(4,(v5_Width)); e->setArgument(5,(v6_Height)); e->setArgument(6,(v7_ColourComponents)); e->setArgument(7,(v8_Pixel)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcPlacement
 IfcCartesianPoint* IfcPlacement::Location() const { return (IfcCartesianPoint*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(0))); }

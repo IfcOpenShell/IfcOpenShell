@@ -33,6 +33,8 @@
 
 #include <map>
 
+#include <boost/dynamic_bitset.hpp>
+
 #include "IfcUtil.h"
 
 namespace IfcWrite {
@@ -68,6 +70,7 @@ namespace IfcWrite {
 		void setArgument(int i,int v);
 		void setArgument(int i,int v, const char* c);
 		void setArgument(int i,const std::string& v);
+		void setArgument(int i,const boost::dynamic_bitset<>& v);
 		void setArgument(int i,double v);
 		void setArgument(int i,IfcUtil::IfcBaseClass* v);
 		void setArgument(int i,IfcEntityList::ptr v);
@@ -75,6 +78,7 @@ namespace IfcWrite {
 		void setArgument(int i,const std::vector<double>& v);
 		void setArgument(int i,const std::vector<std::string>& v);
 		void setArgument(int i,const std::vector<int>& v);
+		void setArgument(int i,const std::vector< boost::dynamic_bitset<> >& v);
 	};
 
 }

@@ -23,7 +23,7 @@
  * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
- 
+
 #ifdef USE_IFC4
 
 #include "../ifcparse/Ifc4.h"
@@ -7360,7 +7360,7 @@ IfcPressureMeasure::IfcPressureMeasure(double v) { IfcWritableEntity* e = new If
 IfcPressureMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPropertySetDefinitionSet
-IfcUtil::ArgumentType IfcPropertySetDefinitionSet::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_ENTITY; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcPropertySetDefinitionSet::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_ENTITY_INSTANCE; } else { throw IfcParse::IfcException("argument out of range"); } }
 Argument* IfcPropertySetDefinitionSet::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcPropertySetDefinitionSet::is(Type::Enum v) const { return v == IfcPropertySetDefinitionSet::Class(); }
 Type::Enum IfcPropertySetDefinitionSet::type() const { return Type::IfcPropertySetDefinitionSet; }
@@ -8319,11 +8319,13 @@ IfcBeamType::IfcBeamType(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHisto
 // Function implementations for IfcBlobTexture
 std::string IfcBlobTexture::RasterFormat() const { return *entity->getArgument(5); }
 void IfcBlobTexture::setRasterFormat(std::string v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(5,v); }
+boost::dynamic_bitset<> IfcBlobTexture::RasterCode() const { return *entity->getArgument(6); }
+void IfcBlobTexture::setRasterCode(boost::dynamic_bitset<> v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(6,v); }
 bool IfcBlobTexture::is(Type::Enum v) const { return v == Type::IfcBlobTexture || IfcSurfaceTexture::is(v); }
 Type::Enum IfcBlobTexture::type() const { return Type::IfcBlobTexture; }
 Type::Enum IfcBlobTexture::Class() { return Type::IfcBlobTexture; }
 IfcBlobTexture::IfcBlobTexture(IfcAbstractEntity* e) : IfcSurfaceTexture((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcBlobTexture)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-IfcBlobTexture::IfcBlobTexture(bool v1_RepeatS, bool v2_RepeatT, boost::optional< std::string > v3_Mode, IfcCartesianTransformationOperator2D* v4_TextureTransform, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_Parameter, std::string v6_RasterFormat) : IfcSurfaceTexture((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_RepeatS)); e->setArgument(1,(v2_RepeatT)); if (v3_Mode) { e->setArgument(2,(*v3_Mode)); } else { e->setArgument(2); } e->setArgument(3,(v4_TextureTransform)); if (v5_Parameter) { e->setArgument(4,(*v5_Parameter)); } else { e->setArgument(4); } e->setArgument(5,(v6_RasterFormat)); entity = e; EntityBuffer::Add(this); }
+IfcBlobTexture::IfcBlobTexture(bool v1_RepeatS, bool v2_RepeatT, boost::optional< std::string > v3_Mode, IfcCartesianTransformationOperator2D* v4_TextureTransform, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_Parameter, std::string v6_RasterFormat, boost::dynamic_bitset<> v7_RasterCode) : IfcSurfaceTexture((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_RepeatS)); e->setArgument(1,(v2_RepeatT)); if (v3_Mode) { e->setArgument(2,(*v3_Mode)); } else { e->setArgument(2); } e->setArgument(3,(v4_TextureTransform)); if (v5_Parameter) { e->setArgument(4,(*v5_Parameter)); } else { e->setArgument(4); } e->setArgument(5,(v6_RasterFormat)); e->setArgument(6,(v7_RasterCode)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcBlock
 double IfcBlock::XLength() const { return *entity->getArgument(1); }
@@ -12673,11 +12675,13 @@ int IfcPixelTexture::Height() const { return *entity->getArgument(6); }
 void IfcPixelTexture::setHeight(int v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(6,v); }
 int IfcPixelTexture::ColourComponents() const { return *entity->getArgument(7); }
 void IfcPixelTexture::setColourComponents(int v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(7,v); }
+std::vector< boost::dynamic_bitset<> > /*[1:?]*/ IfcPixelTexture::Pixel() const { return *entity->getArgument(8); }
+void IfcPixelTexture::setPixel(std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(8,v); }
 bool IfcPixelTexture::is(Type::Enum v) const { return v == Type::IfcPixelTexture || IfcSurfaceTexture::is(v); }
 Type::Enum IfcPixelTexture::type() const { return Type::IfcPixelTexture; }
 Type::Enum IfcPixelTexture::Class() { return Type::IfcPixelTexture; }
 IfcPixelTexture::IfcPixelTexture(IfcAbstractEntity* e) : IfcSurfaceTexture((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcPixelTexture)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-IfcPixelTexture::IfcPixelTexture(bool v1_RepeatS, bool v2_RepeatT, boost::optional< std::string > v3_Mode, IfcCartesianTransformationOperator2D* v4_TextureTransform, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_Parameter, int v6_Width, int v7_Height, int v8_ColourComponents) : IfcSurfaceTexture((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_RepeatS)); e->setArgument(1,(v2_RepeatT)); if (v3_Mode) { e->setArgument(2,(*v3_Mode)); } else { e->setArgument(2); } e->setArgument(3,(v4_TextureTransform)); if (v5_Parameter) { e->setArgument(4,(*v5_Parameter)); } else { e->setArgument(4); } e->setArgument(5,(v6_Width)); e->setArgument(6,(v7_Height)); e->setArgument(7,(v8_ColourComponents)); entity = e; EntityBuffer::Add(this); }
+IfcPixelTexture::IfcPixelTexture(bool v1_RepeatS, bool v2_RepeatT, boost::optional< std::string > v3_Mode, IfcCartesianTransformationOperator2D* v4_TextureTransform, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_Parameter, int v6_Width, int v7_Height, int v8_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v9_Pixel) : IfcSurfaceTexture((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_RepeatS)); e->setArgument(1,(v2_RepeatT)); if (v3_Mode) { e->setArgument(2,(*v3_Mode)); } else { e->setArgument(2); } e->setArgument(3,(v4_TextureTransform)); if (v5_Parameter) { e->setArgument(4,(*v5_Parameter)); } else { e->setArgument(4); } e->setArgument(5,(v6_Width)); e->setArgument(6,(v7_Height)); e->setArgument(7,(v8_ColourComponents)); e->setArgument(8,(v9_Pixel)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcPlacement
 IfcCartesianPoint* IfcPlacement::Location() const { return (IfcCartesianPoint*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(0))); }

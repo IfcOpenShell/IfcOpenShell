@@ -158,17 +158,24 @@ void IfcWritableEntity::setArgument(int i, Argument* a) {
 		break;
 	case IfcUtil::Argument_STRING:
 		this->setArgument(i, static_cast<std::string>(*a));
-		break; 
-	case IfcUtil::Argument_VECTOR_INT: {
+		break;
+	case IfcUtil::Argument_BINARY:
+		this->setArgument(i, static_cast< boost::dynamic_bitset<> >(*a));
+		break;
+	case IfcUtil::Argument_AGGREGATE_OF_INT: {
 		std::vector<int> attr_value = *a;
 		this->setArgument(i, attr_value); }
 		break;
-	case IfcUtil::Argument_VECTOR_DOUBLE: {
+	case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
 		std::vector<double> attr_value = *a;
 		this->setArgument(i, attr_value); }
 		break;
-	case IfcUtil::Argument_VECTOR_STRING: {
+	case IfcUtil::Argument_AGGREGATE_OF_STRING: {
 		std::vector<std::string> attr_value = *a;
+		this->setArgument(i, attr_value); }
+		break;
+	case IfcUtil::Argument_AGGREGATE_OF_BINARY: {
+		std::vector< boost::dynamic_bitset<> > attr_value = *a;
 		this->setArgument(i, attr_value); }
 		break;
 	case IfcUtil::Argument_ENUMERATION: {
@@ -178,19 +185,19 @@ void IfcWritableEntity::setArgument(int i, Argument* a) {
 		enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
 		std::pair<const char*, int> enum_ref = IfcSchema::Type::GetEnumerationIndex(ty, enum_literal);
 		this->setArgument(i, enum_ref.second, enum_ref.first); }
-		break; 
-	case IfcUtil::Argument_ENTITY: {
+		break;
+	case IfcUtil::Argument_ENTITY_INSTANCE: {
 		this->setArgument(i, static_cast<IfcUtil::IfcBaseClass*>(*a)); }
-		break; 
-	case IfcUtil::Argument_ENTITY_LIST: {
+		break;
+	case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
 		IfcEntityList::ptr instances = *a;
 		IfcEntityList::ptr mapped_instances(new IfcEntityList);
 		for (IfcEntityList::it it = instances->begin(); it != instances->end(); ++it) {
 			mapped_instances->push(*it);
 		}
 		this->setArgument(i, mapped_instances); }
-		break; 
-	case IfcUtil::Argument_ENTITY_LIST_LIST: {
+		break;
+	case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
 		IfcEntityListList::ptr instances = *a;
 		IfcEntityListList::ptr mapped_instances(new IfcEntityListList);
 		for (IfcEntityListList::outer_it it = instances->begin(); it != instances->end(); ++it) {
@@ -201,7 +208,8 @@ void IfcWritableEntity::setArgument(int i, Argument* a) {
 			mapped_instances->push(inner);
 		}		
 		this->setArgument(i, mapped_instances); }
-		break; 
+		break;
+	default:
 	case IfcUtil::Argument_UNKNOWN:
 		throw IfcParse::IfcException("Unknown argument encountered");
 		break;
@@ -222,6 +230,9 @@ void IfcWritableEntity::setArgument(int i,int v, const char* c){
 	_setArgument(i, IfcWriteArgument::EnumerationReference(v, c));
 }
 void IfcWritableEntity::setArgument(int i,const std::string& v){
+	_setArgument(i, v);
+}
+void IfcWritableEntity::setArgument(int i,const boost::dynamic_bitset<>& v){
 	_setArgument(i, v);
 }
 void IfcWritableEntity::setArgument(int i,double v){
@@ -257,6 +268,9 @@ void IfcWritableEntity::setArgument(int i,const std::vector<std::string>& v){
 void IfcWritableEntity::setArgument(int i,const std::vector<int>& v){
 	_setArgument(i, v);
 }
+void IfcWritableEntity::setArgument(int i,const std::vector< boost::dynamic_bitset<> >& v){
+	_setArgument(i, v);
+}
 
 class SizeVisitor : public boost::static_visitor<int> {
 public:
@@ -265,10 +279,12 @@ public:
 	int operator()(const int& i) const { return -1; }
 	int operator()(const bool& i) const { return -1; }
 	int operator()(const double& i) const { return -1; }
-	int operator()(const std::string& i) const { return i.size(); }
+	int operator()(const std::string& i) const { return -1; }
+	int operator()(const boost::dynamic_bitset<>& i) const { return -1; }
 	int operator()(const std::vector<int>& i) const { return i.size(); }
 	int operator()(const std::vector<double>& i) const { return i.size(); }
 	int operator()(const std::vector<std::string>& i) const { return i.size(); }
+	int operator()(const std::vector< boost::dynamic_bitset<> >& i) const { return i.size(); }
 	int operator()(const IfcWriteArgument::EnumerationReference& i) const { return -1; }
 	int operator()(const IfcUtil::IfcBaseClass* const& i) const { return -1; }
 	int operator()(const IfcEntityList::ptr& i) const { return i->size(); }
@@ -310,6 +326,27 @@ private:
 		}
 		return oss.str();
 	}
+
+	std::string format_binary(const boost::dynamic_bitset<>& b) {
+		std::ostringstream oss;
+		oss.imbue(std::locale::classic());
+		oss.put('"');
+		oss << std::hex << std::setw(1);
+		unsigned c = b.size();
+		unsigned n = c % 4;
+		oss << n;
+		for (unsigned i = 0; i < c + n;) {
+			unsigned accum = 0;
+			for (int j = 0; j < 4; ++j, ++i) {
+				unsigned bit = i < n ? 0 : b.test(c - i + n - 1) ? 1 : 0;
+				accum |= bit << (3-j);
+			}
+			oss << accum;
+		}
+		oss.put('"');
+		return oss.str();
+	}
+
 	bool upper;
 public:
 	StringBuilderVisitor(std::ostringstream& stream, bool upper = false) 
@@ -319,6 +356,7 @@ public:
 	void operator()(const int& i) { data << i; }
 	void operator()(const bool& i) { data << (i ? ".T." : ".F."); }
 	void operator()(const double& i) { data << format_double(i); }
+	void operator()(const boost::dynamic_bitset<>& i) { data << format_binary(i); }
 	void operator()(const std::string& i) { 
 		std::string s = i;
 		if (upper) {
@@ -330,6 +368,7 @@ public:
 	void operator()(const std::vector<int>& i);
 	void operator()(const std::vector<double>& i);
 	void operator()(const std::vector<std::string>& i);
+	void operator()(const std::vector< boost::dynamic_bitset<> >& i);
 	void operator()(const IfcWriteArgument::EnumerationReference& i) {
 		data << "." << i.enumeration_value << ".";
 	}
@@ -390,9 +429,20 @@ void StringBuilderVisitor::serialize(const std::vector<double>& i) {
 	data << ")";
 }
 
+template <>
+void StringBuilderVisitor::serialize(const std::vector< boost::dynamic_bitset<> >& i) {
+	data << "(";
+	for (std::vector< boost::dynamic_bitset<> >::const_iterator it = i.begin(); it != i.end(); ++it) {
+		if (it != i.begin()) data << ",";
+		data << format_binary(*it);
+	}
+	data << ")";
+}
+
 void StringBuilderVisitor::operator()(const std::vector<int>& i) { serialize(i); }
 void StringBuilderVisitor::operator()(const std::vector<double>& i) { serialize(i); }
 void StringBuilderVisitor::operator()(const std::vector<std::string>& i) { serialize(i); }
+void StringBuilderVisitor::operator()(const std::vector< boost::dynamic_bitset<> >& i) { serialize(i); }
 	
 
 IfcWriteArgument::operator int() const { return as<int>(); }
@@ -404,10 +454,12 @@ IfcWriteArgument::operator std::string() const {
 	}
 	return as<std::string>(); 
 }
+IfcWriteArgument::operator IfcUtil::IfcBaseClass*() const { return as<IfcUtil::IfcBaseClass*>(); }
+IfcWriteArgument::operator boost::dynamic_bitset<>() const { return as< boost::dynamic_bitset<> >(); }
 IfcWriteArgument::operator std::vector<double>() const { return as<std::vector<double> >(); }
 IfcWriteArgument::operator std::vector<int>() const { return as<std::vector<int> >(); }
 IfcWriteArgument::operator std::vector<std::string>() const { return as<std::vector<std::string > >(); }
-IfcWriteArgument::operator IfcUtil::IfcBaseClass*() const { return as<IfcUtil::IfcBaseClass*>(); }
+IfcWriteArgument::operator std::vector< boost::dynamic_bitset<> >() const { return as< std::vector< boost::dynamic_bitset<> > >(); }
 IfcWriteArgument::operator IfcEntityList::ptr() const { return as<IfcEntityList::ptr>(); }
 IfcWriteArgument::operator IfcEntityListList::ptr() const { throw; }
 bool IfcWriteArgument::isNull() const { return type() == IfcUtil::Argument_NULL; }

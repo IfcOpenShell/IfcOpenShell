@@ -149,7 +149,7 @@ class BinaryType(Node):
     def init(self):
         pass
     def __repr__(self):
-        return "BINARY"
+        return "binary"
 
 
 class BoundSpecification(Node):

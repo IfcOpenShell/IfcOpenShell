@@ -37,7 +37,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 			stream << v;
 			value = stream.str();
 			break; }
-		case IfcUtil::Argument_ENTITY: {
+		case IfcUtil::Argument_ENTITY_INSTANCE: {
 			IfcUtil::IfcBaseClass* e = *argument;
 			if (Type::IsSimple(e->type())) {
 				IfcUtil::IfcBaseType* f = (IfcUtil::IfcBaseType*) e;

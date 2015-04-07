@@ -376,9 +376,13 @@ bool TokenFunc::isEnumeration(const Token& t) {
 	return ! isOperator(t) && startsWith(t, '.');
 }
 
+bool TokenFunc::isBinary(const Token& t) {
+	return ! isOperator(t) && startsWith(t, '"');
+}
+
 bool TokenFunc::isKeyword(const Token& t) {
 	// bool is a subtype of enumeration, no need to test for that
-	return !isOperator(t) && !isIdentifier(t) && !isString(t) && !isEnumeration(t) && !isInt(t) && !isFloat(t);
+	return !isOperator(t) && !isIdentifier(t) && !isString(t) && !isEnumeration(t) && !isInt(t) && !isFloat(t) && !isBinary(t);
 }
 
 bool TokenFunc::isInt(const Token& t) {
@@ -445,7 +449,37 @@ std::string TokenFunc::asString(const Token& t) {
 	if ( isOperator(t,'$') ) return "";
 	else if ( isOperator(t) ) throw IfcException("Token is not a string");
 	std::string str = t.first->TokenString(t.second);
-	return isString(t) || isEnumeration(t) ? str.substr(1,str.size()-2) : str;
+	return isString(t) || isEnumeration(t) || isBinary(t) ? str.substr(1,str.size()-2) : str;
+}
+
+boost::dynamic_bitset<> TokenFunc::asBinary(const Token& t) {
+	const std::string str = asString(t);
+	if (str.size() < 1) {
+		throw IfcException("Token is not a valid binary sequence");
+	}
+	
+	std::string::const_iterator it = str.begin();
+	int n = *it - '0';
+	if ((n < 0 || n > 3) || (str.size() == 1 && n != 0)) {
+		throw IfcException("Token is not a valid binary sequence");
+	}
+
+	++it;
+	unsigned i = (str.size()-1) * 4 - n;
+	boost::dynamic_bitset<> bitset(i);	
+
+	for(; it != str.end(); ++it) {
+		const std::string::value_type& c = *it;
+		int value = (c < 'A') ? (c - '0') : (c - 'A' + 10);
+		for (unsigned j = 0; j < 4; ++j) {
+			if (i-- == 0) break;
+			if (value & (1 << (3-j))) {
+				bitset.set(i);
+			}			
+		}
+	}
+
+	return bitset;
 }
 
 std::string TokenFunc::toString(const Token& t) {
@@ -506,13 +540,17 @@ IfcUtil::ArgumentType ArgumentList::type() const {
 	if (list.empty()) return IfcUtil::Argument_UNKNOWN;
 	const IfcUtil::ArgumentType elem_type = list[0]->type();
 	if (elem_type == IfcUtil::Argument_INT) {
-		return IfcUtil::Argument_VECTOR_INT;
+		return IfcUtil::Argument_AGGREGATE_OF_INT;
 	} else if (elem_type == IfcUtil::Argument_DOUBLE) {
-		return IfcUtil::Argument_VECTOR_DOUBLE;
+		return IfcUtil::Argument_AGGREGATE_OF_DOUBLE;
 	} else if (elem_type == IfcUtil::Argument_STRING) {
-		return IfcUtil::Argument_VECTOR_STRING;
-	} else if (elem_type == IfcUtil::Argument_ENTITY) {
-		return IfcUtil::Argument_ENTITY_LIST;
+		return IfcUtil::Argument_AGGREGATE_OF_STRING;
+	} else if (elem_type == IfcUtil::Argument_BINARY) {
+		return IfcUtil::Argument_AGGREGATE_OF_BINARY;
+	} else if (elem_type == IfcUtil::Argument_ENTITY_INSTANCE) {
+		return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE;
+	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE;
 	} else {
 		return IfcUtil::Argument_UNKNOWN;
 	}
@@ -522,6 +560,18 @@ void ArgumentList::push(Argument* l) {
 	list.push_back(l);
 }
 
+// templated helper function for reading arguments into a list
+template<typename T>
+std::vector<T> read_list_as_vector(const std::vector<Argument*>& list) {
+	std::vector<T> return_value;
+	return_value.reserve(list.size());
+	std::vector<Argument*>::const_iterator it = list.begin();
+	for (; it != list.end(); ++it) {
+		return_value.push_back(**it);
+	}
+	return return_value;
+}
+
 //
 // Functions for casting the ArgumentList to other types
 //
@@ -529,32 +579,20 @@ ArgumentList::operator int() const { throw IfcException("Argument is not an inte
 ArgumentList::operator bool() const { throw IfcException("Argument is not a boolean"); }
 ArgumentList::operator double() const { throw IfcException("Argument is not a number"); }
 ArgumentList::operator std::string() const { throw IfcException("Argument is not a string"); }
+ArgumentList::operator boost::dynamic_bitset<>() const { throw IfcException("Argument is not a binary"); }
 ArgumentList::operator std::vector<double>() const {
-	std::vector<double> r;
-	std::vector<Argument*>::const_iterator it;
-	for ( it = list.begin(); it != list.end(); ++ it ) {
-		r.push_back(**it);
-	}
-	return r;
+	return read_list_as_vector<double>(list);
 }
 ArgumentList::operator std::vector<int>() const {
-	std::vector<int> r;
-	std::vector<Argument*>::const_iterator it;
-	for ( it = list.begin(); it != list.end(); ++ it ) {
-		r.push_back(**it);
-	}
-	return r;
+	return read_list_as_vector<int>(list);
 }
 ArgumentList::operator std::vector<std::string>() const {
-	std::vector<std::string> r;
-	std::vector<Argument*>::const_iterator it;
-	for ( it = list.begin(); it != list.end(); ++ it ) {
-		r.push_back(**it);
-	}
-	return r;
+	return read_list_as_vector<std::string>(list);
 }
-ArgumentList::operator IfcUtil::IfcBaseClass*() const { throw IfcException("Argument is not an IFC type"); }
-//ArgumentList::operator IfcUtil::IfcAbstractSelect::ptr() const { throw IfcException("Argument is not an IFC type"); }
+ArgumentList::operator std::vector<boost::dynamic_bitset<> >() const {
+	return read_list_as_vector<boost::dynamic_bitset<> >(list);
+}
+ArgumentList::operator IfcUtil::IfcBaseClass*() const { throw IfcException("Argument is not an entity instance"); }
 ArgumentList::operator IfcEntityList::ptr() const {
 	IfcEntityList::ptr l ( new IfcEntityList() );
 	std::vector<Argument*>::const_iterator it;
@@ -626,7 +664,9 @@ IfcUtil::ArgumentType TokenArgument::type() const {
 	} else if (TokenFunc::isEnumeration(token)) {
 		return IfcUtil::Argument_ENUMERATION;
 	} else if (TokenFunc::isIdentifier(token)) {
-		return IfcUtil::Argument_ENTITY;
+		return IfcUtil::Argument_ENTITY_INSTANCE;
+	} else if (TokenFunc::isBinary(token)) {
+		return IfcUtil::Argument_BINARY;
 	} else if (TokenFunc::isOperator(token, '$')) {
 		return IfcUtil::Argument_NULL;
 	} else if (TokenFunc::isOperator(token, '*')) {
@@ -643,14 +683,16 @@ TokenArgument::operator int() const { return TokenFunc::asInt(token); }
 TokenArgument::operator bool() const { return TokenFunc::asBool(token); }
 TokenArgument::operator double() const { return TokenFunc::asFloat(token); }
 TokenArgument::operator std::string() const { return TokenFunc::asString(token); }
+TokenArgument::operator boost::dynamic_bitset<>() const { return TokenFunc::asBinary(token); }
 TokenArgument::operator std::vector<double>() const { throw IfcException("Argument is not a list of floats"); }
 TokenArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
 TokenArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
+TokenArgument::operator std::vector<boost::dynamic_bitset<> >() const { throw IfcException("Argument is not a list of binaries"); }
 TokenArgument::operator IfcUtil::IfcBaseClass*() const { return token.first->file->entityById(TokenFunc::asInt(token)); }
-TokenArgument::operator IfcEntityList::ptr() const { throw IfcException("Argument is not a list of entities"); }
-TokenArgument::operator IfcEntityListList::ptr() const { throw IfcException("Argument is not a list of entity lists"); }
+TokenArgument::operator IfcEntityList::ptr() const { throw IfcException("Argument is not a list of entity instances"); }
+TokenArgument::operator IfcEntityListList::ptr() const { throw IfcException("Argument is not a list of list of entity instances"); }
 unsigned int TokenArgument::size() const { return 1; }
-Argument* TokenArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
+Argument* TokenArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of attributes"); }
 std::string TokenArgument::toString(bool upper) const { 
 	if ( upper && TokenFunc::isString(token) ) {
 		return IfcWrite::IfcCharacterEncoder(TokenFunc::asString(token)); 
@@ -661,7 +703,7 @@ std::string TokenArgument::toString(bool upper) const {
 bool TokenArgument::isNull() const { return TokenFunc::isOperator(token,'$'); }
 
 IfcUtil::ArgumentType EntityArgument::type() const {
-	return IfcUtil::Argument_ENTITY;
+	return IfcUtil::Argument_ENTITY_INSTANCE;
 }
 
 //
@@ -670,14 +712,16 @@ IfcUtil::ArgumentType EntityArgument::type() const {
 EntityArgument::operator int() const { throw IfcException("Argument is not an integer"); }
 EntityArgument::operator bool() const { throw IfcException("Argument is not a boolean"); }
 EntityArgument::operator double() const { throw IfcException("Argument is not a number"); }
+EntityArgument::operator boost::dynamic_bitset<>() const { throw IfcException("Argument is not a binary"); }
 EntityArgument::operator std::string() const { throw IfcException("Argument is not a string"); }
 EntityArgument::operator std::vector<double>() const { throw IfcException("Argument is not a list of floats"); }
 EntityArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
 EntityArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
+EntityArgument::operator std::vector<boost::dynamic_bitset<> >() const { throw IfcException("Argument is not a list of binaries"); }
 EntityArgument::operator IfcUtil::IfcBaseClass*() const { return entity; }
 //EntityArgument::operator IfcUtil::IfcAbstractSelect::ptr() const { return entity; }
-EntityArgument::operator IfcEntityList::ptr() const { throw IfcException("Argument is not a list of entities"); }
-EntityArgument::operator IfcEntityListList::ptr() const { throw IfcException("Argument is not a list of entity lists"); }
+EntityArgument::operator IfcEntityList::ptr() const { throw IfcException("Argument is not a list of entity instances"); }
+EntityArgument::operator IfcEntityListList::ptr() const { throw IfcException("Argument is not a list of list of entity instances"); }
 unsigned int EntityArgument::size() const { return 1; }
 Argument* EntityArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
 std::string EntityArgument::toString(bool upper) const { 
@@ -951,14 +995,14 @@ void IfcFile::traverse(IfcUtil::IfcBaseClass* instance, std::set<IfcUtil::IfcBas
 	for (unsigned i = 0; i < instance->getArgumentCount(); ++i) {
 		Argument* arg = instance->getArgument(i);
 
-		if (arg->type() == IfcUtil::Argument_ENTITY) {
+		if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
 			traverse(*arg, visited, list, level + 1, max_level);
-		} else if (arg->type() == IfcUtil::Argument_ENTITY_LIST) {
+		} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
 			IfcEntityList::ptr entity_list_attribute = *arg;
 			for (IfcEntityList::it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
 				traverse(*it, visited, list, level + 1, max_level);
 			}
-		} else if (arg->type() == IfcUtil::Argument_ENTITY_LIST_LIST) {
+		} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
 			IfcEntityListList::ptr entity_list_attribute = *arg;
 			for (IfcEntityListList::outer_it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
 				for (IfcEntityListList::inner_it jt = it->begin(); jt != it->end(); ++jt) {
@@ -1029,11 +1073,11 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		for (unsigned i = 0; i < we->getArgumentCount(); ++i) {
 			Argument* attr = we->getArgument(i);
 			IfcUtil::ArgumentType attr_type = attr->type();
-			if (attr_type == IfcUtil::Argument_ENTITY) {
+			if (attr_type == IfcUtil::Argument_ENTITY_INSTANCE) {
 				entity_entity_map_t::const_iterator eit = entity_file_map.find(*attr);
 				if (eit == entity_file_map.end()) throw IfcParse::IfcException("Unable to map instance to file");
 				we->setArgument(i, eit->second);
-			} else if (attr_type == IfcUtil::Argument_ENTITY_LIST) {
+			} else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
 				IfcEntityList::ptr instances = *attr;
 				IfcEntityList::ptr new_instances(new IfcEntityList);
 				for (IfcEntityList::it it = instances->begin(); it != instances->end(); ++it) {
@@ -1042,7 +1086,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 					new_instances->push(eit->second);
 				}
 				we->setArgument(i, new_instances);
-			} else if (attr_type == IfcUtil::Argument_ENTITY_LIST_LIST) {
+			} else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
 				IfcEntityListList::ptr instances = *attr;
 				IfcEntityListList::ptr new_instances(new IfcEntityListList);
 				for (IfcEntityListList::outer_it it = instances->begin(); it != instances->end(); ++it) {
@@ -1066,7 +1110,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 					double v = *attr;
 					v *= *conversion_factor;
 					we->setArgument(i, v);
-				} else if (attr_type == IfcUtil::Argument_VECTOR_DOUBLE) {
+				} else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
 					std::vector<double> v = *attr;
 					for (std::vector<double>::iterator it = v.begin(); it != v.end(); ++it) {
 						(*it) *= *conversion_factor;
@@ -1195,14 +1239,14 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 
 				IfcUtil::ArgumentType attr_type = related_instance->getArgumentType(i);
 				switch(attr_type) {
-				case IfcUtil::Argument_ENTITY: {
+				case IfcUtil::Argument_ENTITY_INSTANCE: {
 					IfcUtil::IfcBaseClass* instance_attribute = *attr;
 					if (instance_attribute == entity) {
 						make_writable(related_instance)->setArgument(i);
 						// deletion_queue.insert(related_instance);
 					} }
 					break;
-				case IfcUtil::Argument_ENTITY_LIST: {
+				case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
 					IfcEntityList::ptr instance_list = *attr;
 					if (instance_list->contains(entity)) {
 						instance_list->remove(entity);
@@ -1212,7 +1256,7 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 						} */
 					} }
 					break;
-				case IfcUtil::Argument_ENTITY_LIST_LIST: {
+				case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
 					IfcEntityListList::ptr instance_list_list = *attr;
 					if (instance_list_list->contains(entity)) {
 						IfcEntityListList::ptr new_list(new IfcEntityListList);
@@ -1364,12 +1408,12 @@ IfcEntityList::ptr IfcFile::getInverse(int instance_id, IfcSchema::Type::Enum ty
 		bool valid = type == IfcSchema::Type::UNDEFINED || (*it)->is(type);
 		if (valid && attribute_index >= 0) {
 			Argument* arg = (*it)->entity->getArgument(attribute_index);
-			if (arg->type() == IfcUtil::Argument_ENTITY) {
+			if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
 				valid = instance == *arg;
-			} else if (arg->type() == IfcUtil::Argument_ENTITY_LIST) {
+			} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
 				IfcEntityList::ptr li = *arg;
 				valid = li->contains(instance);
-			} else if (arg->type() == IfcUtil::Argument_ENTITY_LIST_LIST) {
+			} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
 				IfcEntityListList::ptr li = *arg;
 				valid = li->contains(instance);
 			}
