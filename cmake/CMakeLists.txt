@@ -193,6 +193,7 @@ SET(include_files_geom
     ../src/ifcgeom/IfcGeomMaterial.h
     ../src/ifcgeom/IfcGeomRenderStyles.h
     ../src/ifcgeom/IfcGeomRepresentation.h
+    ../src/ifcgeom/IfcGeomShapeType.h
     ../src/ifcgeom/IfcRegister.h
     ../src/ifcgeom/IfcRegisterConvertCurve.h
     ../src/ifcgeom/IfcRegisterConvertFace.h
@@ -202,11 +203,12 @@ SET(include_files_geom
     ../src/ifcgeom/IfcRegisterCreateCache.h
     ../src/ifcgeom/IfcRegisterDef.h
     ../src/ifcgeom/IfcRegisterGeomHeader.h
-    ../src/ifcgeom/IfcRegisterIsShapeCollection.h
     ../src/ifcgeom/IfcRegisterPurgeCache.h
+    ../src/ifcgeom/IfcRegisterShapeType.h
     ../src/ifcgeom/IfcRegisterUndef.h
     ../src/ifcgeom/IfcRepresentationShapeItem.h
 )
+
 SET(include_files_parse
     ../src/ifcparse/Ifc2x3-latebound.h
     ../src/ifcparse/Ifc2x3.h

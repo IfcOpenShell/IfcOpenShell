@@ -145,6 +145,7 @@
 			name = property(name)
 			type = property(type)
 			guid = property(guid)
+			context = property(context)
 			transformation = property(transformation)
     %}
 };
@@ -198,8 +199,14 @@
 };
 
 %inline %{
-	boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcParse::IfcLateBoundEntity* instance) {
+	boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcParse::IfcLateBoundEntity* instance, IfcParse::IfcLateBoundEntity* representation = 0) {
 		if (instance->is(IfcSchema::Type::IfcProduct)) {
+			if (representation) {
+				if (!representation->is(IfcSchema::Type::IfcRepresentation)) {
+					throw IfcParse::IfcException("Supplied representation not of type IfcRepresentation");
+				}
+			}
+
 			IfcParse::IfcFile* file = instance->entity->file;
 			
 			IfcSchema::IfcProject::list::ptr projects = file->entitiesByType<IfcSchema::IfcProject>();
@@ -211,28 +218,39 @@
 			IfcGeom::Kernel kernel;
 			kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.sew_shells() ? 1000 : -1);
 			kernel.setValue(IfcGeom::Kernel::GV_FORCE_CCW_FACE_ORIENTATION, settings.force_ccw_face_orientation() ? 1 : -1);
+			kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.include_curves() ? (settings.exclude_solids_and_surfaces() ? -1. : 0.) : +1.));
 
 			IfcSchema::IfcProduct* product = (IfcSchema::IfcProduct*) instance;
 
-			if (!product->hasRepresentation()) {
+			if (!representation && !product->hasRepresentation()) {
 				throw IfcParse::IfcException("Representation is NULL");
 			}
 			
 			IfcSchema::IfcProductRepresentation* prodrep = product->Representation();
 			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
-			IfcSchema::IfcRepresentation* representation = 0;
+			IfcSchema::IfcRepresentation* ifc_representation = (IfcSchema::IfcRepresentation*) representation;
 			
-			// First, try to find a representation with a 'Body' identifier
-			for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
-				IfcSchema::IfcRepresentation* rep = *it;
-				if (rep->RepresentationIdentifier() == "Body") {
-					representation = rep;
-					break;
+			if (!ifc_representation) {
+				// First, try to find a representation based on the settings
+				for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
+					IfcSchema::IfcRepresentation* rep = *it;
+					if (!settings.exclude_solids_and_surfaces()) {
+						if (rep->RepresentationIdentifier() == "Body") {
+							ifc_representation = rep;
+							break;
+						}
+					}
+					if (settings.include_curves()) {
+						if (rep->RepresentationIdentifier() == "Plan" || rep->RepresentationIdentifier() == "Axis") {
+							ifc_representation = rep;
+							break;
+						}
+					}
 				}
 			}
 
-			// Otherwise, find a representation within the 'Model' context
-			if (!representation) {
+			// Otherwise, find a representation within the 'Model' or 'Plan' context
+			if (!ifc_representation) {
 				for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
 					IfcSchema::IfcRepresentation* rep = *it;
 					IfcSchema::IfcRepresentationContext* context = rep->ContextOfItems();
@@ -240,26 +258,36 @@
 					// TODO: Remove redundancy with IfcGeomIterator.h
 					if (context->hasContextType()) {
 						std::set<std::string> context_types;
-						context_types.insert("model");
-						context_types.insert("design");
-						context_types.insert("model view");
+						if (!settings.exclude_solids_and_surfaces()) {
+							context_types.insert("model");
+							context_types.insert("design");
+							context_types.insert("model view");
+						}
+						if (settings.include_curves()) {
+							context_types.insert("plan");
+						}			
 
 						std::string context_type_lc = context->ContextType();
 						for (std::string::iterator c = context_type_lc.begin(); c != context_type_lc.end(); ++c) {
 							*c = tolower(*c);
 						}
 						if (context_types.find(context_type_lc) != context_types.end()) {
-							representation = rep;
+							ifc_representation = rep;
 						}
 					}
 				}
 			}
 
-			if (!representation) {
-				throw IfcParse::IfcException("No IfcRepresentations with a 'Body' RepresentationIdentifier found");
+			if (!ifc_representation) {
+				if (reps->size()) {
+					// Return a random representation
+					ifc_representation = *reps->begin();
+				} else {
+					throw IfcParse::IfcException("No suitable IfcRepresentation found");
+				}
 			}
 
-			IfcSchema::IfcRepresentationContext* ctx = representation->ContextOfItems();
+			IfcSchema::IfcRepresentationContext* ctx = ifc_representation->ContextOfItems();
 			if (!ctx->is(IfcSchema::Type::IfcGeometricRepresentationContext)) {
 				throw IfcParse::IfcException("Context not of type IfcGeometricRepresentationContext");
 			}
@@ -281,7 +309,7 @@
 
 			kernel.setValue(IfcGeom::Kernel::GV_PRECISION, precision);
 			
-			IfcGeom::BRepElement<double>* brep = kernel.create_brep_for_representation_and_product<double>(settings, representation, product);
+			IfcGeom::BRepElement<double>* brep = kernel.create_brep_for_representation_and_product<double>(settings, ifc_representation, product);
 			if (!brep) {
 				throw IfcParse::IfcException("Failed to process shape");
 			}

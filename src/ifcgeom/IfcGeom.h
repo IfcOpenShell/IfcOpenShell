@@ -44,6 +44,7 @@
 #include "../ifcgeom/IfcGeomElement.h" 
 #include "../ifcgeom/IfcGeomRepresentation.h" 
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
+#include "../ifcgeom/IfcGeomShapeType.h"
 
 #define IN_CACHE(T,E,t,e) std::map<int,t>::const_iterator it = cache.T.find(E->entity->id());\
 if ( it != cache.T.end() ) { e = it->second; return true; }
@@ -94,13 +95,15 @@ public:
 		// The precision used in boolean operations, setting this value too low results
 		// in artefacts and potentially modelling failures
 		// Default: 0.00001 (obtained from IfcGeometricRepresentationContext if available)
-		GV_PRECISION
+		GV_PRECISION,
+		// Whether to process shapes of type Face or higher (1) Wire or lower (-1) or all (0)
+		GV_DIMENSIONALITY
 	};
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
 	bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);
 	bool convert_shapes(const IfcUtil::IfcBaseClass* L, IfcRepresentationShapeItems& result);
-	bool is_shape_collection(const IfcUtil::IfcBaseClass* L);
+	IfcGeom::ShapeType shape_type(const IfcUtil::IfcBaseClass* L);
 	bool convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
 	bool flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& shapes, TopoDS_Shape& result, bool fuse);
 	bool convert_wire(const IfcUtil::IfcBaseClass* L, TopoDS_Wire& result);

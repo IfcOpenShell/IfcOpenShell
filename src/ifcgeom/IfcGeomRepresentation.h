@@ -29,6 +29,9 @@
 
 #include <TopExp_Explorer.hxx>
 
+#include <BRepAdaptor_Curve.hxx>
+#include <GCPnts_QuasiUniformDeflection.hxx>
+
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcGeomMaterial.h"
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
@@ -150,10 +153,11 @@ namespace IfcGeom {
 						Logger::Message(Logger::LOG_ERROR,"Failed to triangulate shape");
 						continue;
 					}
-					TopExp_Explorer exp;
 
 					// Iterates over the faces of the shape
-					for ( exp.Init(s,TopAbs_FACE); exp.More(); exp.Next() ) {
+					int num_faces = 0;
+					TopExp_Explorer exp;
+					for ( exp.Init(s,TopAbs_FACE); exp.More(); exp.Next(), ++num_faces ) {
 						TopoDS_Face face = TopoDS::Face(exp.Current());
 						TopLoc_Location loc;
 						Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face,loc);
@@ -191,9 +195,9 @@ namespace IfcGeom {
 									if (normal_direction.Magnitude() > ALMOST_ZERO) {
 										normal = gp_Dir(normal_direction.XYZ() * rotation_matrix);
 									}
-									_normals.push_back((float)normal.X());
-									_normals.push_back((float)normal.Y());
-									_normals.push_back((float)normal.Z());
+									_normals.push_back(static_cast<P>(normal.X()));
+									_normals.push_back(static_cast<P>(normal.Y()));
+									_normals.push_back(static_cast<P>(normal.Z()));
 								}
 							}
 
@@ -224,15 +228,47 @@ namespace IfcGeom {
 
 								_material_ids.push_back(surface_style_id);
 
-								addEdge(n1,n2,edgecount,edges_temp);
-								addEdge(n2,n3,edgecount,edges_temp);
-								addEdge(n3,n1,edgecount,edges_temp);
+								addEdge(n1, n2, edgecount, edges_temp);
+								addEdge(n2, n3, edgecount, edges_temp);
+								addEdge(n3, n1, edgecount, edges_temp);
 							}
 							for ( std::vector<std::pair<int,int> >::const_iterator it = edges_temp.begin(); it != edges_temp.end(); ++it ) {
-								_edges.push_back(edgecount[*it]==1);
+								if (edgecount[*it] == 1) {
+									// non manifold edge, face boundary
+									_edges.push_back(it->first);
+									_edges.push_back(it->second);
+								}
 							}
 						}
 					}
+
+					if (num_faces == 0) {
+						// Edges are only emitted if there are no faces. A mixed representation of faces
+						// and loose edges is discouraged by the standard. An alternative would be to use
+						// TopExp::MapShapesAndAncestors() to find edges that do not belong to any face.
+						for (TopExp_Explorer exp(s, TopAbs_EDGE); exp.More(); exp.Next()) {
+							BRepAdaptor_Curve crv(TopoDS::Edge(exp.Current()));
+							GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
+							int n = tessellater.NbPoints();
+							int start = _verts.size() / 3;
+							for (int i = 1; i <= n; ++i) {
+								gp_XYZ p = tessellater.Value(i).XYZ();
+								trsf.Transforms(p);
+								
+								_material_ids.push_back(surface_style_id);
+
+								_verts.push_back(static_cast<P>(p.X()));
+								_verts.push_back(static_cast<P>(p.Y()));
+								_verts.push_back(static_cast<P>(p.Z()));
+
+								if (i > 1) {
+									_edges.push_back(start + i - 2);
+									_edges.push_back(start + i - 1);
+								}
+							}
+						}
+					}
+
 				}
 			}
 			virtual ~Triangulation() {}

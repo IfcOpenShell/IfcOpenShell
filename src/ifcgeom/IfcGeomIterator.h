@@ -39,7 +39,7 @@
  *   IfcGeomObject.transformation.matrix is a 4x3 matrix that defines the       *
  *     orientation and translation of the mesh in relation to the world origin  *
  *                                                                              *
- * IfcGeom::Iterator::findContext()                                             *
+ * IfcGeom::Iterator::initialize()                                              *
  *   finds the most suitable representation contexts. Returns true iff          *
  *   at least a single representation will process successfully                 *
  *                                                                              *
@@ -143,19 +143,24 @@ namespace IfcGeom {
 		}
 
 	public:
-		bool findContext() {
+		bool initialize() {
 			try {
 				initUnits();
 			} catch (...) {}
 
-			// Really this should only be 'Model', as per 
-			// the standard 'Design' is deprecated. So,
-			// just for backwards compatibility:
 			std::set<std::string> context_types;
-			context_types.insert("model");
-			context_types.insert("design");
-			// DDS likes to output 'model view'
-			context_types.insert("model view");
+			if (!settings.exclude_solids_and_surfaces()) {
+				// Really this should only be 'Model', as per 
+				// the standard 'Design' is deprecated. So,
+				// just for backwards compatibility:
+				context_types.insert("model");
+				context_types.insert("design");
+				// DDS likes to output 'model view'
+				context_types.insert("model view");
+			}
+			if (settings.include_curves()) {
+				context_types.insert("plan");
+			}			
 
 			double lowest_precision_encountered = std::numeric_limits<double>::infinity();
 			bool any_precision_encountered = false;
@@ -407,7 +412,7 @@ namespace IfcGeom {
 			} catch(...) {}
 
 			ElementSettings element_settings(settings, unit_magnitude, instance_type);
-			Element<P>* ifc_object = new Element<P>(element_settings, id, parent_id, product_name, instance_type, product_guid, trsf);
+			Element<P>* ifc_object = new Element<P>(element_settings, id, parent_id, product_name, instance_type, product_guid, "", trsf);
 			
 			return ifc_object;
 		}
@@ -432,7 +437,7 @@ namespace IfcGeom {
 			}
 		}
 	private:
-		void initialize() {
+		void _initialize() {
 			current_triangulation = 0;
 			current_shape_model = 0;
 			current_serialization = 0;
@@ -446,34 +451,35 @@ namespace IfcGeom {
 
 			kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.sew_shells() ? 1000 : -1);
 			kernel.setValue(IfcGeom::Kernel::GV_FORCE_CCW_FACE_ORIENTATION, settings.force_ccw_face_orientation() ? 1 : -1);
+			kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.include_curves() ? (settings.exclude_solids_and_surfaces() ? -1. : 0.) : +1.));
 		}
 	public:
 		Iterator(const IteratorSettings& settings, IfcParse::IfcFile* file)
 			: settings(settings)
 			, ifc_file(file)
 		{
-			initialize();
+			_initialize();
 		}
 		Iterator(const IteratorSettings& settings, const std::string& filename)
 			: settings(settings)
 			, ifc_file(new IfcParse::IfcFile)
 		{
 			ifc_file->Init(filename);
-			initialize();
+			_initialize();
 		}
 		Iterator(const IteratorSettings& settings, void* data, int length)
 			: settings(settings)
 			, ifc_file(new IfcParse::IfcFile)
 		{
 			ifc_file->Init(data, length);
-			initialize();
+			_initialize();
 		}
 		Iterator(const IteratorSettings& settings, std::istream& filestream, int length)
 			: settings(settings)
 			, ifc_file(new IfcParse::IfcFile)
 		{
 			ifc_file->Init(filestream, length);
-			initialize();
+			_initialize();
 		}
 
 		~Iterator() {

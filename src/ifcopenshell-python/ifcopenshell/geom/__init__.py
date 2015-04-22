@@ -74,7 +74,7 @@ def create_shape(settings, inst):
 
 def iterate(settings, filename):
     it = iterator(settings, filename)
-    if it.findContext():
+    if it.initialize():
         while True:
             yield it.get()
             if not it.next(): break

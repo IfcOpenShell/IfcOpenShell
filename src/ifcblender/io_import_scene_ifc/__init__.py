@@ -66,7 +66,7 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
     settings = ifcopenshell_geom.settings()
     settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, blender_booleans)
     iterator = ifcopenshell_geom.iterator(settings, filename)
-    valid_file = iterator.findContext()
+    valid_file = iterator.initialize()
     if not valid_file:
         return False
     print("Done reading file")

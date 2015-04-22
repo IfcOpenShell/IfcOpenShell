@@ -70,7 +70,9 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<double>* 
 	std::string tmp = o->name().empty() ? o->guid() : o->name();
 
 	std::replace( tmp.begin(), tmp.end(), ' ', '_');
-	const std::string name = tmp;
+	std::string name = tmp;
+	name += std::string("_") + o->context();
+
 	obj_stream << "g " << name << "\n";
 	obj_stream << "s 1" << "\n";
 
@@ -83,6 +85,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<double>* 
 		const double z = *(it++);
 		obj_stream << "v " << x << " " << y << " " << z << "\n";
 	}
+
 	for ( std::vector<double>::const_iterator it = mesh.normals().begin(); it != mesh.normals().end(); ) {
 		const double x = *(it++);
 		const double y = *(it++);
@@ -111,6 +114,38 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<double>* 
 		const int v2 = *(it++)+vcount_total;
 		const int v3 = *(it++)+vcount_total;
 		obj_stream << "f " << v1 << "//" << v1 << " " << v2 << "//" << v2 << " " << v3 << "//" << v3 << "\n";
+
 	}
-    vcount_total += vcount;
+
+	std::set<int> faces_set (mesh.faces().begin(), mesh.faces().end());
+	const std::vector<int>& edges = mesh.edges();
+
+	for ( std::vector<int>::const_iterator it = edges.begin(); it != edges.end(); ) {
+		const int i1 = *(it++);
+		const int i2 = *(it++);
+
+		if (faces_set.find(i1) != faces_set.end() || faces_set.find(i2) != faces_set.end()) {
+			continue;
+		}
+
+		const int material_id = *(material_it++);
+
+		if (material_id != previous_material_id) {
+			const IfcGeom::Material& material = mesh.materials()[material_id];
+			const std::string material_name = material.name();
+			obj_stream << "usemtl " << material_name << "\n";
+			if (materials.find(material_name) == materials.end()) {
+				writeMaterial(material);
+				materials.insert(material_name);
+			}
+			previous_material_id = material_id;
+		}
+
+		const int v1 = i1 + vcount_total;
+		const int v2 = i2 + vcount_total;
+
+		obj_stream << "l " << v1 << " " << v2 << "\n";
+	}
+
+	vcount_total += vcount;
 }

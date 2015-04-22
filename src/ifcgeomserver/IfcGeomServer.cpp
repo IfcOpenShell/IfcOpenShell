@@ -299,7 +299,7 @@ int main (int argc, char** argv) {
 			settings.force_ccw_face_orientation() = true;
 
 			iterator = new IfcGeom::Iterator<float>(settings, data, len);
-			has_more = iterator->findContext();
+			has_more = iterator->initialize();
 
 			More(has_more).write(std::cout);
 			continue;

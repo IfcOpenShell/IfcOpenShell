@@ -18,6 +18,7 @@
 ********************************************************************************/
 
 #include "IfcGeom.h"
+#include "IfcGeomShapeType.h"
 
 using namespace IfcSchema;
 using namespace IfcUtil;
@@ -28,24 +29,59 @@ bool IfcGeom::Kernel::convert_shapes(const IfcBaseClass* l, IfcRepresentationSha
 	return false;
 }
 
-bool IfcGeom::Kernel::is_shape_collection(const IfcBaseClass* l) {
-#include "IfcRegisterIsShapeCollection.h"
-	return false;
+IfcGeom::ShapeType IfcGeom::Kernel::shape_type(const IfcBaseClass* l) {
+#include "IfcRegisterShapeType.h"
+	return ST_OTHER;
 }
 
 bool IfcGeom::Kernel::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
 	const unsigned int id = l->entity->id();
 	bool success = false;
 	bool processed = false;
+	bool ignored = false;
+
 	std::map<int,TopoDS_Shape>::const_iterator it = cache.Shape.find(id);
 	if ( it != cache.Shape.end() ) { r = it->second; return true; }
+	const bool include_curves = getValue(GV_DIMENSIONALITY) != +1;
+	const bool include_solids_and_surfaces = getValue(GV_DIMENSIONALITY) != -1;
+
+	IfcGeom::ShapeType st = shape_type(l);
+	ignored = (!include_solids_and_surfaces && (st == ST_SHAPE || st == ST_FACE)) || (!include_curves && (st == ST_WIRE || st == ST_CURVE));
+	if (st == ST_SHAPELIST) {
+		processed = true;
+		IfcRepresentationShapeItems items;
+		success = convert_shapes(l, items) && flatten_shape_list(items, r, false);
+	} else if (st == ST_SHAPE && include_solids_and_surfaces) {
 #include "IfcRegisterConvertShape.h"
-	if ( processed ) { 
+	} else if (st == ST_FACE && include_solids_and_surfaces) {
+		processed = true;
+		success = convert_face(l, r);
+	} else if (st == ST_WIRE && include_curves) {
+		processed = true;
+		TopoDS_Wire w;
+		success = convert_wire(l, w);
+		if (success) {
+			r = w;
+		}
+	} else if (st == ST_CURVE && include_curves) {
+		processed = true;
+		Handle(Geom_Curve) crv;
+		TopoDS_Wire w;
+		success = convert_curve(l, crv) && convert_curve_to_wire(crv, w);
+		if (success) {
+			r = w;
+		}
+	}
+
+	if ( processed && success ) { 
 		const double precision = getValue(GV_PRECISION);
 		apply_tolerance(r, precision);
 		cache.Shape[id] = r;
-	} else {
-		Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
+	} else if (!ignored) {
+		const char* const msg = processed
+			? "Failed to convert:"
+			: "No operation defined for:";
+		Logger::Message(Logger::LOG_ERROR, msg, l->entity);
 	}
 	return success;
 }

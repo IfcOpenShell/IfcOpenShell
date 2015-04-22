@@ -225,6 +225,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\ifcgeom\IfcGeomShapeType.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ifcgeom\IfcRegister.h"
 				>
 			</File>
@@ -261,11 +265,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterIsShapeCollection.h"
+				RelativePath="..\src\ifcgeom\IfcRegisterPurgeCache.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterPurgeCache.h"
+				RelativePath="..\src\ifcgeom\IfcRegisterShapeType.h"
 				>
 			</File>
 			<File

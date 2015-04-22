@@ -72,6 +72,7 @@ namespace IfcGeom {
 		std::string _name;
 		std::string _type;
 		std::string _guid;
+		std::string _context;
 		Transformation<P> _transformation;
 	public:
 		int id() const { return _id; }
@@ -79,9 +80,10 @@ namespace IfcGeom {
 		const std::string& name() const { return _name; }
 		const std::string& type() const { return _type; }
 		const std::string& guid() const { return _guid; }
+		const std::string& context() const { return _context; }
 		const Transformation<P>& transformation() const { return _transformation; }
-		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const gp_Trsf& trsf)
-			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _transformation(settings, trsf)
+		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const gp_Trsf& trsf)
+			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
 		{}
 		virtual ~Element() {}
 	};
@@ -92,8 +94,8 @@ namespace IfcGeom {
 		Representation::BRep* _geometry;
 	public:
 		const Representation::BRep& geometry() const { return *_geometry; }
-		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const gp_Trsf& trsf, Representation::BRep* geometry)
-			: Element<P>(geometry->settings(),id,parent_id,name,type,guid,trsf)
+		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const gp_Trsf& trsf, Representation::BRep* geometry)
+			: Element<P>(geometry->settings(),id,parent_id,name,type,guid,context,trsf)
 			, _geometry(geometry)
 		{}
 		virtual ~BRepElement() {

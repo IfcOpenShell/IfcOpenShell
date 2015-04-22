@@ -65,6 +65,8 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
+
+#include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopLoc_Location.hxx>
 #include <TopTools_ListOfShape.hxx>
@@ -435,3 +437,64 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeLoop* l, TopoDS_Wire& resu
 	result = mw;
 	return true;
 }
+
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdge* l, TopoDS_Wire& result) {
+	if (!l->EdgeStart()->is(IfcSchema::Type::IfcVertexPoint) || !l->EdgeEnd()->is(IfcSchema::Type::IfcVertexPoint)) {
+		Logger::Message(Logger::LOG_ERROR, "Only IfcVertexPoints are supported for EdgeStart and -End", l->entity);
+		return false;
+	}
+
+	IfcSchema::IfcPoint* pnt1 = ((IfcSchema::IfcVertexPoint*) l->EdgeStart())->VertexGeometry();
+	IfcSchema::IfcPoint* pnt2 = ((IfcSchema::IfcVertexPoint*) l->EdgeEnd())->VertexGeometry();
+	if (!pnt1->is(IfcSchema::Type::IfcCartesianPoint) || !pnt2->is(IfcSchema::Type::IfcCartesianPoint)) {
+		Logger::Message(Logger::LOG_ERROR, "Only IfcCartesianPoints are supported for VertexGeometry", l->entity);
+		return false;
+	}
+	
+	gp_Pnt p1, p2;
+	if (!convert(((IfcSchema::IfcCartesianPoint*)pnt1), p1) ||
+		!convert(((IfcSchema::IfcCartesianPoint*)pnt2), p2))
+	{
+		return false;
+	}
+
+	BRepBuilderAPI_MakeWire mw;
+	mw.Add(BRepBuilderAPI_MakeEdge(p1, p2));
+
+	result = mw.Wire();
+	return true;
+}
+
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcOrientedEdge* l, TopoDS_Wire& result) {
+	if (convert(l->EdgeElement(), result)) {
+		if (!l->Orientation()) {
+			result.Reverse();
+		}
+		return true;
+	} else {
+		return false;
+	}
+}
+
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcSubedge* l, TopoDS_Wire& result) {
+	TopoDS_Wire temp;
+	if (convert(l->ParentEdge(), result) && convert((IfcSchema::IfcEdge*) l, temp)) {
+		TopExp_Explorer exp(result, TopAbs_EDGE);
+		TopoDS_Edge edge = TopoDS::Edge(exp.Current());
+		Standard_Real u1, u2;
+		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u1, u2);
+		TopoDS_Vertex v1, v2;
+		TopExp::Vertices(temp, v1, v2);
+		BRepBuilderAPI_MakeWire mw;
+		mw.Add(BRepBuilderAPI_MakeEdge(crv, v1, v2));
+		result = mw.Wire();
+		return true;
+	} else {
+		return false;
+	}
+}
+
+
+
+
+

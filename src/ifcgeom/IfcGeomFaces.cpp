@@ -101,6 +101,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
 	IfcSchema::IfcFaceBound::list::it it = bounds->begin();
 	IfcSchema::IfcLoop* loop = (*it)->Bound();
+	// FIXME: The assumption that the first bound is 
+	// the outer bound is not necessarily correct.
 	TopoDS_Wire outer_wire;
 	if ( ! convert_wire(loop,outer_wire) ) return false;
 	BRepBuilderAPI_MakeFace mf (outer_wire);
@@ -127,10 +129,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 			sfs.Perform();
 			TopoDS_Shape sfs_shape = sfs.Shape();
 			bool is_face = sfs_shape.ShapeType() == TopAbs_FACE;
+			// This assertion is not strictly necessary. The schema
+			// does suggest there to be only one outer bound, but
+			// not all models comply with this.
 			if ( is_face ) {
 				face = TopoDS::Face(sfs_shape);
 			} else {
-				return false;
+				face = sfs_shape;
 			}
 		} else {
 			return false;

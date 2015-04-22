@@ -17,6 +17,9 @@
  *                                                                              *
  ********************************************************************************/
 
+#include <map>
+#include <set>
+
 #include <Max.h>
 #include <stdmat.h>
 #include <istdplug.h>
@@ -215,7 +218,7 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 
 	IfcGeom::Iterator<float> iterator(settings, fn_mb);
 
-	if (!iterator.findContext()) return false;
+	if (!iterator.initialize()) return false;
 
 	itfc->ProgressStart(_T("Importing file..."), TRUE, fn, NULL);
 
@@ -244,11 +247,37 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 
 		bool needs_default = std::find(o->geometry().material_ids().begin(), o->geometry().material_ids().end(), -1) != o->geometry().material_ids().end();
 
+		typedef std::pair<int, int> edge_t;
+
+		std::set<edge_t> face_boundaries;
+		for(std::vector<int>::const_iterator it = o->geometry().edges().begin(); it != o->geometry().edges().end();) {
+			const int v1 = *it++;
+			const int v2 = *it++;
+
+			const edge_t e((std::min)(v1, v2), (std::max)(v1, v2));
+			face_boundaries.insert(e);
+		}
+
 		for( int i = 0; i < numFaces; i ++ ) {
-			tri->mesh.faces[i].setVerts(o->geometry().faces()[3*i+0],o->geometry().faces()[3*i+1],o->geometry().faces()[3*i+2]);
-			tri->mesh.faces[i].setEdgeVisFlags(o->geometry().edges()[3*i+0],o->geometry().edges()[3*i+1],o->geometry().edges()[3*i+2]);
+			const int v1 = o->geometry().faces()[3*i+0];
+			const int v2 = o->geometry().faces()[3*i+1];
+			const int v3 = o->geometry().faces()[3*i+2];
+			
+			const edge_t e1((std::min)(v1, v2), (std::max)(v1, v2));
+			const edge_t e2((std::min)(v2, v3), (std::max)(v2, v3));
+			const edge_t e3((std::min)(v3, v1), (std::max)(v3, v1));
+
+			const bool b1 = face_boundaries.find(e1) != face_boundaries.end();
+			const bool b2 = face_boundaries.find(e2) != face_boundaries.end();
+			const bool b3 = face_boundaries.find(e3) != face_boundaries.end();
+
+			tri->mesh.faces[i].setVerts(v1, v2, v3);
+			tri->mesh.faces[i].setEdgeVisFlags(b1, b2, b3);
+
 			MtlID mtlid = o->geometry().material_ids()[i];
-			if (needs_default) mtlid ++;
+			if (needs_default) {
+				mtlid ++;
+			}
 			tri->mesh.faces[i].setMatID(mtlid);
 		}
 				

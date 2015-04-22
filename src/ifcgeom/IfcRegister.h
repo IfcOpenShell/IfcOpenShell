@@ -43,7 +43,7 @@
 
 SHAPES(IfcShellBasedSurfaceModel);
 SHAPES(IfcFaceBasedSurfaceModel);
-SHAPES(IfcShapeRepresentation);
+SHAPES(IfcRepresentation);
 SHAPES(IfcMappedItem);
 SHAPES(IfcFacetedBrep);
 SHAPES(IfcGeometricSet);
@@ -96,6 +96,9 @@ FACE(IfcDerivedProfileDef);
 FACE(IfcFace);
 
 WIRE(IfcEdgeCurve);
+WIRE(IfcSubedge);
+WIRE(IfcOrientedEdge);
+WIRE(IfcEdge);
 WIRE(IfcEdgeLoop);
 WIRE(IfcPolyline);
 WIRE(IfcPolyLoop);

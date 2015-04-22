@@ -66,11 +66,15 @@ namespace IfcGeom {
 		static const int DISABLE_TRIANGULATION = 9;
 		// Applies default materials to entity instances without a surface style.
 		static const int APPLY_DEFAULT_MATERIALS = 10;
+		// Specifies whether to include subtypes of IfcCurve.
+		static const int INCLUDE_CURVES = 11;
+		// Specifies whether to exclude subtypes of IfcSolidModel and IfcSurface.
+		static const int EXCLUDE_SOLIDS_AND_SURFACES = 12;
 
 		// End of settings enumeration.
 
 	private:
-		bool _weld_vertices, _use_world_coords, _convert_back_units, _use_brep_data, _sew_shells, _faster_booleans, _force_ccw_face_orientation, _disable_opening_subtractions, _disable_triangulation, _apply_default_materials;
+		bool _weld_vertices, _use_world_coords, _convert_back_units, _use_brep_data, _sew_shells, _faster_booleans, _force_ccw_face_orientation, _disable_opening_subtractions, _disable_triangulation, _apply_default_materials, _include_curves, _exclude_solids_and_surfaces;
 		double _deflection_tolerance;
 	public:
 		IteratorSettings()
@@ -84,6 +88,8 @@ namespace IfcGeom {
 			, _disable_opening_subtractions(false)
 			, _disable_triangulation(false)
 			, _apply_default_materials(false)
+			, _include_curves(false)
+			, _exclude_solids_and_surfaces(false)
 			// TODO: Make deflection tolerance into a command line argument
 			// For now, stick to one millimeter. Note that this is independent of the IFC length unit.
 			, _deflection_tolerance(1.e-3)
@@ -109,6 +115,10 @@ namespace IfcGeom {
 		bool& disable_triangulation() { return _disable_triangulation; }
 		const bool& apply_default_materials() const { return _apply_default_materials; }
 		bool& apply_default_materials() { return _apply_default_materials; }
+		const bool& include_curves() const { return _include_curves; }
+		bool& include_curves() { return _include_curves; }
+		const bool& exclude_solids_and_surfaces() const { return _exclude_solids_and_surfaces; }
+		bool& exclude_solids_and_surfaces() { return _exclude_solids_and_surfaces; }
 		
 		const double& deflection_tolerance() const { return _deflection_tolerance; }
 		double& deflection_tolerance() { return _deflection_tolerance; }
@@ -144,6 +154,12 @@ namespace IfcGeom {
 				break;
 			case APPLY_DEFAULT_MATERIALS:
 				_apply_default_materials = value;
+				break;
+			case INCLUDE_CURVES:
+				_include_curves = value;
+				break;
+			case EXCLUDE_SOLIDS_AND_SURFACES:
+				_exclude_solids_and_surfaces = value;
 				break;
 			default: throw IfcParse::IfcException("Invalid IteratorSetting");
 			}

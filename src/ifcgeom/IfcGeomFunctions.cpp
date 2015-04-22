@@ -370,7 +370,9 @@ bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face&
 }
 
 bool IfcGeom::Kernel::convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire) {
-	wire = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(curve));
+	try {
+		wire = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(curve));
+	} catch(...) { return false; }
 	return true;
 }
 
@@ -503,6 +505,7 @@ static double ifc_length_unit = 1.0;
 static double ifc_planeangle_unit = -1.0;
 static double force_ccw_face_orientation = -1.0;
 static double modelling_precision = 0.00001;
+static double dimensionality = 1;
 
 void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	switch (var) {
@@ -533,6 +536,9 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_PRECISION:
 		modelling_precision = value;
 		break;
+	case GV_DIMENSIONALITY:
+		dimensionality = value;
+		break;
 	default:
 		assert(!"never reach here");
 	}
@@ -561,6 +567,9 @@ double IfcGeom::Kernel::getValue(GeomValue var) {
 		break;
 	case GV_PRECISION:
 		return modelling_precision;
+		break;
+	case GV_DIMENSIONALITY:
+		return dimensionality;
 		break;
 	}
 	assert(!"never reach here");
@@ -911,12 +920,20 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 		shape = new IfcGeom::Representation::BRep(element_settings, representation->entity->id(), shapes);
 	}
 
+	std::string context_string = "";
+	if (representation->hasRepresentationIdentifier()) {
+		context_string = representation->RepresentationIdentifier();
+	} else if (representation->ContextOfItems()->hasContextType()) {
+		context_string = representation->ContextOfItems()->ContextType();
+	}
+
 	return new BRepElement<P>(
 		product->entity->id(),
 		parent_id,
 		name, 
 		product_type,
 		guid,
+		context_string,
 		trsf,
 		shape
 	);

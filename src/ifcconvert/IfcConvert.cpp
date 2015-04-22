@@ -89,6 +89,13 @@ int main(int argc, char** argv) {
 	std::vector<std::string> entity_vector;
 	boost::program_options::options_description geom_options;
 	geom_options.add_options()
+		("plan",
+			"Specifies whether to include curves in the output result. Typically "
+			"these are representations of type Plan or Axis. Excluded by default.")
+		("model",
+			"Specifies whether to include surfaces and solides in the output result. "
+			"Typically these are representations of type Body or Facetation. "
+			"Included by default.")
 		("weld-vertices",
 			"Specifies whether vertices are welded, meaning that the coordinates "
 			"vector will only contain unique xyz-triplets. This results in a "
@@ -169,6 +176,8 @@ int main(int argc, char** argv) {
 	const bool force_ccw_face_orientation = vmap.count("force-ccw-face-orientation") != 0;
 	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
 	const bool include_entities = vmap.count("include") != 0;
+	const bool include_plan = vmap.count("plan") != 0;
+	const bool include_model = vmap.count("model") != 0 || (!include_plan);
 
 	// Gets the set ifc types to be ignored from the command line. 
 	std::set<std::string> entities;
@@ -233,6 +242,8 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::FASTER_BOOLEANS,              merge_boolean_operands);
 	settings.set(IfcGeom::IteratorSettings::FORCE_CCW_FACE_ORIENTATION,   force_ccw_face_orientation);
 	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
+	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
+	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
 
 	GeometrySerializer* serializer;
 	if (output_extension == ".obj") {
@@ -289,7 +300,7 @@ int main(int argc, char** argv) {
 	time_t start,end;
 	time(&start);
 	
-	if (!context_iterator.findContext()) {
+	if (!context_iterator.initialize()) {
 		Logger::Message(Logger::LOG_ERROR, "Unable to parse .ifc file or no geometrical entities found");
 		write_log();
 		return 1;

@@ -278,16 +278,19 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	IfcSchema::IfcBooleanOperand* operand2 = l->SecondOperand();
 	bool is_halfspace = operand2->is(IfcSchema::Type::IfcHalfSpaceSolid);
 
-	if ( is_shape_collection(operand1) ) {
+	if ( shape_type(operand1) == ST_SHAPELIST ) {
 		if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
 			return false;
 		}
-	} else {
+	} else if ( shape_type(operand1) == ST_SHAPE ) {
 		if ( ! convert_shape(operand1, s1) ) {
 			return false;
 		}
 		{ TopoDS_Solid temp_solid;
 		s1 = ensure_fit_for_subtraction(s1, temp_solid); }
+	} else {
+		Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", operand1->entity);
+		return false;
 	}
 
 	const double first_operand_volume = shape_volume(s1);
@@ -295,14 +298,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		Logger::Message(Logger::LOG_WARNING,"Empty solid for:",l->FirstOperand()->entity);
 
 	bool shape2_processed = false;
-	if ( is_shape_collection(operand2) ) {
+	if ( shape_type(operand2) == ST_SHAPELIST ) {
 		shape2_processed = convert_shapes(operand2, items2) && flatten_shape_list(items2, s2, true);
-	} else {
+	} else if ( shape_type(operand2) == ST_SHAPE ) {
 		shape2_processed = convert_shape(operand2,s2);
 		if (shape2_processed && !is_halfspace) {
 			TopoDS_Solid temp_solid;
 			s2 = ensure_fit_for_subtraction(s2, temp_solid);
 		}
+	} else {
+		Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", operand2->entity);
 	}
 
 	if (!shape2_processed) {
@@ -494,13 +499,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 	return b;
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcShapeRepresentation* l, IfcRepresentationShapeItems& shapes) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresentationShapeItems& shapes) {
 	IfcSchema::IfcRepresentationItem::list::ptr items = l->Items();
 	bool part_succes = false;
 	if ( items->size() ) {
 		for ( IfcSchema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++ it ) {
 			IfcSchema::IfcRepresentationItem* representation_item = *it;
-			if ( is_shape_collection(representation_item) ) {
+			if ( shape_type(representation_item) == ST_SHAPELIST ) {
 				part_succes |= convert_shapes(*it, shapes);
 			} else {
 				TopoDS_Shape s;
@@ -521,14 +526,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 	const IfcGeom::SurfaceStyle* parent_style = get_style(l);
 	for ( IfcEntityList::it it = elements->begin(); it != elements->end(); ++ it ) {
 		IfcSchema::IfcGeometricSetSelect* element = *it;
-		if (element->is(IfcSchema::Type::IfcSurface)) {
-			IfcSchema::IfcSurface* surface = (IfcSchema::IfcSurface*) element;
-			TopoDS_Shape s;
-			if (convert_shape(surface, s)) {
-				part_succes = true;
-				const IfcGeom::SurfaceStyle* style = get_style(surface);
-				shapes.push_back(IfcRepresentationShapeItem(s, style ? style : parent_style));
+		TopoDS_Shape s;
+		if (convert_shape(element, s)) {
+			part_succes = true;
+			const IfcGeom::SurfaceStyle* style = 0;
+			if (element->is(IfcSchema::Type::IfcPoint)) {
+				style = get_style((IfcSchema::IfcPoint*) element);
+			} else if (element->is(IfcSchema::Type::IfcCurve)) {
+				style = get_style((IfcSchema::IfcCurve*) element);
+			} else if (element->is(IfcSchema::Type::IfcSurface)) {
+				style = get_style((IfcSchema::IfcSurface*) element);
 			}
+			shapes.push_back(IfcRepresentationShapeItem(s, style ? style : parent_style));
 		}
 	}
 	return part_succes;
