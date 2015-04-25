@@ -187,6 +187,7 @@ public:
 class Entity : public Command {
 private:
 	const IfcGeom::TriangulationElement<float>* geom;
+	bool append_line_data;
 protected:
 	void read_content(std::istream& s) {}
 	void write_content(std::ostream& s) {
@@ -206,11 +207,35 @@ protected:
 		swrite<int32_t>(s, geom->geometry().id());
 		swrite(s, std::string((char*)geom->geometry().verts().data(), geom->geometry().verts().size() * sizeof(float)));
 		swrite(s, std::string((char*)geom->geometry().normals().data(), geom->geometry().normals().size() * sizeof(float)));
-		{ std::vector<int32_t> indices;
-		for (std::vector<int>::const_iterator it = geom->geometry().faces().begin(); it != geom->geometry().faces().end(); ++it) {
-			indices.push_back(*it);
-		} 
-		swrite(s, std::string((char*) indices.data(), indices.size() * sizeof(int32_t))); }
+		{
+			std::vector<int32_t> indices;
+			const std::vector<int>& faces = geom->geometry().faces();
+			indices.reserve(faces.size());
+			for (std::vector<int>::const_iterator it = indices.begin(); it != indices.end(); ++it) {
+				indices.push_back(*it);
+			} 
+			swrite(s, std::string((char*) indices.data(), indices.size() * sizeof(int32_t)));
+
+			if (append_line_data) {
+				std::vector<int32_t> lines;
+				std::set<int32_t> faces_set (indices.begin(), indices.end());
+				
+				const std::vector<int>& edges = geom->geometry().edges();
+				for ( std::vector<int>::const_iterator it = edges.begin(); it != edges.end(); ) {
+					const int32_t i1 = *(it++);
+					const int32_t i2 = *(it++);
+
+					if (faces_set.find(i1) != faces_set.end() || faces_set.find(i2) != faces_set.end()) {
+						continue;
+					}
+
+					lines.push_back(i1);
+					lines.push_back(i2);
+				}
+
+				swrite(s, std::string((char*) lines.data(), lines.size() * sizeof(int32_t)));
+			}
+		}
 		{ std::vector<float> diffuse_color_array;
 		for (std::vector<IfcGeom::Material>::const_iterator it = geom->geometry().materials().begin(); it != geom->geometry().materials().end(); ++it) {
 			const IfcGeom::Material& m = *it;
@@ -238,7 +263,7 @@ protected:
 		swrite(s, std::string((char*) material_indices.data(), material_indices.size() * sizeof(int32_t))); }
 	}
 public:
-	Entity(const IfcGeom::TriangulationElement<float>* geom) : Command(ENTITY), geom(geom) {};
+	Entity(const IfcGeom::TriangulationElement<float>* geom) : Command(ENTITY), geom(geom), append_line_data(true) {};
 };
 
 class Next : public Command {
@@ -297,6 +322,7 @@ int main (int argc, char** argv) {
 			settings.weld_vertices() = false;
 			settings.convert_back_units() = true;
 			settings.force_ccw_face_orientation() = true;
+			settings.include_curves() = true;
 
 			iterator = new IfcGeom::Iterator<float>(settings, data, len);
 			has_more = iterator->initialize();
