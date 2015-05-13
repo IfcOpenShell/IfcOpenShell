@@ -57,17 +57,20 @@ namespace IfcGeom {
 		boost::optional<double> specularity;
 	public:
 		SurfaceStyle() {
-			this->name = "IfcSurfaceStyleShading";
+			this->name = "surface-style";
 		}
 		SurfaceStyle(int id) : id(id) {
 			std::stringstream sstr; 
-			sstr << "IfcSurfaceStyleShading_" << id; 
+			sstr << "surface-style-" << id; 
 			this->name = sstr.str(); 
 		}
 		SurfaceStyle(const std::string& name) : name(name) {}
 		SurfaceStyle(int id, const std::string& name) : id(id) {
 			std::stringstream sstr; 
-			sstr << id << "_" << name;
+			std::string sanitized = name;
+			std::transform(sanitized.begin(), sanitized.end(), sanitized.begin(), ::tolower);
+			std::replace(sanitized.begin(), sanitized.end(), ' ', '-');
+			sstr << "surface-style-" << id << "-" << sanitized;
 			this->name = sstr.str(); 
 		}
 		

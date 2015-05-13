@@ -108,6 +108,8 @@ class file(object):
 			return entity_instance(self.wrapped_data.by_id(key))
 		elif isinstance(key, str):
 			return entity_instance(self.wrapped_data.by_guid(key))
+	def by_id(self, id): return self[id]
+	def by_guid(self, guid): return self[guid]
 	def add(self, inst):
 		inst.wrapped_data.this.disown()
 		return entity_instance(self.wrapped_data.add(inst.wrapped_data))

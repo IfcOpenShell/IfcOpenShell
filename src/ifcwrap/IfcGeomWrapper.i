@@ -146,6 +146,7 @@
 			type = property(type)
 			guid = property(guid)
 			context = property(context)
+			unique_id = property(unique_id)
 			transformation = property(transformation)
     %}
 };

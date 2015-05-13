@@ -67,13 +67,7 @@ void WaveFrontOBJSerializer::writeMaterial(const IfcGeom::Material& style) {
 }
 void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<double>* o) {
 
-	std::string tmp = o->name().empty() ? o->guid() : o->name();
-
-	std::replace( tmp.begin(), tmp.end(), ' ', '_');
-	std::string name = tmp;
-	name += std::string("_") + o->context();
-
-	obj_stream << "g " << name << "\n";
+	obj_stream << "g " << o->unique_id() << "\n";
 	obj_stream << "s 1" << "\n";
 
 	const IfcGeom::Representation::Triangulation<double>& mesh = o->geometry();

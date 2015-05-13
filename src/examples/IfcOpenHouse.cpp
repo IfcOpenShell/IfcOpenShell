@@ -43,7 +43,7 @@
 
 // Some convenience typedefs and definitions. 
 typedef std::string S;
-typedef IfcWrite::IfcGuidHelper guid;
+typedef IfcParse::IfcGlobalId guid;
 typedef std::pair<double, double> XY;
 boost::none_t const null = (static_cast<boost::none_t>(0));
 

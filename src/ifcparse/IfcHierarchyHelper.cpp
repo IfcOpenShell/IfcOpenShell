@@ -108,7 +108,7 @@ IfcSchema::IfcProject* IfcHierarchyHelper::addProject(IfcSchema::IfcOwnerHistory
 
 	IfcSchema::IfcUnitAssignment* unit_assignment = new IfcSchema::IfcUnitAssignment(units);
 
-	IfcSchema::IfcProject* project = new IfcSchema::IfcProject(IfcWrite::IfcGuidHelper(), owner_hist, boost::none, boost::none, 
+	IfcSchema::IfcProject* project = new IfcSchema::IfcProject(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, 
 		boost::none, boost::none, boost::none, rep_contexts, unit_assignment);
 
 	addEntity(dimexp);
@@ -146,7 +146,7 @@ IfcSchema::IfcSite* IfcHierarchyHelper::addSite(IfcSchema::IfcProject* proj, Ifc
 		proj = addProject(owner_hist);
 	}
 
-	IfcSchema::IfcSite* site = new IfcSchema::IfcSite(IfcWrite::IfcGuidHelper(), owner_hist, boost::none, 
+	IfcSchema::IfcSite* site = new IfcSchema::IfcSite(IfcParse::IfcGlobalId(), owner_hist, boost::none, 
 		boost::none, boost::none, addLocalPlacement(), 0, boost::none, 
 		IfcSchema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, 
 		boost::none, boost::none, boost::none, boost::none, 0);
@@ -169,7 +169,7 @@ IfcSchema::IfcBuilding* IfcHierarchyHelper::addBuilding(IfcSchema::IfcSite* site
 	if (! site) {
 		site = addSite(0, owner_hist);
 	}
-	IfcSchema::IfcBuilding* building = new IfcSchema::IfcBuilding(IfcWrite::IfcGuidHelper(), owner_hist, boost::none, boost::none, boost::none, 
+	IfcSchema::IfcBuilding* building = new IfcSchema::IfcBuilding(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, boost::none, 
 		addLocalPlacement(), 0, boost::none, IfcSchema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, 
 		boost::none, boost::none, 0);
 
@@ -195,7 +195,7 @@ IfcSchema::IfcBuildingStorey* IfcHierarchyHelper::addBuildingStorey(IfcSchema::I
 	if (! building) {
 		building = addBuilding(0, owner_hist);
 	}
-	IfcSchema::IfcBuildingStorey* storey = new IfcSchema::IfcBuildingStorey(IfcWrite::IfcGuidHelper(), 
+	IfcSchema::IfcBuildingStorey* storey = new IfcSchema::IfcBuildingStorey(IfcParse::IfcGlobalId(), 
 		owner_hist, boost::none, boost::none, boost::none, addLocalPlacement(), 0, boost::none, 
 		IfcSchema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, boost::none);
 

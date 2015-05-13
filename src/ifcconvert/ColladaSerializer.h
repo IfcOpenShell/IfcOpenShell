@@ -94,8 +94,7 @@ private:
 		};
 		class DeferredObject {
 		public:
-			std::string guid, name, type, context;
-			int obj_id;
+			std::string unique_id, type;
 			std::vector<double> matrix;
 			std::vector<double> vertices;
 			std::vector<double> normals;
@@ -104,14 +103,11 @@ private:
 			std::vector<int> material_ids;
 			std::vector<IfcGeom::Material> materials;
 			std::vector<std::string> material_references;
-			DeferredObject(const std::string& guid, const std::string& name, const std::string& type, const std::string& context, int obj_id, const std::vector<double>& matrix, const std::vector<double>& vertices,
+			DeferredObject(const std::string& unique_id, const std::string& type, const std::vector<double>& matrix, const std::vector<double>& vertices,
 				const std::vector<double>& normals, const std::vector<int>& faces, const std::vector<int>& edges, const std::vector<int>& material_ids, 
 				const std::vector<IfcGeom::Material>& materials, const std::vector<std::string>& material_references)
-				: guid(guid)
-				, name(name)
+				: unique_id(unique_id)
 				, type(type)
-				, context(context)
-				, obj_id(obj_id)
 				, matrix(matrix)
 				, vertices(vertices)
 				, normals(normals)
@@ -121,7 +117,6 @@ private:
 				, materials(materials)
 				, material_references(material_references)
 			{}
-			const std::string Name() const;
 		};
 		COLLADABU::NativeString filename;
 		COLLADASW::StreamWriter stream;
@@ -139,7 +134,7 @@ private:
 		std::vector<DeferredObject> deferreds;
 		virtual ~ColladaExporter() {}
 		void startDocument(const std::string& unit_name, float unit_magnitude);
-		void write(const std::string& guid, const std::string& name, const std::string& type, const std::string& context, int obj_id, const std::vector<double>& matrix, const std::vector<double>& vertices, const std::vector<double>& normals, const std::vector<int>& faces, const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials);
+		void write(const std::string& unique_id, const std::string& type, const std::vector<double>& matrix, const std::vector<double>& vertices, const std::vector<double>& normals, const std::vector<int>& faces, const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials);
 		void endDocument();
 	};
 	ColladaExporter exporter;

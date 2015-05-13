@@ -222,7 +222,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcGuidHelper.cpp"
+				RelativePath="..\src\ifcparse\IfcGlobalId.cpp"
 				>
 			</File>
 			<File
@@ -277,6 +277,10 @@
 			</File>
 			<File
 				RelativePath="..\src\ifcparse\IfcFile.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcparse\IfcGlobalId.h"
 				>
 			</File>
 			<File

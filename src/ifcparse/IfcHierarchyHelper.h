@@ -35,8 +35,10 @@
 #else
 #include "../ifcparse/Ifc2x3.h"
 #endif
+
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcWrite.h"
+#include "../ifcparse/IfcGlobalId.h"
 
 class IfcHierarchyHelper : public IfcParse::IfcFile {
 public:
@@ -100,7 +102,7 @@ public:
 			}
 			IfcSchema::IfcObjectDefinition::list::ptr relating_objects (new IfcTemplatedEntityList<IfcSchema::IfcObjectDefinition>());
 			relating_objects->push(relating_object);
-			T* t = new T(IfcWrite::IfcGuidHelper(), owner_hist, boost::none, boost::none, related_object, relating_objects);
+			T* t = new T(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, related_object, relating_objects);
 			addEntity(t);
 		}
 	}
@@ -196,7 +198,7 @@ inline void IfcHierarchyHelper::addRelatedObject <IfcSchema::IfcRelContainedInSp
 		}
 		IfcSchema::IfcProduct::list::ptr relating_objects (new IfcTemplatedEntityList<IfcSchema::IfcProduct>());
 		relating_objects->push((IfcSchema::IfcProduct*)relating_object);
-		IfcSchema::IfcRelContainedInSpatialStructure* t = new IfcSchema::IfcRelContainedInSpatialStructure(IfcWrite::IfcGuidHelper(), owner_hist, 
+		IfcSchema::IfcRelContainedInSpatialStructure* t = new IfcSchema::IfcRelContainedInSpatialStructure(IfcParse::IfcGlobalId(), owner_hist, 
 			boost::none, boost::none, relating_objects, (IfcSchema::IfcSpatialStructureElement*)related_object);
 
 		addEntity(t);

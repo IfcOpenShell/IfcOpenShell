@@ -136,17 +136,6 @@ namespace IfcWrite {
 		IfcUtil::ArgumentType type() const;
 	};
 
-	/// A helper class for the creation of IFC GlobalIds.
-	class IfcGuidHelper {
-	private:
-		std::string data;
-		static bool seeded;
-	public:
-		static const unsigned int length = 22;
-		IfcGuidHelper();
-		operator std::string() const;
-	};
-
 	// Accumulates all schema instances created from constructors
 	// This way they can be added in a single batch to the IfcFile
 	class EntityBuffer {

@@ -20,9 +20,13 @@
 #ifndef IFCGEOMELEMENT_H
 #define IFCGEOMELEMENT_H
 
+#include <string>
+#include <algorithm>
+
+#include "../ifcparse/IfcGlobalId.h"
+
 #include "../ifcgeom/IfcGeomRepresentation.h"
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
-
 
 namespace IfcGeom {
 
@@ -73,6 +77,7 @@ namespace IfcGeom {
 		std::string _type;
 		std::string _guid;
 		std::string _context;
+		std::string _unique_id;
 		Transformation<P> _transformation;
 	public:
 		int id() const { return _id; }
@@ -81,10 +86,21 @@ namespace IfcGeom {
 		const std::string& type() const { return _type; }
 		const std::string& guid() const { return _guid; }
 		const std::string& context() const { return _context; }
+		const std::string& unique_id() const { return _unique_id; }
 		const Transformation<P>& transformation() const { return _transformation; }
 		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const gp_Trsf& trsf)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
-		{}
+		{
+			std::ostringstream oss;
+			oss << "product-" << IfcParse::IfcGlobalId(guid).formatted();
+			if (!_context.empty()) {
+				std::string ctx = _context;
+				std::transform(ctx.begin(), ctx.end(), ctx.begin(), ::tolower);
+				std::replace(ctx.begin(), ctx.end(), ' ', '-');
+				oss << "-" << ctx;
+			}
+			_unique_id = oss.str();
+		}
 		virtual ~Element() {}
 	};
 

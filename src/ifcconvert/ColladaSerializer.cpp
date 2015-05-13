@@ -28,7 +28,7 @@ std::string collada_id(const std::string& s) {
 	id.reserve(s.size());
 	for (std::string::const_iterator it = s.begin(); it != s.end(); ++it) {
 		const std::string::value_type c = *it;
-		if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_')) {
+		if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_') || ( c == '-')) {
 			id.push_back(c);
 		}
 	}
@@ -247,7 +247,7 @@ void ColladaSerializer::ColladaExporter::startDocument(const std::string& unit_n
 	asset.add();
 }
 
-void ColladaSerializer::ColladaExporter::write(const std::string& guid, const std::string& name, const std::string& type, const std::string& context, int obj_id, const std::vector<double>& matrix, const std::vector<double>& vertices, const std::vector<double>& normals, const std::vector<int>& faces, const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& _materials) {
+void ColladaSerializer::ColladaExporter::write(const std::string& unique_id, const std::string& type, const std::vector<double>& matrix, const std::vector<double>& vertices, const std::vector<double>& normals, const std::vector<int>& faces, const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& _materials) {
 	std::vector<std::string> material_references;
 	for (std::vector<IfcGeom::Material>::const_iterator it = _materials.begin(); it != _materials.end(); ++it) {
 		const IfcGeom::Material& material = *it;
@@ -256,18 +256,7 @@ void ColladaSerializer::ColladaExporter::write(const std::string& guid, const st
 		}
 		material_references.push_back(collada_id(material.name()));
 	}
-	deferreds.push_back(DeferredObject(guid, name, type, context, obj_id, matrix, vertices, normals, faces, edges, material_ids, _materials, material_references));
-}
-
-const std::string ColladaSerializer::ColladaExporter::DeferredObject::Name() const {
-	std::stringstream ss;
-	if (!this->name.empty()) {
-		ss << this->obj_id << "_" << this->name;
-	} else {
-		ss << this->guid;
-	}
-	ss << "_" << this->context;
-	return collada_id(ss.str());
+	deferreds.push_back(DeferredObject(unique_id, type, matrix, vertices, normals, faces, edges, material_ids, _materials, material_references));
 }
 
 void ColladaSerializer::ColladaExporter::endDocument() {
@@ -275,13 +264,13 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	// only at this point all objects are written to the stream.
 	materials.write();
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
-		const std::string object_name = it->Name();
+		const std::string object_name = it->unique_id + "-representation";
 		geometries.write(object_name, it->type, it->vertices, it->normals, it->faces, it->edges, it->material_ids, it->materials);
 	}
 	geometries.close();
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
-		const std::string object_name = it->Name();
-		scene.add(object_name + "-instance", object_name, object_name, it->material_references, it->matrix);
+		const std::string object_name = it->unique_id;
+		scene.add(object_name, object_name, object_name + "-representation", it->material_references, it->matrix);
 	}
 	scene.write();
 	stream.endDocument();
@@ -297,7 +286,7 @@ void ColladaSerializer::writeHeader() {
 
 void ColladaSerializer::write(const IfcGeom::TriangulationElement<double>* o) {
 	const IfcGeom::Representation::Triangulation<double>& mesh = o->geometry();
-	exporter.write(o->guid(), o->name(), o->type(), o->context(), o->id(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(), mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials());
+	exporter.write(o->unique_id(), o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(), mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials());
 }
 
 void ColladaSerializer::finalize() {

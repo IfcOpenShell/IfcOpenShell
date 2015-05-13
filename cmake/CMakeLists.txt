@@ -129,7 +129,7 @@ ADD_LIBRARY(IfcParse STATIC
   ../src/ifcparse/Ifc4-latebound.cpp
   ../src/ifcparse/Ifc4.cpp
   ../src/ifcparse/IfcCharacterDecoder.cpp
-  ../src/ifcparse/IfcGuidHelper.cpp
+  ../src/ifcparse/IfcGlobalId.cpp
   ../src/ifcparse/IfcHierarchyHelper.cpp
   ../src/ifcparse/IfcLateBoundEntity.cpp
   ../src/ifcparse/IfcParse.cpp
@@ -220,6 +220,7 @@ SET(include_files_parse
     ../src/ifcparse/IfcEntityDescriptor.h
     ../src/ifcparse/IfcException.h
     ../src/ifcparse/IfcFile.h
+    ../src/ifcparse/IfcGlobalId.h
     ../src/ifcparse/IfcHierarchyHelper.h
     ../src/ifcparse/IfcLateBoundEntity.h
     ../src/ifcparse/IfcParse.h
