@@ -55,9 +55,6 @@ namespace IfcGeom {
 		// Specifies whether to compose IfcOpeningElements into a single compound
 		// in order to speed up the processing of opening subtractions.
 		static const int FASTER_BOOLEANS = 6;
-		// By default singular faces have no explicitly defined orientation, to
-		// force faces to be defined CounterClockWise set this to true.
-		static const int FORCE_CCW_FACE_ORIENTATION = 7;
 		// Disables the subtraction of IfcOpeningElement representations from
 		// the related building element representations.
 		static const int DISABLE_OPENING_SUBTRACTIONS = 8;
@@ -74,7 +71,7 @@ namespace IfcGeom {
 		// End of settings enumeration.
 
 	private:
-		bool _weld_vertices, _use_world_coords, _convert_back_units, _use_brep_data, _sew_shells, _faster_booleans, _force_ccw_face_orientation, _disable_opening_subtractions, _disable_triangulation, _apply_default_materials, _include_curves, _exclude_solids_and_surfaces;
+		bool _weld_vertices, _use_world_coords, _convert_back_units, _use_brep_data, _sew_shells, _faster_booleans, _disable_opening_subtractions, _disable_triangulation, _apply_default_materials, _include_curves, _exclude_solids_and_surfaces;
 		double _deflection_tolerance;
 	public:
 		IteratorSettings()
@@ -84,7 +81,6 @@ namespace IfcGeom {
 			, _use_brep_data(false)
 			, _sew_shells(false)
 			, _faster_booleans(false)
-			, _force_ccw_face_orientation(false)
 			, _disable_opening_subtractions(false)
 			, _disable_triangulation(false)
 			, _apply_default_materials(false)
@@ -107,8 +103,6 @@ namespace IfcGeom {
 		bool& sew_shells() { return _sew_shells; }
 		const bool& faster_booleans() const { return _faster_booleans; }
 		bool& faster_booleans() { return _faster_booleans; }
-		const bool& force_ccw_face_orientation() const { return _force_ccw_face_orientation; }
-		bool& force_ccw_face_orientation() { return _force_ccw_face_orientation; }
 		const bool& disable_opening_subtractions() const { return _disable_opening_subtractions; }
 		bool& disable_opening_subtractions() { return _disable_opening_subtractions; }
 		const bool& disable_triangulation() const { return _disable_triangulation; }
@@ -142,9 +136,6 @@ namespace IfcGeom {
 				break;
 			case SEW_SHELLS:
 				_sew_shells = value;
-				break;
-			case FORCE_CCW_FACE_ORIENTATION:
-				_force_ccw_face_orientation = value;
 				break;
 			case DISABLE_OPENING_SUBTRACTIONS:
 				_disable_opening_subtractions = value;

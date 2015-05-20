@@ -503,7 +503,6 @@ static double point_equality_tolerance = 0.00001;
 static double max_faces_to_sew = -1.0;
 static double ifc_length_unit = 1.0;
 static double ifc_planeangle_unit = -1.0;
-static double force_ccw_face_orientation = -1.0;
 static double modelling_precision = 0.00001;
 static double dimensionality = 1;
 
@@ -529,9 +528,6 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 		break;
 	case GV_PLANEANGLE_UNIT:
 		ifc_planeangle_unit = value;
-		break;
-	case GV_FORCE_CCW_FACE_ORIENTATION:
-		force_ccw_face_orientation = value;
 		break;
 	case GV_PRECISION:
 		modelling_precision = value;
@@ -561,9 +557,6 @@ double IfcGeom::Kernel::getValue(GeomValue var) {
 		break;
 	case GV_PLANEANGLE_UNIT:
 		return ifc_planeangle_unit;
-		break;
-	case GV_FORCE_CCW_FACE_ORIENTATION:
-		return force_ccw_face_orientation;
 		break;
 	case GV_PRECISION:
 		return modelling_precision;

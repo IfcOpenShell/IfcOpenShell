@@ -408,30 +408,15 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeLoop* l, TopoDS_Wire& resu
 	IfcSchema::IfcOrientedEdge::list::ptr li = l->EdgeList();
 	BRepBuilderAPI_MakeWire mw;
 	for (IfcSchema::IfcOrientedEdge::list::it it = li->begin(); it != li->end(); ++it) {
-		IfcSchema::IfcOrientedEdge* e = *it;
-
-		IfcSchema::IfcPoint* pnt1 = ((IfcSchema::IfcVertexPoint*) e->EdgeStart())->VertexGeometry();
-		IfcSchema::IfcPoint* pnt2 = ((IfcSchema::IfcVertexPoint*) e->EdgeEnd())->VertexGeometry();
-		if (!pnt1->is(IfcSchema::Type::IfcCartesianPoint) || !pnt2->is(IfcSchema::Type::IfcCartesianPoint)) {
-			Logger::Message(Logger::LOG_ERROR, "Only IfcCartesianPoints are supported for VertexGeometry", l->entity);
-			return false;
-		}
-	
-		gp_Pnt p1, p2;
-		if (!IfcGeom::Kernel::convert(((IfcSchema::IfcCartesianPoint*)pnt1), p1) ||
-			!IfcGeom::Kernel::convert(((IfcSchema::IfcCartesianPoint*)pnt2), p2))
-		{
-			return false;
-		}
-
-		mw.Add(BRepBuilderAPI_MakeEdge(p1, p2));
-		continue;
-		
-		IfcSchema::IfcEdge* base = e->EdgeElement();
 		TopoDS_Wire w;
-		if (convert_wire(e->EdgeElement(), w)) {
-			if (!e->Orientation()) w.Reverse();
-			mw.Add(w);
+		if (convert_wire(*it, w)) {
+			if (!(*it)->Orientation()) w.Reverse();
+			TopoDS_Iterator it(w, false);
+			for (; it.More(); it.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(it.Value());
+				mw.Add(e);
+			}
+			// mw.Add(w);
 		}
 	}
 	result = mw;
@@ -466,7 +451,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdge* l, TopoDS_Wire& result) 
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcOrientedEdge* l, TopoDS_Wire& result) {
-	if (convert(l->EdgeElement(), result)) {
+	if (convert_wire(l->EdgeElement(), result)) {
 		if (!l->Orientation()) {
 			result.Reverse();
 		}
@@ -478,7 +463,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcOrientedEdge* l, TopoDS_Wire& 
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSubedge* l, TopoDS_Wire& result) {
 	TopoDS_Wire temp;
-	if (convert(l->ParentEdge(), result) && convert((IfcSchema::IfcEdge*) l, temp)) {
+	if (convert_wire(l->ParentEdge(), result) && convert((IfcSchema::IfcEdge*) l, temp)) {
 		TopExp_Explorer exp(result, TopAbs_EDGE);
 		TopoDS_Edge edge = TopoDS::Edge(exp.Current());
 		Standard_Real u1, u2;

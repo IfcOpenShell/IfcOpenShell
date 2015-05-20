@@ -47,6 +47,7 @@
 #include <TColStd_Array1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
 #include <Geom_Line.hxx>
+#include <Geom_Plane.hxx>
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <Geom_TrimmedCurve.hxx>
@@ -70,6 +71,7 @@
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopExp_Explorer.hxx>
+#include <TopoDS_Iterator.hxx>
 
 #include <BRepAlgoAPI_Cut.hxx>
 
@@ -91,7 +93,6 @@
 #include <TColStd_Array1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
 
-#include <Geom_Plane.hxx>
 #include <BRepCheck_Face.hxx>
 #endif
 
@@ -99,116 +100,181 @@
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
-	IfcSchema::IfcFaceBound::list::it it = bounds->begin();
-	IfcSchema::IfcLoop* loop = (*it)->Bound();
-	// FIXME: The assumption that the first bound is 
-	// the outer bound is not necessarily correct.
-	TopoDS_Wire outer_wire;
-	if ( ! convert_wire(loop,outer_wire) ) return false;
-	BRepBuilderAPI_MakeFace mf (outer_wire);
-	BRepBuilderAPI_FaceError er = mf.Error();
-	if ( er == BRepBuilderAPI_NotPlanar ) {
-		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(outer_wire, 0.01, TopAbs_WIRE);
-		mf.~BRepBuilderAPI_MakeFace();
-		new (&mf) BRepBuilderAPI_MakeFace(outer_wire);
-		er = mf.Error();
-	}
-	if ( er != BRepBuilderAPI_FaceDone ) return false;
-	if ( bounds->size() == 1 ) {
-		face = mf.Face();
-	} else {
-		for( ++it; it != bounds->end(); ++ it) {
-			IfcSchema::IfcLoop* loop = (*it)->Bound();
-			TopoDS_Wire wire;
-			if ( ! convert_wire(loop,wire) ) return false;
-			mf.Add(wire);
-		}
-		if ( mf.IsDone() ) {
-			ShapeFix_Shape sfs(mf.Face());
-			sfs.Perform();
-			TopoDS_Shape sfs_shape = sfs.Shape();
-			bool is_face = sfs_shape.ShapeType() == TopAbs_FACE;
-			// This assertion is not strictly necessary. The schema
-			// does suggest there to be only one outer bound, but
-			// not all models comply with this.
-			if ( is_face ) {
-				face = TopoDS::Face(sfs_shape);
-			} else {
-				face = sfs_shape;
-			}
-		} else {
-			return false;
-		}
-	}
 
-	if ( getValue(GV_FORCE_CCW_FACE_ORIENTATION)>0 ) { 
-	// Check the orientation of the face by comparing the 
-	// normal of the topological surface to the Newell's Method's
-	// normal. Newell's Method is used for the normal calculation
-	// as a simple edge cross product can give opposite results
-	// for a concave face boundary.
-	// Reference: Graphics Gems III p. 231
-	BRepGProp_Face prop(TopoDS::Face(face));
-	gp_Vec normal_direction;
-	gp_Pnt center;
-	double u1,u2,v1,v2;
-	prop.Bounds(u1,u2,v1,v2);
-	prop.Normal((u1+u2)/2.0,(v1+v2)/2.0,center,normal_direction);						
-	gp_Dir face_normal1 = gp_Dir(normal_direction.XYZ());
+	Handle(Geom_Surface) face_surface;
+	bool reversed_face_surface = false;
+	const bool is_face_surface = l->is(IfcSchema::Type::IfcFaceSurface);
 
-	double x = 0, y = 0, z = 0;
-	gp_Pnt current, previous, first;
-	int n = 0;
-	// Iterate over the vertices of the outer wire (discarding
-	// any potential holes)
-	for ( TopExp_Explorer exp(outer_wire,TopAbs_VERTEX);; exp.Next()) {
-		unsigned has_more = exp.More();
-		if ( has_more ) {
-			const TopoDS_Vertex& v = TopoDS::Vertex(exp.Current());
-			current = BRep_Tool::Pnt(v);
-		} else {
-			current = first;			
-		}
-		if ( n ) {
-			const double& xn  = previous.X();
-			const double& yn  = previous.Y();
-			const double& zn  = previous.Z();
-			const double& xn1 =  current.X();
-			const double& yn1 =  current.Y();
-			const double& zn1 =  current.Z();
-			x += (yn-yn1)*(zn+zn1);
-			y += (xn+xn1)*(zn-zn1);
-			z += (xn-xn1)*(yn+yn1);
-		} else {
-			first = current;
-		}
-		if ( !has_more ) {
-			break;
-		} 
-		previous = current;
-		++n;
-	}
+	if (is_face_surface) {
+		IfcSchema::IfcFaceSurface* fs = (IfcSchema::IfcFaceSurface*) l;
+		fs->FaceSurface();
+		// FIXME: Surfaces are interpreted as a TopoDS_Shape
+		TopoDS_Shape surface_shape;
+		if (!convert_shape(fs->FaceSurface(), surface_shape)) return false;
 
-	// If Newell's normal does not point in the same direction
-	// as the topological face normal the face orientation is
-	// reversed
-	gp_Vec face_normal2(x,y,z);
+		// FIXME: Assert this obtaines the only face
+		TopExp_Explorer exp(surface_shape, TopAbs_FACE);
+		if (!exp.More()) return false;
 
-	if (face_normal2.Magnitude() > ALMOST_ZERO) {
-		if ( face_normal1.Dot(face_normal2) < 0 ) {
-			TopAbs_Orientation o = face.Orientation();
-			face.Orientation(o == TopAbs_FORWARD ? TopAbs_REVERSED : TopAbs_FORWARD);
-		}
-	}
+		TopoDS_Face surface = TopoDS::Face(exp.Current());
+		face_surface = BRep_Tool::Surface(surface);
 	}
 	
-	// It might be a good idea to globally discard faces
-	// smaller than a certain treshold value. But for now
-	// only when processing IfcConnectedFacesets the small
-	// faces are skipped.
-	// return face_area(face) > 0.0001;
-	return true;
+	const int num_bounds = bounds->size();
+	int num_outer_bounds = 0;
+
+	for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
+		IfcSchema::IfcFaceBound* bound = *it;
+		if (bound->is(IfcSchema::Type::IfcFaceOuterBound)) num_outer_bounds ++;
+	}
+
+	// The number of outer bounds should be one according to the schema. Also Open Cascade
+	// expects this, but it is not strictly checked. Regardless, if the number is greater,
+	// the face will still be processed as long as there are no holes. A compound of faces
+	// is returned in that case.
+	if (num_bounds > 1 && num_outer_bounds > 1 && num_bounds != num_outer_bounds) {
+		Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", l->entity);
+		return false;
+	}
+
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	if (num_outer_bounds > 1) {
+		builder.MakeCompound(compound);
+	}
+	
+	// The builder is initialized on the heap because of the various different moments
+	// of initialization depending on the configuration of surfaces and boundaries.
+	BRepBuilderAPI_MakeFace* mf = 0;
+	
+	bool success = false;
+	int processed = 0;
+
+	for (int process_interior = 0; process_interior <= 1; ++process_interior) {
+		for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
+			IfcSchema::IfcFaceBound* bound = *it;
+			IfcSchema::IfcLoop* loop = bound->Bound();
+		
+			const bool same_sense = bound->Orientation();
+			const bool is_interior = 
+				!bound->is(IfcSchema::Type::IfcFaceOuterBound) &&
+				(num_bounds > 1) &&
+				(num_outer_bounds < num_bounds);
+
+			// The exterior face boundary is processed first
+			if (is_interior == !process_interior) continue;
+		
+			TopoDS_Wire wire;
+			if (!convert_wire(loop, wire)) break;
+
+			/*
+			The approach below does not result in a significant speed-up
+			if (loop->is(IfcSchema::Type::IfcPolyLoop) && processed == 0 && face_surface.IsNull()) {
+				IfcSchema::IfcPolyLoop* polyloop = (IfcSchema::IfcPolyLoop*) loop;
+				IfcSchema::IfcCartesianPoint::list::ptr points = polyloop->Polygon();
+
+				if (points->size() == 3) {
+					// Help Open Cascade by finding the plane more efficiently
+					IfcSchema::IfcCartesianPoint::list::it point_iterator = points->begin();
+					gp_Pnt a, b, c;
+					convert(*point_iterator++, a);
+					convert(*point_iterator++, b);
+					convert(*point_iterator++, c);
+					const gp_XYZ ab = (b.XYZ() - a.XYZ());
+					const gp_XYZ ac = (c.XYZ() - a.XYZ());
+					const gp_Vec cross = ab.Crossed(ac);
+					if (cross.SquareMagnitude() > ALMOST_ZERO) {
+						const gp_Dir n = cross;
+						face_surface = new Geom_Plane(a, n);
+					}
+				}
+			}
+			*/
+		
+			if (!same_sense) {
+				wire.Reverse();
+			}
+
+			ShapeFix_ShapeTolerance FTol;
+			FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
+
+			if (!mf) {
+				if (face_surface.IsNull()) {
+					mf = new BRepBuilderAPI_MakeFace(wire);
+				} else {
+					mf = new BRepBuilderAPI_MakeFace(face_surface, wire); 
+				}				
+
+				/* BRepBuilderAPI_FaceError er = mf->Error();
+				if (er == BRepBuilderAPI_NotPlanar) {
+					ShapeFix_ShapeTolerance FTol;
+					FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
+					delete mf;
+					mf = new BRepBuilderAPI_MakeFace(wire);
+				} */
+
+				if (mf->IsDone()) {
+					TopoDS_Face outer_face_bound = mf->Face();
+
+					// If the wires are reversed the face needs to be reversed as well in order
+					// to maintain the counter-clock-wise ordering of the bounding wire's vertices.
+					bool all_reversed = true;
+					TopoDS_Iterator it(outer_face_bound, false);
+					for (; it.More(); it.Next()) {
+						const TopoDS_Wire& w = TopoDS::Wire(it.Value());
+						if ((w.Orientation() != TopAbs_REVERSED) == same_sense) {
+							all_reversed = false;
+						}
+					}
+
+					if (all_reversed) {
+						outer_face_bound.Reverse();
+					}
+
+					if (num_outer_bounds > 1) {
+						builder.Add(compound, outer_face_bound);
+						delete mf; mf = 0;
+					} else if (num_bounds > 1) {
+						// Reinitialize the builder to the outer face 
+						// bound in order to add holes more robustly.
+						delete mf;
+						mf = new BRepBuilderAPI_MakeFace(outer_face_bound);
+					} else {
+						face = outer_face_bound;
+						success = true;
+					}
+				} else {
+					break;
+				}
+
+			} else {
+				mf->Add(wire);
+			}
+			processed ++;
+		}
+	}
+
+	if (!success) {
+		success = processed == num_bounds;
+		if (success) {
+			if (num_outer_bounds > 1) {
+				face = compound;
+			} else {
+				success = success && mf->IsDone();
+				if (success) {
+					face = mf->Face();
+				}
+			}
+		}
+	}
+
+	if (success) {
+		ShapeFix_ShapeTolerance FTol;
+		FTol.SetTolerance(face, getValue(GV_PRECISION), TopAbs_FACE);
+	}
+
+	delete mf;
+	return success;
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryClosedProfileDef* l, TopoDS_Shape& face) {

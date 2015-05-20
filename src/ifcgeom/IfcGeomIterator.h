@@ -450,7 +450,6 @@ namespace IfcGeom {
 			unit_magnitude = 1.f;
 
 			kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.sew_shells() ? 1000 : -1);
-			kernel.setValue(IfcGeom::Kernel::GV_FORCE_CCW_FACE_ORIENTATION, settings.force_ccw_face_orientation() ? 1 : -1);
 			kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.include_curves() ? (settings.exclude_solids_and_surfaces() ? -1. : 0.) : +1.));
 		}
 	public:

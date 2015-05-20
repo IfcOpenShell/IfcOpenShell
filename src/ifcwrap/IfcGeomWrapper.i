@@ -95,7 +95,7 @@
 
 %extend IfcGeom::IteratorSettings {
 	%pythoncode %{
-		attrs = ("convert_back_units", "deflection_tolerance", "disable_opening_subtractions", "disable_triangulation", "faster_booleans", "force_ccw_face_orientation", "sew_shells", "use_brep_data", "use_world_coords", "weld_vertices")
+		attrs = ("convert_back_units", "deflection_tolerance", "disable_opening_subtractions", "disable_triangulation", "faster_booleans", "sew_shells", "use_brep_data", "use_world_coords", "weld_vertices")
 		def __repr__(self):
 			return "%s(%s)"%(self.__class__.__name__, ",".join(tuple("%s=%r"%(a, getattr(self, a)()) for a in self.attrs)))
 	%}
@@ -218,7 +218,6 @@
 			
 			IfcGeom::Kernel kernel;
 			kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.sew_shells() ? 1000 : -1);
-			kernel.setValue(IfcGeom::Kernel::GV_FORCE_CCW_FACE_ORIENTATION, settings.force_ccw_face_orientation() ? 1 : -1);
 			kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.include_curves() ? (settings.exclude_solids_and_surfaces() ? -1. : 0.) : +1.));
 
 			IfcSchema::IfcProduct* product = (IfcSchema::IfcProduct*) instance;

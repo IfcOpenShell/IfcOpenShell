@@ -321,7 +321,6 @@ int main (int argc, char** argv) {
 			settings.use_world_coords() = false;
 			settings.weld_vertices() = false;
 			settings.convert_back_units() = true;
-			settings.force_ccw_face_orientation() = true;
 			settings.include_curves() = true;
 
 			iterator = new IfcGeom::Iterator<float>(settings, data, len);

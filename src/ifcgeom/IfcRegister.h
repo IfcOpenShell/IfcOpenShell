@@ -93,6 +93,7 @@ FACE(IfcEllipseProfileDef);
 FACE(IfcCenterLineProfileDef);
 FACE(IfcCompositeProfileDef);
 FACE(IfcDerivedProfileDef);
+// IfcFaceSurface included
 FACE(IfcFace);
 
 WIRE(IfcEdgeCurve);

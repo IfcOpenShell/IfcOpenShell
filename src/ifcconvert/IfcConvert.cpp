@@ -120,10 +120,6 @@ int main(int argc, char** argv) {
 			"operand before applying the subtraction operation. This may "
 			"introduce a performance improvement at the risk of failing, in "
 			"which case the subtraction is applied one-by-one.")
-		("force-ccw-face-orientation", 
-			"Recompute topological face normals using Newell's Method to "
-			"guarantee that face vertices are defined in a Counter Clock "
-			"Wise order, even if the faces are not part of a closed shell.")
 		("disable-opening-subtractions", 
 			"Specifies whether to disable the boolean subtraction of "
 			"IfcOpeningElement Representations from their RelatingElements.")
@@ -173,7 +169,6 @@ int main(int argc, char** argv) {
 	const bool convert_back_units = vmap.count("convert-back-units") != 0;
 	const bool sew_shells = vmap.count("sew-shells") != 0;
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
-	const bool force_ccw_face_orientation = vmap.count("force-ccw-face-orientation") != 0;
 	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
 	const bool include_entities = vmap.count("include") != 0;
 	const bool include_plan = vmap.count("plan") != 0;
@@ -240,7 +235,6 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS,                   sew_shells);
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS,           convert_back_units);
 	settings.set(IfcGeom::IteratorSettings::FASTER_BOOLEANS,              merge_boolean_operands);
-	settings.set(IfcGeom::IteratorSettings::FORCE_CCW_FACE_ORIENTATION,   force_ccw_face_orientation);
 	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
 	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);

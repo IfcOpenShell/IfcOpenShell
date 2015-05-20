@@ -81,9 +81,6 @@ public:
 		// that consist of many faces is really detrimental for the performance.
 		// Default: 1000
 		GV_MAX_FACES_TO_SEW,
-		// By default singular faces have no explicitly defined orientation, to
-		// force faces to be defined CounterClockWise, set this value greater than zero.
-		GV_FORCE_CCW_FACE_ORIENTATION,
 		// The length unit used the creation of TopoDS_Shapes, primarily affects the
 		// interpretation of IfcCartesianPoints and IfcVector magnitudes
 		// DefaultL 1.0
