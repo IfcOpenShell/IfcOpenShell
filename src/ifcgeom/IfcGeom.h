@@ -138,8 +138,8 @@ public:
 		IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
 		for (IfcSchema::IfcStyledItem::list::it jt = styled_items->begin(); jt != styled_items->end(); ++jt) {
 #ifdef USE_IFC4
-			IfcUtil::IfcAbstractSelect::list::ptr style_assignments = (*jt)->Styles();
-			for (IfcUtil::IfcAbstractSelect::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+			IfcEntityList::ptr style_assignments = (*jt)->Styles();
+			for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
 				if (!(*kt)->is(IfcSchema::Type::IfcPresentationStyleAssignment)) {
 					continue;
 				}
