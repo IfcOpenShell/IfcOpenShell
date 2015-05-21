@@ -85,6 +85,7 @@
 #include <Standard_Failure.hxx>
 
 #include <BRep_Tool.hxx>
+#include <BRepCheck_Face.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 
 #ifdef USE_IFC4
@@ -92,8 +93,6 @@
 #include <TColgp_Array2OfPnt.hxx>
 #include <TColStd_Array1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
-
-#include <BRepCheck_Face.hxx>
 #endif
 
 #include "../ifcgeom/IfcGeom.h"
@@ -155,7 +154,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 			IfcSchema::IfcFaceBound* bound = *it;
 			IfcSchema::IfcLoop* loop = bound->Bound();
 		
-			const bool same_sense = bound->Orientation();
+			bool same_sense = bound->Orientation();
 			const bool is_interior = 
 				!bound->is(IfcSchema::Type::IfcFaceOuterBound) &&
 				(num_bounds > 1) &&
@@ -215,6 +214,21 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 
 				if (mf->IsDone()) {
 					TopoDS_Face outer_face_bound = mf->Face();
+
+					if (BRepCheck_Face(outer_face_bound).OrientationOfWires() == BRepCheck_BadOrientationOfSubshape) {
+						wire.Reverse();
+						same_sense = !same_sense;
+						delete mf;
+						if (face_surface.IsNull()) {
+							mf = new BRepBuilderAPI_MakeFace(wire);
+						} else {
+							mf = new BRepBuilderAPI_MakeFace(face_surface, wire); 
+						}
+						ShapeFix_Face fix(mf->Face());
+						fix.FixOrientation();
+						fix.Perform();
+						outer_face_bound = fix.Face();
+					}
 
 					// If the wires are reversed the face needs to be reversed as well in order
 					// to maintain the counter-clock-wise ordering of the bounding wire's vertices.
