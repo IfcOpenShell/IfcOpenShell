@@ -169,6 +169,37 @@ int main(int argc, char** argv) {
 		IfcSchema::IfcFace* face = new IfcSchema::IfcFace(bounds);
 		create_testcase(file, face, "imprecise polyloop");
 	}
+	{ 
+		IfcSchema::IfcCartesianPoint* point1 = file.addTriplet<IfcSchema::IfcCartesianPoint>(+400, 0., 0.);
+		IfcSchema::IfcCartesianPoint* point2 = file.addTriplet<IfcSchema::IfcCartesianPoint>(-400, 0., 0.);
+		IfcSchema::IfcVertexPoint* vertex1 = new IfcSchema::IfcVertexPoint(point1);
+		IfcSchema::IfcVertexPoint* vertex2 = new IfcSchema::IfcVertexPoint(point2);
+		IfcSchema::IfcCircle* circle = new IfcSchema::IfcCircle(file.addPlacement2d(), 400.);
+		IfcSchema::IfcEdgeCurve* edge1 = new IfcSchema::IfcEdgeCurve(vertex1, vertex2, circle, true);
+		IfcSchema::IfcEdgeCurve* edge2 = new IfcSchema::IfcEdgeCurve(vertex2, vertex1, circle, true);
+		IfcSchema::IfcOrientedEdge* oriented_edge1 = new IfcSchema::IfcOrientedEdge(edge1, true);
+		IfcSchema::IfcOrientedEdge* oriented_edge2 = new IfcSchema::IfcOrientedEdge(edge2, true);
+		IfcSchema::IfcOrientedEdge::list::ptr edges(new IfcSchema::IfcOrientedEdge::list);
+		edges->push(oriented_edge1);
+		edges->push(oriented_edge2);
+		IfcSchema::IfcEdgeLoop* loop = new IfcSchema::IfcEdgeLoop(edges);
+		IfcSchema::IfcFaceOuterBound* bound = new IfcSchema::IfcFaceOuterBound(loop, true);
+		
+		IfcSchema::IfcFaceBound::list::ptr bounds (new IfcSchema::IfcFaceBound::list);
+		bounds->push(bound);
+
+		IfcSchema::IfcCartesianPoint::list::ptr trim1(new IfcSchema::IfcCartesianPoint::list);
+		IfcSchema::IfcCartesianPoint::list::ptr trim2(new IfcSchema::IfcCartesianPoint::list);
+		trim1->push(point1);
+		trim2->push(point2);
+		IfcSchema::IfcTrimmedCurve* trimmed_curve = new IfcSchema::IfcTrimmedCurve(circle, trim1->generalize(), trim2->generalize(), true, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);
+		IfcSchema::IfcArbitraryOpenProfileDef* profile = new IfcSchema::IfcArbitraryOpenProfileDef(IfcSchema::IfcProfileTypeEnum::IfcProfileType_CURVE, boost::none, trimmed_curve);
+		IfcSchema::IfcAxis1Placement* place = new IfcSchema::IfcAxis1Placement(file.addTriplet<IfcSchema::IfcCartesianPoint>(0., 0., 0.), file.addTriplet<IfcSchema::IfcDirection>(1., 0., 0.));
+		IfcSchema::IfcSurfaceOfRevolution* surface = new IfcSchema::IfcSurfaceOfRevolution(profile, file.addPlacement3d(), place);
+
+		IfcSchema::IfcFace* face = new IfcSchema::IfcFaceSurface(bounds, surface, true);
+		create_testcase(file, face, "face surface");
+	}
 	const std::string filename = "faces.ifc";
 	file.header().file_name().name(filename);
 	std::ofstream f(filename.c_str());
