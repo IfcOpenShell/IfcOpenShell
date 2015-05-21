@@ -77,7 +77,7 @@ class Mapping:
     def make_argument_entity(self, attr):
         type = attr.type if hasattr(attr, 'type') else attr
         while isinstance(type, nodes.AggregationType): type = type.type
-        if type in self.express_to_cpp_typemapping: return "Type::UNDEFINED"
+        if str(type) in self.express_to_cpp_typemapping: return "Type::UNDEFINED"
         else: return "Type::%s" % type        
 
     def make_argument_type(self, attr):
@@ -88,6 +88,8 @@ class Mapping:
                 return "ENTITY_INSTANCE"
             elif self.schema.is_type(type):
                 return _make_argument_type(self.schema.types[type].type.type)
+            elif isinstance(type, nodes.BinaryType):
+                return "BINARY"
             elif isinstance(type, nodes.EnumerationType):
                 return "ENUMERATION"
             elif isinstance(type, nodes.AggregationType):

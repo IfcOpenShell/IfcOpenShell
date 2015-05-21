@@ -7366,8 +7366,8 @@ bool IfcPropertySetDefinitionSet::is(Type::Enum v) const { return v == IfcProper
 Type::Enum IfcPropertySetDefinitionSet::type() const { return Type::IfcPropertySetDefinitionSet; }
 Type::Enum IfcPropertySetDefinitionSet::Class() { return Type::IfcPropertySetDefinitionSet; }
 IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(IfcAbstractEntity* e) { entity = e; }
-IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v) { IfcWritableEntity* e = new IfcWritableEntity(Type::IfcPropertySetDefinitionSet); e->setArgument(0, v); entity = e; }
-IfcPropertySetDefinitionSet::operator IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr() const { return *entity->getArgument(0); }
+IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v) { IfcWritableEntity* e = new IfcWritableEntity(Type::IfcPropertySetDefinitionSet); e->setArgument(0, v->generalize()); entity = e; }
+IfcPropertySetDefinitionSet::operator IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr() const { IfcEntityList::ptr es = *entity->getArgument(0); return es->as<IfcPropertySetDefinition>(); }
 
 // Function implementations for IfcRadioActivityMeasure
 IfcUtil::ArgumentType IfcRadioActivityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }

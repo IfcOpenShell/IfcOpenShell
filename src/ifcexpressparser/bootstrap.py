@@ -114,6 +114,7 @@ actions = {
     'aggregation_types'         : "lambda t: AggregationType(t)",
     'general_aggregation_types' : "lambda t: AggregationType(t)",
     'select_type'               : "lambda t: SelectType(t)",
+    'binary_type'               : "lambda t: BinaryType(t)",
     'subtype_declaration'       : "lambda t: SubtypeExpression(t)",
     'derive_clause'             : "lambda t: AttributeList('derive', t)",
     'derived_attr'              : "lambda t: DerivedAttribute(t)",

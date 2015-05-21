@@ -145,6 +145,13 @@ class DerivedAttribute(Node):
         return str(self.name)
 
 
+class BinaryType(Node):
+    def init(self):
+        pass
+    def __repr__(self):
+        return "binary"
+
+
 class BoundSpecification(Node):
     lower = property(lambda self: self.tokens[1])
     upper = property(lambda self: self.tokens[3])
