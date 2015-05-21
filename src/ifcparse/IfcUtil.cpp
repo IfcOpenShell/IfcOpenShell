@@ -25,11 +25,15 @@
 #include "IfcUtil.h"
 
 void IfcEntityList::push(IfcUtil::IfcBaseClass* l) {
-	if ( l ) ls.push_back(l);
+	if (l) {
+		ls.push_back(l);
+	}
 }
 void IfcEntityList::push(const IfcEntityList::ptr& l) {
-	for( it i = l->begin(); i != l->end(); ++i  ) {
-		if ( *i ) ls.push_back(*i);
+	if (l) {
+		for( it i = l->begin(); i != l->end(); ++i  ) {
+			if ( *i ) ls.push_back(*i);
+		}
 	}
 }
 unsigned int IfcEntityList::size() const { return (unsigned int) ls.size(); }

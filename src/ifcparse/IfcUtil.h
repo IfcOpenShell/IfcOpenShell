@@ -80,6 +80,13 @@ namespace IfcUtil {
 		virtual IfcSchema::Type::Enum getArgumentEntity(unsigned int i) const = 0;
 		virtual Argument* getArgument(unsigned int i) const = 0;
 		virtual const char* getArgumentName(unsigned int i) const = 0;
+
+		template <class T>
+		typename T* as() {
+			return is(T::Class()) 
+				? static_cast<T*>(this) 
+				: static_cast<T*>(0);
+		}
 	};
 
 	class IfcBaseEntity : public IfcBaseClass {
@@ -127,8 +134,8 @@ class IfcTemplatedEntityList {
 public:
 	typedef SHARED_PTR< IfcTemplatedEntityList<T> > ptr;
 	typedef typename std::vector<T*>::const_iterator it;
-	void push(T* t) {if (t) ls.push_back(t);}
-	void push(ptr t) { for ( typename T::list::it it = t->begin(); it != t->end(); ++it ) push(*it); }
+	void push(T* t) { if (t) { ls.push_back(t); } }
+	void push(ptr t) { if (t) { for ( typename T::list::it it = t->begin(); it != t->end(); ++it ) push(*it); } }
 	it begin() { return ls.begin(); }
 	it end() { return ls.end(); }
 	unsigned int size() const { return (unsigned int) ls.size(); }
@@ -162,15 +169,17 @@ public:
 	typedef SHARED_PTR< IfcEntityListList > ptr;
 	typedef std::vector< std::vector<IfcUtil::IfcBaseClass*> >::const_iterator outer_it;
 	typedef std::vector<IfcUtil::IfcBaseClass*>::const_iterator inner_it;
-	void push(const std::vector<IfcUtil::IfcBaseClass*>& l) { 
+	void push(const std::vector<IfcUtil::IfcBaseClass*>& l) {
 		ls.push_back(l); 
 	}
 	void push(const IfcEntityList::ptr& l) { 
-		std::vector<IfcUtil::IfcBaseClass*> li;
-		for (std::vector<IfcUtil::IfcBaseClass*>::const_iterator jt = l->begin(); jt != l->end(); ++jt) {
-			li.push_back(*jt); 
-		} 
-		push(li); 
+		if (l) {
+			std::vector<IfcUtil::IfcBaseClass*> li;
+			for (std::vector<IfcUtil::IfcBaseClass*>::const_iterator jt = l->begin(); jt != l->end(); ++jt) {
+				li.push_back(*jt); 
+			} 
+			push(li); 
+		}
 	}
 	outer_it begin() const { return ls.begin(); }
 	outer_it end() const { return ls.end(); }

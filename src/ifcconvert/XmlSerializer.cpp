@@ -119,7 +119,7 @@ typename V::list::ptr get_related(T* t, F f, G g) {
 	typename V::list::ptr acc(new typename V::list);
 	for (typename U::list::it it = li->begin(); it != li->end(); ++it) {
 		U* u = *it;
-		acc->push((*u.*g)());
+		acc->push((*u.*g)()->as<V>());
 	}
 	return acc;
 }
@@ -142,9 +142,15 @@ void descend(IfcProduct* product, ptree& tree) {
 		}
 	}
 
+#ifdef USE_IFC2x3
 	IfcObjectDefinition::list::ptr structures = get_related
 		<IfcProduct, IfcRelDecomposes, IfcObjectDefinition>
 		(product, &IfcProduct::IsDecomposedBy, &IfcRelDecomposes::RelatedObjects);
+#else
+	IfcObjectDefinition::list::ptr structures = get_related
+		<IfcProduct, IfcRelAggregates, IfcObjectDefinition>
+		(product, &IfcProduct::IsDecomposedBy, &IfcRelAggregates::RelatedObjects);
+#endif
 
 	for (IfcObjectDefinition::list::it it = structures->begin(); it != structures->end(); ++it) {
 		IfcObjectDefinition* ob = *it;
@@ -172,9 +178,15 @@ template <>
 void descend(IfcProject* project, ptree& tree) {
 	ptree& child = format_entity_instance(project, tree);
 	
+#ifdef USE_IFC2x3
 	IfcObjectDefinition::list::ptr structures = get_related
 		<IfcProject, IfcRelDecomposes, IfcObjectDefinition>
 		(project, &IfcProject::IsDecomposedBy, &IfcRelDecomposes::RelatedObjects);
+#else
+	IfcObjectDefinition::list::ptr structures = get_related
+		<IfcProject, IfcRelAggregates, IfcObjectDefinition>
+		(project, &IfcProduct::IsDecomposedBy, &IfcRelAggregates::RelatedObjects);
+#endif
 	
 	for (IfcObjectDefinition::list::it it = structures->begin(); it != structures->end(); ++it) {
 		IfcObjectDefinition* ob = *it;
