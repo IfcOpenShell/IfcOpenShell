@@ -885,7 +885,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcDerivedProfileDef* l, TopoDS_S
 
 #ifdef USE_IFC4
 
-bool convert_surf(IfcSchema::IfcBSplineSurfaceWithKnots* l, Handle_Geom_Surface& surf) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineSurfaceWithKnots* l, TopoDS_Shape& face) {
 	SHARED_PTR< IfcTemplatedEntityListList<IfcSchema::IfcCartesianPoint> > cps = l->ControlPointsList();
 	std::vector<double> uknots = l->UKnots();
 	std::vector<double> vknots = l->VKnots();
@@ -926,52 +926,18 @@ bool convert_surf(IfcSchema::IfcBSplineSurfaceWithKnots* l, Handle_Geom_Surface&
 	for (std::vector<int>::const_iterator it = vmults.begin(); it != vmults.end(); ++it, ++i) {
 		VMults(i) = *it;
 	}
-	surf = new Geom_BSplineSurface(Poles, UKnots, VKnots, UMults, VMults, UDegree, VDegree);
+	Handle_Geom_Surface surf = new Geom_BSplineSurface(Poles, UKnots, VKnots, UMults, VMults, UDegree, VDegree);
+
+	face = BRepBuilderAPI_MakeFace(surf, getValue(GV_PRECISION));
+
 	return true;
 }
 
-bool convert_surf(IfcSchema::IfcPlane* l, Handle_Geom_Surface& surf) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcPlane* l, TopoDS_Shape& face) {
 	gp_Pln pln;
 	convert(l, pln);
-	surf = new Geom_Plane(pln);
-	return true;
-}
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcAdvancedFace* l, TopoDS_Shape& face) {
-	IfcSchema::IfcSurface* s = l->FaceSurface();
-	Handle_Geom_Surface surf(0);
-	if (s->is(IfcSchema::Type::IfcBSplineSurfaceWithKnots)) {
-		convert_surf((IfcSchema::IfcBSplineSurfaceWithKnots*)s, surf);
-	} else if (s->is(IfcSchema::Type::IfcPlane)) {
-		convert_surf((IfcSchema::IfcPlane*)s, surf);
-	} else {
-		return false;
-	}
-
-	BRepBuilderAPI_MakeFace mf(surf, Precision::Confusion());
-	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
-	for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
-		IfcSchema::IfcLoop* loop = (*it)->Bound();
-		TopoDS_Wire outer_wire;
-		if (!convert_wire(loop, outer_wire)) return false;
-
-		TopoDS_Face temp = BRepBuilderAPI_MakeFace(surf, outer_wire);
-
-		if (BRepCheck_Face(temp).OrientationOfWires() == BRepCheck_BadOrientationOfSubshape) {
-			outer_wire.Reverse();			
-			ShapeFix_Face fix(BRepBuilderAPI_MakeFace(surf, outer_wire).Face());
-			fix.FixOrientation();
-			fix.Perform();
-			TopoDS_Face temp = fix.Face();			
-			TopExp_Explorer exp(temp, TopAbs_WIRE);
-			outer_wire = TopoDS::Wire(exp.Current());
-		}
-
-		mf.Add(outer_wire);
-	}
-
-	face = mf.Face();
-
+	Handle_Geom_Surface surf = new Geom_Plane(pln);
+	face = BRepBuilderAPI_MakeFace(surf, getValue(GV_PRECISION));
 	return true;
 }
 

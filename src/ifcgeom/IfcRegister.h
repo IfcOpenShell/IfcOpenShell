@@ -51,6 +51,9 @@ SHAPES(IfcGeometricSet);
 #ifdef USE_IFC4
 SHAPE(IfcCylindricalSurface);
 SHAPE(IfcAdvancedBrep);
+// FIXME: Surfaces should have a shape type of their own
+SHAPE(IfcBSplineSurfaceWithKnots);
+SHAPE(IfcPlane);
 #endif
 SHAPE(IfcExtrudedAreaSolid);
 SHAPE(IfcRevolvedAreaSolid);
@@ -58,6 +61,7 @@ SHAPE(IfcConnectedFaceSet);
 SHAPE(IfcBooleanResult);
 SHAPE(IfcPolygonalBoundedHalfSpace);
 SHAPE(IfcHalfSpaceSolid);
+// FIXME: Surfaces should have a shape type of their own
 SHAPE(IfcSurfaceOfLinearExtrusion);
 SHAPE(IfcSurfaceOfRevolution);
 SHAPE(IfcBlock);
@@ -71,9 +75,6 @@ SHAPE(IfcRectangularTrimmedSurface);
 SHAPE(IfcSurfaceCurveSweptAreaSolid);
 SHAPE(IfcSweptDiskSolid);
 
-#ifdef USE_IFC4
-FACE(IfcAdvancedFace);
-#endif
 FACE(IfcArbitraryProfileDefWithVoids);
 FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcRoundedRectangleProfileDef);
@@ -94,6 +95,7 @@ FACE(IfcCenterLineProfileDef);
 FACE(IfcCompositeProfileDef);
 FACE(IfcDerivedProfileDef);
 // IfcFaceSurface included
+// IfcAdvancedFace included in case of IFC4
 FACE(IfcFace);
 
 WIRE(IfcEdgeCurve);
