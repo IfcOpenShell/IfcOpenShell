@@ -346,7 +346,9 @@ simpletype_impl_type = "return Type::%(class_name)s;"
 simpletype_impl_class = "return Type::%(class_name)s;"
 simpletype_impl_explicit_constructor = "entity = e;"
 simpletype_impl_constructor = "IfcWritableEntity* e = new IfcWritableEntity(Type::%(class_name)s); e->setArgument(0, v); entity = e;"
-simpletype_impl_cast = "return *entity->getArgument(0);"    
+simpletype_impl_constructor_templated = "IfcWritableEntity* e = new IfcWritableEntity(Type::%(class_name)s); e->setArgument(0, v->generalize()); entity = e;"
+simpletype_impl_cast = "return *entity->getArgument(0);"
+simpletype_impl_cast_templated = "IfcEntityList::ptr es = *entity->getArgument(0); return es->as<%(underlying_type)s>();"
     
 select = """%(documentation)s
 typedef IfcUtil::IfcBaseClass %(name)s;

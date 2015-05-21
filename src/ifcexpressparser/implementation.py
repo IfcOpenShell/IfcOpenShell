@@ -72,10 +72,10 @@ class Implementation:
                     def find_template(arg):
                         simple = mapping.schema.is_simpletype(arg['list_instance_type'])
                         select = arg['list_instance_type'] == "IfcUtil::IfcBaseClass"
-                        express = arg['list_instance_type'] in mapping.express_to_cpp_typemapping
+                        express = mapping.flatten_type_string(arg['list_instance_type']) in mapping.express_to_cpp_typemapping
                         if arg['is_enum']: return templates.get_attr_stmt_enum
                         elif arg['is_nested']: return templates.get_attr_stmt_nested_array
-                        elif arg['is_array'] and not (select or simple or express): return templates.get_attr_stmt_array
+                        elif arg['is_templated_list'] and not (select or simple or express): return templates.get_attr_stmt_array
                         elif arg['non_optional_type'].endswith('*'): return templates.get_attr_stmt_entity
                         else: return templates.get_attr_stmt
 
@@ -96,7 +96,7 @@ class Implementation:
                         select = arg['list_instance_type'] == "IfcUtil::IfcBaseClass"
                         express = arg['list_instance_type'] in mapping.express_to_cpp_typemapping
                         if arg['is_enum']: return templates.set_attr_stmt_enum
-                        elif arg['is_array'] and not (select or simple or express): return templates.set_attr_stmt_array
+                        elif arg['is_templated_list'] and not (select or simple or express): return templates.set_attr_stmt_array
                         else: return templates.set_attr_stmt
 
                     tmpl = find_template(arg)
@@ -189,8 +189,15 @@ class Implementation:
             constructor = templates.constructor_single_initlist if superclass \
                 else templates.constructor
             
+            simpletype_impl_cast = templates.simpletype_impl_cast_templated if mapping.is_templated_list(type) \
+                else templates.simpletype_impl_cast
+                
+            simpletype_impl_constructor = templates.simpletype_impl_constructor_templated if mapping.is_templated_list(type) \
+                else templates.simpletype_impl_constructor
+                
             def compose(params):
                 class_name, attr_type, superclass, superclass_init, name, tmpl, return_type, args, body = params
+                underlying_type = mapping.list_instance_type(type)
                 arguments = ",".join(args)
                 body = body % locals()
                 return tmpl % locals()
@@ -203,8 +210,8 @@ class Implementation:
                 ('type',            templates.const_function,       'Type::Enum',            (),                        templates.simpletype_impl_type                ),
                 ('Class',           templates.function,             'Type::Enum',            (),                        templates.simpletype_impl_class               ),
                 ('',                          constructor,          '',                      ('IfcAbstractEntity* e',), templates.simpletype_impl_explicit_constructor),
-                ('',                          constructor,          '',                      ("%s v" % type_str,),      templates.simpletype_impl_constructor         ),
-                ('',                templates.cast_function,        type_str,                (),                        templates.simpletype_impl_cast                )
+                ('',                          constructor,          '',                      ("%s v" % type_str,),                simpletype_impl_constructor         ),
+                ('',                templates.cast_function,        type_str,                (),                                  simpletype_impl_cast                )
             ))))
             simple_type_impl.append('')
 
