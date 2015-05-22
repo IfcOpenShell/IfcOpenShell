@@ -228,9 +228,9 @@ namespace IfcGeom {
 
 								_material_ids.push_back(surface_style_id);
 
-								addEdge(n1, n2, edgecount, edges_temp);
-								addEdge(n2, n3, edgecount, edges_temp);
-								addEdge(n3, n1, edgecount, edges_temp);
+								addEdge(dict[n1], dict[n2], edgecount, edges_temp);
+								addEdge(dict[n2], dict[n3], edgecount, edges_temp);
+								addEdge(dict[n3], dict[n1], edgecount, edges_temp);
 							}
 							for ( std::vector<std::pair<int,int> >::const_iterator it = edges_temp.begin(); it != edges_temp.end(); ++it ) {
 								if (edgecount[*it] == 1) {
