@@ -192,8 +192,15 @@ namespace IfcGeom {
 				}
 			}
 
+			// In case no contexts are identified based on their ContextType, all contexts are
+			// considered. Note that sub contexts are excluded as they are considered later on.
 			if (filtered_contexts->size() == 0) {
-				filtered_contexts = contexts;
+				for (it = contexts->begin(); it != contexts->end(); ++it) {
+					IfcSchema::IfcGeometricRepresentationContext* context = *it;
+					if (!context->is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
+						filtered_contexts->push(context);
+					}
+				}
 			}
 
 			for (it = filtered_contexts->begin(); it != filtered_contexts->end(); ++it) {
