@@ -147,6 +147,10 @@ const TopoDS_Shape& IfcGeom::Kernel::ensure_fit_for_subtraction(const TopoDS_Sha
 
 bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
 							   const IfcGeom::IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::IfcRepresentationShapeItems& cut_shapes) {
+
+	// TODO: Refactor convert_openings() convert_openings_fast() and convert(IfcBooleanResult) to use
+	// the same code base and conform to the same checks and logging messages.
+
 	// Iterate over IfcOpeningElements
 	IfcGeom::IfcRepresentationShapeItems opening_shapes;
 	unsigned int last_size = 0;
@@ -251,11 +255,19 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 
 				if ( brep_cut.IsDone() ) {
 					TopoDS_Shape brep_cut_result = brep_cut;
-				
+
+					ShapeFix_Shape fix(brep_cut_result);
+					try {
+						fix.Perform();
+						brep_cut_result = fix.Shape();
+					} catch (...) {
+						Logger::Message(Logger::LOG_WARNING, "Shape healing failed on opening subtraction result", entity->entity);
+					}
+					
 					BRepCheck_Analyzer analyser(brep_cut_result);
 					bool is_valid = analyser.IsValid() != 0;
 					if ( is_valid ) {
-						entity_shape = brep_cut;
+						entity_shape = brep_cut_result;
 						if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
 							const double volume_after_subtraction = shape_volume(entity_shape);
 					
