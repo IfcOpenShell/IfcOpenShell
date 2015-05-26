@@ -28,7 +28,10 @@
 #include <tr1/memory>
 #define SHARED_PTR std::tr1::shared_ptr
 #else
-#ifdef _MSC_VER
+#if _MSC_VER >= 1600
+// MSVC 2008 does not have shared_ptr by default, but it comes
+// in a feature pack. Therefore for IDEs prior to MSVC 2010 the
+// shared_ptr that ships with boost is used.
 #include <memory>
 #define SHARED_PTR std::tr1::shared_ptr
 #else

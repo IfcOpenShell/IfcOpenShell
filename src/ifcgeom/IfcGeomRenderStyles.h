@@ -23,7 +23,11 @@
 #ifdef __GNUC__
 #include <tr1/array>
 #else
+#if _MSC_VER < 1600
+#include <boost/tr1/array.hpp>
+#else
 #include <array>
+#endif
 #endif
 
 #ifdef USE_IFC4
