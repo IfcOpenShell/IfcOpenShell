@@ -82,7 +82,7 @@ namespace IfcUtil {
 		virtual const char* getArgumentName(unsigned int i) const = 0;
 
 		template <class T>
-		typename T* as() {
+		T* as() {
 			return is(T::Class()) 
 				? static_cast<T*>(this) 
 				: static_cast<T*>(0);
