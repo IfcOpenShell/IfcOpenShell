@@ -68,8 +68,14 @@ class iterator(_iterator):
             return wrap_shape_creation(self.settings, _iterator.get(self))
 
 
-def create_shape(settings, inst): 
-    return wrap_shape_creation(settings, ifcopenshell_wrapper.create_shape(settings, inst.wrapped_data))
+def create_shape(settings, inst, repr=None): 
+    return wrap_shape_creation(
+        settings,
+        ifcopenshell_wrapper.create_shape(
+            settings, 
+            inst.wrapped_data,
+            repr.wrapped_data if repr is not None else None
+    ))
 
 
 def iterate(settings, filename):
