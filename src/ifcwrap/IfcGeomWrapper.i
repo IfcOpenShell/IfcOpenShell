@@ -93,6 +93,47 @@
 %ignore IfcGeom::Iterator<double>::Iterator(const IfcGeom::IteratorSettings&, void*, int);
 %ignore IfcGeom::Iterator<double>::Iterator(const IfcGeom::IteratorSettings&, std::istream&, int);
 
+// Ignore the std::vector accessors and replace them to pairs that will
+// be expanded to Python tuples by means of typemaps. This in order to
+// minimize passing STL objects across dynamic library boundaries.
+%ignore IfcGeom::Representation::Triangulation::verts;
+%ignore IfcGeom::Representation::Triangulation::faces;
+%ignore IfcGeom::Representation::Triangulation::edges;
+%ignore IfcGeom::Representation::Triangulation::normals;
+%ignore IfcGeom::Representation::Triangulation::material_ids;
+%ignore IfcGeom::Representation::Triangulation::materials;
+%extend IfcGeom::Representation::Triangulation {
+	std::pair<const int*, unsigned> get_faces() {
+		return std::make_pair(&$self->faces()[0], $self->faces().size());
+	}
+	std::pair<const int*, unsigned> get_edges() {
+		return std::make_pair(&$self->edges()[0], $self->edges().size());
+	}
+	std::pair<const int*, unsigned> get_material_ids() {
+		return std::make_pair(&$self->material_ids()[0], $self->material_ids().size());
+	}
+	std::pair<const IfcGeom::Material*, unsigned> get_materials() {
+		return std::make_pair(&$self->materials()[0], $self->materials().size());
+	}
+}
+%extend IfcGeom::Representation::Triangulation<float> {
+	std::pair<const float*, unsigned> get_verts() {
+		return std::make_pair(&$self->verts()[0], $self->verts().size());
+	}
+	std::pair<const float*, unsigned> get_normals() {
+		return std::make_pair(&$self->normals()[0], $self->normals().size());
+	}
+}
+%extend IfcGeom::Representation::Triangulation<double> {
+	std::pair<const double*, unsigned> get_verts() {
+		return std::make_pair(&$self->verts()[0], $self->verts().size());
+	}
+	std::pair<const double*, unsigned> get_normals() {
+		return std::make_pair(&$self->normals()[0], $self->normals().size());
+	}
+}
+	
+
 %extend IfcGeom::IteratorSettings {
 	%pythoncode %{
 		attrs = ("convert_back_units", "deflection_tolerance", "disable_opening_subtractions", "disable_triangulation", "faster_booleans", "sew_shells", "use_brep_data", "use_world_coords", "weld_vertices")
@@ -114,17 +155,34 @@
 };
 
 %extend IfcGeom::Representation::Triangulation {
-    %pythoncode %{
+	%pythoncode %{
 		if _newclass:
 			# Hide the getters with read-only property implementations
 			id = property(id)
-			verts = property(verts)
-			faces = property(faces)
-			edges = property(edges)
-			normals = property(normals)
-			material_ids = property(material_ids)
-			materials = property(materials)
-    %}
+			faces = property(get_faces)
+			edges = property(get_edges)
+			material_ids = property(get_material_ids)
+			materials = property(get_materials)
+	%}
+};
+
+// Specialized accessors follow later, for otherwise property definitions
+// would appear before templated getter functions are defined.
+%extend IfcGeom::Representation::Triangulation<float> {
+	%pythoncode %{
+		if _newclass:
+			# Hide the getters with read-only property implementations
+			verts = property(get_verts)
+			normals = property(get_normals)
+	%}
+};
+%extend IfcGeom::Representation::Triangulation<double> {
+	%pythoncode %{
+		if _newclass:
+			# Hide the getters with read-only property implementations
+			verts = property(get_verts)
+			normals = property(get_normals)
+	%}
 };
 
 %extend IfcGeom::Representation::Serialization {
@@ -133,7 +191,7 @@
 			# Hide the getters with read-only property implementations
 			id = property(id)
 			brep_data = property(brep_data)
-    %}
+	%}
 };
 
 %extend IfcGeom::Element {
@@ -148,7 +206,7 @@
 			context = property(context)
 			unique_id = property(unique_id)
 			transformation = property(transformation)
-    %}
+	%}
 };
 
 %extend IfcGeom::TriangulationElement {
@@ -156,7 +214,7 @@
 		if _newclass:
 			# Hide the getters with read-only property implementations
 			geometry = property(geometry)
-    %}
+	%}
 };
 
 %extend IfcGeom::SerializedElement {
@@ -164,7 +222,7 @@
 		if _newclass:
 			# Hide the getters with read-only property implementations
 			geometry = property(geometry)
-    %}
+	%}
 };
 
 %extend IfcGeom::Material {
@@ -180,7 +238,7 @@
 			transparency = property(transparency)
 			specularity = property(specularity)
 			name = property(name)
-    %}
+	%}
 };
 
 %extend IfcGeom::Transformation {
@@ -188,7 +246,7 @@
 		if _newclass:
 			# Hide the getters with read-only property implementations
 			matrix = property(matrix)
-    %}
+	%}
 };
 
 %extend IfcGeom::Matrix {
@@ -196,7 +254,7 @@
 		if _newclass:
 			# Hide the getters with read-only property implementations
 			data = property(data)
-    %}
+	%}
 };
 
 %inline %{

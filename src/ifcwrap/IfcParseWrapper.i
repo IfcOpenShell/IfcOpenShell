@@ -216,8 +216,8 @@ namespace IfcUtil {
 		std::ofstream f(fn.c_str());
 		f << (*$self);
 	}
-	std::vector<int> entity_names() const {
-		std::vector<int> keys;
+	std::vector<unsigned> entity_names() const {
+		std::vector<unsigned> keys;
 		keys.reserve(std::distance($self->begin(), $self->end()));
 		for (IfcParse::IfcFile::entity_by_id_t::const_iterator it = $self->begin(); it != $self->end(); ++ it) {
 			keys.push_back(it->first);
@@ -228,10 +228,23 @@ namespace IfcUtil {
 		if _newclass:
 			# Hide the getters with read-only property implementations
 			header = property(header)
-    %}
+	%}
 }
 
 %extend IfcParse::IfcLateBoundEntity {
+	int get_attribute_category(const std::string& name) const {
+		const std::vector<std::string> names = $self->getAttributeNames();
+		if (std::find(names.begin(), names.end(), name) != names.end()) {
+			return 1;
+		} else {
+			const std::vector<std::string> names = $self->getInverseAttributeNames();
+			if (std::find(names.begin(), names.end(), name) != names.end()) {
+				return 2;
+			} else {
+				return 0;
+			}
+		}
+	}
 	%pythoncode %{
 	set_argument = lambda self,x,y: self._set_argument(x) if y is None else self._set_argument(x,y)
 	%}
@@ -244,7 +257,7 @@ namespace IfcUtil {
 			file_description = property(file_description)
 			file_name = property(file_name)
 			file_schema = property(file_schema)
-    %}
+	%}
 };
 
 %extend IfcParse::FileDescription {
@@ -257,7 +270,7 @@ namespace IfcUtil {
 			__swig_getmethods__["implementation_level"] = implementation_level
 			__swig_setmethods__["implementation_level"] = implementation_level
 			implementation_level = property(implementation_level, implementation_level)
-    %}
+	%}
 };
 
 %extend IfcParse::FileName {
@@ -285,7 +298,7 @@ namespace IfcUtil {
 			__swig_getmethods__["authorization"] = authorization
 			__swig_setmethods__["authorization"] = authorization
 			authorization = property(authorization, authorization)
-    %}
+	%}
 };
 
 %extend IfcParse::FileSchema {
@@ -295,7 +308,7 @@ namespace IfcUtil {
 			__swig_getmethods__["schema_identifiers"] = schema_identifiers
 			__swig_setmethods__["schema_identifiers"] = schema_identifiers
 			schema_identifiers = property(schema_identifiers, schema_identifiers)
-    %}
+	%}
 };
 
 %include "../ifcparse/IfcSpfHeader.h"
