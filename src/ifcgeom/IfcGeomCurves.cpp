@@ -77,6 +77,10 @@
 
 #include <TopLoc_Location.hxx>
 
+#ifdef USE_IFC4
+#include <Geom_BSplineCurve.hxx>
+#endif
+
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)& curve) {
@@ -136,3 +140,38 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& c
 	curve = new Geom_Line(pnt,vec);
 	return true;
 }
+
+#ifdef USE_IFC4
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineCurveWithKnots* l, Handle(Geom_Curve)& curve) {
+
+	const IfcSchema::IfcCartesianPoint::list::ptr cps = l->ControlPointsList();
+	const std::vector<int> mults = l->KnotMultiplicities();
+	const std::vector<double> knots = l->Knots();
+
+	TColgp_Array1OfPnt      Poles(0,  cps->size() - 1);
+	TColStd_Array1OfReal    Knots(0, knots.size() - 1);
+	TColStd_Array1OfInteger Mults(0, mults.size() - 1);
+	Standard_Integer        Degree = l->Degree();
+	Standard_Boolean        Periodic = l->ClosedCurve();
+
+	int i = 0;
+	for (IfcSchema::IfcCartesianPoint::list::it it = cps->begin(); it != cps->end(); ++it, ++i) {
+		gp_Pnt pnt;
+		if (!convert(*it, pnt)) return false;
+		Poles(i) = pnt;
+	}
+	
+	i = 0;
+	for (std::vector<int>::const_iterator it = mults.begin(); it != mults.end(); ++it, ++i) {
+		Mults(i) = *it;
+	}
+
+	i = 0;
+	for (std::vector<double>::const_iterator it = knots.begin(); it != knots.end(); ++it, ++i) {
+		Knots(i) = *it;
+	}
+	
+	curve = new Geom_BSplineCurve(Poles, Knots, Mults, Degree, Periodic);
+	return true;
+}
+#endif

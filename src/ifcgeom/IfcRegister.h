@@ -112,6 +112,9 @@ WIRE(IfcArbitraryOpenProfileDef);
 CURVE(IfcCircle);
 CURVE(IfcEllipse);
 CURVE(IfcLine);
+#ifdef USE_IFC4
+CURVE(IfcBSplineCurveWithKnots);
+#endif
 
 CLASS(IfcCartesianPoint,gp_Pnt);
 CLASS(IfcDirection,gp_Dir);
