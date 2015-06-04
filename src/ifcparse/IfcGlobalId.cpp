@@ -26,6 +26,7 @@
 
 #include "../ifcparse/IfcGlobalId.h"
 #include "../ifcparse/IfcException.h"
+#include "../ifcparse/IfcUtil.h"
 
 static const char* chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
 
@@ -94,7 +95,7 @@ IfcParse::IfcGlobalId::IfcGlobalId() {
 	boost::uuids::uuid test_uuid;
 	std::copy(test_vector.begin(), test_vector.end(), test_uuid.begin());
 	if (uuid_data != test_uuid) {
-		throw IfcParse::IfcException("Internal error generating GlobalId");
+		Logger::Message(Logger::LOG_ERROR, "Internal error generating GlobalId");
 	}
 #endif
 }
@@ -110,7 +111,7 @@ IfcParse::IfcGlobalId::IfcGlobalId(const std::string& s)
 #ifndef NDEBUG
 	const std::string test_string = compress(&uuid_data.data[0]);
 	if (string_data != test_string) {
-		throw IfcParse::IfcException("Internal error generating GlobalId");
+		Logger::Message(Logger::LOG_ERROR, "Internal error generating GlobalId");
 	}
 #endif
 }
