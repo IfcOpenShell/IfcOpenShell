@@ -320,7 +320,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* 
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangleProfileDef* l, TopoDS_Shape& face) {
 	const double x = l->XDim() / 2.0f * getValue(GV_LENGTH_UNIT);
-	const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
+	const double y = l->YDim() / 2.0f * getValue(GV_LENGTH_UNIT);
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO ) {
 		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
