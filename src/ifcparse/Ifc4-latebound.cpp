@@ -663,6 +663,7 @@ void InitDescriptorMap() {
     current->add("Name",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current = entity_descriptor_map[Type::IfcStructuralLoadConfiguration] = new IfcEntityDescriptor(Type::IfcStructuralLoadConfiguration,entity_descriptor_map.find(Type::IfcStructuralLoad)->second);
     current->add("Values",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcStructuralLoadOrResult);
+    current->add("Locations",true,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::IfcLengthMeasure);
     current = entity_descriptor_map[Type::IfcStructuralLoadOrResult] = new IfcEntityDescriptor(Type::IfcStructuralLoadOrResult,entity_descriptor_map.find(Type::IfcStructuralLoad)->second);
 
     current = entity_descriptor_map[Type::IfcStructuralLoadStatic] = new IfcEntityDescriptor(Type::IfcStructuralLoadStatic,entity_descriptor_map.find(Type::IfcStructuralLoadOrResult)->second);
@@ -771,7 +772,7 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcTextureVertex] = new IfcEntityDescriptor(Type::IfcTextureVertex,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
     current->add("Coordinates",false,IfcUtil::Argument_AGGREGATE_OF_DOUBLE,Type::IfcParameterValue);
     current = entity_descriptor_map[Type::IfcTextureVertexList] = new IfcEntityDescriptor(Type::IfcTextureVertexList,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
-
+    current->add("TexCoordsList",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::IfcParameterValue);
     current = entity_descriptor_map[Type::IfcTimePeriod] = new IfcEntityDescriptor(Type::IfcTimePeriod,0);
     current->add("StartTime",false,IfcUtil::Argument_STRING,Type::IfcTime);
     current->add("EndTime",false,IfcUtil::Argument_STRING,Type::IfcTime);
@@ -830,7 +831,7 @@ void InitDescriptorMap() {
     current->add("Description",true,IfcUtil::Argument_STRING,Type::IfcText);
     current->add("Sort",true,IfcUtil::Argument_STRING,Type::IfcIdentifier);
     current = entity_descriptor_map[Type::IfcColourRgbList] = new IfcEntityDescriptor(Type::IfcColourRgbList,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
-
+    current->add("ColourList",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::IfcNormalisedRatioMeasure);
     current = entity_descriptor_map[Type::IfcColourSpecification] = new IfcEntityDescriptor(Type::IfcColourSpecification,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
     current->add("Name",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current = entity_descriptor_map[Type::IfcCompositeProfileDef] = new IfcEntityDescriptor(Type::IfcCompositeProfileDef,entity_descriptor_map.find(Type::IfcProfileDef)->second);
@@ -971,7 +972,7 @@ void InitDescriptorMap() {
     current->add("MappedTo",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcTessellatedFaceSet);
     current->add("TexCoords",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcTextureVertexList);
     current = entity_descriptor_map[Type::IfcIndexedTriangleTextureMap] = new IfcEntityDescriptor(Type::IfcIndexedTriangleTextureMap,entity_descriptor_map.find(Type::IfcIndexedTextureMap)->second);
-
+    current->add("TexCoordIndex",true,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT,Type::UNDEFINED);
     current = entity_descriptor_map[Type::IfcIrregularTimeSeries] = new IfcEntityDescriptor(Type::IfcIrregularTimeSeries,entity_descriptor_map.find(Type::IfcTimeSeries)->second);
     current->add("Values",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcIrregularTimeSeriesValue);
     current = entity_descriptor_map[Type::IfcLagTime] = new IfcEntityDescriptor(Type::IfcLagTime,entity_descriptor_map.find(Type::IfcSchedulingTime)->second);
@@ -1355,7 +1356,7 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcCartesianPointList] = new IfcEntityDescriptor(Type::IfcCartesianPointList,entity_descriptor_map.find(Type::IfcGeometricRepresentationItem)->second);
 
     current = entity_descriptor_map[Type::IfcCartesianPointList3D] = new IfcEntityDescriptor(Type::IfcCartesianPointList3D,entity_descriptor_map.find(Type::IfcCartesianPointList)->second);
-
+    current->add("CoordList",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::IfcLengthMeasure);
     current = entity_descriptor_map[Type::IfcCartesianTransformationOperator] = new IfcEntityDescriptor(Type::IfcCartesianTransformationOperator,entity_descriptor_map.find(Type::IfcGeometricRepresentationItem)->second);
     current->add("Axis1",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcDirection);
     current->add("Axis2",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcDirection);
@@ -1796,11 +1797,13 @@ void InitDescriptorMap() {
     current->add("WorkMethod",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current = entity_descriptor_map[Type::IfcTessellatedFaceSet] = new IfcEntityDescriptor(Type::IfcTessellatedFaceSet,entity_descriptor_map.find(Type::IfcTessellatedItem)->second);
     current->add("Coordinates",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCartesianPointList3D);
+    current->add("Normals",true,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::IfcParameterValue);
     current->add("Closed",true,IfcUtil::Argument_BOOL,Type::UNDEFINED);
     current = entity_descriptor_map[Type::IfcTransportElementType] = new IfcEntityDescriptor(Type::IfcTransportElementType,entity_descriptor_map.find(Type::IfcElementType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcTransportElementTypeEnum);
     current = entity_descriptor_map[Type::IfcTriangulatedFaceSet] = new IfcEntityDescriptor(Type::IfcTriangulatedFaceSet,entity_descriptor_map.find(Type::IfcTessellatedFaceSet)->second);
-
+    current->add("CoordIndex",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT,Type::UNDEFINED);
+    current->add("NormalIndex",true,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT,Type::UNDEFINED);
     current = entity_descriptor_map[Type::IfcWindowLiningProperties] = new IfcEntityDescriptor(Type::IfcWindowLiningProperties,entity_descriptor_map.find(Type::IfcPreDefinedPropertySet)->second);
     current->add("LiningDepth",true,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current->add("LiningThickness",true,IfcUtil::Argument_DOUBLE,Type::IfcNonNegativeLengthMeasure);
@@ -2100,7 +2103,7 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcRampType] = new IfcEntityDescriptor(Type::IfcRampType,entity_descriptor_map.find(Type::IfcBuildingElementType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcRampTypeEnum);
     current = entity_descriptor_map[Type::IfcRationalBSplineSurfaceWithKnots] = new IfcEntityDescriptor(Type::IfcRationalBSplineSurfaceWithKnots,entity_descriptor_map.find(Type::IfcBSplineSurfaceWithKnots)->second);
-
+    current->add("WeightsData",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::UNDEFINED);
     current = entity_descriptor_map[Type::IfcReinforcingElement] = new IfcEntityDescriptor(Type::IfcReinforcingElement,entity_descriptor_map.find(Type::IfcElementComponent)->second);
     current->add("SteelGrade",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current = entity_descriptor_map[Type::IfcReinforcingElementType] = new IfcEntityDescriptor(Type::IfcReinforcingElementType,entity_descriptor_map.find(Type::IfcElementComponentType)->second);

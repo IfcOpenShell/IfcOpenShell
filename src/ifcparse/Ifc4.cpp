@@ -8729,11 +8729,13 @@ IfcCartesianPointList::IfcCartesianPointList(IfcAbstractEntity* e) : IfcGeometri
 IfcCartesianPointList::IfcCartesianPointList() : IfcGeometricRepresentationItem((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcCartesianPointList3D
+std::vector< std::vector< double > > IfcCartesianPointList3D::CoordList() const { return *entity->getArgument(0); }
+void IfcCartesianPointList3D::setCoordList(std::vector< std::vector< double > > v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(0,v); }
 bool IfcCartesianPointList3D::is(Type::Enum v) const { return v == Type::IfcCartesianPointList3D || IfcCartesianPointList::is(v); }
 Type::Enum IfcCartesianPointList3D::type() const { return Type::IfcCartesianPointList3D; }
 Type::Enum IfcCartesianPointList3D::Class() { return Type::IfcCartesianPointList3D; }
 IfcCartesianPointList3D::IfcCartesianPointList3D(IfcAbstractEntity* e) : IfcCartesianPointList((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcCartesianPointList3D)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-IfcCartesianPointList3D::IfcCartesianPointList3D() : IfcCartesianPointList((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); entity = e; EntityBuffer::Add(this); }
+IfcCartesianPointList3D::IfcCartesianPointList3D(std::vector< std::vector< double > > v1_CoordList) : IfcCartesianPointList((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_CoordList)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcCartesianTransformationOperator
 bool IfcCartesianTransformationOperator::hasAxis1() const { return !entity->getArgument(0)->isNull(); }
@@ -8968,11 +8970,13 @@ IfcColourRgb::IfcColourRgb(IfcAbstractEntity* e) : IfcColourSpecification((IfcAb
 IfcColourRgb::IfcColourRgb(boost::optional< std::string > v1_Name, double v2_Red, double v3_Green, double v4_Blue) : IfcColourSpecification((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); if (v1_Name) { e->setArgument(0,(*v1_Name)); } else { e->setArgument(0); } e->setArgument(1,(v2_Red)); e->setArgument(2,(v3_Green)); e->setArgument(3,(v4_Blue)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcColourRgbList
+std::vector< std::vector< double > > IfcColourRgbList::ColourList() const { return *entity->getArgument(0); }
+void IfcColourRgbList::setColourList(std::vector< std::vector< double > > v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(0,v); }
 bool IfcColourRgbList::is(Type::Enum v) const { return v == Type::IfcColourRgbList || IfcPresentationItem::is(v); }
 Type::Enum IfcColourRgbList::type() const { return Type::IfcColourRgbList; }
 Type::Enum IfcColourRgbList::Class() { return Type::IfcColourRgbList; }
 IfcColourRgbList::IfcColourRgbList(IfcAbstractEntity* e) : IfcPresentationItem((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcColourRgbList)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-IfcColourRgbList::IfcColourRgbList() : IfcPresentationItem((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); entity = e; EntityBuffer::Add(this); }
+IfcColourRgbList::IfcColourRgbList(std::vector< std::vector< double > > v1_ColourList) : IfcPresentationItem((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_ColourList)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcColourSpecification
 bool IfcColourSpecification::hasName() const { return !entity->getArgument(0)->isNull(); }
@@ -11392,11 +11396,14 @@ IfcIndexedTextureMap::IfcIndexedTextureMap(IfcAbstractEntity* e) : IfcTextureCoo
 IfcIndexedTextureMap::IfcIndexedTextureMap(IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v1_Maps, IfcTessellatedFaceSet* v2_MappedTo, IfcTextureVertexList* v3_TexCoords) : IfcTextureCoordinate((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Maps)->generalize()); e->setArgument(1,(v2_MappedTo)); e->setArgument(2,(v3_TexCoords)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcIndexedTriangleTextureMap
+bool IfcIndexedTriangleTextureMap::hasTexCoordIndex() const { return !entity->getArgument(3)->isNull(); }
+std::vector< std::vector< int > > IfcIndexedTriangleTextureMap::TexCoordIndex() const { return *entity->getArgument(3); }
+void IfcIndexedTriangleTextureMap::setTexCoordIndex(std::vector< std::vector< int > > v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(3,v); }
 bool IfcIndexedTriangleTextureMap::is(Type::Enum v) const { return v == Type::IfcIndexedTriangleTextureMap || IfcIndexedTextureMap::is(v); }
 Type::Enum IfcIndexedTriangleTextureMap::type() const { return Type::IfcIndexedTriangleTextureMap; }
 Type::Enum IfcIndexedTriangleTextureMap::Class() { return Type::IfcIndexedTriangleTextureMap; }
 IfcIndexedTriangleTextureMap::IfcIndexedTriangleTextureMap(IfcAbstractEntity* e) : IfcIndexedTextureMap((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcIndexedTriangleTextureMap)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-IfcIndexedTriangleTextureMap::IfcIndexedTriangleTextureMap(IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v1_Maps, IfcTessellatedFaceSet* v2_MappedTo, IfcTextureVertexList* v3_TexCoords) : IfcIndexedTextureMap((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Maps)->generalize()); e->setArgument(1,(v2_MappedTo)); e->setArgument(2,(v3_TexCoords)); entity = e; EntityBuffer::Add(this); }
+IfcIndexedTriangleTextureMap::IfcIndexedTriangleTextureMap(IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v1_Maps, IfcTessellatedFaceSet* v2_MappedTo, IfcTextureVertexList* v3_TexCoords, boost::optional< std::vector< std::vector< int > > > v4_TexCoordIndex) : IfcIndexedTextureMap((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Maps)->generalize()); e->setArgument(1,(v2_MappedTo)); e->setArgument(2,(v3_TexCoords)); if (v4_TexCoordIndex) { e->setArgument(3,(*v4_TexCoordIndex)); } else { e->setArgument(3); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcInterceptor
 bool IfcInterceptor::hasPredefinedType() const { return !entity->getArgument(8)->isNull(); }
@@ -13520,11 +13527,13 @@ IfcRationalBSplineCurveWithKnots::IfcRationalBSplineCurveWithKnots(IfcAbstractEn
 IfcRationalBSplineCurveWithKnots::IfcRationalBSplineCurveWithKnots(int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect, std::vector< int > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, IfcKnotType::IfcKnotType v8_KnotSpec, std::vector< double > /*[2:?]*/ v9_WeightsData) : IfcBSplineCurveWithKnots((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Degree)); e->setArgument(1,(v2_ControlPointsList)->generalize()); e->setArgument(2,v3_CurveForm,IfcBSplineCurveForm::ToString(v3_CurveForm)); e->setArgument(3,(v4_ClosedCurve)); e->setArgument(4,(v5_SelfIntersect)); e->setArgument(5,(v6_KnotMultiplicities)); e->setArgument(6,(v7_Knots)); e->setArgument(7,v8_KnotSpec,IfcKnotType::ToString(v8_KnotSpec)); e->setArgument(8,(v9_WeightsData)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcRationalBSplineSurfaceWithKnots
+std::vector< std::vector< double > > IfcRationalBSplineSurfaceWithKnots::WeightsData() const { return *entity->getArgument(12); }
+void IfcRationalBSplineSurfaceWithKnots::setWeightsData(std::vector< std::vector< double > > v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(12,v); }
 bool IfcRationalBSplineSurfaceWithKnots::is(Type::Enum v) const { return v == Type::IfcRationalBSplineSurfaceWithKnots || IfcBSplineSurfaceWithKnots::is(v); }
 Type::Enum IfcRationalBSplineSurfaceWithKnots::type() const { return Type::IfcRationalBSplineSurfaceWithKnots; }
 Type::Enum IfcRationalBSplineSurfaceWithKnots::Class() { return Type::IfcRationalBSplineSurfaceWithKnots; }
 IfcRationalBSplineSurfaceWithKnots::IfcRationalBSplineSurfaceWithKnots(IfcAbstractEntity* e) : IfcBSplineSurfaceWithKnots((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcRationalBSplineSurfaceWithKnots)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-IfcRationalBSplineSurfaceWithKnots::IfcRationalBSplineSurfaceWithKnots(int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, bool v5_UClosed, bool v6_VClosed, bool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, IfcKnotType::IfcKnotType v12_KnotSpec) : IfcBSplineSurfaceWithKnots((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_UDegree)); e->setArgument(1,(v2_VDegree)); e->setArgument(2,(v3_ControlPointsList)->generalize()); e->setArgument(3,v4_SurfaceForm,IfcBSplineSurfaceForm::ToString(v4_SurfaceForm)); e->setArgument(4,(v5_UClosed)); e->setArgument(5,(v6_VClosed)); e->setArgument(6,(v7_SelfIntersect)); e->setArgument(7,(v8_UMultiplicities)); e->setArgument(8,(v9_VMultiplicities)); e->setArgument(9,(v10_UKnots)); e->setArgument(10,(v11_VKnots)); e->setArgument(11,v12_KnotSpec,IfcKnotType::ToString(v12_KnotSpec)); entity = e; EntityBuffer::Add(this); }
+IfcRationalBSplineSurfaceWithKnots::IfcRationalBSplineSurfaceWithKnots(int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, bool v5_UClosed, bool v6_VClosed, bool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, IfcKnotType::IfcKnotType v12_KnotSpec, std::vector< std::vector< double > > v13_WeightsData) : IfcBSplineSurfaceWithKnots((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_UDegree)); e->setArgument(1,(v2_VDegree)); e->setArgument(2,(v3_ControlPointsList)->generalize()); e->setArgument(3,v4_SurfaceForm,IfcBSplineSurfaceForm::ToString(v4_SurfaceForm)); e->setArgument(4,(v5_UClosed)); e->setArgument(5,(v6_VClosed)); e->setArgument(6,(v7_SelfIntersect)); e->setArgument(7,(v8_UMultiplicities)); e->setArgument(8,(v9_VMultiplicities)); e->setArgument(9,(v10_UKnots)); e->setArgument(10,(v11_VKnots)); e->setArgument(11,v12_KnotSpec,IfcKnotType::ToString(v12_KnotSpec)); e->setArgument(12,(v13_WeightsData)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcRectangleHollowProfileDef
 double IfcRectangleHollowProfileDef::WallThickness() const { return *entity->getArgument(5); }
@@ -15263,11 +15272,14 @@ IfcStructuralLoadCase::IfcStructuralLoadCase(std::string v1_GlobalId, IfcOwnerHi
 // Function implementations for IfcStructuralLoadConfiguration
 IfcTemplatedEntityList< IfcStructuralLoadOrResult >::ptr IfcStructuralLoadConfiguration::Values() const { IfcEntityList::ptr es = *entity->getArgument(1); return es->as<IfcStructuralLoadOrResult>(); }
 void IfcStructuralLoadConfiguration::setValues(IfcTemplatedEntityList< IfcStructuralLoadOrResult >::ptr v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(1,v->generalize()); }
+bool IfcStructuralLoadConfiguration::hasLocations() const { return !entity->getArgument(2)->isNull(); }
+std::vector< std::vector< double > > IfcStructuralLoadConfiguration::Locations() const { return *entity->getArgument(2); }
+void IfcStructuralLoadConfiguration::setLocations(std::vector< std::vector< double > > v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(2,v); }
 bool IfcStructuralLoadConfiguration::is(Type::Enum v) const { return v == Type::IfcStructuralLoadConfiguration || IfcStructuralLoad::is(v); }
 Type::Enum IfcStructuralLoadConfiguration::type() const { return Type::IfcStructuralLoadConfiguration; }
 Type::Enum IfcStructuralLoadConfiguration::Class() { return Type::IfcStructuralLoadConfiguration; }
 IfcStructuralLoadConfiguration::IfcStructuralLoadConfiguration(IfcAbstractEntity* e) : IfcStructuralLoad((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcStructuralLoadConfiguration)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-IfcStructuralLoadConfiguration::IfcStructuralLoadConfiguration(boost::optional< std::string > v1_Name, IfcTemplatedEntityList< IfcStructuralLoadOrResult >::ptr v2_Values) : IfcStructuralLoad((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); if (v1_Name) { e->setArgument(0,(*v1_Name)); } else { e->setArgument(0); } e->setArgument(1,(v2_Values)->generalize()); entity = e; EntityBuffer::Add(this); }
+IfcStructuralLoadConfiguration::IfcStructuralLoadConfiguration(boost::optional< std::string > v1_Name, IfcTemplatedEntityList< IfcStructuralLoadOrResult >::ptr v2_Values, boost::optional< std::vector< std::vector< double > > > v3_Locations) : IfcStructuralLoad((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); if (v1_Name) { e->setArgument(0,(*v1_Name)); } else { e->setArgument(0); } e->setArgument(1,(v2_Values)->generalize()); if (v3_Locations) { e->setArgument(2,(*v3_Locations)); } else { e->setArgument(2); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcStructuralLoadGroup
 IfcLoadGroupTypeEnum::IfcLoadGroupTypeEnum IfcStructuralLoadGroup::PredefinedType() const { return IfcLoadGroupTypeEnum::FromString(*entity->getArgument(5)); }
@@ -16176,6 +16188,9 @@ IfcTendonType::IfcTendonType(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerH
 // Function implementations for IfcTessellatedFaceSet
 IfcCartesianPointList3D* IfcTessellatedFaceSet::Coordinates() const { return (IfcCartesianPointList3D*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(0))); }
 void IfcTessellatedFaceSet::setCoordinates(IfcCartesianPointList3D* v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(0,v); }
+bool IfcTessellatedFaceSet::hasNormals() const { return !entity->getArgument(1)->isNull(); }
+std::vector< std::vector< double > > IfcTessellatedFaceSet::Normals() const { return *entity->getArgument(1); }
+void IfcTessellatedFaceSet::setNormals(std::vector< std::vector< double > > v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(1,v); }
 bool IfcTessellatedFaceSet::hasClosed() const { return !entity->getArgument(2)->isNull(); }
 bool IfcTessellatedFaceSet::Closed() const { return *entity->getArgument(2); }
 void IfcTessellatedFaceSet::setClosed(bool v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(2,v); }
@@ -16185,7 +16200,7 @@ bool IfcTessellatedFaceSet::is(Type::Enum v) const { return v == Type::IfcTessel
 Type::Enum IfcTessellatedFaceSet::type() const { return Type::IfcTessellatedFaceSet; }
 Type::Enum IfcTessellatedFaceSet::Class() { return Type::IfcTessellatedFaceSet; }
 IfcTessellatedFaceSet::IfcTessellatedFaceSet(IfcAbstractEntity* e) : IfcTessellatedItem((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcTessellatedFaceSet)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-IfcTessellatedFaceSet::IfcTessellatedFaceSet(IfcCartesianPointList3D* v1_Coordinates, boost::optional< bool > v3_Closed) : IfcTessellatedItem((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Coordinates)); if (v3_Closed) { e->setArgument(2,(*v3_Closed)); } else { e->setArgument(2); } entity = e; EntityBuffer::Add(this); }
+IfcTessellatedFaceSet::IfcTessellatedFaceSet(IfcCartesianPointList3D* v1_Coordinates, boost::optional< std::vector< std::vector< double > > > v2_Normals, boost::optional< bool > v3_Closed) : IfcTessellatedItem((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Coordinates)); if (v2_Normals) { e->setArgument(1,(*v2_Normals)); } else { e->setArgument(1); } if (v3_Closed) { e->setArgument(2,(*v3_Closed)); } else { e->setArgument(2); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcTessellatedItem
 bool IfcTessellatedItem::is(Type::Enum v) const { return v == Type::IfcTessellatedItem || IfcGeometricRepresentationItem::is(v); }
@@ -16338,11 +16353,13 @@ IfcTextureVertex::IfcTextureVertex(IfcAbstractEntity* e) : IfcPresentationItem((
 IfcTextureVertex::IfcTextureVertex(std::vector< double > /*[2:2]*/ v1_Coordinates) : IfcPresentationItem((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Coordinates)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcTextureVertexList
+std::vector< std::vector< double > > IfcTextureVertexList::TexCoordsList() const { return *entity->getArgument(0); }
+void IfcTextureVertexList::setTexCoordsList(std::vector< std::vector< double > > v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(0,v); }
 bool IfcTextureVertexList::is(Type::Enum v) const { return v == Type::IfcTextureVertexList || IfcPresentationItem::is(v); }
 Type::Enum IfcTextureVertexList::type() const { return Type::IfcTextureVertexList; }
 Type::Enum IfcTextureVertexList::Class() { return Type::IfcTextureVertexList; }
 IfcTextureVertexList::IfcTextureVertexList(IfcAbstractEntity* e) : IfcPresentationItem((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcTextureVertexList)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-IfcTextureVertexList::IfcTextureVertexList() : IfcPresentationItem((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); entity = e; EntityBuffer::Add(this); }
+IfcTextureVertexList::IfcTextureVertexList(std::vector< std::vector< double > > v1_TexCoordsList) : IfcPresentationItem((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_TexCoordsList)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcTimePeriod
 std::string IfcTimePeriod::StartTime() const { return *entity->getArgument(0); }
@@ -16459,11 +16476,16 @@ IfcTrapeziumProfileDef::IfcTrapeziumProfileDef(IfcAbstractEntity* e) : IfcParame
 IfcTrapeziumProfileDef::IfcTrapeziumProfileDef(IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_BottomXDim, double v5_TopXDim, double v6_YDim, double v7_TopXOffset) : IfcParameterizedProfileDef((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,v1_ProfileType,IfcProfileTypeEnum::ToString(v1_ProfileType)); if (v2_ProfileName) { e->setArgument(1,(*v2_ProfileName)); } else { e->setArgument(1); } e->setArgument(2,(v3_Position)); e->setArgument(3,(v4_BottomXDim)); e->setArgument(4,(v5_TopXDim)); e->setArgument(5,(v6_YDim)); e->setArgument(6,(v7_TopXOffset)); entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcTriangulatedFaceSet
+std::vector< std::vector< int > > IfcTriangulatedFaceSet::CoordIndex() const { return *entity->getArgument(3); }
+void IfcTriangulatedFaceSet::setCoordIndex(std::vector< std::vector< int > > v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(3,v); }
+bool IfcTriangulatedFaceSet::hasNormalIndex() const { return !entity->getArgument(4)->isNull(); }
+std::vector< std::vector< int > > IfcTriangulatedFaceSet::NormalIndex() const { return *entity->getArgument(4); }
+void IfcTriangulatedFaceSet::setNormalIndex(std::vector< std::vector< int > > v) { if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(4,v); }
 bool IfcTriangulatedFaceSet::is(Type::Enum v) const { return v == Type::IfcTriangulatedFaceSet || IfcTessellatedFaceSet::is(v); }
 Type::Enum IfcTriangulatedFaceSet::type() const { return Type::IfcTriangulatedFaceSet; }
 Type::Enum IfcTriangulatedFaceSet::Class() { return Type::IfcTriangulatedFaceSet; }
 IfcTriangulatedFaceSet::IfcTriangulatedFaceSet(IfcAbstractEntity* e) : IfcTessellatedFaceSet((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcTriangulatedFaceSet)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-IfcTriangulatedFaceSet::IfcTriangulatedFaceSet(IfcCartesianPointList3D* v1_Coordinates, boost::optional< bool > v3_Closed) : IfcTessellatedFaceSet((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Coordinates)); if (v3_Closed) { e->setArgument(2,(*v3_Closed)); } else { e->setArgument(2); } entity = e; EntityBuffer::Add(this); }
+IfcTriangulatedFaceSet::IfcTriangulatedFaceSet(IfcCartesianPointList3D* v1_Coordinates, boost::optional< std::vector< std::vector< double > > > v2_Normals, boost::optional< bool > v3_Closed, std::vector< std::vector< int > > v4_CoordIndex, boost::optional< std::vector< std::vector< int > > > v5_NormalIndex) : IfcTessellatedFaceSet((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Coordinates)); if (v2_Normals) { e->setArgument(1,(*v2_Normals)); } else { e->setArgument(1); } if (v3_Closed) { e->setArgument(2,(*v3_Closed)); } else { e->setArgument(2); } e->setArgument(3,(v4_CoordIndex)); if (v5_NormalIndex) { e->setArgument(4,(*v5_NormalIndex)); } else { e->setArgument(4); } entity = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcTrimmedCurve
 IfcCurve* IfcTrimmedCurve::BasisCurve() const { return (IfcCurve*)((IfcUtil::IfcBaseClass*)(*entity->getArgument(0))); }

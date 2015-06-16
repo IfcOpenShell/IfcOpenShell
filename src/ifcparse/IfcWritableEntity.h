@@ -63,22 +63,28 @@ namespace IfcWrite {
 		unsigned int id();
 		IfcWritableEntity* isWritable();
 
-		void setArgument(int i);
 		void setArgument(int i, Argument* a);
+
+		void setArgument(int i);
 		void setArgumentDerived(int i);
-		void setArgument(int i,bool v);
+		
 		void setArgument(int i,int v);
-		void setArgument(int i,int v, const char* c);
+		void setArgument(int i,bool v);
+		void setArgument(int i,double v);
 		void setArgument(int i,const std::string& v);
 		void setArgument(int i,const boost::dynamic_bitset<>& v);
-		void setArgument(int i,double v);
+		void setArgument(int i,int v, const char* c);
 		void setArgument(int i,IfcUtil::IfcBaseClass* v);
-		void setArgument(int i,IfcEntityList::ptr v);
-		void setArgument(int i,IfcEntityListList::ptr v);
+
+		void setArgument(int i,const std::vector<int>& v);
 		void setArgument(int i,const std::vector<double>& v);
 		void setArgument(int i,const std::vector<std::string>& v);
-		void setArgument(int i,const std::vector<int>& v);
 		void setArgument(int i,const std::vector< boost::dynamic_bitset<> >& v);
+		void setArgument(int i,IfcEntityList::ptr v);
+		
+		void setArgument(int i,const std::vector< std::vector<int> >& v);
+		void setArgument(int i,const std::vector< std::vector<double> >& v);
+		void setArgument(int i,IfcEntityListList::ptr v);		
 	};
 
 }

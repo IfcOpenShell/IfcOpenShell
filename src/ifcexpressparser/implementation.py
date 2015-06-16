@@ -74,7 +74,7 @@ class Implementation:
                         select = arg['list_instance_type'] == "IfcUtil::IfcBaseClass"
                         express = mapping.flatten_type_string(arg['list_instance_type']) in mapping.express_to_cpp_typemapping
                         if arg['is_enum']: return templates.get_attr_stmt_enum
-                        elif arg['is_nested']: return templates.get_attr_stmt_nested_array
+                        elif arg['is_nested'] and arg['is_templated_list']: return templates.get_attr_stmt_nested_array
                         elif arg['is_templated_list'] and not (select or simple or express): return templates.get_attr_stmt_array
                         elif arg['non_optional_type'].endswith('*'): return templates.get_attr_stmt_entity
                         else: return templates.get_attr_stmt

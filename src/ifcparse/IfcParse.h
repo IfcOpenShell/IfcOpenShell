@@ -149,6 +149,8 @@ namespace IfcParse {
 		operator std::vector<boost::dynamic_bitset<> >() const;
 		operator IfcEntityList::ptr() const;
 
+		operator std::vector< std::vector<int> >() const;
+		operator std::vector< std::vector<double> >() const;
 		operator IfcEntityListList::ptr() const;
 
 		bool isNull() const;
@@ -184,6 +186,9 @@ namespace IfcParse {
 		operator std::vector<std::string>() const;
 		operator std::vector<boost::dynamic_bitset<> >() const;
 		operator IfcEntityList::ptr() const;
+		
+		operator std::vector< std::vector<int> >() const;
+		operator std::vector< std::vector<double> >() const;
 		operator IfcEntityListList::ptr() const;
 
 		bool isNull() const;
@@ -218,6 +223,8 @@ namespace IfcParse {
 		operator std::vector<boost::dynamic_bitset<> >() const;
 		operator IfcEntityList::ptr() const;
 
+		operator std::vector< std::vector<int> >() const;
+		operator std::vector< std::vector<double> >() const;
 		operator IfcEntityListList::ptr() const;
 
 		bool isNull() const;

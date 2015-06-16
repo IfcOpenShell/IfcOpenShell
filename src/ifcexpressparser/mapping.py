@@ -17,6 +17,7 @@
 #                                                                             #
 ###############################################################################
 
+import sys
 import nodes
 import templates
 
@@ -35,7 +36,7 @@ class Mapping:
     supported_argument_types = {
         'INT', 'BOOL', 'DOUBLE', 'STRING', 'BINARY', 'ENUMERATION', 'ENTITY_INSTANCE',
         'AGGREGATE_OF_INT', 'AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_STRING', 'AGGREGATE_OF_BINARY', 'AGGREGATE_OF_ENTITY_INSTANCE',
-        'AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE'
+        'AGGREGATE_OF_AGGREGATE_OF_INT', 'AGGREGATE_OF_AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE',
     }
 
     def __init__(self, schema):
@@ -96,9 +97,12 @@ class Mapping:
                 ty = _make_argument_type(type.type)
                 if ty == "UNKNOWN": return "UNKNOWN"
                 return "AGGREGATE_OF_" + ty
-            else: raise ValueError
+            else:
+                raise ValueError("Unable to map type %r for attribute %r" % (type, attr))
         ty = _make_argument_type(attr.type if hasattr(attr, 'type') else attr)
-        if ty not in self.supported_argument_types: ty = 'UNKNOWN'
+        if ty not in self.supported_argument_types:
+            print("Attribute %r mapped as 'unknown'" % (type, attr), file=sys.stderr)
+            ty = 'UNKNOWN'
         return "IfcUtil::Argument_%s" % ty
 
     def get_type_dep(self, type):
@@ -121,7 +125,8 @@ class Mapping:
             if self.schema.is_select(attr_type.type):
                 type_str = templates.untyped_list
             elif self.schema.is_simpletype(ty) or ty in self.express_to_cpp_typemapping.values():
-                type_str = templates.array_type % {
+                tmpl = templates.nested_array_type if is_nested_list else templates.array_type
+                type_str = tmpl % {
                     'instance_type' : ty,
                     'lower'         : attr_type.bounds.lower,
                     'upper'         : attr_type.bounds.upper

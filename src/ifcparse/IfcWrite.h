@@ -98,6 +98,10 @@ namespace IfcWrite {
 			IfcEntityList::ptr,
 
 			// AGGREGATES OF AGGREGATES:
+			// An aggregate of an aggregate of ints. E.g. ((1, 2), (3))
+			std::vector< std::vector<int> >,
+			// An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
+			std::vector< std::vector<double> >,
 			// An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
 			IfcEntityListList::ptr
 		> container;
@@ -127,6 +131,8 @@ namespace IfcWrite {
 		operator std::vector<boost::dynamic_bitset<> >() const;
 		operator IfcEntityList::ptr() const;
 
+		operator std::vector< std::vector<int> >() const;
+		operator std::vector< std::vector<double> >() const;
 		operator IfcEntityListList::ptr() const;
 
 		bool isNull() const;

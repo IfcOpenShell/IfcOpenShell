@@ -11970,8 +11970,10 @@ public:
     /// Whether the optional attribute Locations is defined for this IfcStructuralLoadConfiguration
     bool hasLocations() const;
     /// Locations of the load samples or result samples, given within the local coordinate system defined by the instance which uses this resource object.  Each item in the list of locations pertains to the values list item at the same list index.  This attribute is optional for configurations in which the locations are implicitly known from higher-level definitions.
+    std::vector< std::vector< double > > Locations() const;
+    void setLocations(std::vector< std::vector< double > > v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_UNKNOWN; } return IfcStructuralLoad::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE; } return IfcStructuralLoad::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcStructuralLoadOrResult; case 2: return Type::IfcLengthMeasure; } return IfcStructuralLoad::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "Values"; case 2: return "Locations"; } return IfcStructuralLoad::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -11979,7 +11981,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcStructuralLoadConfiguration (IfcAbstractEntity* e);
-    IfcStructuralLoadConfiguration (boost::optional< std::string > v1_Name, IfcTemplatedEntityList< IfcStructuralLoadOrResult >::ptr v2_Values);
+    IfcStructuralLoadConfiguration (boost::optional< std::string > v1_Name, IfcTemplatedEntityList< IfcStructuralLoadOrResult >::ptr v2_Values, boost::optional< std::vector< std::vector< double > > > v3_Locations);
     typedef IfcTemplatedEntityList< IfcStructuralLoadConfiguration > list;
 };
 /// Definition from IAI: Abstract superclass of simple load or result classes.
@@ -13211,8 +13213,10 @@ public:
 
 class IfcTextureVertexList : public IfcPresentationItem {
 public:
+    std::vector< std::vector< double > > TexCoordsList() const;
+    void setTexCoordsList(std::vector< std::vector< double > > v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_UNKNOWN; } return IfcPresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE; } return IfcPresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcParameterValue; } return IfcPresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TexCoordsList"; } return IfcPresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13220,7 +13224,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcTextureVertexList (IfcAbstractEntity* e);
-    IfcTextureVertexList ();
+    IfcTextureVertexList (std::vector< std::vector< double > > v1_TexCoordsList);
     typedef IfcTemplatedEntityList< IfcTextureVertexList > list;
 };
 /// IfcTimePeriod defines a time period given by a start and end time. Both time definitions consider the time zone and allow for the daylight savings offset.
@@ -13936,8 +13940,10 @@ public:
 
 class IfcColourRgbList : public IfcPresentationItem {
 public:
+    std::vector< std::vector< double > > ColourList() const;
+    void setColourList(std::vector< std::vector< double > > v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_UNKNOWN; } return IfcPresentationItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE; } return IfcPresentationItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcNormalisedRatioMeasure; } return IfcPresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ColourList"; } return IfcPresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -13945,7 +13951,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcColourRgbList (IfcAbstractEntity* e);
-    IfcColourRgbList ();
+    IfcColourRgbList (std::vector< std::vector< double > > v1_ColourList);
     typedef IfcTemplatedEntityList< IfcColourRgbList > list;
 };
 /// Definition from ISO/CD 10303-46:1992: The colour specification entity contains a direct colour definition. Colour component values refer directly to a specific colour space.
@@ -15651,8 +15657,10 @@ class IfcIndexedTriangleTextureMap : public IfcIndexedTextureMap {
 public:
     /// Whether the optional attribute TexCoordIndex is defined for this IfcIndexedTriangleTextureMap
     bool hasTexCoordIndex() const;
+    std::vector< std::vector< int > > TexCoordIndex() const;
+    void setTexCoordIndex(std::vector< std::vector< int > > v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_UNKNOWN; } return IfcIndexedTextureMap::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT; } return IfcIndexedTextureMap::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::UNDEFINED; } return IfcIndexedTextureMap::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "TexCoordIndex"; } return IfcIndexedTextureMap::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15660,7 +15668,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcIndexedTriangleTextureMap (IfcAbstractEntity* e);
-    IfcIndexedTriangleTextureMap (IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v1_Maps, IfcTessellatedFaceSet* v2_MappedTo, IfcTextureVertexList* v3_TexCoords);
+    IfcIndexedTriangleTextureMap (IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v1_Maps, IfcTessellatedFaceSet* v2_MappedTo, IfcTextureVertexList* v3_TexCoords, boost::optional< std::vector< std::vector< int > > > v4_TexCoordIndex);
     typedef IfcTemplatedEntityList< IfcIndexedTriangleTextureMap > list;
 };
 /// In an irregular time series, unpredictable bursts of data arrive at unspecified points in time, or most time stamps cannot be characterized by a repeating pattern.
@@ -20179,8 +20187,10 @@ public:
 
 class IfcCartesianPointList3D : public IfcCartesianPointList {
 public:
+    std::vector< std::vector< double > > CoordList() const;
+    void setCoordList(std::vector< std::vector< double > > v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_UNKNOWN; } return IfcCartesianPointList::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE; } return IfcCartesianPointList::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLengthMeasure; } return IfcCartesianPointList::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "CoordList"; } return IfcCartesianPointList::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -20188,7 +20198,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcCartesianPointList3D (IfcAbstractEntity* e);
-    IfcCartesianPointList3D ();
+    IfcCartesianPointList3D (std::vector< std::vector< double > > v1_CoordList);
     typedef IfcTemplatedEntityList< IfcCartesianPointList3D > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A Cartesian transformation operator defines a geometric transformation composed of translation, rotation, mirroring and uniform scaling. The list of normalized vectors u defines the columns of an orthogonal matrix T. These vectors are computed, by the base axis function, from the direction attributes axis1, axis2 and, in Cartesian transformation operator 3d, axis3. If |T|= -1, the transformation includes mirroring. The local origin point A, the scale value S and the matrix T together define a transformation.  
@@ -28153,12 +28163,14 @@ public:
     void setCoordinates(IfcCartesianPointList3D* v);
     /// Whether the optional attribute Normals is defined for this IfcTessellatedFaceSet
     bool hasNormals() const;
+    std::vector< std::vector< double > > Normals() const;
+    void setNormals(std::vector< std::vector< double > > v);
     /// Whether the optional attribute Closed is defined for this IfcTessellatedFaceSet
     bool hasClosed() const;
     bool Closed() const;
     void setClosed(bool v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_UNKNOWN; case 2: return IfcUtil::Argument_BOOL; } return IfcTessellatedItem::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE; case 2: return IfcUtil::Argument_BOOL; } return IfcTessellatedItem::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCartesianPointList3D; case 1: return Type::IfcParameterValue; case 2: return Type::UNDEFINED; } return IfcTessellatedItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Coordinates"; case 1: return "Normals"; case 2: return "Closed"; } return IfcTessellatedItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -28168,7 +28180,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcTessellatedFaceSet (IfcAbstractEntity* e);
-    IfcTessellatedFaceSet (IfcCartesianPointList3D* v1_Coordinates, boost::optional< bool > v3_Closed);
+    IfcTessellatedFaceSet (IfcCartesianPointList3D* v1_Coordinates, boost::optional< std::vector< std::vector< double > > > v2_Normals, boost::optional< bool > v3_Closed);
     typedef IfcTemplatedEntityList< IfcTessellatedFaceSet > list;
 };
 /// Definition from IAI: The element type
@@ -28254,10 +28266,14 @@ public:
 
 class IfcTriangulatedFaceSet : public IfcTessellatedFaceSet {
 public:
+    std::vector< std::vector< int > > CoordIndex() const;
+    void setCoordIndex(std::vector< std::vector< int > > v);
     /// Whether the optional attribute NormalIndex is defined for this IfcTriangulatedFaceSet
     bool hasNormalIndex() const;
+    std::vector< std::vector< int > > NormalIndex() const;
+    void setNormalIndex(std::vector< std::vector< int > > v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_UNKNOWN; case 4: return IfcUtil::Argument_UNKNOWN; } return IfcTessellatedFaceSet::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT; case 4: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT; } return IfcTessellatedFaceSet::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::UNDEFINED; case 4: return Type::UNDEFINED; } return IfcTessellatedFaceSet::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "CoordIndex"; case 4: return "NormalIndex"; } return IfcTessellatedFaceSet::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -28265,7 +28281,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcTriangulatedFaceSet (IfcAbstractEntity* e);
-    IfcTriangulatedFaceSet (IfcCartesianPointList3D* v1_Coordinates, boost::optional< bool > v3_Closed);
+    IfcTriangulatedFaceSet (IfcCartesianPointList3D* v1_Coordinates, boost::optional< std::vector< std::vector< double > > > v2_Normals, boost::optional< bool > v3_Closed, std::vector< std::vector< int > > v4_CoordIndex, boost::optional< std::vector< std::vector< int > > > v5_NormalIndex);
     typedef IfcTemplatedEntityList< IfcTriangulatedFaceSet > list;
 };
 /// The window lining is the outer
@@ -35259,8 +35275,10 @@ public:
 class IfcRationalBSplineSurfaceWithKnots : public IfcBSplineSurfaceWithKnots {
 public:
     /// The weights associated with the control points in the rational case.
+    std::vector< std::vector< double > > WeightsData() const;
+    void setWeightsData(std::vector< std::vector< double > > v);
     virtual unsigned int getArgumentCount() const { return 13; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 12: return IfcUtil::Argument_UNKNOWN; } return IfcBSplineSurfaceWithKnots::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 12: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE; } return IfcBSplineSurfaceWithKnots::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 12: return Type::UNDEFINED; } return IfcBSplineSurfaceWithKnots::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 12: return "WeightsData"; } return IfcBSplineSurfaceWithKnots::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -35268,7 +35286,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcRationalBSplineSurfaceWithKnots (IfcAbstractEntity* e);
-    IfcRationalBSplineSurfaceWithKnots (int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, bool v5_UClosed, bool v6_VClosed, bool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, IfcKnotType::IfcKnotType v12_KnotSpec);
+    IfcRationalBSplineSurfaceWithKnots (int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, bool v5_UClosed, bool v6_VClosed, bool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, IfcKnotType::IfcKnotType v12_KnotSpec, std::vector< std::vector< double > > v13_WeightsData);
     typedef IfcTemplatedEntityList< IfcRationalBSplineSurfaceWithKnots > list;
 };
 /// Definition from IAI: Bars, wires, strands, meshes, tendons, and other components embedded in concrete in such a manner that the reinforcement and the concrete act together in resisting forces.

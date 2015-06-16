@@ -409,6 +409,7 @@ constructor_single_initlist = "%(class_name)s::%(class_name)s(%(arguments)s) : %
 cast_function = "%(class_name)s::operator %(return_type)s() const { %(body)s }"
 
 array_type = "std::vector< %(instance_type)s > /*[%(lower)s:%(upper)s]*/"
+nested_array_type = "std::vector< std::vector< %(instance_type)s > >"
 list_type = "IfcTemplatedEntityList< %(instance_type)s >::ptr"
 list_list_type = "IfcTemplatedEntityListList< %(instance_type)s >::ptr"
 untyped_list = "IfcEntityList::ptr"

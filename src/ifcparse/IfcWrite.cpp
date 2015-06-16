@@ -198,6 +198,14 @@ void IfcWritableEntity::setArgument(int i, Argument* a) {
 		}
 		this->setArgument(i, mapped_instances); }
 		break;
+	case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
+		std::vector< std::vector<int> > attr_value = *a;
+		this->setArgument(i, attr_value); }
+		break;
+	case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
+		std::vector< std::vector<double> > attr_value = *a;
+		this->setArgument(i, attr_value); }
+		break;
 	case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
 		IfcEntityListList::ptr instances = *a;
 		IfcEntityListList::ptr mapped_instances(new IfcEntityListList);
@@ -263,10 +271,16 @@ void IfcWritableEntity::setArgument(int i,IfcEntityListList::ptr v){
 void IfcWritableEntity::setArgument(int i,const std::vector<double>& v){
 	_setArgument(i, v);
 }
+void IfcWritableEntity::setArgument(int i,const std::vector< std::vector<double> >& v){
+	_setArgument(i, v);
+}
 void IfcWritableEntity::setArgument(int i,const std::vector<std::string>& v){
 	_setArgument(i, v);
 }
 void IfcWritableEntity::setArgument(int i,const std::vector<int>& v){
+	_setArgument(i, v);
+}
+void IfcWritableEntity::setArgument(int i,const std::vector< std::vector<int> >& v){
 	_setArgument(i, v);
 }
 void IfcWritableEntity::setArgument(int i,const std::vector< boost::dynamic_bitset<> >& v){
@@ -284,6 +298,8 @@ public:
 	int operator()(const boost::dynamic_bitset<>& i) const { return -1; }
 	int operator()(const std::vector<int>& i) const { return i.size(); }
 	int operator()(const std::vector<double>& i) const { return i.size(); }
+	int operator()(const std::vector< std::vector<int> >& i) const { return i.size(); }
+	int operator()(const std::vector< std::vector<double> >& i) const { return i.size(); }
 	int operator()(const std::vector<std::string>& i) const { return i.size(); }
 	int operator()(const std::vector< boost::dynamic_bitset<> >& i) const { return i.size(); }
 	int operator()(const IfcWriteArgument::EnumerationReference& i) const { return -1; }
@@ -389,6 +405,8 @@ public:
 		}
 		data << ")";
 	}
+	void operator()(const std::vector< std::vector<int> >& i);
+	void operator()(const std::vector< std::vector<double> >& i);
 	void operator()(const IfcEntityListList::ptr& i) { 
 		data << "(";
 		for (IfcEntityListList::outer_it outer_it = i->begin(); outer_it != i->end(); ++outer_it) {
@@ -444,7 +462,22 @@ void StringBuilderVisitor::operator()(const std::vector<int>& i) { serialize(i);
 void StringBuilderVisitor::operator()(const std::vector<double>& i) { serialize(i); }
 void StringBuilderVisitor::operator()(const std::vector<std::string>& i) { serialize(i); }
 void StringBuilderVisitor::operator()(const std::vector< boost::dynamic_bitset<> >& i) { serialize(i); }
-	
+void StringBuilderVisitor::operator()(const std::vector< std::vector<int> >& i) {
+	data << "(";
+	for (std::vector< std::vector<int> >::const_iterator it = i.begin(); it != i.end(); ++it) {
+		if (it != i.begin()) data << ",";
+		serialize(*it);
+	}
+	data << ")";
+}
+void StringBuilderVisitor::operator()(const std::vector< std::vector<double> >& i) {
+	data << "(";
+	for (std::vector< std::vector<double> >::const_iterator it = i.begin(); it != i.end(); ++it) {
+		if (it != i.begin()) data << ",";
+		serialize(*it);
+	}
+	data << ")";
+}
 
 IfcWriteArgument::operator int() const { return as<int>(); }
 IfcWriteArgument::operator bool() const { return as<bool>(); }
@@ -462,6 +495,8 @@ IfcWriteArgument::operator std::vector<int>() const { return as<std::vector<int>
 IfcWriteArgument::operator std::vector<std::string>() const { return as<std::vector<std::string > >(); }
 IfcWriteArgument::operator std::vector< boost::dynamic_bitset<> >() const { return as< std::vector< boost::dynamic_bitset<> > >(); }
 IfcWriteArgument::operator IfcEntityList::ptr() const { return as<IfcEntityList::ptr>(); }
+IfcWriteArgument::operator std::vector< std::vector<int> >() const { return as<std::vector< std::vector<int> > >(); }
+IfcWriteArgument::operator std::vector< std::vector<double> >() const { return as<std::vector< std::vector<double> > >(); }
 IfcWriteArgument::operator IfcEntityListList::ptr() const { throw; }
 bool IfcWriteArgument::isNull() const { return type() == IfcUtil::Argument_NULL; }
 Argument* IfcWriteArgument::operator [] (unsigned int i) const { throw IfcParse::IfcException("Invalid cast"); }
