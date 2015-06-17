@@ -76,8 +76,7 @@
 	IfcParse::IfcLateBoundEntity* cast_pyobject(PyObject* element) {
 		void *arg = 0;
 		int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__IfcLateBoundEntity, 0);
-		if (!res) return static_cast<IfcParse::IfcLateBoundEntity*>(0);
-		return reinterpret_cast<IfcParse::IfcLateBoundEntity*>(arg);
+		return static_cast<IfcParse::IfcLateBoundEntity*>(SWIG_IsOK(res) ? arg : 0);
 	}
 
 	template <typename T>
