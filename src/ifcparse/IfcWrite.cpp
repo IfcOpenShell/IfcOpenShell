@@ -350,7 +350,7 @@ private:
 		oss.put('"');
 		oss << std::hex << std::setw(1);
 		unsigned c = b.size();
-		unsigned n = c % 4;
+		unsigned n = (4 - (c % 4)) & 3;
 		oss << n;
 		for (unsigned i = 0; i < c + n;) {
 			unsigned accum = 0;
