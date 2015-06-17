@@ -102,6 +102,8 @@ namespace IfcUtil {
 		const char* getArgumentName(unsigned int i) const;
 		IfcSchema::Type::Enum getArgumentEntity(unsigned int i) const { return IfcSchema::Type::UNDEFINED; }
 	};
+
+	bool valid_binary_string(const std::string& s);
 }
 
 template <class T>

@@ -62,139 +62,15 @@ namespace IfcUtil {
 %rename("get_argument_optionality") getArgumentOptionality;
 %rename("get_attribute_names") getAttributeNames;
 %rename("get_inverse_attribute_names") getInverseAttributeNames;
-%rename("_set_argument") setArgument;
 %rename("__repr__") toString;
 %rename("entity_instance") IfcLateBoundEntity;
 %rename("file") IfcFile;
 
-%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) IfcEntityList::ptr {
-   $1 = (PySequence_Check($input) && !PyUnicode_Check($input) && !PyString_Check($input)) ? 1 : 0;
-}
+%include "utils/type_conversion.i"
 
-%typemap(in) IfcEntityList::ptr {
-	if (PySequence_Check($input)) {
-		$1 = IfcEntityList::ptr(new IfcEntityList());
-		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
-			PyObject* obj = PySequence_GetItem($input, i);
-			if (obj) {
-				void *arg = 0;
-				int res = SWIG_ConvertPtr(obj, &arg, SWIGTYPE_p_IfcParse__IfcLateBoundEntity, 0);
-				if (!SWIG_IsOK(res)) {
-					SWIG_exception_fail(SWIG_ArgError(res), "Sequence element not of type IfcParse::IfcLateBoundEntity*"); 
-				} else {
-					$1->push(reinterpret_cast<IfcParse::IfcLateBoundEntity*>(arg));
-				}
-			}
-		}
-	} else {
-		SWIG_exception(SWIG_RuntimeError,"Unknown argument type");
-	}
-}
+%include "utils/typemaps_in.i"
 
-%typemap(out) IfcEntityList::ptr {
-	const unsigned size = $1 ? $1->size() : 0;
-	$result = PyList_New(size);
-	for (unsigned i = 0; i < size; ++i) {
-		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*$1)[i]), SWIGTYPE_p_IfcParse__IfcLateBoundEntity, 0);
-		PyList_SetItem($result,i,o);
-	}
-}
-
-%typemap(out) IfcUtil::ArgumentType {
-	$result = SWIG_Python_str_FromChar(IfcUtil::ArgumentTypeToString($1));
-}
-
-%typemap(out) std::pair<IfcUtil::ArgumentType, Argument*> {
-	// The SWIG %exception directive does not take care
-	// of our typemap. So the argument conversion block
-	// is wrapped in a try-catch block manually.
-	try {
-	const Argument& arg = *($1.second);
-	const IfcUtil::ArgumentType type = $1.first;
-	if (arg.isNull() || type == IfcUtil::Argument_DERIVED) {
-		Py_INCREF(Py_None);
-		$result = Py_None;
-	} else {
-	switch(type) {
-		case IfcUtil::Argument_INT:
-			$result = PyInt_FromLong((int)arg);
-		break;
-		case IfcUtil::Argument_BOOL:
-			$result = PyBool_FromLong((bool)arg);
-		break; 
-		case IfcUtil::Argument_DOUBLE:
-			$result = PyFloat_FromDouble(arg);
-		break;
-		case IfcUtil::Argument_ENUMERATION:
-		case IfcUtil::Argument_STRING: {
-			const std::string s = arg;
-			$result = PyString_FromString(s.c_str());
-		break; }
-		case IfcUtil::Argument_BINARY: {
-			const boost::dynamic_bitset<> b = arg;
-			std::string bitstring;
-			boost::to_string(b, bitstring);
-			$result = PyString_FromString(bitstring.c_str());
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_INT: {
-			const std::vector<int> v = arg;
-			const unsigned size = v.size();
-			$result = PyList_New(size);
-			for (unsigned int i = 0; i < size; ++i) {
-				PyList_SetItem($result,i,PyInt_FromLong(v[i]));
-			}
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
-			const std::vector<double> v = arg;
-			const unsigned size = v.size();
-			$result = PyList_New(size);
-			for (unsigned int i = 0; i < size; ++i) {
-				PyList_SetItem($result,i,PyFloat_FromDouble(v[i]));
-			}
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_STRING: {
-			const std::vector<std::string> v = arg;
-			const unsigned size = v.size();
-			$result = PyList_New(size);
-			for (unsigned int i = 0; i < size; ++i) {
-				PyList_SetItem($result,i,PyString_FromString(v[i].c_str()));
-			}
-		break; }
-		case IfcUtil::Argument_ENTITY_INSTANCE: {
-			IfcUtil::IfcBaseClass* e = arg;
-			$result = SWIG_NewPointerObj(SWIG_as_voidptr(e), SWIGTYPE_p_IfcParse__IfcLateBoundEntity, 0);
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-			IfcEntityList::ptr es = arg;
-			const unsigned size = es->size();
-			$result = PyList_New(size);
-			for (unsigned i = 0; i < size; ++i) {
-				PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr((*es)[i]), SWIGTYPE_p_IfcParse__IfcLateBoundEntity, 0);
-				PyList_SetItem($result,i,o);
-			}
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_BINARY: {
-			const std::vector< boost::dynamic_bitset<> > bs = arg;
-			const unsigned size = bs.size();
-			$result = PyList_New(size);
-			for (unsigned int i = 0; i < size; ++i) {
-				std::string bitstring;
-				boost::to_string(bs[i], bitstring);
-				PyList_SetItem($result,i,PyString_FromString(bitstring.c_str()));
-			}
-		break; }
-		case IfcUtil::Argument_UNKNOWN:
-		default:
-			SWIG_exception(SWIG_RuntimeError,"Unknown argument type");
-		break;
-	}
-	}
-	} catch(IfcParse::IfcException& e) {
-		SWIG_exception(SWIG_RuntimeError, e.what());
-	} catch(...) {
-		SWIG_exception(SWIG_RuntimeError, "An unknown error occurred");
-	}
-}
+%include "utils/typemaps_out.i"
 
 %extend IfcParse::IfcFile {
 	IfcParse::IfcLateBoundEntity* by_id(unsigned id) {
@@ -245,9 +121,15 @@ namespace IfcUtil {
 			}
 		}
 	}
-	%pythoncode %{
-	set_argument = lambda self,x,y: self._set_argument(x) if y is None else self._set_argument(x,y)
-	%}
+
+	std::pair<IfcUtil::ArgumentType,Argument*> get_argument(unsigned i) {
+		return std::pair<IfcUtil::ArgumentType,Argument*>($self->getArgumentType(i), $self->getArgument(i));
+	}
+
+	std::pair<IfcUtil::ArgumentType,Argument*> get_argument(const std::string& a) {
+		unsigned i = IfcSchema::Type::GetAttributeIndex($self->type(), a);
+		return std::pair<IfcUtil::ArgumentType,Argument*>($self->getArgumentType(i), $self->getArgument(i));
+	}
 }
 
 %extend IfcParse::IfcSpfHeader {

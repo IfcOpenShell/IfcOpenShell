@@ -110,13 +110,13 @@ void IfcParse::IfcLateBoundEntity::invalid_argument(unsigned int i, const std::s
 	const std::string arg_name = IfcSchema::Type::GetAttributeName(_type,i);
 	throw IfcException(t + " is not a valid type for '" + arg_name + "'");
 }
-void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i) {
+void IfcParse::IfcLateBoundEntity::setArgumentAsNull(unsigned int i) {
 	bool is_optional = IfcSchema::Type::GetAttributeOptional(_type, i);
 	if (is_optional) {
 		writable_entity()->setArgument(i);
 	} else invalid_argument(i,"NULL");
 }
-void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, int v) {
+void IfcParse::IfcLateBoundEntity::setArgumentAsInt(unsigned int i, int v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_INT) {
 		writable_entity()->setArgument(i,v);	
@@ -124,19 +124,19 @@ void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, int v) {
 		writable_entity()->setArgument(i, v == 1);
 	} else invalid_argument(i,"INTEGER");
 }
-void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, bool v) {
+void IfcParse::IfcLateBoundEntity::setArgumentAsBool(unsigned int i, bool v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_BOOL) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"BOOLEAN");
 }
-void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, double v) {
+void IfcParse::IfcLateBoundEntity::setArgumentAsDouble(unsigned int i, double v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_DOUBLE) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"REAL");
 }
-void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, const std::string& a) {
+void IfcParse::IfcLateBoundEntity::setArgumentAsString(unsigned int i, const std::string& a) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_STRING) {
 		writable_entity()->setArgument(i,a);
@@ -144,23 +144,27 @@ void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, const std::string
 		std::pair<const char*, int> enum_data = IfcSchema::Type::GetEnumerationIndex(IfcSchema::Type::GetAttributeEntity(_type, i), a);
 		writable_entity()->setArgument(i, enum_data.second, enum_data.first);
 	} else if (arg_type == Argument_BINARY) {
-		boost::dynamic_bitset<> bits(a);
-		writable_entity()->setArgument(i, bits);
+		if (valid_binary_string(a)) {
+			boost::dynamic_bitset<> bits(a);
+			writable_entity()->setArgument(i, bits);
+		} else {
+			throw IfcException("String not a valid binary representation");
+		}
 	} else invalid_argument(i,"STRING");
 }
-void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, const std::vector<int>& v) {
+void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfInt(unsigned int i, const std::vector<int>& v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_AGGREGATE_OF_INT) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"AGGREGATE OF INT");
 }
-void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, const std::vector<double>& v) {
+void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfDouble(unsigned int i, const std::vector<double>& v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_AGGREGATE_OF_DOUBLE) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"AGGREGATE OF DOUBLE");
 }
-void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, const std::vector<std::string>& v) {
+void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfString(unsigned int i, const std::vector<std::string>& v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_AGGREGATE_OF_STRING) {
 		writable_entity()->setArgument(i,v);	
@@ -168,28 +172,44 @@ void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, const std::vector
 		std::vector< boost::dynamic_bitset<> > bits;
 		bits.reserve(v.size());
 		for (std::vector<std::string>::const_iterator it = v.begin(); it != v.end(); ++it) {
-			bits.push_back(boost::dynamic_bitset<>(*it));
+			if (valid_binary_string(*it)) {
+				bits.push_back(boost::dynamic_bitset<>(*it));
+			} else {
+				throw IfcException("String not a valid binary representation");
+			}			
 		}
 		writable_entity()->setArgument(i, bits);
 	} else invalid_argument(i,"AGGREGATE OF STRING");
 }
-void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, IfcParse::IfcLateBoundEntity* v) {
+void IfcParse::IfcLateBoundEntity::setArgumentAsEntityInstance(unsigned int i, IfcParse::IfcLateBoundEntity* v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_ENTITY_INSTANCE) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"ENTITY INSTANCE");
 }
-void IfcParse::IfcLateBoundEntity::setArgument(unsigned int i, IfcEntityList::ptr v) {
+void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfEntityInstance(unsigned int i, IfcEntityList::ptr v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
 	if (arg_type == Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"AGGREGATE OF ENTITY INSTANCE");
 }
-std::pair<IfcUtil::ArgumentType,Argument*> IfcParse::IfcLateBoundEntity::get_argument(unsigned i) {
-	return std::pair<IfcUtil::ArgumentType,Argument*>(getArgumentType(i),getArgument(i));
+void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfAggregateOfInt(unsigned int i, const std::vector< std::vector<int> >& v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
+	if (arg_type == Argument_AGGREGATE_OF_AGGREGATE_OF_INT) {
+		writable_entity()->setArgument(i,v);	
+	} else invalid_argument(i,"AGGREGATE OF AGGREGATE OF INT");
 }
-std::pair<IfcUtil::ArgumentType,Argument*> IfcParse::IfcLateBoundEntity::get_argument(const std::string& a) {
-	return get_argument(IfcSchema::Type::GetAttributeIndex(_type,a));
+void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfAggregateOfDouble(unsigned int i, const std::vector< std::vector<double> >& v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
+	if (arg_type == Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
+		writable_entity()->setArgument(i,v);	
+	} else invalid_argument(i,"AGGREGATE OF AGGREGATE OF DOUBLE");
+}
+void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfAggregateOfEntityInstance(unsigned int i, IfcEntityListList::ptr v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type,i);
+	if (arg_type == Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
+		writable_entity()->setArgument(i,v);	
+	} else invalid_argument(i,"AGGREGATE OF AGGREGATE OF ENTITY INSTANCE");
 }
 unsigned IfcParse::IfcLateBoundEntity::getArgumentIndex(const std::string& a) const {
 	return IfcSchema::Type::GetAttributeIndex(_type,a);

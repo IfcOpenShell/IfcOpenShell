@@ -60,22 +60,23 @@ namespace IfcParse {
 		std::vector<std::string> getAttributeNames() const;
 		std::vector<std::string> getInverseAttributeNames() const;
 
-		void setArgument(unsigned int i);
-		void setArgument(unsigned int i, int v);
-		void setArgument(unsigned int i, bool v);
-		void setArgument(unsigned int i, double v);
-		void setArgument(unsigned int i, const std::string& v);
-		void setArgument(unsigned int i, const std::vector<int>& v);
-		void setArgument(unsigned int i, const std::vector<double>& v);
-		void setArgument(unsigned int i, const std::vector<std::string>& v);
-		void setArgument(unsigned int i, IfcLateBoundEntity* v);
-		void setArgument(unsigned int i, IfcEntityList::ptr v);
+		void setArgumentAsNull(unsigned int i);
+		void setArgumentAsInt(unsigned int i, int v);
+		void setArgumentAsBool(unsigned int i, bool v);
+		void setArgumentAsDouble(unsigned int i, double v);
+		void setArgumentAsString(unsigned int i, const std::string& v);
+		void setArgumentAsEntityInstance(unsigned int i, IfcLateBoundEntity* v);
+		
+		void setArgumentAsAggregateOfInt(unsigned int i, const std::vector<int>& v);
+		void setArgumentAsAggregateOfDouble(unsigned int i, const std::vector<double>& v);
+		void setArgumentAsAggregateOfString(unsigned int i, const std::vector<std::string>& v);
+		void setArgumentAsAggregateOfEntityInstance(unsigned int i, IfcEntityList::ptr v);
+		
+		void setArgumentAsAggregateOfAggregateOfInt(unsigned int i, const std::vector< std::vector<int> >& v);
+		void setArgumentAsAggregateOfAggregateOfDouble(unsigned int i, const std::vector< std::vector<double> >& v);
+		void setArgumentAsAggregateOfAggregateOfEntityInstance(unsigned int i, IfcEntityListList::ptr v);
 
 		std::string toString();
-		
-		// TODO: Write as SWIG extension methods?
-		std::pair<IfcUtil::ArgumentType,Argument*> get_argument(unsigned i);
-		std::pair<IfcUtil::ArgumentType,Argument*> get_argument(const std::string& a);
 
 		bool is_valid();
 	};

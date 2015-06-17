@@ -51,22 +51,15 @@ class entity_instance(object):
 			return entity_instance.wrap_value(self.wrapped_data.get_inverse(name))
 		else: raise AttributeError("entity instance of type '%s' has no attribute '%s'"%(self.wrapped_data.is_a(), name))
 	@staticmethod
-	def map_value(v):
-		if isinstance(v, entity_instance): return v.wrapped_data
-		elif isinstance(v, (tuple, list)) and len(v):
-			classes = list(map(type, v))
-			if float in classes: return ifcopenshell_wrapper.double_vector(v)
-			elif int in classes: return ifcopenshell_wrapper.int_vector(v)
-			elif str in classes: return ifcopenshell_wrapper.string_vector(v)
-			elif entity_instance in classes: return list(map(lambda e: e.wrapped_data, v))
-		return v
-	@staticmethod
 	def wrap_value(v):
 		wrap = lambda e: entity_instance(e)
 		if isinstance(v, ifcopenshell_wrapper.entity_instance): return wrap(v)
 		elif isinstance(v, (tuple, list)) and len(v):
-			classes = list(map(type, v))
-			if ifcopenshell_wrapper.entity_instance in classes: return list(map(wrap, v))
+			classes = set(map(type, v))
+			if {ifcopenshell_wrapper.entity_instance} == classes: return list(map(wrap, v))
+			elif {list} == classes:
+				classes = set(map(type, v[0]))
+				if {ifcopenshell_wrapper.entity_instance} == classes: return [list(map(wrap, x)) for x in v]
 		return v
 	def attribute_type(self, attr):
 		attr_idx = attr if isinstance(attr, int) else self.wrapped_data.get_argument_index(attr)
@@ -78,7 +71,10 @@ class entity_instance(object):
 	def __getitem__(self, key):
 		return entity_instance.wrap_value(self.wrapped_data.get_argument(key))
 	def __setitem__(self, idx, value):
-		self.wrapped_data.set_argument(idx, entity_instance.map_value(value))
+		attr_type = self.attribute_type(idx).title().replace(' ', '')
+		attr_type = attr_type.replace('Binary', 'String')
+		attr_type = attr_type.replace('Enumeration', 'String')
+		getattr(self.wrapped_data, "setArgumentAs%s" % attr_type)(idx, value)
 	def __len__(self): return len(self.wrapped_data)
 	def __repr__(self): return repr(self.wrapped_data)
 	def is_a(self, *args): return self.wrapped_data.is_a(*args)

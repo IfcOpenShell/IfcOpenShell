@@ -137,3 +137,10 @@ static const char* const argument_type_string[] = {
 const char* IfcUtil::ArgumentTypeToString(ArgumentType argument_type) {
 	return argument_type_string[static_cast<int>(argument_type)];
 }
+
+bool IfcUtil::valid_binary_string(const std::string& s) {
+	for (std::string::const_iterator it = s.begin(); it != s.end(); ++it) {
+		if (*it != '0' && *it != '1') return false;
+	}
+	return true;
+}

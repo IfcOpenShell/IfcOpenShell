@@ -24,9 +24,11 @@
 %exception {
 	try {
 		$action
-	} catch(IfcParse::IfcException& e) {
+	} catch(const IfcParse::IfcAttributeOutOfRangeException& e) {
+		SWIG_exception(SWIG_IndexError, e.what());
+	} catch(const IfcParse::IfcException& e) {
 		SWIG_exception(SWIG_RuntimeError, e.what());
-	} catch(std::runtime_error& e) {
+	} catch(const std::runtime_error& e) {
 		SWIG_exception(SWIG_RuntimeError, e.what());
 	} catch(...) {
 		SWIG_exception(SWIG_RuntimeError, "An unknown error occurred");
@@ -39,6 +41,12 @@
 
 	#include "../ifcparse/IfcFile.h"
 	#include "../ifcparse/IfcLateBoundEntity.h"
+
+	#ifdef USE_IFC4
+	#include "../ifcparse/Ifc4-latebound.h"
+	#else
+	#include "../ifcparse/Ifc2x3-latebound.h"
+	#endif
 %}
 
 // The following typemaps are an alternative for the read-only std::vector
