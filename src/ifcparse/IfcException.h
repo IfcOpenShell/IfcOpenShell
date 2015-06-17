@@ -26,11 +26,21 @@
 namespace IfcParse {
 	class IfcException : public std::exception {
 	private:
-		std::string error;
+		std::string message;
 	public:
-		IfcException(std::string e);
-		~IfcException () throw ();
-		const char* what() const throw();
+		IfcException(const std::string& m)
+			 : message(m) {}
+		~IfcException () throw () {}
+		const char* what() const throw() {
+			return message.c_str(); 
+		}
+	};
+
+	class IfcAttributeOutOfRangeException : public IfcException {
+	public:
+		IfcAttributeOutOfRangeException(const std::string& e)
+			: IfcException(e) {}
+		~IfcAttributeOutOfRangeException () throw () {}
 	};
 }
 

@@ -82,7 +82,7 @@ namespace IfcUtil {
 		}
 		const IfcArgumentDescriptor& get_argument(unsigned i) const {
 			if (i < arguments.size()) return arguments[i];
-			else throw IfcParse::IfcException("Argument out of range");
+			else throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range");
 		}
 	public:
 		IfcEntityDescriptor(IfcSchema::Type::Enum type, IfcEntityDescriptor* parent)

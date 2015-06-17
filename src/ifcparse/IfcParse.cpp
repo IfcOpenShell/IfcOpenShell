@@ -650,7 +650,7 @@ unsigned int ArgumentList::size() const { return (unsigned int) list.size(); }
 
 Argument* ArgumentList::operator [] (unsigned int i) const {
 	if ( i >= list.size() ) {
-		throw IfcException("Argument index out of range");
+		throw IfcAttributeOutOfRangeException("Argument index out of range");
 	}
 	return list[i];
 }
@@ -951,7 +951,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 				} else {
 					entity = IfcSchema::SchemaEntity(e);
 				}
-			} catch (IfcException ex) {
+			} catch (const IfcException& ex) {
 				currentId = 0;
 				Logger::Message(Logger::LOG_ERROR,ex.what());
 				continue;
@@ -971,7 +971,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 						Logger::Message(Logger::LOG_WARNING,ss.str());
 					}
 					byguid[guid] = ifc_root;
-				} catch (IfcException ex) {
+				} catch (const IfcException& ex) {
 					Logger::Message(Logger::LOG_ERROR,ex.what());
 				}
 			}
@@ -1176,7 +1176,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 				Logger::Message(Logger::LOG_WARNING,ss.str());
 			}
 			byguid[guid] = ifc_root;
-		} catch (IfcException ex) {
+		} catch (const IfcException& ex) {
 			Logger::Message(Logger::LOG_ERROR,ex.what());
 		}
 	}
@@ -1230,7 +1230,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 				}
 				refs->push(entity);
 			}
-		} catch (IfcParse::IfcException&) {}
+		} catch (const IfcParse::IfcException&) {}
 	}
 
 	return entity;
@@ -1381,10 +1381,6 @@ IfcSchema::IfcRoot* IfcFile::entityByGuid(const std::string& guid) {
 		return it->second;
 	}
 }
-
-IfcException::IfcException(std::string e) { error = e; }
-IfcException::~IfcException() throw () {}
-const char* IfcException::what() const throw() { return error.c_str(); }
 
 // FIXME: Test destructor to delete entity and arg allocations
 IfcFile::~IfcFile() {

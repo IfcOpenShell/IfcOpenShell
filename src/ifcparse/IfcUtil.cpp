@@ -71,7 +71,7 @@ IfcEntityList::ptr IfcEntityList::filtered(const std::set<IfcSchema::Type::Enum>
 
 unsigned int IfcUtil::IfcBaseType::getArgumentCount() const { return 1; }
 Argument* IfcUtil::IfcBaseType::getArgument(unsigned int i) const { return entity->getArgument(i); }
-const char* IfcUtil::IfcBaseType::getArgumentName(unsigned int i) const { if (i == 0) { return "wrappedValue"; } else { throw IfcParse::IfcException("argument out of range"); } }
+const char* IfcUtil::IfcBaseType::getArgumentName(unsigned int i) const { if (i == 0) { return "wrappedValue"; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 
 void Logger::SetOutput(std::ostream* l1, std::ostream* l2) { 
 	log1 = l1; 

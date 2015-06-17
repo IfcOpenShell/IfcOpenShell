@@ -6510,7 +6510,7 @@ IfcWorkScheduleTypeEnum::IfcWorkScheduleTypeEnum IfcWorkScheduleTypeEnum::FromSt
 
 
 // Function implementations for IfcAbsorbedDoseMeasure
-IfcUtil::ArgumentType IfcAbsorbedDoseMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcAbsorbedDoseMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcAbsorbedDoseMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcAbsorbedDoseMeasure::is(Type::Enum v) const { return v == IfcAbsorbedDoseMeasure::Class(); }
 Type::Enum IfcAbsorbedDoseMeasure::type() const { return Type::IfcAbsorbedDoseMeasure; }
@@ -6520,7 +6520,7 @@ IfcAbsorbedDoseMeasure::IfcAbsorbedDoseMeasure(double v) { IfcWritableEntity* e 
 IfcAbsorbedDoseMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcAccelerationMeasure
-IfcUtil::ArgumentType IfcAccelerationMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcAccelerationMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcAccelerationMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcAccelerationMeasure::is(Type::Enum v) const { return v == IfcAccelerationMeasure::Class(); }
 Type::Enum IfcAccelerationMeasure::type() const { return Type::IfcAccelerationMeasure; }
@@ -6530,7 +6530,7 @@ IfcAccelerationMeasure::IfcAccelerationMeasure(double v) { IfcWritableEntity* e 
 IfcAccelerationMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcAmountOfSubstanceMeasure
-IfcUtil::ArgumentType IfcAmountOfSubstanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcAmountOfSubstanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcAmountOfSubstanceMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcAmountOfSubstanceMeasure::is(Type::Enum v) const { return v == IfcAmountOfSubstanceMeasure::Class(); }
 Type::Enum IfcAmountOfSubstanceMeasure::type() const { return Type::IfcAmountOfSubstanceMeasure; }
@@ -6540,7 +6540,7 @@ IfcAmountOfSubstanceMeasure::IfcAmountOfSubstanceMeasure(double v) { IfcWritable
 IfcAmountOfSubstanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcAngularVelocityMeasure
-IfcUtil::ArgumentType IfcAngularVelocityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcAngularVelocityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcAngularVelocityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcAngularVelocityMeasure::is(Type::Enum v) const { return v == IfcAngularVelocityMeasure::Class(); }
 Type::Enum IfcAngularVelocityMeasure::type() const { return Type::IfcAngularVelocityMeasure; }
@@ -6550,7 +6550,7 @@ IfcAngularVelocityMeasure::IfcAngularVelocityMeasure(double v) { IfcWritableEnti
 IfcAngularVelocityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcAreaDensityMeasure
-IfcUtil::ArgumentType IfcAreaDensityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcAreaDensityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcAreaDensityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcAreaDensityMeasure::is(Type::Enum v) const { return v == IfcAreaDensityMeasure::Class(); }
 Type::Enum IfcAreaDensityMeasure::type() const { return Type::IfcAreaDensityMeasure; }
@@ -6560,7 +6560,7 @@ IfcAreaDensityMeasure::IfcAreaDensityMeasure(double v) { IfcWritableEntity* e = 
 IfcAreaDensityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcAreaMeasure
-IfcUtil::ArgumentType IfcAreaMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcAreaMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcAreaMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcAreaMeasure::is(Type::Enum v) const { return v == IfcAreaMeasure::Class(); }
 Type::Enum IfcAreaMeasure::type() const { return Type::IfcAreaMeasure; }
@@ -6570,7 +6570,7 @@ IfcAreaMeasure::IfcAreaMeasure(double v) { IfcWritableEntity* e = new IfcWritabl
 IfcAreaMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcBoolean
-IfcUtil::ArgumentType IfcBoolean::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_BOOL; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcBoolean::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_BOOL; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcBoolean::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcBoolean::is(Type::Enum v) const { return v == IfcBoolean::Class(); }
 Type::Enum IfcBoolean::type() const { return Type::IfcBoolean; }
@@ -6580,7 +6580,7 @@ IfcBoolean::IfcBoolean(bool v) { IfcWritableEntity* e = new IfcWritableEntity(Ty
 IfcBoolean::operator bool() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcBoxAlignment
-IfcUtil::ArgumentType IfcBoxAlignment::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcBoxAlignment::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcBoxAlignment::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcBoxAlignment::is(Type::Enum v) const { return v == Type::IfcBoxAlignment || IfcLabel::is(v); }
 Type::Enum IfcBoxAlignment::type() const { return Type::IfcBoxAlignment; }
@@ -6590,7 +6590,7 @@ IfcBoxAlignment::IfcBoxAlignment(std::string v) : IfcLabel((IfcAbstractEntity*)0
 IfcBoxAlignment::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcCardinalPointReference
-IfcUtil::ArgumentType IfcCardinalPointReference::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcCardinalPointReference::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcCardinalPointReference::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcCardinalPointReference::is(Type::Enum v) const { return v == IfcCardinalPointReference::Class(); }
 Type::Enum IfcCardinalPointReference::type() const { return Type::IfcCardinalPointReference; }
@@ -6600,7 +6600,7 @@ IfcCardinalPointReference::IfcCardinalPointReference(int v) { IfcWritableEntity*
 IfcCardinalPointReference::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcComplexNumber
-IfcUtil::ArgumentType IfcComplexNumber::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcComplexNumber::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcComplexNumber::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcComplexNumber::is(Type::Enum v) const { return v == IfcComplexNumber::Class(); }
 Type::Enum IfcComplexNumber::type() const { return Type::IfcComplexNumber; }
@@ -6610,7 +6610,7 @@ IfcComplexNumber::IfcComplexNumber(std::vector< double > /*[1:2]*/ v) { IfcWrita
 IfcComplexNumber::operator std::vector< double > /*[1:2]*/() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcCompoundPlaneAngleMeasure
-IfcUtil::ArgumentType IfcCompoundPlaneAngleMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcCompoundPlaneAngleMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcCompoundPlaneAngleMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcCompoundPlaneAngleMeasure::is(Type::Enum v) const { return v == IfcCompoundPlaneAngleMeasure::Class(); }
 Type::Enum IfcCompoundPlaneAngleMeasure::type() const { return Type::IfcCompoundPlaneAngleMeasure; }
@@ -6620,7 +6620,7 @@ IfcCompoundPlaneAngleMeasure::IfcCompoundPlaneAngleMeasure(std::vector< int > /*
 IfcCompoundPlaneAngleMeasure::operator std::vector< int > /*[3:4]*/() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcContextDependentMeasure
-IfcUtil::ArgumentType IfcContextDependentMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcContextDependentMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcContextDependentMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcContextDependentMeasure::is(Type::Enum v) const { return v == IfcContextDependentMeasure::Class(); }
 Type::Enum IfcContextDependentMeasure::type() const { return Type::IfcContextDependentMeasure; }
@@ -6630,7 +6630,7 @@ IfcContextDependentMeasure::IfcContextDependentMeasure(double v) { IfcWritableEn
 IfcContextDependentMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcCountMeasure
-IfcUtil::ArgumentType IfcCountMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcCountMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcCountMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcCountMeasure::is(Type::Enum v) const { return v == IfcCountMeasure::Class(); }
 Type::Enum IfcCountMeasure::type() const { return Type::IfcCountMeasure; }
@@ -6640,7 +6640,7 @@ IfcCountMeasure::IfcCountMeasure(double v) { IfcWritableEntity* e = new IfcWrita
 IfcCountMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcCurvatureMeasure
-IfcUtil::ArgumentType IfcCurvatureMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcCurvatureMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcCurvatureMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcCurvatureMeasure::is(Type::Enum v) const { return v == IfcCurvatureMeasure::Class(); }
 Type::Enum IfcCurvatureMeasure::type() const { return Type::IfcCurvatureMeasure; }
@@ -6650,7 +6650,7 @@ IfcCurvatureMeasure::IfcCurvatureMeasure(double v) { IfcWritableEntity* e = new 
 IfcCurvatureMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDate
-IfcUtil::ArgumentType IfcDate::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcDate::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcDate::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcDate::is(Type::Enum v) const { return v == IfcDate::Class(); }
 Type::Enum IfcDate::type() const { return Type::IfcDate; }
@@ -6660,7 +6660,7 @@ IfcDate::IfcDate(std::string v) { IfcWritableEntity* e = new IfcWritableEntity(T
 IfcDate::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDateTime
-IfcUtil::ArgumentType IfcDateTime::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcDateTime::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcDateTime::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcDateTime::is(Type::Enum v) const { return v == IfcDateTime::Class(); }
 Type::Enum IfcDateTime::type() const { return Type::IfcDateTime; }
@@ -6670,7 +6670,7 @@ IfcDateTime::IfcDateTime(std::string v) { IfcWritableEntity* e = new IfcWritable
 IfcDateTime::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDayInMonthNumber
-IfcUtil::ArgumentType IfcDayInMonthNumber::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcDayInMonthNumber::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcDayInMonthNumber::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcDayInMonthNumber::is(Type::Enum v) const { return v == IfcDayInMonthNumber::Class(); }
 Type::Enum IfcDayInMonthNumber::type() const { return Type::IfcDayInMonthNumber; }
@@ -6680,7 +6680,7 @@ IfcDayInMonthNumber::IfcDayInMonthNumber(int v) { IfcWritableEntity* e = new Ifc
 IfcDayInMonthNumber::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDayInWeekNumber
-IfcUtil::ArgumentType IfcDayInWeekNumber::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcDayInWeekNumber::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcDayInWeekNumber::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcDayInWeekNumber::is(Type::Enum v) const { return v == IfcDayInWeekNumber::Class(); }
 Type::Enum IfcDayInWeekNumber::type() const { return Type::IfcDayInWeekNumber; }
@@ -6690,7 +6690,7 @@ IfcDayInWeekNumber::IfcDayInWeekNumber(int v) { IfcWritableEntity* e = new IfcWr
 IfcDayInWeekNumber::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDescriptiveMeasure
-IfcUtil::ArgumentType IfcDescriptiveMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcDescriptiveMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcDescriptiveMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcDescriptiveMeasure::is(Type::Enum v) const { return v == IfcDescriptiveMeasure::Class(); }
 Type::Enum IfcDescriptiveMeasure::type() const { return Type::IfcDescriptiveMeasure; }
@@ -6700,7 +6700,7 @@ IfcDescriptiveMeasure::IfcDescriptiveMeasure(std::string v) { IfcWritableEntity*
 IfcDescriptiveMeasure::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDimensionCount
-IfcUtil::ArgumentType IfcDimensionCount::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcDimensionCount::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcDimensionCount::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcDimensionCount::is(Type::Enum v) const { return v == IfcDimensionCount::Class(); }
 Type::Enum IfcDimensionCount::type() const { return Type::IfcDimensionCount; }
@@ -6710,7 +6710,7 @@ IfcDimensionCount::IfcDimensionCount(int v) { IfcWritableEntity* e = new IfcWrit
 IfcDimensionCount::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDoseEquivalentMeasure
-IfcUtil::ArgumentType IfcDoseEquivalentMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcDoseEquivalentMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcDoseEquivalentMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcDoseEquivalentMeasure::is(Type::Enum v) const { return v == IfcDoseEquivalentMeasure::Class(); }
 Type::Enum IfcDoseEquivalentMeasure::type() const { return Type::IfcDoseEquivalentMeasure; }
@@ -6720,7 +6720,7 @@ IfcDoseEquivalentMeasure::IfcDoseEquivalentMeasure(double v) { IfcWritableEntity
 IfcDoseEquivalentMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDuration
-IfcUtil::ArgumentType IfcDuration::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcDuration::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcDuration::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcDuration::is(Type::Enum v) const { return v == IfcDuration::Class(); }
 Type::Enum IfcDuration::type() const { return Type::IfcDuration; }
@@ -6730,7 +6730,7 @@ IfcDuration::IfcDuration(std::string v) { IfcWritableEntity* e = new IfcWritable
 IfcDuration::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDynamicViscosityMeasure
-IfcUtil::ArgumentType IfcDynamicViscosityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcDynamicViscosityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcDynamicViscosityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcDynamicViscosityMeasure::is(Type::Enum v) const { return v == IfcDynamicViscosityMeasure::Class(); }
 Type::Enum IfcDynamicViscosityMeasure::type() const { return Type::IfcDynamicViscosityMeasure; }
@@ -6740,7 +6740,7 @@ IfcDynamicViscosityMeasure::IfcDynamicViscosityMeasure(double v) { IfcWritableEn
 IfcDynamicViscosityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcElectricCapacitanceMeasure
-IfcUtil::ArgumentType IfcElectricCapacitanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcElectricCapacitanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcElectricCapacitanceMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcElectricCapacitanceMeasure::is(Type::Enum v) const { return v == IfcElectricCapacitanceMeasure::Class(); }
 Type::Enum IfcElectricCapacitanceMeasure::type() const { return Type::IfcElectricCapacitanceMeasure; }
@@ -6750,7 +6750,7 @@ IfcElectricCapacitanceMeasure::IfcElectricCapacitanceMeasure(double v) { IfcWrit
 IfcElectricCapacitanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcElectricChargeMeasure
-IfcUtil::ArgumentType IfcElectricChargeMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcElectricChargeMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcElectricChargeMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcElectricChargeMeasure::is(Type::Enum v) const { return v == IfcElectricChargeMeasure::Class(); }
 Type::Enum IfcElectricChargeMeasure::type() const { return Type::IfcElectricChargeMeasure; }
@@ -6760,7 +6760,7 @@ IfcElectricChargeMeasure::IfcElectricChargeMeasure(double v) { IfcWritableEntity
 IfcElectricChargeMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcElectricConductanceMeasure
-IfcUtil::ArgumentType IfcElectricConductanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcElectricConductanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcElectricConductanceMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcElectricConductanceMeasure::is(Type::Enum v) const { return v == IfcElectricConductanceMeasure::Class(); }
 Type::Enum IfcElectricConductanceMeasure::type() const { return Type::IfcElectricConductanceMeasure; }
@@ -6770,7 +6770,7 @@ IfcElectricConductanceMeasure::IfcElectricConductanceMeasure(double v) { IfcWrit
 IfcElectricConductanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcElectricCurrentMeasure
-IfcUtil::ArgumentType IfcElectricCurrentMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcElectricCurrentMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcElectricCurrentMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcElectricCurrentMeasure::is(Type::Enum v) const { return v == IfcElectricCurrentMeasure::Class(); }
 Type::Enum IfcElectricCurrentMeasure::type() const { return Type::IfcElectricCurrentMeasure; }
@@ -6780,7 +6780,7 @@ IfcElectricCurrentMeasure::IfcElectricCurrentMeasure(double v) { IfcWritableEnti
 IfcElectricCurrentMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcElectricResistanceMeasure
-IfcUtil::ArgumentType IfcElectricResistanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcElectricResistanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcElectricResistanceMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcElectricResistanceMeasure::is(Type::Enum v) const { return v == IfcElectricResistanceMeasure::Class(); }
 Type::Enum IfcElectricResistanceMeasure::type() const { return Type::IfcElectricResistanceMeasure; }
@@ -6790,7 +6790,7 @@ IfcElectricResistanceMeasure::IfcElectricResistanceMeasure(double v) { IfcWritab
 IfcElectricResistanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcElectricVoltageMeasure
-IfcUtil::ArgumentType IfcElectricVoltageMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcElectricVoltageMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcElectricVoltageMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcElectricVoltageMeasure::is(Type::Enum v) const { return v == IfcElectricVoltageMeasure::Class(); }
 Type::Enum IfcElectricVoltageMeasure::type() const { return Type::IfcElectricVoltageMeasure; }
@@ -6800,7 +6800,7 @@ IfcElectricVoltageMeasure::IfcElectricVoltageMeasure(double v) { IfcWritableEnti
 IfcElectricVoltageMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcEnergyMeasure
-IfcUtil::ArgumentType IfcEnergyMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcEnergyMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcEnergyMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcEnergyMeasure::is(Type::Enum v) const { return v == IfcEnergyMeasure::Class(); }
 Type::Enum IfcEnergyMeasure::type() const { return Type::IfcEnergyMeasure; }
@@ -6810,7 +6810,7 @@ IfcEnergyMeasure::IfcEnergyMeasure(double v) { IfcWritableEntity* e = new IfcWri
 IfcEnergyMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcFontStyle
-IfcUtil::ArgumentType IfcFontStyle::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcFontStyle::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcFontStyle::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcFontStyle::is(Type::Enum v) const { return v == IfcFontStyle::Class(); }
 Type::Enum IfcFontStyle::type() const { return Type::IfcFontStyle; }
@@ -6820,7 +6820,7 @@ IfcFontStyle::IfcFontStyle(std::string v) { IfcWritableEntity* e = new IfcWritab
 IfcFontStyle::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcFontVariant
-IfcUtil::ArgumentType IfcFontVariant::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcFontVariant::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcFontVariant::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcFontVariant::is(Type::Enum v) const { return v == IfcFontVariant::Class(); }
 Type::Enum IfcFontVariant::type() const { return Type::IfcFontVariant; }
@@ -6830,7 +6830,7 @@ IfcFontVariant::IfcFontVariant(std::string v) { IfcWritableEntity* e = new IfcWr
 IfcFontVariant::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcFontWeight
-IfcUtil::ArgumentType IfcFontWeight::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcFontWeight::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcFontWeight::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcFontWeight::is(Type::Enum v) const { return v == IfcFontWeight::Class(); }
 Type::Enum IfcFontWeight::type() const { return Type::IfcFontWeight; }
@@ -6840,7 +6840,7 @@ IfcFontWeight::IfcFontWeight(std::string v) { IfcWritableEntity* e = new IfcWrit
 IfcFontWeight::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcForceMeasure
-IfcUtil::ArgumentType IfcForceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcForceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcForceMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcForceMeasure::is(Type::Enum v) const { return v == IfcForceMeasure::Class(); }
 Type::Enum IfcForceMeasure::type() const { return Type::IfcForceMeasure; }
@@ -6850,7 +6850,7 @@ IfcForceMeasure::IfcForceMeasure(double v) { IfcWritableEntity* e = new IfcWrita
 IfcForceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcFrequencyMeasure
-IfcUtil::ArgumentType IfcFrequencyMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcFrequencyMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcFrequencyMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcFrequencyMeasure::is(Type::Enum v) const { return v == IfcFrequencyMeasure::Class(); }
 Type::Enum IfcFrequencyMeasure::type() const { return Type::IfcFrequencyMeasure; }
@@ -6860,7 +6860,7 @@ IfcFrequencyMeasure::IfcFrequencyMeasure(double v) { IfcWritableEntity* e = new 
 IfcFrequencyMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcGloballyUniqueId
-IfcUtil::ArgumentType IfcGloballyUniqueId::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcGloballyUniqueId::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcGloballyUniqueId::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcGloballyUniqueId::is(Type::Enum v) const { return v == IfcGloballyUniqueId::Class(); }
 Type::Enum IfcGloballyUniqueId::type() const { return Type::IfcGloballyUniqueId; }
@@ -6870,7 +6870,7 @@ IfcGloballyUniqueId::IfcGloballyUniqueId(std::string v) { IfcWritableEntity* e =
 IfcGloballyUniqueId::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcHeatFluxDensityMeasure
-IfcUtil::ArgumentType IfcHeatFluxDensityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcHeatFluxDensityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcHeatFluxDensityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcHeatFluxDensityMeasure::is(Type::Enum v) const { return v == IfcHeatFluxDensityMeasure::Class(); }
 Type::Enum IfcHeatFluxDensityMeasure::type() const { return Type::IfcHeatFluxDensityMeasure; }
@@ -6880,7 +6880,7 @@ IfcHeatFluxDensityMeasure::IfcHeatFluxDensityMeasure(double v) { IfcWritableEnti
 IfcHeatFluxDensityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcHeatingValueMeasure
-IfcUtil::ArgumentType IfcHeatingValueMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcHeatingValueMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcHeatingValueMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcHeatingValueMeasure::is(Type::Enum v) const { return v == IfcHeatingValueMeasure::Class(); }
 Type::Enum IfcHeatingValueMeasure::type() const { return Type::IfcHeatingValueMeasure; }
@@ -6890,7 +6890,7 @@ IfcHeatingValueMeasure::IfcHeatingValueMeasure(double v) { IfcWritableEntity* e 
 IfcHeatingValueMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcIdentifier
-IfcUtil::ArgumentType IfcIdentifier::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcIdentifier::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcIdentifier::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcIdentifier::is(Type::Enum v) const { return v == IfcIdentifier::Class(); }
 Type::Enum IfcIdentifier::type() const { return Type::IfcIdentifier; }
@@ -6900,7 +6900,7 @@ IfcIdentifier::IfcIdentifier(std::string v) { IfcWritableEntity* e = new IfcWrit
 IfcIdentifier::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcIlluminanceMeasure
-IfcUtil::ArgumentType IfcIlluminanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcIlluminanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcIlluminanceMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcIlluminanceMeasure::is(Type::Enum v) const { return v == IfcIlluminanceMeasure::Class(); }
 Type::Enum IfcIlluminanceMeasure::type() const { return Type::IfcIlluminanceMeasure; }
@@ -6910,7 +6910,7 @@ IfcIlluminanceMeasure::IfcIlluminanceMeasure(double v) { IfcWritableEntity* e = 
 IfcIlluminanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcInductanceMeasure
-IfcUtil::ArgumentType IfcInductanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcInductanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcInductanceMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcInductanceMeasure::is(Type::Enum v) const { return v == IfcInductanceMeasure::Class(); }
 Type::Enum IfcInductanceMeasure::type() const { return Type::IfcInductanceMeasure; }
@@ -6920,7 +6920,7 @@ IfcInductanceMeasure::IfcInductanceMeasure(double v) { IfcWritableEntity* e = ne
 IfcInductanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcInteger
-IfcUtil::ArgumentType IfcInteger::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcInteger::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcInteger::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcInteger::is(Type::Enum v) const { return v == IfcInteger::Class(); }
 Type::Enum IfcInteger::type() const { return Type::IfcInteger; }
@@ -6930,7 +6930,7 @@ IfcInteger::IfcInteger(int v) { IfcWritableEntity* e = new IfcWritableEntity(Typ
 IfcInteger::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcIntegerCountRateMeasure
-IfcUtil::ArgumentType IfcIntegerCountRateMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcIntegerCountRateMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcIntegerCountRateMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcIntegerCountRateMeasure::is(Type::Enum v) const { return v == IfcIntegerCountRateMeasure::Class(); }
 Type::Enum IfcIntegerCountRateMeasure::type() const { return Type::IfcIntegerCountRateMeasure; }
@@ -6940,7 +6940,7 @@ IfcIntegerCountRateMeasure::IfcIntegerCountRateMeasure(int v) { IfcWritableEntit
 IfcIntegerCountRateMeasure::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcIonConcentrationMeasure
-IfcUtil::ArgumentType IfcIonConcentrationMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcIonConcentrationMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcIonConcentrationMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcIonConcentrationMeasure::is(Type::Enum v) const { return v == IfcIonConcentrationMeasure::Class(); }
 Type::Enum IfcIonConcentrationMeasure::type() const { return Type::IfcIonConcentrationMeasure; }
@@ -6950,7 +6950,7 @@ IfcIonConcentrationMeasure::IfcIonConcentrationMeasure(double v) { IfcWritableEn
 IfcIonConcentrationMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcIsothermalMoistureCapacityMeasure
-IfcUtil::ArgumentType IfcIsothermalMoistureCapacityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcIsothermalMoistureCapacityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcIsothermalMoistureCapacityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcIsothermalMoistureCapacityMeasure::is(Type::Enum v) const { return v == IfcIsothermalMoistureCapacityMeasure::Class(); }
 Type::Enum IfcIsothermalMoistureCapacityMeasure::type() const { return Type::IfcIsothermalMoistureCapacityMeasure; }
@@ -6960,7 +6960,7 @@ IfcIsothermalMoistureCapacityMeasure::IfcIsothermalMoistureCapacityMeasure(doubl
 IfcIsothermalMoistureCapacityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcKinematicViscosityMeasure
-IfcUtil::ArgumentType IfcKinematicViscosityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcKinematicViscosityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcKinematicViscosityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcKinematicViscosityMeasure::is(Type::Enum v) const { return v == IfcKinematicViscosityMeasure::Class(); }
 Type::Enum IfcKinematicViscosityMeasure::type() const { return Type::IfcKinematicViscosityMeasure; }
@@ -6970,7 +6970,7 @@ IfcKinematicViscosityMeasure::IfcKinematicViscosityMeasure(double v) { IfcWritab
 IfcKinematicViscosityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLabel
-IfcUtil::ArgumentType IfcLabel::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcLabel::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcLabel::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcLabel::is(Type::Enum v) const { return v == IfcLabel::Class(); }
 Type::Enum IfcLabel::type() const { return Type::IfcLabel; }
@@ -6980,7 +6980,7 @@ IfcLabel::IfcLabel(std::string v) { IfcWritableEntity* e = new IfcWritableEntity
 IfcLabel::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLanguageId
-IfcUtil::ArgumentType IfcLanguageId::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcLanguageId::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcLanguageId::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcLanguageId::is(Type::Enum v) const { return v == Type::IfcLanguageId || IfcIdentifier::is(v); }
 Type::Enum IfcLanguageId::type() const { return Type::IfcLanguageId; }
@@ -6990,7 +6990,7 @@ IfcLanguageId::IfcLanguageId(std::string v) : IfcIdentifier((IfcAbstractEntity*)
 IfcLanguageId::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLengthMeasure
-IfcUtil::ArgumentType IfcLengthMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcLengthMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcLengthMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcLengthMeasure::is(Type::Enum v) const { return v == IfcLengthMeasure::Class(); }
 Type::Enum IfcLengthMeasure::type() const { return Type::IfcLengthMeasure; }
@@ -7000,7 +7000,7 @@ IfcLengthMeasure::IfcLengthMeasure(double v) { IfcWritableEntity* e = new IfcWri
 IfcLengthMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLinearForceMeasure
-IfcUtil::ArgumentType IfcLinearForceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcLinearForceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcLinearForceMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcLinearForceMeasure::is(Type::Enum v) const { return v == IfcLinearForceMeasure::Class(); }
 Type::Enum IfcLinearForceMeasure::type() const { return Type::IfcLinearForceMeasure; }
@@ -7010,7 +7010,7 @@ IfcLinearForceMeasure::IfcLinearForceMeasure(double v) { IfcWritableEntity* e = 
 IfcLinearForceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLinearMomentMeasure
-IfcUtil::ArgumentType IfcLinearMomentMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcLinearMomentMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcLinearMomentMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcLinearMomentMeasure::is(Type::Enum v) const { return v == IfcLinearMomentMeasure::Class(); }
 Type::Enum IfcLinearMomentMeasure::type() const { return Type::IfcLinearMomentMeasure; }
@@ -7020,7 +7020,7 @@ IfcLinearMomentMeasure::IfcLinearMomentMeasure(double v) { IfcWritableEntity* e 
 IfcLinearMomentMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLinearStiffnessMeasure
-IfcUtil::ArgumentType IfcLinearStiffnessMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcLinearStiffnessMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcLinearStiffnessMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcLinearStiffnessMeasure::is(Type::Enum v) const { return v == IfcLinearStiffnessMeasure::Class(); }
 Type::Enum IfcLinearStiffnessMeasure::type() const { return Type::IfcLinearStiffnessMeasure; }
@@ -7030,7 +7030,7 @@ IfcLinearStiffnessMeasure::IfcLinearStiffnessMeasure(double v) { IfcWritableEnti
 IfcLinearStiffnessMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLinearVelocityMeasure
-IfcUtil::ArgumentType IfcLinearVelocityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcLinearVelocityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcLinearVelocityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcLinearVelocityMeasure::is(Type::Enum v) const { return v == IfcLinearVelocityMeasure::Class(); }
 Type::Enum IfcLinearVelocityMeasure::type() const { return Type::IfcLinearVelocityMeasure; }
@@ -7040,7 +7040,7 @@ IfcLinearVelocityMeasure::IfcLinearVelocityMeasure(double v) { IfcWritableEntity
 IfcLinearVelocityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLogical
-IfcUtil::ArgumentType IfcLogical::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_BOOL; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcLogical::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_BOOL; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcLogical::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcLogical::is(Type::Enum v) const { return v == IfcLogical::Class(); }
 Type::Enum IfcLogical::type() const { return Type::IfcLogical; }
@@ -7050,7 +7050,7 @@ IfcLogical::IfcLogical(bool v) { IfcWritableEntity* e = new IfcWritableEntity(Ty
 IfcLogical::operator bool() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLuminousFluxMeasure
-IfcUtil::ArgumentType IfcLuminousFluxMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcLuminousFluxMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcLuminousFluxMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcLuminousFluxMeasure::is(Type::Enum v) const { return v == IfcLuminousFluxMeasure::Class(); }
 Type::Enum IfcLuminousFluxMeasure::type() const { return Type::IfcLuminousFluxMeasure; }
@@ -7060,7 +7060,7 @@ IfcLuminousFluxMeasure::IfcLuminousFluxMeasure(double v) { IfcWritableEntity* e 
 IfcLuminousFluxMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLuminousIntensityDistributionMeasure
-IfcUtil::ArgumentType IfcLuminousIntensityDistributionMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcLuminousIntensityDistributionMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcLuminousIntensityDistributionMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcLuminousIntensityDistributionMeasure::is(Type::Enum v) const { return v == IfcLuminousIntensityDistributionMeasure::Class(); }
 Type::Enum IfcLuminousIntensityDistributionMeasure::type() const { return Type::IfcLuminousIntensityDistributionMeasure; }
@@ -7070,7 +7070,7 @@ IfcLuminousIntensityDistributionMeasure::IfcLuminousIntensityDistributionMeasure
 IfcLuminousIntensityDistributionMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLuminousIntensityMeasure
-IfcUtil::ArgumentType IfcLuminousIntensityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcLuminousIntensityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcLuminousIntensityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcLuminousIntensityMeasure::is(Type::Enum v) const { return v == IfcLuminousIntensityMeasure::Class(); }
 Type::Enum IfcLuminousIntensityMeasure::type() const { return Type::IfcLuminousIntensityMeasure; }
@@ -7080,7 +7080,7 @@ IfcLuminousIntensityMeasure::IfcLuminousIntensityMeasure(double v) { IfcWritable
 IfcLuminousIntensityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMagneticFluxDensityMeasure
-IfcUtil::ArgumentType IfcMagneticFluxDensityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcMagneticFluxDensityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcMagneticFluxDensityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcMagneticFluxDensityMeasure::is(Type::Enum v) const { return v == IfcMagneticFluxDensityMeasure::Class(); }
 Type::Enum IfcMagneticFluxDensityMeasure::type() const { return Type::IfcMagneticFluxDensityMeasure; }
@@ -7090,7 +7090,7 @@ IfcMagneticFluxDensityMeasure::IfcMagneticFluxDensityMeasure(double v) { IfcWrit
 IfcMagneticFluxDensityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMagneticFluxMeasure
-IfcUtil::ArgumentType IfcMagneticFluxMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcMagneticFluxMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcMagneticFluxMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcMagneticFluxMeasure::is(Type::Enum v) const { return v == IfcMagneticFluxMeasure::Class(); }
 Type::Enum IfcMagneticFluxMeasure::type() const { return Type::IfcMagneticFluxMeasure; }
@@ -7100,7 +7100,7 @@ IfcMagneticFluxMeasure::IfcMagneticFluxMeasure(double v) { IfcWritableEntity* e 
 IfcMagneticFluxMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMassDensityMeasure
-IfcUtil::ArgumentType IfcMassDensityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcMassDensityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcMassDensityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcMassDensityMeasure::is(Type::Enum v) const { return v == IfcMassDensityMeasure::Class(); }
 Type::Enum IfcMassDensityMeasure::type() const { return Type::IfcMassDensityMeasure; }
@@ -7110,7 +7110,7 @@ IfcMassDensityMeasure::IfcMassDensityMeasure(double v) { IfcWritableEntity* e = 
 IfcMassDensityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMassFlowRateMeasure
-IfcUtil::ArgumentType IfcMassFlowRateMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcMassFlowRateMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcMassFlowRateMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcMassFlowRateMeasure::is(Type::Enum v) const { return v == IfcMassFlowRateMeasure::Class(); }
 Type::Enum IfcMassFlowRateMeasure::type() const { return Type::IfcMassFlowRateMeasure; }
@@ -7120,7 +7120,7 @@ IfcMassFlowRateMeasure::IfcMassFlowRateMeasure(double v) { IfcWritableEntity* e 
 IfcMassFlowRateMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMassMeasure
-IfcUtil::ArgumentType IfcMassMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcMassMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcMassMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcMassMeasure::is(Type::Enum v) const { return v == IfcMassMeasure::Class(); }
 Type::Enum IfcMassMeasure::type() const { return Type::IfcMassMeasure; }
@@ -7130,7 +7130,7 @@ IfcMassMeasure::IfcMassMeasure(double v) { IfcWritableEntity* e = new IfcWritabl
 IfcMassMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMassPerLengthMeasure
-IfcUtil::ArgumentType IfcMassPerLengthMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcMassPerLengthMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcMassPerLengthMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcMassPerLengthMeasure::is(Type::Enum v) const { return v == IfcMassPerLengthMeasure::Class(); }
 Type::Enum IfcMassPerLengthMeasure::type() const { return Type::IfcMassPerLengthMeasure; }
@@ -7140,7 +7140,7 @@ IfcMassPerLengthMeasure::IfcMassPerLengthMeasure(double v) { IfcWritableEntity* 
 IfcMassPerLengthMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcModulusOfElasticityMeasure
-IfcUtil::ArgumentType IfcModulusOfElasticityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcModulusOfElasticityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcModulusOfElasticityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcModulusOfElasticityMeasure::is(Type::Enum v) const { return v == IfcModulusOfElasticityMeasure::Class(); }
 Type::Enum IfcModulusOfElasticityMeasure::type() const { return Type::IfcModulusOfElasticityMeasure; }
@@ -7150,7 +7150,7 @@ IfcModulusOfElasticityMeasure::IfcModulusOfElasticityMeasure(double v) { IfcWrit
 IfcModulusOfElasticityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcModulusOfLinearSubgradeReactionMeasure
-IfcUtil::ArgumentType IfcModulusOfLinearSubgradeReactionMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcModulusOfLinearSubgradeReactionMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcModulusOfLinearSubgradeReactionMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcModulusOfLinearSubgradeReactionMeasure::is(Type::Enum v) const { return v == IfcModulusOfLinearSubgradeReactionMeasure::Class(); }
 Type::Enum IfcModulusOfLinearSubgradeReactionMeasure::type() const { return Type::IfcModulusOfLinearSubgradeReactionMeasure; }
@@ -7160,7 +7160,7 @@ IfcModulusOfLinearSubgradeReactionMeasure::IfcModulusOfLinearSubgradeReactionMea
 IfcModulusOfLinearSubgradeReactionMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcModulusOfRotationalSubgradeReactionMeasure
-IfcUtil::ArgumentType IfcModulusOfRotationalSubgradeReactionMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcModulusOfRotationalSubgradeReactionMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcModulusOfRotationalSubgradeReactionMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcModulusOfRotationalSubgradeReactionMeasure::is(Type::Enum v) const { return v == IfcModulusOfRotationalSubgradeReactionMeasure::Class(); }
 Type::Enum IfcModulusOfRotationalSubgradeReactionMeasure::type() const { return Type::IfcModulusOfRotationalSubgradeReactionMeasure; }
@@ -7170,7 +7170,7 @@ IfcModulusOfRotationalSubgradeReactionMeasure::IfcModulusOfRotationalSubgradeRea
 IfcModulusOfRotationalSubgradeReactionMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcModulusOfSubgradeReactionMeasure
-IfcUtil::ArgumentType IfcModulusOfSubgradeReactionMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcModulusOfSubgradeReactionMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcModulusOfSubgradeReactionMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcModulusOfSubgradeReactionMeasure::is(Type::Enum v) const { return v == IfcModulusOfSubgradeReactionMeasure::Class(); }
 Type::Enum IfcModulusOfSubgradeReactionMeasure::type() const { return Type::IfcModulusOfSubgradeReactionMeasure; }
@@ -7180,7 +7180,7 @@ IfcModulusOfSubgradeReactionMeasure::IfcModulusOfSubgradeReactionMeasure(double 
 IfcModulusOfSubgradeReactionMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMoistureDiffusivityMeasure
-IfcUtil::ArgumentType IfcMoistureDiffusivityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcMoistureDiffusivityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcMoistureDiffusivityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcMoistureDiffusivityMeasure::is(Type::Enum v) const { return v == IfcMoistureDiffusivityMeasure::Class(); }
 Type::Enum IfcMoistureDiffusivityMeasure::type() const { return Type::IfcMoistureDiffusivityMeasure; }
@@ -7190,7 +7190,7 @@ IfcMoistureDiffusivityMeasure::IfcMoistureDiffusivityMeasure(double v) { IfcWrit
 IfcMoistureDiffusivityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMolecularWeightMeasure
-IfcUtil::ArgumentType IfcMolecularWeightMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcMolecularWeightMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcMolecularWeightMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcMolecularWeightMeasure::is(Type::Enum v) const { return v == IfcMolecularWeightMeasure::Class(); }
 Type::Enum IfcMolecularWeightMeasure::type() const { return Type::IfcMolecularWeightMeasure; }
@@ -7200,7 +7200,7 @@ IfcMolecularWeightMeasure::IfcMolecularWeightMeasure(double v) { IfcWritableEnti
 IfcMolecularWeightMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMomentOfInertiaMeasure
-IfcUtil::ArgumentType IfcMomentOfInertiaMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcMomentOfInertiaMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcMomentOfInertiaMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcMomentOfInertiaMeasure::is(Type::Enum v) const { return v == IfcMomentOfInertiaMeasure::Class(); }
 Type::Enum IfcMomentOfInertiaMeasure::type() const { return Type::IfcMomentOfInertiaMeasure; }
@@ -7210,7 +7210,7 @@ IfcMomentOfInertiaMeasure::IfcMomentOfInertiaMeasure(double v) { IfcWritableEnti
 IfcMomentOfInertiaMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMonetaryMeasure
-IfcUtil::ArgumentType IfcMonetaryMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcMonetaryMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcMonetaryMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcMonetaryMeasure::is(Type::Enum v) const { return v == IfcMonetaryMeasure::Class(); }
 Type::Enum IfcMonetaryMeasure::type() const { return Type::IfcMonetaryMeasure; }
@@ -7220,7 +7220,7 @@ IfcMonetaryMeasure::IfcMonetaryMeasure(double v) { IfcWritableEntity* e = new If
 IfcMonetaryMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMonthInYearNumber
-IfcUtil::ArgumentType IfcMonthInYearNumber::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcMonthInYearNumber::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcMonthInYearNumber::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcMonthInYearNumber::is(Type::Enum v) const { return v == IfcMonthInYearNumber::Class(); }
 Type::Enum IfcMonthInYearNumber::type() const { return Type::IfcMonthInYearNumber; }
@@ -7230,7 +7230,7 @@ IfcMonthInYearNumber::IfcMonthInYearNumber(int v) { IfcWritableEntity* e = new I
 IfcMonthInYearNumber::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcNonNegativeLengthMeasure
-IfcUtil::ArgumentType IfcNonNegativeLengthMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcNonNegativeLengthMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcNonNegativeLengthMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcNonNegativeLengthMeasure::is(Type::Enum v) const { return v == Type::IfcNonNegativeLengthMeasure || IfcLengthMeasure::is(v); }
 Type::Enum IfcNonNegativeLengthMeasure::type() const { return Type::IfcNonNegativeLengthMeasure; }
@@ -7240,7 +7240,7 @@ IfcNonNegativeLengthMeasure::IfcNonNegativeLengthMeasure(double v) : IfcLengthMe
 IfcNonNegativeLengthMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcNormalisedRatioMeasure
-IfcUtil::ArgumentType IfcNormalisedRatioMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcNormalisedRatioMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcNormalisedRatioMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcNormalisedRatioMeasure::is(Type::Enum v) const { return v == Type::IfcNormalisedRatioMeasure || IfcRatioMeasure::is(v); }
 Type::Enum IfcNormalisedRatioMeasure::type() const { return Type::IfcNormalisedRatioMeasure; }
@@ -7250,7 +7250,7 @@ IfcNormalisedRatioMeasure::IfcNormalisedRatioMeasure(double v) : IfcRatioMeasure
 IfcNormalisedRatioMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcNumericMeasure
-IfcUtil::ArgumentType IfcNumericMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcNumericMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcNumericMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcNumericMeasure::is(Type::Enum v) const { return v == IfcNumericMeasure::Class(); }
 Type::Enum IfcNumericMeasure::type() const { return Type::IfcNumericMeasure; }
@@ -7260,7 +7260,7 @@ IfcNumericMeasure::IfcNumericMeasure(double v) { IfcWritableEntity* e = new IfcW
 IfcNumericMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPHMeasure
-IfcUtil::ArgumentType IfcPHMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcPHMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcPHMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcPHMeasure::is(Type::Enum v) const { return v == IfcPHMeasure::Class(); }
 Type::Enum IfcPHMeasure::type() const { return Type::IfcPHMeasure; }
@@ -7270,7 +7270,7 @@ IfcPHMeasure::IfcPHMeasure(double v) { IfcWritableEntity* e = new IfcWritableEnt
 IfcPHMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcParameterValue
-IfcUtil::ArgumentType IfcParameterValue::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcParameterValue::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcParameterValue::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcParameterValue::is(Type::Enum v) const { return v == IfcParameterValue::Class(); }
 Type::Enum IfcParameterValue::type() const { return Type::IfcParameterValue; }
@@ -7280,7 +7280,7 @@ IfcParameterValue::IfcParameterValue(double v) { IfcWritableEntity* e = new IfcW
 IfcParameterValue::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPlanarForceMeasure
-IfcUtil::ArgumentType IfcPlanarForceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcPlanarForceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcPlanarForceMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcPlanarForceMeasure::is(Type::Enum v) const { return v == IfcPlanarForceMeasure::Class(); }
 Type::Enum IfcPlanarForceMeasure::type() const { return Type::IfcPlanarForceMeasure; }
@@ -7290,7 +7290,7 @@ IfcPlanarForceMeasure::IfcPlanarForceMeasure(double v) { IfcWritableEntity* e = 
 IfcPlanarForceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPlaneAngleMeasure
-IfcUtil::ArgumentType IfcPlaneAngleMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcPlaneAngleMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcPlaneAngleMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcPlaneAngleMeasure::is(Type::Enum v) const { return v == IfcPlaneAngleMeasure::Class(); }
 Type::Enum IfcPlaneAngleMeasure::type() const { return Type::IfcPlaneAngleMeasure; }
@@ -7300,7 +7300,7 @@ IfcPlaneAngleMeasure::IfcPlaneAngleMeasure(double v) { IfcWritableEntity* e = ne
 IfcPlaneAngleMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPositiveLengthMeasure
-IfcUtil::ArgumentType IfcPositiveLengthMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcPositiveLengthMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcPositiveLengthMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcPositiveLengthMeasure::is(Type::Enum v) const { return v == Type::IfcPositiveLengthMeasure || IfcLengthMeasure::is(v); }
 Type::Enum IfcPositiveLengthMeasure::type() const { return Type::IfcPositiveLengthMeasure; }
@@ -7310,7 +7310,7 @@ IfcPositiveLengthMeasure::IfcPositiveLengthMeasure(double v) : IfcLengthMeasure(
 IfcPositiveLengthMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPositivePlaneAngleMeasure
-IfcUtil::ArgumentType IfcPositivePlaneAngleMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcPositivePlaneAngleMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcPositivePlaneAngleMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcPositivePlaneAngleMeasure::is(Type::Enum v) const { return v == Type::IfcPositivePlaneAngleMeasure || IfcPlaneAngleMeasure::is(v); }
 Type::Enum IfcPositivePlaneAngleMeasure::type() const { return Type::IfcPositivePlaneAngleMeasure; }
@@ -7320,7 +7320,7 @@ IfcPositivePlaneAngleMeasure::IfcPositivePlaneAngleMeasure(double v) : IfcPlaneA
 IfcPositivePlaneAngleMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPositiveRatioMeasure
-IfcUtil::ArgumentType IfcPositiveRatioMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcPositiveRatioMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcPositiveRatioMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcPositiveRatioMeasure::is(Type::Enum v) const { return v == Type::IfcPositiveRatioMeasure || IfcRatioMeasure::is(v); }
 Type::Enum IfcPositiveRatioMeasure::type() const { return Type::IfcPositiveRatioMeasure; }
@@ -7330,7 +7330,7 @@ IfcPositiveRatioMeasure::IfcPositiveRatioMeasure(double v) : IfcRatioMeasure((If
 IfcPositiveRatioMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPowerMeasure
-IfcUtil::ArgumentType IfcPowerMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcPowerMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcPowerMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcPowerMeasure::is(Type::Enum v) const { return v == IfcPowerMeasure::Class(); }
 Type::Enum IfcPowerMeasure::type() const { return Type::IfcPowerMeasure; }
@@ -7340,7 +7340,7 @@ IfcPowerMeasure::IfcPowerMeasure(double v) { IfcWritableEntity* e = new IfcWrita
 IfcPowerMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPresentableText
-IfcUtil::ArgumentType IfcPresentableText::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcPresentableText::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcPresentableText::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcPresentableText::is(Type::Enum v) const { return v == IfcPresentableText::Class(); }
 Type::Enum IfcPresentableText::type() const { return Type::IfcPresentableText; }
@@ -7350,7 +7350,7 @@ IfcPresentableText::IfcPresentableText(std::string v) { IfcWritableEntity* e = n
 IfcPresentableText::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPressureMeasure
-IfcUtil::ArgumentType IfcPressureMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcPressureMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcPressureMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcPressureMeasure::is(Type::Enum v) const { return v == IfcPressureMeasure::Class(); }
 Type::Enum IfcPressureMeasure::type() const { return Type::IfcPressureMeasure; }
@@ -7360,7 +7360,7 @@ IfcPressureMeasure::IfcPressureMeasure(double v) { IfcWritableEntity* e = new If
 IfcPressureMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPropertySetDefinitionSet
-IfcUtil::ArgumentType IfcPropertySetDefinitionSet::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_ENTITY_INSTANCE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcPropertySetDefinitionSet::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_ENTITY_INSTANCE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcPropertySetDefinitionSet::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcPropertySetDefinitionSet::is(Type::Enum v) const { return v == IfcPropertySetDefinitionSet::Class(); }
 Type::Enum IfcPropertySetDefinitionSet::type() const { return Type::IfcPropertySetDefinitionSet; }
@@ -7370,7 +7370,7 @@ IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(IfcTemplatedEntityList<
 IfcPropertySetDefinitionSet::operator IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr() const { IfcEntityList::ptr es = *entity->getArgument(0); return es->as<IfcPropertySetDefinition>(); }
 
 // Function implementations for IfcRadioActivityMeasure
-IfcUtil::ArgumentType IfcRadioActivityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcRadioActivityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcRadioActivityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcRadioActivityMeasure::is(Type::Enum v) const { return v == IfcRadioActivityMeasure::Class(); }
 Type::Enum IfcRadioActivityMeasure::type() const { return Type::IfcRadioActivityMeasure; }
@@ -7380,7 +7380,7 @@ IfcRadioActivityMeasure::IfcRadioActivityMeasure(double v) { IfcWritableEntity* 
 IfcRadioActivityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcRatioMeasure
-IfcUtil::ArgumentType IfcRatioMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcRatioMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcRatioMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcRatioMeasure::is(Type::Enum v) const { return v == IfcRatioMeasure::Class(); }
 Type::Enum IfcRatioMeasure::type() const { return Type::IfcRatioMeasure; }
@@ -7390,7 +7390,7 @@ IfcRatioMeasure::IfcRatioMeasure(double v) { IfcWritableEntity* e = new IfcWrita
 IfcRatioMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcReal
-IfcUtil::ArgumentType IfcReal::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcReal::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcReal::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcReal::is(Type::Enum v) const { return v == IfcReal::Class(); }
 Type::Enum IfcReal::type() const { return Type::IfcReal; }
@@ -7400,7 +7400,7 @@ IfcReal::IfcReal(double v) { IfcWritableEntity* e = new IfcWritableEntity(Type::
 IfcReal::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcRotationalFrequencyMeasure
-IfcUtil::ArgumentType IfcRotationalFrequencyMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcRotationalFrequencyMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcRotationalFrequencyMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcRotationalFrequencyMeasure::is(Type::Enum v) const { return v == IfcRotationalFrequencyMeasure::Class(); }
 Type::Enum IfcRotationalFrequencyMeasure::type() const { return Type::IfcRotationalFrequencyMeasure; }
@@ -7410,7 +7410,7 @@ IfcRotationalFrequencyMeasure::IfcRotationalFrequencyMeasure(double v) { IfcWrit
 IfcRotationalFrequencyMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcRotationalMassMeasure
-IfcUtil::ArgumentType IfcRotationalMassMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcRotationalMassMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcRotationalMassMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcRotationalMassMeasure::is(Type::Enum v) const { return v == IfcRotationalMassMeasure::Class(); }
 Type::Enum IfcRotationalMassMeasure::type() const { return Type::IfcRotationalMassMeasure; }
@@ -7420,7 +7420,7 @@ IfcRotationalMassMeasure::IfcRotationalMassMeasure(double v) { IfcWritableEntity
 IfcRotationalMassMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcRotationalStiffnessMeasure
-IfcUtil::ArgumentType IfcRotationalStiffnessMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcRotationalStiffnessMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcRotationalStiffnessMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcRotationalStiffnessMeasure::is(Type::Enum v) const { return v == IfcRotationalStiffnessMeasure::Class(); }
 Type::Enum IfcRotationalStiffnessMeasure::type() const { return Type::IfcRotationalStiffnessMeasure; }
@@ -7430,7 +7430,7 @@ IfcRotationalStiffnessMeasure::IfcRotationalStiffnessMeasure(double v) { IfcWrit
 IfcRotationalStiffnessMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSectionModulusMeasure
-IfcUtil::ArgumentType IfcSectionModulusMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcSectionModulusMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcSectionModulusMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcSectionModulusMeasure::is(Type::Enum v) const { return v == IfcSectionModulusMeasure::Class(); }
 Type::Enum IfcSectionModulusMeasure::type() const { return Type::IfcSectionModulusMeasure; }
@@ -7440,7 +7440,7 @@ IfcSectionModulusMeasure::IfcSectionModulusMeasure(double v) { IfcWritableEntity
 IfcSectionModulusMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSectionalAreaIntegralMeasure
-IfcUtil::ArgumentType IfcSectionalAreaIntegralMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcSectionalAreaIntegralMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcSectionalAreaIntegralMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcSectionalAreaIntegralMeasure::is(Type::Enum v) const { return v == IfcSectionalAreaIntegralMeasure::Class(); }
 Type::Enum IfcSectionalAreaIntegralMeasure::type() const { return Type::IfcSectionalAreaIntegralMeasure; }
@@ -7450,7 +7450,7 @@ IfcSectionalAreaIntegralMeasure::IfcSectionalAreaIntegralMeasure(double v) { Ifc
 IfcSectionalAreaIntegralMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcShearModulusMeasure
-IfcUtil::ArgumentType IfcShearModulusMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcShearModulusMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcShearModulusMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcShearModulusMeasure::is(Type::Enum v) const { return v == IfcShearModulusMeasure::Class(); }
 Type::Enum IfcShearModulusMeasure::type() const { return Type::IfcShearModulusMeasure; }
@@ -7460,7 +7460,7 @@ IfcShearModulusMeasure::IfcShearModulusMeasure(double v) { IfcWritableEntity* e 
 IfcShearModulusMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSolidAngleMeasure
-IfcUtil::ArgumentType IfcSolidAngleMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcSolidAngleMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcSolidAngleMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcSolidAngleMeasure::is(Type::Enum v) const { return v == IfcSolidAngleMeasure::Class(); }
 Type::Enum IfcSolidAngleMeasure::type() const { return Type::IfcSolidAngleMeasure; }
@@ -7470,7 +7470,7 @@ IfcSolidAngleMeasure::IfcSolidAngleMeasure(double v) { IfcWritableEntity* e = ne
 IfcSolidAngleMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSoundPowerLevelMeasure
-IfcUtil::ArgumentType IfcSoundPowerLevelMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcSoundPowerLevelMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcSoundPowerLevelMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcSoundPowerLevelMeasure::is(Type::Enum v) const { return v == IfcSoundPowerLevelMeasure::Class(); }
 Type::Enum IfcSoundPowerLevelMeasure::type() const { return Type::IfcSoundPowerLevelMeasure; }
@@ -7480,7 +7480,7 @@ IfcSoundPowerLevelMeasure::IfcSoundPowerLevelMeasure(double v) { IfcWritableEnti
 IfcSoundPowerLevelMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSoundPowerMeasure
-IfcUtil::ArgumentType IfcSoundPowerMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcSoundPowerMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcSoundPowerMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcSoundPowerMeasure::is(Type::Enum v) const { return v == IfcSoundPowerMeasure::Class(); }
 Type::Enum IfcSoundPowerMeasure::type() const { return Type::IfcSoundPowerMeasure; }
@@ -7490,7 +7490,7 @@ IfcSoundPowerMeasure::IfcSoundPowerMeasure(double v) { IfcWritableEntity* e = ne
 IfcSoundPowerMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSoundPressureLevelMeasure
-IfcUtil::ArgumentType IfcSoundPressureLevelMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcSoundPressureLevelMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcSoundPressureLevelMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcSoundPressureLevelMeasure::is(Type::Enum v) const { return v == IfcSoundPressureLevelMeasure::Class(); }
 Type::Enum IfcSoundPressureLevelMeasure::type() const { return Type::IfcSoundPressureLevelMeasure; }
@@ -7500,7 +7500,7 @@ IfcSoundPressureLevelMeasure::IfcSoundPressureLevelMeasure(double v) { IfcWritab
 IfcSoundPressureLevelMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSoundPressureMeasure
-IfcUtil::ArgumentType IfcSoundPressureMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcSoundPressureMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcSoundPressureMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcSoundPressureMeasure::is(Type::Enum v) const { return v == IfcSoundPressureMeasure::Class(); }
 Type::Enum IfcSoundPressureMeasure::type() const { return Type::IfcSoundPressureMeasure; }
@@ -7510,7 +7510,7 @@ IfcSoundPressureMeasure::IfcSoundPressureMeasure(double v) { IfcWritableEntity* 
 IfcSoundPressureMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSpecificHeatCapacityMeasure
-IfcUtil::ArgumentType IfcSpecificHeatCapacityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcSpecificHeatCapacityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcSpecificHeatCapacityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcSpecificHeatCapacityMeasure::is(Type::Enum v) const { return v == IfcSpecificHeatCapacityMeasure::Class(); }
 Type::Enum IfcSpecificHeatCapacityMeasure::type() const { return Type::IfcSpecificHeatCapacityMeasure; }
@@ -7520,7 +7520,7 @@ IfcSpecificHeatCapacityMeasure::IfcSpecificHeatCapacityMeasure(double v) { IfcWr
 IfcSpecificHeatCapacityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSpecularExponent
-IfcUtil::ArgumentType IfcSpecularExponent::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcSpecularExponent::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcSpecularExponent::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcSpecularExponent::is(Type::Enum v) const { return v == IfcSpecularExponent::Class(); }
 Type::Enum IfcSpecularExponent::type() const { return Type::IfcSpecularExponent; }
@@ -7530,7 +7530,7 @@ IfcSpecularExponent::IfcSpecularExponent(double v) { IfcWritableEntity* e = new 
 IfcSpecularExponent::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSpecularRoughness
-IfcUtil::ArgumentType IfcSpecularRoughness::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcSpecularRoughness::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcSpecularRoughness::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcSpecularRoughness::is(Type::Enum v) const { return v == IfcSpecularRoughness::Class(); }
 Type::Enum IfcSpecularRoughness::type() const { return Type::IfcSpecularRoughness; }
@@ -7540,7 +7540,7 @@ IfcSpecularRoughness::IfcSpecularRoughness(double v) { IfcWritableEntity* e = ne
 IfcSpecularRoughness::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTemperatureGradientMeasure
-IfcUtil::ArgumentType IfcTemperatureGradientMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcTemperatureGradientMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcTemperatureGradientMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcTemperatureGradientMeasure::is(Type::Enum v) const { return v == IfcTemperatureGradientMeasure::Class(); }
 Type::Enum IfcTemperatureGradientMeasure::type() const { return Type::IfcTemperatureGradientMeasure; }
@@ -7550,7 +7550,7 @@ IfcTemperatureGradientMeasure::IfcTemperatureGradientMeasure(double v) { IfcWrit
 IfcTemperatureGradientMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTemperatureRateOfChangeMeasure
-IfcUtil::ArgumentType IfcTemperatureRateOfChangeMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcTemperatureRateOfChangeMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcTemperatureRateOfChangeMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcTemperatureRateOfChangeMeasure::is(Type::Enum v) const { return v == IfcTemperatureRateOfChangeMeasure::Class(); }
 Type::Enum IfcTemperatureRateOfChangeMeasure::type() const { return Type::IfcTemperatureRateOfChangeMeasure; }
@@ -7560,7 +7560,7 @@ IfcTemperatureRateOfChangeMeasure::IfcTemperatureRateOfChangeMeasure(double v) {
 IfcTemperatureRateOfChangeMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcText
-IfcUtil::ArgumentType IfcText::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcText::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcText::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcText::is(Type::Enum v) const { return v == IfcText::Class(); }
 Type::Enum IfcText::type() const { return Type::IfcText; }
@@ -7570,7 +7570,7 @@ IfcText::IfcText(std::string v) { IfcWritableEntity* e = new IfcWritableEntity(T
 IfcText::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTextAlignment
-IfcUtil::ArgumentType IfcTextAlignment::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcTextAlignment::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcTextAlignment::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcTextAlignment::is(Type::Enum v) const { return v == IfcTextAlignment::Class(); }
 Type::Enum IfcTextAlignment::type() const { return Type::IfcTextAlignment; }
@@ -7580,7 +7580,7 @@ IfcTextAlignment::IfcTextAlignment(std::string v) { IfcWritableEntity* e = new I
 IfcTextAlignment::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTextDecoration
-IfcUtil::ArgumentType IfcTextDecoration::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcTextDecoration::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcTextDecoration::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcTextDecoration::is(Type::Enum v) const { return v == IfcTextDecoration::Class(); }
 Type::Enum IfcTextDecoration::type() const { return Type::IfcTextDecoration; }
@@ -7590,7 +7590,7 @@ IfcTextDecoration::IfcTextDecoration(std::string v) { IfcWritableEntity* e = new
 IfcTextDecoration::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTextFontName
-IfcUtil::ArgumentType IfcTextFontName::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcTextFontName::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcTextFontName::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcTextFontName::is(Type::Enum v) const { return v == IfcTextFontName::Class(); }
 Type::Enum IfcTextFontName::type() const { return Type::IfcTextFontName; }
@@ -7600,7 +7600,7 @@ IfcTextFontName::IfcTextFontName(std::string v) { IfcWritableEntity* e = new Ifc
 IfcTextFontName::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTextTransformation
-IfcUtil::ArgumentType IfcTextTransformation::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcTextTransformation::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcTextTransformation::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcTextTransformation::is(Type::Enum v) const { return v == IfcTextTransformation::Class(); }
 Type::Enum IfcTextTransformation::type() const { return Type::IfcTextTransformation; }
@@ -7610,7 +7610,7 @@ IfcTextTransformation::IfcTextTransformation(std::string v) { IfcWritableEntity*
 IfcTextTransformation::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcThermalAdmittanceMeasure
-IfcUtil::ArgumentType IfcThermalAdmittanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcThermalAdmittanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcThermalAdmittanceMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcThermalAdmittanceMeasure::is(Type::Enum v) const { return v == IfcThermalAdmittanceMeasure::Class(); }
 Type::Enum IfcThermalAdmittanceMeasure::type() const { return Type::IfcThermalAdmittanceMeasure; }
@@ -7620,7 +7620,7 @@ IfcThermalAdmittanceMeasure::IfcThermalAdmittanceMeasure(double v) { IfcWritable
 IfcThermalAdmittanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcThermalConductivityMeasure
-IfcUtil::ArgumentType IfcThermalConductivityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcThermalConductivityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcThermalConductivityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcThermalConductivityMeasure::is(Type::Enum v) const { return v == IfcThermalConductivityMeasure::Class(); }
 Type::Enum IfcThermalConductivityMeasure::type() const { return Type::IfcThermalConductivityMeasure; }
@@ -7630,7 +7630,7 @@ IfcThermalConductivityMeasure::IfcThermalConductivityMeasure(double v) { IfcWrit
 IfcThermalConductivityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcThermalExpansionCoefficientMeasure
-IfcUtil::ArgumentType IfcThermalExpansionCoefficientMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcThermalExpansionCoefficientMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcThermalExpansionCoefficientMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcThermalExpansionCoefficientMeasure::is(Type::Enum v) const { return v == IfcThermalExpansionCoefficientMeasure::Class(); }
 Type::Enum IfcThermalExpansionCoefficientMeasure::type() const { return Type::IfcThermalExpansionCoefficientMeasure; }
@@ -7640,7 +7640,7 @@ IfcThermalExpansionCoefficientMeasure::IfcThermalExpansionCoefficientMeasure(dou
 IfcThermalExpansionCoefficientMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcThermalResistanceMeasure
-IfcUtil::ArgumentType IfcThermalResistanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcThermalResistanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcThermalResistanceMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcThermalResistanceMeasure::is(Type::Enum v) const { return v == IfcThermalResistanceMeasure::Class(); }
 Type::Enum IfcThermalResistanceMeasure::type() const { return Type::IfcThermalResistanceMeasure; }
@@ -7650,7 +7650,7 @@ IfcThermalResistanceMeasure::IfcThermalResistanceMeasure(double v) { IfcWritable
 IfcThermalResistanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcThermalTransmittanceMeasure
-IfcUtil::ArgumentType IfcThermalTransmittanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcThermalTransmittanceMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcThermalTransmittanceMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcThermalTransmittanceMeasure::is(Type::Enum v) const { return v == IfcThermalTransmittanceMeasure::Class(); }
 Type::Enum IfcThermalTransmittanceMeasure::type() const { return Type::IfcThermalTransmittanceMeasure; }
@@ -7660,7 +7660,7 @@ IfcThermalTransmittanceMeasure::IfcThermalTransmittanceMeasure(double v) { IfcWr
 IfcThermalTransmittanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcThermodynamicTemperatureMeasure
-IfcUtil::ArgumentType IfcThermodynamicTemperatureMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcThermodynamicTemperatureMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcThermodynamicTemperatureMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcThermodynamicTemperatureMeasure::is(Type::Enum v) const { return v == IfcThermodynamicTemperatureMeasure::Class(); }
 Type::Enum IfcThermodynamicTemperatureMeasure::type() const { return Type::IfcThermodynamicTemperatureMeasure; }
@@ -7670,7 +7670,7 @@ IfcThermodynamicTemperatureMeasure::IfcThermodynamicTemperatureMeasure(double v)
 IfcThermodynamicTemperatureMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTime
-IfcUtil::ArgumentType IfcTime::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcTime::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcTime::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcTime::is(Type::Enum v) const { return v == IfcTime::Class(); }
 Type::Enum IfcTime::type() const { return Type::IfcTime; }
@@ -7680,7 +7680,7 @@ IfcTime::IfcTime(std::string v) { IfcWritableEntity* e = new IfcWritableEntity(T
 IfcTime::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTimeMeasure
-IfcUtil::ArgumentType IfcTimeMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcTimeMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcTimeMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcTimeMeasure::is(Type::Enum v) const { return v == IfcTimeMeasure::Class(); }
 Type::Enum IfcTimeMeasure::type() const { return Type::IfcTimeMeasure; }
@@ -7690,7 +7690,7 @@ IfcTimeMeasure::IfcTimeMeasure(double v) { IfcWritableEntity* e = new IfcWritabl
 IfcTimeMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTimeStamp
-IfcUtil::ArgumentType IfcTimeStamp::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcTimeStamp::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_INT; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcTimeStamp::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcTimeStamp::is(Type::Enum v) const { return v == IfcTimeStamp::Class(); }
 Type::Enum IfcTimeStamp::type() const { return Type::IfcTimeStamp; }
@@ -7700,7 +7700,7 @@ IfcTimeStamp::IfcTimeStamp(int v) { IfcWritableEntity* e = new IfcWritableEntity
 IfcTimeStamp::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTorqueMeasure
-IfcUtil::ArgumentType IfcTorqueMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcTorqueMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcTorqueMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcTorqueMeasure::is(Type::Enum v) const { return v == IfcTorqueMeasure::Class(); }
 Type::Enum IfcTorqueMeasure::type() const { return Type::IfcTorqueMeasure; }
@@ -7710,7 +7710,7 @@ IfcTorqueMeasure::IfcTorqueMeasure(double v) { IfcWritableEntity* e = new IfcWri
 IfcTorqueMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcURIReference
-IfcUtil::ArgumentType IfcURIReference::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcURIReference::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_STRING; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcURIReference::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcURIReference::is(Type::Enum v) const { return v == IfcURIReference::Class(); }
 Type::Enum IfcURIReference::type() const { return Type::IfcURIReference; }
@@ -7720,7 +7720,7 @@ IfcURIReference::IfcURIReference(std::string v) { IfcWritableEntity* e = new Ifc
 IfcURIReference::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcVaporPermeabilityMeasure
-IfcUtil::ArgumentType IfcVaporPermeabilityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcVaporPermeabilityMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcVaporPermeabilityMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcVaporPermeabilityMeasure::is(Type::Enum v) const { return v == IfcVaporPermeabilityMeasure::Class(); }
 Type::Enum IfcVaporPermeabilityMeasure::type() const { return Type::IfcVaporPermeabilityMeasure; }
@@ -7730,7 +7730,7 @@ IfcVaporPermeabilityMeasure::IfcVaporPermeabilityMeasure(double v) { IfcWritable
 IfcVaporPermeabilityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcVolumeMeasure
-IfcUtil::ArgumentType IfcVolumeMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcVolumeMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcVolumeMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcVolumeMeasure::is(Type::Enum v) const { return v == IfcVolumeMeasure::Class(); }
 Type::Enum IfcVolumeMeasure::type() const { return Type::IfcVolumeMeasure; }
@@ -7740,7 +7740,7 @@ IfcVolumeMeasure::IfcVolumeMeasure(double v) { IfcWritableEntity* e = new IfcWri
 IfcVolumeMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcVolumetricFlowRateMeasure
-IfcUtil::ArgumentType IfcVolumetricFlowRateMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcVolumetricFlowRateMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcVolumetricFlowRateMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcVolumetricFlowRateMeasure::is(Type::Enum v) const { return v == IfcVolumetricFlowRateMeasure::Class(); }
 Type::Enum IfcVolumetricFlowRateMeasure::type() const { return Type::IfcVolumetricFlowRateMeasure; }
@@ -7750,7 +7750,7 @@ IfcVolumetricFlowRateMeasure::IfcVolumetricFlowRateMeasure(double v) { IfcWritab
 IfcVolumetricFlowRateMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcWarpingConstantMeasure
-IfcUtil::ArgumentType IfcWarpingConstantMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcWarpingConstantMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcWarpingConstantMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcWarpingConstantMeasure::is(Type::Enum v) const { return v == IfcWarpingConstantMeasure::Class(); }
 Type::Enum IfcWarpingConstantMeasure::type() const { return Type::IfcWarpingConstantMeasure; }
@@ -7760,7 +7760,7 @@ IfcWarpingConstantMeasure::IfcWarpingConstantMeasure(double v) { IfcWritableEnti
 IfcWarpingConstantMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcWarpingMomentMeasure
-IfcUtil::ArgumentType IfcWarpingMomentMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcException("argument out of range"); } }
+IfcUtil::ArgumentType IfcWarpingMomentMeasure::getArgumentType(unsigned int i) const { if (i == 0) { return IfcUtil::Argument_DOUBLE; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 Argument* IfcWarpingMomentMeasure::getArgument(unsigned int i) const { return entity->getArgument(i); }
 bool IfcWarpingMomentMeasure::is(Type::Enum v) const { return v == IfcWarpingMomentMeasure::Class(); }
 Type::Enum IfcWarpingMomentMeasure::type() const { return Type::IfcWarpingMomentMeasure; }

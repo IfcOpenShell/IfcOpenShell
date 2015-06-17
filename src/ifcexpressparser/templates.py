@@ -338,7 +338,7 @@ public:
 """
 
 simpletype_impl_comment = "// Function implementations for %(name)s"
-simpletype_impl_argument_type = "if (i == 0) { return %(attr_type)s; } else { throw IfcParse::IfcException(\"argument out of range\"); }"
+simpletype_impl_argument_type = "if (i == 0) { return %(attr_type)s; } else { throw IfcParse::IfcAttributeOutOfRangeException(\"Argument index out of range\"); }"
 simpletype_impl_argument = "return entity->getArgument(i);"
 simpletype_impl_is_with_supertype = "return v == Type::%(class_name)s || %(superclass)s::is(v);"
 simpletype_impl_is_without_supertype = "return v == %(class_name)s::Class();"

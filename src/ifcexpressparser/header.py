@@ -95,17 +95,17 @@ class Header:
                     argument_start = argument_count - len(type.attributes)
 
                     argument_name_function_body_switch_stmt = " switch (i) {%s}"%("".join(['case %d: return "%s"; '%(i+argument_start, attr.name) for i, attr in enumerate(type.attributes)])) if len(type.attributes) else ""
-                    argument_name_function_body_tail = (" return %s::getArgumentName(i); "%type.supertypes[0]) if len(type.supertypes) == 1 else ' throw IfcParse::IfcException("argument out of range"); '
+                    argument_name_function_body_tail = (" return %s::getArgumentName(i); "%type.supertypes[0]) if len(type.supertypes) == 1 else ' throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); '
 
                     argument_name_function_body = argument_name_function_body_switch_stmt + argument_name_function_body_tail
 
                     argument_type_function_body_switch_stmt = " switch (i) {%s}"%("".join(['case %d: return %s; '%(i+argument_start, mapping.make_argument_type(attr)) for i, attr in enumerate(type.attributes)])) if len(type.attributes) else ""
-                    argument_type_function_body_tail = (" return %s::getArgumentType(i); "%type.supertypes[0]) if len(type.supertypes) == 1 else ' throw IfcParse::IfcException("argument out of range"); '
+                    argument_type_function_body_tail = (" return %s::getArgumentType(i); "%type.supertypes[0]) if len(type.supertypes) == 1 else ' throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); '
 
                     argument_type_function_body = argument_type_function_body_switch_stmt + argument_type_function_body_tail
                     
                     argument_entity_function_body_switch_stmt = " switch (i) {%s}"%("".join(['case %d: return %s; '%(i+argument_start, mapping.make_argument_entity(attr)) for i, attr in enumerate(type.attributes)])) if len(type.attributes) else ""
-                    argument_entity_function_body_tail = (" return %s::getArgumentEntity(i); "%type.supertypes[0]) if len(type.supertypes) == 1 else ' throw IfcParse::IfcException("argument out of range"); '
+                    argument_entity_function_body_tail = (" return %s::getArgumentEntity(i); "%type.supertypes[0]) if len(type.supertypes) == 1 else ' throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); '
 
                     argument_entity_function_body = argument_entity_function_body_switch_stmt + argument_entity_function_body_tail
 
