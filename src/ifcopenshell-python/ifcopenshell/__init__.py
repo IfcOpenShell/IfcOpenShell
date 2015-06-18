@@ -75,10 +75,14 @@ class entity_instance(object):
 	def __getitem__(self, key):
 		return entity_instance.wrap_value(self.wrapped_data.get_argument(key))
 	def __setitem__(self, idx, value):
-		attr_type = self.attribute_type(idx).title().replace(' ', '')
-		attr_type = attr_type.replace('Binary', 'String')
-		attr_type = attr_type.replace('Enumeration', 'String')
-		getattr(self.wrapped_data, "setArgumentAs%s" % attr_type)(idx, entity_instance.unwrap_value(value))
+		if value is None:
+			self.wrapped_data.setArgumentAsNull(idx)
+		else:
+			attr_type = self.attribute_type(idx).title().replace(' ', '')
+			attr_type = attr_type.replace('Binary', 'String')
+			attr_type = attr_type.replace('Enumeration', 'String')
+			getattr(self.wrapped_data, "setArgumentAs%s" % attr_type)(idx, entity_instance.unwrap_value(value))
+		return value
 	def __len__(self): return len(self.wrapped_data)
 	def __repr__(self): return repr(self.wrapped_data)
 	def is_a(self, *args): return self.wrapped_data.is_a(*args)
