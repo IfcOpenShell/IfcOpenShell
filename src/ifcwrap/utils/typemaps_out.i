@@ -22,49 +22,63 @@
 		$result = Py_None;
 	} else {
 	switch(type) {
-		case IfcUtil::Argument_INT:
-			$result = pythonize((int) arg);
-		break;
-		case IfcUtil::Argument_BOOL:
-			$result = pythonize((bool) arg);
-		break; 
-		case IfcUtil::Argument_DOUBLE:
-			$result = pythonize((double) arg);
-		break;
+		case IfcUtil::Argument_INT: {
+			int v = arg;
+			$result = pythonize(v);
+		break; }
+		case IfcUtil::Argument_BOOL: {
+			bool v = arg;
+			$result = pythonize(v);
+		break; }
+		case IfcUtil::Argument_DOUBLE: {
+			double v = arg;
+			$result = pythonize(v);
+		break; }
 		case IfcUtil::Argument_ENUMERATION:
-		case IfcUtil::Argument_STRING:
-			$result = pythonize((std::string) arg);
-		break;
-		case IfcUtil::Argument_BINARY:
-			$result = pythonize((boost::dynamic_bitset<>) arg);
-		break;
-		case IfcUtil::Argument_AGGREGATE_OF_INT:
-			$result = pythonize_vector((std::vector<int>) arg);
-		break;
-		case IfcUtil::Argument_AGGREGATE_OF_DOUBLE:
-			$result = pythonize_vector((std::vector<double>) arg);
-		break;
-		case IfcUtil::Argument_AGGREGATE_OF_STRING:
-			$result = pythonize_vector((std::vector<std::string>) arg);
-		break;
-		case IfcUtil::Argument_ENTITY_INSTANCE:
-			$result = pythonize((IfcUtil::IfcBaseClass*) arg);
-		break;
-		case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE:
-			$result = pythonize((IfcEntityList::ptr) arg);
-		break;
-		case IfcUtil::Argument_AGGREGATE_OF_BINARY:
-			$result = pythonize_vector((std::vector< boost::dynamic_bitset<> >) arg);
-		break;
-		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT:
-			$result = pythonize_vector2((std::vector< std::vector<int> >) arg);
-		break;
-		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE:
-			$result = pythonize_vector2((std::vector< std::vector<double> >) arg);
-		break;
-		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE:
-			$result = pythonize((IfcEntityListList::ptr) arg);
-		break;
+		case IfcUtil::Argument_STRING: {
+			std::string v = arg;
+			$result = pythonize(v);
+		break; }
+		case IfcUtil::Argument_BINARY: {
+			boost::dynamic_bitset<> v = arg;
+			$result = pythonize(v);
+		break; }
+		case IfcUtil::Argument_AGGREGATE_OF_INT: {
+			std::vector<int> v = arg;
+			$result = pythonize_vector(v);
+		break; }
+		case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
+			std::vector<double> v = arg;
+			$result = pythonize_vector(v);
+		break; }
+		case IfcUtil::Argument_AGGREGATE_OF_STRING: {
+			std::vector<std::string> v = arg;
+			$result = pythonize_vector(v);
+		break; }
+		case IfcUtil::Argument_ENTITY_INSTANCE: {
+			IfcUtil::IfcBaseClass* v = arg;
+			$result = pythonize(v);
+		break; }
+		case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
+			IfcEntityList::ptr v = arg;
+			$result = pythonize(v);
+		break; }
+		case IfcUtil::Argument_AGGREGATE_OF_BINARY: {
+			std::vector< boost::dynamic_bitset<> > v = arg;
+			$result = pythonize_vector(v);
+		break; }
+		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
+			std::vector< std::vector<int> > v = arg;
+			$result = pythonize_vector2(v);
+		break; }
+		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
+			std::vector< std::vector<double> > v = arg;
+			$result = pythonize_vector2(v);
+		break; }
+		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
+			IfcEntityListList::ptr v = arg;
+			$result = pythonize(v);
+		break; }
 		case IfcUtil::Argument_UNKNOWN:
 		default:
 			SWIG_exception(SWIG_RuntimeError,"Unknown attribute type");
