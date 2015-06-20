@@ -19,6 +19,7 @@
 
 import os
 import sys
+import numbers
 import platform
 import functools
 import itertools
@@ -66,7 +67,7 @@ class entity_instance(object):
 		is_instance = lambda e: isinstance(e, entity_instance)
 		return entity_instance.walk(is_instance, unwrap, v)
 	def attribute_type(self, attr):
-		attr_idx = attr if isinstance(attr, int) else self.wrapped_data.get_argument_index(attr)
+		attr_idx = attr if isinstance(attr, numbers.Integral) else self.wrapped_data.get_argument_index(attr)
 		return self.wrapped_data.get_argument_type(attr_idx)
 	def attribute_name(self, attr_idx):
 		return self.wrapped_data.get_argument_name(attr_idx)
@@ -110,7 +111,7 @@ class file(object):
 		if attr[0:6] == 'create': return functools.partial(self.create_entity,attr[6:])
 		else: return getattr(self.wrapped_data, attr)
 	def __getitem__(self, key):
-		if isinstance(key, int):
+		if isinstance(key, numbers.Integral):
 			return entity_instance(self.wrapped_data.by_id(key))
 		elif isinstance(key, str):
 			return entity_instance(self.wrapped_data.by_guid(key))
