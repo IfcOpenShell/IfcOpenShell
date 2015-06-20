@@ -459,16 +459,20 @@ namespace IfcGeom {
 			kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.sew_shells() ? 1000 : -1);
 			kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.include_curves() ? (settings.exclude_solids_and_surfaces() ? -1. : 0.) : +1.));
 		}
+
+		bool owns_ifc_file;
 	public:
 		Iterator(const IteratorSettings& settings, IfcParse::IfcFile* file)
 			: settings(settings)
 			, ifc_file(file)
+			, owns_ifc_file(false)
 		{
 			_initialize();
 		}
 		Iterator(const IteratorSettings& settings, const std::string& filename)
 			: settings(settings)
 			, ifc_file(new IfcParse::IfcFile)
+			, owns_ifc_file(true)
 		{
 			ifc_file->Init(filename);
 			_initialize();
@@ -476,6 +480,7 @@ namespace IfcGeom {
 		Iterator(const IteratorSettings& settings, void* data, int length)
 			: settings(settings)
 			, ifc_file(new IfcParse::IfcFile)
+			, owns_ifc_file(true)
 		{
 			ifc_file->Init(data, length);
 			_initialize();
@@ -483,14 +488,16 @@ namespace IfcGeom {
 		Iterator(const IteratorSettings& settings, std::istream& filestream, int length)
 			: settings(settings)
 			, ifc_file(new IfcParse::IfcFile)
+			, owns_ifc_file(true)
 		{
 			ifc_file->Init(filestream, length);
 			_initialize();
 		}
 
 		~Iterator() {
-			// TODO: Correctly implement destructor for IfcFile
-			delete ifc_file;
+			if (owns_ifc_file) {
+				delete ifc_file;
+			}
 
 			delete current_triangulation;
 			current_triangulation = 0;
