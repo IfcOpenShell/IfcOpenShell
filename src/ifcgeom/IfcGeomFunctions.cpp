@@ -134,7 +134,9 @@ bool IfcGeom::Kernel::is_compound(const TopoDS_Shape& shape) {
 
 const TopoDS_Shape& IfcGeom::Kernel::ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid) {
 	const bool is_comp = is_compound(shape);
-	if ( ! is_comp ) return shape;
+	if (!is_comp) {
+		return solid = shape;
+	}
 	create_solid_from_compound(shape, solid);
 	
 	// If the SEW_SHELLS option had been set this precision had been applied
