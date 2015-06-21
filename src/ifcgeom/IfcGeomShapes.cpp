@@ -619,7 +619,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCurveBoundedPlane* l, TopoDS_S
 	IfcGeom::Kernel::convert(l->BasisSurface(), pln);
 
 	gp_Trsf trsf;
-	trsf.SetTransformation(pln.Position());
+	trsf.SetTransformation(pln.Position(), gp::XOY());
 	
 	TopoDS_Wire outer;
 	convert_wire(l->OuterBoundary(), outer);
