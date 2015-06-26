@@ -97,10 +97,11 @@
 		$result = pythonize_vector<template_type>($1);
 	}
 	%typemap(out) const std::vector<template_type>& {
-		$result = pythonize_vector<template_type>($1);
+		$result = pythonize_vector<template_type>(*$1);
 	}
 %enddef
 
 CREATE_VECTOR_TYPEMAP_OUT(int)
+CREATE_VECTOR_TYPEMAP_OUT(unsigned int)
 CREATE_VECTOR_TYPEMAP_OUT(double)
 CREATE_VECTOR_TYPEMAP_OUT(std::string)

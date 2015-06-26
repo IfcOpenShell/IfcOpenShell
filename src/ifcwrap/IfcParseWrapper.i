@@ -66,12 +66,6 @@ namespace IfcUtil {
 %rename("entity_instance") IfcLateBoundEntity;
 %rename("file") IfcFile;
 
-%include "utils/type_conversion.i"
-
-%include "utils/typemaps_in.i"
-
-%include "utils/typemaps_out.i"
-
 %extend IfcParse::IfcFile {
 	IfcParse::IfcLateBoundEntity* by_id(unsigned id) {
 		return (IfcParse::IfcLateBoundEntity*) $self->entityById(id);

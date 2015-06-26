@@ -107,6 +107,7 @@
 // Conversion functions to convert STL vectors into Python objects
 %{
 	PyObject* pythonize(const int& t)                   { return PyInt_FromLong(t);                                                                  }
+	PyObject* pythonize(const unsigned int& t)          { return PyInt_FromLong(t);                                                                  }
 	PyObject* pythonize(const bool& t)                  { return PyBool_FromLong(t);                                                                 }
 	PyObject* pythonize(const double& t)                { return PyFloat_FromDouble(t);                                                              }
 	PyObject* pythonize(const std::string& t)           { return PyString_FromString(t.c_str());                                                     }
