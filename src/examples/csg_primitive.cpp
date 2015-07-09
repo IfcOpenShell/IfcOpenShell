@@ -32,8 +32,8 @@
 #include "../ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
-typedef IfcWrite::IfcGuidHelper guid;
-boost::none_t const null = (static_cast<boost::none_t>(0));
+typedef IfcParse::IfcGlobalId guid;
+boost::none_t const null = boost::none;
 
 class Node {
 private:
@@ -135,7 +135,7 @@ public:
 int main(int argc, char** argv) {
 	const char filename[] = "IfcCsgPrimitive.ifc";
 	IfcHierarchyHelper file;
-	file.filename(filename);
+	file.header().file_name().name(filename);
 
 	IfcSchema::IfcRepresentationItem* csg1 = Node::Box(8000.,6000.,3000.).subtract(
 		Node::Box(7600.,5600.,2800.).move(200.,200.,200.)
@@ -171,8 +171,8 @@ int main(int argc, char** argv) {
 
 	product->setObjectPlacement(file.addLocalPlacement());
 		
-	IfcSchema::IfcRepresentation::list reps (new IfcTemplatedEntityList<IfcSchema::IfcRepresentation>());
-	IfcSchema::IfcRepresentationItem::list items (new IfcTemplatedEntityList<IfcSchema::IfcRepresentationItem>());
+	IfcSchema::IfcRepresentation::list::ptr reps (new IfcSchema::IfcRepresentation::list());
+	IfcSchema::IfcRepresentationItem::list::ptr items (new IfcSchema::IfcRepresentationItem::list());
 		
 	items->push(csg1);
 	items->push(csg2);
@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
 		file.getSingle<IfcSchema::IfcRepresentationContext>(), S("Body"), S("CSG"), items);
 	reps->push(rep);
 
-	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
+	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(null, null, reps);
 	file.addEntity(rep);
 	file.addEntity(shape);
 		

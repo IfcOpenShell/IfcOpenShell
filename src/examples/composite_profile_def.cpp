@@ -32,19 +32,19 @@
 #include "../ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
-typedef IfcWrite::IfcGuidHelper guid;
-boost::none_t const null = (static_cast<boost::none_t>(0));
+typedef IfcParse::IfcGlobalId guid;
+boost::none_t const null = boost::none;
 
 int main(int argc, char** argv) {
 	const char filename[] = "IfcCompositeProfileDef.ifc";
 	IfcHierarchyHelper file;
-	file.filename(filename);
+	file.header().file_name().name(filename);
 
 	double coords1[] = {100.0, 0.0};
 	double coords2[] = {200.0, 0.0};
 	double coords3[] = {300.0, 0.0};
 
-	IfcSchema::IfcProfileDef::list profiles (new IfcTemplatedEntityList<IfcSchema::IfcProfileDef>());
+	IfcSchema::IfcProfileDef::list::ptr profiles (new IfcSchema::IfcProfileDef::list());
 
 	IfcSchema::IfcCartesianTransformationOperator2D* transform1 = new IfcSchema::IfcCartesianTransformationOperator2D(file.addDoublet<IfcSchema::IfcDirection>(1, 0), file.addDoublet<IfcSchema::IfcDirection>(0, -1), file.addDoublet<IfcSchema::IfcCartesianPoint>(40, 0), null);
 	IfcSchema::IfcCartesianTransformationOperator2D* transform2 = new IfcSchema::IfcCartesianTransformationOperator2D(file.addDoublet<IfcSchema::IfcDirection>(0, -1), file.addDoublet<IfcSchema::IfcDirection>(1, 0), file.addDoublet<IfcSchema::IfcCartesianPoint>(40, 0), 0.3);
@@ -98,15 +98,15 @@ int main(int argc, char** argv) {
 	file.addEntity(composite);
 	file.addEntity(solid);
 		
-	IfcSchema::IfcRepresentation::list reps (new IfcTemplatedEntityList<IfcSchema::IfcRepresentation>());
-	IfcSchema::IfcRepresentationItem::list items (new IfcTemplatedEntityList<IfcSchema::IfcRepresentationItem>());
+	IfcSchema::IfcRepresentation::list::ptr reps (new IfcSchema::IfcRepresentation::list());
+	IfcSchema::IfcRepresentationItem::list::ptr items (new IfcSchema::IfcRepresentationItem::list());
 		
 	items->push(solid);
 	IfcSchema::IfcShapeRepresentation* rep = new IfcSchema::IfcShapeRepresentation(
 		file.getSingle<IfcSchema::IfcRepresentationContext>(), S("Body"), S("SweptSolid"), items);
 	reps->push(rep);
 
-	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
+	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
 	file.addEntity(rep);
 	file.addEntity(shape);
 		
