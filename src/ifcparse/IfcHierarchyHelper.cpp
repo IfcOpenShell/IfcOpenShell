@@ -278,7 +278,7 @@ IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addExtrudedPolyline(co
 		? context 
 		: getRepresentationContext("Model"), std::string("Body"), std::string("SweptSolid"), items);
 	reps->push(rep);
-	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);		
+	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
 	addEntity(rep);
 	addEntity(shape);
 	addExtrudedPolyline(rep, points, h, place, place2, dir, context);
@@ -292,7 +292,7 @@ void IfcHierarchyHelper::addBox(IfcSchema::IfcShapeRepresentation* rep, double w
 {
 	if (false) {
 		IfcSchema::IfcRectangleProfileDef* profile = new IfcSchema::IfcRectangleProfileDef(
-			IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, 0, place ? place : addPlacement2d(), w, d);
+			IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, boost::none, place ? place : addPlacement2d(), w, d);
 		IfcSchema::IfcExtrudedAreaSolid* solid = new IfcSchema::IfcExtrudedAreaSolid(profile, 
 			place2 ? place2 : addPlacement3d(), dir ? dir : addTriplet<IfcSchema::IfcDirection>(0, 0, 1), h);
 
@@ -333,7 +333,7 @@ IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addBox(double w, doubl
 	IfcSchema::IfcShapeRepresentation* rep = new IfcSchema::IfcShapeRepresentation(
 		context ? context : getRepresentationContext("Model"), std::string("Body"), std::string("SweptSolid"), items);
 	reps->push(rep);
-	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);		
+	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
 	addEntity(rep);
 	addEntity(shape);
 	addBox(rep, w, d, h, place, place2, dir, context);
@@ -354,7 +354,7 @@ IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addAxisBox(double w, d
 	reps->push(axis_rep);
 	reps->push(body_rep);
 
-	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);		
+	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
 	addEntity(shape);
 	addEntity(body_rep);
 	addBox(body_rep, w, d, h, 0, 0, 0, context);

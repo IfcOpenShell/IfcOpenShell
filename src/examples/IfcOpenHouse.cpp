@@ -45,7 +45,7 @@
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
 typedef std::pair<double, double> XY;
-boost::none_t const null = (static_cast<boost::none_t>(0));
+boost::none_t const null = boost::none;
 
 // The creation of Nurbs-surface for the IfcSite mesh, to be implemented lateron
 void createGroundShape(TopoDS_Shape& shape);

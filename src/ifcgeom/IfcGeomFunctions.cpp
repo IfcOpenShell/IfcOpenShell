@@ -637,7 +637,7 @@ IfcSchema::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, do
 		0, std::string("Facetation"), std::string("SurfaceModel"), items);
 
 	reps->push(rep);
-	IfcSchema::IfcProductDefinitionShape* shapedef = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
+	IfcSchema::IfcProductDefinitionShape* shapedef = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
 
 	es->push(shell);
 	es->push(surface_model);
