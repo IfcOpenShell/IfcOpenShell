@@ -178,7 +178,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
 	IfcSchema::IfcBuildingStorey* storey = 0;
 	IfcSchema::IfcObjectDefinition* obdef = static_cast<IfcSchema::IfcObjectDefinition*>(file->entityById(o->id()));
 
-#ifdef USE_IFC2x3
+#ifndef USE_IFC4
 	typedef IfcSchema::IfcRelDecomposes decomposition_element;
 #else
 	typedef IfcSchema::IfcRelAggregates decomposition_element;
