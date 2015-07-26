@@ -171,19 +171,19 @@
 				RelativePath="..\src\ifcconvert\ColladaSerializer.cpp"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcconvert\IfcConvert.cpp"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcconvert\OpenCascadeBasedSerializer.cpp"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcconvert\WavefrontObjSerializer.cpp"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcconvert\XmlSerializer.cpp"
 				>
 			</File>
@@ -197,35 +197,31 @@
 				RelativePath="..\src\ifcconvert\ColladaSerializer.h"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcconvert\GeometrySerializer.h"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcconvert\IgesSerializer.h"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcconvert\OpenCascadeBasedSerializer.h"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcconvert\StepSerializer.h"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcconvert\Serializer.h"
 				>
 			</File>
-            <File
-				RelativePath="..\src\ifcconvert\SurfaceStyle.h"
-				>
-			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcconvert\WavefrontObjSerializer.h"
 				>
 			</File>
-            <File
+			<File
 				RelativePath="..\src\ifcconvert\XmlSerializer.h"
 				>
 			</File>
