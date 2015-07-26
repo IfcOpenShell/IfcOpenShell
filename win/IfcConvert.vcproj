@@ -180,6 +180,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\ifcconvert\SvgSerializer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcconvert\util.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ifcconvert\WavefrontObjSerializer.cpp"
 				>
 			</File>
@@ -215,6 +223,14 @@
 			</File>
 			<File
 				RelativePath="..\src\ifcconvert\Serializer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcconvert\SvgSerializer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ifcconvert\util.h"
 				>
 			</File>
 			<File

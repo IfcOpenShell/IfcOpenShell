@@ -40,6 +40,9 @@
 #include "../ifcconvert/StepSerializer.h"
 #include "../ifcconvert/WavefrontObjSerializer.h"
 #include "../ifcconvert/XmlSerializer.h"
+#include "../ifcconvert/SvgSerializer.h"
+
+static std::string DEFAULT_EXTENSION = "obj";
 
 void printVersion() {
 	std::cerr << "IfcOpenShell IfcConvert " << IFCOPENSHELL_VERSION << std::endl;
@@ -57,6 +60,7 @@ void printUsage(const boost::program_options::options_description& generic_optio
 	std::cerr << "  .stp   STEP           Standard for the Exchange of Product Data" << std::endl
 	          << "  .igs   IGES           Initial Graphics Exchange Specification" << std::endl
 	          << "  .xml   XML            Property definitions and decomposition tree" << std::endl
+			  << "  .svg   SVG            Scalable Vector Graphics (2d floor plan)" << std::endl
 	          << std::endl
 	          << "Command line options" << std::endl << generic_options << std::endl
 	          << "Advanced options" << std::endl << geom_options << std::endl;
@@ -86,6 +90,7 @@ int main(int argc, char** argv) {
 		("input-file", boost::program_options::value<std::string>(), "input IFC file")
 		("output-file", boost::program_options::value<std::string>(), "output geometry file");
 
+	std::string bounds;
 	std::vector<std::string> entity_vector;
 	boost::program_options::options_description geom_options;
 	geom_options.add_options()
@@ -123,6 +128,9 @@ int main(int argc, char** argv) {
 		("disable-opening-subtractions", 
 			"Specifies whether to disable the boolean subtraction of "
 			"IfcOpeningElement Representations from their RelatingElements.")
+		("bounds", boost::program_options::value<std::string>(&bounds),
+			"Specifies the bounding rectangle, for example 512x512, to which the " 
+			"output will be scaled. Only used when converting to SVG.")
 		("include", 
 			"Specifies that the entities listed after --entities are to be included")
 		("exclude", 
@@ -170,9 +178,21 @@ int main(int argc, char** argv) {
 	const bool sew_shells = vmap.count("sew-shells") != 0;
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
 	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
-	const bool include_entities = vmap.count("include") != 0;
+	bool include_entities = vmap.count("include") != 0;
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
+	boost::optional<int> bounding_width, bounding_height;
+	if (vmap.count("bounds") == 1) {
+		int w, h;
+		if (sscanf(bounds.c_str(), "%ux%u", &w, &h) == 2) {
+			bounding_width = w;
+			bounding_height = h;
+		} else {
+			std::cerr << "[Error] Invalid use of --bounds" << std::endl;
+			printUsage(generic_options, geom_options);
+			return 1;
+		}
+	}
 
 	// Gets the set ifc types to be ignored from the command line. 
 	std::set<std::string> entities;
@@ -183,19 +203,13 @@ int main(int argc, char** argv) {
 		}
 		entities.insert(lowercase_type);
 	}
-
-	// If no entities are specified these are the defaults to skip from output
-	if (entity_vector.empty()) {
-		entities.insert("ifcopeningelement");
-		entities.insert("ifcspace");
-	}
 	
 	const std::string input_filename = vmap["input-file"].as<std::string>();
 	// If no output filename is specified a Wavefront OBJ file will be output
 	// to maintain backwards compatibility with the obsolete IfcObj executable.
 	const std::string output_filename = vmap.count("output-file") == 1 
 		? vmap["output-file"].as<std::string>()
-		: change_extension(input_filename, "obj");
+		: change_extension(input_filename, DEFAULT_EXTENSION);
 	
 	if (output_filename.size() < 5) {
 		printUsage(generic_options, geom_options);
@@ -205,6 +219,17 @@ int main(int argc, char** argv) {
 	std::string output_extension = output_filename.substr(output_filename.size()-4);
 	for (std::string::iterator c = output_extension.begin(); c != output_extension.end(); ++c) {
 		*c = tolower(*c);
+	}
+
+	// If no entities are specified these are the defaults to skip from output
+	if (entity_vector.empty()) {
+		if (output_extension == ".svg") {
+			entities.insert("ifcspace");
+			include_entities = true;
+		} else {
+			entities.insert("ifcopeningelement");
+			entities.insert("ifcspace");
+		}
 	}
 
 	Logger::SetOutput(&std::cout, &log_stream);
@@ -258,6 +283,15 @@ int main(int argc, char** argv) {
 		// See: http://tracker.dev.opencascade.org/view.php?id=23679
 		IGESControl_Controller::Init();
 		serializer = new IgesSerializer(output_filename);
+	} else if (output_extension == ".svg") {
+		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+		serializer = new SvgSerializer(output_filename);
+		if (bounding_width && bounding_height) {
+			((SvgSerializer*) serializer)->setBoundingRectangle(
+				static_cast<double>(*bounding_width), 
+				static_cast<double>(*bounding_height)
+			);
+		}
 	} else {
 		Logger::Message(Logger::LOG_ERROR, "Unknown output filename extension");
 		write_log();
@@ -299,6 +333,8 @@ int main(int argc, char** argv) {
 		write_log();
 		return 1;
 	}
+
+	serializer->setFile(context_iterator.getFile());
 
 	if (convert_back_units) {
 		serializer->setUnitNameAndMagnitude(context_iterator.getUnitName(), static_cast<const float>(context_iterator.getUnitMagnitude()));

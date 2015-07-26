@@ -54,18 +54,19 @@ namespace IfcGeom {
 		class BRep : public Representation {
 		private:
 			unsigned int id;
-			const IfcGeom::IfcRepresentationShapeItems shapes;
+			const IfcGeom::IfcRepresentationShapeItems _shapes;
 			BRep(const BRep& other);
 			BRep& operator=(const BRep& other);
 		public:
 			BRep(const ElementSettings& settings, unsigned int id, const IfcGeom::IfcRepresentationShapeItems& shapes)
 				: Representation(settings)
 				, id(id)
-				, shapes(shapes)
+				, _shapes(shapes)
 			{}
 			virtual ~BRep() {}
-			IfcGeom::IfcRepresentationShapeItems::const_iterator begin() const { return shapes.begin(); }
-			IfcGeom::IfcRepresentationShapeItems::const_iterator end() const { return shapes.end(); }
+			IfcGeom::IfcRepresentationShapeItems::const_iterator begin() const { return _shapes.begin(); }
+			IfcGeom::IfcRepresentationShapeItems::const_iterator end() const { return _shapes.end(); }
+			const IfcGeom::IfcRepresentationShapeItems& shapes() const { return _shapes; }
 			const unsigned int& getId() const { return id; }
 		};
 
