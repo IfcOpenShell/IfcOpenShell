@@ -347,7 +347,7 @@ void SvgSerializer::finalize() {
 	}
 	
 	svg_file << "    </g>\n";
-	svg_file << "</svg>\n";
+	svg_file << "</svg>" << std::endl;
 }
 
 void SvgSerializer::writeHeader() {
