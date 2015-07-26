@@ -55,7 +55,7 @@ void printUsage(const boost::program_options::options_description& generic_optio
 	          << "Converts the geometry in an IFC file into one of the following formats:" << std::endl
 	          << "  .obj   WaveFront OBJ  (a .mtl file is also created)" << std::endl;
 #ifdef WITH_OPENCOLLADA	          
-	std::cerr << "  .dae   Collada        Digital Assets Exchange" << std::endl;
+	std::cerr << "  .dae   Collada        Digital Asset Exchange" << std::endl;
 #endif
 	std::cerr << "  .stp   STEP           Standard for the Exchange of Product Data" << std::endl
 	          << "  .igs   IGES           Initial Graphics Exchange Specification" << std::endl
@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
 			"Specifies whether to include curves in the output result. Typically "
 			"these are representations of type Plan or Axis. Excluded by default.")
 		("model",
-			"Specifies whether to include surfaces and solides in the output result. "
+			"Specifies whether to include surfaces and solids in the output result. "
 			"Typically these are representations of type Body or Facetation. "
 			"Included by default.")
 		("weld-vertices",
