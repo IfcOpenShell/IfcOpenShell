@@ -2,9 +2,24 @@ IfcOpenShell
 ============
 open source (LGPL) software library for working with the IFC file format
 
+[http://ifcopenshell.org](http://ifcopenshell.org)  
+[http://academy.ifcopenshell.org](http://academy.ifcopenshell.org)
 
-http://ifcopenshell.org
-http://academy.ifcopenshell.org
+
+Dependencies
+============
+* [Boost](http://www.boost.org/)
+* Open Cascade *optional*, but required for building IfcGeom)  
+  [Official](http://www.opencascade.org/getocc/download/loadocc/) or [community edition](https://github.com/tpaviot/oce)  
+  For converting IFC representation items into BRep solids and tesselated meshes
+* [ICU](http://site.icu-project.org/) *optional*  
+  For handling code pages and Unicode in the parser
+* [OpenCOLLADA](https://github.com/khronosGroup/OpenCOLLADA/) *optional*  
+  For IfcConvert to be able to write tessellated Collada (.dae) files
+* [SWIG](http://www.swig.org/), [Python](https://www.python.org/) libraries *optional*  
+  For building the IfcOpenShell Python interface and the Blender add-on
+* 3ds max SDK *optional*  
+  For building the 3ds max plug-in
 
 
 Compiling on Windows
@@ -62,6 +77,8 @@ To build IfcOpenShell please take the following steps:
 
 If all worked out correctly you can now use IfcOpenShell. For example:
 
+**Invoking IfcConvert from the command line**
+
     $ wget ftp://ftp.dds.no/pub/ifc/Munkerud/Munkerud_hus6_BE.zip
     $ unzip Munkerud_hus6_BE.zip
     $ ./IfcConvert Munkerud_hus6_BE.ifc
@@ -69,17 +86,23 @@ If all worked out correctly you can now use IfcOpenShell. For example:
 
 Or:
 
-    $ wget ftp://ftp.dds.no/pub/ifc/Munkerud/Munkerud_hus6_BE.zip
-    $ unzip Munkerud_hus6_BE.zip
+**Using the IfcOpenShell Python interface**
+
+    $ wget -O duplex.zip http://projects.buildingsmartalliance.org/files/?artifact_id=4278
+    $ unzip duplex.zip
     $ python
     >>> import ifcopenshell
     >>> f = ifcopenshell.open("Duplex_A_20110907_optimized.ifc")
+    >>>
+    >>> # Accessing entity instances by type:
     >>> f.by_type("ifcwall")[:2]
     [#91=IfcWallStandardCase('2O2Fr$t4X7Zf8NOew3FL9r',#1,'Basic Wall:Interior - Partition (92mm Stud):144586',$,'Basic Wall:Interior - Partition (92mm Stud):128360',#5198,#18806,'144586'), #92=IfcWallStandardCase('2O2Fr$t4X7Zf8NOew3FLIE',#1,'Basic Wall:Interior - Partition (92mm Stud):143921',$,'Basic Wall:Interior - Partition (92mm Stud):128360',#5206,#18805,'143921')]
     >>> wall = _[0]
     >>> len(wall) # number of EXPRESS attributes
     8
-    >>> wall.GlobalId
+    >>>
+    >>> # Accessing EXPRESS attributes by name:
+    >>> wall.GlobalId 
     '2O2Fr$t4X7Zf8NOew3FL9r'
     >>> wall.Name = "My wall"
     >>> wall.NonExistingAttr
@@ -101,8 +124,11 @@ Or:
       File ".\ifc_wrapper.py", line 114, in _set_argument
         def _set_argument(self, *args): return _ifc_wrapper.entity_instance__set_argument(self, *args)
     RuntimeError: INT is not a valid type for 'GlobalId'
+    >>> # Creating new entity instances
     >>> f.createIfcCartesianPoint(Coordinates=(1.0,1.5,2.0))
     #27530=IfcCartesianPoint((1.,1.5,2.))
+    >>> 
+    >>> # Working with GlobalId attributes:
     >>> import uuid
     >>> ifcopenshell.guid.compress(uuid.uuid1().hex)
     '3x4C8Q_6qHuv$P$FYkANRX'
@@ -111,8 +137,12 @@ Or:
     >>> new_wall = f.createIfcWallStandardCase(new_guid, owner_hist, None, None, Tag='my_tag')
     >>> new_wall.ObjectType = ''
     >>> new_wall.ObjectPlacement = new_wall.Representation = None
+    >>>
+    >>> # Accessing entity instances by instance id or GlobalId:
     >>> f[92]
     #92=IfcWallStandardCase('2O2Fr$t4X7Zf8NOew3FLIE',#1,'Basic Wall:Interior - Partition (92mm Stud):143921',$,'Basic Wall:Interior - Partition (92mm Stud):128360',#5206,#18805,'143921')
     >>> f['2O2Fr$t4X7Zf8NOew3FLIE']
     #92=IfcWallStandardCase('2O2Fr$t4X7Zf8NOew3FLIE',#1,'Basic Wall:Interior - Partition (92mm Stud):143921',$,'Basic Wall:Interior - Partition (92mm Stud):128360',#5206,#18805,'143921')
+    >>>
+    >>> # Writing IFC-SPF files to disk:
     >>> f.write("out.ifc")
