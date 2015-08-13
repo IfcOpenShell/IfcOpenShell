@@ -173,6 +173,7 @@ import implementation
 import latebound_header
 import latebound_implementation
 
+syntax.ignore("--" + restOfLine)
 syntax.ignore(Regex(r"\((?:\*(?:[^*]*\*+)+?\))"))
 ast = syntax.parseFile(sys.argv[1])
 schema = schema.Schema(ast)
