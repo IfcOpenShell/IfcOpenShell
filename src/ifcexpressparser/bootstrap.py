@@ -158,30 +158,42 @@ for id in to_emit:
         stmt = "Suppress%s" % stmt
     statements.append("%s << %s" % (id, stmt))
 
-print ("""import sys
-from pyparsing import *
-from nodes import *
+print ("""import os
+import sys
+import pickle
 
-%s
+cache_file = sys.argv[1] + ".cache.dat"
+if os.path.exists(cache_file):
+    with open(cache_file, "rb") as f:
+        mapping = pickle.load(f)
+else:
+    from pyparsing import *
+    from nodes import *
+    
+    import schema
+    import mapping
+    
+    %s
+    
+    syntax.ignore(Regex(r"\((?:\*(?:[^*]*\*+)+?\))"))
+    ast = syntax.parseFile(sys.argv[1])
+    schema = schema.Schema(ast)
+    mapping = mapping.Mapping(schema)
 
-import schema
-import mapping
+    with open(cache_file, "wb") as f:
+        pickle.dump(mapping, f, protocol=0)    
 
 import header
 import enum_header
 import implementation
 import latebound_header
 import latebound_implementation
-
-syntax.ignore("--" + restOfLine)
-syntax.ignore(Regex(r"\((?:\*(?:[^*]*\*+)+?\))"))
-ast = syntax.parseFile(sys.argv[1])
-schema = schema.Schema(ast)
-mapping = mapping.Mapping(schema)
+import schema_class
 
 header.Header(mapping).emit()
 enum_header.EnumHeader(mapping).emit()
 implementation.Implementation(mapping).emit()
 latebound_header.LateBoundHeader(mapping).emit()
 latebound_implementation.LateBoundImplementation(mapping).emit()
-"""%('\n'.join(statements)))
+schema_class.SchemaClass(mapping).emit()
+"""%('\n    '.join(statements)))
