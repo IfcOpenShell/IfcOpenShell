@@ -352,8 +352,15 @@ IfcCharacterEncoder::operator std::string() {
 #else
 	for (std::string::const_iterator i = str.begin(); i != str.end(); ++i) {
 		char ch = *i;
-		if ( ch == '\\' || ch == '\'' ) oss.put(ch);
-		oss.put(ch);
+		const bool within_spf_range = ch >= 0x20 && ch <= 0x7e;
+		if (within_spf_range) {
+			if ( ch == '\\' || ch == '\'' ) {
+				oss.put(ch);
+			}		
+			oss.put(ch);
+		} else {
+			oss.put('_');
+		}
 	}
 #endif
 	oss.put('\'');
