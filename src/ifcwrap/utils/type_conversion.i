@@ -112,7 +112,9 @@
 	PyObject* pythonize(const double& t)                { return PyFloat_FromDouble(t);                                                              }
 	PyObject* pythonize(const std::string& t)           { return PyString_FromString(t.c_str());                                                     }
 	PyObject* pythonize(const IfcUtil::IfcBaseClass* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__IfcLateBoundEntity, 0); }
-
+	// NB: This cannot be temporary as a Python object is constructed from a pointer to the address of this object
+	PyObject* pythonize(const IfcGeom::Material& t)     { return SWIG_NewPointerObj(SWIG_as_voidptr(&t), SWIGTYPE_p_IfcGeom__Material, 0);           }
+	
 	PyObject* pythonize(const boost::dynamic_bitset<>& t) { 
 		std::string bitstring;
 		boost::to_string(t, bitstring);
