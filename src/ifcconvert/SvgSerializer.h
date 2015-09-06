@@ -59,6 +59,7 @@ public:
 	virtual void addXCoordinate(const SHARED_PTR<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
 	virtual void addYCoordinate(const SHARED_PTR<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
 	virtual void addSizeComponent(const SHARED_PTR<util::string_buffer::float_item>& fi) { radii.push_back(fi); }
+	virtual void growBoundingBox(double x, double y) { if (x < xmin) xmin = x; if (x > xmax) xmax = x; if (y < ymin) ymin = y; if (y > ymax) ymax = y; }
 	virtual ~SvgSerializer() {}
 	virtual void writeHeader();
 	virtual void writeMaterial(const IfcGeom::SurfaceStyle& style) {}
@@ -73,6 +74,8 @@ public:
 	virtual void setFile(IfcParse::IfcFile* f) { file = f; }
 	virtual void setBoundingRectangle(double width, double height);
 	virtual void setSectionHeight(double h) { section_height = h; }
+	virtual std::string nameElement(const IfcGeom::Element<double>* elem);
+	virtual std::string nameElement(const IfcSchema::IfcProduct* elem);
 };
 
 #endif
