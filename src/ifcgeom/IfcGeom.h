@@ -46,9 +46,9 @@
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 #include "../ifcgeom/IfcGeomShapeType.h"
 
-#define IN_CACHE(T,E,t,e) std::map<int,t>::const_iterator it = cache.T.find(E->entity->id());\
+#define IN_CACHE(T,E,t,e) std::map<int,t>::const_iterator it = cache.T.find(E->data().id());\
 if ( it != cache.T.end() ) { e = it->second; return true; }
-#define CACHE(T,E,e) cache.T[E->entity->id()] = e;
+#define CACHE(T,E,e) cache.T[E->data().id()] = e;
 
 namespace IfcGeom {
 
@@ -140,7 +140,7 @@ public:
 #ifdef USE_IFC4
 			IfcEntityList::ptr style_assignments = (*jt)->Styles();
 			for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-				if (!(*kt)->is(IfcSchema::Type::IfcPresentationStyleAssignment)) {
+				if (!(*kt)->declaration().is(IfcSchema::Type::IfcPresentationStyleAssignment)) {
 					continue;
 				}
 				IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
@@ -152,12 +152,12 @@ public:
 				IfcEntityList::ptr styles = style_assignment->Styles();
 				for (IfcEntityList::it lt = styles->begin(); lt != styles->end(); ++lt) {
 					IfcUtil::IfcBaseClass* style = *lt;
-					if (style->is(IfcSchema::Type::IfcSurfaceStyle)) {
+					if (style->declaration().is(IfcSchema::Type::IfcSurfaceStyle)) {
 						IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
 						if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
 							IfcEntityList::ptr styles_elements = surface_style->Styles();
 							for (IfcEntityList::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
-								if ((*mt)->is(T::Class())) {
+								if ((*mt)->declaration().is(T::Class())) {
 									return std::make_pair(surface_style, (T*) *mt);
 								}
 							}

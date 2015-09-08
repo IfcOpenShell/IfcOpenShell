@@ -176,7 +176,7 @@ namespace IfcGeom {
 
  			for (it = contexts->begin(); it != contexts->end(); ++it) {
 				IfcSchema::IfcGeometricRepresentationContext* context = *it;
-				if (context->is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
+				if (context->declaration().is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
 					// Continue, as the list of subcontexts will be considered
 					// by the parent's context inverse attributes.
 					continue;
@@ -197,7 +197,7 @@ namespace IfcGeom {
 			if (filtered_contexts->size() == 0) {
 				for (it = contexts->begin(); it != contexts->end(); ++it) {
 					IfcSchema::IfcGeometricRepresentationContext* context = *it;
-					if (!context->is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
+					if (!context->declaration().is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
 						filtered_contexts->push(context);
 					}
 				}
@@ -306,7 +306,7 @@ namespace IfcGeom {
 					IfcSchema::IfcProduct::list::ptr unfiltered_products(new IfcSchema::IfcProduct::list);
 
 					for ( IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it ) {
-						if ( (*it)->is(IfcSchema::Type::IfcProductDefinitionShape) ) {
+						if ( (*it)->declaration().is(IfcSchema::Type::IfcProductDefinitionShape) ) {
 							IfcSchema::IfcProductDefinitionShape* pds = (IfcSchema::IfcProductDefinitionShape*)*it;
 							unfiltered_products->push(pds->ShapeOfProduct());
 						} else {
@@ -316,7 +316,7 @@ namespace IfcGeom {
 
 							// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
 							// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
-							unfiltered_products->push((*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>());
+							unfiltered_products->push((*it)->data().getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>());
 						}
 
 						// Filter the products based on the set of entities being included or excluded for
@@ -324,7 +324,7 @@ namespace IfcGeom {
 						for ( IfcSchema::IfcProduct::list::it it = unfiltered_products->begin(); it != unfiltered_products->end(); ++it ) {
 							bool found = false;
 							for (std::set<IfcSchema::Type::Enum>::const_iterator jt = entities_to_include_or_exclude.begin(); jt != entities_to_include_or_exclude.end(); ++jt) {
-								if ((*it)->is(*jt)) {
+								if ((*it)->declaration().is(*jt)) {
 									found = true;
 									break;
 								}
@@ -398,7 +398,7 @@ namespace IfcGeom {
 			try {
 				const IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
 				instance_type = IfcSchema::Type::ToString(ifc_entity->type());
-				if ( ifc_entity->is(IfcSchema::Type::IfcProduct) ) {
+				if ( ifc_entity->declaration().is(IfcSchema::Type::IfcProduct) ) {
 					IfcSchema::IfcProduct* ifc_product = (IfcSchema::IfcProduct*)ifc_entity;
 					
 					product_guid = ifc_product->GlobalId();
@@ -408,7 +408,7 @@ namespace IfcGeom {
 					try {
 						IfcSchema::IfcObjectDefinition* parent_object = kernel.get_decomposing_entity(ifc_product);
 						if (parent_object) {
-							parent_id = parent_object->entity->id();
+							parent_id = parent_object->data().id();
 						}
 					} catch (...) {}
 					

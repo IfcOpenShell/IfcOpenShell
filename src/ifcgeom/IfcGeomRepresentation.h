@@ -148,10 +148,8 @@ namespace IfcGeom {
 					try {
 						BRepMesh_IncrementalMesh(s, settings().deflection_tolerance());
 					} catch(...) {
-
 						// TODO: Catch outside
-						// Logger::Message(Logger::LOG_ERROR,"Failed to triangulate shape:",ifc_file->entityById(_id)->entity);
-						Logger::Message(Logger::LOG_ERROR,"Failed to triangulate shape");
+						Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
 						continue;
 					}
 

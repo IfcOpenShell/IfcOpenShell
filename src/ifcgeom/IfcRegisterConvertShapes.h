@@ -1,10 +1,10 @@
 ﻿#include "IfcRegisterUndef.h"
 #define SHAPES(T) \
-	if ( l->is(T::Class()) ) { \
+	if ( l->declaration().is(T::Class()) ) { \
 		try { \
-			return convert((T*)l,r); \
+			return convert(l->as<T>(), r); \
 		} catch (...) { } \
-		Logger::Message(Logger::LOG_ERROR,"Failed to convert:",l->entity); \
+		Logger::Message(Logger::LOG_ERROR, "Failed to convert:", l); \
 		return false; \
 	}
 #include "IfcRegisterDef.h"

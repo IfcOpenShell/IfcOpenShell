@@ -32,7 +32,7 @@ namespace IfcParse {
 	// that in the IfcFile class the distinction what entity type to be created is 
 	// no longer necessary and weird diagonal casts when creating geometry from
 	// IfcLateBoundEntities are eliminated.
-	class IfcLateBoundEntity : public IfcUtil::IfcBaseEntity {
+	class IfcLateBoundEntity : public IfcUtil::IfcBaseClass { // TODO: -Entity or -Type?
 	private:
 		IfcSchema::Type::Enum _type;
 		IfcWrite::IfcWritableEntity* writable_entity();
@@ -79,6 +79,20 @@ namespace IfcParse {
 		std::string toString();
 
 		bool is_valid();
+
+		// const IfcParse::entity& entity();
+		
+		const IfcAbstractEntity& data() const { return *data_; }
+		IfcAbstractEntity& data() { return *data_; }
+
+		virtual const IfcParse::declaration& declaration() const {
+			if (data().file) {
+				throw;
+				// data().file->
+			} else {
+				throw;
+			}
+		}
 	};
 
 }

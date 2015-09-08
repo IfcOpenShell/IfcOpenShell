@@ -204,16 +204,20 @@ class Implementation:
                 
             simple_type_impl.append(templates.simpletype_impl_comment % {'name': class_name})
             simple_type_impl.extend(map(compose, map(lambda x: (class_name, attr_type, superclass, "(IfcAbstractEntity*)0")+x, (
-                ('getArgumentType', templates.const_function,       'IfcUtil::ArgumentType', ('unsigned int i',),       templates.simpletype_impl_argument_type       ),
-                ('getArgument',     templates.const_function,       'Argument*',             ('unsigned int i',),       templates.simpletype_impl_argument            ),
-                ('is',              templates.const_function,       'bool',                  ('Type::Enum v',),                   simpletype_impl_is                  ),
-                ('type',            templates.const_function,       'Type::Enum',            (),                        templates.simpletype_impl_type                ),
+                #('getArgumentType', templates.const_function,       'IfcUtil::ArgumentType', ('unsigned int i',),       templates.simpletype_impl_argument_type       ),
+                #('getArgument',     templates.const_function,       'Argument*',             ('unsigned int i',),       templates.simpletype_impl_argument            ),
+                #('is',              templates.const_function,       'bool',                  ('Type::Enum v',),                   simpletype_impl_is                  ),
+                #('type',            templates.const_function,       'Type::Enum',            (),                        templates.simpletype_impl_type                ),
                 ('Class',           templates.function,             'Type::Enum',            (),                        templates.simpletype_impl_class               ),
+                ('declaration',     templates.const_function,       'const IfcParse::type_declaration&', (),            templates.simpletype_impl_declaration       ),
                 ('',                          constructor,          '',                      ('IfcAbstractEntity* e',), templates.simpletype_impl_explicit_constructor),
                 ('',                          constructor,          '',                      ("%s v" % type_str,),                simpletype_impl_constructor         ),
                 ('',                templates.cast_function,        type_str,                (),                                  simpletype_impl_cast                )
             ))))
             simple_type_impl.append('')
+            
+        external_definitions = ["extern entity* %s_type;"           % n for n in mapping.schema.entities.keys()   ] + \
+                               ["extern type_declaration* %s_type;" % n for n in mapping.schema.simpletypes.keys()]
 
         self.str = templates.implementation % {
             'schema_name_upper'        : mapping.schema.name.upper(),
@@ -226,7 +230,8 @@ class Implementation:
             'simple_type_statement'    : simple_type_statements,
             'parent_type_statements'   : catnl(parent_type_statements),
             'entity_implementations'   : catnl(entity_implementations),
-            'simple_type_impl'         : catnl(simple_type_impl)
+            'simple_type_impl'         : catnl(simple_type_impl),
+            'external_definitions'     : catnl(external_definitions)
         }
 
         self.schema_name = mapping.schema.name.capitalize()

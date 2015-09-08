@@ -257,7 +257,8 @@ namespace IfcParse {
 		std::string datatype() const;
 		IfcSchema::Type::Enum type() const;
 		bool is(IfcSchema::Type::Enum v) const;
-		unsigned int id();
+		unsigned int id() const;
+		const IfcWrite::IfcWritableEntity* isWritable() const;
 		IfcWrite::IfcWritableEntity* isWritable();
 	};
 

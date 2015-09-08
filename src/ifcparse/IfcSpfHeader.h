@@ -91,7 +91,11 @@ public:
 		return ss.str();
 	}
 	
-	unsigned int id() {
+	unsigned int id() const {
+		return 0;
+	}
+
+	const IfcWrite::IfcWritableEntity* isWritable() const {
 		return 0;
 	}
 

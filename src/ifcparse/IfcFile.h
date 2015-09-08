@@ -41,6 +41,8 @@ public:
 private:
 	typedef std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
+	const schema_definition* schema_;
+
 	bool _create_latebound_entities;
 
 	entity_by_id_t byid;
@@ -131,6 +133,8 @@ public:
 	bool create_latebound_entities() const { return _create_latebound_entities; }
 
 	std::pair<IfcSchema::IfcNamedUnit*, double> getUnit(IfcSchema::IfcUnitEnum::IfcUnitEnum);
+
+	const schema_definition* schema() const { return schema_; }
 };
 
 }

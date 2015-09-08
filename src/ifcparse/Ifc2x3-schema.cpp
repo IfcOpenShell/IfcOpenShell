@@ -28,125 +28,1105 @@
 
 #include "../ifcparse/IfcSchema.h"
 
-void populate() {
-    declaration* IfcAbsorbedDoseMeasure_type = new type_declaration("IfcAbsorbedDoseMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcAccelerationMeasure_type = new type_declaration("IfcAccelerationMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcAmountOfSubstanceMeasure_type = new type_declaration("IfcAmountOfSubstanceMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcAngularVelocityMeasure_type = new type_declaration("IfcAngularVelocityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcAreaMeasure_type = new type_declaration("IfcAreaMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcBoolean_type = new type_declaration("IfcBoolean", new simple_type(simple_type::boolean_type));
-    declaration* IfcComplexNumber_type = new type_declaration("IfcComplexNumber", new aggregation_type(aggregation_type::array_type, 1, 2, new simple_type(simple_type::real_type)));
-    declaration* IfcCompoundPlaneAngleMeasure_type = new type_declaration("IfcCompoundPlaneAngleMeasure", new aggregation_type(aggregation_type::list_type, 3, 4, new simple_type(simple_type::integer_type)));
-    declaration* IfcContextDependentMeasure_type = new type_declaration("IfcContextDependentMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcCountMeasure_type = new type_declaration("IfcCountMeasure", new simple_type(simple_type::number_type));
-    declaration* IfcCurvatureMeasure_type = new type_declaration("IfcCurvatureMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcDayInMonthNumber_type = new type_declaration("IfcDayInMonthNumber", new simple_type(simple_type::integer_type));
-    declaration* IfcDaylightSavingHour_type = new type_declaration("IfcDaylightSavingHour", new simple_type(simple_type::integer_type));
-    declaration* IfcDescriptiveMeasure_type = new type_declaration("IfcDescriptiveMeasure", new simple_type(simple_type::string_type));
-    declaration* IfcDimensionCount_type = new type_declaration("IfcDimensionCount", new simple_type(simple_type::integer_type));
-    declaration* IfcDoseEquivalentMeasure_type = new type_declaration("IfcDoseEquivalentMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcDynamicViscosityMeasure_type = new type_declaration("IfcDynamicViscosityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcElectricCapacitanceMeasure_type = new type_declaration("IfcElectricCapacitanceMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcElectricChargeMeasure_type = new type_declaration("IfcElectricChargeMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcElectricConductanceMeasure_type = new type_declaration("IfcElectricConductanceMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcElectricCurrentMeasure_type = new type_declaration("IfcElectricCurrentMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcElectricResistanceMeasure_type = new type_declaration("IfcElectricResistanceMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcElectricVoltageMeasure_type = new type_declaration("IfcElectricVoltageMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcEnergyMeasure_type = new type_declaration("IfcEnergyMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcFontStyle_type = new type_declaration("IfcFontStyle", new simple_type(simple_type::string_type));
-    declaration* IfcFontVariant_type = new type_declaration("IfcFontVariant", new simple_type(simple_type::string_type));
-    declaration* IfcFontWeight_type = new type_declaration("IfcFontWeight", new simple_type(simple_type::string_type));
-    declaration* IfcForceMeasure_type = new type_declaration("IfcForceMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcFrequencyMeasure_type = new type_declaration("IfcFrequencyMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcGloballyUniqueId_type = new type_declaration("IfcGloballyUniqueId", new simple_type(simple_type::string_type));
-    declaration* IfcHeatFluxDensityMeasure_type = new type_declaration("IfcHeatFluxDensityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcHeatingValueMeasure_type = new type_declaration("IfcHeatingValueMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcHourInDay_type = new type_declaration("IfcHourInDay", new simple_type(simple_type::integer_type));
-    declaration* IfcIdentifier_type = new type_declaration("IfcIdentifier", new simple_type(simple_type::string_type));
-    declaration* IfcIlluminanceMeasure_type = new type_declaration("IfcIlluminanceMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcInductanceMeasure_type = new type_declaration("IfcInductanceMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcInteger_type = new type_declaration("IfcInteger", new simple_type(simple_type::integer_type));
-    declaration* IfcIntegerCountRateMeasure_type = new type_declaration("IfcIntegerCountRateMeasure", new simple_type(simple_type::integer_type));
-    declaration* IfcIonConcentrationMeasure_type = new type_declaration("IfcIonConcentrationMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcIsothermalMoistureCapacityMeasure_type = new type_declaration("IfcIsothermalMoistureCapacityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcKinematicViscosityMeasure_type = new type_declaration("IfcKinematicViscosityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcLabel_type = new type_declaration("IfcLabel", new simple_type(simple_type::string_type));
-    declaration* IfcLengthMeasure_type = new type_declaration("IfcLengthMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcLinearForceMeasure_type = new type_declaration("IfcLinearForceMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcLinearMomentMeasure_type = new type_declaration("IfcLinearMomentMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcLinearStiffnessMeasure_type = new type_declaration("IfcLinearStiffnessMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcLinearVelocityMeasure_type = new type_declaration("IfcLinearVelocityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcLogical_type = new type_declaration("IfcLogical", new simple_type(simple_type::logical_type));
-    declaration* IfcLuminousFluxMeasure_type = new type_declaration("IfcLuminousFluxMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcLuminousIntensityDistributionMeasure_type = new type_declaration("IfcLuminousIntensityDistributionMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcLuminousIntensityMeasure_type = new type_declaration("IfcLuminousIntensityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcMagneticFluxDensityMeasure_type = new type_declaration("IfcMagneticFluxDensityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcMagneticFluxMeasure_type = new type_declaration("IfcMagneticFluxMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcMassDensityMeasure_type = new type_declaration("IfcMassDensityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcMassFlowRateMeasure_type = new type_declaration("IfcMassFlowRateMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcMassMeasure_type = new type_declaration("IfcMassMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcMassPerLengthMeasure_type = new type_declaration("IfcMassPerLengthMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcMinuteInHour_type = new type_declaration("IfcMinuteInHour", new simple_type(simple_type::integer_type));
-    declaration* IfcModulusOfElasticityMeasure_type = new type_declaration("IfcModulusOfElasticityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcModulusOfLinearSubgradeReactionMeasure_type = new type_declaration("IfcModulusOfLinearSubgradeReactionMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcModulusOfRotationalSubgradeReactionMeasure_type = new type_declaration("IfcModulusOfRotationalSubgradeReactionMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcModulusOfSubgradeReactionMeasure_type = new type_declaration("IfcModulusOfSubgradeReactionMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcMoistureDiffusivityMeasure_type = new type_declaration("IfcMoistureDiffusivityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcMolecularWeightMeasure_type = new type_declaration("IfcMolecularWeightMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcMomentOfInertiaMeasure_type = new type_declaration("IfcMomentOfInertiaMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcMonetaryMeasure_type = new type_declaration("IfcMonetaryMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcMonthInYearNumber_type = new type_declaration("IfcMonthInYearNumber", new simple_type(simple_type::integer_type));
-    declaration* IfcNumericMeasure_type = new type_declaration("IfcNumericMeasure", new simple_type(simple_type::number_type));
-    declaration* IfcPHMeasure_type = new type_declaration("IfcPHMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcParameterValue_type = new type_declaration("IfcParameterValue", new simple_type(simple_type::real_type));
-    declaration* IfcPlanarForceMeasure_type = new type_declaration("IfcPlanarForceMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcPlaneAngleMeasure_type = new type_declaration("IfcPlaneAngleMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcPositiveLengthMeasure_type = new type_declaration("IfcPositiveLengthMeasure", new named_type(IfcLengthMeasure_type));
-    declaration* IfcPositivePlaneAngleMeasure_type = new type_declaration("IfcPositivePlaneAngleMeasure", new named_type(IfcPlaneAngleMeasure_type));
-    declaration* IfcPowerMeasure_type = new type_declaration("IfcPowerMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcPresentableText_type = new type_declaration("IfcPresentableText", new simple_type(simple_type::string_type));
-    declaration* IfcPressureMeasure_type = new type_declaration("IfcPressureMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcRadioActivityMeasure_type = new type_declaration("IfcRadioActivityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcRatioMeasure_type = new type_declaration("IfcRatioMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcReal_type = new type_declaration("IfcReal", new simple_type(simple_type::real_type));
-    declaration* IfcRotationalFrequencyMeasure_type = new type_declaration("IfcRotationalFrequencyMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcRotationalMassMeasure_type = new type_declaration("IfcRotationalMassMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcRotationalStiffnessMeasure_type = new type_declaration("IfcRotationalStiffnessMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcSecondInMinute_type = new type_declaration("IfcSecondInMinute", new simple_type(simple_type::real_type));
-    declaration* IfcSectionModulusMeasure_type = new type_declaration("IfcSectionModulusMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcSectionalAreaIntegralMeasure_type = new type_declaration("IfcSectionalAreaIntegralMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcShearModulusMeasure_type = new type_declaration("IfcShearModulusMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcSolidAngleMeasure_type = new type_declaration("IfcSolidAngleMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcSoundPowerMeasure_type = new type_declaration("IfcSoundPowerMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcSoundPressureMeasure_type = new type_declaration("IfcSoundPressureMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcSpecificHeatCapacityMeasure_type = new type_declaration("IfcSpecificHeatCapacityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcSpecularExponent_type = new type_declaration("IfcSpecularExponent", new simple_type(simple_type::real_type));
-    declaration* IfcSpecularRoughness_type = new type_declaration("IfcSpecularRoughness", new simple_type(simple_type::real_type));
-    declaration* IfcTemperatureGradientMeasure_type = new type_declaration("IfcTemperatureGradientMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcText_type = new type_declaration("IfcText", new simple_type(simple_type::string_type));
-    declaration* IfcTextAlignment_type = new type_declaration("IfcTextAlignment", new simple_type(simple_type::string_type));
-    declaration* IfcTextDecoration_type = new type_declaration("IfcTextDecoration", new simple_type(simple_type::string_type));
-    declaration* IfcTextFontName_type = new type_declaration("IfcTextFontName", new simple_type(simple_type::string_type));
-    declaration* IfcTextTransformation_type = new type_declaration("IfcTextTransformation", new simple_type(simple_type::string_type));
-    declaration* IfcThermalAdmittanceMeasure_type = new type_declaration("IfcThermalAdmittanceMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcThermalConductivityMeasure_type = new type_declaration("IfcThermalConductivityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcThermalExpansionCoefficientMeasure_type = new type_declaration("IfcThermalExpansionCoefficientMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcThermalResistanceMeasure_type = new type_declaration("IfcThermalResistanceMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcThermalTransmittanceMeasure_type = new type_declaration("IfcThermalTransmittanceMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcThermodynamicTemperatureMeasure_type = new type_declaration("IfcThermodynamicTemperatureMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcTimeMeasure_type = new type_declaration("IfcTimeMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcTimeStamp_type = new type_declaration("IfcTimeStamp", new simple_type(simple_type::integer_type));
-    declaration* IfcTorqueMeasure_type = new type_declaration("IfcTorqueMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcVaporPermeabilityMeasure_type = new type_declaration("IfcVaporPermeabilityMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcVolumeMeasure_type = new type_declaration("IfcVolumeMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcVolumetricFlowRateMeasure_type = new type_declaration("IfcVolumetricFlowRateMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcWarpingConstantMeasure_type = new type_declaration("IfcWarpingConstantMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcWarpingMomentMeasure_type = new type_declaration("IfcWarpingMomentMeasure", new simple_type(simple_type::real_type));
-    declaration* IfcYearNumber_type = new type_declaration("IfcYearNumber", new simple_type(simple_type::integer_type));
-    declaration* IfcBoxAlignment_type = new type_declaration("IfcBoxAlignment", new named_type(IfcLabel_type));
-    declaration* IfcNormalisedRatioMeasure_type = new type_declaration("IfcNormalisedRatioMeasure", new named_type(IfcRatioMeasure_type));
-    declaration* IfcPositiveRatioMeasure_type = new type_declaration("IfcPositiveRatioMeasure", new named_type(IfcRatioMeasure_type));
-    declaration* IfcActionSourceTypeEnum_type;
+using namespace IfcParse;
+entity* Ifc2DCompositeCurve_type = 0;
+entity* IfcActionRequest_type = 0;
+entity* IfcActor_type = 0;
+entity* IfcActorRole_type = 0;
+entity* IfcActuatorType_type = 0;
+entity* IfcAddress_type = 0;
+entity* IfcAirTerminalBoxType_type = 0;
+entity* IfcAirTerminalType_type = 0;
+entity* IfcAirToAirHeatRecoveryType_type = 0;
+entity* IfcAlarmType_type = 0;
+entity* IfcAngularDimension_type = 0;
+entity* IfcAnnotation_type = 0;
+entity* IfcAnnotationCurveOccurrence_type = 0;
+entity* IfcAnnotationFillArea_type = 0;
+entity* IfcAnnotationFillAreaOccurrence_type = 0;
+entity* IfcAnnotationOccurrence_type = 0;
+entity* IfcAnnotationSurface_type = 0;
+entity* IfcAnnotationSurfaceOccurrence_type = 0;
+entity* IfcAnnotationSymbolOccurrence_type = 0;
+entity* IfcAnnotationTextOccurrence_type = 0;
+entity* IfcApplication_type = 0;
+entity* IfcAppliedValue_type = 0;
+entity* IfcAppliedValueRelationship_type = 0;
+entity* IfcApproval_type = 0;
+entity* IfcApprovalActorRelationship_type = 0;
+entity* IfcApprovalPropertyRelationship_type = 0;
+entity* IfcApprovalRelationship_type = 0;
+entity* IfcArbitraryClosedProfileDef_type = 0;
+entity* IfcArbitraryOpenProfileDef_type = 0;
+entity* IfcArbitraryProfileDefWithVoids_type = 0;
+entity* IfcAsset_type = 0;
+entity* IfcAsymmetricIShapeProfileDef_type = 0;
+entity* IfcAxis1Placement_type = 0;
+entity* IfcAxis2Placement2D_type = 0;
+entity* IfcAxis2Placement3D_type = 0;
+entity* IfcBSplineCurve_type = 0;
+entity* IfcBeam_type = 0;
+entity* IfcBeamType_type = 0;
+entity* IfcBezierCurve_type = 0;
+entity* IfcBlobTexture_type = 0;
+entity* IfcBlock_type = 0;
+entity* IfcBoilerType_type = 0;
+entity* IfcBooleanClippingResult_type = 0;
+entity* IfcBooleanResult_type = 0;
+entity* IfcBoundaryCondition_type = 0;
+entity* IfcBoundaryEdgeCondition_type = 0;
+entity* IfcBoundaryFaceCondition_type = 0;
+entity* IfcBoundaryNodeCondition_type = 0;
+entity* IfcBoundaryNodeConditionWarping_type = 0;
+entity* IfcBoundedCurve_type = 0;
+entity* IfcBoundedSurface_type = 0;
+entity* IfcBoundingBox_type = 0;
+entity* IfcBoxedHalfSpace_type = 0;
+entity* IfcBuilding_type = 0;
+entity* IfcBuildingElement_type = 0;
+entity* IfcBuildingElementComponent_type = 0;
+entity* IfcBuildingElementPart_type = 0;
+entity* IfcBuildingElementProxy_type = 0;
+entity* IfcBuildingElementProxyType_type = 0;
+entity* IfcBuildingElementType_type = 0;
+entity* IfcBuildingStorey_type = 0;
+entity* IfcCShapeProfileDef_type = 0;
+entity* IfcCableCarrierFittingType_type = 0;
+entity* IfcCableCarrierSegmentType_type = 0;
+entity* IfcCableSegmentType_type = 0;
+entity* IfcCalendarDate_type = 0;
+entity* IfcCartesianPoint_type = 0;
+entity* IfcCartesianTransformationOperator_type = 0;
+entity* IfcCartesianTransformationOperator2D_type = 0;
+entity* IfcCartesianTransformationOperator2DnonUniform_type = 0;
+entity* IfcCartesianTransformationOperator3D_type = 0;
+entity* IfcCartesianTransformationOperator3DnonUniform_type = 0;
+entity* IfcCenterLineProfileDef_type = 0;
+entity* IfcChamferEdgeFeature_type = 0;
+entity* IfcChillerType_type = 0;
+entity* IfcCircle_type = 0;
+entity* IfcCircleHollowProfileDef_type = 0;
+entity* IfcCircleProfileDef_type = 0;
+entity* IfcClassification_type = 0;
+entity* IfcClassificationItem_type = 0;
+entity* IfcClassificationItemRelationship_type = 0;
+entity* IfcClassificationNotation_type = 0;
+entity* IfcClassificationNotationFacet_type = 0;
+entity* IfcClassificationReference_type = 0;
+entity* IfcClosedShell_type = 0;
+entity* IfcCoilType_type = 0;
+entity* IfcColourRgb_type = 0;
+entity* IfcColourSpecification_type = 0;
+entity* IfcColumn_type = 0;
+entity* IfcColumnType_type = 0;
+entity* IfcComplexProperty_type = 0;
+entity* IfcCompositeCurve_type = 0;
+entity* IfcCompositeCurveSegment_type = 0;
+entity* IfcCompositeProfileDef_type = 0;
+entity* IfcCompressorType_type = 0;
+entity* IfcCondenserType_type = 0;
+entity* IfcCondition_type = 0;
+entity* IfcConditionCriterion_type = 0;
+entity* IfcConic_type = 0;
+entity* IfcConnectedFaceSet_type = 0;
+entity* IfcConnectionCurveGeometry_type = 0;
+entity* IfcConnectionGeometry_type = 0;
+entity* IfcConnectionPointEccentricity_type = 0;
+entity* IfcConnectionPointGeometry_type = 0;
+entity* IfcConnectionPortGeometry_type = 0;
+entity* IfcConnectionSurfaceGeometry_type = 0;
+entity* IfcConstraint_type = 0;
+entity* IfcConstraintAggregationRelationship_type = 0;
+entity* IfcConstraintClassificationRelationship_type = 0;
+entity* IfcConstraintRelationship_type = 0;
+entity* IfcConstructionEquipmentResource_type = 0;
+entity* IfcConstructionMaterialResource_type = 0;
+entity* IfcConstructionProductResource_type = 0;
+entity* IfcConstructionResource_type = 0;
+entity* IfcContextDependentUnit_type = 0;
+entity* IfcControl_type = 0;
+entity* IfcControllerType_type = 0;
+entity* IfcConversionBasedUnit_type = 0;
+entity* IfcCooledBeamType_type = 0;
+entity* IfcCoolingTowerType_type = 0;
+entity* IfcCoordinatedUniversalTimeOffset_type = 0;
+entity* IfcCostItem_type = 0;
+entity* IfcCostSchedule_type = 0;
+entity* IfcCostValue_type = 0;
+entity* IfcCovering_type = 0;
+entity* IfcCoveringType_type = 0;
+entity* IfcCraneRailAShapeProfileDef_type = 0;
+entity* IfcCraneRailFShapeProfileDef_type = 0;
+entity* IfcCrewResource_type = 0;
+entity* IfcCsgPrimitive3D_type = 0;
+entity* IfcCsgSolid_type = 0;
+entity* IfcCurrencyRelationship_type = 0;
+entity* IfcCurtainWall_type = 0;
+entity* IfcCurtainWallType_type = 0;
+entity* IfcCurve_type = 0;
+entity* IfcCurveBoundedPlane_type = 0;
+entity* IfcCurveStyle_type = 0;
+entity* IfcCurveStyleFont_type = 0;
+entity* IfcCurveStyleFontAndScaling_type = 0;
+entity* IfcCurveStyleFontPattern_type = 0;
+entity* IfcDamperType_type = 0;
+entity* IfcDateAndTime_type = 0;
+entity* IfcDefinedSymbol_type = 0;
+entity* IfcDerivedProfileDef_type = 0;
+entity* IfcDerivedUnit_type = 0;
+entity* IfcDerivedUnitElement_type = 0;
+entity* IfcDiameterDimension_type = 0;
+entity* IfcDimensionCalloutRelationship_type = 0;
+entity* IfcDimensionCurve_type = 0;
+entity* IfcDimensionCurveDirectedCallout_type = 0;
+entity* IfcDimensionCurveTerminator_type = 0;
+entity* IfcDimensionPair_type = 0;
+entity* IfcDimensionalExponents_type = 0;
+entity* IfcDirection_type = 0;
+entity* IfcDiscreteAccessory_type = 0;
+entity* IfcDiscreteAccessoryType_type = 0;
+entity* IfcDistributionChamberElement_type = 0;
+entity* IfcDistributionChamberElementType_type = 0;
+entity* IfcDistributionControlElement_type = 0;
+entity* IfcDistributionControlElementType_type = 0;
+entity* IfcDistributionElement_type = 0;
+entity* IfcDistributionElementType_type = 0;
+entity* IfcDistributionFlowElement_type = 0;
+entity* IfcDistributionFlowElementType_type = 0;
+entity* IfcDistributionPort_type = 0;
+entity* IfcDocumentElectronicFormat_type = 0;
+entity* IfcDocumentInformation_type = 0;
+entity* IfcDocumentInformationRelationship_type = 0;
+entity* IfcDocumentReference_type = 0;
+entity* IfcDoor_type = 0;
+entity* IfcDoorLiningProperties_type = 0;
+entity* IfcDoorPanelProperties_type = 0;
+entity* IfcDoorStyle_type = 0;
+entity* IfcDraughtingCallout_type = 0;
+entity* IfcDraughtingCalloutRelationship_type = 0;
+entity* IfcDraughtingPreDefinedColour_type = 0;
+entity* IfcDraughtingPreDefinedCurveFont_type = 0;
+entity* IfcDraughtingPreDefinedTextFont_type = 0;
+entity* IfcDuctFittingType_type = 0;
+entity* IfcDuctSegmentType_type = 0;
+entity* IfcDuctSilencerType_type = 0;
+entity* IfcEdge_type = 0;
+entity* IfcEdgeCurve_type = 0;
+entity* IfcEdgeFeature_type = 0;
+entity* IfcEdgeLoop_type = 0;
+entity* IfcElectricApplianceType_type = 0;
+entity* IfcElectricDistributionPoint_type = 0;
+entity* IfcElectricFlowStorageDeviceType_type = 0;
+entity* IfcElectricGeneratorType_type = 0;
+entity* IfcElectricHeaterType_type = 0;
+entity* IfcElectricMotorType_type = 0;
+entity* IfcElectricTimeControlType_type = 0;
+entity* IfcElectricalBaseProperties_type = 0;
+entity* IfcElectricalCircuit_type = 0;
+entity* IfcElectricalElement_type = 0;
+entity* IfcElement_type = 0;
+entity* IfcElementAssembly_type = 0;
+entity* IfcElementComponent_type = 0;
+entity* IfcElementComponentType_type = 0;
+entity* IfcElementQuantity_type = 0;
+entity* IfcElementType_type = 0;
+entity* IfcElementarySurface_type = 0;
+entity* IfcEllipse_type = 0;
+entity* IfcEllipseProfileDef_type = 0;
+entity* IfcEnergyConversionDevice_type = 0;
+entity* IfcEnergyConversionDeviceType_type = 0;
+entity* IfcEnergyProperties_type = 0;
+entity* IfcEnvironmentalImpactValue_type = 0;
+entity* IfcEquipmentElement_type = 0;
+entity* IfcEquipmentStandard_type = 0;
+entity* IfcEvaporativeCoolerType_type = 0;
+entity* IfcEvaporatorType_type = 0;
+entity* IfcExtendedMaterialProperties_type = 0;
+entity* IfcExternalReference_type = 0;
+entity* IfcExternallyDefinedHatchStyle_type = 0;
+entity* IfcExternallyDefinedSurfaceStyle_type = 0;
+entity* IfcExternallyDefinedSymbol_type = 0;
+entity* IfcExternallyDefinedTextFont_type = 0;
+entity* IfcExtrudedAreaSolid_type = 0;
+entity* IfcFace_type = 0;
+entity* IfcFaceBasedSurfaceModel_type = 0;
+entity* IfcFaceBound_type = 0;
+entity* IfcFaceOuterBound_type = 0;
+entity* IfcFaceSurface_type = 0;
+entity* IfcFacetedBrep_type = 0;
+entity* IfcFacetedBrepWithVoids_type = 0;
+entity* IfcFailureConnectionCondition_type = 0;
+entity* IfcFanType_type = 0;
+entity* IfcFastener_type = 0;
+entity* IfcFastenerType_type = 0;
+entity* IfcFeatureElement_type = 0;
+entity* IfcFeatureElementAddition_type = 0;
+entity* IfcFeatureElementSubtraction_type = 0;
+entity* IfcFillAreaStyle_type = 0;
+entity* IfcFillAreaStyleHatching_type = 0;
+entity* IfcFillAreaStyleTileSymbolWithStyle_type = 0;
+entity* IfcFillAreaStyleTiles_type = 0;
+entity* IfcFilterType_type = 0;
+entity* IfcFireSuppressionTerminalType_type = 0;
+entity* IfcFlowController_type = 0;
+entity* IfcFlowControllerType_type = 0;
+entity* IfcFlowFitting_type = 0;
+entity* IfcFlowFittingType_type = 0;
+entity* IfcFlowInstrumentType_type = 0;
+entity* IfcFlowMeterType_type = 0;
+entity* IfcFlowMovingDevice_type = 0;
+entity* IfcFlowMovingDeviceType_type = 0;
+entity* IfcFlowSegment_type = 0;
+entity* IfcFlowSegmentType_type = 0;
+entity* IfcFlowStorageDevice_type = 0;
+entity* IfcFlowStorageDeviceType_type = 0;
+entity* IfcFlowTerminal_type = 0;
+entity* IfcFlowTerminalType_type = 0;
+entity* IfcFlowTreatmentDevice_type = 0;
+entity* IfcFlowTreatmentDeviceType_type = 0;
+entity* IfcFluidFlowProperties_type = 0;
+entity* IfcFooting_type = 0;
+entity* IfcFuelProperties_type = 0;
+entity* IfcFurnishingElement_type = 0;
+entity* IfcFurnishingElementType_type = 0;
+entity* IfcFurnitureStandard_type = 0;
+entity* IfcFurnitureType_type = 0;
+entity* IfcGasTerminalType_type = 0;
+entity* IfcGeneralMaterialProperties_type = 0;
+entity* IfcGeneralProfileProperties_type = 0;
+entity* IfcGeometricCurveSet_type = 0;
+entity* IfcGeometricRepresentationContext_type = 0;
+entity* IfcGeometricRepresentationItem_type = 0;
+entity* IfcGeometricRepresentationSubContext_type = 0;
+entity* IfcGeometricSet_type = 0;
+entity* IfcGrid_type = 0;
+entity* IfcGridAxis_type = 0;
+entity* IfcGridPlacement_type = 0;
+entity* IfcGroup_type = 0;
+entity* IfcHalfSpaceSolid_type = 0;
+entity* IfcHeatExchangerType_type = 0;
+entity* IfcHumidifierType_type = 0;
+entity* IfcHygroscopicMaterialProperties_type = 0;
+entity* IfcIShapeProfileDef_type = 0;
+entity* IfcImageTexture_type = 0;
+entity* IfcInventory_type = 0;
+entity* IfcIrregularTimeSeries_type = 0;
+entity* IfcIrregularTimeSeriesValue_type = 0;
+entity* IfcJunctionBoxType_type = 0;
+entity* IfcLShapeProfileDef_type = 0;
+entity* IfcLaborResource_type = 0;
+entity* IfcLampType_type = 0;
+entity* IfcLibraryInformation_type = 0;
+entity* IfcLibraryReference_type = 0;
+entity* IfcLightDistributionData_type = 0;
+entity* IfcLightFixtureType_type = 0;
+entity* IfcLightIntensityDistribution_type = 0;
+entity* IfcLightSource_type = 0;
+entity* IfcLightSourceAmbient_type = 0;
+entity* IfcLightSourceDirectional_type = 0;
+entity* IfcLightSourceGoniometric_type = 0;
+entity* IfcLightSourcePositional_type = 0;
+entity* IfcLightSourceSpot_type = 0;
+entity* IfcLine_type = 0;
+entity* IfcLinearDimension_type = 0;
+entity* IfcLocalPlacement_type = 0;
+entity* IfcLocalTime_type = 0;
+entity* IfcLoop_type = 0;
+entity* IfcManifoldSolidBrep_type = 0;
+entity* IfcMappedItem_type = 0;
+entity* IfcMaterial_type = 0;
+entity* IfcMaterialClassificationRelationship_type = 0;
+entity* IfcMaterialDefinitionRepresentation_type = 0;
+entity* IfcMaterialLayer_type = 0;
+entity* IfcMaterialLayerSet_type = 0;
+entity* IfcMaterialLayerSetUsage_type = 0;
+entity* IfcMaterialList_type = 0;
+entity* IfcMaterialProperties_type = 0;
+entity* IfcMeasureWithUnit_type = 0;
+entity* IfcMechanicalConcreteMaterialProperties_type = 0;
+entity* IfcMechanicalFastener_type = 0;
+entity* IfcMechanicalFastenerType_type = 0;
+entity* IfcMechanicalMaterialProperties_type = 0;
+entity* IfcMechanicalSteelMaterialProperties_type = 0;
+entity* IfcMember_type = 0;
+entity* IfcMemberType_type = 0;
+entity* IfcMetric_type = 0;
+entity* IfcMonetaryUnit_type = 0;
+entity* IfcMotorConnectionType_type = 0;
+entity* IfcMove_type = 0;
+entity* IfcNamedUnit_type = 0;
+entity* IfcObject_type = 0;
+entity* IfcObjectDefinition_type = 0;
+entity* IfcObjectPlacement_type = 0;
+entity* IfcObjective_type = 0;
+entity* IfcOccupant_type = 0;
+entity* IfcOffsetCurve2D_type = 0;
+entity* IfcOffsetCurve3D_type = 0;
+entity* IfcOneDirectionRepeatFactor_type = 0;
+entity* IfcOpenShell_type = 0;
+entity* IfcOpeningElement_type = 0;
+entity* IfcOpticalMaterialProperties_type = 0;
+entity* IfcOrderAction_type = 0;
+entity* IfcOrganization_type = 0;
+entity* IfcOrganizationRelationship_type = 0;
+entity* IfcOrientedEdge_type = 0;
+entity* IfcOutletType_type = 0;
+entity* IfcOwnerHistory_type = 0;
+entity* IfcParameterizedProfileDef_type = 0;
+entity* IfcPath_type = 0;
+entity* IfcPerformanceHistory_type = 0;
+entity* IfcPermeableCoveringProperties_type = 0;
+entity* IfcPermit_type = 0;
+entity* IfcPerson_type = 0;
+entity* IfcPersonAndOrganization_type = 0;
+entity* IfcPhysicalComplexQuantity_type = 0;
+entity* IfcPhysicalQuantity_type = 0;
+entity* IfcPhysicalSimpleQuantity_type = 0;
+entity* IfcPile_type = 0;
+entity* IfcPipeFittingType_type = 0;
+entity* IfcPipeSegmentType_type = 0;
+entity* IfcPixelTexture_type = 0;
+entity* IfcPlacement_type = 0;
+entity* IfcPlanarBox_type = 0;
+entity* IfcPlanarExtent_type = 0;
+entity* IfcPlane_type = 0;
+entity* IfcPlate_type = 0;
+entity* IfcPlateType_type = 0;
+entity* IfcPoint_type = 0;
+entity* IfcPointOnCurve_type = 0;
+entity* IfcPointOnSurface_type = 0;
+entity* IfcPolyLoop_type = 0;
+entity* IfcPolygonalBoundedHalfSpace_type = 0;
+entity* IfcPolyline_type = 0;
+entity* IfcPort_type = 0;
+entity* IfcPostalAddress_type = 0;
+entity* IfcPreDefinedColour_type = 0;
+entity* IfcPreDefinedCurveFont_type = 0;
+entity* IfcPreDefinedDimensionSymbol_type = 0;
+entity* IfcPreDefinedItem_type = 0;
+entity* IfcPreDefinedPointMarkerSymbol_type = 0;
+entity* IfcPreDefinedSymbol_type = 0;
+entity* IfcPreDefinedTerminatorSymbol_type = 0;
+entity* IfcPreDefinedTextFont_type = 0;
+entity* IfcPresentationLayerAssignment_type = 0;
+entity* IfcPresentationLayerWithStyle_type = 0;
+entity* IfcPresentationStyle_type = 0;
+entity* IfcPresentationStyleAssignment_type = 0;
+entity* IfcProcedure_type = 0;
+entity* IfcProcess_type = 0;
+entity* IfcProduct_type = 0;
+entity* IfcProductDefinitionShape_type = 0;
+entity* IfcProductRepresentation_type = 0;
+entity* IfcProductsOfCombustionProperties_type = 0;
+entity* IfcProfileDef_type = 0;
+entity* IfcProfileProperties_type = 0;
+entity* IfcProject_type = 0;
+entity* IfcProjectOrder_type = 0;
+entity* IfcProjectOrderRecord_type = 0;
+entity* IfcProjectionCurve_type = 0;
+entity* IfcProjectionElement_type = 0;
+entity* IfcProperty_type = 0;
+entity* IfcPropertyBoundedValue_type = 0;
+entity* IfcPropertyConstraintRelationship_type = 0;
+entity* IfcPropertyDefinition_type = 0;
+entity* IfcPropertyDependencyRelationship_type = 0;
+entity* IfcPropertyEnumeratedValue_type = 0;
+entity* IfcPropertyEnumeration_type = 0;
+entity* IfcPropertyListValue_type = 0;
+entity* IfcPropertyReferenceValue_type = 0;
+entity* IfcPropertySet_type = 0;
+entity* IfcPropertySetDefinition_type = 0;
+entity* IfcPropertySingleValue_type = 0;
+entity* IfcPropertyTableValue_type = 0;
+entity* IfcProtectiveDeviceType_type = 0;
+entity* IfcProxy_type = 0;
+entity* IfcPumpType_type = 0;
+entity* IfcQuantityArea_type = 0;
+entity* IfcQuantityCount_type = 0;
+entity* IfcQuantityLength_type = 0;
+entity* IfcQuantityTime_type = 0;
+entity* IfcQuantityVolume_type = 0;
+entity* IfcQuantityWeight_type = 0;
+entity* IfcRadiusDimension_type = 0;
+entity* IfcRailing_type = 0;
+entity* IfcRailingType_type = 0;
+entity* IfcRamp_type = 0;
+entity* IfcRampFlight_type = 0;
+entity* IfcRampFlightType_type = 0;
+entity* IfcRationalBezierCurve_type = 0;
+entity* IfcRectangleHollowProfileDef_type = 0;
+entity* IfcRectangleProfileDef_type = 0;
+entity* IfcRectangularPyramid_type = 0;
+entity* IfcRectangularTrimmedSurface_type = 0;
+entity* IfcReferencesValueDocument_type = 0;
+entity* IfcRegularTimeSeries_type = 0;
+entity* IfcReinforcementBarProperties_type = 0;
+entity* IfcReinforcementDefinitionProperties_type = 0;
+entity* IfcReinforcingBar_type = 0;
+entity* IfcReinforcingElement_type = 0;
+entity* IfcReinforcingMesh_type = 0;
+entity* IfcRelAggregates_type = 0;
+entity* IfcRelAssigns_type = 0;
+entity* IfcRelAssignsTasks_type = 0;
+entity* IfcRelAssignsToActor_type = 0;
+entity* IfcRelAssignsToControl_type = 0;
+entity* IfcRelAssignsToGroup_type = 0;
+entity* IfcRelAssignsToProcess_type = 0;
+entity* IfcRelAssignsToProduct_type = 0;
+entity* IfcRelAssignsToProjectOrder_type = 0;
+entity* IfcRelAssignsToResource_type = 0;
+entity* IfcRelAssociates_type = 0;
+entity* IfcRelAssociatesAppliedValue_type = 0;
+entity* IfcRelAssociatesApproval_type = 0;
+entity* IfcRelAssociatesClassification_type = 0;
+entity* IfcRelAssociatesConstraint_type = 0;
+entity* IfcRelAssociatesDocument_type = 0;
+entity* IfcRelAssociatesLibrary_type = 0;
+entity* IfcRelAssociatesMaterial_type = 0;
+entity* IfcRelAssociatesProfileProperties_type = 0;
+entity* IfcRelConnects_type = 0;
+entity* IfcRelConnectsElements_type = 0;
+entity* IfcRelConnectsPathElements_type = 0;
+entity* IfcRelConnectsPortToElement_type = 0;
+entity* IfcRelConnectsPorts_type = 0;
+entity* IfcRelConnectsStructuralActivity_type = 0;
+entity* IfcRelConnectsStructuralElement_type = 0;
+entity* IfcRelConnectsStructuralMember_type = 0;
+entity* IfcRelConnectsWithEccentricity_type = 0;
+entity* IfcRelConnectsWithRealizingElements_type = 0;
+entity* IfcRelContainedInSpatialStructure_type = 0;
+entity* IfcRelCoversBldgElements_type = 0;
+entity* IfcRelCoversSpaces_type = 0;
+entity* IfcRelDecomposes_type = 0;
+entity* IfcRelDefines_type = 0;
+entity* IfcRelDefinesByProperties_type = 0;
+entity* IfcRelDefinesByType_type = 0;
+entity* IfcRelFillsElement_type = 0;
+entity* IfcRelFlowControlElements_type = 0;
+entity* IfcRelInteractionRequirements_type = 0;
+entity* IfcRelNests_type = 0;
+entity* IfcRelOccupiesSpaces_type = 0;
+entity* IfcRelOverridesProperties_type = 0;
+entity* IfcRelProjectsElement_type = 0;
+entity* IfcRelReferencedInSpatialStructure_type = 0;
+entity* IfcRelSchedulesCostItems_type = 0;
+entity* IfcRelSequence_type = 0;
+entity* IfcRelServicesBuildings_type = 0;
+entity* IfcRelSpaceBoundary_type = 0;
+entity* IfcRelVoidsElement_type = 0;
+entity* IfcRelationship_type = 0;
+entity* IfcRelaxation_type = 0;
+entity* IfcRepresentation_type = 0;
+entity* IfcRepresentationContext_type = 0;
+entity* IfcRepresentationItem_type = 0;
+entity* IfcRepresentationMap_type = 0;
+entity* IfcResource_type = 0;
+entity* IfcRevolvedAreaSolid_type = 0;
+entity* IfcRibPlateProfileProperties_type = 0;
+entity* IfcRightCircularCone_type = 0;
+entity* IfcRightCircularCylinder_type = 0;
+entity* IfcRoof_type = 0;
+entity* IfcRoot_type = 0;
+entity* IfcRoundedEdgeFeature_type = 0;
+entity* IfcRoundedRectangleProfileDef_type = 0;
+entity* IfcSIUnit_type = 0;
+entity* IfcSanitaryTerminalType_type = 0;
+entity* IfcScheduleTimeControl_type = 0;
+entity* IfcSectionProperties_type = 0;
+entity* IfcSectionReinforcementProperties_type = 0;
+entity* IfcSectionedSpine_type = 0;
+entity* IfcSensorType_type = 0;
+entity* IfcServiceLife_type = 0;
+entity* IfcServiceLifeFactor_type = 0;
+entity* IfcShapeAspect_type = 0;
+entity* IfcShapeModel_type = 0;
+entity* IfcShapeRepresentation_type = 0;
+entity* IfcShellBasedSurfaceModel_type = 0;
+entity* IfcSimpleProperty_type = 0;
+entity* IfcSite_type = 0;
+entity* IfcSlab_type = 0;
+entity* IfcSlabType_type = 0;
+entity* IfcSlippageConnectionCondition_type = 0;
+entity* IfcSolidModel_type = 0;
+entity* IfcSoundProperties_type = 0;
+entity* IfcSoundValue_type = 0;
+entity* IfcSpace_type = 0;
+entity* IfcSpaceHeaterType_type = 0;
+entity* IfcSpaceProgram_type = 0;
+entity* IfcSpaceThermalLoadProperties_type = 0;
+entity* IfcSpaceType_type = 0;
+entity* IfcSpatialStructureElement_type = 0;
+entity* IfcSpatialStructureElementType_type = 0;
+entity* IfcSphere_type = 0;
+entity* IfcStackTerminalType_type = 0;
+entity* IfcStair_type = 0;
+entity* IfcStairFlight_type = 0;
+entity* IfcStairFlightType_type = 0;
+entity* IfcStructuralAction_type = 0;
+entity* IfcStructuralActivity_type = 0;
+entity* IfcStructuralAnalysisModel_type = 0;
+entity* IfcStructuralConnection_type = 0;
+entity* IfcStructuralConnectionCondition_type = 0;
+entity* IfcStructuralCurveConnection_type = 0;
+entity* IfcStructuralCurveMember_type = 0;
+entity* IfcStructuralCurveMemberVarying_type = 0;
+entity* IfcStructuralItem_type = 0;
+entity* IfcStructuralLinearAction_type = 0;
+entity* IfcStructuralLinearActionVarying_type = 0;
+entity* IfcStructuralLoad_type = 0;
+entity* IfcStructuralLoadGroup_type = 0;
+entity* IfcStructuralLoadLinearForce_type = 0;
+entity* IfcStructuralLoadPlanarForce_type = 0;
+entity* IfcStructuralLoadSingleDisplacement_type = 0;
+entity* IfcStructuralLoadSingleDisplacementDistortion_type = 0;
+entity* IfcStructuralLoadSingleForce_type = 0;
+entity* IfcStructuralLoadSingleForceWarping_type = 0;
+entity* IfcStructuralLoadStatic_type = 0;
+entity* IfcStructuralLoadTemperature_type = 0;
+entity* IfcStructuralMember_type = 0;
+entity* IfcStructuralPlanarAction_type = 0;
+entity* IfcStructuralPlanarActionVarying_type = 0;
+entity* IfcStructuralPointAction_type = 0;
+entity* IfcStructuralPointConnection_type = 0;
+entity* IfcStructuralPointReaction_type = 0;
+entity* IfcStructuralProfileProperties_type = 0;
+entity* IfcStructuralReaction_type = 0;
+entity* IfcStructuralResultGroup_type = 0;
+entity* IfcStructuralSteelProfileProperties_type = 0;
+entity* IfcStructuralSurfaceConnection_type = 0;
+entity* IfcStructuralSurfaceMember_type = 0;
+entity* IfcStructuralSurfaceMemberVarying_type = 0;
+entity* IfcStructuredDimensionCallout_type = 0;
+entity* IfcStyleModel_type = 0;
+entity* IfcStyledItem_type = 0;
+entity* IfcStyledRepresentation_type = 0;
+entity* IfcSubContractResource_type = 0;
+entity* IfcSubedge_type = 0;
+entity* IfcSurface_type = 0;
+entity* IfcSurfaceCurveSweptAreaSolid_type = 0;
+entity* IfcSurfaceOfLinearExtrusion_type = 0;
+entity* IfcSurfaceOfRevolution_type = 0;
+entity* IfcSurfaceStyle_type = 0;
+entity* IfcSurfaceStyleLighting_type = 0;
+entity* IfcSurfaceStyleRefraction_type = 0;
+entity* IfcSurfaceStyleRendering_type = 0;
+entity* IfcSurfaceStyleShading_type = 0;
+entity* IfcSurfaceStyleWithTextures_type = 0;
+entity* IfcSurfaceTexture_type = 0;
+entity* IfcSweptAreaSolid_type = 0;
+entity* IfcSweptDiskSolid_type = 0;
+entity* IfcSweptSurface_type = 0;
+entity* IfcSwitchingDeviceType_type = 0;
+entity* IfcSymbolStyle_type = 0;
+entity* IfcSystem_type = 0;
+entity* IfcSystemFurnitureElementType_type = 0;
+entity* IfcTShapeProfileDef_type = 0;
+entity* IfcTable_type = 0;
+entity* IfcTableRow_type = 0;
+entity* IfcTankType_type = 0;
+entity* IfcTask_type = 0;
+entity* IfcTelecomAddress_type = 0;
+entity* IfcTendon_type = 0;
+entity* IfcTendonAnchor_type = 0;
+entity* IfcTerminatorSymbol_type = 0;
+entity* IfcTextLiteral_type = 0;
+entity* IfcTextLiteralWithExtent_type = 0;
+entity* IfcTextStyle_type = 0;
+entity* IfcTextStyleFontModel_type = 0;
+entity* IfcTextStyleForDefinedFont_type = 0;
+entity* IfcTextStyleTextModel_type = 0;
+entity* IfcTextStyleWithBoxCharacteristics_type = 0;
+entity* IfcTextureCoordinate_type = 0;
+entity* IfcTextureCoordinateGenerator_type = 0;
+entity* IfcTextureMap_type = 0;
+entity* IfcTextureVertex_type = 0;
+entity* IfcThermalMaterialProperties_type = 0;
+entity* IfcTimeSeries_type = 0;
+entity* IfcTimeSeriesReferenceRelationship_type = 0;
+entity* IfcTimeSeriesSchedule_type = 0;
+entity* IfcTimeSeriesValue_type = 0;
+entity* IfcTopologicalRepresentationItem_type = 0;
+entity* IfcTopologyRepresentation_type = 0;
+entity* IfcTransformerType_type = 0;
+entity* IfcTransportElement_type = 0;
+entity* IfcTransportElementType_type = 0;
+entity* IfcTrapeziumProfileDef_type = 0;
+entity* IfcTrimmedCurve_type = 0;
+entity* IfcTubeBundleType_type = 0;
+entity* IfcTwoDirectionRepeatFactor_type = 0;
+entity* IfcTypeObject_type = 0;
+entity* IfcTypeProduct_type = 0;
+entity* IfcUShapeProfileDef_type = 0;
+entity* IfcUnitAssignment_type = 0;
+entity* IfcUnitaryEquipmentType_type = 0;
+entity* IfcValveType_type = 0;
+entity* IfcVector_type = 0;
+entity* IfcVertex_type = 0;
+entity* IfcVertexBasedTextureMap_type = 0;
+entity* IfcVertexLoop_type = 0;
+entity* IfcVertexPoint_type = 0;
+entity* IfcVibrationIsolatorType_type = 0;
+entity* IfcVirtualElement_type = 0;
+entity* IfcVirtualGridIntersection_type = 0;
+entity* IfcWall_type = 0;
+entity* IfcWallStandardCase_type = 0;
+entity* IfcWallType_type = 0;
+entity* IfcWasteTerminalType_type = 0;
+entity* IfcWaterProperties_type = 0;
+entity* IfcWindow_type = 0;
+entity* IfcWindowLiningProperties_type = 0;
+entity* IfcWindowPanelProperties_type = 0;
+entity* IfcWindowStyle_type = 0;
+entity* IfcWorkControl_type = 0;
+entity* IfcWorkPlan_type = 0;
+entity* IfcWorkSchedule_type = 0;
+entity* IfcZShapeProfileDef_type = 0;
+entity* IfcZone_type = 0;
+type_declaration* IfcAbsorbedDoseMeasure_type = 0;
+type_declaration* IfcAccelerationMeasure_type = 0;
+type_declaration* IfcAmountOfSubstanceMeasure_type = 0;
+type_declaration* IfcAngularVelocityMeasure_type = 0;
+type_declaration* IfcAreaMeasure_type = 0;
+type_declaration* IfcBoolean_type = 0;
+type_declaration* IfcBoxAlignment_type = 0;
+type_declaration* IfcComplexNumber_type = 0;
+type_declaration* IfcCompoundPlaneAngleMeasure_type = 0;
+type_declaration* IfcContextDependentMeasure_type = 0;
+type_declaration* IfcCountMeasure_type = 0;
+type_declaration* IfcCurvatureMeasure_type = 0;
+type_declaration* IfcDayInMonthNumber_type = 0;
+type_declaration* IfcDaylightSavingHour_type = 0;
+type_declaration* IfcDescriptiveMeasure_type = 0;
+type_declaration* IfcDimensionCount_type = 0;
+type_declaration* IfcDoseEquivalentMeasure_type = 0;
+type_declaration* IfcDynamicViscosityMeasure_type = 0;
+type_declaration* IfcElectricCapacitanceMeasure_type = 0;
+type_declaration* IfcElectricChargeMeasure_type = 0;
+type_declaration* IfcElectricConductanceMeasure_type = 0;
+type_declaration* IfcElectricCurrentMeasure_type = 0;
+type_declaration* IfcElectricResistanceMeasure_type = 0;
+type_declaration* IfcElectricVoltageMeasure_type = 0;
+type_declaration* IfcEnergyMeasure_type = 0;
+type_declaration* IfcFontStyle_type = 0;
+type_declaration* IfcFontVariant_type = 0;
+type_declaration* IfcFontWeight_type = 0;
+type_declaration* IfcForceMeasure_type = 0;
+type_declaration* IfcFrequencyMeasure_type = 0;
+type_declaration* IfcGloballyUniqueId_type = 0;
+type_declaration* IfcHeatFluxDensityMeasure_type = 0;
+type_declaration* IfcHeatingValueMeasure_type = 0;
+type_declaration* IfcHourInDay_type = 0;
+type_declaration* IfcIdentifier_type = 0;
+type_declaration* IfcIlluminanceMeasure_type = 0;
+type_declaration* IfcInductanceMeasure_type = 0;
+type_declaration* IfcInteger_type = 0;
+type_declaration* IfcIntegerCountRateMeasure_type = 0;
+type_declaration* IfcIonConcentrationMeasure_type = 0;
+type_declaration* IfcIsothermalMoistureCapacityMeasure_type = 0;
+type_declaration* IfcKinematicViscosityMeasure_type = 0;
+type_declaration* IfcLabel_type = 0;
+type_declaration* IfcLengthMeasure_type = 0;
+type_declaration* IfcLinearForceMeasure_type = 0;
+type_declaration* IfcLinearMomentMeasure_type = 0;
+type_declaration* IfcLinearStiffnessMeasure_type = 0;
+type_declaration* IfcLinearVelocityMeasure_type = 0;
+type_declaration* IfcLogical_type = 0;
+type_declaration* IfcLuminousFluxMeasure_type = 0;
+type_declaration* IfcLuminousIntensityDistributionMeasure_type = 0;
+type_declaration* IfcLuminousIntensityMeasure_type = 0;
+type_declaration* IfcMagneticFluxDensityMeasure_type = 0;
+type_declaration* IfcMagneticFluxMeasure_type = 0;
+type_declaration* IfcMassDensityMeasure_type = 0;
+type_declaration* IfcMassFlowRateMeasure_type = 0;
+type_declaration* IfcMassMeasure_type = 0;
+type_declaration* IfcMassPerLengthMeasure_type = 0;
+type_declaration* IfcMinuteInHour_type = 0;
+type_declaration* IfcModulusOfElasticityMeasure_type = 0;
+type_declaration* IfcModulusOfLinearSubgradeReactionMeasure_type = 0;
+type_declaration* IfcModulusOfRotationalSubgradeReactionMeasure_type = 0;
+type_declaration* IfcModulusOfSubgradeReactionMeasure_type = 0;
+type_declaration* IfcMoistureDiffusivityMeasure_type = 0;
+type_declaration* IfcMolecularWeightMeasure_type = 0;
+type_declaration* IfcMomentOfInertiaMeasure_type = 0;
+type_declaration* IfcMonetaryMeasure_type = 0;
+type_declaration* IfcMonthInYearNumber_type = 0;
+type_declaration* IfcNormalisedRatioMeasure_type = 0;
+type_declaration* IfcNumericMeasure_type = 0;
+type_declaration* IfcPHMeasure_type = 0;
+type_declaration* IfcParameterValue_type = 0;
+type_declaration* IfcPlanarForceMeasure_type = 0;
+type_declaration* IfcPlaneAngleMeasure_type = 0;
+type_declaration* IfcPositiveLengthMeasure_type = 0;
+type_declaration* IfcPositivePlaneAngleMeasure_type = 0;
+type_declaration* IfcPositiveRatioMeasure_type = 0;
+type_declaration* IfcPowerMeasure_type = 0;
+type_declaration* IfcPresentableText_type = 0;
+type_declaration* IfcPressureMeasure_type = 0;
+type_declaration* IfcRadioActivityMeasure_type = 0;
+type_declaration* IfcRatioMeasure_type = 0;
+type_declaration* IfcReal_type = 0;
+type_declaration* IfcRotationalFrequencyMeasure_type = 0;
+type_declaration* IfcRotationalMassMeasure_type = 0;
+type_declaration* IfcRotationalStiffnessMeasure_type = 0;
+type_declaration* IfcSecondInMinute_type = 0;
+type_declaration* IfcSectionModulusMeasure_type = 0;
+type_declaration* IfcSectionalAreaIntegralMeasure_type = 0;
+type_declaration* IfcShearModulusMeasure_type = 0;
+type_declaration* IfcSolidAngleMeasure_type = 0;
+type_declaration* IfcSoundPowerMeasure_type = 0;
+type_declaration* IfcSoundPressureMeasure_type = 0;
+type_declaration* IfcSpecificHeatCapacityMeasure_type = 0;
+type_declaration* IfcSpecularExponent_type = 0;
+type_declaration* IfcSpecularRoughness_type = 0;
+type_declaration* IfcTemperatureGradientMeasure_type = 0;
+type_declaration* IfcText_type = 0;
+type_declaration* IfcTextAlignment_type = 0;
+type_declaration* IfcTextDecoration_type = 0;
+type_declaration* IfcTextFontName_type = 0;
+type_declaration* IfcTextTransformation_type = 0;
+type_declaration* IfcThermalAdmittanceMeasure_type = 0;
+type_declaration* IfcThermalConductivityMeasure_type = 0;
+type_declaration* IfcThermalExpansionCoefficientMeasure_type = 0;
+type_declaration* IfcThermalResistanceMeasure_type = 0;
+type_declaration* IfcThermalTransmittanceMeasure_type = 0;
+type_declaration* IfcThermodynamicTemperatureMeasure_type = 0;
+type_declaration* IfcTimeMeasure_type = 0;
+type_declaration* IfcTimeStamp_type = 0;
+type_declaration* IfcTorqueMeasure_type = 0;
+type_declaration* IfcVaporPermeabilityMeasure_type = 0;
+type_declaration* IfcVolumeMeasure_type = 0;
+type_declaration* IfcVolumetricFlowRateMeasure_type = 0;
+type_declaration* IfcWarpingConstantMeasure_type = 0;
+type_declaration* IfcWarpingMomentMeasure_type = 0;
+type_declaration* IfcYearNumber_type = 0;
+select_type* IfcActorSelect_type = 0;
+select_type* IfcAppliedValueSelect_type = 0;
+select_type* IfcAxis2Placement_type = 0;
+select_type* IfcBooleanOperand_type = 0;
+select_type* IfcCharacterStyleSelect_type = 0;
+select_type* IfcClassificationNotationSelect_type = 0;
+select_type* IfcColour_type = 0;
+select_type* IfcColourOrFactor_type = 0;
+select_type* IfcConditionCriterionSelect_type = 0;
+select_type* IfcCsgSelect_type = 0;
+select_type* IfcCurveFontOrScaledCurveFontSelect_type = 0;
+select_type* IfcCurveOrEdgeCurve_type = 0;
+select_type* IfcCurveStyleFontSelect_type = 0;
+select_type* IfcDateTimeSelect_type = 0;
+select_type* IfcDefinedSymbolSelect_type = 0;
+select_type* IfcDerivedMeasureValue_type = 0;
+select_type* IfcDocumentSelect_type = 0;
+select_type* IfcDraughtingCalloutElement_type = 0;
+select_type* IfcFillAreaStyleTileShapeSelect_type = 0;
+select_type* IfcFillStyleSelect_type = 0;
+select_type* IfcGeometricSetSelect_type = 0;
+select_type* IfcHatchLineDistanceSelect_type = 0;
+select_type* IfcLayeredItem_type = 0;
+select_type* IfcLibrarySelect_type = 0;
+select_type* IfcLightDistributionDataSourceSelect_type = 0;
+select_type* IfcMaterialSelect_type = 0;
+select_type* IfcMeasureValue_type = 0;
+select_type* IfcMetricValueSelect_type = 0;
+select_type* IfcObjectReferenceSelect_type = 0;
+select_type* IfcOrientationSelect_type = 0;
+select_type* IfcPointOrVertexPoint_type = 0;
+select_type* IfcPresentationStyleSelect_type = 0;
+select_type* IfcShell_type = 0;
+select_type* IfcSimpleValue_type = 0;
+select_type* IfcSizeSelect_type = 0;
+select_type* IfcSpecularHighlightSelect_type = 0;
+select_type* IfcStructuralActivityAssignmentSelect_type = 0;
+select_type* IfcSurfaceOrFaceSurface_type = 0;
+select_type* IfcSurfaceStyleElementSelect_type = 0;
+select_type* IfcSymbolStyleSelect_type = 0;
+select_type* IfcTextFontSelect_type = 0;
+select_type* IfcTextStyleSelect_type = 0;
+select_type* IfcTrimmingSelect_type = 0;
+select_type* IfcUnit_type = 0;
+select_type* IfcValue_type = 0;
+select_type* IfcVectorOrDirection_type = 0;
+enumeration_type* IfcActionSourceTypeEnum_type = 0;
+enumeration_type* IfcActionTypeEnum_type = 0;
+enumeration_type* IfcActuatorTypeEnum_type = 0;
+enumeration_type* IfcAddressTypeEnum_type = 0;
+enumeration_type* IfcAheadOrBehind_type = 0;
+enumeration_type* IfcAirTerminalBoxTypeEnum_type = 0;
+enumeration_type* IfcAirTerminalTypeEnum_type = 0;
+enumeration_type* IfcAirToAirHeatRecoveryTypeEnum_type = 0;
+enumeration_type* IfcAlarmTypeEnum_type = 0;
+enumeration_type* IfcAnalysisModelTypeEnum_type = 0;
+enumeration_type* IfcAnalysisTheoryTypeEnum_type = 0;
+enumeration_type* IfcArithmeticOperatorEnum_type = 0;
+enumeration_type* IfcAssemblyPlaceEnum_type = 0;
+enumeration_type* IfcBSplineCurveForm_type = 0;
+enumeration_type* IfcBeamTypeEnum_type = 0;
+enumeration_type* IfcBenchmarkEnum_type = 0;
+enumeration_type* IfcBoilerTypeEnum_type = 0;
+enumeration_type* IfcBooleanOperator_type = 0;
+enumeration_type* IfcBuildingElementProxyTypeEnum_type = 0;
+enumeration_type* IfcCableCarrierFittingTypeEnum_type = 0;
+enumeration_type* IfcCableCarrierSegmentTypeEnum_type = 0;
+enumeration_type* IfcCableSegmentTypeEnum_type = 0;
+enumeration_type* IfcChangeActionEnum_type = 0;
+enumeration_type* IfcChillerTypeEnum_type = 0;
+enumeration_type* IfcCoilTypeEnum_type = 0;
+enumeration_type* IfcColumnTypeEnum_type = 0;
+enumeration_type* IfcCompressorTypeEnum_type = 0;
+enumeration_type* IfcCondenserTypeEnum_type = 0;
+enumeration_type* IfcConnectionTypeEnum_type = 0;
+enumeration_type* IfcConstraintEnum_type = 0;
+enumeration_type* IfcControllerTypeEnum_type = 0;
+enumeration_type* IfcCooledBeamTypeEnum_type = 0;
+enumeration_type* IfcCoolingTowerTypeEnum_type = 0;
+enumeration_type* IfcCostScheduleTypeEnum_type = 0;
+enumeration_type* IfcCoveringTypeEnum_type = 0;
+enumeration_type* IfcCurrencyEnum_type = 0;
+enumeration_type* IfcCurtainWallTypeEnum_type = 0;
+enumeration_type* IfcDamperTypeEnum_type = 0;
+enumeration_type* IfcDataOriginEnum_type = 0;
+enumeration_type* IfcDerivedUnitEnum_type = 0;
+enumeration_type* IfcDimensionExtentUsage_type = 0;
+enumeration_type* IfcDirectionSenseEnum_type = 0;
+enumeration_type* IfcDistributionChamberElementTypeEnum_type = 0;
+enumeration_type* IfcDocumentConfidentialityEnum_type = 0;
+enumeration_type* IfcDocumentStatusEnum_type = 0;
+enumeration_type* IfcDoorPanelOperationEnum_type = 0;
+enumeration_type* IfcDoorPanelPositionEnum_type = 0;
+enumeration_type* IfcDoorStyleConstructionEnum_type = 0;
+enumeration_type* IfcDoorStyleOperationEnum_type = 0;
+enumeration_type* IfcDuctFittingTypeEnum_type = 0;
+enumeration_type* IfcDuctSegmentTypeEnum_type = 0;
+enumeration_type* IfcDuctSilencerTypeEnum_type = 0;
+enumeration_type* IfcElectricApplianceTypeEnum_type = 0;
+enumeration_type* IfcElectricCurrentEnum_type = 0;
+enumeration_type* IfcElectricDistributionPointFunctionEnum_type = 0;
+enumeration_type* IfcElectricFlowStorageDeviceTypeEnum_type = 0;
+enumeration_type* IfcElectricGeneratorTypeEnum_type = 0;
+enumeration_type* IfcElectricHeaterTypeEnum_type = 0;
+enumeration_type* IfcElectricMotorTypeEnum_type = 0;
+enumeration_type* IfcElectricTimeControlTypeEnum_type = 0;
+enumeration_type* IfcElementAssemblyTypeEnum_type = 0;
+enumeration_type* IfcElementCompositionEnum_type = 0;
+enumeration_type* IfcEnergySequenceEnum_type = 0;
+enumeration_type* IfcEnvironmentalImpactCategoryEnum_type = 0;
+enumeration_type* IfcEvaporativeCoolerTypeEnum_type = 0;
+enumeration_type* IfcEvaporatorTypeEnum_type = 0;
+enumeration_type* IfcFanTypeEnum_type = 0;
+enumeration_type* IfcFilterTypeEnum_type = 0;
+enumeration_type* IfcFireSuppressionTerminalTypeEnum_type = 0;
+enumeration_type* IfcFlowDirectionEnum_type = 0;
+enumeration_type* IfcFlowInstrumentTypeEnum_type = 0;
+enumeration_type* IfcFlowMeterTypeEnum_type = 0;
+enumeration_type* IfcFootingTypeEnum_type = 0;
+enumeration_type* IfcGasTerminalTypeEnum_type = 0;
+enumeration_type* IfcGeometricProjectionEnum_type = 0;
+enumeration_type* IfcGlobalOrLocalEnum_type = 0;
+enumeration_type* IfcHeatExchangerTypeEnum_type = 0;
+enumeration_type* IfcHumidifierTypeEnum_type = 0;
+enumeration_type* IfcInternalOrExternalEnum_type = 0;
+enumeration_type* IfcInventoryTypeEnum_type = 0;
+enumeration_type* IfcJunctionBoxTypeEnum_type = 0;
+enumeration_type* IfcLampTypeEnum_type = 0;
+enumeration_type* IfcLayerSetDirectionEnum_type = 0;
+enumeration_type* IfcLightDistributionCurveEnum_type = 0;
+enumeration_type* IfcLightEmissionSourceEnum_type = 0;
+enumeration_type* IfcLightFixtureTypeEnum_type = 0;
+enumeration_type* IfcLoadGroupTypeEnum_type = 0;
+enumeration_type* IfcLogicalOperatorEnum_type = 0;
+enumeration_type* IfcMemberTypeEnum_type = 0;
+enumeration_type* IfcMotorConnectionTypeEnum_type = 0;
+enumeration_type* IfcNullStyle_type = 0;
+enumeration_type* IfcObjectTypeEnum_type = 0;
+enumeration_type* IfcObjectiveEnum_type = 0;
+enumeration_type* IfcOccupantTypeEnum_type = 0;
+enumeration_type* IfcOutletTypeEnum_type = 0;
+enumeration_type* IfcPermeableCoveringOperationEnum_type = 0;
+enumeration_type* IfcPhysicalOrVirtualEnum_type = 0;
+enumeration_type* IfcPileConstructionEnum_type = 0;
+enumeration_type* IfcPileTypeEnum_type = 0;
+enumeration_type* IfcPipeFittingTypeEnum_type = 0;
+enumeration_type* IfcPipeSegmentTypeEnum_type = 0;
+enumeration_type* IfcPlateTypeEnum_type = 0;
+enumeration_type* IfcProcedureTypeEnum_type = 0;
+enumeration_type* IfcProfileTypeEnum_type = 0;
+enumeration_type* IfcProjectOrderRecordTypeEnum_type = 0;
+enumeration_type* IfcProjectOrderTypeEnum_type = 0;
+enumeration_type* IfcProjectedOrTrueLengthEnum_type = 0;
+enumeration_type* IfcPropertySourceEnum_type = 0;
+enumeration_type* IfcProtectiveDeviceTypeEnum_type = 0;
+enumeration_type* IfcPumpTypeEnum_type = 0;
+enumeration_type* IfcRailingTypeEnum_type = 0;
+enumeration_type* IfcRampFlightTypeEnum_type = 0;
+enumeration_type* IfcRampTypeEnum_type = 0;
+enumeration_type* IfcReflectanceMethodEnum_type = 0;
+enumeration_type* IfcReinforcingBarRoleEnum_type = 0;
+enumeration_type* IfcReinforcingBarSurfaceEnum_type = 0;
+enumeration_type* IfcResourceConsumptionEnum_type = 0;
+enumeration_type* IfcRibPlateDirectionEnum_type = 0;
+enumeration_type* IfcRoleEnum_type = 0;
+enumeration_type* IfcRoofTypeEnum_type = 0;
+enumeration_type* IfcSIPrefix_type = 0;
+enumeration_type* IfcSIUnitName_type = 0;
+enumeration_type* IfcSanitaryTerminalTypeEnum_type = 0;
+enumeration_type* IfcSectionTypeEnum_type = 0;
+enumeration_type* IfcSensorTypeEnum_type = 0;
+enumeration_type* IfcSequenceEnum_type = 0;
+enumeration_type* IfcServiceLifeFactorTypeEnum_type = 0;
+enumeration_type* IfcServiceLifeTypeEnum_type = 0;
+enumeration_type* IfcSlabTypeEnum_type = 0;
+enumeration_type* IfcSoundScaleEnum_type = 0;
+enumeration_type* IfcSpaceHeaterTypeEnum_type = 0;
+enumeration_type* IfcSpaceTypeEnum_type = 0;
+enumeration_type* IfcStackTerminalTypeEnum_type = 0;
+enumeration_type* IfcStairFlightTypeEnum_type = 0;
+enumeration_type* IfcStairTypeEnum_type = 0;
+enumeration_type* IfcStateEnum_type = 0;
+enumeration_type* IfcStructuralCurveTypeEnum_type = 0;
+enumeration_type* IfcStructuralSurfaceTypeEnum_type = 0;
+enumeration_type* IfcSurfaceSide_type = 0;
+enumeration_type* IfcSurfaceTextureEnum_type = 0;
+enumeration_type* IfcSwitchingDeviceTypeEnum_type = 0;
+enumeration_type* IfcTankTypeEnum_type = 0;
+enumeration_type* IfcTendonTypeEnum_type = 0;
+enumeration_type* IfcTextPath_type = 0;
+enumeration_type* IfcThermalLoadSourceEnum_type = 0;
+enumeration_type* IfcThermalLoadTypeEnum_type = 0;
+enumeration_type* IfcTimeSeriesDataTypeEnum_type = 0;
+enumeration_type* IfcTimeSeriesScheduleTypeEnum_type = 0;
+enumeration_type* IfcTransformerTypeEnum_type = 0;
+enumeration_type* IfcTransitionCode_type = 0;
+enumeration_type* IfcTransportElementTypeEnum_type = 0;
+enumeration_type* IfcTrimmingPreference_type = 0;
+enumeration_type* IfcTubeBundleTypeEnum_type = 0;
+enumeration_type* IfcUnitEnum_type = 0;
+enumeration_type* IfcUnitaryEquipmentTypeEnum_type = 0;
+enumeration_type* IfcValveTypeEnum_type = 0;
+enumeration_type* IfcVibrationIsolatorTypeEnum_type = 0;
+enumeration_type* IfcWallTypeEnum_type = 0;
+enumeration_type* IfcWasteTerminalTypeEnum_type = 0;
+enumeration_type* IfcWindowPanelOperationEnum_type = 0;
+enumeration_type* IfcWindowPanelPositionEnum_type = 0;
+enumeration_type* IfcWindowStyleConstructionEnum_type = 0;
+enumeration_type* IfcWindowStyleOperationEnum_type = 0;
+enumeration_type* IfcWorkControlTypeEnum_type = 0;
+schema_definition* populate_schema() {
+    IfcAbsorbedDoseMeasure_type = new type_declaration(IfcSchema::Type::IfcAbsorbedDoseMeasure, new simple_type(simple_type::real_type));
+    IfcAccelerationMeasure_type = new type_declaration(IfcSchema::Type::IfcAccelerationMeasure, new simple_type(simple_type::real_type));
+    IfcAmountOfSubstanceMeasure_type = new type_declaration(IfcSchema::Type::IfcAmountOfSubstanceMeasure, new simple_type(simple_type::real_type));
+    IfcAngularVelocityMeasure_type = new type_declaration(IfcSchema::Type::IfcAngularVelocityMeasure, new simple_type(simple_type::real_type));
+    IfcAreaMeasure_type = new type_declaration(IfcSchema::Type::IfcAreaMeasure, new simple_type(simple_type::real_type));
+    IfcBoolean_type = new type_declaration(IfcSchema::Type::IfcBoolean, new simple_type(simple_type::boolean_type));
+    IfcComplexNumber_type = new type_declaration(IfcSchema::Type::IfcComplexNumber, new aggregation_type(aggregation_type::array_type, 1, 2, new simple_type(simple_type::real_type)));
+    IfcCompoundPlaneAngleMeasure_type = new type_declaration(IfcSchema::Type::IfcCompoundPlaneAngleMeasure, new aggregation_type(aggregation_type::list_type, 3, 4, new simple_type(simple_type::integer_type)));
+    IfcContextDependentMeasure_type = new type_declaration(IfcSchema::Type::IfcContextDependentMeasure, new simple_type(simple_type::real_type));
+    IfcCountMeasure_type = new type_declaration(IfcSchema::Type::IfcCountMeasure, new simple_type(simple_type::number_type));
+    IfcCurvatureMeasure_type = new type_declaration(IfcSchema::Type::IfcCurvatureMeasure, new simple_type(simple_type::real_type));
+    IfcDayInMonthNumber_type = new type_declaration(IfcSchema::Type::IfcDayInMonthNumber, new simple_type(simple_type::integer_type));
+    IfcDaylightSavingHour_type = new type_declaration(IfcSchema::Type::IfcDaylightSavingHour, new simple_type(simple_type::integer_type));
+    IfcDescriptiveMeasure_type = new type_declaration(IfcSchema::Type::IfcDescriptiveMeasure, new simple_type(simple_type::string_type));
+    IfcDimensionCount_type = new type_declaration(IfcSchema::Type::IfcDimensionCount, new simple_type(simple_type::integer_type));
+    IfcDoseEquivalentMeasure_type = new type_declaration(IfcSchema::Type::IfcDoseEquivalentMeasure, new simple_type(simple_type::real_type));
+    IfcDynamicViscosityMeasure_type = new type_declaration(IfcSchema::Type::IfcDynamicViscosityMeasure, new simple_type(simple_type::real_type));
+    IfcElectricCapacitanceMeasure_type = new type_declaration(IfcSchema::Type::IfcElectricCapacitanceMeasure, new simple_type(simple_type::real_type));
+    IfcElectricChargeMeasure_type = new type_declaration(IfcSchema::Type::IfcElectricChargeMeasure, new simple_type(simple_type::real_type));
+    IfcElectricConductanceMeasure_type = new type_declaration(IfcSchema::Type::IfcElectricConductanceMeasure, new simple_type(simple_type::real_type));
+    IfcElectricCurrentMeasure_type = new type_declaration(IfcSchema::Type::IfcElectricCurrentMeasure, new simple_type(simple_type::real_type));
+    IfcElectricResistanceMeasure_type = new type_declaration(IfcSchema::Type::IfcElectricResistanceMeasure, new simple_type(simple_type::real_type));
+    IfcElectricVoltageMeasure_type = new type_declaration(IfcSchema::Type::IfcElectricVoltageMeasure, new simple_type(simple_type::real_type));
+    IfcEnergyMeasure_type = new type_declaration(IfcSchema::Type::IfcEnergyMeasure, new simple_type(simple_type::real_type));
+    IfcFontStyle_type = new type_declaration(IfcSchema::Type::IfcFontStyle, new simple_type(simple_type::string_type));
+    IfcFontVariant_type = new type_declaration(IfcSchema::Type::IfcFontVariant, new simple_type(simple_type::string_type));
+    IfcFontWeight_type = new type_declaration(IfcSchema::Type::IfcFontWeight, new simple_type(simple_type::string_type));
+    IfcForceMeasure_type = new type_declaration(IfcSchema::Type::IfcForceMeasure, new simple_type(simple_type::real_type));
+    IfcFrequencyMeasure_type = new type_declaration(IfcSchema::Type::IfcFrequencyMeasure, new simple_type(simple_type::real_type));
+    IfcGloballyUniqueId_type = new type_declaration(IfcSchema::Type::IfcGloballyUniqueId, new simple_type(simple_type::string_type));
+    IfcHeatFluxDensityMeasure_type = new type_declaration(IfcSchema::Type::IfcHeatFluxDensityMeasure, new simple_type(simple_type::real_type));
+    IfcHeatingValueMeasure_type = new type_declaration(IfcSchema::Type::IfcHeatingValueMeasure, new simple_type(simple_type::real_type));
+    IfcHourInDay_type = new type_declaration(IfcSchema::Type::IfcHourInDay, new simple_type(simple_type::integer_type));
+    IfcIdentifier_type = new type_declaration(IfcSchema::Type::IfcIdentifier, new simple_type(simple_type::string_type));
+    IfcIlluminanceMeasure_type = new type_declaration(IfcSchema::Type::IfcIlluminanceMeasure, new simple_type(simple_type::real_type));
+    IfcInductanceMeasure_type = new type_declaration(IfcSchema::Type::IfcInductanceMeasure, new simple_type(simple_type::real_type));
+    IfcInteger_type = new type_declaration(IfcSchema::Type::IfcInteger, new simple_type(simple_type::integer_type));
+    IfcIntegerCountRateMeasure_type = new type_declaration(IfcSchema::Type::IfcIntegerCountRateMeasure, new simple_type(simple_type::integer_type));
+    IfcIonConcentrationMeasure_type = new type_declaration(IfcSchema::Type::IfcIonConcentrationMeasure, new simple_type(simple_type::real_type));
+    IfcIsothermalMoistureCapacityMeasure_type = new type_declaration(IfcSchema::Type::IfcIsothermalMoistureCapacityMeasure, new simple_type(simple_type::real_type));
+    IfcKinematicViscosityMeasure_type = new type_declaration(IfcSchema::Type::IfcKinematicViscosityMeasure, new simple_type(simple_type::real_type));
+    IfcLabel_type = new type_declaration(IfcSchema::Type::IfcLabel, new simple_type(simple_type::string_type));
+    IfcLengthMeasure_type = new type_declaration(IfcSchema::Type::IfcLengthMeasure, new simple_type(simple_type::real_type));
+    IfcLinearForceMeasure_type = new type_declaration(IfcSchema::Type::IfcLinearForceMeasure, new simple_type(simple_type::real_type));
+    IfcLinearMomentMeasure_type = new type_declaration(IfcSchema::Type::IfcLinearMomentMeasure, new simple_type(simple_type::real_type));
+    IfcLinearStiffnessMeasure_type = new type_declaration(IfcSchema::Type::IfcLinearStiffnessMeasure, new simple_type(simple_type::real_type));
+    IfcLinearVelocityMeasure_type = new type_declaration(IfcSchema::Type::IfcLinearVelocityMeasure, new simple_type(simple_type::real_type));
+    IfcLogical_type = new type_declaration(IfcSchema::Type::IfcLogical, new simple_type(simple_type::logical_type));
+    IfcLuminousFluxMeasure_type = new type_declaration(IfcSchema::Type::IfcLuminousFluxMeasure, new simple_type(simple_type::real_type));
+    IfcLuminousIntensityDistributionMeasure_type = new type_declaration(IfcSchema::Type::IfcLuminousIntensityDistributionMeasure, new simple_type(simple_type::real_type));
+    IfcLuminousIntensityMeasure_type = new type_declaration(IfcSchema::Type::IfcLuminousIntensityMeasure, new simple_type(simple_type::real_type));
+    IfcMagneticFluxDensityMeasure_type = new type_declaration(IfcSchema::Type::IfcMagneticFluxDensityMeasure, new simple_type(simple_type::real_type));
+    IfcMagneticFluxMeasure_type = new type_declaration(IfcSchema::Type::IfcMagneticFluxMeasure, new simple_type(simple_type::real_type));
+    IfcMassDensityMeasure_type = new type_declaration(IfcSchema::Type::IfcMassDensityMeasure, new simple_type(simple_type::real_type));
+    IfcMassFlowRateMeasure_type = new type_declaration(IfcSchema::Type::IfcMassFlowRateMeasure, new simple_type(simple_type::real_type));
+    IfcMassMeasure_type = new type_declaration(IfcSchema::Type::IfcMassMeasure, new simple_type(simple_type::real_type));
+    IfcMassPerLengthMeasure_type = new type_declaration(IfcSchema::Type::IfcMassPerLengthMeasure, new simple_type(simple_type::real_type));
+    IfcMinuteInHour_type = new type_declaration(IfcSchema::Type::IfcMinuteInHour, new simple_type(simple_type::integer_type));
+    IfcModulusOfElasticityMeasure_type = new type_declaration(IfcSchema::Type::IfcModulusOfElasticityMeasure, new simple_type(simple_type::real_type));
+    IfcModulusOfLinearSubgradeReactionMeasure_type = new type_declaration(IfcSchema::Type::IfcModulusOfLinearSubgradeReactionMeasure, new simple_type(simple_type::real_type));
+    IfcModulusOfRotationalSubgradeReactionMeasure_type = new type_declaration(IfcSchema::Type::IfcModulusOfRotationalSubgradeReactionMeasure, new simple_type(simple_type::real_type));
+    IfcModulusOfSubgradeReactionMeasure_type = new type_declaration(IfcSchema::Type::IfcModulusOfSubgradeReactionMeasure, new simple_type(simple_type::real_type));
+    IfcMoistureDiffusivityMeasure_type = new type_declaration(IfcSchema::Type::IfcMoistureDiffusivityMeasure, new simple_type(simple_type::real_type));
+    IfcMolecularWeightMeasure_type = new type_declaration(IfcSchema::Type::IfcMolecularWeightMeasure, new simple_type(simple_type::real_type));
+    IfcMomentOfInertiaMeasure_type = new type_declaration(IfcSchema::Type::IfcMomentOfInertiaMeasure, new simple_type(simple_type::real_type));
+    IfcMonetaryMeasure_type = new type_declaration(IfcSchema::Type::IfcMonetaryMeasure, new simple_type(simple_type::real_type));
+    IfcMonthInYearNumber_type = new type_declaration(IfcSchema::Type::IfcMonthInYearNumber, new simple_type(simple_type::integer_type));
+    IfcNumericMeasure_type = new type_declaration(IfcSchema::Type::IfcNumericMeasure, new simple_type(simple_type::number_type));
+    IfcPHMeasure_type = new type_declaration(IfcSchema::Type::IfcPHMeasure, new simple_type(simple_type::real_type));
+    IfcParameterValue_type = new type_declaration(IfcSchema::Type::IfcParameterValue, new simple_type(simple_type::real_type));
+    IfcPlanarForceMeasure_type = new type_declaration(IfcSchema::Type::IfcPlanarForceMeasure, new simple_type(simple_type::real_type));
+    IfcPlaneAngleMeasure_type = new type_declaration(IfcSchema::Type::IfcPlaneAngleMeasure, new simple_type(simple_type::real_type));
+    IfcPositiveLengthMeasure_type = new type_declaration(IfcSchema::Type::IfcPositiveLengthMeasure, new named_type(IfcLengthMeasure_type));
+    IfcPositivePlaneAngleMeasure_type = new type_declaration(IfcSchema::Type::IfcPositivePlaneAngleMeasure, new named_type(IfcPlaneAngleMeasure_type));
+    IfcPowerMeasure_type = new type_declaration(IfcSchema::Type::IfcPowerMeasure, new simple_type(simple_type::real_type));
+    IfcPresentableText_type = new type_declaration(IfcSchema::Type::IfcPresentableText, new simple_type(simple_type::string_type));
+    IfcPressureMeasure_type = new type_declaration(IfcSchema::Type::IfcPressureMeasure, new simple_type(simple_type::real_type));
+    IfcRadioActivityMeasure_type = new type_declaration(IfcSchema::Type::IfcRadioActivityMeasure, new simple_type(simple_type::real_type));
+    IfcRatioMeasure_type = new type_declaration(IfcSchema::Type::IfcRatioMeasure, new simple_type(simple_type::real_type));
+    IfcReal_type = new type_declaration(IfcSchema::Type::IfcReal, new simple_type(simple_type::real_type));
+    IfcRotationalFrequencyMeasure_type = new type_declaration(IfcSchema::Type::IfcRotationalFrequencyMeasure, new simple_type(simple_type::real_type));
+    IfcRotationalMassMeasure_type = new type_declaration(IfcSchema::Type::IfcRotationalMassMeasure, new simple_type(simple_type::real_type));
+    IfcRotationalStiffnessMeasure_type = new type_declaration(IfcSchema::Type::IfcRotationalStiffnessMeasure, new simple_type(simple_type::real_type));
+    IfcSecondInMinute_type = new type_declaration(IfcSchema::Type::IfcSecondInMinute, new simple_type(simple_type::real_type));
+    IfcSectionModulusMeasure_type = new type_declaration(IfcSchema::Type::IfcSectionModulusMeasure, new simple_type(simple_type::real_type));
+    IfcSectionalAreaIntegralMeasure_type = new type_declaration(IfcSchema::Type::IfcSectionalAreaIntegralMeasure, new simple_type(simple_type::real_type));
+    IfcShearModulusMeasure_type = new type_declaration(IfcSchema::Type::IfcShearModulusMeasure, new simple_type(simple_type::real_type));
+    IfcSolidAngleMeasure_type = new type_declaration(IfcSchema::Type::IfcSolidAngleMeasure, new simple_type(simple_type::real_type));
+    IfcSoundPowerMeasure_type = new type_declaration(IfcSchema::Type::IfcSoundPowerMeasure, new simple_type(simple_type::real_type));
+    IfcSoundPressureMeasure_type = new type_declaration(IfcSchema::Type::IfcSoundPressureMeasure, new simple_type(simple_type::real_type));
+    IfcSpecificHeatCapacityMeasure_type = new type_declaration(IfcSchema::Type::IfcSpecificHeatCapacityMeasure, new simple_type(simple_type::real_type));
+    IfcSpecularExponent_type = new type_declaration(IfcSchema::Type::IfcSpecularExponent, new simple_type(simple_type::real_type));
+    IfcSpecularRoughness_type = new type_declaration(IfcSchema::Type::IfcSpecularRoughness, new simple_type(simple_type::real_type));
+    IfcTemperatureGradientMeasure_type = new type_declaration(IfcSchema::Type::IfcTemperatureGradientMeasure, new simple_type(simple_type::real_type));
+    IfcText_type = new type_declaration(IfcSchema::Type::IfcText, new simple_type(simple_type::string_type));
+    IfcTextAlignment_type = new type_declaration(IfcSchema::Type::IfcTextAlignment, new simple_type(simple_type::string_type));
+    IfcTextDecoration_type = new type_declaration(IfcSchema::Type::IfcTextDecoration, new simple_type(simple_type::string_type));
+    IfcTextFontName_type = new type_declaration(IfcSchema::Type::IfcTextFontName, new simple_type(simple_type::string_type));
+    IfcTextTransformation_type = new type_declaration(IfcSchema::Type::IfcTextTransformation, new simple_type(simple_type::string_type));
+    IfcThermalAdmittanceMeasure_type = new type_declaration(IfcSchema::Type::IfcThermalAdmittanceMeasure, new simple_type(simple_type::real_type));
+    IfcThermalConductivityMeasure_type = new type_declaration(IfcSchema::Type::IfcThermalConductivityMeasure, new simple_type(simple_type::real_type));
+    IfcThermalExpansionCoefficientMeasure_type = new type_declaration(IfcSchema::Type::IfcThermalExpansionCoefficientMeasure, new simple_type(simple_type::real_type));
+    IfcThermalResistanceMeasure_type = new type_declaration(IfcSchema::Type::IfcThermalResistanceMeasure, new simple_type(simple_type::real_type));
+    IfcThermalTransmittanceMeasure_type = new type_declaration(IfcSchema::Type::IfcThermalTransmittanceMeasure, new simple_type(simple_type::real_type));
+    IfcThermodynamicTemperatureMeasure_type = new type_declaration(IfcSchema::Type::IfcThermodynamicTemperatureMeasure, new simple_type(simple_type::real_type));
+    IfcTimeMeasure_type = new type_declaration(IfcSchema::Type::IfcTimeMeasure, new simple_type(simple_type::real_type));
+    IfcTimeStamp_type = new type_declaration(IfcSchema::Type::IfcTimeStamp, new simple_type(simple_type::integer_type));
+    IfcTorqueMeasure_type = new type_declaration(IfcSchema::Type::IfcTorqueMeasure, new simple_type(simple_type::real_type));
+    IfcVaporPermeabilityMeasure_type = new type_declaration(IfcSchema::Type::IfcVaporPermeabilityMeasure, new simple_type(simple_type::real_type));
+    IfcVolumeMeasure_type = new type_declaration(IfcSchema::Type::IfcVolumeMeasure, new simple_type(simple_type::real_type));
+    IfcVolumetricFlowRateMeasure_type = new type_declaration(IfcSchema::Type::IfcVolumetricFlowRateMeasure, new simple_type(simple_type::real_type));
+    IfcWarpingConstantMeasure_type = new type_declaration(IfcSchema::Type::IfcWarpingConstantMeasure, new simple_type(simple_type::real_type));
+    IfcWarpingMomentMeasure_type = new type_declaration(IfcSchema::Type::IfcWarpingMomentMeasure, new simple_type(simple_type::real_type));
+    IfcYearNumber_type = new type_declaration(IfcSchema::Type::IfcYearNumber, new simple_type(simple_type::integer_type));
+    IfcBoxAlignment_type = new type_declaration(IfcSchema::Type::IfcBoxAlignment, new named_type(IfcLabel_type));
+    IfcNormalisedRatioMeasure_type = new type_declaration(IfcSchema::Type::IfcNormalisedRatioMeasure, new named_type(IfcRatioMeasure_type));
+    IfcPositiveRatioMeasure_type = new type_declaration(IfcSchema::Type::IfcPositiveRatioMeasure, new named_type(IfcRatioMeasure_type));
     {
         std::vector<std::string> items; items.reserve(27);
         items.push_back("BRAKES");
@@ -176,9 +1156,8 @@ void populate() {
         items.push_back("USERDEFINED");
         items.push_back("WAVE");
         items.push_back("WIND_W");
-        IfcActionSourceTypeEnum_type = new enumeration_type("IfcActionSourceTypeEnum", items);
+        IfcActionSourceTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcActionSourceTypeEnum, items);
     }
-    declaration* IfcActionTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("EXTRAORDINARY_A");
@@ -186,9 +1165,8 @@ void populate() {
         items.push_back("PERMANENT_G");
         items.push_back("USERDEFINED");
         items.push_back("VARIABLE_Q");
-        IfcActionTypeEnum_type = new enumeration_type("IfcActionTypeEnum", items);
+        IfcActionTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcActionTypeEnum, items);
     }
-    declaration* IfcActuatorTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("ELECTRICACTUATOR");
@@ -198,9 +1176,8 @@ void populate() {
         items.push_back("PNEUMATICACTUATOR");
         items.push_back("THERMOSTATICACTUATOR");
         items.push_back("USERDEFINED");
-        IfcActuatorTypeEnum_type = new enumeration_type("IfcActuatorTypeEnum", items);
+        IfcActuatorTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcActuatorTypeEnum, items);
     }
-    declaration* IfcAddressTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("DISTRIBUTIONPOINT");
@@ -208,16 +1185,14 @@ void populate() {
         items.push_back("OFFICE");
         items.push_back("SITE");
         items.push_back("USERDEFINED");
-        IfcAddressTypeEnum_type = new enumeration_type("IfcAddressTypeEnum", items);
+        IfcAddressTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcAddressTypeEnum, items);
     }
-    declaration* IfcAheadOrBehind_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("AHEAD");
         items.push_back("BEHIND");
-        IfcAheadOrBehind_type = new enumeration_type("IfcAheadOrBehind", items);
+        IfcAheadOrBehind_type = new enumeration_type(IfcSchema::Type::IfcAheadOrBehind, items);
     }
-    declaration* IfcAirTerminalBoxTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("CONSTANTFLOW");
@@ -225,9 +1200,8 @@ void populate() {
         items.push_back("USERDEFINED");
         items.push_back("VARIABLEFLOWPRESSUREDEPENDANT");
         items.push_back("VARIABLEFLOWPRESSUREINDEPENDANT");
-        IfcAirTerminalBoxTypeEnum_type = new enumeration_type("IfcAirTerminalBoxTypeEnum", items);
+        IfcAirTerminalBoxTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcAirTerminalBoxTypeEnum, items);
     }
-    declaration* IfcAirTerminalTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("DIFFUSER");
@@ -239,9 +1213,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("REGISTER");
         items.push_back("USERDEFINED");
-        IfcAirTerminalTypeEnum_type = new enumeration_type("IfcAirTerminalTypeEnum", items);
+        IfcAirTerminalTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcAirTerminalTypeEnum, items);
     }
-    declaration* IfcAirToAirHeatRecoveryTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(11);
         items.push_back("FIXEDPLATECOUNTERFLOWEXCHANGER");
@@ -255,9 +1228,8 @@ void populate() {
         items.push_back("THERMOSIPHONSEALEDTUBEHEATEXCHANGERS");
         items.push_back("TWINTOWERENTHALPYRECOVERYLOOPS");
         items.push_back("USERDEFINED");
-        IfcAirToAirHeatRecoveryTypeEnum_type = new enumeration_type("IfcAirToAirHeatRecoveryTypeEnum", items);
+        IfcAirToAirHeatRecoveryTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcAirToAirHeatRecoveryTypeEnum, items);
     }
-    declaration* IfcAlarmTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("BELL");
@@ -268,9 +1240,8 @@ void populate() {
         items.push_back("SIREN");
         items.push_back("USERDEFINED");
         items.push_back("WHISTLE");
-        IfcAlarmTypeEnum_type = new enumeration_type("IfcAlarmTypeEnum", items);
+        IfcAlarmTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcAlarmTypeEnum, items);
     }
-    declaration* IfcAnalysisModelTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("IN_PLANE_LOADING_2D");
@@ -278,9 +1249,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("OUT_PLANE_LOADING_2D");
         items.push_back("USERDEFINED");
-        IfcAnalysisModelTypeEnum_type = new enumeration_type("IfcAnalysisModelTypeEnum", items);
+        IfcAnalysisModelTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcAnalysisModelTypeEnum, items);
     }
-    declaration* IfcAnalysisTheoryTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("FIRST_ORDER_THEORY");
@@ -289,26 +1259,23 @@ void populate() {
         items.push_back("SECOND_ORDER_THEORY");
         items.push_back("THIRD_ORDER_THEORY");
         items.push_back("USERDEFINED");
-        IfcAnalysisTheoryTypeEnum_type = new enumeration_type("IfcAnalysisTheoryTypeEnum", items);
+        IfcAnalysisTheoryTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcAnalysisTheoryTypeEnum, items);
     }
-    declaration* IfcArithmeticOperatorEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("ADD");
         items.push_back("DIVIDE");
         items.push_back("MULTIPLY");
         items.push_back("SUBTRACT");
-        IfcArithmeticOperatorEnum_type = new enumeration_type("IfcArithmeticOperatorEnum", items);
+        IfcArithmeticOperatorEnum_type = new enumeration_type(IfcSchema::Type::IfcArithmeticOperatorEnum, items);
     }
-    declaration* IfcAssemblyPlaceEnum_type;
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("FACTORY");
         items.push_back("NOTDEFINED");
         items.push_back("SITE");
-        IfcAssemblyPlaceEnum_type = new enumeration_type("IfcAssemblyPlaceEnum", items);
+        IfcAssemblyPlaceEnum_type = new enumeration_type(IfcSchema::Type::IfcAssemblyPlaceEnum, items);
     }
-    declaration* IfcBSplineCurveForm_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("CIRCULAR_ARC");
@@ -317,9 +1284,8 @@ void populate() {
         items.push_back("PARABOLIC_ARC");
         items.push_back("POLYLINE_FORM");
         items.push_back("UNSPECIFIED");
-        IfcBSplineCurveForm_type = new enumeration_type("IfcBSplineCurveForm", items);
+        IfcBSplineCurveForm_type = new enumeration_type(IfcSchema::Type::IfcBSplineCurveForm, items);
     }
-    declaration* IfcBeamTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("BEAM");
@@ -328,9 +1294,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("T_BEAM");
         items.push_back("USERDEFINED");
-        IfcBeamTypeEnum_type = new enumeration_type("IfcBeamTypeEnum", items);
+        IfcBeamTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcBeamTypeEnum, items);
     }
-    declaration* IfcBenchmarkEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("EQUALTO");
@@ -339,33 +1304,29 @@ void populate() {
         items.push_back("LESSTHAN");
         items.push_back("LESSTHANOREQUALTO");
         items.push_back("NOTEQUALTO");
-        IfcBenchmarkEnum_type = new enumeration_type("IfcBenchmarkEnum", items);
+        IfcBenchmarkEnum_type = new enumeration_type(IfcSchema::Type::IfcBenchmarkEnum, items);
     }
-    declaration* IfcBoilerTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("NOTDEFINED");
         items.push_back("STEAM");
         items.push_back("USERDEFINED");
         items.push_back("WATER");
-        IfcBoilerTypeEnum_type = new enumeration_type("IfcBoilerTypeEnum", items);
+        IfcBoilerTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcBoilerTypeEnum, items);
     }
-    declaration* IfcBooleanOperator_type;
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("DIFFERENCE");
         items.push_back("INTERSECTION");
         items.push_back("UNION");
-        IfcBooleanOperator_type = new enumeration_type("IfcBooleanOperator", items);
+        IfcBooleanOperator_type = new enumeration_type(IfcSchema::Type::IfcBooleanOperator, items);
     }
-    declaration* IfcBuildingElementProxyTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcBuildingElementProxyTypeEnum_type = new enumeration_type("IfcBuildingElementProxyTypeEnum", items);
+        IfcBuildingElementProxyTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcBuildingElementProxyTypeEnum, items);
     }
-    declaration* IfcCableCarrierFittingTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("BEND");
@@ -374,9 +1335,8 @@ void populate() {
         items.push_back("REDUCER");
         items.push_back("TEE");
         items.push_back("USERDEFINED");
-        IfcCableCarrierFittingTypeEnum_type = new enumeration_type("IfcCableCarrierFittingTypeEnum", items);
+        IfcCableCarrierFittingTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcCableCarrierFittingTypeEnum, items);
     }
-    declaration* IfcCableCarrierSegmentTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("CABLELADDERSEGMENT");
@@ -385,18 +1345,16 @@ void populate() {
         items.push_back("CONDUITSEGMENT");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcCableCarrierSegmentTypeEnum_type = new enumeration_type("IfcCableCarrierSegmentTypeEnum", items);
+        IfcCableCarrierSegmentTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcCableCarrierSegmentTypeEnum, items);
     }
-    declaration* IfcCableSegmentTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("CABLESEGMENT");
         items.push_back("CONDUCTORSEGMENT");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcCableSegmentTypeEnum_type = new enumeration_type("IfcCableSegmentTypeEnum", items);
+        IfcCableSegmentTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcCableSegmentTypeEnum, items);
     }
-    declaration* IfcChangeActionEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("ADDED");
@@ -405,9 +1363,8 @@ void populate() {
         items.push_back("MODIFIEDADDED");
         items.push_back("MODIFIEDDELETED");
         items.push_back("NOCHANGE");
-        IfcChangeActionEnum_type = new enumeration_type("IfcChangeActionEnum", items);
+        IfcChangeActionEnum_type = new enumeration_type(IfcSchema::Type::IfcChangeActionEnum, items);
     }
-    declaration* IfcChillerTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("AIRCOOLED");
@@ -415,9 +1372,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
         items.push_back("WATERCOOLED");
-        IfcChillerTypeEnum_type = new enumeration_type("IfcChillerTypeEnum", items);
+        IfcChillerTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcChillerTypeEnum, items);
     }
-    declaration* IfcCoilTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("DXCOOLINGCOIL");
@@ -428,17 +1384,15 @@ void populate() {
         items.push_back("USERDEFINED");
         items.push_back("WATERCOOLINGCOIL");
         items.push_back("WATERHEATINGCOIL");
-        IfcCoilTypeEnum_type = new enumeration_type("IfcCoilTypeEnum", items);
+        IfcCoilTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcCoilTypeEnum, items);
     }
-    declaration* IfcColumnTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("COLUMN");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcColumnTypeEnum_type = new enumeration_type("IfcColumnTypeEnum", items);
+        IfcColumnTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcColumnTypeEnum, items);
     }
-    declaration* IfcCompressorTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(17);
         items.push_back("BOOSTER");
@@ -458,9 +1412,8 @@ void populate() {
         items.push_back("TWINSCREW");
         items.push_back("USERDEFINED");
         items.push_back("WELDEDSHELLHERMETIC");
-        IfcCompressorTypeEnum_type = new enumeration_type("IfcCompressorTypeEnum", items);
+        IfcCompressorTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcCompressorTypeEnum, items);
     }
-    declaration* IfcCondenserTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("AIRCOOLED");
@@ -471,18 +1424,16 @@ void populate() {
         items.push_back("WATERCOOLEDSHELLCOIL");
         items.push_back("WATERCOOLEDSHELLTUBE");
         items.push_back("WATERCOOLEDTUBEINTUBE");
-        IfcCondenserTypeEnum_type = new enumeration_type("IfcCondenserTypeEnum", items);
+        IfcCondenserTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcCondenserTypeEnum, items);
     }
-    declaration* IfcConnectionTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("ATEND");
         items.push_back("ATPATH");
         items.push_back("ATSTART");
         items.push_back("NOTDEFINED");
-        IfcConnectionTypeEnum_type = new enumeration_type("IfcConnectionTypeEnum", items);
+        IfcConnectionTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcConnectionTypeEnum, items);
     }
-    declaration* IfcConstraintEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("ADVISORY");
@@ -490,9 +1441,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("SOFT");
         items.push_back("USERDEFINED");
-        IfcConstraintEnum_type = new enumeration_type("IfcConstraintEnum", items);
+        IfcConstraintEnum_type = new enumeration_type(IfcSchema::Type::IfcConstraintEnum, items);
     }
-    declaration* IfcControllerTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("FLOATING");
@@ -503,18 +1453,16 @@ void populate() {
         items.push_back("TIMEDTWOPOSITION");
         items.push_back("TWOPOSITION");
         items.push_back("USERDEFINED");
-        IfcControllerTypeEnum_type = new enumeration_type("IfcControllerTypeEnum", items);
+        IfcControllerTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcControllerTypeEnum, items);
     }
-    declaration* IfcCooledBeamTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("ACTIVE");
         items.push_back("NOTDEFINED");
         items.push_back("PASSIVE");
         items.push_back("USERDEFINED");
-        IfcCooledBeamTypeEnum_type = new enumeration_type("IfcCooledBeamTypeEnum", items);
+        IfcCooledBeamTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcCooledBeamTypeEnum, items);
     }
-    declaration* IfcCoolingTowerTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("MECHANICALFORCEDDRAFT");
@@ -522,9 +1470,8 @@ void populate() {
         items.push_back("NATURALDRAFT");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcCoolingTowerTypeEnum_type = new enumeration_type("IfcCoolingTowerTypeEnum", items);
+        IfcCoolingTowerTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcCoolingTowerTypeEnum, items);
     }
-    declaration* IfcCostScheduleTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("BUDGET");
@@ -536,9 +1483,8 @@ void populate() {
         items.push_back("TENDER");
         items.push_back("UNPRICEDBILLOFQUANTITIES");
         items.push_back("USERDEFINED");
-        IfcCostScheduleTypeEnum_type = new enumeration_type("IfcCostScheduleTypeEnum", items);
+        IfcCostScheduleTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcCostScheduleTypeEnum, items);
     }
-    declaration* IfcCoveringTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(10);
         items.push_back("CEILING");
@@ -551,9 +1497,8 @@ void populate() {
         items.push_back("SLEEVING");
         items.push_back("USERDEFINED");
         items.push_back("WRAPPING");
-        IfcCoveringTypeEnum_type = new enumeration_type("IfcCoveringTypeEnum", items);
+        IfcCoveringTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcCoveringTypeEnum, items);
     }
-    declaration* IfcCurrencyEnum_type;
     {
         std::vector<std::string> items; items.reserve(83);
         items.push_back("AED");
@@ -639,16 +1584,14 @@ void populate() {
         items.push_back("XEU");
         items.push_back("ZAR");
         items.push_back("ZWD");
-        IfcCurrencyEnum_type = new enumeration_type("IfcCurrencyEnum", items);
+        IfcCurrencyEnum_type = new enumeration_type(IfcSchema::Type::IfcCurrencyEnum, items);
     }
-    declaration* IfcCurtainWallTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcCurtainWallTypeEnum_type = new enumeration_type("IfcCurtainWallTypeEnum", items);
+        IfcCurtainWallTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcCurtainWallTypeEnum, items);
     }
-    declaration* IfcDamperTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(13);
         items.push_back("BACKDRAFTDAMPER");
@@ -664,9 +1607,8 @@ void populate() {
         items.push_back("RELIEFDAMPER");
         items.push_back("SMOKEDAMPER");
         items.push_back("USERDEFINED");
-        IfcDamperTypeEnum_type = new enumeration_type("IfcDamperTypeEnum", items);
+        IfcDamperTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcDamperTypeEnum, items);
     }
-    declaration* IfcDataOriginEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("MEASURED");
@@ -674,9 +1616,8 @@ void populate() {
         items.push_back("PREDICTED");
         items.push_back("SIMULATED");
         items.push_back("USERDEFINED");
-        IfcDataOriginEnum_type = new enumeration_type("IfcDataOriginEnum", items);
+        IfcDataOriginEnum_type = new enumeration_type(IfcSchema::Type::IfcDataOriginEnum, items);
     }
-    declaration* IfcDerivedUnitEnum_type;
     {
         std::vector<std::string> items; items.reserve(49);
         items.push_back("ACCELERATIONUNIT");
@@ -728,23 +1669,20 @@ void populate() {
         items.push_back("VOLUMETRICFLOWRATEUNIT");
         items.push_back("WARPINGCONSTANTUNIT");
         items.push_back("WARPINGMOMENTUNIT");
-        IfcDerivedUnitEnum_type = new enumeration_type("IfcDerivedUnitEnum", items);
+        IfcDerivedUnitEnum_type = new enumeration_type(IfcSchema::Type::IfcDerivedUnitEnum, items);
     }
-    declaration* IfcDimensionExtentUsage_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("ORIGIN");
         items.push_back("TARGET");
-        IfcDimensionExtentUsage_type = new enumeration_type("IfcDimensionExtentUsage", items);
+        IfcDimensionExtentUsage_type = new enumeration_type(IfcSchema::Type::IfcDimensionExtentUsage, items);
     }
-    declaration* IfcDirectionSenseEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("NEGATIVE");
         items.push_back("POSITIVE");
-        IfcDirectionSenseEnum_type = new enumeration_type("IfcDirectionSenseEnum", items);
+        IfcDirectionSenseEnum_type = new enumeration_type(IfcSchema::Type::IfcDirectionSenseEnum, items);
     }
-    declaration* IfcDistributionChamberElementTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(10);
         items.push_back("FORMEDDUCT");
@@ -757,9 +1695,8 @@ void populate() {
         items.push_back("TRENCH");
         items.push_back("USERDEFINED");
         items.push_back("VALVECHAMBER");
-        IfcDistributionChamberElementTypeEnum_type = new enumeration_type("IfcDistributionChamberElementTypeEnum", items);
+        IfcDistributionChamberElementTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcDistributionChamberElementTypeEnum, items);
     }
-    declaration* IfcDocumentConfidentialityEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("CONFIDENTIAL");
@@ -768,9 +1705,8 @@ void populate() {
         items.push_back("PUBLIC");
         items.push_back("RESTRICTED");
         items.push_back("USERDEFINED");
-        IfcDocumentConfidentialityEnum_type = new enumeration_type("IfcDocumentConfidentialityEnum", items);
+        IfcDocumentConfidentialityEnum_type = new enumeration_type(IfcSchema::Type::IfcDocumentConfidentialityEnum, items);
     }
-    declaration* IfcDocumentStatusEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("DRAFT");
@@ -778,9 +1714,8 @@ void populate() {
         items.push_back("FINALDRAFT");
         items.push_back("NOTDEFINED");
         items.push_back("REVISION");
-        IfcDocumentStatusEnum_type = new enumeration_type("IfcDocumentStatusEnum", items);
+        IfcDocumentStatusEnum_type = new enumeration_type(IfcSchema::Type::IfcDocumentStatusEnum, items);
     }
-    declaration* IfcDoorPanelOperationEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("DOUBLE_ACTING");
@@ -791,18 +1726,16 @@ void populate() {
         items.push_back("SLIDING");
         items.push_back("SWINGING");
         items.push_back("USERDEFINED");
-        IfcDoorPanelOperationEnum_type = new enumeration_type("IfcDoorPanelOperationEnum", items);
+        IfcDoorPanelOperationEnum_type = new enumeration_type(IfcSchema::Type::IfcDoorPanelOperationEnum, items);
     }
-    declaration* IfcDoorPanelPositionEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("LEFT");
         items.push_back("MIDDLE");
         items.push_back("NOTDEFINED");
         items.push_back("RIGHT");
-        IfcDoorPanelPositionEnum_type = new enumeration_type("IfcDoorPanelPositionEnum", items);
+        IfcDoorPanelPositionEnum_type = new enumeration_type(IfcSchema::Type::IfcDoorPanelPositionEnum, items);
     }
-    declaration* IfcDoorStyleConstructionEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("ALUMINIUM");
@@ -814,9 +1747,8 @@ void populate() {
         items.push_back("STEEL");
         items.push_back("USERDEFINED");
         items.push_back("WOOD");
-        IfcDoorStyleConstructionEnum_type = new enumeration_type("IfcDoorStyleConstructionEnum", items);
+        IfcDoorStyleConstructionEnum_type = new enumeration_type(IfcSchema::Type::IfcDoorStyleConstructionEnum, items);
     }
-    declaration* IfcDoorStyleOperationEnum_type;
     {
         std::vector<std::string> items; items.reserve(18);
         items.push_back("DOUBLE_DOOR_DOUBLE_SWING");
@@ -837,9 +1769,8 @@ void populate() {
         items.push_back("SLIDING_TO_LEFT");
         items.push_back("SLIDING_TO_RIGHT");
         items.push_back("USERDEFINED");
-        IfcDoorStyleOperationEnum_type = new enumeration_type("IfcDoorStyleOperationEnum", items);
+        IfcDoorStyleOperationEnum_type = new enumeration_type(IfcSchema::Type::IfcDoorStyleOperationEnum, items);
     }
-    declaration* IfcDuctFittingTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("BEND");
@@ -851,18 +1782,16 @@ void populate() {
         items.push_back("OBSTRUCTION");
         items.push_back("TRANSITION");
         items.push_back("USERDEFINED");
-        IfcDuctFittingTypeEnum_type = new enumeration_type("IfcDuctFittingTypeEnum", items);
+        IfcDuctFittingTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcDuctFittingTypeEnum, items);
     }
-    declaration* IfcDuctSegmentTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("FLEXIBLESEGMENT");
         items.push_back("NOTDEFINED");
         items.push_back("RIGIDSEGMENT");
         items.push_back("USERDEFINED");
-        IfcDuctSegmentTypeEnum_type = new enumeration_type("IfcDuctSegmentTypeEnum", items);
+        IfcDuctSegmentTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcDuctSegmentTypeEnum, items);
     }
-    declaration* IfcDuctSilencerTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("FLATOVAL");
@@ -870,9 +1799,8 @@ void populate() {
         items.push_back("RECTANGULAR");
         items.push_back("ROUND");
         items.push_back("USERDEFINED");
-        IfcDuctSilencerTypeEnum_type = new enumeration_type("IfcDuctSilencerTypeEnum", items);
+        IfcDuctSilencerTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcDuctSilencerTypeEnum, items);
     }
-    declaration* IfcElectricApplianceTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(26);
         items.push_back("COMPUTER");
@@ -901,17 +1829,15 @@ void populate() {
         items.push_back("WASHINGMACHINE");
         items.push_back("WATERCOOLER");
         items.push_back("WATERHEATER");
-        IfcElectricApplianceTypeEnum_type = new enumeration_type("IfcElectricApplianceTypeEnum", items);
+        IfcElectricApplianceTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcElectricApplianceTypeEnum, items);
     }
-    declaration* IfcElectricCurrentEnum_type;
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("ALTERNATING");
         items.push_back("DIRECT");
         items.push_back("NOTDEFINED");
-        IfcElectricCurrentEnum_type = new enumeration_type("IfcElectricCurrentEnum", items);
+        IfcElectricCurrentEnum_type = new enumeration_type(IfcSchema::Type::IfcElectricCurrentEnum, items);
     }
-    declaration* IfcElectricDistributionPointFunctionEnum_type;
     {
         std::vector<std::string> items; items.reserve(11);
         items.push_back("ALARMPANEL");
@@ -925,9 +1851,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("SWITCHBOARD");
         items.push_back("USERDEFINED");
-        IfcElectricDistributionPointFunctionEnum_type = new enumeration_type("IfcElectricDistributionPointFunctionEnum", items);
+        IfcElectricDistributionPointFunctionEnum_type = new enumeration_type(IfcSchema::Type::IfcElectricDistributionPointFunctionEnum, items);
     }
-    declaration* IfcElectricFlowStorageDeviceTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("BATTERY");
@@ -937,16 +1862,14 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("UPS");
         items.push_back("USERDEFINED");
-        IfcElectricFlowStorageDeviceTypeEnum_type = new enumeration_type("IfcElectricFlowStorageDeviceTypeEnum", items);
+        IfcElectricFlowStorageDeviceTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcElectricFlowStorageDeviceTypeEnum, items);
     }
-    declaration* IfcElectricGeneratorTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcElectricGeneratorTypeEnum_type = new enumeration_type("IfcElectricGeneratorTypeEnum", items);
+        IfcElectricGeneratorTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcElectricGeneratorTypeEnum, items);
     }
-    declaration* IfcElectricHeaterTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("ELECTRICCABLEHEATER");
@@ -954,9 +1877,8 @@ void populate() {
         items.push_back("ELECTRICPOINTHEATER");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcElectricHeaterTypeEnum_type = new enumeration_type("IfcElectricHeaterTypeEnum", items);
+        IfcElectricHeaterTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcElectricHeaterTypeEnum, items);
     }
-    declaration* IfcElectricMotorTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("DC");
@@ -966,9 +1888,8 @@ void populate() {
         items.push_back("RELUCTANCESYNCHRONOUS");
         items.push_back("SYNCHRONOUS");
         items.push_back("USERDEFINED");
-        IfcElectricMotorTypeEnum_type = new enumeration_type("IfcElectricMotorTypeEnum", items);
+        IfcElectricMotorTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcElectricMotorTypeEnum, items);
     }
-    declaration* IfcElectricTimeControlTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("NOTDEFINED");
@@ -976,9 +1897,8 @@ void populate() {
         items.push_back("TIMECLOCK");
         items.push_back("TIMEDELAY");
         items.push_back("USERDEFINED");
-        IfcElectricTimeControlTypeEnum_type = new enumeration_type("IfcElectricTimeControlTypeEnum", items);
+        IfcElectricTimeControlTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcElectricTimeControlTypeEnum, items);
     }
-    declaration* IfcElementAssemblyTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(11);
         items.push_back("ACCESSORY_ASSEMBLY");
@@ -992,17 +1912,15 @@ void populate() {
         items.push_back("SLAB_FIELD");
         items.push_back("TRUSS");
         items.push_back("USERDEFINED");
-        IfcElementAssemblyTypeEnum_type = new enumeration_type("IfcElementAssemblyTypeEnum", items);
+        IfcElementAssemblyTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcElementAssemblyTypeEnum, items);
     }
-    declaration* IfcElementCompositionEnum_type;
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("COMPLEX");
         items.push_back("ELEMENT");
         items.push_back("PARTIAL");
-        IfcElementCompositionEnum_type = new enumeration_type("IfcElementCompositionEnum", items);
+        IfcElementCompositionEnum_type = new enumeration_type(IfcSchema::Type::IfcElementCompositionEnum, items);
     }
-    declaration* IfcEnergySequenceEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("AUXILIARY");
@@ -1011,9 +1929,8 @@ void populate() {
         items.push_back("SECONDARY");
         items.push_back("TERTIARY");
         items.push_back("USERDEFINED");
-        IfcEnergySequenceEnum_type = new enumeration_type("IfcEnergySequenceEnum", items);
+        IfcEnergySequenceEnum_type = new enumeration_type(IfcSchema::Type::IfcEnergySequenceEnum, items);
     }
-    declaration* IfcEnvironmentalImpactCategoryEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("COMBINEDVALUE");
@@ -1024,9 +1941,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("TRANSPORTATION");
         items.push_back("USERDEFINED");
-        IfcEnvironmentalImpactCategoryEnum_type = new enumeration_type("IfcEnvironmentalImpactCategoryEnum", items);
+        IfcEnvironmentalImpactCategoryEnum_type = new enumeration_type(IfcSchema::Type::IfcEnvironmentalImpactCategoryEnum, items);
     }
-    declaration* IfcEvaporativeCoolerTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(11);
         items.push_back("DIRECTEVAPORATIVEAIRWASHER");
@@ -1040,9 +1956,8 @@ void populate() {
         items.push_back("INDIRECTEVAPORATIVEWETCOIL");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcEvaporativeCoolerTypeEnum_type = new enumeration_type("IfcEvaporativeCoolerTypeEnum", items);
+        IfcEvaporativeCoolerTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcEvaporativeCoolerTypeEnum, items);
     }
-    declaration* IfcEvaporatorTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("DIRECTEXPANSIONBRAZEDPLATE");
@@ -1052,9 +1967,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("SHELLANDCOIL");
         items.push_back("USERDEFINED");
-        IfcEvaporatorTypeEnum_type = new enumeration_type("IfcEvaporatorTypeEnum", items);
+        IfcEvaporatorTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcEvaporatorTypeEnum, items);
     }
-    declaration* IfcFanTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("CENTRIFUGALAIRFOIL");
@@ -1066,9 +1980,8 @@ void populate() {
         items.push_back("TUBEAXIAL");
         items.push_back("USERDEFINED");
         items.push_back("VANEAXIAL");
-        IfcFanTypeEnum_type = new enumeration_type("IfcFanTypeEnum", items);
+        IfcFanTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcFanTypeEnum, items);
     }
-    declaration* IfcFilterTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("AIRPARTICLEFILTER");
@@ -1078,9 +1991,8 @@ void populate() {
         items.push_back("STRAINER");
         items.push_back("USERDEFINED");
         items.push_back("WATERFILTER");
-        IfcFilterTypeEnum_type = new enumeration_type("IfcFilterTypeEnum", items);
+        IfcFilterTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcFilterTypeEnum, items);
     }
-    declaration* IfcFireSuppressionTerminalTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("BREECHINGINLET");
@@ -1090,18 +2002,16 @@ void populate() {
         items.push_back("SPRINKLER");
         items.push_back("SPRINKLERDEFLECTOR");
         items.push_back("USERDEFINED");
-        IfcFireSuppressionTerminalTypeEnum_type = new enumeration_type("IfcFireSuppressionTerminalTypeEnum", items);
+        IfcFireSuppressionTerminalTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcFireSuppressionTerminalTypeEnum, items);
     }
-    declaration* IfcFlowDirectionEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("NOTDEFINED");
         items.push_back("SINK");
         items.push_back("SOURCE");
         items.push_back("SOURCEANDSINK");
-        IfcFlowDirectionEnum_type = new enumeration_type("IfcFlowDirectionEnum", items);
+        IfcFlowDirectionEnum_type = new enumeration_type(IfcSchema::Type::IfcFlowDirectionEnum, items);
     }
-    declaration* IfcFlowInstrumentTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(10);
         items.push_back("AMMETER");
@@ -1114,9 +2024,8 @@ void populate() {
         items.push_back("USERDEFINED");
         items.push_back("VOLTMETER_PEAK");
         items.push_back("VOLTMETER_RMS");
-        IfcFlowInstrumentTypeEnum_type = new enumeration_type("IfcFlowInstrumentTypeEnum", items);
+        IfcFlowInstrumentTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcFlowInstrumentTypeEnum, items);
     }
-    declaration* IfcFlowMeterTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("ELECTRICMETER");
@@ -1127,9 +2036,8 @@ void populate() {
         items.push_back("OILMETER");
         items.push_back("USERDEFINED");
         items.push_back("WATERMETER");
-        IfcFlowMeterTypeEnum_type = new enumeration_type("IfcFlowMeterTypeEnum", items);
+        IfcFlowMeterTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcFlowMeterTypeEnum, items);
     }
-    declaration* IfcFootingTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("FOOTING_BEAM");
@@ -1138,9 +2046,8 @@ void populate() {
         items.push_back("PILE_CAP");
         items.push_back("STRIP_FOOTING");
         items.push_back("USERDEFINED");
-        IfcFootingTypeEnum_type = new enumeration_type("IfcFootingTypeEnum", items);
+        IfcFootingTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcFootingTypeEnum, items);
     }
-    declaration* IfcGasTerminalTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("GASAPPLIANCE");
@@ -1148,9 +2055,8 @@ void populate() {
         items.push_back("GASBURNER");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcGasTerminalTypeEnum_type = new enumeration_type("IfcGasTerminalTypeEnum", items);
+        IfcGasTerminalTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcGasTerminalTypeEnum, items);
     }
-    declaration* IfcGeometricProjectionEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("ELEVATION_VIEW");
@@ -1162,25 +2068,22 @@ void populate() {
         items.push_back("SECTION_VIEW");
         items.push_back("SKETCH_VIEW");
         items.push_back("USERDEFINED");
-        IfcGeometricProjectionEnum_type = new enumeration_type("IfcGeometricProjectionEnum", items);
+        IfcGeometricProjectionEnum_type = new enumeration_type(IfcSchema::Type::IfcGeometricProjectionEnum, items);
     }
-    declaration* IfcGlobalOrLocalEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("GLOBAL_COORDS");
         items.push_back("LOCAL_COORDS");
-        IfcGlobalOrLocalEnum_type = new enumeration_type("IfcGlobalOrLocalEnum", items);
+        IfcGlobalOrLocalEnum_type = new enumeration_type(IfcSchema::Type::IfcGlobalOrLocalEnum, items);
     }
-    declaration* IfcHeatExchangerTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("NOTDEFINED");
         items.push_back("PLATE");
         items.push_back("SHELLANDTUBE");
         items.push_back("USERDEFINED");
-        IfcHeatExchangerTypeEnum_type = new enumeration_type("IfcHeatExchangerTypeEnum", items);
+        IfcHeatExchangerTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcHeatExchangerTypeEnum, items);
     }
-    declaration* IfcHumidifierTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(15);
         items.push_back("ADIABATICAIRWASHER");
@@ -1198,17 +2101,15 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("STEAMINJECTION");
         items.push_back("USERDEFINED");
-        IfcHumidifierTypeEnum_type = new enumeration_type("IfcHumidifierTypeEnum", items);
+        IfcHumidifierTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcHumidifierTypeEnum, items);
     }
-    declaration* IfcInternalOrExternalEnum_type;
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("EXTERNAL");
         items.push_back("INTERNAL");
         items.push_back("NOTDEFINED");
-        IfcInternalOrExternalEnum_type = new enumeration_type("IfcInternalOrExternalEnum", items);
+        IfcInternalOrExternalEnum_type = new enumeration_type(IfcSchema::Type::IfcInternalOrExternalEnum, items);
     }
-    declaration* IfcInventoryTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("ASSETINVENTORY");
@@ -1216,16 +2117,14 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("SPACEINVENTORY");
         items.push_back("USERDEFINED");
-        IfcInventoryTypeEnum_type = new enumeration_type("IfcInventoryTypeEnum", items);
+        IfcInventoryTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcInventoryTypeEnum, items);
     }
-    declaration* IfcJunctionBoxTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcJunctionBoxTypeEnum_type = new enumeration_type("IfcJunctionBoxTypeEnum", items);
+        IfcJunctionBoxTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcJunctionBoxTypeEnum, items);
     }
-    declaration* IfcLampTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("COMPACTFLUORESCENT");
@@ -1236,26 +2135,23 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("TUNGSTENFILAMENT");
         items.push_back("USERDEFINED");
-        IfcLampTypeEnum_type = new enumeration_type("IfcLampTypeEnum", items);
+        IfcLampTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcLampTypeEnum, items);
     }
-    declaration* IfcLayerSetDirectionEnum_type;
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("AXIS1");
         items.push_back("AXIS2");
         items.push_back("AXIS3");
-        IfcLayerSetDirectionEnum_type = new enumeration_type("IfcLayerSetDirectionEnum", items);
+        IfcLayerSetDirectionEnum_type = new enumeration_type(IfcSchema::Type::IfcLayerSetDirectionEnum, items);
     }
-    declaration* IfcLightDistributionCurveEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("NOTDEFINED");
         items.push_back("TYPE_A");
         items.push_back("TYPE_B");
         items.push_back("TYPE_C");
-        IfcLightDistributionCurveEnum_type = new enumeration_type("IfcLightDistributionCurveEnum", items);
+        IfcLightDistributionCurveEnum_type = new enumeration_type(IfcSchema::Type::IfcLightDistributionCurveEnum, items);
     }
-    declaration* IfcLightEmissionSourceEnum_type;
     {
         std::vector<std::string> items; items.reserve(11);
         items.push_back("COMPACTFLUORESCENT");
@@ -1269,18 +2165,16 @@ void populate() {
         items.push_back("METALHALIDE");
         items.push_back("NOTDEFINED");
         items.push_back("TUNGSTENFILAMENT");
-        IfcLightEmissionSourceEnum_type = new enumeration_type("IfcLightEmissionSourceEnum", items);
+        IfcLightEmissionSourceEnum_type = new enumeration_type(IfcSchema::Type::IfcLightEmissionSourceEnum, items);
     }
-    declaration* IfcLightFixtureTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("DIRECTIONSOURCE");
         items.push_back("NOTDEFINED");
         items.push_back("POINTSOURCE");
         items.push_back("USERDEFINED");
-        IfcLightFixtureTypeEnum_type = new enumeration_type("IfcLightFixtureTypeEnum", items);
+        IfcLightFixtureTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcLightFixtureTypeEnum, items);
     }
-    declaration* IfcLoadGroupTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("LOAD_CASE");
@@ -1289,16 +2183,14 @@ void populate() {
         items.push_back("LOAD_GROUP");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcLoadGroupTypeEnum_type = new enumeration_type("IfcLoadGroupTypeEnum", items);
+        IfcLoadGroupTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcLoadGroupTypeEnum, items);
     }
-    declaration* IfcLogicalOperatorEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("LOGICALAND");
         items.push_back("LOGICALOR");
-        IfcLogicalOperatorEnum_type = new enumeration_type("IfcLogicalOperatorEnum", items);
+        IfcLogicalOperatorEnum_type = new enumeration_type(IfcSchema::Type::IfcLogicalOperatorEnum, items);
     }
-    declaration* IfcMemberTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(14);
         items.push_back("BRACE");
@@ -1315,9 +2207,8 @@ void populate() {
         items.push_back("STRUT");
         items.push_back("STUD");
         items.push_back("USERDEFINED");
-        IfcMemberTypeEnum_type = new enumeration_type("IfcMemberTypeEnum", items);
+        IfcMemberTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcMemberTypeEnum, items);
     }
-    declaration* IfcMotorConnectionTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("BELTDRIVE");
@@ -1325,15 +2216,13 @@ void populate() {
         items.push_back("DIRECTDRIVE");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcMotorConnectionTypeEnum_type = new enumeration_type("IfcMotorConnectionTypeEnum", items);
+        IfcMotorConnectionTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcMotorConnectionTypeEnum, items);
     }
-    declaration* IfcNullStyle_type;
     {
         std::vector<std::string> items; items.reserve(1);
         items.push_back("NULL");
-        IfcNullStyle_type = new enumeration_type("IfcNullStyle", items);
+        IfcNullStyle_type = new enumeration_type(IfcSchema::Type::IfcNullStyle, items);
     }
-    declaration* IfcObjectTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("ACTOR");
@@ -1344,9 +2233,8 @@ void populate() {
         items.push_back("PRODUCT");
         items.push_back("PROJECT");
         items.push_back("RESOURCE");
-        IfcObjectTypeEnum_type = new enumeration_type("IfcObjectTypeEnum", items);
+        IfcObjectTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcObjectTypeEnum, items);
     }
-    declaration* IfcObjectiveEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("CODECOMPLIANCE");
@@ -1357,9 +2245,8 @@ void populate() {
         items.push_back("SPECIFICATION");
         items.push_back("TRIGGERCONDITION");
         items.push_back("USERDEFINED");
-        IfcObjectiveEnum_type = new enumeration_type("IfcObjectiveEnum", items);
+        IfcObjectiveEnum_type = new enumeration_type(IfcSchema::Type::IfcObjectiveEnum, items);
     }
-    declaration* IfcOccupantTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("ASSIGNEE");
@@ -1371,9 +2258,8 @@ void populate() {
         items.push_back("OWNER");
         items.push_back("TENANT");
         items.push_back("USERDEFINED");
-        IfcOccupantTypeEnum_type = new enumeration_type("IfcOccupantTypeEnum", items);
+        IfcOccupantTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcOccupantTypeEnum, items);
     }
-    declaration* IfcOutletTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("AUDIOVISUALOUTLET");
@@ -1381,9 +2267,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("POWEROUTLET");
         items.push_back("USERDEFINED");
-        IfcOutletTypeEnum_type = new enumeration_type("IfcOutletTypeEnum", items);
+        IfcOutletTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcOutletTypeEnum, items);
     }
-    declaration* IfcPermeableCoveringOperationEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("GRILL");
@@ -1391,17 +2276,15 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("SCREEN");
         items.push_back("USERDEFINED");
-        IfcPermeableCoveringOperationEnum_type = new enumeration_type("IfcPermeableCoveringOperationEnum", items);
+        IfcPermeableCoveringOperationEnum_type = new enumeration_type(IfcSchema::Type::IfcPermeableCoveringOperationEnum, items);
     }
-    declaration* IfcPhysicalOrVirtualEnum_type;
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("NOTDEFINED");
         items.push_back("PHYSICAL");
         items.push_back("VIRTUAL");
-        IfcPhysicalOrVirtualEnum_type = new enumeration_type("IfcPhysicalOrVirtualEnum", items);
+        IfcPhysicalOrVirtualEnum_type = new enumeration_type(IfcSchema::Type::IfcPhysicalOrVirtualEnum, items);
     }
-    declaration* IfcPileConstructionEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("CAST_IN_PLACE");
@@ -1410,9 +2293,8 @@ void populate() {
         items.push_back("PRECAST_CONCRETE");
         items.push_back("PREFAB_STEEL");
         items.push_back("USERDEFINED");
-        IfcPileConstructionEnum_type = new enumeration_type("IfcPileConstructionEnum", items);
+        IfcPileConstructionEnum_type = new enumeration_type(IfcSchema::Type::IfcPileConstructionEnum, items);
     }
-    declaration* IfcPileTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("COHESION");
@@ -1420,9 +2302,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("SUPPORT");
         items.push_back("USERDEFINED");
-        IfcPileTypeEnum_type = new enumeration_type("IfcPileTypeEnum", items);
+        IfcPileTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcPileTypeEnum, items);
     }
-    declaration* IfcPipeFittingTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("BEND");
@@ -1434,9 +2315,8 @@ void populate() {
         items.push_back("OBSTRUCTION");
         items.push_back("TRANSITION");
         items.push_back("USERDEFINED");
-        IfcPipeFittingTypeEnum_type = new enumeration_type("IfcPipeFittingTypeEnum", items);
+        IfcPipeFittingTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcPipeFittingTypeEnum, items);
     }
-    declaration* IfcPipeSegmentTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("FLEXIBLESEGMENT");
@@ -1445,18 +2325,16 @@ void populate() {
         items.push_back("RIGIDSEGMENT");
         items.push_back("SPOOL");
         items.push_back("USERDEFINED");
-        IfcPipeSegmentTypeEnum_type = new enumeration_type("IfcPipeSegmentTypeEnum", items);
+        IfcPipeSegmentTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcPipeSegmentTypeEnum, items);
     }
-    declaration* IfcPlateTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("CURTAIN_PANEL");
         items.push_back("NOTDEFINED");
         items.push_back("SHEET");
         items.push_back("USERDEFINED");
-        IfcPlateTypeEnum_type = new enumeration_type("IfcPlateTypeEnum", items);
+        IfcPlateTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcPlateTypeEnum, items);
     }
-    declaration* IfcProcedureTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("ADVICE_CAUTION");
@@ -1468,16 +2346,14 @@ void populate() {
         items.push_back("SHUTDOWN");
         items.push_back("STARTUP");
         items.push_back("USERDEFINED");
-        IfcProcedureTypeEnum_type = new enumeration_type("IfcProcedureTypeEnum", items);
+        IfcProcedureTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcProcedureTypeEnum, items);
     }
-    declaration* IfcProfileTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("AREA");
         items.push_back("CURVE");
-        IfcProfileTypeEnum_type = new enumeration_type("IfcProfileTypeEnum", items);
+        IfcProfileTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcProfileTypeEnum, items);
     }
-    declaration* IfcProjectOrderRecordTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("CHANGE");
@@ -1487,9 +2363,8 @@ void populate() {
         items.push_back("PURCHASE");
         items.push_back("USERDEFINED");
         items.push_back("WORK");
-        IfcProjectOrderRecordTypeEnum_type = new enumeration_type("IfcProjectOrderRecordTypeEnum", items);
+        IfcProjectOrderRecordTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcProjectOrderRecordTypeEnum, items);
     }
-    declaration* IfcProjectOrderTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("CHANGEORDER");
@@ -1499,16 +2374,14 @@ void populate() {
         items.push_back("PURCHASEORDER");
         items.push_back("USERDEFINED");
         items.push_back("WORKORDER");
-        IfcProjectOrderTypeEnum_type = new enumeration_type("IfcProjectOrderTypeEnum", items);
+        IfcProjectOrderTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcProjectOrderTypeEnum, items);
     }
-    declaration* IfcProjectedOrTrueLengthEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("PROJECTED_LENGTH");
         items.push_back("TRUE_LENGTH");
-        IfcProjectedOrTrueLengthEnum_type = new enumeration_type("IfcProjectedOrTrueLengthEnum", items);
+        IfcProjectedOrTrueLengthEnum_type = new enumeration_type(IfcSchema::Type::IfcProjectedOrTrueLengthEnum, items);
     }
-    declaration* IfcPropertySourceEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("ASBUILT");
@@ -1520,9 +2393,8 @@ void populate() {
         items.push_back("NOTKNOWN");
         items.push_back("SIMULATED");
         items.push_back("USERDEFINED");
-        IfcPropertySourceEnum_type = new enumeration_type("IfcPropertySourceEnum", items);
+        IfcPropertySourceEnum_type = new enumeration_type(IfcSchema::Type::IfcPropertySourceEnum, items);
     }
-    declaration* IfcProtectiveDeviceTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("CIRCUITBREAKER");
@@ -1533,9 +2405,8 @@ void populate() {
         items.push_back("RESIDUALCURRENTSWITCH");
         items.push_back("USERDEFINED");
         items.push_back("VARISTOR");
-        IfcProtectiveDeviceTypeEnum_type = new enumeration_type("IfcProtectiveDeviceTypeEnum", items);
+        IfcProtectiveDeviceTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcProtectiveDeviceTypeEnum, items);
     }
-    declaration* IfcPumpTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("CIRCULATOR");
@@ -1545,9 +2416,8 @@ void populate() {
         items.push_back("USERDEFINED");
         items.push_back("VERTICALINLINE");
         items.push_back("VERTICALTURBINE");
-        IfcPumpTypeEnum_type = new enumeration_type("IfcPumpTypeEnum", items);
+        IfcPumpTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcPumpTypeEnum, items);
     }
-    declaration* IfcRailingTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("BALUSTRADE");
@@ -1555,18 +2425,16 @@ void populate() {
         items.push_back("HANDRAIL");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcRailingTypeEnum_type = new enumeration_type("IfcRailingTypeEnum", items);
+        IfcRailingTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcRailingTypeEnum, items);
     }
-    declaration* IfcRampFlightTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("NOTDEFINED");
         items.push_back("SPIRAL");
         items.push_back("STRAIGHT");
         items.push_back("USERDEFINED");
-        IfcRampFlightTypeEnum_type = new enumeration_type("IfcRampFlightTypeEnum", items);
+        IfcRampFlightTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcRampFlightTypeEnum, items);
     }
-    declaration* IfcRampTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("HALF_TURN_RAMP");
@@ -1577,9 +2445,8 @@ void populate() {
         items.push_back("TWO_QUARTER_TURN_RAMP");
         items.push_back("TWO_STRAIGHT_RUN_RAMP");
         items.push_back("USERDEFINED");
-        IfcRampTypeEnum_type = new enumeration_type("IfcRampTypeEnum", items);
+        IfcRampTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcRampTypeEnum, items);
     }
-    declaration* IfcReflectanceMethodEnum_type;
     {
         std::vector<std::string> items; items.reserve(10);
         items.push_back("BLINN");
@@ -1592,9 +2459,8 @@ void populate() {
         items.push_back("PHONG");
         items.push_back("PLASTIC");
         items.push_back("STRAUSS");
-        IfcReflectanceMethodEnum_type = new enumeration_type("IfcReflectanceMethodEnum", items);
+        IfcReflectanceMethodEnum_type = new enumeration_type(IfcSchema::Type::IfcReflectanceMethodEnum, items);
     }
-    declaration* IfcReinforcingBarRoleEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("EDGE");
@@ -1606,16 +2472,14 @@ void populate() {
         items.push_back("SHEAR");
         items.push_back("STUD");
         items.push_back("USERDEFINED");
-        IfcReinforcingBarRoleEnum_type = new enumeration_type("IfcReinforcingBarRoleEnum", items);
+        IfcReinforcingBarRoleEnum_type = new enumeration_type(IfcSchema::Type::IfcReinforcingBarRoleEnum, items);
     }
-    declaration* IfcReinforcingBarSurfaceEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("PLAIN");
         items.push_back("TEXTURED");
-        IfcReinforcingBarSurfaceEnum_type = new enumeration_type("IfcReinforcingBarSurfaceEnum", items);
+        IfcReinforcingBarSurfaceEnum_type = new enumeration_type(IfcSchema::Type::IfcReinforcingBarSurfaceEnum, items);
     }
-    declaration* IfcResourceConsumptionEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("CONSUMED");
@@ -1626,16 +2490,14 @@ void populate() {
         items.push_back("PARTIALLYCONSUMED");
         items.push_back("PARTIALLYOCCUPIED");
         items.push_back("USERDEFINED");
-        IfcResourceConsumptionEnum_type = new enumeration_type("IfcResourceConsumptionEnum", items);
+        IfcResourceConsumptionEnum_type = new enumeration_type(IfcSchema::Type::IfcResourceConsumptionEnum, items);
     }
-    declaration* IfcRibPlateDirectionEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("DIRECTION_X");
         items.push_back("DIRECTION_Y");
-        IfcRibPlateDirectionEnum_type = new enumeration_type("IfcRibPlateDirectionEnum", items);
+        IfcRibPlateDirectionEnum_type = new enumeration_type(IfcSchema::Type::IfcRibPlateDirectionEnum, items);
     }
-    declaration* IfcRoleEnum_type;
     {
         std::vector<std::string> items; items.reserve(23);
         items.push_back("ARCHITECT");
@@ -1661,9 +2523,8 @@ void populate() {
         items.push_back("SUBCONTRACTOR");
         items.push_back("SUPPLIER");
         items.push_back("USERDEFINED");
-        IfcRoleEnum_type = new enumeration_type("IfcRoleEnum", items);
+        IfcRoleEnum_type = new enumeration_type(IfcSchema::Type::IfcRoleEnum, items);
     }
-    declaration* IfcRoofTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(14);
         items.push_back("BARREL_ROOF");
@@ -1680,9 +2541,8 @@ void populate() {
         items.push_back("PAVILION_ROOF");
         items.push_back("RAINBOW_ROOF");
         items.push_back("SHED_ROOF");
-        IfcRoofTypeEnum_type = new enumeration_type("IfcRoofTypeEnum", items);
+        IfcRoofTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcRoofTypeEnum, items);
     }
-    declaration* IfcSIPrefix_type;
     {
         std::vector<std::string> items; items.reserve(16);
         items.push_back("ATTO");
@@ -1701,9 +2561,8 @@ void populate() {
         items.push_back("PETA");
         items.push_back("PICO");
         items.push_back("TERA");
-        IfcSIPrefix_type = new enumeration_type("IfcSIPrefix", items);
+        IfcSIPrefix_type = new enumeration_type(IfcSchema::Type::IfcSIPrefix, items);
     }
-    declaration* IfcSIUnitName_type;
     {
         std::vector<std::string> items; items.reserve(30);
         items.push_back("AMPERE");
@@ -1736,9 +2595,8 @@ void populate() {
         items.push_back("VOLT");
         items.push_back("WATT");
         items.push_back("WEBER");
-        IfcSIUnitName_type = new enumeration_type("IfcSIUnitName", items);
+        IfcSIUnitName_type = new enumeration_type(IfcSchema::Type::IfcSIUnitName, items);
     }
-    declaration* IfcSanitaryTerminalTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(12);
         items.push_back("BATH");
@@ -1753,16 +2611,14 @@ void populate() {
         items.push_back("USERDEFINED");
         items.push_back("WASHHANDBASIN");
         items.push_back("WCSEAT");
-        IfcSanitaryTerminalTypeEnum_type = new enumeration_type("IfcSanitaryTerminalTypeEnum", items);
+        IfcSanitaryTerminalTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcSanitaryTerminalTypeEnum, items);
     }
-    declaration* IfcSectionTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("TAPERED");
         items.push_back("UNIFORM");
-        IfcSectionTypeEnum_type = new enumeration_type("IfcSectionTypeEnum", items);
+        IfcSectionTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcSectionTypeEnum, items);
     }
-    declaration* IfcSensorTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(15);
         items.push_back("CO2SENSOR");
@@ -1780,9 +2636,8 @@ void populate() {
         items.push_back("SOUNDSENSOR");
         items.push_back("TEMPERATURESENSOR");
         items.push_back("USERDEFINED");
-        IfcSensorTypeEnum_type = new enumeration_type("IfcSensorTypeEnum", items);
+        IfcSensorTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcSensorTypeEnum, items);
     }
-    declaration* IfcSequenceEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("FINISH_FINISH");
@@ -1790,9 +2645,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("START_FINISH");
         items.push_back("START_START");
-        IfcSequenceEnum_type = new enumeration_type("IfcSequenceEnum", items);
+        IfcSequenceEnum_type = new enumeration_type(IfcSchema::Type::IfcSequenceEnum, items);
     }
-    declaration* IfcServiceLifeFactorTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("A_QUALITYOFCOMPONENTS");
@@ -1804,9 +2658,8 @@ void populate() {
         items.push_back("G_MAINTENANCELEVEL");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcServiceLifeFactorTypeEnum_type = new enumeration_type("IfcServiceLifeFactorTypeEnum", items);
+        IfcServiceLifeFactorTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcServiceLifeFactorTypeEnum, items);
     }
-    declaration* IfcServiceLifeTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("ACTUALSERVICELIFE");
@@ -1814,9 +2667,8 @@ void populate() {
         items.push_back("OPTIMISTICREFERENCESERVICELIFE");
         items.push_back("PESSIMISTICREFERENCESERVICELIFE");
         items.push_back("REFERENCESERVICELIFE");
-        IfcServiceLifeTypeEnum_type = new enumeration_type("IfcServiceLifeTypeEnum", items);
+        IfcServiceLifeTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcServiceLifeTypeEnum, items);
     }
-    declaration* IfcSlabTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("BASESLAB");
@@ -1825,9 +2677,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("ROOF");
         items.push_back("USERDEFINED");
-        IfcSlabTypeEnum_type = new enumeration_type("IfcSlabTypeEnum", items);
+        IfcSlabTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcSlabTypeEnum, items);
     }
-    declaration* IfcSoundScaleEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("DBA");
@@ -1837,9 +2688,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("NR");
         items.push_back("USERDEFINED");
-        IfcSoundScaleEnum_type = new enumeration_type("IfcSoundScaleEnum", items);
+        IfcSoundScaleEnum_type = new enumeration_type(IfcSchema::Type::IfcSoundScaleEnum, items);
     }
-    declaration* IfcSpaceHeaterTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("BASEBOARDHEATER");
@@ -1851,16 +2701,14 @@ void populate() {
         items.push_back("TUBULARRADIATOR");
         items.push_back("UNITHEATER");
         items.push_back("USERDEFINED");
-        IfcSpaceHeaterTypeEnum_type = new enumeration_type("IfcSpaceHeaterTypeEnum", items);
+        IfcSpaceHeaterTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcSpaceHeaterTypeEnum, items);
     }
-    declaration* IfcSpaceTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcSpaceTypeEnum_type = new enumeration_type("IfcSpaceTypeEnum", items);
+        IfcSpaceTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcSpaceTypeEnum, items);
     }
-    declaration* IfcStackTerminalTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("BIRDCAGE");
@@ -1868,9 +2716,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("RAINWATERHOPPER");
         items.push_back("USERDEFINED");
-        IfcStackTerminalTypeEnum_type = new enumeration_type("IfcStackTerminalTypeEnum", items);
+        IfcStackTerminalTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcStackTerminalTypeEnum, items);
     }
-    declaration* IfcStairFlightTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("CURVED");
@@ -1880,9 +2727,8 @@ void populate() {
         items.push_back("STRAIGHT");
         items.push_back("USERDEFINED");
         items.push_back("WINDER");
-        IfcStairFlightTypeEnum_type = new enumeration_type("IfcStairFlightTypeEnum", items);
+        IfcStairFlightTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcStairFlightTypeEnum, items);
     }
-    declaration* IfcStairTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(16);
         items.push_back("CURVED_RUN_STAIR");
@@ -1901,9 +2747,8 @@ void populate() {
         items.push_back("TWO_QUARTER_WINDING_STAIR");
         items.push_back("TWO_STRAIGHT_RUN_STAIR");
         items.push_back("USERDEFINED");
-        IfcStairTypeEnum_type = new enumeration_type("IfcStairTypeEnum", items);
+        IfcStairTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcStairTypeEnum, items);
     }
-    declaration* IfcStateEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("LOCKED");
@@ -1911,9 +2756,8 @@ void populate() {
         items.push_back("READONLYLOCKED");
         items.push_back("READWRITE");
         items.push_back("READWRITELOCKED");
-        IfcStateEnum_type = new enumeration_type("IfcStateEnum", items);
+        IfcStateEnum_type = new enumeration_type(IfcSchema::Type::IfcStateEnum, items);
     }
-    declaration* IfcStructuralCurveTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("CABLE");
@@ -1923,9 +2767,8 @@ void populate() {
         items.push_back("RIGID_JOINED_MEMBER");
         items.push_back("TENSION_MEMBER");
         items.push_back("USERDEFINED");
-        IfcStructuralCurveTypeEnum_type = new enumeration_type("IfcStructuralCurveTypeEnum", items);
+        IfcStructuralCurveTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcStructuralCurveTypeEnum, items);
     }
-    declaration* IfcStructuralSurfaceTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("BENDING_ELEMENT");
@@ -1933,17 +2776,15 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("SHELL");
         items.push_back("USERDEFINED");
-        IfcStructuralSurfaceTypeEnum_type = new enumeration_type("IfcStructuralSurfaceTypeEnum", items);
+        IfcStructuralSurfaceTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcStructuralSurfaceTypeEnum, items);
     }
-    declaration* IfcSurfaceSide_type;
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("BOTH");
         items.push_back("NEGATIVE");
         items.push_back("POSITIVE");
-        IfcSurfaceSide_type = new enumeration_type("IfcSurfaceSide", items);
+        IfcSurfaceSide_type = new enumeration_type(IfcSchema::Type::IfcSurfaceSide, items);
     }
-    declaration* IfcSurfaceTextureEnum_type;
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("BUMP");
@@ -1955,9 +2796,8 @@ void populate() {
         items.push_back("SPECULAR");
         items.push_back("TEXTURE");
         items.push_back("TRANSPARENCYMAP");
-        IfcSurfaceTextureEnum_type = new enumeration_type("IfcSurfaceTextureEnum", items);
+        IfcSurfaceTextureEnum_type = new enumeration_type(IfcSchema::Type::IfcSurfaceTextureEnum, items);
     }
-    declaration* IfcSwitchingDeviceTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("CONTACTOR");
@@ -1967,9 +2807,8 @@ void populate() {
         items.push_back("SWITCHDISCONNECTOR");
         items.push_back("TOGGLESWITCH");
         items.push_back("USERDEFINED");
-        IfcSwitchingDeviceTypeEnum_type = new enumeration_type("IfcSwitchingDeviceTypeEnum", items);
+        IfcSwitchingDeviceTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcSwitchingDeviceTypeEnum, items);
     }
-    declaration* IfcTankTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("EXPANSION");
@@ -1978,9 +2817,8 @@ void populate() {
         items.push_back("PRESSUREVESSEL");
         items.push_back("SECTIONAL");
         items.push_back("USERDEFINED");
-        IfcTankTypeEnum_type = new enumeration_type("IfcTankTypeEnum", items);
+        IfcTankTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcTankTypeEnum, items);
     }
-    declaration* IfcTendonTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("BAR");
@@ -1989,18 +2827,16 @@ void populate() {
         items.push_back("STRAND");
         items.push_back("USERDEFINED");
         items.push_back("WIRE");
-        IfcTendonTypeEnum_type = new enumeration_type("IfcTendonTypeEnum", items);
+        IfcTendonTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcTendonTypeEnum, items);
     }
-    declaration* IfcTextPath_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("DOWN");
         items.push_back("LEFT");
         items.push_back("RIGHT");
         items.push_back("UP");
-        IfcTextPath_type = new enumeration_type("IfcTextPath", items);
+        IfcTextPath_type = new enumeration_type(IfcSchema::Type::IfcTextPath, items);
     }
-    declaration* IfcThermalLoadSourceEnum_type;
     {
         std::vector<std::string> items; items.reserve(13);
         items.push_back("AIREXCHANGERATE");
@@ -2016,18 +2852,16 @@ void populate() {
         items.push_back("USERDEFINED");
         items.push_back("VENTILATIONINDOORAIR");
         items.push_back("VENTILATIONOUTSIDEAIR");
-        IfcThermalLoadSourceEnum_type = new enumeration_type("IfcThermalLoadSourceEnum", items);
+        IfcThermalLoadSourceEnum_type = new enumeration_type(IfcSchema::Type::IfcThermalLoadSourceEnum, items);
     }
-    declaration* IfcThermalLoadTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("LATENT");
         items.push_back("NOTDEFINED");
         items.push_back("RADIANT");
         items.push_back("SENSIBLE");
-        IfcThermalLoadTypeEnum_type = new enumeration_type("IfcThermalLoadTypeEnum", items);
+        IfcThermalLoadTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcThermalLoadTypeEnum, items);
     }
-    declaration* IfcTimeSeriesDataTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("CONTINUOUS");
@@ -2037,9 +2871,8 @@ void populate() {
         items.push_back("PIECEWISEBINARY");
         items.push_back("PIECEWISECONSTANT");
         items.push_back("PIECEWISECONTINUOUS");
-        IfcTimeSeriesDataTypeEnum_type = new enumeration_type("IfcTimeSeriesDataTypeEnum", items);
+        IfcTimeSeriesDataTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcTimeSeriesDataTypeEnum, items);
     }
-    declaration* IfcTimeSeriesScheduleTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("ANNUAL");
@@ -2048,9 +2881,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
         items.push_back("WEEKLY");
-        IfcTimeSeriesScheduleTypeEnum_type = new enumeration_type("IfcTimeSeriesScheduleTypeEnum", items);
+        IfcTimeSeriesScheduleTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcTimeSeriesScheduleTypeEnum, items);
     }
-    declaration* IfcTransformerTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("CURRENT");
@@ -2058,18 +2890,16 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
         items.push_back("VOLTAGE");
-        IfcTransformerTypeEnum_type = new enumeration_type("IfcTransformerTypeEnum", items);
+        IfcTransformerTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcTransformerTypeEnum, items);
     }
-    declaration* IfcTransitionCode_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("CONTINUOUS");
         items.push_back("CONTSAMEGRADIENT");
         items.push_back("CONTSAMEGRADIENTSAMECURVATURE");
         items.push_back("DISCONTINUOUS");
-        IfcTransitionCode_type = new enumeration_type("IfcTransitionCode", items);
+        IfcTransitionCode_type = new enumeration_type(IfcSchema::Type::IfcTransitionCode, items);
     }
-    declaration* IfcTransportElementTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("ELEVATOR");
@@ -2077,25 +2907,22 @@ void populate() {
         items.push_back("MOVINGWALKWAY");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcTransportElementTypeEnum_type = new enumeration_type("IfcTransportElementTypeEnum", items);
+        IfcTransportElementTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcTransportElementTypeEnum, items);
     }
-    declaration* IfcTrimmingPreference_type;
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("CARTESIAN");
         items.push_back("PARAMETER");
         items.push_back("UNSPECIFIED");
-        IfcTrimmingPreference_type = new enumeration_type("IfcTrimmingPreference", items);
+        IfcTrimmingPreference_type = new enumeration_type(IfcSchema::Type::IfcTrimmingPreference, items);
     }
-    declaration* IfcTubeBundleTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("FINNED");
         items.push_back("NOTDEFINED");
         items.push_back("USERDEFINED");
-        IfcTubeBundleTypeEnum_type = new enumeration_type("IfcTubeBundleTypeEnum", items);
+        IfcTubeBundleTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcTubeBundleTypeEnum, items);
     }
-    declaration* IfcUnitEnum_type;
     {
         std::vector<std::string> items; items.reserve(30);
         items.push_back("ABSORBEDDOSEUNIT");
@@ -2128,9 +2955,8 @@ void populate() {
         items.push_back("TIMEUNIT");
         items.push_back("USERDEFINED");
         items.push_back("VOLUMEUNIT");
-        IfcUnitEnum_type = new enumeration_type("IfcUnitEnum", items);
+        IfcUnitEnum_type = new enumeration_type(IfcSchema::Type::IfcUnitEnum, items);
     }
-    declaration* IfcUnitaryEquipmentTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("AIRCONDITIONINGUNIT");
@@ -2139,9 +2965,8 @@ void populate() {
         items.push_back("ROOFTOPUNIT");
         items.push_back("SPLITSYSTEM");
         items.push_back("USERDEFINED");
-        IfcUnitaryEquipmentTypeEnum_type = new enumeration_type("IfcUnitaryEquipmentTypeEnum", items);
+        IfcUnitaryEquipmentTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcUnitaryEquipmentTypeEnum, items);
     }
-    declaration* IfcValveTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(23);
         items.push_back("AIRRELEASE");
@@ -2167,18 +2992,16 @@ void populate() {
         items.push_back("STEAMTRAP");
         items.push_back("STOPCOCK");
         items.push_back("USERDEFINED");
-        IfcValveTypeEnum_type = new enumeration_type("IfcValveTypeEnum", items);
+        IfcValveTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcValveTypeEnum, items);
     }
-    declaration* IfcVibrationIsolatorTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("COMPRESSION");
         items.push_back("NOTDEFINED");
         items.push_back("SPRING");
         items.push_back("USERDEFINED");
-        IfcVibrationIsolatorTypeEnum_type = new enumeration_type("IfcVibrationIsolatorTypeEnum", items);
+        IfcVibrationIsolatorTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcVibrationIsolatorTypeEnum, items);
     }
-    declaration* IfcWallTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("ELEMENTEDWALL");
@@ -2188,9 +3011,8 @@ void populate() {
         items.push_back("SHEAR");
         items.push_back("STANDARD");
         items.push_back("USERDEFINED");
-        IfcWallTypeEnum_type = new enumeration_type("IfcWallTypeEnum", items);
+        IfcWallTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcWallTypeEnum, items);
     }
-    declaration* IfcWasteTerminalTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(12);
         items.push_back("FLOORTRAP");
@@ -2205,9 +3027,8 @@ void populate() {
         items.push_back("USERDEFINED");
         items.push_back("WASTEDISPOSALUNIT");
         items.push_back("WASTETRAP");
-        IfcWasteTerminalTypeEnum_type = new enumeration_type("IfcWasteTerminalTypeEnum", items);
+        IfcWasteTerminalTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcWasteTerminalTypeEnum, items);
     }
-    declaration* IfcWindowPanelOperationEnum_type;
     {
         std::vector<std::string> items; items.reserve(14);
         items.push_back("BOTTOMHUNG");
@@ -2224,9 +3045,8 @@ void populate() {
         items.push_back("TILTANDTURNLEFTHAND");
         items.push_back("TILTANDTURNRIGHTHAND");
         items.push_back("TOPHUNG");
-        IfcWindowPanelOperationEnum_type = new enumeration_type("IfcWindowPanelOperationEnum", items);
+        IfcWindowPanelOperationEnum_type = new enumeration_type(IfcSchema::Type::IfcWindowPanelOperationEnum, items);
     }
-    declaration* IfcWindowPanelPositionEnum_type;
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("BOTTOM");
@@ -2235,9 +3055,8 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("RIGHT");
         items.push_back("TOP");
-        IfcWindowPanelPositionEnum_type = new enumeration_type("IfcWindowPanelPositionEnum", items);
+        IfcWindowPanelPositionEnum_type = new enumeration_type(IfcSchema::Type::IfcWindowPanelPositionEnum, items);
     }
-    declaration* IfcWindowStyleConstructionEnum_type;
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("ALUMINIUM");
@@ -2248,9 +3067,8 @@ void populate() {
         items.push_back("PLASTIC");
         items.push_back("STEEL");
         items.push_back("WOOD");
-        IfcWindowStyleConstructionEnum_type = new enumeration_type("IfcWindowStyleConstructionEnum", items);
+        IfcWindowStyleConstructionEnum_type = new enumeration_type(IfcSchema::Type::IfcWindowStyleConstructionEnum, items);
     }
-    declaration* IfcWindowStyleOperationEnum_type;
     {
         std::vector<std::string> items; items.reserve(11);
         items.push_back("DOUBLE_PANEL_HORIZONTAL");
@@ -2264,9 +3082,8 @@ void populate() {
         items.push_back("TRIPLE_PANEL_TOP");
         items.push_back("TRIPLE_PANEL_VERTICAL");
         items.push_back("USERDEFINED");
-        IfcWindowStyleOperationEnum_type = new enumeration_type("IfcWindowStyleOperationEnum", items);
+        IfcWindowStyleOperationEnum_type = new enumeration_type(IfcSchema::Type::IfcWindowStyleOperationEnum, items);
     }
-    declaration* IfcWorkControlTypeEnum_type;
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("ACTUAL");
@@ -2274,764 +3091,749 @@ void populate() {
         items.push_back("NOTDEFINED");
         items.push_back("PLANNED");
         items.push_back("USERDEFINED");
-        IfcWorkControlTypeEnum_type = new enumeration_type("IfcWorkControlTypeEnum", items);
+        IfcWorkControlTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcWorkControlTypeEnum, items);
     }
-    entity* IfcActorRole_type = new entity("IfcActorRole", 0);
-    entity* IfcAddress_type = new entity("IfcAddress", 0);
-    entity* IfcApplication_type = new entity("IfcApplication", 0);
-    entity* IfcAppliedValue_type = new entity("IfcAppliedValue", 0);
-    entity* IfcAppliedValueRelationship_type = new entity("IfcAppliedValueRelationship", 0);
-    entity* IfcApproval_type = new entity("IfcApproval", 0);
-    entity* IfcApprovalActorRelationship_type = new entity("IfcApprovalActorRelationship", 0);
-    entity* IfcApprovalPropertyRelationship_type = new entity("IfcApprovalPropertyRelationship", 0);
-    entity* IfcApprovalRelationship_type = new entity("IfcApprovalRelationship", 0);
-    entity* IfcBoundaryCondition_type = new entity("IfcBoundaryCondition", 0);
-    entity* IfcBoundaryEdgeCondition_type = new entity("IfcBoundaryEdgeCondition", IfcBoundaryCondition_type);
-    entity* IfcBoundaryFaceCondition_type = new entity("IfcBoundaryFaceCondition", IfcBoundaryCondition_type);
-    entity* IfcBoundaryNodeCondition_type = new entity("IfcBoundaryNodeCondition", IfcBoundaryCondition_type);
-    entity* IfcBoundaryNodeConditionWarping_type = new entity("IfcBoundaryNodeConditionWarping", IfcBoundaryNodeCondition_type);
-    entity* IfcCalendarDate_type = new entity("IfcCalendarDate", 0);
-    entity* IfcClassification_type = new entity("IfcClassification", 0);
-    entity* IfcClassificationItem_type = new entity("IfcClassificationItem", 0);
-    entity* IfcClassificationItemRelationship_type = new entity("IfcClassificationItemRelationship", 0);
-    entity* IfcClassificationNotation_type = new entity("IfcClassificationNotation", 0);
-    entity* IfcClassificationNotationFacet_type = new entity("IfcClassificationNotationFacet", 0);
-    entity* IfcColourSpecification_type = new entity("IfcColourSpecification", 0);
-    entity* IfcConnectionGeometry_type = new entity("IfcConnectionGeometry", 0);
-    entity* IfcConnectionPointGeometry_type = new entity("IfcConnectionPointGeometry", IfcConnectionGeometry_type);
-    entity* IfcConnectionPortGeometry_type = new entity("IfcConnectionPortGeometry", IfcConnectionGeometry_type);
-    entity* IfcConnectionSurfaceGeometry_type = new entity("IfcConnectionSurfaceGeometry", IfcConnectionGeometry_type);
-    entity* IfcConstraint_type = new entity("IfcConstraint", 0);
-    entity* IfcConstraintAggregationRelationship_type = new entity("IfcConstraintAggregationRelationship", 0);
-    entity* IfcConstraintClassificationRelationship_type = new entity("IfcConstraintClassificationRelationship", 0);
-    entity* IfcConstraintRelationship_type = new entity("IfcConstraintRelationship", 0);
-    entity* IfcCoordinatedUniversalTimeOffset_type = new entity("IfcCoordinatedUniversalTimeOffset", 0);
-    entity* IfcCostValue_type = new entity("IfcCostValue", IfcAppliedValue_type);
-    entity* IfcCurrencyRelationship_type = new entity("IfcCurrencyRelationship", 0);
-    entity* IfcCurveStyleFont_type = new entity("IfcCurveStyleFont", 0);
-    entity* IfcCurveStyleFontAndScaling_type = new entity("IfcCurveStyleFontAndScaling", 0);
-    entity* IfcCurveStyleFontPattern_type = new entity("IfcCurveStyleFontPattern", 0);
-    entity* IfcDateAndTime_type = new entity("IfcDateAndTime", 0);
-    entity* IfcDerivedUnit_type = new entity("IfcDerivedUnit", 0);
-    entity* IfcDerivedUnitElement_type = new entity("IfcDerivedUnitElement", 0);
-    entity* IfcDimensionalExponents_type = new entity("IfcDimensionalExponents", 0);
-    entity* IfcDocumentElectronicFormat_type = new entity("IfcDocumentElectronicFormat", 0);
-    entity* IfcDocumentInformation_type = new entity("IfcDocumentInformation", 0);
-    entity* IfcDocumentInformationRelationship_type = new entity("IfcDocumentInformationRelationship", 0);
-    entity* IfcDraughtingCalloutRelationship_type = new entity("IfcDraughtingCalloutRelationship", 0);
-    entity* IfcEnvironmentalImpactValue_type = new entity("IfcEnvironmentalImpactValue", IfcAppliedValue_type);
-    entity* IfcExternalReference_type = new entity("IfcExternalReference", 0);
-    entity* IfcExternallyDefinedHatchStyle_type = new entity("IfcExternallyDefinedHatchStyle", IfcExternalReference_type);
-    entity* IfcExternallyDefinedSurfaceStyle_type = new entity("IfcExternallyDefinedSurfaceStyle", IfcExternalReference_type);
-    entity* IfcExternallyDefinedSymbol_type = new entity("IfcExternallyDefinedSymbol", IfcExternalReference_type);
-    entity* IfcExternallyDefinedTextFont_type = new entity("IfcExternallyDefinedTextFont", IfcExternalReference_type);
-    entity* IfcGridAxis_type = new entity("IfcGridAxis", 0);
-    entity* IfcIrregularTimeSeriesValue_type = new entity("IfcIrregularTimeSeriesValue", 0);
-    entity* IfcLibraryInformation_type = new entity("IfcLibraryInformation", 0);
-    entity* IfcLibraryReference_type = new entity("IfcLibraryReference", IfcExternalReference_type);
-    entity* IfcLightDistributionData_type = new entity("IfcLightDistributionData", 0);
-    entity* IfcLightIntensityDistribution_type = new entity("IfcLightIntensityDistribution", 0);
-    entity* IfcLocalTime_type = new entity("IfcLocalTime", 0);
-    entity* IfcMaterial_type = new entity("IfcMaterial", 0);
-    entity* IfcMaterialClassificationRelationship_type = new entity("IfcMaterialClassificationRelationship", 0);
-    entity* IfcMaterialLayer_type = new entity("IfcMaterialLayer", 0);
-    entity* IfcMaterialLayerSet_type = new entity("IfcMaterialLayerSet", 0);
-    entity* IfcMaterialLayerSetUsage_type = new entity("IfcMaterialLayerSetUsage", 0);
-    entity* IfcMaterialList_type = new entity("IfcMaterialList", 0);
-    entity* IfcMaterialProperties_type = new entity("IfcMaterialProperties", 0);
-    entity* IfcMeasureWithUnit_type = new entity("IfcMeasureWithUnit", 0);
-    entity* IfcMechanicalMaterialProperties_type = new entity("IfcMechanicalMaterialProperties", IfcMaterialProperties_type);
-    entity* IfcMechanicalSteelMaterialProperties_type = new entity("IfcMechanicalSteelMaterialProperties", IfcMechanicalMaterialProperties_type);
-    entity* IfcMetric_type = new entity("IfcMetric", IfcConstraint_type);
-    entity* IfcMonetaryUnit_type = new entity("IfcMonetaryUnit", 0);
-    entity* IfcNamedUnit_type = new entity("IfcNamedUnit", 0);
-    entity* IfcObjectPlacement_type = new entity("IfcObjectPlacement", 0);
-    entity* IfcObjective_type = new entity("IfcObjective", IfcConstraint_type);
-    entity* IfcOpticalMaterialProperties_type = new entity("IfcOpticalMaterialProperties", IfcMaterialProperties_type);
-    entity* IfcOrganization_type = new entity("IfcOrganization", 0);
-    entity* IfcOrganizationRelationship_type = new entity("IfcOrganizationRelationship", 0);
-    entity* IfcOwnerHistory_type = new entity("IfcOwnerHistory", 0);
-    entity* IfcPerson_type = new entity("IfcPerson", 0);
-    entity* IfcPersonAndOrganization_type = new entity("IfcPersonAndOrganization", 0);
-    entity* IfcPhysicalQuantity_type = new entity("IfcPhysicalQuantity", 0);
-    entity* IfcPhysicalSimpleQuantity_type = new entity("IfcPhysicalSimpleQuantity", IfcPhysicalQuantity_type);
-    entity* IfcPostalAddress_type = new entity("IfcPostalAddress", IfcAddress_type);
-    entity* IfcPreDefinedItem_type = new entity("IfcPreDefinedItem", 0);
-    entity* IfcPreDefinedSymbol_type = new entity("IfcPreDefinedSymbol", IfcPreDefinedItem_type);
-    entity* IfcPreDefinedTerminatorSymbol_type = new entity("IfcPreDefinedTerminatorSymbol", IfcPreDefinedSymbol_type);
-    entity* IfcPreDefinedTextFont_type = new entity("IfcPreDefinedTextFont", IfcPreDefinedItem_type);
-    entity* IfcPresentationLayerAssignment_type = new entity("IfcPresentationLayerAssignment", 0);
-    entity* IfcPresentationLayerWithStyle_type = new entity("IfcPresentationLayerWithStyle", IfcPresentationLayerAssignment_type);
-    entity* IfcPresentationStyle_type = new entity("IfcPresentationStyle", 0);
-    entity* IfcPresentationStyleAssignment_type = new entity("IfcPresentationStyleAssignment", 0);
-    entity* IfcProductRepresentation_type = new entity("IfcProductRepresentation", 0);
-    entity* IfcProductsOfCombustionProperties_type = new entity("IfcProductsOfCombustionProperties", IfcMaterialProperties_type);
-    entity* IfcProfileDef_type = new entity("IfcProfileDef", 0);
-    entity* IfcProfileProperties_type = new entity("IfcProfileProperties", 0);
-    entity* IfcProperty_type = new entity("IfcProperty", 0);
-    entity* IfcPropertyConstraintRelationship_type = new entity("IfcPropertyConstraintRelationship", 0);
-    entity* IfcPropertyDependencyRelationship_type = new entity("IfcPropertyDependencyRelationship", 0);
-    entity* IfcPropertyEnumeration_type = new entity("IfcPropertyEnumeration", 0);
-    entity* IfcQuantityArea_type = new entity("IfcQuantityArea", IfcPhysicalSimpleQuantity_type);
-    entity* IfcQuantityCount_type = new entity("IfcQuantityCount", IfcPhysicalSimpleQuantity_type);
-    entity* IfcQuantityLength_type = new entity("IfcQuantityLength", IfcPhysicalSimpleQuantity_type);
-    entity* IfcQuantityTime_type = new entity("IfcQuantityTime", IfcPhysicalSimpleQuantity_type);
-    entity* IfcQuantityVolume_type = new entity("IfcQuantityVolume", IfcPhysicalSimpleQuantity_type);
-    entity* IfcQuantityWeight_type = new entity("IfcQuantityWeight", IfcPhysicalSimpleQuantity_type);
-    entity* IfcReferencesValueDocument_type = new entity("IfcReferencesValueDocument", 0);
-    entity* IfcReinforcementBarProperties_type = new entity("IfcReinforcementBarProperties", 0);
-    entity* IfcRelaxation_type = new entity("IfcRelaxation", 0);
-    entity* IfcRepresentation_type = new entity("IfcRepresentation", 0);
-    entity* IfcRepresentationContext_type = new entity("IfcRepresentationContext", 0);
-    entity* IfcRepresentationItem_type = new entity("IfcRepresentationItem", 0);
-    entity* IfcRepresentationMap_type = new entity("IfcRepresentationMap", 0);
-    entity* IfcRibPlateProfileProperties_type = new entity("IfcRibPlateProfileProperties", IfcProfileProperties_type);
-    entity* IfcRoot_type = new entity("IfcRoot", 0);
-    entity* IfcSIUnit_type = new entity("IfcSIUnit", IfcNamedUnit_type);
-    entity* IfcSectionProperties_type = new entity("IfcSectionProperties", 0);
-    entity* IfcSectionReinforcementProperties_type = new entity("IfcSectionReinforcementProperties", 0);
-    entity* IfcShapeAspect_type = new entity("IfcShapeAspect", 0);
-    entity* IfcShapeModel_type = new entity("IfcShapeModel", IfcRepresentation_type);
-    entity* IfcShapeRepresentation_type = new entity("IfcShapeRepresentation", IfcShapeModel_type);
-    entity* IfcSimpleProperty_type = new entity("IfcSimpleProperty", IfcProperty_type);
-    entity* IfcStructuralConnectionCondition_type = new entity("IfcStructuralConnectionCondition", 0);
-    entity* IfcStructuralLoad_type = new entity("IfcStructuralLoad", 0);
-    entity* IfcStructuralLoadStatic_type = new entity("IfcStructuralLoadStatic", IfcStructuralLoad_type);
-    entity* IfcStructuralLoadTemperature_type = new entity("IfcStructuralLoadTemperature", IfcStructuralLoadStatic_type);
-    entity* IfcStyleModel_type = new entity("IfcStyleModel", IfcRepresentation_type);
-    entity* IfcStyledItem_type = new entity("IfcStyledItem", IfcRepresentationItem_type);
-    entity* IfcStyledRepresentation_type = new entity("IfcStyledRepresentation", IfcStyleModel_type);
-    entity* IfcSurfaceStyle_type = new entity("IfcSurfaceStyle", IfcPresentationStyle_type);
-    entity* IfcSurfaceStyleLighting_type = new entity("IfcSurfaceStyleLighting", 0);
-    entity* IfcSurfaceStyleRefraction_type = new entity("IfcSurfaceStyleRefraction", 0);
-    entity* IfcSurfaceStyleShading_type = new entity("IfcSurfaceStyleShading", 0);
-    entity* IfcSurfaceStyleWithTextures_type = new entity("IfcSurfaceStyleWithTextures", 0);
-    entity* IfcSurfaceTexture_type = new entity("IfcSurfaceTexture", 0);
-    entity* IfcSymbolStyle_type = new entity("IfcSymbolStyle", IfcPresentationStyle_type);
-    entity* IfcTable_type = new entity("IfcTable", 0);
-    entity* IfcTableRow_type = new entity("IfcTableRow", 0);
-    entity* IfcTelecomAddress_type = new entity("IfcTelecomAddress", IfcAddress_type);
-    entity* IfcTextStyle_type = new entity("IfcTextStyle", IfcPresentationStyle_type);
-    entity* IfcTextStyleFontModel_type = new entity("IfcTextStyleFontModel", IfcPreDefinedTextFont_type);
-    entity* IfcTextStyleForDefinedFont_type = new entity("IfcTextStyleForDefinedFont", 0);
-    entity* IfcTextStyleTextModel_type = new entity("IfcTextStyleTextModel", 0);
-    entity* IfcTextStyleWithBoxCharacteristics_type = new entity("IfcTextStyleWithBoxCharacteristics", 0);
-    entity* IfcTextureCoordinate_type = new entity("IfcTextureCoordinate", 0);
-    entity* IfcTextureCoordinateGenerator_type = new entity("IfcTextureCoordinateGenerator", IfcTextureCoordinate_type);
-    entity* IfcTextureMap_type = new entity("IfcTextureMap", IfcTextureCoordinate_type);
-    entity* IfcTextureVertex_type = new entity("IfcTextureVertex", 0);
-    entity* IfcThermalMaterialProperties_type = new entity("IfcThermalMaterialProperties", IfcMaterialProperties_type);
-    entity* IfcTimeSeries_type = new entity("IfcTimeSeries", 0);
-    entity* IfcTimeSeriesReferenceRelationship_type = new entity("IfcTimeSeriesReferenceRelationship", 0);
-    entity* IfcTimeSeriesValue_type = new entity("IfcTimeSeriesValue", 0);
-    entity* IfcTopologicalRepresentationItem_type = new entity("IfcTopologicalRepresentationItem", IfcRepresentationItem_type);
-    entity* IfcTopologyRepresentation_type = new entity("IfcTopologyRepresentation", IfcShapeModel_type);
-    entity* IfcUnitAssignment_type = new entity("IfcUnitAssignment", 0);
-    entity* IfcVertex_type = new entity("IfcVertex", IfcTopologicalRepresentationItem_type);
-    entity* IfcVertexBasedTextureMap_type = new entity("IfcVertexBasedTextureMap", 0);
-    entity* IfcVertexPoint_type = new entity("IfcVertexPoint", IfcVertex_type);
-    entity* IfcVirtualGridIntersection_type = new entity("IfcVirtualGridIntersection", 0);
-    entity* IfcWaterProperties_type = new entity("IfcWaterProperties", IfcMaterialProperties_type);
-    entity* IfcAnnotationOccurrence_type = new entity("IfcAnnotationOccurrence", IfcStyledItem_type);
-    entity* IfcAnnotationSurfaceOccurrence_type = new entity("IfcAnnotationSurfaceOccurrence", IfcAnnotationOccurrence_type);
-    entity* IfcAnnotationSymbolOccurrence_type = new entity("IfcAnnotationSymbolOccurrence", IfcAnnotationOccurrence_type);
-    entity* IfcAnnotationTextOccurrence_type = new entity("IfcAnnotationTextOccurrence", IfcAnnotationOccurrence_type);
-    entity* IfcArbitraryClosedProfileDef_type = new entity("IfcArbitraryClosedProfileDef", IfcProfileDef_type);
-    entity* IfcArbitraryOpenProfileDef_type = new entity("IfcArbitraryOpenProfileDef", IfcProfileDef_type);
-    entity* IfcArbitraryProfileDefWithVoids_type = new entity("IfcArbitraryProfileDefWithVoids", IfcArbitraryClosedProfileDef_type);
-    entity* IfcBlobTexture_type = new entity("IfcBlobTexture", IfcSurfaceTexture_type);
-    entity* IfcCenterLineProfileDef_type = new entity("IfcCenterLineProfileDef", IfcArbitraryOpenProfileDef_type);
-    entity* IfcClassificationReference_type = new entity("IfcClassificationReference", IfcExternalReference_type);
-    entity* IfcColourRgb_type = new entity("IfcColourRgb", IfcColourSpecification_type);
-    entity* IfcComplexProperty_type = new entity("IfcComplexProperty", IfcProperty_type);
-    entity* IfcCompositeProfileDef_type = new entity("IfcCompositeProfileDef", IfcProfileDef_type);
-    entity* IfcConnectedFaceSet_type = new entity("IfcConnectedFaceSet", IfcTopologicalRepresentationItem_type);
-    entity* IfcConnectionCurveGeometry_type = new entity("IfcConnectionCurveGeometry", IfcConnectionGeometry_type);
-    entity* IfcConnectionPointEccentricity_type = new entity("IfcConnectionPointEccentricity", IfcConnectionPointGeometry_type);
-    entity* IfcContextDependentUnit_type = new entity("IfcContextDependentUnit", IfcNamedUnit_type);
-    entity* IfcConversionBasedUnit_type = new entity("IfcConversionBasedUnit", IfcNamedUnit_type);
-    entity* IfcCurveStyle_type = new entity("IfcCurveStyle", IfcPresentationStyle_type);
-    entity* IfcDerivedProfileDef_type = new entity("IfcDerivedProfileDef", IfcProfileDef_type);
-    entity* IfcDimensionCalloutRelationship_type = new entity("IfcDimensionCalloutRelationship", IfcDraughtingCalloutRelationship_type);
-    entity* IfcDimensionPair_type = new entity("IfcDimensionPair", IfcDraughtingCalloutRelationship_type);
-    entity* IfcDocumentReference_type = new entity("IfcDocumentReference", IfcExternalReference_type);
-    entity* IfcDraughtingPreDefinedTextFont_type = new entity("IfcDraughtingPreDefinedTextFont", IfcPreDefinedTextFont_type);
-    entity* IfcEdge_type = new entity("IfcEdge", IfcTopologicalRepresentationItem_type);
-    entity* IfcEdgeCurve_type = new entity("IfcEdgeCurve", IfcEdge_type);
-    entity* IfcExtendedMaterialProperties_type = new entity("IfcExtendedMaterialProperties", IfcMaterialProperties_type);
-    entity* IfcFace_type = new entity("IfcFace", IfcTopologicalRepresentationItem_type);
-    entity* IfcFaceBound_type = new entity("IfcFaceBound", IfcTopologicalRepresentationItem_type);
-    entity* IfcFaceOuterBound_type = new entity("IfcFaceOuterBound", IfcFaceBound_type);
-    entity* IfcFaceSurface_type = new entity("IfcFaceSurface", IfcFace_type);
-    entity* IfcFailureConnectionCondition_type = new entity("IfcFailureConnectionCondition", IfcStructuralConnectionCondition_type);
-    entity* IfcFillAreaStyle_type = new entity("IfcFillAreaStyle", IfcPresentationStyle_type);
-    entity* IfcFuelProperties_type = new entity("IfcFuelProperties", IfcMaterialProperties_type);
-    entity* IfcGeneralMaterialProperties_type = new entity("IfcGeneralMaterialProperties", IfcMaterialProperties_type);
-    entity* IfcGeneralProfileProperties_type = new entity("IfcGeneralProfileProperties", IfcProfileProperties_type);
-    entity* IfcGeometricRepresentationContext_type = new entity("IfcGeometricRepresentationContext", IfcRepresentationContext_type);
-    entity* IfcGeometricRepresentationItem_type = new entity("IfcGeometricRepresentationItem", IfcRepresentationItem_type);
-    entity* IfcGeometricRepresentationSubContext_type = new entity("IfcGeometricRepresentationSubContext", IfcGeometricRepresentationContext_type);
-    entity* IfcGeometricSet_type = new entity("IfcGeometricSet", IfcGeometricRepresentationItem_type);
-    entity* IfcGridPlacement_type = new entity("IfcGridPlacement", IfcObjectPlacement_type);
-    entity* IfcHalfSpaceSolid_type = new entity("IfcHalfSpaceSolid", IfcGeometricRepresentationItem_type);
-    entity* IfcHygroscopicMaterialProperties_type = new entity("IfcHygroscopicMaterialProperties", IfcMaterialProperties_type);
-    entity* IfcImageTexture_type = new entity("IfcImageTexture", IfcSurfaceTexture_type);
-    entity* IfcIrregularTimeSeries_type = new entity("IfcIrregularTimeSeries", IfcTimeSeries_type);
-    entity* IfcLightSource_type = new entity("IfcLightSource", IfcGeometricRepresentationItem_type);
-    entity* IfcLightSourceAmbient_type = new entity("IfcLightSourceAmbient", IfcLightSource_type);
-    entity* IfcLightSourceDirectional_type = new entity("IfcLightSourceDirectional", IfcLightSource_type);
-    entity* IfcLightSourceGoniometric_type = new entity("IfcLightSourceGoniometric", IfcLightSource_type);
-    entity* IfcLightSourcePositional_type = new entity("IfcLightSourcePositional", IfcLightSource_type);
-    entity* IfcLightSourceSpot_type = new entity("IfcLightSourceSpot", IfcLightSourcePositional_type);
-    entity* IfcLocalPlacement_type = new entity("IfcLocalPlacement", IfcObjectPlacement_type);
-    entity* IfcLoop_type = new entity("IfcLoop", IfcTopologicalRepresentationItem_type);
-    entity* IfcMappedItem_type = new entity("IfcMappedItem", IfcRepresentationItem_type);
-    entity* IfcMaterialDefinitionRepresentation_type = new entity("IfcMaterialDefinitionRepresentation", IfcProductRepresentation_type);
-    entity* IfcMechanicalConcreteMaterialProperties_type = new entity("IfcMechanicalConcreteMaterialProperties", IfcMechanicalMaterialProperties_type);
-    entity* IfcObjectDefinition_type = new entity("IfcObjectDefinition", IfcRoot_type);
-    entity* IfcOneDirectionRepeatFactor_type = new entity("IfcOneDirectionRepeatFactor", IfcGeometricRepresentationItem_type);
-    entity* IfcOpenShell_type = new entity("IfcOpenShell", IfcConnectedFaceSet_type);
-    entity* IfcOrientedEdge_type = new entity("IfcOrientedEdge", IfcEdge_type);
-    entity* IfcParameterizedProfileDef_type = new entity("IfcParameterizedProfileDef", IfcProfileDef_type);
-    entity* IfcPath_type = new entity("IfcPath", IfcTopologicalRepresentationItem_type);
-    entity* IfcPhysicalComplexQuantity_type = new entity("IfcPhysicalComplexQuantity", IfcPhysicalQuantity_type);
-    entity* IfcPixelTexture_type = new entity("IfcPixelTexture", IfcSurfaceTexture_type);
-    entity* IfcPlacement_type = new entity("IfcPlacement", IfcGeometricRepresentationItem_type);
-    entity* IfcPlanarExtent_type = new entity("IfcPlanarExtent", IfcGeometricRepresentationItem_type);
-    entity* IfcPoint_type = new entity("IfcPoint", IfcGeometricRepresentationItem_type);
-    entity* IfcPointOnCurve_type = new entity("IfcPointOnCurve", IfcPoint_type);
-    entity* IfcPointOnSurface_type = new entity("IfcPointOnSurface", IfcPoint_type);
-    entity* IfcPolyLoop_type = new entity("IfcPolyLoop", IfcLoop_type);
-    entity* IfcPolygonalBoundedHalfSpace_type = new entity("IfcPolygonalBoundedHalfSpace", IfcHalfSpaceSolid_type);
-    entity* IfcPreDefinedColour_type = new entity("IfcPreDefinedColour", IfcPreDefinedItem_type);
-    entity* IfcPreDefinedCurveFont_type = new entity("IfcPreDefinedCurveFont", IfcPreDefinedItem_type);
-    entity* IfcPreDefinedDimensionSymbol_type = new entity("IfcPreDefinedDimensionSymbol", IfcPreDefinedSymbol_type);
-    entity* IfcPreDefinedPointMarkerSymbol_type = new entity("IfcPreDefinedPointMarkerSymbol", IfcPreDefinedSymbol_type);
-    entity* IfcProductDefinitionShape_type = new entity("IfcProductDefinitionShape", IfcProductRepresentation_type);
-    entity* IfcPropertyBoundedValue_type = new entity("IfcPropertyBoundedValue", IfcSimpleProperty_type);
-    entity* IfcPropertyDefinition_type = new entity("IfcPropertyDefinition", IfcRoot_type);
-    entity* IfcPropertyEnumeratedValue_type = new entity("IfcPropertyEnumeratedValue", IfcSimpleProperty_type);
-    entity* IfcPropertyListValue_type = new entity("IfcPropertyListValue", IfcSimpleProperty_type);
-    entity* IfcPropertyReferenceValue_type = new entity("IfcPropertyReferenceValue", IfcSimpleProperty_type);
-    entity* IfcPropertySetDefinition_type = new entity("IfcPropertySetDefinition", IfcPropertyDefinition_type);
-    entity* IfcPropertySingleValue_type = new entity("IfcPropertySingleValue", IfcSimpleProperty_type);
-    entity* IfcPropertyTableValue_type = new entity("IfcPropertyTableValue", IfcSimpleProperty_type);
-    entity* IfcRectangleProfileDef_type = new entity("IfcRectangleProfileDef", IfcParameterizedProfileDef_type);
-    entity* IfcRegularTimeSeries_type = new entity("IfcRegularTimeSeries", IfcTimeSeries_type);
-    entity* IfcReinforcementDefinitionProperties_type = new entity("IfcReinforcementDefinitionProperties", IfcPropertySetDefinition_type);
-    entity* IfcRelationship_type = new entity("IfcRelationship", IfcRoot_type);
-    entity* IfcRoundedRectangleProfileDef_type = new entity("IfcRoundedRectangleProfileDef", IfcRectangleProfileDef_type);
-    entity* IfcSectionedSpine_type = new entity("IfcSectionedSpine", IfcGeometricRepresentationItem_type);
-    entity* IfcServiceLifeFactor_type = new entity("IfcServiceLifeFactor", IfcPropertySetDefinition_type);
-    entity* IfcShellBasedSurfaceModel_type = new entity("IfcShellBasedSurfaceModel", IfcGeometricRepresentationItem_type);
-    entity* IfcSlippageConnectionCondition_type = new entity("IfcSlippageConnectionCondition", IfcStructuralConnectionCondition_type);
-    entity* IfcSolidModel_type = new entity("IfcSolidModel", IfcGeometricRepresentationItem_type);
-    entity* IfcSoundProperties_type = new entity("IfcSoundProperties", IfcPropertySetDefinition_type);
-    entity* IfcSoundValue_type = new entity("IfcSoundValue", IfcPropertySetDefinition_type);
-    entity* IfcSpaceThermalLoadProperties_type = new entity("IfcSpaceThermalLoadProperties", IfcPropertySetDefinition_type);
-    entity* IfcStructuralLoadLinearForce_type = new entity("IfcStructuralLoadLinearForce", IfcStructuralLoadStatic_type);
-    entity* IfcStructuralLoadPlanarForce_type = new entity("IfcStructuralLoadPlanarForce", IfcStructuralLoadStatic_type);
-    entity* IfcStructuralLoadSingleDisplacement_type = new entity("IfcStructuralLoadSingleDisplacement", IfcStructuralLoadStatic_type);
-    entity* IfcStructuralLoadSingleDisplacementDistortion_type = new entity("IfcStructuralLoadSingleDisplacementDistortion", IfcStructuralLoadSingleDisplacement_type);
-    entity* IfcStructuralLoadSingleForce_type = new entity("IfcStructuralLoadSingleForce", IfcStructuralLoadStatic_type);
-    entity* IfcStructuralLoadSingleForceWarping_type = new entity("IfcStructuralLoadSingleForceWarping", IfcStructuralLoadSingleForce_type);
-    entity* IfcStructuralProfileProperties_type = new entity("IfcStructuralProfileProperties", IfcGeneralProfileProperties_type);
-    entity* IfcStructuralSteelProfileProperties_type = new entity("IfcStructuralSteelProfileProperties", IfcStructuralProfileProperties_type);
-    entity* IfcSubedge_type = new entity("IfcSubedge", IfcEdge_type);
-    entity* IfcSurface_type = new entity("IfcSurface", IfcGeometricRepresentationItem_type);
-    entity* IfcSurfaceStyleRendering_type = new entity("IfcSurfaceStyleRendering", IfcSurfaceStyleShading_type);
-    entity* IfcSweptAreaSolid_type = new entity("IfcSweptAreaSolid", IfcSolidModel_type);
-    entity* IfcSweptDiskSolid_type = new entity("IfcSweptDiskSolid", IfcSolidModel_type);
-    entity* IfcSweptSurface_type = new entity("IfcSweptSurface", IfcSurface_type);
-    entity* IfcTShapeProfileDef_type = new entity("IfcTShapeProfileDef", IfcParameterizedProfileDef_type);
-    entity* IfcTerminatorSymbol_type = new entity("IfcTerminatorSymbol", IfcAnnotationSymbolOccurrence_type);
-    entity* IfcTextLiteral_type = new entity("IfcTextLiteral", IfcGeometricRepresentationItem_type);
-    entity* IfcTextLiteralWithExtent_type = new entity("IfcTextLiteralWithExtent", IfcTextLiteral_type);
-    entity* IfcTrapeziumProfileDef_type = new entity("IfcTrapeziumProfileDef", IfcParameterizedProfileDef_type);
-    entity* IfcTwoDirectionRepeatFactor_type = new entity("IfcTwoDirectionRepeatFactor", IfcOneDirectionRepeatFactor_type);
-    entity* IfcTypeObject_type = new entity("IfcTypeObject", IfcObjectDefinition_type);
-    entity* IfcTypeProduct_type = new entity("IfcTypeProduct", IfcTypeObject_type);
-    entity* IfcUShapeProfileDef_type = new entity("IfcUShapeProfileDef", IfcParameterizedProfileDef_type);
-    entity* IfcVector_type = new entity("IfcVector", IfcGeometricRepresentationItem_type);
-    entity* IfcVertexLoop_type = new entity("IfcVertexLoop", IfcLoop_type);
-    entity* IfcWindowLiningProperties_type = new entity("IfcWindowLiningProperties", IfcPropertySetDefinition_type);
-    entity* IfcWindowPanelProperties_type = new entity("IfcWindowPanelProperties", IfcPropertySetDefinition_type);
-    entity* IfcWindowStyle_type = new entity("IfcWindowStyle", IfcTypeProduct_type);
-    entity* IfcZShapeProfileDef_type = new entity("IfcZShapeProfileDef", IfcParameterizedProfileDef_type);
-    entity* IfcAnnotationCurveOccurrence_type = new entity("IfcAnnotationCurveOccurrence", IfcAnnotationOccurrence_type);
-    entity* IfcAnnotationFillArea_type = new entity("IfcAnnotationFillArea", IfcGeometricRepresentationItem_type);
-    entity* IfcAnnotationFillAreaOccurrence_type = new entity("IfcAnnotationFillAreaOccurrence", IfcAnnotationOccurrence_type);
-    entity* IfcAnnotationSurface_type = new entity("IfcAnnotationSurface", IfcGeometricRepresentationItem_type);
-    entity* IfcAxis1Placement_type = new entity("IfcAxis1Placement", IfcPlacement_type);
-    entity* IfcAxis2Placement2D_type = new entity("IfcAxis2Placement2D", IfcPlacement_type);
-    entity* IfcAxis2Placement3D_type = new entity("IfcAxis2Placement3D", IfcPlacement_type);
-    entity* IfcBooleanResult_type = new entity("IfcBooleanResult", IfcGeometricRepresentationItem_type);
-    entity* IfcBoundedSurface_type = new entity("IfcBoundedSurface", IfcSurface_type);
-    entity* IfcBoundingBox_type = new entity("IfcBoundingBox", IfcGeometricRepresentationItem_type);
-    entity* IfcBoxedHalfSpace_type = new entity("IfcBoxedHalfSpace", IfcHalfSpaceSolid_type);
-    entity* IfcCShapeProfileDef_type = new entity("IfcCShapeProfileDef", IfcParameterizedProfileDef_type);
-    entity* IfcCartesianPoint_type = new entity("IfcCartesianPoint", IfcPoint_type);
-    entity* IfcCartesianTransformationOperator_type = new entity("IfcCartesianTransformationOperator", IfcGeometricRepresentationItem_type);
-    entity* IfcCartesianTransformationOperator2D_type = new entity("IfcCartesianTransformationOperator2D", IfcCartesianTransformationOperator_type);
-    entity* IfcCartesianTransformationOperator2DnonUniform_type = new entity("IfcCartesianTransformationOperator2DnonUniform", IfcCartesianTransformationOperator2D_type);
-    entity* IfcCartesianTransformationOperator3D_type = new entity("IfcCartesianTransformationOperator3D", IfcCartesianTransformationOperator_type);
-    entity* IfcCartesianTransformationOperator3DnonUniform_type = new entity("IfcCartesianTransformationOperator3DnonUniform", IfcCartesianTransformationOperator3D_type);
-    entity* IfcCircleProfileDef_type = new entity("IfcCircleProfileDef", IfcParameterizedProfileDef_type);
-    entity* IfcClosedShell_type = new entity("IfcClosedShell", IfcConnectedFaceSet_type);
-    entity* IfcCompositeCurveSegment_type = new entity("IfcCompositeCurveSegment", IfcGeometricRepresentationItem_type);
-    entity* IfcCraneRailAShapeProfileDef_type = new entity("IfcCraneRailAShapeProfileDef", IfcParameterizedProfileDef_type);
-    entity* IfcCraneRailFShapeProfileDef_type = new entity("IfcCraneRailFShapeProfileDef", IfcParameterizedProfileDef_type);
-    entity* IfcCsgPrimitive3D_type = new entity("IfcCsgPrimitive3D", IfcGeometricRepresentationItem_type);
-    entity* IfcCsgSolid_type = new entity("IfcCsgSolid", IfcSolidModel_type);
-    entity* IfcCurve_type = new entity("IfcCurve", IfcGeometricRepresentationItem_type);
-    entity* IfcCurveBoundedPlane_type = new entity("IfcCurveBoundedPlane", IfcBoundedSurface_type);
-    entity* IfcDefinedSymbol_type = new entity("IfcDefinedSymbol", IfcGeometricRepresentationItem_type);
-    entity* IfcDimensionCurve_type = new entity("IfcDimensionCurve", IfcAnnotationCurveOccurrence_type);
-    entity* IfcDimensionCurveTerminator_type = new entity("IfcDimensionCurveTerminator", IfcTerminatorSymbol_type);
-    entity* IfcDirection_type = new entity("IfcDirection", IfcGeometricRepresentationItem_type);
-    entity* IfcDoorLiningProperties_type = new entity("IfcDoorLiningProperties", IfcPropertySetDefinition_type);
-    entity* IfcDoorPanelProperties_type = new entity("IfcDoorPanelProperties", IfcPropertySetDefinition_type);
-    entity* IfcDoorStyle_type = new entity("IfcDoorStyle", IfcTypeProduct_type);
-    entity* IfcDraughtingCallout_type = new entity("IfcDraughtingCallout", IfcGeometricRepresentationItem_type);
-    entity* IfcDraughtingPreDefinedColour_type = new entity("IfcDraughtingPreDefinedColour", IfcPreDefinedColour_type);
-    entity* IfcDraughtingPreDefinedCurveFont_type = new entity("IfcDraughtingPreDefinedCurveFont", IfcPreDefinedCurveFont_type);
-    entity* IfcEdgeLoop_type = new entity("IfcEdgeLoop", IfcLoop_type);
-    entity* IfcElementQuantity_type = new entity("IfcElementQuantity", IfcPropertySetDefinition_type);
-    entity* IfcElementType_type = new entity("IfcElementType", IfcTypeProduct_type);
-    entity* IfcElementarySurface_type = new entity("IfcElementarySurface", IfcSurface_type);
-    entity* IfcEllipseProfileDef_type = new entity("IfcEllipseProfileDef", IfcParameterizedProfileDef_type);
-    entity* IfcEnergyProperties_type = new entity("IfcEnergyProperties", IfcPropertySetDefinition_type);
-    entity* IfcExtrudedAreaSolid_type = new entity("IfcExtrudedAreaSolid", IfcSweptAreaSolid_type);
-    entity* IfcFaceBasedSurfaceModel_type = new entity("IfcFaceBasedSurfaceModel", IfcGeometricRepresentationItem_type);
-    entity* IfcFillAreaStyleHatching_type = new entity("IfcFillAreaStyleHatching", IfcGeometricRepresentationItem_type);
-    entity* IfcFillAreaStyleTileSymbolWithStyle_type = new entity("IfcFillAreaStyleTileSymbolWithStyle", IfcGeometricRepresentationItem_type);
-    entity* IfcFillAreaStyleTiles_type = new entity("IfcFillAreaStyleTiles", IfcGeometricRepresentationItem_type);
-    entity* IfcFluidFlowProperties_type = new entity("IfcFluidFlowProperties", IfcPropertySetDefinition_type);
-    entity* IfcFurnishingElementType_type = new entity("IfcFurnishingElementType", IfcElementType_type);
-    entity* IfcFurnitureType_type = new entity("IfcFurnitureType", IfcFurnishingElementType_type);
-    entity* IfcGeometricCurveSet_type = new entity("IfcGeometricCurveSet", IfcGeometricSet_type);
-    entity* IfcIShapeProfileDef_type = new entity("IfcIShapeProfileDef", IfcParameterizedProfileDef_type);
-    entity* IfcLShapeProfileDef_type = new entity("IfcLShapeProfileDef", IfcParameterizedProfileDef_type);
-    entity* IfcLine_type = new entity("IfcLine", IfcCurve_type);
-    entity* IfcManifoldSolidBrep_type = new entity("IfcManifoldSolidBrep", IfcSolidModel_type);
-    entity* IfcObject_type = new entity("IfcObject", IfcObjectDefinition_type);
-    entity* IfcOffsetCurve2D_type = new entity("IfcOffsetCurve2D", IfcCurve_type);
-    entity* IfcOffsetCurve3D_type = new entity("IfcOffsetCurve3D", IfcCurve_type);
-    entity* IfcPermeableCoveringProperties_type = new entity("IfcPermeableCoveringProperties", IfcPropertySetDefinition_type);
-    entity* IfcPlanarBox_type = new entity("IfcPlanarBox", IfcPlanarExtent_type);
-    entity* IfcPlane_type = new entity("IfcPlane", IfcElementarySurface_type);
-    entity* IfcProcess_type = new entity("IfcProcess", IfcObject_type);
-    entity* IfcProduct_type = new entity("IfcProduct", IfcObject_type);
-    entity* IfcProject_type = new entity("IfcProject", IfcObject_type);
-    entity* IfcProjectionCurve_type = new entity("IfcProjectionCurve", IfcAnnotationCurveOccurrence_type);
-    entity* IfcPropertySet_type = new entity("IfcPropertySet", IfcPropertySetDefinition_type);
-    entity* IfcProxy_type = new entity("IfcProxy", IfcProduct_type);
-    entity* IfcRectangleHollowProfileDef_type = new entity("IfcRectangleHollowProfileDef", IfcRectangleProfileDef_type);
-    entity* IfcRectangularPyramid_type = new entity("IfcRectangularPyramid", IfcCsgPrimitive3D_type);
-    entity* IfcRectangularTrimmedSurface_type = new entity("IfcRectangularTrimmedSurface", IfcBoundedSurface_type);
-    entity* IfcRelAssigns_type = new entity("IfcRelAssigns", IfcRelationship_type);
-    entity* IfcRelAssignsToActor_type = new entity("IfcRelAssignsToActor", IfcRelAssigns_type);
-    entity* IfcRelAssignsToControl_type = new entity("IfcRelAssignsToControl", IfcRelAssigns_type);
-    entity* IfcRelAssignsToGroup_type = new entity("IfcRelAssignsToGroup", IfcRelAssigns_type);
-    entity* IfcRelAssignsToProcess_type = new entity("IfcRelAssignsToProcess", IfcRelAssigns_type);
-    entity* IfcRelAssignsToProduct_type = new entity("IfcRelAssignsToProduct", IfcRelAssigns_type);
-    entity* IfcRelAssignsToProjectOrder_type = new entity("IfcRelAssignsToProjectOrder", IfcRelAssignsToControl_type);
-    entity* IfcRelAssignsToResource_type = new entity("IfcRelAssignsToResource", IfcRelAssigns_type);
-    entity* IfcRelAssociates_type = new entity("IfcRelAssociates", IfcRelationship_type);
-    entity* IfcRelAssociatesAppliedValue_type = new entity("IfcRelAssociatesAppliedValue", IfcRelAssociates_type);
-    entity* IfcRelAssociatesApproval_type = new entity("IfcRelAssociatesApproval", IfcRelAssociates_type);
-    entity* IfcRelAssociatesClassification_type = new entity("IfcRelAssociatesClassification", IfcRelAssociates_type);
-    entity* IfcRelAssociatesConstraint_type = new entity("IfcRelAssociatesConstraint", IfcRelAssociates_type);
-    entity* IfcRelAssociatesDocument_type = new entity("IfcRelAssociatesDocument", IfcRelAssociates_type);
-    entity* IfcRelAssociatesLibrary_type = new entity("IfcRelAssociatesLibrary", IfcRelAssociates_type);
-    entity* IfcRelAssociatesMaterial_type = new entity("IfcRelAssociatesMaterial", IfcRelAssociates_type);
-    entity* IfcRelAssociatesProfileProperties_type = new entity("IfcRelAssociatesProfileProperties", IfcRelAssociates_type);
-    entity* IfcRelConnects_type = new entity("IfcRelConnects", IfcRelationship_type);
-    entity* IfcRelConnectsElements_type = new entity("IfcRelConnectsElements", IfcRelConnects_type);
-    entity* IfcRelConnectsPathElements_type = new entity("IfcRelConnectsPathElements", IfcRelConnectsElements_type);
-    entity* IfcRelConnectsPortToElement_type = new entity("IfcRelConnectsPortToElement", IfcRelConnects_type);
-    entity* IfcRelConnectsPorts_type = new entity("IfcRelConnectsPorts", IfcRelConnects_type);
-    entity* IfcRelConnectsStructuralActivity_type = new entity("IfcRelConnectsStructuralActivity", IfcRelConnects_type);
-    entity* IfcRelConnectsStructuralElement_type = new entity("IfcRelConnectsStructuralElement", IfcRelConnects_type);
-    entity* IfcRelConnectsStructuralMember_type = new entity("IfcRelConnectsStructuralMember", IfcRelConnects_type);
-    entity* IfcRelConnectsWithEccentricity_type = new entity("IfcRelConnectsWithEccentricity", IfcRelConnectsStructuralMember_type);
-    entity* IfcRelConnectsWithRealizingElements_type = new entity("IfcRelConnectsWithRealizingElements", IfcRelConnectsElements_type);
-    entity* IfcRelContainedInSpatialStructure_type = new entity("IfcRelContainedInSpatialStructure", IfcRelConnects_type);
-    entity* IfcRelCoversBldgElements_type = new entity("IfcRelCoversBldgElements", IfcRelConnects_type);
-    entity* IfcRelCoversSpaces_type = new entity("IfcRelCoversSpaces", IfcRelConnects_type);
-    entity* IfcRelDecomposes_type = new entity("IfcRelDecomposes", IfcRelationship_type);
-    entity* IfcRelDefines_type = new entity("IfcRelDefines", IfcRelationship_type);
-    entity* IfcRelDefinesByProperties_type = new entity("IfcRelDefinesByProperties", IfcRelDefines_type);
-    entity* IfcRelDefinesByType_type = new entity("IfcRelDefinesByType", IfcRelDefines_type);
-    entity* IfcRelFillsElement_type = new entity("IfcRelFillsElement", IfcRelConnects_type);
-    entity* IfcRelFlowControlElements_type = new entity("IfcRelFlowControlElements", IfcRelConnects_type);
-    entity* IfcRelInteractionRequirements_type = new entity("IfcRelInteractionRequirements", IfcRelConnects_type);
-    entity* IfcRelNests_type = new entity("IfcRelNests", IfcRelDecomposes_type);
-    entity* IfcRelOccupiesSpaces_type = new entity("IfcRelOccupiesSpaces", IfcRelAssignsToActor_type);
-    entity* IfcRelOverridesProperties_type = new entity("IfcRelOverridesProperties", IfcRelDefinesByProperties_type);
-    entity* IfcRelProjectsElement_type = new entity("IfcRelProjectsElement", IfcRelConnects_type);
-    entity* IfcRelReferencedInSpatialStructure_type = new entity("IfcRelReferencedInSpatialStructure", IfcRelConnects_type);
-    entity* IfcRelSchedulesCostItems_type = new entity("IfcRelSchedulesCostItems", IfcRelAssignsToControl_type);
-    entity* IfcRelSequence_type = new entity("IfcRelSequence", IfcRelConnects_type);
-    entity* IfcRelServicesBuildings_type = new entity("IfcRelServicesBuildings", IfcRelConnects_type);
-    entity* IfcRelSpaceBoundary_type = new entity("IfcRelSpaceBoundary", IfcRelConnects_type);
-    entity* IfcRelVoidsElement_type = new entity("IfcRelVoidsElement", IfcRelConnects_type);
-    entity* IfcResource_type = new entity("IfcResource", IfcObject_type);
-    entity* IfcRevolvedAreaSolid_type = new entity("IfcRevolvedAreaSolid", IfcSweptAreaSolid_type);
-    entity* IfcRightCircularCone_type = new entity("IfcRightCircularCone", IfcCsgPrimitive3D_type);
-    entity* IfcRightCircularCylinder_type = new entity("IfcRightCircularCylinder", IfcCsgPrimitive3D_type);
-    entity* IfcSpatialStructureElement_type = new entity("IfcSpatialStructureElement", IfcProduct_type);
-    entity* IfcSpatialStructureElementType_type = new entity("IfcSpatialStructureElementType", IfcElementType_type);
-    entity* IfcSphere_type = new entity("IfcSphere", IfcCsgPrimitive3D_type);
-    entity* IfcStructuralActivity_type = new entity("IfcStructuralActivity", IfcProduct_type);
-    entity* IfcStructuralItem_type = new entity("IfcStructuralItem", IfcProduct_type);
-    entity* IfcStructuralMember_type = new entity("IfcStructuralMember", IfcStructuralItem_type);
-    entity* IfcStructuralReaction_type = new entity("IfcStructuralReaction", IfcStructuralActivity_type);
-    entity* IfcStructuralSurfaceMember_type = new entity("IfcStructuralSurfaceMember", IfcStructuralMember_type);
-    entity* IfcStructuralSurfaceMemberVarying_type = new entity("IfcStructuralSurfaceMemberVarying", IfcStructuralSurfaceMember_type);
-    entity* IfcStructuredDimensionCallout_type = new entity("IfcStructuredDimensionCallout", IfcDraughtingCallout_type);
-    entity* IfcSurfaceCurveSweptAreaSolid_type = new entity("IfcSurfaceCurveSweptAreaSolid", IfcSweptAreaSolid_type);
-    entity* IfcSurfaceOfLinearExtrusion_type = new entity("IfcSurfaceOfLinearExtrusion", IfcSweptSurface_type);
-    entity* IfcSurfaceOfRevolution_type = new entity("IfcSurfaceOfRevolution", IfcSweptSurface_type);
-    entity* IfcSystemFurnitureElementType_type = new entity("IfcSystemFurnitureElementType", IfcFurnishingElementType_type);
-    entity* IfcTask_type = new entity("IfcTask", IfcProcess_type);
-    entity* IfcTransportElementType_type = new entity("IfcTransportElementType", IfcElementType_type);
-    entity* IfcActor_type = new entity("IfcActor", IfcObject_type);
-    entity* IfcAnnotation_type = new entity("IfcAnnotation", IfcProduct_type);
-    entity* IfcAsymmetricIShapeProfileDef_type = new entity("IfcAsymmetricIShapeProfileDef", IfcIShapeProfileDef_type);
-    entity* IfcBlock_type = new entity("IfcBlock", IfcCsgPrimitive3D_type);
-    entity* IfcBooleanClippingResult_type = new entity("IfcBooleanClippingResult", IfcBooleanResult_type);
-    entity* IfcBoundedCurve_type = new entity("IfcBoundedCurve", IfcCurve_type);
-    entity* IfcBuilding_type = new entity("IfcBuilding", IfcSpatialStructureElement_type);
-    entity* IfcBuildingElementType_type = new entity("IfcBuildingElementType", IfcElementType_type);
-    entity* IfcBuildingStorey_type = new entity("IfcBuildingStorey", IfcSpatialStructureElement_type);
-    entity* IfcCircleHollowProfileDef_type = new entity("IfcCircleHollowProfileDef", IfcCircleProfileDef_type);
-    entity* IfcColumnType_type = new entity("IfcColumnType", IfcBuildingElementType_type);
-    entity* IfcCompositeCurve_type = new entity("IfcCompositeCurve", IfcBoundedCurve_type);
-    entity* IfcConic_type = new entity("IfcConic", IfcCurve_type);
-    entity* IfcConstructionResource_type = new entity("IfcConstructionResource", IfcResource_type);
-    entity* IfcControl_type = new entity("IfcControl", IfcObject_type);
-    entity* IfcCostItem_type = new entity("IfcCostItem", IfcControl_type);
-    entity* IfcCostSchedule_type = new entity("IfcCostSchedule", IfcControl_type);
-    entity* IfcCoveringType_type = new entity("IfcCoveringType", IfcBuildingElementType_type);
-    entity* IfcCrewResource_type = new entity("IfcCrewResource", IfcConstructionResource_type);
-    entity* IfcCurtainWallType_type = new entity("IfcCurtainWallType", IfcBuildingElementType_type);
-    entity* IfcDimensionCurveDirectedCallout_type = new entity("IfcDimensionCurveDirectedCallout", IfcDraughtingCallout_type);
-    entity* IfcDistributionElementType_type = new entity("IfcDistributionElementType", IfcElementType_type);
-    entity* IfcDistributionFlowElementType_type = new entity("IfcDistributionFlowElementType", IfcDistributionElementType_type);
-    entity* IfcElectricalBaseProperties_type = new entity("IfcElectricalBaseProperties", IfcEnergyProperties_type);
-    entity* IfcElement_type = new entity("IfcElement", IfcProduct_type);
-    entity* IfcElementAssembly_type = new entity("IfcElementAssembly", IfcElement_type);
-    entity* IfcElementComponent_type = new entity("IfcElementComponent", IfcElement_type);
-    entity* IfcElementComponentType_type = new entity("IfcElementComponentType", IfcElementType_type);
-    entity* IfcEllipse_type = new entity("IfcEllipse", IfcConic_type);
-    entity* IfcEnergyConversionDeviceType_type = new entity("IfcEnergyConversionDeviceType", IfcDistributionFlowElementType_type);
-    entity* IfcEquipmentElement_type = new entity("IfcEquipmentElement", IfcElement_type);
-    entity* IfcEquipmentStandard_type = new entity("IfcEquipmentStandard", IfcControl_type);
-    entity* IfcEvaporativeCoolerType_type = new entity("IfcEvaporativeCoolerType", IfcEnergyConversionDeviceType_type);
-    entity* IfcEvaporatorType_type = new entity("IfcEvaporatorType", IfcEnergyConversionDeviceType_type);
-    entity* IfcFacetedBrep_type = new entity("IfcFacetedBrep", IfcManifoldSolidBrep_type);
-    entity* IfcFacetedBrepWithVoids_type = new entity("IfcFacetedBrepWithVoids", IfcManifoldSolidBrep_type);
-    entity* IfcFastener_type = new entity("IfcFastener", IfcElementComponent_type);
-    entity* IfcFastenerType_type = new entity("IfcFastenerType", IfcElementComponentType_type);
-    entity* IfcFeatureElement_type = new entity("IfcFeatureElement", IfcElement_type);
-    entity* IfcFeatureElementAddition_type = new entity("IfcFeatureElementAddition", IfcFeatureElement_type);
-    entity* IfcFeatureElementSubtraction_type = new entity("IfcFeatureElementSubtraction", IfcFeatureElement_type);
-    entity* IfcFlowControllerType_type = new entity("IfcFlowControllerType", IfcDistributionFlowElementType_type);
-    entity* IfcFlowFittingType_type = new entity("IfcFlowFittingType", IfcDistributionFlowElementType_type);
-    entity* IfcFlowMeterType_type = new entity("IfcFlowMeterType", IfcFlowControllerType_type);
-    entity* IfcFlowMovingDeviceType_type = new entity("IfcFlowMovingDeviceType", IfcDistributionFlowElementType_type);
-    entity* IfcFlowSegmentType_type = new entity("IfcFlowSegmentType", IfcDistributionFlowElementType_type);
-    entity* IfcFlowStorageDeviceType_type = new entity("IfcFlowStorageDeviceType", IfcDistributionFlowElementType_type);
-    entity* IfcFlowTerminalType_type = new entity("IfcFlowTerminalType", IfcDistributionFlowElementType_type);
-    entity* IfcFlowTreatmentDeviceType_type = new entity("IfcFlowTreatmentDeviceType", IfcDistributionFlowElementType_type);
-    entity* IfcFurnishingElement_type = new entity("IfcFurnishingElement", IfcElement_type);
-    entity* IfcFurnitureStandard_type = new entity("IfcFurnitureStandard", IfcControl_type);
-    entity* IfcGasTerminalType_type = new entity("IfcGasTerminalType", IfcFlowTerminalType_type);
-    entity* IfcGrid_type = new entity("IfcGrid", IfcProduct_type);
-    entity* IfcGroup_type = new entity("IfcGroup", IfcObject_type);
-    entity* IfcHeatExchangerType_type = new entity("IfcHeatExchangerType", IfcEnergyConversionDeviceType_type);
-    entity* IfcHumidifierType_type = new entity("IfcHumidifierType", IfcEnergyConversionDeviceType_type);
-    entity* IfcInventory_type = new entity("IfcInventory", IfcGroup_type);
-    entity* IfcJunctionBoxType_type = new entity("IfcJunctionBoxType", IfcFlowFittingType_type);
-    entity* IfcLaborResource_type = new entity("IfcLaborResource", IfcConstructionResource_type);
-    entity* IfcLampType_type = new entity("IfcLampType", IfcFlowTerminalType_type);
-    entity* IfcLightFixtureType_type = new entity("IfcLightFixtureType", IfcFlowTerminalType_type);
-    entity* IfcLinearDimension_type = new entity("IfcLinearDimension", IfcDimensionCurveDirectedCallout_type);
-    entity* IfcMechanicalFastener_type = new entity("IfcMechanicalFastener", IfcFastener_type);
-    entity* IfcMechanicalFastenerType_type = new entity("IfcMechanicalFastenerType", IfcFastenerType_type);
-    entity* IfcMemberType_type = new entity("IfcMemberType", IfcBuildingElementType_type);
-    entity* IfcMotorConnectionType_type = new entity("IfcMotorConnectionType", IfcEnergyConversionDeviceType_type);
-    entity* IfcMove_type = new entity("IfcMove", IfcTask_type);
-    entity* IfcOccupant_type = new entity("IfcOccupant", IfcActor_type);
-    entity* IfcOpeningElement_type = new entity("IfcOpeningElement", IfcFeatureElementSubtraction_type);
-    entity* IfcOrderAction_type = new entity("IfcOrderAction", IfcTask_type);
-    entity* IfcOutletType_type = new entity("IfcOutletType", IfcFlowTerminalType_type);
-    entity* IfcPerformanceHistory_type = new entity("IfcPerformanceHistory", IfcControl_type);
-    entity* IfcPermit_type = new entity("IfcPermit", IfcControl_type);
-    entity* IfcPipeFittingType_type = new entity("IfcPipeFittingType", IfcFlowFittingType_type);
-    entity* IfcPipeSegmentType_type = new entity("IfcPipeSegmentType", IfcFlowSegmentType_type);
-    entity* IfcPlateType_type = new entity("IfcPlateType", IfcBuildingElementType_type);
-    entity* IfcPolyline_type = new entity("IfcPolyline", IfcBoundedCurve_type);
-    entity* IfcPort_type = new entity("IfcPort", IfcProduct_type);
-    entity* IfcProcedure_type = new entity("IfcProcedure", IfcProcess_type);
-    entity* IfcProjectOrder_type = new entity("IfcProjectOrder", IfcControl_type);
-    entity* IfcProjectOrderRecord_type = new entity("IfcProjectOrderRecord", IfcControl_type);
-    entity* IfcProjectionElement_type = new entity("IfcProjectionElement", IfcFeatureElementAddition_type);
-    entity* IfcProtectiveDeviceType_type = new entity("IfcProtectiveDeviceType", IfcFlowControllerType_type);
-    entity* IfcPumpType_type = new entity("IfcPumpType", IfcFlowMovingDeviceType_type);
-    entity* IfcRadiusDimension_type = new entity("IfcRadiusDimension", IfcDimensionCurveDirectedCallout_type);
-    entity* IfcRailingType_type = new entity("IfcRailingType", IfcBuildingElementType_type);
-    entity* IfcRampFlightType_type = new entity("IfcRampFlightType", IfcBuildingElementType_type);
-    entity* IfcRelAggregates_type = new entity("IfcRelAggregates", IfcRelDecomposes_type);
-    entity* IfcRelAssignsTasks_type = new entity("IfcRelAssignsTasks", IfcRelAssignsToControl_type);
-    entity* IfcSanitaryTerminalType_type = new entity("IfcSanitaryTerminalType", IfcFlowTerminalType_type);
-    entity* IfcScheduleTimeControl_type = new entity("IfcScheduleTimeControl", IfcControl_type);
-    entity* IfcServiceLife_type = new entity("IfcServiceLife", IfcControl_type);
-    entity* IfcSite_type = new entity("IfcSite", IfcSpatialStructureElement_type);
-    entity* IfcSlabType_type = new entity("IfcSlabType", IfcBuildingElementType_type);
-    entity* IfcSpace_type = new entity("IfcSpace", IfcSpatialStructureElement_type);
-    entity* IfcSpaceHeaterType_type = new entity("IfcSpaceHeaterType", IfcEnergyConversionDeviceType_type);
-    entity* IfcSpaceProgram_type = new entity("IfcSpaceProgram", IfcControl_type);
-    entity* IfcSpaceType_type = new entity("IfcSpaceType", IfcSpatialStructureElementType_type);
-    entity* IfcStackTerminalType_type = new entity("IfcStackTerminalType", IfcFlowTerminalType_type);
-    entity* IfcStairFlightType_type = new entity("IfcStairFlightType", IfcBuildingElementType_type);
-    entity* IfcStructuralAction_type = new entity("IfcStructuralAction", IfcStructuralActivity_type);
-    entity* IfcStructuralConnection_type = new entity("IfcStructuralConnection", IfcStructuralItem_type);
-    entity* IfcStructuralCurveConnection_type = new entity("IfcStructuralCurveConnection", IfcStructuralConnection_type);
-    entity* IfcStructuralCurveMember_type = new entity("IfcStructuralCurveMember", IfcStructuralMember_type);
-    entity* IfcStructuralCurveMemberVarying_type = new entity("IfcStructuralCurveMemberVarying", IfcStructuralCurveMember_type);
-    entity* IfcStructuralLinearAction_type = new entity("IfcStructuralLinearAction", IfcStructuralAction_type);
-    entity* IfcStructuralLinearActionVarying_type = new entity("IfcStructuralLinearActionVarying", IfcStructuralLinearAction_type);
-    entity* IfcStructuralLoadGroup_type = new entity("IfcStructuralLoadGroup", IfcGroup_type);
-    entity* IfcStructuralPlanarAction_type = new entity("IfcStructuralPlanarAction", IfcStructuralAction_type);
-    entity* IfcStructuralPlanarActionVarying_type = new entity("IfcStructuralPlanarActionVarying", IfcStructuralPlanarAction_type);
-    entity* IfcStructuralPointAction_type = new entity("IfcStructuralPointAction", IfcStructuralAction_type);
-    entity* IfcStructuralPointConnection_type = new entity("IfcStructuralPointConnection", IfcStructuralConnection_type);
-    entity* IfcStructuralPointReaction_type = new entity("IfcStructuralPointReaction", IfcStructuralReaction_type);
-    entity* IfcStructuralResultGroup_type = new entity("IfcStructuralResultGroup", IfcGroup_type);
-    entity* IfcStructuralSurfaceConnection_type = new entity("IfcStructuralSurfaceConnection", IfcStructuralConnection_type);
-    entity* IfcSubContractResource_type = new entity("IfcSubContractResource", IfcConstructionResource_type);
-    entity* IfcSwitchingDeviceType_type = new entity("IfcSwitchingDeviceType", IfcFlowControllerType_type);
-    entity* IfcSystem_type = new entity("IfcSystem", IfcGroup_type);
-    entity* IfcTankType_type = new entity("IfcTankType", IfcFlowStorageDeviceType_type);
-    entity* IfcTimeSeriesSchedule_type = new entity("IfcTimeSeriesSchedule", IfcControl_type);
-    entity* IfcTransformerType_type = new entity("IfcTransformerType", IfcEnergyConversionDeviceType_type);
-    entity* IfcTransportElement_type = new entity("IfcTransportElement", IfcElement_type);
-    entity* IfcTrimmedCurve_type = new entity("IfcTrimmedCurve", IfcBoundedCurve_type);
-    entity* IfcTubeBundleType_type = new entity("IfcTubeBundleType", IfcEnergyConversionDeviceType_type);
-    entity* IfcUnitaryEquipmentType_type = new entity("IfcUnitaryEquipmentType", IfcEnergyConversionDeviceType_type);
-    entity* IfcValveType_type = new entity("IfcValveType", IfcFlowControllerType_type);
-    entity* IfcVirtualElement_type = new entity("IfcVirtualElement", IfcElement_type);
-    entity* IfcWallType_type = new entity("IfcWallType", IfcBuildingElementType_type);
-    entity* IfcWasteTerminalType_type = new entity("IfcWasteTerminalType", IfcFlowTerminalType_type);
-    entity* IfcWorkControl_type = new entity("IfcWorkControl", IfcControl_type);
-    entity* IfcWorkPlan_type = new entity("IfcWorkPlan", IfcWorkControl_type);
-    entity* IfcWorkSchedule_type = new entity("IfcWorkSchedule", IfcWorkControl_type);
-    entity* IfcZone_type = new entity("IfcZone", IfcGroup_type);
-    entity* Ifc2DCompositeCurve_type = new entity("Ifc2DCompositeCurve", IfcCompositeCurve_type);
-    entity* IfcActionRequest_type = new entity("IfcActionRequest", IfcControl_type);
-    entity* IfcAirTerminalBoxType_type = new entity("IfcAirTerminalBoxType", IfcFlowControllerType_type);
-    entity* IfcAirTerminalType_type = new entity("IfcAirTerminalType", IfcFlowTerminalType_type);
-    entity* IfcAirToAirHeatRecoveryType_type = new entity("IfcAirToAirHeatRecoveryType", IfcEnergyConversionDeviceType_type);
-    entity* IfcAngularDimension_type = new entity("IfcAngularDimension", IfcDimensionCurveDirectedCallout_type);
-    entity* IfcAsset_type = new entity("IfcAsset", IfcGroup_type);
-    entity* IfcBSplineCurve_type = new entity("IfcBSplineCurve", IfcBoundedCurve_type);
-    entity* IfcBeamType_type = new entity("IfcBeamType", IfcBuildingElementType_type);
-    entity* IfcBezierCurve_type = new entity("IfcBezierCurve", IfcBSplineCurve_type);
-    entity* IfcBoilerType_type = new entity("IfcBoilerType", IfcEnergyConversionDeviceType_type);
-    entity* IfcBuildingElement_type = new entity("IfcBuildingElement", IfcElement_type);
-    entity* IfcBuildingElementComponent_type = new entity("IfcBuildingElementComponent", IfcBuildingElement_type);
-    entity* IfcBuildingElementPart_type = new entity("IfcBuildingElementPart", IfcBuildingElementComponent_type);
-    entity* IfcBuildingElementProxy_type = new entity("IfcBuildingElementProxy", IfcBuildingElement_type);
-    entity* IfcBuildingElementProxyType_type = new entity("IfcBuildingElementProxyType", IfcBuildingElementType_type);
-    entity* IfcCableCarrierFittingType_type = new entity("IfcCableCarrierFittingType", IfcFlowFittingType_type);
-    entity* IfcCableCarrierSegmentType_type = new entity("IfcCableCarrierSegmentType", IfcFlowSegmentType_type);
-    entity* IfcCableSegmentType_type = new entity("IfcCableSegmentType", IfcFlowSegmentType_type);
-    entity* IfcChillerType_type = new entity("IfcChillerType", IfcEnergyConversionDeviceType_type);
-    entity* IfcCircle_type = new entity("IfcCircle", IfcConic_type);
-    entity* IfcCoilType_type = new entity("IfcCoilType", IfcEnergyConversionDeviceType_type);
-    entity* IfcColumn_type = new entity("IfcColumn", IfcBuildingElement_type);
-    entity* IfcCompressorType_type = new entity("IfcCompressorType", IfcFlowMovingDeviceType_type);
-    entity* IfcCondenserType_type = new entity("IfcCondenserType", IfcEnergyConversionDeviceType_type);
-    entity* IfcCondition_type = new entity("IfcCondition", IfcGroup_type);
-    entity* IfcConditionCriterion_type = new entity("IfcConditionCriterion", IfcControl_type);
-    entity* IfcConstructionEquipmentResource_type = new entity("IfcConstructionEquipmentResource", IfcConstructionResource_type);
-    entity* IfcConstructionMaterialResource_type = new entity("IfcConstructionMaterialResource", IfcConstructionResource_type);
-    entity* IfcConstructionProductResource_type = new entity("IfcConstructionProductResource", IfcConstructionResource_type);
-    entity* IfcCooledBeamType_type = new entity("IfcCooledBeamType", IfcEnergyConversionDeviceType_type);
-    entity* IfcCoolingTowerType_type = new entity("IfcCoolingTowerType", IfcEnergyConversionDeviceType_type);
-    entity* IfcCovering_type = new entity("IfcCovering", IfcBuildingElement_type);
-    entity* IfcCurtainWall_type = new entity("IfcCurtainWall", IfcBuildingElement_type);
-    entity* IfcDamperType_type = new entity("IfcDamperType", IfcFlowControllerType_type);
-    entity* IfcDiameterDimension_type = new entity("IfcDiameterDimension", IfcDimensionCurveDirectedCallout_type);
-    entity* IfcDiscreteAccessory_type = new entity("IfcDiscreteAccessory", IfcElementComponent_type);
-    entity* IfcDiscreteAccessoryType_type = new entity("IfcDiscreteAccessoryType", IfcElementComponentType_type);
-    entity* IfcDistributionChamberElementType_type = new entity("IfcDistributionChamberElementType", IfcDistributionFlowElementType_type);
-    entity* IfcDistributionControlElementType_type = new entity("IfcDistributionControlElementType", IfcDistributionElementType_type);
-    entity* IfcDistributionElement_type = new entity("IfcDistributionElement", IfcElement_type);
-    entity* IfcDistributionFlowElement_type = new entity("IfcDistributionFlowElement", IfcDistributionElement_type);
-    entity* IfcDistributionPort_type = new entity("IfcDistributionPort", IfcPort_type);
-    entity* IfcDoor_type = new entity("IfcDoor", IfcBuildingElement_type);
-    entity* IfcDuctFittingType_type = new entity("IfcDuctFittingType", IfcFlowFittingType_type);
-    entity* IfcDuctSegmentType_type = new entity("IfcDuctSegmentType", IfcFlowSegmentType_type);
-    entity* IfcDuctSilencerType_type = new entity("IfcDuctSilencerType", IfcFlowTreatmentDeviceType_type);
-    entity* IfcEdgeFeature_type = new entity("IfcEdgeFeature", IfcFeatureElementSubtraction_type);
-    entity* IfcElectricApplianceType_type = new entity("IfcElectricApplianceType", IfcFlowTerminalType_type);
-    entity* IfcElectricFlowStorageDeviceType_type = new entity("IfcElectricFlowStorageDeviceType", IfcFlowStorageDeviceType_type);
-    entity* IfcElectricGeneratorType_type = new entity("IfcElectricGeneratorType", IfcEnergyConversionDeviceType_type);
-    entity* IfcElectricHeaterType_type = new entity("IfcElectricHeaterType", IfcFlowTerminalType_type);
-    entity* IfcElectricMotorType_type = new entity("IfcElectricMotorType", IfcEnergyConversionDeviceType_type);
-    entity* IfcElectricTimeControlType_type = new entity("IfcElectricTimeControlType", IfcFlowControllerType_type);
-    entity* IfcElectricalCircuit_type = new entity("IfcElectricalCircuit", IfcSystem_type);
-    entity* IfcElectricalElement_type = new entity("IfcElectricalElement", IfcElement_type);
-    entity* IfcEnergyConversionDevice_type = new entity("IfcEnergyConversionDevice", IfcDistributionFlowElement_type);
-    entity* IfcFanType_type = new entity("IfcFanType", IfcFlowMovingDeviceType_type);
-    entity* IfcFilterType_type = new entity("IfcFilterType", IfcFlowTreatmentDeviceType_type);
-    entity* IfcFireSuppressionTerminalType_type = new entity("IfcFireSuppressionTerminalType", IfcFlowTerminalType_type);
-    entity* IfcFlowController_type = new entity("IfcFlowController", IfcDistributionFlowElement_type);
-    entity* IfcFlowFitting_type = new entity("IfcFlowFitting", IfcDistributionFlowElement_type);
-    entity* IfcFlowInstrumentType_type = new entity("IfcFlowInstrumentType", IfcDistributionControlElementType_type);
-    entity* IfcFlowMovingDevice_type = new entity("IfcFlowMovingDevice", IfcDistributionFlowElement_type);
-    entity* IfcFlowSegment_type = new entity("IfcFlowSegment", IfcDistributionFlowElement_type);
-    entity* IfcFlowStorageDevice_type = new entity("IfcFlowStorageDevice", IfcDistributionFlowElement_type);
-    entity* IfcFlowTerminal_type = new entity("IfcFlowTerminal", IfcDistributionFlowElement_type);
-    entity* IfcFlowTreatmentDevice_type = new entity("IfcFlowTreatmentDevice", IfcDistributionFlowElement_type);
-    entity* IfcFooting_type = new entity("IfcFooting", IfcBuildingElement_type);
-    entity* IfcMember_type = new entity("IfcMember", IfcBuildingElement_type);
-    entity* IfcPile_type = new entity("IfcPile", IfcBuildingElement_type);
-    entity* IfcPlate_type = new entity("IfcPlate", IfcBuildingElement_type);
-    entity* IfcRailing_type = new entity("IfcRailing", IfcBuildingElement_type);
-    entity* IfcRamp_type = new entity("IfcRamp", IfcBuildingElement_type);
-    entity* IfcRampFlight_type = new entity("IfcRampFlight", IfcBuildingElement_type);
-    entity* IfcRationalBezierCurve_type = new entity("IfcRationalBezierCurve", IfcBezierCurve_type);
-    entity* IfcReinforcingElement_type = new entity("IfcReinforcingElement", IfcBuildingElementComponent_type);
-    entity* IfcReinforcingMesh_type = new entity("IfcReinforcingMesh", IfcReinforcingElement_type);
-    entity* IfcRoof_type = new entity("IfcRoof", IfcBuildingElement_type);
-    entity* IfcRoundedEdgeFeature_type = new entity("IfcRoundedEdgeFeature", IfcEdgeFeature_type);
-    entity* IfcSensorType_type = new entity("IfcSensorType", IfcDistributionControlElementType_type);
-    entity* IfcSlab_type = new entity("IfcSlab", IfcBuildingElement_type);
-    entity* IfcStair_type = new entity("IfcStair", IfcBuildingElement_type);
-    entity* IfcStairFlight_type = new entity("IfcStairFlight", IfcBuildingElement_type);
-    entity* IfcStructuralAnalysisModel_type = new entity("IfcStructuralAnalysisModel", IfcSystem_type);
-    entity* IfcTendon_type = new entity("IfcTendon", IfcReinforcingElement_type);
-    entity* IfcTendonAnchor_type = new entity("IfcTendonAnchor", IfcReinforcingElement_type);
-    entity* IfcVibrationIsolatorType_type = new entity("IfcVibrationIsolatorType", IfcDiscreteAccessoryType_type);
-    entity* IfcWall_type = new entity("IfcWall", IfcBuildingElement_type);
-    entity* IfcWallStandardCase_type = new entity("IfcWallStandardCase", IfcWall_type);
-    entity* IfcWindow_type = new entity("IfcWindow", IfcBuildingElement_type);
-    entity* IfcActuatorType_type = new entity("IfcActuatorType", IfcDistributionControlElementType_type);
-    entity* IfcAlarmType_type = new entity("IfcAlarmType", IfcDistributionControlElementType_type);
-    entity* IfcBeam_type = new entity("IfcBeam", IfcBuildingElement_type);
-    entity* IfcChamferEdgeFeature_type = new entity("IfcChamferEdgeFeature", IfcEdgeFeature_type);
-    entity* IfcControllerType_type = new entity("IfcControllerType", IfcDistributionControlElementType_type);
-    entity* IfcDistributionChamberElement_type = new entity("IfcDistributionChamberElement", IfcDistributionFlowElement_type);
-    entity* IfcDistributionControlElement_type = new entity("IfcDistributionControlElement", IfcDistributionElement_type);
-    entity* IfcElectricDistributionPoint_type = new entity("IfcElectricDistributionPoint", IfcFlowController_type);
-    entity* IfcReinforcingBar_type = new entity("IfcReinforcingBar", IfcReinforcingElement_type);
-    declaration* IfcActorSelect_type;
+    IfcActorRole_type = new entity(IfcSchema::Type::IfcActorRole, 0);
+    IfcAddress_type = new entity(IfcSchema::Type::IfcAddress, 0);
+    IfcApplication_type = new entity(IfcSchema::Type::IfcApplication, 0);
+    IfcAppliedValue_type = new entity(IfcSchema::Type::IfcAppliedValue, 0);
+    IfcAppliedValueRelationship_type = new entity(IfcSchema::Type::IfcAppliedValueRelationship, 0);
+    IfcApproval_type = new entity(IfcSchema::Type::IfcApproval, 0);
+    IfcApprovalActorRelationship_type = new entity(IfcSchema::Type::IfcApprovalActorRelationship, 0);
+    IfcApprovalPropertyRelationship_type = new entity(IfcSchema::Type::IfcApprovalPropertyRelationship, 0);
+    IfcApprovalRelationship_type = new entity(IfcSchema::Type::IfcApprovalRelationship, 0);
+    IfcBoundaryCondition_type = new entity(IfcSchema::Type::IfcBoundaryCondition, 0);
+    IfcBoundaryEdgeCondition_type = new entity(IfcSchema::Type::IfcBoundaryEdgeCondition, IfcBoundaryCondition_type);
+    IfcBoundaryFaceCondition_type = new entity(IfcSchema::Type::IfcBoundaryFaceCondition, IfcBoundaryCondition_type);
+    IfcBoundaryNodeCondition_type = new entity(IfcSchema::Type::IfcBoundaryNodeCondition, IfcBoundaryCondition_type);
+    IfcBoundaryNodeConditionWarping_type = new entity(IfcSchema::Type::IfcBoundaryNodeConditionWarping, IfcBoundaryNodeCondition_type);
+    IfcCalendarDate_type = new entity(IfcSchema::Type::IfcCalendarDate, 0);
+    IfcClassification_type = new entity(IfcSchema::Type::IfcClassification, 0);
+    IfcClassificationItem_type = new entity(IfcSchema::Type::IfcClassificationItem, 0);
+    IfcClassificationItemRelationship_type = new entity(IfcSchema::Type::IfcClassificationItemRelationship, 0);
+    IfcClassificationNotation_type = new entity(IfcSchema::Type::IfcClassificationNotation, 0);
+    IfcClassificationNotationFacet_type = new entity(IfcSchema::Type::IfcClassificationNotationFacet, 0);
+    IfcColourSpecification_type = new entity(IfcSchema::Type::IfcColourSpecification, 0);
+    IfcConnectionGeometry_type = new entity(IfcSchema::Type::IfcConnectionGeometry, 0);
+    IfcConnectionPointGeometry_type = new entity(IfcSchema::Type::IfcConnectionPointGeometry, IfcConnectionGeometry_type);
+    IfcConnectionPortGeometry_type = new entity(IfcSchema::Type::IfcConnectionPortGeometry, IfcConnectionGeometry_type);
+    IfcConnectionSurfaceGeometry_type = new entity(IfcSchema::Type::IfcConnectionSurfaceGeometry, IfcConnectionGeometry_type);
+    IfcConstraint_type = new entity(IfcSchema::Type::IfcConstraint, 0);
+    IfcConstraintAggregationRelationship_type = new entity(IfcSchema::Type::IfcConstraintAggregationRelationship, 0);
+    IfcConstraintClassificationRelationship_type = new entity(IfcSchema::Type::IfcConstraintClassificationRelationship, 0);
+    IfcConstraintRelationship_type = new entity(IfcSchema::Type::IfcConstraintRelationship, 0);
+    IfcCoordinatedUniversalTimeOffset_type = new entity(IfcSchema::Type::IfcCoordinatedUniversalTimeOffset, 0);
+    IfcCostValue_type = new entity(IfcSchema::Type::IfcCostValue, IfcAppliedValue_type);
+    IfcCurrencyRelationship_type = new entity(IfcSchema::Type::IfcCurrencyRelationship, 0);
+    IfcCurveStyleFont_type = new entity(IfcSchema::Type::IfcCurveStyleFont, 0);
+    IfcCurveStyleFontAndScaling_type = new entity(IfcSchema::Type::IfcCurveStyleFontAndScaling, 0);
+    IfcCurveStyleFontPattern_type = new entity(IfcSchema::Type::IfcCurveStyleFontPattern, 0);
+    IfcDateAndTime_type = new entity(IfcSchema::Type::IfcDateAndTime, 0);
+    IfcDerivedUnit_type = new entity(IfcSchema::Type::IfcDerivedUnit, 0);
+    IfcDerivedUnitElement_type = new entity(IfcSchema::Type::IfcDerivedUnitElement, 0);
+    IfcDimensionalExponents_type = new entity(IfcSchema::Type::IfcDimensionalExponents, 0);
+    IfcDocumentElectronicFormat_type = new entity(IfcSchema::Type::IfcDocumentElectronicFormat, 0);
+    IfcDocumentInformation_type = new entity(IfcSchema::Type::IfcDocumentInformation, 0);
+    IfcDocumentInformationRelationship_type = new entity(IfcSchema::Type::IfcDocumentInformationRelationship, 0);
+    IfcDraughtingCalloutRelationship_type = new entity(IfcSchema::Type::IfcDraughtingCalloutRelationship, 0);
+    IfcEnvironmentalImpactValue_type = new entity(IfcSchema::Type::IfcEnvironmentalImpactValue, IfcAppliedValue_type);
+    IfcExternalReference_type = new entity(IfcSchema::Type::IfcExternalReference, 0);
+    IfcExternallyDefinedHatchStyle_type = new entity(IfcSchema::Type::IfcExternallyDefinedHatchStyle, IfcExternalReference_type);
+    IfcExternallyDefinedSurfaceStyle_type = new entity(IfcSchema::Type::IfcExternallyDefinedSurfaceStyle, IfcExternalReference_type);
+    IfcExternallyDefinedSymbol_type = new entity(IfcSchema::Type::IfcExternallyDefinedSymbol, IfcExternalReference_type);
+    IfcExternallyDefinedTextFont_type = new entity(IfcSchema::Type::IfcExternallyDefinedTextFont, IfcExternalReference_type);
+    IfcGridAxis_type = new entity(IfcSchema::Type::IfcGridAxis, 0);
+    IfcIrregularTimeSeriesValue_type = new entity(IfcSchema::Type::IfcIrregularTimeSeriesValue, 0);
+    IfcLibraryInformation_type = new entity(IfcSchema::Type::IfcLibraryInformation, 0);
+    IfcLibraryReference_type = new entity(IfcSchema::Type::IfcLibraryReference, IfcExternalReference_type);
+    IfcLightDistributionData_type = new entity(IfcSchema::Type::IfcLightDistributionData, 0);
+    IfcLightIntensityDistribution_type = new entity(IfcSchema::Type::IfcLightIntensityDistribution, 0);
+    IfcLocalTime_type = new entity(IfcSchema::Type::IfcLocalTime, 0);
+    IfcMaterial_type = new entity(IfcSchema::Type::IfcMaterial, 0);
+    IfcMaterialClassificationRelationship_type = new entity(IfcSchema::Type::IfcMaterialClassificationRelationship, 0);
+    IfcMaterialLayer_type = new entity(IfcSchema::Type::IfcMaterialLayer, 0);
+    IfcMaterialLayerSet_type = new entity(IfcSchema::Type::IfcMaterialLayerSet, 0);
+    IfcMaterialLayerSetUsage_type = new entity(IfcSchema::Type::IfcMaterialLayerSetUsage, 0);
+    IfcMaterialList_type = new entity(IfcSchema::Type::IfcMaterialList, 0);
+    IfcMaterialProperties_type = new entity(IfcSchema::Type::IfcMaterialProperties, 0);
+    IfcMeasureWithUnit_type = new entity(IfcSchema::Type::IfcMeasureWithUnit, 0);
+    IfcMechanicalMaterialProperties_type = new entity(IfcSchema::Type::IfcMechanicalMaterialProperties, IfcMaterialProperties_type);
+    IfcMechanicalSteelMaterialProperties_type = new entity(IfcSchema::Type::IfcMechanicalSteelMaterialProperties, IfcMechanicalMaterialProperties_type);
+    IfcMetric_type = new entity(IfcSchema::Type::IfcMetric, IfcConstraint_type);
+    IfcMonetaryUnit_type = new entity(IfcSchema::Type::IfcMonetaryUnit, 0);
+    IfcNamedUnit_type = new entity(IfcSchema::Type::IfcNamedUnit, 0);
+    IfcObjectPlacement_type = new entity(IfcSchema::Type::IfcObjectPlacement, 0);
+    IfcObjective_type = new entity(IfcSchema::Type::IfcObjective, IfcConstraint_type);
+    IfcOpticalMaterialProperties_type = new entity(IfcSchema::Type::IfcOpticalMaterialProperties, IfcMaterialProperties_type);
+    IfcOrganization_type = new entity(IfcSchema::Type::IfcOrganization, 0);
+    IfcOrganizationRelationship_type = new entity(IfcSchema::Type::IfcOrganizationRelationship, 0);
+    IfcOwnerHistory_type = new entity(IfcSchema::Type::IfcOwnerHistory, 0);
+    IfcPerson_type = new entity(IfcSchema::Type::IfcPerson, 0);
+    IfcPersonAndOrganization_type = new entity(IfcSchema::Type::IfcPersonAndOrganization, 0);
+    IfcPhysicalQuantity_type = new entity(IfcSchema::Type::IfcPhysicalQuantity, 0);
+    IfcPhysicalSimpleQuantity_type = new entity(IfcSchema::Type::IfcPhysicalSimpleQuantity, IfcPhysicalQuantity_type);
+    IfcPostalAddress_type = new entity(IfcSchema::Type::IfcPostalAddress, IfcAddress_type);
+    IfcPreDefinedItem_type = new entity(IfcSchema::Type::IfcPreDefinedItem, 0);
+    IfcPreDefinedSymbol_type = new entity(IfcSchema::Type::IfcPreDefinedSymbol, IfcPreDefinedItem_type);
+    IfcPreDefinedTerminatorSymbol_type = new entity(IfcSchema::Type::IfcPreDefinedTerminatorSymbol, IfcPreDefinedSymbol_type);
+    IfcPreDefinedTextFont_type = new entity(IfcSchema::Type::IfcPreDefinedTextFont, IfcPreDefinedItem_type);
+    IfcPresentationLayerAssignment_type = new entity(IfcSchema::Type::IfcPresentationLayerAssignment, 0);
+    IfcPresentationLayerWithStyle_type = new entity(IfcSchema::Type::IfcPresentationLayerWithStyle, IfcPresentationLayerAssignment_type);
+    IfcPresentationStyle_type = new entity(IfcSchema::Type::IfcPresentationStyle, 0);
+    IfcPresentationStyleAssignment_type = new entity(IfcSchema::Type::IfcPresentationStyleAssignment, 0);
+    IfcProductRepresentation_type = new entity(IfcSchema::Type::IfcProductRepresentation, 0);
+    IfcProductsOfCombustionProperties_type = new entity(IfcSchema::Type::IfcProductsOfCombustionProperties, IfcMaterialProperties_type);
+    IfcProfileDef_type = new entity(IfcSchema::Type::IfcProfileDef, 0);
+    IfcProfileProperties_type = new entity(IfcSchema::Type::IfcProfileProperties, 0);
+    IfcProperty_type = new entity(IfcSchema::Type::IfcProperty, 0);
+    IfcPropertyConstraintRelationship_type = new entity(IfcSchema::Type::IfcPropertyConstraintRelationship, 0);
+    IfcPropertyDependencyRelationship_type = new entity(IfcSchema::Type::IfcPropertyDependencyRelationship, 0);
+    IfcPropertyEnumeration_type = new entity(IfcSchema::Type::IfcPropertyEnumeration, 0);
+    IfcQuantityArea_type = new entity(IfcSchema::Type::IfcQuantityArea, IfcPhysicalSimpleQuantity_type);
+    IfcQuantityCount_type = new entity(IfcSchema::Type::IfcQuantityCount, IfcPhysicalSimpleQuantity_type);
+    IfcQuantityLength_type = new entity(IfcSchema::Type::IfcQuantityLength, IfcPhysicalSimpleQuantity_type);
+    IfcQuantityTime_type = new entity(IfcSchema::Type::IfcQuantityTime, IfcPhysicalSimpleQuantity_type);
+    IfcQuantityVolume_type = new entity(IfcSchema::Type::IfcQuantityVolume, IfcPhysicalSimpleQuantity_type);
+    IfcQuantityWeight_type = new entity(IfcSchema::Type::IfcQuantityWeight, IfcPhysicalSimpleQuantity_type);
+    IfcReferencesValueDocument_type = new entity(IfcSchema::Type::IfcReferencesValueDocument, 0);
+    IfcReinforcementBarProperties_type = new entity(IfcSchema::Type::IfcReinforcementBarProperties, 0);
+    IfcRelaxation_type = new entity(IfcSchema::Type::IfcRelaxation, 0);
+    IfcRepresentation_type = new entity(IfcSchema::Type::IfcRepresentation, 0);
+    IfcRepresentationContext_type = new entity(IfcSchema::Type::IfcRepresentationContext, 0);
+    IfcRepresentationItem_type = new entity(IfcSchema::Type::IfcRepresentationItem, 0);
+    IfcRepresentationMap_type = new entity(IfcSchema::Type::IfcRepresentationMap, 0);
+    IfcRibPlateProfileProperties_type = new entity(IfcSchema::Type::IfcRibPlateProfileProperties, IfcProfileProperties_type);
+    IfcRoot_type = new entity(IfcSchema::Type::IfcRoot, 0);
+    IfcSIUnit_type = new entity(IfcSchema::Type::IfcSIUnit, IfcNamedUnit_type);
+    IfcSectionProperties_type = new entity(IfcSchema::Type::IfcSectionProperties, 0);
+    IfcSectionReinforcementProperties_type = new entity(IfcSchema::Type::IfcSectionReinforcementProperties, 0);
+    IfcShapeAspect_type = new entity(IfcSchema::Type::IfcShapeAspect, 0);
+    IfcShapeModel_type = new entity(IfcSchema::Type::IfcShapeModel, IfcRepresentation_type);
+    IfcShapeRepresentation_type = new entity(IfcSchema::Type::IfcShapeRepresentation, IfcShapeModel_type);
+    IfcSimpleProperty_type = new entity(IfcSchema::Type::IfcSimpleProperty, IfcProperty_type);
+    IfcStructuralConnectionCondition_type = new entity(IfcSchema::Type::IfcStructuralConnectionCondition, 0);
+    IfcStructuralLoad_type = new entity(IfcSchema::Type::IfcStructuralLoad, 0);
+    IfcStructuralLoadStatic_type = new entity(IfcSchema::Type::IfcStructuralLoadStatic, IfcStructuralLoad_type);
+    IfcStructuralLoadTemperature_type = new entity(IfcSchema::Type::IfcStructuralLoadTemperature, IfcStructuralLoadStatic_type);
+    IfcStyleModel_type = new entity(IfcSchema::Type::IfcStyleModel, IfcRepresentation_type);
+    IfcStyledItem_type = new entity(IfcSchema::Type::IfcStyledItem, IfcRepresentationItem_type);
+    IfcStyledRepresentation_type = new entity(IfcSchema::Type::IfcStyledRepresentation, IfcStyleModel_type);
+    IfcSurfaceStyle_type = new entity(IfcSchema::Type::IfcSurfaceStyle, IfcPresentationStyle_type);
+    IfcSurfaceStyleLighting_type = new entity(IfcSchema::Type::IfcSurfaceStyleLighting, 0);
+    IfcSurfaceStyleRefraction_type = new entity(IfcSchema::Type::IfcSurfaceStyleRefraction, 0);
+    IfcSurfaceStyleShading_type = new entity(IfcSchema::Type::IfcSurfaceStyleShading, 0);
+    IfcSurfaceStyleWithTextures_type = new entity(IfcSchema::Type::IfcSurfaceStyleWithTextures, 0);
+    IfcSurfaceTexture_type = new entity(IfcSchema::Type::IfcSurfaceTexture, 0);
+    IfcSymbolStyle_type = new entity(IfcSchema::Type::IfcSymbolStyle, IfcPresentationStyle_type);
+    IfcTable_type = new entity(IfcSchema::Type::IfcTable, 0);
+    IfcTableRow_type = new entity(IfcSchema::Type::IfcTableRow, 0);
+    IfcTelecomAddress_type = new entity(IfcSchema::Type::IfcTelecomAddress, IfcAddress_type);
+    IfcTextStyle_type = new entity(IfcSchema::Type::IfcTextStyle, IfcPresentationStyle_type);
+    IfcTextStyleFontModel_type = new entity(IfcSchema::Type::IfcTextStyleFontModel, IfcPreDefinedTextFont_type);
+    IfcTextStyleForDefinedFont_type = new entity(IfcSchema::Type::IfcTextStyleForDefinedFont, 0);
+    IfcTextStyleTextModel_type = new entity(IfcSchema::Type::IfcTextStyleTextModel, 0);
+    IfcTextStyleWithBoxCharacteristics_type = new entity(IfcSchema::Type::IfcTextStyleWithBoxCharacteristics, 0);
+    IfcTextureCoordinate_type = new entity(IfcSchema::Type::IfcTextureCoordinate, 0);
+    IfcTextureCoordinateGenerator_type = new entity(IfcSchema::Type::IfcTextureCoordinateGenerator, IfcTextureCoordinate_type);
+    IfcTextureMap_type = new entity(IfcSchema::Type::IfcTextureMap, IfcTextureCoordinate_type);
+    IfcTextureVertex_type = new entity(IfcSchema::Type::IfcTextureVertex, 0);
+    IfcThermalMaterialProperties_type = new entity(IfcSchema::Type::IfcThermalMaterialProperties, IfcMaterialProperties_type);
+    IfcTimeSeries_type = new entity(IfcSchema::Type::IfcTimeSeries, 0);
+    IfcTimeSeriesReferenceRelationship_type = new entity(IfcSchema::Type::IfcTimeSeriesReferenceRelationship, 0);
+    IfcTimeSeriesValue_type = new entity(IfcSchema::Type::IfcTimeSeriesValue, 0);
+    IfcTopologicalRepresentationItem_type = new entity(IfcSchema::Type::IfcTopologicalRepresentationItem, IfcRepresentationItem_type);
+    IfcTopologyRepresentation_type = new entity(IfcSchema::Type::IfcTopologyRepresentation, IfcShapeModel_type);
+    IfcUnitAssignment_type = new entity(IfcSchema::Type::IfcUnitAssignment, 0);
+    IfcVertex_type = new entity(IfcSchema::Type::IfcVertex, IfcTopologicalRepresentationItem_type);
+    IfcVertexBasedTextureMap_type = new entity(IfcSchema::Type::IfcVertexBasedTextureMap, 0);
+    IfcVertexPoint_type = new entity(IfcSchema::Type::IfcVertexPoint, IfcVertex_type);
+    IfcVirtualGridIntersection_type = new entity(IfcSchema::Type::IfcVirtualGridIntersection, 0);
+    IfcWaterProperties_type = new entity(IfcSchema::Type::IfcWaterProperties, IfcMaterialProperties_type);
+    IfcAnnotationOccurrence_type = new entity(IfcSchema::Type::IfcAnnotationOccurrence, IfcStyledItem_type);
+    IfcAnnotationSurfaceOccurrence_type = new entity(IfcSchema::Type::IfcAnnotationSurfaceOccurrence, IfcAnnotationOccurrence_type);
+    IfcAnnotationSymbolOccurrence_type = new entity(IfcSchema::Type::IfcAnnotationSymbolOccurrence, IfcAnnotationOccurrence_type);
+    IfcAnnotationTextOccurrence_type = new entity(IfcSchema::Type::IfcAnnotationTextOccurrence, IfcAnnotationOccurrence_type);
+    IfcArbitraryClosedProfileDef_type = new entity(IfcSchema::Type::IfcArbitraryClosedProfileDef, IfcProfileDef_type);
+    IfcArbitraryOpenProfileDef_type = new entity(IfcSchema::Type::IfcArbitraryOpenProfileDef, IfcProfileDef_type);
+    IfcArbitraryProfileDefWithVoids_type = new entity(IfcSchema::Type::IfcArbitraryProfileDefWithVoids, IfcArbitraryClosedProfileDef_type);
+    IfcBlobTexture_type = new entity(IfcSchema::Type::IfcBlobTexture, IfcSurfaceTexture_type);
+    IfcCenterLineProfileDef_type = new entity(IfcSchema::Type::IfcCenterLineProfileDef, IfcArbitraryOpenProfileDef_type);
+    IfcClassificationReference_type = new entity(IfcSchema::Type::IfcClassificationReference, IfcExternalReference_type);
+    IfcColourRgb_type = new entity(IfcSchema::Type::IfcColourRgb, IfcColourSpecification_type);
+    IfcComplexProperty_type = new entity(IfcSchema::Type::IfcComplexProperty, IfcProperty_type);
+    IfcCompositeProfileDef_type = new entity(IfcSchema::Type::IfcCompositeProfileDef, IfcProfileDef_type);
+    IfcConnectedFaceSet_type = new entity(IfcSchema::Type::IfcConnectedFaceSet, IfcTopologicalRepresentationItem_type);
+    IfcConnectionCurveGeometry_type = new entity(IfcSchema::Type::IfcConnectionCurveGeometry, IfcConnectionGeometry_type);
+    IfcConnectionPointEccentricity_type = new entity(IfcSchema::Type::IfcConnectionPointEccentricity, IfcConnectionPointGeometry_type);
+    IfcContextDependentUnit_type = new entity(IfcSchema::Type::IfcContextDependentUnit, IfcNamedUnit_type);
+    IfcConversionBasedUnit_type = new entity(IfcSchema::Type::IfcConversionBasedUnit, IfcNamedUnit_type);
+    IfcCurveStyle_type = new entity(IfcSchema::Type::IfcCurveStyle, IfcPresentationStyle_type);
+    IfcDerivedProfileDef_type = new entity(IfcSchema::Type::IfcDerivedProfileDef, IfcProfileDef_type);
+    IfcDimensionCalloutRelationship_type = new entity(IfcSchema::Type::IfcDimensionCalloutRelationship, IfcDraughtingCalloutRelationship_type);
+    IfcDimensionPair_type = new entity(IfcSchema::Type::IfcDimensionPair, IfcDraughtingCalloutRelationship_type);
+    IfcDocumentReference_type = new entity(IfcSchema::Type::IfcDocumentReference, IfcExternalReference_type);
+    IfcDraughtingPreDefinedTextFont_type = new entity(IfcSchema::Type::IfcDraughtingPreDefinedTextFont, IfcPreDefinedTextFont_type);
+    IfcEdge_type = new entity(IfcSchema::Type::IfcEdge, IfcTopologicalRepresentationItem_type);
+    IfcEdgeCurve_type = new entity(IfcSchema::Type::IfcEdgeCurve, IfcEdge_type);
+    IfcExtendedMaterialProperties_type = new entity(IfcSchema::Type::IfcExtendedMaterialProperties, IfcMaterialProperties_type);
+    IfcFace_type = new entity(IfcSchema::Type::IfcFace, IfcTopologicalRepresentationItem_type);
+    IfcFaceBound_type = new entity(IfcSchema::Type::IfcFaceBound, IfcTopologicalRepresentationItem_type);
+    IfcFaceOuterBound_type = new entity(IfcSchema::Type::IfcFaceOuterBound, IfcFaceBound_type);
+    IfcFaceSurface_type = new entity(IfcSchema::Type::IfcFaceSurface, IfcFace_type);
+    IfcFailureConnectionCondition_type = new entity(IfcSchema::Type::IfcFailureConnectionCondition, IfcStructuralConnectionCondition_type);
+    IfcFillAreaStyle_type = new entity(IfcSchema::Type::IfcFillAreaStyle, IfcPresentationStyle_type);
+    IfcFuelProperties_type = new entity(IfcSchema::Type::IfcFuelProperties, IfcMaterialProperties_type);
+    IfcGeneralMaterialProperties_type = new entity(IfcSchema::Type::IfcGeneralMaterialProperties, IfcMaterialProperties_type);
+    IfcGeneralProfileProperties_type = new entity(IfcSchema::Type::IfcGeneralProfileProperties, IfcProfileProperties_type);
+    IfcGeometricRepresentationContext_type = new entity(IfcSchema::Type::IfcGeometricRepresentationContext, IfcRepresentationContext_type);
+    IfcGeometricRepresentationItem_type = new entity(IfcSchema::Type::IfcGeometricRepresentationItem, IfcRepresentationItem_type);
+    IfcGeometricRepresentationSubContext_type = new entity(IfcSchema::Type::IfcGeometricRepresentationSubContext, IfcGeometricRepresentationContext_type);
+    IfcGeometricSet_type = new entity(IfcSchema::Type::IfcGeometricSet, IfcGeometricRepresentationItem_type);
+    IfcGridPlacement_type = new entity(IfcSchema::Type::IfcGridPlacement, IfcObjectPlacement_type);
+    IfcHalfSpaceSolid_type = new entity(IfcSchema::Type::IfcHalfSpaceSolid, IfcGeometricRepresentationItem_type);
+    IfcHygroscopicMaterialProperties_type = new entity(IfcSchema::Type::IfcHygroscopicMaterialProperties, IfcMaterialProperties_type);
+    IfcImageTexture_type = new entity(IfcSchema::Type::IfcImageTexture, IfcSurfaceTexture_type);
+    IfcIrregularTimeSeries_type = new entity(IfcSchema::Type::IfcIrregularTimeSeries, IfcTimeSeries_type);
+    IfcLightSource_type = new entity(IfcSchema::Type::IfcLightSource, IfcGeometricRepresentationItem_type);
+    IfcLightSourceAmbient_type = new entity(IfcSchema::Type::IfcLightSourceAmbient, IfcLightSource_type);
+    IfcLightSourceDirectional_type = new entity(IfcSchema::Type::IfcLightSourceDirectional, IfcLightSource_type);
+    IfcLightSourceGoniometric_type = new entity(IfcSchema::Type::IfcLightSourceGoniometric, IfcLightSource_type);
+    IfcLightSourcePositional_type = new entity(IfcSchema::Type::IfcLightSourcePositional, IfcLightSource_type);
+    IfcLightSourceSpot_type = new entity(IfcSchema::Type::IfcLightSourceSpot, IfcLightSourcePositional_type);
+    IfcLocalPlacement_type = new entity(IfcSchema::Type::IfcLocalPlacement, IfcObjectPlacement_type);
+    IfcLoop_type = new entity(IfcSchema::Type::IfcLoop, IfcTopologicalRepresentationItem_type);
+    IfcMappedItem_type = new entity(IfcSchema::Type::IfcMappedItem, IfcRepresentationItem_type);
+    IfcMaterialDefinitionRepresentation_type = new entity(IfcSchema::Type::IfcMaterialDefinitionRepresentation, IfcProductRepresentation_type);
+    IfcMechanicalConcreteMaterialProperties_type = new entity(IfcSchema::Type::IfcMechanicalConcreteMaterialProperties, IfcMechanicalMaterialProperties_type);
+    IfcObjectDefinition_type = new entity(IfcSchema::Type::IfcObjectDefinition, IfcRoot_type);
+    IfcOneDirectionRepeatFactor_type = new entity(IfcSchema::Type::IfcOneDirectionRepeatFactor, IfcGeometricRepresentationItem_type);
+    IfcOpenShell_type = new entity(IfcSchema::Type::IfcOpenShell, IfcConnectedFaceSet_type);
+    IfcOrientedEdge_type = new entity(IfcSchema::Type::IfcOrientedEdge, IfcEdge_type);
+    IfcParameterizedProfileDef_type = new entity(IfcSchema::Type::IfcParameterizedProfileDef, IfcProfileDef_type);
+    IfcPath_type = new entity(IfcSchema::Type::IfcPath, IfcTopologicalRepresentationItem_type);
+    IfcPhysicalComplexQuantity_type = new entity(IfcSchema::Type::IfcPhysicalComplexQuantity, IfcPhysicalQuantity_type);
+    IfcPixelTexture_type = new entity(IfcSchema::Type::IfcPixelTexture, IfcSurfaceTexture_type);
+    IfcPlacement_type = new entity(IfcSchema::Type::IfcPlacement, IfcGeometricRepresentationItem_type);
+    IfcPlanarExtent_type = new entity(IfcSchema::Type::IfcPlanarExtent, IfcGeometricRepresentationItem_type);
+    IfcPoint_type = new entity(IfcSchema::Type::IfcPoint, IfcGeometricRepresentationItem_type);
+    IfcPointOnCurve_type = new entity(IfcSchema::Type::IfcPointOnCurve, IfcPoint_type);
+    IfcPointOnSurface_type = new entity(IfcSchema::Type::IfcPointOnSurface, IfcPoint_type);
+    IfcPolyLoop_type = new entity(IfcSchema::Type::IfcPolyLoop, IfcLoop_type);
+    IfcPolygonalBoundedHalfSpace_type = new entity(IfcSchema::Type::IfcPolygonalBoundedHalfSpace, IfcHalfSpaceSolid_type);
+    IfcPreDefinedColour_type = new entity(IfcSchema::Type::IfcPreDefinedColour, IfcPreDefinedItem_type);
+    IfcPreDefinedCurveFont_type = new entity(IfcSchema::Type::IfcPreDefinedCurveFont, IfcPreDefinedItem_type);
+    IfcPreDefinedDimensionSymbol_type = new entity(IfcSchema::Type::IfcPreDefinedDimensionSymbol, IfcPreDefinedSymbol_type);
+    IfcPreDefinedPointMarkerSymbol_type = new entity(IfcSchema::Type::IfcPreDefinedPointMarkerSymbol, IfcPreDefinedSymbol_type);
+    IfcProductDefinitionShape_type = new entity(IfcSchema::Type::IfcProductDefinitionShape, IfcProductRepresentation_type);
+    IfcPropertyBoundedValue_type = new entity(IfcSchema::Type::IfcPropertyBoundedValue, IfcSimpleProperty_type);
+    IfcPropertyDefinition_type = new entity(IfcSchema::Type::IfcPropertyDefinition, IfcRoot_type);
+    IfcPropertyEnumeratedValue_type = new entity(IfcSchema::Type::IfcPropertyEnumeratedValue, IfcSimpleProperty_type);
+    IfcPropertyListValue_type = new entity(IfcSchema::Type::IfcPropertyListValue, IfcSimpleProperty_type);
+    IfcPropertyReferenceValue_type = new entity(IfcSchema::Type::IfcPropertyReferenceValue, IfcSimpleProperty_type);
+    IfcPropertySetDefinition_type = new entity(IfcSchema::Type::IfcPropertySetDefinition, IfcPropertyDefinition_type);
+    IfcPropertySingleValue_type = new entity(IfcSchema::Type::IfcPropertySingleValue, IfcSimpleProperty_type);
+    IfcPropertyTableValue_type = new entity(IfcSchema::Type::IfcPropertyTableValue, IfcSimpleProperty_type);
+    IfcRectangleProfileDef_type = new entity(IfcSchema::Type::IfcRectangleProfileDef, IfcParameterizedProfileDef_type);
+    IfcRegularTimeSeries_type = new entity(IfcSchema::Type::IfcRegularTimeSeries, IfcTimeSeries_type);
+    IfcReinforcementDefinitionProperties_type = new entity(IfcSchema::Type::IfcReinforcementDefinitionProperties, IfcPropertySetDefinition_type);
+    IfcRelationship_type = new entity(IfcSchema::Type::IfcRelationship, IfcRoot_type);
+    IfcRoundedRectangleProfileDef_type = new entity(IfcSchema::Type::IfcRoundedRectangleProfileDef, IfcRectangleProfileDef_type);
+    IfcSectionedSpine_type = new entity(IfcSchema::Type::IfcSectionedSpine, IfcGeometricRepresentationItem_type);
+    IfcServiceLifeFactor_type = new entity(IfcSchema::Type::IfcServiceLifeFactor, IfcPropertySetDefinition_type);
+    IfcShellBasedSurfaceModel_type = new entity(IfcSchema::Type::IfcShellBasedSurfaceModel, IfcGeometricRepresentationItem_type);
+    IfcSlippageConnectionCondition_type = new entity(IfcSchema::Type::IfcSlippageConnectionCondition, IfcStructuralConnectionCondition_type);
+    IfcSolidModel_type = new entity(IfcSchema::Type::IfcSolidModel, IfcGeometricRepresentationItem_type);
+    IfcSoundProperties_type = new entity(IfcSchema::Type::IfcSoundProperties, IfcPropertySetDefinition_type);
+    IfcSoundValue_type = new entity(IfcSchema::Type::IfcSoundValue, IfcPropertySetDefinition_type);
+    IfcSpaceThermalLoadProperties_type = new entity(IfcSchema::Type::IfcSpaceThermalLoadProperties, IfcPropertySetDefinition_type);
+    IfcStructuralLoadLinearForce_type = new entity(IfcSchema::Type::IfcStructuralLoadLinearForce, IfcStructuralLoadStatic_type);
+    IfcStructuralLoadPlanarForce_type = new entity(IfcSchema::Type::IfcStructuralLoadPlanarForce, IfcStructuralLoadStatic_type);
+    IfcStructuralLoadSingleDisplacement_type = new entity(IfcSchema::Type::IfcStructuralLoadSingleDisplacement, IfcStructuralLoadStatic_type);
+    IfcStructuralLoadSingleDisplacementDistortion_type = new entity(IfcSchema::Type::IfcStructuralLoadSingleDisplacementDistortion, IfcStructuralLoadSingleDisplacement_type);
+    IfcStructuralLoadSingleForce_type = new entity(IfcSchema::Type::IfcStructuralLoadSingleForce, IfcStructuralLoadStatic_type);
+    IfcStructuralLoadSingleForceWarping_type = new entity(IfcSchema::Type::IfcStructuralLoadSingleForceWarping, IfcStructuralLoadSingleForce_type);
+    IfcStructuralProfileProperties_type = new entity(IfcSchema::Type::IfcStructuralProfileProperties, IfcGeneralProfileProperties_type);
+    IfcStructuralSteelProfileProperties_type = new entity(IfcSchema::Type::IfcStructuralSteelProfileProperties, IfcStructuralProfileProperties_type);
+    IfcSubedge_type = new entity(IfcSchema::Type::IfcSubedge, IfcEdge_type);
+    IfcSurface_type = new entity(IfcSchema::Type::IfcSurface, IfcGeometricRepresentationItem_type);
+    IfcSurfaceStyleRendering_type = new entity(IfcSchema::Type::IfcSurfaceStyleRendering, IfcSurfaceStyleShading_type);
+    IfcSweptAreaSolid_type = new entity(IfcSchema::Type::IfcSweptAreaSolid, IfcSolidModel_type);
+    IfcSweptDiskSolid_type = new entity(IfcSchema::Type::IfcSweptDiskSolid, IfcSolidModel_type);
+    IfcSweptSurface_type = new entity(IfcSchema::Type::IfcSweptSurface, IfcSurface_type);
+    IfcTShapeProfileDef_type = new entity(IfcSchema::Type::IfcTShapeProfileDef, IfcParameterizedProfileDef_type);
+    IfcTerminatorSymbol_type = new entity(IfcSchema::Type::IfcTerminatorSymbol, IfcAnnotationSymbolOccurrence_type);
+    IfcTextLiteral_type = new entity(IfcSchema::Type::IfcTextLiteral, IfcGeometricRepresentationItem_type);
+    IfcTextLiteralWithExtent_type = new entity(IfcSchema::Type::IfcTextLiteralWithExtent, IfcTextLiteral_type);
+    IfcTrapeziumProfileDef_type = new entity(IfcSchema::Type::IfcTrapeziumProfileDef, IfcParameterizedProfileDef_type);
+    IfcTwoDirectionRepeatFactor_type = new entity(IfcSchema::Type::IfcTwoDirectionRepeatFactor, IfcOneDirectionRepeatFactor_type);
+    IfcTypeObject_type = new entity(IfcSchema::Type::IfcTypeObject, IfcObjectDefinition_type);
+    IfcTypeProduct_type = new entity(IfcSchema::Type::IfcTypeProduct, IfcTypeObject_type);
+    IfcUShapeProfileDef_type = new entity(IfcSchema::Type::IfcUShapeProfileDef, IfcParameterizedProfileDef_type);
+    IfcVector_type = new entity(IfcSchema::Type::IfcVector, IfcGeometricRepresentationItem_type);
+    IfcVertexLoop_type = new entity(IfcSchema::Type::IfcVertexLoop, IfcLoop_type);
+    IfcWindowLiningProperties_type = new entity(IfcSchema::Type::IfcWindowLiningProperties, IfcPropertySetDefinition_type);
+    IfcWindowPanelProperties_type = new entity(IfcSchema::Type::IfcWindowPanelProperties, IfcPropertySetDefinition_type);
+    IfcWindowStyle_type = new entity(IfcSchema::Type::IfcWindowStyle, IfcTypeProduct_type);
+    IfcZShapeProfileDef_type = new entity(IfcSchema::Type::IfcZShapeProfileDef, IfcParameterizedProfileDef_type);
+    IfcAnnotationCurveOccurrence_type = new entity(IfcSchema::Type::IfcAnnotationCurveOccurrence, IfcAnnotationOccurrence_type);
+    IfcAnnotationFillArea_type = new entity(IfcSchema::Type::IfcAnnotationFillArea, IfcGeometricRepresentationItem_type);
+    IfcAnnotationFillAreaOccurrence_type = new entity(IfcSchema::Type::IfcAnnotationFillAreaOccurrence, IfcAnnotationOccurrence_type);
+    IfcAnnotationSurface_type = new entity(IfcSchema::Type::IfcAnnotationSurface, IfcGeometricRepresentationItem_type);
+    IfcAxis1Placement_type = new entity(IfcSchema::Type::IfcAxis1Placement, IfcPlacement_type);
+    IfcAxis2Placement2D_type = new entity(IfcSchema::Type::IfcAxis2Placement2D, IfcPlacement_type);
+    IfcAxis2Placement3D_type = new entity(IfcSchema::Type::IfcAxis2Placement3D, IfcPlacement_type);
+    IfcBooleanResult_type = new entity(IfcSchema::Type::IfcBooleanResult, IfcGeometricRepresentationItem_type);
+    IfcBoundedSurface_type = new entity(IfcSchema::Type::IfcBoundedSurface, IfcSurface_type);
+    IfcBoundingBox_type = new entity(IfcSchema::Type::IfcBoundingBox, IfcGeometricRepresentationItem_type);
+    IfcBoxedHalfSpace_type = new entity(IfcSchema::Type::IfcBoxedHalfSpace, IfcHalfSpaceSolid_type);
+    IfcCShapeProfileDef_type = new entity(IfcSchema::Type::IfcCShapeProfileDef, IfcParameterizedProfileDef_type);
+    IfcCartesianPoint_type = new entity(IfcSchema::Type::IfcCartesianPoint, IfcPoint_type);
+    IfcCartesianTransformationOperator_type = new entity(IfcSchema::Type::IfcCartesianTransformationOperator, IfcGeometricRepresentationItem_type);
+    IfcCartesianTransformationOperator2D_type = new entity(IfcSchema::Type::IfcCartesianTransformationOperator2D, IfcCartesianTransformationOperator_type);
+    IfcCartesianTransformationOperator2DnonUniform_type = new entity(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform, IfcCartesianTransformationOperator2D_type);
+    IfcCartesianTransformationOperator3D_type = new entity(IfcSchema::Type::IfcCartesianTransformationOperator3D, IfcCartesianTransformationOperator_type);
+    IfcCartesianTransformationOperator3DnonUniform_type = new entity(IfcSchema::Type::IfcCartesianTransformationOperator3DnonUniform, IfcCartesianTransformationOperator3D_type);
+    IfcCircleProfileDef_type = new entity(IfcSchema::Type::IfcCircleProfileDef, IfcParameterizedProfileDef_type);
+    IfcClosedShell_type = new entity(IfcSchema::Type::IfcClosedShell, IfcConnectedFaceSet_type);
+    IfcCompositeCurveSegment_type = new entity(IfcSchema::Type::IfcCompositeCurveSegment, IfcGeometricRepresentationItem_type);
+    IfcCraneRailAShapeProfileDef_type = new entity(IfcSchema::Type::IfcCraneRailAShapeProfileDef, IfcParameterizedProfileDef_type);
+    IfcCraneRailFShapeProfileDef_type = new entity(IfcSchema::Type::IfcCraneRailFShapeProfileDef, IfcParameterizedProfileDef_type);
+    IfcCsgPrimitive3D_type = new entity(IfcSchema::Type::IfcCsgPrimitive3D, IfcGeometricRepresentationItem_type);
+    IfcCsgSolid_type = new entity(IfcSchema::Type::IfcCsgSolid, IfcSolidModel_type);
+    IfcCurve_type = new entity(IfcSchema::Type::IfcCurve, IfcGeometricRepresentationItem_type);
+    IfcCurveBoundedPlane_type = new entity(IfcSchema::Type::IfcCurveBoundedPlane, IfcBoundedSurface_type);
+    IfcDefinedSymbol_type = new entity(IfcSchema::Type::IfcDefinedSymbol, IfcGeometricRepresentationItem_type);
+    IfcDimensionCurve_type = new entity(IfcSchema::Type::IfcDimensionCurve, IfcAnnotationCurveOccurrence_type);
+    IfcDimensionCurveTerminator_type = new entity(IfcSchema::Type::IfcDimensionCurveTerminator, IfcTerminatorSymbol_type);
+    IfcDirection_type = new entity(IfcSchema::Type::IfcDirection, IfcGeometricRepresentationItem_type);
+    IfcDoorLiningProperties_type = new entity(IfcSchema::Type::IfcDoorLiningProperties, IfcPropertySetDefinition_type);
+    IfcDoorPanelProperties_type = new entity(IfcSchema::Type::IfcDoorPanelProperties, IfcPropertySetDefinition_type);
+    IfcDoorStyle_type = new entity(IfcSchema::Type::IfcDoorStyle, IfcTypeProduct_type);
+    IfcDraughtingCallout_type = new entity(IfcSchema::Type::IfcDraughtingCallout, IfcGeometricRepresentationItem_type);
+    IfcDraughtingPreDefinedColour_type = new entity(IfcSchema::Type::IfcDraughtingPreDefinedColour, IfcPreDefinedColour_type);
+    IfcDraughtingPreDefinedCurveFont_type = new entity(IfcSchema::Type::IfcDraughtingPreDefinedCurveFont, IfcPreDefinedCurveFont_type);
+    IfcEdgeLoop_type = new entity(IfcSchema::Type::IfcEdgeLoop, IfcLoop_type);
+    IfcElementQuantity_type = new entity(IfcSchema::Type::IfcElementQuantity, IfcPropertySetDefinition_type);
+    IfcElementType_type = new entity(IfcSchema::Type::IfcElementType, IfcTypeProduct_type);
+    IfcElementarySurface_type = new entity(IfcSchema::Type::IfcElementarySurface, IfcSurface_type);
+    IfcEllipseProfileDef_type = new entity(IfcSchema::Type::IfcEllipseProfileDef, IfcParameterizedProfileDef_type);
+    IfcEnergyProperties_type = new entity(IfcSchema::Type::IfcEnergyProperties, IfcPropertySetDefinition_type);
+    IfcExtrudedAreaSolid_type = new entity(IfcSchema::Type::IfcExtrudedAreaSolid, IfcSweptAreaSolid_type);
+    IfcFaceBasedSurfaceModel_type = new entity(IfcSchema::Type::IfcFaceBasedSurfaceModel, IfcGeometricRepresentationItem_type);
+    IfcFillAreaStyleHatching_type = new entity(IfcSchema::Type::IfcFillAreaStyleHatching, IfcGeometricRepresentationItem_type);
+    IfcFillAreaStyleTileSymbolWithStyle_type = new entity(IfcSchema::Type::IfcFillAreaStyleTileSymbolWithStyle, IfcGeometricRepresentationItem_type);
+    IfcFillAreaStyleTiles_type = new entity(IfcSchema::Type::IfcFillAreaStyleTiles, IfcGeometricRepresentationItem_type);
+    IfcFluidFlowProperties_type = new entity(IfcSchema::Type::IfcFluidFlowProperties, IfcPropertySetDefinition_type);
+    IfcFurnishingElementType_type = new entity(IfcSchema::Type::IfcFurnishingElementType, IfcElementType_type);
+    IfcFurnitureType_type = new entity(IfcSchema::Type::IfcFurnitureType, IfcFurnishingElementType_type);
+    IfcGeometricCurveSet_type = new entity(IfcSchema::Type::IfcGeometricCurveSet, IfcGeometricSet_type);
+    IfcIShapeProfileDef_type = new entity(IfcSchema::Type::IfcIShapeProfileDef, IfcParameterizedProfileDef_type);
+    IfcLShapeProfileDef_type = new entity(IfcSchema::Type::IfcLShapeProfileDef, IfcParameterizedProfileDef_type);
+    IfcLine_type = new entity(IfcSchema::Type::IfcLine, IfcCurve_type);
+    IfcManifoldSolidBrep_type = new entity(IfcSchema::Type::IfcManifoldSolidBrep, IfcSolidModel_type);
+    IfcObject_type = new entity(IfcSchema::Type::IfcObject, IfcObjectDefinition_type);
+    IfcOffsetCurve2D_type = new entity(IfcSchema::Type::IfcOffsetCurve2D, IfcCurve_type);
+    IfcOffsetCurve3D_type = new entity(IfcSchema::Type::IfcOffsetCurve3D, IfcCurve_type);
+    IfcPermeableCoveringProperties_type = new entity(IfcSchema::Type::IfcPermeableCoveringProperties, IfcPropertySetDefinition_type);
+    IfcPlanarBox_type = new entity(IfcSchema::Type::IfcPlanarBox, IfcPlanarExtent_type);
+    IfcPlane_type = new entity(IfcSchema::Type::IfcPlane, IfcElementarySurface_type);
+    IfcProcess_type = new entity(IfcSchema::Type::IfcProcess, IfcObject_type);
+    IfcProduct_type = new entity(IfcSchema::Type::IfcProduct, IfcObject_type);
+    IfcProject_type = new entity(IfcSchema::Type::IfcProject, IfcObject_type);
+    IfcProjectionCurve_type = new entity(IfcSchema::Type::IfcProjectionCurve, IfcAnnotationCurveOccurrence_type);
+    IfcPropertySet_type = new entity(IfcSchema::Type::IfcPropertySet, IfcPropertySetDefinition_type);
+    IfcProxy_type = new entity(IfcSchema::Type::IfcProxy, IfcProduct_type);
+    IfcRectangleHollowProfileDef_type = new entity(IfcSchema::Type::IfcRectangleHollowProfileDef, IfcRectangleProfileDef_type);
+    IfcRectangularPyramid_type = new entity(IfcSchema::Type::IfcRectangularPyramid, IfcCsgPrimitive3D_type);
+    IfcRectangularTrimmedSurface_type = new entity(IfcSchema::Type::IfcRectangularTrimmedSurface, IfcBoundedSurface_type);
+    IfcRelAssigns_type = new entity(IfcSchema::Type::IfcRelAssigns, IfcRelationship_type);
+    IfcRelAssignsToActor_type = new entity(IfcSchema::Type::IfcRelAssignsToActor, IfcRelAssigns_type);
+    IfcRelAssignsToControl_type = new entity(IfcSchema::Type::IfcRelAssignsToControl, IfcRelAssigns_type);
+    IfcRelAssignsToGroup_type = new entity(IfcSchema::Type::IfcRelAssignsToGroup, IfcRelAssigns_type);
+    IfcRelAssignsToProcess_type = new entity(IfcSchema::Type::IfcRelAssignsToProcess, IfcRelAssigns_type);
+    IfcRelAssignsToProduct_type = new entity(IfcSchema::Type::IfcRelAssignsToProduct, IfcRelAssigns_type);
+    IfcRelAssignsToProjectOrder_type = new entity(IfcSchema::Type::IfcRelAssignsToProjectOrder, IfcRelAssignsToControl_type);
+    IfcRelAssignsToResource_type = new entity(IfcSchema::Type::IfcRelAssignsToResource, IfcRelAssigns_type);
+    IfcRelAssociates_type = new entity(IfcSchema::Type::IfcRelAssociates, IfcRelationship_type);
+    IfcRelAssociatesAppliedValue_type = new entity(IfcSchema::Type::IfcRelAssociatesAppliedValue, IfcRelAssociates_type);
+    IfcRelAssociatesApproval_type = new entity(IfcSchema::Type::IfcRelAssociatesApproval, IfcRelAssociates_type);
+    IfcRelAssociatesClassification_type = new entity(IfcSchema::Type::IfcRelAssociatesClassification, IfcRelAssociates_type);
+    IfcRelAssociatesConstraint_type = new entity(IfcSchema::Type::IfcRelAssociatesConstraint, IfcRelAssociates_type);
+    IfcRelAssociatesDocument_type = new entity(IfcSchema::Type::IfcRelAssociatesDocument, IfcRelAssociates_type);
+    IfcRelAssociatesLibrary_type = new entity(IfcSchema::Type::IfcRelAssociatesLibrary, IfcRelAssociates_type);
+    IfcRelAssociatesMaterial_type = new entity(IfcSchema::Type::IfcRelAssociatesMaterial, IfcRelAssociates_type);
+    IfcRelAssociatesProfileProperties_type = new entity(IfcSchema::Type::IfcRelAssociatesProfileProperties, IfcRelAssociates_type);
+    IfcRelConnects_type = new entity(IfcSchema::Type::IfcRelConnects, IfcRelationship_type);
+    IfcRelConnectsElements_type = new entity(IfcSchema::Type::IfcRelConnectsElements, IfcRelConnects_type);
+    IfcRelConnectsPathElements_type = new entity(IfcSchema::Type::IfcRelConnectsPathElements, IfcRelConnectsElements_type);
+    IfcRelConnectsPortToElement_type = new entity(IfcSchema::Type::IfcRelConnectsPortToElement, IfcRelConnects_type);
+    IfcRelConnectsPorts_type = new entity(IfcSchema::Type::IfcRelConnectsPorts, IfcRelConnects_type);
+    IfcRelConnectsStructuralActivity_type = new entity(IfcSchema::Type::IfcRelConnectsStructuralActivity, IfcRelConnects_type);
+    IfcRelConnectsStructuralElement_type = new entity(IfcSchema::Type::IfcRelConnectsStructuralElement, IfcRelConnects_type);
+    IfcRelConnectsStructuralMember_type = new entity(IfcSchema::Type::IfcRelConnectsStructuralMember, IfcRelConnects_type);
+    IfcRelConnectsWithEccentricity_type = new entity(IfcSchema::Type::IfcRelConnectsWithEccentricity, IfcRelConnectsStructuralMember_type);
+    IfcRelConnectsWithRealizingElements_type = new entity(IfcSchema::Type::IfcRelConnectsWithRealizingElements, IfcRelConnectsElements_type);
+    IfcRelContainedInSpatialStructure_type = new entity(IfcSchema::Type::IfcRelContainedInSpatialStructure, IfcRelConnects_type);
+    IfcRelCoversBldgElements_type = new entity(IfcSchema::Type::IfcRelCoversBldgElements, IfcRelConnects_type);
+    IfcRelCoversSpaces_type = new entity(IfcSchema::Type::IfcRelCoversSpaces, IfcRelConnects_type);
+    IfcRelDecomposes_type = new entity(IfcSchema::Type::IfcRelDecomposes, IfcRelationship_type);
+    IfcRelDefines_type = new entity(IfcSchema::Type::IfcRelDefines, IfcRelationship_type);
+    IfcRelDefinesByProperties_type = new entity(IfcSchema::Type::IfcRelDefinesByProperties, IfcRelDefines_type);
+    IfcRelDefinesByType_type = new entity(IfcSchema::Type::IfcRelDefinesByType, IfcRelDefines_type);
+    IfcRelFillsElement_type = new entity(IfcSchema::Type::IfcRelFillsElement, IfcRelConnects_type);
+    IfcRelFlowControlElements_type = new entity(IfcSchema::Type::IfcRelFlowControlElements, IfcRelConnects_type);
+    IfcRelInteractionRequirements_type = new entity(IfcSchema::Type::IfcRelInteractionRequirements, IfcRelConnects_type);
+    IfcRelNests_type = new entity(IfcSchema::Type::IfcRelNests, IfcRelDecomposes_type);
+    IfcRelOccupiesSpaces_type = new entity(IfcSchema::Type::IfcRelOccupiesSpaces, IfcRelAssignsToActor_type);
+    IfcRelOverridesProperties_type = new entity(IfcSchema::Type::IfcRelOverridesProperties, IfcRelDefinesByProperties_type);
+    IfcRelProjectsElement_type = new entity(IfcSchema::Type::IfcRelProjectsElement, IfcRelConnects_type);
+    IfcRelReferencedInSpatialStructure_type = new entity(IfcSchema::Type::IfcRelReferencedInSpatialStructure, IfcRelConnects_type);
+    IfcRelSchedulesCostItems_type = new entity(IfcSchema::Type::IfcRelSchedulesCostItems, IfcRelAssignsToControl_type);
+    IfcRelSequence_type = new entity(IfcSchema::Type::IfcRelSequence, IfcRelConnects_type);
+    IfcRelServicesBuildings_type = new entity(IfcSchema::Type::IfcRelServicesBuildings, IfcRelConnects_type);
+    IfcRelSpaceBoundary_type = new entity(IfcSchema::Type::IfcRelSpaceBoundary, IfcRelConnects_type);
+    IfcRelVoidsElement_type = new entity(IfcSchema::Type::IfcRelVoidsElement, IfcRelConnects_type);
+    IfcResource_type = new entity(IfcSchema::Type::IfcResource, IfcObject_type);
+    IfcRevolvedAreaSolid_type = new entity(IfcSchema::Type::IfcRevolvedAreaSolid, IfcSweptAreaSolid_type);
+    IfcRightCircularCone_type = new entity(IfcSchema::Type::IfcRightCircularCone, IfcCsgPrimitive3D_type);
+    IfcRightCircularCylinder_type = new entity(IfcSchema::Type::IfcRightCircularCylinder, IfcCsgPrimitive3D_type);
+    IfcSpatialStructureElement_type = new entity(IfcSchema::Type::IfcSpatialStructureElement, IfcProduct_type);
+    IfcSpatialStructureElementType_type = new entity(IfcSchema::Type::IfcSpatialStructureElementType, IfcElementType_type);
+    IfcSphere_type = new entity(IfcSchema::Type::IfcSphere, IfcCsgPrimitive3D_type);
+    IfcStructuralActivity_type = new entity(IfcSchema::Type::IfcStructuralActivity, IfcProduct_type);
+    IfcStructuralItem_type = new entity(IfcSchema::Type::IfcStructuralItem, IfcProduct_type);
+    IfcStructuralMember_type = new entity(IfcSchema::Type::IfcStructuralMember, IfcStructuralItem_type);
+    IfcStructuralReaction_type = new entity(IfcSchema::Type::IfcStructuralReaction, IfcStructuralActivity_type);
+    IfcStructuralSurfaceMember_type = new entity(IfcSchema::Type::IfcStructuralSurfaceMember, IfcStructuralMember_type);
+    IfcStructuralSurfaceMemberVarying_type = new entity(IfcSchema::Type::IfcStructuralSurfaceMemberVarying, IfcStructuralSurfaceMember_type);
+    IfcStructuredDimensionCallout_type = new entity(IfcSchema::Type::IfcStructuredDimensionCallout, IfcDraughtingCallout_type);
+    IfcSurfaceCurveSweptAreaSolid_type = new entity(IfcSchema::Type::IfcSurfaceCurveSweptAreaSolid, IfcSweptAreaSolid_type);
+    IfcSurfaceOfLinearExtrusion_type = new entity(IfcSchema::Type::IfcSurfaceOfLinearExtrusion, IfcSweptSurface_type);
+    IfcSurfaceOfRevolution_type = new entity(IfcSchema::Type::IfcSurfaceOfRevolution, IfcSweptSurface_type);
+    IfcSystemFurnitureElementType_type = new entity(IfcSchema::Type::IfcSystemFurnitureElementType, IfcFurnishingElementType_type);
+    IfcTask_type = new entity(IfcSchema::Type::IfcTask, IfcProcess_type);
+    IfcTransportElementType_type = new entity(IfcSchema::Type::IfcTransportElementType, IfcElementType_type);
+    IfcActor_type = new entity(IfcSchema::Type::IfcActor, IfcObject_type);
+    IfcAnnotation_type = new entity(IfcSchema::Type::IfcAnnotation, IfcProduct_type);
+    IfcAsymmetricIShapeProfileDef_type = new entity(IfcSchema::Type::IfcAsymmetricIShapeProfileDef, IfcIShapeProfileDef_type);
+    IfcBlock_type = new entity(IfcSchema::Type::IfcBlock, IfcCsgPrimitive3D_type);
+    IfcBooleanClippingResult_type = new entity(IfcSchema::Type::IfcBooleanClippingResult, IfcBooleanResult_type);
+    IfcBoundedCurve_type = new entity(IfcSchema::Type::IfcBoundedCurve, IfcCurve_type);
+    IfcBuilding_type = new entity(IfcSchema::Type::IfcBuilding, IfcSpatialStructureElement_type);
+    IfcBuildingElementType_type = new entity(IfcSchema::Type::IfcBuildingElementType, IfcElementType_type);
+    IfcBuildingStorey_type = new entity(IfcSchema::Type::IfcBuildingStorey, IfcSpatialStructureElement_type);
+    IfcCircleHollowProfileDef_type = new entity(IfcSchema::Type::IfcCircleHollowProfileDef, IfcCircleProfileDef_type);
+    IfcColumnType_type = new entity(IfcSchema::Type::IfcColumnType, IfcBuildingElementType_type);
+    IfcCompositeCurve_type = new entity(IfcSchema::Type::IfcCompositeCurve, IfcBoundedCurve_type);
+    IfcConic_type = new entity(IfcSchema::Type::IfcConic, IfcCurve_type);
+    IfcConstructionResource_type = new entity(IfcSchema::Type::IfcConstructionResource, IfcResource_type);
+    IfcControl_type = new entity(IfcSchema::Type::IfcControl, IfcObject_type);
+    IfcCostItem_type = new entity(IfcSchema::Type::IfcCostItem, IfcControl_type);
+    IfcCostSchedule_type = new entity(IfcSchema::Type::IfcCostSchedule, IfcControl_type);
+    IfcCoveringType_type = new entity(IfcSchema::Type::IfcCoveringType, IfcBuildingElementType_type);
+    IfcCrewResource_type = new entity(IfcSchema::Type::IfcCrewResource, IfcConstructionResource_type);
+    IfcCurtainWallType_type = new entity(IfcSchema::Type::IfcCurtainWallType, IfcBuildingElementType_type);
+    IfcDimensionCurveDirectedCallout_type = new entity(IfcSchema::Type::IfcDimensionCurveDirectedCallout, IfcDraughtingCallout_type);
+    IfcDistributionElementType_type = new entity(IfcSchema::Type::IfcDistributionElementType, IfcElementType_type);
+    IfcDistributionFlowElementType_type = new entity(IfcSchema::Type::IfcDistributionFlowElementType, IfcDistributionElementType_type);
+    IfcElectricalBaseProperties_type = new entity(IfcSchema::Type::IfcElectricalBaseProperties, IfcEnergyProperties_type);
+    IfcElement_type = new entity(IfcSchema::Type::IfcElement, IfcProduct_type);
+    IfcElementAssembly_type = new entity(IfcSchema::Type::IfcElementAssembly, IfcElement_type);
+    IfcElementComponent_type = new entity(IfcSchema::Type::IfcElementComponent, IfcElement_type);
+    IfcElementComponentType_type = new entity(IfcSchema::Type::IfcElementComponentType, IfcElementType_type);
+    IfcEllipse_type = new entity(IfcSchema::Type::IfcEllipse, IfcConic_type);
+    IfcEnergyConversionDeviceType_type = new entity(IfcSchema::Type::IfcEnergyConversionDeviceType, IfcDistributionFlowElementType_type);
+    IfcEquipmentElement_type = new entity(IfcSchema::Type::IfcEquipmentElement, IfcElement_type);
+    IfcEquipmentStandard_type = new entity(IfcSchema::Type::IfcEquipmentStandard, IfcControl_type);
+    IfcEvaporativeCoolerType_type = new entity(IfcSchema::Type::IfcEvaporativeCoolerType, IfcEnergyConversionDeviceType_type);
+    IfcEvaporatorType_type = new entity(IfcSchema::Type::IfcEvaporatorType, IfcEnergyConversionDeviceType_type);
+    IfcFacetedBrep_type = new entity(IfcSchema::Type::IfcFacetedBrep, IfcManifoldSolidBrep_type);
+    IfcFacetedBrepWithVoids_type = new entity(IfcSchema::Type::IfcFacetedBrepWithVoids, IfcManifoldSolidBrep_type);
+    IfcFastener_type = new entity(IfcSchema::Type::IfcFastener, IfcElementComponent_type);
+    IfcFastenerType_type = new entity(IfcSchema::Type::IfcFastenerType, IfcElementComponentType_type);
+    IfcFeatureElement_type = new entity(IfcSchema::Type::IfcFeatureElement, IfcElement_type);
+    IfcFeatureElementAddition_type = new entity(IfcSchema::Type::IfcFeatureElementAddition, IfcFeatureElement_type);
+    IfcFeatureElementSubtraction_type = new entity(IfcSchema::Type::IfcFeatureElementSubtraction, IfcFeatureElement_type);
+    IfcFlowControllerType_type = new entity(IfcSchema::Type::IfcFlowControllerType, IfcDistributionFlowElementType_type);
+    IfcFlowFittingType_type = new entity(IfcSchema::Type::IfcFlowFittingType, IfcDistributionFlowElementType_type);
+    IfcFlowMeterType_type = new entity(IfcSchema::Type::IfcFlowMeterType, IfcFlowControllerType_type);
+    IfcFlowMovingDeviceType_type = new entity(IfcSchema::Type::IfcFlowMovingDeviceType, IfcDistributionFlowElementType_type);
+    IfcFlowSegmentType_type = new entity(IfcSchema::Type::IfcFlowSegmentType, IfcDistributionFlowElementType_type);
+    IfcFlowStorageDeviceType_type = new entity(IfcSchema::Type::IfcFlowStorageDeviceType, IfcDistributionFlowElementType_type);
+    IfcFlowTerminalType_type = new entity(IfcSchema::Type::IfcFlowTerminalType, IfcDistributionFlowElementType_type);
+    IfcFlowTreatmentDeviceType_type = new entity(IfcSchema::Type::IfcFlowTreatmentDeviceType, IfcDistributionFlowElementType_type);
+    IfcFurnishingElement_type = new entity(IfcSchema::Type::IfcFurnishingElement, IfcElement_type);
+    IfcFurnitureStandard_type = new entity(IfcSchema::Type::IfcFurnitureStandard, IfcControl_type);
+    IfcGasTerminalType_type = new entity(IfcSchema::Type::IfcGasTerminalType, IfcFlowTerminalType_type);
+    IfcGrid_type = new entity(IfcSchema::Type::IfcGrid, IfcProduct_type);
+    IfcGroup_type = new entity(IfcSchema::Type::IfcGroup, IfcObject_type);
+    IfcHeatExchangerType_type = new entity(IfcSchema::Type::IfcHeatExchangerType, IfcEnergyConversionDeviceType_type);
+    IfcHumidifierType_type = new entity(IfcSchema::Type::IfcHumidifierType, IfcEnergyConversionDeviceType_type);
+    IfcInventory_type = new entity(IfcSchema::Type::IfcInventory, IfcGroup_type);
+    IfcJunctionBoxType_type = new entity(IfcSchema::Type::IfcJunctionBoxType, IfcFlowFittingType_type);
+    IfcLaborResource_type = new entity(IfcSchema::Type::IfcLaborResource, IfcConstructionResource_type);
+    IfcLampType_type = new entity(IfcSchema::Type::IfcLampType, IfcFlowTerminalType_type);
+    IfcLightFixtureType_type = new entity(IfcSchema::Type::IfcLightFixtureType, IfcFlowTerminalType_type);
+    IfcLinearDimension_type = new entity(IfcSchema::Type::IfcLinearDimension, IfcDimensionCurveDirectedCallout_type);
+    IfcMechanicalFastener_type = new entity(IfcSchema::Type::IfcMechanicalFastener, IfcFastener_type);
+    IfcMechanicalFastenerType_type = new entity(IfcSchema::Type::IfcMechanicalFastenerType, IfcFastenerType_type);
+    IfcMemberType_type = new entity(IfcSchema::Type::IfcMemberType, IfcBuildingElementType_type);
+    IfcMotorConnectionType_type = new entity(IfcSchema::Type::IfcMotorConnectionType, IfcEnergyConversionDeviceType_type);
+    IfcMove_type = new entity(IfcSchema::Type::IfcMove, IfcTask_type);
+    IfcOccupant_type = new entity(IfcSchema::Type::IfcOccupant, IfcActor_type);
+    IfcOpeningElement_type = new entity(IfcSchema::Type::IfcOpeningElement, IfcFeatureElementSubtraction_type);
+    IfcOrderAction_type = new entity(IfcSchema::Type::IfcOrderAction, IfcTask_type);
+    IfcOutletType_type = new entity(IfcSchema::Type::IfcOutletType, IfcFlowTerminalType_type);
+    IfcPerformanceHistory_type = new entity(IfcSchema::Type::IfcPerformanceHistory, IfcControl_type);
+    IfcPermit_type = new entity(IfcSchema::Type::IfcPermit, IfcControl_type);
+    IfcPipeFittingType_type = new entity(IfcSchema::Type::IfcPipeFittingType, IfcFlowFittingType_type);
+    IfcPipeSegmentType_type = new entity(IfcSchema::Type::IfcPipeSegmentType, IfcFlowSegmentType_type);
+    IfcPlateType_type = new entity(IfcSchema::Type::IfcPlateType, IfcBuildingElementType_type);
+    IfcPolyline_type = new entity(IfcSchema::Type::IfcPolyline, IfcBoundedCurve_type);
+    IfcPort_type = new entity(IfcSchema::Type::IfcPort, IfcProduct_type);
+    IfcProcedure_type = new entity(IfcSchema::Type::IfcProcedure, IfcProcess_type);
+    IfcProjectOrder_type = new entity(IfcSchema::Type::IfcProjectOrder, IfcControl_type);
+    IfcProjectOrderRecord_type = new entity(IfcSchema::Type::IfcProjectOrderRecord, IfcControl_type);
+    IfcProjectionElement_type = new entity(IfcSchema::Type::IfcProjectionElement, IfcFeatureElementAddition_type);
+    IfcProtectiveDeviceType_type = new entity(IfcSchema::Type::IfcProtectiveDeviceType, IfcFlowControllerType_type);
+    IfcPumpType_type = new entity(IfcSchema::Type::IfcPumpType, IfcFlowMovingDeviceType_type);
+    IfcRadiusDimension_type = new entity(IfcSchema::Type::IfcRadiusDimension, IfcDimensionCurveDirectedCallout_type);
+    IfcRailingType_type = new entity(IfcSchema::Type::IfcRailingType, IfcBuildingElementType_type);
+    IfcRampFlightType_type = new entity(IfcSchema::Type::IfcRampFlightType, IfcBuildingElementType_type);
+    IfcRelAggregates_type = new entity(IfcSchema::Type::IfcRelAggregates, IfcRelDecomposes_type);
+    IfcRelAssignsTasks_type = new entity(IfcSchema::Type::IfcRelAssignsTasks, IfcRelAssignsToControl_type);
+    IfcSanitaryTerminalType_type = new entity(IfcSchema::Type::IfcSanitaryTerminalType, IfcFlowTerminalType_type);
+    IfcScheduleTimeControl_type = new entity(IfcSchema::Type::IfcScheduleTimeControl, IfcControl_type);
+    IfcServiceLife_type = new entity(IfcSchema::Type::IfcServiceLife, IfcControl_type);
+    IfcSite_type = new entity(IfcSchema::Type::IfcSite, IfcSpatialStructureElement_type);
+    IfcSlabType_type = new entity(IfcSchema::Type::IfcSlabType, IfcBuildingElementType_type);
+    IfcSpace_type = new entity(IfcSchema::Type::IfcSpace, IfcSpatialStructureElement_type);
+    IfcSpaceHeaterType_type = new entity(IfcSchema::Type::IfcSpaceHeaterType, IfcEnergyConversionDeviceType_type);
+    IfcSpaceProgram_type = new entity(IfcSchema::Type::IfcSpaceProgram, IfcControl_type);
+    IfcSpaceType_type = new entity(IfcSchema::Type::IfcSpaceType, IfcSpatialStructureElementType_type);
+    IfcStackTerminalType_type = new entity(IfcSchema::Type::IfcStackTerminalType, IfcFlowTerminalType_type);
+    IfcStairFlightType_type = new entity(IfcSchema::Type::IfcStairFlightType, IfcBuildingElementType_type);
+    IfcStructuralAction_type = new entity(IfcSchema::Type::IfcStructuralAction, IfcStructuralActivity_type);
+    IfcStructuralConnection_type = new entity(IfcSchema::Type::IfcStructuralConnection, IfcStructuralItem_type);
+    IfcStructuralCurveConnection_type = new entity(IfcSchema::Type::IfcStructuralCurveConnection, IfcStructuralConnection_type);
+    IfcStructuralCurveMember_type = new entity(IfcSchema::Type::IfcStructuralCurveMember, IfcStructuralMember_type);
+    IfcStructuralCurveMemberVarying_type = new entity(IfcSchema::Type::IfcStructuralCurveMemberVarying, IfcStructuralCurveMember_type);
+    IfcStructuralLinearAction_type = new entity(IfcSchema::Type::IfcStructuralLinearAction, IfcStructuralAction_type);
+    IfcStructuralLinearActionVarying_type = new entity(IfcSchema::Type::IfcStructuralLinearActionVarying, IfcStructuralLinearAction_type);
+    IfcStructuralLoadGroup_type = new entity(IfcSchema::Type::IfcStructuralLoadGroup, IfcGroup_type);
+    IfcStructuralPlanarAction_type = new entity(IfcSchema::Type::IfcStructuralPlanarAction, IfcStructuralAction_type);
+    IfcStructuralPlanarActionVarying_type = new entity(IfcSchema::Type::IfcStructuralPlanarActionVarying, IfcStructuralPlanarAction_type);
+    IfcStructuralPointAction_type = new entity(IfcSchema::Type::IfcStructuralPointAction, IfcStructuralAction_type);
+    IfcStructuralPointConnection_type = new entity(IfcSchema::Type::IfcStructuralPointConnection, IfcStructuralConnection_type);
+    IfcStructuralPointReaction_type = new entity(IfcSchema::Type::IfcStructuralPointReaction, IfcStructuralReaction_type);
+    IfcStructuralResultGroup_type = new entity(IfcSchema::Type::IfcStructuralResultGroup, IfcGroup_type);
+    IfcStructuralSurfaceConnection_type = new entity(IfcSchema::Type::IfcStructuralSurfaceConnection, IfcStructuralConnection_type);
+    IfcSubContractResource_type = new entity(IfcSchema::Type::IfcSubContractResource, IfcConstructionResource_type);
+    IfcSwitchingDeviceType_type = new entity(IfcSchema::Type::IfcSwitchingDeviceType, IfcFlowControllerType_type);
+    IfcSystem_type = new entity(IfcSchema::Type::IfcSystem, IfcGroup_type);
+    IfcTankType_type = new entity(IfcSchema::Type::IfcTankType, IfcFlowStorageDeviceType_type);
+    IfcTimeSeriesSchedule_type = new entity(IfcSchema::Type::IfcTimeSeriesSchedule, IfcControl_type);
+    IfcTransformerType_type = new entity(IfcSchema::Type::IfcTransformerType, IfcEnergyConversionDeviceType_type);
+    IfcTransportElement_type = new entity(IfcSchema::Type::IfcTransportElement, IfcElement_type);
+    IfcTrimmedCurve_type = new entity(IfcSchema::Type::IfcTrimmedCurve, IfcBoundedCurve_type);
+    IfcTubeBundleType_type = new entity(IfcSchema::Type::IfcTubeBundleType, IfcEnergyConversionDeviceType_type);
+    IfcUnitaryEquipmentType_type = new entity(IfcSchema::Type::IfcUnitaryEquipmentType, IfcEnergyConversionDeviceType_type);
+    IfcValveType_type = new entity(IfcSchema::Type::IfcValveType, IfcFlowControllerType_type);
+    IfcVirtualElement_type = new entity(IfcSchema::Type::IfcVirtualElement, IfcElement_type);
+    IfcWallType_type = new entity(IfcSchema::Type::IfcWallType, IfcBuildingElementType_type);
+    IfcWasteTerminalType_type = new entity(IfcSchema::Type::IfcWasteTerminalType, IfcFlowTerminalType_type);
+    IfcWorkControl_type = new entity(IfcSchema::Type::IfcWorkControl, IfcControl_type);
+    IfcWorkPlan_type = new entity(IfcSchema::Type::IfcWorkPlan, IfcWorkControl_type);
+    IfcWorkSchedule_type = new entity(IfcSchema::Type::IfcWorkSchedule, IfcWorkControl_type);
+    IfcZone_type = new entity(IfcSchema::Type::IfcZone, IfcGroup_type);
+    Ifc2DCompositeCurve_type = new entity(IfcSchema::Type::Ifc2DCompositeCurve, IfcCompositeCurve_type);
+    IfcActionRequest_type = new entity(IfcSchema::Type::IfcActionRequest, IfcControl_type);
+    IfcAirTerminalBoxType_type = new entity(IfcSchema::Type::IfcAirTerminalBoxType, IfcFlowControllerType_type);
+    IfcAirTerminalType_type = new entity(IfcSchema::Type::IfcAirTerminalType, IfcFlowTerminalType_type);
+    IfcAirToAirHeatRecoveryType_type = new entity(IfcSchema::Type::IfcAirToAirHeatRecoveryType, IfcEnergyConversionDeviceType_type);
+    IfcAngularDimension_type = new entity(IfcSchema::Type::IfcAngularDimension, IfcDimensionCurveDirectedCallout_type);
+    IfcAsset_type = new entity(IfcSchema::Type::IfcAsset, IfcGroup_type);
+    IfcBSplineCurve_type = new entity(IfcSchema::Type::IfcBSplineCurve, IfcBoundedCurve_type);
+    IfcBeamType_type = new entity(IfcSchema::Type::IfcBeamType, IfcBuildingElementType_type);
+    IfcBezierCurve_type = new entity(IfcSchema::Type::IfcBezierCurve, IfcBSplineCurve_type);
+    IfcBoilerType_type = new entity(IfcSchema::Type::IfcBoilerType, IfcEnergyConversionDeviceType_type);
+    IfcBuildingElement_type = new entity(IfcSchema::Type::IfcBuildingElement, IfcElement_type);
+    IfcBuildingElementComponent_type = new entity(IfcSchema::Type::IfcBuildingElementComponent, IfcBuildingElement_type);
+    IfcBuildingElementPart_type = new entity(IfcSchema::Type::IfcBuildingElementPart, IfcBuildingElementComponent_type);
+    IfcBuildingElementProxy_type = new entity(IfcSchema::Type::IfcBuildingElementProxy, IfcBuildingElement_type);
+    IfcBuildingElementProxyType_type = new entity(IfcSchema::Type::IfcBuildingElementProxyType, IfcBuildingElementType_type);
+    IfcCableCarrierFittingType_type = new entity(IfcSchema::Type::IfcCableCarrierFittingType, IfcFlowFittingType_type);
+    IfcCableCarrierSegmentType_type = new entity(IfcSchema::Type::IfcCableCarrierSegmentType, IfcFlowSegmentType_type);
+    IfcCableSegmentType_type = new entity(IfcSchema::Type::IfcCableSegmentType, IfcFlowSegmentType_type);
+    IfcChillerType_type = new entity(IfcSchema::Type::IfcChillerType, IfcEnergyConversionDeviceType_type);
+    IfcCircle_type = new entity(IfcSchema::Type::IfcCircle, IfcConic_type);
+    IfcCoilType_type = new entity(IfcSchema::Type::IfcCoilType, IfcEnergyConversionDeviceType_type);
+    IfcColumn_type = new entity(IfcSchema::Type::IfcColumn, IfcBuildingElement_type);
+    IfcCompressorType_type = new entity(IfcSchema::Type::IfcCompressorType, IfcFlowMovingDeviceType_type);
+    IfcCondenserType_type = new entity(IfcSchema::Type::IfcCondenserType, IfcEnergyConversionDeviceType_type);
+    IfcCondition_type = new entity(IfcSchema::Type::IfcCondition, IfcGroup_type);
+    IfcConditionCriterion_type = new entity(IfcSchema::Type::IfcConditionCriterion, IfcControl_type);
+    IfcConstructionEquipmentResource_type = new entity(IfcSchema::Type::IfcConstructionEquipmentResource, IfcConstructionResource_type);
+    IfcConstructionMaterialResource_type = new entity(IfcSchema::Type::IfcConstructionMaterialResource, IfcConstructionResource_type);
+    IfcConstructionProductResource_type = new entity(IfcSchema::Type::IfcConstructionProductResource, IfcConstructionResource_type);
+    IfcCooledBeamType_type = new entity(IfcSchema::Type::IfcCooledBeamType, IfcEnergyConversionDeviceType_type);
+    IfcCoolingTowerType_type = new entity(IfcSchema::Type::IfcCoolingTowerType, IfcEnergyConversionDeviceType_type);
+    IfcCovering_type = new entity(IfcSchema::Type::IfcCovering, IfcBuildingElement_type);
+    IfcCurtainWall_type = new entity(IfcSchema::Type::IfcCurtainWall, IfcBuildingElement_type);
+    IfcDamperType_type = new entity(IfcSchema::Type::IfcDamperType, IfcFlowControllerType_type);
+    IfcDiameterDimension_type = new entity(IfcSchema::Type::IfcDiameterDimension, IfcDimensionCurveDirectedCallout_type);
+    IfcDiscreteAccessory_type = new entity(IfcSchema::Type::IfcDiscreteAccessory, IfcElementComponent_type);
+    IfcDiscreteAccessoryType_type = new entity(IfcSchema::Type::IfcDiscreteAccessoryType, IfcElementComponentType_type);
+    IfcDistributionChamberElementType_type = new entity(IfcSchema::Type::IfcDistributionChamberElementType, IfcDistributionFlowElementType_type);
+    IfcDistributionControlElementType_type = new entity(IfcSchema::Type::IfcDistributionControlElementType, IfcDistributionElementType_type);
+    IfcDistributionElement_type = new entity(IfcSchema::Type::IfcDistributionElement, IfcElement_type);
+    IfcDistributionFlowElement_type = new entity(IfcSchema::Type::IfcDistributionFlowElement, IfcDistributionElement_type);
+    IfcDistributionPort_type = new entity(IfcSchema::Type::IfcDistributionPort, IfcPort_type);
+    IfcDoor_type = new entity(IfcSchema::Type::IfcDoor, IfcBuildingElement_type);
+    IfcDuctFittingType_type = new entity(IfcSchema::Type::IfcDuctFittingType, IfcFlowFittingType_type);
+    IfcDuctSegmentType_type = new entity(IfcSchema::Type::IfcDuctSegmentType, IfcFlowSegmentType_type);
+    IfcDuctSilencerType_type = new entity(IfcSchema::Type::IfcDuctSilencerType, IfcFlowTreatmentDeviceType_type);
+    IfcEdgeFeature_type = new entity(IfcSchema::Type::IfcEdgeFeature, IfcFeatureElementSubtraction_type);
+    IfcElectricApplianceType_type = new entity(IfcSchema::Type::IfcElectricApplianceType, IfcFlowTerminalType_type);
+    IfcElectricFlowStorageDeviceType_type = new entity(IfcSchema::Type::IfcElectricFlowStorageDeviceType, IfcFlowStorageDeviceType_type);
+    IfcElectricGeneratorType_type = new entity(IfcSchema::Type::IfcElectricGeneratorType, IfcEnergyConversionDeviceType_type);
+    IfcElectricHeaterType_type = new entity(IfcSchema::Type::IfcElectricHeaterType, IfcFlowTerminalType_type);
+    IfcElectricMotorType_type = new entity(IfcSchema::Type::IfcElectricMotorType, IfcEnergyConversionDeviceType_type);
+    IfcElectricTimeControlType_type = new entity(IfcSchema::Type::IfcElectricTimeControlType, IfcFlowControllerType_type);
+    IfcElectricalCircuit_type = new entity(IfcSchema::Type::IfcElectricalCircuit, IfcSystem_type);
+    IfcElectricalElement_type = new entity(IfcSchema::Type::IfcElectricalElement, IfcElement_type);
+    IfcEnergyConversionDevice_type = new entity(IfcSchema::Type::IfcEnergyConversionDevice, IfcDistributionFlowElement_type);
+    IfcFanType_type = new entity(IfcSchema::Type::IfcFanType, IfcFlowMovingDeviceType_type);
+    IfcFilterType_type = new entity(IfcSchema::Type::IfcFilterType, IfcFlowTreatmentDeviceType_type);
+    IfcFireSuppressionTerminalType_type = new entity(IfcSchema::Type::IfcFireSuppressionTerminalType, IfcFlowTerminalType_type);
+    IfcFlowController_type = new entity(IfcSchema::Type::IfcFlowController, IfcDistributionFlowElement_type);
+    IfcFlowFitting_type = new entity(IfcSchema::Type::IfcFlowFitting, IfcDistributionFlowElement_type);
+    IfcFlowInstrumentType_type = new entity(IfcSchema::Type::IfcFlowInstrumentType, IfcDistributionControlElementType_type);
+    IfcFlowMovingDevice_type = new entity(IfcSchema::Type::IfcFlowMovingDevice, IfcDistributionFlowElement_type);
+    IfcFlowSegment_type = new entity(IfcSchema::Type::IfcFlowSegment, IfcDistributionFlowElement_type);
+    IfcFlowStorageDevice_type = new entity(IfcSchema::Type::IfcFlowStorageDevice, IfcDistributionFlowElement_type);
+    IfcFlowTerminal_type = new entity(IfcSchema::Type::IfcFlowTerminal, IfcDistributionFlowElement_type);
+    IfcFlowTreatmentDevice_type = new entity(IfcSchema::Type::IfcFlowTreatmentDevice, IfcDistributionFlowElement_type);
+    IfcFooting_type = new entity(IfcSchema::Type::IfcFooting, IfcBuildingElement_type);
+    IfcMember_type = new entity(IfcSchema::Type::IfcMember, IfcBuildingElement_type);
+    IfcPile_type = new entity(IfcSchema::Type::IfcPile, IfcBuildingElement_type);
+    IfcPlate_type = new entity(IfcSchema::Type::IfcPlate, IfcBuildingElement_type);
+    IfcRailing_type = new entity(IfcSchema::Type::IfcRailing, IfcBuildingElement_type);
+    IfcRamp_type = new entity(IfcSchema::Type::IfcRamp, IfcBuildingElement_type);
+    IfcRampFlight_type = new entity(IfcSchema::Type::IfcRampFlight, IfcBuildingElement_type);
+    IfcRationalBezierCurve_type = new entity(IfcSchema::Type::IfcRationalBezierCurve, IfcBezierCurve_type);
+    IfcReinforcingElement_type = new entity(IfcSchema::Type::IfcReinforcingElement, IfcBuildingElementComponent_type);
+    IfcReinforcingMesh_type = new entity(IfcSchema::Type::IfcReinforcingMesh, IfcReinforcingElement_type);
+    IfcRoof_type = new entity(IfcSchema::Type::IfcRoof, IfcBuildingElement_type);
+    IfcRoundedEdgeFeature_type = new entity(IfcSchema::Type::IfcRoundedEdgeFeature, IfcEdgeFeature_type);
+    IfcSensorType_type = new entity(IfcSchema::Type::IfcSensorType, IfcDistributionControlElementType_type);
+    IfcSlab_type = new entity(IfcSchema::Type::IfcSlab, IfcBuildingElement_type);
+    IfcStair_type = new entity(IfcSchema::Type::IfcStair, IfcBuildingElement_type);
+    IfcStairFlight_type = new entity(IfcSchema::Type::IfcStairFlight, IfcBuildingElement_type);
+    IfcStructuralAnalysisModel_type = new entity(IfcSchema::Type::IfcStructuralAnalysisModel, IfcSystem_type);
+    IfcTendon_type = new entity(IfcSchema::Type::IfcTendon, IfcReinforcingElement_type);
+    IfcTendonAnchor_type = new entity(IfcSchema::Type::IfcTendonAnchor, IfcReinforcingElement_type);
+    IfcVibrationIsolatorType_type = new entity(IfcSchema::Type::IfcVibrationIsolatorType, IfcDiscreteAccessoryType_type);
+    IfcWall_type = new entity(IfcSchema::Type::IfcWall, IfcBuildingElement_type);
+    IfcWallStandardCase_type = new entity(IfcSchema::Type::IfcWallStandardCase, IfcWall_type);
+    IfcWindow_type = new entity(IfcSchema::Type::IfcWindow, IfcBuildingElement_type);
+    IfcActuatorType_type = new entity(IfcSchema::Type::IfcActuatorType, IfcDistributionControlElementType_type);
+    IfcAlarmType_type = new entity(IfcSchema::Type::IfcAlarmType, IfcDistributionControlElementType_type);
+    IfcBeam_type = new entity(IfcSchema::Type::IfcBeam, IfcBuildingElement_type);
+    IfcChamferEdgeFeature_type = new entity(IfcSchema::Type::IfcChamferEdgeFeature, IfcEdgeFeature_type);
+    IfcControllerType_type = new entity(IfcSchema::Type::IfcControllerType, IfcDistributionControlElementType_type);
+    IfcDistributionChamberElement_type = new entity(IfcSchema::Type::IfcDistributionChamberElement, IfcDistributionFlowElement_type);
+    IfcDistributionControlElement_type = new entity(IfcSchema::Type::IfcDistributionControlElement, IfcDistributionElement_type);
+    IfcElectricDistributionPoint_type = new entity(IfcSchema::Type::IfcElectricDistributionPoint, IfcFlowController_type);
+    IfcReinforcingBar_type = new entity(IfcSchema::Type::IfcReinforcingBar, IfcReinforcingElement_type);
     {
         std::vector<const declaration*> items; items.reserve(3);
         items.push_back(IfcOrganization_type);
         items.push_back(IfcPerson_type);
         items.push_back(IfcPersonAndOrganization_type);
-        IfcActorSelect_type = new select_type("IfcActorSelect", items);
+        IfcActorSelect_type = new select_type(IfcSchema::Type::IfcActorSelect, items);
     }
-    declaration* IfcAppliedValueSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(3);
         items.push_back(IfcMeasureWithUnit_type);
         items.push_back(IfcMonetaryMeasure_type);
         items.push_back(IfcRatioMeasure_type);
-        IfcAppliedValueSelect_type = new select_type("IfcAppliedValueSelect", items);
+        IfcAppliedValueSelect_type = new select_type(IfcSchema::Type::IfcAppliedValueSelect, items);
     }
-    declaration* IfcAxis2Placement_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcAxis2Placement2D_type);
         items.push_back(IfcAxis2Placement3D_type);
-        IfcAxis2Placement_type = new select_type("IfcAxis2Placement", items);
+        IfcAxis2Placement_type = new select_type(IfcSchema::Type::IfcAxis2Placement, items);
     }
-    declaration* IfcBooleanOperand_type;
     {
         std::vector<const declaration*> items; items.reserve(4);
         items.push_back(IfcBooleanResult_type);
         items.push_back(IfcCsgPrimitive3D_type);
         items.push_back(IfcHalfSpaceSolid_type);
         items.push_back(IfcSolidModel_type);
-        IfcBooleanOperand_type = new select_type("IfcBooleanOperand", items);
+        IfcBooleanOperand_type = new select_type(IfcSchema::Type::IfcBooleanOperand, items);
     }
-    declaration* IfcCharacterStyleSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(1);
         items.push_back(IfcTextStyleForDefinedFont_type);
-        IfcCharacterStyleSelect_type = new select_type("IfcCharacterStyleSelect", items);
+        IfcCharacterStyleSelect_type = new select_type(IfcSchema::Type::IfcCharacterStyleSelect, items);
     }
-    declaration* IfcClassificationNotationSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcClassificationNotation_type);
         items.push_back(IfcClassificationReference_type);
-        IfcClassificationNotationSelect_type = new select_type("IfcClassificationNotationSelect", items);
+        IfcClassificationNotationSelect_type = new select_type(IfcSchema::Type::IfcClassificationNotationSelect, items);
     }
-    declaration* IfcColour_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcColourSpecification_type);
         items.push_back(IfcPreDefinedColour_type);
-        IfcColour_type = new select_type("IfcColour", items);
+        IfcColour_type = new select_type(IfcSchema::Type::IfcColour, items);
     }
-    declaration* IfcColourOrFactor_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcColourRgb_type);
         items.push_back(IfcNormalisedRatioMeasure_type);
-        IfcColourOrFactor_type = new select_type("IfcColourOrFactor", items);
+        IfcColourOrFactor_type = new select_type(IfcSchema::Type::IfcColourOrFactor, items);
     }
-    declaration* IfcConditionCriterionSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcLabel_type);
         items.push_back(IfcMeasureWithUnit_type);
-        IfcConditionCriterionSelect_type = new select_type("IfcConditionCriterionSelect", items);
+        IfcConditionCriterionSelect_type = new select_type(IfcSchema::Type::IfcConditionCriterionSelect, items);
     }
-    declaration* IfcCsgSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcBooleanResult_type);
         items.push_back(IfcCsgPrimitive3D_type);
-        IfcCsgSelect_type = new select_type("IfcCsgSelect", items);
+        IfcCsgSelect_type = new select_type(IfcSchema::Type::IfcCsgSelect, items);
     }
-    declaration* IfcCurveOrEdgeCurve_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcBoundedCurve_type);
         items.push_back(IfcEdgeCurve_type);
-        IfcCurveOrEdgeCurve_type = new select_type("IfcCurveOrEdgeCurve", items);
+        IfcCurveOrEdgeCurve_type = new select_type(IfcSchema::Type::IfcCurveOrEdgeCurve, items);
     }
-    declaration* IfcCurveStyleFontSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcCurveStyleFont_type);
         items.push_back(IfcPreDefinedCurveFont_type);
-        IfcCurveStyleFontSelect_type = new select_type("IfcCurveStyleFontSelect", items);
+        IfcCurveStyleFontSelect_type = new select_type(IfcSchema::Type::IfcCurveStyleFontSelect, items);
     }
-    declaration* IfcDateTimeSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(3);
         items.push_back(IfcCalendarDate_type);
         items.push_back(IfcDateAndTime_type);
         items.push_back(IfcLocalTime_type);
-        IfcDateTimeSelect_type = new select_type("IfcDateTimeSelect", items);
+        IfcDateTimeSelect_type = new select_type(IfcSchema::Type::IfcDateTimeSelect, items);
     }
-    declaration* IfcDefinedSymbolSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcExternallyDefinedSymbol_type);
         items.push_back(IfcPreDefinedSymbol_type);
-        IfcDefinedSymbolSelect_type = new select_type("IfcDefinedSymbolSelect", items);
+        IfcDefinedSymbolSelect_type = new select_type(IfcSchema::Type::IfcDefinedSymbolSelect, items);
     }
-    declaration* IfcDerivedMeasureValue_type;
     {
         std::vector<const declaration*> items; items.reserve(68);
         items.push_back(IfcAbsorbedDoseMeasure_type);
@@ -3102,75 +3904,65 @@ void populate() {
         items.push_back(IfcVolumetricFlowRateMeasure_type);
         items.push_back(IfcWarpingConstantMeasure_type);
         items.push_back(IfcWarpingMomentMeasure_type);
-        IfcDerivedMeasureValue_type = new select_type("IfcDerivedMeasureValue", items);
+        IfcDerivedMeasureValue_type = new select_type(IfcSchema::Type::IfcDerivedMeasureValue, items);
     }
-    declaration* IfcDocumentSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcDocumentInformation_type);
         items.push_back(IfcDocumentReference_type);
-        IfcDocumentSelect_type = new select_type("IfcDocumentSelect", items);
+        IfcDocumentSelect_type = new select_type(IfcSchema::Type::IfcDocumentSelect, items);
     }
-    declaration* IfcDraughtingCalloutElement_type;
     {
         std::vector<const declaration*> items; items.reserve(3);
         items.push_back(IfcAnnotationCurveOccurrence_type);
         items.push_back(IfcAnnotationSymbolOccurrence_type);
         items.push_back(IfcAnnotationTextOccurrence_type);
-        IfcDraughtingCalloutElement_type = new select_type("IfcDraughtingCalloutElement", items);
+        IfcDraughtingCalloutElement_type = new select_type(IfcSchema::Type::IfcDraughtingCalloutElement, items);
     }
-    declaration* IfcFillAreaStyleTileShapeSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(1);
         items.push_back(IfcFillAreaStyleTileSymbolWithStyle_type);
-        IfcFillAreaStyleTileShapeSelect_type = new select_type("IfcFillAreaStyleTileShapeSelect", items);
+        IfcFillAreaStyleTileShapeSelect_type = new select_type(IfcSchema::Type::IfcFillAreaStyleTileShapeSelect, items);
     }
-    declaration* IfcFillStyleSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(4);
         items.push_back(IfcColour_type);
         items.push_back(IfcExternallyDefinedHatchStyle_type);
         items.push_back(IfcFillAreaStyleHatching_type);
         items.push_back(IfcFillAreaStyleTiles_type);
-        IfcFillStyleSelect_type = new select_type("IfcFillStyleSelect", items);
+        IfcFillStyleSelect_type = new select_type(IfcSchema::Type::IfcFillStyleSelect, items);
     }
-    declaration* IfcGeometricSetSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(3);
         items.push_back(IfcCurve_type);
         items.push_back(IfcPoint_type);
         items.push_back(IfcSurface_type);
-        IfcGeometricSetSelect_type = new select_type("IfcGeometricSetSelect", items);
+        IfcGeometricSetSelect_type = new select_type(IfcSchema::Type::IfcGeometricSetSelect, items);
     }
-    declaration* IfcHatchLineDistanceSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcOneDirectionRepeatFactor_type);
         items.push_back(IfcPositiveLengthMeasure_type);
-        IfcHatchLineDistanceSelect_type = new select_type("IfcHatchLineDistanceSelect", items);
+        IfcHatchLineDistanceSelect_type = new select_type(IfcSchema::Type::IfcHatchLineDistanceSelect, items);
     }
-    declaration* IfcLayeredItem_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcRepresentation_type);
         items.push_back(IfcRepresentationItem_type);
-        IfcLayeredItem_type = new select_type("IfcLayeredItem", items);
+        IfcLayeredItem_type = new select_type(IfcSchema::Type::IfcLayeredItem, items);
     }
-    declaration* IfcLibrarySelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcLibraryInformation_type);
         items.push_back(IfcLibraryReference_type);
-        IfcLibrarySelect_type = new select_type("IfcLibrarySelect", items);
+        IfcLibrarySelect_type = new select_type(IfcSchema::Type::IfcLibrarySelect, items);
     }
-    declaration* IfcLightDistributionDataSourceSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcExternalReference_type);
         items.push_back(IfcLightIntensityDistribution_type);
-        IfcLightDistributionDataSourceSelect_type = new select_type("IfcLightDistributionDataSourceSelect", items);
+        IfcLightDistributionDataSourceSelect_type = new select_type(IfcSchema::Type::IfcLightDistributionDataSourceSelect, items);
     }
-    declaration* IfcMaterialSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(5);
         items.push_back(IfcMaterial_type);
@@ -3178,9 +3970,8 @@ void populate() {
         items.push_back(IfcMaterialLayerSet_type);
         items.push_back(IfcMaterialLayerSetUsage_type);
         items.push_back(IfcMaterialList_type);
-        IfcMaterialSelect_type = new select_type("IfcMaterialSelect", items);
+        IfcMaterialSelect_type = new select_type(IfcSchema::Type::IfcMaterialSelect, items);
     }
-    declaration* IfcMeasureValue_type;
     {
         std::vector<const declaration*> items; items.reserve(22);
         items.push_back(IfcAmountOfSubstanceMeasure_type);
@@ -3205,9 +3996,8 @@ void populate() {
         items.push_back(IfcThermodynamicTemperatureMeasure_type);
         items.push_back(IfcTimeMeasure_type);
         items.push_back(IfcVolumeMeasure_type);
-        IfcMeasureValue_type = new select_type("IfcMeasureValue", items);
+        IfcMeasureValue_type = new select_type(IfcSchema::Type::IfcMeasureValue, items);
     }
-    declaration* IfcMetricValueSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(6);
         items.push_back(IfcCostValue_type);
@@ -3216,9 +4006,8 @@ void populate() {
         items.push_back(IfcTable_type);
         items.push_back(IfcText_type);
         items.push_back(IfcTimeSeries_type);
-        IfcMetricValueSelect_type = new select_type("IfcMetricValueSelect", items);
+        IfcMetricValueSelect_type = new select_type(IfcSchema::Type::IfcMetricValueSelect, items);
     }
-    declaration* IfcObjectReferenceSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(13);
         items.push_back(IfcAddress_type);
@@ -3234,23 +4023,20 @@ void populate() {
         items.push_back(IfcPerson_type);
         items.push_back(IfcPersonAndOrganization_type);
         items.push_back(IfcTimeSeries_type);
-        IfcObjectReferenceSelect_type = new select_type("IfcObjectReferenceSelect", items);
+        IfcObjectReferenceSelect_type = new select_type(IfcSchema::Type::IfcObjectReferenceSelect, items);
     }
-    declaration* IfcOrientationSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcDirection_type);
         items.push_back(IfcPlaneAngleMeasure_type);
-        IfcOrientationSelect_type = new select_type("IfcOrientationSelect", items);
+        IfcOrientationSelect_type = new select_type(IfcSchema::Type::IfcOrientationSelect, items);
     }
-    declaration* IfcPointOrVertexPoint_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcPoint_type);
         items.push_back(IfcVertexPoint_type);
-        IfcPointOrVertexPoint_type = new select_type("IfcPointOrVertexPoint", items);
+        IfcPointOrVertexPoint_type = new select_type(IfcSchema::Type::IfcPointOrVertexPoint, items);
     }
-    declaration* IfcPresentationStyleSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(6);
         items.push_back(IfcCurveStyle_type);
@@ -3259,16 +4045,14 @@ void populate() {
         items.push_back(IfcSurfaceStyle_type);
         items.push_back(IfcSymbolStyle_type);
         items.push_back(IfcTextStyle_type);
-        IfcPresentationStyleSelect_type = new select_type("IfcPresentationStyleSelect", items);
+        IfcPresentationStyleSelect_type = new select_type(IfcSchema::Type::IfcPresentationStyleSelect, items);
     }
-    declaration* IfcShell_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcClosedShell_type);
         items.push_back(IfcOpenShell_type);
-        IfcShell_type = new select_type("IfcShell", items);
+        IfcShell_type = new select_type(IfcSchema::Type::IfcShell, items);
     }
-    declaration* IfcSimpleValue_type;
     {
         std::vector<const declaration*> items; items.reserve(7);
         items.push_back(IfcBoolean_type);
@@ -3278,9 +4062,8 @@ void populate() {
         items.push_back(IfcLogical_type);
         items.push_back(IfcReal_type);
         items.push_back(IfcText_type);
-        IfcSimpleValue_type = new select_type("IfcSimpleValue", items);
+        IfcSimpleValue_type = new select_type(IfcSchema::Type::IfcSimpleValue, items);
     }
-    declaration* IfcSizeSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(6);
         items.push_back(IfcDescriptiveMeasure_type);
@@ -3289,31 +4072,27 @@ void populate() {
         items.push_back(IfcPositiveLengthMeasure_type);
         items.push_back(IfcPositiveRatioMeasure_type);
         items.push_back(IfcRatioMeasure_type);
-        IfcSizeSelect_type = new select_type("IfcSizeSelect", items);
+        IfcSizeSelect_type = new select_type(IfcSchema::Type::IfcSizeSelect, items);
     }
-    declaration* IfcSpecularHighlightSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcSpecularExponent_type);
         items.push_back(IfcSpecularRoughness_type);
-        IfcSpecularHighlightSelect_type = new select_type("IfcSpecularHighlightSelect", items);
+        IfcSpecularHighlightSelect_type = new select_type(IfcSchema::Type::IfcSpecularHighlightSelect, items);
     }
-    declaration* IfcStructuralActivityAssignmentSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcElement_type);
         items.push_back(IfcStructuralItem_type);
-        IfcStructuralActivityAssignmentSelect_type = new select_type("IfcStructuralActivityAssignmentSelect", items);
+        IfcStructuralActivityAssignmentSelect_type = new select_type(IfcSchema::Type::IfcStructuralActivityAssignmentSelect, items);
     }
-    declaration* IfcSurfaceOrFaceSurface_type;
     {
         std::vector<const declaration*> items; items.reserve(3);
         items.push_back(IfcFaceBasedSurfaceModel_type);
         items.push_back(IfcFaceSurface_type);
         items.push_back(IfcSurface_type);
-        IfcSurfaceOrFaceSurface_type = new select_type("IfcSurfaceOrFaceSurface", items);
+        IfcSurfaceOrFaceSurface_type = new select_type(IfcSchema::Type::IfcSurfaceOrFaceSurface, items);
     }
-    declaration* IfcSurfaceStyleElementSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(5);
         items.push_back(IfcExternallyDefinedSurfaceStyle_type);
@@ -3321,64 +4100,56 @@ void populate() {
         items.push_back(IfcSurfaceStyleRefraction_type);
         items.push_back(IfcSurfaceStyleShading_type);
         items.push_back(IfcSurfaceStyleWithTextures_type);
-        IfcSurfaceStyleElementSelect_type = new select_type("IfcSurfaceStyleElementSelect", items);
+        IfcSurfaceStyleElementSelect_type = new select_type(IfcSchema::Type::IfcSurfaceStyleElementSelect, items);
     }
-    declaration* IfcSymbolStyleSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(1);
         items.push_back(IfcColour_type);
-        IfcSymbolStyleSelect_type = new select_type("IfcSymbolStyleSelect", items);
+        IfcSymbolStyleSelect_type = new select_type(IfcSchema::Type::IfcSymbolStyleSelect, items);
     }
-    declaration* IfcTextFontSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcExternallyDefinedTextFont_type);
         items.push_back(IfcPreDefinedTextFont_type);
-        IfcTextFontSelect_type = new select_type("IfcTextFontSelect", items);
+        IfcTextFontSelect_type = new select_type(IfcSchema::Type::IfcTextFontSelect, items);
     }
-    declaration* IfcTextStyleSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcTextStyleTextModel_type);
         items.push_back(IfcTextStyleWithBoxCharacteristics_type);
-        IfcTextStyleSelect_type = new select_type("IfcTextStyleSelect", items);
+        IfcTextStyleSelect_type = new select_type(IfcSchema::Type::IfcTextStyleSelect, items);
     }
-    declaration* IfcTrimmingSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcCartesianPoint_type);
         items.push_back(IfcParameterValue_type);
-        IfcTrimmingSelect_type = new select_type("IfcTrimmingSelect", items);
+        IfcTrimmingSelect_type = new select_type(IfcSchema::Type::IfcTrimmingSelect, items);
     }
-    declaration* IfcUnit_type;
     {
         std::vector<const declaration*> items; items.reserve(3);
         items.push_back(IfcDerivedUnit_type);
         items.push_back(IfcMonetaryUnit_type);
         items.push_back(IfcNamedUnit_type);
-        IfcUnit_type = new select_type("IfcUnit", items);
+        IfcUnit_type = new select_type(IfcSchema::Type::IfcUnit, items);
     }
-    declaration* IfcValue_type;
     {
         std::vector<const declaration*> items; items.reserve(3);
         items.push_back(IfcDerivedMeasureValue_type);
         items.push_back(IfcMeasureValue_type);
         items.push_back(IfcSimpleValue_type);
-        IfcValue_type = new select_type("IfcValue", items);
+        IfcValue_type = new select_type(IfcSchema::Type::IfcValue, items);
     }
-    declaration* IfcVectorOrDirection_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcDirection_type);
         items.push_back(IfcVector_type);
-        IfcVectorOrDirection_type = new select_type("IfcVectorOrDirection", items);
+        IfcVectorOrDirection_type = new select_type(IfcSchema::Type::IfcVectorOrDirection, items);
     }
-    declaration* IfcCurveFontOrScaledCurveFontSelect_type;
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcCurveStyleFontAndScaling_type);
         items.push_back(IfcCurveStyleFontSelect_type);
-        IfcCurveFontOrScaledCurveFontSelect_type = new select_type("IfcCurveFontOrScaledCurveFontSelect", items);
+        IfcCurveFontOrScaledCurveFontSelect_type = new select_type(IfcSchema::Type::IfcCurveFontOrScaledCurveFontSelect, items);
     }
     {
         std::vector<const entity::attribute*> attributes; attributes.reserve(0);
@@ -8618,6 +9389,995 @@ void populate() {
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IfcZone_type->set_attributes(attributes, derived);
     }
+
+    std::vector<const declaration*> declarations; declarations.reserve(980);
+    declarations.push_back(IfcAbsorbedDoseMeasure_type);
+    declarations.push_back(IfcAccelerationMeasure_type);
+    declarations.push_back(IfcAmountOfSubstanceMeasure_type);
+    declarations.push_back(IfcAngularVelocityMeasure_type);
+    declarations.push_back(IfcAreaMeasure_type);
+    declarations.push_back(IfcBoolean_type);
+    declarations.push_back(IfcComplexNumber_type);
+    declarations.push_back(IfcCompoundPlaneAngleMeasure_type);
+    declarations.push_back(IfcContextDependentMeasure_type);
+    declarations.push_back(IfcCountMeasure_type);
+    declarations.push_back(IfcCurvatureMeasure_type);
+    declarations.push_back(IfcDayInMonthNumber_type);
+    declarations.push_back(IfcDaylightSavingHour_type);
+    declarations.push_back(IfcDescriptiveMeasure_type);
+    declarations.push_back(IfcDimensionCount_type);
+    declarations.push_back(IfcDoseEquivalentMeasure_type);
+    declarations.push_back(IfcDynamicViscosityMeasure_type);
+    declarations.push_back(IfcElectricCapacitanceMeasure_type);
+    declarations.push_back(IfcElectricChargeMeasure_type);
+    declarations.push_back(IfcElectricConductanceMeasure_type);
+    declarations.push_back(IfcElectricCurrentMeasure_type);
+    declarations.push_back(IfcElectricResistanceMeasure_type);
+    declarations.push_back(IfcElectricVoltageMeasure_type);
+    declarations.push_back(IfcEnergyMeasure_type);
+    declarations.push_back(IfcFontStyle_type);
+    declarations.push_back(IfcFontVariant_type);
+    declarations.push_back(IfcFontWeight_type);
+    declarations.push_back(IfcForceMeasure_type);
+    declarations.push_back(IfcFrequencyMeasure_type);
+    declarations.push_back(IfcGloballyUniqueId_type);
+    declarations.push_back(IfcHeatFluxDensityMeasure_type);
+    declarations.push_back(IfcHeatingValueMeasure_type);
+    declarations.push_back(IfcHourInDay_type);
+    declarations.push_back(IfcIdentifier_type);
+    declarations.push_back(IfcIlluminanceMeasure_type);
+    declarations.push_back(IfcInductanceMeasure_type);
+    declarations.push_back(IfcInteger_type);
+    declarations.push_back(IfcIntegerCountRateMeasure_type);
+    declarations.push_back(IfcIonConcentrationMeasure_type);
+    declarations.push_back(IfcIsothermalMoistureCapacityMeasure_type);
+    declarations.push_back(IfcKinematicViscosityMeasure_type);
+    declarations.push_back(IfcLabel_type);
+    declarations.push_back(IfcLengthMeasure_type);
+    declarations.push_back(IfcLinearForceMeasure_type);
+    declarations.push_back(IfcLinearMomentMeasure_type);
+    declarations.push_back(IfcLinearStiffnessMeasure_type);
+    declarations.push_back(IfcLinearVelocityMeasure_type);
+    declarations.push_back(IfcLogical_type);
+    declarations.push_back(IfcLuminousFluxMeasure_type);
+    declarations.push_back(IfcLuminousIntensityDistributionMeasure_type);
+    declarations.push_back(IfcLuminousIntensityMeasure_type);
+    declarations.push_back(IfcMagneticFluxDensityMeasure_type);
+    declarations.push_back(IfcMagneticFluxMeasure_type);
+    declarations.push_back(IfcMassDensityMeasure_type);
+    declarations.push_back(IfcMassFlowRateMeasure_type);
+    declarations.push_back(IfcMassMeasure_type);
+    declarations.push_back(IfcMassPerLengthMeasure_type);
+    declarations.push_back(IfcMinuteInHour_type);
+    declarations.push_back(IfcModulusOfElasticityMeasure_type);
+    declarations.push_back(IfcModulusOfLinearSubgradeReactionMeasure_type);
+    declarations.push_back(IfcModulusOfRotationalSubgradeReactionMeasure_type);
+    declarations.push_back(IfcModulusOfSubgradeReactionMeasure_type);
+    declarations.push_back(IfcMoistureDiffusivityMeasure_type);
+    declarations.push_back(IfcMolecularWeightMeasure_type);
+    declarations.push_back(IfcMomentOfInertiaMeasure_type);
+    declarations.push_back(IfcMonetaryMeasure_type);
+    declarations.push_back(IfcMonthInYearNumber_type);
+    declarations.push_back(IfcNumericMeasure_type);
+    declarations.push_back(IfcPHMeasure_type);
+    declarations.push_back(IfcParameterValue_type);
+    declarations.push_back(IfcPlanarForceMeasure_type);
+    declarations.push_back(IfcPlaneAngleMeasure_type);
+    declarations.push_back(IfcPositiveLengthMeasure_type);
+    declarations.push_back(IfcPositivePlaneAngleMeasure_type);
+    declarations.push_back(IfcPowerMeasure_type);
+    declarations.push_back(IfcPresentableText_type);
+    declarations.push_back(IfcPressureMeasure_type);
+    declarations.push_back(IfcRadioActivityMeasure_type);
+    declarations.push_back(IfcRatioMeasure_type);
+    declarations.push_back(IfcReal_type);
+    declarations.push_back(IfcRotationalFrequencyMeasure_type);
+    declarations.push_back(IfcRotationalMassMeasure_type);
+    declarations.push_back(IfcRotationalStiffnessMeasure_type);
+    declarations.push_back(IfcSecondInMinute_type);
+    declarations.push_back(IfcSectionModulusMeasure_type);
+    declarations.push_back(IfcSectionalAreaIntegralMeasure_type);
+    declarations.push_back(IfcShearModulusMeasure_type);
+    declarations.push_back(IfcSolidAngleMeasure_type);
+    declarations.push_back(IfcSoundPowerMeasure_type);
+    declarations.push_back(IfcSoundPressureMeasure_type);
+    declarations.push_back(IfcSpecificHeatCapacityMeasure_type);
+    declarations.push_back(IfcSpecularExponent_type);
+    declarations.push_back(IfcSpecularRoughness_type);
+    declarations.push_back(IfcTemperatureGradientMeasure_type);
+    declarations.push_back(IfcText_type);
+    declarations.push_back(IfcTextAlignment_type);
+    declarations.push_back(IfcTextDecoration_type);
+    declarations.push_back(IfcTextFontName_type);
+    declarations.push_back(IfcTextTransformation_type);
+    declarations.push_back(IfcThermalAdmittanceMeasure_type);
+    declarations.push_back(IfcThermalConductivityMeasure_type);
+    declarations.push_back(IfcThermalExpansionCoefficientMeasure_type);
+    declarations.push_back(IfcThermalResistanceMeasure_type);
+    declarations.push_back(IfcThermalTransmittanceMeasure_type);
+    declarations.push_back(IfcThermodynamicTemperatureMeasure_type);
+    declarations.push_back(IfcTimeMeasure_type);
+    declarations.push_back(IfcTimeStamp_type);
+    declarations.push_back(IfcTorqueMeasure_type);
+    declarations.push_back(IfcVaporPermeabilityMeasure_type);
+    declarations.push_back(IfcVolumeMeasure_type);
+    declarations.push_back(IfcVolumetricFlowRateMeasure_type);
+    declarations.push_back(IfcWarpingConstantMeasure_type);
+    declarations.push_back(IfcWarpingMomentMeasure_type);
+    declarations.push_back(IfcYearNumber_type);
+    declarations.push_back(IfcBoxAlignment_type);
+    declarations.push_back(IfcNormalisedRatioMeasure_type);
+    declarations.push_back(IfcPositiveRatioMeasure_type);
+    declarations.push_back(IfcActionSourceTypeEnum_type);
+    declarations.push_back(IfcActionTypeEnum_type);
+    declarations.push_back(IfcActuatorTypeEnum_type);
+    declarations.push_back(IfcAddressTypeEnum_type);
+    declarations.push_back(IfcAheadOrBehind_type);
+    declarations.push_back(IfcAirTerminalBoxTypeEnum_type);
+    declarations.push_back(IfcAirTerminalTypeEnum_type);
+    declarations.push_back(IfcAirToAirHeatRecoveryTypeEnum_type);
+    declarations.push_back(IfcAlarmTypeEnum_type);
+    declarations.push_back(IfcAnalysisModelTypeEnum_type);
+    declarations.push_back(IfcAnalysisTheoryTypeEnum_type);
+    declarations.push_back(IfcArithmeticOperatorEnum_type);
+    declarations.push_back(IfcAssemblyPlaceEnum_type);
+    declarations.push_back(IfcBSplineCurveForm_type);
+    declarations.push_back(IfcBeamTypeEnum_type);
+    declarations.push_back(IfcBenchmarkEnum_type);
+    declarations.push_back(IfcBoilerTypeEnum_type);
+    declarations.push_back(IfcBooleanOperator_type);
+    declarations.push_back(IfcBuildingElementProxyTypeEnum_type);
+    declarations.push_back(IfcCableCarrierFittingTypeEnum_type);
+    declarations.push_back(IfcCableCarrierSegmentTypeEnum_type);
+    declarations.push_back(IfcCableSegmentTypeEnum_type);
+    declarations.push_back(IfcChangeActionEnum_type);
+    declarations.push_back(IfcChillerTypeEnum_type);
+    declarations.push_back(IfcCoilTypeEnum_type);
+    declarations.push_back(IfcColumnTypeEnum_type);
+    declarations.push_back(IfcCompressorTypeEnum_type);
+    declarations.push_back(IfcCondenserTypeEnum_type);
+    declarations.push_back(IfcConnectionTypeEnum_type);
+    declarations.push_back(IfcConstraintEnum_type);
+    declarations.push_back(IfcControllerTypeEnum_type);
+    declarations.push_back(IfcCooledBeamTypeEnum_type);
+    declarations.push_back(IfcCoolingTowerTypeEnum_type);
+    declarations.push_back(IfcCostScheduleTypeEnum_type);
+    declarations.push_back(IfcCoveringTypeEnum_type);
+    declarations.push_back(IfcCurrencyEnum_type);
+    declarations.push_back(IfcCurtainWallTypeEnum_type);
+    declarations.push_back(IfcDamperTypeEnum_type);
+    declarations.push_back(IfcDataOriginEnum_type);
+    declarations.push_back(IfcDerivedUnitEnum_type);
+    declarations.push_back(IfcDimensionExtentUsage_type);
+    declarations.push_back(IfcDirectionSenseEnum_type);
+    declarations.push_back(IfcDistributionChamberElementTypeEnum_type);
+    declarations.push_back(IfcDocumentConfidentialityEnum_type);
+    declarations.push_back(IfcDocumentStatusEnum_type);
+    declarations.push_back(IfcDoorPanelOperationEnum_type);
+    declarations.push_back(IfcDoorPanelPositionEnum_type);
+    declarations.push_back(IfcDoorStyleConstructionEnum_type);
+    declarations.push_back(IfcDoorStyleOperationEnum_type);
+    declarations.push_back(IfcDuctFittingTypeEnum_type);
+    declarations.push_back(IfcDuctSegmentTypeEnum_type);
+    declarations.push_back(IfcDuctSilencerTypeEnum_type);
+    declarations.push_back(IfcElectricApplianceTypeEnum_type);
+    declarations.push_back(IfcElectricCurrentEnum_type);
+    declarations.push_back(IfcElectricDistributionPointFunctionEnum_type);
+    declarations.push_back(IfcElectricFlowStorageDeviceTypeEnum_type);
+    declarations.push_back(IfcElectricGeneratorTypeEnum_type);
+    declarations.push_back(IfcElectricHeaterTypeEnum_type);
+    declarations.push_back(IfcElectricMotorTypeEnum_type);
+    declarations.push_back(IfcElectricTimeControlTypeEnum_type);
+    declarations.push_back(IfcElementAssemblyTypeEnum_type);
+    declarations.push_back(IfcElementCompositionEnum_type);
+    declarations.push_back(IfcEnergySequenceEnum_type);
+    declarations.push_back(IfcEnvironmentalImpactCategoryEnum_type);
+    declarations.push_back(IfcEvaporativeCoolerTypeEnum_type);
+    declarations.push_back(IfcEvaporatorTypeEnum_type);
+    declarations.push_back(IfcFanTypeEnum_type);
+    declarations.push_back(IfcFilterTypeEnum_type);
+    declarations.push_back(IfcFireSuppressionTerminalTypeEnum_type);
+    declarations.push_back(IfcFlowDirectionEnum_type);
+    declarations.push_back(IfcFlowInstrumentTypeEnum_type);
+    declarations.push_back(IfcFlowMeterTypeEnum_type);
+    declarations.push_back(IfcFootingTypeEnum_type);
+    declarations.push_back(IfcGasTerminalTypeEnum_type);
+    declarations.push_back(IfcGeometricProjectionEnum_type);
+    declarations.push_back(IfcGlobalOrLocalEnum_type);
+    declarations.push_back(IfcHeatExchangerTypeEnum_type);
+    declarations.push_back(IfcHumidifierTypeEnum_type);
+    declarations.push_back(IfcInternalOrExternalEnum_type);
+    declarations.push_back(IfcInventoryTypeEnum_type);
+    declarations.push_back(IfcJunctionBoxTypeEnum_type);
+    declarations.push_back(IfcLampTypeEnum_type);
+    declarations.push_back(IfcLayerSetDirectionEnum_type);
+    declarations.push_back(IfcLightDistributionCurveEnum_type);
+    declarations.push_back(IfcLightEmissionSourceEnum_type);
+    declarations.push_back(IfcLightFixtureTypeEnum_type);
+    declarations.push_back(IfcLoadGroupTypeEnum_type);
+    declarations.push_back(IfcLogicalOperatorEnum_type);
+    declarations.push_back(IfcMemberTypeEnum_type);
+    declarations.push_back(IfcMotorConnectionTypeEnum_type);
+    declarations.push_back(IfcNullStyle_type);
+    declarations.push_back(IfcObjectTypeEnum_type);
+    declarations.push_back(IfcObjectiveEnum_type);
+    declarations.push_back(IfcOccupantTypeEnum_type);
+    declarations.push_back(IfcOutletTypeEnum_type);
+    declarations.push_back(IfcPermeableCoveringOperationEnum_type);
+    declarations.push_back(IfcPhysicalOrVirtualEnum_type);
+    declarations.push_back(IfcPileConstructionEnum_type);
+    declarations.push_back(IfcPileTypeEnum_type);
+    declarations.push_back(IfcPipeFittingTypeEnum_type);
+    declarations.push_back(IfcPipeSegmentTypeEnum_type);
+    declarations.push_back(IfcPlateTypeEnum_type);
+    declarations.push_back(IfcProcedureTypeEnum_type);
+    declarations.push_back(IfcProfileTypeEnum_type);
+    declarations.push_back(IfcProjectOrderRecordTypeEnum_type);
+    declarations.push_back(IfcProjectOrderTypeEnum_type);
+    declarations.push_back(IfcProjectedOrTrueLengthEnum_type);
+    declarations.push_back(IfcPropertySourceEnum_type);
+    declarations.push_back(IfcProtectiveDeviceTypeEnum_type);
+    declarations.push_back(IfcPumpTypeEnum_type);
+    declarations.push_back(IfcRailingTypeEnum_type);
+    declarations.push_back(IfcRampFlightTypeEnum_type);
+    declarations.push_back(IfcRampTypeEnum_type);
+    declarations.push_back(IfcReflectanceMethodEnum_type);
+    declarations.push_back(IfcReinforcingBarRoleEnum_type);
+    declarations.push_back(IfcReinforcingBarSurfaceEnum_type);
+    declarations.push_back(IfcResourceConsumptionEnum_type);
+    declarations.push_back(IfcRibPlateDirectionEnum_type);
+    declarations.push_back(IfcRoleEnum_type);
+    declarations.push_back(IfcRoofTypeEnum_type);
+    declarations.push_back(IfcSIPrefix_type);
+    declarations.push_back(IfcSIUnitName_type);
+    declarations.push_back(IfcSanitaryTerminalTypeEnum_type);
+    declarations.push_back(IfcSectionTypeEnum_type);
+    declarations.push_back(IfcSensorTypeEnum_type);
+    declarations.push_back(IfcSequenceEnum_type);
+    declarations.push_back(IfcServiceLifeFactorTypeEnum_type);
+    declarations.push_back(IfcServiceLifeTypeEnum_type);
+    declarations.push_back(IfcSlabTypeEnum_type);
+    declarations.push_back(IfcSoundScaleEnum_type);
+    declarations.push_back(IfcSpaceHeaterTypeEnum_type);
+    declarations.push_back(IfcSpaceTypeEnum_type);
+    declarations.push_back(IfcStackTerminalTypeEnum_type);
+    declarations.push_back(IfcStairFlightTypeEnum_type);
+    declarations.push_back(IfcStairTypeEnum_type);
+    declarations.push_back(IfcStateEnum_type);
+    declarations.push_back(IfcStructuralCurveTypeEnum_type);
+    declarations.push_back(IfcStructuralSurfaceTypeEnum_type);
+    declarations.push_back(IfcSurfaceSide_type);
+    declarations.push_back(IfcSurfaceTextureEnum_type);
+    declarations.push_back(IfcSwitchingDeviceTypeEnum_type);
+    declarations.push_back(IfcTankTypeEnum_type);
+    declarations.push_back(IfcTendonTypeEnum_type);
+    declarations.push_back(IfcTextPath_type);
+    declarations.push_back(IfcThermalLoadSourceEnum_type);
+    declarations.push_back(IfcThermalLoadTypeEnum_type);
+    declarations.push_back(IfcTimeSeriesDataTypeEnum_type);
+    declarations.push_back(IfcTimeSeriesScheduleTypeEnum_type);
+    declarations.push_back(IfcTransformerTypeEnum_type);
+    declarations.push_back(IfcTransitionCode_type);
+    declarations.push_back(IfcTransportElementTypeEnum_type);
+    declarations.push_back(IfcTrimmingPreference_type);
+    declarations.push_back(IfcTubeBundleTypeEnum_type);
+    declarations.push_back(IfcUnitEnum_type);
+    declarations.push_back(IfcUnitaryEquipmentTypeEnum_type);
+    declarations.push_back(IfcValveTypeEnum_type);
+    declarations.push_back(IfcVibrationIsolatorTypeEnum_type);
+    declarations.push_back(IfcWallTypeEnum_type);
+    declarations.push_back(IfcWasteTerminalTypeEnum_type);
+    declarations.push_back(IfcWindowPanelOperationEnum_type);
+    declarations.push_back(IfcWindowPanelPositionEnum_type);
+    declarations.push_back(IfcWindowStyleConstructionEnum_type);
+    declarations.push_back(IfcWindowStyleOperationEnum_type);
+    declarations.push_back(IfcWorkControlTypeEnum_type);
+    declarations.push_back(IfcActorRole_type);
+    declarations.push_back(IfcAddress_type);
+    declarations.push_back(IfcApplication_type);
+    declarations.push_back(IfcAppliedValue_type);
+    declarations.push_back(IfcAppliedValueRelationship_type);
+    declarations.push_back(IfcApproval_type);
+    declarations.push_back(IfcApprovalActorRelationship_type);
+    declarations.push_back(IfcApprovalPropertyRelationship_type);
+    declarations.push_back(IfcApprovalRelationship_type);
+    declarations.push_back(IfcBoundaryCondition_type);
+    declarations.push_back(IfcBoundaryEdgeCondition_type);
+    declarations.push_back(IfcBoundaryFaceCondition_type);
+    declarations.push_back(IfcBoundaryNodeCondition_type);
+    declarations.push_back(IfcBoundaryNodeConditionWarping_type);
+    declarations.push_back(IfcCalendarDate_type);
+    declarations.push_back(IfcClassification_type);
+    declarations.push_back(IfcClassificationItem_type);
+    declarations.push_back(IfcClassificationItemRelationship_type);
+    declarations.push_back(IfcClassificationNotation_type);
+    declarations.push_back(IfcClassificationNotationFacet_type);
+    declarations.push_back(IfcColourSpecification_type);
+    declarations.push_back(IfcConnectionGeometry_type);
+    declarations.push_back(IfcConnectionPointGeometry_type);
+    declarations.push_back(IfcConnectionPortGeometry_type);
+    declarations.push_back(IfcConnectionSurfaceGeometry_type);
+    declarations.push_back(IfcConstraint_type);
+    declarations.push_back(IfcConstraintAggregationRelationship_type);
+    declarations.push_back(IfcConstraintClassificationRelationship_type);
+    declarations.push_back(IfcConstraintRelationship_type);
+    declarations.push_back(IfcCoordinatedUniversalTimeOffset_type);
+    declarations.push_back(IfcCostValue_type);
+    declarations.push_back(IfcCurrencyRelationship_type);
+    declarations.push_back(IfcCurveStyleFont_type);
+    declarations.push_back(IfcCurveStyleFontAndScaling_type);
+    declarations.push_back(IfcCurveStyleFontPattern_type);
+    declarations.push_back(IfcDateAndTime_type);
+    declarations.push_back(IfcDerivedUnit_type);
+    declarations.push_back(IfcDerivedUnitElement_type);
+    declarations.push_back(IfcDimensionalExponents_type);
+    declarations.push_back(IfcDocumentElectronicFormat_type);
+    declarations.push_back(IfcDocumentInformation_type);
+    declarations.push_back(IfcDocumentInformationRelationship_type);
+    declarations.push_back(IfcDraughtingCalloutRelationship_type);
+    declarations.push_back(IfcEnvironmentalImpactValue_type);
+    declarations.push_back(IfcExternalReference_type);
+    declarations.push_back(IfcExternallyDefinedHatchStyle_type);
+    declarations.push_back(IfcExternallyDefinedSurfaceStyle_type);
+    declarations.push_back(IfcExternallyDefinedSymbol_type);
+    declarations.push_back(IfcExternallyDefinedTextFont_type);
+    declarations.push_back(IfcGridAxis_type);
+    declarations.push_back(IfcIrregularTimeSeriesValue_type);
+    declarations.push_back(IfcLibraryInformation_type);
+    declarations.push_back(IfcLibraryReference_type);
+    declarations.push_back(IfcLightDistributionData_type);
+    declarations.push_back(IfcLightIntensityDistribution_type);
+    declarations.push_back(IfcLocalTime_type);
+    declarations.push_back(IfcMaterial_type);
+    declarations.push_back(IfcMaterialClassificationRelationship_type);
+    declarations.push_back(IfcMaterialLayer_type);
+    declarations.push_back(IfcMaterialLayerSet_type);
+    declarations.push_back(IfcMaterialLayerSetUsage_type);
+    declarations.push_back(IfcMaterialList_type);
+    declarations.push_back(IfcMaterialProperties_type);
+    declarations.push_back(IfcMeasureWithUnit_type);
+    declarations.push_back(IfcMechanicalMaterialProperties_type);
+    declarations.push_back(IfcMechanicalSteelMaterialProperties_type);
+    declarations.push_back(IfcMetric_type);
+    declarations.push_back(IfcMonetaryUnit_type);
+    declarations.push_back(IfcNamedUnit_type);
+    declarations.push_back(IfcObjectPlacement_type);
+    declarations.push_back(IfcObjective_type);
+    declarations.push_back(IfcOpticalMaterialProperties_type);
+    declarations.push_back(IfcOrganization_type);
+    declarations.push_back(IfcOrganizationRelationship_type);
+    declarations.push_back(IfcOwnerHistory_type);
+    declarations.push_back(IfcPerson_type);
+    declarations.push_back(IfcPersonAndOrganization_type);
+    declarations.push_back(IfcPhysicalQuantity_type);
+    declarations.push_back(IfcPhysicalSimpleQuantity_type);
+    declarations.push_back(IfcPostalAddress_type);
+    declarations.push_back(IfcPreDefinedItem_type);
+    declarations.push_back(IfcPreDefinedSymbol_type);
+    declarations.push_back(IfcPreDefinedTerminatorSymbol_type);
+    declarations.push_back(IfcPreDefinedTextFont_type);
+    declarations.push_back(IfcPresentationLayerAssignment_type);
+    declarations.push_back(IfcPresentationLayerWithStyle_type);
+    declarations.push_back(IfcPresentationStyle_type);
+    declarations.push_back(IfcPresentationStyleAssignment_type);
+    declarations.push_back(IfcProductRepresentation_type);
+    declarations.push_back(IfcProductsOfCombustionProperties_type);
+    declarations.push_back(IfcProfileDef_type);
+    declarations.push_back(IfcProfileProperties_type);
+    declarations.push_back(IfcProperty_type);
+    declarations.push_back(IfcPropertyConstraintRelationship_type);
+    declarations.push_back(IfcPropertyDependencyRelationship_type);
+    declarations.push_back(IfcPropertyEnumeration_type);
+    declarations.push_back(IfcQuantityArea_type);
+    declarations.push_back(IfcQuantityCount_type);
+    declarations.push_back(IfcQuantityLength_type);
+    declarations.push_back(IfcQuantityTime_type);
+    declarations.push_back(IfcQuantityVolume_type);
+    declarations.push_back(IfcQuantityWeight_type);
+    declarations.push_back(IfcReferencesValueDocument_type);
+    declarations.push_back(IfcReinforcementBarProperties_type);
+    declarations.push_back(IfcRelaxation_type);
+    declarations.push_back(IfcRepresentation_type);
+    declarations.push_back(IfcRepresentationContext_type);
+    declarations.push_back(IfcRepresentationItem_type);
+    declarations.push_back(IfcRepresentationMap_type);
+    declarations.push_back(IfcRibPlateProfileProperties_type);
+    declarations.push_back(IfcRoot_type);
+    declarations.push_back(IfcSIUnit_type);
+    declarations.push_back(IfcSectionProperties_type);
+    declarations.push_back(IfcSectionReinforcementProperties_type);
+    declarations.push_back(IfcShapeAspect_type);
+    declarations.push_back(IfcShapeModel_type);
+    declarations.push_back(IfcShapeRepresentation_type);
+    declarations.push_back(IfcSimpleProperty_type);
+    declarations.push_back(IfcStructuralConnectionCondition_type);
+    declarations.push_back(IfcStructuralLoad_type);
+    declarations.push_back(IfcStructuralLoadStatic_type);
+    declarations.push_back(IfcStructuralLoadTemperature_type);
+    declarations.push_back(IfcStyleModel_type);
+    declarations.push_back(IfcStyledItem_type);
+    declarations.push_back(IfcStyledRepresentation_type);
+    declarations.push_back(IfcSurfaceStyle_type);
+    declarations.push_back(IfcSurfaceStyleLighting_type);
+    declarations.push_back(IfcSurfaceStyleRefraction_type);
+    declarations.push_back(IfcSurfaceStyleShading_type);
+    declarations.push_back(IfcSurfaceStyleWithTextures_type);
+    declarations.push_back(IfcSurfaceTexture_type);
+    declarations.push_back(IfcSymbolStyle_type);
+    declarations.push_back(IfcTable_type);
+    declarations.push_back(IfcTableRow_type);
+    declarations.push_back(IfcTelecomAddress_type);
+    declarations.push_back(IfcTextStyle_type);
+    declarations.push_back(IfcTextStyleFontModel_type);
+    declarations.push_back(IfcTextStyleForDefinedFont_type);
+    declarations.push_back(IfcTextStyleTextModel_type);
+    declarations.push_back(IfcTextStyleWithBoxCharacteristics_type);
+    declarations.push_back(IfcTextureCoordinate_type);
+    declarations.push_back(IfcTextureCoordinateGenerator_type);
+    declarations.push_back(IfcTextureMap_type);
+    declarations.push_back(IfcTextureVertex_type);
+    declarations.push_back(IfcThermalMaterialProperties_type);
+    declarations.push_back(IfcTimeSeries_type);
+    declarations.push_back(IfcTimeSeriesReferenceRelationship_type);
+    declarations.push_back(IfcTimeSeriesValue_type);
+    declarations.push_back(IfcTopologicalRepresentationItem_type);
+    declarations.push_back(IfcTopologyRepresentation_type);
+    declarations.push_back(IfcUnitAssignment_type);
+    declarations.push_back(IfcVertex_type);
+    declarations.push_back(IfcVertexBasedTextureMap_type);
+    declarations.push_back(IfcVertexPoint_type);
+    declarations.push_back(IfcVirtualGridIntersection_type);
+    declarations.push_back(IfcWaterProperties_type);
+    declarations.push_back(IfcAnnotationOccurrence_type);
+    declarations.push_back(IfcAnnotationSurfaceOccurrence_type);
+    declarations.push_back(IfcAnnotationSymbolOccurrence_type);
+    declarations.push_back(IfcAnnotationTextOccurrence_type);
+    declarations.push_back(IfcArbitraryClosedProfileDef_type);
+    declarations.push_back(IfcArbitraryOpenProfileDef_type);
+    declarations.push_back(IfcArbitraryProfileDefWithVoids_type);
+    declarations.push_back(IfcBlobTexture_type);
+    declarations.push_back(IfcCenterLineProfileDef_type);
+    declarations.push_back(IfcClassificationReference_type);
+    declarations.push_back(IfcColourRgb_type);
+    declarations.push_back(IfcComplexProperty_type);
+    declarations.push_back(IfcCompositeProfileDef_type);
+    declarations.push_back(IfcConnectedFaceSet_type);
+    declarations.push_back(IfcConnectionCurveGeometry_type);
+    declarations.push_back(IfcConnectionPointEccentricity_type);
+    declarations.push_back(IfcContextDependentUnit_type);
+    declarations.push_back(IfcConversionBasedUnit_type);
+    declarations.push_back(IfcCurveStyle_type);
+    declarations.push_back(IfcDerivedProfileDef_type);
+    declarations.push_back(IfcDimensionCalloutRelationship_type);
+    declarations.push_back(IfcDimensionPair_type);
+    declarations.push_back(IfcDocumentReference_type);
+    declarations.push_back(IfcDraughtingPreDefinedTextFont_type);
+    declarations.push_back(IfcEdge_type);
+    declarations.push_back(IfcEdgeCurve_type);
+    declarations.push_back(IfcExtendedMaterialProperties_type);
+    declarations.push_back(IfcFace_type);
+    declarations.push_back(IfcFaceBound_type);
+    declarations.push_back(IfcFaceOuterBound_type);
+    declarations.push_back(IfcFaceSurface_type);
+    declarations.push_back(IfcFailureConnectionCondition_type);
+    declarations.push_back(IfcFillAreaStyle_type);
+    declarations.push_back(IfcFuelProperties_type);
+    declarations.push_back(IfcGeneralMaterialProperties_type);
+    declarations.push_back(IfcGeneralProfileProperties_type);
+    declarations.push_back(IfcGeometricRepresentationContext_type);
+    declarations.push_back(IfcGeometricRepresentationItem_type);
+    declarations.push_back(IfcGeometricRepresentationSubContext_type);
+    declarations.push_back(IfcGeometricSet_type);
+    declarations.push_back(IfcGridPlacement_type);
+    declarations.push_back(IfcHalfSpaceSolid_type);
+    declarations.push_back(IfcHygroscopicMaterialProperties_type);
+    declarations.push_back(IfcImageTexture_type);
+    declarations.push_back(IfcIrregularTimeSeries_type);
+    declarations.push_back(IfcLightSource_type);
+    declarations.push_back(IfcLightSourceAmbient_type);
+    declarations.push_back(IfcLightSourceDirectional_type);
+    declarations.push_back(IfcLightSourceGoniometric_type);
+    declarations.push_back(IfcLightSourcePositional_type);
+    declarations.push_back(IfcLightSourceSpot_type);
+    declarations.push_back(IfcLocalPlacement_type);
+    declarations.push_back(IfcLoop_type);
+    declarations.push_back(IfcMappedItem_type);
+    declarations.push_back(IfcMaterialDefinitionRepresentation_type);
+    declarations.push_back(IfcMechanicalConcreteMaterialProperties_type);
+    declarations.push_back(IfcObjectDefinition_type);
+    declarations.push_back(IfcOneDirectionRepeatFactor_type);
+    declarations.push_back(IfcOpenShell_type);
+    declarations.push_back(IfcOrientedEdge_type);
+    declarations.push_back(IfcParameterizedProfileDef_type);
+    declarations.push_back(IfcPath_type);
+    declarations.push_back(IfcPhysicalComplexQuantity_type);
+    declarations.push_back(IfcPixelTexture_type);
+    declarations.push_back(IfcPlacement_type);
+    declarations.push_back(IfcPlanarExtent_type);
+    declarations.push_back(IfcPoint_type);
+    declarations.push_back(IfcPointOnCurve_type);
+    declarations.push_back(IfcPointOnSurface_type);
+    declarations.push_back(IfcPolyLoop_type);
+    declarations.push_back(IfcPolygonalBoundedHalfSpace_type);
+    declarations.push_back(IfcPreDefinedColour_type);
+    declarations.push_back(IfcPreDefinedCurveFont_type);
+    declarations.push_back(IfcPreDefinedDimensionSymbol_type);
+    declarations.push_back(IfcPreDefinedPointMarkerSymbol_type);
+    declarations.push_back(IfcProductDefinitionShape_type);
+    declarations.push_back(IfcPropertyBoundedValue_type);
+    declarations.push_back(IfcPropertyDefinition_type);
+    declarations.push_back(IfcPropertyEnumeratedValue_type);
+    declarations.push_back(IfcPropertyListValue_type);
+    declarations.push_back(IfcPropertyReferenceValue_type);
+    declarations.push_back(IfcPropertySetDefinition_type);
+    declarations.push_back(IfcPropertySingleValue_type);
+    declarations.push_back(IfcPropertyTableValue_type);
+    declarations.push_back(IfcRectangleProfileDef_type);
+    declarations.push_back(IfcRegularTimeSeries_type);
+    declarations.push_back(IfcReinforcementDefinitionProperties_type);
+    declarations.push_back(IfcRelationship_type);
+    declarations.push_back(IfcRoundedRectangleProfileDef_type);
+    declarations.push_back(IfcSectionedSpine_type);
+    declarations.push_back(IfcServiceLifeFactor_type);
+    declarations.push_back(IfcShellBasedSurfaceModel_type);
+    declarations.push_back(IfcSlippageConnectionCondition_type);
+    declarations.push_back(IfcSolidModel_type);
+    declarations.push_back(IfcSoundProperties_type);
+    declarations.push_back(IfcSoundValue_type);
+    declarations.push_back(IfcSpaceThermalLoadProperties_type);
+    declarations.push_back(IfcStructuralLoadLinearForce_type);
+    declarations.push_back(IfcStructuralLoadPlanarForce_type);
+    declarations.push_back(IfcStructuralLoadSingleDisplacement_type);
+    declarations.push_back(IfcStructuralLoadSingleDisplacementDistortion_type);
+    declarations.push_back(IfcStructuralLoadSingleForce_type);
+    declarations.push_back(IfcStructuralLoadSingleForceWarping_type);
+    declarations.push_back(IfcStructuralProfileProperties_type);
+    declarations.push_back(IfcStructuralSteelProfileProperties_type);
+    declarations.push_back(IfcSubedge_type);
+    declarations.push_back(IfcSurface_type);
+    declarations.push_back(IfcSurfaceStyleRendering_type);
+    declarations.push_back(IfcSweptAreaSolid_type);
+    declarations.push_back(IfcSweptDiskSolid_type);
+    declarations.push_back(IfcSweptSurface_type);
+    declarations.push_back(IfcTShapeProfileDef_type);
+    declarations.push_back(IfcTerminatorSymbol_type);
+    declarations.push_back(IfcTextLiteral_type);
+    declarations.push_back(IfcTextLiteralWithExtent_type);
+    declarations.push_back(IfcTrapeziumProfileDef_type);
+    declarations.push_back(IfcTwoDirectionRepeatFactor_type);
+    declarations.push_back(IfcTypeObject_type);
+    declarations.push_back(IfcTypeProduct_type);
+    declarations.push_back(IfcUShapeProfileDef_type);
+    declarations.push_back(IfcVector_type);
+    declarations.push_back(IfcVertexLoop_type);
+    declarations.push_back(IfcWindowLiningProperties_type);
+    declarations.push_back(IfcWindowPanelProperties_type);
+    declarations.push_back(IfcWindowStyle_type);
+    declarations.push_back(IfcZShapeProfileDef_type);
+    declarations.push_back(IfcAnnotationCurveOccurrence_type);
+    declarations.push_back(IfcAnnotationFillArea_type);
+    declarations.push_back(IfcAnnotationFillAreaOccurrence_type);
+    declarations.push_back(IfcAnnotationSurface_type);
+    declarations.push_back(IfcAxis1Placement_type);
+    declarations.push_back(IfcAxis2Placement2D_type);
+    declarations.push_back(IfcAxis2Placement3D_type);
+    declarations.push_back(IfcBooleanResult_type);
+    declarations.push_back(IfcBoundedSurface_type);
+    declarations.push_back(IfcBoundingBox_type);
+    declarations.push_back(IfcBoxedHalfSpace_type);
+    declarations.push_back(IfcCShapeProfileDef_type);
+    declarations.push_back(IfcCartesianPoint_type);
+    declarations.push_back(IfcCartesianTransformationOperator_type);
+    declarations.push_back(IfcCartesianTransformationOperator2D_type);
+    declarations.push_back(IfcCartesianTransformationOperator2DnonUniform_type);
+    declarations.push_back(IfcCartesianTransformationOperator3D_type);
+    declarations.push_back(IfcCartesianTransformationOperator3DnonUniform_type);
+    declarations.push_back(IfcCircleProfileDef_type);
+    declarations.push_back(IfcClosedShell_type);
+    declarations.push_back(IfcCompositeCurveSegment_type);
+    declarations.push_back(IfcCraneRailAShapeProfileDef_type);
+    declarations.push_back(IfcCraneRailFShapeProfileDef_type);
+    declarations.push_back(IfcCsgPrimitive3D_type);
+    declarations.push_back(IfcCsgSolid_type);
+    declarations.push_back(IfcCurve_type);
+    declarations.push_back(IfcCurveBoundedPlane_type);
+    declarations.push_back(IfcDefinedSymbol_type);
+    declarations.push_back(IfcDimensionCurve_type);
+    declarations.push_back(IfcDimensionCurveTerminator_type);
+    declarations.push_back(IfcDirection_type);
+    declarations.push_back(IfcDoorLiningProperties_type);
+    declarations.push_back(IfcDoorPanelProperties_type);
+    declarations.push_back(IfcDoorStyle_type);
+    declarations.push_back(IfcDraughtingCallout_type);
+    declarations.push_back(IfcDraughtingPreDefinedColour_type);
+    declarations.push_back(IfcDraughtingPreDefinedCurveFont_type);
+    declarations.push_back(IfcEdgeLoop_type);
+    declarations.push_back(IfcElementQuantity_type);
+    declarations.push_back(IfcElementType_type);
+    declarations.push_back(IfcElementarySurface_type);
+    declarations.push_back(IfcEllipseProfileDef_type);
+    declarations.push_back(IfcEnergyProperties_type);
+    declarations.push_back(IfcExtrudedAreaSolid_type);
+    declarations.push_back(IfcFaceBasedSurfaceModel_type);
+    declarations.push_back(IfcFillAreaStyleHatching_type);
+    declarations.push_back(IfcFillAreaStyleTileSymbolWithStyle_type);
+    declarations.push_back(IfcFillAreaStyleTiles_type);
+    declarations.push_back(IfcFluidFlowProperties_type);
+    declarations.push_back(IfcFurnishingElementType_type);
+    declarations.push_back(IfcFurnitureType_type);
+    declarations.push_back(IfcGeometricCurveSet_type);
+    declarations.push_back(IfcIShapeProfileDef_type);
+    declarations.push_back(IfcLShapeProfileDef_type);
+    declarations.push_back(IfcLine_type);
+    declarations.push_back(IfcManifoldSolidBrep_type);
+    declarations.push_back(IfcObject_type);
+    declarations.push_back(IfcOffsetCurve2D_type);
+    declarations.push_back(IfcOffsetCurve3D_type);
+    declarations.push_back(IfcPermeableCoveringProperties_type);
+    declarations.push_back(IfcPlanarBox_type);
+    declarations.push_back(IfcPlane_type);
+    declarations.push_back(IfcProcess_type);
+    declarations.push_back(IfcProduct_type);
+    declarations.push_back(IfcProject_type);
+    declarations.push_back(IfcProjectionCurve_type);
+    declarations.push_back(IfcPropertySet_type);
+    declarations.push_back(IfcProxy_type);
+    declarations.push_back(IfcRectangleHollowProfileDef_type);
+    declarations.push_back(IfcRectangularPyramid_type);
+    declarations.push_back(IfcRectangularTrimmedSurface_type);
+    declarations.push_back(IfcRelAssigns_type);
+    declarations.push_back(IfcRelAssignsToActor_type);
+    declarations.push_back(IfcRelAssignsToControl_type);
+    declarations.push_back(IfcRelAssignsToGroup_type);
+    declarations.push_back(IfcRelAssignsToProcess_type);
+    declarations.push_back(IfcRelAssignsToProduct_type);
+    declarations.push_back(IfcRelAssignsToProjectOrder_type);
+    declarations.push_back(IfcRelAssignsToResource_type);
+    declarations.push_back(IfcRelAssociates_type);
+    declarations.push_back(IfcRelAssociatesAppliedValue_type);
+    declarations.push_back(IfcRelAssociatesApproval_type);
+    declarations.push_back(IfcRelAssociatesClassification_type);
+    declarations.push_back(IfcRelAssociatesConstraint_type);
+    declarations.push_back(IfcRelAssociatesDocument_type);
+    declarations.push_back(IfcRelAssociatesLibrary_type);
+    declarations.push_back(IfcRelAssociatesMaterial_type);
+    declarations.push_back(IfcRelAssociatesProfileProperties_type);
+    declarations.push_back(IfcRelConnects_type);
+    declarations.push_back(IfcRelConnectsElements_type);
+    declarations.push_back(IfcRelConnectsPathElements_type);
+    declarations.push_back(IfcRelConnectsPortToElement_type);
+    declarations.push_back(IfcRelConnectsPorts_type);
+    declarations.push_back(IfcRelConnectsStructuralActivity_type);
+    declarations.push_back(IfcRelConnectsStructuralElement_type);
+    declarations.push_back(IfcRelConnectsStructuralMember_type);
+    declarations.push_back(IfcRelConnectsWithEccentricity_type);
+    declarations.push_back(IfcRelConnectsWithRealizingElements_type);
+    declarations.push_back(IfcRelContainedInSpatialStructure_type);
+    declarations.push_back(IfcRelCoversBldgElements_type);
+    declarations.push_back(IfcRelCoversSpaces_type);
+    declarations.push_back(IfcRelDecomposes_type);
+    declarations.push_back(IfcRelDefines_type);
+    declarations.push_back(IfcRelDefinesByProperties_type);
+    declarations.push_back(IfcRelDefinesByType_type);
+    declarations.push_back(IfcRelFillsElement_type);
+    declarations.push_back(IfcRelFlowControlElements_type);
+    declarations.push_back(IfcRelInteractionRequirements_type);
+    declarations.push_back(IfcRelNests_type);
+    declarations.push_back(IfcRelOccupiesSpaces_type);
+    declarations.push_back(IfcRelOverridesProperties_type);
+    declarations.push_back(IfcRelProjectsElement_type);
+    declarations.push_back(IfcRelReferencedInSpatialStructure_type);
+    declarations.push_back(IfcRelSchedulesCostItems_type);
+    declarations.push_back(IfcRelSequence_type);
+    declarations.push_back(IfcRelServicesBuildings_type);
+    declarations.push_back(IfcRelSpaceBoundary_type);
+    declarations.push_back(IfcRelVoidsElement_type);
+    declarations.push_back(IfcResource_type);
+    declarations.push_back(IfcRevolvedAreaSolid_type);
+    declarations.push_back(IfcRightCircularCone_type);
+    declarations.push_back(IfcRightCircularCylinder_type);
+    declarations.push_back(IfcSpatialStructureElement_type);
+    declarations.push_back(IfcSpatialStructureElementType_type);
+    declarations.push_back(IfcSphere_type);
+    declarations.push_back(IfcStructuralActivity_type);
+    declarations.push_back(IfcStructuralItem_type);
+    declarations.push_back(IfcStructuralMember_type);
+    declarations.push_back(IfcStructuralReaction_type);
+    declarations.push_back(IfcStructuralSurfaceMember_type);
+    declarations.push_back(IfcStructuralSurfaceMemberVarying_type);
+    declarations.push_back(IfcStructuredDimensionCallout_type);
+    declarations.push_back(IfcSurfaceCurveSweptAreaSolid_type);
+    declarations.push_back(IfcSurfaceOfLinearExtrusion_type);
+    declarations.push_back(IfcSurfaceOfRevolution_type);
+    declarations.push_back(IfcSystemFurnitureElementType_type);
+    declarations.push_back(IfcTask_type);
+    declarations.push_back(IfcTransportElementType_type);
+    declarations.push_back(IfcActor_type);
+    declarations.push_back(IfcAnnotation_type);
+    declarations.push_back(IfcAsymmetricIShapeProfileDef_type);
+    declarations.push_back(IfcBlock_type);
+    declarations.push_back(IfcBooleanClippingResult_type);
+    declarations.push_back(IfcBoundedCurve_type);
+    declarations.push_back(IfcBuilding_type);
+    declarations.push_back(IfcBuildingElementType_type);
+    declarations.push_back(IfcBuildingStorey_type);
+    declarations.push_back(IfcCircleHollowProfileDef_type);
+    declarations.push_back(IfcColumnType_type);
+    declarations.push_back(IfcCompositeCurve_type);
+    declarations.push_back(IfcConic_type);
+    declarations.push_back(IfcConstructionResource_type);
+    declarations.push_back(IfcControl_type);
+    declarations.push_back(IfcCostItem_type);
+    declarations.push_back(IfcCostSchedule_type);
+    declarations.push_back(IfcCoveringType_type);
+    declarations.push_back(IfcCrewResource_type);
+    declarations.push_back(IfcCurtainWallType_type);
+    declarations.push_back(IfcDimensionCurveDirectedCallout_type);
+    declarations.push_back(IfcDistributionElementType_type);
+    declarations.push_back(IfcDistributionFlowElementType_type);
+    declarations.push_back(IfcElectricalBaseProperties_type);
+    declarations.push_back(IfcElement_type);
+    declarations.push_back(IfcElementAssembly_type);
+    declarations.push_back(IfcElementComponent_type);
+    declarations.push_back(IfcElementComponentType_type);
+    declarations.push_back(IfcEllipse_type);
+    declarations.push_back(IfcEnergyConversionDeviceType_type);
+    declarations.push_back(IfcEquipmentElement_type);
+    declarations.push_back(IfcEquipmentStandard_type);
+    declarations.push_back(IfcEvaporativeCoolerType_type);
+    declarations.push_back(IfcEvaporatorType_type);
+    declarations.push_back(IfcFacetedBrep_type);
+    declarations.push_back(IfcFacetedBrepWithVoids_type);
+    declarations.push_back(IfcFastener_type);
+    declarations.push_back(IfcFastenerType_type);
+    declarations.push_back(IfcFeatureElement_type);
+    declarations.push_back(IfcFeatureElementAddition_type);
+    declarations.push_back(IfcFeatureElementSubtraction_type);
+    declarations.push_back(IfcFlowControllerType_type);
+    declarations.push_back(IfcFlowFittingType_type);
+    declarations.push_back(IfcFlowMeterType_type);
+    declarations.push_back(IfcFlowMovingDeviceType_type);
+    declarations.push_back(IfcFlowSegmentType_type);
+    declarations.push_back(IfcFlowStorageDeviceType_type);
+    declarations.push_back(IfcFlowTerminalType_type);
+    declarations.push_back(IfcFlowTreatmentDeviceType_type);
+    declarations.push_back(IfcFurnishingElement_type);
+    declarations.push_back(IfcFurnitureStandard_type);
+    declarations.push_back(IfcGasTerminalType_type);
+    declarations.push_back(IfcGrid_type);
+    declarations.push_back(IfcGroup_type);
+    declarations.push_back(IfcHeatExchangerType_type);
+    declarations.push_back(IfcHumidifierType_type);
+    declarations.push_back(IfcInventory_type);
+    declarations.push_back(IfcJunctionBoxType_type);
+    declarations.push_back(IfcLaborResource_type);
+    declarations.push_back(IfcLampType_type);
+    declarations.push_back(IfcLightFixtureType_type);
+    declarations.push_back(IfcLinearDimension_type);
+    declarations.push_back(IfcMechanicalFastener_type);
+    declarations.push_back(IfcMechanicalFastenerType_type);
+    declarations.push_back(IfcMemberType_type);
+    declarations.push_back(IfcMotorConnectionType_type);
+    declarations.push_back(IfcMove_type);
+    declarations.push_back(IfcOccupant_type);
+    declarations.push_back(IfcOpeningElement_type);
+    declarations.push_back(IfcOrderAction_type);
+    declarations.push_back(IfcOutletType_type);
+    declarations.push_back(IfcPerformanceHistory_type);
+    declarations.push_back(IfcPermit_type);
+    declarations.push_back(IfcPipeFittingType_type);
+    declarations.push_back(IfcPipeSegmentType_type);
+    declarations.push_back(IfcPlateType_type);
+    declarations.push_back(IfcPolyline_type);
+    declarations.push_back(IfcPort_type);
+    declarations.push_back(IfcProcedure_type);
+    declarations.push_back(IfcProjectOrder_type);
+    declarations.push_back(IfcProjectOrderRecord_type);
+    declarations.push_back(IfcProjectionElement_type);
+    declarations.push_back(IfcProtectiveDeviceType_type);
+    declarations.push_back(IfcPumpType_type);
+    declarations.push_back(IfcRadiusDimension_type);
+    declarations.push_back(IfcRailingType_type);
+    declarations.push_back(IfcRampFlightType_type);
+    declarations.push_back(IfcRelAggregates_type);
+    declarations.push_back(IfcRelAssignsTasks_type);
+    declarations.push_back(IfcSanitaryTerminalType_type);
+    declarations.push_back(IfcScheduleTimeControl_type);
+    declarations.push_back(IfcServiceLife_type);
+    declarations.push_back(IfcSite_type);
+    declarations.push_back(IfcSlabType_type);
+    declarations.push_back(IfcSpace_type);
+    declarations.push_back(IfcSpaceHeaterType_type);
+    declarations.push_back(IfcSpaceProgram_type);
+    declarations.push_back(IfcSpaceType_type);
+    declarations.push_back(IfcStackTerminalType_type);
+    declarations.push_back(IfcStairFlightType_type);
+    declarations.push_back(IfcStructuralAction_type);
+    declarations.push_back(IfcStructuralConnection_type);
+    declarations.push_back(IfcStructuralCurveConnection_type);
+    declarations.push_back(IfcStructuralCurveMember_type);
+    declarations.push_back(IfcStructuralCurveMemberVarying_type);
+    declarations.push_back(IfcStructuralLinearAction_type);
+    declarations.push_back(IfcStructuralLinearActionVarying_type);
+    declarations.push_back(IfcStructuralLoadGroup_type);
+    declarations.push_back(IfcStructuralPlanarAction_type);
+    declarations.push_back(IfcStructuralPlanarActionVarying_type);
+    declarations.push_back(IfcStructuralPointAction_type);
+    declarations.push_back(IfcStructuralPointConnection_type);
+    declarations.push_back(IfcStructuralPointReaction_type);
+    declarations.push_back(IfcStructuralResultGroup_type);
+    declarations.push_back(IfcStructuralSurfaceConnection_type);
+    declarations.push_back(IfcSubContractResource_type);
+    declarations.push_back(IfcSwitchingDeviceType_type);
+    declarations.push_back(IfcSystem_type);
+    declarations.push_back(IfcTankType_type);
+    declarations.push_back(IfcTimeSeriesSchedule_type);
+    declarations.push_back(IfcTransformerType_type);
+    declarations.push_back(IfcTransportElement_type);
+    declarations.push_back(IfcTrimmedCurve_type);
+    declarations.push_back(IfcTubeBundleType_type);
+    declarations.push_back(IfcUnitaryEquipmentType_type);
+    declarations.push_back(IfcValveType_type);
+    declarations.push_back(IfcVirtualElement_type);
+    declarations.push_back(IfcWallType_type);
+    declarations.push_back(IfcWasteTerminalType_type);
+    declarations.push_back(IfcWorkControl_type);
+    declarations.push_back(IfcWorkPlan_type);
+    declarations.push_back(IfcWorkSchedule_type);
+    declarations.push_back(IfcZone_type);
+    declarations.push_back(Ifc2DCompositeCurve_type);
+    declarations.push_back(IfcActionRequest_type);
+    declarations.push_back(IfcAirTerminalBoxType_type);
+    declarations.push_back(IfcAirTerminalType_type);
+    declarations.push_back(IfcAirToAirHeatRecoveryType_type);
+    declarations.push_back(IfcAngularDimension_type);
+    declarations.push_back(IfcAsset_type);
+    declarations.push_back(IfcBSplineCurve_type);
+    declarations.push_back(IfcBeamType_type);
+    declarations.push_back(IfcBezierCurve_type);
+    declarations.push_back(IfcBoilerType_type);
+    declarations.push_back(IfcBuildingElement_type);
+    declarations.push_back(IfcBuildingElementComponent_type);
+    declarations.push_back(IfcBuildingElementPart_type);
+    declarations.push_back(IfcBuildingElementProxy_type);
+    declarations.push_back(IfcBuildingElementProxyType_type);
+    declarations.push_back(IfcCableCarrierFittingType_type);
+    declarations.push_back(IfcCableCarrierSegmentType_type);
+    declarations.push_back(IfcCableSegmentType_type);
+    declarations.push_back(IfcChillerType_type);
+    declarations.push_back(IfcCircle_type);
+    declarations.push_back(IfcCoilType_type);
+    declarations.push_back(IfcColumn_type);
+    declarations.push_back(IfcCompressorType_type);
+    declarations.push_back(IfcCondenserType_type);
+    declarations.push_back(IfcCondition_type);
+    declarations.push_back(IfcConditionCriterion_type);
+    declarations.push_back(IfcConstructionEquipmentResource_type);
+    declarations.push_back(IfcConstructionMaterialResource_type);
+    declarations.push_back(IfcConstructionProductResource_type);
+    declarations.push_back(IfcCooledBeamType_type);
+    declarations.push_back(IfcCoolingTowerType_type);
+    declarations.push_back(IfcCovering_type);
+    declarations.push_back(IfcCurtainWall_type);
+    declarations.push_back(IfcDamperType_type);
+    declarations.push_back(IfcDiameterDimension_type);
+    declarations.push_back(IfcDiscreteAccessory_type);
+    declarations.push_back(IfcDiscreteAccessoryType_type);
+    declarations.push_back(IfcDistributionChamberElementType_type);
+    declarations.push_back(IfcDistributionControlElementType_type);
+    declarations.push_back(IfcDistributionElement_type);
+    declarations.push_back(IfcDistributionFlowElement_type);
+    declarations.push_back(IfcDistributionPort_type);
+    declarations.push_back(IfcDoor_type);
+    declarations.push_back(IfcDuctFittingType_type);
+    declarations.push_back(IfcDuctSegmentType_type);
+    declarations.push_back(IfcDuctSilencerType_type);
+    declarations.push_back(IfcEdgeFeature_type);
+    declarations.push_back(IfcElectricApplianceType_type);
+    declarations.push_back(IfcElectricFlowStorageDeviceType_type);
+    declarations.push_back(IfcElectricGeneratorType_type);
+    declarations.push_back(IfcElectricHeaterType_type);
+    declarations.push_back(IfcElectricMotorType_type);
+    declarations.push_back(IfcElectricTimeControlType_type);
+    declarations.push_back(IfcElectricalCircuit_type);
+    declarations.push_back(IfcElectricalElement_type);
+    declarations.push_back(IfcEnergyConversionDevice_type);
+    declarations.push_back(IfcFanType_type);
+    declarations.push_back(IfcFilterType_type);
+    declarations.push_back(IfcFireSuppressionTerminalType_type);
+    declarations.push_back(IfcFlowController_type);
+    declarations.push_back(IfcFlowFitting_type);
+    declarations.push_back(IfcFlowInstrumentType_type);
+    declarations.push_back(IfcFlowMovingDevice_type);
+    declarations.push_back(IfcFlowSegment_type);
+    declarations.push_back(IfcFlowStorageDevice_type);
+    declarations.push_back(IfcFlowTerminal_type);
+    declarations.push_back(IfcFlowTreatmentDevice_type);
+    declarations.push_back(IfcFooting_type);
+    declarations.push_back(IfcMember_type);
+    declarations.push_back(IfcPile_type);
+    declarations.push_back(IfcPlate_type);
+    declarations.push_back(IfcRailing_type);
+    declarations.push_back(IfcRamp_type);
+    declarations.push_back(IfcRampFlight_type);
+    declarations.push_back(IfcRationalBezierCurve_type);
+    declarations.push_back(IfcReinforcingElement_type);
+    declarations.push_back(IfcReinforcingMesh_type);
+    declarations.push_back(IfcRoof_type);
+    declarations.push_back(IfcRoundedEdgeFeature_type);
+    declarations.push_back(IfcSensorType_type);
+    declarations.push_back(IfcSlab_type);
+    declarations.push_back(IfcStair_type);
+    declarations.push_back(IfcStairFlight_type);
+    declarations.push_back(IfcStructuralAnalysisModel_type);
+    declarations.push_back(IfcTendon_type);
+    declarations.push_back(IfcTendonAnchor_type);
+    declarations.push_back(IfcVibrationIsolatorType_type);
+    declarations.push_back(IfcWall_type);
+    declarations.push_back(IfcWallStandardCase_type);
+    declarations.push_back(IfcWindow_type);
+    declarations.push_back(IfcActuatorType_type);
+    declarations.push_back(IfcAlarmType_type);
+    declarations.push_back(IfcBeam_type);
+    declarations.push_back(IfcChamferEdgeFeature_type);
+    declarations.push_back(IfcControllerType_type);
+    declarations.push_back(IfcDistributionChamberElement_type);
+    declarations.push_back(IfcDistributionControlElement_type);
+    declarations.push_back(IfcElectricDistributionPoint_type);
+    declarations.push_back(IfcReinforcingBar_type);
+    declarations.push_back(IfcActorSelect_type);
+    declarations.push_back(IfcAppliedValueSelect_type);
+    declarations.push_back(IfcAxis2Placement_type);
+    declarations.push_back(IfcBooleanOperand_type);
+    declarations.push_back(IfcCharacterStyleSelect_type);
+    declarations.push_back(IfcClassificationNotationSelect_type);
+    declarations.push_back(IfcColour_type);
+    declarations.push_back(IfcColourOrFactor_type);
+    declarations.push_back(IfcConditionCriterionSelect_type);
+    declarations.push_back(IfcCsgSelect_type);
+    declarations.push_back(IfcCurveOrEdgeCurve_type);
+    declarations.push_back(IfcCurveStyleFontSelect_type);
+    declarations.push_back(IfcDateTimeSelect_type);
+    declarations.push_back(IfcDefinedSymbolSelect_type);
+    declarations.push_back(IfcDerivedMeasureValue_type);
+    declarations.push_back(IfcDocumentSelect_type);
+    declarations.push_back(IfcDraughtingCalloutElement_type);
+    declarations.push_back(IfcFillAreaStyleTileShapeSelect_type);
+    declarations.push_back(IfcFillStyleSelect_type);
+    declarations.push_back(IfcGeometricSetSelect_type);
+    declarations.push_back(IfcHatchLineDistanceSelect_type);
+    declarations.push_back(IfcLayeredItem_type);
+    declarations.push_back(IfcLibrarySelect_type);
+    declarations.push_back(IfcLightDistributionDataSourceSelect_type);
+    declarations.push_back(IfcMaterialSelect_type);
+    declarations.push_back(IfcMeasureValue_type);
+    declarations.push_back(IfcMetricValueSelect_type);
+    declarations.push_back(IfcObjectReferenceSelect_type);
+    declarations.push_back(IfcOrientationSelect_type);
+    declarations.push_back(IfcPointOrVertexPoint_type);
+    declarations.push_back(IfcPresentationStyleSelect_type);
+    declarations.push_back(IfcShell_type);
+    declarations.push_back(IfcSimpleValue_type);
+    declarations.push_back(IfcSizeSelect_type);
+    declarations.push_back(IfcSpecularHighlightSelect_type);
+    declarations.push_back(IfcStructuralActivityAssignmentSelect_type);
+    declarations.push_back(IfcSurfaceOrFaceSurface_type);
+    declarations.push_back(IfcSurfaceStyleElementSelect_type);
+    declarations.push_back(IfcSymbolStyleSelect_type);
+    declarations.push_back(IfcTextFontSelect_type);
+    declarations.push_back(IfcTextStyleSelect_type);
+    declarations.push_back(IfcTrimmingSelect_type);
+    declarations.push_back(IfcUnit_type);
+    declarations.push_back(IfcValue_type);
+    declarations.push_back(IfcVectorOrDirection_type);
+    declarations.push_back(IfcCurveFontOrScaledCurveFontSelect_type);
+    return new schema_definition("IFC2X3", declarations, true);
+}
+
+const schema_definition& get_schema() {
+
+    static const schema_definition* s = populate_schema();
+    return *s;
 }
 
 #endif

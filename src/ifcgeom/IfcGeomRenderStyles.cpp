@@ -41,9 +41,9 @@ bool process_colour(IfcSchema::IfcNormalisedRatioMeasure* factor, std::tr1::arra
 bool process_colour(IfcSchema::IfcColourOrFactor* colour_or_factor, std::tr1::array<double, 3>& rgb) {
 	if (colour_or_factor == 0) {
 		return false;
-	} else if (colour_or_factor->is(IfcSchema::Type::IfcColourRgb)) {
+	} else if (colour_or_factor->declaration().is(IfcSchema::Type::IfcColourRgb)) {
 		return process_colour(static_cast<IfcSchema::IfcColourRgb*>(colour_or_factor), rgb);
-	} else if (colour_or_factor->is(IfcSchema::Type::IfcNormalisedRatioMeasure)) {
+	} else if (colour_or_factor->declaration().is(IfcSchema::Type::IfcNormalisedRatioMeasure)) {
 		return process_colour(static_cast<IfcSchema::IfcNormalisedRatioMeasure*>(colour_or_factor), rgb);
 	} else {
 		return false;
@@ -55,7 +55,7 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepr
 	if (shading_styles.second == 0) {
 		return 0;
 	}
-	int surface_style_id = shading_styles.first->entity->id();
+	int surface_style_id = shading_styles.first->data().id();
 	std::map<int,SurfaceStyle>::const_iterator it = cache.Style.find(surface_style_id);
 	if (it != cache.Style.end()) {
 		return &(it->second);
@@ -70,7 +70,7 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepr
 	if (process_colour(shading_styles.second->SurfaceColour(), rgb)) {
 		surface_style.Diffuse().reset(SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
 	}
-	if (shading_styles.second->is(IfcSchema::Type::IfcSurfaceStyleRendering)) {
+	if (shading_styles.second->declaration().is(IfcSchema::Type::IfcSurfaceStyleRendering)) {
 		IfcSchema::IfcSurfaceStyleRendering* rendering_style = static_cast<IfcSchema::IfcSurfaceStyleRendering*>(shading_styles.second);
 		if (rendering_style->hasDiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {
 			SurfaceStyle::ColorComponent diffuse = surface_style.Diffuse().get_value_or(SurfaceStyle::ColorComponent(1,1,1));
@@ -87,12 +87,12 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepr
 		}
 		if (rendering_style->hasSpecularHighlight()) {
 			IfcSchema::IfcSpecularHighlightSelect* highlight = rendering_style->SpecularHighlight();
-			if (highlight->is(IfcSchema::Type::IfcSpecularRoughness)) {
+			if (highlight->declaration().is(IfcSchema::Type::IfcSpecularRoughness)) {
 				double roughness = *((IfcSchema::IfcSpecularRoughness*)highlight);
 				if (roughness >= 1e-9) {
 					surface_style.Specularity().reset(1.0 / roughness);
 				}
-			} else if (highlight->is(IfcSchema::Type::IfcSpecularExponent)) {
+			} else if (highlight->declaration().is(IfcSchema::Type::IfcSpecularExponent)) {
 				surface_style.Specularity().reset(*((IfcSchema::IfcSpecularExponent*)highlight));
 			}
 		}

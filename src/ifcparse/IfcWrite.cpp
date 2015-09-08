@@ -109,12 +109,13 @@ std::string IfcWritableEntity::toString(bool upper) const {
 
 	return ss.str();
 }
-unsigned int IfcWritableEntity::id() { 
+unsigned int IfcWritableEntity::id() const { 
 	if ( !_id ) {
 		_id = new int(file->FreshId()); 
 	}
 	return *_id; 
 }
+const IfcWritableEntity* IfcWritableEntity::isWritable() const { return this; }
 IfcWritableEntity* IfcWritableEntity::isWritable() { return this; }
 bool IfcWritableEntity::arg_writable(int i) {
 	std::map<int,bool>::const_iterator it = writemask.find(i);
@@ -390,11 +391,11 @@ public:
 		data << "." << i.enumeration_value << ".";
 	}
 	void operator()(const IfcUtil::IfcBaseClass* const& i) { 
-		IfcAbstractEntity* e = i->entity;
-		if ( IfcSchema::Type::IsSimple(e->type()) ) {
-			data << e->toString(upper);
+		const IfcAbstractEntity& e = i->data();
+		if ( IfcSchema::Type::IsSimple(e.type()) ) {
+			data << e.toString(upper);
 		} else {
-			data << "#" << e->id();
+			data << "#" << e.id();
 		}
 	}
 	void operator()(const IfcEntityList::ptr& i) { 

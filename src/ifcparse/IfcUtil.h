@@ -28,6 +28,7 @@
 
 #include <boost/dynamic_bitset.hpp>
 
+#include "../ifcparse/IfcSchema.h"
 #include "../ifcparse/SharedPointer.h"
 
 #ifdef USE_IFC4
@@ -40,6 +41,13 @@ class Argument;
 class IfcEntityList;
 class IfcEntityListList;
 class IfcAbstractEntity;
+
+namespace IfcParse { // these have to be declared first in order for the virtual function below to be covariant. separate into different header file
+	class declaration;
+	class entity;
+	class type_declaration;
+}
+
 namespace IfcWrite {
 	class IfcWritableEntity;
 }
@@ -72,35 +80,53 @@ namespace IfcUtil {
 	const char* ArgumentTypeToString(ArgumentType argument_type);
 
 	class IfcBaseClass {
+	protected:
+		IfcAbstractEntity* data_;
 	public:
-		IfcAbstractEntity* entity;
-		virtual bool is(IfcSchema::Type::Enum v) const = 0;
-		virtual IfcSchema::Type::Enum type() const = 0;
+		IfcBaseClass() : data_(0) {}
+		IfcBaseClass(IfcAbstractEntity* d) : data_(d) {}
+		virtual ~IfcBaseClass();
 
-		virtual unsigned int getArgumentCount() const = 0;
-		virtual ArgumentType getArgumentType(unsigned int i) const = 0;
-		virtual IfcSchema::Type::Enum getArgumentEntity(unsigned int i) const = 0;
-		virtual Argument* getArgument(unsigned int i) const = 0;
-		virtual const char* getArgumentName(unsigned int i) const = 0;
+		const IfcAbstractEntity& data() const { return *data_; }
+		IfcAbstractEntity& data() { return *data_; }
+
+		void data(IfcAbstractEntity* d);
+
+		virtual const IfcParse::declaration& declaration() const = 0;
 
 		template <class T>
 		T* as() {
-			return is(T::Class()) 
+			return declaration().is(T::Class()) 
 				? static_cast<T*>(this) 
 				: static_cast<T*>(0);
 		}
+
+		template <class T>
+		const T* as() const {
+			return declaration().is(T::Class()) 
+				? static_cast<const T*>(this) 
+				: static_cast<const T*>(0);
+		}
+	private:
+		IfcBaseClass(const IfcBaseClass&);
+		IfcBaseClass& operator=(const IfcBaseClass&);
 	};
 
 	class IfcBaseEntity : public IfcBaseClass {
+	public:
+		IfcBaseEntity() : IfcBaseClass() {}
+		IfcBaseEntity(IfcAbstractEntity* d) : IfcBaseClass(d) {}
+
+		virtual const IfcParse::entity& declaration() const = 0;
 	};
 
 	// TODO: Investigate whether these should be template classes instead
-	class IfcBaseType : public IfcBaseEntity {
+	class IfcBaseType : public IfcBaseClass {
 	public:
-		unsigned int getArgumentCount() const;
-		Argument* getArgument(unsigned int i) const;
-		const char* getArgumentName(unsigned int i) const;
-		IfcSchema::Type::Enum getArgumentEntity(unsigned int i) const { return IfcSchema::Type::UNDEFINED; }
+		IfcBaseType() : IfcBaseClass() {}
+		IfcBaseType(IfcAbstractEntity* d) : IfcBaseClass(d) {}
+
+		virtual const IfcParse::type_declaration& declaration() const = 0;
 	};
 
 	bool valid_binary_string(const std::string& s);
@@ -125,7 +151,7 @@ public:
 	typename U::list::ptr as() {
 		typename U::list::ptr r(new typename U::list);
 		const bool all = U::Class() == IfcSchema::Type::UNDEFINED;
-		for ( it i = begin(); i != end(); ++ i ) if (all || (*i)->is(U::Class())) r->push((U*)*i);
+		for ( it i = begin(); i != end(); ++ i ) if (all || (*i)->declaration().is(U::Class())) r->push((U*)*i);
 		return r;
 	}
 	void remove(IfcUtil::IfcBaseClass*);
@@ -153,7 +179,7 @@ public:
 	typename U::list::ptr as() {
 		typename U::list::ptr r(new typename U::list);
 		const bool all = U::Class() == IfcSchema::Type::UNDEFINED;
-		for ( it i = begin(); i != end(); ++ i ) if (all || (*i)->is(U::Class())) r->push((U*)*i);
+		for ( it i = begin(); i != end(); ++ i ) if (all || (*i)->declaration().is(U::Class())) r->push((U*)*i);
 		return r;
 	}
 	void remove(T* t) {
@@ -305,7 +331,8 @@ public:
 	virtual IfcSchema::Type::Enum type() const = 0;
 	virtual bool is(IfcSchema::Type::Enum v) const = 0;
 	virtual std::string toString(bool upper=false) const = 0;
-	virtual unsigned int id() = 0;
+	virtual unsigned int id() const = 0;
+	virtual const IfcWrite::IfcWritableEntity* isWritable() const = 0;
 	virtual IfcWrite::IfcWritableEntity* isWritable() = 0;
 };
 
@@ -325,7 +352,7 @@ public:
 	static void Verbosity(Severity v);
 	static Severity Verbosity();
 	/// Log a message to the output stream
-	static void Message(Severity type, const std::string& message, IfcAbstractEntity* entity=0);
+	static void Message(Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance=0);
 	static void Status(const std::string& message, bool new_line=true);
 	static void ProgressBar(int progress);
 	static std::string GetLog();

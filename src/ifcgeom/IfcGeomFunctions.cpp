@@ -159,7 +159,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
-		if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
+		if ( fes->declaration().is(IfcSchema::Type::IfcOpeningElement) ) {
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
@@ -190,7 +190,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
 		TopoDS_Shape entity_shape;
 		if ( entity_shape_gtrsf.Form() == gp_Other ) {
-			Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to:",entity->entity);
+			Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
 			entity_shape = BRepBuilderAPI_GTransform(entity_shape_unlocated,entity_shape_gtrsf,true).Shape();
 		} else {
 			entity_shape = entity_shape_unlocated.Moved(entity_shape_gtrsf.Trsf());
@@ -202,7 +202,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 			const TopoDS_Shape& opening_shape_unlocated = ensure_fit_for_subtraction(it4->Shape(),opening_shape_solid);
 			const gp_GTrsf& opening_shape_gtrsf = it4->Placement();
 			if ( opening_shape_gtrsf.Form() == gp_Other ) {
-				Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to opening of:",entity->entity);
+				Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to opening of:", entity);
 			}
 			const TopoDS_Shape& opening_shape = opening_shape_gtrsf.Form() == gp_Other
 				? BRepBuilderAPI_GTransform(opening_shape_unlocated,opening_shape_gtrsf,true).Shape()
@@ -212,7 +212,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 			if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
 				opening_volume = shape_volume(opening_shape);
 				if ( opening_volume <= ALMOST_ZERO )
-					Logger::Message(Logger::LOG_WARNING,"Empty opening for:",entity->entity);
+					Logger::Message(Logger::LOG_WARNING, "Empty opening for:", entity);
 				original_shape_volume = shape_volume(entity_shape);
 			}
 
@@ -246,7 +246,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 						// Add the original in case subtraction fails
 						builder.Add(compound, exp.Current());
 					} else {
-						Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",entity->entity);
+						Logger::Message(Logger::LOG_ERROR, "Failed to process subtraction:", entity);
 					}
 				}
 
@@ -263,7 +263,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 						fix.Perform();
 						brep_cut_result = fix.Shape();
 					} catch (...) {
-						Logger::Message(Logger::LOG_WARNING, "Shape healing failed on opening subtraction result", entity->entity);
+						Logger::Message(Logger::LOG_WARNING, "Shape healing failed on opening subtraction result", entity);
 					}
 					
 					BRepCheck_Analyzer analyser(brep_cut_result);
@@ -274,13 +274,13 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 							const double volume_after_subtraction = shape_volume(entity_shape);
 					
 							if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
-								Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",entity->entity);
+								Logger::Message(Logger::LOG_WARNING, "Subtraction yields unchanged volume:", entity);
 						}
 					} else {
-						Logger::Message(Logger::LOG_ERROR,"Invalid result from subtraction:",entity->entity);
+						Logger::Message(Logger::LOG_ERROR, "Invalid result from subtraction:", entity);
 					}
 				} else {
-					Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",entity->entity);
+					Logger::Message(Logger::LOG_ERROR, "Failed to process subtraction:", entity);
 				}
 			}
 
@@ -302,7 +302,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
-		if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
+		if ( fes->declaration().is(IfcSchema::Type::IfcOpeningElement) ) {
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
@@ -339,7 +339,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
 		TopoDS_Shape entity_shape;
 		if ( entity_shape_gtrsf.Form() == gp_Other ) {
-			Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to:",entity->entity);
+			Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
 			entity_shape = BRepBuilderAPI_GTransform(entity_shape_unlocated,entity_shape_gtrsf,true).Shape();
 		} else {
 			entity_shape = entity_shape_unlocated.Moved(entity_shape_gtrsf.Trsf());
@@ -360,7 +360,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			// Apparently processing the boolean operation failed or resulted in an invalid result
 			// in which case the original shape without the subtractions is returned instead
 			// we try convert the openings in the original way, one by one.
-			Logger::Message(Logger::LOG_WARNING,"Subtracting combined openings compound failed:",entity->entity);
+			Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed:", entity);
 			return false;
 		}
 		
@@ -855,7 +855,7 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 	try {
 		IfcSchema::IfcObjectDefinition* parent_object = get_decomposing_entity(product);
 		if (parent_object) {
-			parent_id = parent_object->entity->id();
+			parent_id = parent_object->data().id();
 		}
 	} catch (...) {}
 		
@@ -870,12 +870,12 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 	// Does the IfcElement have any IfcOpenings?
 	// Note that openings for IfcOpeningElements are not processed
 	IfcSchema::IfcRelVoidsElement::list::ptr openings;
-	if ( product->is(IfcSchema::Type::IfcElement) && !product->is(IfcSchema::Type::IfcOpeningElement) ) {
+	if ( product->declaration().is(IfcSchema::Type::IfcElement) && !product->declaration().is(IfcSchema::Type::IfcOpeningElement) ) {
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
 		openings = element->HasOpenings();
 	}
 	// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
-	if ( product->is(IfcSchema::Type::IfcBuildingElementPart ) ) {
+	if ( product->declaration().is(IfcSchema::Type::IfcBuildingElementPart ) ) {
 		IfcSchema::IfcBuildingElementPart* part = (IfcSchema::IfcBuildingElementPart*)product;
 #ifdef USE_IFC4
 		IfcSchema::IfcRelAggregates::list::ptr decomposes = part->Decomposes();
@@ -885,14 +885,14 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 		for ( IfcSchema::IfcRelDecomposes::list::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
 #endif
 			IfcSchema::IfcObjectDefinition* obdef = (*it)->RelatingObject();
-			if ( obdef->is(IfcSchema::Type::IfcElement) ) {
+			if ( obdef->declaration().is(IfcSchema::Type::IfcElement) ) {
 				IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)obdef;
 				openings->push(element->HasOpenings());
 			}
 		}
 	}
 
-	const std::string product_type = IfcSchema::Type::ToString(product->type());
+	const std::string product_type = IfcSchema::Type::ToString(product->declaration().type());
 	ElementSettings element_settings(settings, getValue(GV_LENGTH_UNIT), product_type);
 
 	if ( !settings.disable_opening_subtractions() && openings && openings->size() ) {
@@ -908,7 +908,7 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 				convert_openings(product,openings,shapes,trsf,opened_shapes);
 			}
 		} catch(...) { 
-			Logger::Message(Logger::LOG_ERROR,"Error processing openings for:",product->entity); 
+			Logger::Message(Logger::LOG_ERROR, "Error processing openings for:", product); 
 		}
 		if ( settings.use_world_coords() ) {
 			for ( IfcGeom::IfcRepresentationShapeItems::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
@@ -916,15 +916,15 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 			}
 			trsf = gp_Trsf();
 		}
-		shape = new IfcGeom::Representation::BRep(element_settings, representation->entity->id(), opened_shapes);
+		shape = new IfcGeom::Representation::BRep(element_settings, representation->data().id(), opened_shapes);
 	} else if ( settings.use_world_coords() ) {
 		for ( IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 			it->prepend(trsf);
 		}
 		trsf = gp_Trsf();
-		shape = new IfcGeom::Representation::BRep(element_settings, representation->entity->id(), shapes);
+		shape = new IfcGeom::Representation::BRep(element_settings, representation->data().id(), shapes);
 	} else {
-		shape = new IfcGeom::Representation::BRep(element_settings, representation->entity->id(), shapes);
+		shape = new IfcGeom::Representation::BRep(element_settings, representation->data().id(), shapes);
 	}
 
 	std::string context_string = "";
@@ -935,7 +935,7 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 	}
 
 	return new BRepElement<P>(
-		product->entity->id(),
+		product->data().id(),
 		parent_id,
 		name, 
 		product_type,
@@ -950,14 +950,14 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 	IfcSchema::IfcObjectDefinition* parent = 0;
 
 	// In case of an opening element, parent to the RelatingBuildingElement
-	if ( product->is(IfcSchema::Type::IfcOpeningElement ) ) {
+	if ( product->declaration().is(IfcSchema::Type::IfcOpeningElement ) ) {
 		IfcSchema::IfcOpeningElement* opening = (IfcSchema::IfcOpeningElement*)product;
 		IfcSchema::IfcRelVoidsElement::list::ptr voids = opening->VoidsElements();
 		if ( voids->size() ) {
 			IfcSchema::IfcRelVoidsElement* ifc_void = *voids->begin();
 			parent = ifc_void->RelatingBuildingElement();
 		}
-	} else if ( product->is(IfcSchema::Type::IfcElement ) ) {
+	} else if ( product->declaration().is(IfcSchema::Type::IfcElement ) ) {
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
 		IfcSchema::IfcRelFillsElement::list::ptr fills = element->FillsVoids();
 		// Incase of a RelatedBuildingElement parent to the opening element
@@ -980,13 +980,13 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 	}
 	// Parent decompositions to the RelatingObject
 	if (!parent) {
-		IfcEntityList::ptr parents = product->entity->getInverse(IfcSchema::Type::IfcRelAggregates, -1);
-		parents->push(product->entity->getInverse(IfcSchema::Type::IfcRelNests, -1));
+		IfcEntityList::ptr parents = product->data().getInverse(IfcSchema::Type::IfcRelAggregates, -1);
+		parents->push(product->data().getInverse(IfcSchema::Type::IfcRelNests, -1));
 		for ( IfcEntityList::it it = parents->begin(); it != parents->end(); ++ it ) {
 			IfcSchema::IfcRelDecomposes* decompose = (IfcSchema::IfcRelDecomposes*)*it;
 			IfcSchema::IfcObjectDefinition* ifc_objectdef;
 #ifdef USE_IFC4
-			if (decompose->is(IfcSchema::Type::IfcRelAggregates)) {
+			if (decompose->declaration().is(IfcSchema::Type::IfcRelAggregates)) {
 				ifc_objectdef = ((IfcSchema::IfcRelAggregates*)decompose)->RelatingObject();
 			} else {
 				continue;
@@ -1022,19 +1022,19 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 				IfcUtil::IfcBaseClass* base = *it;
 				IfcSchema::IfcSIUnit* unit = 0;
 				double value = 1.f;
-				if ( base->is(IfcSchema::Type::IfcConversionBasedUnit) ) {
+				if ( base->declaration().is(IfcSchema::Type::IfcConversionBasedUnit) ) {
 					IfcSchema::IfcConversionBasedUnit* u = (IfcSchema::IfcConversionBasedUnit*)base;
 					current_unit_name = u->Name();
 					IfcSchema::IfcMeasureWithUnit* u2 = u->ConversionFactor();
 					IfcSchema::IfcUnit* u3 = u2->UnitComponent();
-					if ( u3->is(IfcSchema::Type::IfcSIUnit) ) {
+					if ( u3->declaration().is(IfcSchema::Type::IfcSIUnit) ) {
 						unit = (IfcSchema::IfcSIUnit*) u3;
 					}
 					IfcSchema::IfcValue* v = u2->ValueComponent();
 					// Quick hack to get the numeric value from an IfcValue:
-					const double f = *v->entity->getArgument(0);
+					const double f = *v->data().getArgument(0);
 					value *= f;
-				} else if ( base->is(IfcSchema::Type::IfcSIUnit) ) {
+				} else if ( base->declaration().is(IfcSchema::Type::IfcSIUnit) ) {
 					unit = (IfcSchema::IfcSIUnit*)base;
 				}
 				if ( unit ) {

@@ -188,7 +188,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
 		// Iterate over the decomposing element to find the parent IfcBuildingStorey
 		decomposition_element::list::ptr decomposes = obdef->Decomposes();
 		if (!decomposes->size()) {
-			if (obdef->is(IfcSchema::Type::IfcElement)) {
+			if (obdef->declaration().is(IfcSchema::Type::IfcElement)) {
 				IfcSchema::IfcRelContainedInSpatialStructure::list::ptr containment = ((IfcSchema::IfcElement*)obdef)->ContainedInStructure();
 				if (!containment->size()) {
 					break;
@@ -210,7 +210,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
 				}
 			}
 		}
-		if (obdef->is(IfcSchema::Type::IfcBuildingStorey)) {
+		if (obdef->declaration().is(IfcSchema::Type::IfcBuildingStorey)) {
 			storey = static_cast<IfcSchema::IfcBuildingStorey*>(obdef);
 			break;
 		}

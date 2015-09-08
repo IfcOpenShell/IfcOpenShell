@@ -40,12 +40,17 @@
 namespace IfcWrite {
 	class IfcWritableEntity : public IfcAbstractEntity {
 	private:
+		// Mutable because calling id() will generate a fresh id on
+		// the current file, in case none has been assigned previously
+		mutable int* _id;
+		
 		std::map<int,bool> writemask;
 		std::map<int,Argument*> args;
 		IfcSchema::Type::Enum _type;
-		int* _id;
+
 		bool arg_writable(int i);
 		void arg_writable(int i, bool b);
+		
 		template <typename T> void _setArgument(int i, const T&);
 	public:
 		IfcWritableEntity(IfcSchema::Type::Enum t);
@@ -60,7 +65,8 @@ namespace IfcWrite {
 		IfcSchema::Type::Enum type() const;
 		bool is(IfcSchema::Type::Enum v) const;
 		std::string toString(bool upper=false) const;
-		unsigned int id();
+		unsigned int id() const;
+		const IfcWritableEntity* isWritable() const;
 		IfcWritableEntity* isWritable();
 
 		void setArgument(int i, Argument* a);

@@ -36,10 +36,10 @@ using namespace IfcUtil;
 
 IfcWrite::IfcWritableEntity* IfcParse::IfcLateBoundEntity::writable_entity() {
 	IfcWrite::IfcWritableEntity* e;
-	if (entity->isWritable()) {
-		e = (IfcWrite::IfcWritableEntity*) entity;
+	if (data_->isWritable()) {
+		e = (IfcWrite::IfcWritableEntity*) data_;
 	} else {
-		entity = e = new IfcWrite::IfcWritableEntity(entity);
+		data_ = e = new IfcWrite::IfcWritableEntity(data_);
 	}
 	return e;
 }
@@ -47,20 +47,25 @@ IfcParse::IfcLateBoundEntity::IfcLateBoundEntity(const std::string& s) {
 	std::string S = s;
 	for (std::string::iterator i = S.begin(); i != S.end(); ++i ) *i = toupper(*i);
 	_type = IfcSchema::Type::FromString(S);
-	entity = new IfcWrite::IfcWritableEntity(_type);
+	data_ = new IfcWrite::IfcWritableEntity(_type);
 	for (unsigned i = 0; i < getArgumentCount(); ++i) {
 		// Side effect of this is that a NULL attribute is created.
-		entity->getArgument(i);
+		data_->getArgument(i);
 	}
 	IfcSchema::Type::PopulateDerivedFields(writable_entity());
 }
 IfcParse::IfcLateBoundEntity::IfcLateBoundEntity(IfcAbstractEntity* e) {
-	entity = e;
+	data_ = e;
 	_type = e->type();
 }
+/*
+const IfcParse::entity& IfcParse::IfcLateBoundEntity::entity() {
+	return *get_schema().declaration_by_name(IfcSchema::Type::ToString(_type));
+}
+*/
 unsigned int IfcParse::IfcLateBoundEntity::id() const {
-	if (entity->file) {
-		return static_cast<unsigned int>(entity->id());
+	if (data_->file) {
+		return static_cast<unsigned int>(data_->id());
 	} else {
 		throw IfcException("Entity not bound to a file");
 	}
@@ -97,7 +102,7 @@ IfcSchema::Type::Enum IfcParse::IfcLateBoundEntity::getArgumentEntity(unsigned i
 	return IfcSchema::Type::GetAttributeEntity(_type, i);
 }
 Argument* IfcParse::IfcLateBoundEntity::getArgument(unsigned int i) const {
-	return entity->getArgument(i);
+	return data_->getArgument(i);
 }
 const char* IfcParse::IfcLateBoundEntity::getArgumentName(unsigned int i) const {
 	return IfcSchema::Type::GetAttributeName(_type,i).c_str();
@@ -215,11 +220,11 @@ unsigned IfcParse::IfcLateBoundEntity::getArgumentIndex(const std::string& a) co
 	return IfcSchema::Type::GetAttributeIndex(_type,a);
 }
 std::string IfcParse::IfcLateBoundEntity::toString() {
-	return entity->toString(false);
+	return data_->toString(false);
 }
 IfcEntityList::ptr IfcParse::IfcLateBoundEntity::get_inverse(const std::string& a) {
 	std::pair<IfcSchema::Type::Enum, unsigned> inv = IfcSchema::Type::GetInverseAttribute(_type, a);
-	return entity->getInverse(inv.first, inv.second);
+	return data_->getInverse(inv.first, inv.second);
 }		
 bool IfcParse::IfcLateBoundEntity::is_valid() {
 	const unsigned arg_count = getArgumentCount();

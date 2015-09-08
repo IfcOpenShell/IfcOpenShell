@@ -26,7 +26,10 @@ class SchemaClass:
     def __init__(self, mapping):
         
         class UnmetDependenciesException(Exception): pass
-    
+        
+        schema_name = mapping.schema.name
+        declared_types = []
+        
         def get_declared_type(type, emitted_names=None):
             if isinstance(type, nodes.AggregationType):
                 aggr_type = type.aggregate_type
@@ -47,7 +50,22 @@ class SchemaClass:
     
         self.schema_name = mapping.schema.name.capitalize()
         
-        statements = ['','#include "../ifcparse/IfcSchema.h"','','void populate() {']
+        statements = ['',
+                      '#include "../ifcparse/IfcSchema.h"',
+                      '',
+                      'using namespace IfcParse;'
+                      '']
+
+        collections_by_type = (('entity',           mapping.schema.entities    ),
+                               ('type_declaration', mapping.schema.simpletypes ),
+                               ('select_type',      mapping.schema.selects     ),
+                               ('enumeration_type', mapping.schema.enumerations))
+
+        for cpp_type, collection in collections_by_type:
+            for name in collection.keys():
+                statements.append('%(cpp_type)s* %(name)s_type = 0;' % locals())
+                      
+        statements.append('schema_definition* populate_schema() {')
         
         emitted_types = set()
         while len(emitted_types) < len(mapping.schema.simpletypes):
@@ -59,16 +77,19 @@ class SchemaClass:
                 except UnmetDependenciesException:
                     continue
 
-                statements.append('    declaration* %(name)s_type = new type_declaration("%(name)s", %(declared_type)s);' % locals())
+                statements.append('    %(name)s_type = new type_declaration(IfcSchema::Type::%(name)s, %(declared_type)s);' % locals())
                 emitted_types.add(name)
                 
+                declared_types.append('%(name)s_type' % locals())
+                
         for name, enum in mapping.schema.enumerations.items():
-            statements.append('    declaration* %(name)s_type;' % locals())
             statements.append('    {')
             statements.append('        std::vector<std::string> items; items.reserve(%d);' % len(enum.values))
             statements.extend(map(lambda v: '        items.push_back("%s");' % v, sorted(enum.values)))
-            statements.append('        %(name)s_type = new enumeration_type("%(name)s", items);' % locals())
+            statements.append('        %(name)s_type = new enumeration_type(IfcSchema::Type::%(name)s, items);' % locals())
             statements.append('    }')
+            
+            declared_types.append('%(name)s_type' % locals())
         
         emitted_entities = set()
         while len(emitted_entities) < len(mapping.schema.entities):
@@ -76,8 +97,10 @@ class SchemaClass:
                 if name in emitted_entities: continue
                 if len(type.supertypes) == 0 or set(type.supertypes) < emitted_entities:
                     supertype = '0' if len(type.supertypes) == 0 else '%s_type' % type.supertypes[0]
-                    statements.append('    entity* %(name)s_type = new entity("%(name)s", %(supertype)s);' % locals())
+                    statements.append('    %(name)s_type = new entity(IfcSchema::Type::%(name)s, %(supertype)s);' % locals())
                     emitted_entities.add(name)
+                    
+                    declared_types.append('%(name)s_type' % locals())
         
         emmited = emitted_types | emitted_entities | set(mapping.schema.enumerations.keys())
         
@@ -86,14 +109,17 @@ class SchemaClass:
             for name, type in mapping.schema.selects.items():
                 if name in emitted_selects: continue
                 if set(type.values) < emmited:
-                    statements.append('    declaration* %(name)s_type;' % locals())
                     statements.append('    {')
                     statements.append('        std::vector<const declaration*> items; items.reserve(%d);' % len(type.values))
                     statements.extend(map(lambda v: '        items.push_back(%s_type);' % v, sorted(type.values)))
-                    statements.append('        %(name)s_type = new select_type("%(name)s", items);' % locals())
+                    statements.append('        %(name)s_type = new select_type(IfcSchema::Type::%(name)s, items);' % locals())
                     statements.append('    }')
                     emitted_selects.add(name)
                     emmited.add(name)
+                    
+                    declared_types.append('%(name)s_type' % locals())
+                    
+        num_declarations = len(declared_types)
                     
         for name, type in mapping.schema.entities.items():
             derived = set(mapping.derived_in_supertype(type))
@@ -109,8 +135,22 @@ class SchemaClass:
             statements.append('        ' + " ".join(map(lambda b: 'derived.push_back(%s);' % str(b in derived).lower(), attribute_names)))
             statements.append('        %(name)s_type->set_attributes(attributes, derived);' % locals())
             statements.append('    }')
-    
-        statements.extend(('}','',''))
+            
+        statements.append('')
+        statements.append('    std::vector<const declaration*> declarations; declarations.reserve(%(num_declarations)d);' % locals())
+        for type_name in declared_types:
+            statements.append('    declarations.push_back(%(type_name)s);' % locals())
+            
+        statements.append('    return new schema_definition("%(schema_name)s", declarations, true);' % locals())
+        
+        statements.extend(('}',''))
+        
+        statements.extend(('const schema_definition& get_schema() {',
+                           '',
+                           '    static const schema_definition* s = populate_schema();',
+                           '    return *s;',
+                           '}','',''))
+                           
         self.str = "\n".join(statements)
     def __repr__(self):
         return self.str

@@ -56,7 +56,7 @@ IfcEntityList::ptr IfcEntityList::filtered(const std::set<IfcSchema::Type::Enum>
 	for (it it = begin(); it != end(); ++it) {
 		bool contained = false;
 		for (std::set<IfcSchema::Type::Enum>::const_iterator jt = entities.begin(); jt != entities.end(); ++jt) {
-			if ((*it)->is(*jt)) {
+			if ((*it)->declaration().is(*jt)) {
 				contained = true;
 				break;
 			}
@@ -69,9 +69,9 @@ IfcEntityList::ptr IfcEntityList::filtered(const std::set<IfcSchema::Type::Enum>
 }
 
 
-unsigned int IfcUtil::IfcBaseType::getArgumentCount() const { return 1; }
-Argument* IfcUtil::IfcBaseType::getArgument(unsigned int i) const { return entity->getArgument(i); }
-const char* IfcUtil::IfcBaseType::getArgumentName(unsigned int i) const { if (i == 0) { return "wrappedValue"; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
+// unsigned int IfcUtil::IfcBaseType::getArgumentCount() const { return 1; }
+// Argument* IfcUtil::IfcBaseType::getArgument(unsigned int i) const { return entity->getArgument(i); }
+// const char* IfcUtil::IfcBaseType::getArgumentName(unsigned int i) const { if (i == 0) { return "wrappedValue"; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 
 void Logger::SetOutput(std::ostream* l1, std::ostream* l2) { 
 	log1 = l1; 
@@ -80,10 +80,10 @@ void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
 		log2 = &log_stream;
 	}
 }
-void Logger::Message(Logger::Severity type, const std::string& message, IfcAbstractEntity* entity) {
+void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* entity) {
 	if ( log2 && type >= verbosity ) {
 		(*log2) << "[" << severity_strings[type] << "] " << message << std::endl;
-		if ( entity ) (*log2) << entity->toString() << std::endl;
+		if ( entity ) (*log2) << entity->data().toString() << std::endl;
 	}
 }
 void Logger::Status(const std::string& message, bool new_line) {
@@ -143,4 +143,13 @@ bool IfcUtil::valid_binary_string(const std::string& s) {
 		if (*it != '0' && *it != '1') return false;
 	}
 	return true;
+}
+
+IfcUtil::IfcBaseClass::~IfcBaseClass() {
+	delete data_; 
+}
+
+void IfcUtil::IfcBaseClass::data(IfcAbstractEntity* d) {
+	delete data_;
+	data_ = d; 
 }

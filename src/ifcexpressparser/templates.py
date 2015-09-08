@@ -28,8 +28,11 @@ header = """
 #include <boost/optional.hpp>
 
 #include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcSchema.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/%(schema_name)senum.h"
+
+const IfcParse::schema_definition& get_schema();
 
 #define IfcSchema %(schema_name)s
 
@@ -103,6 +106,7 @@ namespace Type {
 
 implementation= """
 #include "../ifcparse/%(schema_name)s.h"
+#include "../ifcparse/IfcSchema.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcWrite.h"
 #include "../ifcparse/IfcWritableEntity.h"
@@ -110,6 +114,9 @@ implementation= """
 using namespace %(schema_name)s;
 using namespace IfcParse;
 using namespace IfcWrite;
+
+// External definitions
+%(external_definitions)s
 
 IfcUtil::IfcBaseClass* %(schema_name)s::SchemaEntity(IfcAbstractEntity* e) {
     switch(e->type()) {
@@ -326,10 +333,7 @@ derived_field_statement_attrs = 'idxs.insert(%d); '
 simpletype = """%(documentation)s
 class %(name)s : public %(superclass)s {
 public:
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
-    virtual Argument* getArgument(unsigned int i) const;
-    bool is(Type::Enum v) const;
-    Type::Enum type() const;
+    virtual const IfcParse::type_declaration& declaration() const;
     static Type::Enum Class();
     explicit %(name)s (IfcAbstractEntity* e);
     %(name)s (%(type)s v);
@@ -339,16 +343,17 @@ public:
 
 simpletype_impl_comment = "// Function implementations for %(name)s"
 simpletype_impl_argument_type = "if (i == 0) { return %(attr_type)s; } else { throw IfcParse::IfcAttributeOutOfRangeException(\"Argument index out of range\"); }"
-simpletype_impl_argument = "return entity->getArgument(i);"
+simpletype_impl_argument = "return data_->getArgument(i);"
 simpletype_impl_is_with_supertype = "return v == Type::%(class_name)s || %(superclass)s::is(v);"
 simpletype_impl_is_without_supertype = "return v == %(class_name)s::Class();"
 simpletype_impl_type = "return Type::%(class_name)s;"
 simpletype_impl_class = "return Type::%(class_name)s;"
-simpletype_impl_explicit_constructor = "entity = e;"
-simpletype_impl_constructor = "IfcWritableEntity* e = new IfcWritableEntity(Type::%(class_name)s); e->setArgument(0, v); entity = e;"
-simpletype_impl_constructor_templated = "IfcWritableEntity* e = new IfcWritableEntity(Type::%(class_name)s); e->setArgument(0, v->generalize()); entity = e;"
-simpletype_impl_cast = "return *entity->getArgument(0);"
-simpletype_impl_cast_templated = "IfcEntityList::ptr es = *entity->getArgument(0); return es->as<%(underlying_type)s>();"
+simpletype_impl_explicit_constructor = "data_ = e;"
+simpletype_impl_constructor = "IfcWritableEntity* e = new IfcWritableEntity(Type::%(class_name)s); e->setArgument(0, v); data_ = e;"
+simpletype_impl_constructor_templated = "IfcWritableEntity* e = new IfcWritableEntity(Type::%(class_name)s); e->setArgument(0, v->generalize()); data_ = e;"
+simpletype_impl_cast = "return *data_->getArgument(0);"
+simpletype_impl_cast_templated = "IfcEntityList::ptr es = *data_->getArgument(0); return es->as<%(underlying_type)s>();"
+simpletype_impl_declaration = "return *%(class_name)s_type;"
     
 select = """%(documentation)s
 typedef IfcUtil::IfcBaseClass %(name)s;
@@ -365,13 +370,7 @@ const char* ToString(%(name)s v);
 entity = """%(documentation)s
 class %(name)s %(superclass)s{
 public:
-%(attributes)s    virtual unsigned int getArgumentCount() const { return %(argument_count)d; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const {%(argument_type_function_body)s}
-    virtual Type::Enum getArgumentEntity(unsigned int i) const {%(argument_entity_function_body)s}
-    virtual const char* getArgumentName(unsigned int i) const {%(argument_name_function_body)s}
-    virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
-%(inverse)s    bool is(Type::Enum v) const;
-    Type::Enum type() const;
+%(attributes)s    %(inverse)s    virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     %(name)s (IfcAbstractEntity* e);
     %(name)s (%(constructor_arguments)s);
@@ -393,11 +392,12 @@ const char* %(name)s::ToString(%(name)s v) {
 """
 
 entity_implementation = """// Function implementations for %(name)s
-%(attributes)s%(inverse)sbool %(name)s::is(Type::Enum v) const { return v == Type::%(name)s%(parent_type_test)s; }
-Type::Enum %(name)s::type() const { return Type::%(name)s; }
+%(attributes)s
+%(inverse)s
+const IfcParse::entity& %(name)s::declaration() const { return *%(name)s_type; }
 Type::Enum %(name)s::Class() { return Type::%(name)s; }
-%(name)s::%(name)s(IfcAbstractEntity* e) : %(superclass)s { if (!e) return; if (!e->is(Type::%(name)s)) throw IfcException("Unable to find find keyword in schema"); entity = e; }
-%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass)s { IfcWritableEntity* e = new IfcWritableEntity(Class());%(constructor_implementation)s entity = e; EntityBuffer::Add(this); }
+%(name)s::%(name)s(IfcAbstractEntity* e) : %(superclass)s { if (!e) return; if (!e->is(Type::%(name)s)) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass)s { IfcWritableEntity* e = new IfcWritableEntity(Class());%(constructor_implementation)s data_ = e; EntityBuffer::Add(this); }
 """
 
 optional_attribute_description = "/// Whether the optional attribute %s is defined for this %s"
@@ -423,19 +423,19 @@ parent_type_stmt = '    if(v==%(name)s%(padding)s) { return %(parent)s; }'
 
 parent_type_test = " || %s::is(v)"
 
-optional_attr_stmt = "return !entity->getArgument(%(index)d)->isNull();"
+optional_attr_stmt = "return !data_->getArgument(%(index)d)->isNull();"
 
-get_attr_stmt = "return *entity->getArgument(%(index)d);"
-get_attr_stmt_enum = "return %(type)s::FromString(*entity->getArgument(%(index)d));"
-get_attr_stmt_entity = "return (%(type)s)((IfcUtil::IfcBaseClass*)(*entity->getArgument(%(index)d)));"
-get_attr_stmt_array = "IfcEntityList::ptr es = *entity->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
-get_attr_stmt_nested_array = "IfcEntityListList::ptr es = *entity->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
+get_attr_stmt = "return *data_->getArgument(%(index)d);"
+get_attr_stmt_enum = "return %(type)s::FromString(*data_->getArgument(%(index)d));"
+get_attr_stmt_entity = "return (%(type)s)((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)));"
+get_attr_stmt_array = "IfcEntityList::ptr es = *data_->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
+get_attr_stmt_nested_array = "IfcEntityListList::ptr es = *data_->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
 
-get_inverse = "return entity->getInverse(Type::%(type)s, %(index)d)->as<%(type)s>();"
+get_inverse = "return data_->getInverse(Type::%(type)s, %(index)d)->as<%(type)s>();"
 
-set_attr_stmt = "if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(%(index)d,v);"
-set_attr_stmt_enum = "if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(%(index)d,v,%(type)s::ToString(v));"
-set_attr_stmt_array = "if ( ! entity->isWritable() ) { entity = new IfcWritableEntity(entity); } ((IfcWritableEntity*)entity)->setArgument(%(index)d,v->generalize());"
+set_attr_stmt = "if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(%(index)d,v);"
+set_attr_stmt_enum = "if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(%(index)d,v,%(type)s::ToString(v));"
+set_attr_stmt_array = "if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(%(index)d,v->generalize());"
 
 constructor_stmt = " e->setArgument(%(index)d,(%(name)s));"
 constructor_stmt_enum = " e->setArgument(%(index)d,%(name)s,%(type)s::ToString(%(name)s));"

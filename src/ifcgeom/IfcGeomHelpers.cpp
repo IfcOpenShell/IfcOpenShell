@@ -282,21 +282,21 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement2D* l, gp_Trsf2d
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf) {
 	IN_CACHE(IfcObjectPlacement,l,gp_Trsf,trsf)
-	if ( ! l->is(IfcSchema::Type::IfcLocalPlacement) ) {
-		Logger::Message(Logger::LOG_ERROR, "Unsupported IfcObjectPlacement:", l->entity);
+	if ( ! l->declaration().is(IfcSchema::Type::IfcLocalPlacement) ) {
+		Logger::Message(Logger::LOG_ERROR, "Unsupported IfcObjectPlacement:", l);
 		return false; 		
 	}
 	IfcSchema::IfcLocalPlacement* current = (IfcSchema::IfcLocalPlacement*)l;
 	while (1) {
 		gp_Trsf trsf2;
 		IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
-		if ( relplacement->is(IfcSchema::Type::IfcAxis2Placement3D) ) {
+		if ( relplacement->declaration().is(IfcSchema::Type::IfcAxis2Placement3D) ) {
 			IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)relplacement,trsf2);
 			trsf.PreMultiply(trsf2);
 		}
 		if ( current->hasPlacementRelTo() ) {
 			IfcSchema::IfcObjectPlacement* relto = current->PlacementRelTo();
-			if ( relto->is(IfcSchema::Type::IfcLocalPlacement) )
+			if ( relto->declaration().is(IfcSchema::Type::IfcLocalPlacement) )
 				current = (IfcSchema::IfcLocalPlacement*)current->PlacementRelTo();
 			else break;			
 		} else break;

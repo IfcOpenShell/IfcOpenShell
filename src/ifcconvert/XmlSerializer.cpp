@@ -39,15 +39,15 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 			break; }
 		case IfcUtil::Argument_ENTITY_INSTANCE: {
 			IfcUtil::IfcBaseClass* e = *argument;
-			if (Type::IsSimple(e->type())) {
+			if (Type::IsSimple(e->declaration().type())) {
 				IfcUtil::IfcBaseType* f = (IfcUtil::IfcBaseType*) e;
-				value = format_attribute(f->getArgument(0), f->getArgumentType(0));
-			} else if (e->is(IfcSchema::Type::IfcSIUnit) || e->is(IfcSchema::Type::IfcConversionBasedUnit)) {
+				value = format_attribute(f->data().getArgument(0), f->data().getArgument(0)->type());
+			} else if (e->declaration().is(IfcSchema::Type::IfcSIUnit) || e->declaration().is(IfcSchema::Type::IfcConversionBasedUnit)) {
 				// Some string concatenation to have a unit name as a XML attribute.
 
 				std::string unit_name;
 
-				if (e->is(IfcSchema::Type::IfcSIUnit)) {
+				if (e->declaration().is(IfcSchema::Type::IfcSIUnit)) {
 					IfcSchema::IfcSIUnit* unit = (IfcSchema::IfcSIUnit*) e;
 					unit_name = IfcSchema::IfcSIUnitName::ToString(unit->Name());
 					if (unit->hasPrefix()) {
@@ -71,18 +71,20 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 // over the entity attributes and writes them as xml attributes of the node.
 ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& tree, bool as_link = false) {
 	ptree child;
-	const unsigned n = instance->getArgumentCount();
+	const unsigned n = instance->data().getArgumentCount();
+	std::vector<const IfcParse::entity::attribute*> attributes = instance->declaration().all_attributes();
+
 	for (unsigned i = 0; i < n; ++i) {
-		const Argument* argument = instance->getArgument(i);
+		const Argument* argument = instance->data().getArgument(i);
 		if (argument->isNull()) continue;
 
-		std::string argument_name = instance->getArgumentName(i);
+		std::string argument_name = attributes[i]->name();
 		std::map<std::string, std::string>::const_iterator argument_name_it;
 		argument_name_it = argument_name_map.find(argument_name);
 		if (argument_name_it != argument_name_map.end()) {
 			argument_name = argument_name_it->second;
 		}
-		const IfcUtil::ArgumentType argument_type = instance->getArgumentType(i);
+		const IfcUtil::ArgumentType argument_type = instance->data().getArgument(i)->type();
 
 		boost::optional<std::string> value;
 		try {
@@ -101,7 +103,7 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& tree, boo
 			}
 		}
 	}
-	return tree.add_child(Type::ToString(instance->type()), child);
+	return tree.add_child(Type::ToString(instance->declaration().type()), child);
 }
 
 // A function to be called recursively. Template specialization is used 
@@ -130,7 +132,7 @@ template <>
 void descend(IfcProduct* product, ptree& tree) {
 	ptree& child = format_entity_instance(product, tree);
 	
-	if (product->is(Type::IfcSpatialStructureElement)) {
+	if (product->declaration().is(Type::IfcSpatialStructureElement)) {
 		IfcSpatialStructureElement* structure = (IfcSpatialStructureElement*) product;
 
 		IfcProduct::list::ptr elements = get_related
@@ -154,7 +156,7 @@ void descend(IfcProduct* product, ptree& tree) {
 
 	for (IfcObjectDefinition::list::it it = structures->begin(); it != structures->end(); ++it) {
 		IfcObjectDefinition* ob = *it;
-		if (ob->is(Type::IfcSpatialStructureElement)) {
+		if (ob->declaration().is(Type::IfcSpatialStructureElement)) {
 			descend((IfcProduct*)ob, child);
 		} else {
 			descend(ob, child);
@@ -167,7 +169,7 @@ void descend(IfcProduct* product, ptree& tree) {
 
 	for (IfcPropertySetDefinition::list::it it = property_sets->begin(); it != property_sets->end(); ++it) {
 		IfcPropertySetDefinition* pset = *it;
-		if (pset->is(Type::IfcPropertySet)) {
+		if (pset->declaration().is(Type::IfcPropertySet)) {
 			format_entity_instance(pset, child, true);
 		}
 	}
@@ -190,7 +192,7 @@ void descend(IfcProject* project, ptree& tree) {
 	
 	for (IfcObjectDefinition::list::it it = structures->begin(); it != structures->end(); ++it) {
 		IfcObjectDefinition* ob = *it;
-		if (ob->is(Type::IfcSpatialStructureElement)) {
+		if (ob->declaration().is(Type::IfcSpatialStructureElement)) {
 			descend((IfcProduct*)ob, child);
 		} else {
 			descend(ob, child);
@@ -202,7 +204,7 @@ void descend(IfcProject* project, ptree& tree) {
 void format_properties(IfcProperty::list::ptr properties, ptree& node) {
 	for (IfcProperty::list::it it = properties->begin(); it != properties->end(); ++it) {
 		IfcProperty* p = *it;
-		if (p->is(Type::IfcComplexProperty)) {
+		if (p->declaration().is(Type::IfcComplexProperty)) {
 			IfcComplexProperty* complex = (IfcComplexProperty*) p;
 			format_properties(complex->HasProperties(), node);
 		} else {

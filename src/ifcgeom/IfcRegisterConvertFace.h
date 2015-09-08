@@ -1,6 +1,6 @@
 ﻿#include "IfcRegisterUndef.h"
 #define FACE(T) \
-	if ( l->is(T::Class()) ) return convert((T*)l,r);
+	if ( l->declaration().is(T::Class()) ) return convert(l->as<T>(), r);
 #include "IfcRegisterDef.h"
 
 #include "IfcRegister.h"

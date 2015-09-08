@@ -25,7 +25,7 @@ using namespace IfcUtil;
 
 bool IfcGeom::Kernel::convert_shapes(const IfcBaseClass* l, IfcRepresentationShapeItems& r) {
 #include "IfcRegisterConvertShapes.h"
-	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
+	Logger::Message(Logger::LOG_ERROR, "No operation defined for:", l);
 	return false;
 }
 
@@ -35,7 +35,7 @@ IfcGeom::ShapeType IfcGeom::Kernel::shape_type(const IfcBaseClass* l) {
 }
 
 bool IfcGeom::Kernel::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
-	const unsigned int id = l->entity->id();
+	const unsigned int id = l->data().id();
 	bool success = false;
 	bool processed = false;
 	bool ignored = false;
@@ -81,7 +81,7 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
 		const char* const msg = processed
 			? "Failed to convert:"
 			: "No operation defined for:";
-		Logger::Message(Logger::LOG_ERROR, msg, l->entity);
+		Logger::Message(Logger::LOG_ERROR, msg, l);
 	}
 	return success;
 }
@@ -92,18 +92,18 @@ bool IfcGeom::Kernel::convert_wire(const IfcBaseClass* l, TopoDS_Wire& r) {
 	if (IfcGeom::Kernel::convert_curve(l, curve)) {
 		return IfcGeom::Kernel::convert_curve_to_wire(curve, r);
 	}
-	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
+	Logger::Message(Logger::LOG_ERROR, "No operation defined for:", l);
 	return false;
 }
 
 bool IfcGeom::Kernel::convert_face(const IfcBaseClass* l, TopoDS_Shape& r) {
 #include "IfcRegisterConvertFace.h"
-	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
+	Logger::Message(Logger::LOG_ERROR, "No operation defined for:", l);
 	return false;
 }
 
 bool IfcGeom::Kernel::convert_curve(const IfcBaseClass* l, Handle(Geom_Curve)& r) {
 #include "IfcRegisterConvertCurve.h"
-	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
+	Logger::Message(Logger::LOG_ERROR, "No operation defined for:", l);
 	return false;
 }
