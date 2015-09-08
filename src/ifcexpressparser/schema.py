@@ -22,15 +22,15 @@ import collections
 
 class Schema:
     def is_enumeration(self, v):
-        return v in self.enumerations
+        return str(v) in self.enumerations
     def is_select(self, v):
-        return v in self.selects
+        return str(v) in self.selects
     def is_simpletype(self, v):
-        return v in self.simpletypes
+        return str(v) in self.simpletypes
     def is_type(self, v):
-        return v in self.types
+        return str(v) in self.types
     def is_entity(self, v):
-        return v in self.entities
+        return str(v) in self.entities
     def __init__(self, parsetree):
         self.name = parsetree[1]
 
@@ -43,4 +43,4 @@ class Schema:
 
         self.enumerations = of_type(nodes.EnumerationType)
         self.selects = of_type(nodes.SelectType)
-        self.simpletypes = of_type(str, nodes.AggregationType)
+        self.simpletypes = of_type(str, nodes.AggregationType, nodes.BinaryType)
