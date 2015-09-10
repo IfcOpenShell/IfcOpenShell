@@ -141,3 +141,6 @@ def create_entity(type,*args,**kwargs):
 	for idx, arg in attrs: e[idx] = arg
 	return e
 
+
+version = ifcopenshell_wrapper.version()
+schema_identifier = ifcopenshell_wrapper.schema_identifier()
