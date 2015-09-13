@@ -288,7 +288,7 @@ UErrorCode IfcCharacterDecoder::status = U_ZERO_ERROR;
 #endif
 
 #ifdef HAVE_ICU
-IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDecoder::JSON;
+IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDecoder::UTF8;
 
 // Many BIM software (eg. Revit, ArchiCAD, ...) has wrong behavior  
 bool IfcCharacterDecoder::compatibility_mode = false;

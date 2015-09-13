@@ -82,6 +82,9 @@ class entity_instance(object):
 			attr_type = self.attribute_type(idx).title().replace(' ', '')
 			attr_type = attr_type.replace('Binary', 'String')
 			attr_type = attr_type.replace('Enumeration', 'String')
+			try:
+				if isinstance(value, unicode): value = value.encode("utf-8")
+			except: pass
 			getattr(self.wrapped_data, "setArgumentAs%s" % attr_type)(idx, entity_instance.unwrap_value(value))
 		return value
 	def __len__(self): return len(self.wrapped_data)
