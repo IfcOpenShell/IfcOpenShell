@@ -20,6 +20,8 @@
 #include <iomanip>
 #include <locale>
 
+#include <boost/algorithm/string.hpp>
+
 #include "../ifcparse/IfcParse.h" 
 #include "../ifcparse/IfcWrite.h"
 #include "../ifcparse/IfcWritableEntity.h"
@@ -91,7 +93,7 @@ std::string IfcWritableEntity::toString(bool upper) const {
 	
 	std::string dt = datatype();
 	if (upper) {
-		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
+		boost::to_upper(dt);
 	}
 
 	if (_id && !IfcSchema::Type::IsSimple(type())) {
