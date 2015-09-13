@@ -288,7 +288,7 @@ UErrorCode IfcCharacterDecoder::status = U_ZERO_ERROR;
 #endif
 
 #ifdef HAVE_ICU
-IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDecoder::JSON;
+IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDecoder::UTF8;
 
 // Many BIM software (eg. Revit, ArchiCAD, ...) has wrong behavior  
 bool IfcCharacterDecoder::compatibility_mode = false;
@@ -352,8 +352,15 @@ IfcCharacterEncoder::operator std::string() {
 #else
 	for (std::string::const_iterator i = str.begin(); i != str.end(); ++i) {
 		char ch = *i;
-		if ( ch == '\\' || ch == '\'' ) oss.put(ch);
-		oss.put(ch);
+		const bool within_spf_range = ch >= 0x20 && ch <= 0x7e;
+		if (within_spf_range) {
+			if ( ch == '\\' || ch == '\'' ) {
+				oss.put(ch);
+			}		
+			oss.put(ch);
+		} else {
+			oss.put('_');
+		}
 	}
 #endif
 	oss.put('\'');

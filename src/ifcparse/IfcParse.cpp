@@ -28,6 +28,8 @@
 #include <Windows.h>
 #endif
 
+#include <boost/algorithm/string.hpp>
+
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcException.h"
@@ -855,7 +857,7 @@ std::string Entity::toString(bool upper) const {
 	
 	std::string dt = datatype();
 	if (upper) {
-		for (std::string::iterator p = dt.begin(); p != dt.end(); ++p ) *p = toupper(*p);
+		boost::to_upper(dt);
 	}
 
 	if (!IfcSchema::Type::IsSimple(type()) || _id != 0) {
@@ -1355,9 +1357,7 @@ IfcEntityList::ptr IfcFile::entitiesByType(IfcSchema::Type::Enum t) {
 }
 
 IfcEntityList::ptr IfcFile::entitiesByType(const std::string& t) {
-	std::string ty = t;
-	for (std::string::iterator p = ty.begin(); p != ty.end(); ++p ) *p = toupper(*p);
-	return entitiesByType(IfcSchema::Type::FromString(ty));
+	return entitiesByType(IfcSchema::Type::FromString(boost::to_upper_copy(t)));
 }
 
 IfcEntityList::ptr IfcFile::entitiesByReference(int t) {

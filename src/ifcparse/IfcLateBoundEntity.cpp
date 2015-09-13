@@ -19,6 +19,8 @@
 
 #include <sstream>
 
+#include <boost/algorithm/string.hpp>
+
 #include "../ifcparse/IfcWritableEntity.h"
 
 #include "../ifcparse/IfcUtil.h"
@@ -44,9 +46,7 @@ IfcWrite::IfcWritableEntity* IfcParse::IfcLateBoundEntity::writable_entity() {
 	return e;
 }
 IfcParse::IfcLateBoundEntity::IfcLateBoundEntity(const std::string& s) {
-	std::string S = s;
-	for (std::string::iterator i = S.begin(); i != S.end(); ++i ) *i = toupper(*i);
-	_type = IfcSchema::Type::FromString(S);
+	_type = IfcSchema::Type::FromString(boost::to_upper_copy(s));
 	entity = new IfcWrite::IfcWritableEntity(_type);
 	for (unsigned i = 0; i < getArgumentCount(); ++i) {
 		// Side effect of this is that a NULL attribute is created.
@@ -78,9 +78,7 @@ std::string IfcParse::IfcLateBoundEntity::is_a() const {
 	return IfcSchema::Type::ToString(_type);
 }
 bool IfcParse::IfcLateBoundEntity::is_a(const std::string& s) const {
-	std::string S = s;
-	for (std::string::iterator i = S.begin(); i != S.end(); ++i ) *i = toupper(*i);
-	return is(IfcSchema::Type::FromString(S));
+	return is(IfcSchema::Type::FromString(boost::to_upper_copy(s)));
 }
 IfcSchema::Type::Enum IfcParse::IfcLateBoundEntity::type() const {
 	return _type;

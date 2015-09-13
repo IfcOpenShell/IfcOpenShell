@@ -164,7 +164,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 			if (is_interior == !process_interior) continue;
 		
 			TopoDS_Wire wire;
-			if (!convert_wire(loop, wire)) break;
+			if (!convert_wire(loop, wire)) {
+				Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop->entity);
+				delete mf;
+				return false;
+			}
 
 			/*
 			The approach below does not result in a significant speed-up
@@ -252,13 +256,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 						// Reinitialize the builder to the outer face 
 						// bound in order to add holes more robustly.
 						delete mf;
+						// TODO: What about the face_surface?
 						mf = new BRepBuilderAPI_MakeFace(outer_face_bound);
 					} else {
 						face = outer_face_bound;
 						success = true;
 					}
 				} else {
-					break;
+					Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary", bound->entity);
+					delete mf;
+					return false;
 				}
 
 			} else {

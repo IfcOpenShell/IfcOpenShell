@@ -90,16 +90,10 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 			path.add(",");
 			addYCoordinate(path.add(p1.Y()));
 
-			if (p1.X() < xmin) xmin = p1.X();
-			if (p1.X() > xmax) xmax = p1.X();
-			if (p1.Y() < ymin) ymin = p1.Y();
-			if (p1.Y() > ymax) ymax = p1.Y();
+			growBoundingBox(p1.X(), p1.Y());
 		}
 
-		if (p2.X() < xmin) xmin = p2.X();
-		if (p2.X() > xmax) xmax = p2.X();
-		if (p2.Y() < ymin) ymin = p2.Y();
-		if (p2.Y() > ymax) ymax = p2.Y();
+		growBoundingBox(p2.X(), p2.Y());
 
 		Handle(Standard_Type) ty = curve->DynamicType();
 
@@ -218,7 +212,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
 
 	if (!storey) return;
 
-	path_object& p = start_path(storey, o->unique_id());
+	path_object& p = start_path(storey, nameElement(o));
 
 	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
 		gp_GTrsf gtrsf = it->Placement();
@@ -334,9 +328,9 @@ void SvgSerializer::finalize() {
 				svg_file << "    </g>\n";
 			}
 			std::ostringstream oss;
-			svg_file << "    <g id=\"storey-" << IfcParse::IfcGlobalId(it->first->GlobalId()).formatted() << "\">\n";
+			svg_file << "    <g " << nameElement(it->first) << ">\n";
 		}
-		svg_file << "        <g id=\"" << it->second.first << "\">\n";
+		svg_file << "        <g " << it->second.first << ">\n";
 		std::vector<util::string_buffer>::const_iterator jt;
 		for (jt = it->second.second.begin(); jt != it->second.second.end(); ++jt) {
 			svg_file << jt->str();
@@ -352,4 +346,18 @@ void SvgSerializer::finalize() {
 
 void SvgSerializer::writeHeader() {
 	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
+}
+
+std::string SvgSerializer::nameElement(const IfcGeom::Element<double>* elem) {
+	std::ostringstream oss;
+	const std::string type = "product";
+	oss << "id=\"" << type << "-" << elem->unique_id() << "\"";
+	return oss.str();
+}
+
+std::string SvgSerializer::nameElement(const IfcSchema::IfcProduct* elem) {
+	std::ostringstream oss;
+	const std::string type = elem->is(IfcSchema::Type::IfcBuildingStorey) ? "storey" : "product";
+	oss << "id=\"product-" << IfcParse::IfcGlobalId(elem->GlobalId()).formatted() << "\"";
+	return oss.str();
 }

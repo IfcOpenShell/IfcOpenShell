@@ -16,7 +16,7 @@ SET(CMAKE_SWIG_FLAGS "")
 
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
 SWIG_ADD_MODULE(ifcopenshell_wrapper python IfcPython.i)
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${PYTHON_LIBRARIES} IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKOffset)
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${PYTHON_LIBRARIES} IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKOffset ${ICU_LIBRARIES})
 
 # To install IfcPython let's get the site-packages dir from python
 EXECUTE_PROCESS(COMMAND python -c "import sys; from distutils.sysconfig import get_python_lib; sys.stdout.write(get_python_lib())"

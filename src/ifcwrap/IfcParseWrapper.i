@@ -200,4 +200,12 @@ namespace IfcUtil {
 		f->Init(s);
 		return f;
 	}
+
+	const char* const schema_identifier() {
+		return IfcSchema::Identifier;
+	}
+
+	const char* const version() {
+		return IFCOPENSHELL_VERSION;
+	}
 %}

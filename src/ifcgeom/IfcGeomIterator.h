@@ -64,6 +64,8 @@
 #include <limits>
 #include <algorithm>
 
+#include <boost/algorithm/string.hpp>
+
 #include <gp_Mat.hxx>
 #include <gp_Mat2d.hxx>
 #include <gp_GTrsf.hxx>
@@ -125,10 +127,7 @@ namespace IfcGeom {
 		void populate_set(const std::set<std::string>& include_or_ignore) {
 			entities_to_include_or_exclude.clear();
 			for (std::set<std::string>::const_iterator it = include_or_ignore.begin(); it != include_or_ignore.end(); ++it) {
-				std::string uppercase_type = *it;
-				for (std::string::iterator c = uppercase_type.begin(); c != uppercase_type.end(); ++c) {
-					*c = toupper(*c);
-				}
+				const std::string uppercase_type = boost::to_upper_copy(*it);
 				IfcSchema::Type::Enum ty;
 				try {
 					ty = IfcSchema::Type::FromString(uppercase_type);
