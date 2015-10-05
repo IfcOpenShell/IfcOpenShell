@@ -181,11 +181,9 @@ namespace IfcGeom {
 					continue;
 				}
 				if (context->hasContextType()) {
-					std::string context_type_lc = context->ContextType();
-					for (std::string::iterator c = context_type_lc.begin(); c != context_type_lc.end(); ++c) {
-						*c = tolower(*c);
-					}
-					if (context_types.find(context_type_lc) != context_types.end()) {
+					std::string context_type = context->ContextType();
+					boost::to_lower(context_type);
+					if (context_types.find(context_type) != context_types.end()) {
 						filtered_contexts->push(context);
 					}
 				}
