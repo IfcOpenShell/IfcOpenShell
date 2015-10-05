@@ -969,7 +969,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 					const std::string guid = ifc_root->GlobalId();
 					if ( byguid.find(guid) != byguid.end() ) {
 						std::stringstream ss;
-						ss << "Overwriting entity with guid " << guid;
+						ss << "Instance encountered with non-unique GlobalId " << guid;
 						Logger::Message(Logger::LOG_WARNING,ss.str());
 					}
 					byguid[guid] = ifc_root;
@@ -991,7 +991,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 			
 			if ( byid.find(currentId) != byid.end() ) {
 				std::stringstream ss;
-				ss << "Overwriting entity with id " << currentId;
+				ss << "Overwriting instance with name #" << currentId;
 				Logger::Message(Logger::LOG_WARNING,ss.str());
 			}
 			byid[currentId] = entity;
