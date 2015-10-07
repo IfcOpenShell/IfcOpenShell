@@ -776,8 +776,14 @@ bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::IfcRepresentationShapeIt
 			_trsf = trsf.Trsf();
 			trsf_valid = true;
 		} catch (...) {}
-		const TopoDS_Shape moved_shape = trsf_valid ? merged.Moved(_trsf) :
-			BRepBuilderAPI_GTransform(merged,trsf,true).Shape();
+
+		const TopoDS_Shape moved_shape = trsf.Form() == gp_Identity
+			? merged
+			: (
+			trsf_valid 
+			? merged.Moved(_trsf)
+			: BRepBuilderAPI_GTransform(merged,trsf,true).Shape()
+			);
 
 		if (shapes.size() == 1) {
 			result = moved_shape;
@@ -807,6 +813,10 @@ bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::IfcRepresentationShapeIt
 		} else {
 			builder.Add(compound,moved_shape);
 		}
+	}
+
+	if (!fuse) {
+		result = compound;
 	}
 
 	const bool success = !result.IsNull();
