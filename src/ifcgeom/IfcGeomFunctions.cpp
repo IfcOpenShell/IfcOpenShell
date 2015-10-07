@@ -554,7 +554,7 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	}
 }
 
-double IfcGeom::Kernel::getValue(GeomValue var) {
+double IfcGeom::Kernel::getValue(GeomValue var) const {
 	switch (var) {
 	case GV_DEFLECTION_TOLERANCE:
 		return deflection_tolerance;
