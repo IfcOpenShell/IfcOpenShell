@@ -67,11 +67,13 @@ namespace IfcGeom {
 		static const int INCLUDE_CURVES = 11;
 		// Specifies whether to exclude subtypes of IfcSolidModel and IfcSurface.
 		static const int EXCLUDE_SOLIDS_AND_SURFACES = 12;
+		// Specifies whether to slide representations according to associated IfcLayerSets.
+		static const int APPLY_LAYERSETS = 13;
 
 		// End of settings enumeration.
 
 	private:
-		bool _weld_vertices, _use_world_coords, _convert_back_units, _use_brep_data, _sew_shells, _faster_booleans, _disable_opening_subtractions, _disable_triangulation, _apply_default_materials, _include_curves, _exclude_solids_and_surfaces;
+		bool _weld_vertices, _use_world_coords, _convert_back_units, _use_brep_data, _sew_shells, _faster_booleans, _disable_opening_subtractions, _disable_triangulation, _apply_default_materials, _include_curves, _exclude_solids_and_surfaces, _apply_layersets;
 		double _deflection_tolerance;
 	public:
 		IteratorSettings()
@@ -86,6 +88,7 @@ namespace IfcGeom {
 			, _apply_default_materials(false)
 			, _include_curves(false)
 			, _exclude_solids_and_surfaces(false)
+			, _apply_layersets(false)
 			// TODO: Make deflection tolerance into a command line argument
 			// For now, stick to one millimeter. Note that this is independent of the IFC length unit.
 			, _deflection_tolerance(1.e-3)
@@ -113,6 +116,8 @@ namespace IfcGeom {
 		bool& include_curves() { return _include_curves; }
 		const bool& exclude_solids_and_surfaces() const { return _exclude_solids_and_surfaces; }
 		bool& exclude_solids_and_surfaces() { return _exclude_solids_and_surfaces; }
+		const bool& apply_layersets() const { return _apply_layersets; }
+		bool& apply_layersets() { return _apply_layersets; }
 		
 		const double& deflection_tolerance() const { return _deflection_tolerance; }
 		double& deflection_tolerance() { return _deflection_tolerance; }
@@ -151,6 +156,9 @@ namespace IfcGeom {
 				break;
 			case EXCLUDE_SOLIDS_AND_SURFACES:
 				_exclude_solids_and_surfaces = value;
+				break;
+			case APPLY_LAYERSETS:
+				_apply_layersets = value;
 				break;
 			default: throw IfcParse::IfcException("Invalid IteratorSetting");
 			}

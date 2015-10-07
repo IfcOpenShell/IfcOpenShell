@@ -129,6 +129,9 @@ int main(int argc, char** argv) {
 		("disable-opening-subtractions", 
 			"Specifies whether to disable the boolean subtraction of "
 			"IfcOpeningElement Representations from their RelatingElements.")
+		("enable-layerset-slicing", 
+			"Specifies whether to enable the slicing of products according "
+			"to their associated IfcMaterialLayerSet.")
 		("bounds", boost::program_options::value<std::string>(&bounds),
 			"Specifies the bounding rectangle, for example 512x512, to which the " 
 			"output will be scaled. Only used when converting to SVG.")
@@ -182,6 +185,8 @@ int main(int argc, char** argv) {
 	bool include_entities = vmap.count("include") != 0;
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
+	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
+
 	boost::optional<int> bounding_width, bounding_height;
 	if (vmap.count("bounds") == 1) {
 		int w, h;
@@ -259,6 +264,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
 	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
+	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
 
 	GeometrySerializer* serializer;
 	if (output_extension == ".obj") {

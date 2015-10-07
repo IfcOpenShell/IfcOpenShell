@@ -50,8 +50,7 @@ bool process_colour(IfcSchema::IfcColourOrFactor* colour_or_factor, std::tr1::ar
 	}
 }
 
-const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepresentationItem* item) {
-	std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*> shading_styles = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(item);
+const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*>& shading_styles) {
 	if (shading_styles.second == 0) {
 		return 0;
 	}
@@ -105,6 +104,28 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepr
 		}
 	}
 	return &(cache.Style[surface_style_id] = surface_style);
+}
+
+const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepresentationItem* item) {
+	return internalize_surface_style(get_surface_style<IfcSchema::IfcSurfaceStyleShading>(item));	
+}
+
+const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcMaterial* material) {
+	IfcSchema::IfcMaterialDefinitionRepresentation::list::ptr defs = material->HasRepresentation();
+	for (auto jt = defs->begin(); jt != defs->end(); ++jt) {
+		IfcSchema::IfcRepresentation::list::ptr reps = (*jt)->Representations();
+		IfcSchema::IfcStyledItem::list::ptr styles(new IfcSchema::IfcStyledItem::list);
+		for (auto it = reps->begin(); it != reps->end(); ++it) {
+			styles->push((**it).Items()->as<IfcSchema::IfcStyledItem>());
+		}
+		for (auto it = styles->begin(); it != styles->end(); ++it) {
+			auto ss = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(*it);
+			if (ss.second) {
+				return internalize_surface_style(ss);
+			}
+		}
+	}
+	return 0;
 }
 
 static std::map<std::string, IfcGeom::SurfaceStyle> default_materials;
