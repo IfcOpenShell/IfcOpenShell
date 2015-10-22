@@ -52,8 +52,14 @@ def get_bounding_box_center(bbox):
 def create_shape_from_serialization(brep_object):
     brep_data, occ_shape = None, None
     
-    try: brep_data = brep_object.geometry.brep_data
-    except: pass    
+    is_product_shape = True
+    try:
+        brep_data = brep_object.geometry.brep_data
+    except: 
+        try: 
+            brep_data = brep_object.brep_data
+            is_product_shape = False
+        except: pass
     if not brep_data: return tuple(brep_object, None)
     
     try:
@@ -62,5 +68,8 @@ def create_shape_from_serialization(brep_object):
         occ_shape = ss.Shape(ss.NbShapes())
     except: pass
     
-    return tuple(brep_object, occ_shape)
+    if is_product_shape:
+        return tuple(brep_object, occ_shape)
+    else:
+        return occ_shape
 

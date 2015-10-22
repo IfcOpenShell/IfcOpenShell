@@ -24,6 +24,15 @@ using namespace IfcSchema;
 using namespace IfcUtil;
 
 bool IfcGeom::Kernel::convert_shapes(const IfcBaseClass* l, IfcRepresentationShapeItems& r) {
+	if (shape_type(l) != ST_SHAPELIST) {
+		TopoDS_Shape shp;
+		if (convert_shape(l, shp)) {
+			r.push_back(IfcGeom::IfcRepresentationShapeItem(shp, get_style(l->as<IfcSchema::IfcRepresentationItem>())));
+			return true;
+		}
+		return false;
+	}
+
 #include "IfcRegisterConvertShapes.h"
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
 	return false;

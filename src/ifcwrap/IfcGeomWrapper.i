@@ -72,17 +72,35 @@
 	}
 }
 
+// A visitor
+%{
+struct ShapeRTTI : public boost::static_visitor<PyObject*>
+{
+    PyObject* operator()(IfcGeom::Element<double>* elem) const {
+		IfcGeom::SerializedElement<double>* serialized_elem = dynamic_cast<IfcGeom::SerializedElement<double>*>(elem);
+		IfcGeom::TriangulationElement<double>* triangulation_elem = dynamic_cast<IfcGeom::TriangulationElement<double>*>(elem);
+		if (triangulation_elem) {
+			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_IfcGeom__TriangulationElementT_double_t, SWIG_POINTER_OWN);
+		} else if (serialized_elem) {
+			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElementT_double_t, SWIG_POINTER_OWN);
+		}
+	}
+    PyObject* operator()(IfcGeom::Representation::Representation* representation) const {
+		IfcGeom::Representation::Serialization* serialized_representation = dynamic_cast<IfcGeom::Representation::Serialization*>(representation);
+		IfcGeom::Representation::Triangulation<double>* triangulated_representation = dynamic_cast<IfcGeom::Representation::Triangulation<double>*>(representation);
+		if (serialized_representation) {
+			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_representation), SWIGTYPE_p_IfcGeom__Representation__Serialization, SWIG_POINTER_OWN);
+		} else if (triangulated_representation) {
+			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulated_representation), SWIGTYPE_p_IfcGeom__Representation__TriangulationT_double_t, SWIG_POINTER_OWN);
+		}
+	}
+};
+%}
+
 // Note that these elements ARE to be owned by SWIG/Python
 %typemap(out) boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> {
 	// See which type is set and return appropriate
-	IfcGeom::Element<double>* elem = boost::get<IfcGeom::Element<double>*>($1);
-	IfcGeom::SerializedElement<double>* serialized_elem = dynamic_cast<IfcGeom::SerializedElement<double>*>(elem);
-	IfcGeom::TriangulationElement<double>* triangulation_elem = dynamic_cast<IfcGeom::TriangulationElement<double>*>(elem);
-	if (triangulation_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_IfcGeom__TriangulationElementT_double_t, SWIG_POINTER_OWN);
-	} else if (serialized_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElementT_double_t, SWIG_POINTER_OWN);
-	}
+	$result = boost::apply_visitor(ShapeRTTI(), $1);
 }
 
 // This does not seem to work:
@@ -218,25 +236,25 @@
 
 %inline %{
 	boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcParse::IfcLateBoundEntity* instance, IfcParse::IfcLateBoundEntity* representation = 0) {
+		IfcParse::IfcFile* file = instance->entity->file;
+		IfcSchema::IfcProject::list::ptr projects = file->entitiesByType<IfcSchema::IfcProject>();
+		if (projects->size() != 1) {
+			throw IfcParse::IfcException("Not a single IfcProject instance");
+		}
+		IfcSchema::IfcProject* project = *projects->begin();
+			
+		IfcGeom::Kernel kernel;
+		kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.sew_shells() ? 1000 : -1);
+		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.include_curves() ? (settings.exclude_solids_and_surfaces() ? -1. : 0.) : +1.));
+		std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
+			
 		if (instance->is(IfcSchema::Type::IfcProduct)) {
 			if (representation) {
 				if (!representation->is(IfcSchema::Type::IfcRepresentation)) {
 					throw IfcParse::IfcException("Supplied representation not of type IfcRepresentation");
 				}
 			}
-
-			IfcParse::IfcFile* file = instance->entity->file;
-			
-			IfcSchema::IfcProject::list::ptr projects = file->entitiesByType<IfcSchema::IfcProject>();
-			if (projects->size() != 1) {
-				throw IfcParse::IfcException("Not a single IfcProject instance");
-			}
-			IfcSchema::IfcProject* project = *projects->begin();
-			
-			IfcGeom::Kernel kernel;
-			kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.sew_shells() ? 1000 : -1);
-			kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.include_curves() ? (settings.exclude_solids_and_surfaces() ? -1. : 0.) : +1.));
-
+		
 			IfcSchema::IfcProduct* product = (IfcSchema::IfcProduct*) instance;
 
 			if (!representation && !product->hasRepresentation()) {
@@ -318,7 +336,6 @@
 			if (context->hasPrecision()) {
 				precision = context->Precision();
 			}
-			std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 			precision *= length_unit.second;
 
 			// Some arbitrary factor that has proven to work better for the models in the set of test files.
@@ -342,7 +359,28 @@
 				throw IfcParse::IfcException("No element to return based on provided settings");
 			}
 		} else {
-			throw IfcParse::IfcException("Only obtaining representations for IfcProduct instances is currently supported");
+			if (!representation) {
+				if (instance->is(IfcSchema::Type::IfcRepresentationItem) || instance->is(IfcSchema::Type::IfcRepresentation)) {
+					IfcGeom::IfcRepresentationShapeItems shapes;
+					if (kernel.convert_shapes(instance, shapes)) {
+						IfcGeom::ElementSettings element_settings(settings, kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT), IfcSchema::Type::ToString(instance->type()));
+						IfcGeom::Representation::BRep brep(element_settings, instance->entity->id(), shapes);
+						try {
+							if (settings.use_brep_data()) {
+								return new IfcGeom::Representation::Serialization(brep);
+							} else if (!settings.disable_triangulation()) {
+								return new IfcGeom::Representation::Triangulation<double>(brep);
+							}
+						} catch (...) {
+							throw IfcParse::IfcException("Error during shape serialization");
+						}
+					} else {
+						throw IfcParse::IfcException("Geometrical element not understood");
+					}
+				}
+			} else {
+				throw IfcParse::IfcException("Invalid additional representation specified");
+			}
 		}
 	}
 %}
