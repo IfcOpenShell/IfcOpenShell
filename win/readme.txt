@@ -16,7 +16,7 @@ which are listed in the usage instructions. Either edit the script file or set t
 running the script.
 
 build-deps.cmd expects a CMake generator as %1 and a build configuration type as %2. If the parameters
-are not provided, the default values are used ("Visual Studio 12 Win64" and RelWithDebInfo respectively).
+are not provided, the default values are used ("Visual Studio 14 2015 Win64" and RelWithDebInfo respectively).
 A build type (Build/Rebuild/Clean) can be provided as %3, if wanted (defaults to Build). See vs-cfg.cmd
 if you want to change the defaults. The batch file will create deps\ and deps-vs<VERSION>-<ARCHITECTURE>-installed\
 directories to the project root. Note that currently only libraries for one build configuration type
