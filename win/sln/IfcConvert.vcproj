@@ -2,10 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="IfcGeom"
-	ProjectGUID="{BA57AF0F-1D12-4FAC-BD40-7474D729CAE9}"
-	RootNamespace="IfcGeom"
-	Keyword="Win32Proj"
+	Name="IfcConvert"
+	ProjectGUID="{5B0BAAB3-9FC4-4C0C-9D38-8BF4B07F4A85}"
+	RootNamespace="IfcConvert"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -18,10 +17,10 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="1"
+			OutputDirectory="..\..\build\debug"
+			IntermediateDirectory="..\..\temp\obj\debug"
+			ConfigurationType="1"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -42,11 +41,11 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/DWNT"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="0"
+				ProgramDataBaseFileName="$(IntDir)\vc90.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -60,10 +59,16 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				AdditionalDependencies="TKerneld.lib TKMathd.lib TKBRepd.lib TKGeomBased.lib TKGeomAlgod.lib TKG3dd.lib TKG2dd.lib TKShHealingd.lib TKTopAlgod.lib TKMeshd.lib TKPrimd.lib TKBoold.lib TKBOd.lib TKFilletd.lib TKSTEPd.lib TKSTEPBased.lib TKSTEPAttrd.lib TKXSBased.lib TKSTEP209d.lib TKIGESd.lib TKOffsetd.lib"
+				GenerateDebugInformation="true"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -75,15 +80,18 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="1"
+			OutputDirectory="..\..\build\release"
+			IntermediateDirectory="..\..\temp\obj\release"
+			ConfigurationType="1"
+			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -106,10 +114,8 @@
 				AdditionalOptions="/DWNT"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -123,10 +129,18 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				AdditionalDependencies="TKernel.lib TKMath.lib TKBRep.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKShHealing.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKBool.lib TKBO.lib TKFillet.lib TKSTEP.lib TKSTEPBase.lib TKSTEPAttr.lib TKXSBase.lib TKSTEP209.lib TKIGES.lib TKOffset.lib"
+				GenerateDebugInformation="true"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -136,6 +150,9 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -151,43 +168,31 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomCurves.cpp"
+				RelativePath="..\..\src\ifcconvert\ColladaSerializer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomFaces.cpp"
+				RelativePath="..\..\src\ifcconvert\IfcConvert.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomFunctions.cpp"
+				RelativePath="..\..\src\ifcconvert\OpenCascadeBasedSerializer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomHelpers.cpp"
+				RelativePath="..\..\src\ifcconvert\SvgSerializer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomMaterial.cpp"
+				RelativePath="..\..\src\ifcconvert\util.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomRenderStyles.cpp"
+				RelativePath="..\..\src\ifcconvert\WavefrontObjSerializer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomRepresentation.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcGeomShapes.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcGeomWires.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcRegister.cpp"
+				RelativePath="..\..\src\ifcconvert\XmlSerializer.cpp"
 				>
 			</File>
 		</Filter>
@@ -197,95 +202,45 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeom.h"
+				RelativePath="..\..\src\ifcconvert\ColladaSerializer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomElement.h"
+				RelativePath="..\..\src\ifcconvert\GeometrySerializer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomIterator.h"
+				RelativePath="..\..\src\ifcconvert\IgesSerializer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomIteratorSettings.h"
+				RelativePath="..\..\src\ifcconvert\OpenCascadeBasedSerializer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomMaterial.h"
+				RelativePath="..\..\src\ifcconvert\StepSerializer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomRenderStyles.h"
+				RelativePath="..\..\src\ifcconvert\Serializer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomRepresentation.h"
+				RelativePath="..\..\src\ifcconvert\SvgSerializer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcGeomShapeType.h"
+				RelativePath="..\..\src\ifcconvert\util.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcRegister.h"
+				RelativePath="..\..\src\ifcconvert\WavefrontObjSerializer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterConvertCurve.h"
+				RelativePath="..\..\src\ifcconvert\XmlSerializer.h"
 				>
 			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterConvertFace.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterConvertShape.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterConvertShapes.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterConvertWire.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterCreateCache.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterDef.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterGeomHeader.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterPurgeCache.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterShapeType.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcRegisterUndef.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ifcgeom\IfcRepresentationShapeItem.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
 		</Filter>
 	</Files>
 	<Globals>
