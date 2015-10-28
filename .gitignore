@@ -1,0 +1,4 @@
+# Dependency and build folders created by the build scripts
+deps*/
+build*/
+install*/
