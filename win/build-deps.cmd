@@ -94,7 +94,7 @@ echo      Defaults to RelWithDebInfo if not specified.
 IF %BUILD_CFG%==MinSizeRel cecho {0E}     WARNING: MinSizeRel build can suffer from a significant performance loss.{# #}{\n}
 cecho {0D}  Build Type                = %BUILD_TYPE%{# #}{\n}
 echo    - The used build type for the dependencies (Build, Rebuild, Clean).
-echo      Defaults to Build if not specified.
+echo      Defaults to Build if not specified. Rebuild/Clean also uninstalls Python.
 cecho {0D}  IFCOS_INSTALL_PYTHON      = %IFCOS_INSTALL_PYTHON%{# #}{\n}
 echo    - Download and install Python.
 echo      Set to something other than TRUE if you wish to use an already installed version of Python.
@@ -113,6 +113,9 @@ echo    3. Visual Studio 2008 or newer (2013 or newer recommended).
 echo    4. Run this batch script with Visual Studio environment variables set.
 echo.
 REM TODO 3ds Max SDK?
+
+cecho {0E}Warning: You will need roughly 8 GB of disk space to proceed (VS 2015 x64 RelWithDebInfo).{# #}{\n}
+echo.
 
 echo If you are not ready with the above, press Ctrl-C to abort!
 pause
@@ -269,29 +272,33 @@ call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :Python
+set PYTHON_AMD64_POSTFIX=.amd64
+IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
+:: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
+set PYTHON_VERSION=3.4.3
+set DEPENDENCY_NAME=Python %PYTHON_VERSION%
+set DEPENDENCY_DIR=N/A
+set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
-    set PYTHON_AMD64_POSTFIX=.amd64
-    IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
-    :: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
-    set PYTHON_VERSION=3.4.3
-    set DEPENDENCY_NAME=Python %PYTHON_VERSION%
-    set DEPENDENCY_DIR=N/A
-    set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
     cd "%DEPS_DIR%"
     call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
     IF NOT %ERRORLEVEL%==0 GOTO :Error
-    :: TODO Uninstall if build type == Clean
+    REM Uninstall if build Rebuild/Clean used
+    IF NOT %BUILD_TYPE%==Build (
+        cecho {0D}Uninstalling %DEPENDENCY_NAME%. Please be patient, this will take a while.{# #}{\n}
+        msiexec /x %PYTHON_INSTALLER% /qn
+    )
+
     IF NOT EXIST "%INSTALL_DIR%\Python". (
         cecho {0D}Installing %DEPENDENCY_NAME%. Please be patient, this will take a while.{# #}{\n}
         msiexec /qn /i %PYTHON_INSTALLER% TARGETDIR=%INSTALL_DIR%\Python
-        echo %ERRORLEVEL%
     ) ELSE (
         cecho {0D}%DEPENDENCY_NAME% already installed. Skipping.{# #}{\n}
     )
 ) ELSE (
     cecho {0D}IFCOS_INSTALL_PYTHON not true, skipping installation of Python.{# #}{\n}
 )
-pause
+
 :SWIG
 set SWIG_VERSION=3.0.5
 set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
