@@ -64,6 +64,7 @@ IF NOT EXIST %INSTALL_DIR%. mkdir %INSTALL_DIR%
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
+:: TODO Option for Python 2 or 3
 IF "%IFCOS_INSTALL_PYTHON%"=="" set IFCOS_INSTALL_PYTHON=TRUE
 IF "%IFCOS_NUM_BUILD_PROCESSES%"=="" set IFCOS_NUM_BUILD_PROCESSES=%NUMBER_OF_PROCESSORS%
 
@@ -122,7 +123,7 @@ pause
 echo.
 
 cd %DEPS_DIR%
-goto :Python
+
 :Boost
 set BOOST_VERSION=1.59.0
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
@@ -159,7 +160,7 @@ cd "%DEPS_DIR%\boost"
 cecho {0D}Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while.{# #}{\n}
 IF EXIST "%DEPS_DIR%\boost\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
 call .\b2 toolset=msvc-%VC_VER%.0 runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCESSES% ^
-    %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
+    variant=%DEBUG_OR_RELEASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
 
 :ICU
 set DEPENDENCY_NAME=ICU
@@ -272,13 +273,16 @@ call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :Python
-set PYTHON_AMD64_POSTFIX=.amd64
-IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
 :: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
 set PYTHON_VERSION=3.4.3
+REM set PYTHON_VERSION=2.7.10
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
+set PYTHON_AMD64_POSTFIX=.amd64
+:: NOTE/TODO Beginning from 3.5.0: set PYTHON_AMD64_POSTFIX=-amd64
+IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
 set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
+:: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     cd "%DEPS_DIR%"
     call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
@@ -300,7 +304,7 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 )
 
 :SWIG
-set SWIG_VERSION=3.0.5
+set SWIG_VERSION=3.0.7
 set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
 set DEPENDENCY_DIR=N/A
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
