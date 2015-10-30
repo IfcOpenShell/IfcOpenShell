@@ -42,9 +42,10 @@ set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce
 set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib
 set OPENCOLLADA_INCLUDE_DIR=%INSTALL_DIR%\OpenCOLLADA\include\opencollada
 set OPENCOLLADA_LIBRARY_DIR=%INSTALL_DIR%\OpenCOLLADA\lib\opencollada
-:: TODO 3ds Max SDK?
+set PYTHONPATH=%INSTALL_DIR%\Python
 set SWIG_DIR=%INSTALL_DIR%\swigwin
-set PATH=%PATH%;%SWIG_DIR%
+set PATH=%PATH%;%SWIG_DIR%;%PYTHONPATH%
+:: TODO 3ds Max SDK?
 
 echo.
 cecho {0A}Script configuration:{# #}{\n}
@@ -61,7 +62,7 @@ echo    OCC_INCLUDE_DIR         = %OCC_INCLUDE_DIR%
 echo    OCC_LIBRARY_DIR         = %OCC_LIBRARY_DIR%
 echo    OPENCOLLADA_INCLUDE_DIR = %OPENCOLLADA_INCLUDE_DIR%
 echo    OPENCOLLADA_LIBRARY_DIR = %OPENCOLLADA_LIBRARY_DIR%
-:: TODO Python
+echo    PYTHONPATH              = %PYTHONPATH%
 echo    SWIG_DIR                = %SWIG_DIR%
 echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%

@@ -27,14 +27,15 @@ After the dependencies are build, execute run-cmake.bat. The batch file expects 
 %1, or alternatively if more parameters are provided, %* is passed for the CMake inkovation. If no %1
 is provided, the same default value as above is used. This batch script will create a folder of form 
 build-vs<VERSION>-<ARCHITECTURE> which will contain the solution and project files for Visual Studio.
+IMPORTANT: If you wish to use any library from a custom location, modify the paths in run-cmake.bat 
+accordingly.
 
 All of the dependencies are build as static libraries against the static run-time allowing the developer
 to effortlessly deploy standalone binaries.
 
-You can now build the project using the IfcOpenShell.sln file in the build folder. Build the INSTALL
-project if wanted. The project will installed to installed-vs<VERSION>-<ARCHITECTURE> folder in the
-project's root folder and the required IfcOpenShell-Python parts are deployed to the Python's Lib
-folder.
+You can now build the project using the IfcOpenShell.sln file in the build folder. Build the INSTALL project
+if wanted. The project will installed to installed-vs<VERSION>-<ARCHITECTURE> folder in the project's root
+folder and the required IfcOpenShell-Python parts are deployed to the <PYTHONPATH>\Lib\site-packages folder.
 
 
 == Directory Structure ==
