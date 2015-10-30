@@ -64,8 +64,8 @@ IF NOT EXIST %INSTALL_DIR%. mkdir %INSTALL_DIR%
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
-:: TODO Option for Python 2 or 3
 IF "%IFCOS_INSTALL_PYTHON%"=="" set IFCOS_INSTALL_PYTHON=TRUE
+IF "%IFCOS_USE_PYTHON2%"=="" set IFCOS_USE_PYTHON2=FALSE
 IF "%IFCOS_NUM_BUILD_PROCESSES%"=="" set IFCOS_NUM_BUILD_PROCESSES=%NUMBER_OF_PROCESSORS%
 
 :: For subroutines
@@ -99,6 +99,9 @@ echo      Defaults to Build if not specified. Rebuild/Clean also uninstalls Pyth
 cecho {0D}  IFCOS_INSTALL_PYTHON      = %IFCOS_INSTALL_PYTHON%{# #}{\n}
 echo    - Download and install Python.
 echo      Set to something other than TRUE if you wish to use an already installed version of Python.
+cecho {0D}  IFCOS_USE_PYTHON2         = %IFCOS_USE_PYTHON2%{# #}{\n}
+echo    - Use Python 2 instead of 3.
+echo      Set to TRUE if you wish to use Python 2 instead of 3. Has no effect if IFCOS_INSTALL_PYTHON is not TRUE.
 cecho {0D}  IFCOS_NUM_BUILD_PROCESSES = %IFCOS_NUM_BUILD_PROCESSES%{# #}{\n}
 echo    - How many MSBuild.exe processes may be run in parallel.
 echo      Defaults to NUMBER_OF_PROCESSORS.
@@ -124,6 +127,8 @@ echo.
 
 cd %DEPS_DIR%
 
+:: Note all of the depedencies have approriate label so that user can easily skip something if wanted
+:: by modifying this file and using goto.
 :Boost
 set BOOST_VERSION=1.59.0
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
@@ -160,7 +165,8 @@ cd "%DEPS_DIR%\boost"
 cecho {0D}Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while.{# #}{\n}
 IF EXIST "%DEPS_DIR%\boost\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
 call .\b2 toolset=msvc-%VC_VER%.0 runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCESSES% ^
-    variant=%DEBUG_OR_RELEASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
+    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
+IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :ICU
 set DEPENDENCY_NAME=ICU
@@ -275,7 +281,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :Python
 :: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
 set PYTHON_VERSION=3.4.3
-REM set PYTHON_VERSION=2.7.10
+IF "%IFCOS_USE_PYTHON2%"=="TRUE" set PYTHON_VERSION=2.7.10
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
 set PYTHON_AMD64_POSTFIX=.amd64
