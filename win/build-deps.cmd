@@ -282,6 +282,8 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
 set PYTHON_VERSION=3.4.3
 IF "%IFCOS_USE_PYTHON2%"=="TRUE" set PYTHON_VERSION=2.7.10
+set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
+set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
 set PYTHON_AMD64_POSTFIX=.amd64
@@ -299,9 +301,9 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
         msiexec /x %PYTHON_INSTALLER% /qn
     )
 
-    IF NOT EXIST "%INSTALL_DIR%\Python". (
+    IF NOT EXIST "%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%". (
         cecho {0D}Installing %DEPENDENCY_NAME%. Please be patient, this will take a while.{# #}{\n}
-        msiexec /qn /i %PYTHON_INSTALLER% TARGETDIR=%INSTALL_DIR%\Python
+        msiexec /qn /i %PYTHON_INSTALLER% TARGETDIR=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
     ) ELSE (
         cecho {0D}%DEPENDENCY_NAME% already installed. Skipping.{# #}{\n}
     )
