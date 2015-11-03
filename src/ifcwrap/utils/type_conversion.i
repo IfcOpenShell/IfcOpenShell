@@ -132,9 +132,9 @@
 
 	template <typename T>
 	PyObject* pythonize_vector(const std::vector<T>& v) {
-		const unsigned size = v.size();
+		const size_t size = v.size();
 		PyObject* pyobj = PyTuple_New(size);
-		for (unsigned int i = 0; i < size; ++i) {
+		for (size_t i = 0; i < size; ++i) {
 			PyTuple_SetItem(pyobj, i, pythonize(v[i]));
 		}
 		return pyobj;
@@ -142,9 +142,9 @@
 
 	template <typename T>
 	PyObject* pythonize_vector2(const std::vector< std::vector<T> >& v) {
-		const unsigned size = v.size();
+		const size_t size = v.size();
 		PyObject* pyobj = PyTuple_New(size);
-		for (unsigned int i = 0; i < size; ++i) {
+		for (size_t i = 0; i < size; ++i) {
 			PyTuple_SetItem(pyobj, i, pythonize_vector(v[i]));
 		}
 		return pyobj;

@@ -39,8 +39,8 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::addFloatSource(const
 	COLLADASW::FloatSource source(mSW);
 	source.setId(mesh_id + suffix);
 	source.setArrayId(mesh_id + suffix + COLLADASW::LibraryGeometries::ARRAY_ID_SUFFIX);
-	source.setAccessorStride(strlen(coords));
-	source.setAccessorCount(floats.size() / 3);
+	source.setAccessorStride((unsigned long)strlen(coords));
+	source.setAccessorCount((unsigned long)floats.size() / 3);
 	for (unsigned int i = 0; i < source.getAccessorStride(); ++i) {
 		source.getParameterNameList().push_back(std::string(1, coords[i]));
 	}
@@ -73,7 +73,7 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(const std::str
 	int previous_material_id = -1;
 	for (std::vector<int>::const_iterator it = faces.begin(); !faces.empty(); it += 3) {
 		const int current_material_id = *(material_it++);
-		const int num_triangles = std::distance(index_range_start, it) / 3;
+		const unsigned long num_triangles = (unsigned long)std::distance(index_range_start, it) / 3;
 		if ((previous_material_id != current_material_id && num_triangles > 0) || (it == faces.end())) {
 			COLLADASW::Triangles triangles(mSW);
 			triangles.setMaterial(materials[previous_material_id].name());
@@ -126,7 +126,7 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(const std::str
 	for (linelist_t::const_iterator it = linelist.begin(); it != linelist.end(); ++it) {
 		COLLADASW::Lines lines(mSW);
 		lines.setMaterial(materials[it->first].name());
-		lines.setCount(it->second.size());
+		lines.setCount((unsigned long)it->second.size());
 		int offset = 0;
 		lines.getInputList().push_back(COLLADASW::Input(COLLADASW::InputSemantic::VERTEX, "#" + mesh_id + COLLADASW::LibraryGeometries::VERTICES_ID_SUFFIX, 0));
 		lines.prepareToAppendValues();

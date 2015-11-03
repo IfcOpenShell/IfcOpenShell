@@ -84,7 +84,7 @@ Argument* IfcWritableEntity::getArgument (unsigned int i) {
 	}
 	return args[i];
 }
-unsigned int IfcWritableEntity::getArgumentCount() const {return args.size(); }
+unsigned int IfcWritableEntity::getArgumentCount() const { return (unsigned)args.size(); }
 IfcSchema::Type::Enum IfcWritableEntity::type() const { return _type; }
 bool IfcWritableEntity::is(IfcSchema::Type::Enum v) const { return _type == v; }
 std::string IfcWritableEntity::toString(bool upper) const {
@@ -298,12 +298,12 @@ public:
 	int operator()(const double& i) const { return -1; }
 	int operator()(const std::string& i) const { return -1; }
 	int operator()(const boost::dynamic_bitset<>& i) const { return -1; }
-	int operator()(const std::vector<int>& i) const { return i.size(); }
-	int operator()(const std::vector<double>& i) const { return i.size(); }
-	int operator()(const std::vector< std::vector<int> >& i) const { return i.size(); }
-	int operator()(const std::vector< std::vector<double> >& i) const { return i.size(); }
-	int operator()(const std::vector<std::string>& i) const { return i.size(); }
-	int operator()(const std::vector< boost::dynamic_bitset<> >& i) const { return i.size(); }
+	int operator()(const std::vector<int>& i) const { return (int)i.size(); }
+	int operator()(const std::vector<double>& i) const { return (int)i.size(); }
+	int operator()(const std::vector< std::vector<int> >& i) const { return (int)i.size(); }
+	int operator()(const std::vector< std::vector<double> >& i) const { return (int)i.size(); }
+	int operator()(const std::vector<std::string>& i) const { return (int)i.size(); }
+	int operator()(const std::vector< boost::dynamic_bitset<> >& i) const { return (int)i.size(); }
 	int operator()(const IfcWriteArgument::EnumerationReference& i) const { return -1; }
 	int operator()(const IfcUtil::IfcBaseClass* const& i) const { return -1; }
 	int operator()(const IfcEntityList::ptr& i) const { return i->size(); }
@@ -351,7 +351,7 @@ private:
 		oss.imbue(std::locale::classic());
 		oss.put('"');
 		oss << std::hex << std::setw(1);
-		unsigned c = b.size();
+		unsigned c = (unsigned)b.size();
 		unsigned n = (4 - (c % 4)) & 3;
 		oss << n;
 		for (unsigned i = 0; i < c + n;) {
