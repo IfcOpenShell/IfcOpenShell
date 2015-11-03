@@ -202,17 +202,8 @@ IF EXIST "%DEPS_DIR%\icu-55.1-vs%VS_VER%\". (
 :: Note OpenCOLLADA has only Release and Debug builds.
 set DEPENDENCY_NAME=OpenCOLLADA
 set DEPENDENCY_DIR=%DEPS_DIR%\OpenCOLLADA
-:: TODO Temporarily use our own repo until the upstream has static VC runtime option
-call :GitCloneOrPullRepository https://github.com/Tridify/OpenCOLLADA.git "%DEPENDENCY_DIR%"
-REM call :GitCloneOrPullRepository https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%"
+call :GitCloneOrPullRepository https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF NOT EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%". (
-    cd "%DEPENDENCY_DIR%"
-    call git branch vs-static-rt origin/vs-static-rt
-    IF NOT %ERRORLEVEL%==0 GOTO :Error
-    call git checkout vs-static-rt
-    IF NOT %ERRORLEVEL%==0 GOTO :Error
-)
 cd "%DEPENDENCY_DIR%"
 :: NOTE OpenCOLLADA has been observed to have problems with switching between debug and release builds so
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
