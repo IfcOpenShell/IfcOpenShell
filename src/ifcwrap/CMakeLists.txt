@@ -41,6 +41,12 @@ INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS "")
+# NOTE Workaround for most likely missing debug Python libraries on Windows (requires Python built from the source).
+# Python 3.5 intaller and onwards will have an option to install the debug libraries too.
+IF (WIN32 AND NOT PYTHON_DEBUG_LIBRARIES)
+	MESSAGE(STATUS "PYTHON_DEBUG_LIBRARIES not found, defining SWIG_PYTHON_INTERPRETER_NO_DEBUG workaround for IfcWrap.")
+	ADD_DEFINITIONS(-DSWIG_PYTHON_INTERPRETER_NO_DEBUG)
+ENDIF()
 
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
 SWIG_ADD_MODULE(ifcopenshell_wrapper python IfcPython.i)
