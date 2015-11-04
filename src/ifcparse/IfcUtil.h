@@ -230,7 +230,7 @@ public:
 	void push(const std::vector<T*>& t) {ls.push_back(t);}
 	outer_it begin() { return ls.begin(); }
 	outer_it end() { return ls.end(); }
-	int size() const { return ls.size(); }
+	int size() const { return (int)ls.size(); }
 	int totalSize() const { 
 		int accum = 0; 
 		for (outer_it it = begin(); it != end(); ++it) { 

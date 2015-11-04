@@ -399,7 +399,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& shape) {
 	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
 	bool facesAdded = false;
-	const unsigned int num_faces = faces->size();
+	const unsigned int num_faces = (unsigned)faces->size();
 	bool valid_shell = false;
 	if ( num_faces < getValue(GV_MAX_FACES_TO_SEW) ) {
 		BRepOffsetAPI_Sewing builder;
@@ -882,7 +882,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 
 	if (faces.empty()) return false;
 	
-	const unsigned int num_faces = indices.size();
+	const unsigned int num_faces = (unsigned)indices.size();
 	bool valid_shell = false;
 
 	if (faces.size() < getValue(GV_MAX_FACES_TO_SEW)) {
