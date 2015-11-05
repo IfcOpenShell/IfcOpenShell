@@ -24,6 +24,8 @@
 @echo off
 echo.
 
+set THISDIR=%CD%
+
 :: Enable the delayed environment variable expansion needed in vs-cfg.cmd.
 setlocal EnableDelayedExpansion
 
@@ -271,10 +273,13 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :Python
 :: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
+:: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
 set PYTHON_VERSION=3.4.3
 IF "%IFCOS_USE_PYTHON2%"=="TRUE" set PYTHON_VERSION=2.7.10
 set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
 set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
+set PYTHONPATH=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
 set PYTHON_AMD64_POSTFIX=.amd64
@@ -283,6 +288,10 @@ IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
 set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
 :: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
+    REM Store Python versions to BuildDepsCache.txt for run-cmake.bat
+    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>"%THISDIR%\BuildDepsCache.txt"
+    echo PYTHONPATH=%PYTHONPATH%>>"%THISDIR%\BuildDepsCache.txt"
+
     cd "%DEPS_DIR%"
     call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
     IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -292,9 +301,9 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
         msiexec /x %PYTHON_INSTALLER% /qn
     )
 
-    IF NOT EXIST "%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%". (
+    IF NOT EXIST "%PYTHONPATH%". (
         cecho {0D}Installing %DEPENDENCY_NAME%. Please be patient, this will take a while.{# #}{\n}
-        msiexec /qn /i %PYTHON_INSTALLER% TARGETDIR=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+        msiexec /qn /i %PYTHON_INSTALLER% TARGETDIR="%PYTHONPATH%"
     ) ELSE (
         cecho {0D}%DEPENDENCY_NAME% already installed. Skipping.{# #}{\n}
     )

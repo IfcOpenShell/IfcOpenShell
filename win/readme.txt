@@ -28,10 +28,7 @@ After the dependencies are build, execute run-cmake.bat. The batch file expects 
 is provided, the same default value as above is used. This batch script will create a folder of form 
 build-vs<VERSION>-<ARCHITECTURE> which will contain the solution and project files for Visual Studio.
 IMPORTANT: If you wish to use any library from a custom location, modify the paths in run-cmake.bat 
-accordingly. If you used IFCOS_USE_PYTHON2=TRUE when running build-deps.cmd, currently it must also be
-set accordingly before running run-cmake.bat, if run-cmake.bat is not run in the same command prompt
-session as build-deps.cmd was run.
-
+accordingly.
 
 All of the dependencies are build as static libraries against the static run-time allowing the developer
 to effortlessly deploy standalone binaries.
@@ -47,6 +44,7 @@ folder and the required IfcOpenShell-Python parts are deployed to the <PYTHONPAT
 |   readme.txt              - This file
 |   run-cmake.bat           - Sets environment variables for the dependencies and runs CMake for IFCOS
 |   vs-cfg.cmd              - Utility file used by the build scripts
+|   BuildDepsCache.txt      - Cache file created by build-deps.cmd
 |
 +---sln                     - Contains the old Visual Studio solution and project files
 \---utils                   - Contains various utilities for the build scripts

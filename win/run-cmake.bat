@@ -25,6 +25,9 @@ set PROJECT_NAME=IfcOpenShell
 :: Enable the delayed environment variable expansion needed in vs-cfg.cmd.
 setlocal EnableDelayedExpansion
 
+:: Read Python related variables from BuildDepsCache.txt
+for /f "delims== tokens=1,2" %%G in (BuildDepsCache.txt) do set %%G=%%H
+
 call vs-cfg.cmd %1
 
 pushd ..
@@ -34,11 +37,6 @@ popd
 set BUILD_DIR=build-vs%VS_VER%-%TARGET_ARCH%
 IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
-:: TODO Duplicate code with build-deps.cmd: have some kind of build cache/config file and read Pyhon version from there.
-set PYTHON_VERSION=3.4.3
-IF "%IFCOS_USE_PYTHON2%"=="TRUE" set PYTHON_VERSION=2.7.10
-set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
-set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
 
 set BOOST_ROOT=%DEPS_DIR%\boost
 REM set BOOST_INCLUDEDIR=%DEPS_DIR%\boost
@@ -49,9 +47,10 @@ set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce
 set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib
 set OPENCOLLADA_INCLUDE_DIR=%INSTALL_DIR%\OpenCOLLADA\include\opencollada
 set OPENCOLLADA_LIBRARY_DIR=%INSTALL_DIR%\OpenCOLLADA\lib\opencollada
-set PYTHON_INCLUDE_DIR=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%\include
-set PYTHON_LIBRARY=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%\libs\python%PY_VER_MAJOR_MINOR%.lib
-set PYTHONPATH=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+if "%PY_VER_MAJOR_MINOR%"=="" set PY_VER_MAJOR_MINOR=34
+if "%PYTHONPATH%"=="" set PYTHONPATH=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+set PYTHON_INCLUDE_DIR=%PYTHONPATH%\include
+set PYTHON_LIBRARY=%PYTHONPATH%\libs\python%PY_VER_MAJOR_MINOR%.lib
 set SWIG_DIR=%INSTALL_DIR%\swigwin
 set PATH=%PATH%;%SWIG_DIR%;%PYTHONPATH%
 :: TODO 3ds Max SDK?
@@ -71,9 +70,9 @@ echo    OCC_INCLUDE_DIR         = %OCC_INCLUDE_DIR%
 echo    OCC_LIBRARY_DIR         = %OCC_LIBRARY_DIR%
 echo    OPENCOLLADA_INCLUDE_DIR = %OPENCOLLADA_INCLUDE_DIR%
 echo    OPENCOLLADA_LIBRARY_DIR = %OPENCOLLADA_LIBRARY_DIR%
+echo    PYTHONPATH              = %PYTHONPATH%
 echo    PYTHON_INCLUDE_DIR      = %PYTHON_INCLUDE_DIR%
 echo    PYTHON_LIBRARY          = %PYTHON_LIBRARY%
-echo    PYTHONPATH              = %PYTHONPATH%
 echo    SWIG_DIR                = %SWIG_DIR%
 echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
