@@ -54,6 +54,11 @@ ELSE()
 	MESSAGE(FATAL_ERROR "Unable to find header files, aborting")
 ENDIF()
 
+SET(OCE_LIBRARIES
+	TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
+	TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset
+)
+
 IF("$ENV{OCC_LIBRARY_DIR}" STREQUAL "")
 	SET(OCC_LIBRARY_DIR "/usr/lib/" CACHE FILEPATH "Open CASCADE library files")
 	MESSAGE(STATUS "Looking for opencascade library files in: ${OCC_LIBRARY_DIR}")
@@ -246,10 +251,7 @@ file(GLOB H_FILES ../src/ifcconvert/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_EXECUTABLE(IfcConvert ${SOURCE_FILES})
 
-TARGET_LINK_LIBRARIES(IfcConvert IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing
-	TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset
-	${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES}
-)
+TARGET_LINK_LIBRARIES(IfcConvert IfcParse IfcGeom ${OCE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
 
 # IfcGeomServer
 file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
@@ -257,10 +259,7 @@ file(GLOB H_FILES ../src/ifcgeomserver/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_EXECUTABLE(IfcGeomServer ${SOURCE_FILES})
 
-TARGET_LINK_LIBRARIES(IfcGeomServer IfcParse IfcGeom TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing
-	TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset
-	${Boost_LIBRARIES}
-)
+TARGET_LINK_LIBRARIES(IfcGeomServer IfcParse IfcGeom ${OCE_LIBRARIES} ${Boost_LIBRARIES})
 
 IF(BUILD_IFCPYTHON)
 	ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)

@@ -35,11 +35,10 @@ the cmake/ folder.
 The preferred way to fetch and build this project's dependencies is to use the build scripts
 in win/ folder. See win/readme.txt for more information. Instructions in a nutshell
 (assuming Visual Studio x64 environment variables set):
-    > git clone https://github.com/Tridify/IfcOpenShell.git
+    > git clone https://github.com/IfcOpenShell/IfcOpenShell.git
     > cd oce\win
     > build-deps.cmd (defaults to using VS 2015 x64 RelWithDebInfo build)
     > run-cmake.bat (defaults to using VS 2015 x64)
-    > copy-runtime-deps.bat (defaults to using RelWithDebInfo)
     > ..\build-vs2015-x64\IfcOpenShell.sln
 You can now build the solution using the RelWithDebInfo configuration
 You can also build the INSTALL project if wanted
