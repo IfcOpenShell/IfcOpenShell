@@ -25,10 +25,10 @@ set PROJECT_NAME=IfcOpenShell
 :: Enable the delayed environment variable expansion needed in vs-cfg.cmd.
 setlocal EnableDelayedExpansion
 
-:: Read Python related variables from BuildDepsCache.txt
-for /f "delims== tokens=1,2" %%G in (BuildDepsCache.txt) do set %%G=%%H
-
 call vs-cfg.cmd %1
+
+:: Read Python related variables from BuildDepsCache.txt
+for /f "delims== tokens=1,2" %%G in (BuildDepsCache-%TARGET_ARCH%.txt) do set %%G=%%H
 
 pushd ..
 set CMAKE_INSTALL_PREFIX=%CD%\installed-vs%VS_VER%-%TARGET_ARCH%

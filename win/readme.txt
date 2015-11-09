@@ -40,11 +40,11 @@ folder and the required IfcOpenShell-Python parts are deployed to the <PYTHONPAT
 
 == Directory Structure ==
 
-|   build-deps.cmd          - Fetches and builds all needed dependencies for IFCOS
-|   readme.txt              - This file
-|   run-cmake.bat           - Sets environment variables for the dependencies and runs CMake for IFCOS
-|   vs-cfg.cmd              - Utility file used by the build scripts
-|   BuildDepsCache.txt      - Cache file created by build-deps.cmd
+|   build-deps.cmd            - Fetches and builds all needed dependencies for IFCOS
+|   readme.txt                - This file
+|   run-cmake.bat             - Sets environment variables for the dependencies and runs CMake for IFCOS
+|   vs-cfg.cmd                - Utility file used by the build scripts
+|   BuildDepsCache-<ARCH>.txt - Cache file created by build-deps.cmd
 |
-+---sln                     - Contains the old Visual Studio solution and project files
-\---utils                   - Contains various utilities for the build scripts
++---sln                       - Contains the old Visual Studio solution and project files
+\---utils                     - Contains various utilities for the build scripts
