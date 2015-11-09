@@ -54,7 +54,7 @@ ELSE()
 	MESSAGE(FATAL_ERROR "Unable to find header files, aborting")
 ENDIF()
 
-SET(OCE_LIBRARIES
+SET(OPENCASCADE_LIBRARIES
 	TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
 	TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset
 )
@@ -251,7 +251,7 @@ file(GLOB H_FILES ../src/ifcconvert/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_EXECUTABLE(IfcConvert ${SOURCE_FILES})
 
-TARGET_LINK_LIBRARIES(IfcConvert IfcParse IfcGeom ${OCE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcConvert IfcParse IfcGeom ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
 
 # IfcGeomServer
 file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
@@ -259,7 +259,7 @@ file(GLOB H_FILES ../src/ifcgeomserver/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_EXECUTABLE(IfcGeomServer ${SOURCE_FILES})
 
-TARGET_LINK_LIBRARIES(IfcGeomServer IfcParse IfcGeom ${OCE_LIBRARIES} ${Boost_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcGeomServer IfcParse IfcGeom ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
 
 IF(BUILD_IFCPYTHON)
 	ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)

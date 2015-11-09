@@ -50,7 +50,7 @@ ENDIF()
 
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
 SWIG_ADD_MODULE(ifcopenshell_wrapper python IfcPython.i)
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper IfcParse IfcGeom ${PYTHON_LIBRARIES} ${OCE_LIBRARIES} ${ICU_LIBRARIES})
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper IfcParse IfcGeom ${PYTHON_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${ICU_LIBRARIES})
 
 # To install IfcPython let's get the site-packages dir from python
 EXECUTE_PROCESS(COMMAND
