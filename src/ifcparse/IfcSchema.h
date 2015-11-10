@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <iterator>
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4enum.h"
@@ -243,12 +244,14 @@ namespace IfcParse {
 		const std::vector<const attribute*> all_attributes() const {
 			std::vector<const attribute*> attrs;
 			attrs.reserve(derived_.size());
-			std::vector<const attribute*>::iterator it = attrs.begin();
+			// std::vector<const attribute*>::iterator it = attrs.begin();
 			if (supertype_) {
 				const std::vector<const attribute*> supertype_attrs = supertype_->all_attributes();
-				it = std::copy(supertype_attrs.begin(), supertype_attrs.end(), it);
+				// it = std::copy(supertype_attrs.begin(), supertype_attrs.end(), it);
+				std::copy(supertype_attrs.begin(), supertype_attrs.end(), std::back_inserter(attrs));
 			}
-			std::copy(attributes_.begin(), attributes_.end(), it);
+			// std::copy(attributes_.begin(), attributes_.end(), it);
+			std::copy(attributes_.begin(), attributes_.end(), std::back_inserter(attrs));
 			return attrs;
 		}
 
@@ -266,6 +269,7 @@ namespace IfcParse {
 		std::vector<const type_declaration*> type_declarations_;
 		std::vector<const select_type*> select_types_;
 		std::vector<const enumeration_type*> enumeration_types_;
+		std::vector<const entity*> entities_;
 
 		class declaration_by_name_cmp : public std::binary_function<const declaration*, const std::string&, bool> {
 		public:
@@ -284,6 +288,7 @@ namespace IfcParse {
 				if ((**it).as_type_declaration()) type_declarations_.push_back((**it).as_type_declaration());
 				if ((**it).as_select_type()) select_types_.push_back((**it).as_select_type());
 				if ((**it).as_enumeration_type()) enumeration_types_.push_back((**it).as_enumeration_type());
+				if ((**it).as_entity()) entities_.push_back((**it).as_entity());
 			}
 		}
 
@@ -307,10 +312,13 @@ namespace IfcParse {
 			return declaration_by_name(IfcSchema::Type::ToString(name));
 		}
 
-		const std::vector<const declaration*>& declarations() { return declarations_; }
-		const std::vector<const type_declaration*>& type_declarations() { return type_declarations_; }
-		const std::vector<const select_type*>& select_types() { return select_types_; }
-		const std::vector<const enumeration_type*>& enumeration_types() { return enumeration_types_; }
+		const std::vector<const declaration*>& declarations() const { return declarations_; }
+		const std::vector<const type_declaration*>& type_declarations() const { return type_declarations_; }
+		const std::vector<const select_type*>& select_types() const { return select_types_; }
+		const std::vector<const enumeration_type*>& enumeration_types() const { return enumeration_types_; }
+		const std::vector<const entity*>& entities() const { return entities_; }
+
+		const std::string& name() const { return name_; }
 	};
 
 }

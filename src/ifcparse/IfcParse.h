@@ -130,7 +130,7 @@ namespace IfcParse {
 		std::vector<Argument*> list;
 		void push(Argument* l);
 	public:
-		~ArgumentList();
+		virtual ~ArgumentList();
 
 		void read(IfcSpfLexer* t, std::vector<unsigned int>& ids);
 
@@ -206,7 +206,7 @@ namespace IfcParse {
 		IfcUtil::IfcBaseClass* entity;
 	public:
 		EntityArgument(const Token& t);
-		~EntityArgument();
+		virtual ~EntityArgument();
 
 		IfcUtil::ArgumentType type() const;
 
@@ -251,6 +251,7 @@ namespace IfcParse {
 		~Entity();
 		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index);
 		void Load(std::vector<unsigned int>& ids, bool seek=false) const;
+		void Unload();
 		Argument* getArgument (unsigned int i);
 		unsigned int getArgumentCount() const;
 		std::string toString(bool upper=false) const;

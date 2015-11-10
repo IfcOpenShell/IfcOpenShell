@@ -61,6 +61,7 @@ void printUsage(const boost::program_options::options_description& generic_optio
 	          << "  .igs   IGES           Initial Graphics Exchange Specification" << std::endl
 	          << "  .xml   XML            Property definitions and decomposition tree" << std::endl
 			  << "  .svg   SVG            Scalable Vector Graphics (2d floor plan)" << std::endl
+			  << "  .hdf   HDF5           Efficient binary IFC serialization" << std::endl
 	          << std::endl
 	          << "Command line options" << std::endl << generic_options << std::endl
 	          << "Advanced options" << std::endl << geom_options << std::endl;
@@ -131,6 +132,8 @@ int main(int argc, char** argv) {
 		("bounds", boost::program_options::value<std::string>(&bounds),
 			"Specifies the bounding rectangle, for example 512x512, to which the " 
 			"output will be scaled. Only used when converting to SVG.")
+		("compress",
+			"Compress HDF5.")
 		("include", 
 			"Specifies that the entities listed after --entities are to be included")
 		("exclude", 
@@ -249,6 +252,20 @@ int main(int argc, char** argv) {
 			}
 		} catch (...) {}
 		write_log();
+		return exit_code;
+	} else if (output_extension == ".hdf") {
+		int exit_code = 1;
+		// try {
+			IfcParse::IfcFile f;
+			if (!f.Init(input_filename)) {
+				Logger::Message(Logger::LOG_ERROR, "Unable to parse .ifc file");
+			} else {
+				f.write_hdf5(output_filename, vmap.count("compress") != 0);
+				exit_code = 0;
+			}
+		// } catch (...) {}
+		write_log();
+		// std::cin.get();
 		return exit_code;
 	}
 

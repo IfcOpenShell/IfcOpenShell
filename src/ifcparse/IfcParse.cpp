@@ -38,6 +38,7 @@
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcSIPrefix.h"
 #include "../ifcparse/IfcSchema.h"
+#include "../ifcparse/IfcHdf5File.h"
 
 using namespace IfcParse;
 
@@ -830,6 +831,11 @@ void Entity::Load(std::vector<unsigned int>& ids, bool seek) const {
 	if ( ! TokenFunc::isOperator(semilocon,';') ) file->tokens->stream->Seek(old_offset);
 }
 
+void Entity::Unload() {
+	delete args;
+	args = 0;
+}
+
 IfcSchema::Type::Enum Entity::type() const {
 	return _type;
 }
@@ -1535,4 +1541,8 @@ std::pair<IfcSchema::IfcNamedUnit*, double> IfcFile::getUnit(IfcSchema::IfcUnitE
 		}
 	}
 	return return_value;
+}
+
+void IfcFile::write_hdf5(const std::string& name, bool compress) const {
+	IfcHdf5File(this, name, compress);
 }

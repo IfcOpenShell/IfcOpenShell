@@ -64,7 +64,11 @@ class SchemaClass:
         for cpp_type, collection in collections_by_type:
             for name in collection.keys():
                 statements.append('%(cpp_type)s* %(name)s_type = 0;' % locals())
-                      
+                
+        statements.append('#ifdef _MSC_VER'          )
+        statements.append('#pragma optimize("", off)')
+        statements.append('#endif'                   )
+                          
         statements.append('schema_definition* populate_schema() {')
         
         emitted_types = set()
@@ -144,6 +148,10 @@ class SchemaClass:
         statements.append('    return new schema_definition("%(schema_name)s", declarations, true);' % locals())
         
         statements.extend(('}',''))
+        
+        statements.append('#ifdef _MSC_VER'         )
+        statements.append('#pragma optimize("", on)')
+        statements.append('#endif'                  )
         
         statements.extend(('const schema_definition& get_schema() {',
                            '',

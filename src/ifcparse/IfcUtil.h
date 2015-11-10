@@ -130,6 +130,23 @@ namespace IfcUtil {
 	};
 
 	bool valid_binary_string(const std::string& s);
+
+	template <typename T> struct cpp_to_schema_type;
+	template <>           struct cpp_to_schema_type < boost::dynamic_bitset<> > { static const IfcParse::simple_type::data_type schema_type = IfcParse::simple_type::binary_type;  };
+	template <>           struct cpp_to_schema_type < bool                    > { static const IfcParse::simple_type::data_type schema_type = IfcParse::simple_type::boolean_type; };
+	template <>           struct cpp_to_schema_type < int                     > { static const IfcParse::simple_type::data_type schema_type = IfcParse::simple_type::integer_type; };
+	template <>           struct cpp_to_schema_type < double                  > { static const IfcParse::simple_type::data_type schema_type = IfcParse::simple_type::real_type;    };
+	template <>           struct cpp_to_schema_type < std::string             > { static const IfcParse::simple_type::data_type schema_type = IfcParse::simple_type::string_type;  };
+
+	template <IfcParse::simple_type::data_type T> 
+	            struct schema_to_cpp_type;
+	template <> struct schema_to_cpp_type < IfcParse::simple_type::binary_type  > { typedef boost::dynamic_bitset<> cpp_type; };
+	template <> struct schema_to_cpp_type < IfcParse::simple_type::boolean_type > { typedef bool                    cpp_type; };
+	template <> struct schema_to_cpp_type < IfcParse::simple_type::integer_type > { typedef int                     cpp_type; };
+	template <> struct schema_to_cpp_type < IfcParse::simple_type::logical_type > { typedef bool                    cpp_type; };
+	template <> struct schema_to_cpp_type < IfcParse::simple_type::number_type  > { typedef double                  cpp_type; };
+	template <> struct schema_to_cpp_type < IfcParse::simple_type::real_type    > { typedef double                  cpp_type; };
+	template <> struct schema_to_cpp_type < IfcParse::simple_type::string_type  > { typedef std::string             cpp_type; };
 }
 
 template <class T>

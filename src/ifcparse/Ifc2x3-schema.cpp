@@ -1009,6 +1009,11 @@ enumeration_type* IfcWindowPanelPositionEnum_type = 0;
 enumeration_type* IfcWindowStyleConstructionEnum_type = 0;
 enumeration_type* IfcWindowStyleOperationEnum_type = 0;
 enumeration_type* IfcWorkControlTypeEnum_type = 0;
+
+#ifdef _MSC_VER
+#  pragma optimize( "", off )
+#endif
+
 schema_definition* populate_schema() {
     IfcAbsorbedDoseMeasure_type = new type_declaration(IfcSchema::Type::IfcAbsorbedDoseMeasure, new simple_type(simple_type::real_type));
     IfcAccelerationMeasure_type = new type_declaration(IfcSchema::Type::IfcAccelerationMeasure, new simple_type(simple_type::real_type));
@@ -10373,6 +10378,10 @@ schema_definition* populate_schema() {
     declarations.push_back(IfcCurveFontOrScaledCurveFontSelect_type);
     return new schema_definition("IFC2X3", declarations, true);
 }
+
+#ifdef _MSC_VER
+#  pragma optimize( "", on )
+#endif
 
 const schema_definition& get_schema() {
 
