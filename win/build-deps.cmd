@@ -218,7 +218,7 @@ call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OPENCOLLADA.sln" %DEBUG_OR_REL
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-pause
+
 :oce-win-bundle
 set DEPENDENCY_NAME=oce-win-bundle
 set DEPENDENCY_DIR=%DEPS_DIR%\oce-win-bundle

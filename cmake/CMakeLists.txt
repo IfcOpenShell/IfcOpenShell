@@ -32,6 +32,8 @@ OPTION(BUILD_EXAMPLES "Build example applications." ON)
 # Find Boost
 IF(MSVC)
 	SET(Boost_USE_STATIC_LIBS ON)
+	SET(Boost_USE_STATIC_RUNTIME ON)
+	SET(Boost_USE_MULTITHREADED ON)
 ENDIF()
 FIND_PACKAGE(Boost REQUIRED COMPONENTS system program_options regex thread date_time)
 MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
@@ -54,10 +56,23 @@ ELSE()
 	MESSAGE(FATAL_ERROR "Unable to find header files, aborting")
 ENDIF()
 
-SET(OPENCASCADE_LIBRARIES
-	TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
-	TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset
-)
+IF (MSVC)
+	# TODO Clean up by having a macro/function that takes in library names and a debug postfix and creates both release and debug linkage
+	SET(OPENCASCADE_LIBRARIES
+		optimized TKernel optimized TKMath optimized TKBRep optimized TKGeomBase optimized TKGeomAlgo
+		optimized TKG3d optimized TKG2d optimized TKShHealing optimized TKTopAlgo optimized TKMesh
+		optimized TKPrim optimized TKBool optimized TKBO optimized TKFillet optimized TKSTEP optimized TKSTEPBase
+		optimized TKSTEPAttr optimized TKXSBase optimized TKSTEP209 optimized TKIGES optimized TKOffset
+		debug TKerneld debug TKMathd debug TKBRepd debug TKGeomBased debug TKGeomAlgod debug TKG3dd debug TKG2dd
+		debug TKShHealingd debug TKTopAlgod debug TKMeshd debug TKPrimd debug TKBoold debug TKBOd debug TKFilletd
+		debug TKSTEPd debug TKSTEPBased debug TKSTEPAttrd debug TKXSBased debug TKSTEP209d debug TKIGESd debug TKOffsetd
+	)
+ELSE()
+	SET(OPENCASCADE_LIBRARIES
+		TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
+		TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset
+	)
+ENDIF()
 
 IF("$ENV{OCC_LIBRARY_DIR}" STREQUAL "")
 	SET(OCC_LIBRARY_DIR "/usr/lib/" CACHE FILEPATH "Open CASCADE library files")
@@ -68,7 +83,7 @@ ELSE()
 	MESSAGE(STATUS "Looking for opencascade library files in: ${OCC_LIBRARY_DIR}")
 ENDIF()
 
-FIND_LIBRARY(libTKernel "TKernel" ${OCC_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
+FIND_LIBRARY(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
 IF(libTKernel)
 	MESSAGE(STATUS "Library files found")
 ELSE()
@@ -89,14 +104,18 @@ IF(UNICODE_SUPPORT)
 		SET(ICU_LIBRARY_DIR "$ENV{ICU_LIBRARY_DIR}" CACHE FILEPATH "ICU library files")
 	ENDIF()
 
-	FIND_LIBRARY(icu "icuuc" /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR})
+	FIND_LIBRARY(icu NAMES icuuc icuucd PATHS /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR})
 
 	IF(icu)
 		ADD_DEFINITIONS(-DHAVE_ICU)
 		MESSAGE(STATUS "ICU libraries found")
-	IF(MSVC)
-		ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
-	ENDIF()
+		# TODO Clean up by having a macro/function that takes in library names and a debug postfix and creates both release and debug linkage
+		if (MSVC)
+			SET(ICU_LIBRARIES optimized icuuc optimized icudt debug icuucd debug icudtd)
+			ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
+		ELSE()
+			SET(ICU_LIBRARIES icuuc icudata)
+		ENDIF()
 	ELSE()
 		MESSAGE(STATUS "Unable to find ICU library files, continuing")
 	ENDIF()
@@ -124,11 +143,20 @@ IF(COLLADA_SUPPORT)
 	IF(COLLADASWStreamWriter_h)
 		MESSAGE(STATUS "OpenCOLLADA header files found")
 		ADD_DEFINITIONS(-DWITH_OPENCOLLADA)
-		SET(OPENCOLLADA_LIBRARIES
-			GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils
-			OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
-			OpenCOLLADAStreamWriter UTF buffer ftoa pcre
-		)
+		# TODO Clean up by having a macro/function that takes in library names and a debug postfix and creates both release and debug linkage
+		IF(MSVC)
+			SET(OPENCOLLADA_LIBRARIES
+				optimized GeneratedSaxParser optimized MathMLSolver optimized OpenCOLLADABaseUtils optimized OpenCOLLADAFramework optimized OpenCOLLADASaxFrameworkLoader
+				optimized OpenCOLLADAStreamWriter optimized UTF optimized buffer optimized ftoa optimized pcre
+				debug GeneratedSaxParserd debug MathMLSolverd debug OpenCOLLADABaseUtilsd debug OpenCOLLADAFrameworkd debug OpenCOLLADASaxFrameworkLoaderd
+				debug OpenCOLLADAStreamWriterd debug UTFd debug bufferd debug ftoad debug pcred
+			)
+		ELSE()
+			SET(OPENCOLLADA_LIBRARIES
+				GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
+				OpenCOLLADAStreamWriter UTF buffer ftoa pcre
+			)
+		ENDIF()
 	ELSE()
 		MESSAGE(STATUS "OpenCOLLADA header files not found, continuing without COLLADA support")
 	ENDIF()
@@ -223,7 +251,7 @@ file(GLOB H_FILES ../src/ifcparse/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_LIBRARY(IfcParse STATIC ${SOURCE_FILES})
 IF(icu)
-	TARGET_LINK_LIBRARIES(IfcParse icuuc icudt)
+	TARGET_LINK_LIBRARIES(IfcParse ${ICU_LIBRARIES})
 ENDIF()
 
 # IfcGeom
@@ -251,7 +279,7 @@ file(GLOB H_FILES ../src/ifcconvert/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_EXECUTABLE(IfcConvert ${SOURCE_FILES})
 
-TARGET_LINK_LIBRARIES(IfcConvert IfcParse IfcGeom ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcConvert IfcParse IfcGeom ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
 
 # IfcGeomServer
 file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
@@ -259,7 +287,7 @@ file(GLOB H_FILES ../src/ifcgeomserver/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_EXECUTABLE(IfcGeomServer ${SOURCE_FILES})
 
-TARGET_LINK_LIBRARIES(IfcGeomServer IfcParse IfcGeom ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcGeomServer IfcParse IfcGeom ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${ICU_LIBRARIES})
 
 IF(BUILD_IFCPYTHON)
 	ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)

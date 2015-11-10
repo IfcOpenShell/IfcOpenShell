@@ -19,9 +19,8 @@ build-deps.cmd expects a CMake generator as %1 and a build configuration type as
 are not provided, the default values are used ("Visual Studio 14 2015 Win64" and RelWithDebInfo respectively).
 A build type (Build/Rebuild/Clean) can be provided as %3, if wanted (defaults to Build). See vs-cfg.cmd
 if you want to change the defaults. The batch file will create deps\ and deps-vs<VERSION>-<ARCHITECTURE>-installed\
-directories to the project root. Note that currently only libraries for one build configuration type
-can be installed at a time, so if wanting to switch between release and debug builds, run the build-deps.cmd
-again with the appropriate build type as %2.
+directories to the project root. Debug and release builds of the depedencies can co-exist by simply running
+"build-deps.cmd <GENERATOR> Debug" and "build-deps.cmd <GENERATOR> <Release|RelWithDebInfo|MinSizeRel>".
 
 After the dependencies are build, execute run-cmake.bat. The batch file expects a CMake generator as
 %1, or alternatively if more parameters are provided, %* is passed for the CMake inkovation. If no %1
@@ -30,12 +29,12 @@ build-vs<VERSION>-<ARCHITECTURE> which will contain the solution and project fil
 IMPORTANT: If you wish to use any library from a custom location, modify the paths in run-cmake.bat 
 accordingly.
 
-All of the dependencies are build as static libraries against the static run-time allowing the developer
-to effortlessly deploy standalone binaries.
-
 You can now build the project using the IfcOpenShell.sln file in the build folder. Build the INSTALL project
 if wanted. The project will installed to installed-vs<VERSION>-<ARCHITECTURE> folder in the project's root
 folder and the required IfcOpenShell-Python parts are deployed to the <PYTHONPATH>\Lib\site-packages folder.
+
+All of the dependencies are build as static libraries against the static run-time allowing the developer
+to effortlessly deploy standalone IFCOS binaries.
 
 
 == Directory Structure ==
