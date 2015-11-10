@@ -190,14 +190,14 @@ IF EXIST "%DEPS_DIR%\icu-55.1-vs%VS_VER%". (
 IF EXIST "%DEPS_DIR%\icu-55.1-vs%VS_VER%\". (
     robocopy "%DEPS_DIR%\icu-55.1-vs%VS_VER%\include" "%INSTALL_DIR%\icu\include" /E /IS /njh /njs
     IF NOT EXIST "%INSTALL_DIR%\icu\lib". mkdir "%INSTALL_DIR%\icu\lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicutest%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutest.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicutu%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutu.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicuuc%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuuc.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicudt%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icudt.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicuin%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuin.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicuio%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuio.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicule%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icule.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\siculx%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\iculx.lib"
+    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicutest%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutest%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicutu%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutu%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicuuc%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuuc%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicudt%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icudt%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicuin%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuin%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicuio%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuio%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicule%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icule%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\siculx%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\iculx%POSTFIX_D%.lib"
 )
 
 :OpenCOLLADA
@@ -210,7 +210,7 @@ cd "%DEPENDENCY_DIR%"
 :: NOTE OpenCOLLADA has been observed to have problems with switching between debug and release builds so
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
 REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\OpenCOLLADA" -DUSE_STATIC_MSVC_RUNTIME=1
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\OpenCOLLADA" -DUSE_STATIC_MSVC_RUNTIME=1 -DCMAKE_DEBUG_POSTFIX=d
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM TODO OpenCOLLADA takes a long time to build; build only if needed
 REM IF NOT EXIST "%DEPS_DIR%\OpenCOLLADA\%BUILD_DIR%\lib\%DEBUG_OR_RELEASE%\OpenCOLLADASaxFrameworkLoader.lib".
@@ -218,7 +218,7 @@ call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OPENCOLLADA.sln" %DEBUG_OR_REL
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-
+pause
 :oce-win-bundle
 set DEPENDENCY_NAME=oce-win-bundle
 set DEPENDENCY_DIR=%DEPS_DIR%\oce-win-bundle
