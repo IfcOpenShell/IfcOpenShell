@@ -21,13 +21,15 @@ cmake_minimum_required (VERSION 2.6)
 
 project (IfcOpenShell)
 
-OPTION(UNICODE_SUPPORT "Build with Unicode support enabled (requires ICU)." ON)
-OPTION(COLLADA_SUPPORT "Build with COLLADA support enabled (requires OpenCOLLADA)." ON)
+OPTION(UNICODE_SUPPORT "Build IfcOpenShell with Unicode support (requires ICU)." ON)
+OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
 #TODO OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." OFF)
 OPTION(USE_IFC4 "Use IFC 4 instead of IFC 2x3" OFF)
 OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
+# TODO QtViewer is deprecated ATM as it uses the 0.4 API
+# OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
 
 # Find Boost
 IF(MSVC)
@@ -117,7 +119,7 @@ IF(UNICODE_SUPPORT)
 			SET(ICU_LIBRARIES icuuc icudata)
 		ENDIF()
 	ELSE()
-		MESSAGE(STATUS "Unable to find ICU library files, continuing")
+		MESSAGE(FATAL_ERROR "UNICODE_SUPPORT enabled, but unable to find ICU. Disable UNICODE_SUPPORT or fix ICU paths to proceed.")
 	ENDIF()
 ENDIF()
 
@@ -158,7 +160,7 @@ IF(COLLADA_SUPPORT)
 			)
 		ENDIF()
 	ELSE()
-		MESSAGE(STATUS "OpenCOLLADA header files not found, continuing without COLLADA support")
+		MESSAGE(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA. Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
 	ENDIF()
 ENDIF()
 
@@ -242,7 +244,7 @@ endif()
 IF(USE_IFC4)
 	ADD_DEFINITIONS(-DUSE_IFC4)
 ELSE()
-	ADD_DEFINITIONS(-DUSE_IFC2x3)
+	ADD_DEFINITIONS(-DUSE_IFC2x3) # TODO Make all caps? i.e. USE_IFC2X3
 ENDIF()
 
 # IfcParse
@@ -250,7 +252,7 @@ file(GLOB CPP_FILES ../src/ifcparse/*.cpp)
 file(GLOB H_FILES ../src/ifcparse/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_LIBRARY(IfcParse STATIC ${SOURCE_FILES})
-IF(icu)
+IF(UNICODE_SUPPORT)
 	TARGET_LINK_LIBRARIES(IfcParse ${ICU_LIBRARIES})
 ENDIF()
 
@@ -297,7 +299,10 @@ IF(BUILD_EXAMPLES)
 	ADD_SUBDIRECTORY(../src/examples examples)
 ENDIF()
 
-# ADD_SUBDIRECTORY(../src/qtviewer qtviewer)
+# TODO QtViewer is deprecated ATM as it uses the 0.4 API
+# IF(BUILD_QTVIEWER)
+	# ADD_SUBDIRECTORY(../src/qtviewer qtviewer)
+# ENDIF()
 
 # CMake installation targets
 FILE(GLOB include_files_geom ../src/ifcgeom/*.h)

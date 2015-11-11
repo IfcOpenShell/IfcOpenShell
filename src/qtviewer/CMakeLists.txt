@@ -17,12 +17,6 @@
 #                                                                              #
 ################################################################################
 
-OPTION( QT_USE_QTVIEWER "IfcOpenShell QT GUI Viewer, QT environment required" OFF )
-
-
-IF (QT_USE_QTVIEWER)
-
-
 # Find QT header files
 SET(QT_MIN_VERSION "4.5.0")
 FIND_PACKAGE(Qt4 REQUIRED)
@@ -59,6 +53,3 @@ ADD_EXECUTABLE(  QTviewer ${QTviewer_SRCS} ${QTviewer_MOC_SRCS})
 #http://www.qtcentre.org/wiki/index.php?title=Compiling_Qt4_apps_with_CMake
 
 TARGET_LINK_libRARIES (QTviewer IfcParse IfcGeom ${QT_LIBRARIES} ${OPENCASCADE_LIBRARIES})
-
-
-ENDIF (QT_USE_QTVIEWER)

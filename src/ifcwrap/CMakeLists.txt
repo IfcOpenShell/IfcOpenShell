@@ -18,8 +18,9 @@
 ################################################################################
 
 FIND_PACKAGE(SWIG)
-
-IF(SWIG_FOUND)
+IF(NOT SWIG_FOUND)
+	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find SWIG. Disable BUILD_IFCPYTHON or fix SWIG paths to proceed.")
+ENDIF()
 
 INCLUDE(${SWIG_USE_FILE})
 
@@ -33,8 +34,9 @@ IF(NOT "$ENV{PYTHON_LIBRARY}" STREQUAL "")
 ENDIF()
 
 FIND_PACKAGE(PythonLibs)
-
-IF(PYTHONLIBS_FOUND)
+IF(NOT PYTHONLIBS_FOUND)
+	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find Python. Disable BUILD_IFCPYTHON or fix Python paths to proceed.")
+ENDIF()
 
 INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
 
@@ -70,7 +72,3 @@ INSTALL(FILES
 		"${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/__init__.py"
 		DESTINATION "${python_package_dir}/ifcopenshell/geom")
 INSTALL(TARGETS _ifcopenshell_wrapper DESTINATION "${python_package_dir}/ifcopenshell")
-
-ENDIF(PYTHONLIBS_FOUND)
-
-ENDIF(SWIG_FOUND)
