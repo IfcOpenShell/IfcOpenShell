@@ -41,6 +41,22 @@ FIND_PACKAGE(Boost REQUIRED COMPONENTS system program_options regex thread date_
 MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
+# Usage:
+# SET(SOME_LIRARIES foo bar)
+# ADD_DEBUG_VARIANTS(SOME_LIRARIES "${SOME_LIRARIES}" "d")
+# "foo bar" -> "optimized foo debug food optimized bar debug bard"
+FUNCTION(ADD_DEBUG_VARIANTS NAME LIBRARIES POSTFIX)
+	SET(LIBRARIES_STR "${LIBRARIES}")
+	SET(LIBRARIES "")
+	FOREACH(lib ${LIBRARIES_STR})
+		SET(LIBRARIES "${LIBRARIES} optimized ${lib}")
+		SET(LIBRARIES "${LIBRARIES} debug ${lib}${POSTFIX}")
+	ENDFOREACH()
+	STRING(STRIP ${LIBRARIES} LIBRARIES) # leading and trailing whitespace cause confusion
+	SEPARATE_ARGUMENTS(LIBRARIES) # "optimized <lib> debug <lib>" needs to be a list instead of a string
+	SET(${NAME} ${LIBRARIES} PARENT_SCOPE)
+ENDFUNCTION()
+
 # Find Open CASCADE
 IF("$ENV{OCC_INCLUDE_DIR}" STREQUAL "")
 	SET(OCC_INCLUDE_DIR "/usr/include/opencascade/" CACHE FILEPATH "Open CASCADE header files")
@@ -58,22 +74,13 @@ ELSE()
 	MESSAGE(FATAL_ERROR "Unable to find header files, aborting")
 ENDIF()
 
-IF (MSVC)
-	# TODO Clean up by having a macro/function that takes in library names and a debug postfix and creates both release and debug linkage
-	SET(OPENCASCADE_LIBRARIES
-		optimized TKernel optimized TKMath optimized TKBRep optimized TKGeomBase optimized TKGeomAlgo
-		optimized TKG3d optimized TKG2d optimized TKShHealing optimized TKTopAlgo optimized TKMesh
-		optimized TKPrim optimized TKBool optimized TKBO optimized TKFillet optimized TKSTEP optimized TKSTEPBase
-		optimized TKSTEPAttr optimized TKXSBase optimized TKSTEP209 optimized TKIGES optimized TKOffset
-		debug TKerneld debug TKMathd debug TKBRepd debug TKGeomBased debug TKGeomAlgod debug TKG3dd debug TKG2dd
-		debug TKShHealingd debug TKTopAlgod debug TKMeshd debug TKPrimd debug TKBoold debug TKBOd debug TKFilletd
-		debug TKSTEPd debug TKSTEPBased debug TKSTEPAttrd debug TKXSBased debug TKSTEP209d debug TKIGESd debug TKOffsetd
-	)
-ELSE()
-	SET(OPENCASCADE_LIBRARIES
-		TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
-		TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset
-	)
+SET(OPENCASCADE_LIBRARIES
+	TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
+	TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset
+)
+
+IF(MSVC)
+	ADD_DEBUG_VARIANTS(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" "d")
 ENDIF()
 
 IF("$ENV{OCC_LIBRARY_DIR}" STREQUAL "")
@@ -111,9 +118,10 @@ IF(UNICODE_SUPPORT)
 	IF(icu)
 		ADD_DEFINITIONS(-DHAVE_ICU)
 		MESSAGE(STATUS "ICU libraries found")
-		# TODO Clean up by having a macro/function that takes in library names and a debug postfix and creates both release and debug linkage
-		if (MSVC)
-			SET(ICU_LIBRARIES optimized icuuc optimized icudt debug icuucd debug icudtd)
+		# NOTE icudata appears to be icudt on Windows/MSVC on icudata on others
+		IF(MSVC)
+			SET(ICU_LIBRARIES icuuc icudt)
+			ADD_DEBUG_VARIANTS(ICU_LIBRARIES "${ICU_LIBRARIES}" "d")
 			ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
 		ELSE()
 			SET(ICU_LIBRARIES icuuc icudata)
@@ -145,19 +153,12 @@ IF(COLLADA_SUPPORT)
 	IF(COLLADASWStreamWriter_h)
 		MESSAGE(STATUS "OpenCOLLADA header files found")
 		ADD_DEFINITIONS(-DWITH_OPENCOLLADA)
-		# TODO Clean up by having a macro/function that takes in library names and a debug postfix and creates both release and debug linkage
+		SET(OPENCOLLADA_LIBRARIES
+			GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
+			OpenCOLLADAStreamWriter UTF buffer ftoa pcre
+		)
 		IF(MSVC)
-			SET(OPENCOLLADA_LIBRARIES
-				optimized GeneratedSaxParser optimized MathMLSolver optimized OpenCOLLADABaseUtils optimized OpenCOLLADAFramework optimized OpenCOLLADASaxFrameworkLoader
-				optimized OpenCOLLADAStreamWriter optimized UTF optimized buffer optimized ftoa optimized pcre
-				debug GeneratedSaxParserd debug MathMLSolverd debug OpenCOLLADABaseUtilsd debug OpenCOLLADAFrameworkd debug OpenCOLLADASaxFrameworkLoaderd
-				debug OpenCOLLADAStreamWriterd debug UTFd debug bufferd debug ftoad debug pcred
-			)
-		ELSE()
-			SET(OPENCOLLADA_LIBRARIES
-				GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
-				OpenCOLLADAStreamWriter UTF buffer ftoa pcre
-			)
+			ADD_DEBUG_VARIANTS(OPENCOLLADA_LIBRARIES "${OPENCOLLADA_LIBRARIES}" "d")
 		ENDIF()
 	ELSE()
 		MESSAGE(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA. Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
@@ -176,7 +177,7 @@ IF (NOT WIN32)
 			ADD_DEFINITIONS(-DOCE_HAVE_${STR})
 			ADD_DEFINITIONS(-DHAVE_${STR})
 		ENDIF(FOUND_${STR})
-	ENDMACRO(CHECK_ADD_OCE_OCC_DEF)
+	ENDMACRO()
 
 	CHECK_ADD_OCE_OCC_DEF(limits)
 	CHECK_ADD_OCE_OCC_DEF(climits)
@@ -191,11 +192,12 @@ ENDIF()
 
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
-ENDIF(NOT CMAKE_BUILD_TYPE)
+ENDIF()
 
 # NOTE: RelWithDebInfo and Release use O2 (= /Ox /Gl /Gy/ = Og /Oi /Ot /Oy /Ob2 /Gs /GF /Gy) by default,
 # with the exception with RelWithDebInfo has /Ob1 instead. /Ob2 has been observed to improve the performance
 # of IfcConvert significantly.
+# TODO Setting of /GL and /LTCG don't seem to apply for static libraries (IfcGeom, IfcParse)
 if(ENABLE_BUILD_OPTIMIZATIONS)
 	if(MSVC)
 		# C++
@@ -238,7 +240,7 @@ INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCL
 	${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS}
 )
 if(NOT WIN32)
-	INCLUDE_DIRECTORIES(${LINK_DIRECTORIES} /usr/inc /usr/local/inc /usr/local/include/oce)
+	INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} /usr/inc /usr/local/inc /usr/local/include/oce)
 endif()
 
 IF(USE_IFC4)
