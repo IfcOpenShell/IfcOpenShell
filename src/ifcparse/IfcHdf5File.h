@@ -65,6 +65,7 @@ namespace IfcParse {
 		std::map<IfcSchema::Type::Enum, H5::DataType*> declared_types;
 		// TODO: why? get_datatype()
 		std::map<IfcParse::simple_type::data_type, const H5::DataType*> default_types;
+		std::map<std::string, const H5::DataType*> overridden_types;
 		std::map<IfcParse::simple_type::data_type, std::string> default_type_names;
 		std::map<IfcUtil::ArgumentType, std::string> default_cpp_type_names;
 

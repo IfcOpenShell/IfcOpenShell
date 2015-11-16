@@ -6,6 +6,8 @@
 #pragma message("warning: HDF5 compression support is recommended")
 #endif
 
+static bool OVERRIDE = true;
+
 class UnmetDependencyException : public std::exception {};
 
 H5::DataType* IfcParse::IfcHdf5File::map_type(const IfcParse::parameter_type* pt) {
@@ -94,7 +96,12 @@ H5::CompType* IfcParse::IfcHdf5File::map_entity(const IfcParse::entity* e) {
 		}
 		const std::string& name = (*it)->name();
 		const bool is_optional = (*it)->optional();
-		H5::DataType* type = map_type((*it)->type_of_attribute());
+		const H5::DataType* type;
+		if (overridden_types.find(name) != overridden_types.end()) {
+			type = overridden_types.find(name)->second;
+		} else {
+			type = map_type((*it)->type_of_attribute());
+		}
 		h5_attributes.push_back(std::make_pair(name, type));
 	}
 
@@ -144,6 +151,12 @@ void IfcParse::IfcHdf5File::init_default_types() {
 	default_cpp_type_names[IfcUtil::Argument_DOUBLE] = "real";
 	default_cpp_type_names[IfcUtil::Argument_STRING] = "string";
 	default_cpp_type_names[IfcUtil::Argument_INT]    = "integer";
+
+	if (OVERRIDE) {
+		hsize_t dims = 3;
+		overridden_types["GlobalId"] = new H5::StrType(H5::PredType::C_S1, 22);
+		overridden_types["Coordinates"] = new H5::ArrayType(*default_types[simple_type::real_type], 1, &dims);
+	}
 }
 
 void IfcParse::IfcHdf5File::visit_select(const IfcParse::select_type* pt, std::set<const IfcParse::declaration*>& leafs) {
@@ -478,6 +491,8 @@ void IfcParse::IfcHdf5File::write_select(void*& ptr, IfcUtil::IfcBaseClass* inst
 
 void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 	std::set<IfcSchema::Type::Enum> tys;
+
+	this->file->close();
 	
 	for (auto it = f.begin(); it != f.end(); ++it) {
 		IfcSchema::Type::Enum ty = it->second->declaration().type();
@@ -490,6 +505,7 @@ void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 	std::sort(dataset_names.begin(), dataset_names.end());
 	
 	for (auto it = dataset_names.begin(); it != dataset_names.end(); ++it) {
+
 		const std::vector<IfcUtil::IfcBaseClass*>& es = sorted_entities.find(*it)->second;
 		hsize_t dims = es.size();
 		// don't chunk too small
@@ -551,6 +567,7 @@ void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 				}
 
 				const IfcParse::entity::attribute* schema_attr = attributes[i];
+				const std::string& attribute_name = schema_attr->name();
 				Argument& attr_value = *dat.getArgument(i);
 				member_type = dt->getMemberDataType(member_idx++);
 
@@ -564,8 +581,19 @@ void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 					}
 				} else {
 					set_unset_mask |= 1 << i;
-
-					if (member_type == *instance_reference) {
+					if (OVERRIDE && attribute_name == "GlobalId") {
+						std::string s = attr_value;
+						memcpy(static_cast<char*>(ptr), s.c_str(), s.size());
+						advance(ptr, s.length());
+					} else if (OVERRIDE && attribute_name == "Coordinates") {
+						std::vector<double> ds = attr_value;
+						for (auto it = ds.begin(); it != ds.end(); ++it) {
+							write_number_of_size(ptr, default_types[simple_type::real_type]->getSize(), *it);
+						}
+						if (ds.size() == 2) {
+							write_number_of_size(ptr, default_types[simple_type::real_type]->getSize(), std::numeric_limits<double>::quiet_NaN());
+						}
+					} else if (member_type == *instance_reference) {
 						IfcUtil::IfcBaseClass* v = attr_value;
 						auto ref = make_instance_reference(v);
 						write_number_of_size(ptr, instance_reference->getMemberDataType(0).getSize(), ref.first);
