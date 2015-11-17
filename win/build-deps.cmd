@@ -97,7 +97,7 @@ echo      Defaults to RelWithDebInfo if not specified.
 IF %BUILD_CFG%==MinSizeRel cecho {0E}     WARNING: MinSizeRel build can suffer from a significant performance loss.{# #}{\n}
 cecho {0D}  Build Type                = %BUILD_TYPE%{# #}{\n}
 echo    - The used build type for the dependencies (Build, Rebuild, Clean).
-echo      Defaults to Build if not specified. Rebuild/Clean also uninstalls Python.
+echo      Defaults to Build if not specified. Rebuild/Clean also uninstalls Python (if it was installed by this script).
 cecho {0D}  IFCOS_INSTALL_PYTHON      = %IFCOS_INSTALL_PYTHON%{# #}{\n}
 echo    - Download and install Python.
 echo      Set to something other than TRUE if you wish to use an already installed version of Python.
@@ -111,12 +111,16 @@ echo.
 
 :: Print script's usage information
 cecho {0A}Requirements for a successful execution:{# #}{\n}
-echo    1. Install Git and make sure 'git' is accessible from PATH.
+echo    1. Install PowerShell (preinstalled in Windows ^>= 7) and make sure 'powershell' is accessible from PATH.
+echo     - https://support.microsoft.com/en-us/kb/968929
+echo    2. Install Git and make sure 'git' is accessible from PATH.
 echo     - http://code.google.com/p/tortoisegit/
-echo    2. Install CMake and make sure 'cmake' is accessible from PATH.
+echo    3. Install CMake and make sure 'cmake' is accessible from PATH.
 echo     - http://www.cmake.org/
-echo    3. Visual Studio 2008 or newer (2013 or newer recommended).
-echo    4. Run this batch script with Visual Studio environment variables set.
+echo    4. Visual Studio 2008 or newer (2013 or newer recommended).
+echo     - http://www.cmake.org/
+echo    5. Run this batch script with Visual Studio environment variables set.
+echo     - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
 echo.
 REM TODO 3ds Max SDK?
 
@@ -352,7 +356,8 @@ goto :EOF
 pushd %2
 IF NOT EXIST "%3". (
     cecho {0D}Downloading %DEPENDENCY_NAME% into %2.{# #}{\n}
-    wget --no-check-certificate %1
+    powershell -Command "$webClient = new-object System.Net.WebClient; $webClient.DownloadFile('%1', '%3')"
+    REM Old wget version in case someone has problem with PowerShell: wget --no-check-certificate %1
 ) ELSE (
     cecho {0D}%DEPENDENCY_NAME% already downloaded. Skipping.{# #}{\n}
 )
