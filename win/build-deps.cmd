@@ -32,7 +32,7 @@ setlocal EnableDelayedExpansion
 :: Make sure vcvarsall.bat is called and dev env set is up.
 IF "%VSINSTALLDIR%"=="" (
    call utils\cecho.cmd 0 12 "Visual Studio environment variables not set - cannot proceed!"
-   GOTO :Error
+   GOTO :ErrorAndPrintUsage
 )
 
 set PROJECT_NAME=IfcOpenShell
@@ -77,11 +77,14 @@ REM /clp:ErrorsOnly;WarningsOnly
 set INSTALL_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS%
 set BUILD_DIR=build-vs%VS_VER%-%TARGET_ARCH%
 
-REM echo.
-REM call cecho.cmd 0 15 "This script fetches and builds all %PROJECT_NAME% dependencies"
+echo.
+
+:: Check that required tools are in PATH
+FOR %%i IN (powershell git cmake) DO (
+    where.exe %%i 1> NUL 2> NUL || call cecho.cmd 0 12 "Required tool `'%%i`' not installed or not added to PATH" && goto :ErrorAndPrintUsage
+)
 
 :: Print build configuration information
-echo.
 
 call cecho.cmd 0 10 "Script configuration:"
 call cecho.cmd 0 13 "* CMake Generator`t= '`"%GENERATOR_DEFAULT%`'`t
@@ -111,19 +114,7 @@ echo      Defaults to NUMBER_OF_PROCESSORS.
 echo.
 
 :: Print script's usage information
-call cecho.cmd 0 10 "Requirements for a successful execution:"
-echo  1. Install PowerShell (preinstalled in Windows ^>= 7) and make sure 'powershell' is accessible from PATH.
-echo   - https://support.microsoft.com/en-us/kb/968929
-echo  2. Install Git and make sure 'git' is accessible from PATH.
-echo   - http://code.google.com/p/tortoisegit/
-echo  3. Install CMake and make sure 'cmake' is accessible from PATH.
-echo   - http://www.cmake.org/
-echo  4. Visual Studio 2008 or newer (2013 or newer recommended).
-echo   - https://www.visualstudio.com/
-echo  5. Run this batch script with Visual Studio environment variables set.
-echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
-echo.
-REM TODO 3ds Max SDK?
+call :PrintUsage
 
 call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to proceed `(VS 2015 x64 RelWithDebInfo`)."
 echo.
@@ -336,17 +327,20 @@ IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swi
 
 :Successful
 echo.
-call %TOOLS%\utils\cecho.cmd 0 10 "%PROJECT_NAME% dependencies built."
+call %THISDIR%\utils\cecho.cmd 0 10 "%PROJECT_NAME% dependencies built."
 goto :Finish
 
+:ErrorAndPrintUsage
+echo.
+call :PrintUsage
 :Error
 echo.
-call %TOOLS%\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
+call %THISDIR%\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
 goto :Finish
 
 :Finish
 set PATH=%ORIGINAL_PATH%
-cd %TOOLS%
+cd %THISDIR%
 endlocal
 goto :EOF
 
@@ -428,3 +422,19 @@ call cecho.cmd 0 13 "Installing %2 %DEPENDENCY_NAME%. Please be patient, this wi
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
+
+:: PrintUsage - Prints usage information
+:PrintUsage
+call %THISDIR%\utils\cecho.cmd 0 10 "Requirements for a successful execution:"
+echo  1. Install PowerShell (preinstalled in Windows ^>= 7) and make sure 'powershell' is accessible from PATH.
+echo   - https://support.microsoft.com/en-us/kb/968929
+echo  2. Install Git and make sure 'git' is accessible from PATH.
+echo   - http://code.google.com/p/tortoisegit/
+echo  3. Install CMake and make sure 'cmake' is accessible from PATH.
+echo   - http://www.cmake.org/
+echo  4. Visual Studio 2008 or newer (2013 or newer recommended).
+echo   - https://www.visualstudio.com/
+echo  5. Run this batch script with Visual Studio environment variables set.
+echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
+echo.
+REM TODO 3ds Max SDK instructions?
