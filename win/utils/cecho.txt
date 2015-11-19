@@ -1,1 +1,0 @@
-cecho is from http://www.codeproject.com/Articles/17033/Add-Colors-to-Batch-Files

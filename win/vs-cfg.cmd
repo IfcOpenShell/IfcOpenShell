@@ -52,7 +52,7 @@ set GENERATOR_DEFAULT=%GENERATOR_VS2015_64%
 
 IF "!GENERATOR!"=="" (
     set GENERATOR=%GENERATOR_DEFAULT%
-    utils\cecho {0E}vs-cfg.cmd: Warning: Generator not passed - using the default %GENERATOR_DEFAULT%.{# #}{\n}
+    call utils\cecho.cmd 0 14 "vs-cfg.cmd: Warning: Generator not passed - using the default '`"%GENERATOR_DEFAULT%`'`t
 )
 
 IF NOT !GENERATOR!==%GENERATOR_VS2008_32% IF NOT !GENERATOR!==%GENERATOR_VS2008_64% (
@@ -60,8 +60,8 @@ IF NOT !GENERATOR!==%GENERATOR_VS2010_32% IF NOT !GENERATOR!==%GENERATOR_VS2010_
 IF NOT !GENERATOR!==%GENERATOR_VS2012_32% IF NOT !GENERATOR!==%GENERATOR_VS2012_64% (
 IF NOT !GENERATOR!==%GENERATOR_VS2013_32% IF NOT !GENERATOR!==%GENERATOR_VS2013_64% (
 IF NOT !GENERATOR!==%GENERATOR_VS2015_32% IF NOT !GENERATOR!==%GENERATOR_VS2015_64% (
-    utils\cecho {0C}vs-cfg.cmd: Invalid or unsupported CMake generator string passed: !GENERATOR!. Cannot proceed, aborting!{# #}{\n}
-    GOTO :EOF
+    call utils\cecho.cmd 0 12 "vs-cfg.cmd: Invalid or unsupported CMake generator string passed: '`"!GENERATOR!`'". Cannot proceed, aborting!"
+    exit /b 1
 )))))
 
 :: Figure out the build configuration from the CMake generator string.
@@ -120,11 +120,11 @@ set BUILD_CFG_DEFAULT=%BUILD_CFG_RELWITHDEBINFO%
 
 IF "!BUILD_CFG!"=="" (
     set BUILD_CFG=%BUILD_CFG_DEFAULT%
-    utils\cecho {0E}vs-cfg.cmd: Warning: BUILD_CFG not specified - using the default %BUILD_CFG_DEFAULT%{# #}{\n}
+    call utils\cecho.cmd 0 14 "vs-cfg.cmd: Warning: BUILD_CFG not specified - using the default %BUILD_CFG_DEFAULT%"
 )
 IF NOT !BUILD_CFG!==%BUILD_CFG_MINSIZEREL% IF NOT !BUILD_CFG!==%BUILD_CFG_RELEASE% (
 IF NOT !BUILD_CFG!==%BUILD_CFG_RELWITHDEBINFO% IF NOT !BUILD_CFG!==%BUILD_CFG_DEBUG% (
-    utils\cecho {0C}vs-cfg.cmd: Invalid or unsupported CMake build configuration type passed: !BUILD_CFG!. Cannot proceed, aborting!{# #}{\n}
+    call utils\cecho.cmd 0 12 "vs-cfg.cmd: Invalid or unsupported CMake build configuration type passed: !BUILD_CFG!. Cannot proceed, aborting!"
     exit /b 1
 ))
 
@@ -148,7 +148,7 @@ IF %BUILD_CFG%==Debug (
 :: Populate path variables
 cd ..\
 set ORIGINAL_PATH=%PATH%
-set PATH=%PATH%;"%CD%\win\utils"
+set PATH=%PATH%;%CD%\win\utils
 
 :: Fetch and build the dependencies to a dedicated directory depending on the used VS version and target architecture.
 :: NOTE For IfcOpenShell we can build all of our deps both x86 and x64 using different VS versions in the same directories

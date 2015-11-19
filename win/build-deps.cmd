@@ -31,13 +31,13 @@ setlocal EnableDelayedExpansion
 
 :: Make sure vcvarsall.bat is called and dev env set is up.
 IF "%VSINSTALLDIR%"=="" (
-   utils\cecho {0C}Visual Studio environment variables not set - cannot proceed!{# #}{\n}
+   call utils\cecho.cmd 0 12 "Visual Studio environment variables not set - cannot proceed!"
    GOTO :Error
 )
 
 set PROJECT_NAME=IfcOpenShell
 
-utils\cecho {F0}This script fetches and builds all %PROJECT_NAME% dependencies{# #}{\n}
+call utils\cecho.cmd 15 0 "This script fetches and builds all %PROJECT_NAME% dependencies"
 echo.
 
 :: Set up variables depending on the used Visual Studio version
@@ -47,14 +47,14 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 set BUILD_TYPE=%3
 
 IF %GENERATOR%=="" (
-   cecho {0C}GENERATOR not specified - cannot proceed!{# #}{\n}
+   call cecho.cmd 0 12 "GENERATOR not specified - cannot proceed!"
    GOTO :Error
 )
 
 IF "%BUILD_TYPE%"=="" set BUILD_TYPE=Build
 
 IF NOT "!BUILD_TYPE!"=="Build" IF NOT "!BUILD_TYPE!"=="Rebuild" IF NOT "!BUILD_TYPE!"=="Clean" (
-    utils\cecho {0C}Invalid build type passed: !BUILD_TYPE!. Cannot proceed, aborting!{# #}{\n}
+    call utils\cecho.cmd 0 12 "Invalid build type passed: !BUILD_TYPE!. Cannot proceed, aborting!"
     GOTO :Error
 )
 
@@ -68,63 +68,64 @@ IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 :: User-configurable build options
 IF "%IFCOS_INSTALL_PYTHON%"=="" set IFCOS_INSTALL_PYTHON=TRUE
 IF "%IFCOS_USE_PYTHON2%"=="" set IFCOS_USE_PYTHON2=FALSE
-IF "%IFCOS_NUM_BUILD_PROCESSES%"=="" set IFCOS_NUM_BUILD_PROCESSES=%NUMBER_OF_PROCESSORS%
+IF "%IFCOS_NUM_BUILD_PROCS%"=="" set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
 :: For subroutines
-set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCESSES% /t:%BUILD_TYPE%
+set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS% /t:%BUILD_TYPE%
 REM /clp:ErrorsOnly;WarningsOnly
 :: Note BUILD_TYPE not passed, Clean e.g. wouldn't delete the installed files.
-set INSTALL_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCESSES%
+set INSTALL_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS%
 set BUILD_DIR=build-vs%VS_VER%-%TARGET_ARCH%
 
 REM echo.
-REM cecho {F0}This script fetches and builds all %PROJECT_NAME% dependencies{# #}{\n}
+REM call cecho.cmd 0 15 "This script fetches and builds all %PROJECT_NAME% dependencies"
 
 :: Print build configuration information
 echo.
-cecho {0A}Script configuration:{# #}{\n}
-cecho {0D}  CMake Generator           = %GENERATOR%{# #}{\n}
-echo    - Passed to CMake -G option.
-cecho {0D}  Target Architecture       = %TARGET_ARCH%{# #}{\n}
-echo    - Whether were doing 32-bit (x86) or 64-bit (x64) build.
-cecho {0D}  Dependency Directory      = %DEPS_DIR%{# #}{\n}
-echo    - The directory where %PROJECT_NAME% dependencies are fetched and built.
-cecho {0D}  Installation Directory    = %INSTALL_DIR%{# #}{\n}
-echo    - The directory where %PROJECT_NAME% dependencies are installed.
-cecho {0D}  Build Config Type         = %BUILD_CFG%{# #}{\n}
-echo    - The used build configuration type for the dependencies.
+
+call cecho.cmd 0 10 "Script configuration:"
+call cecho.cmd 0 13 "* CMake Generator`t= '`"%GENERATOR_DEFAULT%`'`t
+echo   - Passed to CMake -G option.
+call cecho.cmd 0 13 "* Target Architecture`t= %TARGET_ARCH%"
+echo   - Whether were doing 32-bit (x86) or 64-bit (x64) build.
+call cecho.cmd 0 13 "* Dependency Directory`t= %DEPS_DIR%"
+echo   - The directory where %PROJECT_NAME% dependencies are fetched and built.
+call cecho.cmd 0 13 "* Installation Directory = %INSTALL_DIR%"
+echo   - The directory where %PROJECT_NAME% dependencies are installed.
+call cecho.cmd 0 13 "* Build Config Type`t= %BUILD_CFG%"
+echo   - The used build configuration type for the dependencies.
 echo      Defaults to RelWithDebInfo if not specified.
-IF %BUILD_CFG%==MinSizeRel cecho {0E}     WARNING: MinSizeRel build can suffer from a significant performance loss.{# #}{\n}
-cecho {0D}  Build Type                = %BUILD_TYPE%{# #}{\n}
-echo    - The used build type for the dependencies (Build, Rebuild, Clean).
+IF %BUILD_CFG%==MinSizeRel call cecho.cmd 0 14 "     WARNING: MinSizeRel build can suffer from a significant performance loss."
+call cecho.cmd 0 13 "* Build Type`t`t= %BUILD_TYPE%"
+echo   - The used build type for the dependencies (Build, Rebuild, Clean).
 echo      Defaults to Build if not specified. Rebuild/Clean also uninstalls Python (if it was installed by this script).
-cecho {0D}  IFCOS_INSTALL_PYTHON      = %IFCOS_INSTALL_PYTHON%{# #}{\n}
-echo    - Download and install Python.
+call cecho.cmd 0 13 "* IFCOS_INSTALL_PYTHON`t= %IFCOS_INSTALL_PYTHON%"
+echo   - Download and install Python.
 echo      Set to something other than TRUE if you wish to use an already installed version of Python.
-cecho {0D}  IFCOS_USE_PYTHON2         = %IFCOS_USE_PYTHON2%{# #}{\n}
-echo    - Use Python 2 instead of 3.
+call cecho.cmd 0 13 "* IFCOS_USE_PYTHON2`t= %IFCOS_USE_PYTHON2%"
+echo   - Use Python 2 instead of 3.
 echo      Set to TRUE if you wish to use Python 2 instead of 3. Has no effect if IFCOS_INSTALL_PYTHON is not TRUE.
-cecho {0D}  IFCOS_NUM_BUILD_PROCESSES = %IFCOS_NUM_BUILD_PROCESSES%{# #}{\n}
-echo    - How many MSBuild.exe processes may be run in parallel.
+call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
+echo   - How many MSBuild.exe processes may be run in parallel.
 echo      Defaults to NUMBER_OF_PROCESSORS.
 echo.
 
 :: Print script's usage information
-cecho {0A}Requirements for a successful execution:{# #}{\n}
-echo    1. Install PowerShell (preinstalled in Windows ^>= 7) and make sure 'powershell' is accessible from PATH.
-echo     - https://support.microsoft.com/en-us/kb/968929
-echo    2. Install Git and make sure 'git' is accessible from PATH.
-echo     - http://code.google.com/p/tortoisegit/
-echo    3. Install CMake and make sure 'cmake' is accessible from PATH.
-echo     - http://www.cmake.org/
-echo    4. Visual Studio 2008 or newer (2013 or newer recommended).
-echo     - http://www.cmake.org/
-echo    5. Run this batch script with Visual Studio environment variables set.
-echo     - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
+call cecho.cmd 0 10 "Requirements for a successful execution:"
+echo  1. Install PowerShell (preinstalled in Windows ^>= 7) and make sure 'powershell' is accessible from PATH.
+echo   - https://support.microsoft.com/en-us/kb/968929
+echo  2. Install Git and make sure 'git' is accessible from PATH.
+echo   - http://code.google.com/p/tortoisegit/
+echo  3. Install CMake and make sure 'cmake' is accessible from PATH.
+echo   - http://www.cmake.org/
+echo  4. Visual Studio 2008 or newer (2013 or newer recommended).
+echo   - https://www.visualstudio.com/
+echo  5. Run this batch script with Visual Studio environment variables set.
+echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
 echo.
 REM TODO 3ds Max SDK?
 
-cecho {0E}Warning: You will need roughly 8 GB of disk space to proceed (VS 2015 x64 RelWithDebInfo).{# #}{\n}
+call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to proceed `(VS 2015 x64 RelWithDebInfo`)."
 echo.
 
 echo If you are not ready with the above, press Ctrl-C to abort!
@@ -150,6 +151,7 @@ set ZIP_EXT=7z
 set BOOST_ZIP=boost_%BOOST_VER%.%ZIP_EXT%
 
 call :DownloadFile http://downloads.sourceforge.net/project/boost/boost/%BOOST_VERSION%/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
+
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\boost"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -160,7 +162,7 @@ IF EXIST "%DEPS_DIR%\boost_%BOOST_VER%". (
     ren boost_%BOOST_VER% boost
     IF NOT EXIST "%DEPS_DIR%\boost\boost.css" GOTO :Error
     cd "%DEPS_DIR%\boost"
-    cecho {0D}Building Boost build script.{# #}{\n}
+    call cecho.cmd 0 13 "Building Boost build script."
     call bootstrap vc%VC_VER%
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 )
@@ -168,9 +170,9 @@ IF EXIST "%DEPS_DIR%\boost_%BOOST_VER%". (
 set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options --with-date_time
 :: NOTE Boost is fast to build with limited set of libraries so build it always.
 cd "%DEPS_DIR%\boost"
-cecho {0D}Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while.{# #}{\n}
+call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
 IF EXIST "%DEPS_DIR%\boost\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
-call .\b2 toolset=msvc-%VC_VER%.0 runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCESSES% ^
+call .\b2 toolset=msvc-%VC_VER%.0 runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -301,18 +303,18 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     IF NOT %ERRORLEVEL%==0 GOTO :Error
     REM Uninstall if build Rebuild/Clean used
     IF NOT %BUILD_TYPE%==Build (
-        cecho {0D}Uninstalling %DEPENDENCY_NAME%. Please be patient, this will take a while.{# #}{\n}
+        call cecho.cmd 0 13 "Uninstalling %DEPENDENCY_NAME%. Please be patient, this will take a while."
         msiexec /x %PYTHON_INSTALLER% /qn
     )
 
     IF NOT EXIST "%PYTHONPATH%". (
-        cecho {0D}Installing %DEPENDENCY_NAME%. Please be patient, this will take a while.{# #}{\n}
+        call cecho.cmd 0 13 "Installing %DEPENDENCY_NAME%. Please be patient, this will take a while."
         msiexec /qn /i %PYTHON_INSTALLER% TARGETDIR="%PYTHONPATH%"
     ) ELSE (
-        cecho {0D}%DEPENDENCY_NAME% already installed. Skipping.{# #}{\n}
+        call cecho.cmd 0 13 "%DEPENDENCY_NAME% already installed. Skipping."
     )
 ) ELSE (
-    cecho {0D}IFCOS_INSTALL_PYTHON not true, skipping installation of Python.{# #}{\n}
+    call cecho.cmd 0 13 "IFCOS_INSTALL_PYTHON not true, skipping installation of Python."
 )
 
 :SWIG
@@ -334,12 +336,12 @@ IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swi
 
 :Successful
 echo.
-%TOOLS%\utils\cecho {0A}%PROJECT_NAME% dependencies built.{# #}{\n}
+call %TOOLS%\utils\cecho.cmd 0 10 "%PROJECT_NAME% dependencies built."
 goto :Finish
 
 :Error
 echo.
-%TOOLS%\utils\cecho {0C}An error occurred! Aborting!{# #}{\n}
+call %TOOLS%\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
 goto :Finish
 
 :Finish
@@ -355,11 +357,11 @@ goto :EOF
 :DownloadFile
 pushd %2
 IF NOT EXIST "%3". (
-    cecho {0D}Downloading %DEPENDENCY_NAME% into %2.{# #}{\n}
+    call cecho.cmd 0 13 "Downloading %DEPENDENCY_NAME% into %2."
     powershell -Command "$webClient = new-object System.Net.WebClient; $webClient.DownloadFile('%1', '%3')"
     REM Old wget version in case someone has problem with PowerShell: wget --no-check-certificate %1
 ) ELSE (
-    cecho {0D}%DEPENDENCY_NAME% already downloaded. Skipping.{# #}{\n}
+    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already downloaded. Skipping."
 )
 set RET=%ERRORLEVEL%
 popd
@@ -369,10 +371,10 @@ exit /b %RET%
 :: Params: %1 filename, %2 destinationDir, %3 dirAfterExtraction
 :ExtractArchive
 IF NOT EXIST "%3". (
-    cecho {0D}Extracting %DEPENDENCY_NAME% into %2.{# #}{\n}
+    call cecho.cmd 0 13 "Extracting %DEPENDENCY_NAME% into %2."
     7za x %1 -y -o%2
 ) ELSE (
-    cecho {0D}%DEPENDENCY_NAME% already extracted into %3. Skipping.{# #}{\n}
+    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %3. Skipping."
 )
 exit /b %ERRORLEVEL%
 
@@ -381,11 +383,11 @@ exit /b %ERRORLEVEL%
 :: F.ex. call :GitCloneRepository https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPS_DIR%\OpenCOLLADA\"
 :GitCloneOrPullRepository
 IF NOT EXIST %2. (
-    cecho {0D}Cloning %DEPENDENCY_NAME% into %2.{# #}{\n}
+    call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %2."
     pushd "%DEPS_DIR%"
     call git clone %1 %2
 ) ELSE (
-    cecho {0D}%DEPENDENCY_NAME% already cloned. Pulling latest changes.{# #}{\n}
+    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned. Pulling latest changes."
     pushd %2
     call git pull
 )
@@ -397,7 +399,7 @@ exit /b %RET%
 :: Params: %* cmakeOptions
 :: NOTE cd to root CMakeLists.txt folder before calling this if the CMakeLists.txt is not in the repo root.
 :RunCMake
-cecho {0D}Running CMake for %DEPENDENCY_NAME%.{# #}{\n}
+call cecho.cmd 0 13 "Running CMake for %DEPENDENCY_NAME%."
 IF NOT EXIST %BUILD_DIR%. mkdir %BUILD_DIR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd %BUILD_DIR%
@@ -412,7 +414,7 @@ exit /b %RET%
 :: BuildSolution - Builds/Rebuilds/Cleans a solution using MSBuild
 :: Params: %1 solutioName, %2 configuration
 :BuildSolution
-cecho {0D}%BUILD_TYPE%ing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while.{# #}{\n}
+call cecho.cmd 0 13 "%BUILD_TYPE%ing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
 %MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%
 exit /b %ERRORLEVEL%
 
@@ -421,7 +423,7 @@ exit /b %ERRORLEVEL%
 :: NOTE the actual install dir is set during cmake run.
 :InstallCMakeProject
 pushd %1
-cecho {0D}Installing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while.{# #}{\n}
+call cecho.cmd 0 13 "Installing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
 %INSTALL_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%
 set RET=%ERRORLEVEL%
 popd

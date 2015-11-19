@@ -56,11 +56,11 @@ set PATH=%PATH%;%SWIG_DIR%;%PYTHONPATH%
 :: TODO 3ds Max SDK?
 
 echo.
-cecho {0A}Script configuration:{# #}{\n}
+call cecho.cmd 0 10 "Script configuration:"
 echo   CMake Generator = %GENERATOR%
 echo   All arguments   = %*
 echo.
-cecho {0A}Dependency Environment Variables for %PROJECT_NAME%:{# #}{\n}
+call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_ROOT              = %BOOST_ROOT%
 REM echo    BOOST_INCLUDEDIR = %BOOST_INCLUDEDIR%
 echo    BOOST_LIBRARYDIR        = %BOOST_LIBRARYDIR%
@@ -81,7 +81,7 @@ echo.
 set CMAKELISTS_DIR=..\cmake
 REM IF NOT EXIST %PROJECT_NAME%.sln. (
     IF EXIST CMakeCache.txt. del /Q CMakeCache.txt
-    cecho {0D}Running CMake for %PROJECT_NAME%.{# #}{\n}
+    call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
     IF "%2"=="" (
         REM No extra arguments provided, trust that GENERATOR is set properly.
         cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%"
@@ -94,8 +94,8 @@ REM IF NOT EXIST %PROJECT_NAME%.sln. (
     )
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM ) ELSE (
-    REM cecho {0A}%PROJECT_NAME%.sln exists. Skipping CMake call for %PROJECT_NAME%.{# #}{\n}
-    REM cecho {0A}Delete %CD%\%PROJECT_NAME%.sln to trigger a CMake rerun.{# #}{\n}
+    REM call cecho.cmd 0 10 "%PROJECT_NAME%.sln exists. Skipping CMake call for %PROJECT_NAME%."
+    REM call cecho.cmd 0 10 "Delete %BUILD_DIR%\%PROJECT_NAME%.sln to trigger a CMake rerun."
 REM )
 echo.
 
@@ -103,7 +103,7 @@ goto :Finish
 
 :Error
 echo.
-cecho {0C}An error occurred! Aborting!{# #}{\n}
+cecho {0C}An error occurred! Aborting!"
 goto :Finish
 
 :Finish
