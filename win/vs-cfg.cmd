@@ -32,7 +32,6 @@ set GENERATOR=%1
 :: F.ex. "vs2013-32" and/or "vc14-64"
 
 :: TODO Print CMake and VS versions. Maybe in build-deps.cmd would be better than here.
-:: Make CMake missing a fatal error and abort the script.
 
 :: Supported Visual Studio versions:
 set GENERATOR_VS2015_32="Visual Studio 14 2015"

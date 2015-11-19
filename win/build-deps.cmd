@@ -97,20 +97,20 @@ call cecho.cmd 0 13 "* Installation Directory = %INSTALL_DIR%"
 echo   - The directory where %PROJECT_NAME% dependencies are installed.
 call cecho.cmd 0 13 "* Build Config Type`t= %BUILD_CFG%"
 echo   - The used build configuration type for the dependencies.
-echo      Defaults to RelWithDebInfo if not specified.
+echo     Defaults to RelWithDebInfo if not specified.
 IF %BUILD_CFG%==MinSizeRel call cecho.cmd 0 14 "     WARNING: MinSizeRel build can suffer from a significant performance loss."
 call cecho.cmd 0 13 "* Build Type`t`t= %BUILD_TYPE%"
 echo   - The used build type for the dependencies (Build, Rebuild, Clean).
-echo      Defaults to Build if not specified. Rebuild/Clean also uninstalls Python (if it was installed by this script).
+echo     Defaults to Build if not specified. Rebuild/Clean also uninstalls Python (if it was installed by this script).
 call cecho.cmd 0 13 "* IFCOS_INSTALL_PYTHON`t= %IFCOS_INSTALL_PYTHON%"
 echo   - Download and install Python.
-echo      Set to something other than TRUE if you wish to use an already installed version of Python.
+echo     Set to something other than TRUE if you wish to use an already installed version of Python.
 call cecho.cmd 0 13 "* IFCOS_USE_PYTHON2`t= %IFCOS_USE_PYTHON2%"
 echo   - Use Python 2 instead of 3.
-echo      Set to TRUE if you wish to use Python 2 instead of 3. Has no effect if IFCOS_INSTALL_PYTHON is not TRUE.
+echo     Set to TRUE if you wish to use Python 2 instead of 3. Has no effect if IFCOS_INSTALL_PYTHON is not TRUE.
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo   - How many MSBuild.exe processes may be run in parallel.
-echo      Defaults to NUMBER_OF_PROCESSORS.
+echo     Defaults to NUMBER_OF_PROCESSORS.
 echo.
 
 :: Print script's usage information

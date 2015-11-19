@@ -24,7 +24,7 @@ set PROJECT_NAME=IfcOpenShell
 
 :: Enable the delayed environment variable expansion needed in vs-cfg.cmd.
 setlocal EnableDelayedExpansion
-
+:: TODO Getting warning print in vs-cfg.cmd for missing build type although this script doesn't need it specified
 call vs-cfg.cmd %1
 
 :: Read Python related variables from BuildDepsCache.txt
