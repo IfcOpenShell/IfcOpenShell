@@ -34,35 +34,33 @@ set GENERATOR=%1
 :: TODO Print CMake and VS versions. Maybe in build-deps.cmd would be better than here.
 
 :: Supported Visual Studio versions:
-set GENERATOR_VS2015_32="Visual Studio 14 2015"
-set GENERATOR_VS2015_64="Visual Studio 14 2015 Win64"
+set GENERATORS[0]="Visual Studio 14 2015"
+set GENERATORS[1]="Visual Studio 14 2015 Win64"
 :: TODO Check CMake version and convert possible new format (>= 3.0) generator names 
 :: to the old versions if using older CMake for VS <= 2013,
 :: see http://www.cmake.org/cmake/help/v3.0/release/3.0.0.html#other-changes
-set GENERATOR_VS2013_32="Visual Studio 12"
-set GENERATOR_VS2013_64="Visual Studio 12 Win64"
-set GENERATOR_VS2012_32="Visual Studio 11"
-set GENERATOR_VS2012_64="Visual Studio 11 Win64"
-set GENERATOR_VS2010_32="Visual Studio 10"
-set GENERATOR_VS2010_64="Visual Studio 10 Win64"
-set GENERATOR_VS2008_32="Visual Studio 9 2008"
-set GENERATOR_VS2008_64="Visual Studio 9 2008 Win64"
-set GENERATOR_DEFAULT=%GENERATOR_VS2015_64%
+set GENERATORS[2]="Visual Studio 12"
+set GENERATORS[3]="Visual Studio 12 Win64"
+set GENERATORS[4]="Visual Studio 11"
+set GENERATORS[5]="Visual Studio 11 Win64"
+set GENERATORS[6]="Visual Studio 10"
+set GENERATORS[7]="Visual Studio 10 Win64"
+set GENERATORS[8]="Visual Studio 9 2008"
+set GENERATORS[9]="Visual Studio 9 2008 Win64"
+set GENERATOR_DEFAULT=%GENERATORS[1]%
 
 IF "!GENERATOR!"=="" (
     set GENERATOR=%GENERATOR_DEFAULT%
     call utils\cecho.cmd 0 14 "vs-cfg.cmd: Warning: Generator not passed - using the default '`"%GENERATOR_DEFAULT%`'`t
 )
 
-IF NOT !GENERATOR!==%GENERATOR_VS2008_32% IF NOT !GENERATOR!==%GENERATOR_VS2008_64% (
-IF NOT !GENERATOR!==%GENERATOR_VS2010_32% IF NOT !GENERATOR!==%GENERATOR_VS2010_64% (
-IF NOT !GENERATOR!==%GENERATOR_VS2012_32% IF NOT !GENERATOR!==%GENERATOR_VS2012_64% (
-IF NOT !GENERATOR!==%GENERATOR_VS2013_32% IF NOT !GENERATOR!==%GENERATOR_VS2013_64% (
-IF NOT !GENERATOR!==%GENERATOR_VS2015_32% IF NOT !GENERATOR!==%GENERATOR_VS2015_64% (
-    call utils\cecho.cmd 0 12 "vs-cfg.cmd: Invalid or unsupported CMake generator string passed: '`"!GENERATOR!`'". Cannot proceed, aborting!"
-    exit /b 1
-)))))
+FOR /l %%i in (0,1,9) DO (
+    IF !GENERATOR!==!GENERATORS[%%i]! GOTO :GeneratorValid
+)
+call utils\cecho.cmd 0 12 "vs-cfg.cmd: Invalid or unsupported CMake generator string passed: '`"!GENERATOR!`'". Cannot proceed, aborting!"
+exit /b 1
 
+:GeneratorValid
 :: Figure out the build configuration from the CMake generator string.
 :: Are we building 32-bit or 64-bit version.
 set ARCH_BITS=32
@@ -71,6 +69,7 @@ set TARGET_ARCH=x86
 set VS_PLATFORM=Win32
 
 :: Split the string for closer inspection.
+:: TODO A bit clumsy and not dynamic when new VS is released, clean this up.
 :: VS_VER and VC_VER are convenience variables used f.ex. for filenames.
 set GENERATOR_NO_DOUBLEQUOTES=%GENERATOR:"=%
 set GENERATOR_SPLIT=%GENERATOR_NO_DOUBLEQUOTES: =,%

@@ -26,6 +26,10 @@ echo.
 
 set THISDIR=%CD%
 
+set PROJECT_NAME=IfcOpenShell
+call utils\cecho.cmd 15 0 "This script fetches and builds all %PROJECT_NAME% dependencies"
+echo.
+
 :: Enable the delayed environment variable expansion needed in vs-cfg.cmd.
 setlocal EnableDelayedExpansion
 
@@ -34,11 +38,6 @@ IF "%VSINSTALLDIR%"=="" (
    call utils\cecho.cmd 0 12 "Visual Studio environment variables not set - cannot proceed!"
    GOTO :ErrorAndPrintUsage
 )
-
-set PROJECT_NAME=IfcOpenShell
-
-call utils\cecho.cmd 15 0 "This script fetches and builds all %PROJECT_NAME% dependencies"
-echo.
 
 :: Set up variables depending on the used Visual Studio version
 call vs-cfg.cmd %1 %2
@@ -87,7 +86,7 @@ FOR %%i IN (powershell git cmake) DO (
 :: Print build configuration information
 
 call cecho.cmd 0 10 "Script configuration:"
-call cecho.cmd 0 13 "* CMake Generator`t= '`"%GENERATOR_DEFAULT%`'`t
+call cecho.cmd 0 13 "* CMake Generator`t= '`"%GENERATOR%`'`t
 echo   - Passed to CMake -G option.
 call cecho.cmd 0 13 "* Target Architecture`t= %TARGET_ARCH%"
 echo   - Whether were doing 32-bit (x86) or 64-bit (x64) build.
@@ -113,13 +112,12 @@ echo   - How many MSBuild.exe processes may be run in parallel.
 echo     Defaults to NUMBER_OF_PROCESSORS.
 echo.
 
-:: Print script's usage information
 call :PrintUsage
 
 call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to proceed `(VS 2015 x64 RelWithDebInfo`)."
 echo.
 
-echo If you are not ready with the above, press Ctrl-C to abort!
+call cecho.cmd black cyan "If you are not ready with the above, press Ctrl-C to abort!"
 pause
 echo.
 
