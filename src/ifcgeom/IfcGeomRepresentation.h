@@ -123,10 +123,10 @@ namespace IfcGeom {
 						Material adapter(&it->Style());
 						std::vector<Material>::const_iterator jt = std::find(_materials.begin(), _materials.end(), adapter);
 						if (jt == _materials.end()) {
-							surface_style_id = _materials.size();
+							surface_style_id = (int)_materials.size();
 							_materials.push_back(adapter);
 						} else {
-							surface_style_id = jt - _materials.begin();
+							surface_style_id = (int)(jt - _materials.begin());
 						}
 					}
 
@@ -134,10 +134,10 @@ namespace IfcGeom {
 						Material material(IfcGeom::get_default_style(settings().element_type()));
 						std::vector<Material>::const_iterator it = std::find(_materials.begin(), _materials.end(), material);
 						if (it == _materials.end()) {
-							surface_style_id = _materials.size();
+							surface_style_id = (int)_materials.size();
 							_materials.push_back(material);
 						} else {
-							surface_style_id = it - _materials.begin();
+							surface_style_id = (int)(it - _materials.begin());
 						}
 					}
 
@@ -251,7 +251,7 @@ namespace IfcGeom {
 							BRepAdaptor_Curve crv(TopoDS::Edge(exp.Current()));
 							GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
 							int n = tessellater.NbPoints();
-							int start = _verts.size() / 3;
+							int start = (int)_verts.size() / 3;
 							for (int i = 1; i <= n; ++i) {
 								gp_XYZ p = tessellater.Value(i).XYZ();
 								trsf.Transforms(p);

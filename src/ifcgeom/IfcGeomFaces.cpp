@@ -899,11 +899,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineSurfaceWithKnots* l, To
 	std::vector<int> umults = l->UMultiplicities();
 	std::vector<int> vmults = l->VMultiplicities();
 
-	TColgp_Array2OfPnt Poles (0, cps->size() - 1, 0, (*cps->begin()).size() - 1);
-	TColStd_Array1OfReal UKnots(0, uknots.size() - 1);
-	TColStd_Array1OfReal VKnots(0, vknots.size() - 1);
-	TColStd_Array1OfInteger UMults(0, umults.size() - 1);
-	TColStd_Array1OfInteger VMults(0, vmults.size() - 1);
+	TColgp_Array2OfPnt Poles (0, (int)cps->size() - 1, 0, (int)(*cps->begin()).size() - 1);
+	TColStd_Array1OfReal UKnots(0, (int)uknots.size() - 1);
+	TColStd_Array1OfReal VKnots(0, (int)vknots.size() - 1);
+	TColStd_Array1OfInteger UMults(0, (int)umults.size() - 1);
+	TColStd_Array1OfInteger VMults(0, (int)vmults.size() - 1);
 	Standard_Integer UDegree = l->UDegree();
 	Standard_Integer VDegree = l->VDegree();
 

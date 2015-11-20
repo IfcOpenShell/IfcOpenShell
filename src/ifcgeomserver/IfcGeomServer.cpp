@@ -69,7 +69,7 @@ void swrite(std::ostream& s, T t) {
 
 template <>
 void swrite(std::ostream& s, std::string t) {
-	int32_t len = t.size();
+	int32_t len = (int32_t)t.size();
 	swrite(s, len);
 	s.write(t.c_str(), len);
 	while (len++ % 4) s.put(0);
@@ -323,7 +323,7 @@ int main (int argc, char** argv) {
 			settings.convert_back_units() = true;
 			settings.include_curves() = true;
 
-			iterator = new IfcGeom::Iterator<float>(settings, data, len);
+			iterator = new IfcGeom::Iterator<float>(settings, data, (int)len);
 			has_more = iterator->initialize();
 
 			More(has_more).write(std::cout);

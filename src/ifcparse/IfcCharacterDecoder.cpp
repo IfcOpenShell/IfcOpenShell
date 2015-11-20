@@ -135,7 +135,7 @@ IfcCharacterDecoder::operator std::string() {
 #ifdef HAVE_ICU
 			if ( previous_codepage != codepage ) {
 				if ( converter ) ucnv_close(converter);
-				char encoder[11] = {'i','s','o','-','8','8','5','9','-',codepage + 0x30};
+				char encoder[11] = {'i','s','o','-','8','8','5','9','-', (char)codepage + 0x30};
 				converter = ucnv_open(encoder, &status);
 			}
 			const char characters[2] = { current_char + 0x80 };
@@ -188,7 +188,7 @@ IfcCharacterDecoder::operator std::string() {
 						if (old_hex == 0) {
 							old_hex = hex;
 						} else {
-							char characters[3] = { old_hex, hex };
+							char characters[3] = { (char)old_hex, (char)hex };
 							const char* char_array = &characters[0];
 							UChar32 ch = ucnv_getNextUChar(compatibility_converter,&char_array,char_array+2,&status);
 							addChar(s,ch);

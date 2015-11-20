@@ -149,8 +149,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineCurveWithKnots* l, Hand
 	const std::vector<double> knots = l->Knots();
 
 	TColgp_Array1OfPnt      Poles(0,  cps->size() - 1);
-	TColStd_Array1OfReal    Knots(0, knots.size() - 1);
-	TColStd_Array1OfInteger Mults(0, mults.size() - 1);
+	TColStd_Array1OfReal    Knots(0, (int)knots.size() - 1);
+	TColStd_Array1OfInteger Mults(0, (int)mults.size() - 1);
 	Standard_Integer        Degree = l->Degree();
 	Standard_Boolean        Periodic = l->ClosedCurve();
 

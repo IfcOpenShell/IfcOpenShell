@@ -467,7 +467,7 @@ boost::dynamic_bitset<> TokenFunc::asBinary(const Token& t) {
 	}
 
 	++it;
-	unsigned i = (str.size()-1) * 4 - n;
+	unsigned i = ((unsigned)str.size()-1) * 4 - n;
 	boost::dynamic_bitset<> bitset(i);	
 
 	for(; it != str.end(); ++it) {

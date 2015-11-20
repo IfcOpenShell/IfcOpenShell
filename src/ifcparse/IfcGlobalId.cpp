@@ -52,7 +52,7 @@ unsigned from_base64(const std::string& s) {
 			r *= 64;
 			const char* c = strchr(chars,*i);
 			if ( !c ) throw IfcParse::IfcException("Failed to decode GlobalId");
-			r += (c-chars);
+			r += (unsigned)(c-chars);
 		}
 	return r;
 }

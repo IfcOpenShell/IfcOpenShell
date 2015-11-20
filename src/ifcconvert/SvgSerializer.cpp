@@ -43,7 +43,7 @@
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <gp_Ax22d.hxx>
-
+#include <Standard_Version.hxx>
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "SvgSerializer.h"

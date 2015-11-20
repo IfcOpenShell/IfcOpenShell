@@ -72,7 +72,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<double>* 
 
 	const IfcGeom::Representation::Triangulation<double>& mesh = o->geometry();
 	
-	const int vcount = mesh.verts().size() / 3;
+	const int vcount = (int)mesh.verts().size() / 3;
 	for ( std::vector<double>::const_iterator it = mesh.verts().begin(); it != mesh.verts().end(); ) {
 		const double x = *(it++);
 		const double y = *(it++);
