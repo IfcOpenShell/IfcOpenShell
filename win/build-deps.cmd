@@ -24,8 +24,6 @@
 @echo off
 echo.
 
-set THISDIR=%CD%
-
 set PROJECT_NAME=IfcOpenShell
 call utils\cecho.cmd 15 0 "This script fetches and builds all %PROJECT_NAME% dependencies"
 echo.
@@ -284,8 +282,8 @@ set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
 :: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     REM Store Python versions to BuildDepsCache.txt for run-cmake.bat
-    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>"%THISDIR%\BuildDepsCache-%TARGET_ARCH%.txt"
-    echo PYTHONPATH=%PYTHONPATH%>>"%THISDIR%\BuildDepsCache-%TARGET_ARCH%.txt"
+    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+    echo PYTHONPATH=%PYTHONPATH%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
 
     cd "%DEPS_DIR%"
     call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
@@ -325,7 +323,7 @@ IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swi
 
 :Successful
 echo.
-call %THISDIR%\utils\cecho.cmd 0 10 "%PROJECT_NAME% dependencies built."
+call %~dp0\utils\cecho.cmd 0 10 "%PROJECT_NAME% dependencies built."
 goto :Finish
 
 :ErrorAndPrintUsage
@@ -333,12 +331,12 @@ echo.
 call :PrintUsage
 :Error
 echo.
-call %THISDIR%\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
+call %~dp0\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
 goto :Finish
 
 :Finish
 set PATH=%ORIGINAL_PATH%
-cd %THISDIR%
+cd %~dp0
 endlocal
 goto :EOF
 
@@ -423,7 +421,7 @@ exit /b %RET%
 
 :: PrintUsage - Prints usage information
 :PrintUsage
-call %THISDIR%\utils\cecho.cmd 0 10 "Requirements for a successful execution:"
+call %~dp0\utils\cecho.cmd 0 10 "Requirements for a successful execution:"
 echo  1. Install PowerShell (preinstalled in Windows ^>= 7) and make sure 'powershell' is accessible from PATH.
 echo   - https://support.microsoft.com/en-us/kb/968929
 echo  2. Install Git and make sure 'git' is accessible from PATH.

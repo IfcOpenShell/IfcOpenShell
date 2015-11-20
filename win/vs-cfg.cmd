@@ -23,9 +23,6 @@
 
 @echo off
 
-:: TOOLS is the path where the Windows build scripts reside.
-set TOOLS=%CD%
-
 set GENERATOR=%1
 
 :: TODO IDEA: Take more user-friendly VS generators and convert them to the CMake ones?
@@ -51,13 +48,13 @@ set GENERATOR_DEFAULT=%GENERATORS[1]%
 
 IF "!GENERATOR!"=="" (
     set GENERATOR=%GENERATOR_DEFAULT%
-    call utils\cecho.cmd 0 14 "vs-cfg.cmd: Warning: Generator not passed - using the default '`"%GENERATOR_DEFAULT%`'`t
+    call utils\cecho.cmd 0 14 "%~nx0: Warning: Generator not passed - using the default '`"%GENERATOR_DEFAULT%`'`t
 )
 
 FOR /l %%i in (0,1,9) DO (
     IF !GENERATOR!==!GENERATORS[%%i]! GOTO :GeneratorValid
 )
-call utils\cecho.cmd 0 12 "vs-cfg.cmd: Invalid or unsupported CMake generator string passed: '`"!GENERATOR!`'". Cannot proceed, aborting!"
+call utils\cecho.cmd 0 12 "%~nx0: Invalid or unsupported CMake generator string passed: '`"!GENERATOR!`'". Cannot proceed, aborting!"
 exit /b 1
 
 :GeneratorValid
@@ -68,32 +65,15 @@ set TARGET_ARCH=x86
 :: Visual Studio platform name, Win32 (i.e. x86) or x64.
 set VS_PLATFORM=Win32
 
-:: Split the string for closer inspection.
-:: TODO A bit clumsy and not dynamic when new VS is released, clean this up.
+:: Find out VS version, VC versions and are we doing 64-bit or not.
 :: VS_VER and VC_VER are convenience variables used f.ex. for filenames.
 set GENERATOR_NO_DOUBLEQUOTES=%GENERATOR:"=%
 set GENERATOR_SPLIT=%GENERATOR_NO_DOUBLEQUOTES: =,%
 FOR %%i IN (%GENERATOR_SPLIT%) DO (
-    IF %%i==14 (
-        set VS_VER=2015
-        set VC_VER=14
-    )
-    IF %%i==12 (
-        set VS_VER=2013
-        set VC_VER=12
-    )
-    IF %%i==11 (
-        set VS_VER=2012
-        set VC_VER=11
-    )
-    IF %%i==10 (
-        set VS_VER=2010
-        set VC_VER=10
-    )
-    IF %%i==2008 (
-        set VS_VER=2008
-        set VC_VER=9
-    )
+    call :StrLength LEN %%i
+    IF !LEN!==1 set VC_VER=%%i
+    IF !LEN!==2 set VC_VER=%%i
+    IF !LEN!==4 set VS_VER=%%i
     REM Are going to perform a 64-bit build?
     IF %%i==Win64 (
         set ARCH_BITS=64
@@ -118,11 +98,11 @@ set BUILD_CFG_DEFAULT=%BUILD_CFG_RELWITHDEBINFO%
 
 IF "!BUILD_CFG!"=="" (
     set BUILD_CFG=%BUILD_CFG_DEFAULT%
-    call utils\cecho.cmd 0 14 "vs-cfg.cmd: Warning: BUILD_CFG not specified - using the default %BUILD_CFG_DEFAULT%"
+    call utils\cecho.cmd 0 14 "%~nx0: Warning: BUILD_CFG not specified - using the default %BUILD_CFG_DEFAULT%"
 )
 IF NOT !BUILD_CFG!==%BUILD_CFG_MINSIZEREL% IF NOT !BUILD_CFG!==%BUILD_CFG_RELEASE% (
 IF NOT !BUILD_CFG!==%BUILD_CFG_RELWITHDEBINFO% IF NOT !BUILD_CFG!==%BUILD_CFG_DEBUG% (
-    call utils\cecho.cmd 0 12 "vs-cfg.cmd: Invalid or unsupported CMake build configuration type passed: !BUILD_CFG!. Cannot proceed, aborting!"
+    call utils\cecho.cmd 0 12 "%~nx0: Invalid or unsupported CMake build configuration type passed: !BUILD_CFG!. Cannot proceed, aborting!"
     exit /b 1
 ))
 
@@ -143,16 +123,27 @@ IF %BUILD_CFG%==Debug (
     set POSTFIX_UNDERSCORE_DEBUG=_debug
 )
 
-:: Populate path variables
-cd ..\
+:: Add utils to PATH
 set ORIGINAL_PATH=%PATH%
-set PATH=%PATH%;%CD%\win\utils
+set PATH=%PATH%;%~dp0\utils
 
 :: Fetch and build the dependencies to a dedicated directory depending on the used VS version and target architecture.
 :: NOTE For IfcOpenShell we can build all of our deps both x86 and x64 using different VS versions in the same directories
 :: so no need for -%VS_VER%-%TARGET_ARCH% postfix.
 :: set DEPS_DIR=%CD%\deps-%VS_VER%-%TARGET_ARCH%
+pushd ..
 set DEPS_DIR=%CD%\deps
 set INSTALL_DIR=%CD%\deps-vs%VS_VER%-%TARGET_ARCH%-installed
 REM set INSTALL_DIR=%CD%\deps-vs%VS_VER%-%TARGET_ARCH%-%DEBUG_OR_RELEASE_LOWERCASE%-installed
-cd %TOOLS%
+popd
+
+GOTO :EOF
+:: http://geekswithblogs.net/SoftwareDoneRight/archive/2010/01/30/useful-dos-batch-functions-substring-and-length.aspx
+:StrLength
+set #=%2%
+set length=0
+:stringLengthLoop
+if defined # (set #=%#:~1%&set /A length += 1&goto stringLengthLoop)
+::echo the string is %length% characters long!
+set "%~1=%length%"
+GOTO :EOF
