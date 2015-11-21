@@ -308,7 +308,7 @@ Token IfcSpfLexer::Next() {
 	while ( ! stream->eof ) {
 
 		// Read character and increment pointer if not starting a new token
-		char c = stream->Peek();
+		c = stream->Peek();
 		if ( len && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '/') ) break;
 		stream->Inc();
 		len ++;
@@ -363,7 +363,7 @@ bool TokenFunc::startsWith(const Token& t, char c) {
 }
 
 bool TokenFunc::isOperator(const Token& t, char op) {
-	return (!t.first) && (!op || op == t.second);
+	return (!t.first) && (!op || (unsigned)op == t.second);
 }
 
 bool TokenFunc::isIdentifier(const Token& t) {
@@ -394,8 +394,8 @@ bool TokenFunc::isInt(const Token& t) {
 	const std::string str = asString(t);
 	const char* start = str.c_str();
 	char* end;
-	long result = strtol(start,&end,10);
-	return ((end - start) == str.length());
+	/*long result =*/ strtol(start,&end,10);
+	return ((end - start) == (ptrdiff_t)str.length());
 }
 
 bool TokenFunc::isBool(const Token& t) {
@@ -412,11 +412,11 @@ bool TokenFunc::isFloat(const Token& t) {
 	const char* start = str.c_str();
 	char* end;
 #ifdef _MSC_VER
-	double result = _strtod_l(start,&end,locale);
+	/*double result =*/ _strtod_l(start,&end,locale);
 #else
 	double result = strtod_l(start,&end,locale);
 #endif
-	return ((end - start) == str.length());
+	return ((end - start) == (ptrdiff_t)str.length());
 }
 
 int TokenFunc::asInt(const Token& t) {
@@ -508,8 +508,7 @@ EntityArgument::EntityArgument(const Token& t) {
 // Aditionally, stores the ids (i.e. #[\d]+) in a vector
 //
 void ArgumentList::read(IfcSpfLexer* t, std::vector<unsigned int>& ids) {
-	IfcParse::IfcFile* file = t->file;
-	
+	//IfcParse::IfcFile* file = t->file;
 	Token next = t->Next();
 	while( next.second || next.first ) {
 		if ( TokenFunc::isOperator(next,',') ) {
@@ -517,9 +516,9 @@ void ArgumentList::read(IfcSpfLexer* t, std::vector<unsigned int>& ids) {
 		} else if ( TokenFunc::isOperator(next,')') ) {
 			break;
 		} else if ( TokenFunc::isOperator(next,'(') ) {
-			ArgumentList* list = new ArgumentList();
-			list->read(t, ids);
-			push(list);
+			ArgumentList* alist = new ArgumentList();
+			alist->read(t, ids);
+			push(alist);
 		} else {
 			if ( TokenFunc::isIdentifier(next) ) {
 				ids.push_back(TokenFunc::asInt(next));
@@ -640,7 +639,7 @@ ArgumentList::operator IfcEntityListList::ptr() const {
 	for ( it = list.begin(); it != list.end(); ++ it ) {
 		const Argument* arg = *it;
 		const ArgumentList* arg_list;
-		if ((arg_list = dynamic_cast<const ArgumentList*>(arg))) {
+		if ((arg_list = dynamic_cast<const ArgumentList*>(arg)) != 0) {
 			IfcEntityList::ptr e = *arg_list;
 			l->push(e);
 		}
@@ -1070,9 +1069,9 @@ void IfcFile::addEntities(IfcEntityList::ptr es) {
 IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 	// If this instance has been inserted before, return
 	// a reference to the copy that was created from it.
-	entity_entity_map_t::iterator it = entity_file_map.find(entity);
-	if (it != entity_file_map.end()) {
-		return it->second;
+	entity_entity_map_t::iterator mit = entity_file_map.find(entity);
+	if (mit != entity_file_map.end()) {
+		return mit->second;
 	}
 
 	// Obtain all forward references by a depth-first 
@@ -1272,8 +1271,8 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	// moment, inversely related instances affected by the removal of the
 	// entity being deleted are not deleted themselves.
 	if (references) {
-		for (IfcEntityList::it it = references->begin(); it != references->end(); ++it) {
-			IfcUtil::IfcBaseEntity* related_instance = (IfcUtil::IfcBaseEntity*) *it;
+		for (IfcEntityList::it iit = references->begin(); iit != references->end(); ++iit) {
+			IfcUtil::IfcBaseEntity* related_instance = (IfcUtil::IfcBaseEntity*) *iit;
 			for (unsigned i = 0; i < related_instance->getArgumentCount(); ++i) {
 				Argument* attr = related_instance->getArgument(i);
 				if (attr->isNull()) continue;
@@ -1495,21 +1494,21 @@ std::pair<IfcSchema::IfcNamedUnit*, double> IfcFile::getUnit(IfcSchema::IfcUnitE
 				if (named_unit->UnitType() != type) {
 					continue;
 				}
-				IfcSchema::IfcSIUnit* unit = 0;
+				IfcSchema::IfcSIUnit* siunit = 0;
 				if (named_unit->is(IfcSchema::Type::IfcConversionBasedUnit)) {
 					IfcSchema::IfcConversionBasedUnit* u = (IfcSchema::IfcConversionBasedUnit*)named_unit;
 					IfcSchema::IfcMeasureWithUnit* mu = u->ConversionFactor();
 					return_value.second *= static_cast<double>(*mu->ValueComponent()->entity->getArgument(0));
 					return_value.first = named_unit;
 					if (mu->UnitComponent()->is(IfcSchema::Type::IfcSIUnit)) {
-						unit = (IfcSchema::IfcSIUnit*) mu->UnitComponent();
+						siunit = (IfcSchema::IfcSIUnit*) mu->UnitComponent();
 					}
 				} else if (named_unit->is(IfcSchema::Type::IfcSIUnit)) {
-					return_value.first = unit = (IfcSchema::IfcSIUnit*) named_unit;
+					return_value.first = siunit = (IfcSchema::IfcSIUnit*) named_unit;
 				}
-				if (unit) {
-					if (unit->hasPrefix()) {
-						return_value.second *= IfcSIPrefixToValue(unit->Prefix());
+				if (siunit) {
+					if (siunit->hasPrefix()) {
+						return_value.second *= IfcSIPrefixToValue(siunit->Prefix());
 					}
 				}
 			}

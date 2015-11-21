@@ -104,7 +104,6 @@ std::string IfcWritableEntity::toString(bool upper) const {
 	ss << dt << "(";
 	for (std::map<int,Argument*>::const_iterator it = args.begin(); it != args.end(); ++ it) {
 		if ( it != args.begin() ) ss << ",";
-		const Argument* a = it->second;
 		ss << it->second->toString(upper);
 	}
 	ss << ")";
@@ -140,7 +139,6 @@ void IfcWritableEntity::setArgument(int i) {
 }
 
 void IfcWritableEntity::setArgument(int i, Argument* a) {
-	IfcWrite::IfcWriteArgument* wa = new IfcWrite::IfcWriteArgument(this);
 	IfcUtil::ArgumentType attr_type = a->type();
 	switch(attr_type) {
 	case IfcUtil::Argument_NULL:
@@ -182,7 +180,7 @@ void IfcWritableEntity::setArgument(int i, Argument* a) {
 		this->setArgument(i, attr_value); }
 		break;
 	case IfcUtil::Argument_ENUMERATION: {
-		IfcSchema::Type::Enum ty = IfcSchema::Type::GetAttributeEntity(_type, i);
+		IfcSchema::Type::Enum ty = IfcSchema::Type::GetAttributeEntity(_type, (unsigned char)i);
 		std::string enum_literal = a->toString();
 		// Remove leading and trailing '.'
 		enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
@@ -312,6 +310,9 @@ public:
 
 class StringBuilderVisitor : public boost::static_visitor<void> {
 private:
+	StringBuilderVisitor(const StringBuilderVisitor&); //N/A
+	StringBuilderVisitor& operator =(const StringBuilderVisitor&); //N/A
+
 	std::ostringstream& data;
 	template <typename T> void serialize(const std::vector<T>& i) {
 		data << "(";

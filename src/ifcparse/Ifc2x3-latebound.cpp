@@ -4250,7 +4250,7 @@ std::pair<Type::Enum, unsigned> Type::GetInverseAttribute(Enum t, const std::str
 	if (inverse_map.empty()) ::InitInverseMap();
 	inverse_map_t::const_iterator it;
 	inverse_map_t::mapped_type::const_iterator jt;
-    while (true) {
+	for (;;) {
         it = inverse_map.find(t);
         if (it != inverse_map.end()) {
 			jt = it->second.find(a);
@@ -4270,7 +4270,7 @@ std::set<std::string> Type::GetInverseAttributeNames(Enum t) {
 
 	std::set<std::string> return_value;
 
-    while (true) {
+	for (;;) {
         it = inverse_map.find(t);
         if (it != inverse_map.end()) {
 			for (jt = it->second.begin(); jt != it->second.end(); ++jt) {

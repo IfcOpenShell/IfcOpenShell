@@ -208,12 +208,11 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 				? BRepBuilderAPI_GTransform(opening_shape_unlocated,opening_shape_gtrsf,true).Shape()
 				: opening_shape_unlocated.Moved(opening_shape_gtrsf.Trsf());
 					
-			double opening_volume, original_shape_volume;
+			double opening_volume;
 			if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
 				opening_volume = shape_volume(opening_shape);
 				if ( opening_volume <= ALMOST_ZERO )
 					Logger::Message(Logger::LOG_WARNING,"Empty opening for:",entity->entity);
-				original_shape_volume = shape_volume(entity_shape);
 			}
 
 			if (entity_shape.ShapeType() == TopAbs_COMPSOLID) {
@@ -235,9 +234,9 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 						BRepCheck_Analyzer analyser(brep_cut_result);
 						bool is_valid = analyser.IsValid() != 0;
 						if (is_valid) {
-							TopExp_Explorer exp(brep_cut_result, TopAbs_SOLID);
-							for (; exp.More(); exp.Next()) {
-								builder.Add(compound, exp.Current());
+							TopExp_Explorer exp2(brep_cut_result, TopAbs_SOLID);
+							for (; exp2.More(); exp2.Next()) {
+								builder.Add(compound, exp2.Current());
 								added = true;
 							}
 						}
@@ -272,7 +271,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 						entity_shape = brep_cut_result;
 						if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
 							const double volume_after_subtraction = shape_volume(entity_shape);
-					
+							double original_shape_volume = shape_volume(entity_shape);
 							if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
 								Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",entity->entity);
 						}
@@ -615,11 +614,11 @@ IfcSchema::IfcProductDefinitionShape* IfcGeom::tesselate(TopoDS_Shape& shape, do
 				IfcSchema::IfcFaceOuterBound* bound = new IfcSchema::IfcFaceOuterBound(loop, face.Orientation() != TopAbs_REVERSED);
 				IfcSchema::IfcFaceBound::list::ptr bounds (new IfcSchema::IfcFaceBound::list);
 				bounds->push(bound);
-				IfcSchema::IfcFace* face = new IfcSchema::IfcFace(bounds);
+				IfcSchema::IfcFace* face2 = new IfcSchema::IfcFace(bounds);
 				es->push(loop);
 				es->push(bound);
-				es->push(face);
-				faces->push(face);
+				es->push(face2);
+				faces->push(face2);
 			}
 		}
 	}
@@ -703,7 +702,6 @@ bool IfcGeom::Kernel::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& sha
 	// Now loop over all the vertices that are part of the wire(s) to be filled
 	for (int i = 1; i <= num_verts; ++i) {
 		first = current = TopoDS::Vertex(vertex_to_edges.FindKey(i));
-		const bool isSame = first.IsSame(current);
 		// We keep track of the vertices we already used
 		if (visited.find(vertex_to_edges.FindIndex(current)) != visited.end()) {
 			continue;
@@ -711,7 +709,7 @@ bool IfcGeom::Kernel::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& sha
 		// Given these vertices, try to find closed loops and create new
 		// wires out of them.
 		BRepBuilderAPI_MakeWire w;
-		while (true) {
+		for (;;) {
 			visited.insert(vertex_to_edges.FindIndex(current));
 			// Find the edge that the current vertex is part of and points
 			// away from the previous vertex (null for the first vertex).
@@ -822,7 +820,7 @@ void IfcGeom::Kernel::remove_redundant_points_from_loop(TColgp_SequenceOfPnt& po
 	if (tol <= 0.) tol = getValue(GV_POINT_EQUALITY_TOLERANCE);
 	tol *= tol;
 
-	while (true) {
+	for (;;) {
 		bool removed = false;
 		int n = polygon.Length() - (closed ? 0 : 1);
 		for (int i = 1; i <= n; ++i) {

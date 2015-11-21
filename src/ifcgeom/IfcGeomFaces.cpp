@@ -101,7 +101,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
 
 	Handle(Geom_Surface) face_surface;
-	bool reversed_face_surface = false;
 	const bool is_face_surface = l->is(IfcSchema::Type::IfcFaceSurface);
 
 	if (is_face_surface) {
@@ -237,9 +236,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 					// If the wires are reversed the face needs to be reversed as well in order
 					// to maintain the counter-clock-wise ordering of the bounding wire's vertices.
 					bool all_reversed = true;
-					TopoDS_Iterator it(outer_face_bound, false);
-					for (; it.More(); it.Next()) {
-						const TopoDS_Wire& w = TopoDS::Wire(it.Value());
+					TopoDS_Iterator jt(outer_face_bound, false);
+					for (; jt.More(); jt.Next()) {
+						const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
 						if ((w.Orientation() != TopAbs_REVERSED) == same_sense) {
 							all_reversed = false;
 						}
@@ -856,7 +855,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeProfileDef* l, TopoDS
 	builder.MakeCompound(compound);
 
 	IfcSchema::IfcProfileDef::list::ptr profiles = l->Profiles();
-	bool first = true;
+	//bool first = true;
 	for (IfcSchema::IfcProfileDef::list::it it = profiles->begin(); it != profiles->end(); ++it) {
 		TopoDS_Face f;
 		if (convert_face(*it, f)) {

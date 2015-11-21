@@ -128,7 +128,7 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(const std::str
 		lines.setMaterial(materials[it->first].name());
 		lines.setCount((unsigned long)it->second.size());
 		int offset = 0;
-		lines.getInputList().push_back(COLLADASW::Input(COLLADASW::InputSemantic::VERTEX, "#" + mesh_id + COLLADASW::LibraryGeometries::VERTICES_ID_SUFFIX, 0));
+		lines.getInputList().push_back(COLLADASW::Input(COLLADASW::InputSemantic::VERTEX, "#" + mesh_id + COLLADASW::LibraryGeometries::VERTICES_ID_SUFFIX, offset++));
 		lines.prepareToAppendValues();
 		lines.appendValues(it->second);
 		lines.finish();

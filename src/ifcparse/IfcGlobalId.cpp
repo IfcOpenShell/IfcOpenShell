@@ -38,7 +38,7 @@ std::string base64(unsigned v, int l) {
 		r.push_back(chars[v%64]);
 		v /= 64;
 	}
-	while ( r.size() != l ) r.push_back('0');
+	while ( (int)r.size() != l ) r.push_back('0');
 	std::reverse(r.begin(),r.end());
 	return r;
 }
@@ -70,7 +70,7 @@ std::string compress(unsigned char* v) {
 
 // Expands the base64 representation into a UUID byte array
 void expand(const std::string& s, std::vector<unsigned char>& v) {
-	v.push_back(from_base64(s.substr(0,2)));
+	v.push_back((unsigned char)from_base64(s.substr(0,2)));
 	for( unsigned i = 0; i < 5; ++i ) {
 		unsigned d = from_base64(s.substr(2+4*i,4));
 		for ( unsigned j = 0; j < 3; ++ j ) {

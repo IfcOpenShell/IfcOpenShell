@@ -22,6 +22,10 @@
 #ifndef COLLADASERIALIZER_H
 #define COLLADASERIALIZER_H
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4201 4512)
+#endif
 #include <COLLADASWStreamWriter.h>
 #include <COLLADASWPrimitves.h>
 #include <COLLADASWLibraryGeometries.h>
@@ -34,6 +38,9 @@
 #include <COLLADASWLibraryMaterials.h>
 #include <COLLADASWBaseInputElement.h>
 #include <COLLADASWAsset.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #include "../ifcgeom/IfcGeomIterator.h"
 
@@ -41,12 +48,15 @@
 
 class ColladaSerializer : public GeometrySerializer
 {
+	// TODO The vast amount of implement details of ColladaSerializer could be hidden to the cpp file.
 private:
 	class ColladaExporter
 	{
 	private:
 		class ColladaGeometries : public COLLADASW::LibraryGeometries
 		{
+			ColladaGeometries(const ColladaGeometries&); //N/A
+			ColladaGeometries& operator =(const ColladaGeometries&); //N/A
 		public:
 			explicit ColladaGeometries(COLLADASW::StreamWriter& stream)
 				: COLLADASW::LibraryGeometries(&stream)
@@ -58,6 +68,9 @@ private:
 		class ColladaScene : public COLLADASW::LibraryVisualScenes
 		{
 		private:
+			ColladaScene(const ColladaScene&); //N/A
+			ColladaScene& operator =(const ColladaScene&); //N/A
+
 			const std::string scene_id;
 			bool scene_opened;
 		public:
@@ -71,9 +84,13 @@ private:
 		};
 		class ColladaMaterials : public COLLADASW::LibraryMaterials
 		{
+			ColladaMaterials(const ColladaMaterials&); //N/A
+			ColladaMaterials& operator =(const ColladaMaterials&); //N/A
 		private:
 			class ColladaEffects : public COLLADASW::LibraryEffects
 			{
+				ColladaEffects(const ColladaEffects&); //N/A
+				ColladaEffects& operator =(const ColladaEffects&); //N/A
 			public:
 				explicit ColladaEffects(COLLADASW::StreamWriter& stream)
 					: COLLADASW::LibraryEffects(&stream)

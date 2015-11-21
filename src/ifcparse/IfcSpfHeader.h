@@ -29,6 +29,9 @@ class HeaderEntity : public IfcAbstractEntity {
 private:	
 	ArgumentList* _list;
 	const char * const _datatype;
+
+	HeaderEntity(const HeaderEntity&); //N/A
+	HeaderEntity& operator =(const HeaderEntity&); //N/A
 protected:
 	HeaderEntity(const char * const datatype, IfcSpfLexer* lexer) 
 		: _datatype(datatype), _list(0)

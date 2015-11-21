@@ -25,8 +25,10 @@
 #include "../ifcconvert/GeometrySerializer.h"
 
 class OpenCascadeBasedSerializer : public GeometrySerializer {
+	OpenCascadeBasedSerializer(const OpenCascadeBasedSerializer&); //N/A
+	OpenCascadeBasedSerializer& operator =(const OpenCascadeBasedSerializer&); //N/A
 protected:
-	const std::string& out_filename;
+	const std::string out_filename;
 	const char* getSymbolForUnitMagnitude(float mag);
 public:
 	explicit OpenCascadeBasedSerializer(const std::string& out_filename)

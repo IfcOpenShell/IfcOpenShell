@@ -184,8 +184,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	bool trim_cartesian = l->MasterRepresentation() == IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN;
 	IfcEntityList::ptr trims1 = l->Trim1();
 	IfcEntityList::ptr trims2 = l->Trim2();
-	bool trimmed1 = false;
-	bool trimmed2 = false;
 	unsigned sense_agreement = l->SenseAgreement() ? 0 : 1;
 	double flts[2];
 	gp_Pnt pnts[2];
@@ -411,9 +409,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeLoop* l, TopoDS_Wire& resu
 		TopoDS_Wire w;
 		if (convert_wire(*it, w)) {
 			if (!(*it)->Orientation()) w.Reverse();
-			TopoDS_Iterator it(w, false);
-			for (; it.More(); it.Next()) {
-				const TopoDS_Edge& e = TopoDS::Edge(it.Value());
+			TopoDS_Iterator topoit(w, false);
+			for (; topoit.More(); topoit.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(topoit.Value());
 				mw.Add(e);
 			}
 			// mw.Add(w);

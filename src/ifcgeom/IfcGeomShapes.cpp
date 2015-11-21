@@ -627,9 +627,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCurveBoundedPlane* l, TopoDS_S
 	BRepBuilderAPI_MakeFace mf (outer);
 	mf.Add(outer);
 
-	IfcSchema::IfcCurve::list::ptr inner = l->InnerBoundaries();
+	IfcSchema::IfcCurve::list::ptr boundaries = l->InnerBoundaries();
 
-	for (IfcSchema::IfcCurve::list::it it = inner->begin(); it != inner->end(); ++it) {
+	for (IfcSchema::IfcCurve::list::it it = boundaries->begin(); it != boundaries->end(); ++it) {
 		TopoDS_Wire inner;
 		convert_wire(*it, inner);
 		
@@ -762,8 +762,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 			// Subtraction of pipes with small radii is unstable.
 			hasInnerRadius = false;
 		} else {
-			Handle(Geom_Circle) circle = new Geom_Circle(directrix, r2);
-			section2 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
+			Handle(Geom_Circle) circle2 = new Geom_Circle(directrix, r2);
+			section2 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle2));
 		}
 	}
 
