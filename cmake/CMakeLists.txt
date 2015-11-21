@@ -220,7 +220,13 @@ IF(MSVC)
 	# Disable warnings about unsafe C functions; we could use the safe C99 & C11 versions if we have no need for supporting old compilers.
 	ADD_DEFINITIONS(-D_UNICODE -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS)
 	ADD_DEFINITIONS(-bigobj) # required for building the big ifcXXX.objs, https://msdn.microsoft.com/en-us/library/ms173499.aspx
-
+	# Bump up the warning level from the default 3 to 4. Disable warning C4100 ("'identifier' : unreferenced formal parameter")
+	# (too much spam)
+	ADD_DEFINITIONS(-W4 -wd4100)
+	# and on VS > 2013 C4458 ("declaration of 'indentifier' hides class member") (overeager and false positives), at least for now.
+	IF(MSVC_VERSION GREATER 1800)
+		ADD_DEFINITIONS(-wd4458)
+	ENDIF()
 	# Link against the static VC runtime
 	FOREACH(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
 			CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
