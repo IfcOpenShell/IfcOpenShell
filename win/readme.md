@@ -21,11 +21,8 @@ if you want to change the defaults. The batch file will create `deps\` and `deps
 directories to the project root. Debug and release builds of the depedencies can co-exist by simply running
 `build-deps.cmd <GENERATOR> Debug` and `build-deps.cmd <GENERATOR> <Release|RelWithDebInfo|MinSizeRel>`.
 
-After the dependencies are build, execute `run-cmake.bat`. The batch file expects a CMake generator as
-`%1` (if not provided, the same default value as above is used), or alternatively, if more parameters are provided, `%*` is passed for the CMake invokation, i.e., if one 
-wants to pass custom build options, the generator must be passed also using CMake's syntax:
-
-`run-cmake.bat -G "Visual Studio 14 2015 Win64" -DBUILD_IFCPYTHON=0`.
+After the dependencies are build, execute `run-cmake.bat`. The batch file expects always a CMake generator as
+`%1` (if not provided, the same default value as above is used), and the rest of possible parameters are passed as is.
 
 The batch script will create a folder of form `build-vs<VERSION>-<ARCHITECTURE>\` which will contain the solution and project files for Visual Studio.
 **If you wish to use any library from a custom location, modify the paths in run-cmake.bat 
