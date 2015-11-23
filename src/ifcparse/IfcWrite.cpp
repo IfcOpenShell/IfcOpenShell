@@ -289,21 +289,21 @@ void IfcWritableEntity::setArgument(int i,const std::vector< boost::dynamic_bits
 
 class SizeVisitor : public boost::static_visitor<int> {
 public:
-	int operator()(const boost::none_t& i) const { return -1; }
-	int operator()(const IfcWriteArgument::Derived& i) const { return -1; }
-	int operator()(const int& i) const { return -1; }
-	int operator()(const bool& i) const { return -1; }
-	int operator()(const double& i) const { return -1; }
-	int operator()(const std::string& i) const { return -1; }
-	int operator()(const boost::dynamic_bitset<>& i) const { return -1; }
+	int operator()(const boost::none_t& /*i*/) const { return -1; }
+	int operator()(const IfcWriteArgument::Derived& /*i*/) const { return -1; }
+	int operator()(const int& /*i*/) const { return -1; }
+	int operator()(const bool& /*i*/) const { return -1; }
+	int operator()(const double& /*i*/) const { return -1; }
+	int operator()(const std::string& /*i*/) const { return -1; }
+	int operator()(const boost::dynamic_bitset<>& /*i*/) const { return -1; }
 	int operator()(const std::vector<int>& i) const { return (int)i.size(); }
 	int operator()(const std::vector<double>& i) const { return (int)i.size(); }
 	int operator()(const std::vector< std::vector<int> >& i) const { return (int)i.size(); }
 	int operator()(const std::vector< std::vector<double> >& i) const { return (int)i.size(); }
 	int operator()(const std::vector<std::string>& i) const { return (int)i.size(); }
 	int operator()(const std::vector< boost::dynamic_bitset<> >& i) const { return (int)i.size(); }
-	int operator()(const IfcWriteArgument::EnumerationReference& i) const { return -1; }
-	int operator()(const IfcUtil::IfcBaseClass* const& i) const { return -1; }
+	int operator()(const IfcWriteArgument::EnumerationReference& /*i*/) const { return -1; }
+	int operator()(const IfcUtil::IfcBaseClass* const& /*i*/) const { return -1; }
 	int operator()(const IfcEntityList::ptr& i) const { return i->size(); }
 	int operator()(const IfcEntityListList::ptr& i) const { return i->size(); }
 };
@@ -371,8 +371,8 @@ private:
 public:
 	StringBuilderVisitor(std::ostringstream& stream, bool upper = false) 
 		: data(stream), upper(upper) {}
-	void operator()(const boost::none_t& i) { data << "$"; }
-	void operator()(const IfcWriteArgument::Derived& i) { data << "*"; }
+	void operator()(const boost::none_t& /*i*/) { data << "$"; }
+	void operator()(const IfcWriteArgument::Derived& /*i*/) { data << "*"; }
 	void operator()(const int& i) { data << i; }
 	void operator()(const bool& i) { data << (i ? ".T." : ".F."); }
 	void operator()(const double& i) { data << format_double(i); }
@@ -502,7 +502,7 @@ IfcWriteArgument::operator std::vector< std::vector<int> >() const { return as<s
 IfcWriteArgument::operator std::vector< std::vector<double> >() const { return as<std::vector< std::vector<double> > >(); }
 IfcWriteArgument::operator IfcEntityListList::ptr() const { throw; }
 bool IfcWriteArgument::isNull() const { return type() == IfcUtil::Argument_NULL; }
-Argument* IfcWriteArgument::operator [] (unsigned int i) const { throw IfcParse::IfcException("Invalid cast"); }
+Argument* IfcWriteArgument::operator [] (unsigned int /*i*/) const { throw IfcParse::IfcException("Invalid cast"); }
 std::string IfcWriteArgument::toString(bool upper) const {
 	std::ostringstream str;
 	str.imbue(std::locale::classic());

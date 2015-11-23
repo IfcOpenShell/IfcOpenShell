@@ -156,16 +156,16 @@ public:
 
 class Get : public Command {
 protected:
-	void read_content(std::istream& s) {}
-	void write_content(std::ostream& s) {}
+	void read_content(std::istream& /*s*/) {}
+	void write_content(std::ostream& /*s*/) {}
 public:
 	Get() : Command(GET) {};
 };
 
 class GetLog : public Command {
 protected:
-	void read_content(std::istream& s) {}
-	void write_content(std::ostream& s) {}
+	void read_content(std::istream& /*s*/) {}
+	void write_content(std::ostream& /*s*/) {}
 public:
 	GetLog() : Command(GET_LOG) {};
 };
@@ -189,7 +189,7 @@ private:
 	const IfcGeom::TriangulationElement<float>* geom;
 	bool append_line_data;
 protected:
-	void read_content(std::istream& s) {}
+	void read_content(std::istream& /*s*/) {}
 	void write_content(std::ostream& s) {
 		swrite<int32_t>(s, geom->id());
 		swrite(s, geom->guid());
@@ -268,21 +268,21 @@ public:
 
 class Next : public Command {
 protected:
-	void read_content(std::istream& s) {}
-	void write_content(std::ostream& s) {}
+	void read_content(std::istream& /*s*/) {}
+	void write_content(std::ostream& /*s*/) {}
 public:
 	Next() : Command(NEXT) {};
 };
 
 class Bye : public Command {
 protected:
-	void read_content(std::istream& s) {}
-	void write_content(std::ostream& s) {}
+	void read_content(std::istream& /*s*/) {}
+	void write_content(std::ostream& /*s*/) {}
 public:
 	Bye() : Command(BYE) {};
 };
 
-int main (int argc, char** argv) {
+int main () {
 	// Redirect stdout to this stream, so that involuntary 
 	// writes to stdout do not interfere with our protocol.
 	std::ostringstream oss;

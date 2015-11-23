@@ -42,6 +42,8 @@
 #include "../ifcconvert/XmlSerializer.h"
 #include "../ifcconvert/SvgSerializer.h"
 
+#include <IGESControl_Controller.hxx>
+
 static std::string DEFAULT_EXTENSION = "obj";
 
 void printVersion() {

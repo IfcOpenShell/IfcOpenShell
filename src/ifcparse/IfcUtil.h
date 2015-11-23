@@ -100,7 +100,7 @@ namespace IfcUtil {
 		unsigned int getArgumentCount() const;
 		Argument* getArgument(unsigned int i) const;
 		const char* getArgumentName(unsigned int i) const;
-		IfcSchema::Type::Enum getArgumentEntity(unsigned int i) const { return IfcSchema::Type::UNDEFINED; }
+		IfcSchema::Type::Enum getArgumentEntity(unsigned int /*i*/) const { return IfcSchema::Type::UNDEFINED; }
 	};
 
 	bool valid_binary_string(const std::string& s);

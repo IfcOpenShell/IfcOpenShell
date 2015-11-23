@@ -50,7 +50,7 @@ boost::none_t const null = boost::none;
 // The creation of Nurbs-surface for the IfcSite mesh, to be implemented lateron
 void createGroundShape(TopoDS_Shape& shape);
 
-int main(int argc, char** argv) {
+int main() {
 
 	// The IfcHierarchyHelper is a subclass of the regular IfcFile that provides several
 	// convenience functions for working with geometry in IFC files.

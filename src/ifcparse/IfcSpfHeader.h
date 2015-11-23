@@ -68,7 +68,7 @@ public:
 		return (*_list)[i];
 	}
 
-	IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index) {
+	IfcEntityList::ptr getInverse(IfcSchema::Type::Enum /*type*/, int /*attribute_index*/) {
 		return IfcEntityList::ptr(new IfcEntityList);
 	}
 
@@ -84,7 +84,7 @@ public:
 		return (IfcSchema::Type::Enum) -1;
 	}
 
-	bool is(IfcSchema::Type::Enum v) const {
+	bool is(IfcSchema::Type::Enum /*v*/) const {
 		return false;
 	}
 

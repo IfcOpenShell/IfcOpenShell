@@ -143,6 +143,8 @@ void IfcSpfStream::ReadBuffer(bool inc) {
 		offset += len;
 		fseek(stream, offset, SEEK_SET);
 	}
+#else
+	(void)inc;
 #endif
 	eof = feof(stream) != 0;
 	if ( eof ) return;
@@ -731,7 +733,7 @@ TokenArgument::operator std::vector< std::vector<int> >() const { throw IfcExcep
 TokenArgument::operator std::vector< std::vector<double> >() const { throw IfcException("Argument is not a list of list of floats"); }
 TokenArgument::operator IfcEntityListList::ptr() const { throw IfcException("Argument is not a list of list of entity instances"); }
 unsigned int TokenArgument::size() const { return 1; }
-Argument* TokenArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of attributes"); }
+Argument* TokenArgument::operator [] (unsigned int /*i*/) const { throw IfcException("Argument is not a list of attributes"); }
 std::string TokenArgument::toString(bool upper) const { 
 	if ( upper && TokenFunc::isString(token) ) {
 		return IfcWrite::IfcCharacterEncoder(TokenFunc::asString(token)); 
@@ -763,7 +765,7 @@ EntityArgument::operator std::vector< std::vector<int> >() const { throw IfcExce
 EntityArgument::operator std::vector< std::vector<double> >() const { throw IfcException("Argument is not a list of list of floats"); }
 EntityArgument::operator IfcEntityListList::ptr() const { throw IfcException("Argument is not a list of list of entity instances"); }
 unsigned int EntityArgument::size() const { return 1; }
-Argument* EntityArgument::operator [] (unsigned int i) const { throw IfcException("Argument is not a list of arguments"); }
+Argument* EntityArgument::operator [] (unsigned int /*i*/) const { throw IfcException("Argument is not a list of arguments"); }
 std::string EntityArgument::toString(bool upper) const { 
 	return entity->entity->toString(upper);
 }
