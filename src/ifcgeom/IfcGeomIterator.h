@@ -180,13 +180,15 @@ namespace IfcGeom {
 					// by the parent's context inverse attributes.
 					continue;
 				}
-				if (context->hasContextType()) {
-					std::string context_type = context->ContextType();
-					boost::to_lower(context_type);
-					if (context_types.find(context_type) != context_types.end()) {
-						filtered_contexts->push(context);
+				try {
+					if (context->hasContextType()) {
+						std::string context_type = context->ContextType();
+						boost::to_lower(context_type);
+						if (context_types.find(context_type) != context_types.end()) {
+							filtered_contexts->push(context);
+						}
 					}
-				}
+				} catch (const IfcParse::IfcException&) {}
 			}
 
 			// In case no contexts are identified based on their ContextType, all contexts are
@@ -204,10 +206,12 @@ namespace IfcGeom {
 				IfcSchema::IfcGeometricRepresentationContext* context = *it;
 
 				representations->push(context->RepresentationsInContext());
-				if (context->hasPrecision() && context->Precision() < lowest_precision_encountered) {
-					lowest_precision_encountered = context->Precision();
-					any_precision_encountered = true;
-				}
+				try {
+					if (context->hasPrecision() && context->Precision() < lowest_precision_encountered) {
+						lowest_precision_encountered = context->Precision();
+						any_precision_encountered = true;
+					}
+				} catch (const IfcParse::IfcException&) {}
 				IfcSchema::IfcGeometricRepresentationSubContext::list::ptr sub_contexts = context->HasSubContexts();
 				for (jt = sub_contexts->begin(); jt != sub_contexts->end(); ++jt) {
 					representations->push((*jt)->RepresentationsInContext());
