@@ -201,13 +201,53 @@ namespace IfcParse {
 			bool optional() const { return optional_; }
 		};
 
+		class inverse_attribute {
+		public:
+			typedef enum { bag_type, set_type, unspecified_type } aggregate_type;
+		protected:
+			std::string name_;
+			aggregate_type type_of_aggregation_;
+			int bound1_, bound2_;
+			parameter_type* type_of_element_;
+			const entity* entity_reference_;
+			const attribute* attribute_reference_;
+		public:
+			inverse_attribute(const std::string& name, aggregate_type type_of_aggregation, int bound1, int bound2, const entity* entity_reference, const attribute* attribute_reference)
+				: name_(name)
+				, type_of_aggregation_(type_of_aggregation)
+				, bound1_(bound1)
+				, bound2_(bound2)
+				, entity_reference_(entity_reference)
+				, attribute_reference_(attribute_reference)
+			{}
+
+			const std::string& name() const { return name_; }
+			aggregate_type type_of_aggregation() const { type_of_aggregation_; }
+			int bound1() const { return bound1_; }
+			int bound2() const { return bound2_; }
+			const entity* entity_reference() const { return entity_reference_; }
+			const attribute* attribute_reference() const { return attribute_reference_; }
+		};
+		
 	protected:
 		const entity* supertype_; /* NB: IFC explicitly allows only single inheritance */
 		std::vector<const entity*> subtypes_;
 
 		std::vector<const attribute*> attributes_;
 		std::vector<bool> derived_;
-	
+
+		std::vector<const inverse_attribute*> inverse_attributes_;
+
+		class attribute_by_name_cmp : public std::unary_function<const attribute*, bool> {
+		private:
+			std::string name_;
+		public:
+			attribute_by_name_cmp(const std::string name)
+				: name_(name) {}
+			bool operator()(const attribute* attr) {
+				return attr->name() == name_;
+			}
+		};
 	public:
 		entity(const std::string& name, entity* supertype)
 			: declaration(name)
@@ -237,6 +277,10 @@ namespace IfcParse {
 			derived_ = derived;
 		}
 
+		void set_inverse_attributes(const std::vector<const inverse_attribute*>& inverse_attributes) {
+			inverse_attributes_ = inverse_attributes;
+		}
+
 		const std::vector<const entity*>& subtypes() const { return subtypes_; }
 		const std::vector<const attribute*>& attributes() const { return attributes_; }
 		const std::vector<bool>& derived() const { return derived_; }
@@ -244,16 +288,58 @@ namespace IfcParse {
 		const std::vector<const attribute*> all_attributes() const {
 			std::vector<const attribute*> attrs;
 			attrs.reserve(derived_.size());
-			// std::vector<const attribute*>::iterator it = attrs.begin();
 			if (supertype_) {
 				const std::vector<const attribute*> supertype_attrs = supertype_->all_attributes();
-				// it = std::copy(supertype_attrs.begin(), supertype_attrs.end(), it);
 				std::copy(supertype_attrs.begin(), supertype_attrs.end(), std::back_inserter(attrs));
 			}
-			// std::copy(attributes_.begin(), attributes_.end(), it);
 			std::copy(attributes_.begin(), attributes_.end(), std::back_inserter(attrs));
 			return attrs;
 		}
+
+		const std::vector<const inverse_attribute*> all_inverse_attributes() const {
+			std::vector<const inverse_attribute*> attrs;
+			if (supertype_) {
+				const std::vector<const inverse_attribute*> supertype_inv_attrs = supertype_->all_inverse_attributes();
+				std::copy(supertype_inv_attrs.begin(), supertype_inv_attrs.end(), std::back_inserter(attrs));
+			}
+			std::copy(inverse_attributes_.begin(), inverse_attributes_.end(), std::back_inserter(attrs));
+			return attrs;
+		}
+
+		ptrdiff_t attribute_index(const attribute* attr) const {
+			const entity* current = this;
+			ptrdiff_t index = -1;
+			do {
+				if (index > -1) {
+					index += current->attributes().size();
+				} else {
+					auto it = std::find(current->attributes().begin(), current->attributes().end(), attr);
+					if (it != current->attributes().end()) {
+						index = std::distance(current->attributes().begin(), it);
+					}
+				}
+			} while (current = current->supertype_);
+			return index;
+		}
+
+		ptrdiff_t attribute_index(const std::string& attr_name) const {
+			const entity* current = this;
+			ptrdiff_t index = -1;
+			attribute_by_name_cmp cmp(attr_name);
+			do {
+				if (index > -1) {
+					index += current->attributes().size();
+				} else {
+					auto it = std::find_if(current->attributes().begin(), current->attributes().end(), cmp);
+					if (it != current->attributes().end()) {
+						index = std::distance(current->attributes().begin(), it);
+					}
+				}
+			} while (current = current->supertype_);
+			return index;
+		}
+
+		const entity* supertype() const { return supertype_; }
 
 		virtual const entity* as_entity() const { return this; }
 	};

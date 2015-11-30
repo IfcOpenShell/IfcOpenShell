@@ -263,6 +263,100 @@ namespace IfcParse {
 		IfcWrite::IfcWritableEntity* isWritable();
 	};
 
+	template <typename Fn1, typename Fn2>
+	class InstanceStreamer {
+	private:
+		IfcFile* file_;
+		IfcSpfStream& stream_;
+		IfcSpfLexer& lexer_;
+		Fn1& fn1_;
+		Fn2& fn2_;
+
+		unsigned int current_inst_name_, 
+			last_inst_name_, 
+			num_insts_encountered_,
+			max_inst_name_encountered_;
+
+	public:
+		InstanceStreamer(IfcFile* file, IfcSpfStream& stream, IfcSpfLexer& lexer, Fn1& fn1, Fn2& fn2)
+			: file_(file)
+			, stream_(stream)
+			, lexer_(lexer)
+			, fn1_(fn1)
+			, fn2_(fn2)
+			, current_inst_name_(0)
+			, last_inst_name_(0)
+			, num_insts_encountered_(0)
+			, max_inst_name_encountered_(0)
+		{}
+
+		unsigned int current_inst_name() { return current_inst_name_; }
+		unsigned int last_inst_name() { return last_inst_name_; }
+		unsigned int num_insts_encountered() { return num_insts_encountered_; }
+		unsigned int max_inst_name_encountered() { return max_inst_name_encountered_; }
+
+		void stream() {
+			Logger::Status("Scanning file...");
+
+			Token token = TokenPtr();
+			Token previous = TokenPtr();
+			
+			Entity* inst_data;
+			IfcUtil::IfcBaseClass* entity_instance = 0; 
+			while (!stream_.eof) {
+				if (current_inst_name_ != 0) {
+					try {
+						inst_data = new Entity(current_inst_name_, file_);
+						if (file_->create_latebound_entities()) {
+							entity_instance = new IfcLateBoundEntity(inst_data);
+						} else {
+							entity_instance = IfcSchema::SchemaEntity(inst_data);
+						}
+					} catch (const IfcException& ex) {
+						current_inst_name_ = 0;
+						Logger::Message(Logger::LOG_ERROR, ex.what());
+						continue;
+					}
+
+					// Update the status after every 1000 instances parsed
+					if (((++num_insts_encountered_) % 1000) == 0) {
+						std::stringstream ss; ss << "\r#" << current_inst_name_;
+						Logger::Status(ss.str(), false);
+					}
+
+					fn1_(entity_instance);
+
+					max_inst_name_encountered_ = (std::max)(max_inst_name_encountered_, current_inst_name_);
+					
+					current_inst_name_ = 0;
+				} else {
+					try {
+						token = lexer_.Next();
+					} catch (...) {
+						token = TokenPtr(); 
+					}
+				}
+
+				if (!(token.second || token.first)) {
+					break;
+				}
+		
+				if ((previous.second || previous.first) && TokenFunc::isIdentifier(previous)) {
+					int id = TokenFunc::asInt(previous);
+					if (TokenFunc::isOperator(token, '=')) {
+						current_inst_name_ = id;
+					} else if (entity_instance) {
+						fn2_(entity_instance, id);
+					}
+				}
+
+				previous = token;
+			}
+
+			Logger::Status("\rDone scanning file   ");
+		}		
+	};
+
 }
 
 std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);

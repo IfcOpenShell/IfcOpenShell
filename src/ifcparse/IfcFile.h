@@ -23,6 +23,7 @@
 #include <map>
 #include <set>
 
+#include "../ifcparse/Hdf5Settings.h"
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcSpfHeader.h"
 
@@ -36,7 +37,6 @@ public:
 	typedef std::map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
 	typedef std::map<std::string, IfcSchema::IfcRoot*> entity_by_guid_t;
 	typedef std::map<unsigned int, IfcEntityList::ptr> entities_by_ref_t;
-	typedef std::map<unsigned int, unsigned int> offset_by_id_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
 private:
 	typedef std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> entity_entity_map_t;
@@ -49,7 +49,6 @@ private:
 	entities_by_type_t bytype;
 	entities_by_ref_t byref;
 	entity_by_guid_t byguid;
-	offset_by_id_t offsets;
 
 	entity_entity_map_t entity_file_map;
 
@@ -136,7 +135,7 @@ public:
 
 	const schema_definition* schema() const { return schema_; }
 
-	void write_hdf5(const std::string&, bool compress) const;
+	void write_hdf5(const std::string&, const Hdf5Settings&);
 };
 
 }

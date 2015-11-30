@@ -22,11 +22,12 @@
 
 #include "H5Cpp.h"
 
+#include "../ifcparse/Hdf5Settings.h"
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcFile.h"
 
 namespace IfcParse {
-		
+
 	class IfcHdf5File {
 	private:
 		class allocator_t {
@@ -50,6 +51,7 @@ namespace IfcParse {
 		};
 
 		allocator_t allocator;
+		Hdf5Settings settings_;
 
 		std::string name_;
 		schema_definition schema_;
@@ -84,7 +86,7 @@ namespace IfcParse {
 		void write_select(void*& ptr, IfcUtil::IfcBaseClass* instance, const H5::CompType* datatype) const;
 
 		void write_schema(const schema_definition& schema);
-		void write_population(const IfcFile& f, bool compress);
+		void write_population(IfcFile& f);
 
 		template <typename T>
 		const H5::DataType* get_datatype() const {
@@ -109,12 +111,13 @@ namespace IfcParse {
 	public:
 		typedef std::pair<std::string, const H5::DataType*> compound_member;
 
-		IfcHdf5File(const IfcFile* f, const std::string& name, bool compress)
+		IfcHdf5File(IfcFile* f, const std::string& name, const Hdf5Settings& settings)
 			: name_(name)
 			, schema_(*f->schema())
+			, settings_(settings)
 		{
 			write_schema(*f->schema());
-			write_population(*f, compress);
+			write_population(*f);
 		};
 	};
 

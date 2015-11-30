@@ -33,6 +33,8 @@
 
 #include <boost/program_options.hpp>
 
+#include "../ifcparse/Hdf5Settings.h"
+
 #include "../ifcgeom/IfcGeomIterator.h"
 
 #include "../ifcconvert/ColladaSerializer.h"
@@ -132,8 +134,11 @@ int main(int argc, char** argv) {
 		("bounds", boost::program_options::value<std::string>(&bounds),
 			"Specifies the bounding rectangle, for example 512x512, to which the " 
 			"output will be scaled. Only used when converting to SVG.")
-		("compress",
-			"Compress HDF5.")
+		("hdf5-compress", "")
+		("hdf5-fix-cartesian-point", "")
+		("hdf5-fix-global-id", "")
+		("hdf5-instantiate-inverse", "")
+		("hdf5-instantiate-select", "")
 		("include", 
 			"Specifies that the entities listed after --entities are to be included")
 		("exclude", 
@@ -260,7 +265,13 @@ int main(int argc, char** argv) {
 			if (!f.Init(input_filename)) {
 				Logger::Message(Logger::LOG_ERROR, "Unable to parse .ifc file");
 			} else {
-				f.write_hdf5(output_filename, vmap.count("compress") != 0);
+				IfcParse::Hdf5Settings settings;
+				settings.compress() = vmap.count("hdf5-compress") != 0;
+				settings.fix_cartesian_point() = vmap.count("hdf5-fix-cartesian-point") != 0;
+				settings.fix_global_id() = vmap.count("hdf5-fix-global-id") != 0;
+				settings.instantiate_inverse() = vmap.count("hdf5-instantiate-inverse") != 0;
+				settings.instantiate_select() = vmap.count("hdf5-instantiate-select") != 0;
+				f.write_hdf5(output_filename, settings);
 				exit_code = 0;
 			}
 		// } catch (...) {}

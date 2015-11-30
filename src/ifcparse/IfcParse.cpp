@@ -920,6 +920,73 @@ bool IfcFile::Init(void* data, int len) {
 	return IfcFile::Init(new IfcSpfStream(data,len));
 }
 
+class RegisterInstancesToFile {
+private:
+	IfcFile::entity_by_id_t& byid_;
+	IfcFile::entity_by_guid_t& byguid_;
+	IfcFile::entities_by_type_t& bytype_;
+	IfcFile::entities_by_ref_t& byref_;
+
+	bool populate_guid_mapping_;
+public:
+	RegisterInstancesToFile(
+		IfcFile::entity_by_id_t& byid, 
+		IfcFile::entity_by_guid_t& byguid, 
+		IfcFile::entities_by_type_t& bytype, 
+		IfcFile::entities_by_ref_t& byref
+	)
+		: byid_(byid)
+		, byguid_(byguid)
+		, bytype_(bytype)
+		, byref_(byref)
+		, populate_guid_mapping_(true)
+	{}
+
+	const bool& populate_guid_mapping() const { return populate_guid_mapping_; }
+	bool& populate_guid_mapping() { return populate_guid_mapping_; }
+
+	void operator()(IfcUtil::IfcBaseClass* instance) {
+		if (populate_guid_mapping_ && instance->declaration().is(IfcSchema::Type::IfcRoot)) {
+			IfcSchema::IfcRoot* ifc_root = (IfcSchema::IfcRoot*) instance;
+			try {
+				const std::string guid = ifc_root->GlobalId();
+				if (byguid_.insert(std::make_pair(guid, ifc_root)).second == false) {
+					std::stringstream ss;
+					ss << "Duplicate instance with guid '" << guid << "' not stored";
+					Logger::Message(Logger::LOG_WARNING,ss.str());
+				}
+			} catch (const IfcException& ex) {
+				Logger::Message(Logger::LOG_ERROR,ex.what());
+			}
+		}
+
+		const IfcParse::entity* entity = instance->declaration().as_entity();
+		while(entity) {
+			IfcEntityList::ptr& instances_by_type = bytype_[entity->type()];
+			if (!instances_by_type) {
+				instances_by_type.reset(new IfcEntityList);
+			}
+			instances_by_type->push(instance);
+			entity = entity->supertype();
+		}
+		
+		unsigned int id = instance->data().id();
+		if (byid_.insert(std::make_pair(id, instance)).second == false) {
+			std::stringstream ss;
+			ss << "Duplicate instance with id '" << id << "' not stored";
+			Logger::Message(Logger::LOG_WARNING,ss.str());
+		}
+	}
+
+	void operator()(IfcUtil::IfcBaseClass* instance, unsigned int refering_inst_name) {
+		IfcEntityList::ptr& instances_by_ref = byref_[refering_inst_name];
+		if (!instances_by_ref) {
+			instances_by_ref.reset(new IfcEntityList);
+		}
+		instances_by_ref->push(instance);
+	}
+};
+
 bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 	// Initialize a "C" locale for locale-independent
 	// number parsing. See comment above on line 41.
@@ -942,92 +1009,12 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 		Logger::Message(Logger::LOG_ERROR, std::string("File schema encountered different from expected '") + IfcSchema::Identifier + "'");
 	}
 
-	Token token = TokenPtr();
-	Token previous = TokenPtr();
-
-	unsigned int currentId = 0;
-	lastId = 0;
-	int x = 0;
-	Entity* e;
-	IfcUtil::IfcBaseClass* entity = 0; 
-	Logger::Status("Scanning file...");
-	while ( ! stream->eof ) {
-		if ( currentId ) {
-			try {
-				e = new Entity(currentId,this);
-				if (this->create_latebound_entities()) {
-					entity = new IfcLateBoundEntity(e);
-				} else {
-					entity = IfcSchema::SchemaEntity(e);
-				}
-			} catch (const IfcException& ex) {
-				currentId = 0;
-				Logger::Message(Logger::LOG_ERROR,ex.what());
-				continue;
-			}
-			// Update the status after every 1000 instances parsed
-			if ( !((++x)%1000) ) {
-				std::stringstream ss; ss << "\r#" << currentId;
-				Logger::Status(ss.str(), false);
-			}
-			if ( entity->declaration().is(IfcSchema::Type::IfcRoot) ) {
-				IfcSchema::IfcRoot* ifc_root = (IfcSchema::IfcRoot*) entity;
-				try {
-					const std::string guid = ifc_root->GlobalId();
-					if ( byguid.find(guid) != byguid.end() ) {
-						std::stringstream ss;
-						ss << "Overwriting entity with guid " << guid;
-						Logger::Message(Logger::LOG_WARNING,ss.str());
-					}
-					byguid[guid] = ifc_root;
-				} catch (const IfcException& ex) {
-					Logger::Message(Logger::LOG_ERROR,ex.what());
-				}
-			}
-
-			IfcSchema::Type::Enum ty = entity->declaration().type();
-			do {
-				IfcEntityList::ptr instances_by_type = entitiesByType(ty);
-				if (!instances_by_type) {
-					instances_by_type = IfcEntityList::ptr(new IfcEntityList());
-					bytype[ty] = instances_by_type;
-				}
-				instances_by_type->push(entity);
-				ty = IfcSchema::Type::Parent(ty);
-			} while ( ty > -1 );
-			
-			if ( byid.find(currentId) != byid.end() ) {
-				std::stringstream ss;
-				ss << "Overwriting entity with id " << currentId;
-				Logger::Message(Logger::LOG_WARNING,ss.str());
-			}
-			byid[currentId] = entity;
-			
-			MaxId = (std::max)(MaxId,currentId);
-			currentId = 0;
-		} else {
-			try { token = tokens->Next(); }
-			catch (... ) { token = TokenPtr(); }
-		}
-
-		if ( ! (token.second || token.first) ) break;
-		
-		if ( (previous.second || previous.first) && TokenFunc::isIdentifier(previous) ) {
-			int id = TokenFunc::asInt(previous);
-			if ( TokenFunc::isOperator(token,'=') ) {
-				currentId = id;
-			} else if (entity) {
-				IfcEntityList::ptr instances_by_ref = entitiesByReference(id);
-				if (!instances_by_ref) {
-					instances_by_ref = IfcEntityList::ptr(new IfcEntityList());
-					byref[id] = instances_by_ref;
-				}
-				instances_by_ref->push(entity);
-			}
-		}
-		previous = token;
-	}
-	Logger::Status("\rDone scanning file   ");
+	RegisterInstancesToFile populate(byid, byguid, bytype, byref);
+	populate.populate_guid_mapping() = false;
+	InstanceStreamer<RegisterInstancesToFile, RegisterInstancesToFile> streamer(this, *stream, *tokens, populate, populate);
+	streamer.stream();
+	MaxId = streamer.max_inst_name_encountered();
+	
 	return true;
 }
 
@@ -1543,6 +1530,6 @@ std::pair<IfcSchema::IfcNamedUnit*, double> IfcFile::getUnit(IfcSchema::IfcUnitE
 	return return_value;
 }
 
-void IfcFile::write_hdf5(const std::string& name, bool compress) const {
-	IfcHdf5File(this, name, compress);
+void IfcFile::write_hdf5(const std::string& name, const Hdf5Settings& settings) {
+	IfcHdf5File(this, name, settings);
 }

@@ -6,14 +6,37 @@
 #pragma message("warning: HDF5 compression support is recommended")
 #endif
 
-static bool OVERRIDE = true;
-
 class UnmetDependencyException : public std::exception {};
+
+void visit(void* buffer, H5::DataType* dt) {
+	if (dt->getClass() == H5T_COMPOUND) {
+		H5::CompType* ct = (H5::CompType*) dt;
+		for (int i = 0; i < ct->getNmembers(); ++i) {
+			std::cerr << ct->getMemberName(i) << " ";
+			size_t offs = ct->getMemberOffset(i);
+			H5::DataType dt2 = ct->getMemberDataType(i);
+			visit((uint8_t*)buffer+offs, &dt2);
+			dt2.close();
+		}
+	} else if (dt->getClass() == H5T_VLEN) {
+		hvl_t* ht = (hvl_t*) buffer;
+		H5::VarLenType* vt = (H5::VarLenType*) dt;
+		H5::DataType dt2 = vt->getSuper();
+		for (int i = 0; i < ht->len; ++i) {
+			std::cerr << i << " ";
+			visit((uint8_t*)ht->p + i * vt->getSize(), &dt2);
+		}
+		dt2.close();
+	} else if (dt->getClass() == H5T_STRING) {
+		char* c = *(char**)buffer;
+		std::cerr << "'" << c << "'" << " ";
+	}
+}
 
 H5::DataType* IfcParse::IfcHdf5File::map_type(const IfcParse::parameter_type* pt) {
 	H5::DataType* h5_dt;
 	if (pt->as_aggregation_type()) {
-		h5_dt = new H5::VarLenType(map_type(pt->as_aggregation_type()->type_of_element()));		
+		h5_dt = new H5::VarLenType(map_type(pt->as_aggregation_type()->type_of_element()));
 	} else if (pt->as_named_type()) {
 		if (pt->as_named_type()->declared_type()->as_entity()) {
 			h5_dt = new H5::DataType();
@@ -80,9 +103,13 @@ H5::DataType* IfcParse::IfcHdf5File::commit(H5::DataType* dt, const std::string&
 
 H5::CompType* IfcParse::IfcHdf5File::map_entity(const IfcParse::entity* e) {
 	std::vector<const IfcParse::entity::attribute*> attributes = e->all_attributes();
+	std::vector<const IfcParse::entity::inverse_attribute*> inverse_attributes;
+	if (settings_.instantiate_inverse()) {
+		inverse_attributes = e->all_inverse_attributes();
+	}
 	
 	std::vector< IfcParse::IfcHdf5File::compound_member > h5_attributes;
-	h5_attributes.reserve(attributes.size() + 2);
+	h5_attributes.reserve(attributes.size() + inverse_attributes.size() + 2);
 
 	h5_attributes.push_back(std::make_pair(std::string("set_unset_bitmap"), &H5::PredType::NATIVE_INT16));
     h5_attributes.push_back(std::make_pair(std::string("Entity-Instance-Identifier"), &H5::PredType::NATIVE_INT32));
@@ -103,6 +130,16 @@ H5::CompType* IfcParse::IfcHdf5File::map_entity(const IfcParse::entity* e) {
 			type = map_type((*it)->type_of_attribute());
 		}
 		h5_attributes.push_back(std::make_pair(name, type));
+	}
+
+	if (settings_.instantiate_inverse()) {
+		for (auto it = inverse_attributes.begin(); it != inverse_attributes.end(); ++it) {
+			const std::string& name = (*it)->name();
+			H5::DataType* ir_copy = new H5::DataType();
+			ir_copy->copy(*instance_reference);
+			const H5::DataType* type = new H5::VarLenType(ir_copy);
+			h5_attributes.push_back(std::make_pair(name, type));
+		}
 	}
 
 	return create_compound(h5_attributes);
@@ -152,10 +189,13 @@ void IfcParse::IfcHdf5File::init_default_types() {
 	default_cpp_type_names[IfcUtil::Argument_STRING] = "string";
 	default_cpp_type_names[IfcUtil::Argument_INT]    = "integer";
 
-	if (OVERRIDE) {
-		hsize_t dims = 3;
+	if (settings_.fix_global_id()) {
 		overridden_types["GlobalId"] = new H5::StrType(H5::PredType::C_S1, 22);
+	}
+	if (settings_.fix_cartesian_point()) {
+		hsize_t dims = 3;
 		overridden_types["Coordinates"] = new H5::ArrayType(*default_types[simple_type::real_type], 1, &dims);
+		overridden_types["DirectionRatios"] = new H5::ArrayType(*default_types[simple_type::real_type], 1, &dims);
 	}
 }
 
@@ -183,6 +223,8 @@ std::string IfcParse::IfcHdf5File::flatten_aggregate_name(const IfcParse::parame
 }
 
 H5::DataType* IfcParse::IfcHdf5File::map_select(const IfcParse::select_type* pt) {
+	if (settings_.instantiate_select()) return 0;
+
 	std::set<const IfcParse::declaration*> leafs;
 	visit_select(pt, leafs);
 
@@ -361,8 +403,11 @@ void IfcParse::IfcHdf5File::write_aggregate(void*& ptr, const IfcEntityList::ptr
 	void* aggr_ptr = aggr_data;
 	for (IfcEntityList::it it = ts->begin(); it != ts->end(); ++it) {
 		auto ref = make_instance_reference(*it);
-		write_number_of_size(aggr_ptr, instance_reference->getMemberDataType(0).getSize(), ref.first);
-		write_number_of_size(aggr_ptr, instance_reference->getMemberDataType(1).getSize(), ref.second);
+		// write_number_of_size(aggr_ptr, instance_reference->getMemberDataType(0).getSize(), ref.first);
+		// write_number_of_size(aggr_ptr, instance_reference->getMemberDataType(1).getSize(), ref.second);
+		// Hard-coded for efficiency
+		write_number_of_size(aggr_ptr, 2, ref.first);
+		write_number_of_size(aggr_ptr, 4, ref.second);
 	}
 	write_vlen_t(ptr, n_elements, aggr_data);
 }
@@ -436,8 +481,10 @@ void IfcParse::IfcHdf5File::write_select(void*& ptr, IfcUtil::IfcBaseClass* inst
 		size_t offset = datatype->getMemberOffset(member_index);
 		auto ref = make_instance_reference(instance);
 		void* ptr_member = (uint8_t*) ptr + offset;
-		write_number_of_size(ptr_member, instance_reference->getMemberDataType(0).getSize(), ref.first);
-		write_number_of_size(ptr_member, instance_reference->getMemberDataType(1).getSize(), ref.second);
+		// write_number_of_size(ptr_member, instance_reference->getMemberDataType(0).getSize(), ref.first);
+		// write_number_of_size(ptr_member, instance_reference->getMemberDataType(1).getSize(), ref.second);
+		write_number_of_size(ptr_member, 2, ref.first);
+		write_number_of_size(ptr_member, 4, ref.second);
 	} else {
 		Argument& wrapped_data = *instance->data().getArgument(0);
 		IfcUtil::ArgumentType ty = wrapped_data.type();
@@ -447,7 +494,9 @@ void IfcParse::IfcHdf5File::write_select(void*& ptr, IfcUtil::IfcBaseClass* inst
 			std::string member_name = default_cpp_type_names.find(ty)->second + "-value";
 			member_index = datatype->getMemberIndex(member_name);
 			size_t offset = datatype->getMemberOffset(member_index);
-			size_t member_size = datatype->getMemberDataType(member_index).getSize();
+			H5::DataType memberdt = datatype->getMemberDataType(member_index);
+			size_t member_size = memberdt.getSize();
+			memberdt.close();
 			void* ptr_member = (uint8_t*) ptr + offset;
 			switch(wrapped_data.type()) {
 				case IfcUtil::Argument_BOOL: {
@@ -489,16 +538,50 @@ void IfcParse::IfcHdf5File::write_select(void*& ptr, IfcUtil::IfcBaseClass* inst
 	advance(ptr, datatype->getSize());
 }
 
-void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
+void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
 	std::set<IfcSchema::Type::Enum> tys;
 
-	this->file->close();
+	// Wth was this?
+	// this->file->close();
 	
+	std::set<IfcSchema::Type::Enum> types_with_instiated_selected;
+
 	for (auto it = f.begin(); it != f.end(); ++it) {
 		IfcSchema::Type::Enum ty = it->second->declaration().type();
 		tys.insert(ty);
 		// This already is sorted on entity instance name
 		sorted_entities[ty].push_back(it->second);
+
+		if (settings_.instantiate_select()) {
+			bool has=false;
+			for (unsigned i = 0; i < it->second->data().getArgumentCount(); ++i) {
+				Argument* attr = it->second->data().getArgument(i);
+				if (attr->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
+					IfcUtil::IfcBaseClass* inst = *attr;
+					if (!inst->declaration().as_entity()) {
+						IfcSchema::Type::Enum ty2 = inst->declaration().type();
+						tys.insert(ty2);
+						sorted_entities[ty2].push_back(inst);
+						has = true;
+					}
+				} else if (attr->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+					IfcEntityList::ptr insts = *attr;
+					for (auto it = insts->begin(); it != insts->end(); ++it) {
+						if (!(*it)->declaration().as_entity()) {
+							IfcSchema::Type::Enum ty2 = (*it)->declaration().type();
+							tys.insert(ty2);
+							sorted_entities[ty2].push_back(*it);
+							has = true;
+						}
+					}
+				}
+			}
+			if (has) {
+				types_with_instiated_selected.insert(ty);
+			} else {
+				static_cast<IfcParse::Entity*>(&it->second->data())->Unload();
+			}
+		}
 	}
 
 	dataset_names.assign(tys.begin(), tys.end());
@@ -506,7 +589,15 @@ void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 	
 	for (auto it = dataset_names.begin(); it != dataset_names.end(); ++it) {
 
+		// std::cout << "begin inner loop" << std::endl;
+		// std::cin.get();
+
+		// if (*it != IfcSchema::Type::IfcUnitAssignment) continue;
+
+		std::cerr << IfcSchema::Type::ToString(*it) << std::endl;
+
 		const std::vector<IfcUtil::IfcBaseClass*>& es = sorted_entities.find(*it)->second;
+		size_t datatype_size = declared_types[*it]->getSize();
 		hsize_t dims = es.size();
 		// don't chunk too small
 		// hsize_t chunk = (std::min)(std::max(es.size() / 64, (size_t)8), es.size());
@@ -515,8 +606,8 @@ void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 
 		const H5::DSetCreatPropList* plist;
 		// H5O_MESG_MAX_SIZE = 65536
-		const bool compact = es.size() * declared_types[*it]->getSize() < (1 << 15);
-		if (compress && !compact) { 
+		const bool compact = es.size() * datatype_size < (1 << 15);
+		if (settings_.compress() && !compact) { 
 			H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
 			plist_->setChunk(1, &chunk);
 			// D'oh. Order is significant, according to h5ex_d_shuffle.c
@@ -532,22 +623,59 @@ void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 			plist = &H5::DSetCreatPropList::DEFAULT;
 		}
 
-		H5::DataSet ds = population_group.createDataSet(IfcSchema::Type::ToString(*it) + "_instances", *declared_types[*it], H5::DataSpace(1, &dims), *plist);
+		H5::DataSpace space(1, &dims);
+		H5::DataSet ds = population_group.createDataSet(IfcSchema::Type::ToString(*it) + "_instances", *declared_types[*it], space, *plist);
 		
-		void* data = allocator.allocate(declared_types[*it]->getSize() * static_cast<size_t>(dims));
+		size_t dataset_size = declared_types[*it]->getSize() * static_cast<size_t>(dims);
+		void* data = allocator.allocate(dataset_size);
+
+		std::cerr << dataset_size << std::endl;
 		
 		void* ptr = data;
 		const H5::CompType* dt = (H5::CompType*) declared_types[*it];
 		int ind = 0;
 
 		for (auto jt = es.begin(); jt != es.end(); ++jt, ++ind) {
+			void* start = ptr;
+
 			int member_idx = 0;
 
 			H5::DataType member_type;
 
 			IfcAbstractEntity& dat = (*jt)->data();
 			const declaration& decl = (*jt)->declaration();			
+
+			if (!decl.as_entity()) {
+				if (!settings_.instantiate_select()) throw;
+				// This is a type
+				auto q = dt->getClass();
+				auto s = dt->getSize();
+				const Argument& attr_value = *dat.getArgument(0);
+				if (*dt == *default_types[simple_type::real_type]) {
+					double d = attr_value;
+					write_number_of_size(ptr, s, d);
+				} else if (*dt == *default_types[simple_type::string_type]) {
+					std::string s = attr_value;
+					write(ptr, s);
+				} else if (*dt == *default_types[simple_type::integer_type]) {
+					int i = attr_value;
+					write_number_of_size(ptr, s, i);
+				} else if (*dt == *default_types[simple_type::boolean_type] ||
+					        *dt == *default_types[simple_type::logical_type]) 
+				{
+					bool b = attr_value;
+					write_number_of_size(ptr, s, static_cast<uint8_t>(b ? 1 : 0));
+				} else {
+					throw;
+				}
+				continue;
+			}
+
 			std::vector<const IfcParse::entity::attribute*> attributes = decl.as_entity()->all_attributes();
+			std::vector<const IfcParse::entity::inverse_attribute*> inverse_attributes;
+			if (settings_.instantiate_inverse()) {
+				inverse_attributes = decl.as_entity()->all_inverse_attributes();
+			}
 			const std::vector<bool>& attributes_derived_in_subtype = decl.as_entity()->derived();
 			std::vector<bool>::const_iterator is_derived = attributes_derived_in_subtype.begin();
 
@@ -557,11 +685,15 @@ void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 			size_t set_unset_size = member_type.getSize();
 			// skip for now write later
 			advance(ptr, set_unset_size);
-
+			member_type.close();
+			
 			member_type = dt->getMemberDataType(member_idx++);
 			write_number_of_size(ptr, member_type.getSize(), static_cast<unsigned int>(dat.id()));
-			
-			for (unsigned i = 0; i < dat.getArgumentCount(); ++i, ++is_derived) {
+			member_type.close();
+
+			//                        ----v-----   In some IFC files there are extra superfluous attributes in the instantiation. For example FJK haus.
+			const size_t attr_count = (std::min)(attributes.size(), (size_t) dat.getArgumentCount());
+			for (unsigned i = 0; i < attr_count; ++i, ++is_derived) {
 				if (*is_derived) {
 					continue;
 				}
@@ -569,6 +701,7 @@ void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 				const IfcParse::entity::attribute* schema_attr = attributes[i];
 				const std::string& attribute_name = schema_attr->name();
 				Argument& attr_value = *dat.getArgument(i);
+
 				member_type = dt->getMemberDataType(member_idx++);
 
 				if (attr_value.isNull()) {
@@ -581,11 +714,11 @@ void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 					}
 				} else {
 					set_unset_mask |= 1 << i;
-					if (OVERRIDE && attribute_name == "GlobalId") {
+					if (settings_.fix_global_id() && attribute_name == "GlobalId") {
 						std::string s = attr_value;
 						memcpy(static_cast<char*>(ptr), s.c_str(), s.size());
 						advance(ptr, s.length());
-					} else if (OVERRIDE && attribute_name == "Coordinates") {
+					} else if (settings_.fix_cartesian_point() && (attribute_name == "Coordinates" || attribute_name == "DirectionRatios")) {
 						std::vector<double> ds = attr_value;
 						for (auto it = ds.begin(); it != ds.end(); ++it) {
 							write_number_of_size(ptr, default_types[simple_type::real_type]->getSize(), *it);
@@ -596,8 +729,10 @@ void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 					} else if (member_type == *instance_reference) {
 						IfcUtil::IfcBaseClass* v = attr_value;
 						auto ref = make_instance_reference(v);
-						write_number_of_size(ptr, instance_reference->getMemberDataType(0).getSize(), ref.first);
-						write_number_of_size(ptr, instance_reference->getMemberDataType(1).getSize(), ref.second);
+						// write_number_of_size(ptr, instance_reference->getMemberDataType(0).getSize(), ref.first);
+						// write_number_of_size(ptr, instance_reference->getMemberDataType(1).getSize(), ref.second);
+						write_number_of_size(ptr, 2, ref.first);
+						write_number_of_size(ptr, 4, ref.second);
 					} else if (member_type == *default_types[simple_type::real_type]) {
 						double d = attr_value;
 						write_number_of_size(ptr, member_type.getSize(), d);
@@ -637,6 +772,7 @@ void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 								void* buffer_ptr;
 								// void* buffer = buffer_ptr = new uint8_t[size_in_bytes * num_elements];
 								void* buffer = buffer_ptr = allocator.allocate(size_in_bytes * num_elements);
+								memset(buffer, 0, size_in_bytes * num_elements);
 								for (auto it = es->begin(); it != es->end(); ++it) {
 									write_select(buffer_ptr, *it, static_cast<const H5::CompType*>(datatype));
 								}
@@ -681,18 +817,63 @@ void IfcParse::IfcHdf5File::write_population(const IfcFile& f, bool compress) {
 						write_select(ptr, attr_value, static_cast<H5::CompType*>(&member_type));
 					}
 				}
+
+				member_type.close();
+			}
+
+			for (auto it = inverse_attributes.begin(); it != inverse_attributes.end(); ++it) {
+				member_type = dt->getMemberDataType(member_idx++);
+
+				auto q = member_type.getClass();
+				if (member_type.getClass() != H5T_VLEN) {
+					std::cerr << dt->getMemberName(member_idx - 1) << " ";
+					std::cerr << "Inverse attribute must be vlen" << std::endl;
+				}
+				const IfcParse::entity* entity_ref = (*it)->entity_reference();
+				const IfcParse::entity::attribute* attribute_ref = (*it)->attribute_reference();
+				IfcEntityList::ptr instances = f.getInverse(dat.id(), entity_ref->type(), entity_ref->attribute_index(attribute_ref));
+				if (instances->size() == 0) {
+					memset(ptr, 0, member_type.getSize());
+					advance(ptr, member_type.getSize());
+				} else {
+					write_aggregate(ptr, instances);
+				}
+
+				member_type.close();
 			}
 
 			write_number_of_size(set_unset_ptr, set_unset_size, set_unset_mask);			
+			const size_t written_length = (uint8_t*) ptr - (uint8_t*) start;
+			
+			if (written_length != datatype_size) {
+				std::cerr << "Written " << written_length << " bytes, but expected " << datatype_size << std::endl;
+			}
 		}
 
-		ds.write(data, *declared_types[*it]);
-		ds.close();
+		/* for (size_t i = 0; i < dataset_size; ++i) {
+			std::cout << std::hex << (int)((uint8_t*)data)[i] << " ";
+		} */
 
-		allocator.free();
+		// visit(data, declared_types[*it]);
+		ds.write(data, *declared_types[*it]);
+		H5Dvlen_reclaim(declared_types[*it]->getId(), space.getId(), H5P_DEFAULT, data);
+
+		ds.close();
+		space.close();
+
+		if (plist != &H5::DSetCreatPropList::DEFAULT) {
+			// ->close() doesn't work due to const, hack hack hack
+			H5Pclose(plist->getId());
+		}
+
+		// allocator.free();
+		delete[] data;
 		
 		for (auto it = es.begin(); it != es.end(); ++it) {
-			static_cast<IfcParse::Entity*>(&(**it).data())->Unload();
+			if (types_with_instiated_selected.find((**it).declaration().type()) == types_with_instiated_selected.end()) {
+				// Instances possibly refering to embedded simple type instantiations are not freed
+				static_cast<IfcParse::Entity*>(&(**it).data())->Unload();
+			}
 		}
 
 	}

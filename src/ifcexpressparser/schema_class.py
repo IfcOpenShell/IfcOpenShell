@@ -34,7 +34,7 @@ class SchemaClass:
             if isinstance(type, nodes.AggregationType):
                 aggr_type = type.aggregate_type
                 make_bound = lambda b: -1 if b == '?' else int(b)
-                bound1, bound2 = map(make_bound, (type.bounds.lower, type.bounds.upper))                    
+                bound1, bound2 = map(make_bound, (type.bounds.lower, type.bounds.upper))
                 decl_type = get_declared_type(type.type)
                 return "new aggregation_type(aggregation_type::%(aggr_type)s_type, %(bound1)d, %(bound2)d, %(decl_type)s)" % locals()
             elif isinstance(type, nodes.BinaryType):
@@ -46,7 +46,21 @@ class SchemaClass:
                     else:
                         raise UnmetDependenciesException(type)
                 else:
-                    return "new simple_type(simple_type::%s_type)" % type            
+                    return "new simple_type(simple_type::%s_type)" % type
+
+        def find_inverse_name_and_index(entity_name, attribute_name):
+            attributes_per_subtype = []
+            while True:
+                entity = mapping.schema.entities[entity_name]
+                attr_names = list(map(operator.attrgetter('name'), entity.attributes))
+                if len(attr_names):
+                    attributes_per_subtype.append((entity_name, attr_names))
+                if len(entity.supertypes) != 1: break
+                entity_name = entity.supertypes[0]
+            index = 0
+            for et, attrs in attributes_per_subtype[::-1]:
+                try: return et, attrs.index(attribute_name)
+                except: pass
     
         self.schema_name = mapping.schema.name.capitalize()
         
@@ -139,6 +153,23 @@ class SchemaClass:
             statements.append('        ' + " ".join(map(lambda b: 'derived.push_back(%s);' % str(b in derived).lower(), attribute_names)))
             statements.append('        %(name)s_type->set_attributes(attributes, derived);' % locals())
             statements.append('    }')
+            
+        for name, type in mapping.schema.entities.items():
+            if type.inverse:
+                statements.append('    {')
+                statements.append('        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(%d);' % len(type.inverse.elements))
+                for attr in type.inverse.elements:
+                    if attr.bounds:
+                        make_bound = lambda b: -1 if b == '?' else int(b)
+                        bound1, bound2 = map(make_bound, (attr.bounds.lower, attr.bounds.upper))
+                    else:
+                        bound1, bound2 = -1, -1
+                    attr_name, aggr_type, entity_ref = attr.name, attr.type, attr.entity
+                    if aggr_type is None: aggr_type = 'unspecified'
+                    attribute_entity, attribute_entity_index = find_inverse_name_and_index(entity_ref, attr.attribute)
+                    statements.append('        attributes.push_back(new entity::inverse_attribute("%(attr_name)s", entity::inverse_attribute::%(aggr_type)s_type, %(bound1)d, %(bound2)d, %(entity_ref)s_type, %(attribute_entity)s_type->attributes()[%(attribute_entity_index)d]));' % locals())
+                statements.append('        %(name)s_type->set_inverse_attributes(attributes);' % locals())
+                statements.append('    }')
             
         statements.append('')
         statements.append('    std::vector<const declaration*> declarations; declarations.reserve(%(num_declarations)d);' % locals())

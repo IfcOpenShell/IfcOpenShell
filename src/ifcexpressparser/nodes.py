@@ -137,7 +137,7 @@ class AttributeList(Node):
 
 class InverseAttribute(Node):
     name = property(lambda self: self.tokens[0])
-    type = property(lambda self: self.tokens[2])
+    type = property(lambda self: None if len(self.tokens) == 6 else self.tokens[2])
     bounds = property(lambda self: None if len(self.tokens) == 6 else self.tokens[3])
     entity = property(lambda self: self.tokens[-4])
     attribute = property(lambda self: self.tokens[-2])
