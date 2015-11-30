@@ -19,6 +19,7 @@
 
 #include <iomanip>
 #include <locale>
+#include <limits>
 
 #include <boost/algorithm/string.hpp>
 
@@ -327,7 +328,7 @@ private:
 	std::string format_double(const double& d) {
 		std::ostringstream oss;
 		oss.imbue(std::locale::classic());
-		oss << std::setprecision(15) << d;
+		oss << std::setprecision(std::numeric_limits<double>::digits10) << d;
 		const std::string str = oss.str();
 		oss.str("");
 		std::string::size_type e = str.find('e');
