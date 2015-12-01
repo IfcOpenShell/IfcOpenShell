@@ -26,6 +26,7 @@ set PROJECT_NAME=IfcOpenShell
 setlocal EnableDelayedExpansion
 :: TODO Getting warning print in vs-cfg.cmd for missing build type although this script doesn't need it specified
 call vs-cfg.cmd %1
+IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :: Read Python related variables from BuildDepsCache.txt
 for /f "delims== tokens=1,2" %%G in (BuildDepsCache-%TARGET_ARCH%.txt) do set %%G=%%H
@@ -103,7 +104,7 @@ goto :Finish
 
 :Error
 echo.
-cecho {0C}An error occurred! Aborting!"
+call %~dp0\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
 goto :Finish
 
 :Finish
