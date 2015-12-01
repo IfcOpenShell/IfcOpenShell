@@ -46,6 +46,7 @@ public:
 	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {
 		const char* symbol = getSymbolForUnitMagnitude(magnitude);
 		if (symbol) {
+			Interface_Static::SetCVal("xstep.cascade.unit", symbol);
 			Interface_Static::SetCVal("write.iges.unit", symbol);
 		}
 	}

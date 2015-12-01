@@ -42,6 +42,12 @@ void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<double>* o) {
 
 		const gp_Trsf& o_trsf = o->transformation().data();
 		gtrsf.PreMultiply(o_trsf);
+
+		if (o->geometry().settings().convert_back_units()) {
+			gp_Trsf scale;
+			scale.SetScaleFactor(1.0 / o->geometry().settings().unit_magnitude());
+			gtrsf.PreMultiply(scale);
+		}
 		
 		const TopoDS_Shape& s = it->Shape();			
 			
