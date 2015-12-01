@@ -182,9 +182,7 @@ namespace IfcGeom {
 				}
 				if (context->hasContextType()) {
 					std::string context_type_lc = context->ContextType();
-					for (std::string::iterator c = context_type_lc.begin(); c != context_type_lc.end(); ++c) {
-						*c = tolower(*c);
-					}
+					std::transform(context_type_lc.begin(), context_type_lc.end(), context_type_lc.begin(), ::tolower);
 					if (context_types.find(context_type_lc) != context_types.end()) {
 						filtered_contexts->push(context);
 					}
@@ -287,7 +285,7 @@ namespace IfcGeom {
 		}
 
 		BRepElement<P>* create_shape_model_for_next_entity() {
-			while ( true ) {
+			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
 
 				// Have we reached the end of our list of representations?
@@ -320,16 +318,16 @@ namespace IfcGeom {
 
 						// Filter the products based on the set of entities being included or excluded for
 						// processing. The set is iterated over te able to filter on subtypes.
-						for ( IfcSchema::IfcProduct::list::it it = unfiltered_products->begin(); it != unfiltered_products->end(); ++it ) {
+						for ( IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt ) {
 							bool found = false;
-							for (std::set<IfcSchema::Type::Enum>::const_iterator jt = entities_to_include_or_exclude.begin(); jt != entities_to_include_or_exclude.end(); ++jt) {
-								if ((*it)->is(*jt)) {
+							for (std::set<IfcSchema::Type::Enum>::const_iterator kt = entities_to_include_or_exclude.begin(); kt != entities_to_include_or_exclude.end(); ++kt) {
+								if ((*jt)->is(*kt)) {
 									found = true;
 									break;
 								}
 							}
 							if (found == include_entities_in_processing) {
-								ifcproducts->push(*it);
+								ifcproducts->push(*jt);
 							}
 						}
 

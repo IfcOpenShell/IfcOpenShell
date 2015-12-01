@@ -31,6 +31,8 @@
 #include "../ifcparse/IfcWrite.h"
 #include "../ifcparse/IfcWritableEntity.h"
 
+#include <map>
+
 using namespace Ifc2x3;
 using namespace IfcParse;
 using namespace IfcWrite;

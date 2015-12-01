@@ -29,6 +29,9 @@ class HeaderEntity : public IfcAbstractEntity {
 private:	
 	ArgumentList* _list;
 	const char * const _datatype;
+
+	HeaderEntity(const HeaderEntity&); //N/A
+	HeaderEntity& operator =(const HeaderEntity&); //N/A
 protected:
 	HeaderEntity(const char * const datatype, IfcSpfLexer* lexer) 
 		: _datatype(datatype), _list(0)
@@ -65,7 +68,7 @@ public:
 		return (*_list)[i];
 	}
 
-	IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index) {
+	IfcEntityList::ptr getInverse(IfcSchema::Type::Enum /*type*/, int /*attribute_index*/) {
 		return IfcEntityList::ptr(new IfcEntityList);
 	}
 
@@ -81,7 +84,7 @@ public:
 		return (IfcSchema::Type::Enum) -1;
 	}
 
-	bool is(IfcSchema::Type::Enum v) const {
+	bool is(IfcSchema::Type::Enum /*v*/) const {
 		return false;
 	}
 

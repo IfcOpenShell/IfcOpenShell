@@ -19,6 +19,12 @@
 
 :: This script initializes various Visual Studio -related environment variables needed for building
 :: This batch file expects CMake generator as %1 and build configuration type as %2.
+:: If %1 is not provided, it is deduced from the VisualStudioVersion environment variable and from the location of cl.exe.
+
+:: NOTE This batch file expects the generator string to be CMake 3.0.0 and newer format, i.e.
+:: "Visual Studio 10 2010" instead of "Visual Studio 10". However, one can use this batch file
+:: also with CMake 2 as the generator will be converted into the older format if necessary.
+
 :: NOTE: The delayed environment variable expansion needs to be enabled before calling this.
 
 @echo off
@@ -28,33 +34,46 @@ set GENERATOR=%1
 :: TODO IDEA: Take more user-friendly VS generators and convert them to the CMake ones?
 :: F.ex. "vs2013-32" and/or "vc14-64"
 
-:: TODO Print CMake and VS versions. Maybe in build-deps.cmd would be better than here.
-
 :: Supported Visual Studio versions:
-set GENERATORS[0]="Visual Studio 14 2015"
-set GENERATORS[1]="Visual Studio 14 2015 Win64"
-:: TODO Check CMake version and convert possible new format (>= 3.0) generator names 
-:: to the old versions if using older CMake for VS <= 2013,
-:: see http://www.cmake.org/cmake/help/v3.0/release/3.0.0.html#other-changes
-set GENERATORS[2]="Visual Studio 12"
-set GENERATORS[3]="Visual Studio 12 Win64"
-set GENERATORS[4]="Visual Studio 11"
-set GENERATORS[5]="Visual Studio 11 Win64"
-set GENERATORS[6]="Visual Studio 10"
-set GENERATORS[7]="Visual Studio 10 Win64"
-set GENERATORS[8]="Visual Studio 9 2008"
-set GENERATORS[9]="Visual Studio 9 2008 Win64"
-set GENERATOR_DEFAULT=%GENERATORS[1]%
+set GENERATORS[0]="Visual Studio 9 2008 Win64"
+set GENERATORS[1]="Visual Studio 9 2008"
+set GENERATORS[2]="Visual Studio 10 2010 Win64"
+set GENERATORS[3]="Visual Studio 10 2010"
+set GENERATORS[4]="Visual Studio 11 2012 Win64"
+set GENERATORS[5]="Visual Studio 11 2012"
+set GENERATORS[6]="Visual Studio 12 2013 Win64"
+set GENERATORS[7]="Visual Studio 12 2013"
+set GENERATORS[8]="Visual Studio 14 2015 Win64"
+set GENERATORS[9]="Visual Studio 14 2015"
+set LAST_GENERATOR_IDX=9
 
-IF "!GENERATOR!"=="" (
-    set GENERATOR=%GENERATOR_DEFAULT%
-    call utils\cecho.cmd 0 14 "%~nx0: Warning: Generator not passed - using the default '`"%GENERATOR_DEFAULT%`'`t
+REM Deduce desired architecture from the location of cl.exe
+where cl.exe | findstr /r /c:"amd64" >nul
+set START=%ERRORLEVEL%
+set STEP=2
+
+IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
+    set VC_VER=%VisualStudioVersion:.0=%
+    FOR /l %%i in (%START%,%STEP%,%LAST_GENERATOR_IDX%) DO (
+        REM http://stackoverflow.com/a/8758579
+        REM NOTE add space before VC_VER so that e.g. "12" doesn't match with "2012"
+        echo(!GENERATORS[%%i]! | findstr /r /c:" !VC_VER!" >nul && (
+            set GENERATOR=!GENERATORS[%%i]!
+            call utils\cecho.cmd black cyan "Generator not passed, but VisualStudioVersion=%VisualStudioVersion% environment variable detected:"
+            call utils\cecho.cmd black cyan "using '`"!GENERATOR!`'" as the generator."
+            GOTO :GeneratorValid
+        )
+    )
 )
 
-FOR /l %%i in (0,1,9) DO (
+FOR /l %%i in (0,1,%LAST_GENERATOR_IDX%) DO (
     IF !GENERATOR!==!GENERATORS[%%i]! GOTO :GeneratorValid
 )
 call utils\cecho.cmd 0 12 "%~nx0: Invalid or unsupported CMake generator string passed: '`"!GENERATOR!`'". Cannot proceed, aborting!"
+echo Supported CMake generator strings:
+FOR /l %%i in (0,1,%LAST_GENERATOR_IDX%) DO (
+    echo !GENERATORS[%%i]!
+)
 exit /b 1
 
 :GeneratorValid
@@ -81,6 +100,18 @@ FOR %%i IN (%GENERATOR_SPLIT%) DO (
         set VS_PLATFORM=x64
     )
 )
+
+:: Check CMake version and convert possible new format (>= 3.0) generator names to the old versions if using older CMake for VS <= 2013,
+:: see http://www.cmake.org/cmake/help/v3.0/release/3.0.0.html#other-changes
+FOR /f "delims=" %%i in ('where cmake') DO set CMAKE_PATH=%%i
+IF NOT "%CMAKE_PATH%"=="" (
+    FOR /f "delims=" %%i in ('cmake --version ^| findstr /C:"cmake version 3"') DO GOTO :CMake3AndNewer
+)
+:: CMake older than 3.0.0: convert new format generators to the old format (simple brute force for simplicity)
+set GENERATOR=%GENERATOR: 2013=%
+set GENERATOR=%GENERATOR: 2012=%
+set GENERATOR=%GENERATOR: 2010=%
+:CMake3AndNewer
 
 :: VS project file extension is different on older VS versions
 set VCPROJ_FILE_EXT=vcxproj

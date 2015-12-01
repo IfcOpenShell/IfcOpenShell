@@ -104,7 +104,6 @@ std::string IfcWritableEntity::toString(bool upper) const {
 	ss << dt << "(";
 	for (std::map<int,Argument*>::const_iterator it = args.begin(); it != args.end(); ++ it) {
 		if ( it != args.begin() ) ss << ",";
-		const Argument* a = it->second;
 		ss << it->second->toString(upper);
 	}
 	ss << ")";
@@ -140,7 +139,6 @@ void IfcWritableEntity::setArgument(int i) {
 }
 
 void IfcWritableEntity::setArgument(int i, Argument* a) {
-	IfcWrite::IfcWriteArgument* wa = new IfcWrite::IfcWriteArgument(this);
 	IfcUtil::ArgumentType attr_type = a->type();
 	switch(attr_type) {
 	case IfcUtil::Argument_NULL:
@@ -182,7 +180,7 @@ void IfcWritableEntity::setArgument(int i, Argument* a) {
 		this->setArgument(i, attr_value); }
 		break;
 	case IfcUtil::Argument_ENUMERATION: {
-		IfcSchema::Type::Enum ty = IfcSchema::Type::GetAttributeEntity(_type, i);
+		IfcSchema::Type::Enum ty = IfcSchema::Type::GetAttributeEntity(_type, (unsigned char)i);
 		std::string enum_literal = a->toString();
 		// Remove leading and trailing '.'
 		enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
@@ -291,27 +289,30 @@ void IfcWritableEntity::setArgument(int i,const std::vector< boost::dynamic_bits
 
 class SizeVisitor : public boost::static_visitor<int> {
 public:
-	int operator()(const boost::none_t& i) const { return -1; }
-	int operator()(const IfcWriteArgument::Derived& i) const { return -1; }
-	int operator()(const int& i) const { return -1; }
-	int operator()(const bool& i) const { return -1; }
-	int operator()(const double& i) const { return -1; }
-	int operator()(const std::string& i) const { return -1; }
-	int operator()(const boost::dynamic_bitset<>& i) const { return -1; }
+	int operator()(const boost::none_t& /*i*/) const { return -1; }
+	int operator()(const IfcWriteArgument::Derived& /*i*/) const { return -1; }
+	int operator()(const int& /*i*/) const { return -1; }
+	int operator()(const bool& /*i*/) const { return -1; }
+	int operator()(const double& /*i*/) const { return -1; }
+	int operator()(const std::string& /*i*/) const { return -1; }
+	int operator()(const boost::dynamic_bitset<>& /*i*/) const { return -1; }
 	int operator()(const std::vector<int>& i) const { return (int)i.size(); }
 	int operator()(const std::vector<double>& i) const { return (int)i.size(); }
 	int operator()(const std::vector< std::vector<int> >& i) const { return (int)i.size(); }
 	int operator()(const std::vector< std::vector<double> >& i) const { return (int)i.size(); }
 	int operator()(const std::vector<std::string>& i) const { return (int)i.size(); }
 	int operator()(const std::vector< boost::dynamic_bitset<> >& i) const { return (int)i.size(); }
-	int operator()(const IfcWriteArgument::EnumerationReference& i) const { return -1; }
-	int operator()(const IfcUtil::IfcBaseClass* const& i) const { return -1; }
+	int operator()(const IfcWriteArgument::EnumerationReference& /*i*/) const { return -1; }
+	int operator()(const IfcUtil::IfcBaseClass* const& /*i*/) const { return -1; }
 	int operator()(const IfcEntityList::ptr& i) const { return i->size(); }
 	int operator()(const IfcEntityListList::ptr& i) const { return i->size(); }
 };
 
 class StringBuilderVisitor : public boost::static_visitor<void> {
 private:
+	StringBuilderVisitor(const StringBuilderVisitor&); //N/A
+	StringBuilderVisitor& operator =(const StringBuilderVisitor&); //N/A
+
 	std::ostringstream& data;
 	template <typename T> void serialize(const std::vector<T>& i) {
 		data << "(";
@@ -370,8 +371,8 @@ private:
 public:
 	StringBuilderVisitor(std::ostringstream& stream, bool upper = false) 
 		: data(stream), upper(upper) {}
-	void operator()(const boost::none_t& i) { data << "$"; }
-	void operator()(const IfcWriteArgument::Derived& i) { data << "*"; }
+	void operator()(const boost::none_t& /*i*/) { data << "$"; }
+	void operator()(const IfcWriteArgument::Derived& /*i*/) { data << "*"; }
 	void operator()(const int& i) { data << i; }
 	void operator()(const bool& i) { data << (i ? ".T." : ".F."); }
 	void operator()(const double& i) { data << format_double(i); }
@@ -501,7 +502,7 @@ IfcWriteArgument::operator std::vector< std::vector<int> >() const { return as<s
 IfcWriteArgument::operator std::vector< std::vector<double> >() const { return as<std::vector< std::vector<double> > >(); }
 IfcWriteArgument::operator IfcEntityListList::ptr() const { throw; }
 bool IfcWriteArgument::isNull() const { return type() == IfcUtil::Argument_NULL; }
-Argument* IfcWriteArgument::operator [] (unsigned int i) const { throw IfcParse::IfcException("Invalid cast"); }
+Argument* IfcWriteArgument::operator [] (unsigned int /*i*/) const { throw IfcParse::IfcException("Invalid cast"); }
 std::string IfcWriteArgument::toString(bool upper) const {
 	std::ostringstream str;
 	str.imbue(std::locale::classic());

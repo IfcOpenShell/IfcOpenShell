@@ -14,7 +14,7 @@ Prerequisites
 Dependencies
 ============
 * [Boost](http://www.boost.org/)
-* Open Cascade *optional*, but required for building IfcGeom)  
+* Open Cascade *optional*, but required for building IfcGeom
   [Official](http://www.opencascade.org/getocc/download/loadocc/) or [community edition](https://github.com/tpaviot/oce)  
   For converting IFC representation items into BRep solids and tesselated meshes
 * [ICU](http://site.icu-project.org/) *optional*  
@@ -34,14 +34,16 @@ the cmake/ folder.
 
 The preferred way to fetch and build this project's dependencies is to use the build scripts
 in win/ folder. See [win/readme.md] for more information. Instructions in a nutshell
-(assuming Visual Studio x64 environment variables set):
+(**assuming Visual Studio 2015 x64 environment variables set**):
+
     > git clone https://github.com/IfcOpenShell/IfcOpenShell.git
     > cd oce\win
-    > build-deps.cmd (defaults to using VS 2015 x64 RelWithDebInfo build)
-    > run-cmake.bat (defaults to using VS 2015 x64)
+    > build-deps.cmd (defaults to RelWithDebInfo build)
+    > run-cmake.bat
     > ..\build-vs2015-x64\IfcOpenShell.sln
-You can now build the solution using the RelWithDebInfo configuration (freshly created solution by CMake defaults to Debug).
-Build the INSTALL project to deploy the headers and binaries into a single location if wanted/needed.
+
+You can now build the solution using the `RelWithDebInfo` configuration (freshly created solution by CMake defaults to `Debug`).
+Build the `INSTALL` project to deploy the headers and binaries into a single location if wanted/needed.
 
 Alternatively, the old Visual Studio solution and project files requiring manual work can
 be found from the win/sln folder.

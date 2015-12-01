@@ -29,13 +29,17 @@
 
 #include <string>
 #include <vector>
-#include <map>
 
 #include <boost/optional.hpp>
 
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/Ifc2x3enum.h"
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4100)
+#endif
 
 #define IfcSchema Ifc2x3
 
@@ -41582,5 +41586,9 @@ public:
 void InitStringMap();
 IfcUtil::IfcBaseClass* SchemaEntity(IfcAbstractEntity* e = 0);
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #endif

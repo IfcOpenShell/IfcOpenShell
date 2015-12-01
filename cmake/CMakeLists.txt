@@ -25,7 +25,7 @@ OPTION(UNICODE_SUPPORT "Build IfcOpenShell with Unicode support (requires ICU)."
 OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
 #TODO OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." OFF)
-OPTION(USE_IFC4 "Use IFC 4 instead of IFC 2x3" OFF)
+OPTION(USE_IFC4 "Use IFC 4 instead of IFC 2x3 (full rebuild recommended when switching this)" OFF)
 OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
@@ -217,10 +217,17 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
 endif()
 
 IF(MSVC)
+	# Enforce Unicode for CRT and Win32 API calls
+	ADD_DEFINITIONS(-D_UNICODE -DUNICODE)
 	# Disable warnings about unsafe C functions; we could use the safe C99 & C11 versions if we have no need for supporting old compilers.
-	ADD_DEFINITIONS(-D_UNICODE -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS)
+	ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS)
 	ADD_DEFINITIONS(-bigobj) # required for building the big ifcXXX.objs, https://msdn.microsoft.com/en-us/library/ms173499.aspx
-
+	# Bump up the warning level from the default 3 to 4.
+	ADD_DEFINITIONS(-W4)
+	IF(MSVC_VERSION GREATER 1800) # > 2013
+		# Disable overeager and false positives causing C4458 ("declaration of 'indentifier' hides class member"), at least for now.
+		ADD_DEFINITIONS(-wd4458)
+	ENDIF()
 	# Link against the static VC runtime
 	FOREACH(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
 			CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE

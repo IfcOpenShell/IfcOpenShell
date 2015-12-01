@@ -14,22 +14,21 @@ the requirements for a successful execution. The script allows a few user-config
 which are listed in the usage instructions. Either edit the script file or set these values before
 running the script.
 
-`build-deps.cmd` expects a CMake generator as `%1` and a build configuration type as `%2`. If the parameters
-are not provided, the default values are used (`"Visual Studio 14 2015 Win64"` and `RelWithDebInfo` respectively).
-A build type (`Build/Rebuild/Clean`) can be provided as `%3`, if wanted (defaults to `Build`). See `vs-cfg.cmd`
-if you want to change the defaults. The batch file will create `deps\` and `deps-vs<VERSION>-<ARCHITECTURE>-installed\`
+`build-deps.cmd` expects a CMake generator as `%1` and a build configuration type (`RelWithDebInfo/Release/MinSizeRel/Debug`,
+defaults to `RelWithDebInfo`) as `%2`. If the generator is not provided, the generator is deduced from the Visual Studio
+environment variables. A build type (`Build/Rebuild/Clean`, defaults to `Build`) can be provided as `%3`. See `vs-cfg.cmd`
+if you wish to change the defaults. The batch file will create `deps\` and `deps-vs<VERSION>-<ARCHITECTURE>-installed\`
 directories to the project root. Debug and release builds of the depedencies can co-exist by simply running
 `build-deps.cmd <GENERATOR> Debug` and `build-deps.cmd <GENERATOR> <Release|RelWithDebInfo|MinSizeRel>`.
 
-After the dependencies are build, execute `run-cmake.bat`. The batch file expects a CMake generator as
-`%1` (if not provided, the same default value as above is used), or alternatively, if more parameters are provided, `%*` is passed for the CMake invokation, i.e., if one 
-wants to pass custom build options, the generator must be passed also using CMake's syntax:
+After the dependencies are build, execute `run-cmake.bat`. The batch file expects always a CMake generator as `%1`
+(if not provided, the same default value as above is used), and the rest of possible parameters are passed as is.
+**If you wish to use any library from a custom location, modify the paths in `run-cmake.bat` accordingly**. The batch
+script will create a folder of form `build-vs<VERSION>-<ARCHITECTURE>\` which will contain the solution and project
+files for Visual Studio.
 
-`run-cmake.bat -G "Visual Studio 14 2015 Win64" -DBUILD_IFCPYTHON=0`.
-
-The batch script will create a folder of form `build-vs<VERSION>-<ARCHITECTURE>\` which will contain the solution and project files for Visual Studio.
-**If you wish to use any library from a custom location, modify the paths in run-cmake.bat 
-accordingly**.
+Note that building IfcOpenShell as 64-bit is recommended as many of real life IFC files has been observed to take
+easily more than 2 GBs of RAM while converting.
 
 After this, one can build the project using the `IfcOpenShell.sln` file in the build folder. Build the `INSTALL` project
 if wanted. The project will be installed to `installed-vs<VERSION>-<ARCHITECTURE>\` folder in the project's root

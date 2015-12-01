@@ -130,7 +130,7 @@ IfcCharacterDecoder::operator std::string() {
 #ifdef HAVE_ICU
 	unsigned int old_hex = 0; // for compatibility_mode
 #endif  
-	while ( current_char = file->Peek() ) {
+	while ( (current_char = file->Peek()) != 0 ) {
 		if ( EXPECTS_CHARACTER(parse_state) ) {
 #ifdef HAVE_ICU
 			if ( previous_codepage != codepage ) {
@@ -227,7 +227,7 @@ void IfcCharacterDecoder::dryRun() {
 	unsigned int parse_state = 0;
 	char current_char;
 	unsigned int hex_count = 0;
-	while ( current_char = file->Peek() ) {
+	while ((current_char = file->Peek()) != 0) {
 		if ( EXPECTS_CHARACTER(parse_state) ) {
 			parse_state = 0;
 		} else if ( current_char == '\'' && ! parse_state ) {
@@ -340,8 +340,8 @@ IfcCharacterEncoder::operator std::string() {
 			oss << "\\X" << num_bytes_str << "\\";
 		}
 		if ( within_spf_range ) {
-			oss.put(ch);
-			if ( ch == '\\' || ch == '\'' ) oss.put(ch);
+			oss.put((char)ch);
+			if ( ch == '\\' || ch == '\'' ) oss.put((char)ch);
 		} else {
 			oss << std::hex << std::setw(num_bytes*2) << std::uppercase << std::setfill('0') << (int) ch;
 		}

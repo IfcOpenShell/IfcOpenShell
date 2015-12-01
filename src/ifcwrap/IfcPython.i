@@ -36,6 +36,15 @@
 # include <time.h>
 # include <wchar.h>
 #endif
+
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable : 4127 4244 4702 4510 4512 4610)
+# if _MSC_VER > 1800
+#  pragma warning(disable : 4456 4459)
+# endif
+#endif
+// TODO add '# pragma warning(pop)' to the very end of the file
 %}
 
 %include "std_string.i"
