@@ -101,7 +101,7 @@
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& shape) {
 	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
 	if (height < getValue(GV_PRECISION)) {
-		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l);
+		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l->entity);
 		return false;
 	}
 
