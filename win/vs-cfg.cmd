@@ -166,6 +166,8 @@ pushd ..
 set DEPS_DIR=%CD%\deps
 set INSTALL_DIR=%CD%\deps-vs%VS_VER%-%TARGET_ARCH%-installed
 REM set INSTALL_DIR=%CD%\deps-vs%VS_VER%-%TARGET_ARCH%-%DEBUG_OR_RELEASE_LOWERCASE%-installed
+:: BUILD_DIR is a relative build directory used for CMake-based projects
+set BUILD_DIR=build-vs%VS_VER%-%TARGET_ARCH%
 popd
 
 GOTO :EOF

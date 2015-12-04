@@ -35,7 +35,6 @@ pushd ..
 set CMAKE_INSTALL_PREFIX=%CD%\installed-vs%VS_VER%-%TARGET_ARCH%
 popd
 
-set BUILD_DIR=build-vs%VS_VER%-%TARGET_ARCH%
 IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
 

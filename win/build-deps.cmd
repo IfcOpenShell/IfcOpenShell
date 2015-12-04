@@ -18,7 +18,7 @@
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 :: This batch file expects CMake generator as %1 and build configuration type as %2. If not provided,
-:: the GENERATOR_DEFAULT will be used for %1 and BUILD_CFG_DEFAULT for %2 (both set in vs-cfg.cmd)
+:: a deduced generator will be used for %1 and BUILD_CFG_DEFAULT for %2 (both set in vs-cfg.cmd)
 :: Optionally a build type (Build/Rebuild/Clean) can be passed as %3.
 
 @echo off
@@ -72,7 +72,6 @@ set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS% /t:%BUILD_TYPE%
 REM /clp:ErrorsOnly;WarningsOnly
 :: Note BUILD_TYPE not passed, Clean e.g. wouldn't delete the installed files.
 set INSTALL_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS%
-set BUILD_DIR=build-vs%VS_VER%-%TARGET_ARCH%
 
 echo.
 

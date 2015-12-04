@@ -31,8 +31,10 @@ Note that building IfcOpenShell as 64-bit is recommended as many of real life IF
 easily more than 2 GBs of RAM while converting.
 
 After this, one can build the project using the `IfcOpenShell.sln` file in the build folder. Build the `INSTALL` project
-if wanted. The project will be installed to `installed-vs<VERSION>-<ARCHITECTURE>\` folder in the project's root
-folder and the required IfcOpenShell-Python parts are deployed to the `<PYTHONPATH>\Lib\site-packages\` folder.
+if wanted. Convenience batch files `build-ifcopenshell.cmd` and `install-ifcopenshell.cmd` can also be used. The batch files
+expect `%1` and `%2` in same fashion as above and possible extra parameters are passed for the `MSBuild`call. The project will
+be installed to `installed-vs<VERSION>-<ARCHITECTURE>\` folder in the project's root folder and the required IfcOpenShell-Python
+parts are deployed to the `<PYTHONPATH>\Lib\site-packages\` folder.
 
 **Note:** All of the dependencies are build as static libraries against the static run-time allowing the developer
 to effortlessly deploy standalone IFCOS binaries.
@@ -49,6 +51,8 @@ Directory Structure
 \---win
 |   build-deps.cmd                  - Fetches and builds all needed dependencies for IFCOS
 |   BuildDepsCache-<ARCH>.txt       - Cache file created by build-deps.cmd
+|   build-ifcopenshell.cmd          - Builds IFCOS
+|   install-ifcopenshell.cmd        - Builds IFCOS's INSTALL project
 |   readme.md                       - This file
 |   run-cmake.bat                   - Sets environment variables for the dependencies and runs CMake for IFCOS
 |   vs-cfg.cmd                      - Utility file used by the build scripts
