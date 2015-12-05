@@ -160,10 +160,15 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
 		if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
+			if (!fes->hasRepresentation()) continue;
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
-			IfcGeom::Kernel::convert(fes->ObjectPlacement(),opening_trsf);
+			if (fes->hasObjectPlacement()) {
+				try {
+					convert(fes->ObjectPlacement(),opening_trsf);
+				} catch (...) {}
+			}
 
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
@@ -303,10 +308,15 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
 		if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
+			if (!fes->hasRepresentation()) continue;
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
-			IfcGeom::Kernel::convert(fes->ObjectPlacement(),opening_trsf);
+			if (fes->hasObjectPlacement()) {
+				try {
+					convert(fes->ObjectPlacement(),opening_trsf);
+				} catch (...) {}
+			}
 
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
