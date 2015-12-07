@@ -33,17 +33,26 @@ Users are advised to build IfcOpenShell using the CMake file provided in
 the cmake/ folder.
 
 The preferred way to fetch and build this project's dependencies is to use the build scripts
-in win/ folder. See [win/readme.md] for more information. Instructions in a nutshell
+in win/ folder. **See [win/readme.md] for more information**. Instructions in a nutshell
 (**assuming Visual Studio 2015 x64 environment variables set**):
 
     > git clone https://github.com/IfcOpenShell/IfcOpenShell.git
-    > cd oce\win
-    > build-deps.cmd (defaults to RelWithDebInfo build)
+    > cd IfcOpenShell\win
+    > build-deps.cmd
     > run-cmake.bat
+
+You can now open and build the solution file in Visual Studio:
+
     > ..\build-vs2015-x64\IfcOpenShell.sln
 
-You can now build the solution using the `RelWithDebInfo` configuration (freshly created solution by CMake defaults to `Debug`).
-Build the `INSTALL` project to deploy the headers and binaries into a single location if wanted/needed.
+As the scripts default to using the `RelWithDebInfo` configuration, and a freshly created solution by CMake defaults
+to `Debug`, make sure to switch the used build configuration. Build the `INSTALL` project (right-click -> Project
+Only) to deploy the headers and binaries into a single location if wanted/needed.
+
+Alternatively, one can use the utility batch files to build and install the project easily from the command-line:
+
+    > build-ifcopenshell.cmd
+    > install-ifcopenshell.cmd
 
 Alternatively, the old Visual Studio solution and project files requiring manual work can
 be found from the win/sln folder.
