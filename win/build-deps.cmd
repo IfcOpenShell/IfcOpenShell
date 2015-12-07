@@ -106,7 +106,7 @@ echo   - Use Python 2 instead of 3.
 echo     Set to TRUE if you wish to use Python 2 instead of 3. Has no effect if IFCOS_INSTALL_PYTHON is not TRUE.
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo   - How many MSBuild.exe processes may be run in parallel.
-echo     Defaults to NUMBER_OF_PROCESSORS.
+echo     Defaults to NUMBER_OF_PROCESSORS. Used also by other IfcOpenShell build scripts.
 echo.
 
 call :PrintUsage
