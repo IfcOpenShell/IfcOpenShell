@@ -121,7 +121,7 @@ public:
 	double face_area(const TopoDS_Face& f);
 	void apply_tolerance(TopoDS_Shape& s, double t);
 	void setValue(GeomValue var, double value);
-	double getValue(GeomValue var);
+	double getValue(GeomValue var) const;
 	bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
 	void remove_redundant_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
 

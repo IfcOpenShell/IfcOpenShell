@@ -217,17 +217,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
 	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
 		gp_GTrsf gtrsf = it->Placement();
 		
-		gp_Trsf o_trsf;
-		const std::vector<double>& matrix = o->transformation().matrix().data();
-		o_trsf.SetValues(
-			matrix[0], matrix[3], matrix[6], matrix[ 9],
-			matrix[1], matrix[4], matrix[7], matrix[10], 
-			matrix[2], matrix[5], matrix[8], matrix[11]
-#if OCC_VERSION_HEX < 0x60800
-			, Precision::Angular(), Precision::Confusion()
-#endif
-		);
-		gtrsf.PreMultiply(o_trsf);
+		const gp_Trsf& o_trsf = o->transformation().data();
 		const TopoDS_Shape& s = it->Shape();			
 			
 		bool trsf_valid = false;

@@ -17,11 +17,12 @@
  *                                                                              *
  ********************************************************************************/
 
+#include <limits>
+#include <iomanip>
+
 #include "../ifcgeom/IfcGeomRenderStyles.h"
 
 #include "WavefrontObjSerializer.h"
-
-#include <iomanip>
 
 bool WaveFrontOBJSerializer::ready() {
 	return obj_stream.is_open() && mtl_stream.is_open();
@@ -69,6 +70,8 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<double>* 
 
 	obj_stream << "g " << o->unique_id() << "\n";
 	obj_stream << "s 1" << "\n";
+
+	obj_stream << std::setprecision(std::numeric_limits<double>::digits10);
 
 	const IfcGeom::Representation::Triangulation<double>& mesh = o->geometry();
 	

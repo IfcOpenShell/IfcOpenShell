@@ -89,6 +89,13 @@ namespace IfcUtil {
 				? static_cast<T*>(this) 
 				: static_cast<T*>(0);
 		}
+
+		template <class T>
+		const T* as() const {
+			return is(T::Class()) 
+				? static_cast<const T*>(this) 
+				: static_cast<const T*>(0);
+		}
 	};
 
 	class IfcBaseEntity : public IfcBaseClass {

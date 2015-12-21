@@ -160,10 +160,15 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
 		if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
+			if (!fes->hasRepresentation()) continue;
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
-			IfcGeom::Kernel::convert(fes->ObjectPlacement(),opening_trsf);
+			if (fes->hasObjectPlacement()) {
+				try {
+					convert(fes->ObjectPlacement(),opening_trsf);
+				} catch (...) {}
+			}
 
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
@@ -302,10 +307,15 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
 		if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
+			if (!fes->hasRepresentation()) continue;
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
-			IfcGeom::Kernel::convert(fes->ObjectPlacement(),opening_trsf);
+			if (fes->hasObjectPlacement()) {
+				try {
+					convert(fes->ObjectPlacement(),opening_trsf);
+				} catch (...) {}
+			}
 
 			// Move the opening into the coordinate system of the IfcProduct
 			opening_trsf.PreMultiply(entity_trsf.Inverted());
@@ -553,7 +563,7 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	}
 }
 
-double IfcGeom::Kernel::getValue(GeomValue var) {
+double IfcGeom::Kernel::getValue(GeomValue var) const {
 	switch (var) {
 	case GV_DEFLECTION_TOLERANCE:
 		return deflection_tolerance;
@@ -774,8 +784,14 @@ bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::IfcRepresentationShapeIt
 			_trsf = trsf.Trsf();
 			trsf_valid = true;
 		} catch (...) {}
-		const TopoDS_Shape moved_shape = trsf_valid ? merged.Moved(_trsf) :
-			BRepBuilderAPI_GTransform(merged,trsf,true).Shape();
+
+		const TopoDS_Shape moved_shape = trsf.Form() == gp_Identity
+			? merged
+			: (
+			trsf_valid 
+			? merged.Moved(_trsf)
+			: BRepBuilderAPI_GTransform(merged,trsf,true).Shape()
+			);
 
 		if (shapes.size() == 1) {
 			result = moved_shape;
@@ -805,6 +821,10 @@ bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::IfcRepresentationShapeIt
 		} else {
 			builder.Add(compound,moved_shape);
 		}
+	}
+
+	if (!fuse) {
+		result = compound;
 	}
 
 	const bool success = !result.IsNull();

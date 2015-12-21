@@ -255,7 +255,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 				flts[1] -= M_PI / 2.;
 			}
 		}
-		if ( isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],(double)(M_PI*2.0)),0.0f) ) {
+		if ( isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.),0.) ) {
 			w.Add(BRepBuilderAPI_MakeEdge(curve));
 		} else {
 			BRepBuilderAPI_MakeEdge e (curve,flts[0],flts[1]);

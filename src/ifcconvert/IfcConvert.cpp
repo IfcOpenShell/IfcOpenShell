@@ -32,6 +32,7 @@
 #include <time.h>
 
 #include <boost/program_options.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "../ifcgeom/IfcGeomIterator.h"
 
@@ -199,9 +200,8 @@ int main(int argc, char** argv) {
 	// Gets the set ifc types to be ignored from the command line. 
 	std::set<std::string> entities;
 	for (std::vector<std::string>::const_iterator it = entity_vector.begin(); it != entity_vector.end(); ++it) {
-		std::string lowercase_type = *it;
-		std::transform(lowercase_type.begin(), lowercase_type.end(), lowercase_type.begin(), ::tolower);
-		entities.insert(lowercase_type);
+		const std::string& mixed_case_type = *it;
+		entities.insert(boost::to_lower_copy(mixed_case_type));
 	}
 	
 	const std::string input_filename = vmap["input-file"].as<std::string>();
@@ -217,7 +217,7 @@ int main(int argc, char** argv) {
 	}
 
 	std::string output_extension = output_filename.substr(output_filename.size()-4);
-	std::transform(output_extension.begin(), output_extension.end(), output_extension.begin(), ::tolower);
+	boost::to_lower(output_extension);
 
 	// If no entities are specified these are the defaults to skip from output
 	if (entity_vector.empty()) {
