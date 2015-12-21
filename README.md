@@ -1,15 +1,20 @@
 IfcOpenShell 
 ============
-open source (LGPL) software library for working with the IFC file format
+Open source (LGPL) software library for working with the IFC file format.
 
 [http://ifcopenshell.org](http://ifcopenshell.org)  
 [http://academy.ifcopenshell.org](http://academy.ifcopenshell.org)
 
 
+Prerequisites
+=============
+* Git, CMake (2.6 or newer), Visual Studio 2008 or newer (Windows), or GCC (*nix, Clang untested).
+
+
 Dependencies
 ============
 * [Boost](http://www.boost.org/)
-* Open Cascade *optional*, but required for building IfcGeom)  
+* Open Cascade *optional*, but required for building IfcGeom
   [Official](http://www.opencascade.org/getocc/download/loadocc/) or [community edition](https://github.com/tpaviot/oce)  
   For converting IFC representation items into BRep solids and tesselated meshes
 * [ICU](http://site.icu-project.org/) *optional*  
@@ -18,32 +23,44 @@ Dependencies
   For IfcConvert to be able to write tessellated Collada (.dae) files
 * [SWIG](http://www.swig.org/), [Python](https://www.python.org/) libraries *optional*  
   For building the IfcOpenShell Python interface and the Blender add-on
-* 3ds max SDK *optional*  
-  For building the 3ds max plug-in
+* 3ds Max SDK *optional*  
+  For building the 3ds Max plug-in
 
 
 Compiling on Windows
 ====================
-Users are advised to use the Visual Studio .sln file in the win/ folder.
-For Windows users a prebuilt Open CASCADE version is available from the
-http://opencascade.org website. Download and install this version and
-provide the paths to the Open CASCADE header and library files to MS
-Visual Studio C++.
+Users are advised to build IfcOpenShell using the CMake file provided in
+the cmake/ folder.
 
-For building the Autodesk 3ds Max plugin, the 3ds Max SDK needs to be
-installed as well as 3ds Max itself. Please provide the include and
-library paths to Visual Studio.
+The preferred way to fetch and build this project's dependencies is to use the build scripts
+in win/ folder. **See [win/readme.md] for more information**. Instructions in a nutshell
+(**assuming Visual Studio 2015 x64 environment variables set**):
 
-For building the IfcPython wrapper, SWIG needs to be installed. Please
-download the latest swigwin version from http://www.swig.org/download.html.
-After extracting the .zip file, please add the extracted folder to the PATH
-environment variable. Python needs to be installed, please provide the
-include and library paths to Visual Studio.
+    > git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+    > cd IfcOpenShell\win
+    > build-deps.cmd
+    > run-cmake.bat
+
+You can now open and build the solution file in Visual Studio:
+
+    > ..\build-vs2015-x64\IfcOpenShell.sln
+
+As the scripts default to using the `RelWithDebInfo` configuration, and a freshly created solution by CMake defaults
+to `Debug`, make sure to switch the used build configuration. Build the `INSTALL` project (right-click -> Project
+Only) to deploy the headers and binaries into a single location if wanted/needed.
+
+Alternatively, one can use the utility batch files to build and install the project easily from the command-line:
+
+    > build-ifcopenshell.cmd
+    > install-ifcopenshell.cmd
+
+Alternatively, the old Visual Studio solution and project files requiring manual work can
+be found from the win/sln folder.
 
 
 Compiling on *nix
 =================
-Users are advised to build IfcOpenShell using the cmake file provided in
+Users are advised to build IfcOpenShell using the CMake file provided in
 the cmake/ folder. There might be an Open CASCADE package in your operating
 system's software repository. If not, you will need to compile Open 
 CASCADE yourself. See http://opencascade.org.
@@ -146,3 +163,5 @@ Or:
     >>>
     >>> # Writing IFC-SPF files to disk:
     >>> f.write("out.ifc")
+
+[win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"

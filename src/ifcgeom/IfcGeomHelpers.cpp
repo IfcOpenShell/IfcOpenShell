@@ -287,7 +287,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& t
 		return false; 		
 	}
 	IfcSchema::IfcLocalPlacement* current = (IfcSchema::IfcLocalPlacement*)l;
-	while (1) {
+	for (;;) {
 		gp_Trsf trsf2;
 		IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
 		if ( relplacement->is(IfcSchema::Type::IfcAxis2Placement3D) ) {

@@ -41,6 +41,8 @@ namespace IfcGeom {
 	namespace Representation {
 
 		class Representation {
+			Representation(const Representation&); //N/A
+			Representation& operator =(const Representation&); //N/A
 		protected:
 			const ElementSettings _settings;
 		public:
@@ -116,33 +118,33 @@ namespace IfcGeom {
 					: Representation(shape_model.settings())
 					, _id(shape_model.getId())
 			{
-				for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it = shape_model.begin(); it != shape_model.end(); ++ it ) {
+				for ( IfcGeom::IfcRepresentationShapeItems::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++ iit ) {
 
 					int surface_style_id = -1;
-					if (it->hasStyle()) {
-						Material adapter(&it->Style());
+					if (iit->hasStyle()) {
+						Material adapter(&iit->Style());
 						std::vector<Material>::const_iterator jt = std::find(_materials.begin(), _materials.end(), adapter);
 						if (jt == _materials.end()) {
-							surface_style_id = _materials.size();
+							surface_style_id = (int)_materials.size();
 							_materials.push_back(adapter);
 						} else {
-							surface_style_id = jt - _materials.begin();
+							surface_style_id = (int)(jt - _materials.begin());
 						}
 					}
 
 					if (settings().apply_default_materials() && surface_style_id == -1) {
 						Material material(IfcGeom::get_default_style(settings().element_type()));
-						std::vector<Material>::const_iterator it = std::find(_materials.begin(), _materials.end(), material);
-						if (it == _materials.end()) {
-							surface_style_id = _materials.size();
+						std::vector<Material>::const_iterator mit = std::find(_materials.begin(), _materials.end(), material);
+						if (mit == _materials.end()) {
+							surface_style_id = (int)_materials.size();
 							_materials.push_back(material);
 						} else {
-							surface_style_id = it - _materials.begin();
+							surface_style_id = (int)(mit - _materials.begin());
 						}
 					}
 
-					const TopoDS_Shape& s = it->Shape();
-					const gp_GTrsf& trsf = it->Placement();
+					const TopoDS_Shape& s = iit->Shape();
+					const gp_GTrsf& trsf = iit->Placement();
 
 					// Triangulate the shape
 					try {
@@ -233,11 +235,11 @@ namespace IfcGeom {
 								addEdge(dict[n2], dict[n3], edgecount, edges_temp);
 								addEdge(dict[n3], dict[n1], edgecount, edges_temp);
 							}
-							for ( std::vector<std::pair<int,int> >::const_iterator it = edges_temp.begin(); it != edges_temp.end(); ++it ) {
-								if (edgecount[*it] == 1) {
+							for ( std::vector<std::pair<int,int> >::const_iterator jt = edges_temp.begin(); jt != edges_temp.end(); ++jt ) {
+								if (edgecount[*jt] == 1) {
 									// non manifold edge, face boundary
-									_edges.push_back(it->first);
-									_edges.push_back(it->second);
+									_edges.push_back(jt->first);
+									_edges.push_back(jt->second);
 								}
 							}
 						}
@@ -247,11 +249,11 @@ namespace IfcGeom {
 						// Edges are only emitted if there are no faces. A mixed representation of faces
 						// and loose edges is discouraged by the standard. An alternative would be to use
 						// TopExp::MapShapesAndAncestors() to find edges that do not belong to any face.
-						for (TopExp_Explorer exp(s, TopAbs_EDGE); exp.More(); exp.Next()) {
-							BRepAdaptor_Curve crv(TopoDS::Edge(exp.Current()));
+						for (TopExp_Explorer texp(s, TopAbs_EDGE); texp.More(); texp.Next()) {
+							BRepAdaptor_Curve crv(TopoDS::Edge(texp.Current()));
 							GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
 							int n = tessellater.NbPoints();
-							int start = _verts.size() / 3;
+							int start = (int)_verts.size() / 3;
 							for (int i = 1; i <= n; ++i) {
 								gp_XYZ p = tessellater.Value(i).XYZ();
 								trsf.Transforms(p);

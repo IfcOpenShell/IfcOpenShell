@@ -35,7 +35,6 @@ class SvgSerializer : public GeometrySerializer {
 public:
 	typedef std::pair<std::string, std::vector<util::string_buffer> > path_object;
 protected:
-	const char* getSymbolForUnitMagnitude(float mag);
 	std::ofstream svg_file;
 	double xmin, ymin, xmax, ymax, width, height;
 	boost::optional<double> section_height;
@@ -62,15 +61,14 @@ public:
 	virtual void growBoundingBox(double x, double y) { if (x < xmin) xmin = x; if (x > xmax) xmax = x; if (y < ymin) ymin = y; if (y > ymax) ymax = y; }
 	virtual ~SvgSerializer() {}
 	virtual void writeHeader();
-	virtual void writeMaterial(const IfcGeom::SurfaceStyle& style) {}
 	virtual bool ready();
-	virtual void write(const IfcGeom::TriangulationElement<double>* o) {}
+	virtual void write(const IfcGeom::TriangulationElement<double>* /*o*/) {}
 	virtual void write(const IfcGeom::BRepElement<double>* o);
 	virtual void write(path_object& p, const TopoDS_Wire& wire);
 	virtual path_object& start_path(IfcSchema::IfcBuildingStorey* storey, const std::string& id);
 	virtual bool isTesselated() const { return false; }
 	virtual void finalize();
-	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) {}
+	virtual void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	virtual void setFile(IfcParse::IfcFile* f) { file = f; }
 	virtual void setBoundingRectangle(double width, double height);
 	virtual void setSectionHeight(double h) { section_height = h; }

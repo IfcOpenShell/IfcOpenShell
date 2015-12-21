@@ -69,7 +69,7 @@ void swrite(std::ostream& s, T t) {
 
 template <>
 void swrite(std::ostream& s, std::string t) {
-	int32_t len = t.size();
+	int32_t len = (int32_t)t.size();
 	swrite(s, len);
 	s.write(t.c_str(), len);
 	while (len++ % 4) s.put(0);
@@ -156,16 +156,16 @@ public:
 
 class Get : public Command {
 protected:
-	void read_content(std::istream& s) {}
-	void write_content(std::ostream& s) {}
+	void read_content(std::istream& /*s*/) {}
+	void write_content(std::ostream& /*s*/) {}
 public:
 	Get() : Command(GET) {};
 };
 
 class GetLog : public Command {
 protected:
-	void read_content(std::istream& s) {}
-	void write_content(std::ostream& s) {}
+	void read_content(std::istream& /*s*/) {}
+	void write_content(std::ostream& /*s*/) {}
 public:
 	GetLog() : Command(GET_LOG) {};
 };
@@ -189,7 +189,7 @@ private:
 	const IfcGeom::TriangulationElement<float>* geom;
 	bool append_line_data;
 protected:
-	void read_content(std::istream& s) {}
+	void read_content(std::istream& /*s*/) {}
 	void write_content(std::ostream& s) {
 		swrite<int32_t>(s, geom->id());
 		swrite(s, geom->guid());
@@ -238,9 +238,9 @@ protected:
 		}
 		{ std::vector<float> diffuse_color_array;
 		for (std::vector<IfcGeom::Material>::const_iterator it = geom->geometry().materials().begin(); it != geom->geometry().materials().end(); ++it) {
-			const IfcGeom::Material& m = *it;
-			if (m.hasDiffuse()) {
-				const double* color = m.diffuse();
+			const IfcGeom::Material& mat = *it;
+			if (mat.hasDiffuse()) {
+				const double* color = mat.diffuse();
 				diffuse_color_array.push_back(static_cast<float>(color[0]));
 				diffuse_color_array.push_back(static_cast<float>(color[1]));
 				diffuse_color_array.push_back(static_cast<float>(color[2]));
@@ -249,8 +249,8 @@ protected:
 				diffuse_color_array.push_back(0.f);
 				diffuse_color_array.push_back(0.f);
 			}
-			if (m.hasTransparency()) {
-				diffuse_color_array.push_back(static_cast<float>(1. - m.transparency()));
+			if (mat.hasTransparency()) {
+				diffuse_color_array.push_back(static_cast<float>(1. - mat.transparency()));
 			} else {
 				diffuse_color_array.push_back(1.f);
 			}
@@ -268,25 +268,21 @@ public:
 
 class Next : public Command {
 protected:
-	void read_content(std::istream& s) {}
-	void write_content(std::ostream& s) {}
+	void read_content(std::istream& /*s*/) {}
+	void write_content(std::ostream& /*s*/) {}
 public:
 	Next() : Command(NEXT) {};
 };
 
 class Bye : public Command {
 protected:
-	void read_content(std::istream& s) {}
-	void write_content(std::ostream& s) {}
+	void read_content(std::istream& /*s*/) {}
+	void write_content(std::ostream& /*s*/) {}
 public:
 	Bye() : Command(BYE) {};
 };
 
-int main (int argc, char** argv) {
-	if (sizeof(float) != 4 || sizeof(int32_t) != 4) {
-		return 1;
-	}
-
+int main () {
 	// Redirect stdout to this stream, so that involuntary 
 	// writes to stdout do not interfere with our protocol.
 	std::ostringstream oss;
@@ -308,7 +304,7 @@ int main (int argc, char** argv) {
 	Hello().write(std::cout);
 
 	int exit_code = 0;
-	while (1) {
+	for (;;) {
 		const int32_t msg_type = sread<int32_t>(std::cin);
 		switch (msg_type) {
 		case IFC_MODEL: {
@@ -323,7 +319,7 @@ int main (int argc, char** argv) {
 			settings.convert_back_units() = true;
 			settings.include_curves() = true;
 
-			iterator = new IfcGeom::Iterator<float>(settings, data, len);
+			iterator = new IfcGeom::Iterator<float>(settings, data, (int)len);
 			has_more = iterator->initialize();
 
 			More(has_more).write(std::cout);

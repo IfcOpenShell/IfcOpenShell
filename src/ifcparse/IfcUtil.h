@@ -107,7 +107,7 @@ namespace IfcUtil {
 		unsigned int getArgumentCount() const;
 		Argument* getArgument(unsigned int i) const;
 		const char* getArgumentName(unsigned int i) const;
-		IfcSchema::Type::Enum getArgumentEntity(unsigned int i) const { return IfcSchema::Type::UNDEFINED; }
+		IfcSchema::Type::Enum getArgumentEntity(unsigned int /*i*/) const { return IfcSchema::Type::UNDEFINED; }
 	};
 
 	bool valid_binary_string(const std::string& s);
@@ -194,11 +194,11 @@ public:
 	}
 	outer_it begin() const { return ls.begin(); }
 	outer_it end() const { return ls.end(); }
-	int size() const { return ls.size(); }
+	int size() const { return (int)ls.size(); }
 	int totalSize() const { 
 		int accum = 0; 
 		for (outer_it it = begin(); it != end(); ++it) { 
-			accum += it->size(); 
+			accum += (int)it->size(); 
 		} 
 		return accum; 
 	}
@@ -237,7 +237,7 @@ public:
 	void push(const std::vector<T*>& t) {ls.push_back(t);}
 	outer_it begin() { return ls.begin(); }
 	outer_it end() { return ls.end(); }
-	int size() const { return ls.size(); }
+	int size() const { return (int)ls.size(); }
 	int totalSize() const { 
 		int accum = 0; 
 		for (outer_it it = begin(); it != end(); ++it) { 

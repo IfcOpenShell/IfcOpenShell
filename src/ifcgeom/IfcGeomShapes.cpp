@@ -404,7 +404,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& shape) {
 	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
 	bool facesAdded = false;
-	const unsigned int num_faces = faces->size();
+	const unsigned int num_faces = (unsigned)faces->size();
 	bool valid_shell = false;
 	if ( num_faces < getValue(GV_MAX_FACES_TO_SEW) ) {
 		BRepOffsetAPI_Sewing builder;
@@ -632,9 +632,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCurveBoundedPlane* l, TopoDS_S
 	BRepBuilderAPI_MakeFace mf (outer);
 	mf.Add(outer);
 
-	IfcSchema::IfcCurve::list::ptr inner = l->InnerBoundaries();
+	IfcSchema::IfcCurve::list::ptr boundaries = l->InnerBoundaries();
 
-	for (IfcSchema::IfcCurve::list::it it = inner->begin(); it != inner->end(); ++it) {
+	for (IfcSchema::IfcCurve::list::it it = boundaries->begin(); it != boundaries->end(); ++it) {
 		TopoDS_Wire inner;
 		convert_wire(*it, inner);
 		
@@ -767,8 +767,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 			// Subtraction of pipes with small radii is unstable.
 			hasInnerRadius = false;
 		} else {
-			Handle(Geom_Circle) circle = new Geom_Circle(directrix, r2);
-			section2 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
+			Handle(Geom_Circle) circle2 = new Geom_Circle(directrix, r2);
+			section2 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle2));
 		}
 	}
 
@@ -887,7 +887,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 
 	if (faces.empty()) return false;
 	
-	const unsigned int num_faces = indices.size();
+	const unsigned int num_faces = (unsigned)indices.size();
 	bool valid_shell = false;
 
 	if (faces.size() < getValue(GV_MAX_FACES_TO_SEW)) {

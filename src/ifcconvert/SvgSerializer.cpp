@@ -43,7 +43,7 @@
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <gp_Ax22d.hxx>
-
+#include <Standard_Version.hxx>
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "SvgSerializer.h"
@@ -178,7 +178,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
 	typedef IfcSchema::IfcRelAggregates decomposition_element;
 #endif
 
-	while (true) {
+	for (;;) {
 		// Iterate over the decomposing element to find the parent IfcBuildingStorey
 		decomposition_element::list::ptr decomposes = obdef->Decomposes();
 		if (!decomposes->size()) {

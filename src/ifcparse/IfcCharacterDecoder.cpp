@@ -130,12 +130,12 @@ IfcCharacterDecoder::operator std::string() {
 #ifdef HAVE_ICU
 	unsigned int old_hex = 0; // for compatibility_mode
 #endif  
-	while ( current_char = file->Peek() ) {
+	while ( (current_char = file->Peek()) != 0 ) {
 		if ( EXPECTS_CHARACTER(parse_state) ) {
 #ifdef HAVE_ICU
 			if ( previous_codepage != codepage ) {
 				if ( converter ) ucnv_close(converter);
-				char encoder[11] = {'i','s','o','-','8','8','5','9','-',codepage + 0x30};
+				char encoder[11] = {'i','s','o','-','8','8','5','9','-', (char)codepage + 0x30};
 				converter = ucnv_open(encoder, &status);
 			}
 			const char characters[2] = { current_char + 0x80 };
@@ -188,7 +188,7 @@ IfcCharacterDecoder::operator std::string() {
 						if (old_hex == 0) {
 							old_hex = hex;
 						} else {
-							char characters[3] = { old_hex, hex };
+							char characters[3] = { (char)old_hex, (char)hex };
 							const char* char_array = &characters[0];
 							UChar32 ch = ucnv_getNextUChar(compatibility_converter,&char_array,char_array+2,&status);
 							addChar(s,ch);
@@ -227,7 +227,7 @@ void IfcCharacterDecoder::dryRun() {
 	unsigned int parse_state = 0;
 	char current_char;
 	unsigned int hex_count = 0;
-	while ( current_char = file->Peek() ) {
+	while ((current_char = file->Peek()) != 0) {
 		if ( EXPECTS_CHARACTER(parse_state) ) {
 			parse_state = 0;
 		} else if ( current_char == '\'' && ! parse_state ) {
@@ -340,8 +340,8 @@ IfcCharacterEncoder::operator std::string() {
 			oss << "\\X" << num_bytes_str << "\\";
 		}
 		if ( within_spf_range ) {
-			oss.put(ch);
-			if ( ch == '\\' || ch == '\'' ) oss.put(ch);
+			oss.put((char)ch);
+			if ( ch == '\\' || ch == '\'' ) oss.put((char)ch);
 		} else {
 			oss << std::hex << std::setw(num_bytes*2) << std::uppercase << std::setfill('0') << (int) ch;
 		}
