@@ -156,7 +156,7 @@ IF %BUILD_CFG%==Debug (
 
 :: Add utils to PATH
 set ORIGINAL_PATH=%PATH%
-set PATH=%PATH%;%~dp0\utils
+set PATH=%PATH%;%~dp0utils
 
 :: Fetch and build the dependencies to a dedicated directory depending on the used VS version and target architecture.
 :: NOTE For IfcOpenShell we can build all of our deps both x86 and x64 using different VS versions in the same directories

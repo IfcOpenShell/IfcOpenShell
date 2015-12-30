@@ -199,6 +199,10 @@ set DEPENDENCY_DIR=%DEPS_DIR%\OpenCOLLADA
 call :GitCloneOrPullRepository https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
+:: Debug build of OpenCOLLADAValidator fails (https://github.com/KhronosGroup/OpenCOLLADA/issues/377) so
+:: so disable it from the build altogether as we have no use for it
+findstr #add_subdirectory(COLLADAValidator) CMakeLists.txt>NUL
+IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOLLADA_CMakeLists.txt.patch"
 :: NOTE OpenCOLLADA has been observed to have problems with switching between debug and release builds so
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
 REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
@@ -208,7 +212,6 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\OpenCOLLADA" -DUSE_STATIC_M
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM IF NOT EXIST "%DEPS_DIR%\OpenCOLLADA\%BUILD_DIR%\lib\%DEBUG_OR_RELEASE%\OpenCOLLADASaxFrameworkLoader.lib".
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OPENCOLLADA.sln" %DEBUG_OR_RELEASE%
-:: TODO Debug build of OpenCOLLADAValidator as it will fail, https://github.com/KhronosGroup/OpenCOLLADA/issues/377
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
