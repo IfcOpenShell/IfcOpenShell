@@ -199,6 +199,10 @@ set DEPENDENCY_DIR=%DEPS_DIR%\OpenCOLLADA
 call :GitCloneOrPullRepository https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
+:: Debug build of OpenCOLLADAValidator fails (https://github.com/KhronosGroup/OpenCOLLADA/issues/377) so
+:: so disable it from the build altogether as we have no use for it
+findstr #add_subdirectory(COLLADAValidator) CMakeLists.txt>NUL
+IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOLLADA_CMakeLists.txt.patch"
 :: NOTE OpenCOLLADA has been observed to have problems with switching between debug and release builds so
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
 REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
@@ -206,60 +210,28 @@ REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\OpenCOLLADA" -DUSE_STATIC_MSVC_RUNTIME=1 -DCMAKE_DEBUG_POSTFIX=d ^
                -DLIBXML2_LIBRARIES="" -DLIBXML2_INCLUDE_DIR="" -DPCRE_INCLUDE_DIR="" -DPCRE_LIBRARIES=""
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-REM TODO OpenCOLLADA takes a long time to build; build only if needed
 REM IF NOT EXIST "%DEPS_DIR%\OpenCOLLADA\%BUILD_DIR%\lib\%DEBUG_OR_RELEASE%\OpenCOLLADASaxFrameworkLoader.lib".
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OPENCOLLADA.sln" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-:oce-win-bundle
-set DEPENDENCY_NAME=oce-win-bundle
-set DEPENDENCY_DIR=%DEPS_DIR%\oce-win-bundle
-:: TODO Temporarily use our own repo until the upstream is fixed
-REM call :GitCloneOrPullRepository https://github.com/QbProg/oce-win-bundle.git "%DEPENDENCY_DIR%"
-call :GitCloneOrPullRepository https://github.com/Tridify/oce-win-bundle.git "%DEPENDENCY_DIR%"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF NOT EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%". (
-    cd "%DEPENDENCY_DIR%"
-    call git branch msvc-enhancements origin/msvc-enhancements
-    IF NOT %ERRORLEVEL%==0 GOTO :Error
-    call git checkout msvc-enhancements
-    IF NOT %ERRORLEVEL%==0 GOTO :Error
-)
-cd "%DEPENDENCY_DIR%"
-call :RunCMake -DOCE_WIN_BUNDLE_INSTALL_DIR="%INSTALL_DIR%\oce-win-bundle" -DBUNDLE_USE_STATIC_MSVC_RUNTIME=1
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-REM IF NOT EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\FreeImage.cmake\%BUILD_CFG%\FreeImage.dll"
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\oce-win-bundle.sln" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
 :OCE
 set DEPENDENCY_NAME=Open CASCADE Community Edition
 set DEPENDENCY_DIR=%DEPS_DIR%\oce
-:: TODO Temporarily use our own repo until the upstream has static VC runtime option
-REM call :GitCloneOrPullRepository https://github.com/tpaviot/oce.git "%DEPENDENCY_DIR%"
-call :GitCloneOrPullRepository https://github.com/Tridify/oce.git "%DEPENDENCY_DIR%"
+call :GitCloneOrPullRepository https://github.com/tpaviot/oce.git "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF NOT EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%". (
-    cd "%DEPENDENCY_DIR%"
-    call git branch temp-vs-static-lib-build-fixes origin/temp-vs-static-lib-build-fixes
-    IF NOT %ERRORLEVEL%==0 GOTO :Error
-    call git checkout temp-vs-static-lib-build-fixes
-    IF NOT %ERRORLEVEL%==0 GOTO :Error
-)
+:: Use the oce-win-bundle for OCE's dependencies
+call :GitCloneOrPullRepository https://github.com/QbProg/oce-win-bundle.git "%DEPENDENCY_DIR%\oce-win-bundle"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
 cd "%DEPENDENCY_DIR%"
 set OCE_BUNDLE_ROOT_PATH="%INSTALL_DIR%\oce-win-bundle"
-REM -DOCE_USE_BUNDLE_SOURCE=1 REM set OCE_BUNDLE_ROOT_PATH=%DEPS_DIR%\oce-win-bundle
 :: NOTE Specify OCE_NO_LIBRARY_VERSION as rc.exe can fail due to long filenames and huge command-line parameter
 :: input (more than 32,000 characters). Could maybe try using subst for the build dir to overcome this.
-call :RunCMake  -DOCE_BUILD_SHARED_LIB=0 -DOCE_USE_BUNDLE=1 -DOCE_BUNDLE_ROOT_PATH="%OCE_BUNDLE_ROOT_PATH%" ^
-                -DOCE_INSTALL_PREFIX="%INSTALL_DIR%\oce" -DOCE_TESTING=0 -DOCE_NO_LIBRARY_VERSION=1 ^
-                -DOCE_USE_STATIC_MSVC_RUNTIME=1
+call :RunCMake  -DOCE_BUILD_SHARED_LIB=0 -DOCE_INSTALL_PREFIX="%INSTALL_DIR%\oce" -DOCE_TESTING=0 ^
+                -DOCE_NO_LIBRARY_VERSION=1 -DOCE_USE_STATIC_MSVC_RUNTIME=1
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-REM TODO OCE takes a long time to build; build only if needed
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCE.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
