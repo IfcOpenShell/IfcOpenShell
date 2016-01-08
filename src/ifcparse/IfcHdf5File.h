@@ -20,6 +20,8 @@
 #ifndef IFCHDF5FILE_H
 #define IFCHDF5FILE_H
 
+#define SORT_ON_NAME
+
 #include "H5Cpp.h"
 
 #include "../ifcparse/Hdf5Settings.h"
@@ -71,7 +73,11 @@ namespace IfcParse {
 		std::map<IfcParse::simple_type::data_type, std::string> default_type_names;
 		std::map<IfcUtil::ArgumentType, std::string> default_cpp_type_names;
 
+#ifdef SORT_ON_NAME
+		std::map<IfcSchema::Type::Enum, std::vector<uint32_t> > sorted_entities;
+#else
 		std::map<IfcSchema::Type::Enum, std::vector<IfcUtil::IfcBaseClass*> > sorted_entities;
+#endif
 		std::vector<IfcSchema::Type::Enum> dataset_names;
 
 		H5::DataType* map_type(const IfcParse::parameter_type* pt);

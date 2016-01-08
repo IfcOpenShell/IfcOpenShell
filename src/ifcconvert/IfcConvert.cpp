@@ -94,6 +94,7 @@ int main(int argc, char** argv) {
 		("output-file", boost::program_options::value<std::string>(), "output geometry file");
 
 	std::string bounds;
+	uint32_t hdf5_chunk_size;
 	std::vector<std::string> entity_vector;
 	boost::program_options::options_description geom_options;
 	geom_options.add_options()
@@ -139,6 +140,7 @@ int main(int argc, char** argv) {
 		("hdf5-fix-global-id", "")
 		("hdf5-instantiate-inverse", "")
 		("hdf5-instantiate-select", "")
+		("hdf5-chunk-size", boost::program_options::value(&hdf5_chunk_size), "")
 		("include", 
 			"Specifies that the entities listed after --entities are to be included")
 		("exclude", 
@@ -271,6 +273,9 @@ int main(int argc, char** argv) {
 				settings.fix_global_id() = vmap.count("hdf5-fix-global-id") != 0;
 				settings.instantiate_inverse() = vmap.count("hdf5-instantiate-inverse") != 0;
 				settings.instantiate_select() = vmap.count("hdf5-instantiate-select") != 0;
+				if (vmap.count("hdf5-chunk-size") == 1) {
+					settings.chunk_size() = hdf5_chunk_size;
+				}
 				f.write_hdf5(output_filename, settings);
 				exit_code = 0;
 			}

@@ -459,13 +459,32 @@ void IfcParse::IfcHdf5File::write_schema(const IfcParse::schema_definition& sche
 	for (auto it = schema.entities().begin(); it != schema.entities().end(); ++it) {
 		declared_types[(*it)->type()] = commit(map_entity(*it), (*it)->name());
 	}
+
+	H5::StrType schema_name_t;
+	schema_name_t.copy(H5::PredType::C_S1);
+	schema_name_t.setSize(schema.name().size());
+
+	hsize_t schema_name_length = 1;
+	H5::DataSpace schema_name_s(1, &schema_name_length);
+	
+	H5::Attribute attr = schema_group.createAttribute("iso_10303_26_data", schema_name_t, schema_name_s);
+	attr.write(schema_name_t, schema.name());
+	attr.close();
 };
 
 std::pair<size_t, size_t> IfcParse::IfcHdf5File::make_instance_reference(const IfcUtil::IfcBaseClass* instance) const {
+#ifdef SORT_ON_NAME
+	const std::vector<uint32_t>& es = sorted_entities.find(instance->declaration().type())->second;
+#else
 	const std::vector<IfcUtil::IfcBaseClass*>& es = sorted_entities.find(instance->declaration().type())->second;
+#endif
 	
 	auto dataset_id = std::lower_bound(dataset_names.begin(), dataset_names.end(), instance->declaration().type());
-	auto instance_id = std::lower_bound(es.begin(), es.end(), instance); // TODO: << make a vector of ids to make sure pointers are stable
+#ifdef SORT_ON_NAME
+	auto instance_id = std::lower_bound(es.begin(), es.end(), instance->data().id());
+#else
+	auto instance_id = std::lower_bound(es.begin(), es.end(), instance);
+#endif
 	
 	size_t dataset_offset = std::distance(dataset_names.begin(), dataset_id);
 	size_t instance_offset = std::distance(es.begin(), instance_id);
@@ -550,8 +569,13 @@ void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
 		IfcSchema::Type::Enum ty = it->second->declaration().type();
 		tys.insert(ty);
 		// This already is sorted on entity instance name
+#ifdef SORT_ON_NAME
+		sorted_entities[ty].push_back(static_cast<uint32_t>(it->first));
+#else
 		sorted_entities[ty].push_back(it->second);
+#endif
 
+#ifndef SORT_ON_NAME
 		if (settings_.instantiate_select()) {
 			bool has=false;
 			for (unsigned i = 0; i < it->second->data().getArgumentCount(); ++i) {
@@ -582,10 +606,33 @@ void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
 				static_cast<IfcParse::Entity*>(&it->second->data())->Unload();
 			}
 		}
+#endif
 	}
 
 	dataset_names.assign(tys.begin(), tys.end());
 	std::sort(dataset_names.begin(), dataset_names.end());
+
+	{
+		hsize_t dataset_names_length = dataset_names.size();
+		H5::DataSpace dataset_names_s(1, &dataset_names_length);
+
+		H5::Attribute attr = schema_group.createAttribute("iso_10303_26_data_set_names", *default_types[simple_type::string_type], dataset_names_s);
+		char** attr_data = (char**) allocator.allocate(sizeof(char*) * dataset_names_length);
+		size_t i = 0;
+		for (auto it = dataset_names.begin(); it != dataset_names.end(); ++it, ++i) {
+			std::string nm = IfcSchema::Type::ToString(*it);
+			attr_data[i] = (char*) allocator.allocate(nm.size() + 1);
+			strcpy(attr_data[i], nm.c_str());
+		}
+		attr.write(*default_types[simple_type::string_type], attr_data);
+		attr.close();
+	}
+
+#ifdef SORT_ON_NAME
+	for (auto it = sorted_entities.begin(); it != sorted_entities.end(); ++it) {
+		std::sort(it->second.begin(), it->second.end());
+	}
+#endif
 	
 	for (auto it = dataset_names.begin(); it != dataset_names.end(); ++it) {
 
@@ -596,13 +643,24 @@ void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
 
 		std::cerr << IfcSchema::Type::ToString(*it) << std::endl;
 
+#ifdef SORT_ON_NAME
+		std::vector<IfcUtil::IfcBaseClass*> es;
+		es.reserve(sorted_entities.find(*it)->second.size());
+		for (auto jt = sorted_entities.find(*it)->second.begin(); jt != sorted_entities.find(*it)->second.end(); ++jt) {
+			es.push_back(f.entityById(*jt));
+		}
+#else
 		const std::vector<IfcUtil::IfcBaseClass*>& es = sorted_entities.find(*it)->second;
+#endif
 		size_t datatype_size = declared_types[*it]->getSize();
 		hsize_t dims = es.size();
-		// don't chunk too small
-		// hsize_t chunk = (std::min)(std::max(es.size() / 64, (size_t)8), es.size());
-		// hsize_t chunk = (std::min)(  (std::max)(es.size() / 8, (size_t) 128 ) , es.size());
-		hsize_t chunk = dims;
+		
+		hsize_t chunk;
+		if (settings_.chunk_size() > 0 && settings_.chunk_size() < dims) {
+			chunk = static_cast<hsize_t>(settings_.chunk_size());
+		} else {
+			chunk = dims;
+		}
 
 		const H5::DSetCreatPropList* plist;
 		// H5O_MESG_MAX_SIZE = 65536
@@ -618,6 +676,10 @@ void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
 			H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
 			// Set compact according to h5ex_d_compact.c
 			plist_->setLayout(H5D_COMPACT);
+			plist = plist_;
+		} else if (chunk != dims){
+			H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
+			plist_->setChunk(1, &chunk);
 			plist = plist_;
 		} else {
 			plist = &H5::DSetCreatPropList::DEFAULT;
@@ -688,7 +750,8 @@ void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
 			member_type.close();
 			
 			member_type = dt->getMemberDataType(member_idx++);
-			write_number_of_size(ptr, member_type.getSize(), static_cast<unsigned int>(dat.id()));
+			const unsigned int inst_name = static_cast<unsigned int>(dat.id());
+			write_number_of_size(ptr, member_type.getSize(), inst_name);
 			member_type.close();
 
 			//                        ----v-----   In some IFC files there are extra superfluous attributes in the instantiation. For example FJK haus.
