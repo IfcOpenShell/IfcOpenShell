@@ -47,6 +47,7 @@
 #define ENDEXTENDED_0						(1 << 20)
 #define FOURTH_SOLIDUS						(1 << 21)
 #define IGNORED_DIRECTIVE					(1 << 22)
+#define ENCOUNTERED_HEX                     (1 << 23) 
 
 // FIXME: These probably need to be less forgiving in terms of wrongly defined sequences
 #define EXPECTS_ALPHABET(S)					(S & FIRST_SOLIDUS)
@@ -64,7 +65,7 @@
 #define IS_VALID_ALPHABET_DEFINITION(C)		(C >= 0x40 && C <= 0x4A)
 #define IS_HEXADECIMAL(C)					((C >= 0x30 && C <= 0x39 ) || (C >= 0x41 && C <= 0x46 ))
 #define HEX_TO_INT(C)						((C >= 0x30 && C <= 0x39 ) ? C - 0x30 : (C+10) - 0x41)
-#define CLEAR_HEX(C)						(C &= ~(HEX(1)&HEX(2)&HEX(3)&HEX(4)&HEX(5)&HEX(6)&HEX(7)&HEX(8)))
+#define CLEAR_HEX(C)						(C &= ~(HEX(1)|HEX(2)|HEX(3)|HEX(4)|HEX(5)|HEX(6)|HEX(7)|HEX(8)))
 
 using namespace IfcParse;
 using namespace IfcWrite;
@@ -155,7 +156,10 @@ IfcCharacterDecoder::operator std::string() {
 			if ( parse_state & ALPHABET_DEFINITION || 
 				parse_state & IGNORED_DIRECTIVE || 
 				parse_state & ENDEXTENDED_0 ) parse_state = hex = hex_count = 0;
-			else if ( parse_state & HEX(3) ) parse_state += THIRD_SOLIDUS;
+			else if ( parse_state & ENCOUNTERED_HEX ) {
+				parse_state += THIRD_SOLIDUS;
+				parse_state -= ENCOUNTERED_HEX;
+			}
 			else parse_state += SECOND_SOLIDUS;
 		} else if ( current_char == 'X' && EXPECTS_ENDEXTENDED_X(parse_state) ) {
 			parse_state += ENDEXTENDED_X;
@@ -202,7 +206,10 @@ IfcCharacterDecoder::operator std::string() {
 					}
 #endif
 					if ( hex_count == 2 ) parse_state = 0;
-					else CLEAR_HEX(parse_state);
+					else {
+						CLEAR_HEX(parse_state);
+						parse_state += ENCOUNTERED_HEX;
+					}
 					hex = hex_count = 0;
 			}
 		} else if ( parse_state && !(
@@ -238,7 +245,10 @@ void IfcCharacterDecoder::dryRun() {
 			if ( parse_state & ALPHABET_DEFINITION || 
 				parse_state & IGNORED_DIRECTIVE || 
 				parse_state & ENDEXTENDED_0 ) parse_state = hex_count = 0;
-			else if ( parse_state & HEX(3) ) parse_state += THIRD_SOLIDUS;
+			else if ( parse_state & ENCOUNTERED_HEX ) {
+				parse_state += THIRD_SOLIDUS;
+				parse_state -= ENCOUNTERED_HEX;
+			}
 			else parse_state += SECOND_SOLIDUS;
 		} else if ( current_char == 'X' && EXPECTS_ENDEXTENDED_X(parse_state) ) {
 			parse_state += ENDEXTENDED_X;
@@ -264,7 +274,10 @@ void IfcCharacterDecoder::dryRun() {
 				(hex_count == 4 && !(parse_state & EXTENDED4)) ||
 				(hex_count == 8) ) {
 					if ( hex_count == 2 ) parse_state = 0;
-					else CLEAR_HEX(parse_state);
+					else {
+						CLEAR_HEX(parse_state);
+						parse_state += ENCOUNTERED_HEX;
+					}
 					hex_count = 0;
 			}
 		} else if ( parse_state && !(
