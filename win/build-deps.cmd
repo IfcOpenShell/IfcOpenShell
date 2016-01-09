@@ -349,12 +349,13 @@ IF NOT EXIST %2. (
     call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %2."
     pushd "%DEPS_DIR%"
     call git clone %1 %2
+    set RET=%ERRORLEVEL%
 ) ELSE (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned. Pulling latest changes."
     pushd %2
     call git pull
+    set RET=0
 )
-set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
 

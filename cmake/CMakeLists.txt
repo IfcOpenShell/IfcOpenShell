@@ -31,13 +31,29 @@ OPTION(BUILD_EXAMPLES "Build example applications." ON)
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
 
+
+# Create cache entries if absent for environment variables
+MACRO(UNIFY_ENVVARS_AND_CACHE VAR)
+	IF ((NOT DEFINED ${VAR}) AND (NOT "$ENV{${VAR}}" STREQUAL ""))
+		SET(${VAR} "$ENV{${VAR}}" CACHE STRING "${VAR}" FORCE)
+	ENDIF()
+ENDMACRO()
+
+UNIFY_ENVVARS_AND_CACHE(OCC_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(OCC_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(ICU_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(ICU_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(PCRE_LIBRARY_DIR)
+
 # Find Boost
 IF(MSVC)
 	SET(Boost_USE_STATIC_LIBS ON)
 	SET(Boost_USE_STATIC_RUNTIME ON)
 	SET(Boost_USE_MULTITHREADED ON)
 ENDIF()
-FIND_PACKAGE(Boost REQUIRED COMPONENTS system program_options regex thread date_time)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS program_options)
 MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
@@ -58,12 +74,12 @@ FUNCTION(ADD_DEBUG_VARIANTS NAME LIBRARIES POSTFIX)
 ENDFUNCTION()
 
 # Find Open CASCADE
-IF("$ENV{OCC_INCLUDE_DIR}" STREQUAL "")
+IF("${OCC_INCLUDE_DIR}" STREQUAL "")
 	SET(OCC_INCLUDE_DIR "/usr/include/opencascade/" CACHE FILEPATH "Open CASCADE header files")
 	MESSAGE(STATUS "Looking for opencascade include files in: ${OCC_INCLUDE_DIR}")
 	MESSAGE(STATUS "Use OCC_INCLUDE_DIR to specify another directory")
 ELSE()
-	SET(OCC_INCLUDE_DIR $ENV{OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
+	SET(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
 	MESSAGE(STATUS "Looking for opencascade include files in: ${OCC_INCLUDE_DIR}")
 ENDIF()
 
@@ -83,12 +99,12 @@ IF(MSVC)
 	ADD_DEBUG_VARIANTS(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" "d")
 ENDIF()
 
-IF("$ENV{OCC_LIBRARY_DIR}" STREQUAL "")
+IF("${OCC_LIBRARY_DIR}" STREQUAL "")
 	SET(OCC_LIBRARY_DIR "/usr/lib/" CACHE FILEPATH "Open CASCADE library files")
 	MESSAGE(STATUS "Looking for opencascade library files in: ${OCC_LIBRARY_DIR}")
 	MESSAGE(STATUS "Use OCC_LIBRARY_DIR to specify another directory")
 ELSE()
-	SET(OCC_LIBRARY_DIR $ENV{OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
+	SET(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
 	MESSAGE(STATUS "Looking for opencascade library files in: ${OCC_LIBRARY_DIR}")
 ENDIF()
 
@@ -101,16 +117,16 @@ ENDIF()
 
 IF(UNICODE_SUPPORT)
 	# Find ICU 
-	IF("$ENV{ICU_INCLUDE_DIR}" STREQUAL "")
+	IF("${ICU_INCLUDE_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No ICU include directory specified")
 	ElSE()
-		SET(ICU_INCLUDE_DIR "$ENV{ICU_INCLUDE_DIR}" CACHE FILEPATH "ICU header files")
+		SET(ICU_INCLUDE_DIR "${ICU_INCLUDE_DIR}" CACHE FILEPATH "ICU header files")
 	ENDIF()
 
-	IF("$ENV{ICU_LIBRARY_DIR}" STREQUAL "")
+	IF("${ICU_LIBRARY_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No ICU library directory specified")
 	ElSE()
-		SET(ICU_LIBRARY_DIR "$ENV{ICU_LIBRARY_DIR}" CACHE FILEPATH "ICU library files")
+		SET(ICU_LIBRARY_DIR "${ICU_LIBRARY_DIR}" CACHE FILEPATH "ICU library files")
 	ENDIF()
 
 	FIND_LIBRARY(icu NAMES icuuc icuucd PATHS /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR})
@@ -118,13 +134,14 @@ IF(UNICODE_SUPPORT)
 	IF(icu)
 		ADD_DEFINITIONS(-DHAVE_ICU)
 		MESSAGE(STATUS "ICU libraries found")
-		# NOTE icudata appears to be icudt on Windows/MSVC on icudata on others
+		# NOTE icudata appears to be icudt on Windows/MSVC and icudata on others
+		#      dl is included to resolve dlopen and friends symbols
 		IF(MSVC)
 			SET(ICU_LIBRARIES icuuc icudt)
 			ADD_DEBUG_VARIANTS(ICU_LIBRARIES "${ICU_LIBRARIES}" "d")
 			ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
 		ELSE()
-			SET(ICU_LIBRARIES icuuc icudata)
+			SET(ICU_LIBRARIES icuuc icudata dl)
 		ENDIF()
 	ELSE()
 		MESSAGE(FATAL_ERROR "UNICODE_SUPPORT enabled, but unable to find ICU. Disable UNICODE_SUPPORT or fix ICU paths to proceed.")
@@ -133,18 +150,18 @@ ENDIF()
 
 IF(COLLADA_SUPPORT)
 	# Find OpenCOLLADA
-	IF("$ENV{OPENCOLLADA_INCLUDE_DIR}" STREQUAL "")
+	IF("${OPENCOLLADA_INCLUDE_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No OpenCOLLADA include directory specified")
 		SET(OPENCOLLADA_INCLUDE_DIR "/usr/local/include/opencollada" CACHE FILEPATH "OpenCOLLADA header files")
 	ElSE()
-		SET(OPENCOLLADA_INCLUDE_DIR "$ENV{OPENCOLLADA_INCLUDE_DIR}" CACHE FILEPATH "OpenCOLLADA header files")
+		SET(OPENCOLLADA_INCLUDE_DIR "${OPENCOLLADA_INCLUDE_DIR}" CACHE FILEPATH "OpenCOLLADA header files")
 	ENDIF()
 
-	IF("$ENV{OPENCOLLADA_LIBRARY_DIR}" STREQUAL "")
+	IF("${OPENCOLLADA_LIBRARY_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No OpenCOLLADA library directory specified")
 		SET(OPENCOLLADA_LIBRARY_DIR "/usr/local/lib/opencollada" CACHE FILEPATH "OpenCOLLADA library files")
 	ElSE()
-		SET(OPENCOLLADA_LIBRARY_DIR "$ENV{OPENCOLLADA_LIBRARY_DIR}" CACHE FILEPATH "OpenCOLLADA library files")
+		SET(OPENCOLLADA_LIBRARY_DIR "${OPENCOLLADA_LIBRARY_DIR}" CACHE FILEPATH "OpenCOLLADA library files")
 	ENDIF()
 
 	SET(OPENCOLLADA_INCLUDE_DIRS "${OPENCOLLADA_INCLUDE_DIR}/COLLADABaseUtils" "${OPENCOLLADA_INCLUDE_DIR}/COLLADAStreamWriter")
@@ -157,6 +174,9 @@ IF(COLLADA_SUPPORT)
 			GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
 			OpenCOLLADAStreamWriter UTF buffer ftoa pcre
 		)
+		IF(NOT "${PCRE_LIBRARY_DIR}" STREQUAL "")
+			SET(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_LIBRARY_DIR} ${PCRE_LIBRARY_DIR})
+		ENDIF()
 		IF(MSVC)
 			ADD_DEBUG_VARIANTS(OPENCOLLADA_LIBRARIES "${OPENCOLLADA_LIBRARIES}" "d")
 		ENDIF()
@@ -280,15 +300,18 @@ if(NOT WIN32)
 	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
 endif()
 
-# IfcConvert
-# TODO
-# if (IFCCONVERT_DOUBLE_PRECISION)
-	# add_definitions(-DIFCCONVERT_DOUBLE_PRECISION)
-# endif()
 file(GLOB CPP_FILES ../src/ifcconvert/*.cpp)
 file(GLOB H_FILES ../src/ifcconvert/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_EXECUTABLE(IfcConvert ${SOURCE_FILES})
+
+# Make sure cross-referenced symbols between static OCC libraries get
+# resolved. Also add thread and rt libraries.
+get_filename_component(libTKernelExt ${libTKernel} EXT)
+if("${libTKernelExt}" STREQUAL ".a")
+    find_package(Threads)
+    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} rt dl)
+endif()
 
 TARGET_LINK_LIBRARIES(IfcConvert IfcParse IfcGeom ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
 
