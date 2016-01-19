@@ -33,8 +33,16 @@ setlocal EnableDelayedExpansion
 
 :: Make sure vcvarsall.bat is called and dev env set is up.
 IF "%VSINSTALLDIR%"=="" (
-   call utils\cecho.cmd 0 12 "Visual Studio environment variables not set - cannot proceed!"
+   call utils\cecho.cmd 0 12 "Visual Studio environment variables not set- cannot proceed."
    GOTO :ErrorAndPrintUsage
+)
+
+:: Check for cl.exe - at least the "Typical" Visual Studio 2015 installation does not include the C++ toolset by default,
+:: http://blogs.msdn.com/b/vcblog/archive/2015/07/24/setup-changes-in-visual-studio-2015-affecting-c-developers.aspx
+where cl.exe 2>&1>NUL
+if not %ERRORLEVEL%==0 (
+    call utils\cecho.cmd 0 12 "%~nx0: cl.exe not in PATH. Make sure to select the C++ toolset when installing Visual Studio- cannot proceed."
+    GOTO :ErrorAndPrintUsage
 )
 
 :: Set up variables depending on the used Visual Studio version
@@ -422,7 +430,7 @@ echo  2. Install Git and make sure 'git' is accessible from PATH.
 echo   - http://code.google.com/p/tortoisegit/
 echo  3. Install CMake and make sure 'cmake' is accessible from PATH.
 echo   - http://www.cmake.org/
-echo  4. Visual Studio 2008 or newer (2013 or newer recommended).
+echo  4. Visual Studio 2008 or newer (2013 or newer recommended) with C++ toolset.
 echo   - https://www.visualstudio.com/
 echo  5. Run this batch script with Visual Studio environment variables set.
 echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx

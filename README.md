@@ -8,14 +8,14 @@ Open source (LGPL) software library for working with the IFC file format.
 
 Prerequisites
 =============
-* Git, CMake (2.6 or newer), Visual Studio 2008 or newer (Windows), or GCC (*nix, Clang untested).
+* Git, CMake (2.6 or newer), Visual Studio 2008 or newer with C++ toolset (Windows), or GCC (*nix, Clang untested).
 
 
 Dependencies
 ============
 * [Boost](http://www.boost.org/)
 * Open Cascade *optional*, but required for building IfcGeom
-  [Official](http://www.opencascade.org/getocc/download/loadocc/) or [community edition](https://github.com/tpaviot/oce)  
+  ([official](http://www.opencascade.org/getocc/download/loadocc/) or [community edition](https://github.com/tpaviot/oce))  
   For converting IFC representation items into BRep solids and tesselated meshes
 * [ICU](http://site.icu-project.org/) *optional*  
   For handling code pages and Unicode in the parser
@@ -92,7 +92,10 @@ To build IfcOpenShell please take the following steps:
     $ cmake ../
     $ make
 
-If all worked out correctly you can now use IfcOpenShell. For example:
+If all worked out correctly you can now use IfcOpenShell. See the examples below.
+
+Usage examples
+==============
 
 **Invoking IfcConvert from the command line**
 
@@ -100,8 +103,6 @@ If all worked out correctly you can now use IfcOpenShell. For example:
     $ unzip Munkerud_hus6_BE.zip
     $ ./IfcConvert Munkerud_hus6_BE.ifc
     $ less Munkerud_hus6_BE.obj
-
-Or:
 
 **Using the IfcOpenShell Python interface**
 

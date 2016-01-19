@@ -47,7 +47,7 @@ set GENERATORS[8]="Visual Studio 14 2015 Win64"
 set GENERATORS[9]="Visual Studio 14 2015"
 set LAST_GENERATOR_IDX=9
 
-REM Deduce desired architecture from the location of cl.exe
+:: Deduce desired architecture from the location of cl.exe
 where cl.exe | findstr /r /c:"amd64" >nul
 set START=%ERRORLEVEL%
 set STEP=2
@@ -65,11 +65,18 @@ IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
         )
     )
 )
+:: Check that the used CMake version supports the chosen generator
+set GENERATOR_CHECK=%GENERATOR: Win64=%
+cmake --help | findstr /c:%GENERATOR_CHECK%
+if not %ERRORLEVEL%==0 (
+    call utils\cecho.cmd 0 12 "%~nx0: The used CMake version does not support '`"!GENERATOR!`'"- cannot proceed."
+    exit /b 1
+)
 
 FOR /l %%i in (0,1,%LAST_GENERATOR_IDX%) DO (
     IF !GENERATOR!==!GENERATORS[%%i]! GOTO :GeneratorValid
 )
-call utils\cecho.cmd 0 12 "%~nx0: Invalid or unsupported CMake generator string passed: '`"!GENERATOR!`'". Cannot proceed, aborting!"
+call utils\cecho.cmd 0 12 "%~nx0: Invalid or unsupported CMake generator string passed: '`"!GENERATOR!`'"- cannot proceed."
 echo Supported CMake generator strings:
 FOR /l %%i in (0,1,%LAST_GENERATOR_IDX%) DO (
     echo !GENERATORS[%%i]!
@@ -133,7 +140,7 @@ IF "!BUILD_CFG!"=="" (
 )
 IF NOT !BUILD_CFG!==%BUILD_CFG_MINSIZEREL% IF NOT !BUILD_CFG!==%BUILD_CFG_RELEASE% (
 IF NOT !BUILD_CFG!==%BUILD_CFG_RELWITHDEBINFO% IF NOT !BUILD_CFG!==%BUILD_CFG_DEBUG% (
-    call utils\cecho.cmd 0 12 "%~nx0: Invalid or unsupported CMake build configuration type passed: !BUILD_CFG!. Cannot proceed, aborting!"
+    call utils\cecho.cmd 0 12 "%~nx0: Invalid or unsupported CMake build configuration type passed: !BUILD_CFG!. Cannot proceed."
     exit /b 1
 ))
 
