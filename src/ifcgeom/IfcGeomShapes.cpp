@@ -249,10 +249,20 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, TopoDS_Shap
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, TopoDS_Shape& shape) {
 	TopoDS_Shape halfspace;
 	if ( ! IfcGeom::Kernel::convert((IfcSchema::IfcHalfSpaceSolid*)l,halfspace) ) return false;	
+	
 	TopoDS_Wire wire;
-	if ( ! convert_wire(l->PolygonalBoundary(),wire) || ! wire.Closed() ) return false;	
+	if ( ! convert_wire(l->PolygonalBoundary(),wire) || ! wire.Closed() ) return false;
+	
 	gp_Trsf trsf;
-	convert(l->Position(),trsf);
+	if ( ! convert(l->Position(),trsf) ) return false;
+
+	TColgp_SequenceOfPnt points;
+	if (wire_to_sequence_of_point(wire, points)) {
+		remove_duplicate_points_from_loop(points, wire.Closed()); // Note: wire always closed, as per if statement above
+		remove_collinear_points_from_loop(points, wire.Closed());
+		sequence_of_point_to_wire(points, wire, wire.Closed());
+	}
+
 	TopoDS_Shape prism = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,200));
 	gp_Trsf down; down.SetTranslation(gp_Vec(0,0,-100.0));
 	prism.Move(trsf*down);
@@ -277,6 +287,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, Ifc
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape& shape) {
+
 	TopoDS_Shape s1, s2;
 	IfcRepresentationShapeItems items1, items2;
 	TopoDS_Wire boundary_wire;
@@ -330,10 +341,36 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 
 	const IfcSchema::IfcBooleanOperator::IfcBooleanOperator op = l->Operator();
 
+	/*
+	// TK: A little debugging trick to output both operands for visual inspection
+	
+	BRep_Builder builder;
+	TopoDS_Compound compound;
+	builder.MakeCompound(compound);
+	builder.Add(compound, s1);
+	builder.Add(compound, s2);
+	shape = compound;
+	return true;
+	*/
+
 	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
 
 		bool valid_cut = false;
-		BRepAlgoAPI_Cut brep_cut(s1,s2);
+
+#if OCC_VERSION_HEX < 0x60900
+		BRepAlgoAPI_Cut brep_cut(s1, s2);
+#else
+		BRepAlgoAPI_Cut brep_cut;
+		TopTools_ListOfShape s1s;
+		s1s.Append(s1);
+		TopTools_ListOfShape s2s;
+		s2s.Append(s2);
+		brep_cut.SetFuzzyValue(getValue(GV_PRECISION));
+		brep_cut.SetArguments(s1s);
+		brep_cut.SetTools(s2s);
+		brep_cut.Build();
+#endif
+
 		if ( brep_cut.IsDone() ) {
 			TopoDS_Shape result = brep_cut;
 

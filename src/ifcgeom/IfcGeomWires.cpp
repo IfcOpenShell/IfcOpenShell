@@ -284,7 +284,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& resu
 	}
 
 	// Remove points that are too close to one another
-	remove_redundant_points_from_loop(polygon, false);
+	remove_duplicate_points_from_loop(polygon, false);
 	
 	BRepBuilderAPI_MakePolygon w;
 	for (int i = 1; i <= polygon.Length(); ++i) {
@@ -314,7 +314,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& resu
 	}
 
 	// Remove points that are too close to one another
-	remove_redundant_points_from_loop(polygon, true);
+	remove_duplicate_points_from_loop(polygon, true);
 
 	int count = polygon.Length();
 	if (original_count - count != 0) {

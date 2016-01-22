@@ -109,6 +109,7 @@ public:
 	bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
 	bool convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
 	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
+	const IfcSchema::IfcRepresentationItem* find_item_carrying_style(const IfcSchema::IfcRepresentationItem* item);
 	bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid);
 	bool is_compound(const TopoDS_Shape& shape);
 	bool is_convex(const TopoDS_Wire& wire);
@@ -123,7 +124,10 @@ public:
 	void setValue(GeomValue var, double value);
 	double getValue(GeomValue var) const;
 	bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
-	void remove_redundant_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
+	void remove_duplicate_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
+	void remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
+	bool wire_to_sequence_of_point(const TopoDS_Wire&, TColgp_SequenceOfPnt&);
+	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
@@ -135,6 +139,10 @@ public:
 	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem* representation_item);
 	
 	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcRepresentationItem* representation_item) {
+		// For certain representation items, most notably boolean operands,
+		// a style definition might reside on one of its operands.
+		representation_item = find_item_carrying_style(representation_item);
+
 		IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
 		for (IfcSchema::IfcStyledItem::list::it jt = styled_items->begin(); jt != styled_items->end(); ++jt) {
 #ifdef USE_IFC4
