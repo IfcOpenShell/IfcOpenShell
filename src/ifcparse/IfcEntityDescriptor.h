@@ -26,7 +26,8 @@
 #include <iostream>
 #include <algorithm>
 
-#include "../ifcparse/SharedPointer.h"
+#include <boost/shared_ptr.hpp>
+
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcException.h"
 

@@ -294,7 +294,7 @@ void SvgSerializer::finalize() {
 		const double cx = xmin * sc;
 		const double cy = ymin * sc;
 
-		{std::vector< SHARED_PTR<util::string_buffer::float_item> >::const_iterator it;
+		{std::vector< boost::shared_ptr<util::string_buffer::float_item> >::const_iterator it;
 		for (it = xcoords.begin(); it != xcoords.end(); ++it) {
 			double& v = (*it)->value();
 			v = v * sc - cx;

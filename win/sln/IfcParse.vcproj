@@ -319,10 +319,6 @@
 				RelativePath="..\..\src\ifcparse\IfcWrite.h"
 				>
 			</File>
-			<File
-				RelativePath="..\..\src\ifcparse\SharedPointer.h"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

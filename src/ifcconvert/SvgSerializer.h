@@ -40,9 +40,9 @@ protected:
 	boost::optional<double> section_height;
 	bool rescale;
 	std::multimap<IfcSchema::IfcBuildingStorey*, path_object> paths;
-	std::vector< SHARED_PTR<util::string_buffer::float_item> > xcoords;
-	std::vector< SHARED_PTR<util::string_buffer::float_item> > ycoords;
-	std::vector< SHARED_PTR<util::string_buffer::float_item> > radii;
+	std::vector< boost::shared_ptr<util::string_buffer::float_item> > xcoords;
+	std::vector< boost::shared_ptr<util::string_buffer::float_item> > ycoords;
+	std::vector< boost::shared_ptr<util::string_buffer::float_item> > radii;
 	IfcParse::IfcFile* file;
 public:
 	explicit SvgSerializer(const std::string& out_filename)
@@ -55,9 +55,9 @@ public:
 		, rescale(false)
 		, file(0)
 	{}
-	virtual void addXCoordinate(const SHARED_PTR<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
-	virtual void addYCoordinate(const SHARED_PTR<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
-	virtual void addSizeComponent(const SHARED_PTR<util::string_buffer::float_item>& fi) { radii.push_back(fi); }
+	virtual void addXCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
+	virtual void addYCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
+	virtual void addSizeComponent(const boost::shared_ptr<util::string_buffer::float_item>& fi) { radii.push_back(fi); }
 	virtual void growBoundingBox(double x, double y) { if (x < xmin) xmin = x; if (x > xmax) xmax = x; if (y < ymin) ymin = y; if (y > ymax) ymax = y; }
 	virtual ~SvgSerializer() {}
 	virtual void writeHeader();
