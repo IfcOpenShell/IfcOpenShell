@@ -23,7 +23,7 @@
 #include <sstream>
 #include <vector>
 
-#include "../ifcparse/SharedPointer.h"
+#include <boost/shared_ptr.hpp>
 
 namespace util {
 	class string_buffer {
@@ -51,12 +51,12 @@ namespace util {
 			std::string str() const { std::stringstream ss; ss << d; return ss.str(); }
 		};
 	private:
-		std::vector< SHARED_PTR<item> > items;
+		std::vector< boost::shared_ptr<item> > items;
 		void clear();
-		void assign(const std::vector< SHARED_PTR<item> >& other);
+		void assign(const std::vector< boost::shared_ptr<item> >& other);
 	public:
-		SHARED_PTR<string_item> add(const std::string& s);
-		SHARED_PTR<float_item> add(const double& d);
+		boost::shared_ptr<string_item> add(const std::string& s);
+		boost::shared_ptr<float_item> add(const double& d);
 		std::string str() const;
 	};
 }

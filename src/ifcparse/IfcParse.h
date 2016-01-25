@@ -37,9 +37,9 @@
 #include <cstring>
 #include <map>
 
+#include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
 
-#include "../ifcparse/SharedPointer.h"
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcUtil.h"
 

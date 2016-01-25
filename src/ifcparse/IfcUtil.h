@@ -26,9 +26,8 @@
 #include <sstream>
 #include <algorithm>
 
+#include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
-
-#include "../ifcparse/SharedPointer.h"
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4enum.h"
@@ -119,7 +118,7 @@ class IfcTemplatedEntityList;
 class IfcEntityList {
 	std::vector<IfcUtil::IfcBaseClass*> ls;
 public:
-	typedef SHARED_PTR<IfcEntityList> ptr;
+	typedef boost::shared_ptr<IfcEntityList> ptr;
 	typedef std::vector<IfcUtil::IfcBaseClass*>::const_iterator it;
 	void push(IfcUtil::IfcBaseClass* l);
 	void push(const ptr& l);
@@ -143,7 +142,7 @@ template <class T>
 class IfcTemplatedEntityList {
 	std::vector<T*> ls;
 public:
-	typedef SHARED_PTR< IfcTemplatedEntityList<T> > ptr;
+	typedef boost::shared_ptr< IfcTemplatedEntityList<T> > ptr;
 	typedef typename std::vector<T*>::const_iterator it;
 	void push(T* t) { if (t) { ls.push_back(t); } }
 	void push(ptr t) { if (t) { for ( typename T::list::it it = t->begin(); it != t->end(); ++it ) push(*it); } }
@@ -177,7 +176,7 @@ class IfcTemplatedEntityListList;
 class IfcEntityListList {
 	std::vector< std::vector<IfcUtil::IfcBaseClass*> > ls;
 public:
-	typedef SHARED_PTR< IfcEntityListList > ptr;
+	typedef boost::shared_ptr< IfcEntityListList > ptr;
 	typedef std::vector< std::vector<IfcUtil::IfcBaseClass*> >::const_iterator outer_it;
 	typedef std::vector<IfcUtil::IfcBaseClass*>::const_iterator inner_it;
 	void push(const std::vector<IfcUtil::IfcBaseClass*>& l) {
@@ -231,7 +230,7 @@ template <class T>
 class IfcTemplatedEntityListList {
 	std::vector< std::vector<T*> > ls;
 public:
-	typedef typename SHARED_PTR< IfcTemplatedEntityListList<T> > ptr;
+	typedef typename boost::shared_ptr< IfcTemplatedEntityListList<T> > ptr;
 	typedef typename std::vector< std::vector<T*> >::const_iterator outer_it;
 	typedef typename std::vector<T*>::const_iterator inner_it;
 	void push(const std::vector<T*>& t) {ls.push_back(t);}

@@ -20,16 +20,6 @@
 #ifndef IFCGEOMRENDERSTYLES_H
 #define IFCGEOMRENDERSTYLES_H
 
-#ifdef __GNUC__
-#include <tr1/array>
-#else
-#if _MSC_VER < 1600
-#include <boost/tr1/array.hpp>
-#else
-#include <array>
-#endif
-#endif
-
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4.h"
 #else
@@ -41,7 +31,7 @@ namespace IfcGeom {
 	public:
 		class ColorComponent {
 		private:
-			std::tr1::array<double, 3> data;
+			double data[3];
 		public:
 			ColorComponent(double r, double g, double b) {
 				data[0] = r; data[1] = g; data[2] = b;
