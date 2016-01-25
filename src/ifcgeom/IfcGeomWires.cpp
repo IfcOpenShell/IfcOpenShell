@@ -168,6 +168,25 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 		//last_vertex = w.Vertex();
 		if ( w.Error() != BRepBuilderAPI_WireDone ) {
 			Logger::Message(Logger::LOG_ERROR,"Failed to join curve segments:",l->entity);
+
+			TopoDS_Vertex v1, v2, last;
+			last = w.Vertex();
+				
+			if (!last.IsNull()) {
+				std::stringstream ss;
+				gp_Pnt p = BRep_Tool::Pnt(last);
+				ss << std::setprecision(4) << "Last vertex at (" << p.X() << " " << p.Y() << " " << p.Z() << ")";
+				Logger::Message(Logger::LOG_NOTICE, ss.str());
+			}
+
+			TopExp::Vertices(wire2, v1, v2);
+			if (!v1.IsNull()) {
+				std::stringstream ss;
+				gp_Pnt p = BRep_Tool::Pnt(v1);
+				ss << std::setprecision(4) << "Segment starts at (" << p.X() << " " << p.Y() << " " << p.Z() << ") for:";
+				Logger::Message(Logger::LOG_NOTICE, ss.str(), (*it)->entity);
+			}
+			
 			return false;
 		}
 	}
