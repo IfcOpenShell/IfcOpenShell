@@ -105,6 +105,10 @@
 #include "../ifcparse/IfcSIPrefix.h"
 #include "../ifcgeom/IfcGeom.h"
 
+#if OCC_VERSION_HEX < 0x60900
+#pragma message("warning: You are linking against Open CASCADE version " OCC_VERSION_COMPLETE ". Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade.")
+#endif
+
 bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
 	BRepOffsetAPI_Sewing builder;
 	builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
@@ -323,6 +327,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 	return true;
 }
 
+#if OCC_VERSION_HEX < 0x60900
 bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
 							   const IfcGeom::IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::IfcRepresentationShapeItems& cut_shapes) {
 	
@@ -382,19 +387,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			entity_shape = entity_shape_unlocated.Moved(entity_shape_gtrsf.Trsf());
 		}
 
-#if OCC_VERSION_HEX < 0x60900
 		BRepAlgoAPI_Cut brep_cut(entity_shape,opening_compound);
-#else
-		BRepAlgoAPI_Cut brep_cut;
-		TopTools_ListOfShape s1s;
-		s1s.Append(entity_shape);
-		TopTools_ListOfShape s2s;
-		s2s.Append(opening_compound);
-		brep_cut.SetFuzzyValue(getValue(GV_PRECISION));
-		brep_cut.SetArguments(s1s);
-		brep_cut.SetTools(s2s);
-		brep_cut.Build();
-#endif
 
 		bool is_valid = false;
 		if ( brep_cut.IsDone() ) {
@@ -417,6 +410,93 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 	}
 	return true;
 }
+#else
+bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
+							   const IfcGeom::IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::IfcRepresentationShapeItems& cut_shapes) {
+	
+	TopTools_ListOfShape opening_shapelist;
+	
+	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
+		IfcSchema::IfcRelVoidsElement* v = *it;
+		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
+		if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
+			if (!fes->hasRepresentation()) continue;
+
+			// Convert the IfcRepresentation of the IfcOpeningElement
+			gp_Trsf opening_trsf;
+			if (fes->hasObjectPlacement()) {
+				try {
+					convert(fes->ObjectPlacement(),opening_trsf);
+				} catch (...) {}
+			}
+
+			// Move the opening into the coordinate system of the IfcProduct
+			opening_trsf.PreMultiply(entity_trsf.Inverted());
+
+			IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
+			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
+
+			IfcGeom::IfcRepresentationShapeItems opening_shapes;
+						
+			for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
+				convert_shapes(*it2,opening_shapes);
+			}
+
+			for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
+				gp_GTrsf gtrsf = opening_shapes[i].Placement();
+				gtrsf.PreMultiply(opening_trsf);
+				const TopoDS_Shape& opening_shape = gtrsf.Form() == gp_Other
+					? BRepBuilderAPI_GTransform(opening_shapes[i].Shape(),gtrsf,true).Shape()
+					: (opening_shapes[i].Shape()).Moved(gtrsf.Trsf());
+				opening_shapelist.Append(opening_shape);
+			}
+
+		}
+	}
+
+	// Iterate over the shapes of the IfcProduct
+	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
+		TopoDS_Shape entity_shape_solid;
+		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
+		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
+		TopoDS_Shape entity_shape;
+		if ( entity_shape_gtrsf.Form() == gp_Other ) {
+			Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to:",entity->entity);
+			entity_shape = BRepBuilderAPI_GTransform(entity_shape_unlocated,entity_shape_gtrsf,true).Shape();
+		} else {
+			entity_shape = entity_shape_unlocated.Moved(entity_shape_gtrsf.Trsf());
+		}
+
+		BRepAlgoAPI_Cut brep_cut;
+		TopTools_ListOfShape s1s;
+		s1s.Append(entity_shape);
+		brep_cut.SetFuzzyValue(getValue(GV_PRECISION));
+		brep_cut.SetArguments(s1s);
+		brep_cut.SetTools(opening_shapelist);
+		brep_cut.Build();
+
+		bool is_valid = false;
+		if ( brep_cut.IsDone() ) {
+			TopoDS_Shape brep_cut_result = brep_cut;
+				
+			BRepCheck_Analyzer analyser(brep_cut_result);
+			is_valid = analyser.IsValid() != 0;
+			if ( is_valid ) {
+				cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(brep_cut_result, &it3->Style()));
+			}
+		}
+		if ( !is_valid ) {
+			// Apparently processing the boolean operation failed or resulted in an invalid result
+			// in which case the original shape without the subtractions is returned instead
+			// we try convert the openings in the original way, one by one.
+			Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed:", entity->entity);
+			return false;
+		}
+		
+	}
+	return true;
+}
+#endif
 
 bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face) {
 	BRepBuilderAPI_MakeFace mf(wire, false);
@@ -919,7 +999,7 @@ void IfcGeom::Kernel::remove_collinear_points_from_loop(TColgp_SequenceOfPnt& po
 			to_remove[i-1] = true;
 		}
 	}
-	for (int i = to_remove.size() - 1; i >= 0; --i) {
+	for (int i = (int) to_remove.size() - 1; i >= 0; --i) {
 		if (to_remove[i]) {
 			polygon.Remove(i+1);
 		}
@@ -1020,7 +1100,12 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 	if ( !settings.disable_opening_subtractions() && openings && openings->size() ) {
 		IfcGeom::IfcRepresentationShapeItems opened_shapes;
 		try {
-			if ( settings.faster_booleans() ) {
+#if OCC_VERSION_HEX < 0x60900
+			const bool faster_booleans = settings.faster_booleans();
+#else
+			const bool faster_booleans = true;
+#endif
+			if (faster_booleans) {
 				bool succes = convert_openings_fast(product,openings,shapes,trsf,opened_shapes);
 				if ( ! succes ) {
 					opened_shapes.clear();
