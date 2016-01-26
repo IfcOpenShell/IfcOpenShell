@@ -115,7 +115,11 @@ call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to procee
 echo.
 
 call cecho.cmd black cyan "If you are not ready with the above, press Ctrl-C to abort!"
+
 pause
+echo.
+set START_TIME=%TIME%
+echo Build started at %START_TIME%.
 echo.
 
 cd %DEPS_DIR%
@@ -308,6 +312,22 @@ call %~dp0\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
 goto :Finish
 
 :Finish
+:: Print end time and elapsed time, http://stackoverflow.com/a/9935540
+set END_TIME=%TIME%
+for /F "tokens=1-4 delims=:.," %%a in ("%START_TIME%") do (
+   set /A "start=(((%%a*60)+1%%b %% 100)*60+1%%c %% 100)*100+1%%d %% 100"
+)
+for /F "tokens=1-4 delims=:.," %%a in ("%END_TIME%") do (
+   set /A "end=(((%%a*60)+1%%b %% 100)*60+1%%c %% 100)*100+1%%d %% 100"
+)
+set /A elapsed=end-start
+set /A hh=elapsed/(60*60*100), rest=elapsed%%(60*60*100), mm=rest/(60*100), rest%%=60*100, ss=rest/100, cc=rest%%100
+if %mm% lss 10 set mm=0%mm%
+if %ss% lss 10 set ss=0%ss%
+if %cc% lss 10 set cc=0%cc%
+echo.
+echo Build ended at %END_TIME%. Time elapsed %hh%:%mm%:%ss%.%cc%.
+
 set PATH=%ORIGINAL_PATH%
 cd %~dp0
 endlocal

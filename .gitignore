@@ -3,5 +3,6 @@
 /build*/
 /install*/
 /win/BuildDepsCache*.txt
+# IfcExpressParser residue
 /src/ifcexpressparser/__pycache__
 /src/ifcexpressparser/express_parser.py
