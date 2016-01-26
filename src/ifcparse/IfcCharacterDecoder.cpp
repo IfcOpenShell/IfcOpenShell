@@ -208,7 +208,7 @@ IfcCharacterDecoder::operator std::string() {
 					if ( hex_count == 2 ) parse_state = 0;
 					else {
 						CLEAR_HEX(parse_state);
-						parse_state += ENCOUNTERED_HEX;
+						parse_state |= ENCOUNTERED_HEX;
 					}
 					hex = hex_count = 0;
 			}
@@ -276,7 +276,7 @@ void IfcCharacterDecoder::dryRun() {
 					if ( hex_count == 2 ) parse_state = 0;
 					else {
 						CLEAR_HEX(parse_state);
-						parse_state += ENCOUNTERED_HEX;
+						parse_state |= ENCOUNTERED_HEX;
 					}
 					hex_count = 0;
 			}
