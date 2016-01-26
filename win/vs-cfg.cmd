@@ -15,11 +15,11 @@
 :: You should have received a copy of the Lesser GNU General Public License    ::
 :: along with this program. If not, see <http://www.gnu.org/licenses/>.        ::
 ::                                                                             ::
-:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::::::::::::::::::::::::::::::::::::::::::::::::::::::: ::::::::::::::::::::::::::
 
-:: This script initializes various Visual Studio -related environment variables needed for building
-:: This batch file expects CMake generator as %1 and build configuration type as %2.
-:: If %1 is not provided, it is deduced from the VisualStudioVersion environment variable and from the location of cl.exe.
+:: This script initializes various Visual Studio related environment variables needed for building.
+:: the dependencies. This batch file expects a CMake generator as %1. If %1 is not provided, it is
+:: deduced from the VisualStudioVersion environment variable and from the location of cl.exe.
 
 :: NOTE This batch file expects the generator string to be CMake 3.0.0 and newer format, i.e.
 :: "Visual Studio 10 2010" instead of "Visual Studio 10". However, one can use this batch file
@@ -31,8 +31,7 @@
 
 set GENERATOR=%1
 
-:: TODO IDEA: Take more user-friendly VS generators and convert them to the CMake ones?
-:: F.ex. "vs2013-32" and/or "vc14-64"
+:: TODO IDEA: Take more user-friendly VS generators (e.g. "vs2013-x86") and convert them to the CMake ones?
 
 :: Supported Visual Studio versions:
 set GENERATORS[0]="Visual Studio 9 2008 Win64"
@@ -67,7 +66,7 @@ IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
 )
 :: Check that the used CMake version supports the chosen generator
 set GENERATOR_CHECK=%GENERATOR: Win64=%
-cmake --help | findstr /c:%GENERATOR_CHECK%
+cmake --help | findstr /c:%GENERATOR_CHECK% >nul
 if not %ERRORLEVEL%==0 (
     call utils\cecho.cmd 0 12 "%~nx0: The used CMake version does not support '`"!GENERATOR!`'"- cannot proceed."
     exit /b 1
@@ -123,43 +122,6 @@ set GENERATOR=%GENERATOR: 2010=%
 :: VS project file extension is different on older VS versions
 set VCPROJ_FILE_EXT=vcxproj
 IF %VS_VER%==2008 set VCPROJ_FILE_EXT=vcproj
-
-:: Set up variables depending on the used build configuration type.
-set BUILD_CFG=%2
-
-:: The default build types provided by CMake
-set BUILD_CFG_MINSIZEREL=MinSizeRel
-set BUILD_CFG_RELEASE=Release
-set BUILD_CFG_RELWITHDEBINFO=RelWithDebInfo
-set BUILD_CFG_DEBUG=Debug
-set BUILD_CFG_DEFAULT=%BUILD_CFG_RELWITHDEBINFO%
-
-IF "!BUILD_CFG!"=="" (
-    set BUILD_CFG=%BUILD_CFG_DEFAULT%
-    call utils\cecho.cmd 0 14 "%~nx0: Warning: BUILD_CFG not specified - using the default %BUILD_CFG_DEFAULT%"
-)
-IF NOT !BUILD_CFG!==%BUILD_CFG_MINSIZEREL% IF NOT !BUILD_CFG!==%BUILD_CFG_RELEASE% (
-IF NOT !BUILD_CFG!==%BUILD_CFG_RELWITHDEBINFO% IF NOT !BUILD_CFG!==%BUILD_CFG_DEBUG% (
-    call utils\cecho.cmd 0 12 "%~nx0: Invalid or unsupported CMake build configuration type passed: !BUILD_CFG!. Cannot proceed."
-    exit /b 1
-))
-
-:: DEBUG_OR_RELEASE and DEBUG_OR_RELEASE_LOWERCASE are "Debug" and "debug" for Debug build and "Release" and
-:: "release" for all of the Release variants.
-:: POSTFIX_D, POSTFIX_UNDERSCORE_D and POSTFIX_UNDERSCORE_DEBUG are helpers for performing file copies and
-:: checking for existence of files. In release build these variables are empty.
-set DEBUG_OR_RELEASE=Release
-set DEBUG_OR_RELEASE_LOWERCASE=release
-set POSTFIX_D=
-set POSTFIX_UNDERSCORE_D=
-set POSTFIX_UNDERSCORE_DEBUG=
-IF %BUILD_CFG%==Debug (
-    set DEBUG_OR_RELEASE=Debug
-    set DEBUG_OR_RELEASE_LOWERCASE=debug
-    set POSTFIX_D=d
-    set POSTFIX_UNDERSCORE_D=_d
-    set POSTFIX_UNDERSCORE_DEBUG=_debug
-)
 
 :: Add utils to PATH
 set ORIGINAL_PATH=%PATH%

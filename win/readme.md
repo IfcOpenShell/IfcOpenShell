@@ -69,6 +69,7 @@ Directory Structure
 |   build-deps.cmd                  - Fetches and builds all needed dependencies for IFCOS
 |   BuildDepsCache-<ARCH>.txt       - Cache file created by build-deps.cmd
 |   build-ifcopenshell.cmd          - Builds IFCOS
+|   build-type-cfg.cmd              - Utility file used by the build scripts
 |   install-ifcopenshell.cmd        - Builds IFCOS's INSTALL project
 |   readme.md                       - This file
 |   run-cmake.bat                   - Sets environment variables for the dependencies and runs CMake for IFCOS

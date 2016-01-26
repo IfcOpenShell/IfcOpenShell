@@ -24,7 +24,7 @@ set PROJECT_NAME=IfcOpenShell
 
 :: Enable the delayed environment variable expansion needed in vs-cfg.cmd.
 setlocal EnableDelayedExpansion
-:: TODO Getting warning print in vs-cfg.cmd for missing build type although this script doesn't need it specified
+
 call vs-cfg.cmd %1
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -39,7 +39,6 @@ IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
 
 set BOOST_ROOT=%DEPS_DIR%\boost
-REM set BOOST_INCLUDEDIR=%DEPS_DIR%\boost
 set BOOST_LIBRARYDIR=%DEPS_DIR%\boost\stage\vs%VS_VER%-%VS_PLATFORM%\lib
 set ICU_INCLUDE_DIR=%INSTALL_DIR%\icu\include
 set ICU_LIBRARY_DIR=%INSTALL_DIR%\icu\lib
@@ -47,8 +46,8 @@ set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce
 set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib
 set OPENCOLLADA_INCLUDE_DIR=%INSTALL_DIR%\OpenCOLLADA\include\opencollada
 set OPENCOLLADA_LIBRARY_DIR=%INSTALL_DIR%\OpenCOLLADA\lib\opencollada
-if "%PY_VER_MAJOR_MINOR%"=="" set PY_VER_MAJOR_MINOR=34
-if "%PYTHONPATH%"=="" set PYTHONPATH=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+if not defined PY_VER_MAJOR_MINOR set PY_VER_MAJOR_MINOR=34
+if not defined PYTHONPATH set PYTHONPATH=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
 set PYTHON_INCLUDE_DIR=%PYTHONPATH%\include
 set PYTHON_LIBRARY=%PYTHONPATH%\libs\python%PY_VER_MAJOR_MINOR%.lib
 set SWIG_DIR=%INSTALL_DIR%\swigwin
@@ -62,7 +61,6 @@ echo   All arguments   = %*
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_ROOT              = %BOOST_ROOT%
-REM echo    BOOST_INCLUDEDIR = %BOOST_INCLUDEDIR%
 echo    BOOST_LIBRARYDIR        = %BOOST_LIBRARYDIR%
 echo    ICU_INCLUDE_DIR         = %ICU_INCLUDE_DIR%
 echo    ICU_LIBRARY_DIR         = %ICU_LIBRARY_DIR%

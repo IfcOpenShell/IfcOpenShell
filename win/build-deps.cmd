@@ -46,16 +46,12 @@ if not %ERRORLEVEL%==0 (
 )
 
 :: Set up variables depending on the used Visual Studio version
-call vs-cfg.cmd %1 %2
+call vs-cfg.cmd %1
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call build-type-cfg.cmd %2
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 set BUILD_TYPE=%3
-
-IF %GENERATOR%=="" (
-   call cecho.cmd 0 12 "GENERATOR not specified - cannot proceed!"
-   GOTO :Error
-)
-
 IF "%BUILD_TYPE%"=="" set BUILD_TYPE=Build
 
 IF NOT "!BUILD_TYPE!"=="Build" IF NOT "!BUILD_TYPE!"=="Rebuild" IF NOT "!BUILD_TYPE!"=="Clean" (
@@ -71,9 +67,9 @@ IF NOT EXIST %INSTALL_DIR%. mkdir %INSTALL_DIR%
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
-IF "%IFCOS_INSTALL_PYTHON%"=="" set IFCOS_INSTALL_PYTHON=TRUE
-IF "%IFCOS_USE_PYTHON2%"=="" set IFCOS_USE_PYTHON2=FALSE
-IF "%IFCOS_NUM_BUILD_PROCS%"=="" set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
+IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
+IF NOT DEFINED IFCOS_USE_PYTHON2 set IFCOS_USE_PYTHON2=FALSE
+IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
 :: For subroutines
 set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS% /t:%BUILD_TYPE%
