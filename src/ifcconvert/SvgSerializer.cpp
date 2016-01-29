@@ -218,6 +218,8 @@ void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
 		gp_GTrsf gtrsf = it->Placement();
 		
 		const gp_Trsf& o_trsf = o->transformation().data();
+		gtrsf.PreMultiply(o_trsf);
+
 		const TopoDS_Shape& s = it->Shape();			
 			
 		bool trsf_valid = false;
