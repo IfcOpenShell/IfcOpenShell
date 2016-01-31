@@ -172,9 +172,9 @@ set DEPENDENCY_NAME=ICU
 set DEPENDENCY_DIR=N/A
 set ICU_ZIP=icu-55.1-vs%VS_VER%.7z
 cd "%DEPS_DIR%"
-call :DownloadFile http://www.npcglib.org/~stathis/downloads/%ICU_ZIP% "%DEPS_DIR%" %ICU_ZIP%
+call :DownloadFile http://www.npcglib.org/~stathis/downloads/%ICU_ZIP% "%DEPS_DIR%" "%ICU_ZIP%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %ICU_ZIP% "%DEPS_DIR%" "%INSTALL_DIR%\icu"
+call :ExtractArchive "%ICU_ZIP%" "%DEPS_DIR%" "%INSTALL_DIR%\icu"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: Rename lib and bin directories to predictable form
 IF EXIST "%DEPS_DIR%\icu-55.1-vs%VS_VER%". (
@@ -185,6 +185,8 @@ IF EXIST "%DEPS_DIR%\icu-55.1-vs%VS_VER%". (
 )
 
 IF EXIST "%DEPS_DIR%\icu-55.1-vs%VS_VER%\". (
+
+    echo "%DEPS_DIR%\icu-55.1-vs%VS_VER%\include"
     robocopy "%DEPS_DIR%\icu-55.1-vs%VS_VER%\include" "%INSTALL_DIR%\icu\include" /E /IS /njh /njs
     IF NOT EXIST "%INSTALL_DIR%\icu\lib". mkdir "%INSTALL_DIR%\icu\lib"
     copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicutest%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutest%POSTFIX_D%.lib"
@@ -265,6 +267,7 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 
     cd "%DEPS_DIR%"
     call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
+    call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" "%PYTHON_INSTALLER%"
     IF NOT %ERRORLEVEL%==0 GOTO :Error
     REM Uninstall if build Rebuild/Clean used
     IF NOT %BUILD_TYPE%==Build (
@@ -289,8 +292,9 @@ set DEPENDENCY_DIR=N/A
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
 cd "%DEPS_DIR%"
 call :DownloadFile http://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" %SWIG_ZIP%
+call :DownloadFile http://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" "%SWIG_ZIP%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %SWIG_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\swigwin"
+call :ExtractArchive "%SWIG_ZIP%" "%DEPS_DIR%" "%DEPS_DIR%\swigwin"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
     pushd %DEPS%
@@ -326,10 +330,10 @@ goto :EOF
 :DownloadFile
 pushd "%2"
 IF NOT EXIST "%3". (
-    call cecho.cmd 0 13 "Downloading %DEPENDENCY_NAME% into "%2"."
+    call cecho.cmd 0 13 "Downloading %DEPENDENCY_NAME% into "%~2"."
 	call cecho.cmd 0 13 "URL : "%1"."
     REM powershell -Command "$webClient = new-object System.Net.WebClient; $webClient.DownloadFile('%1','%3',"","",$true,600)"
-    powershell -File "%SCRIPTPATH%\DownloadFile.ps1" "%1" "%3"
+    powershell -File "%SCRIPTPATH%\DownloadFile.ps1" "%~1" "%~3"
 	REM Old wget version in case someone has problem with PowerShell: wget --no-check-certificate "%1"
 ) ELSE (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already downloaded. Skipping."
@@ -348,7 +352,10 @@ IF NOT EXIST "%~3". (
 	call cecho.cmd 0 13 "dirAfterExtraction = %~3"
     7za x "%~1" -y -o"%~2"
 ) ELSE (
-    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %3. Skipping."
+    call cecho.cmd 0 13 "filename = %~1"
+	call cecho.cmd 0 13 "destinationDir = %~2"
+	call cecho.cmd 0 13 "dirAfterExtraction = %~3"
+    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %~3. Skipping."
 )
 exit /b %ERRORLEVEL%
 
@@ -375,9 +382,9 @@ exit /b %RET%
 :: NOTE cd to root CMakeLists.txt folder before calling this if the CMakeLists.txt is not in the repo root.
 :RunCMake
 call cecho.cmd 0 13 "Running CMake for %DEPENDENCY_NAME%."
-IF NOT EXIST %BUILD_DIR%. mkdir %BUILD_DIR%
+IF NOT EXIST "%BUILD_DIR%". mkdir "%BUILD_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-pushd %BUILD_DIR%
+pushd "%BUILD_DIR%"
 :: TODO make deleting cache a parameter for this subroutine? We probably want to delete the 
 :: cache always e.g. when we've had new changes in the repository.
 IF %BUILD_TYPE%==Rebuild IF EXIST CMakeCache.txt. del CMakeCache.txt
