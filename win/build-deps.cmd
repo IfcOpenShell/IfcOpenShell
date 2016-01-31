@@ -305,6 +305,7 @@ IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swi
 :Successful
 echo.
 call %~dp0\utils\cecho.cmd 0 10 "%PROJECT_NAME% dependencies built."
+set IFCOS_SCRIPT_RET=0
 goto :Finish
 
 :ErrorAndPrintUsage
@@ -313,6 +314,7 @@ call :PrintUsage
 :Error
 echo.
 call %~dp0\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
+set IFCOS_SCRIPT_RET=1
 goto :Finish
 
 :Finish
@@ -334,8 +336,7 @@ echo Build ended at %END_TIME%. Time elapsed %hh%:%mm%:%ss%.%cc%.
 
 set PATH=%ORIGINAL_PATH%
 cd %~dp0
-endlocal
-goto :EOF
+exit /b %IFCOS_SCRIPT_RET%
 
 ::::::::::::::::::::::::::::::::::::: Subroutines :::::::::::::::::::::::::::::::::::::
 

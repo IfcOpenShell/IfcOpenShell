@@ -44,11 +44,13 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 echo.
 call cecho.cmd 0 10 "%VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME% build finished."
+set IFCOS_SCRIPT_RET=0
 goto :End
 
 :Error
 echo.
 call %~dp0\utils\cecho.cmd 0 12 "%VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME% build failed!"
+set IFCOS_SCRIPT_RET=1
 
 :End
-endlocal
+exit /b %IFCOS_SCRIPT_RET%

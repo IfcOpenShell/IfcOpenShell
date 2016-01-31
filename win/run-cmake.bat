@@ -97,14 +97,15 @@ REM ) ELSE (
 REM )
 echo.
 
+set IFCOS_SCRIPT_RET=0
 goto :Finish
 
 :Error
 echo.
 call %~dp0\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
+set IFCOS_SCRIPT_RET=1
 goto :Finish
 
 :Finish
 popd
-set PATH=%ORIGINAL_PATH%
-endlocal
+exit /b %IFCOS_SCRIPT_RET%

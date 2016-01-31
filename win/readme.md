@@ -66,6 +66,7 @@ Directory Structure
 +---deps-installed-vs<VER>-<ARCH>   - Created by build-deps.cmd,  for a certain VS version and target architecture
 +---installed-vs<VER>-<ARCH>        - Created by building the IFCOS's INSTALL project
 \---win
+|   build-all.cmd                   - Runs all of the build scripts for IFCOS and it dependencies in a row without pauses
 |   build-deps.cmd                  - Fetches and builds all needed dependencies for IFCOS
 |   BuildDepsCache-<ARCH>.txt       - Cache file created by build-deps.cmd
 |   build-ifcopenshell.cmd          - Builds IFCOS
