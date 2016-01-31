@@ -31,6 +31,9 @@ echo.
 :: Enable the delayed environment variable expansion needed in vs-cfg.cmd.
 setlocal EnableDelayedExpansion
 
+:: Save the path in which this script runs into a variable
+set SCRIPTPATH=%cd%
+
 :: Make sure vcvarsall.bat is called and dev env set is up.
 IF "%VSINSTALLDIR%"=="" (
    call utils\cecho.cmd 0 12 "Visual Studio environment variables not set - cannot proceed!"
@@ -56,8 +59,8 @@ IF NOT "!BUILD_TYPE!"=="Build" IF NOT "!BUILD_TYPE!"=="Rebuild" IF NOT "!BUILD_T
 )
 
 :: Make sure deps and install folders exists.
-IF NOT EXIST %DEPS_DIR%. mkdir %DEPS_DIR%
-IF NOT EXIST %INSTALL_DIR%. mkdir %INSTALL_DIR%
+IF NOT EXIST "%DEPS_DIR%". mkdir "%DEPS_DIR%"
+IF NOT EXIST "%INSTALL_DIR%". mkdir "%INSTALL_DIR%"
 
 :: If we use VS2008, framework path (for MSBuild) may not be correctly set. Manually attempt to add in that case
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
@@ -115,10 +118,11 @@ call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to procee
 echo.
 
 call cecho.cmd black cyan "If you are not ready with the above, press Ctrl-C to abort!"
-pause
+::pause
 echo.
 
-cd %DEPS_DIR%
+
+cd "%DEPS_DIR%"
 
 :: Note all of the depedencies have approriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
@@ -136,11 +140,14 @@ set BOOST_LIBRARYDIR=%DEPS_DIR%\boost\stage\%VS_PLATFORM%\lib
 set ZIP_EXT=7z
 set BOOST_ZIP=boost_%BOOST_VER%.%ZIP_EXT%
 
-call :DownloadFile http://downloads.sourceforge.net/project/boost/boost/%BOOST_VERSION%/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
+call :DownloadFile http://downloads.sourceforge.net/project/boost/boost/%BOOST_VERSION%/%BOOST_ZIP% "%DEPS_DIR%" "%BOOST_ZIP%"
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\boost"
+call :ExtractArchive "%BOOST_ZIP%" "%DEPS_DIR%" "%DEPS_DIR%\boost"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+Pause Bis hier geht es
+
 
 :: Build Boost build script
 IF EXIST "%DEPS_DIR%\boost_%BOOST_VER%". (
@@ -244,7 +251,7 @@ set PYTHON_VERSION=3.4.3
 IF "%IFCOS_USE_PYTHON2%"=="TRUE" set PYTHON_VERSION=2.7.10
 set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
 set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
-set PYTHONPATH=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+set PYTHONPATH="%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%"
 
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
@@ -315,14 +322,17 @@ goto :EOF
 
 ::::::::::::::::::::::::::::::::::::: Subroutines :::::::::::::::::::::::::::::::::::::
 
-:: DownloadFile - Downloads a file using wget
+:: DownloadFile - Downloads a file using powershell
 :: Params: %1 url, %2 destinationDir, %3 filename
+:: Timeout 600 seconds
 :DownloadFile
-pushd %2
+pushd "%2"
 IF NOT EXIST "%3". (
-    call cecho.cmd 0 13 "Downloading %DEPENDENCY_NAME% into %2."
-    powershell -Command "$webClient = new-object System.Net.WebClient; $webClient.DownloadFile('%1', '%3')"
-    REM Old wget version in case someone has problem with PowerShell: wget --no-check-certificate %1
+    call cecho.cmd 0 13 "Downloading %DEPENDENCY_NAME% into "%2"."
+	call cecho.cmd 0 13 "URL : "%1"."
+    REM powershell -Command "$webClient = new-object System.Net.WebClient; $webClient.DownloadFile('%1','%3',"","",$true,600)"
+    powershell -File "%SCRIPTPATH%\DownloadFile.ps1" "%1" "%3"
+	REM Old wget version in case someone has problem with PowerShell: wget --no-check-certificate "%1"
 ) ELSE (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already downloaded. Skipping."
 )
@@ -333,9 +343,12 @@ exit /b %RET%
 :: ExtractArchive - Extracts an archive file using 7-zip
 :: Params: %1 filename, %2 destinationDir, %3 dirAfterExtraction
 :ExtractArchive
-IF NOT EXIST "%3". (
-    call cecho.cmd 0 13 "Extracting %DEPENDENCY_NAME% into %2."
-    7za x %1 -y -o%2
+IF NOT EXIST "%~3". (
+    call cecho.cmd 0 13 "Extracting %DEPENDENCY_NAME% into "%~2"."
+	call cecho.cmd 0 13 "filename = %~1"
+	call cecho.cmd 0 13 "destinationDir = %~2"
+	call cecho.cmd 0 13 "dirAfterExtraction = %~3"
+    7za x "%~1" -y -o"%~2"
 ) ELSE (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %3. Skipping."
 )
@@ -395,7 +408,7 @@ exit /b %RET%
 
 :: PrintUsage - Prints usage information
 :PrintUsage
-call %~dp0\utils\cecho.cmd 0 10 "Requirements for a successful execution:"
+call "%~dp0\utils\cecho.cmd" 0 10 "Requirements for a successful execution:"
 echo  1. Install PowerShell (preinstalled in Windows ^>= 7) and make sure 'powershell' is accessible from PATH.
 echo   - https://support.microsoft.com/en-us/kb/968929
 echo  2. Install Git and make sure 'git' is accessible from PATH.
