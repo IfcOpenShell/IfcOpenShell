@@ -146,8 +146,6 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive "%BOOST_ZIP%" "%DEPS_DIR%" "%DEPS_DIR%\boost"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-Pause Bis hier geht es
-
 
 :: Build Boost build script
 IF EXIST "%DEPS_DIR%\boost_%BOOST_VER%". (
