@@ -27,7 +27,9 @@ echo.
 
 :: Enable the delayed environment variable expansion needed in VSConfig.cmd.
 setlocal EnableDelayedExpansion
-call vs-cfg.cmd %1 %2
+call vs-cfg.cmd %1
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call build-type-cfg.cmd %2
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 echo.
