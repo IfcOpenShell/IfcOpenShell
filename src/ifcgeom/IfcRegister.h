@@ -53,9 +53,9 @@ SHAPE(IfcCylindricalSurface);
 SHAPE(IfcAdvancedBrep);
 // FIXME: Surfaces should have a shape type of their own
 SHAPE(IfcBSplineSurfaceWithKnots);
-SHAPE(IfcPlane);
 SHAPE(IfcTriangulatedFaceSet);
 #endif
+SHAPE(IfcPlane);
 SHAPE(IfcExtrudedAreaSolid);
 SHAPE(IfcRevolvedAreaSolid);
 SHAPE(IfcConnectedFaceSet);
