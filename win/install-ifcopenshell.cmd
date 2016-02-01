@@ -36,7 +36,7 @@ call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo.
 
 call cecho.cmd 0 13 "Installing %VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME%"
-MSBuild ..\%BUILD_DIR%\INSTALL.%VCPROJ_FILE_EXT% /nologo /m:%IFCOS_NUM_BUILD_PROCS% /p:Platform=%VS_PLATFORM% ^
+MSBuild "..\%BUILD_DIR%\INSTALL.%VCPROJ_FILE_EXT%" /nologo /m:%IFCOS_NUM_BUILD_PROCS% /p:Platform=%VS_PLATFORM% ^
     /p:Configuration=%BUILD_CFG% %3 %4 %5 %6 %7 %8 %9
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -46,7 +46,7 @@ goto :End
 
 :Error
 echo.
-call %~dp0\utils\cecho.cmd 0 12 "%VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME% installation failed!"
+call "%~dp0\utils\cecho.cmd" 0 12 "%VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME% installation failed!"
 
 :End
 endlocal

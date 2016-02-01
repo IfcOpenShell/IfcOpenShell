@@ -48,7 +48,7 @@ set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib
 set OPENCOLLADA_INCLUDE_DIR=%INSTALL_DIR%\OpenCOLLADA\include\opencollada
 set OPENCOLLADA_LIBRARY_DIR=%INSTALL_DIR%\OpenCOLLADA\lib\opencollada
 if "%PY_VER_MAJOR_MINOR%"=="" set PY_VER_MAJOR_MINOR=34
-if "%PYTHONPATH%"=="" set PYTHONPATH=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+if %PYTHONPATH%=="" set PYTHONPATH=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
 set PYTHON_INCLUDE_DIR=%PYTHONPATH%\include
 set PYTHON_LIBRARY=%PYTHONPATH%\libs\python%PY_VER_MAJOR_MINOR%.lib
 set SWIG_DIR=%INSTALL_DIR%\swigwin
@@ -84,7 +84,7 @@ REM IF NOT EXIST %PROJECT_NAME%.sln. (
     call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
     IF "%2"=="" (
         REM No extra arguments provided, trust that GENERATOR is set properly.
-        cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%"
+        cmake.exe "%CMAKELISTS_DIR%" -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%"
     ) ELSE (
         REM Extra arguments has been provided. As CMake options are typically of format -DSOMETHING:BOOL=ON,
         REM i.e. they contain an equal sign, they will mess up the batch file argument parsing if the arguments are passed on
