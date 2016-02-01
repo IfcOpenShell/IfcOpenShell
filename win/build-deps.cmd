@@ -331,7 +331,7 @@ IF NOT EXIST "%3". (
     call cecho.cmd 0 13 "Downloading %DEPENDENCY_NAME% into "%~2"."
 	call cecho.cmd 0 13 "URL : "%1"."
     REM powershell -Command "$webClient = new-object System.Net.WebClient; $webClient.DownloadFile('%1','%3',"","",$true,600)"
-    powershell -File "%SCRIPTPATH%\DownloadFile.ps1" "%~1" "%~3"
+    powershell -ExecutionPolicy Bypass -File "%SCRIPTPATH%\DownloadFile.ps1" "%~1" "%~3"
 	REM Old wget version in case someone has problem with PowerShell: wget --no-check-certificate "%1"
 ) ELSE (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already downloaded. Skipping."
