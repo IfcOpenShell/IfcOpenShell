@@ -88,7 +88,7 @@ REM IF NOT EXIST %PROJECT_NAME%.sln. (
         REM i.e. they contain an equal sign, they will mess up the batch file argument parsing if the arguments are passed on
         REM by splitting them %2 %3 %4 %5 %6 %7 %8 %9. In the extra argument case trust that user has provided the generator
         REM as the first argument as pass all arguments as is by using %*.
-        cmake.exe %CMAKELISTS_DIR% -G %*
+        cmake.exe %CMAKELISTS_DIR% -G %* -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%"
     )
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM ) ELSE (
