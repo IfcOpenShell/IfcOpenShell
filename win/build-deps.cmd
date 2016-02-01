@@ -290,21 +290,20 @@ set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
 set DEPENDENCY_DIR=N/A
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
 cd "%DEPS_DIR%"
-call :DownloadFile http://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" "%SWIG_ZIP%"
-call :DownloadFile http://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" "%SWIG_ZIP%"
+call :DownloadFile http://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" %SWIG_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive "%SWIG_ZIP%" "%DEPS_DIR%" "%DEPS_DIR%\swigwin"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
-    pushd "%DEPS%"
-    ren "swigwin-%SWIG_VERSION%" swigwin
+    pushd %DEPS_DIR%
+    ren swigwin-%SWIG_VERSION% swigwin
     popd
 )
 IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swigwin" /E /IS /MOVE /njh /njs
 
 :Successful
 echo.
-call %~dp0\utils\cecho.cmd 0 10 "%PROJECT_NAME% dependencies built."
+call "%~dp0\utils\cecho.cmd" 0 10 "%PROJECT_NAME% dependencies built."
 goto :Finish
 
 :ErrorAndPrintUsage
@@ -312,12 +311,12 @@ echo.
 call :PrintUsage
 :Error
 echo.
-call %~dp0\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
+call "%~dp0\utils\cecho.cmd" 0 12 "An error occurred! Aborting!"
 goto :Finish
 
 :Finish
 set PATH=%ORIGINAL_PATH%
-cd %~dp0
+cd "%~dp0"
 endlocal
 goto :EOF
 
