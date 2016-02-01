@@ -266,21 +266,20 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONPATH=%PYTHONPATH%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
 
     cd "%DEPS_DIR%"
-    call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
     call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" "%PYTHON_INSTALLER%"
+    call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" "%PYTHON_INSTALLER%"	
     IF NOT %ERRORLEVEL%==0 GOTO :Error
     REM Uninstall if build Rebuild/Clean used
     IF NOT %BUILD_TYPE%==Build (
         call cecho.cmd 0 13 "Uninstalling %DEPENDENCY_NAME%. Please be patient, this will take a while."
-        msiexec /x %PYTHON_INSTALLER% /qn
+        msiexec /x "%PYTHON_INSTALLER%" /qn
     )
-
-    IF NOT EXIST "%PYTHONPATH%". (
+    IF NOT EXIST %PYTHONPATH%. (
         call cecho.cmd 0 13 "Installing %DEPENDENCY_NAME%. Please be patient, this will take a while."
-        msiexec /qn /i %PYTHON_INSTALLER% TARGETDIR="%PYTHONPATH%"
+        msiexec /qn /i "%PYTHON_INSTALLER%" TARGETDIR=%PYTHONPATH%
     ) ELSE (
         call cecho.cmd 0 13 "%DEPENDENCY_NAME% already installed. Skipping."
-    )
+		)
 ) ELSE (
     call cecho.cmd 0 13 "IFCOS_INSTALL_PYTHON not true, skipping installation of Python."
 )
@@ -291,14 +290,14 @@ set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
 set DEPENDENCY_DIR=N/A
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
 cd "%DEPS_DIR%"
-call :DownloadFile http://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" %SWIG_ZIP%
+call :DownloadFile http://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" "%SWIG_ZIP%"
 call :DownloadFile http://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" "%SWIG_ZIP%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive "%SWIG_ZIP%" "%DEPS_DIR%" "%DEPS_DIR%\swigwin"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
-    pushd %DEPS%
-    ren swigwin-%SWIG_VERSION% swigwin
+    pushd "%DEPS%"
+    ren "swigwin-%SWIG_VERSION%" swigwin
     popd
 )
 IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swigwin" /E /IS /MOVE /njh /njs
