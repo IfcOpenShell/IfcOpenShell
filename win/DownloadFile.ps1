@@ -18,7 +18,7 @@ Write-Host => $File
 
     $uri = New-Object "System.Uri" "$URL"
     $request = [System.Net.HttpWebRequest]::Create($uri)
-    $request.set_Timeout(150000) #150 second timeout
+    $request.set_Timeout(300000) #300 second timeout
     $response = $request.GetResponse()
     $totalLength = [System.Math]::Floor($response.get_ContentLength()/1024)
     $responseStream = $response.GetResponseStream()
