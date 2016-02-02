@@ -26,10 +26,11 @@ Write-Host => $File
     $buffer = new-object byte[] 10KB
     $count = $responseStream.Read($buffer,0,$buffer.length)
     $downloadedBytes = $count
+	$totalLengthByte = $totalLength*1024
     while ($count -gt 0)
     {
-        [System.Console]::CursorLeft = 0
-        [System.Console]::Write("Downloaded {0}K of {1}K", [System.Math]::Floor($downloadedBytes/1024), $totalLength)
+        #[System.Console]::CursorLeft = 0
+        Write-Host Downloaded $downloadedBytes Bytes of $totalLengthByte Bytes
         $targetStream.Write($buffer, 0, $count)
         $count = $responseStream.Read($buffer,0,$buffer.length)
         $downloadedBytes = $downloadedBytes + $count
