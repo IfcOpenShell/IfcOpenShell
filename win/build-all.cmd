@@ -17,16 +17,23 @@
 ::                                                                             ::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-:: TODO Allow passing cmd line args
+:: The first argument is assumed to be a CMake generator and it is passed for build-deps, run-cmake, build-ifcopenshell,
+:: and install-ifcopenshell. The second argument is assumed to be a build configuration type and it is passed for build-deps,
+:: build-ifcopenshell and install-ifcopenshell. The rest of the arguments are passed for run-cmake.
+:: Usage example for doing an optimized vs2015-x64 build with debug information and using IFC 4:
+:: > build-all.cmd vs2015-x64 RelWithDebInfo -DUSE_IFC4=1 -DENABLE_BUILD_OPTIMIZATIONS=1
 @echo off
+
+for /f "tokens=2,* delims= " %%a in ("%*") do set ALL_BUT_FIRST_TWO=%%b
+
 :: Use "yes" trick to break the pause in build-deps.cmd
 echo y>y.txt
-call .\build-deps <y.txt
+call .\build-deps %1 %2<y.txt
 if not %ERRORLEVEL%==0 goto :EOF
 del .\y.txt
-call .\run-cmake
+call .\run-cmake %1 %ALL_BUT_FIRST_TWO%
 if not %ERRORLEVEL%==0 goto :EOF
-call .\build-ifcopenshell
+call .\build-ifcopenshell %1 %2
 ECHO %ERRORLEVEL%
 if not %ERRORLEVEL%==0 goto :EOF
-call .\install-ifcopenshell
+call .\install-ifcopenshell %1 %2
