@@ -54,10 +54,13 @@ set SWIG_DIR=%INSTALL_DIR%\swigwin
 set PATH=%PATH%;%SWIG_DIR%;%PYTHONPATH%
 :: TODO 3ds Max SDK?
 
+:: http://stackoverflow.com/a/26732879
+for /f "tokens=1,* delims= " %%a in ("%*") do set ALL_BUT_FIRST=%%b
+
 echo.
 call cecho.cmd 0 10 "Script configuration:"
 echo   CMake Generator = %GENERATOR%
-echo   All arguments   = %*
+echo   All arguments   = %ALL_BUT_FIRST%
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_ROOT              = %BOOST_ROOT%
@@ -77,24 +80,12 @@ echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
 echo.
 
 set CMAKELISTS_DIR=..\cmake
-REM IF NOT EXIST %PROJECT_NAME%.sln. (
-    IF EXIST CMakeCache.txt. del /Q CMakeCache.txt
-    call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
-    IF "%2"=="" (
-        REM No extra arguments provided, trust that GENERATOR is set properly.
-        cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%"
-    ) ELSE (
-        REM Extra arguments has been provided. As CMake options are typically of format -DSOMETHING:BOOL=ON,
-        REM i.e. they contain an equal sign, they will mess up the batch file argument parsing if the arguments are passed on
-        REM by splitting them %2 %3 %4 %5 %6 %7 %8 %9. In the extra argument case trust that user has provided the generator
-        REM as the first argument as pass all arguments as is by using %*.
-        cmake.exe %CMAKELISTS_DIR% -G %* -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%"
-    )
-    IF NOT %ERRORLEVEL%==0 GOTO :Error
-REM ) ELSE (
-    REM call cecho.cmd 0 10 "%PROJECT_NAME%.sln exists. Skipping CMake call for %PROJECT_NAME%."
-    REM call cecho.cmd 0 10 "Delete %BUILD_DIR%\%PROJECT_NAME%.sln to trigger a CMake rerun."
-REM )
+:: For now clear CMakeCache.txt always in order to assure that when changing build options everything goes smoothly.
+IF EXIST CMakeCache.txt. del /Q CMakeCache.txt
+call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
+cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" %ALL_BUT_FIRST%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
 echo.
 
 set IFCOS_SCRIPT_RET=0

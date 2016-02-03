@@ -24,6 +24,11 @@ can co-exist by simply running `build-deps.cmd <GENERATOR> Debug` and `build-dep
 
 After the dependencies are build, execute `run-cmake.bat`. The batch file expects always a CMake generator as `%1`
 (if not provided, the same default value as above is used), and the rest of possible parameters are passed as is.
+If passing build options for the script, the generator must be always passed as the first option:
+```
+> run-cmake.bat vs2015-x64 -DUSE_IFC4=1 -DBUILD_IFCPYTHON=0
+```
+
 **If you wish to use any library from a custom location, modify the paths in `run-cmake.bat` accordingly**. The batch
 script will create a folder of form `build-vs<VERSION>-<ARCHITECTURE>\` which will contain the solution and project
 files for Visual Studio.
