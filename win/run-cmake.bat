@@ -59,8 +59,8 @@ for /f "tokens=1,* delims= " %%a in ("%*") do set ALL_BUT_FIRST=%%b
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
-echo   CMake Generator = %GENERATOR%
-echo   All arguments   = %ALL_BUT_FIRST%
+echo   Generator = %GENERATOR%
+echo   Arguments = %ALL_BUT_FIRST%
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_ROOT              = %BOOST_ROOT%
