@@ -16,10 +16,11 @@ running the script.
 
 `build-deps.cmd` expects a CMake generator as `%1` and a build configuration type (`RelWithDebInfo/Release/MinSizeRel/Debug`,
 defaults to `RelWithDebInfo`) as `%2`. If the generator is not provided, the generator is deduced from the Visual Studio
-environment variables. A build type (`Build/Rebuild/Clean`, defaults to `Build`) can be provided as `%3`. See `vs-cfg.cmd`
-if you wish to change the defaults. The batch file will create `deps\` and `deps-vs<VERSION>-<ARCHITECTURE>-installed\`
-directories to the project root. Debug and release builds of the depedencies can co-exist by simply running
-`build-deps.cmd <GENERATOR> Debug` and `build-deps.cmd <GENERATOR> <Release|RelWithDebInfo|MinSizeRel>`.
+environment variables. User-friendly VS generator shorthands are supported, e.g. `vs2013-x86` or `vs2015-x64`, and these are
+converted to the appropriate CMake ones by the scripts. A build type (`Build/Rebuild/Clean`, defaults to `Build`) can be
+provided as `%3`. See `vs-cfg.cmd` if you wish to change the defaults. The batch file will create `deps\` and
+`deps-vs<VERSION>-<ARCHITECTURE>-installed\` directories to the project root. Debug and release builds of the depedencies
+can co-exist by simply running `build-deps.cmd <GENERATOR> Debug` and `build-deps.cmd <GENERATOR> <Release|RelWithDebInfo|MinSizeRel>`.
 
 After the dependencies are build, execute `run-cmake.bat`. The batch file expects always a CMake generator as `%1`
 (if not provided, the same default value as above is used), and the rest of possible parameters are passed as is.

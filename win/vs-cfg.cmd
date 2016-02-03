@@ -20,6 +20,7 @@
 :: This script initializes various Visual Studio related environment variables needed for building.
 :: the dependencies. This batch file expects a CMake generator as %1. If %1 is not provided, it is
 :: deduced from the VisualStudioVersion environment variable and from the location of cl.exe.
+:: User-friendly VS generators are allowed (e.g. "vs2013-x86") and converted to the appropriate CMake ones.
 
 :: NOTE This batch file expects the generator string to be CMake 3.0.0 and newer format, i.e.
 :: "Visual Studio 10 2010" instead of "Visual Studio 10". However, one can use this batch file
@@ -30,8 +31,6 @@
 @echo off
 
 set GENERATOR=%1
-
-:: TODO IDEA: Take more user-friendly VS generators (e.g. "vs2013-x86") and convert them to the CMake ones?
 
 :: Supported Visual Studio versions:
 set GENERATORS[0]="Visual Studio 9 2008 Win64"
@@ -46,17 +45,35 @@ set GENERATORS[8]="Visual Studio 14 2015 Win64"
 set GENERATORS[9]="Visual Studio 14 2015"
 set LAST_GENERATOR_IDX=9
 
-:: Deduce desired architecture from the location of cl.exe
-where cl.exe | findstr /r /c:"amd64" >nul
-set START=%ERRORLEVEL%
 set STEP=2
+:: Is generator shorthand used?
+set GEN_SHORTHAND=!GENERATOR:vs=!
+if !GEN_SHORTHAND!==!GENERATOR! goto :GeneratorShorthandCheckDone
+set START=%LAST_GENERATOR_IDX%
+:: "echo if" trick from http://stackoverflow.com/a/8758579
+echo(!GEN_SHORTHAND! | findstr /c:"-x86" >nul && ( set START=1 )
+echo(!GEN_SHORTHAND! | findstr /c:"-x64" >nul && ( set START=0 )
+set VS_VER=!GEN_SHORTHAND:-x86=!
+set VS_VER=!VS_VER:-x64=!
+echo(!GENERATOR! | findstr /c:"vs20" >nul && (
+    for /l %%i in (!START!,!STEP!,%LAST_GENERATOR_IDX%) do (
+        echo(!GENERATORS[%%i]! | findstr /c:"!VS_VER!" >nul && (
+            set GENERATOR=!GENERATORS[%%i]!
+            goto :GeneratorShorthandCheckDone
+        )
+    )
+)
+:GeneratorShorthandCheckDone
+
+:: Deduce desired architecture from the location of cl.exe
+where cl.exe | findstr /c:"amd64" >nul
+set START=%ERRORLEVEL%
 
 IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
     set VC_VER=%VisualStudioVersion:.0=%
     FOR /l %%i in (%START%,%STEP%,%LAST_GENERATOR_IDX%) DO (
-        REM http://stackoverflow.com/a/8758579
         REM NOTE add space before VC_VER so that e.g. "12" doesn't match with "2012"
-        echo(!GENERATORS[%%i]! | findstr /r /c:" !VC_VER!" >nul && (
+        echo(!GENERATORS[%%i]! | findstr /c:" !VC_VER!" >nul && (
             set GENERATOR=!GENERATORS[%%i]!
             call utils\cecho.cmd black cyan "Generator not passed, but VisualStudioVersion=%VisualStudioVersion% environment variable detected:"
             call utils\cecho.cmd black cyan "using '`"!GENERATOR!`'" as the generator."
