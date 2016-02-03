@@ -1275,8 +1275,7 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 }
 
 const IfcSchema::IfcRepresentationItem* IfcGeom::Kernel::find_item_carrying_style(const IfcSchema::IfcRepresentationItem* item) {
-	IfcSchema::IfcStyledItem::list::ptr styles = item->StyledByItem();
-	if (styles->size()) {
+	if (item->StyledByItem()->size()) {
 		return item;
 	}
 
@@ -1284,9 +1283,7 @@ const IfcSchema::IfcRepresentationItem* IfcGeom::Kernel::find_item_carrying_styl
 		// All instantiations of IfcBooleanOperand (type of FirstOperand) are subtypes of
 		// IfcGeometricRepresentationItem
 		item = (IfcSchema::IfcGeometricRepresentationItem*) ((IfcSchema::IfcBooleanClippingResult*) item)->FirstOperand();
-
-		IfcSchema::IfcStyledItem::list::ptr styles = item->StyledByItem();
-		if (styles->size()) {
+		if (item->StyledByItem()->size()) {
 			return item;
 		}
 	}
