@@ -48,7 +48,7 @@ set LAST_GENERATOR_IDX=9
 set STEP=2
 :: Is generator shorthand used?
 set GEN_SHORTHAND=!GENERATOR:vs=!
-if !GEN_SHORTHAND!==!GENERATOR! goto :GeneratorShorthandCheckDone
+if not "!GEN_SHORTHAND!"=="" if !GEN_SHORTHAND!==!GENERATOR! goto :GeneratorShorthandCheckDone
 set START=%LAST_GENERATOR_IDX%
 :: "echo if" trick from http://stackoverflow.com/a/8758579
 echo(!GEN_SHORTHAND! | findstr /c:"-x86" >nul && ( set START=1 )
@@ -83,10 +83,12 @@ IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
 )
 :: Check that the used CMake version supports the chosen generator
 set GENERATOR_CHECK=%GENERATOR: Win64=%
-cmake --help | findstr /c:%GENERATOR_CHECK% >nul
-if not %ERRORLEVEL%==0 (
-    call utils\cecho.cmd 0 12 "%~nx0: The used CMake version does not support '`"!GENERATOR!`'"- cannot proceed."
-    exit /b 1
+IF "!GENERATOR_CHECK!"=="" (
+    cmake --help | findstr /c:%GENERATOR_CHECK% >nul
+    if not %ERRORLEVEL%==0 (
+        call utils\cecho.cmd 0 12 "%~nx0: The used CMake version does not support '`"!GENERATOR!`'"- cannot proceed."
+        exit /b 1
+    )
 )
 
 FOR /l %%i in (0,1,%LAST_GENERATOR_IDX%) DO (
