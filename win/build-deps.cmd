@@ -124,6 +124,7 @@ pause
 echo.
 set START_TIME=%TIME%
 echo Build started at %START_TIME%.
+set BUILD_STARTED=TRUE
 echo.
 
 cd %DEPS_DIR%
@@ -319,6 +320,7 @@ goto :Finish
 
 :Finish
 :: Print end time and elapsed time, http://stackoverflow.com/a/9935540
+if not defined BUILD_STARTED goto :BuildTimeSkipped
 set END_TIME=%TIME%
 for /F "tokens=1-4 delims=:.," %%a in ("%START_TIME%") do (
    set /A "start=(((%%a*60)+1%%b %% 100)*60+1%%c %% 100)*100+1%%d %% 100"
@@ -333,7 +335,7 @@ if %ss% lss 10 set ss=0%ss%
 if %cc% lss 10 set cc=0%cc%
 echo.
 echo Build ended at %END_TIME%. Time elapsed %hh%:%mm%:%ss%.%cc%.
-
+:BuildTimeSkipped
 set PATH=%ORIGINAL_PATH%
 cd %~dp0
 exit /b %IFCOS_SCRIPT_RET%
