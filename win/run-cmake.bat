@@ -22,11 +22,15 @@ echo.
 
 set PROJECT_NAME=IfcOpenShell
 
-:: Enable the delayed environment variable expansion needed in vs-cfg.cmd.
 setlocal EnableDelayedExpansion
 
 call vs-cfg.cmd %1
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: As CMake options are typically of format -DSOMETHING:BOOL=ON or -DSOMETHING=1, i.e. they contain an equal sign,
+:: they will mess up the batch file argument parsing if the arguments are passed on by splitting them %2 %3 %4 %5
+:: %6 %7 %8 %9. Work around that, http://scripts.dragon-it.co.uk/scripts.nsf/docs/batch-search-replace-substitute
+set ARGUMENTS=%*
+call set ARGUMENTS=%%ARGUMENTS:%1=%%
 
 :: Read Python related variables from BuildDepsCache.txt
 for /f "delims== tokens=1,2" %%G in (BuildDepsCache-%TARGET_ARCH%.txt) do set %%G=%%H
@@ -54,13 +58,10 @@ set SWIG_DIR=%INSTALL_DIR%\swigwin
 set PATH=%PATH%;%SWIG_DIR%;%PYTHONPATH%
 :: TODO 3ds Max SDK?
 
-:: http://stackoverflow.com/a/26732879
-for /f "tokens=1,* delims= " %%a in ("%*") do set ALL_BUT_FIRST=%%b
-
 echo.
 call cecho.cmd 0 10 "Script configuration:"
 echo   Generator = %GENERATOR%
-echo   Arguments = %ALL_BUT_FIRST%
+echo   Arguments = %ARGUMENTS%
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_ROOT              = %BOOST_ROOT%
@@ -83,7 +84,7 @@ set CMAKELISTS_DIR=..\cmake
 :: For now clear CMakeCache.txt always in order to assure that when changing build options everything goes smoothly.
 IF EXIST CMakeCache.txt. del /Q CMakeCache.txt
 call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
-cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" %ALL_BUT_FIRST%
+cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" %ARGUMENTS%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 echo.
