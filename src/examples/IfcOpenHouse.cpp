@@ -41,6 +41,10 @@
 #include "../ifcparse/IfcHierarchyHelper.h"
 #include "../ifcgeom/IfcGeom.h"
 
+#if USE_VLC
+#include <vld.h>
+#endif
+
 // Some convenience typedefs and definitions. 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
@@ -531,6 +535,8 @@ void createGroundShape(TopoDS_Shape& shape) {
 	TColStd_Array1OfInteger mult(0, 1);
 	mult(0) = 5;
 	mult(1) = 5;	
+#undef new
+
 	Handle(Geom_BSplineSurface) surf = new Geom_BSplineSurface(cv, knots, knots, mult, mult, 4, 4);
 #if OCC_VERSION_HEX < 0x60502
 	shape = BRepBuilderAPI_MakeFace(surf);
