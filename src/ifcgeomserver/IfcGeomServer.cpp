@@ -286,13 +286,7 @@ public:
 	Bye() : Command(BYE) {};
 };
 
-int main ()
-{
-	// Memory leak debugging in MSVC debug mode
-#if defined(_MSC_VER) && defined(_DEBUG)
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-#endif
-
+int main () {
 	// Redirect stdout to this stream, so that involuntary 
 	// writes to stdout do not interfere with our protocol.
 	std::ostringstream oss;
