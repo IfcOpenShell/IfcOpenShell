@@ -29,8 +29,10 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: As CMake options are typically of format -DSOMETHING:BOOL=ON or -DSOMETHING=1, i.e. they contain an equal sign,
 :: they will mess up the batch file argument parsing if the arguments are passed on by splitting them %2 %3 %4 %5
 :: %6 %7 %8 %9. Work around that, http://scripts.dragon-it.co.uk/scripts.nsf/docs/batch-search-replace-substitute
-set ARGUMENTS=%*
-call set ARGUMENTS=%%ARGUMENTS:%1=%%
+if not (%1)==() (
+    set ARGUMENTS=%*
+    call set ARGUMENTS=%%ARGUMENTS:%1=%%
+)
 
 :: Read Python related variables from BuildDepsCache.txt
 for /f "delims== tokens=1,2" %%G in (BuildDepsCache-%TARGET_ARCH%.txt) do set %%G=%%H

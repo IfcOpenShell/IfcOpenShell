@@ -36,8 +36,8 @@ del .\y.txt
 if not %ERRORLEVEL%==0 goto :EOF
 :: Same trick as in run-cmake.bat
 set ARGUMENTS=%*
-call set ARGUMENTS=%%ARGUMENTS:%1=%%
-call set ARGUMENTS=%%ARGUMENTS:%2=%%
+if not (%1)==() call set ARGUMENTS=%%ARGUMENTS:%1=%%
+if not (%2)==() call set ARGUMENTS=%%ARGUMENTS:%2=%%
 call .\run-cmake %1 %ARGUMENTS%
 if not %ERRORLEVEL%==0 goto :EOF
 call .\build-ifcopenshell %1 %2
