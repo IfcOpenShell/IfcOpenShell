@@ -43,7 +43,7 @@ protected:
 		}
 	}
 
-	~HeaderEntity() {
+	virtual ~HeaderEntity() {
 		delete _list;
 	}
 
@@ -166,7 +166,14 @@ public:
 		_file_name = new FileName();
 		_file_schema = new FileSchema();
 	}
-	
+
+	~IfcSpfHeader()
+	{
+		delete _file_schema;
+		delete _file_name;
+		delete _file_description;
+	}
+
 	IfcSpfLexer* lexer() { return _lexer; }
 	void lexer(IfcSpfLexer* l) { _lexer = l; }
 
