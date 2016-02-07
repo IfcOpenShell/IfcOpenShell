@@ -28,7 +28,7 @@ OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizati
 OPTION(USE_IFC4 "Use IFC 4 instead of IFC 2x3 (full rebuild recommended when switching this)" OFF)
 OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
-OPTION(USE_VLC "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
+OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
 
@@ -238,8 +238,8 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
 endif()
 
 IF(MSVC)
-	IF(USE_VLC)
-		ADD_DEFINITIONS(-DUSE_VLC)
+	IF(USE_VLD)
+		ADD_DEFINITIONS(-DUSE_VLD)
 	ENDIF()
 	# Enforce Unicode for CRT and Win32 API calls
 	ADD_DEFINITIONS(-D_UNICODE -DUNICODE)

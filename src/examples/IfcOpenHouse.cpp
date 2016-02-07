@@ -41,7 +41,7 @@
 #include "../ifcparse/IfcHierarchyHelper.h"
 #include "../ifcgeom/IfcGeom.h"
 
-#if USE_VLC
+#if USE_VLD
 #include <vld.h>
 #endif
 
