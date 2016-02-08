@@ -889,6 +889,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcDerivedProfileDef* l, TopoDS_S
 	}
 }
 
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcPlane* l, TopoDS_Shape& face) {
+	gp_Pln pln;
+	convert(l, pln);
+	Handle_Geom_Surface surf = new Geom_Plane(pln);
+	face = BRepBuilderAPI_MakeFace(surf, getValue(GV_PRECISION));
+	return true;
+}
+
 #ifdef USE_IFC4
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineSurfaceWithKnots* l, TopoDS_Shape& face) {
@@ -936,14 +944,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineSurfaceWithKnots* l, To
 
 	face = BRepBuilderAPI_MakeFace(surf, getValue(GV_PRECISION));
 
-	return true;
-}
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcPlane* l, TopoDS_Shape& face) {
-	gp_Pln pln;
-	convert(l, pln);
-	Handle_Geom_Surface surf = new Geom_Plane(pln);
-	face = BRepBuilderAPI_MakeFace(surf, getValue(GV_PRECISION));
 	return true;
 }
 
