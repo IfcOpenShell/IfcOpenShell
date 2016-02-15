@@ -47,6 +47,7 @@ UNIFY_ENVVARS_AND_CACHE(ICU_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(PCRE_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
 
 # Find Boost
 IF(MSVC)
@@ -274,25 +275,78 @@ if(NOT WIN32)
 	INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} /usr/inc /usr/local/inc /usr/local/include/oce)
 endif()
 
-IF(USE_IFC4)
-	ADD_DEFINITIONS(-DUSE_IFC4)
-	SET(IFC_RELEASE_NOT_USED "2x3")
-ELSE()
-	ADD_DEFINITIONS(-DUSE_IFC2x3) # TODO Make all caps? i.e. USE_IFC2X3
-	SET(IFC_RELEASE_NOT_USED "4")
-ENDIF()
+function(files_for_ifc_version IFC_VERSION RESULT_NAME)
+    set(IFC_PARSE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse)
+    set(${RESULT_NAME} 
+        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}.h 
+        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}enum.h
+        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}-latebound.h
+        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}.cpp
+        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}-latebound.cpp
+        PARENT_SCOPE
+    )
+endfunction()
+
+if(COMPILE_SCHEMA)
+    set(IFC_RELEASE_NOT_USED "2x3" "4")
+    
+    if(PYTHON_EXECUTABLE)
+        set(PYTHON_EXECUTABLE_USED ${PYTHON_EXECUTABLE})
+    else()
+        set(PYTHON_EXECUTABLE_USED "python")
+    endif()
+    
+    # Install pyparsing if necessary
+    execute_process(COMMAND ${PYTHON_EXECUTABLE_USED} -m pip "list" OUTPUT_VARIABLE PYTHON_PACKAGE_LIST)
+    string(FIND "${PYTHON_PACKAGE_LIST}" pyparsing PYPARSING_FOUND)
+    if ("${PYPARSING_FOUND}" STREQUAL "-1")
+        message(STATUS "Installing pyparsing")
+        execute_process(COMMAND ${PYTHON_EXECUTABLE_USED} -m pip "install" --user pyparsing)
+    else()
+        message(STATUS "Python interpreter with pyparsing found")
+    endif()
+    
+    # Bootstrap the parser
+    message(STATUS "Compiling schema, this will take a while...")
+    execute_process(COMMAND ${PYTHON_EXECUTABLE_USED} bootstrap.py express.bnf 
+        WORKING_DIRECTORY ../src/ifcexpressparser 
+        OUTPUT_FILE express_parser.py)
+        
+    # Generate code
+    execute_process(COMMAND ${PYTHON_EXECUTABLE_USED} ../ifcexpressparser/express_parser.py ../../${COMPILE_SCHEMA}
+        WORKING_DIRECTORY ../src/ifcparse
+        OUTPUT_VARIABLE COMPILED_SCHEMA_NAME)
+    
+    # Prevent the schema that had just been compiled from being excluded
+    if(${COMPILED_SCHEMA_NAME} STREQUAL "IFC2X3")
+        list(REMOVE_ITEM IFC_RELEASE_NOT_USED "2x3")
+    elseif(${COMPILED_SCHEMA_NAME} STREQUAL "IFC4")
+        list(REMOVE_ITEM IFC_RELEASE_NOT_USED "4")
+    endif()
+else()
+    if(USE_IFC4)
+        add_definitions(-DUSE_IFC4)
+        set(IFC_RELEASE_NOT_USED "2x3")
+    else()
+        add_definitions(-DUSE_IFC2x3) # TODO Make all caps? i.e. USE_IFC2X3
+        set(IFC_RELEASE_NOT_USED "4")
+    endif()
+endif()
 
 # IfcParse
 file(GLOB CPP_FILES ../src/ifcparse/*.cpp)
 file(GLOB H_FILES ../src/ifcparse/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
-# Remove sources specific to an IFC release we are not using
-list(REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse/Ifc${IFC_RELEASE_NOT_USED}.h)
-list(REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse/Ifc${IFC_RELEASE_NOT_USED}enum.h)
-list(REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse/Ifc${IFC_RELEASE_NOT_USED}-latebound.h)
-list(REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse/Ifc${IFC_RELEASE_NOT_USED}.cpp)
-list(REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse/Ifc${IFC_RELEASE_NOT_USED}-latebound.cpp)
+
+foreach(IFC_RELEASE ${IFC_RELEASE_NOT_USED})
+    files_for_ifc_version(${IFC_RELEASE} SOURCE_FILES_NOT_USED)
+    foreach(SOURCE_FILE ${SOURCE_FILES_NOT_USED})
+        list(REMOVE_ITEM SOURCE_FILES ${SOURCE_FILE})
+    endforeach()
+endforeach()
+
 ADD_LIBRARY(IfcParse STATIC ${SOURCE_FILES})
+
 IF(UNICODE_SUPPORT)
 	TARGET_LINK_LIBRARIES(IfcParse ${ICU_LIBRARIES})
 ENDIF()
