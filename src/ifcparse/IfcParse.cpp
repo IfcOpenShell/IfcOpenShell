@@ -127,6 +127,11 @@ IfcSpfStream::IfcSpfStream(void* data, int l) {
 	len = l;	
 }
 
+IfcSpfStream::~IfcSpfStream()
+{
+	Close();
+}
+
 void IfcSpfStream::Close() {
 #ifdef BUF_SIZE
 	if ( paging ) fclose(stream);

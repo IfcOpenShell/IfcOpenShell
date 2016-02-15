@@ -22,11 +22,17 @@ echo.
 
 set PROJECT_NAME=IfcOpenShell
 
-:: Enable the delayed environment variable expansion needed in vs-cfg.cmd.
 setlocal EnableDelayedExpansion
-:: TODO Getting warning print in vs-cfg.cmd for missing build type although this script doesn't need it specified
+
 call vs-cfg.cmd %1
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: As CMake options are typically of format -DSOMETHING:BOOL=ON or -DSOMETHING=1, i.e. they contain an equal sign,
+:: they will mess up the batch file argument parsing if the arguments are passed on by splitting them %2 %3 %4 %5
+:: %6 %7 %8 %9. Work around that, http://scripts.dragon-it.co.uk/scripts.nsf/docs/batch-search-replace-substitute
+if not (%1)==() (
+    set ARGUMENTS=%*
+    call set ARGUMENTS=%%ARGUMENTS:%1=%%
+)
 
 :: Read Python related variables from BuildDepsCache.txt
 for /f "delims== tokens=1,2" %%G in (BuildDepsCache-%TARGET_ARCH%.txt) do set %%G=%%H
@@ -39,7 +45,6 @@ IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
 
 set BOOST_ROOT=%DEPS_DIR%\boost
-REM set BOOST_INCLUDEDIR=%DEPS_DIR%\boost
 set BOOST_LIBRARYDIR=%DEPS_DIR%\boost\stage\vs%VS_VER%-%VS_PLATFORM%\lib
 set ICU_INCLUDE_DIR=%INSTALL_DIR%\icu\include
 set ICU_LIBRARY_DIR=%INSTALL_DIR%\icu\lib
@@ -47,8 +52,8 @@ set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce
 set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib
 set OPENCOLLADA_INCLUDE_DIR=%INSTALL_DIR%\OpenCOLLADA\include\opencollada
 set OPENCOLLADA_LIBRARY_DIR=%INSTALL_DIR%\OpenCOLLADA\lib\opencollada
-if "%PY_VER_MAJOR_MINOR%"=="" set PY_VER_MAJOR_MINOR=34
-if "%PYTHONPATH%"=="" set PYTHONPATH=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+if not defined PY_VER_MAJOR_MINOR set PY_VER_MAJOR_MINOR=34
+if not defined PYTHONPATH set PYTHONPATH=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
 set PYTHON_INCLUDE_DIR=%PYTHONPATH%\include
 set PYTHON_LIBRARY=%PYTHONPATH%\libs\python%PY_VER_MAJOR_MINOR%.lib
 set SWIG_DIR=%INSTALL_DIR%\swigwin
@@ -57,12 +62,11 @@ set PATH=%PATH%;%SWIG_DIR%;%PYTHONPATH%
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
-echo   CMake Generator = %GENERATOR%
-echo   All arguments   = %*
+echo   Generator = %GENERATOR%
+echo   Arguments = %ARGUMENTS%
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_ROOT              = %BOOST_ROOT%
-REM echo    BOOST_INCLUDEDIR = %BOOST_INCLUDEDIR%
 echo    BOOST_LIBRARYDIR        = %BOOST_LIBRARYDIR%
 echo    ICU_INCLUDE_DIR         = %ICU_INCLUDE_DIR%
 echo    ICU_LIBRARY_DIR         = %ICU_LIBRARY_DIR%
@@ -79,34 +83,23 @@ echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
 echo.
 
 set CMAKELISTS_DIR=..\cmake
-REM IF NOT EXIST %PROJECT_NAME%.sln. (
-    IF EXIST CMakeCache.txt. del /Q CMakeCache.txt
-    call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
-    IF "%2"=="" (
-        REM No extra arguments provided, trust that GENERATOR is set properly.
-        cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%"
-    ) ELSE (
-        REM Extra arguments has been provided. As CMake options are typically of format -DSOMETHING:BOOL=ON,
-        REM i.e. they contain an equal sign, they will mess up the batch file argument parsing if the arguments are passed on
-        REM by splitting them %2 %3 %4 %5 %6 %7 %8 %9. In the extra argument case trust that user has provided the generator
-        REM as the first argument as pass all arguments as is by using %*.
-        cmake.exe %CMAKELISTS_DIR% -G %*
-    )
-    IF NOT %ERRORLEVEL%==0 GOTO :Error
-REM ) ELSE (
-    REM call cecho.cmd 0 10 "%PROJECT_NAME%.sln exists. Skipping CMake call for %PROJECT_NAME%."
-    REM call cecho.cmd 0 10 "Delete %BUILD_DIR%\%PROJECT_NAME%.sln to trigger a CMake rerun."
-REM )
+:: For now clear CMakeCache.txt always in order to assure that when changing build options everything goes smoothly.
+IF EXIST CMakeCache.txt. del /Q CMakeCache.txt
+call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
+cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" %ARGUMENTS%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
 echo.
 
+set IFCOS_SCRIPT_RET=0
 goto :Finish
 
 :Error
 echo.
 call %~dp0\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
+set IFCOS_SCRIPT_RET=1
 goto :Finish
 
 :Finish
 popd
-set PATH=%ORIGINAL_PATH%
-endlocal
+exit /b %IFCOS_SCRIPT_RET%

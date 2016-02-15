@@ -37,6 +37,10 @@
 
 #include "../ifcgeom/IfcGeomIterator.h"
 
+#if USE_VLD
+#include <vld.h>
+#endif
+
 using namespace boost;
 
 template <typename T>

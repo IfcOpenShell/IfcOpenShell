@@ -1,6 +1,6 @@
 IfcOpenShell 
 ============
-Open source (LGPL) software library for working with the IFC file format.
+Open source (LGPL) software library for working with the IFC ([IFC2x3 TC1] and [IFC4]) file format.
 
 [http://ifcopenshell.org](http://ifcopenshell.org)  
 [http://academy.ifcopenshell.org](http://academy.ifcopenshell.org)
@@ -8,22 +8,22 @@ Open source (LGPL) software library for working with the IFC file format.
 
 Prerequisites
 =============
-* Git, CMake (2.6 or newer), Visual Studio 2008 or newer (Windows), or GCC (*nix, Clang untested).
+* Git, CMake (2.6 or newer), Visual Studio 2008 or newer with C++ toolset (Windows), or GCC (*nix, Clang untested).
 
 
 Dependencies
 ============
 * [Boost](http://www.boost.org/)
-* Open Cascade *optional*, but required for building IfcGeom
-  [Official](http://www.opencascade.org/getocc/download/loadocc/) or [community edition](https://github.com/tpaviot/oce)  
+* Open Cascade - *optional*, but required for building IfcGeom
+  ([official](http://www.opencascade.org/getocc/download/loadocc/) or [community edition](https://github.com/tpaviot/oce))  
   For converting IFC representation items into BRep solids and tesselated meshes
-* [ICU](http://site.icu-project.org/) *optional*  
+* [ICU](http://site.icu-project.org/) - *optional*  
   For handling code pages and Unicode in the parser
-* [OpenCOLLADA](https://github.com/khronosGroup/OpenCOLLADA/) *optional*  
+* [OpenCOLLADA](https://github.com/khronosGroup/OpenCOLLADA/) - *optional*  
   For IfcConvert to be able to write tessellated Collada (.dae) files
-* [SWIG](http://www.swig.org/), [Python](https://www.python.org/) libraries *optional*  
+* [SWIG](http://www.swig.org/), [Python](https://www.python.org/) libraries - *optional*  
   For building the IfcOpenShell Python interface and the Blender add-on
-* 3ds Max SDK *optional*  
+* 3ds Max SDK - *optional*  
   For building the 3ds Max plug-in
 
 
@@ -92,7 +92,10 @@ To build IfcOpenShell please take the following steps:
     $ cmake ../
     $ make
 
-If all worked out correctly you can now use IfcOpenShell. For example:
+If all worked out correctly you can now use IfcOpenShell. See the examples below.
+
+Usage examples
+==============
 
 **Invoking IfcConvert from the command line**
 
@@ -100,8 +103,6 @@ If all worked out correctly you can now use IfcOpenShell. For example:
     $ unzip Munkerud_hus6_BE.zip
     $ ./IfcConvert Munkerud_hus6_BE.ifc
     $ less Munkerud_hus6_BE.obj
-
-Or:
 
 **Using the IfcOpenShell Python interface**
 
@@ -165,3 +166,5 @@ Or:
     >>> f.write("out.ifc")
 
 [win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"
+[IFC2x3 TC1]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc2x3-tc1-release "IFC2x3 TC1"
+[IFC4]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc4-release "IFC4"

@@ -33,21 +33,25 @@ setlocal EnableDelayedExpansion
 
 :: Make sure vcvarsall.bat is called and dev env set is up.
 IF "%VSINSTALLDIR%"=="" (
-   call utils\cecho.cmd 0 12 "Visual Studio environment variables not set - cannot proceed!"
+   call utils\cecho.cmd 0 12 "Visual Studio environment variables not set- cannot proceed."
    GOTO :ErrorAndPrintUsage
 )
 
+:: Check for cl.exe - at least the "Typical" Visual Studio 2015 installation does not include the C++ toolset by default,
+:: http://blogs.msdn.com/b/vcblog/archive/2015/07/24/setup-changes-in-visual-studio-2015-affecting-c-developers.aspx
+where cl.exe 2>&1>NUL
+if not %ERRORLEVEL%==0 (
+    call utils\cecho.cmd 0 12 "%~nx0: cl.exe not in PATH. Make sure to select the C++ toolset when installing Visual Studio- cannot proceed."
+    GOTO :ErrorAndPrintUsage
+)
+
 :: Set up variables depending on the used Visual Studio version
-call vs-cfg.cmd %1 %2
+call vs-cfg.cmd %1
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call build-type-cfg.cmd %2
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 set BUILD_TYPE=%3
-
-IF %GENERATOR%=="" (
-   call cecho.cmd 0 12 "GENERATOR not specified - cannot proceed!"
-   GOTO :Error
-)
-
 IF "%BUILD_TYPE%"=="" set BUILD_TYPE=Build
 
 IF NOT "!BUILD_TYPE!"=="Build" IF NOT "!BUILD_TYPE!"=="Rebuild" IF NOT "!BUILD_TYPE!"=="Clean" (
@@ -63,9 +67,9 @@ IF NOT EXIST %INSTALL_DIR%. mkdir %INSTALL_DIR%
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
-IF "%IFCOS_INSTALL_PYTHON%"=="" set IFCOS_INSTALL_PYTHON=TRUE
-IF "%IFCOS_USE_PYTHON2%"=="" set IFCOS_USE_PYTHON2=FALSE
-IF "%IFCOS_NUM_BUILD_PROCS%"=="" set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
+IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
+IF NOT DEFINED IFCOS_USE_PYTHON2 set IFCOS_USE_PYTHON2=FALSE
+IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
 :: For subroutines
 set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS% /t:%BUILD_TYPE%
@@ -115,7 +119,12 @@ call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to procee
 echo.
 
 call cecho.cmd black cyan "If you are not ready with the above, press Ctrl-C to abort!"
+
 pause
+echo.
+set START_TIME=%TIME%
+echo Build started at %START_TIME%.
+set BUILD_STARTED=TRUE
 echo.
 
 cd %DEPS_DIR%
@@ -297,6 +306,7 @@ IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swi
 :Successful
 echo.
 call %~dp0\utils\cecho.cmd 0 10 "%PROJECT_NAME% dependencies built."
+set IFCOS_SCRIPT_RET=0
 goto :Finish
 
 :ErrorAndPrintUsage
@@ -305,13 +315,30 @@ call :PrintUsage
 :Error
 echo.
 call %~dp0\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
+set IFCOS_SCRIPT_RET=1
 goto :Finish
 
 :Finish
+:: Print end time and elapsed time, http://stackoverflow.com/a/9935540
+if not defined BUILD_STARTED goto :BuildTimeSkipped
+set END_TIME=%TIME%
+for /F "tokens=1-4 delims=:.," %%a in ("%START_TIME%") do (
+   set /A "start=(((%%a*60)+1%%b %% 100)*60+1%%c %% 100)*100+1%%d %% 100"
+)
+for /F "tokens=1-4 delims=:.," %%a in ("%END_TIME%") do (
+   set /A "end=(((%%a*60)+1%%b %% 100)*60+1%%c %% 100)*100+1%%d %% 100"
+)
+set /A elapsed=end-start
+set /A hh=elapsed/(60*60*100), rest=elapsed%%(60*60*100), mm=rest/(60*100), rest%%=60*100, ss=rest/100, cc=rest%%100
+if %mm% lss 10 set mm=0%mm%
+if %ss% lss 10 set ss=0%ss%
+if %cc% lss 10 set cc=0%cc%
+echo.
+echo Build ended at %END_TIME%. Time elapsed %hh%:%mm%:%ss%.%cc%.
+:BuildTimeSkipped
 set PATH=%ORIGINAL_PATH%
 cd %~dp0
-endlocal
-goto :EOF
+exit /b %IFCOS_SCRIPT_RET%
 
 ::::::::::::::::::::::::::::::::::::: Subroutines :::::::::::::::::::::::::::::::::::::
 
@@ -402,7 +429,7 @@ echo  2. Install Git and make sure 'git' is accessible from PATH.
 echo   - http://code.google.com/p/tortoisegit/
 echo  3. Install CMake and make sure 'cmake' is accessible from PATH.
 echo   - http://www.cmake.org/
-echo  4. Visual Studio 2008 or newer (2013 or newer recommended).
+echo  4. Visual Studio 2008 or newer (2013 or newer recommended) with C++ toolset.
 echo   - https://www.visualstudio.com/
 echo  5. Run this batch script with Visual Studio environment variables set.
 echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx

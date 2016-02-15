@@ -118,6 +118,7 @@ IfcCharacterDecoder::~IfcCharacterDecoder() {
   destination = 0;
   converter = 0;
   compatibility_converter = 0;
+  ucnv_flushCache();
 #endif
 }
 IfcCharacterDecoder::operator std::string() {

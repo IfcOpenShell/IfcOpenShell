@@ -41,6 +41,10 @@
 #include "../ifcparse/IfcHierarchyHelper.h"
 #include "../ifcgeom/IfcGeom.h"
 
+#if USE_VLD
+#include <vld.h>
+#endif
+
 // Some convenience typedefs and definitions. 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
