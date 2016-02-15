@@ -534,11 +534,22 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 		trsf = trsf_2d;
 	}
 	gtrsf.Multiply(trsf);
+
+	const IfcGeom::SurfaceStyle* mapped_item_style = get_style(l);
+	
 	const unsigned int previous_size = (const unsigned int) shapes.size();
-	bool b = convert_shapes(map->MappedRepresentation(),shapes);
+	bool b = convert_shapes(map->MappedRepresentation(), shapes);
+	
 	for ( unsigned int i = previous_size; i < shapes.size(); ++ i ) {
 		shapes[i].append(gtrsf);
+
+		// Apply styles assigned to the mapped item only if on
+		// a more granular level no styles have been applied
+		if (!shapes[i].hasStyle()) {
+			shapes[i].setStyle(mapped_item_style);
+		}
 	}
+
 	return b;
 }
 
