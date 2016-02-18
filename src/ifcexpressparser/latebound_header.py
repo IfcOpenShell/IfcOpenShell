@@ -17,9 +17,10 @@
 #                                                                             #
 ###############################################################################
 
+import codegen
 import templates
 
-class LateBoundHeader:
+class LateBoundHeader(codegen.Base):
     def __init__(self, mapping):
         self.str = templates.lb_header % {
             'schema_name_upper' : mapping.schema.name.upper(),
@@ -27,9 +28,9 @@ class LateBoundHeader:
         }
         
         self.schema_name = mapping.schema.name.capitalize()
+        
+        self.file_name = '%s-latebound.h'%self.schema_name
+        
+        
     def __repr__(self):
         return self.str
-    def emit(self):
-        f = open('%s-latebound.h'%self.schema_name, 'w', encoding='utf-8')
-        f.write(str(self))
-        f.close()

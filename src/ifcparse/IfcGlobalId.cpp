@@ -23,6 +23,8 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <boost/version.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "../ifcparse/IfcGlobalId.h"
 #include "../ifcparse/IfcException.h"
@@ -87,7 +89,11 @@ IfcParse::IfcGlobalId::IfcGlobalId() {
 	std::vector<unsigned char> v(uuid_data.size());
 	std::copy(uuid_data.begin(), uuid_data.end(), v.begin());
 	string_data = compress(&v[0]);
+#if BOOST_VERSION < 104400
+	formatted_string = boost::lexical_cast<std::string>(uuid_data);
+#else
 	formatted_string = boost::uuids::to_string(uuid_data);
+#endif
 
 #ifndef NDEBUG
 	std::vector<unsigned char> test_vector;
@@ -106,7 +112,11 @@ IfcParse::IfcGlobalId::IfcGlobalId(const std::string& s)
 	std::vector<unsigned char> v;
 	expand(string_data, v);
 	std::copy(v.begin(), v.end(), uuid_data.begin());
+#if BOOST_VERSION < 104400
+	formatted_string = boost::lexical_cast<std::string>(uuid_data);
+#else
 	formatted_string = boost::uuids::to_string(uuid_data);
+#endif
 
 #ifndef NDEBUG
 	const std::string test_string = compress(&uuid_data.data[0]);

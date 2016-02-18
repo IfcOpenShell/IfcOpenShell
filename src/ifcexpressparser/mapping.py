@@ -17,6 +17,8 @@
 #                                                                             #
 ###############################################################################
 
+from __future__ import print_function
+
 import sys
 import nodes
 import templates
@@ -33,11 +35,11 @@ class Mapping:
         'binary'  : 'boost::dynamic_bitset<>'
     }
     
-    supported_argument_types = {
+    supported_argument_types = set([
         'INT', 'BOOL', 'DOUBLE', 'STRING', 'BINARY', 'ENUMERATION', 'ENTITY_INSTANCE',
         'AGGREGATE_OF_INT', 'AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_STRING', 'AGGREGATE_OF_BINARY', 'AGGREGATE_OF_ENTITY_INSTANCE',
         'AGGREGATE_OF_AGGREGATE_OF_INT', 'AGGREGATE_OF_AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE',
-    }
+    ])
 
     def __init__(self, schema):
         self.schema = schema

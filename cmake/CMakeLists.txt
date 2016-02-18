@@ -17,7 +17,7 @@
 #                                                                              #
 ################################################################################
 
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8.5)
 
 project (IfcOpenShell)
 
@@ -297,11 +297,23 @@ if(COMPILE_SCHEMA)
     set(IFC_RELEASE_NOT_USED "2x3" "4")
     
     # Install pyparsing if necessary
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip "list" OUTPUT_VARIABLE PYTHON_PACKAGE_LIST)
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip freeze OUTPUT_VARIABLE PYTHON_PACKAGE_LIST)
+    if ("${PYTHON_PACKAGE_LIST}" STREQUAL "")
+        execute_process(COMMAND pip freeze OUTPUT_VARIABLE PYTHON_PACKAGE_LIST)
+        if ("${PYTHON_PACKAGE_LIST}" STREQUAL "")
+            message(WARNING "Failed to find pip. Pip is required to automatically install pyparsing")
+        endif()
+    endif()
     string(FIND "${PYTHON_PACKAGE_LIST}" pyparsing PYPARSING_FOUND)
     if ("${PYPARSING_FOUND}" STREQUAL "-1")
         message(STATUS "Installing pyparsing")
-        execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip "install" --user pyparsing)
+        execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip "install" --user pyparsing RESULT_VARIABLE SUCCESS)
+        if (NOT "${SUCCESS}" STREQUAL "0")
+            execute_process(COMMAND pip "install" --user pyparsing RESULT_VARIABLE SUCCESS)
+            if (NOT "${SUCCESS}" STREQUAL "0")
+                message(WARNING "Failed to automatically install pyparsing. Please install manually")
+            endif()
+        endif()
     else()
         message(STATUS "Python interpreter with pyparsing found")
     endif()
@@ -310,7 +322,12 @@ if(COMPILE_SCHEMA)
     message(STATUS "Compiling schema, this will take a while...")
     execute_process(COMMAND ${PYTHON_EXECUTABLE} bootstrap.py express.bnf 
         WORKING_DIRECTORY ../src/ifcexpressparser 
-        OUTPUT_FILE express_parser.py)
+        OUTPUT_FILE express_parser.py
+        RESULT_VARIABLE SUCCESS)
+
+    if (NOT "${SUCCESS}" STREQUAL "0")
+        MESSAGE(FATAL_ERROR "Failed to bootstrap parser. Make sure pyparsing is installed")
+    endif()
         
     # Generate code
     execute_process(COMMAND ${PYTHON_EXECUTABLE} ../ifcexpressparser/express_parser.py ../../${COMPILE_SCHEMA}
@@ -318,10 +335,12 @@ if(COMPILE_SCHEMA)
         OUTPUT_VARIABLE COMPILED_SCHEMA_NAME)
     
     # Prevent the schema that had just been compiled from being excluded
-    if(${COMPILED_SCHEMA_NAME} STREQUAL "IFC2X3")
+    if("${COMPILED_SCHEMA_NAME}" STREQUAL "IFC2X3")
         list(REMOVE_ITEM IFC_RELEASE_NOT_USED "2x3")
-    elseif(${COMPILED_SCHEMA_NAME} STREQUAL "IFC4")
+        add_definitions(-DUSE_IFC2x3)
+    elseif("${COMPILED_SCHEMA_NAME}" STREQUAL "IFC4")
         list(REMOVE_ITEM IFC_RELEASE_NOT_USED "4")
+        add_definitions(-DUSE_IFC4)
     endif()
 else()
     if(USE_IFC4)

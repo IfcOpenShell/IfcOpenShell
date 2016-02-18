@@ -65,6 +65,8 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
+#include <TopoDS_CompSolid.hxx>
+
 #include <TopExp_Explorer.hxx>
 
 #include <BRepPrimAPI_MakePrism.hxx>
@@ -859,7 +861,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCylindricalSurface* l, TopoDS_
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
 	
+#if OCC_VERSION_HEX < 0x60502
+	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius())).Face().Moved(trsf);
+#else
 	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius()), getValue(GV_PRECISION)).Face().Moved(trsf);
+#endif
 	return true;
 }
 

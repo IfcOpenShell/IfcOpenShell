@@ -17,35 +17,18 @@
 #                                                                             #
 ###############################################################################
 
-import nodes
-import platform
-import collections
-
-if tuple(map(int, platform.python_version_tuple())) < (2, 7):
-    import ordereddict
-    collections.OrderedDict = ordereddict.OrderedDict
-
-class Schema:
-    def is_enumeration(self, v):
-        return str(v) in self.enumerations
-    def is_select(self, v):
-        return str(v) in self.selects
-    def is_simpletype(self, v):
-        return str(v) in self.simpletypes
-    def is_type(self, v):
-        return str(v) in self.types
-    def is_entity(self, v):
-        return str(v) in self.entities
-    def __init__(self, parsetree):
-        self.name = parsetree[1]
-
-        sort = lambda d: collections.OrderedDict(sorted(d))
-
-        self.types = sort([(t.name,t) for t in parsetree if isinstance(t, nodes.TypeDeclaration)])
-        self.entities = sort([(t.name,t) for t in parsetree if isinstance(t, nodes.EntityDeclaration)])
-
-        of_type = lambda *types: sort([(a, b.type.type) for a,b in self.types.items() if any(isinstance(b.type.type, ty) for ty in types)])
-
-        self.enumerations = of_type(nodes.EnumerationType)
-        self.selects = of_type(nodes.SelectType)
-        self.simpletypes = of_type(str, nodes.AggregationType, nodes.BinaryType)
+class Base(object):
+    """
+    A base class for all code generation classes. Currently only working around
+    some python 2/3 incompatibilities in terms of unicode file handling.
+    """
+    def emit(self):
+        import platform
+        if tuple(map(int, platform.python_version_tuple())) < (2, 8):
+            from io import open as unicode_open
+        else:
+            unicode_open = open
+            unicode = lambda x, *args, **kwargs: x
+        f = unicode_open(self.file_name, 'w', encoding='utf-8')
+        f.write(unicode(repr(self), encoding='utf-8', errors='ignore'))
+        f.close()

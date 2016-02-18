@@ -63,6 +63,9 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
+#include <TopoDS_CompSolid.hxx>
+
+#include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 
 #include <BRepPrimAPI_MakePrism.hxx>
@@ -95,7 +98,6 @@
 #include <Poly_Triangulation.hxx>
 #include <Poly_Array1OfTriangle.hxx>
 
-#include <TopExp.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopTools_ListIteratorOfListOfShape.hxx>
@@ -106,7 +108,11 @@
 #include "../ifcgeom/IfcGeom.h"
 
 #if OCC_VERSION_HEX < 0x60900
+#ifdef _MSC_VER
 #pragma message("warning: You are linking against Open CASCADE version " OCC_VERSION_COMPLETE ". Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade.")
+#else
+#warning "You are linking against linking against an older version of Open CASCADE. Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade."
+#endif
 #endif
 
 bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
