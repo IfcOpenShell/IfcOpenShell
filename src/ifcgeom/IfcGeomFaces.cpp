@@ -88,6 +88,8 @@
 #include <BRepCheck_Face.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 
+#include <Standard_Version.hxx>
+
 #ifdef USE_IFC4
 #include <Geom_BSplineSurface.hxx>
 #include <TColgp_Array2OfPnt.hxx>
