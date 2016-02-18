@@ -893,7 +893,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPlane* l, TopoDS_Shape& face) 
 	gp_Pln pln;
 	convert(l, pln);
 	Handle_Geom_Surface surf = new Geom_Plane(pln);
+#if OCC_VERSION_HEX < 0x60502
+	face = BRepBuilderAPI_MakeFace(surf);
+#else
 	face = BRepBuilderAPI_MakeFace(surf, getValue(GV_PRECISION));
+#endif
 	return true;
 }
 
@@ -942,7 +946,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineSurfaceWithKnots* l, To
 	}
 	Handle_Geom_Surface surf = new Geom_BSplineSurface(Poles, UKnots, VKnots, UMults, VMults, UDegree, VDegree);
 
+#if OCC_VERSION_HEX < 0x60502
+	face = BRepBuilderAPI_MakeFace(surf);
+#else
 	face = BRepBuilderAPI_MakeFace(surf, getValue(GV_PRECISION));
+#endif
 
 	return true;
 }

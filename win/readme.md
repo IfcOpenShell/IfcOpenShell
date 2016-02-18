@@ -40,7 +40,7 @@ After this, one can build the project using the `IfcOpenShell.sln` file in the b
 if wanted. Convenience batch files `build-ifcopenshell.cmd` and `install-ifcopenshell.cmd` can also be used. The batch files
 expect `%1` and `%2` in same fashion as above and possible extra parameters are passed for the `MSBuild` call. The project will
 be installed to `installed-vs<VERSION>-<ARCHITECTURE>\` folder in the project's root folder and the required IfcOpenShell-Python
-parts are deployed to the `<PYTHONPATH>\Lib\site-packages\` folder.
+parts are deployed to the `<PYTHONHOME>\Lib\site-packages\` folder.
 
 **Note:** All of the dependencies are build as static libraries against the static run-time allowing the developer
 to effortlessly deploy standalone IFCOS binaries.
@@ -58,7 +58,7 @@ Before building the dependencies, disable the script from installing Python:
 After bulding the dependencies, create BuildDepsCache file to `IfcOpenShell\win` which tells the used Python version and intallation directory:
 ```
 > echo PY_VER_MAJOR_MINOR=35> BuildDepsCache-x64.txt
-> echo PYTHONPATH=C:\Python3>> BuildDepsCache-x64.txt
+> echo PYTHONHOME=C:\Python3>> BuildDepsCache-x64.txt
 ```
 
 After this you should be able to run `run-cmake.bat` normally. If using 32-bit Python, the name of the file must be `BuildDepsCache-x86.txt`.
@@ -80,7 +80,7 @@ Directory Structure
 |   install-ifcopenshell.cmd        - Builds IFCOS's INSTALL project
 |   readme.md                       - This file
 |   run-cmake.bat                   - Sets environment variables for the dependencies and runs CMake for IFCOS
-|   set-python-to-path.bat          - Utility for setting PYTHONPATH (read from BuildDepsCache-<ARCH>.txt) to PATH
+|   set-python-to-path.bat          - Utility for setting PYTHONHOME (read from BuildDepsCache-<ARCH>.txt) to PATH
 |   vs-cfg.cmd                      - Utility file used by the build scripts
 +---sln                             - Contains the old Visual Studio solution and project files
 \---utils                           - Contains various utilities for the build scripts

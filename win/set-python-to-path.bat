@@ -27,10 +27,10 @@ if not exist BuildDepsCache-%TARGET_ARCH%.txt. (
     goto :EOF
 )
 for /f "delims== tokens=1,2" %%G in (BuildDepsCache-%TARGET_ARCH%.txt) do set %%G=%%H
-if not defined PYTHONPATH (
-    echo PYTHONPATH PYTHONPATH not defined
+if not defined PYTHONHOME (
+    echo PYTHONHOME PYTHONHOME not defined
     goto :EOF
 )
 
-echo %PYTHONPATH% set to PATH
-set PATH=%PYTHONPATH%;%PATH%
+echo %PYTHONHOME% set to PATH
+set PATH=%PYTHONHOME%;%PATH%

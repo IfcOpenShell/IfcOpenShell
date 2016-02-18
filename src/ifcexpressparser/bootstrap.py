@@ -184,4 +184,6 @@ enum_header.EnumHeader(mapping).emit()
 implementation.Implementation(mapping).emit()
 latebound_header.LateBoundHeader(mapping).emit()
 latebound_implementation.LateBoundImplementation(mapping).emit()
+
+sys.stdout.write(schema.name)
 """%('\n'.join(statements)))

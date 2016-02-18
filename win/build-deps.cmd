@@ -253,7 +253,7 @@ set PYTHON_VERSION=3.4.3
 IF "%IFCOS_USE_PYTHON2%"=="TRUE" set PYTHON_VERSION=2.7.10
 set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
 set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
-set PYTHONPATH=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
 
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
@@ -265,7 +265,7 @@ set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     REM Store Python versions to BuildDepsCache.txt for run-cmake.bat
     echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-    echo PYTHONPATH=%PYTHONPATH%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+    echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
 
     cd "%DEPS_DIR%"
     call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
@@ -276,9 +276,9 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
         msiexec /x %PYTHON_INSTALLER% /qn
     )
 
-    IF NOT EXIST "%PYTHONPATH%". (
+    IF NOT EXIST "%PYTHONHOME%". (
         call cecho.cmd 0 13 "Installing %DEPENDENCY_NAME%. Please be patient, this will take a while."
-        msiexec /qn /i %PYTHON_INSTALLER% TARGETDIR="%PYTHONPATH%"
+        msiexec /qn /i %PYTHON_INSTALLER% TARGETDIR="%PYTHONHOME%"
     ) ELSE (
         call cecho.cmd 0 13 "%DEPENDENCY_NAME% already installed. Skipping."
     )

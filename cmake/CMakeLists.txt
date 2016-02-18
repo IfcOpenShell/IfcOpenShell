@@ -17,7 +17,7 @@
 #                                                                              #
 ################################################################################
 
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8.5)
 
 project (IfcOpenShell)
 
@@ -47,6 +47,7 @@ UNIFY_ENVVARS_AND_CACHE(ICU_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(PCRE_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
 
 # Find Boost
 IF(MSVC)
@@ -274,34 +275,109 @@ if(NOT WIN32)
 	INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} /usr/inc /usr/local/inc /usr/local/include/oce)
 endif()
 
-IF(USE_IFC4)
-	ADD_DEFINITIONS(-DUSE_IFC4)
-	SET(IFC_RELEASE_NOT_USED "2x3")
-ELSE()
-	ADD_DEFINITIONS(-DUSE_IFC2x3) # TODO Make all caps? i.e. USE_IFC2X3
-	SET(IFC_RELEASE_NOT_USED "4")
-ENDIF()
+function(files_for_ifc_version IFC_VERSION RESULT_NAME)
+    set(IFC_PARSE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse)
+    set(${RESULT_NAME} 
+        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}.h 
+        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}enum.h
+        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}-latebound.h
+        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}.cpp
+        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}-latebound.cpp
+        PARENT_SCOPE
+    )
+endfunction()
+
+if(COMPILE_SCHEMA)
+    find_package(PythonInterp)
+    
+    IF(NOT PYTHONINTERP_FOUND)
+        MESSAGE(FATAL_ERROR "A Python interpreter is necessary when COMPILE_SCHEMA is enabled. Disable COMPILE_SCHEMA or fix Python paths to proceed.")
+    ENDIF()
+    
+    set(IFC_RELEASE_NOT_USED "2x3" "4")
+    
+    # Install pyparsing if necessary
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip freeze OUTPUT_VARIABLE PYTHON_PACKAGE_LIST)
+    if ("${PYTHON_PACKAGE_LIST}" STREQUAL "")
+        execute_process(COMMAND pip freeze OUTPUT_VARIABLE PYTHON_PACKAGE_LIST)
+        if ("${PYTHON_PACKAGE_LIST}" STREQUAL "")
+            message(WARNING "Failed to find pip. Pip is required to automatically install pyparsing")
+        endif()
+    endif()
+    string(FIND "${PYTHON_PACKAGE_LIST}" pyparsing PYPARSING_FOUND)
+    if ("${PYPARSING_FOUND}" STREQUAL "-1")
+        message(STATUS "Installing pyparsing")
+        execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip "install" --user pyparsing RESULT_VARIABLE SUCCESS)
+        if (NOT "${SUCCESS}" STREQUAL "0")
+            execute_process(COMMAND pip "install" --user pyparsing RESULT_VARIABLE SUCCESS)
+            if (NOT "${SUCCESS}" STREQUAL "0")
+                message(WARNING "Failed to automatically install pyparsing. Please install manually")
+            endif()
+        endif()
+    else()
+        message(STATUS "Python interpreter with pyparsing found")
+    endif()
+    
+    # Bootstrap the parser
+    message(STATUS "Compiling schema, this will take a while...")
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} bootstrap.py express.bnf 
+        WORKING_DIRECTORY ../src/ifcexpressparser 
+        OUTPUT_FILE express_parser.py
+        RESULT_VARIABLE SUCCESS)
+
+    if (NOT "${SUCCESS}" STREQUAL "0")
+        MESSAGE(FATAL_ERROR "Failed to bootstrap parser. Make sure pyparsing is installed")
+    endif()
+        
+    # Generate code
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} ../ifcexpressparser/express_parser.py ../../${COMPILE_SCHEMA}
+        WORKING_DIRECTORY ../src/ifcparse
+        OUTPUT_VARIABLE COMPILED_SCHEMA_NAME)
+    
+    # Prevent the schema that had just been compiled from being excluded
+    if("${COMPILED_SCHEMA_NAME}" STREQUAL "IFC2X3")
+        list(REMOVE_ITEM IFC_RELEASE_NOT_USED "2x3")
+        add_definitions(-DUSE_IFC2x3)
+    elseif("${COMPILED_SCHEMA_NAME}" STREQUAL "IFC4")
+        list(REMOVE_ITEM IFC_RELEASE_NOT_USED "4")
+        add_definitions(-DUSE_IFC4)
+    endif()
+else()
+    if(USE_IFC4)
+        add_definitions(-DUSE_IFC4)
+        set(IFC_RELEASE_NOT_USED "2x3")
+    else()
+        add_definitions(-DUSE_IFC2x3) # TODO Make all caps? i.e. USE_IFC2X3
+        set(IFC_RELEASE_NOT_USED "4")
+    endif()
+endif()
 
 # IfcParse
-file(GLOB CPP_FILES ../src/ifcparse/*.cpp)
-file(GLOB H_FILES ../src/ifcparse/*.h)
-set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
-# Remove sources specific to an IFC release we are not using
-list(REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse/Ifc${IFC_RELEASE_NOT_USED}.h)
-list(REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse/Ifc${IFC_RELEASE_NOT_USED}enum.h)
-list(REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse/Ifc${IFC_RELEASE_NOT_USED}-latebound.h)
-list(REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse/Ifc${IFC_RELEASE_NOT_USED}.cpp)
-list(REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse/Ifc${IFC_RELEASE_NOT_USED}-latebound.cpp)
-ADD_LIBRARY(IfcParse STATIC ${SOURCE_FILES})
+file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
+file(GLOB IFCPARSE_CPP_FILES ../src/ifcparse/*.cpp)
+
+foreach(IFC_RELEASE ${IFC_RELEASE_NOT_USED})
+    files_for_ifc_version(${IFC_RELEASE} SOURCE_FILES_NOT_USED)
+    foreach(SOURCE_FILE ${SOURCE_FILES_NOT_USED})
+        list(REMOVE_ITEM IFCPARSE_CPP_FILES ${SOURCE_FILE})
+        list(REMOVE_ITEM IFCPARSE_H_FILES ${SOURCE_FILE})
+    endforeach()
+endforeach()
+
+set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
+
+ADD_LIBRARY(IfcParse STATIC ${IFCPARSE_FILES})
+
 IF(UNICODE_SUPPORT)
 	TARGET_LINK_LIBRARIES(IfcParse ${ICU_LIBRARIES})
 ENDIF()
 
 # IfcGeom
-file(GLOB CPP_FILES ../src/ifcgeom/*.cpp)
-file(GLOB H_FILES ../src/ifcgeom/*.h)
-set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
-ADD_LIBRARY(IfcGeom STATIC ${SOURCE_FILES})
+file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h)
+file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
+
+set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
+ADD_LIBRARY(IfcGeom STATIC ${IFCGEOM_FILES})
 
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
@@ -312,10 +388,10 @@ if(NOT WIN32)
 	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
 endif()
 
-file(GLOB CPP_FILES ../src/ifcconvert/*.cpp)
-file(GLOB H_FILES ../src/ifcconvert/*.h)
-set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
-ADD_EXECUTABLE(IfcConvert ${SOURCE_FILES})
+file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
+file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
+set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
+ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
 
 # Make sure cross-referenced symbols between static OCC libraries get
 # resolved. Also add thread and rt libraries.
@@ -343,15 +419,8 @@ IF(BUILD_EXAMPLES)
 	ADD_SUBDIRECTORY(../src/examples examples)
 ENDIF()
 
-# TODO QtViewer is deprecated ATM as it uses the 0.4 API
-# IF(BUILD_QTVIEWER)
-	# ADD_SUBDIRECTORY(../src/qtviewer qtviewer)
-# ENDIF()
-
 # CMake installation targets
-FILE(GLOB include_files_geom ../src/ifcgeom/*.h)
-FILE(GLOB include_files_parse ../src/ifcparse/*.h)
-INSTALL(FILES ${include_files_geom} DESTINATION include/ifcgeom)
-INSTALL(FILES ${include_files_parse} DESTINATION include/ifcparse)
+INSTALL(FILES ${IFCPARSE_H_FILES} DESTINATION include/ifcparse)
+INSTALL(FILES ${IFCGEOM_H_FILES} DESTINATION include/ifcgeom)
 INSTALL(TARGETS IfcConvert IfcGeomServer DESTINATION bin)
 INSTALL(TARGETS IfcParse IfcGeom DESTINATION lib)
