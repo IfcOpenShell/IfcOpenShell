@@ -434,4 +434,3 @@ echo   - https://www.visualstudio.com/
 echo  5. Run this batch script with Visual Studio environment variables set.
 echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
 echo.
-REM TODO 3ds Max SDK instructions?

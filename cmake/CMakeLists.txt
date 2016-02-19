@@ -29,6 +29,7 @@ OPTION(USE_IFC4 "Use IFC 4 instead of IFC 2x3 (full rebuild recommended when swi
 OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
+OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
 
@@ -48,6 +49,9 @@ UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(PCRE_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
+IF(WIN32)
+    UNIFY_ENVVARS_AND_CACHE(THREEDS_MAX_SDK_HOME)
+ENDIF()
 
 # Find Boost
 IF(MSVC)
@@ -417,6 +421,10 @@ ENDIF()
 
 IF(BUILD_EXAMPLES)
 	ADD_SUBDIRECTORY(../src/examples examples)
+ENDIF()
+
+IF(BUILD_IFCMAX)
+	ADD_SUBDIRECTORY(../src/ifcmax ifcmax)
 ENDIF()
 
 # CMake installation targets

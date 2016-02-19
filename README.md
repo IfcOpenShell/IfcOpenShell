@@ -24,7 +24,8 @@ Dependencies
 * [SWIG](http://www.swig.org/), [Python](https://www.python.org/) libraries - *optional*  
   For building the IfcOpenShell Python interface and the Blender add-on
 * 3ds Max SDK - *optional*  
-  For building the 3ds Max plug-in
+  For building the 3ds Max plug-in.
+  All recent versions of 3ds Max (2014 and newer) are 64-bit only, so a 64-bit installation is assumed.
 
 
 Compiling on Windows
