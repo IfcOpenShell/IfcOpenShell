@@ -83,6 +83,5 @@ Directory Structure
 |   run-cmake.bat                   - Sets environment variables for the dependencies and runs CMake for IFCOS
 |   set-python-to-path.bat          - Utility for setting PYTHONHOME (read from BuildDepsCache-<ARCH>.txt) to PATH
 |   vs-cfg.cmd                      - Utility file used by the build scripts
-+---sln                             - Contains the old Visual Studio solution and project files
 \---utils                           - Contains various utilities for the build scripts
 ```

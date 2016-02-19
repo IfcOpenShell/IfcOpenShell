@@ -1,6 +1,6 @@
 IfcOpenShell 
 ============
-Open source (LGPL) software library for working with the IFC ([IFC2x3 TC1] and [IFC4]) file format.
+IfcOpenShell is an open source (LGPL) software library for working with the IFC ([IFC2x3 TC1] and [IFC4]) file format.
 
 [http://ifcopenshell.org](http://ifcopenshell.org)  
 [http://academy.ifcopenshell.org](http://academy.ifcopenshell.org)
@@ -8,7 +8,10 @@ Open source (LGPL) software library for working with the IFC ([IFC2x3 TC1] and [
 
 Prerequisites
 =============
-* Git, CMake (2.6 or newer), Visual Studio 2008 or newer with C++ toolset (Windows), or GCC (*nix, Clang untested).
+* Git
+* CMake (2.6 or newer)
+* Windows: Visual Studio 2008 or newer with C++ toolset, MinGW not supported currently
+* *nix: GCC 4.7 or newer, or Clang (any version should work, but not tested)
 
 
 Dependencies
@@ -30,9 +33,6 @@ Dependencies
 
 Compiling on Windows
 ====================
-Users are advised to build IfcOpenShell using the CMake file provided in
-the cmake/ folder.
-
 The preferred way to fetch and build this project's dependencies is to use the build scripts
 in win/ folder. **See [win/readme.md] for more information**. Instructions in a nutshell
 (**assuming Visual Studio 2015 x64 environment variables set**):
@@ -55,16 +55,10 @@ Alternatively, one can use the utility batch files to build and install the proj
     > build-ifcopenshell.cmd
     > install-ifcopenshell.cmd
 
-Alternatively, the old Visual Studio solution and project files requiring manual work can
-be found from the win/sln folder.
-
-
 Compiling on *nix
 =================
-Users are advised to build IfcOpenShell using the CMake file provided in
-the cmake/ folder. There might be an Open CASCADE package in your operating
-system's software repository. If not, you will need to compile Open 
-CASCADE yourself. See http://opencascade.org.
+There might be an Open CASCADE package in your operating system's software repository. If not, you will need to compile
+Open CASCADE yourself. See http://opencascade.org.
 
 For building the IfcPython wrapper, SWIG and Python development are
 required.
