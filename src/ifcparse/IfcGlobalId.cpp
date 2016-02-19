@@ -23,6 +23,8 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <boost/version.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "../ifcparse/IfcGlobalId.h"
 #include "../ifcparse/IfcException.h"
@@ -38,7 +40,7 @@ std::string base64(unsigned v, int l) {
 		r.push_back(chars[v%64]);
 		v /= 64;
 	}
-	while ( r.size() != l ) r.push_back('0');
+	while ( (int)r.size() != l ) r.push_back('0');
 	std::reverse(r.begin(),r.end());
 	return r;
 }
@@ -52,7 +54,7 @@ unsigned from_base64(const std::string& s) {
 			r *= 64;
 			const char* c = strchr(chars,*i);
 			if ( !c ) throw IfcParse::IfcException("Failed to decode GlobalId");
-			r += (c-chars);
+			r += (unsigned)(c-chars);
 		}
 	return r;
 }
@@ -70,7 +72,7 @@ std::string compress(unsigned char* v) {
 
 // Expands the base64 representation into a UUID byte array
 void expand(const std::string& s, std::vector<unsigned char>& v) {
-	v.push_back(from_base64(s.substr(0,2)));
+	v.push_back((unsigned char)from_base64(s.substr(0,2)));
 	for( unsigned i = 0; i < 5; ++i ) {
 		unsigned d = from_base64(s.substr(2+4*i,4));
 		for ( unsigned j = 0; j < 3; ++ j ) {
@@ -87,7 +89,11 @@ IfcParse::IfcGlobalId::IfcGlobalId() {
 	std::vector<unsigned char> v(uuid_data.size());
 	std::copy(uuid_data.begin(), uuid_data.end(), v.begin());
 	string_data = compress(&v[0]);
+#if BOOST_VERSION < 104400
+	formatted_string = boost::lexical_cast<std::string>(uuid_data);
+#else
 	formatted_string = boost::uuids::to_string(uuid_data);
+#endif
 
 #ifndef NDEBUG
 	std::vector<unsigned char> test_vector;
@@ -106,7 +112,11 @@ IfcParse::IfcGlobalId::IfcGlobalId(const std::string& s)
 	std::vector<unsigned char> v;
 	expand(string_data, v);
 	std::copy(v.begin(), v.end(), uuid_data.begin());
+#if BOOST_VERSION < 104400
+	formatted_string = boost::lexical_cast<std::string>(uuid_data);
+#else
 	formatted_string = boost::uuids::to_string(uuid_data);
+#endif
 
 #ifndef NDEBUG
 	const std::string test_string = compress(&uuid_data.data[0]);

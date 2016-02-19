@@ -64,6 +64,8 @@
 #include <limits>
 #include <algorithm>
 
+#include <boost/algorithm/string.hpp>
+
 #include <gp_Mat.hxx>
 #include <gp_Mat2d.hxx>
 #include <gp_GTrsf.hxx>
@@ -125,10 +127,7 @@ namespace IfcGeom {
 		void populate_set(const std::set<std::string>& include_or_ignore) {
 			entities_to_include_or_exclude.clear();
 			for (std::set<std::string>::const_iterator it = include_or_ignore.begin(); it != include_or_ignore.end(); ++it) {
-				std::string uppercase_type = *it;
-				for (std::string::iterator c = uppercase_type.begin(); c != uppercase_type.end(); ++c) {
-					*c = toupper(*c);
-				}
+				const std::string uppercase_type = boost::to_upper_copy(*it);
 				IfcSchema::Type::Enum ty;
 				try {
 					ty = IfcSchema::Type::FromString(uppercase_type);
@@ -181,15 +180,15 @@ namespace IfcGeom {
 					// by the parent's context inverse attributes.
 					continue;
 				}
-				if (context->hasContextType()) {
-					std::string context_type_lc = context->ContextType();
-					for (std::string::iterator c = context_type_lc.begin(); c != context_type_lc.end(); ++c) {
-						*c = tolower(*c);
+				try {
+					if (context->hasContextType()) {
+						std::string context_type = context->ContextType();
+						boost::to_lower(context_type);
+						if (context_types.find(context_type) != context_types.end()) {
+							filtered_contexts->push(context);
+						}
 					}
-					if (context_types.find(context_type_lc) != context_types.end()) {
-						filtered_contexts->push(context);
-					}
-				}
+				} catch (const IfcParse::IfcException&) {}
 			}
 
 			// In case no contexts are identified based on their ContextType, all contexts are
@@ -207,10 +206,12 @@ namespace IfcGeom {
 				IfcSchema::IfcGeometricRepresentationContext* context = *it;
 
 				representations->push(context->RepresentationsInContext());
-				if (context->hasPrecision() && context->Precision() < lowest_precision_encountered) {
-					lowest_precision_encountered = context->Precision();
-					any_precision_encountered = true;
-				}
+				try {
+					if (context->hasPrecision() && context->Precision() < lowest_precision_encountered) {
+						lowest_precision_encountered = context->Precision();
+						any_precision_encountered = true;
+					}
+				} catch (const IfcParse::IfcException&) {}
 				IfcSchema::IfcGeometricRepresentationSubContext::list::ptr sub_contexts = context->HasSubContexts();
 				for (jt = sub_contexts->begin(); jt != sub_contexts->end(); ++jt) {
 					representations->push((*jt)->RepresentationsInContext());
@@ -288,7 +289,7 @@ namespace IfcGeom {
 		}
 
 		BRepElement<P>* create_shape_model_for_next_entity() {
-			while ( true ) {
+			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
 
 				// Have we reached the end of our list of representations?
@@ -321,16 +322,16 @@ namespace IfcGeom {
 
 						// Filter the products based on the set of entities being included or excluded for
 						// processing. The set is iterated over te able to filter on subtypes.
-						for ( IfcSchema::IfcProduct::list::it it = unfiltered_products->begin(); it != unfiltered_products->end(); ++it ) {
+						for ( IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt ) {
 							bool found = false;
-							for (std::set<IfcSchema::Type::Enum>::const_iterator jt = entities_to_include_or_exclude.begin(); jt != entities_to_include_or_exclude.end(); ++jt) {
-								if ((*it)->declaration().is(*jt)) {
+							for (std::set<IfcSchema::Type::Enum>::const_iterator kt = entities_to_include_or_exclude.begin(); kt != entities_to_include_or_exclude.end(); ++kt) {
+								if ((*jt)->declaration().is(*kt)) {
 									found = true;
 									break;
 								}
 							}
 							if (found == include_entities_in_processing) {
-								ifcproducts->push(*it);
+								ifcproducts->push(*jt);
 							}
 						}
 

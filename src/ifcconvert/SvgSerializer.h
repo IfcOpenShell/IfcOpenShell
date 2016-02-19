@@ -35,15 +35,14 @@ class SvgSerializer : public GeometrySerializer {
 public:
 	typedef std::pair<std::string, std::vector<util::string_buffer> > path_object;
 protected:
-	const char* getSymbolForUnitMagnitude(float mag);
 	std::ofstream svg_file;
 	double xmin, ymin, xmax, ymax, width, height;
 	boost::optional<double> section_height;
 	bool rescale;
 	std::multimap<IfcSchema::IfcBuildingStorey*, path_object> paths;
-	std::vector< SHARED_PTR<util::string_buffer::float_item> > xcoords;
-	std::vector< SHARED_PTR<util::string_buffer::float_item> > ycoords;
-	std::vector< SHARED_PTR<util::string_buffer::float_item> > radii;
+	std::vector< boost::shared_ptr<util::string_buffer::float_item> > xcoords;
+	std::vector< boost::shared_ptr<util::string_buffer::float_item> > ycoords;
+	std::vector< boost::shared_ptr<util::string_buffer::float_item> > radii;
 	IfcParse::IfcFile* file;
 public:
 	explicit SvgSerializer(const std::string& out_filename)
@@ -56,23 +55,25 @@ public:
 		, rescale(false)
 		, file(0)
 	{}
-	virtual void addXCoordinate(const SHARED_PTR<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
-	virtual void addYCoordinate(const SHARED_PTR<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
-	virtual void addSizeComponent(const SHARED_PTR<util::string_buffer::float_item>& fi) { radii.push_back(fi); }
+	virtual void addXCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
+	virtual void addYCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
+	virtual void addSizeComponent(const boost::shared_ptr<util::string_buffer::float_item>& fi) { radii.push_back(fi); }
+	virtual void growBoundingBox(double x, double y) { if (x < xmin) xmin = x; if (x > xmax) xmax = x; if (y < ymin) ymin = y; if (y > ymax) ymax = y; }
 	virtual ~SvgSerializer() {}
 	virtual void writeHeader();
-	virtual void writeMaterial(const IfcGeom::SurfaceStyle& style) {}
 	virtual bool ready();
-	virtual void write(const IfcGeom::TriangulationElement<double>* o) {}
+	virtual void write(const IfcGeom::TriangulationElement<double>* /*o*/) {}
 	virtual void write(const IfcGeom::BRepElement<double>* o);
 	virtual void write(path_object& p, const TopoDS_Wire& wire);
 	virtual path_object& start_path(IfcSchema::IfcBuildingStorey* storey, const std::string& id);
 	virtual bool isTesselated() const { return false; }
 	virtual void finalize();
-	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) {}
+	virtual void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	virtual void setFile(IfcParse::IfcFile* f) { file = f; }
 	virtual void setBoundingRectangle(double width, double height);
 	virtual void setSectionHeight(double h) { section_height = h; }
+	virtual std::string nameElement(const IfcGeom::Element<double>* elem);
+	virtual std::string nameElement(const IfcSchema::IfcProduct* elem);
 };
 
 #endif

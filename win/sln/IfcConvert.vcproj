@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="IfcMax"
-	ProjectGUID="{BD4D152C-8619-4DB9-8637-56DA166979F3}"
-	RootNamespace="IfcMax"
+	Name="IfcConvert"
+	ProjectGUID="{5B0BAAB3-9FC4-4C0C-9D38-8BF4B07F4A85}"
+	RootNamespace="IfcConvert"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -17,11 +17,10 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\build\debug"
-			IntermediateDirectory="..\temp\max\debug"
-			ConfigurationType="2"
+			OutputDirectory="..\..\build\debug"
+			IntermediateDirectory="..\..\temp\obj\debug"
+			ConfigurationType="1"
 			CharacterSet="2"
-			BuildLogFile="$(IntDir)\BuildLog.htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -61,9 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib zlibdll.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib flt.lib geom.lib gfx.lib gup.lib helpsys.lib imageViewers.lib ManipSys.lib maxnet.lib Maxscrpt.lib maxutil.lib MenuMan.lib menus.lib mesh.lib MNMath.lib Paramblk2.lib particle.lib Poly.lib RenderUtil.lib SpringSys.lib tessint.lib viewfile.lib acap.lib TKerneld.lib TKMathd.lib TKBRepd.lib TKGeomBased.lib TKGeomAlgod.lib TKG3dd.lib TKG2dd.lib TKShHealingd.lib TKTopAlgod.lib TKMeshd.lib TKPrimd.lib TKBoold.lib TKBOd.lib TKFilletd.lib"
-				OutputFile="$(OutDir)\$(ProjectName).dli"
-				ModuleDefinitionFile="..\src\ifcmax\ifcmax.def"
+				AdditionalDependencies="TKerneld.lib TKMathd.lib TKBRepd.lib TKGeomBased.lib TKGeomAlgod.lib TKG3dd.lib TKG2dd.lib TKShHealingd.lib TKTopAlgod.lib TKMeshd.lib TKPrimd.lib TKBoold.lib TKBOd.lib TKFilletd.lib TKSTEPd.lib TKSTEPBased.lib TKSTEPAttrd.lib TKXSBased.lib TKSTEP209d.lib TKIGESd.lib TKOffsetd.lib"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -91,9 +88,9 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\build\release"
-			IntermediateDirectory="..\temp\max\release"
-			ConfigurationType="2"
+			OutputDirectory="..\..\build\release"
+			IntermediateDirectory="..\..\temp\obj\release"
+			ConfigurationType="1"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
@@ -115,11 +112,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/DWNT"
-				Optimization="3"
-				InlineFunctionExpansion="2"
+				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
@@ -136,9 +130,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib zlibdll.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib flt.lib geom.lib gfx.lib gup.lib helpsys.lib imageViewers.lib ManipSys.lib maxnet.lib Maxscrpt.lib maxutil.lib MenuMan.lib menus.lib mesh.lib MNMath.lib Paramblk2.lib particle.lib Poly.lib RenderUtil.lib SpringSys.lib tessint.lib viewfile.lib acap.lib TKernel.lib TKMath.lib TKBRep.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKShHealing.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKBool.lib TKBO.lib TKFillet.lib"
-				OutputFile="$(OutDir)\$(ProjectName).dli"
-				ModuleDefinitionFile="..\src\ifcmax\ifcmax.def"
+				AdditionalDependencies="TKernel.lib TKMath.lib TKBRep.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKShHealing.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKBool.lib TKBO.lib TKFillet.lib TKSTEP.lib TKSTEPBase.lib TKSTEPAttr.lib TKXSBase.lib TKSTEP209.lib TKIGES.lib TKOffset.lib"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -176,7 +168,31 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\src\ifcmax\IfcMax.cpp"
+				RelativePath="..\..\src\ifcconvert\ColladaSerializer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\IfcConvert.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\OpenCascadeBasedSerializer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\SvgSerializer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\util.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\WavefrontObjSerializer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\XmlSerializer.cpp"
 				>
 			</File>
 		</Filter>
@@ -186,18 +202,46 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\src\ifcmax\IfcMax.h"
+				RelativePath="..\..\src\ifcconvert\ColladaSerializer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcmax\MaxMaterials.h"
+				RelativePath="..\..\src\ifcconvert\GeometrySerializer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\IgesSerializer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\OpenCascadeBasedSerializer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\StepSerializer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\Serializer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\SvgSerializer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\util.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\WavefrontObjSerializer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcconvert\XmlSerializer.h"
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath="..\src\ifcmax\IfcMax.def"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

@@ -196,4 +196,6 @@ implementation.Implementation(mapping).emit()
 latebound_header.LateBoundHeader(mapping).emit()
 latebound_implementation.LateBoundImplementation(mapping).emit()
 schema_class.SchemaClass(mapping).emit()
+
+sys.stdout.write(mapping.schema.name)
 """%('\n    '.join(statements)))

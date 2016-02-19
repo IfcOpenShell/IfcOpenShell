@@ -41,6 +41,10 @@
 #include "../ifcparse/IfcHierarchyHelper.h"
 #include "../ifcgeom/IfcGeom.h"
 
+#if USE_VLD
+#include <vld.h>
+#endif
+
 // Some convenience typedefs and definitions. 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
@@ -50,7 +54,7 @@ boost::none_t const null = boost::none;
 // The creation of Nurbs-surface for the IfcSite mesh, to be implemented lateron
 void createGroundShape(TopoDS_Shape& shape);
 
-int main(int argc, char** argv) {
+int main() {
 
 	// The IfcHierarchyHelper is a subclass of the regular IfcFile that provides several
 	// convenience functions for working with geometry in IFC files.
@@ -195,42 +199,45 @@ int main(int argc, char** argv) {
 	file.addBuildingProduct(north_wall);
 	file.setSurfaceColour(north_wall->Representation(), wall_colour);
 
-	IfcSchema::IfcShapeRepresentation* clipped_wall_body_rep = file.addEmptyRepresentation();
-	file.addBox(clipped_wall_body_rep, 5000, 360, 6000);
-	// The east wall geometry is clipped using two IfcHalfSpaceSolids, created from an 
-	// 'axis 3d placement' that specifies the plane against which the geometry is clipped.
-	file.clipRepresentation(clipped_wall_body_rep, file.addPlacement3d(-2500, 0, 3000, -1, 0, 1), false);
-	file.clipRepresentation(clipped_wall_body_rep, file.addPlacement3d(2500, 0, 3000, 1, 0, 1), false);
+	// Two identical representations are created for the two remaining walls. Mapped items
+	// are not used, because it is not allowed by the standard for wall body representations.
+	// MappedItems are not allowed for Axis representations as per CV-2x3-161
+	IfcSchema::IfcProductDefinitionShape* clipped_wall_body_reps[2];
+	for (int i = 0; i < 2; ++i) {
+		IfcSchema::IfcShapeRepresentation* body = file.addEmptyRepresentation();
+		file.addBox(body, 5000, 360, 6000);
+		// The wall geometry is clipped using two IfcHalfSpaceSolids, created from an 
+		// 'axis 3d placement' that specifies the plane against which the geometry is clipped.
+		file.clipRepresentation(body, file.addPlacement3d(-2500, 0, 3000, -1, 0, 1), false);
+		file.clipRepresentation(body, file.addPlacement3d(2500, 0, 3000, 1, 0, 1), false);
+		file.setSurfaceColour(body, wall_colour);
+
+		IfcSchema::IfcShapeRepresentation* axis = file.addEmptyRepresentation("Axis", "Curve2D");
+		file.addAxis(axis, 5000);
+
+		IfcSchema::IfcRepresentation::list::ptr reps(new IfcSchema::IfcRepresentation::list);
+		reps->push(body);
+		reps->push(axis);
+		clipped_wall_body_reps[i] = new IfcSchema::IfcProductDefinitionShape(null, null, reps);
+	}
 
 	// Now create a wall on the east of the building, again starting with just a box shape
 	IfcSchema::IfcWallStandardCase* east_wall = new IfcSchema::IfcWallStandardCase(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
-		S("East wall"), null, null, file.addLocalPlacement(storey_placement, 4820, 2500, 0, 0, 0, 1, 0, 1, 0), file.addMappedItem(clipped_wall_body_rep), null
+		S("East wall"), null, null, file.addLocalPlacement(storey_placement, 4820, 2500, 0, 0, 0, 1, 0, 1, 0), clipped_wall_body_reps[0], null
 #ifdef USE_IFC4
 		, IfcSchema::IfcWallTypeEnum::IfcWallType_STANDARD
 #endif	
 	);
 	file.addBuildingProduct(east_wall);
 
-	file.setSurfaceColour(clipped_wall_body_rep, wall_colour);
-
 	// The east wall is copied to the west location of the house
 	IfcSchema::IfcWallStandardCase* west_wall = new IfcSchema::IfcWallStandardCase(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
-		S("West wall"), null, null, file.addLocalPlacement(storey_placement, -4820, 2500, 0, 0, 0, 1, 0, -1, 0), file.addMappedItem(clipped_wall_body_rep), null
+		S("West wall"), null, null, file.addLocalPlacement(storey_placement, -4820, 2500, 0, 0, 0, 1, 0, -1, 0), clipped_wall_body_reps[1], null
 #ifdef USE_IFC4
 		, IfcSchema::IfcWallTypeEnum::IfcWallType_STANDARD
 #endif	
 	);
 	file.addBuildingProduct(west_wall);
-
-	for (int i = 0; i < 2; ++i) {
-		// CV-2x3-161: MappedItems are not allowed for Axis representations
-		IfcSchema::IfcWallStandardCase* wall = i == 0 ? east_wall : west_wall;
-		IfcSchema::IfcShapeRepresentation* wall_axis_rep = file.addEmptyRepresentation("Axis", "Curve2D");
-		file.addAxis(wall_axis_rep, 5000);
-		IfcSchema::IfcRepresentation::list::ptr reps = wall->Representation()->Representations();
-		reps->push(wall_axis_rep);
-		wall->Representation()->setRepresentations(reps);
-	}
 
 	// The west wall is assigned an opening element we created for the south wall, opening elements are
 	// not shared accross building elements, even if they share the same representation. Hence, the east
@@ -380,6 +387,10 @@ int main(int argc, char** argv) {
 	file.addBuildingProduct(door);
 	file.setSurfaceColour(door->Representation(), 0.9, 0.9, 0.9);
 	file.addEntity(new IfcSchema::IfcRelFillsElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, door_opening, door));
+
+	IfcSchema::IfcDoorStyle* door_style = new IfcSchema::IfcDoorStyle(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), S("Door type"), null, null, null, null, null,
+		IfcSchema::IfcDoorStyleOperationEnum::IfcDoorStyleOperation_SINGLE_SWING_LEFT, IfcSchema::IfcDoorStyleConstructionEnum::IfcDoorStyleConstruction_WOOD, false, false);
+	file.addRelatedObject<IfcSchema::IfcRelDefinesByType>(door_style, door);
 
 	// Surface styles are assigned to representation items, hence there is no real limitation to
 	// assign different colours within the same representation. However, some viewers have 

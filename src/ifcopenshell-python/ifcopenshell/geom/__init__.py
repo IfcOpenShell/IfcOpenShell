@@ -31,7 +31,7 @@ def has_occ():
 has_occ = has_occ()
 wrap_shape_creation = lambda settings, shape: shape
 if has_occ:
-    import occ_utils as utils
+    from . import occ_utils as utils
     wrap_shape_creation = lambda settings, shape: utils.create_shape_from_serialization(shape) if getattr(settings, 'use_python_opencascade', False) else shape
 
 

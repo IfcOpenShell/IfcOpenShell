@@ -1,0 +1,10 @@
+# Dependency and build folders created by the build scripts
+/deps*/
+/build*/
+/install*/
+/win/BuildDepsCache*.txt
+# IfcExpressParser residue
+/src/ifcexpressparser/__pycache__
+/src/ifcexpressparser/express_parser.py
+# Python test residue
+/test/__pycache__

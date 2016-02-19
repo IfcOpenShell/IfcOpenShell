@@ -24,19 +24,19 @@
 
 using namespace util;
 
-SHARED_PTR<string_buffer::string_item> string_buffer::add(const std::string& s) {
-	SHARED_PTR<string_item> i = SHARED_PTR<string_item>(new string_item(s));
+boost::shared_ptr<string_buffer::string_item> string_buffer::add(const std::string& s) {
+	boost::shared_ptr<string_item> i = boost::shared_ptr<string_item>(new string_item(s));
 	items.push_back(i);
 	return i;
 }
-SHARED_PTR<string_buffer::float_item> string_buffer::add(const double& d) {
-	SHARED_PTR<float_item> i = SHARED_PTR<float_item>(new float_item(d));
+boost::shared_ptr<string_buffer::float_item> string_buffer::add(const double& d) {
+	boost::shared_ptr<float_item> i = boost::shared_ptr<float_item>(new float_item(d));
 	items.push_back(i);
 	return i;
 }
 std::string string_buffer::str() const {
 	std::stringstream ss;
-	for (std::vector< SHARED_PTR<item> >::const_iterator it = items.begin(); it != items.end(); ++it) {
+	for (std::vector< boost::shared_ptr<item> >::const_iterator it = items.begin(); it != items.end(); ++it) {
 		ss << (**it).str();
 	}
 	return ss.str();

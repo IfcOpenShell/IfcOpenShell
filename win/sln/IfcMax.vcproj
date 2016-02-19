@@ -2,10 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="IfcParseExamples"
-	ProjectGUID="{4DA9E9D7-60A6-4031-BA78-A3741BD62CB9}"
-	RootNamespace="IfcParseExamples"
-	Keyword="Win32Proj"
+	Name="IfcMax"
+	ProjectGUID="{BD4D152C-8619-4DB9-8637-56DA166979F3}"
+	RootNamespace="IfcMax"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -18,10 +17,11 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\build\debug"
-			IntermediateDirectory="..\temp\examples\debug"
-			ConfigurationType="1"
-			CharacterSet="1"
+			OutputDirectory="..\..\build\debug"
+			IntermediateDirectory="..\..\temp\max\debug"
+			ConfigurationType="2"
+			CharacterSet="2"
+			BuildLogFile="$(IntDir)\BuildLog.htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -40,12 +40,13 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/DWNT"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="0"
+				ProgramDataBaseFileName="$(IntDir)\vc90.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -60,10 +61,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies=""
-				LinkIncremental="2"
+				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib zlibdll.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib flt.lib geom.lib gfx.lib gup.lib helpsys.lib imageViewers.lib ManipSys.lib maxnet.lib Maxscrpt.lib maxutil.lib MenuMan.lib menus.lib mesh.lib MNMath.lib Paramblk2.lib particle.lib Poly.lib RenderUtil.lib SpringSys.lib tessint.lib viewfile.lib acap.lib TKerneld.lib TKMathd.lib TKBRepd.lib TKGeomBased.lib TKGeomAlgod.lib TKG3dd.lib TKG2dd.lib TKShHealingd.lib TKTopAlgod.lib TKMeshd.lib TKPrimd.lib TKBoold.lib TKBOd.lib TKFilletd.lib"
+				OutputFile="$(OutDir)\$(ProjectName).dli"
+				ModuleDefinitionFile="..\..\src\ifcmax\ifcmax.def"
 				GenerateDebugInformation="true"
-				SubSystem="1"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -90,10 +91,10 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\build\release"
-			IntermediateDirectory="..\temp\examples\release"
-			ConfigurationType="1"
-			CharacterSet="1"
+			OutputDirectory="..\..\build\release"
+			IntermediateDirectory="..\..\temp\max\release"
+			ConfigurationType="2"
+			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -113,12 +114,14 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
+				AdditionalOptions="/DWNT"
+				Optimization="3"
+				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -133,10 +136,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies=""
-				LinkIncremental="1"
+				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib zlibdll.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib flt.lib geom.lib gfx.lib gup.lib helpsys.lib imageViewers.lib ManipSys.lib maxnet.lib Maxscrpt.lib maxutil.lib MenuMan.lib menus.lib mesh.lib MNMath.lib Paramblk2.lib particle.lib Poly.lib RenderUtil.lib SpringSys.lib tessint.lib viewfile.lib acap.lib TKernel.lib TKMath.lib TKBRep.lib TKGeomBase.lib TKGeomAlgo.lib TKG3d.lib TKG2d.lib TKShHealing.lib TKTopAlgo.lib TKMesh.lib TKPrim.lib TKBool.lib TKBO.lib TKFillet.lib"
+				OutputFile="$(OutDir)\$(ProjectName).dli"
+				ModuleDefinitionFile="..\..\src\ifcmax\ifcmax.def"
 				GenerateDebugInformation="true"
-				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
@@ -173,7 +176,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\src\examples\IfcParseExamples.cpp"
+				RelativePath="..\..\src\ifcmax\IfcMax.cpp"
 				>
 			</File>
 		</Filter>
@@ -182,13 +185,19 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\..\src\ifcmax\IfcMax.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcmax\MaxMaterials.h"
+				>
+			</File>
 		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
+		<File
+			RelativePath="..\..\src\ifcmax\IfcMax.def"
 			>
-		</Filter>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

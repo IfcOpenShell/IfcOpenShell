@@ -32,6 +32,7 @@
 #include <time.h>
 
 #include <boost/program_options.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "../ifcparse/Hdf5Settings.h"
 
@@ -43,6 +44,13 @@
 #include "../ifcconvert/WavefrontObjSerializer.h"
 #include "../ifcconvert/XmlSerializer.h"
 #include "../ifcconvert/SvgSerializer.h"
+
+#include <IGESControl_Controller.hxx>
+#include <Standard_Version.hxx>
+
+#if USE_VLD
+#include <vld.h>
+#endif
 
 static std::string DEFAULT_EXTENSION = "obj";
 
@@ -124,11 +132,17 @@ int main(int argc, char** argv) {
 			"This is a potentially time consuming operation, but guarantees a "
 			"consistent orientation of surface normals, even if the faces are not "
 			"properly oriented in the IFC file.")
+#if OCC_VERSION_HEX < 0x60900
+		// In Open CASCADE version prior to 6.9.0 boolean operations with multiple
+		// arguments where not introduced yet and a work-around was implemented to
+		// subtract multiple openings as a single compound. This hack is obsolete
+		// for newer versions of Open CASCADE.
 		("merge-boolean-operands", 
 			"Specifies whether to merge all IfcOpeningElement operands into a single "
 			"operand before applying the subtraction operation. This may "
 			"introduce a performance improvement at the risk of failing, in "
 			"which case the subtraction is applied one-by-one.")
+#endif
 		("disable-opening-subtractions", 
 			"Specifies whether to disable the boolean subtraction of "
 			"IfcOpeningElement Representations from their RelatingElements.")
@@ -186,7 +200,9 @@ int main(int argc, char** argv) {
 	const bool use_world_coords = vmap.count("use-world-coords") != 0;
 	const bool convert_back_units = vmap.count("convert-back-units") != 0;
 	const bool sew_shells = vmap.count("sew-shells") != 0;
+#if OCC_VERSION_HEX < 0x60900
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
+#endif
 	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
 	bool include_entities = vmap.count("include") != 0;
 	const bool include_plan = vmap.count("plan") != 0;
@@ -207,11 +223,8 @@ int main(int argc, char** argv) {
 	// Gets the set ifc types to be ignored from the command line. 
 	std::set<std::string> entities;
 	for (std::vector<std::string>::const_iterator it = entity_vector.begin(); it != entity_vector.end(); ++it) {
-		std::string lowercase_type = *it;
-		for (std::string::iterator c = lowercase_type.begin(); c != lowercase_type.end(); ++c) {
-			*c = tolower(*c);
-		}
-		entities.insert(lowercase_type);
+		const std::string& mixed_case_type = *it;
+		entities.insert(boost::to_lower_copy(mixed_case_type));
 	}
 	
 	const std::string input_filename = vmap["input-file"].as<std::string>();
@@ -227,9 +240,7 @@ int main(int argc, char** argv) {
 	}
 
 	std::string output_extension = output_filename.substr(output_filename.size()-4);
-	for (std::string::iterator c = output_extension.begin(); c != output_extension.end(); ++c) {
-		*c = tolower(*c);
-	}
+	boost::to_lower(output_extension);
 
 	// If no entities are specified these are the defaults to skip from output
 	if (entity_vector.empty()) {
@@ -292,7 +303,9 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES,                weld_vertices);
 	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS,                   sew_shells);
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS,           convert_back_units);
+#if OCC_VERSION_HEX < 0x60900
 	settings.set(IfcGeom::IteratorSettings::FASTER_BOOLEANS,              merge_boolean_operands);
+#endif
 	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
 	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);

@@ -19,6 +19,10 @@
 
 #include "../ifcparse/IfcFile.h"
 
+#if USE_VLD
+#include <vld.h>
+#endif
+
 using namespace IfcSchema;
 
 int main(int argc, char** argv) {

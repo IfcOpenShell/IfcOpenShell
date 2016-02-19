@@ -1,3 +1,22 @@
+/********************************************************************************
+*                                                                              *
+* This file is part of IfcOpenShell.                                           *
+*                                                                              *
+* IfcOpenShell is free software: you can redistribute it and/or modify         *
+* it under the terms of the Lesser GNU General Public License as published by  *
+* the Free Software Foundation, either version 3.0 of the License, or          *
+* (at your option) any later version.                                          *
+*                                                                              *
+* IfcOpenShell is distributed in the hope that it will be useful,              *
+* but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+* Lesser GNU General Public License for more details.                          *
+*                                                                              *
+* You should have received a copy of the Lesser GNU General Public License     *
+* along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+*                                                                              *
+********************************************************************************/
+
 #include <map>
 
 #include <boost/property_tree/ptree.hpp>
@@ -6,6 +25,8 @@
 #include <boost/version.hpp>
 
 #include "XmlSerializer.h"
+
+#include <algorithm>
 
 using boost::property_tree::ptree;
 using namespace IfcSchema;
@@ -58,7 +79,8 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 					unit_name = unit->Name();
 				}
 
-				for (std::string::iterator c = unit_name.begin(); c != unit_name.end(); ++c) *c = tolower(*c);
+				// TODO add toLower() and toUpper() string helper functions for the project
+				std::transform(unit_name.begin(), unit_name.end(), unit_name.begin(), ::tolower);
 
 				value = unit_name;
 			}

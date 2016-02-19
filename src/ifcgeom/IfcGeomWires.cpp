@@ -168,6 +168,25 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 		//last_vertex = w.Vertex();
 		if ( w.Error() != BRepBuilderAPI_WireDone ) {
 			Logger::Message(Logger::LOG_ERROR, "Failed to join curve segments:", l);
+
+			TopoDS_Vertex v1, v2, last;
+			last = w.Vertex();
+				
+			if (!last.IsNull()) {
+				std::stringstream ss;
+				gp_Pnt p = BRep_Tool::Pnt(last);
+				ss << std::setprecision(4) << "Last vertex at (" << p.X() << " " << p.Y() << " " << p.Z() << ")";
+				Logger::Message(Logger::LOG_NOTICE, ss.str());
+			}
+
+			TopExp::Vertices(wire2, v1, v2);
+			if (!v1.IsNull()) {
+				std::stringstream ss;
+				gp_Pnt p = BRep_Tool::Pnt(v1);
+				ss << std::setprecision(4) << "Segment starts at (" << p.X() << " " << p.Y() << " " << p.Z() << ") for:";
+				Logger::Message(Logger::LOG_NOTICE, ss.str(), *it);
+			}
+			
 			return false;
 		}
 	}
@@ -184,8 +203,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	bool trim_cartesian = l->MasterRepresentation() == IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN;
 	IfcEntityList::ptr trims1 = l->Trim1();
 	IfcEntityList::ptr trims2 = l->Trim2();
-	bool trimmed1 = false;
-	bool trimmed2 = false;
 	unsigned sense_agreement = l->SenseAgreement() ? 0 : 1;
 	double flts[2];
 	gp_Pnt pnts[2];
@@ -257,7 +274,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 				flts[1] -= M_PI / 2.;
 			}
 		}
-		if ( isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],(double)(M_PI*2.0)),0.0f) ) {
+		if ( isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.),0.) ) {
 			w.Add(BRepBuilderAPI_MakeEdge(curve));
 		} else {
 			BRepBuilderAPI_MakeEdge e (curve,flts[0],flts[1]);
@@ -286,7 +303,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& resu
 	}
 
 	// Remove points that are too close to one another
-	remove_redundant_points_from_loop(polygon, false);
+	remove_duplicate_points_from_loop(polygon, false);
 	
 	BRepBuilderAPI_MakePolygon w;
 	for (int i = 1; i <= polygon.Length(); ++i) {
@@ -316,7 +333,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& resu
 	}
 
 	// Remove points that are too close to one another
-	remove_redundant_points_from_loop(polygon, true);
+	remove_duplicate_points_from_loop(polygon, true);
 
 	int count = polygon.Length();
 	if (original_count - count != 0) {
@@ -411,9 +428,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeLoop* l, TopoDS_Wire& resu
 		TopoDS_Wire w;
 		if (convert_wire(*it, w)) {
 			if (!(*it)->Orientation()) w.Reverse();
-			TopoDS_Iterator it(w, false);
-			for (; it.More(); it.Next()) {
-				const TopoDS_Edge& e = TopoDS::Edge(it.Value());
+			TopoDS_Iterator topoit(w, false);
+			for (; topoit.More(); topoit.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(topoit.Value());
 				mw.Add(e);
 			}
 			// mw.Add(w);

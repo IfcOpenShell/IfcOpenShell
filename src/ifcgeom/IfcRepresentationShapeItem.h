@@ -46,6 +46,7 @@ namespace IfcGeom {
 		const gp_GTrsf& Placement() const { return placement; }
 		bool hasStyle() const { return style != 0; }
 		const SurfaceStyle& Style() const { return *style; }
+		void setStyle(const SurfaceStyle* style) { this->style = style; }
 	};
 	typedef std::vector<IfcRepresentationShapeItem> IfcRepresentationShapeItems;
 }

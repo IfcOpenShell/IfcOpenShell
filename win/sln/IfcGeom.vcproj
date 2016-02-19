@@ -2,9 +2,10 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="IfcParse"
-	ProjectGUID="{F7600775-3D48-426A-88E2-F3A4BF4408A2}"
-	RootNamespace="IfcParse"
+	Name="IfcGeom"
+	ProjectGUID="{BA57AF0F-1D12-4FAC-BD40-7474D729CAE9}"
+	RootNamespace="IfcGeom"
+	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -17,11 +18,10 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\build\debug"
-			IntermediateDirectory="..\temp\parse\debug"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
-			CharacterSet="2"
-			BuildLogFile="$(IntDir)\BuildLog.htm"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -42,11 +42,11 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/DWNT"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				ProgramDataBaseFileName="$(IntDir)\vc90.pdb"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -80,10 +80,10 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\build\release"
-			IntermediateDirectory="..\temp\parse\release"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
-			CharacterSet="2"
+			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -106,9 +106,10 @@
 				AdditionalOptions="/DWNT"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				GeneratePreprocessedFile="0"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -150,87 +151,43 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\src\ifcparse\Ifc2x3-latebound.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalOptions="/bigobj"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\Ifc2x3.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalOptions="/bigobj"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\Ifc4-latebound.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalOptions="/bigobj"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\Ifc4.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalOptions="/bigobj"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\ifcparse\IfcCharacterDecoder.cpp"
+				RelativePath="..\..\src\ifcgeom\IfcGeomCurves.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcParse.cpp"
+				RelativePath="..\..\src\ifcgeom\IfcGeomFaces.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcUtil.cpp"
+				RelativePath="..\..\src\ifcgeom\IfcGeomFunctions.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcWrite.cpp"
+				RelativePath="..\..\src\ifcgeom\IfcGeomHelpers.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcSIPrefix.cpp"
+				RelativePath="..\..\src\ifcgeom\IfcGeomMaterial.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcSpfHeader.cpp"
+				RelativePath="..\..\src\ifcgeom\IfcGeomRenderStyles.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcGlobalId.cpp"
+				RelativePath="..\..\src\ifcgeom\IfcGeomRepresentation.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcHierarchyHelper.cpp"
+				RelativePath="..\..\src\ifcgeom\IfcGeomShapes.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcLateBoundEntity.cpp"
+				RelativePath="..\..\src\ifcgeom\IfcGeomWires.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ifcgeom\IfcRegister.cpp"
 				>
 			</File>
 		</Filter>
@@ -240,89 +197,95 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\src\ifcparse\Ifc2x3-latebound.h"
+				RelativePath="..\..\src\ifcgeom\IfcGeom.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\Ifc2x3.h"
+				RelativePath="..\..\src\ifcgeom\IfcGeomElement.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\Ifc2x3enum.h"
+				RelativePath="..\..\src\ifcgeom\IfcGeomIterator.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\Ifc4-latebound.h"
+				RelativePath="..\..\src\ifcgeom\IfcGeomIteratorSettings.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\Ifc4.h"
+				RelativePath="..\..\src\ifcgeom\IfcGeomMaterial.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\Ifc4enum.h"
+				RelativePath="..\..\src\ifcgeom\IfcGeomRenderStyles.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcCharacterDecoder.h"
+				RelativePath="..\..\src\ifcgeom\IfcGeomRepresentation.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcEntityDescriptor.h"
+				RelativePath="..\..\src\ifcgeom\IfcGeomShapeType.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcException.h"
+				RelativePath="..\..\src\ifcgeom\IfcRegister.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcFile.h"
+				RelativePath="..\..\src\ifcgeom\IfcRegisterConvertCurve.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcGlobalId.h"
+				RelativePath="..\..\src\ifcgeom\IfcRegisterConvertFace.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcHierarchyHelper.h"
+				RelativePath="..\..\src\ifcgeom\IfcRegisterConvertShape.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcLateBoundEntity.h"
+				RelativePath="..\..\src\ifcgeom\IfcRegisterConvertShapes.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcParse.h"
+				RelativePath="..\..\src\ifcgeom\IfcRegisterConvertWire.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcSIPrefix.h"
+				RelativePath="..\..\src\ifcgeom\IfcRegisterCreateCache.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcSpfHeader.h"
+				RelativePath="..\..\src\ifcgeom\IfcRegisterDef.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcSpfStream.h"
+				RelativePath="..\..\src\ifcgeom\IfcRegisterGeomHeader.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcUtil.h"
+				RelativePath="..\..\src\ifcgeom\IfcRegisterPurgeCache.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcWritableEntity.h"
+				RelativePath="..\..\src\ifcgeom\IfcRegisterShapeType.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\IfcWrite.h"
+				RelativePath="..\..\src\ifcgeom\IfcRegisterUndef.h"
 				>
 			</File>
 			<File
-				RelativePath="..\src\ifcparse\SharedPointer.h"
+				RelativePath="..\..\src\ifcgeom\IfcRepresentationShapeItem.h"
 				>
 			</File>
+		</Filter>
+		<Filter
+			Name="Resource Files"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
+			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
+			>
 		</Filter>
 	</Files>
 	<Globals>

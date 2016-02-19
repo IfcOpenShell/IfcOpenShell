@@ -18,29 +18,34 @@
 ###############################################################################
 
 import nodes
+import platform
 import collections
+
+if tuple(map(int, platform.python_version_tuple())) < (2, 7):
+    import ordereddict
+    collections.OrderedDict = ordereddict.OrderedDict
 
 class Schema:
     def is_enumeration(self, v):
-        return v in self.enumerations
+        return str(v) in self.enumerations
     def is_select(self, v):
-        return v in self.selects
+        return str(v) in self.selects
     def is_simpletype(self, v):
-        return v in self.simpletypes
+        return str(v) in self.simpletypes
     def is_type(self, v):
-        return v in self.types
+        return str(v) in self.types
     def is_entity(self, v):
-        return v in self.entities
+        return str(v) in self.entities
     def __init__(self, parsetree):
         self.name = parsetree[1]
 
-        sort = lambda d: collections.OrderedDict(sorted(d.items()))
+        sort = lambda d: collections.OrderedDict(sorted(d))
 
-        self.types = sort({t.name:t for t in parsetree if isinstance(t, nodes.TypeDeclaration)})
-        self.entities = sort({t.name:t for t in parsetree if isinstance(t, nodes.EntityDeclaration)})
+        self.types = sort([(t.name,t) for t in parsetree if isinstance(t, nodes.TypeDeclaration)])
+        self.entities = sort([(t.name,t) for t in parsetree if isinstance(t, nodes.EntityDeclaration)])
 
-        of_type = lambda *types: sort({a: b.type.type for a,b in self.types.items() if any(isinstance(b.type.type, ty) for ty in types)})
+        of_type = lambda *types: sort([(a, b.type.type) for a,b in self.types.items() if any(isinstance(b.type.type, ty) for ty in types)])
 
         self.enumerations = of_type(nodes.EnumerationType)
         self.selects = of_type(nodes.SelectType)
-        self.simpletypes = of_type(str, nodes.AggregationType)
+        self.simpletypes = of_type(str, nodes.AggregationType, nodes.BinaryType)

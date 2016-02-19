@@ -78,8 +78,8 @@ public:
 		double xx=1.0, double xy=0.0, double xz=0.0);
 
 	template <class T>
-	void addRelatedObject(IfcSchema::IfcObjectDefinition* related_object, 
-		IfcSchema::IfcObjectDefinition* relating_object, IfcSchema::IfcOwnerHistory* owner_hist = 0)
+	void addRelatedObject(IfcSchema::IfcObjectDefinition* relating_object, 
+		IfcSchema::IfcObjectDefinition* related_object, IfcSchema::IfcOwnerHistory* owner_hist = 0)
 	{
 		typename T::list::ptr li = entitiesByType<T>();
 		bool found = false;
@@ -100,9 +100,9 @@ public:
 			if (! owner_hist) {
 				owner_hist = addOwnerHistory();
 			}
-			IfcSchema::IfcObjectDefinition::list::ptr relating_objects (new IfcTemplatedEntityList<IfcSchema::IfcObjectDefinition>());
-			relating_objects->push(relating_object);
-			T* t = new T(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, related_object, relating_objects);
+			IfcSchema::IfcObjectDefinition::list::ptr related_objects (new IfcTemplatedEntityList<IfcSchema::IfcObjectDefinition>());
+			related_objects->push(related_object);
+			T* t = new T(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, relating_object, related_objects);
 			addEntity(t);
 		}
 	}
@@ -174,14 +174,14 @@ private:
 };
 
 template <>
-inline void IfcHierarchyHelper::addRelatedObject <IfcSchema::IfcRelContainedInSpatialStructure> (IfcSchema::IfcObjectDefinition* related_object, 
-	IfcSchema::IfcObjectDefinition* relating_object, IfcSchema::IfcOwnerHistory* owner_hist)
+inline void IfcHierarchyHelper::addRelatedObject <IfcSchema::IfcRelContainedInSpatialStructure> (IfcSchema::IfcObjectDefinition* relating_structure, 
+	IfcSchema::IfcObjectDefinition* related_object, IfcSchema::IfcOwnerHistory* owner_hist)
 {
 	IfcSchema::IfcRelContainedInSpatialStructure::list::ptr li = entitiesByType<IfcSchema::IfcRelContainedInSpatialStructure>();
 	bool found = false;
 	for (IfcSchema::IfcRelContainedInSpatialStructure::list::it i = li->begin(); i != li->end(); ++i) {
 		IfcSchema::IfcRelContainedInSpatialStructure* rel = *i;
-		if (rel->RelatingStructure() == relating_object) {
+		if (rel->RelatingStructure() == relating_structure) {
 			IfcSchema::IfcProduct::list::ptr products = rel->RelatedElements();
 			products->push((IfcSchema::IfcProduct*)related_object);
 			rel->setRelatedElements(products);
@@ -196,10 +196,42 @@ inline void IfcHierarchyHelper::addRelatedObject <IfcSchema::IfcRelContainedInSp
 		if (! owner_hist) {
 			owner_hist = addOwnerHistory();
 		}
-		IfcSchema::IfcProduct::list::ptr relating_objects (new IfcTemplatedEntityList<IfcSchema::IfcProduct>());
-		relating_objects->push((IfcSchema::IfcProduct*)relating_object);
+		IfcSchema::IfcProduct::list::ptr related_objects (new IfcTemplatedEntityList<IfcSchema::IfcProduct>());
+		related_objects->push((IfcSchema::IfcProduct*)related_object);
 		IfcSchema::IfcRelContainedInSpatialStructure* t = new IfcSchema::IfcRelContainedInSpatialStructure(IfcParse::IfcGlobalId(), owner_hist, 
-			boost::none, boost::none, relating_objects, (IfcSchema::IfcSpatialStructureElement*)related_object);
+			boost::none, boost::none, related_objects, (IfcSchema::IfcSpatialStructureElement*)relating_structure);
+
+		addEntity(t);
+	}
+}
+
+template <>
+inline void IfcHierarchyHelper::addRelatedObject <IfcSchema::IfcRelDefinesByType> (IfcSchema::IfcObjectDefinition* relating_type, 
+	IfcSchema::IfcObjectDefinition* related_object, IfcSchema::IfcOwnerHistory* owner_hist)
+{
+	IfcSchema::IfcRelDefinesByType::list::ptr li = entitiesByType<IfcSchema::IfcRelDefinesByType>();
+	bool found = false;
+	for (IfcSchema::IfcRelDefinesByType::list::it i = li->begin(); i != li->end(); ++i) {
+		IfcSchema::IfcRelDefinesByType* rel = *i;
+		if (rel->RelatingType() == relating_type) {
+			IfcSchema::IfcObject::list::ptr objects = rel->RelatedObjects();
+			objects->push((IfcSchema::IfcObject*)related_object);
+			rel->setRelatedObjects(objects);
+			found = true;
+			break;
+		}
+	}
+	if (! found) {
+		if (! owner_hist) {
+			owner_hist = getSingle<IfcSchema::IfcOwnerHistory>();
+		}
+		if (! owner_hist) {
+			owner_hist = addOwnerHistory();
+		}
+		IfcSchema::IfcObject::list::ptr related_objects (new IfcTemplatedEntityList<IfcSchema::IfcObject>());
+		related_objects->push((IfcSchema::IfcObject*)related_object);
+		IfcSchema::IfcRelDefinesByType* t = new IfcSchema::IfcRelDefinesByType(IfcParse::IfcGlobalId(), owner_hist, 
+			boost::none, boost::none, related_objects, (IfcSchema::IfcTypeObject*)relating_type);
 
 		addEntity(t);
 	}

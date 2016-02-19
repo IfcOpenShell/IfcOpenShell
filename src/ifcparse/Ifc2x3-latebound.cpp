@@ -4247,48 +4247,48 @@ std::pair<const char*, int> Type::GetEnumerationIndex(Enum t, const std::string&
 }
 
 std::pair<Type::Enum, unsigned> Type::GetInverseAttribute(Enum t, const std::string& a) {
-	if (inverse_map.empty()) ::InitInverseMap();
-	inverse_map_t::const_iterator it;
-	inverse_map_t::mapped_type::const_iterator jt;
-    while (true) {
+    if (inverse_map.empty()) ::InitInverseMap();
+    inverse_map_t::const_iterator it;
+    inverse_map_t::mapped_type::const_iterator jt;
+    for(;;) {
         it = inverse_map.find(t);
         if (it != inverse_map.end()) {
-			jt = it->second.find(a);
-			if (jt != it->second.end()) {
-				return jt->second;
-			}
-		}
+            jt = it->second.find(a);
+            if (jt != it->second.end()) {
+                return jt->second;
+            }
+        }
         if ((t = Parent(t)) == -1) break;
     }
     throw IfcException("Attribute not found");
 }
 
 std::set<std::string> Type::GetInverseAttributeNames(Enum t) {
-	if (inverse_map.empty()) ::InitInverseMap();
-	inverse_map_t::const_iterator it;
-	inverse_map_t::mapped_type::const_iterator jt;
+    if (inverse_map.empty()) ::InitInverseMap();
+    inverse_map_t::const_iterator it;
+    inverse_map_t::mapped_type::const_iterator jt;
 
-	std::set<std::string> return_value;
+    std::set<std::string> return_value;
 
-    while (true) {
+    for (;;) {
         it = inverse_map.find(t);
         if (it != inverse_map.end()) {
-			for (jt = it->second.begin(); jt != it->second.end(); ++jt) {
-				return_value.insert(jt->first);
-			}
-		}
+            for (jt = it->second.begin(); jt != it->second.end(); ++jt) {
+                return_value.insert(jt->first);
+            }
+        }
         if ((t = Parent(t)) == -1) break;
     }
-    
-	return return_value;
+
+    return return_value;
 }
 
 void Type::PopulateDerivedFields(IfcWrite::IfcWritableEntity* e) {
     std::map<Type::Enum, std::set<int> >::const_iterator i = derived_map.find(e->type());
-	if (i != derived_map.end()) {
-		for (std::set<int>::const_iterator it = i->second.begin(); it != i->second.end(); ++it) {
-			e->setArgumentDerived(*it);
-		}
-	}
+    if (i != derived_map.end()) {
+        for (std::set<int>::const_iterator it = i->second.begin(); it != i->second.end(); ++it) {
+            e->setArgumentDerived(*it);
+        }
+    }
 }
 #endif

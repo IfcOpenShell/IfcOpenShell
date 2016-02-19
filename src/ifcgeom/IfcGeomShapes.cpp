@@ -65,6 +65,8 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
+#include <TopoDS_CompSolid.hxx>
+
 #include <TopExp_Explorer.hxx>
 
 #include <BRepPrimAPI_MakePrism.hxx>
@@ -99,10 +101,15 @@
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& shape) {
+	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
+	if (height < getValue(GV_PRECISION)) {
+		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l);
+		return false;
+	}
+
 	TopoDS_Shape face;
 	if ( !convert_face(l->SweptArea(),face) ) return false;
 
-	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
 
@@ -244,10 +251,20 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, TopoDS_Shap
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, TopoDS_Shape& shape) {
 	TopoDS_Shape halfspace;
 	if ( ! IfcGeom::Kernel::convert((IfcSchema::IfcHalfSpaceSolid*)l,halfspace) ) return false;	
+	
 	TopoDS_Wire wire;
-	if ( ! convert_wire(l->PolygonalBoundary(),wire) || ! wire.Closed() ) return false;	
+	if ( ! convert_wire(l->PolygonalBoundary(),wire) || ! wire.Closed() ) return false;
+	
 	gp_Trsf trsf;
-	convert(l->Position(),trsf);
+	if ( ! convert(l->Position(),trsf) ) return false;
+
+	TColgp_SequenceOfPnt points;
+	if (wire_to_sequence_of_point(wire, points)) {
+		remove_duplicate_points_from_loop(points, wire.Closed()); // Note: wire always closed, as per if statement above
+		remove_collinear_points_from_loop(points, wire.Closed());
+		sequence_of_point_to_wire(points, wire, wire.Closed());
+	}
+
 	TopoDS_Shape prism = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,200));
 	gp_Trsf down; down.SetTranslation(gp_Vec(0,0,-100.0));
 	prism.Move(trsf*down);
@@ -272,6 +289,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, Ifc
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape& shape) {
+
 	TopoDS_Shape s1, s2;
 	IfcRepresentationShapeItems items1, items2;
 	TopoDS_Wire boundary_wire;
@@ -325,10 +343,36 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 
 	const IfcSchema::IfcBooleanOperator::IfcBooleanOperator op = l->Operator();
 
+	/*
+	// TK: A little debugging trick to output both operands for visual inspection
+	
+	BRep_Builder builder;
+	TopoDS_Compound compound;
+	builder.MakeCompound(compound);
+	builder.Add(compound, s1);
+	builder.Add(compound, s2);
+	shape = compound;
+	return true;
+	*/
+
 	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
 
 		bool valid_cut = false;
-		BRepAlgoAPI_Cut brep_cut(s1,s2);
+
+#if OCC_VERSION_HEX < 0x60900
+		BRepAlgoAPI_Cut brep_cut(s1, s2);
+#else
+		BRepAlgoAPI_Cut brep_cut;
+		TopTools_ListOfShape s1s;
+		s1s.Append(s1);
+		TopTools_ListOfShape s2s;
+		s2s.Append(s2);
+		brep_cut.SetFuzzyValue(getValue(GV_PRECISION));
+		brep_cut.SetArguments(s1s);
+		brep_cut.SetTools(s2s);
+		brep_cut.Build();
+#endif
+
 		if ( brep_cut.IsDone() ) {
 			TopoDS_Shape result = brep_cut;
 
@@ -399,7 +443,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& shape) {
 	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
 	bool facesAdded = false;
-	const unsigned int num_faces = faces->size();
+	const unsigned int num_faces = (unsigned)faces->size();
 	bool valid_shell = false;
 	if ( num_faces < getValue(GV_MAX_FACES_TO_SEW) ) {
 		BRepOffsetAPI_Sewing builder;
@@ -492,11 +536,22 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 		trsf = trsf_2d;
 	}
 	gtrsf.Multiply(trsf);
+
+	const IfcGeom::SurfaceStyle* mapped_item_style = get_style(l);
+	
 	const unsigned int previous_size = (const unsigned int) shapes.size();
-	bool b = convert_shapes(map->MappedRepresentation(),shapes);
+	bool b = convert_shapes(map->MappedRepresentation(), shapes);
+	
 	for ( unsigned int i = previous_size; i < shapes.size(); ++ i ) {
 		shapes[i].append(gtrsf);
+
+		// Apply styles assigned to the mapped item only if on
+		// a more granular level no styles have been applied
+		if (!shapes[i].hasStyle()) {
+			shapes[i].setStyle(mapped_item_style);
+		}
 	}
+
 	return b;
 }
 
@@ -627,9 +682,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCurveBoundedPlane* l, TopoDS_S
 	BRepBuilderAPI_MakeFace mf (outer);
 	mf.Add(outer);
 
-	IfcSchema::IfcCurve::list::ptr inner = l->InnerBoundaries();
+	IfcSchema::IfcCurve::list::ptr boundaries = l->InnerBoundaries();
 
-	for (IfcSchema::IfcCurve::list::it it = inner->begin(); it != inner->end(); ++it) {
+	for (IfcSchema::IfcCurve::list::it it = boundaries->begin(); it != boundaries->end(); ++it) {
 		TopoDS_Wire inner;
 		convert_wire(*it, inner);
 		
@@ -762,8 +817,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 			// Subtraction of pipes with small radii is unstable.
 			hasInnerRadius = false;
 		} else {
-			Handle(Geom_Circle) circle = new Geom_Circle(directrix, r2);
-			section2 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
+			Handle(Geom_Circle) circle2 = new Geom_Circle(directrix, r2);
+			section2 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle2));
 		}
 	}
 
@@ -817,7 +872,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCylindricalSurface* l, TopoDS_
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
 	
+#if OCC_VERSION_HEX < 0x60502
+	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius())).Face().Moved(trsf);
+#else
 	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius()), getValue(GV_PRECISION)).Face().Moved(trsf);
+#endif
 	return true;
 }
 
@@ -882,7 +941,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 
 	if (faces.empty()) return false;
 	
-	const unsigned int num_faces = indices.size();
+	const unsigned int num_faces = (unsigned)indices.size();
 	bool valid_shell = false;
 
 	if (faces.size() < getValue(GV_MAX_FACES_TO_SEW)) {

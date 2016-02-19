@@ -88,6 +88,8 @@
 #include <BRepCheck_Face.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 
+#include <Standard_Version.hxx>
+
 #ifdef USE_IFC4
 #include <Geom_BSplineSurface.hxx>
 #include <TColgp_Array2OfPnt.hxx>
@@ -101,7 +103,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
 
 	Handle(Geom_Surface) face_surface;
-	bool reversed_face_surface = false;
 	const bool is_face_surface = l->declaration().is(IfcSchema::Type::IfcFaceSurface);
 
 	if (is_face_surface) {
@@ -164,7 +165,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 			if (is_interior == !process_interior) continue;
 		
 			TopoDS_Wire wire;
-			if (!convert_wire(loop, wire)) break;
+			if (!convert_wire(loop, wire)) {
+				Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop);
+				delete mf;
+				return false;
+			}
 
 			/*
 			The approach below does not result in a significant speed-up
@@ -233,9 +238,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 					// If the wires are reversed the face needs to be reversed as well in order
 					// to maintain the counter-clock-wise ordering of the bounding wire's vertices.
 					bool all_reversed = true;
-					TopoDS_Iterator it(outer_face_bound, false);
-					for (; it.More(); it.Next()) {
-						const TopoDS_Wire& w = TopoDS::Wire(it.Value());
+					TopoDS_Iterator jt(outer_face_bound, false);
+					for (; jt.More(); jt.Next()) {
+						const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
 						if ((w.Orientation() != TopAbs_REVERSED) == same_sense) {
 							all_reversed = false;
 						}
@@ -252,13 +257,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 						// Reinitialize the builder to the outer face 
 						// bound in order to add holes more robustly.
 						delete mf;
+						// TODO: What about the face_surface?
 						mf = new BRepBuilderAPI_MakeFace(outer_face_bound);
 					} else {
 						face = outer_face_bound;
 						success = true;
 					}
 				} else {
-					break;
+					Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary", bound);
+					delete mf;
+					return false;
 				}
 
 			} else {
@@ -849,7 +857,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeProfileDef* l, TopoDS
 	builder.MakeCompound(compound);
 
 	IfcSchema::IfcProfileDef::list::ptr profiles = l->Profiles();
-	bool first = true;
+	//bool first = true;
 	for (IfcSchema::IfcProfileDef::list::it it = profiles->begin(); it != profiles->end(); ++it) {
 		TopoDS_Face f;
 		if (convert_face(*it, f)) {
@@ -883,20 +891,32 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcDerivedProfileDef* l, TopoDS_S
 	}
 }
 
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcPlane* l, TopoDS_Shape& face) {
+	gp_Pln pln;
+	convert(l, pln);
+	Handle_Geom_Surface surf = new Geom_Plane(pln);
+#if OCC_VERSION_HEX < 0x60502
+	face = BRepBuilderAPI_MakeFace(surf);
+#else
+	face = BRepBuilderAPI_MakeFace(surf, getValue(GV_PRECISION));
+#endif
+	return true;
+}
+
 #ifdef USE_IFC4
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineSurfaceWithKnots* l, TopoDS_Shape& face) {
-	SHARED_PTR< IfcTemplatedEntityListList<IfcSchema::IfcCartesianPoint> > cps = l->ControlPointsList();
+	boost::shared_ptr< IfcTemplatedEntityListList<IfcSchema::IfcCartesianPoint> > cps = l->ControlPointsList();
 	std::vector<double> uknots = l->UKnots();
 	std::vector<double> vknots = l->VKnots();
 	std::vector<int> umults = l->UMultiplicities();
 	std::vector<int> vmults = l->VMultiplicities();
 
-	TColgp_Array2OfPnt Poles (0, cps->size() - 1, 0, (*cps->begin()).size() - 1);
-	TColStd_Array1OfReal UKnots(0, uknots.size() - 1);
-	TColStd_Array1OfReal VKnots(0, vknots.size() - 1);
-	TColStd_Array1OfInteger UMults(0, umults.size() - 1);
-	TColStd_Array1OfInteger VMults(0, vmults.size() - 1);
+	TColgp_Array2OfPnt Poles (0, (int)cps->size() - 1, 0, (int)(*cps->begin()).size() - 1);
+	TColStd_Array1OfReal UKnots(0, (int)uknots.size() - 1);
+	TColStd_Array1OfReal VKnots(0, (int)vknots.size() - 1);
+	TColStd_Array1OfInteger UMults(0, (int)umults.size() - 1);
+	TColStd_Array1OfInteger VMults(0, (int)vmults.size() - 1);
 	Standard_Integer UDegree = l->UDegree();
 	Standard_Integer VDegree = l->VDegree();
 
@@ -928,16 +948,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineSurfaceWithKnots* l, To
 	}
 	Handle_Geom_Surface surf = new Geom_BSplineSurface(Poles, UKnots, VKnots, UMults, VMults, UDegree, VDegree);
 
+#if OCC_VERSION_HEX < 0x60502
+	face = BRepBuilderAPI_MakeFace(surf);
+#else
 	face = BRepBuilderAPI_MakeFace(surf, getValue(GV_PRECISION));
+#endif
 
-	return true;
-}
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcPlane* l, TopoDS_Shape& face) {
-	gp_Pln pln;
-	convert(l, pln);
-	Handle_Geom_Surface surf = new Geom_Plane(pln);
-	face = BRepBuilderAPI_MakeFace(surf, getValue(GV_PRECISION));
 	return true;
 }
 

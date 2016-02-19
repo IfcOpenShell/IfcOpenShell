@@ -1,9 +1,21 @@
-
-OPTION( QT_USE_QTVIEWER "IfcOpenShell QT GUI Viewer, QT environment required" OFF )
-
-
-IF (QT_USE_QTVIEWER)
-
+################################################################################
+#                                                                              #
+# This file is part of IfcOpenShell.                                           #
+#                                                                              #
+# IfcOpenShell is free software: you can redistribute it and/or modify         #
+# it under the terms of the Lesser GNU General Public License as published by  #
+# the Free Software Foundation, either version 3.0 of the License, or          #
+# (at your option) any later version.                                          #
+#                                                                              #
+# IfcOpenShell is distributed in the hope that it will be useful,              #
+# but WITHOUT ANY WARRANTY; without even the implied warranty of               #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 #
+# Lesser GNU General Public License for more details.                          #
+#                                                                              #
+# You should have received a copy of the Lesser GNU General Public License     #
+# along with this program. If not, see <http://www.gnu.org/licenses/>.         #
+#                                                                              #
+################################################################################
 
 # Find QT header files
 SET(QT_MIN_VERSION "4.5.0")
@@ -40,7 +52,4 @@ QT_WRAP_CPP(QTviewer QTviewer_SRCS ${QTviewer_MOC_SRCS})
 ADD_EXECUTABLE(  QTviewer ${QTviewer_SRCS} ${QTviewer_MOC_SRCS})
 #http://www.qtcentre.org/wiki/index.php?title=Compiling_Qt4_apps_with_CMake
 
-TARGET_LINK_libRARIES (QTviewer IfcParse IfcGeom ${QT_LIBRARIES} TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO TKFillet)
-
-
-ENDIF (QT_USE_QTVIEWER)
+TARGET_LINK_libRARIES (QTviewer IfcParse IfcGeom ${QT_LIBRARIES} ${OPENCASCADE_LIBRARIES})

@@ -17,6 +17,8 @@
 #                                                                             #
 ###############################################################################
 
+from __future__ import print_function
+
 import sys
 import nodes
 import templates
@@ -33,11 +35,11 @@ class Mapping:
         'binary'  : 'boost::dynamic_bitset<>'
     }
     
-    supported_argument_types = {
+    supported_argument_types = set([
         'INT', 'BOOL', 'DOUBLE', 'STRING', 'BINARY', 'ENUMERATION', 'ENTITY_INSTANCE',
         'AGGREGATE_OF_INT', 'AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_STRING', 'AGGREGATE_OF_BINARY', 'AGGREGATE_OF_ENTITY_INSTANCE',
         'AGGREGATE_OF_AGGREGATE_OF_INT', 'AGGREGATE_OF_AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE',
-    }
+    ])
 
     def __init__(self, schema):
         self.schema = schema
@@ -52,11 +54,11 @@ class Mapping:
     def simple_type_parent(self, type):
         parent = self.schema.types[type].type.type
         if isinstance(parent, nodes.AggregationType): parent = None
-        return None if parent in self.express_to_cpp_typemapping else parent
+        return None if str(parent) in self.express_to_cpp_typemapping else parent
 
     def make_type_string(self, type):
-        if isinstance(type, str):
-            return self.express_to_cpp_typemapping.get(type, type)
+        if isinstance(type, (str, nodes.BinaryType)):
+            return self.express_to_cpp_typemapping.get(str(type), type)
         else:
             is_list = self.schema.is_entity(type.type)
             is_nested_list = isinstance(type.type, nodes.AggregationType)
@@ -83,12 +85,8 @@ class Mapping:
 
     def make_argument_type(self, attr):
         def _make_argument_type(type):
-            if type in self.express_to_cpp_typemapping:
-                return self.express_to_cpp_typemapping.get(type, type).split('::')[-1].upper()
-            elif self.schema.is_entity(type) or isinstance(type, nodes.SelectType):
+            if self.schema.is_entity(type) or isinstance(type, nodes.SelectType):
                 return "ENTITY_INSTANCE"
-            elif self.schema.is_type(type):
-                return _make_argument_type(self.schema.types[type].type.type)
             elif isinstance(type, nodes.BinaryType):
                 return "BINARY"
             elif isinstance(type, nodes.EnumerationType):
@@ -97,17 +95,21 @@ class Mapping:
                 ty = _make_argument_type(type.type)
                 if ty == "UNKNOWN": return "UNKNOWN"
                 return "AGGREGATE_OF_" + ty
+            elif str(type) in self.express_to_cpp_typemapping:
+                return self.express_to_cpp_typemapping.get(str(type), type).split('::')[-1].upper()
+            elif self.schema.is_type(type):
+                return _make_argument_type(self.schema.types[type].type.type)
             else:
                 raise ValueError("Unable to map type %r for attribute %r" % (type, attr))
         ty = _make_argument_type(attr.type if hasattr(attr, 'type') else attr)
         if ty not in self.supported_argument_types:
-            print("Attribute %r mapped as 'unknown'" % (type, attr), file=sys.stderr)
+            print("Attribute %r mapped as 'unknown'" % (attr), file=sys.stderr)
             ty = 'UNKNOWN'
         return "IfcUtil::Argument_%s" % ty
 
     def get_type_dep(self, type):
         if isinstance(type, str):
-            return self.express_to_cpp_typemapping.get(type, type)
+            return self.express_to_cpp_typemapping.get(str(type), type)
         else:
             return self.get_type_dep(type.type)
 
@@ -124,7 +126,7 @@ class Mapping:
             ty = self.get_parameter_type(attr_type.type if is_nested_list else attr_type, False, allow_entities, False)
             if self.schema.is_select(attr_type.type):
                 type_str = templates.untyped_list
-            elif self.schema.is_simpletype(ty) or ty in self.express_to_cpp_typemapping.values():
+            elif self.schema.is_simpletype(ty) or str(ty) in self.express_to_cpp_typemapping.values():
                 tmpl = templates.nested_array_type if is_nested_list else templates.array_type
                 type_str = tmpl % {
                     'instance_type' : ty,

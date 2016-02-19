@@ -20,7 +20,6 @@
 #ifndef STEPSERIALIZER_H
 #define STEPSERIALIZER_H
 
-#include <STEPControl_Controller.hxx>
 #include <STEPControl_Writer.hxx>
 #include <Interface_Static.hxx>
 
@@ -49,9 +48,10 @@ public:
 		writer.Write(out_filename.c_str());
 		std::cout.rdbuf(sb);
 	}
-	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {
+	void setUnitNameAndMagnitude(const std::string& /*name*/, float magnitude) {
 		const char* symbol = getSymbolForUnitMagnitude(magnitude);
 		if (symbol) {
+			Interface_Static::SetCVal("xstep.cascade.unit", symbol);
 			Interface_Static::SetCVal("write.step.unit", symbol);
 		}
 	}

@@ -43,7 +43,7 @@
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <gp_Ax22d.hxx>
-
+#include <Standard_Version.hxx>
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "SvgSerializer.h"
@@ -90,16 +90,10 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 			path.add(",");
 			addYCoordinate(path.add(p1.Y()));
 
-			if (p1.X() < xmin) xmin = p1.X();
-			if (p1.X() > xmax) xmax = p1.X();
-			if (p1.Y() < ymin) ymin = p1.Y();
-			if (p1.Y() > ymax) ymax = p1.Y();
+			growBoundingBox(p1.X(), p1.Y());
 		}
 
-		if (p2.X() < xmin) xmin = p2.X();
-		if (p2.X() > xmax) xmax = p2.X();
-		if (p2.Y() < ymin) ymin = p2.Y();
-		if (p2.Y() > ymax) ymax = p2.Y();
+		growBoundingBox(p2.X(), p2.Y());
 
 		Handle(Standard_Type) ty = curve->DynamicType();
 
@@ -184,7 +178,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
 	typedef IfcSchema::IfcRelAggregates decomposition_element;
 #endif
 
-	while (true) {
+	for (;;) {
 		// Iterate over the decomposing element to find the parent IfcBuildingStorey
 		decomposition_element::list::ptr decomposes = obdef->Decomposes();
 		if (!decomposes->size()) {
@@ -218,22 +212,14 @@ void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
 
 	if (!storey) return;
 
-	path_object& p = start_path(storey, o->unique_id());
+	path_object& p = start_path(storey, nameElement(o));
 
 	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
 		gp_GTrsf gtrsf = it->Placement();
 		
-		gp_Trsf o_trsf;
-		const std::vector<double>& matrix = o->transformation().matrix().data();
-		o_trsf.SetValues(
-			matrix[0], matrix[3], matrix[6], matrix[ 9],
-			matrix[1], matrix[4], matrix[7], matrix[10], 
-			matrix[2], matrix[5], matrix[8], matrix[11]
-#if OCC_VERSION_HEX < 0x60800
-			, Precision::Angular(), Precision::Confusion()
-#endif
-		);
+		const gp_Trsf& o_trsf = o->transformation().data();
 		gtrsf.PreMultiply(o_trsf);
+
 		const TopoDS_Shape& s = it->Shape();			
 			
 		bool trsf_valid = false;
@@ -310,7 +296,7 @@ void SvgSerializer::finalize() {
 		const double cx = xmin * sc;
 		const double cy = ymin * sc;
 
-		{std::vector< SHARED_PTR<util::string_buffer::float_item> >::const_iterator it;
+		{std::vector< boost::shared_ptr<util::string_buffer::float_item> >::const_iterator it;
 		for (it = xcoords.begin(); it != xcoords.end(); ++it) {
 			double& v = (*it)->value();
 			v = v * sc - cx;
@@ -334,9 +320,9 @@ void SvgSerializer::finalize() {
 				svg_file << "    </g>\n";
 			}
 			std::ostringstream oss;
-			svg_file << "    <g id=\"storey-" << IfcParse::IfcGlobalId(it->first->GlobalId()).formatted() << "\">\n";
+			svg_file << "    <g " << nameElement(it->first) << ">\n";
 		}
-		svg_file << "        <g id=\"" << it->second.first << "\">\n";
+		svg_file << "        <g " << it->second.first << ">\n";
 		std::vector<util::string_buffer>::const_iterator jt;
 		for (jt = it->second.second.begin(); jt != it->second.second.end(); ++jt) {
 			svg_file << jt->str();
@@ -352,4 +338,18 @@ void SvgSerializer::finalize() {
 
 void SvgSerializer::writeHeader() {
 	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
+}
+
+std::string SvgSerializer::nameElement(const IfcGeom::Element<double>* elem) {
+	std::ostringstream oss;
+	const std::string type = "product";
+	oss << "id=\"" << type << "-" << elem->unique_id() << "\"";
+	return oss.str();
+}
+
+std::string SvgSerializer::nameElement(const IfcSchema::IfcProduct* elem) {
+	std::ostringstream oss;
+	const std::string type = elem->declaration().is(IfcSchema::Type::IfcBuildingStorey) ? "storey" : "product";
+	oss << "id=\"product-" << IfcParse::IfcGlobalId(elem->GlobalId()).formatted() << "\"";
+	return oss.str();
 }

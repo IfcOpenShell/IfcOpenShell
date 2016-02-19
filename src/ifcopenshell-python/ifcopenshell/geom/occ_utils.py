@@ -1,3 +1,22 @@
+###############################################################################
+#                                                                             #
+# This file is part of IfcOpenShell.                                          #
+#                                                                             #
+# IfcOpenShell is free software: you can redistribute it and/or modify        #
+# it under the terms of the Lesser GNU General Public License as published by #
+# the Free Software Foundation, either version 3.0 of the License, or         #
+# (at your option) any later version.                                         #
+#                                                                             #
+# IfcOpenShell is distributed in the hope that it will be useful,             #
+# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                #
+# Lesser GNU General Public License for more details.                         #
+#                                                                             #
+# You should have received a copy of the Lesser GNU General Public License    #
+# along with this program. If not, see <http://www.gnu.org/licenses/>.        #
+#                                                                             #
+###############################################################################
+
 import random
 from collections import namedtuple
 
@@ -52,8 +71,14 @@ def get_bounding_box_center(bbox):
 def create_shape_from_serialization(brep_object):
     brep_data, occ_shape = None, None
     
-    try: brep_data = brep_object.geometry.brep_data
-    except: pass    
+    is_product_shape = True
+    try:
+        brep_data = brep_object.geometry.brep_data
+    except: 
+        try: 
+            brep_data = brep_object.brep_data
+            is_product_shape = False
+        except: pass
     if not brep_data: return tuple(brep_object, None)
     
     try:
@@ -62,5 +87,8 @@ def create_shape_from_serialization(brep_object):
         occ_shape = ss.Shape(ss.NbShapes())
     except: pass
     
-    return tuple(brep_object, occ_shape)
+    if is_product_shape:
+        return tuple(brep_object, occ_shape)
+    else:
+        return occ_shape
 

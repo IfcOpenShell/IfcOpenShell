@@ -26,7 +26,8 @@
 #include <iostream>
 #include <algorithm>
 
-#include "../ifcparse/SharedPointer.h"
+#include <boost/shared_ptr.hpp>
+
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcException.h"
 
@@ -48,7 +49,7 @@ namespace IfcUtil {
 		std::pair<const char*, int> getIndex(const std::string& value) const {
 			std::vector<std::string>::const_iterator it = std::find(values.begin(), values.end(), value);
 			if (it != values.end()) {
-				return std::make_pair(it->c_str(), std::distance(it, values.begin()));
+				return std::make_pair(it->c_str(), (int)std::distance(it, values.begin()));
 			} else {
 				throw IfcParse::IfcException("Invalid enumeration value");
 			}
@@ -91,7 +92,7 @@ namespace IfcUtil {
 			arguments.push_back(IfcArgumentDescriptor(name, optional, argument_type, data_type));
 		}
 		unsigned getArgumentCount() const {
-			return (parent ? parent->getArgumentCount() : 0) + arguments.size();
+			return (parent ? parent->getArgumentCount() : 0) + (unsigned)arguments.size();
 		}
 		const std::string& getArgumentName(unsigned i) const {
 			const unsigned a = argument_start();

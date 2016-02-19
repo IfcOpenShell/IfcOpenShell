@@ -29,7 +29,6 @@
 
 #include <string>
 #include <vector>
-#include <map>
 
 #include <boost/optional.hpp>
 
@@ -39,6 +38,11 @@
 #include "../ifcparse/Ifc4enum.h"
 
 const IfcParse::schema_definition& get_schema();
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4100)
+#endif
 
 #define IfcSchema Ifc4
 
@@ -50175,5 +50179,9 @@ public:
 void InitStringMap();
 IfcUtil::IfcBaseClass* SchemaEntity(IfcAbstractEntity* e = 0);
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #endif
