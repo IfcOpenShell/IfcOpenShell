@@ -19,6 +19,8 @@
 
 ADD_EXECUTABLE(IfcParseExamples IfcParseExamples.cpp)
 TARGET_LINK_LIBRARIES(IfcParseExamples IfcParse)
+set_target_properties(IfcParseExamples PROPERTIES FOLDER Examples)
 
 ADD_EXECUTABLE(IfcOpenHouse IfcOpenHouse.cpp)
 TARGET_LINK_LIBRARIES(IfcOpenHouse IfcParse IfcGeom ${OPENCASCADE_LIBRARIES})
+set_target_properties(IfcOpenHouse PROPERTIES FOLDER Examples)
