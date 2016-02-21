@@ -243,7 +243,7 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
 endif()
 
 IF(MSVC)
-    # Enable solution folders (free VS versions < 2012 doesn't support solution folders)
+    # Enable solution folders (free VS versions prior to 2012 don't support solution folders)
     if (MSVC_VERSION GREATER 1600)
         set_property(GLOBAL PROPERTY USE_FOLDERS ON)
     endif()

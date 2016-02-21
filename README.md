@@ -1,6 +1,8 @@
 IfcOpenShell 
 ============
-IfcOpenShell is an open source ([LGPL]) software library for working with the [IFC] ([IFC2x3 TC1] and [IFC4]) file format.
+IfcOpenShell is an open source ([LGPL]) software library for working with the Industry Foundation Classes ([IFC]) 
+file format. Currently supported IFC releases are [IFC2x3 TC1] and [IFC4].
+
 For more information, see
 * [http://ifcopenshell.org](http://ifcopenshell.org)  
 * [http://academy.ifcopenshell.org](http://academy.ifcopenshell.org)
@@ -22,9 +24,9 @@ Dependencies
   For handling code pages and Unicode in the parser
 * [OpenCOLLADA](https://github.com/khronosGroup/OpenCOLLADA/) - *optional*  
   For IfcConvert to be able to write tessellated Collada (.dae) files
-* [SWIG](http://www.swig.org/), [Python](https://www.python.org/) libraries - *optional*  
+* [SWIG](http://www.swig.org/) and [Python](https://www.python.org/) - *optional*  
   For building the IfcOpenShell Python interface and the Blender add-on
-* 3ds Max SDK - *optional*  
+* [3ds Max SDK](http://www.autodesk.com/products/3ds-max/free-trial) - *optional*  
   For building the 3ds Max plug-in.
   All recent versions of 3ds Max (2014 and newer) are 64-bit only, so a 64-bit installation is assumed.
 
