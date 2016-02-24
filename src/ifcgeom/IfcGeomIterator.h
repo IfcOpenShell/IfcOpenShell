@@ -398,7 +398,7 @@ namespace IfcGeom {
 			
 			try {
 				const IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
-				instance_type = IfcSchema::Type::ToString(ifc_entity->type());
+				instance_type = IfcSchema::Type::ToString(ifc_entity->declaration().type());
 				if ( ifc_entity->declaration().is(IfcSchema::Type::IfcProduct) ) {
 					IfcSchema::IfcProduct* ifc_product = (IfcSchema::IfcProduct*)ifc_entity;
 					

@@ -104,6 +104,7 @@ int main(int argc, char** argv) {
 	std::string bounds;
 	uint32_t hdf5_chunk_size;
 	std::vector<std::string> entity_vector;
+	std::vector<std::string> hdf5_ref_attributes;
 	boost::program_options::options_description geom_options;
 	geom_options.add_options()
 		("plan",
@@ -155,6 +156,8 @@ int main(int argc, char** argv) {
 		("hdf5-instantiate-inverse", "")
 		("hdf5-instantiate-select", "")
 		("hdf5-chunk-size", boost::program_options::value(&hdf5_chunk_size), "")
+		("hdf5-ref-attributes", boost::program_options::value< std::vector<std::string> >(&hdf5_ref_attributes)->multitoken(), 
+			"")
 		("include", 
 			"Specifies that the entities listed after --entities are to be included")
 		("exclude", 
@@ -284,6 +287,8 @@ int main(int argc, char** argv) {
 				settings.fix_global_id() = vmap.count("hdf5-fix-global-id") != 0;
 				settings.instantiate_inverse() = vmap.count("hdf5-instantiate-inverse") != 0;
 				settings.instantiate_select() = vmap.count("hdf5-instantiate-select") != 0;
+				std::sort(hdf5_ref_attributes.begin(), hdf5_ref_attributes.end());
+				settings.ref_attributes() = hdf5_ref_attributes;
 				if (vmap.count("hdf5-chunk-size") == 1) {
 					settings.chunk_size() = hdf5_chunk_size;
 				}

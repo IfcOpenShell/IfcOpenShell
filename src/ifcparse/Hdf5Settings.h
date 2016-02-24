@@ -20,12 +20,16 @@
 #ifndef HDF5SETTINGS_H
 #define HDF5SETTINGS_H
 
+#include <string>
+#include <vector>
+
 namespace IfcParse {
 	
 	struct Hdf5Settings {
 	private:
 		bool compress_, fix_cartesian_point_, fix_global_id_, instantiate_select_, instantiate_inverse_;
 		unsigned int chunk_size_;
+		std::vector<std::string> ref_attributes_;
 	public:
 		Hdf5Settings()
 			: compress_(false)
@@ -41,15 +45,18 @@ namespace IfcParse {
 		bool fix_global_id() const { return fix_global_id_; }
 		bool instantiate_select() const { return instantiate_select_; }
 		bool instantiate_inverse() const { return instantiate_inverse_; }
-
+		
 		bool& compress() { return compress_; }
 		bool& fix_cartesian_point() { return fix_cartesian_point_; }
 		bool& fix_global_id() { return fix_global_id_; }
 		bool& instantiate_select() { return instantiate_select_; }
 		bool& instantiate_inverse() { return instantiate_inverse_; }
-
+		
 		unsigned int chunk_size() const { return chunk_size_; }
 		unsigned int& chunk_size() { return chunk_size_; }
+
+		const std::vector<std::string>& ref_attributes() const { return ref_attributes_; }
+		std::vector<std::string>& ref_attributes() { return ref_attributes_; }
 	};
 
 }

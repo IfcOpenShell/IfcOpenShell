@@ -1,3 +1,7 @@
+#include <limits>
+
+#include <boost/lexical_cast.hpp>
+
 #include "IfcHdf5File.h"
 
 #include "H5pubconf.h"
@@ -124,8 +128,13 @@ H5::CompType* IfcParse::IfcHdf5File::map_entity(const IfcParse::entity* e) {
 		const std::string& name = (*it)->name();
 		const bool is_optional = (*it)->optional();
 		const H5::DataType* type;
-		if (overridden_types.find(name) != overridden_types.end()) {
-			type = overridden_types.find(name)->second;
+		const std::string qualified_attr_name = e->name() + "." + name;
+		if (std::binary_search(settings_.ref_attributes().begin(), settings_.ref_attributes().end(), qualified_attr_name)) {
+			type = new H5::PredType(H5::PredType::STD_REF_OBJ);
+		} else if (overridden_types.find(qualified_attr_name) != overridden_types.end()) {
+			type = overridden_types.find(qualified_attr_name)->second;
+		} else if (overridden_types.find("*." + name) != overridden_types.end()) {
+			type = overridden_types.find("*." + name)->second;
 		} else {
 			type = map_type((*it)->type_of_attribute());
 		}
@@ -190,12 +199,12 @@ void IfcParse::IfcHdf5File::init_default_types() {
 	default_cpp_type_names[IfcUtil::Argument_INT]    = "integer";
 
 	if (settings_.fix_global_id()) {
-		overridden_types["GlobalId"] = new H5::StrType(H5::PredType::C_S1, 22);
+		overridden_types["*.GlobalId"] = new H5::StrType(H5::PredType::C_S1, 22);
 	}
 	if (settings_.fix_cartesian_point()) {
 		hsize_t dims = 3;
-		overridden_types["Coordinates"] = new H5::ArrayType(*default_types[simple_type::real_type], 1, &dims);
-		overridden_types["DirectionRatios"] = new H5::ArrayType(*default_types[simple_type::real_type], 1, &dims);
+		overridden_types["IfcCartesianPoint.Coordinates"] = new H5::ArrayType(*default_types[simple_type::real_type], 1, &dims);
+		overridden_types["IfcDirection.DirectionRatios"] = new H5::ArrayType(*default_types[simple_type::real_type], 1, &dims);
 	}
 }
 
@@ -410,6 +419,244 @@ void IfcParse::IfcHdf5File::write_aggregate(void*& ptr, const IfcEntityList::ptr
 		write_number_of_size(aggr_ptr, 4, ref.second);
 	}
 	write_vlen_t(ptr, n_elements, aggr_data);
+}
+
+template <typename T>
+void IfcParse::IfcHdf5File::write_aggregate2(void*& ptr, const std::vector< std::vector<T> >& ts) const {
+	size_t elem_size = sizeof(hvl_t);
+	size_t n_elements = ts.size();
+	size_t size_in_bytes = elem_size * n_elements;
+	void* aggr_data = allocator.allocate(size_in_bytes);
+	void* aggr_ptr = aggr_data;
+	for (std::vector< std::vector<T> >::const_iterator it = ts.begin(); it != ts.end(); ++it) {
+		write_aggregate(aggr_ptr, *it);
+	}
+	write_vlen_t(ptr, n_elements, aggr_data);
+}
+
+template <typename T>
+void IfcParse::IfcHdf5File::write_reference_attribute(void*& ptr, const std::string& dsn, const std::vector<T>& vs) {
+	const std::string dsn_path = "/population/" + dsn;
+	const hsize_t s = vs.size();
+	const H5::DataType& dt = *get_datatype<T>();
+	const size_t size_in_bytes = dt.getSize() * vs.size();
+
+	H5::DataSpace space(1, &s);
+	
+	void* buffer = allocator.allocate(size_in_bytes);
+	void* ds_ptr = buffer;
+	for (auto it = vs.begin(); it != vs.end(); ++it) {
+		write_number_of_size(ds_ptr, dt.getSize(), *it);
+	}
+
+	// TODO: Refactor
+	hsize_t chunk;
+	if (settings_.chunk_size() > 0 && settings_.chunk_size() < s) {
+		chunk = static_cast<hsize_t>(settings_.chunk_size());
+	} else {
+		chunk = s;
+	}
+
+	const H5::DSetCreatPropList* plist;
+	// H5O_MESG_MAX_SIZE = 65536
+	const bool compact = size_in_bytes < (1 << 15);
+	if (settings_.compress() && !compact) { 
+		H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
+		plist_->setChunk(1, &chunk);
+		// D'oh. Order is significant, according to h5ex_d_shuffle.c
+		plist_->setShuffle();
+		plist_->setDeflate(9);
+		plist = plist_;
+	} else if (compact) {
+		H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
+		// Set compact according to h5ex_d_compact.c
+		plist_->setLayout(H5D_COMPACT);
+		plist = plist_;
+	} else if (chunk != s){
+		H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
+		plist_->setChunk(1, &chunk);
+		plist = plist_;
+	} else {
+		plist = &H5::DSetCreatPropList::DEFAULT;
+	}
+	
+	H5::DataSet ds = population_group.createDataSet(dsn, dt, space, *plist);
+	ds.write(buffer, dt);
+	space.close();
+
+	ds.reference(ptr, dsn_path.c_str());
+	advance(ptr, sizeof(hobj_ref_t));
+
+	if (plist != &H5::DSetCreatPropList::DEFAULT) {
+		// ->close() doesn't work due to const, hack hack hack
+		H5Pclose(plist->getId());
+	}
+	
+	delete[] buffer;
+	ds.close();
+}
+
+template <typename T>
+void IfcParse::IfcHdf5File::write_reference_attribute2(void*& ptr, const std::string& dsn, const std::vector< std::vector<T> >& vs) {
+	
+	// See if the attribute is a 'jagged' array in which case a single row of
+	// vlens is written. Otherwise a two dimensional dataset is created.
+	bool is_rectangular = true;
+	size_t w = 0;
+	for (auto it = vs.begin(); it != vs.end(); ++it) {
+		if (it == vs.begin()) {
+			w = it->size();
+		} else {
+			if (w != it->size()) {
+				is_rectangular = false;
+				break;
+			}
+		}
+	}
+	
+	// TODO: Please use smart pointers next time
+	hsize_t* s;
+	hsize_t* chunk;
+	const H5::DataType* dt;
+	H5::DataType* dt2;
+	bool scaled_type = false;
+	
+	if (is_rectangular) {
+		s = new hsize_t[2];
+		s[0] = vs.size();
+		s[1] = w;
+
+		// Try to find the narrowest integer that can represent values in the dataset
+		dt = dt2 = 0;
+		if (std::numeric_limits<T>::is_integer) {
+			T min_value = std::numeric_limits<T>::max();
+			T max_value = std::numeric_limits<T>::min();
+			for (auto it = vs.begin(); it != vs.end(); ++it) {
+				for (auto jt = it->begin(); jt != it->end(); ++jt) {
+					if ((*jt) > max_value) {
+						max_value = *jt;
+					}
+					if ((*jt) < min_value) {
+						min_value = *jt;
+					}
+				}
+			}
+
+			scaled_type = true;
+			if (min_value >= std::numeric_limits<uint8_t>::min() && max_value <= std::numeric_limits<uint8_t>::max()) {
+				dt = dt2 = new H5::PredType(H5::PredType::NATIVE_UINT8);
+			} else if (min_value >= std::numeric_limits<int8_t>::min() && max_value <= std::numeric_limits<int8_t>::max()) {
+				dt = dt2 = new H5::PredType(H5::PredType::NATIVE_INT8);
+			} else if (min_value >= std::numeric_limits<uint16_t>::min() && max_value <= std::numeric_limits<uint16_t>::max()) {
+				dt = dt2 = new H5::PredType(H5::PredType::NATIVE_UINT16);
+			} else if (min_value >= std::numeric_limits<int16_t>::min() && max_value <= std::numeric_limits<int16_t>::max()) {
+				dt = dt2 = new H5::PredType(H5::PredType::NATIVE_INT16);
+			} else if (min_value >= std::numeric_limits<uint32_t>::min() && max_value <= std::numeric_limits<uint32_t>::max()) {
+				dt = dt2 = new H5::PredType(H5::PredType::NATIVE_UINT32);
+			} else if (min_value >= std::numeric_limits<int32_t>::min() && max_value <= std::numeric_limits<int32_t>::max()) {
+				dt = dt2 = new H5::PredType(H5::PredType::NATIVE_INT32);
+			} else {
+				scaled_type = false;
+			}
+
+		}
+		
+		if (dt == 0) {
+			dt = get_datatype<T>();
+		}
+		
+	} else {
+		s = new hsize_t(vs.size());
+		dt = dt2 = new H5::VarLenType(get_datatype<T>());
+	}
+
+	const std::string dsn_path = "/population/" + dsn;
+	const size_t size_in_bytes = is_rectangular
+		? sizeof(T) * vs.size() * w
+		: sizeof(hvl_t) * vs.size();
+
+	// TODO: Refactor
+	const bool is_chunked = settings_.chunk_size() > 0 && settings_.chunk_size() < s[0];
+	if (is_chunked) {
+		if (is_rectangular) {
+			chunk = new hsize_t[2];
+			chunk[0] = settings_.chunk_size();
+			chunk[1] = s[1];
+		} else {
+			chunk = new hsize_t(vs.size());
+		}
+	} else {
+		chunk = s;
+	}
+
+	const H5::DSetCreatPropList* plist;
+	// H5O_MESG_MAX_SIZE = 65536
+	const bool compact = size_in_bytes < (1 << 15);
+	if (settings_.compress() && !compact) { 
+		H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
+		plist_->setChunk(is_rectangular ? 2 : 1, chunk);
+		// D'oh. Order is significant, according to h5ex_d_shuffle.c
+		plist_->setShuffle();
+		plist_->setDeflate(9);
+		plist = plist_;
+	} else if (compact) {
+		H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
+		// Set compact according to h5ex_d_compact.c
+		plist_->setLayout(H5D_COMPACT);
+		plist = plist_;
+	} else if (chunk != s){
+		H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
+		plist_->setChunk(is_rectangular ? 2 : 1, chunk);
+		plist = plist_;
+	} else {
+		plist = &H5::DSetCreatPropList::DEFAULT;
+	}
+
+	H5::DataSpace space(is_rectangular ? 2 : 1, s);
+	H5::DataSet ds = population_group.createDataSet(dsn, *dt, space, *plist);
+	
+	void* buffer = allocator.allocate(size_in_bytes);
+	void* ds_ptr = buffer;
+	for (auto it = vs.begin(); it != vs.end(); ++it) {
+		if (is_rectangular) {
+			for (auto jt = it->begin(); jt != it->end(); ++jt) {
+				write_number_of_size(ds_ptr, dt->getSize(), *jt);
+			}
+		} else {
+			write_aggregate(ds_ptr, *it);
+		}
+	}						
+	ds.write(buffer, *dt);
+	space.close();
+
+	ds.reference(ptr, dsn_path.c_str());
+	advance(ptr, sizeof(hobj_ref_t));
+	
+	delete[] buffer;
+	ds.close();
+
+	if (plist != &H5::DSetCreatPropList::DEFAULT) {
+		// ->close() doesn't work due to const, hack hack hack
+		H5Pclose(plist->getId());
+	}
+	
+	if (is_rectangular) {
+		delete[] s;
+		if (is_chunked) {
+			delete[] chunk;
+		}
+		if (scaled_type) {
+			dt2->close();
+			delete dt;
+		}
+	} else {
+		dt2->close();
+		delete dt;
+		delete s;
+		if (is_chunked) {
+			delete chunk;
+		}
+	}
 }
 
 void IfcParse::IfcHdf5File::write_schema(const IfcParse::schema_definition& schema) {
@@ -641,7 +888,8 @@ void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
 
 		// if (*it != IfcSchema::Type::IfcUnitAssignment) continue;
 
-		std::cerr << IfcSchema::Type::ToString(*it) << std::endl;
+		const std::string current_entity_name = IfcSchema::Type::ToString(*it);
+		std::cerr << current_entity_name << std::endl;
 
 #ifdef SORT_ON_NAME
 		std::vector<IfcUtil::IfcBaseClass*> es;
@@ -777,11 +1025,42 @@ void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
 					}
 				} else {
 					set_unset_mask |= 1 << i;
-					if (settings_.fix_global_id() && attribute_name == "GlobalId") {
+					if (member_type.getClass() == H5T_REFERENCE) {
+						// Something that comes from the ref_attributes settings
+						const std::string dsn = current_entity_name + "." + attribute_name + "_" + boost::lexical_cast<std::string>(dat.id());
+						switch(attr_value.type()) {
+						case IfcUtil::Argument_AGGREGATE_OF_INT: {
+							std::vector<int> vs = attr_value;
+							write_reference_attribute(ptr, dsn, vs);
+							break; }
+						case IfcUtil::Argument_AGGREGATE_OF_BOOL: {
+							std::vector<bool> vs = attr_value;
+							write_reference_attribute(ptr, dsn, vs);
+							break; }
+						case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
+							std::vector<double> vs = attr_value;
+							write_reference_attribute(ptr, dsn, vs);
+							break; }
+						case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
+							std::vector< std::vector<int> > vs = attr_value;
+							write_reference_attribute2(ptr, dsn, vs);
+							break; }
+						case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL: {
+							std::vector< std::vector<int> > vs = attr_value;
+							write_reference_attribute2(ptr, dsn, vs);
+							break; }
+						case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
+							std::vector< std::vector<double> > vs = attr_value;
+							write_reference_attribute2(ptr, dsn, vs);
+							break; }
+						default:
+							throw IfcException(dsn + " is not a supported aggregate");
+						}
+					} if (settings_.fix_global_id() && attribute_name == "GlobalId") {
 						std::string s = attr_value;
 						memcpy(static_cast<char*>(ptr), s.c_str(), s.size());
 						advance(ptr, s.length());
-					} else if (settings_.fix_cartesian_point() && (attribute_name == "Coordinates" || attribute_name == "DirectionRatios")) {
+					} else if (settings_.fix_cartesian_point() && ((attribute_name == "Coordinates" && current_entity_name == "IfcCartesianPoint") || (attribute_name == "DirectionRatios" && current_entity_name == "IfcDirection"))) {
 						std::vector<double> ds = attr_value;
 						for (auto it = ds.begin(); it != ds.end(); ++it) {
 							write_number_of_size(ptr, default_types[simple_type::real_type]->getSize(), *it);
@@ -849,6 +1128,10 @@ void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
 								std::vector<int> ds = attr_value;
 								write_aggregate(ptr, ds);
 								break; }
+							case IfcUtil::Argument_AGGREGATE_OF_BOOL: {
+								std::vector<bool> ds = attr_value;
+								write_aggregate(ptr, ds);
+								break; }
 							case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
 								std::vector<double> ds = attr_value;
 								write_aggregate(ptr, ds);
@@ -860,6 +1143,18 @@ void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
 							case IfcUtil::Argument_AGGREGATE_OF_STRING: {
 								std::vector<std::string> ss = attr_value;
 								write_aggregate(ptr, ss);
+								break; }
+							case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: { 
+								std::vector< std::vector<int> > ds = attr_value;
+								write_aggregate2(ptr, ds);
+								break; }
+							case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL: { 
+								std::vector< std::vector<bool> > ds = attr_value;
+								write_aggregate2(ptr, ds);
+								break; }
+							case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: { 
+								std::vector< std::vector<double> > ds = attr_value;
+								write_aggregate2(ptr, ds);
 								break; }
 							default:
 								// Can be an empty list in which case parser does not know type

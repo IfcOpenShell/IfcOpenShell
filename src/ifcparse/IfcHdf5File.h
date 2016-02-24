@@ -114,6 +114,16 @@ namespace IfcParse {
 
 		template <typename T>
 		void write_aggregate(void*& ptr, const T& ts) const;
+
+		template <typename T>
+		void write_aggregate2(void*& ptr, const std::vector< std::vector<T> >& ts) const;
+
+		template <typename T>
+		void write_reference_attribute(void*& ptr, const std::string& dsn, const std::vector<T>& vs);
+
+		template <typename T>
+		void write_reference_attribute2(void*& ptr, const std::string& dsn, const std::vector< std::vector<T> >& vs);
+
 	public:
 		typedef std::pair<std::string, const H5::DataType*> compound_member;
 
