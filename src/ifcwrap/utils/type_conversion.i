@@ -21,6 +21,7 @@
 %{
 	template <typename T> void* get_python_type();
 	template <> void* get_python_type<double>() { return &PyFloat_Type; }
+	template <> void* get_python_type<bool>() { return &PyBool_Type; }	
 	#if PY_VERSION_HEX >= 0x03000000
 	template <> void* get_python_type<int>() { return &PyLong_Type; }
 	template <> void* get_python_type<std::string>() { return &PyUnicode_Type; }
@@ -57,6 +58,11 @@
 	template <>
 	int cast_pyobject(PyObject* element) {
 		return static_cast<int>(PyInt_AsLong(element));
+	}
+
+	template <>
+	bool cast_pyobject(PyObject* element) {
+		return cast_pyobject<int>(element) != 0;
 	}
 
 	template <>
@@ -107,8 +113,8 @@
 // Conversion functions to convert STL vectors into Python objects
 %{
 	PyObject* pythonize(const int& t)                   { return PyInt_FromLong(t);                                                                  }
-	PyObject* pythonize(const unsigned int& t)          { return PyInt_FromLong(t);                                                                  }
 	PyObject* pythonize(const bool& t)                  { return PyBool_FromLong(t);                                                                 }
+	PyObject* pythonize(const unsigned int& t)          { return PyInt_FromLong(t);                                                                  }
 	PyObject* pythonize(const double& t)                { return PyFloat_FromDouble(t);                                                              }
 	PyObject* pythonize(const std::string& t)           { return PyUnicode_FromString(t.c_str());                                                    }
 	PyObject* pythonize(const IfcUtil::IfcBaseClass* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__IfcLateBoundEntity, 0); }

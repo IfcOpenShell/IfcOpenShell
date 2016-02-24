@@ -65,12 +65,14 @@ namespace IfcUtil {
 		Argument_ENTITY_INSTANCE,
 
 		Argument_AGGREGATE_OF_INT, 
+		Argument_AGGREGATE_OF_BOOL, 
 		Argument_AGGREGATE_OF_DOUBLE, 
 		Argument_AGGREGATE_OF_STRING,
 		Argument_AGGREGATE_OF_BINARY, 
 		Argument_AGGREGATE_OF_ENTITY_INSTANCE,
 	
 		Argument_AGGREGATE_OF_AGGREGATE_OF_INT,
+		Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL,
 		Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,
 		Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE, 
 
@@ -318,12 +320,14 @@ public:
 	virtual operator IfcUtil::IfcBaseClass*() const = 0;
 
 	virtual operator std::vector<int>() const = 0;
+	virtual operator std::vector<bool>() const = 0;
 	virtual operator std::vector<double>() const = 0;
 	virtual operator std::vector<std::string>() const = 0;
 	virtual operator std::vector<boost::dynamic_bitset<> >() const = 0;
 	virtual operator IfcEntityList::ptr() const = 0;
 
 	virtual operator std::vector< std::vector<int> >() const = 0;
+	virtual operator std::vector< std::vector<bool> >() const = 0;
 	virtual operator std::vector< std::vector<double> >() const = 0;
 	virtual operator IfcEntityListList::ptr() const = 0;
 

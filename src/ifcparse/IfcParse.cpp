@@ -551,6 +551,8 @@ IfcUtil::ArgumentType ArgumentList::type() const {
 	const IfcUtil::ArgumentType elem_type = list[0]->type();
 	if (elem_type == IfcUtil::Argument_INT) {
 		return IfcUtil::Argument_AGGREGATE_OF_INT;
+	} else if (elem_type == IfcUtil::Argument_BOOL) {
+		return IfcUtil::Argument_AGGREGATE_OF_BOOL;
 	} else if (elem_type == IfcUtil::Argument_DOUBLE) {
 		return IfcUtil::Argument_AGGREGATE_OF_DOUBLE;
 	} else if (elem_type == IfcUtil::Argument_STRING) {
@@ -561,6 +563,8 @@ IfcUtil::ArgumentType ArgumentList::type() const {
 		return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE;
 	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
 		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT;
+	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_BOOL) {
+		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL;
 	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
 		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE;
 	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
@@ -605,12 +609,16 @@ ArgumentList::operator double() const { throw IfcException("Argument is not a nu
 ArgumentList::operator std::string() const { throw IfcException("Argument is not a string"); }
 ArgumentList::operator boost::dynamic_bitset<>() const { throw IfcException("Argument is not a binary"); }
 
-ArgumentList::operator std::vector<double>() const {
-	return read_aggregate_as_vector<double>(list);
-}
-
 ArgumentList::operator std::vector<int>() const {
 	return read_aggregate_as_vector<int>(list);
+}
+
+ArgumentList::operator std::vector<bool>() const {
+	return read_aggregate_as_vector<bool>(list);
+}
+
+ArgumentList::operator std::vector<double>() const {
+	return read_aggregate_as_vector<double>(list);
 }
 
 ArgumentList::operator std::vector<std::string>() const {
@@ -636,6 +644,10 @@ ArgumentList::operator IfcEntityList::ptr() const {
 
 ArgumentList::operator std::vector< std::vector<int> >() const {
 	return read_aggregate_of_aggregate_as_vector2<int>(list);
+}
+
+ArgumentList::operator std::vector< std::vector<bool> >() const {
+	return read_aggregate_of_aggregate_as_vector2<bool>(list);
 }
 
 ArgumentList::operator std::vector< std::vector<double> >() const {
@@ -730,13 +742,15 @@ TokenArgument::operator bool() const { return TokenFunc::asBool(token); }
 TokenArgument::operator double() const { return TokenFunc::asFloat(token); }
 TokenArgument::operator std::string() const { return TokenFunc::asString(token); }
 TokenArgument::operator boost::dynamic_bitset<>() const { return TokenFunc::asBinary(token); }
-TokenArgument::operator std::vector<double>() const { throw IfcException("Argument is not a list of floats"); }
 TokenArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
+TokenArgument::operator std::vector<bool>() const { throw IfcException("Argument is not a list of bools"); }
+TokenArgument::operator std::vector<double>() const { throw IfcException("Argument is not a list of floats"); }
 TokenArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
 TokenArgument::operator std::vector<boost::dynamic_bitset<> >() const { throw IfcException("Argument is not a list of binaries"); }
 TokenArgument::operator IfcUtil::IfcBaseClass*() const { return token.first->file->entityById(TokenFunc::asInt(token)); }
 TokenArgument::operator IfcEntityList::ptr() const { throw IfcException("Argument is not a list of entity instances"); }
 TokenArgument::operator std::vector< std::vector<int> >() const { throw IfcException("Argument is not a list of list of ints"); }
+TokenArgument::operator std::vector< std::vector<bool> >() const { throw IfcException("Argument is not a list of list of bools"); }
 TokenArgument::operator std::vector< std::vector<double> >() const { throw IfcException("Argument is not a list of list of floats"); }
 TokenArgument::operator IfcEntityListList::ptr() const { throw IfcException("Argument is not a list of list of entity instances"); }
 unsigned int TokenArgument::size() const { return 1; }
@@ -762,13 +776,15 @@ EntityArgument::operator bool() const { throw IfcException("Argument is not a bo
 EntityArgument::operator double() const { throw IfcException("Argument is not a number"); }
 EntityArgument::operator boost::dynamic_bitset<>() const { throw IfcException("Argument is not a binary"); }
 EntityArgument::operator std::string() const { throw IfcException("Argument is not a string"); }
-EntityArgument::operator std::vector<double>() const { throw IfcException("Argument is not a list of floats"); }
 EntityArgument::operator std::vector<int>() const { throw IfcException("Argument is not a list of ints"); }
+EntityArgument::operator std::vector<bool>() const { throw IfcException("Argument is not a list of bools"); }
+EntityArgument::operator std::vector<double>() const { throw IfcException("Argument is not a list of floats"); }
 EntityArgument::operator std::vector<std::string>() const { throw IfcException("Argument is not a list of strings"); }
 EntityArgument::operator std::vector<boost::dynamic_bitset<> >() const { throw IfcException("Argument is not a list of binaries"); }
 EntityArgument::operator IfcUtil::IfcBaseClass*() const { return entity; }
 EntityArgument::operator IfcEntityList::ptr() const { throw IfcException("Argument is not a list of entity instances"); }
 EntityArgument::operator std::vector< std::vector<int> >() const { throw IfcException("Argument is not a list of list of ints"); }
+EntityArgument::operator std::vector< std::vector<bool> >() const { throw IfcException("Argument is not a list of list of bools"); }
 EntityArgument::operator std::vector< std::vector<double> >() const { throw IfcException("Argument is not a list of list of floats"); }
 EntityArgument::operator IfcEntityListList::ptr() const { throw IfcException("Argument is not a list of list of entity instances"); }
 unsigned int EntityArgument::size() const { return 1; }

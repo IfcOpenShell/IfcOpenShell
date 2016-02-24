@@ -86,6 +86,8 @@ namespace IfcWrite {
 			// AGGREGATES:
 			// An aggregate of integers, e.g. (1,2,3)
 			std::vector<int>,
+			// An aggregate of bools, e.g. (.T.,.F.)
+			std::vector<bool>,
 			// An aggregate of floats, e.g. (12.3,4.) 
 			std::vector<double>,
 			// An aggregate of strings, e.g. ('Ifc','Open','Shell')
@@ -100,6 +102,8 @@ namespace IfcWrite {
 			// AGGREGATES OF AGGREGATES:
 			// An aggregate of an aggregate of ints. E.g. ((1, 2), (3))
 			std::vector< std::vector<int> >,
+			// An aggregate of bools, e.g. (.T.,(.T.,.F.))
+			std::vector< std::vector<bool> >,
 			// An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
 			std::vector< std::vector<double> >,
 			// An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
@@ -126,12 +130,14 @@ namespace IfcWrite {
 		operator IfcUtil::IfcBaseClass*() const;
 
 		operator std::vector<int>() const;
+		operator std::vector<bool>() const;
 		operator std::vector<double>() const;
 		operator std::vector<std::string>() const;
 		operator std::vector<boost::dynamic_bitset<> >() const;
 		operator IfcEntityList::ptr() const;
 
 		operator std::vector< std::vector<int> >() const;
+		operator std::vector< std::vector<bool> >() const;
 		operator std::vector< std::vector<double> >() const;
 		operator IfcEntityListList::ptr() const;
 

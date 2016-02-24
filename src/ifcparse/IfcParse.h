@@ -144,12 +144,14 @@ namespace IfcParse {
 		operator IfcUtil::IfcBaseClass*() const;
 
 		operator std::vector<int>() const;
+		operator std::vector<bool>() const;
 		operator std::vector<double>() const;
 		operator std::vector<std::string>() const;
 		operator std::vector<boost::dynamic_bitset<> >() const;
 		operator IfcEntityList::ptr() const;
 
 		operator std::vector< std::vector<int> >() const;
+		operator std::vector< std::vector<bool> >() const;
 		operator std::vector< std::vector<double> >() const;
 		operator IfcEntityListList::ptr() const;
 
@@ -182,12 +184,14 @@ namespace IfcParse {
 		operator IfcUtil::IfcBaseClass*() const;
 
 		operator std::vector<int>() const;
+		operator std::vector<bool>() const;
 		operator std::vector<double>() const;
 		operator std::vector<std::string>() const;
 		operator std::vector<boost::dynamic_bitset<> >() const;
 		operator IfcEntityList::ptr() const;
 		
 		operator std::vector< std::vector<int> >() const;
+		operator std::vector< std::vector<bool> >() const;
 		operator std::vector< std::vector<double> >() const;
 		operator IfcEntityListList::ptr() const;
 
@@ -218,12 +222,14 @@ namespace IfcParse {
 		operator IfcUtil::IfcBaseClass*() const;
 
 		operator std::vector<int>() const;
+		operator std::vector<bool>() const;
 		operator std::vector<double>() const;
 		operator std::vector<std::string>() const;
 		operator std::vector<boost::dynamic_bitset<> >() const;
 		operator IfcEntityList::ptr() const;
 
 		operator std::vector< std::vector<int> >() const;
+		operator std::vector< std::vector<bool> >() const;
 		operator std::vector< std::vector<double> >() const;
 		operator IfcEntityListList::ptr() const;
 

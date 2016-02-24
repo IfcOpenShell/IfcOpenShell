@@ -47,6 +47,10 @@
 			std::vector<int> v = arg;
 			$result = pythonize_vector(v);
 		break; }
+		case IfcUtil::Argument_AGGREGATE_OF_BOOL: {
+			std::vector<bool> v = arg;
+			$result = pythonize_vector(v);
+		break; }
 		case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
 			std::vector<double> v = arg;
 			$result = pythonize_vector(v);
@@ -69,6 +73,10 @@
 		break; }
 		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
 			std::vector< std::vector<int> > v = arg;
+			$result = pythonize_vector2(v);
+		break; }
+		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL: {
+			std::vector< std::vector<bool> > v = arg;
 			$result = pythonize_vector2(v);
 		break; }
 		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
@@ -102,6 +110,7 @@
 %enddef
 
 CREATE_VECTOR_TYPEMAP_OUT(int)
+CREATE_VECTOR_TYPEMAP_OUT(bool)
 CREATE_VECTOR_TYPEMAP_OUT(unsigned int)
 CREATE_VECTOR_TYPEMAP_OUT(double)
 CREATE_VECTOR_TYPEMAP_OUT(std::string)

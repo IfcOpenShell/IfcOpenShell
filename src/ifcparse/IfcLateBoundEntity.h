@@ -68,11 +68,13 @@ namespace IfcParse {
 		void setArgumentAsEntityInstance(unsigned int i, IfcLateBoundEntity* v);
 		
 		void setArgumentAsAggregateOfInt(unsigned int i, const std::vector<int>& v);
+		void setArgumentAsAggregateOfBool(unsigned int i, const std::vector<bool>& v);
 		void setArgumentAsAggregateOfDouble(unsigned int i, const std::vector<double>& v);
 		void setArgumentAsAggregateOfString(unsigned int i, const std::vector<std::string>& v);
 		void setArgumentAsAggregateOfEntityInstance(unsigned int i, IfcEntityList::ptr v);
 		
 		void setArgumentAsAggregateOfAggregateOfInt(unsigned int i, const std::vector< std::vector<int> >& v);
+		void setArgumentAsAggregateOfAggregateOfBool(unsigned int i, const std::vector< std::vector<bool> >& v);
 		void setArgumentAsAggregateOfAggregateOfDouble(unsigned int i, const std::vector< std::vector<double> >& v);
 		void setArgumentAsAggregateOfAggregateOfEntityInstance(unsigned int i, IfcEntityListList::ptr v);
 

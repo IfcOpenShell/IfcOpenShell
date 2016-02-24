@@ -25,6 +25,7 @@
 
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcWrite.h"
+#include "../ifcparse/IfcFile.h"
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4-latebound.h"
@@ -163,6 +164,12 @@ void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfInt(unsigned int i, c
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"AGGREGATE OF INT");
 }
+void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfBool(unsigned int i, const std::vector<bool>& v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type, (unsigned char)i);
+	if (arg_type == Argument_AGGREGATE_OF_BOOL) {
+		writable_entity()->setArgument(i,v);	
+	} else invalid_argument(i,"AGGREGATE OF BOOL");
+}
 void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfDouble(unsigned int i, const std::vector<double>& v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type, (unsigned char)i);
 	if (arg_type == Argument_AGGREGATE_OF_DOUBLE) {
@@ -203,6 +210,12 @@ void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfAggregateOfInt(unsign
 	if (arg_type == Argument_AGGREGATE_OF_AGGREGATE_OF_INT) {
 		writable_entity()->setArgument(i,v);	
 	} else invalid_argument(i,"AGGREGATE OF AGGREGATE OF INT");
+}
+void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfAggregateOfBool(unsigned int i, const std::vector< std::vector<bool> >& v) {
+	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type, (unsigned char)i);
+	if (arg_type == Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL) {
+		writable_entity()->setArgument(i,v);	
+	} else invalid_argument(i,"AGGREGATE OF AGGREGATE OF BOOL");
 }
 void IfcParse::IfcLateBoundEntity::setArgumentAsAggregateOfAggregateOfDouble(unsigned int i, const std::vector< std::vector<double> >& v) {
 	IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(_type, (unsigned char)i);
