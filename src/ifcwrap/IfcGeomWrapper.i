@@ -236,7 +236,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 %inline %{
 	boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcParse::IfcLateBoundEntity* instance, IfcParse::IfcLateBoundEntity* representation = 0) {
-		IfcParse::IfcFile* file = instance->entity->file;
+		IfcParse::IfcFile* file = instance->data().file;
 		IfcSchema::IfcProject::list::ptr projects = file->entitiesByType<IfcSchema::IfcProject>();
 		if (projects->size() != 1) {
 			throw IfcParse::IfcException("Not a single IfcProject instance");
@@ -248,9 +248,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.include_curves() ? (settings.exclude_solids_and_surfaces() ? -1. : 0.) : +1.));
 		std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 			
-		if (instance->is(IfcSchema::Type::IfcProduct)) {
+		if (instance->declaration().is(IfcSchema::Type::IfcProduct)) {
 			if (representation) {
-				if (!representation->is(IfcSchema::Type::IfcRepresentation)) {
+				if (!representation->declaration().is(IfcSchema::Type::IfcRepresentation)) {
 					throw IfcParse::IfcException("Supplied representation not of type IfcRepresentation");
 				}
 			}
@@ -323,11 +323,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			}
 
 			IfcSchema::IfcRepresentationContext* ctx = ifc_representation->ContextOfItems();
-			if (!ctx->is(IfcSchema::Type::IfcGeometricRepresentationContext)) {
+			if (!ctx->declaration().is(IfcSchema::Type::IfcGeometricRepresentationContext)) {
 				throw IfcParse::IfcException("Context not of type IfcGeometricRepresentationContext");
 			}
 			IfcSchema::IfcGeometricRepresentationContext* context = (IfcSchema::IfcGeometricRepresentationContext*) ctx;
-			if (context->is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
+			if (context->declaration().is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
 				IfcSchema::IfcGeometricRepresentationSubContext* subcontext = (IfcSchema::IfcGeometricRepresentationSubContext*) context;
 				context = subcontext->ParentContext();
 			}
@@ -360,11 +360,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			}
 		} else {
 			if (!representation) {
-				if (instance->is(IfcSchema::Type::IfcRepresentationItem) || instance->is(IfcSchema::Type::IfcRepresentation)) {
+				if (instance->declaration().is(IfcSchema::Type::IfcRepresentationItem) || instance->declaration().is(IfcSchema::Type::IfcRepresentation)) {
 					IfcGeom::IfcRepresentationShapeItems shapes;
 					if (kernel.convert_shapes(instance, shapes)) {
 						IfcGeom::ElementSettings element_settings(settings, kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT), IfcSchema::Type::ToString(instance->type()));
-						IfcGeom::Representation::BRep brep(element_settings, instance->entity->id(), shapes);
+						IfcGeom::Representation::BRep brep(element_settings, instance->data().id(), shapes);
 						try {
 							if (settings.use_brep_data()) {
 								return new IfcGeom::Representation::Serialization(brep);

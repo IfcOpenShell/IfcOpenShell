@@ -70,6 +70,8 @@
 
 	#include "../ifcparse/IfcFile.h"
 	#include "../ifcparse/IfcLateBoundEntity.h"
+	#include "../ifcparse/IfcSchema.h"
+	#include "../ifcparse/Hdf5Settings.h"
 
 	#ifdef USE_IFC4
 	#include "../ifcparse/Ifc4-latebound.h"

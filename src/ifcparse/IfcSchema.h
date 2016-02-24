@@ -25,6 +25,10 @@
 #include <algorithm>
 #include <iterator>
 
+#include <boost/algorithm/string.hpp>
+
+#include "../ifcparse/IfcException.h"
+
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4enum.h"
 #else
@@ -360,7 +364,22 @@ namespace IfcParse {
 		class declaration_by_name_cmp : public std::binary_function<const declaration*, const std::string&, bool> {
 		public:
 			bool operator()(const declaration* decl, const std::string& name) {
-				return decl->name() < name;
+				// TODO: Efficiency?
+				return boost::to_lower_copy(decl->name()) < boost::to_lower_copy(name);
+			}
+		};
+
+		class declaration_by_enum_cmp : public std::binary_function<const declaration*, IfcSchema::Type::Enum, bool> {
+		public:
+			bool operator()(const declaration* decl, IfcSchema::Type::Enum name) {
+				return decl->type() < name;
+			}
+		};
+
+		class declaration_by_enum_sort : public std::binary_function<const declaration*, const declaration*, bool> {
+		public:
+			bool operator()(const declaration* a, const declaration* b) {
+				return a->type() < b->type();
 			}
 		};
 
@@ -370,12 +389,13 @@ namespace IfcParse {
 			, declarations_(declarations)
 			, built_in_(built_in)
 		{
+			std::sort(declarations_.begin(), declarations_.end(), declaration_by_enum_sort());
 			for (std::vector<const declaration*>::const_iterator it = declarations_.begin(); it != declarations_.end(); ++it) {
 				if ((**it).as_type_declaration()) type_declarations_.push_back((**it).as_type_declaration());
 				if ((**it).as_select_type()) select_types_.push_back((**it).as_select_type());
 				if ((**it).as_enumeration_type()) enumeration_types_.push_back((**it).as_enumeration_type());
 				if ((**it).as_entity()) entities_.push_back((**it).as_entity());
-			}
+			}			
 		}
 
 		~schema_definition() {
@@ -386,8 +406,8 @@ namespace IfcParse {
 
 		const declaration* declaration_by_name(const std::string& name) const {
 			std::vector<const declaration*>::const_iterator it = std::lower_bound(declarations_.begin(), declarations_.end(), name, declaration_by_name_cmp());
-			if (it == declarations_.end() || (**it).name() != name) {
-				throw;
+			if (it == declarations_.end() || boost::to_lower_copy((**it).name()) != boost::to_lower_copy(name)) {
+				throw IfcParse::IfcException("Entity with '" + name + "' not found");
 			} else {
 				return *it;
 			}
@@ -395,7 +415,7 @@ namespace IfcParse {
 
 		const declaration* declaration_by_name(IfcSchema::Type::Enum name) const {
 			if (!built_in_) throw;
-			return declaration_by_name(IfcSchema::Type::ToString(name));
+			return declarations_[name];
 		}
 
 		const std::vector<const declaration*>& declarations() const { return declarations_; }

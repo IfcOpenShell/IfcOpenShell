@@ -922,9 +922,7 @@ IfcFile::IfcFile(bool create_latebound_entities)
 	, tokens(0)
 	, MaxId(0)
 {
-	if (!create_latebound_entities) {
-		schema_ = &get_schema();
-	}
+	schema_ = &get_schema();
 	setDefaultHeaderValues();
 }
 

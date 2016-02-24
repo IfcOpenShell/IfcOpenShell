@@ -87,14 +87,7 @@ namespace IfcParse {
 		const IfcAbstractEntity& data() const { return *data_; }
 		IfcAbstractEntity& data() { return *data_; }
 
-		virtual const IfcParse::declaration& declaration() const {
-			if (data().file) {
-				throw;
-				// data().file->
-			} else {
-				throw;
-			}
-		}
+		const IfcParse::declaration& IfcParse::IfcLateBoundEntity::declaration() const;
 	};
 
 }

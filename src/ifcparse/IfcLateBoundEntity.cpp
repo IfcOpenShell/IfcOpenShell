@@ -280,3 +280,8 @@ std::vector<std::string> IfcParse::IfcLateBoundEntity::getInverseAttributeNames(
 	std::copy(values.begin(), values.end(), std::back_inserter(return_value));
 	return return_value;
 }
+
+const IfcParse::declaration& IfcParse::IfcLateBoundEntity::declaration() const {
+	// TODO: Bound instances to a file and use according schema
+	return *get_schema().declaration_by_name(_type);
+}

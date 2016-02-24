@@ -133,9 +133,9 @@ public:
 
 	std::pair<IfcSchema::IfcNamedUnit*, double> getUnit(IfcSchema::IfcUnitEnum::IfcUnitEnum);
 
-	const schema_definition* schema() const { return schema_; }
+	const IfcParse::schema_definition* schema() const { return schema_; }
 
-	void write_hdf5(const std::string&, const Hdf5Settings&);
+	void write_hdf5(const std::string&, const IfcParse::Hdf5Settings&);
 };
 
 }
