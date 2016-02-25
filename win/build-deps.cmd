@@ -391,7 +391,7 @@ exit /b %RET%
 :: Params: %1 gitUrl, %2 destDir, %3 revision
 :: F.ex. call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" 064a60b65c2c31b94f013820856bc84fb1937cc6
 :GitCloneAndCheckoutRevision
-IF NOT EXIST %2. (
+IF NOT EXIST "%2". (
     call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %2."
     pushd "%DEPS_DIR%"
     call git clone %1 %2
@@ -402,8 +402,6 @@ IF NOT EXIST %2. (
     popd
 ) ELSE (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned. Skipping."
-    pushd %2
-    call git pull
     set RET=0
 )
 popd
