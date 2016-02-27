@@ -395,15 +395,17 @@ IF NOT EXIST "%2". (
     call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %2."
     pushd "%DEPS_DIR%"
     call git clone %1 %2
-    pushd "%2"
-    call cecho.cmd 0 13 "Checking out %DEPENDENCY_NAME% revision %3."
-    call git checkout %3
     set RET=%ERRORLEVEL%
+    if not %RET%==0 exit /b %RET%
     popd
 ) ELSE (
-    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned. Skipping."
+    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned."
     set RET=0
 )
+pushd "%2"
+call cecho.cmd 0 13 "Checking out %DEPENDENCY_NAME% revision %3."
+call git checkout %3
+set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
  
