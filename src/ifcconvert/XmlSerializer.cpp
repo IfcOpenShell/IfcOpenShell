@@ -164,6 +164,16 @@ void descend(IfcProduct* product, ptree& tree) {
 		}
 	}
 
+    if (product->is(Type::IfcElement)) {
+        IfcElement* element = static_cast<IfcElement*>(product);
+        IfcOpeningElement::list::ptr openings = get_related<IfcElement, IfcRelVoidsElement, IfcOpeningElement>(
+            element, &IfcElement::HasOpenings, &IfcRelVoidsElement::RelatedOpeningElement);
+
+        for (IfcOpeningElement::list::it it = openings->begin(); it != openings->end(); ++it) {
+            descend(*it, child);
+        }
+    }
+
 #ifdef USE_IFC2x3
 	IfcObjectDefinition::list::ptr structures = get_related
 		<IfcProduct, IfcRelDecomposes, IfcObjectDefinition>
