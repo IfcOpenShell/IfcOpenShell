@@ -244,8 +244,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		IfcSchema::IfcProject* project = *projects->begin();
 			
 		IfcGeom::Kernel kernel;
-		kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.sew_shells() ? 1000 : -1);
-		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.include_curves() ? (settings.exclude_solids_and_surfaces() ? -1. : 0.) : +1.));
+		kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.get(IfcGeom::IteratorSettings::SEW_SHELLS) ? 1000 : -1);
+		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES) ? (settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 		std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 			
 		if (instance->is(IfcSchema::Type::IfcProduct)) {
@@ -269,13 +269,13 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				// First, try to find a representation based on the settings
 				for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
 					IfcSchema::IfcRepresentation* rep = *it;
-					if (!settings.exclude_solids_and_surfaces()) {
+					if (!settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
 						if (rep->RepresentationIdentifier() == "Body") {
 							ifc_representation = rep;
 							break;
 						}
 					}
-					if (settings.include_curves()) {
+					if (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES)) {
 						if (rep->RepresentationIdentifier() == "Plan" || rep->RepresentationIdentifier() == "Axis") {
 							ifc_representation = rep;
 							break;
@@ -293,12 +293,12 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					// TODO: Remove redundancy with IfcGeomIterator.h
 					if (context->hasContextType()) {
 						std::set<std::string> context_types;
-						if (!settings.exclude_solids_and_surfaces()) {
+						if (!settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
 							context_types.insert("model");
 							context_types.insert("design");
 							context_types.insert("model view");
 						}
-						if (settings.include_curves()) {
+						if (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES)) {
 							context_types.insert("plan");
 						}			
 
@@ -347,11 +347,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			if (!brep) {
 				throw IfcParse::IfcException("Failed to process shape");
 			}
-			if (settings.use_brep_data()) {
+			if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
 				IfcGeom::SerializedElement<double>* serialization = new IfcGeom::SerializedElement<double>(*brep);
 				delete brep;
 				return serialization;
-			} else if (!settings.disable_triangulation()) {
+			} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
 				IfcGeom::TriangulationElement<double>* triangulation = new IfcGeom::TriangulationElement<double>(*brep);
 				delete brep;
 				return triangulation;
@@ -366,9 +366,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 						IfcGeom::ElementSettings element_settings(settings, kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT), IfcSchema::Type::ToString(instance->type()));
 						IfcGeom::Representation::BRep brep(element_settings, instance->entity->id(), shapes);
 						try {
-							if (settings.use_brep_data()) {
+							if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
 								return new IfcGeom::Representation::Serialization(brep);
-							} else if (!settings.disable_triangulation()) {
+							} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
 								return new IfcGeom::Representation::Triangulation<double>(brep);
 							}
 						} catch (...) {

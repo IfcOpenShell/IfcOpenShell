@@ -132,7 +132,7 @@ namespace IfcGeom {
 						}
 					}
 
-					if (settings().apply_default_materials() && surface_style_id == -1) {
+					if (settings().get(IteratorSettings::APPLY_DEFAULT_MATERIALS) && surface_style_id == -1) {
 						Material material(IfcGeom::get_default_style(settings().element_type()));
 						std::vector<Material>::const_iterator mit = std::find(_materials.begin(), _materials.end(), material);
 						if (mit == _materials.end()) {
@@ -182,7 +182,7 @@ namespace IfcGeom {
 							std::map<int,int> dict;
 
 							// Vertex normals are only calculated if vertices are not welded
-							const bool calculate_normals = !settings().weld_vertices();
+							const bool calculate_normals = !settings().get(IteratorSettings::WELD_VERTICES);
 
 							for( int i = 1; i <= nodes.Length(); ++ i ) {
 								coords.push_back(nodes(i).Transformed(loc).XYZ());
@@ -278,11 +278,12 @@ namespace IfcGeom {
 		private:
 			// Welds vertices that belong to different faces
 			int addVertex(int material_index, const gp_XYZ& p) {
-				const P X = static_cast<P>(settings().convert_back_units() ? (p.X() / settings().unit_magnitude()) : p.X());
-				const P Y = static_cast<P>(settings().convert_back_units() ? (p.Y() / settings().unit_magnitude()) : p.Y());
-				const P Z = static_cast<P>(settings().convert_back_units() ? (p.Z() / settings().unit_magnitude()) : p.Z());
+                const bool convert = settings().get(IteratorSettings::CONVERT_BACK_UNITS);
+				const P X = static_cast<P>(convert ? (p.X() / settings().unit_magnitude()) : p.X());
+				const P Y = static_cast<P>(convert ? (p.Y() / settings().unit_magnitude()) : p.Y());
+				const P Z = static_cast<P>(convert ? (p.Z() / settings().unit_magnitude()) : p.Z());
 				int i = (int) _verts.size() / 3;
-				if (settings().weld_vertices()) {
+				if (settings().get(IteratorSettings::WELD_VERTICES)) {
 					const VertexKey key = std::make_pair(material_index, std::make_pair(X, std::make_pair(Y, Z)));
 					typename VertexKeyMap::const_iterator it = welds.find(key);
 					if ( it != welds.end() ) return it->second;

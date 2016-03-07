@@ -17,12 +17,14 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "IfcUtil.h"
+#include "../ifcparse/IfcException.h"
+
+#include <boost/algorithm/string/replace.hpp>
+
 #include <iostream>
 #include <algorithm>
 
-#include "../ifcparse/IfcException.h"
-
-#include "IfcUtil.h"
 
 void IfcEntityList::push(IfcUtil::IfcBaseClass* l) {
 	if (l) {
@@ -143,4 +145,14 @@ bool IfcUtil::valid_binary_string(const std::string& s) {
 		if (*it != '0' && *it != '1') return false;
 	}
 	return true;
+}
+
+boost::regex IfcUtil::wildcard_string_to_regex(std::string str)
+{
+    std::string special_chars = "\\^.$|()[]*+";
+    foreach(char c, special_chars) {
+        std::string char_str(1, c);
+        boost::replace_all(str, char_str, "\\"+ char_str);
+    }
+    return boost::regex(str);
 }
