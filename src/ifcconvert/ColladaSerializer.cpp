@@ -226,11 +226,9 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
         { 0, 0, 0, 1 }
 	};
 
-#if 0
     matrix_array[0][3] += serializer->settings().offset[0];
     matrix_array[1][3] += serializer->settings().offset[1];
     matrix_array[2][3] += serializer->settings().offset[2];
-#endif
 
 	node.start();
 	node.addMatrix(matrix_array);

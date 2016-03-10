@@ -81,8 +81,8 @@ namespace IfcGeom
             /// Applicable for OBJ and DAE output.
             USE_MATERIAL_NAMES = 1 << 14,
             /// Centers the models upon serialization by the applying the center point of
-            /// the scene bounds as an offset. Applicable only for .dae output currently.
-            //CENTER_MODEL = 1 << 15,
+            /// the scene bounds as an offset. Applicable only for DAE output currently.
+            CENTER_MODEL = 1 << 15,
             /// Generates UVs by using simple box projection. Requires normals.
             /// Applicable only for DAE output currently.
             //GENERATE_UVS = 1 << 16,

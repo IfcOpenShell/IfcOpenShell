@@ -199,10 +199,10 @@ int main(int argc, char** argv) {
         ("use-material-names",
             "Use material names instead of unique IDs for naming materials upon serialization. "
             "Applicable for OBJ and DAE output.")
-        /*("center-model",
+        ("center-model",
             "Centers the models upon serialization by applying the center point of "
-            "the scene bounds as an offset. Applicable only for .dae output currently.")
-        ("generate-uvs",
+            "the scene bounds as an offset. Applicable only for DAE output currently.")
+        /*("generate-uvs",
         "Generates UVs (texture coordinates) by using simple box projection. Requires normals. Not guaranteed to work "
             "properly if used with --weld-vertices. Applicable only for .dae output currently.")*/;
 
@@ -262,7 +262,7 @@ int main(int argc, char** argv) {
     const bool use_element_guids = vmap.count("use-element-guids") != 0 ;
     const bool use_material_names = vmap.count("use-material-names") != 0;
     const bool no_normals = vmap.count("no-normals") != 0 ;
-    //const bool center_model = vmap.count("center-model") != 0 ;
+    bool center_model = vmap.count("center-model") != 0 ;
     //const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
     //const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
 	boost::optional<int> bounding_width, bounding_height;
@@ -345,7 +345,7 @@ int main(int argc, char** argv) {
     settings.set(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS, use_element_guids);
     settings.set(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES, use_material_names);
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
-    //settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, center_model);
+    settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, center_model);
     //settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
     //if (deflection_tolerance_specified)
     //      settings.set_deflection_tolerance(deflection_tolerance);
@@ -381,6 +381,12 @@ int main(int argc, char** argv) {
 		print_usage();
 		return 1;
 	}
+
+    if (output_extension != ".dae" && center_model) {
+        Logger::Message(Logger::LOG_NOTICE, "--center-model setting ignored for non-DAE output");
+        settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, false);
+        center_model = false;
+    }
 
 	if (!serializer->isTesselated()) {
 		if (weld_vertices) {
@@ -450,28 +456,28 @@ int main(int argc, char** argv) {
         if (old_progress != progress) Logger::ProgressBar(progress);
         old_progress = progress;
 
-        //if (center_model) {
-        //    const std::vector<real_t>& pos = geom_object->transformation().matrix().data();
-        //    bounds_min[0] = std::min(bounds_min[0], pos[9]);
-        //    bounds_min[1] = std::min(bounds_min[1], pos[10]);
-        //    bounds_min[2] = std::min(bounds_min[2], pos[11]);
-        //    bounds_max[0] = std::max(bounds_max[0], pos[9]);
-        //    bounds_max[1] = std::max(bounds_max[1], pos[10]);
-        //    bounds_max[2] = std::max(bounds_max[2], pos[11]);
-        //}
+        if (center_model) {
+            const std::vector<real_t>& pos = geom_object->transformation().matrix().data();
+            bounds_min[0] = std::min(bounds_min[0], pos[9]);
+            bounds_min[1] = std::min(bounds_min[1], pos[10]);
+            bounds_min[2] = std::min(bounds_min[2], pos[11]);
+            bounds_max[0] = std::max(bounds_max[0], pos[9]);
+            bounds_max[1] = std::max(bounds_max[1], pos[10]);
+            bounds_max[2] = std::max(bounds_max[2], pos[11]);
+        }
     } while (context_iterator.next());
 
     Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(geometries.size()) +
         " objects)                                ");
 
-    //if (center_model) {
-    //    settings.offset[0] = -(bounds_min[0] + bounds_max[0]) * real_t(0.5);
-    //    settings.offset[1] = -(bounds_min[1] + bounds_max[1]) * real_t(0.5);
-    //    settings.offset[2] = -(bounds_min[2] + bounds_max[2]) * real_t(0.5);
-    //    //printf("Bounds min. (%g, %g, %g)\n", bounds_min[0], bounds_min[1], bounds_min[2]);
-    //    //printf("Bounds max. (%g, %g, %g)\n", bounds_max[0], bounds_max[1], bounds_max[2]);
-    //    printf("Using model offset (%g, %g, %g)\n", settings.offset[0], settings.offset[1], settings.offset[2]); //TODO Logger::Message(Logger::LOG_NOTICE, ...);
-    //}
+    if (center_model) {
+        settings.offset[0] = -(bounds_min[0] + bounds_max[0]) * real_t(0.5);
+        settings.offset[1] = -(bounds_min[1] + bounds_max[1]) * real_t(0.5);
+        settings.offset[2] = -(bounds_min[2] + bounds_max[2]) * real_t(0.5);
+        //printf("Bounds min. (%g, %g, %g)\n", bounds_min[0], bounds_min[1], bounds_min[2]);
+        //printf("Bounds max. (%g, %g, %g)\n", bounds_max[0], bounds_max[1], bounds_max[2]);
+        printf("Using model offset (%g, %g, %g)\n", settings.offset[0], settings.offset[1], settings.offset[2]); //TODO Logger::Message(Logger::LOG_NOTICE, ...);
+    }
 
     Logger::Status("Serializing geometry...");
 
