@@ -20,7 +20,11 @@
 #ifndef GEOMETRYSERIALIZER_H
 #define GEOMETRYSERIALIZER_H
 
-typedef double real_t; /**< @todo Will be configurable */
+#ifdef IFCCONVERT_DOUBLE_PRECISION
+typedef double real_t;
+#else
+typedef float real_t;
+#endif
 
 #include "../ifcconvert/Serializer.h"
 #include "../ifcgeom/IfcGeomIterator.h"
