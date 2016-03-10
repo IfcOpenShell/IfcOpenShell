@@ -176,12 +176,12 @@ int main(int argc, char** argv) {
         /*("names", boost::program_options::value< std::vector<std::string> >(&names)->multitoken(),
             "A list of names or wildcard patterns that should be included in or excluded from the "
             "geometrical output, depending on whether --exclude or --include is specified. "
-            "The names are handled case-sensitively. Cannot be placed right before input file argument.")
+            "The names are handled case-sensitively. Cannot be placed right before input file argument.")*/
         ("no-normals",
             "Disables computation of normals. Saves time and file size and is useful "
             "in instances where you're going to recompute normals for the exported "
             "model in other modelling application in any case.")
-        ("deflection-tolerance", boost::program_options::value<double>(&deflection_tolerance),
+        /*("deflection-tolerance", boost::program_options::value<double>(&deflection_tolerance),
             "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")*/;
 
     std::string bounds;
@@ -261,7 +261,7 @@ int main(int argc, char** argv) {
     const bool use_element_names = vmap.count("use-element-names") != 0;
     const bool use_element_guids = vmap.count("use-element-guids") != 0 ;
     const bool use_material_names = vmap.count("use-material-names") != 0;
-    //const bool no_normals = vmap.count("no-normals") != 0 ;
+    const bool no_normals = vmap.count("no-normals") != 0 ;
     //const bool center_model = vmap.count("center-model") != 0 ;
     //const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
     //const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
@@ -344,7 +344,7 @@ int main(int argc, char** argv) {
     settings.set(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS, use_element_guids);
     settings.set(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES, use_material_names);
-    //settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
+    settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     //settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, center_model);
     //settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
     //if (deflection_tolerance_specified)

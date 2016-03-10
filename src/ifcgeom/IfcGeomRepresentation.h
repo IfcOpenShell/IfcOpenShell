@@ -181,8 +181,9 @@ namespace IfcGeom {
 							BRepGProp_Face prop(face);
 							std::map<int,int> dict;
 
-							// Vertex normals are only calculated if vertices are not welded
-							const bool calculate_normals = !settings().get(IteratorSettings::WELD_VERTICES);
+                            // Vertex normals are only calculated if vertices are not welded and calculation is not disable explicitly.
+                            const bool calculate_normals = !settings().get(IteratorSettings::WELD_VERTICES) &&
+                                !settings().get(IteratorSettings::NO_NORMALS);
 
 							for( int i = 1; i <= nodes.Length(); ++ i ) {
 								coords.push_back(nodes(i).Transformed(loc).XYZ());

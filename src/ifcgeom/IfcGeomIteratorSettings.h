@@ -70,7 +70,7 @@ namespace IfcGeom
             /// Disables computation of normals. Saves time and file size and is useful
             /// in instances where you're going to recompute normals for the exported
             /// model in other modelling application in any case.
-            //NO_NORMALS = 1 << 11,
+            NO_NORMALS = 1 << 11,
             /// Use entity names instead of unique IDs for naming elements.
             /// Applicable for OBJ, DAE, and SVG output.
             USE_ELEMENT_NAMES = 1 << 12,
