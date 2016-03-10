@@ -21,6 +21,7 @@
 #define IFCGEOMITERATORSETTINGS_H
 
 #include "../ifcparse/IfcException.h"
+#include "../ifcparse/IfcUtil.h"
 
 namespace IfcGeom
 {
@@ -103,8 +104,17 @@ namespace IfcGeom
 
         /// Note that this is independent of the IFC length unit, one millimeter by default.
         double deflection_tolerance() const { return deflection_tolerance_; }
-        /// @todo Sanity check for the value
-        void set_deflection_tolerance(double value) { deflection_tolerance_ = value; }
+
+        void set_deflection_tolerance(double value)
+        {
+            /// @todo Using deflection tolerance of 1e-6 or smaller hangs the conversion, research more in-depth.
+            /// This bug can be reproduced e.g. with the Duplex model that can be found from http://www.nibs.org/?page=bsa_commonbimfiles#project1
+            deflection_tolerance_ = value;
+            if (deflection_tolerance_ <= 1e-6) {
+                Logger::Message(Logger::LOG_WARNING, "Deflection tolerance cannot be set to <= 1e-6, using default 1e-3");
+                deflection_tolerance_ = 1e-3;
+            }
+        }
 
         /// Get boolean value for a single settings or for a combination of settings.
         bool get(SettingField setting) const

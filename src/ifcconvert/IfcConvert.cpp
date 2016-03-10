@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
 		("output-file", boost::program_options::value<std::string>(), "output geometry file");
 
     std::vector<std::string> entity_vector/*, names*/;
-    //double deflection_tolerance;
+    double deflection_tolerance;
 	boost::program_options::options_description geom_options;
 	geom_options.add_options()
 		("plan",
@@ -181,8 +181,8 @@ int main(int argc, char** argv) {
             "Disables computation of normals. Saves time and file size and is useful "
             "in instances where you're going to recompute normals for the exported "
             "model in other modelling application in any case.")
-        /*("deflection-tolerance", boost::program_options::value<double>(&deflection_tolerance),
-            "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")*/;
+        ("deflection-tolerance", boost::program_options::value<double>(&deflection_tolerance),
+            "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.");
 
     std::string bounds;
     boost::program_options::options_description serializer_options;
@@ -264,7 +264,7 @@ int main(int argc, char** argv) {
     const bool no_normals = vmap.count("no-normals") != 0 ;
     bool center_model = vmap.count("center-model") != 0 ;
     //const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
-    //const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
+    const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
 	boost::optional<int> bounding_width, bounding_height;
 	if (vmap.count("bounds") == 1) {
 		int w, h;
@@ -347,8 +347,9 @@ int main(int argc, char** argv) {
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, center_model);
     //settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
-    //if (deflection_tolerance_specified)
-    //      settings.set_deflection_tolerance(deflection_tolerance);
+    if (deflection_tolerance_specified) {
+        settings.set_deflection_tolerance(deflection_tolerance);
+    }
 
 	GeometrySerializer* serializer;
 	if (output_extension == ".obj") {
