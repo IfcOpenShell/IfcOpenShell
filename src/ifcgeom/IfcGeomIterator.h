@@ -276,7 +276,7 @@ namespace IfcGeom {
 			include_entities_in_processing = false;
 		}
 
-        // Arbitrary names or wildcard expressions are handled case-sensitively.
+        /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
         void include_entity_names(const std::vector<std::string>& names)
         {
             names_to_include_or_exclude.clear();
@@ -285,7 +285,7 @@ namespace IfcGeom {
             include_entities_in_processing = true;
         }
 
-        // Arbitrary names or wildcard expressions are handled case-sensitively.
+        /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
         void exclude_entity_names(const std::vector<std::string>& names)
         {
             names_to_include_or_exclude.clear();
@@ -346,7 +346,7 @@ namespace IfcGeom {
 							}
 
                             foreach(const boost::regex& r, names_to_include_or_exclude) {
-                                if (boost::regex_match((*it)->Name(), r)) {
+                                if (boost::regex_match((*jt)->Name(), r)) {
                                     found = true;
                                     break;
                                 }

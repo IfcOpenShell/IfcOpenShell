@@ -87,12 +87,15 @@ void print_options(
     const boost::optional<boost::program_options::options_description>& geom_options,
     const boost::optional<boost::program_options::options_description>& serialization_options)
 {
-    if (generic_options)
+    if (generic_options) {
         std::cerr << "\nCommand line options\n" << generic_options;
-    if (geom_options)
+    }
+    if (geom_options) {
         std::cerr << "\nGeometry options\n" << geom_options;
-    if (serialization_options)
+    }
+    if (serialization_options) {
         std::cerr << "\nSerialization options\n" << serialization_options;
+    }
     std::cerr << std::endl;
 }
 
@@ -120,7 +123,7 @@ int main(int argc, char** argv) {
 		("input-file", boost::program_options::value<std::string>(), "input IFC file")
 		("output-file", boost::program_options::value<std::string>(), "output geometry file");
 
-    std::vector<std::string> entity_vector/*, names*/;
+    std::vector<std::string> entity_vector, names;
     double deflection_tolerance;
 	boost::program_options::options_description geom_options;
 	geom_options.add_options()
@@ -171,12 +174,13 @@ int main(int argc, char** argv) {
 		("entities", boost::program_options::value< std::vector<std::string> >(&entity_vector)->multitoken(),
 			"A list of entities that should be included in or excluded from the "
 			"geometrical output, depending on whether --exclude or --include is specified. "
-			" Defaults to IfcOpeningElement and IfcSpace to be excluded. "
+            "Defaults to IfcOpeningElement and IfcSpace to be excluded. SVG output defaults "
+            "to IfcSpace to be included."
             "The names are handled case-insensitively. Cannot be placed right before input file argument.")
-        /*("names", boost::program_options::value< std::vector<std::string> >(&names)->multitoken(),
+        ("names", boost::program_options::value< std::vector<std::string> >(&names)->multitoken(),
             "A list of names or wildcard patterns that should be included in or excluded from the "
             "geometrical output, depending on whether --exclude or --include is specified. "
-            "The names are handled case-sensitively. Cannot be placed right before input file argument.")*/
+            "The names are handled case-sensitively. Cannot be placed right before input file argument.")
         ("no-normals",
             "Disables computation of normals. Saves time and file size and is useful "
             "in instances where you're going to recompute normals for the exported "
@@ -297,10 +301,9 @@ int main(int argc, char** argv) {
 	std::string output_extension = output_filename.substr(output_filename.size()-4);
 	boost::to_lower(output_extension);
 
-	// If no entities are specified these are the defaults to skip from output
-	if (entities.empty()) {
+	// If no entity or names filters are specified these are the defaults to skip from output
+	if (entities.empty() && names.empty()) {
         entities.insert("IfcSpace");
-        /// @todo Document in --help that SVG uses "--include --entities IfcSpace" by default.
 		if (output_extension == ".svg") {
 			include_entities = true;
 		} else {
@@ -405,10 +408,10 @@ int main(int argc, char** argv) {
 	try {
 		if (include_entities) {
 			context_iterator.includeEntities(entities);
-            //context_iterator.include_entity_names(names);
+            context_iterator.include_entity_names(names);
 		} else {
 			context_iterator.excludeEntities(entities);
-            //context_iterator.exclude_entity_names(names);
+            context_iterator.exclude_entity_names(names);
 		}
 	} catch (const IfcParse::IfcException& e) {
 		std::cout << "[Error] " << e.what() << std::endl;

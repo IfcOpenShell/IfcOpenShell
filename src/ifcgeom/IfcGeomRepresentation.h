@@ -176,7 +176,6 @@ namespace IfcGeom {
 							std::vector<std::pair<int,int> > edges_temp;
 
 							const TColgp_Array1OfPnt& nodes = tri->Nodes();
-                            /// @todo can these UVs be used for texture coordinates as is?
 							const TColgp_Array1OfPnt2d& uvs = tri->UVNodes();
 							std::vector<gp_XYZ> coords;
 							BRepGProp_Face prop(face);
