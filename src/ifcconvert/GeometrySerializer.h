@@ -20,17 +20,26 @@
 #ifndef GEOMETRYSERIALIZER_H
 #define GEOMETRYSERIALIZER_H
 
+typedef double real_t; /**< @todo Will be configurable */
+
 #include "../ifcconvert/Serializer.h"
 #include "../ifcgeom/IfcGeomIterator.h"
 
 class GeometrySerializer : public Serializer {
 public:
+    GeometrySerializer(const IfcGeom::IteratorSettings &settings) : settings_(settings) {}
 	virtual ~GeometrySerializer() {} 
 
 	virtual bool isTesselated() const = 0;
-	virtual void write(const IfcGeom::TriangulationElement<double>* o) = 0;
-	virtual void write(const IfcGeom::BRepElement<double>* o) = 0;
+	virtual void write(const IfcGeom::TriangulationElement<real_t>* o) = 0;
+	virtual void write(const IfcGeom::BRepElement<real_t>* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
+
+    const IfcGeom::IteratorSettings& settings() const { return settings_; }
+    IfcGeom::IteratorSettings& settings() { return settings_; }
+
+protected:
+    IfcGeom::IteratorSettings settings_;
 };
 
 #endif

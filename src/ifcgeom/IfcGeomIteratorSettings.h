@@ -72,17 +72,17 @@ namespace IfcGeom
             /// model in other modelling application in any case.
             //NO_NORMALS = 1 << 11,
             /// Use entity names instead of unique IDs for naming objects and materials.
-            /// Applicable for .obj and .dae output.
-            //USE_NAMES = 1 << 12,
+            /// Applicable for OBJ, DAE, and SVG output.
+            USE_NAMES = 1 << 12,
             /// Use entity GUIDs instead of unique IDs for naming objects.
             /// Overrides possible usage of --use-names for objects but not for materials.
-            /// Applicable for .obj and .dae output.
-            //USE_GUIDS = 1 << 13,
+            /// Applicable for OBJ, DAE, and SVG output.
+            USE_GUIDS = 1 << 13,
             /// Centers the models upon serialization by the applying the center point of
             /// the scene bounds as an offset. Applicable only for .dae output currently.
             //CENTER_MODEL = 1 << 14,
             /// Generates UVs by using simple box projection. Requires normals.
-            /// Applicable only for .dae output currently.
+            /// Applicable only for DAE output currently.
             //GENERATE_UVS = 1 << 15,
             //NUM_SETTINGS = 15
         };

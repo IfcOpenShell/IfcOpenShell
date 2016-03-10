@@ -32,8 +32,8 @@ class IgesSerializer : public OpenCascadeBasedSerializer
 private:
 	IGESControl_Writer writer;	
 public:
-	explicit IgesSerializer(const std::string& out_filename) 
-		: OpenCascadeBasedSerializer(out_filename) 
+    IgesSerializer(const std::string& out_filename, const IfcGeom::IteratorSettings &settings)
+        : OpenCascadeBasedSerializer(out_filename, settings)
 	{}
 	virtual ~IgesSerializer() {}
 	void writeShape(const TopoDS_Shape& shape) {

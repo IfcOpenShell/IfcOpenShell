@@ -168,7 +168,8 @@ SvgSerializer::path_object& SvgSerializer::start_path(IfcSchema::IfcBuildingStor
 	return p;
 }
 
-void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
+void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
+{
 	IfcSchema::IfcBuildingStorey* storey = 0;
 	IfcSchema::IfcObjectDefinition* obdef = static_cast<IfcSchema::IfcObjectDefinition*>(file->entityById(o->id()));
 
@@ -340,10 +341,14 @@ void SvgSerializer::writeHeader() {
 	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
 }
 
-std::string SvgSerializer::nameElement(const IfcGeom::Element<double>* elem) {
+std::string SvgSerializer::nameElement(const IfcGeom::Element<real_t>* elem)
+{
 	std::ostringstream oss;
 	const std::string type = "product";
-	oss << "id=\"" << type << "-" << elem->unique_id() << "\"";
+    const std::string name = (settings().get(IfcGeom::IteratorSettings::USE_GUIDS)
+        ? elem->guid() : (settings().get(IfcGeom::IteratorSettings::USE_NAMES)
+        ? elem->name() : elem->unique_id()));
+	oss << "id=\"" << type << "-" << name<< "\"";
 	return oss.str();
 }
 

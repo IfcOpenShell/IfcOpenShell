@@ -34,8 +34,8 @@ private:
 	unsigned int vcount_total;
 	std::set<std::string> materials;
 public:
-	WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename)
-		: GeometrySerializer()
+	WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename, const IfcGeom::IteratorSettings &settings)
+		: GeometrySerializer(settings)
 		, obj_stream(obj_filename.c_str())
 		, mtl_filename(mtl_filename)
 		, mtl_stream(mtl_filename.c_str())		

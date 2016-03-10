@@ -160,3 +160,28 @@ boost::regex IfcUtil::wildcard_string_to_regex(std::string str)
     boost::replace_all(str, "*", ".*");
     return boost::regex(str);
 }
+
+void IfcUtil::sanitate_material_name(std::string &str)
+{
+    // Spaces in material names have been observed to cause problems with obj and dae importers.
+    // Handle other potential problematic characters here too if observing problems.
+    boost::replace_all(str, " ", "_");
+}
+
+void IfcUtil::escape_xml(std::string &str)
+{
+    boost::replace_all(str, "\"", "&quot;");
+    boost::replace_all(str, "'", "&apos;");
+    boost::replace_all(str, "<", "&lt;");
+    boost::replace_all(str, ">", "&gt;");
+    boost::replace_all(str, "&", "&amp;");
+}
+
+void IfcUtil::unescape_xml(std::string &str)
+{
+    boost::replace_all(str, "&quot;", "\"");
+    boost::replace_all(str, "&apos;", "'");
+    boost::replace_all(str, "&lt;", "<");
+    boost::replace_all(str, "&gt;", ">");
+    boost::replace_all(str, "&amp;", "&");
+}

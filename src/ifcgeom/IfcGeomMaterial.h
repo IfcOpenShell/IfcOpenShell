@@ -41,7 +41,8 @@ namespace IfcGeom {
 		const double* specular() const;
 		double transparency() const;
 		double specularity() const;
-		const std::string name() const;
+		const std::string &name() const;
+		const std::string &original_name() const;
 		bool operator==(const Material& other) const;
 	};
 

@@ -47,7 +47,6 @@
 #include <set>
 #include <time.h>
 
-typedef double real_t; /**< @todo Will be configurable */
 #define INF std::numeric_limits<real_t>::infinity()
 real_t bounds_min[3] = { INF, INF, INF };
 real_t bounds_max[3] = { -INF, -INF, -INF };
@@ -191,14 +190,14 @@ int main(int argc, char** argv) {
         ("bounds", boost::program_options::value<std::string>(&bounds),
             "Specifies the bounding rectangle, for example 512x512, to which the "
             "output will be scaled. Only used when converting to SVG.")
-        /*("use-names",
+        ("use-names",
             "Use entity names instead of unique IDs for naming objects and materials "
             "upon serialization. Applicable for .obj and .dae output.")
         ("use-guids",
             "Use entity GUIDs instead of unique IDs for naming objects upon serialization. "
             "Overrides possible usage of --use-names for objects but not for materials."
             "Applicable for .obj and .dae output.")
-        ("center-model",
+        /*("center-model",
             "Centers the models upon serialization by applying the center point of "
             "the scene bounds as an offset. Applicable only for .dae output currently.")
         ("generate-uvs",
@@ -257,8 +256,8 @@ int main(int argc, char** argv) {
 	bool include_entities = vmap.count("include") != 0;
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
-    //const bool use_names = vmap.count("use-names") != 0;
-    //const bool use_guids = vmap.count("use-guids") != 0 ;
+    const bool use_names = vmap.count("use-names") != 0;
+    const bool use_guids = vmap.count("use-guids") != 0 ;
     //const bool no_normals = vmap.count("no-normals") != 0 ;
     //const bool center_model = vmap.count("center-model") != 0 ;
     //const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
@@ -296,7 +295,7 @@ int main(int argc, char** argv) {
 	boost::to_lower(output_extension);
 
 	// If no entities are specified these are the defaults to skip from output
-	if (entity_vector.empty()) {
+	if (entities.empty()) {
         entities.insert("IfcSpace");
         /// @todo Document in --help that SVG uses "--include --entities IfcSpace" by default.
 		if (output_extension == ".svg") {
@@ -339,11 +338,11 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
 	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
-    //settings.set(IfcConvertSettings::USE_NAMES, use_names);
-    //settings.set(IfcConvertSettings::USE_GUIDS, use_guids);
+    settings.set(IfcGeom::IteratorSettings::USE_NAMES, use_names);
+    settings.set(IfcGeom::IteratorSettings::USE_GUIDS, use_guids);
     //settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
-    //settings.set(IfcConvertSettings::CENTER_MODEL, center_model);
-    //settings.set(IfcConvertSettings::GENERATE_UVS, generate_uvs);
+    //settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, center_model);
+    //settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
     //if (deflection_tolerance_specified)
     //      settings.set_deflection_tolerance(deflection_tolerance);
 
@@ -354,21 +353,21 @@ int main(int argc, char** argv) {
 			Logger::Message(Logger::LOG_NOTICE, "Using world coords when writing WaveFront OBJ files");
 			settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
 		}
-		serializer = new WaveFrontOBJSerializer(output_filename, mtl_filename);
+		serializer = new WaveFrontOBJSerializer(output_filename, mtl_filename, settings);
 #ifdef WITH_OPENCOLLADA
 	} else if (output_extension == ".dae") {
-		serializer = new ColladaSerializer(output_filename);
+		serializer = new ColladaSerializer(output_filename, settings);
 #endif
 	} else if (output_extension == ".stp") {
-		serializer = new StepSerializer(output_filename);
+		serializer = new StepSerializer(output_filename, settings);
 	} else if (output_extension == ".igs") {
 		// Not sure why this is needed, but it is.
 		// See: http://tracker.dev.opencascade.org/view.php?id=23679
 		IGESControl_Controller::Init();
-		serializer = new IgesSerializer(output_filename);
+		serializer = new IgesSerializer(output_filename, settings);
 	} else if (output_extension == ".svg") {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-		serializer = new SvgSerializer(output_filename);
+		serializer = new SvgSerializer(output_filename, settings);
 		if (bounding_width && bounding_height) {
             static_cast<SvgSerializer*>(serializer)->setBoundingRectangle(*bounding_width, *bounding_height);
 		}
@@ -415,6 +414,8 @@ int main(int argc, char** argv) {
 		write_log();
 		return 1;
 	}
+
+    serializer->setFile(context_iterator.getFile());
 
 	if (convert_back_units) {
 		serializer->setUnitNameAndMagnitude(context_iterator.getUnitName(), static_cast<float>(context_iterator.getUnitMagnitude()));
@@ -469,8 +470,6 @@ int main(int argc, char** argv) {
     //}
 
     Logger::Status("Serializing geometry...");
-
-    //serializer->setSettings(settings);
 
     if (serializer->isTesselated()) { // isTesselated() doesn't change at run-time
         foreach(const IfcGeom::Element<real_t>* geom, geometries) {

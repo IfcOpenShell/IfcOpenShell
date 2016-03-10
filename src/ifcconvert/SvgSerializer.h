@@ -45,8 +45,8 @@ protected:
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > radii;
 	IfcParse::IfcFile* file;
 public:
-	explicit SvgSerializer(const std::string& out_filename)
-		: GeometrySerializer()
+	explicit SvgSerializer(const std::string& out_filename, const IfcGeom::IteratorSettings &settings)
+		: GeometrySerializer(settings)
 		, svg_file(out_filename.c_str())
 		, xmin(+std::numeric_limits<double>::infinity())
 		, xmax(-std::numeric_limits<double>::infinity())
@@ -62,8 +62,8 @@ public:
 	virtual ~SvgSerializer() {}
 	virtual void writeHeader();
 	virtual bool ready();
-	virtual void write(const IfcGeom::TriangulationElement<double>* /*o*/) {}
-	virtual void write(const IfcGeom::BRepElement<double>* o);
+	virtual void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
+	virtual void write(const IfcGeom::BRepElement<real_t>* o);
 	virtual void write(path_object& p, const TopoDS_Wire& wire);
 	virtual path_object& start_path(IfcSchema::IfcBuildingStorey* storey, const std::string& id);
 	virtual bool isTesselated() const { return false; }
