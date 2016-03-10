@@ -86,8 +86,9 @@ namespace IfcGeom
             CENTER_MODEL = 1 << 15,
             /// Generates UVs by using simple box projection. Requires normals.
             /// Applicable only for DAE output currently.
-            //GENERATE_UVS = 1 << 16,
-            //NUM_SETTINGS = 16
+            GENERATE_UVS = 1 << 16,
+            /// Number of different setting flags.
+            NUM_SETTINGS = 16
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;
@@ -111,7 +112,7 @@ namespace IfcGeom
             /// This bug can be reproduced e.g. with the Duplex model that can be found from http://www.nibs.org/?page=bsa_commonbimfiles#project1
             deflection_tolerance_ = value;
             if (deflection_tolerance_ <= 1e-6) {
-                Logger::Message(Logger::LOG_WARNING, "Deflection tolerance cannot be set to <= 1e-6, using default 1e-3");
+                Logger::Message(Logger::LOG_WARNING, "Deflection tolerance cannot be set to <= 1e-6; using the default value 1e-3");
                 deflection_tolerance_ = 1e-3;
             }
         }

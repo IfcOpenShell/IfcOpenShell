@@ -202,9 +202,9 @@ int main(int argc, char** argv) {
         ("center-model",
             "Centers the models upon serialization by applying the center point of "
             "the scene bounds as an offset. Applicable only for DAE output currently.")
-        /*("generate-uvs",
+        ("generate-uvs",
         "Generates UVs (texture coordinates) by using simple box projection. Requires normals. Not guaranteed to work "
-            "properly if used with --weld-vertices. Applicable only for .dae output currently.")*/;
+            "properly if used with --weld-vertices. Applicable only for DAE output currently.");
 
 	boost::program_options::options_description cmdline_options;
 	cmdline_options.add(generic_options).add(fileio_options).add(geom_options).add(serializer_options);
@@ -263,7 +263,7 @@ int main(int argc, char** argv) {
     const bool use_material_names = vmap.count("use-material-names") != 0;
     const bool no_normals = vmap.count("no-normals") != 0 ;
     bool center_model = vmap.count("center-model") != 0 ;
-    //const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
+    const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
     const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
 	boost::optional<int> bounding_width, bounding_height;
 	if (vmap.count("bounds") == 1) {
@@ -346,7 +346,7 @@ int main(int argc, char** argv) {
     settings.set(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES, use_material_names);
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, center_model);
-    //settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
+    settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
     if (deflection_tolerance_specified) {
         settings.set_deflection_tolerance(deflection_tolerance);
     }
@@ -366,9 +366,7 @@ int main(int argc, char** argv) {
 	} else if (output_extension == ".stp") {
 		serializer = new StepSerializer(output_filename, settings);
 	} else if (output_extension == ".igs") {
-		// Not sure why this is needed, but it is.
-		// See: http://tracker.dev.opencascade.org/view.php?id=23679
-		IGESControl_Controller::Init();
+		IGESControl_Controller::Init(); // work around Open Cascade bug
 		serializer = new IgesSerializer(output_filename, settings);
 	} else if (output_extension == ".svg") {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
@@ -383,10 +381,16 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-    if (output_extension != ".dae" && center_model) {
-        Logger::Message(Logger::LOG_NOTICE, "--center-model setting ignored for non-DAE output");
-        settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, false);
-        center_model = false;
+    if (output_extension != ".dae") {
+        if (center_model) {
+            Logger::Message(Logger::LOG_NOTICE, "--center-model setting ignored for non-DAE output");
+            settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, false);
+            center_model = false;
+        }
+        if (generate_uvs) {
+            Logger::Message(Logger::LOG_NOTICE, "--generate-uvs setting ignored for non-DAE output");
+            settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, false);
+        }
     }
 
 	if (!serializer->isTesselated()) {

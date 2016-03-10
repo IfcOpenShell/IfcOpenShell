@@ -20,18 +20,18 @@
 #ifndef IGESSERIALIZER_H
 #define IGESSERIALIZER_H
 
+#include "OpenCascadeBasedSerializer.h"
+
 #include <IGESControl_Writer.hxx>
 #include <Interface_Static.hxx>
-
-#include "../ifcgeom/IfcGeomIterator.h"
-
-#include "../ifcconvert/OpenCascadeBasedSerializer.h"
 
 class IgesSerializer : public OpenCascadeBasedSerializer
 {
 private:
-	IGESControl_Writer writer;	
+	IGESControl_Writer writer;
 public:
+    /// @note IGESControl_Controller::Init() must be called prior to instantiating IgesSerializer.
+    /// See http://tracker.dev.opencascade.org/view.php?id=23679 for more information.
     IgesSerializer(const std::string& out_filename, const IfcGeom::IteratorSettings &settings)
         : OpenCascadeBasedSerializer(out_filename, settings)
 	{}

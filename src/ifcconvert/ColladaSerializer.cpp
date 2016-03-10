@@ -38,10 +38,9 @@ static void collada_id(std::string &s)
     IfcUtil::escape_xml(s);
 }
 
-#if 0
-static std::vector<real_t> boxProjectUVs(const std::vector<real_t> &vertices, const std::vector<real_t> &normals) {
-    assert(vertices.size() == normals.size());
-    //TODO if (vertices.size() != normals.size()) log error?
+/// @todo Very simple impl. Assumes that input vertices and normals match 1:1.
+static std::vector<real_t> box_project_uvs(const std::vector<real_t> &vertices, const std::vector<real_t> &normals)
+{
     std::vector<real_t> uvs;
     uvs.resize(vertices.size() / 3 * 2);
     for(size_t uv_idx = 0, v_idx = 0;
@@ -67,7 +66,6 @@ static std::vector<real_t> boxProjectUVs(const std::vector<real_t> &vertices, co
 
     return uvs;
 }
-#endif
 
 void ColladaSerializer::ColladaExporter::ColladaGeometries::addFloatSource(const std::string& mesh_id,
     const std::string& suffix, const std::vector<real_t>& floats, const char* coords /* = "XYZ" */)
@@ -98,17 +96,14 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
 	// The normals vector can be empty for example when the WELD_VERTICES setting is used.
 	// IfcOpenShell does not provide them with multiple face normals collapsed into a single vertex.
 	const bool has_normals = !normals.empty();
-#if 0
-    const bool generate_uvs = (has_normals && serializer->settings()..get(IfcGeom::IteratorSettings::GENERATE_UVS));
-#endif
+    const bool generate_uvs = (has_normals && serializer->settings().get(IfcGeom::IteratorSettings::GENERATE_UVS));
+
 	addFloatSource(mesh_id, COLLADASW::LibraryGeometries::POSITIONS_SOURCE_ID_SUFFIX, positions);
 	if (has_normals) {
 		addFloatSource(mesh_id, COLLADASW::LibraryGeometries::NORMALS_SOURCE_ID_SUFFIX, normals);
-#if 0
         if (generate_uvs) {
-            addFloatSource(mesh_id, COLLADASW::LibraryGeometries::TEXCOORDS_SOURCE_ID_SUFFIX, boxProjectUVs(positions, normals), "UV");
+            addFloatSource(mesh_id, COLLADASW::LibraryGeometries::TEXCOORDS_SOURCE_ID_SUFFIX, box_project_uvs(positions, normals), "UV");
         }
-#endif
 	}
 
 	COLLADASW::VerticesElement vertices(mSW);
@@ -134,17 +129,15 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
 			if (has_normals) {
 				triangles.getInputList().push_back(COLLADASW::Input(COLLADASW::InputSemantic::NORMAL,"#" + mesh_id + COLLADASW::LibraryGeometries::NORMALS_SOURCE_ID_SUFFIX, offset++));
 			}
-#if 0
             if (generate_uvs) {
                 triangles.getInputList().push_back(COLLADASW::Input(COLLADASW::InputSemantic::TEXCOORD,"#" + mesh_id + COLLADASW::LibraryGeometries::TEXCOORDS_SOURCE_ID_SUFFIX, offset++));
             }
-#endif
 			triangles.prepareToAppendValues();
 			for (std::vector<int>::const_iterator jt = index_range_start; jt != it; ++jt) {
 				const int idx = *jt;
-                /*if (has_normals && generate_uvs) {
+                if (has_normals && generate_uvs) {
                     triangles.appendValues(idx, idx, idx);
-                } else*/ if(has_normals) {
+                } else if(has_normals) {
 					triangles.appendValues(idx, idx);
 				} else {
 					triangles.appendValues(idx);
