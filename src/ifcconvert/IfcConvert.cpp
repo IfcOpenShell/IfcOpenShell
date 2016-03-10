@@ -190,13 +190,15 @@ int main(int argc, char** argv) {
         ("bounds", boost::program_options::value<std::string>(&bounds),
             "Specifies the bounding rectangle, for example 512x512, to which the "
             "output will be scaled. Only used when converting to SVG.")
-        ("use-names",
-            "Use entity names instead of unique IDs for naming objects and materials "
-            "upon serialization. Applicable for .obj and .dae output.")
-        ("use-guids",
-            "Use entity GUIDs instead of unique IDs for naming objects upon serialization. "
-            "Overrides possible usage of --use-names for objects but not for materials."
-            "Applicable for .obj and .dae output.")
+        ("use-element-names",
+            "Use entity names instead of unique IDs for naming elements upon serialization. "
+            "Applicable for OBJ, DAE, and SVG output.")
+        ("use-element-guids",
+            "Use entity GUIDs instead of unique IDs for naming elements upon serialization. "
+            "Applicable for OBJ, DAE, and SVG output.")
+        ("use-material-names",
+            "Use material names instead of unique IDs for naming materials upon serialization. "
+            "Applicable for OBJ and DAE output.")
         /*("center-model",
             "Centers the models upon serialization by applying the center point of "
             "the scene bounds as an offset. Applicable only for .dae output currently.")
@@ -256,8 +258,9 @@ int main(int argc, char** argv) {
 	bool include_entities = vmap.count("include") != 0;
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
-    const bool use_names = vmap.count("use-names") != 0;
-    const bool use_guids = vmap.count("use-guids") != 0 ;
+    const bool use_element_names = vmap.count("use-element-names") != 0;
+    const bool use_element_guids = vmap.count("use-element-guids") != 0 ;
+    const bool use_material_names = vmap.count("use-material-names") != 0;
     //const bool no_normals = vmap.count("no-normals") != 0 ;
     //const bool center_model = vmap.count("center-model") != 0 ;
     //const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
@@ -338,8 +341,9 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
 	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
-    settings.set(IfcGeom::IteratorSettings::USE_NAMES, use_names);
-    settings.set(IfcGeom::IteratorSettings::USE_GUIDS, use_guids);
+    settings.set(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES, use_element_names);
+    settings.set(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS, use_element_guids);
+    settings.set(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES, use_material_names);
     //settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     //settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, center_model);
     //settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);

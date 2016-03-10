@@ -124,7 +124,8 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
         const size_t num_triangles = std::distance(index_range_start, it) / 3;
 		if ((previous_material_id != current_material_id && num_triangles > 0) || (it == faces.end())) {
 			COLLADASW::Triangles triangles(mSW);
-            std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_NAMES) ? materials[previous_material_id].original_name() : materials[previous_material_id].name());
+            std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+                ? materials[previous_material_id].original_name() : materials[previous_material_id].name());
             collada_id(material_name);
             triangles.setMaterial(material_name);
             triangles.setCount((unsigned long)num_triangles);
@@ -182,7 +183,8 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
 
 	for (linelist_t::const_iterator it = linelist.begin(); it != linelist.end(); ++it) {
 		COLLADASW::Lines lines(mSW);
-        std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_NAMES) ? materials[it->first].original_name() : materials[it->first].name());
+        std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+            ? materials[it->first].original_name() : materials[it->first].name());
         collada_id(material_name);
         lines.setMaterial(material_name);
 		lines.setCount((unsigned long)it->second.size());
@@ -256,7 +258,8 @@ void ColladaSerializer::ColladaExporter::ColladaScene::write() {
 
 void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write(const IfcGeom::Material& material)
 {
-    std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_NAMES) ? material.original_name() : material.name());
+    std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+        ? material.original_name() : material.name());
     collada_id(material_name);
     openEffect(material_name + "-fx");
 	COLLADASW::EffectProfile effect(mSW);
@@ -302,7 +305,8 @@ bool ColladaSerializer::ColladaExporter::ColladaMaterials::contains(const IfcGeo
 void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
 	effects.close();
     foreach(const IfcGeom::Material& material, materials) {
-        std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_NAMES) ? material.original_name() : material.name());
+        std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+            ? material.original_name() : material.name());
         std::string  material_name_unescaped = material_name; // workaround double-escaping that would occur in addInstanceEffect()
         IfcUtil::sanitate_material_name(material_name_unescaped);
         collada_id(material_name);
@@ -333,7 +337,8 @@ void ColladaSerializer::ColladaExporter::write(const std::string& unique_id, con
 		if (!materials.contains(material)) {
 			materials.add(material);
 		}
-        std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_NAMES) ? material.original_name() : material.name());
+        std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+            ? material.original_name() : material.name());
         collada_id(material_name);
         material_references.push_back(material_name);
 	}
@@ -367,8 +372,8 @@ void ColladaSerializer::writeHeader() {
 
 void ColladaSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
 	const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
-    const std::string name = settings().get(IfcGeom::IteratorSettings::USE_GUIDS) ?
-        o->guid() : (settings().get(IfcGeom::IteratorSettings::USE_NAMES) ? o->name() : o->unique_id());
+    const std::string name = settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS) ?
+        o->guid() : (settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES) ? o->name() : o->unique_id());
     exporter.write(name, o->type(), o->transformation().matrix().data(), mesh.verts(),
         mesh.normals(), mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials());
 }

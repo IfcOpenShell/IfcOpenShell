@@ -71,20 +71,22 @@ namespace IfcGeom
             /// in instances where you're going to recompute normals for the exported
             /// model in other modelling application in any case.
             //NO_NORMALS = 1 << 11,
-            /// Use entity names instead of unique IDs for naming objects and materials.
+            /// Use entity names instead of unique IDs for naming elements.
             /// Applicable for OBJ, DAE, and SVG output.
-            USE_NAMES = 1 << 12,
-            /// Use entity GUIDs instead of unique IDs for naming objects.
-            /// Overrides possible usage of --use-names for objects but not for materials.
+            USE_ELEMENT_NAMES = 1 << 12,
+            /// Use entity GUIDs instead of unique IDs for naming elements.
             /// Applicable for OBJ, DAE, and SVG output.
-            USE_GUIDS = 1 << 13,
+            USE_ELEMENT_GUIDS = 1 << 13,
+            /// Use material names instead of unique IDs for naming materials.
+            /// Applicable for OBJ and DAE output.
+            USE_MATERIAL_NAMES = 1 << 14,
             /// Centers the models upon serialization by the applying the center point of
             /// the scene bounds as an offset. Applicable only for .dae output currently.
-            //CENTER_MODEL = 1 << 14,
+            //CENTER_MODEL = 1 << 15,
             /// Generates UVs by using simple box projection. Requires normals.
             /// Applicable only for DAE output currently.
-            //GENERATE_UVS = 1 << 15,
-            //NUM_SETTINGS = 15
+            //GENERATE_UVS = 1 << 16,
+            //NUM_SETTINGS = 16
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;
@@ -104,12 +106,14 @@ namespace IfcGeom
         /// @todo Sanity check for the value
         void set_deflection_tolerance(double value) { deflection_tolerance_ = value; }
 
+        /// Get boolean value for a single settings or for a combination of settings.
         bool get(SettingField setting) const
         {
             /// @todo If unknown setting value/combination: throw IfcParse::IfcException("Invalid IteratorSetting")?
             return (settings_ & setting) != 0;
         }
 
+        /// Set boolean value for a single settings or for a combination of settings.
         void set(SettingField setting, bool value)
         {
             /// @todo If unknown setting value/combination: throw IfcParse::IfcException("Invalid IteratorSetting")?
