@@ -63,7 +63,7 @@ void print_version()
     std::cerr << "IfcOpenShell " << IfcSchema::Identifier << " IfcConvert " << IFCOPENSHELL_VERSION << std::endl;
 }
 
-void print_usage()
+void print_usage(bool suggest_help = true)
 {
     std::cerr << "Usage: IfcConvert [options] <input.ifc> [<output>]" << "\n"
         << "\n"
@@ -77,25 +77,16 @@ void print_usage()
         << "  .xml   XML            Property definitions and decomposition tree" << "\n"
         << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)" << "\n"
         << "\n"
-        << "If no output filename given, <input>." + DEFAULT_EXTENSION + " will be used as the output file.\n"
-        << "\n"
-        << "Run 'IfcConvert --help' for more information." << std::endl;
+        << "If no output filename given, <input>." + DEFAULT_EXTENSION + " will be used as the output file.\n";
+    if (suggest_help) {
+        std::cerr << "\nRun 'IfcConvert --help' for more information.";
+    }
+    std::cerr << std::endl;
 }
 
-void print_options(
-    const boost::optional<boost::program_options::options_description>& generic_options,
-    const boost::optional<boost::program_options::options_description>& geom_options,
-    const boost::optional<boost::program_options::options_description>& serialization_options)
+void print_options(const boost::program_options::options_description& options)
 {
-    if (generic_options) {
-        std::cerr << "\nCommand line options\n" << generic_options;
-    }
-    if (geom_options) {
-        std::cerr << "\nGeometry options\n" << geom_options;
-    }
-    if (serialization_options) {
-        std::cerr << "\nSerialization options\n" << serialization_options;
-    }
+    std::cerr << "\n" << options;
     std::cerr << std::endl;
 }
 
@@ -112,7 +103,7 @@ static std::stringstream log_stream;
 void write_log();
 
 int main(int argc, char** argv) {
-	boost::program_options::options_description generic_options;
+    boost::program_options::options_description generic_options("Command line options");
 	generic_options.add_options()
 		("help,h", "display usage information")
 		("version", "display version information")
@@ -125,7 +116,7 @@ int main(int argc, char** argv) {
 
     std::vector<std::string> entity_vector, names;
     double deflection_tolerance;
-	boost::program_options::options_description geom_options;
+    boost::program_options::options_description geom_options("Geometry options");
 	geom_options.add_options()
 		("plan",
 			"Specifies whether to include curves in the output result. Typically "
@@ -189,7 +180,7 @@ int main(int argc, char** argv) {
             "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.");
 
     std::string bounds;
-    boost::program_options::options_description serializer_options;
+    boost::program_options::options_description serializer_options("Serialization options");
     serializer_options.add_options()
         ("bounds", boost::program_options::value<std::string>(&bounds),
             "Specifies the bounding rectangle, for example 512x512, to which the "
@@ -237,8 +228,8 @@ int main(int argc, char** argv) {
     if (vmap.count("version")) {
         return 0;
     } else if (vmap.count("help")) {
-        print_usage();
-        print_options(generic_options, geom_options, serializer_options);
+        print_usage(false);
+        print_options(generic_options.add(geom_options).add(serializer_options));
         return 0;
     } else if (!vmap.count("input-file")) {
         std::cerr << "[Error] Input file not specified" << std::endl;
@@ -246,7 +237,7 @@ int main(int argc, char** argv) {
         return 1;
 	} else if (vmap.count("include") && vmap.count("exclude")) {
         std::cerr << "[Error] --include and --exclude can not be specified together" << std::endl;
-        print_options(boost::none, geom_options, boost::none);
+        print_options(geom_options);
 		return 1;
 	}
 
@@ -277,7 +268,7 @@ int main(int argc, char** argv) {
 			bounding_height = h;
 		} else {
 			std::cerr << "[Error] Invalid use of --bounds" << std::endl;
-			print_options(boost::none, boost::none, serializer_options);
+            print_options(serializer_options);
 			return 1;
 		}
 	}
