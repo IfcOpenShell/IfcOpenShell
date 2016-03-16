@@ -38,35 +38,6 @@ static void collada_id(std::string &s)
     IfcUtil::escape_xml(s);
 }
 
-/// @todo Very simple impl. Assumes that input vertices and normals match 1:1.
-static std::vector<real_t> box_project_uvs(const std::vector<real_t> &vertices, const std::vector<real_t> &normals)
-{
-    std::vector<real_t> uvs;
-    uvs.resize(vertices.size() / 3 * 2);
-    for(size_t uv_idx = 0, v_idx = 0;
-        uv_idx < uvs.size() && v_idx < vertices.size() && v_idx < normals.size();
-        uv_idx += 2, v_idx += 3) {
-
-        real_t n_x = normals[v_idx], n_y = normals[v_idx+1], n_z = normals[v_idx+2];
-        real_t v_x = vertices[v_idx], v_y = vertices[v_idx+1], v_z = vertices[v_idx+2];
-
-        if (std::abs(n_x) > std::abs(n_y) && std::abs(n_x) > std::abs(n_z)) {
-            uvs[uv_idx] = v_z;
-            uvs[uv_idx+1] = v_y;
-        }
-        if (std::abs(n_y) > std::abs(n_x) && std::abs(n_y) > std::abs(n_z)) {
-            uvs[uv_idx] = v_x;
-            uvs[uv_idx+1] = v_z;
-        }
-        if (std::abs(n_z) > std::abs(n_x) && std::abs(n_z) > std::abs(n_y)) {
-            uvs[uv_idx] = v_x;
-            uvs[uv_idx+1] = v_y;
-        }
-    }
-
-    return uvs;
-}
-
 void ColladaSerializer::ColladaExporter::ColladaGeometries::addFloatSource(const std::string& mesh_id,
     const std::string& suffix, const std::vector<real_t>& floats, const char* coords /* = "XYZ" */)
 {
@@ -89,20 +60,21 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::addFloatSource(const
 void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
     const std::string &mesh_id, const std::string& default_material_name, const std::vector<real_t>& positions,
     const std::vector<real_t>& normals, const std::vector<int>& faces, const std::vector<int>& edges,
-    const std::vector<int> material_ids, const std::vector<IfcGeom::Material>& materials)
+    const std::vector<int> material_ids, const std::vector<IfcGeom::Material>& materials,
+    const std::vector<real_t>& uvs)
 {
 	openMesh(mesh_id);
 
 	// The normals vector can be empty for example when the WELD_VERTICES setting is used.
 	// IfcOpenShell does not provide them with multiple face normals collapsed into a single vertex.
 	const bool has_normals = !normals.empty();
-    const bool generate_uvs = (has_normals && serializer->settings().get(IfcGeom::IteratorSettings::GENERATE_UVS));
+    const bool has_uvs = !uvs.empty();
 
 	addFloatSource(mesh_id, COLLADASW::LibraryGeometries::POSITIONS_SOURCE_ID_SUFFIX, positions);
 	if (has_normals) {
 		addFloatSource(mesh_id, COLLADASW::LibraryGeometries::NORMALS_SOURCE_ID_SUFFIX, normals);
-        if (generate_uvs) {
-            addFloatSource(mesh_id, COLLADASW::LibraryGeometries::TEXCOORDS_SOURCE_ID_SUFFIX, box_project_uvs(positions, normals), "UV");
+        if (has_uvs) {
+            addFloatSource(mesh_id, COLLADASW::LibraryGeometries::TEXCOORDS_SOURCE_ID_SUFFIX, uvs, "UV");
         }
 	}
 
@@ -129,13 +101,13 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
 			if (has_normals) {
 				triangles.getInputList().push_back(COLLADASW::Input(COLLADASW::InputSemantic::NORMAL,"#" + mesh_id + COLLADASW::LibraryGeometries::NORMALS_SOURCE_ID_SUFFIX, offset++));
 			}
-            if (generate_uvs) {
+            if (has_uvs) {
                 triangles.getInputList().push_back(COLLADASW::Input(COLLADASW::InputSemantic::TEXCOORD,"#" + mesh_id + COLLADASW::LibraryGeometries::TEXCOORDS_SOURCE_ID_SUFFIX, offset++));
             }
 			triangles.prepareToAppendValues();
 			for (std::vector<int>::const_iterator jt = index_range_start; jt != it; ++jt) {
 				const int idx = *jt;
-                if (has_normals && generate_uvs) {
+                if (has_normals && has_uvs) {
                     triangles.appendValues(idx, idx, idx);
                 } else if(has_normals) {
 					triangles.appendValues(idx, idx);
@@ -318,13 +290,14 @@ void ColladaSerializer::ColladaExporter::startDocument(const std::string& unit_n
 	asset.add();
 }
 
-void ColladaSerializer::ColladaExporter::write(const std::string& unique_id, const std::string& type,
-    const std::vector<real_t>& matrix, const std::vector<real_t>& vertices, const std::vector<real_t>& normals,
-    const std::vector<int>& faces, const std::vector<int>& edges, const std::vector<int>& material_ids,
-    const std::vector<IfcGeom::Material>& _materials)
+void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationElement<real_t>* o)
 {
+    const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
+    const std::string name = serializer->settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS) ?
+           o->guid() : (serializer->settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES) ? o->name() : o->unique_id());
+
 	std::vector<std::string> material_references;
-    foreach(const IfcGeom::Material& material, _materials) {
+    foreach(const IfcGeom::Material& material, mesh.materials()) {
 		if (!materials.contains(material)) {
 			materials.add(material);
 		}
@@ -333,7 +306,11 @@ void ColladaSerializer::ColladaExporter::write(const std::string& unique_id, con
         collada_id(material_name);
         material_references.push_back(material_name);
 	}
-	deferreds.push_back(DeferredObject(unique_id, type, matrix, vertices, normals, faces, edges, material_ids, _materials, material_references));
+
+	deferreds.push_back(
+        DeferredObject(name, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
+            mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs())
+    );
 }
 
 void ColladaSerializer::ColladaExporter::endDocument() {
@@ -342,7 +319,7 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	materials.write();
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		const std::string object_name = it->unique_id + "-representation";
-		geometries.write(object_name, it->type, it->vertices, it->normals, it->faces, it->edges, it->material_ids, it->materials);
+		geometries.write(object_name, it->type, it->vertices, it->normals, it->faces, it->edges, it->material_ids, it->materials, it->uvs);
 	}
 	geometries.close();
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
@@ -362,11 +339,7 @@ void ColladaSerializer::writeHeader() {
 }
 
 void ColladaSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
-	const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
-    const std::string name = settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS) ?
-        o->guid() : (settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES) ? o->name() : o->unique_id());
-    exporter.write(name, o->type(), o->transformation().matrix().data(), mesh.verts(),
-        mesh.normals(), mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials());
+    exporter.write(o);
 }
 
 void ColladaSerializer::finalize() {

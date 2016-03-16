@@ -177,7 +177,10 @@ int main(int argc, char** argv) {
             "in instances where you're going to recompute normals for the exported "
             "model in other modelling application in any case.")
         ("deflection-tolerance", boost::program_options::value<double>(&deflection_tolerance),
-            "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.");
+            "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
+        ("generate-uvs",
+            "Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
+            "Not guaranteed to work properly if used with --weld-vertices.");
 
     std::string bounds;
     boost::program_options::options_description serializer_options("Serialization options");
@@ -196,10 +199,7 @@ int main(int argc, char** argv) {
             "Applicable for OBJ and DAE output.")
         ("center-model",
             "Centers the models upon serialization by applying the center point of "
-            "the scene bounds as an offset. Applicable only for DAE output currently.")
-        ("generate-uvs",
-        "Generates UVs (texture coordinates) by using simple box projection. Requires normals. Not guaranteed to work "
-            "properly if used with --weld-vertices. Applicable only for DAE output currently.");
+            "the scene bounds as an offset. Applicable only for DAE output currently.");
 
 	boost::program_options::options_description cmdline_options;
 	cmdline_options.add(generic_options).add(fileio_options).add(geom_options).add(serializer_options);
@@ -369,7 +369,7 @@ int main(int argc, char** argv) {
             static_cast<SvgSerializer*>(serializer)->setBoundingRectangle(*bounding_width, *bounding_height);
 		}
 	} else {
-		Logger::Message(Logger::LOG_ERROR, "Unknown output filename extension");
+		Logger::Message(Logger::LOG_ERROR, "Unknown output filename extension '" + output_extension + "'");
 		write_log();
 		print_usage();
 		return 1;
@@ -381,16 +381,15 @@ int main(int argc, char** argv) {
             settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, false);
             center_model = false;
         }
-        if (generate_uvs) {
-            Logger::Message(Logger::LOG_NOTICE, "--generate-uvs setting ignored for non-DAE output");
-            settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, false);
-        }
     }
 
 	if (!serializer->isTesselated()) {
 		if (weld_vertices) {
-			Logger::Message(Logger::LOG_NOTICE, "Weld vertices setting ignored when writing STEP or IGES files");
+            Logger::Message(Logger::LOG_NOTICE, "Weld vertices setting ignored when writing non-tesselated output");
 		}
+        if (generate_uvs) {
+            Logger::Message(Logger::LOG_NOTICE, "Generate UVs setting ignored when writing non-tesselated output");
+        }
         settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 	}
 

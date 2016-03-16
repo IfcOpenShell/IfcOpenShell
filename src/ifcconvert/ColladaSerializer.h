@@ -60,7 +60,8 @@ private:
             void write(const std::string &mesh_id, const std::string& default_material_name,
                 const std::vector<real_t>& positions, const std::vector<real_t>& normals,
                 const std::vector<int>& faces, const std::vector<int>& edges,
-                const std::vector<int> material_ids, const std::vector<IfcGeom::Material>& materials);
+                const std::vector<int> material_ids, const std::vector<IfcGeom::Material>& materials,
+                const std::vector<real_t>& uvs);
 			void close();
             ColladaSerializer *serializer;
 		};
@@ -125,10 +126,11 @@ private:
 			std::vector<int> material_ids;
 			std::vector<IfcGeom::Material> materials;
 			std::vector<std::string> material_references;
+            std::vector<real_t> uvs;
             DeferredObject(const std::string& unique_id, const std::string& type, const std::vector<real_t>& matrix,
                 const std::vector<real_t>& vertices, const std::vector<real_t>& normals, const std::vector<int>& faces,
                 const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
-                const std::vector<std::string>& material_references)
+                const std::vector<std::string>& material_references, const std::vector<real_t>& uvs)
 				: unique_id(unique_id)
 				, type(type)
 				, matrix(matrix)
@@ -139,6 +141,7 @@ private:
 				, material_ids(material_ids)
 				, materials(materials)
 				, material_references(material_references)
+                , uvs(uvs)
 			{}
 		};
 		COLLADABU::NativeString filename;
@@ -160,9 +163,7 @@ private:
 		std::vector<DeferredObject> deferreds;
 		virtual ~ColladaExporter() {}
 		void startDocument(const std::string& unit_name, float unit_magnitude);
-        void write(const std::string& unique_id, const std::string& type, const std::vector<real_t>& matrix,
-            const std::vector<real_t>& vertices, const std::vector<real_t>& normals, const std::vector<int>& faces,
-            const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials);
+        void write(const IfcGeom::TriangulationElement<real_t>* o);
 		void endDocument();
 	};
 	ColladaExporter exporter;

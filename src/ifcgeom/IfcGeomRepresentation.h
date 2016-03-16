@@ -102,6 +102,7 @@ namespace IfcGeom {
 			std::vector<int> _faces;
 			std::vector<int> _edges;
 			std::vector<P> _normals;
+            std::vector<P> uvs_;
 			std::vector<int> _material_ids;
 			std::vector<Material> _materials;
 			VertexKeyMap welds;
@@ -112,8 +113,10 @@ namespace IfcGeom {
 			const std::vector<int>& faces() const { return _faces; }
 			const std::vector<int>& edges() const { return _edges; }
 			const std::vector<P>& normals() const { return _normals; }
+            const std::vector<P>& uvs() const { return uvs_; }
 			const std::vector<int>& material_ids() const { return _material_ids; }
 			const std::vector<Material>& materials() const { return _materials; }
+
 			Triangulation(const BRep& shape_model)
 					: Representation(shape_model.settings())
 					, _id(shape_model.getId())
@@ -246,6 +249,10 @@ namespace IfcGeom {
 						}
 					}
 
+                    if (!_normals.empty() && settings().get(IfcGeom::IteratorSettings::GENERATE_UVS)) {
+                        uvs_ = box_project_uvs(_verts, _normals);
+                    }
+
 					if (num_faces == 0) {
 						// Edges are only emitted if there are no faces. A mixed representation of faces
 						// and loose edges is discouraged by the standard. An alternative would be to use
@@ -276,6 +283,37 @@ namespace IfcGeom {
 				}
 			}
 			virtual ~Triangulation() {}
+
+            /// Generates UVs for a single mesh using box projection.
+            /// @todo Very simple impl. Assumes that input vertices and normals match 1:1.
+            static std::vector<P> box_project_uvs(const std::vector<P> &vertices, const std::vector<P> &normals)
+            {
+                std::vector<P> uvs;
+                uvs.resize(vertices.size() / 3 * 2);
+                for (size_t uv_idx = 0, v_idx = 0;
+                uv_idx < uvs.size() && v_idx < vertices.size() && v_idx < normals.size();
+                    uv_idx += 2, v_idx += 3) {
+
+                    P n_x = normals[v_idx], n_y = normals[v_idx + 1], n_z = normals[v_idx + 2];
+                    P v_x = vertices[v_idx], v_y = vertices[v_idx + 1], v_z = vertices[v_idx + 2];
+
+                    if (std::abs(n_x) > std::abs(n_y) && std::abs(n_x) > std::abs(n_z)) {
+                        uvs[uv_idx] = v_z;
+                        uvs[uv_idx + 1] = v_y;
+                    }
+                    if (std::abs(n_y) > std::abs(n_x) && std::abs(n_y) > std::abs(n_z)) {
+                        uvs[uv_idx] = v_x;
+                        uvs[uv_idx + 1] = v_z;
+                    }
+                    if (std::abs(n_z) > std::abs(n_x) && std::abs(n_z) > std::abs(n_y)) {
+                        uvs[uv_idx] = v_x;
+                        uvs[uv_idx + 1] = v_y;
+                    }
+                }
+
+                return uvs;
+            }
+
 		private:
 			// Welds vertices that belong to different faces
 			int addVertex(int material_index, const gp_XYZ& p) {
