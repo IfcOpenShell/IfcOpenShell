@@ -26,6 +26,7 @@
 
 #include "../ifcconvert/GeometrySerializer.h"
 
+// http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
 class WaveFrontOBJSerializer : public GeometrySerializer {
 private:
 	const std::string mtl_filename;

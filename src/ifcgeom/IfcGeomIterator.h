@@ -113,6 +113,8 @@ namespace IfcGeom {
 		std::string unit_name;
 		// double?
 		P unit_magnitude;
+        gp_XYZ bounds_min_;
+        gp_XYZ bounds_max_;
 
 		void initUnits() {
 			IfcSchema::IfcProject::list::ptr projects = ifc_file->entitiesByType<IfcSchema::IfcProject>();
@@ -251,6 +253,28 @@ namespace IfcGeom {
 			done = 0;
 			total = representations->size();
 
+            for (int i = 1; i < 4; ++i) {
+                bounds_min_.SetCoord(i, std::numeric_limits<double>::infinity());
+                bounds_max_.SetCoord(i, -std::numeric_limits<double>::infinity());
+            }
+
+            IfcSchema::IfcProduct::list::ptr products = ifc_file->entitiesByType<IfcSchema::IfcProduct>();
+            for (IfcSchema::IfcProduct::list::it iter = products->begin(); iter != products->end(); ++iter) {
+                IfcSchema::IfcProduct* product = *iter;
+                if (product->hasObjectPlacement()) {
+                    gp_Trsf trsf; // Use a fresh trsf every time in order to prevent the result to be concatenated
+                    if (kernel.convert(product->ObjectPlacement(), trsf)) {
+                        const gp_XYZ& pos = trsf.TranslationPart();
+                        bounds_min_.SetX(std::min(bounds_min_.X(), pos.X()));
+                        bounds_min_.SetY(std::min(bounds_min_.Y(), pos.Y()));
+                        bounds_min_.SetZ(std::min(bounds_min_.Z(), pos.Z()));
+                        bounds_max_.SetX(std::max(bounds_max_.X(), pos.X()));
+                        bounds_max_.SetY(std::max(bounds_max_.Y(), pos.Y()));
+                        bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z()));
+                    }
+                }
+            }
+
 			return true;
 		}
 
@@ -293,6 +317,9 @@ namespace IfcGeom {
                 names_to_include_or_exclude.insert(IfcUtil::wildcard_string_to_regex(name));
             include_entities_in_processing = false;
         }
+
+        const gp_XYZ& bounds_min() const { return bounds_min_; }
+        const gp_XYZ& bounds_max() const { return bounds_max_; }
 
 	private:
 		// Move to the next IfcRepresentation
@@ -484,7 +511,8 @@ namespace IfcGeom {
 			unit_magnitude = 1.f;
 
             kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.get(IteratorSettings::SEW_SHELLS) ? 1000 : -1);
-            kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES) ? (settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
+            kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
+                ? (settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 		}
 
 		bool owns_ifc_file;

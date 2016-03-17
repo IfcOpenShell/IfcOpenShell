@@ -47,10 +47,6 @@
 #include <set>
 #include <time.h>
 
-#define INF std::numeric_limits<real_t>::infinity()
-real_t bounds_min[3] = { INF, INF, INF };
-real_t bounds_max[3] = { -INF, -INF, -INF };
-
 #if USE_VLD
 #include <vld.h>
 #endif
@@ -198,8 +194,8 @@ int main(int argc, char** argv) {
             "Use material names instead of unique IDs for naming materials upon serialization. "
             "Applicable for OBJ and DAE output.")
         ("center-model",
-            "Centers the models upon serialization by applying the center point of "
-            "the scene bounds as an offset. Applicable only for DAE output currently.");
+            "Centers the elements upon serialization by applying the center point of "
+            "all placements as an offset. Applicable for OBJ and DAE output.");
 
 	boost::program_options::options_description cmdline_options;
 	cmdline_options.add(generic_options).add(fileio_options).add(geom_options).add(serializer_options);
@@ -375,21 +371,18 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-    if (output_extension != ".dae") {
-        if (center_model) {
-            Logger::Message(Logger::LOG_NOTICE, "--center-model setting ignored for non-DAE output");
-            settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, false);
-            center_model = false;
-        }
-    }
-
-	if (!serializer->isTesselated()) {
+    const bool is_tesselated = serializer->isTesselated(); // isTesselated() doesn't change at run-time
+	if (!is_tesselated) {
 		if (weld_vertices) {
             Logger::Message(Logger::LOG_NOTICE, "Weld vertices setting ignored when writing non-tesselated output");
 		}
         if (generate_uvs) {
             Logger::Message(Logger::LOG_NOTICE, "Generate UVs setting ignored when writing non-tesselated output");
         }
+        if (center_model) {
+            Logger::Message(Logger::LOG_NOTICE, "Center model setting ignored when writing non-tesselated output");
+        }
+
         settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 	}
 
@@ -453,42 +446,31 @@ int main(int argc, char** argv) {
         const int progress = context_iterator.progress() / 2;
         if (old_progress != progress) Logger::ProgressBar(progress);
         old_progress = progress;
-
-        if (center_model) {
-            const std::vector<real_t>& pos = geom_object->transformation().matrix().data();
-            bounds_min[0] = std::min(bounds_min[0], pos[9]);
-            bounds_min[1] = std::min(bounds_min[1], pos[10]);
-            bounds_min[2] = std::min(bounds_min[2], pos[11]);
-            bounds_max[0] = std::max(bounds_max[0], pos[9]);
-            bounds_max[1] = std::max(bounds_max[1], pos[10]);
-            bounds_max[2] = std::max(bounds_max[2], pos[11]);
-        }
     } while (context_iterator.next());
 
     Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(geometries.size()) +
         " objects)                                ");
 
     if (center_model) {
-        settings.offset[0] = -(bounds_min[0] + bounds_max[0]) * real_t(0.5);
-        settings.offset[1] = -(bounds_min[1] + bounds_max[1]) * real_t(0.5);
-        settings.offset[2] = -(bounds_min[2] + bounds_max[2]) * real_t(0.5);
-        //printf("Bounds min. (%g, %g, %g)\n", bounds_min[0], bounds_min[1], bounds_min[2]);
-        //printf("Bounds max. (%g, %g, %g)\n", bounds_max[0], bounds_max[1], bounds_max[2]);
-        printf("Using model offset (%g, %g, %g)\n", settings.offset[0], settings.offset[1], settings.offset[2]); //TODO Logger::Message(Logger::LOG_NOTICE, ...);
+        double* offset = serializer->settings().offset;
+        gp_XYZ center = (context_iterator.bounds_min() + context_iterator.bounds_max()) * 0.5;
+        offset[0] = -center.X();
+        offset[1] = -center.Y();
+        offset[2] = -center.Z();
+        //printf("Bounds min. (%g, %g, %g)\n", context_iterator.bounds_min().X(), context_iterator.bounds_min().Y(), context_iterator.bounds_min().Z());
+        //printf("Bounds max. (%g, %g, %g)\n", context_iterator.bounds_min().X(), context_iterator.bounds_min().X(), context_iterator.bounds_min().Z());
+        printf("Using model offset (%g, %g, %g)\n", offset[0], offset[1], offset[2]); //TODO Logger::Message(Logger::LOG_NOTICE, ...);
     }
 
     Logger::Status("Serializing geometry...");
 
-    if (serializer->isTesselated()) { // isTesselated() doesn't change at run-time
-        foreach(const IfcGeom::Element<real_t>* geom, geometries) {
+    foreach(const IfcGeom::Element<real_t>* geom, geometries) {
+        if (is_tesselated) {
             serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom));
-            delete geom;
-        }
-    } else {
-        foreach(const IfcGeom::Element<real_t>* geom, geometries) {
+        } else {
             serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom));
-            delete geom;
         }
+        delete geom;
     }
 
 	serializer->finalize();
