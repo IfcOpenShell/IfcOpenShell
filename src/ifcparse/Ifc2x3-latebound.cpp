@@ -4258,7 +4258,13 @@ std::pair<Type::Enum, unsigned> Type::GetInverseAttribute(Enum t, const std::str
                 return jt->second;
             }
         }
-        if ((t = Parent(t)) == -1) break;
+        boost::optional<Enum> pt = Parent(t);
+        if (pt) {
+            t = *pt;
+        }
+        else {
+            break;
+        }
     }
     throw IfcException("Attribute not found");
 }
@@ -4277,7 +4283,13 @@ std::set<std::string> Type::GetInverseAttributeNames(Enum t) {
                 return_value.insert(jt->first);
             }
         }
-        if ((t = Parent(t)) == -1) break;
+        boost::optional<Enum> pt = Parent(t);
+        if (pt) {
+            t = *pt;
+        }
+        else {
+            break;
+        }
     }
 
     return return_value;
