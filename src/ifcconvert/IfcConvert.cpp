@@ -95,6 +95,13 @@ std::string change_extension(const std::string& fn, const std::string& ext) {
 	}
 }
 
+bool file_exists(const std::string& filename)
+{
+    /// @todo Windows Unicode support
+    std::ifstream file(filename.c_str());
+    return file.good();
+}
+
 static std::stringstream log_stream;
 void write_log();
 
@@ -103,7 +110,8 @@ int main(int argc, char** argv) {
 	generic_options.add_options()
 		("help,h", "display usage information")
 		("version", "display version information")
-		("verbose,v", "more verbose output");
+        ("verbose,v", "more verbose output")
+        ("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g overwriting an existing output file)");
 
 	boost::program_options::options_description fileio_options;
 	fileio_options.add_options()
@@ -284,6 +292,15 @@ int main(int argc, char** argv) {
         print_usage();
 		return 1;
 	}
+
+    if (file_exists(output_filename) && !vmap.count("yes")) {
+        std::string answer;
+        std::cout << "A file '" << output_filename << "' already exists. Overwrite the existing file?" << std::endl;
+        std::cin >> answer;
+        if (!boost::iequals(answer, "yes") && !boost::iequals(answer, "y")) {
+            return 0;
+        }
+    }
 
 	std::string output_extension = output_filename.substr(output_filename.size()-4);
 	boost::to_lower(output_extension);
