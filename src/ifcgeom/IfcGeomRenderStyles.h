@@ -44,7 +44,7 @@ namespace IfcGeom {
 			double& B() { return data[2]; }
 		};
 	private:
-		boost::optional<std::string> name;
+		std::string name;
 		boost::optional<int> id;
 		boost::optional<ColorComponent> diffuse, specular;
 		boost::optional<double> transparency;
@@ -73,16 +73,10 @@ namespace IfcGeom {
 		// pointer addresses of the styles, as they are always referenced 
 		// from out of a global map of some sort.
 		bool operator==(const SurfaceStyle& other) {
-			if (name && other.name) {
-				return *name == *other.name;
-			} else if (id && other.id) {
-				return *id == *other.id;
-			} else {
-				return false;
-			}
+			return name == other.name;
 		}
 		
-		const std::string& Name() const { return *name; }
+		const std::string& Name() const { return name; }
 
 		const boost::optional<ColorComponent>& Diffuse() const { return diffuse; }
 		const boost::optional<ColorComponent>& Specular() const { return specular; }

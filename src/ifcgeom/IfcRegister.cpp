@@ -49,8 +49,10 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
 	bool processed = false;
 	bool ignored = false;
 
+#ifndef NO_CACHE
 	std::map<int,TopoDS_Shape>::const_iterator it = cache.Shape.find(id);
 	if ( it != cache.Shape.end() ) { r = it->second; return true; }
+#endif
 	const bool include_curves = getValue(GV_DIMENSIONALITY) != +1;
 	const bool include_solids_and_surfaces = getValue(GV_DIMENSIONALITY) != -1;
 
@@ -85,7 +87,9 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
 	if ( processed && success ) { 
 		const double precision = getValue(GV_PRECISION);
 		apply_tolerance(r, precision);
+#ifndef NO_CACHE
 		cache.Shape[id] = r;
+#endif
 	} else if (!ignored) {
 		const char* const msg = processed
 			? "Failed to convert:"

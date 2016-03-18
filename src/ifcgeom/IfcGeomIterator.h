@@ -283,6 +283,9 @@ namespace IfcGeom {
 	private:
 		// Move to the next IfcRepresentation
 		void _nextShape() {
+			if (done % 100 == 99) {
+				// kernel.purge_cache();
+			}
 			ifcproducts.reset();
 			++ representation_iterator;
 			++ done;
