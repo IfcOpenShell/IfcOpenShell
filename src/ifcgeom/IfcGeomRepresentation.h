@@ -28,6 +28,7 @@
 #include <TColgp_Array1OfPnt2d.hxx>
 
 #include <TopExp_Explorer.hxx>
+#include <BRepTools.hxx>
 
 #include <BRepAdaptor_Curve.hxx>
 #include <GCPnts_QuasiUniformDeflection.hxx>
@@ -272,6 +273,7 @@ namespace IfcGeom {
 						}
 					}
 
+                    BRepTools::Clean(s);
 				}
 			}
 			virtual ~Triangulation() {}
