@@ -72,7 +72,14 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(const std::str
 	std::vector<int>::const_iterator material_it = material_ids.begin();
 	int previous_material_id = -1;
 	for (std::vector<int>::const_iterator it = faces.begin(); !faces.empty(); it += 3) {
-		const int current_material_id = *(material_it++);
+
+		int current_material_id = 0;
+		if (material_it != material_ids.end()) {
+			// In order for the last range of equal material ids to be output as well, this loop iterates
+			// one element past the end of the vector. This needs to be observed when incrementing.
+			current_material_id = *(material_it++);
+		}
+
 		const unsigned long num_triangles = (unsigned long)std::distance(index_range_start, it) / 3;
 		if ((previous_material_id != current_material_id && num_triangles > 0) || (it == faces.end())) {
 			COLLADASW::Triangles triangles(mSW);
