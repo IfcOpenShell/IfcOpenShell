@@ -26,9 +26,10 @@ class Base(object):
         import platform
         if tuple(map(int, platform.python_version_tuple())) < (2, 8):
             from io import open as unicode_open
+            unicode_type = unicode
         else:
             unicode_open = open
-            unicode = lambda x, *args, **kwargs: x
+            unicode_type = lambda x, *args, **kwargs: x
         f = unicode_open(self.file_name, 'w', encoding='utf-8')
-        f.write(unicode(repr(self), encoding='utf-8', errors='ignore'))
+        f.write(unicode_type(repr(self), encoding='utf-8', errors='ignore'))
         f.close()
