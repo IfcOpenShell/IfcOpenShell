@@ -281,6 +281,11 @@ int main(int argc, char** argv) {
 	std::set<std::string> entities(entity_vector.begin(), entity_vector.end());
 
 	const std::string input_filename = vmap["input-file"].as<std::string>();
+    if (!file_exists(input_filename)) {
+        std::cerr << "[Error] Input file '" << input_filename << "' does not exist" << std::endl;
+        return 1;
+    }
+
 	// If no output filename is specified a Wavefront OBJ file will be output
 	// to maintain backwards compatibility with the obsolete IfcObj executable.
 	const std::string output_filename = vmap.count("output-file") == 1 
@@ -288,7 +293,7 @@ int main(int argc, char** argv) {
 		: change_extension(input_filename, DEFAULT_EXTENSION);
 	
 	if (output_filename.size() < 5) {
-        std::cerr << "[Error] Invalid or unsupported output file given " << output_filename << std::endl;
+        std::cerr << "[Error] Invalid or unsupported output file '" << output_filename << "' given" << std::endl;
         print_usage();
 		return 1;
 	}
@@ -419,7 +424,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (!serializer->ready()) {
-		Logger::Message(Logger::LOG_ERROR, "Unable to open output file for writing");
+        Logger::Message(Logger::LOG_ERROR, "Unable to open output '" + output_filename + "' file for writing");
 		write_log();
 		return 1;
 	}
@@ -428,7 +433,7 @@ int main(int argc, char** argv) {
 	time(&start);
 	
 	if (!context_iterator.initialize()) {
-		Logger::Message(Logger::LOG_ERROR, "Unable to parse .ifc file or no geometrical entities found");
+        Logger::Message(Logger::LOG_ERROR, "Unable to parse input file '" + input_filename + "' or no geometrical entities found");
 		write_log();
 		return 1;
 	}
