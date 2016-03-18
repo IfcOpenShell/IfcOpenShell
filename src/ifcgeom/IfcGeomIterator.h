@@ -291,6 +291,8 @@ namespace IfcGeom {
 			++ done;
 		}
 
+		std::set<IfcSchema::IfcRepresentation*> mapped_representations_processed;
+
 		BRepElement<P>* create_shape_model_for_next_entity() {
 			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
@@ -305,47 +307,147 @@ namespace IfcGeom {
 				// Has the list of IfcProducts for this representation been initialized?
 				if (!ifcproducts) {
 					
-					IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation->OfProductRepresentation();
 					ifcproducts = IfcSchema::IfcProduct::list::ptr(new IfcSchema::IfcProduct::list);
 					IfcSchema::IfcProduct::list::ptr unfiltered_products(new IfcSchema::IfcProduct::list);
 
-					for ( IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it ) {
-						if ( (*it)->is(IfcSchema::Type::IfcProductDefinitionShape) ) {
-							IfcSchema::IfcProductDefinitionShape* pds = (IfcSchema::IfcProductDefinitionShape*)*it;
-							unfiltered_products->push(pds->ShapeOfProduct());
-						} else {
-							// http://buildingsmart-tech.org/ifc/IFC2x3/TC1/html/ifcrepresentationresource/lexical/ifcproductrepresentation.htm
-							// IFC2x Edition 3 NOTE  Users should not instantiate the entity IfcProductRepresentation from IFC2x Edition 3 onwards. 
-							// It will be changed into an ABSTRACT supertype in future releases of IFC.
+					{
+						IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation->OfProductRepresentation();
 
-							// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
-							// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
-							unfiltered_products->push((*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>());
+						for (IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it) {
+							if ((*it)->is(IfcSchema::Type::IfcProductDefinitionShape)) {
+								IfcSchema::IfcProductDefinitionShape* pds = (IfcSchema::IfcProductDefinitionShape*)*it;
+								unfiltered_products->push(pds->ShapeOfProduct());
+							}
+							else {
+								// http://buildingsmart-tech.org/ifc/IFC2x3/TC1/html/ifcrepresentationresource/lexical/ifcproductrepresentation.htm
+								// IFC2x Edition 3 NOTE  Users should not instantiate the entity IfcProductRepresentation from IFC2x Edition 3 onwards. 
+								// It will be changed into an ABSTRACT supertype in future releases of IFC.
+
+								// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
+								// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
+								unfiltered_products->push((*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>());
+							}
 						}
+					}
 
-						// Filter the products based on the set of entities being included or excluded for
-						// processing. The set is iterated over te able to filter on subtypes.
-						for ( IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt ) {
-							bool found = false;
-							for (std::set<IfcSchema::Type::Enum>::const_iterator kt = entities_to_include_or_exclude.begin(); kt != entities_to_include_or_exclude.end(); ++kt) {
-								if ((*jt)->is(*kt)) {
-									found = true;
-									break;
+					const int repid = representation->entity->id();
+					
+					bool has_openings = false;
+					for (IfcSchema::IfcProduct::list::it it = unfiltered_products->begin(); it != unfiltered_products->end(); ++it) {
+						if (kernel.find_openings(*it)->size()) {
+							has_openings = true;
+							break;
+						}
+					}
+					
+					const bool process_maps_for_current_representation = (!has_openings || settings.disable_opening_subtractions());
+					bool representation_processed_as_mapped_item = false;
+
+					IfcSchema::IfcRepresentation* representation_mapped_to = 0;
+					
+					if (process_maps_for_current_representation) {
+						IfcSchema::IfcRepresentationItem::list::ptr items = representation->Items();
+						if (items->size() == 1) {
+							IfcSchema::IfcRepresentationItem* item = *items->begin();
+							if (item->is(IfcSchema::Type::IfcMappedItem)) {
+								if (item->StyledByItem()->size() == 0) {
+									IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
+									if (kernel.is_identity_transform(mapped_item->MappingTarget())) {
+										IfcSchema::IfcRepresentationMap* map = mapped_item->MappingSource();
+										if (kernel.is_identity_transform(map->MappingOrigin())) {
+											representation_mapped_to = map->MappedRepresentation();
+											IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation_mapped_to->OfProductRepresentation();
+
+											bool all_product_without_openings = true;
+											IfcSchema::IfcProduct::list::ptr products;
+
+											for (IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it) {
+												IfcSchema::IfcProduct::list::ptr products_of_prodrep = (*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>();
+												products->push(products_of_prodrep);
+												for (IfcSchema::IfcProduct::list::it jt = products_of_prodrep->begin(); jt != products_of_prodrep->end(); ++jt) {
+													if (kernel.find_openings(*jt)->size() > 0 && !settings.disable_opening_subtractions()) {
+														all_product_without_openings = false;
+														break;
+													}
+												}
+											}
+
+											if (all_product_without_openings) {
+												representation_processed_as_mapped_item = true;
+											}
+										}
+									}
 								}
 							}
-							if (found == include_entities_in_processing) {
-								ifcproducts->push(*jt);
-							}
+						}
+					}
+
+					if (representation_mapped_to) {
+						if (mapped_representations_processed.find(representation_mapped_to) != mapped_representations_processed.end()) {
+							_nextShape();
+							continue;
 						}
 
+						mapped_representations_processed.insert(representation_mapped_to);
 					}
-					// Does this representation have any IfcProducts?
-					if (!ifcproducts->size()) {
+
+					if (representation_processed_as_mapped_item) {
 						_nextShape();
 						continue;
 					}
+
+					IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
+					
+					if (process_maps_for_current_representation && maps->size() == 1) {
+						IfcSchema::IfcRepresentationMap* map = *maps->begin();
+						if (kernel.is_identity_transform(map->MappingOrigin())) {
+							IfcSchema::IfcMappedItem::list::ptr items = map->MapUsage();
+							for (IfcSchema::IfcMappedItem::list::it it = items->begin(); it != items->end(); ++it) {
+								IfcSchema::IfcMappedItem* item = *it;
+								if (item->StyledByItem()->size() != 0) continue;
+								
+								if (!kernel.is_identity_transform(item->MappingTarget())) {
+									continue;
+								}
+
+								IfcSchema::IfcRepresentation::list::ptr reps = item->entity->getInverse(IfcSchema::Type::IfcRepresentation, -1)->as<IfcSchema::IfcRepresentation>();
+								for (IfcSchema::IfcRepresentation::list::it jt = reps->begin(); jt != reps->end(); ++jt) {
+									IfcSchema::IfcRepresentation* rep = *jt;
+									if (rep->Items()->size() != 1) continue;
+									IfcSchema::IfcProductRepresentation::list::ptr prodreps = rep->OfProductRepresentation();
+									for (IfcSchema::IfcProductRepresentation::list::it kt = prodreps->begin(); kt != prodreps->end(); ++kt) {
+										IfcSchema::IfcProduct::list::ptr prods = (*kt)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>();
+										for (IfcSchema::IfcProduct::list::it lt = prods->begin(); lt != prods->end(); ++lt) {
+											if (kernel.find_openings(*lt)->size() == 0 || settings.disable_opening_subtractions()) {
+                                                if (!unfiltered_products->contains(*lt)) {
+                                                    unfiltered_products->push(*lt);
+                                                }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
+					// Filter the products based on the set of entities being included or excluded for
+					// processing. The set is iterated over to able to filter on subtypes.
+					for ( IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt ) {
+						bool found = false;
+						for (std::set<IfcSchema::Type::Enum>::const_iterator kt = entities_to_include_or_exclude.begin(); kt != entities_to_include_or_exclude.end(); ++kt) {
+							if ((*jt)->is(*kt)) {
+								found = true;
+								break;
+							}
+						}
+						if (found == include_entities_in_processing) {
+							ifcproducts->push(*jt);
+						}
+					}
+
 					ifcproduct_iterator = ifcproducts->begin();
 				}
+
 				// Have we reached the end of our list of IfcProducts?
 				if ( ifcproduct_iterator == ifcproducts->end() ) {
 					_nextShape();
@@ -353,8 +455,13 @@ namespace IfcGeom {
 				}
 
 				IfcSchema::IfcProduct* product = *ifcproduct_iterator;
-
-				BRepElement<P>* element = kernel.create_brep_for_representation_and_product<P>(settings, representation, product);
+                
+                BRepElement<P>* element;
+				if (ifcproduct_iterator == ifcproducts->begin()) {
+					element = kernel.create_brep_for_representation_and_product<P>(settings, representation, product);
+				} else {
+					element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
+				}
 
 				if ( !element ) {
 					_nextShape();
@@ -365,9 +472,7 @@ namespace IfcGeom {
 			}	
 		}
 
-		public:
-
-		bool next() {
+		void free_shapes() {
 			// Free all possible representations of the current geometrical entity
 			delete current_triangulation;
 			current_triangulation = 0;
@@ -375,7 +480,11 @@ namespace IfcGeom {
 			current_serialization = 0;
 			delete current_shape_model;
 			current_shape_model = 0;
-			
+		}
+
+		public:
+
+		bool next() {
 			// Increment the iterator over the list of products using the current
 			// shape representation
 			if (ifcproducts) {
@@ -429,23 +538,45 @@ namespace IfcGeom {
 		}
 
 		bool create() {
+			bool success = true;
+
+			IfcGeom::BRepElement<P>* next_shape_model = 0;
+			IfcGeom::SerializedElement<P>* next_serialization = 0;
+			IfcGeom::TriangulationElement<P>* next_triangulation = 0;
+
 			try {
-				current_shape_model = create_shape_model_for_next_entity();
+				next_shape_model = create_shape_model_for_next_entity();
 			} catch (...) {}
-			if (!current_shape_model) return false;
-			if (settings.use_brep_data()) {
-				try {
-					current_serialization = new SerializedElement<P>(*current_shape_model);
-				} catch (...) {}
-				return !!current_serialization;
-			} else if (!settings.disable_triangulation()) {
-				try {
-					current_triangulation = new TriangulationElement<P>(*current_shape_model);
-				} catch (...) {}
-				return !!current_triangulation;
+
+			if (next_shape_model) {
+				if (settings.use_brep_data()) {
+					try {
+						next_serialization = new SerializedElement<P>(*next_shape_model);
+					} catch (...) {
+						success = false;
+					}
+				} else if (!settings.disable_triangulation()) {
+					try {
+						if (ifcproduct_iterator == ifcproducts->begin() || settings.use_world_coords()) {
+							next_triangulation = new TriangulationElement<P>(*next_shape_model);
+						} else {
+							next_triangulation = new TriangulationElement<P>(*next_shape_model, current_triangulation->geometry_pointer());
+						}
+					} catch (...) {
+						success = false;
+					}
+				}
 			} else {
-				return true;
+				success = false;
 			}
+
+			free_shapes();
+
+			current_shape_model = next_shape_model;
+			current_serialization = next_serialization;
+			current_triangulation = next_triangulation;
+
+			return success;
 		}
 	private:
 		void _initialize() {
@@ -503,12 +634,7 @@ namespace IfcGeom {
 				delete ifc_file;
 			}
 
-			delete current_triangulation;
-			current_triangulation = 0;
-			delete current_serialization;
-			current_serialization = 0;
-			delete current_shape_model;
-			current_shape_model = 0;
+			free_shapes();
 		}
 	};
 }

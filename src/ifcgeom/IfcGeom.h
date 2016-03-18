@@ -142,12 +142,19 @@ public:
 	bool wire_to_sequence_of_point(const TopoDS_Wire&, TColgp_SequenceOfPnt&);
 	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
 
+	bool is_identity_transform(IfcUtil::IfcBaseClass*);
+
+	IfcSchema::IfcRelVoidsElement::list::ptr find_openings(IfcSchema::IfcProduct* product);
+
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
 	IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
 
 	template <typename P>
 	IfcGeom::BRepElement<P>* create_brep_for_representation_and_product(const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
+
+	template <typename P>
+	IfcGeom::BRepElement<P>* create_brep_for_processed_representation(const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P>*);
 
 	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem* representation_item);
 	
