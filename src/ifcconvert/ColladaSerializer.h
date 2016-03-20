@@ -150,7 +150,9 @@ private:
 	public:
 		ColladaExporter(const std::string& scene_name, const std::string& fn, ColladaSerializer *_serializer)
 			: filename(fn.c_str())
-			, stream(filename)
+            /// @todo We could use the double precision feature here, but it seems to bloat the output file quite a bit
+            /// by adding seemingly irrelevant precision, e.g. 0.7 becomes 0.6999999999999999
+			, stream(filename/*, sizeof(real_t) == sizeof(double)*/)
 			, geometries(stream, _serializer)
 			, scene(scene_name, stream, _serializer)
 			, materials(stream, _serializer)
