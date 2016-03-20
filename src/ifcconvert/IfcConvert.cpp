@@ -52,6 +52,7 @@
 #endif
 
 const std::string DEFAULT_EXTENSION = "obj";
+const std::string TEMP_FILE_EXTENSION = ".tmp";
 
 void print_version()
 {
@@ -100,6 +101,15 @@ bool file_exists(const std::string& filename)
     /// @todo Windows Unicode support
     std::ifstream file(filename.c_str());
     return file.good();
+}
+
+bool rename_file(const std::string& old_filename, const std::string& new_filename)
+{
+    // Whether or not rename() replaces an existing file is implementation-specific,
+    // so remove() possible existing file always.
+    /// @todo Windows Unicode support
+    std::remove(new_filename.c_str());
+    return std::rename(old_filename.c_str(), new_filename.c_str()) == 0;
 }
 
 static std::stringstream log_stream;
@@ -307,6 +317,8 @@ int main(int argc, char** argv) {
         }
     }
 
+    std::string output_temp_filename = output_filename + TEMP_FILE_EXTENSION;
+
 	std::string output_extension = output_filename.substr(output_filename.size()-4);
 	boost::to_lower(output_extension);
 
@@ -326,13 +338,14 @@ int main(int argc, char** argv) {
 	if (output_extension == ".xml") {
 		int exit_code = 1;
 		try {
-			XmlSerializer s(output_filename);
+			XmlSerializer s(output_temp_filename);
 			IfcParse::IfcFile f;
 			if (!f.Init(input_filename)) {
-				Logger::Message(Logger::LOG_ERROR, "Unable to parse .ifc file");
+				Logger::Message(Logger::LOG_ERROR, "Unable to parse input file '" + input_filename + "'");
 			} else {
 				s.setFile(&f);
 				s.finalize();
+                rename_file(output_temp_filename, output_filename);
 				exit_code = 0;
 			}
 		} catch (...) {}
@@ -365,24 +378,24 @@ int main(int argc, char** argv) {
 
 	GeometrySerializer* serializer;
 	if (output_extension == ".obj") {
-		const std::string mtl_filename = output_filename.substr(0,output_filename.size()-3) + "mtl";
+        const std::string mtl_temp_filename = change_extension(output_filename, "mtl") + TEMP_FILE_EXTENSION;
 		if (!use_world_coords) {
 			Logger::Message(Logger::LOG_NOTICE, "Using world coords when writing WaveFront OBJ files");
 			settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
 		}
-		serializer = new WaveFrontOBJSerializer(output_filename, mtl_filename, settings);
+		serializer = new WaveFrontOBJSerializer(output_temp_filename, mtl_temp_filename, settings);
 #ifdef WITH_OPENCOLLADA
 	} else if (output_extension == ".dae") {
-		serializer = new ColladaSerializer(output_filename, settings);
+		serializer = new ColladaSerializer(output_temp_filename, settings);
 #endif
 	} else if (output_extension == ".stp") {
-		serializer = new StepSerializer(output_filename, settings);
+		serializer = new StepSerializer(output_temp_filename, settings);
 	} else if (output_extension == ".igs") {
 		IGESControl_Controller::Init(); // work around Open Cascade bug
-		serializer = new IgesSerializer(output_filename, settings);
+		serializer = new IgesSerializer(output_temp_filename, settings);
 	} else if (output_extension == ".svg") {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-		serializer = new SvgSerializer(output_filename, settings);
+		serializer = new SvgSerializer(output_temp_filename, settings);
 		if (bounding_width && bounding_height) {
             static_cast<SvgSerializer*>(serializer)->setBoundingRectangle(*bounding_width, *bounding_height);
 		}
@@ -500,6 +513,14 @@ int main(int argc, char** argv) {
     Logger::Status("\rDone serializing geometry                                ");
 
 	delete serializer;
+
+    rename_file(output_temp_filename, output_filename);
+
+    if (output_extension == ".obj") {
+        std::string mtl_filename = change_extension(output_filename, "mtl");
+        std::string mtl_tmp_filename = mtl_filename + TEMP_FILE_EXTENSION;
+        rename_file(mtl_tmp_filename, mtl_filename);
+    }
 
 	write_log();
 
