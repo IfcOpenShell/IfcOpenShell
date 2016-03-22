@@ -21,7 +21,6 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
-#include <boost/foreach.hpp>
 #include <boost/version.hpp>
 
 #include "XmlSerializer.h"
@@ -164,6 +163,16 @@ void descend(IfcProduct* product, ptree& tree) {
 		}
 	}
 
+    if (product->is(Type::IfcElement)) {
+        IfcElement* element = static_cast<IfcElement*>(product);
+        IfcOpeningElement::list::ptr openings = get_related<IfcElement, IfcRelVoidsElement, IfcOpeningElement>(
+            element, &IfcElement::HasOpenings, &IfcRelVoidsElement::RelatedOpeningElement);
+
+        for (IfcOpeningElement::list::it it = openings->begin(); it != openings->end(); ++it) {
+            descend(*it, child);
+        }
+    }
+
 #ifdef USE_IFC2x3
 	IfcObjectDefinition::list::ptr structures = get_related
 		<IfcProduct, IfcRelDecomposes, IfcObjectDefinition>
@@ -246,16 +255,16 @@ void XmlSerializer::finalize() {
 	ptree root, header, decomposition, properties;
 	
 	// Write the SPF header as XML nodes.
-	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
+	foreach(const std::string& s, file->header().file_description().description()) {
 		header.add_child("file_description.description", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_name().author()) {
+	foreach(const std::string& s, file->header().file_name().author()) {
 		header.add_child("file_name.author", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_name().organization()) {
+	foreach(const std::string& s, file->header().file_name().organization()) {
 		header.add_child("file_name.organization", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_schema().schema_identifiers()) {
+	foreach(const std::string& s, file->header().file_schema().schema_identifiers()) {
 		header.add_child("file_schema.schema_identifiers", ptree(s));
 	}
 	header.put("file_description.implementation_level", file->header().file_description().implementation_level());

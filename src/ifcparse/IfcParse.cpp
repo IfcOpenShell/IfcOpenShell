@@ -69,7 +69,10 @@ void init_locale() {
 // 
 // Opens the file, gets the filesize and reads a chunk in memory
 //
-IfcSpfStream::IfcSpfStream(const std::string& fn) {
+IfcSpfStream::IfcSpfStream(const std::string& fn)
+    : stream(0)
+    , buffer(0)
+{
 	eof = false;
 #ifdef _MSC_VER
 	int fn_buffer_size = MultiByteToWideChar(CP_UTF8, 0, fn.c_str(), -1, 0, 0);
@@ -86,7 +89,7 @@ IfcSpfStream::IfcSpfStream(const std::string& fn) {
 	}
 	valid = true;
 	fseek(stream, 0, SEEK_END);
-	size = (unsigned int) ftell(stream);;
+	size = (unsigned int) ftell(stream);
 	rewind(stream);
 #ifdef BUF_SIZE
 	offset = 0;
@@ -96,11 +99,14 @@ IfcSpfStream::IfcSpfStream(const std::string& fn) {
 	buffer = new char[size];
 #endif
 	ptr = 0;
-	len = 0;	
+	len = 0;
 	ReadBuffer(false);
 }
 
-IfcSpfStream::IfcSpfStream(std::istream& f, int l) {
+IfcSpfStream::IfcSpfStream(std::istream& f, int l)
+    : stream(0)
+    , buffer(0)
+{
 	eof = false;
 	size = l;
 #ifdef BUF_SIZE
@@ -114,7 +120,10 @@ IfcSpfStream::IfcSpfStream(std::istream& f, int l) {
 	len = l;	
 }
 
-IfcSpfStream::IfcSpfStream(void* data, int l) {
+IfcSpfStream::IfcSpfStream(void* data, int l)
+    : stream(0)
+    , buffer(0)
+{
 	eof = false;
 	size = l;
 #ifdef BUF_SIZE
@@ -124,7 +133,7 @@ IfcSpfStream::IfcSpfStream(void* data, int l) {
 	buffer = (char*) data;
 	valid = true;
 	ptr = 0;
-	len = l;	
+	len = l;
 }
 
 IfcSpfStream::~IfcSpfStream()

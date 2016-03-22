@@ -1116,11 +1116,11 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 	const std::string product_type = IfcSchema::Type::ToString(product->type());
 	ElementSettings element_settings(settings, getValue(GV_LENGTH_UNIT), product_type);
 
-	if ( !settings.disable_opening_subtractions() && openings && openings->size() ) {
+    if (!settings.get(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && openings && openings->size()) {
 		IfcGeom::IfcRepresentationShapeItems opened_shapes;
 		try {
 #if OCC_VERSION_HEX < 0x60900
-			const bool faster_booleans = settings.faster_booleans();
+            const bool faster_booleans = settings.get(IteratorSettings::FASTER_BOOLEANS);
 #else
 			const bool faster_booleans = true;
 #endif
@@ -1136,14 +1136,14 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 		} catch(...) { 
 			Logger::Message(Logger::LOG_ERROR,"Error processing openings for:",product->entity); 
 		}
-		if ( settings.use_world_coords() ) {
+        if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 			for ( IfcGeom::IfcRepresentationShapeItems::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
 				it->prepend(trsf);
 			}
 			trsf = gp_Trsf();
 		}
 		shape = new IfcGeom::Representation::BRep(element_settings, representation->entity->id(), opened_shapes);
-	} else if ( settings.use_world_coords() ) {
+    } else if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 		for ( IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 			it->prepend(trsf);
 		}

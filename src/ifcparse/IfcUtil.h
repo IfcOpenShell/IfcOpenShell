@@ -26,14 +26,19 @@
 #include <sstream>
 #include <algorithm>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/dynamic_bitset.hpp>
-
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4enum.h"
 #else
 #include "../ifcparse/Ifc2x3enum.h"
 #endif
+
+#include <boost/shared_ptr.hpp>
+#include <boost/dynamic_bitset.hpp>
+#include <boost/regex.hpp>
+#include <boost/foreach.hpp>
+
+#define foreach BOOST_FOREACH
+#define rforeach BOOST_REVERSE_FOREACH
 
 class Argument;
 class IfcEntityList;
@@ -110,6 +115,13 @@ namespace IfcUtil {
 	};
 
 	bool valid_binary_string(const std::string& s);
+
+    boost::regex wildcard_string_to_regex(std::string str);
+
+    /// Replaces spaces and potentially other problem causing characters with underscores.
+    void sanitate_material_name(std::string &str);
+    void escape_xml(std::string &str);
+    void unescape_xml(std::string &str);
 }
 
 template <class T>

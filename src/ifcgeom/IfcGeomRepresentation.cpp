@@ -38,7 +38,7 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
 		const TopoDS_Shape& s = it->Shape();
 		gp_GTrsf trsf = it->Placement();
-		if (settings().convert_back_units()) {
+		if (settings().get(IteratorSettings::CONVERT_BACK_UNITS)) {
 			gp_Trsf scale;
 			scale.SetScaleFactor(1.0 / settings().unit_magnitude());
 			trsf.PreMultiply(scale);

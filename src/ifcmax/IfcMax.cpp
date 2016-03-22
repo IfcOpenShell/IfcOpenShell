@@ -214,9 +214,9 @@ static Mtl* ComposeMultiMaterial(std::map<std::vector<std::string>, Mtl*>& multi
 int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, BOOL /*suppressPrompts*/) {
 
 	IfcGeom::IteratorSettings settings;
-	settings.use_world_coords() = false;
-	settings.weld_vertices() = true;
-	settings.sew_shells() = true;
+    settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
+    settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, true);
+    settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
 
 #ifdef _UNICODE
 	int fn_buffer_size = WideCharToMultiByte(CP_UTF8, 0, name, -1, 0, 0, 0, 0);

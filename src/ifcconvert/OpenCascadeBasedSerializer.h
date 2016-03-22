@@ -31,16 +31,16 @@ protected:
 	const std::string out_filename;
 	const char* getSymbolForUnitMagnitude(float mag);
 public:
-	explicit OpenCascadeBasedSerializer(const std::string& out_filename)
-		: GeometrySerializer()
+	explicit OpenCascadeBasedSerializer(const std::string& out_filename, const IfcGeom::IteratorSettings &settings)
+		: GeometrySerializer(settings)
 		, out_filename(out_filename)
 	{}
 	virtual ~OpenCascadeBasedSerializer() {}
 	void writeHeader() {}
 	bool ready();
 	virtual void writeShape(const TopoDS_Shape& shape) = 0;
-	void write(const IfcGeom::TriangulationElement<double>* /*o*/) {}
-	void write(const IfcGeom::BRepElement<double>* o);
+	void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
+	void write(const IfcGeom::BRepElement<real_t>* o);
 	bool isTesselated() const { return false; }
 	void setFile(IfcParse::IfcFile*) {}
 };
