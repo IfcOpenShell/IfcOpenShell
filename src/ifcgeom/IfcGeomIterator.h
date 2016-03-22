@@ -86,6 +86,9 @@ namespace IfcGeom {
 	template <typename P>
 	class Iterator {
 	private:
+		Iterator(const Iterator&); // N/I
+		Iterator& operator=(const Iterator&); // N/I
+
 		Kernel kernel;
 		IteratorSettings settings;
 
@@ -110,6 +113,8 @@ namespace IfcGeom {
 		std::string unit_name;
 		// double?
 		P unit_magnitude;
+        gp_XYZ bounds_min_;
+        gp_XYZ bounds_max_;
 
 		void initUnits() {
 			IfcSchema::IfcProject::list::ptr projects = ifc_file->entitiesByType<IfcSchema::IfcProject>();
@@ -121,6 +126,7 @@ namespace IfcGeom {
 			}
 		}
 
+        std::set<boost::regex> names_to_include_or_exclude; // regex containing a name or a wildcard expression
 		std::set<IfcSchema::Type::Enum> entities_to_include_or_exclude;
 		bool include_entities_in_processing;
 
@@ -148,7 +154,7 @@ namespace IfcGeom {
 			} catch (...) {}
 
 			std::set<std::string> context_types;
-			if (!settings.exclude_solids_and_surfaces()) {
+            if (!settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
 				// Really this should only be 'Model', as per 
 				// the standard 'Design' is deprecated. So,
 				// just for backwards compatibility:
@@ -157,7 +163,7 @@ namespace IfcGeom {
 				// DDS likes to output 'model view'
 				context_types.insert("model view");
 			}
-			if (settings.include_curves()) {
+            if (settings.get(IteratorSettings::INCLUDE_CURVES)) {
 				context_types.insert("plan");
 			}			
 
@@ -247,38 +253,73 @@ namespace IfcGeom {
 			done = 0;
 			total = representations->size();
 
+            for (int i = 1; i < 4; ++i) {
+                bounds_min_.SetCoord(i, std::numeric_limits<double>::infinity());
+                bounds_max_.SetCoord(i, -std::numeric_limits<double>::infinity());
+            }
+
+            IfcSchema::IfcProduct::list::ptr products = ifc_file->entitiesByType<IfcSchema::IfcProduct>();
+            for (IfcSchema::IfcProduct::list::it iter = products->begin(); iter != products->end(); ++iter) {
+                IfcSchema::IfcProduct* product = *iter;
+                if (product->hasObjectPlacement()) {
+                    gp_Trsf trsf; // Use a fresh trsf every time in order to prevent the result to be concatenated
+                    if (kernel.convert(product->ObjectPlacement(), trsf)) {
+                        const gp_XYZ& pos = trsf.TranslationPart();
+                        bounds_min_.SetX(std::min(bounds_min_.X(), pos.X()));
+                        bounds_min_.SetY(std::min(bounds_min_.Y(), pos.Y()));
+                        bounds_min_.SetZ(std::min(bounds_min_.Z(), pos.Z()));
+                        bounds_max_.SetX(std::max(bounds_max_.X(), pos.X()));
+                        bounds_max_.SetY(std::max(bounds_max_.Y(), pos.Y()));
+                        bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z()));
+                    }
+                }
+            }
+
 			return true;
 		}
 
-		int progress() {
-			return 100 * done / total;
-		}
+		int progress() const { return 100 * done / total; }
 
-		const std::string& getUnitName() {
-			return unit_name;
-		}
+		const std::string& getUnitName() const { return unit_name; }
 
-		const P getUnitMagnitude() {
-			return unit_magnitude;
-		}
+		P getUnitMagnitude() const { return unit_magnitude; }
 	
-		const std::string getLog() {
-			return Logger::GetLog();
-		}
+		std::string getLog() const { return Logger::GetLog(); }
 
-		IfcParse::IfcFile* getFile() {
-			return ifc_file;
-		}
+		IfcParse::IfcFile* getFile() const { return ifc_file; }
 
+        /// @note Entity names are handled case-insensitively.
 		void includeEntities(const std::set<std::string>& entities) {
 			populate_set(entities);
 			include_entities_in_processing = true;
 		}
 
+        /// @note Entity names are handled case-insensitively.
 		void excludeEntities(const std::set<std::string>& entities) {
 			populate_set(entities);
 			include_entities_in_processing = false;
 		}
+
+        /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
+        void include_entity_names(const std::vector<std::string>& names)
+        {
+            names_to_include_or_exclude.clear();
+            foreach(const std::string &name, names)
+                names_to_include_or_exclude.insert(IfcUtil::wildcard_string_to_regex(name));
+            include_entities_in_processing = true;
+        }
+
+        /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
+        void exclude_entity_names(const std::vector<std::string>& names)
+        {
+            names_to_include_or_exclude.clear();
+            foreach(const std::string &name, names)
+                names_to_include_or_exclude.insert(IfcUtil::wildcard_string_to_regex(name));
+            include_entities_in_processing = false;
+        }
+
+        const gp_XYZ& bounds_min() const { return bounds_min_; }
+        const gp_XYZ& bounds_max() const { return bounds_max_; }
 
 	private:
 		// Move to the next IfcRepresentation
@@ -330,6 +371,14 @@ namespace IfcGeom {
 									break;
 								}
 							}
+
+                            foreach(const boost::regex& r, names_to_include_or_exclude) {
+                                if (boost::regex_match((*jt)->Name(), r)) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+
 							if (found == include_entities_in_processing) {
 								ifcproducts->push(*jt);
 							}
@@ -382,13 +431,17 @@ namespace IfcGeom {
 			return create();
 		}
 
-		Element<P>* get() {
-			// TODO: Test settings and throw
-			if (current_triangulation) return current_triangulation;
-			else if (current_serialization) return current_serialization;
-			else if (current_shape_model) return current_shape_model;
-			else return 0;
-		}
+        /// Gets or takes the representation of the current geometrical entity.
+        /// @param take_ownership Pass in 'true' as if wishing to maintain the element lifetime yourself.
+        Element<P>* get(bool take_ownership = false)
+        {
+            // TODO: Test settings and throw
+            Element<P>* ret = 0;
+            if (current_triangulation) { ret = current_triangulation; if (take_ownership) current_triangulation = 0; }
+            else if (current_serialization) { ret = current_serialization; if (take_ownership) current_serialization = 0; }
+            else if (current_shape_model) { ret = current_shape_model; if (take_ownership) current_shape_model = 0; }
+            return ret;
+        }
 
 		const Element<P>* getObject(int id) {
 
@@ -430,12 +483,12 @@ namespace IfcGeom {
 				current_shape_model = create_shape_model_for_next_entity();
 			} catch (...) {}
 			if (!current_shape_model) return false;
-			if (settings.use_brep_data()) {
+            if (settings.get(IteratorSettings::USE_BREP_DATA)) {
 				try {
 					current_serialization = new SerializedElement<P>(*current_shape_model);
 				} catch (...) {}
 				return !!current_serialization;
-			} else if (!settings.disable_triangulation()) {
+            } else if (!settings.get(IteratorSettings::DISABLE_TRIANGULATION)) {
 				try {
 					current_triangulation = new TriangulationElement<P>(*current_shape_model);
 				} catch (...) {}
@@ -457,8 +510,9 @@ namespace IfcGeom {
 			unit_name = "METER";
 			unit_magnitude = 1.f;
 
-			kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.sew_shells() ? 1000 : -1);
-			kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.include_curves() ? (settings.exclude_solids_and_surfaces() ? -1. : 0.) : +1.));
+            kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.get(IteratorSettings::SEW_SHELLS) ? 1000 : -1);
+            kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
+                ? (settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 		}
 
 		bool owns_ifc_file;

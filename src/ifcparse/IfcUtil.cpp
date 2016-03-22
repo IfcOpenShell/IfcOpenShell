@@ -17,12 +17,14 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "IfcUtil.h"
+#include "../ifcparse/IfcException.h"
+
+#include <boost/algorithm/string/replace.hpp>
+
 #include <iostream>
 #include <algorithm>
 
-#include "../ifcparse/IfcException.h"
-
-#include "IfcUtil.h"
 
 void IfcEntityList::push(IfcUtil::IfcBaseClass* l) {
 	if (l) {
@@ -143,4 +145,43 @@ bool IfcUtil::valid_binary_string(const std::string& s) {
 		if (*it != '0' && *it != '1') return false;
 	}
 	return true;
+}
+
+boost::regex IfcUtil::wildcard_string_to_regex(std::string str)
+{
+    // Escape all non-"*?" regex special chars
+    std::string special_chars = "\\^.$|()[]+/";
+    foreach(char c, special_chars) {
+        std::string char_str(1, c);
+        boost::replace_all(str, char_str, "\\"+ char_str);
+    }
+    // Convert "*?" to their regex equivalents
+    boost::replace_all(str, "?", ".");
+    boost::replace_all(str, "*", ".*");
+    return boost::regex(str);
+}
+
+void IfcUtil::sanitate_material_name(std::string &str)
+{
+    // Spaces in material names have been observed to cause problems with obj and dae importers.
+    // Handle other potential problematic characters here too if observing problems.
+    boost::replace_all(str, " ", "_");
+}
+
+void IfcUtil::escape_xml(std::string &str)
+{
+    boost::replace_all(str, "\"", "&quot;");
+    boost::replace_all(str, "'", "&apos;");
+    boost::replace_all(str, "<", "&lt;");
+    boost::replace_all(str, ">", "&gt;");
+    boost::replace_all(str, "&", "&amp;");
+}
+
+void IfcUtil::unescape_xml(std::string &str)
+{
+    boost::replace_all(str, "&quot;", "\"");
+    boost::replace_all(str, "&apos;", "'");
+    boost::replace_all(str, "&lt;", "<");
+    boost::replace_all(str, "&gt;", ">");
+    boost::replace_all(str, "&amp;", "&");
 }

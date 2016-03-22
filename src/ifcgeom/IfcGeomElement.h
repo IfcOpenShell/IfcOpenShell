@@ -44,7 +44,7 @@ namespace IfcGeom {
 			for(int i = 1; i < 5; ++i) {
 				for (int j = 1; j < 4; ++j) {
 					const double trsf_value = trsf.Value(j,i);
-					const double matrix_value = i == 4 && settings.convert_back_units()
+                    const double matrix_value = i == 4 && settings.get(IteratorSettings::CONVERT_BACK_UNITS)
 						? trsf_value / settings.unit_magnitude()
 						: trsf_value;
 					_data.push_back(static_cast<P>(matrix_value));

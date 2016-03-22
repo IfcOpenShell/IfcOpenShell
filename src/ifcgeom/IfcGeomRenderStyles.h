@@ -44,22 +44,22 @@ namespace IfcGeom {
 			double& B() { return data[2]; }
 		};
 	private:
+        std::string original_name_;
 		boost::optional<std::string> name;
 		boost::optional<int> id;
 		boost::optional<ColorComponent> diffuse, specular;
 		boost::optional<double> transparency;
 		boost::optional<double> specularity;
 	public:
-		SurfaceStyle() {
-			this->name = "surface-style";
-		}
+        SurfaceStyle() : name("surface-style") {}
 		SurfaceStyle(int id) : id(id) {
 			std::stringstream sstr; 
 			sstr << "surface-style-" << id; 
 			this->name = sstr.str(); 
 		}
-		SurfaceStyle(const std::string& name) : name(name) {}
-		SurfaceStyle(int id, const std::string& name) : id(id) {
+        SurfaceStyle(const std::string& name) : name(name), original_name_(name) {}
+        SurfaceStyle(int id, const std::string& name) : id(id), original_name_(name)
+        {
 			std::stringstream sstr; 
 			std::string sanitized = name;
 			std::transform(sanitized.begin(), sanitized.end(), sanitized.begin(), ::tolower);
@@ -72,7 +72,7 @@ namespace IfcGeom {
 		// architecture can just as easily be accomplished by comparing the
 		// pointer addresses of the styles, as they are always referenced 
 		// from out of a global map of some sort.
-		bool operator==(const SurfaceStyle& other) {
+        bool operator==(const SurfaceStyle& other) const {
 			if (name && other.name) {
 				return *name == *other.name;
 			} else if (id && other.id) {
@@ -82,7 +82,10 @@ namespace IfcGeom {
 			}
 		}
 		
-		const std::string& Name() const { return *name; }
+        /// ID name, e.g. "surface-style-66675-metal---aluminium"
+        const std::string& Name() const { return *name; }
+        /// Original name, if available, e.g. "Metal - Aluminium"
+        const std::string& original_name() const { return original_name_; }
 
 		const boost::optional<ColorComponent>& Diffuse() const { return diffuse; }
 		const boost::optional<ColorComponent>& Specular() const { return specular; }

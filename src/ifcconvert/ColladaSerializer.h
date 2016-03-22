@@ -27,17 +27,10 @@
 #pragma warning(disable : 4201 4512)
 #endif
 #include <COLLADASWStreamWriter.h>
-#include <COLLADASWPrimitves.h>
 #include <COLLADASWLibraryGeometries.h>
-#include <COLLADASWSource.h>
-#include <COLLADASWScene.h>
-#include <COLLADASWNode.h>
-#include <COLLADASWInstanceGeometry.h>
 #include <COLLADASWLibraryVisualScenes.h>
 #include <COLLADASWLibraryEffects.h>
 #include <COLLADASWLibraryMaterials.h>
-#include <COLLADASWBaseInputElement.h>
-#include <COLLADASWAsset.h>
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -58,12 +51,19 @@ private:
 			ColladaGeometries(const ColladaGeometries&); //N/A
 			ColladaGeometries& operator =(const ColladaGeometries&); //N/A
 		public:
-			explicit ColladaGeometries(COLLADASW::StreamWriter& stream)
+			explicit ColladaGeometries(COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryGeometries(&stream)
+                , serializer(_serializer)
 			{}
-			void addFloatSource(const std::string& mesh_id, const std::string& suffix, const std::vector<double>& floats, const char* coords = "XYZ");
-			void write(const std::string mesh_id, const std::string& default_material_name, const std::vector<double>& positions, const std::vector<double>& normals, const std::vector<int>& faces, const std::vector<int>& edges, const std::vector<int> material_ids, const std::vector<IfcGeom::Material>& materials);
+            void addFloatSource(const std::string& mesh_id, const std::string& suffix,
+                const std::vector<real_t>& floats, const char* coords = "XYZ");
+            void write(const std::string &mesh_id, const std::string& default_material_name,
+                const std::vector<real_t>& positions, const std::vector<real_t>& normals,
+                const std::vector<int>& faces, const std::vector<int>& edges,
+                const std::vector<int> material_ids, const std::vector<IfcGeom::Material>& materials,
+                const std::vector<real_t>& uvs);
 			void close();
+            ColladaSerializer *serializer;
 		};
 		class ColladaScene : public COLLADASW::LibraryVisualScenes
 		{
@@ -74,13 +74,16 @@ private:
 			const std::string scene_id;
 			bool scene_opened;
 		public:
-			ColladaScene(const std::string& scene_id, COLLADASW::StreamWriter& stream)
+			ColladaScene(const std::string& scene_id, COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryVisualScenes(&stream)
 				, scene_id(scene_id)
-				, scene_opened(false)			
+				, scene_opened(false)
+                , serializer(_serializer)
 			{}
-			void add(const std::string& node_id, const std::string& node_name, const std::string& geom_name, const std::vector<std::string>& material_ids, const std::vector<double>& matrix);
+			void add(const std::string& node_id, const std::string& node_name, const std::string& geom_name,
+                const std::vector<std::string>& material_ids, const std::vector<real_t>& matrix);
 			void write();
+            ColladaSerializer *serializer;
 		};
 		class ColladaMaterials : public COLLADASW::LibraryMaterials
 		{
@@ -97,32 +100,37 @@ private:
 				{}
 				void write(const IfcGeom::Material& material);
 				void close();
+                ColladaSerializer *serializer;
 			};
 			std::vector<IfcGeom::Material> materials;
-			ColladaEffects effects;
 		public:
-			explicit ColladaMaterials(COLLADASW::StreamWriter& stream)
+			explicit ColladaMaterials(COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryMaterials(&stream)
 				, effects(stream)
+                , serializer(_serializer)
 			{}
 			void add(const IfcGeom::Material& material);
 			bool contains(const IfcGeom::Material& material);
 			void write();
+            ColladaSerializer *serializer;
+            ColladaEffects effects;
 		};
 		class DeferredObject {
 		public:
 			std::string unique_id, type;
-			std::vector<double> matrix;
-			std::vector<double> vertices;
-			std::vector<double> normals;
+			std::vector<real_t> matrix;
+			std::vector<real_t> vertices;
+			std::vector<real_t> normals;
 			std::vector<int> faces;
 			std::vector<int> edges;
 			std::vector<int> material_ids;
 			std::vector<IfcGeom::Material> materials;
 			std::vector<std::string> material_references;
-			DeferredObject(const std::string& unique_id, const std::string& type, const std::vector<double>& matrix, const std::vector<double>& vertices,
-				const std::vector<double>& normals, const std::vector<int>& faces, const std::vector<int>& edges, const std::vector<int>& material_ids, 
-				const std::vector<IfcGeom::Material>& materials, const std::vector<std::string>& material_references)
+            std::vector<real_t> uvs;
+            DeferredObject(const std::string& unique_id, const std::string& type, const std::vector<real_t>& matrix,
+                const std::vector<real_t>& vertices, const std::vector<real_t>& normals, const std::vector<int>& faces,
+                const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
+                const std::vector<std::string>& material_references, const std::vector<real_t>& uvs)
 				: unique_id(unique_id)
 				, type(type)
 				, matrix(matrix)
@@ -133,39 +141,48 @@ private:
 				, material_ids(material_ids)
 				, materials(materials)
 				, material_references(material_references)
+                , uvs(uvs)
 			{}
 		};
 		COLLADABU::NativeString filename;
 		COLLADASW::StreamWriter stream;
-		ColladaGeometries geometries;
 		ColladaScene scene;
-		ColladaMaterials materials;
 	public:
-		ColladaExporter(const std::string& scene_name, const std::string& fn)
-			: filename(fn.c_str())
-			, stream(filename)
-			, geometries(stream)
-			, scene(scene_name, stream)
-			, materials(stream)
-		{}
+		ColladaExporter(const std::string& scene_name, const std::string& fn, ColladaSerializer *_serializer)
+            : filename(fn)
+            , stream(filename, sizeof(real_t) == sizeof(double)) // utilise Collada stream's double precision feature
+			, geometries(stream, _serializer)
+			, scene(scene_name, stream, _serializer)
+			, materials(stream, _serializer)
+            , serializer(_serializer)
+		{
+        }
+        ColladaMaterials materials;
+        ColladaSerializer *serializer;
+        ColladaGeometries geometries;
 		std::vector<DeferredObject> deferreds;
 		virtual ~ColladaExporter() {}
 		void startDocument(const std::string& unit_name, float unit_magnitude);
-		void write(const std::string& unique_id, const std::string& type, const std::vector<double>& matrix, const std::vector<double>& vertices, const std::vector<double>& normals, const std::vector<int>& faces, const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials);
+        void write(const IfcGeom::TriangulationElement<real_t>* o);
 		void endDocument();
 	};
 	ColladaExporter exporter;
 	std::string unit_name;
 	float unit_magnitude;
 public:
-	ColladaSerializer(const std::string& dae_filename)
-		: GeometrySerializer()
-		, exporter("IfcOpenShell", dae_filename)
-	{}
+    ColladaSerializer(const std::string& dae_filename, const IfcGeom::IteratorSettings &settings)
+        : GeometrySerializer(settings)
+		, exporter("IfcOpenShell", dae_filename, this)
+    {
+        exporter.serializer = this;
+        exporter.materials.serializer = this;
+        exporter.materials.effects.serializer = this;
+        exporter.geometries.serializer = this;
+    }
 	bool ready();
 	void writeHeader();
-	void write(const IfcGeom::TriangulationElement<double>* o);
-	void write(const IfcGeom::BRepElement<double>* /*o*/) {}
+    void write(const IfcGeom::TriangulationElement<real_t>* o);
+    void write(const IfcGeom::BRepElement<real_t>* /*o*/) {}
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {
