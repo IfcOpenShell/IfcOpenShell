@@ -277,14 +277,14 @@ build_dependency pcre-$PCRE_VERSION autoconf "--disable-shared" ftp://ftp.csx.ca
 build_dependency swig autoconf "--with-pcre-prefix=$DEPS_DIR/install/pcre-$PCRE_VERSION" https://github.com/swig/swig.git swig git_clone rel-3.0.8
 
 build_dependency oce-$OCE_VERSION cmake "-DOCE_DISABLE_TKSERVICE_FONT=ON -DOCE_TESTING=OFF -DOCE_BUILD_SHARED_LIB=OFF -DOCE_DISABLE_X11=ON -DOCE_VISUALISATION=OFF -DOCE_OCAF=OFF -DOCE_INSTALL_PREFIX=$DEPS_DIR/install/oce-$OCE_VERSION/" https://github.com/tpaviot/oce/archive/ OCE-$OCE_VERSION.tar.gz download
-build_dependency libxml2-$LIBXML_VERSION autoconf "--without-python --disable-shared --without-zlib --without-iconv" ftp://xmlsoft.org/libxml2/ libxml2-$LIBXML_VERSION.tar.gz download
+build_dependency libxml2-$LIBXML_VERSION autoconf "--without-python --disable-shared --without-zlib --without-iconv --without-lzma" ftp://xmlsoft.org/libxml2/ libxml2-$LIBXML_VERSION.tar.gz download
 build_dependency OpenCOLLADA cmake "
 -DLIBXML2_INCLUDE_DIR=$DEPS_DIR/install/libxml2-$LIBXML_VERSION/include/libxml2
 -DLIBXML2_LIBRARIES=$DEPS_DIR/install/libxml2-$LIBXML_VERSION/lib/libxml2.a
 -DPCRE_INCLUDE_DIR=$DEPS_DIR/install/pcre-$PCRE_VERSION/include
 -DPCRE_PCREPOSIX_LIBRARY=$DEPS_DIR/install/pcre-$PCRE_VERSION/lib/libpcreposix.a
 -DPCRE_PCRE_LIBRARY=$DEPS_DIR/install/pcre-$PCRE_VERSION/lib/libpcre.a
--DCMAKE_INSTALL_PREFIX=$DEPS_DIR/install/OpenCOLLADA/" https://github.com/KhronosGroup/OpenCOLLADA.git OpenCOLLADA git_clone
+-DCMAKE_INSTALL_PREFIX=$DEPS_DIR/install/OpenCOLLADA/" https://github.com/KhronosGroup/OpenCOLLADA.git OpenCOLLADA git_clone $OPENCOLLADA_COMMIT
 
 # Python should not be built with -fvisibility=hidden, from experience that introduces segfaults
 
