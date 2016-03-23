@@ -59,7 +59,7 @@ IF(MSVC)
 	SET(Boost_USE_STATIC_RUNTIME ON)
 	SET(Boost_USE_MULTITHREADED ON)
 ENDIF()
-FIND_PACKAGE(Boost REQUIRED COMPONENTS program_options)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS system program_options regex thread date_time)
 MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 

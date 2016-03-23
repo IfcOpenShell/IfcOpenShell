@@ -306,7 +306,7 @@ done
 export CXXFLAGS=$OLD_CXX_FLAGS
 export CFLAGS=$OLD_C_FLAGS
 
-build_dependency boost-$BOOST_VERSION bjam "--stagedir=$DEPS_DIR/install/boost-$BOOST_VERSION --with-program_options link=static $BOOST_ADDRESS_MODEL cxxflags=\"$CXXFLAGS\" linkflags=\"$LDFLAGS\" stage" http://downloads.sourceforge.net/project/boost/boost/$BOOST_VERSION/ boost_$BOOST_VERSION_UNDERSCORE.tar.bz2 download
+build_dependency boost-$BOOST_VERSION bjam "--stagedir=$DEPS_DIR/install/boost-$BOOST_VERSION --with-system --with-program_options --with-regex --with-thread --with-date_time link=static $BOOST_ADDRESS_MODEL cxxflags=\"$CXXFLAGS\" linkflags=\"$LDFLAGS\" stage" http://downloads.sourceforge.net/project/boost/boost/$BOOST_VERSION/ boost_$BOOST_VERSION_UNDERSCORE.tar.bz2 download
 
 build_dependency icu-$ICU_VERSION icu "--enable-static --disable-shared" http://download.icu-project.org/files/icu4c/$ICU_VERSION/ icu4c-${ICU_VERSION_UNDERSCORE}-src.tgz download
 
