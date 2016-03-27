@@ -381,7 +381,10 @@ namespace IfcGeom {
 						}
 					}
 					
-					const bool process_maps_for_current_representation = (!has_openings || settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS));
+					// With world coords enabled, object transformations are directly applied to
+					// the BRep. There is no way to re-use the geometry for multiple products.
+					const bool process_maps_for_current_representation = !settings.get(IteratorSettings::USE_WORLD_COORDS) &&
+						(!has_openings || settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS));
 					bool representation_processed_as_mapped_item = false;
 
 					IfcSchema::IfcRepresentation* representation_mapped_to = 0;
@@ -506,7 +509,7 @@ namespace IfcGeom {
 				IfcSchema::IfcProduct* product = *ifcproduct_iterator;
                 
                 BRepElement<P>* element;
-				if (ifcproduct_iterator == ifcproducts->begin()) {
+				if (ifcproduct_iterator == ifcproducts->begin() || !settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 					element = kernel.create_brep_for_representation_and_product<P>(settings, representation, product);
 				} else {
 					element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
