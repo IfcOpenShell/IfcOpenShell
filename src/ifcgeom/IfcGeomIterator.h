@@ -543,15 +543,14 @@ namespace IfcGeom {
 			return create();
 		}
 
-        /// Gets or takes the representation of the current geometrical entity.
-        /// @param take_ownership Pass in 'true' as if wishing to maintain the element lifetime yourself.
-        Element<P>* get(bool take_ownership = false)
+        /// Gets the representation of the current geometrical entity.
+        Element<P>* get()
         {
             // TODO: Test settings and throw
             Element<P>* ret = 0;
-            if (current_triangulation) { ret = current_triangulation; if (take_ownership) current_triangulation = 0; }
-            else if (current_serialization) { ret = current_serialization; if (take_ownership) current_serialization = 0; }
-            else if (current_shape_model) { ret = current_shape_model; if (take_ownership) current_shape_model = 0; }
+            if (current_triangulation) { ret = current_triangulation; }
+            else if (current_serialization) { ret = current_serialization; }
+            else if (current_shape_model) { ret = current_shape_model; }
             return ret;
         }
 

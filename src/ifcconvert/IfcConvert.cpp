@@ -462,9 +462,20 @@ int main(int argc, char** argv) {
 	serializer->writeHeader();
 
 	int old_progress = -1;
+
+	if (center_model) {
+		double* offset = serializer->settings().offset;
+		gp_XYZ center = (context_iterator.bounds_min() + context_iterator.bounds_max()) * 0.5;
+		offset[0] = -center.X();
+		offset[1] = -center.Y();
+		offset[2] = -center.Z();
+		std::stringstream msg;
+		msg << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
+		Logger::Message(Logger::LOG_NOTICE, msg.str());
+	}
+
 	Logger::Status("Creating geometry...");
 
-    std::vector<IfcGeom::Element<real_t>* > geometries;
 	// The functions IfcGeom::Iterator::get() and IfcGeom::Iterator::next() 
 	// wrap an iterator of all geometrical products in the Ifc file. 
 	// IfcGeom::Iterator::get() returns an IfcGeom::TriangulationElement or 
@@ -475,43 +486,24 @@ int main(int argc, char** argv) {
 	// calling next() the entity to be returned has already been processed, a 
 	// true return value guarantees that a successfully processed product is 
 	// available. 
+	size_t num_created = 0;
+	
 	do {
-        IfcGeom::Element<real_t> *geom_object = context_iterator.get(true); // true == take ownership, we will clean up ourselves
-        geometries.push_back(geom_object);
+        IfcGeom::Element<real_t> *geom_object = context_iterator.get();
+		if (is_tesselated) {
+			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
+		} else {
+			serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
+		}
         const int progress = context_iterator.progress() / 2;
         if (old_progress != progress) Logger::ProgressBar(progress);
         old_progress = progress;
-    } while (context_iterator.next());
+    } while (++num_created, context_iterator.next());
 
-    Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(geometries.size()) +
+    Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(num_created) +
         " objects)                                ");
 
-    if (center_model) {
-        double* offset = serializer->settings().offset;
-        gp_XYZ center = (context_iterator.bounds_min() + context_iterator.bounds_max()) * 0.5;
-        offset[0] = -center.X();
-        offset[1] = -center.Y();
-        offset[2] = -center.Z();
-        //printf("Bounds min. (%g, %g, %g)\n", context_iterator.bounds_min().X(), context_iterator.bounds_min().Y(), context_iterator.bounds_min().Z());
-        //printf("Bounds max. (%g, %g, %g)\n", context_iterator.bounds_min().X(), context_iterator.bounds_min().X(), context_iterator.bounds_min().Z());
-        printf("Using model offset (%g, %g, %g)\n", offset[0], offset[1], offset[2]); //TODO Logger::Message(Logger::LOG_NOTICE, ...);
-    }
-
-    Logger::Status("Serializing geometry...");
-
-    foreach(const IfcGeom::Element<real_t>* geom, geometries) {
-        if (is_tesselated) {
-            serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom));
-        } else {
-            serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom));
-        }
-        delete geom;
-    }
-
-	serializer->finalize();
-
-    Logger::Status("\rDone serializing geometry                                ");
-
+    serializer->finalize();
 	delete serializer;
 
     rename_file(output_temp_filename, output_filename);
@@ -525,11 +517,23 @@ int main(int argc, char** argv) {
 	write_log();
 
 	time(&end);
+
     int seconds = (int)difftime(end, start);
-    if (seconds < 60)
-        printf("\nConversion took %d seconds\n", seconds); // TODO Logger::Message(Logger::LOG_NOTICE, ...);
-    else
-        printf("\nConversion took %d minute(s) %d seconds\n", seconds/60, seconds%60); // TODO Logger::Message(Logger::LOG_NOTICE, ...);
+	std::stringstream msg;
+	int minutes = seconds / 60;
+	seconds = seconds % 60;
+	msg << "\nConversion took";
+	if (minutes > 0) {
+		msg << " " << minutes << " minute";
+		if (minutes > 1) {
+			msg << "s";
+		}
+	}
+	msg << " " << seconds << " second";
+	if (seconds > 1) {
+		msg << "s";
+	}
+	Logger::Status(msg.str());
 
 	return 0;
 }
