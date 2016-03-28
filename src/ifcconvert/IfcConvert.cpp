@@ -378,12 +378,13 @@ int main(int argc, char** argv) {
 
 	GeometrySerializer* serializer;
 	if (output_extension == ".obj") {
-        const std::string mtl_temp_filename = change_extension(output_filename, "mtl") + TEMP_FILE_EXTENSION;
+        // Do not use temp file for MTL as it's such a small file.
+        const std::string mtl_filename = change_extension(output_filename, "mtl");
 		if (!use_world_coords) {
 			Logger::Message(Logger::LOG_NOTICE, "Using world coords when writing WaveFront OBJ files");
 			settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
 		}
-		serializer = new WaveFrontOBJSerializer(output_temp_filename, mtl_temp_filename, settings);
+		serializer = new WaveFrontOBJSerializer(output_temp_filename, mtl_filename, settings);
 #ifdef WITH_OPENCOLLADA
 	} else if (output_extension == ".dae") {
 		serializer = new ColladaSerializer(output_temp_filename, settings);
@@ -519,12 +520,6 @@ int main(int argc, char** argv) {
     bool successful = rename_file(output_temp_filename, output_filename);
     if (!successful) {
         Logger::Message(Logger::LOG_ERROR, "Unable to write output file '" + output_filename + "");
-    }
-
-    if (output_extension == ".obj") {
-        std::string mtl_filename = change_extension(output_filename, "mtl");
-        std::string mtl_tmp_filename = mtl_filename + TEMP_FILE_EXTENSION;
-        rename_file(mtl_tmp_filename, mtl_filename);
     }
 
 	write_log();
