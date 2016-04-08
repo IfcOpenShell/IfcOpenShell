@@ -157,7 +157,7 @@ class Implementation(codegen.Base):
                 superclass                 = superclass
             )
 
-        selectable_simple_types = sorted(set(sum([b.values for a,b in mapping.schema.selects.items()], [])) & set(mapping.schema.types.keys()))
+        selectable_simple_types = sorted(set(sum([b.values for a,b in mapping.schema.selects.items()], [])) & set(map(str, mapping.schema.types.keys())))
         schema_entity_statements += [templates.schema_entity_stmt%locals() for name, type in mapping.schema.simpletypes.items()]
         schema_entity_statements += [templates.schema_entity_stmt%locals() for name, type in mapping.schema.entities.items()]
 
