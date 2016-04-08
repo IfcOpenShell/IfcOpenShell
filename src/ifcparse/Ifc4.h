@@ -48,7 +48,7 @@ namespace Ifc4 {
 const char* const Identifier = "IFC4";
 
 // Forward definitions
-class IfcActionRequest; class IfcActor; class IfcActorRole; class IfcActuator; class IfcActuatorType; class IfcAddress; class IfcAdvancedBrep; class IfcAdvancedBrepWithVoids; class IfcAdvancedFace; class IfcAirTerminal; class IfcAirTerminalBox; class IfcAirTerminalBoxType; class IfcAirTerminalType; class IfcAirToAirHeatRecovery; class IfcAirToAirHeatRecoveryType; class IfcAlarm; class IfcAlarmType; class IfcAnnotation; class IfcAnnotationFillArea; class IfcApplication; class IfcAppliedValue; class IfcApproval; class IfcApprovalRelationship; class IfcArbitraryClosedProfileDef; class IfcArbitraryOpenProfileDef; class IfcArbitraryProfileDefWithVoids; class IfcAsset; class IfcAsymmetricIShapeProfileDef; class IfcAudioVisualAppliance; class IfcAudioVisualApplianceType; class IfcAxis1Placement; class IfcAxis2Placement2D; class IfcAxis2Placement3D; class IfcBSplineCurve; class IfcBSplineCurveWithKnots; class IfcBSplineSurface; class IfcBSplineSurfaceWithKnots; class IfcBeam; class IfcBeamStandardCase; class IfcBeamType; class IfcBlobTexture; class IfcBlock; class IfcBoiler; class IfcBoilerType; class IfcBooleanClippingResult; class IfcBooleanResult; class IfcBoundaryCondition; class IfcBoundaryCurve; class IfcBoundaryEdgeCondition; class IfcBoundaryFaceCondition; class IfcBoundaryNodeCondition; class IfcBoundaryNodeConditionWarping; class IfcBoundedCurve; class IfcBoundedSurface; class IfcBoundingBox; class IfcBoxedHalfSpace; class IfcBuilding; class IfcBuildingElement; class IfcBuildingElementPart; class IfcBuildingElementPartType; class IfcBuildingElementProxy; class IfcBuildingElementProxyType; class IfcBuildingElementType; class IfcBuildingStorey; class IfcBuildingSystem; class IfcBurner; class IfcBurnerType; class IfcCShapeProfileDef; class IfcCableCarrierFitting; class IfcCableCarrierFittingType; class IfcCableCarrierSegment; class IfcCableCarrierSegmentType; class IfcCableFitting; class IfcCableFittingType; class IfcCableSegment; class IfcCableSegmentType; class IfcCartesianPoint; class IfcCartesianPointList; class IfcCartesianPointList3D; class IfcCartesianTransformationOperator; class IfcCartesianTransformationOperator2D; class IfcCartesianTransformationOperator2DnonUniform; class IfcCartesianTransformationOperator3D; class IfcCartesianTransformationOperator3DnonUniform; class IfcCenterLineProfileDef; class IfcChiller; class IfcChillerType; class IfcChimney; class IfcChimneyType; class IfcCircle; class IfcCircleHollowProfileDef; class IfcCircleProfileDef; class IfcCivilElement; class IfcCivilElementType; class IfcClassification; class IfcClassificationReference; class IfcClosedShell; class IfcCoil; class IfcCoilType; class IfcColourRgb; class IfcColourRgbList; class IfcColourSpecification; class IfcColumn; class IfcColumnStandardCase; class IfcColumnType; class IfcCommunicationsAppliance; class IfcCommunicationsApplianceType; class IfcComplexProperty; class IfcComplexPropertyTemplate; class IfcCompositeCurve; class IfcCompositeCurveOnSurface; class IfcCompositeCurveSegment; class IfcCompositeProfileDef; class IfcCompressor; class IfcCompressorType; class IfcCondenser; class IfcCondenserType; class IfcConic; class IfcConnectedFaceSet; class IfcConnectionCurveGeometry; class IfcConnectionGeometry; class IfcConnectionPointEccentricity; class IfcConnectionPointGeometry; class IfcConnectionSurfaceGeometry; class IfcConnectionVolumeGeometry; class IfcConstraint; class IfcConstructionEquipmentResource; class IfcConstructionEquipmentResourceType; class IfcConstructionMaterialResource; class IfcConstructionMaterialResourceType; class IfcConstructionProductResource; class IfcConstructionProductResourceType; class IfcConstructionResource; class IfcConstructionResourceType; class IfcContext; class IfcContextDependentUnit; class IfcControl; class IfcController; class IfcControllerType; class IfcConversionBasedUnit; class IfcConversionBasedUnitWithOffset; class IfcCooledBeam; class IfcCooledBeamType; class IfcCoolingTower; class IfcCoolingTowerType; class IfcCoordinateOperation; class IfcCoordinateReferenceSystem; class IfcCostItem; class IfcCostSchedule; class IfcCostValue; class IfcCovering; class IfcCoveringType; class IfcCrewResource; class IfcCrewResourceType; class IfcCsgPrimitive3D; class IfcCsgSolid; class IfcCurrencyRelationship; class IfcCurtainWall; class IfcCurtainWallType; class IfcCurve; class IfcCurveBoundedPlane; class IfcCurveBoundedSurface; class IfcCurveStyle; class IfcCurveStyleFont; class IfcCurveStyleFontAndScaling; class IfcCurveStyleFontPattern; class IfcCylindricalSurface; class IfcDamper; class IfcDamperType; class IfcDerivedProfileDef; class IfcDerivedUnit; class IfcDerivedUnitElement; class IfcDimensionalExponents; class IfcDirection; class IfcDiscreteAccessory; class IfcDiscreteAccessoryType; class IfcDistributionChamberElement; class IfcDistributionChamberElementType; class IfcDistributionCircuit; class IfcDistributionControlElement; class IfcDistributionControlElementType; class IfcDistributionElement; class IfcDistributionElementType; class IfcDistributionFlowElement; class IfcDistributionFlowElementType; class IfcDistributionPort; class IfcDistributionSystem; class IfcDocumentInformation; class IfcDocumentInformationRelationship; class IfcDocumentReference; class IfcDoor; class IfcDoorLiningProperties; class IfcDoorPanelProperties; class IfcDoorStandardCase; class IfcDoorStyle; class IfcDoorType; class IfcDraughtingPreDefinedColour; class IfcDraughtingPreDefinedCurveFont; class IfcDuctFitting; class IfcDuctFittingType; class IfcDuctSegment; class IfcDuctSegmentType; class IfcDuctSilencer; class IfcDuctSilencerType; class IfcEdge; class IfcEdgeCurve; class IfcEdgeLoop; class IfcElectricAppliance; class IfcElectricApplianceType; class IfcElectricDistributionBoard; class IfcElectricDistributionBoardType; class IfcElectricFlowStorageDevice; class IfcElectricFlowStorageDeviceType; class IfcElectricGenerator; class IfcElectricGeneratorType; class IfcElectricMotor; class IfcElectricMotorType; class IfcElectricTimeControl; class IfcElectricTimeControlType; class IfcElement; class IfcElementAssembly; class IfcElementAssemblyType; class IfcElementComponent; class IfcElementComponentType; class IfcElementQuantity; class IfcElementType; class IfcElementarySurface; class IfcEllipse; class IfcEllipseProfileDef; class IfcEnergyConversionDevice; class IfcEnergyConversionDeviceType; class IfcEngine; class IfcEngineType; class IfcEvaporativeCooler; class IfcEvaporativeCoolerType; class IfcEvaporator; class IfcEvaporatorType; class IfcEvent; class IfcEventTime; class IfcEventType; class IfcExtendedProperties; class IfcExternalInformation; class IfcExternalReference; class IfcExternalReferenceRelationship; class IfcExternalSpatialElement; class IfcExternalSpatialStructureElement; class IfcExternallyDefinedHatchStyle; class IfcExternallyDefinedSurfaceStyle; class IfcExternallyDefinedTextFont; class IfcExtrudedAreaSolid; class IfcExtrudedAreaSolidTapered; class IfcFace; class IfcFaceBasedSurfaceModel; class IfcFaceBound; class IfcFaceOuterBound; class IfcFaceSurface; class IfcFacetedBrep; class IfcFacetedBrepWithVoids; class IfcFailureConnectionCondition; class IfcFan; class IfcFanType; class IfcFastener; class IfcFastenerType; class IfcFeatureElement; class IfcFeatureElementAddition; class IfcFeatureElementSubtraction; class IfcFillAreaStyle; class IfcFillAreaStyleHatching; class IfcFillAreaStyleTiles; class IfcFilter; class IfcFilterType; class IfcFireSuppressionTerminal; class IfcFireSuppressionTerminalType; class IfcFixedReferenceSweptAreaSolid; class IfcFlowController; class IfcFlowControllerType; class IfcFlowFitting; class IfcFlowFittingType; class IfcFlowInstrument; class IfcFlowInstrumentType; class IfcFlowMeter; class IfcFlowMeterType; class IfcFlowMovingDevice; class IfcFlowMovingDeviceType; class IfcFlowSegment; class IfcFlowSegmentType; class IfcFlowStorageDevice; class IfcFlowStorageDeviceType; class IfcFlowTerminal; class IfcFlowTerminalType; class IfcFlowTreatmentDevice; class IfcFlowTreatmentDeviceType; class IfcFooting; class IfcFootingType; class IfcFurnishingElement; class IfcFurnishingElementType; class IfcFurniture; class IfcFurnitureType; class IfcGeographicElement; class IfcGeographicElementType; class IfcGeometricCurveSet; class IfcGeometricRepresentationContext; class IfcGeometricRepresentationItem; class IfcGeometricRepresentationSubContext; class IfcGeometricSet; class IfcGrid; class IfcGridAxis; class IfcGridPlacement; class IfcGroup; class IfcHalfSpaceSolid; class IfcHeatExchanger; class IfcHeatExchangerType; class IfcHumidifier; class IfcHumidifierType; class IfcIShapeProfileDef; class IfcImageTexture; class IfcIndexedColourMap; class IfcIndexedTextureMap; class IfcIndexedTriangleTextureMap; class IfcInterceptor; class IfcInterceptorType; class IfcInventory; class IfcIrregularTimeSeries; class IfcIrregularTimeSeriesValue; class IfcJunctionBox; class IfcJunctionBoxType; class IfcLShapeProfileDef; class IfcLaborResource; class IfcLaborResourceType; class IfcLagTime; class IfcLamp; class IfcLampType; class IfcLibraryInformation; class IfcLibraryReference; class IfcLightDistributionData; class IfcLightFixture; class IfcLightFixtureType; class IfcLightIntensityDistribution; class IfcLightSource; class IfcLightSourceAmbient; class IfcLightSourceDirectional; class IfcLightSourceGoniometric; class IfcLightSourcePositional; class IfcLightSourceSpot; class IfcLine; class IfcLocalPlacement; class IfcLoop; class IfcManifoldSolidBrep; class IfcMapConversion; class IfcMappedItem; class IfcMaterial; class IfcMaterialClassificationRelationship; class IfcMaterialConstituent; class IfcMaterialConstituentSet; class IfcMaterialDefinition; class IfcMaterialDefinitionRepresentation; class IfcMaterialLayer; class IfcMaterialLayerSet; class IfcMaterialLayerSetUsage; class IfcMaterialLayerWithOffsets; class IfcMaterialList; class IfcMaterialProfile; class IfcMaterialProfileSet; class IfcMaterialProfileSetUsage; class IfcMaterialProfileSetUsageTapering; class IfcMaterialProfileWithOffsets; class IfcMaterialProperties; class IfcMaterialRelationship; class IfcMaterialUsageDefinition; class IfcMeasureWithUnit; class IfcMechanicalFastener; class IfcMechanicalFastenerType; class IfcMedicalDevice; class IfcMedicalDeviceType; class IfcMember; class IfcMemberStandardCase; class IfcMemberType; class IfcMetric; class IfcMirroredProfileDef; class IfcMonetaryUnit; class IfcMotorConnection; class IfcMotorConnectionType; class IfcNamedUnit; class IfcObject; class IfcObjectDefinition; class IfcObjectPlacement; class IfcObjective; class IfcOccupant; class IfcOffsetCurve2D; class IfcOffsetCurve3D; class IfcOpenShell; class IfcOpeningElement; class IfcOpeningStandardCase; class IfcOrganization; class IfcOrganizationRelationship; class IfcOrientedEdge; class IfcOuterBoundaryCurve; class IfcOutlet; class IfcOutletType; class IfcOwnerHistory; class IfcParameterizedProfileDef; class IfcPath; class IfcPcurve; class IfcPerformanceHistory; class IfcPermeableCoveringProperties; class IfcPermit; class IfcPerson; class IfcPersonAndOrganization; class IfcPhysicalComplexQuantity; class IfcPhysicalQuantity; class IfcPhysicalSimpleQuantity; class IfcPile; class IfcPileType; class IfcPipeFitting; class IfcPipeFittingType; class IfcPipeSegment; class IfcPipeSegmentType; class IfcPixelTexture; class IfcPlacement; class IfcPlanarBox; class IfcPlanarExtent; class IfcPlane; class IfcPlate; class IfcPlateStandardCase; class IfcPlateType; class IfcPoint; class IfcPointOnCurve; class IfcPointOnSurface; class IfcPolyLoop; class IfcPolygonalBoundedHalfSpace; class IfcPolyline; class IfcPort; class IfcPostalAddress; class IfcPreDefinedColour; class IfcPreDefinedCurveFont; class IfcPreDefinedItem; class IfcPreDefinedProperties; class IfcPreDefinedPropertySet; class IfcPreDefinedTextFont; class IfcPresentationItem; class IfcPresentationLayerAssignment; class IfcPresentationLayerWithStyle; class IfcPresentationStyle; class IfcPresentationStyleAssignment; class IfcProcedure; class IfcProcedureType; class IfcProcess; class IfcProduct; class IfcProductDefinitionShape; class IfcProductRepresentation; class IfcProfileDef; class IfcProfileProperties; class IfcProject; class IfcProjectLibrary; class IfcProjectOrder; class IfcProjectedCRS; class IfcProjectionElement; class IfcProperty; class IfcPropertyAbstraction; class IfcPropertyBoundedValue; class IfcPropertyDefinition; class IfcPropertyDependencyRelationship; class IfcPropertyEnumeratedValue; class IfcPropertyEnumeration; class IfcPropertyListValue; class IfcPropertyReferenceValue; class IfcPropertySet; class IfcPropertySetDefinition; class IfcPropertySetTemplate; class IfcPropertySingleValue; class IfcPropertyTableValue; class IfcPropertyTemplate; class IfcPropertyTemplateDefinition; class IfcProtectiveDevice; class IfcProtectiveDeviceTrippingUnit; class IfcProtectiveDeviceTrippingUnitType; class IfcProtectiveDeviceType; class IfcProxy; class IfcPump; class IfcPumpType; class IfcQuantityArea; class IfcQuantityCount; class IfcQuantityLength; class IfcQuantitySet; class IfcQuantityTime; class IfcQuantityVolume; class IfcQuantityWeight; class IfcRailing; class IfcRailingType; class IfcRamp; class IfcRampFlight; class IfcRampFlightType; class IfcRampType; class IfcRationalBSplineCurveWithKnots; class IfcRationalBSplineSurfaceWithKnots; class IfcRectangleHollowProfileDef; class IfcRectangleProfileDef; class IfcRectangularPyramid; class IfcRectangularTrimmedSurface; class IfcRecurrencePattern; class IfcReference; class IfcRegularTimeSeries; class IfcReinforcementBarProperties; class IfcReinforcementDefinitionProperties; class IfcReinforcingBar; class IfcReinforcingBarType; class IfcReinforcingElement; class IfcReinforcingElementType; class IfcReinforcingMesh; class IfcReinforcingMeshType; class IfcRelAggregates; class IfcRelAssigns; class IfcRelAssignsToActor; class IfcRelAssignsToControl; class IfcRelAssignsToGroup; class IfcRelAssignsToGroupByFactor; class IfcRelAssignsToProcess; class IfcRelAssignsToProduct; class IfcRelAssignsToResource; class IfcRelAssociates; class IfcRelAssociatesApproval; class IfcRelAssociatesClassification; class IfcRelAssociatesConstraint; class IfcRelAssociatesDocument; class IfcRelAssociatesLibrary; class IfcRelAssociatesMaterial; class IfcRelConnects; class IfcRelConnectsElements; class IfcRelConnectsPathElements; class IfcRelConnectsPortToElement; class IfcRelConnectsPorts; class IfcRelConnectsStructuralActivity; class IfcRelConnectsStructuralMember; class IfcRelConnectsWithEccentricity; class IfcRelConnectsWithRealizingElements; class IfcRelContainedInSpatialStructure; class IfcRelCoversBldgElements; class IfcRelCoversSpaces; class IfcRelDeclares; class IfcRelDecomposes; class IfcRelDefines; class IfcRelDefinesByObject; class IfcRelDefinesByProperties; class IfcRelDefinesByTemplate; class IfcRelDefinesByType; class IfcRelFillsElement; class IfcRelFlowControlElements; class IfcRelInterferesElements; class IfcRelNests; class IfcRelProjectsElement; class IfcRelReferencedInSpatialStructure; class IfcRelSequence; class IfcRelServicesBuildings; class IfcRelSpaceBoundary; class IfcRelSpaceBoundary1stLevel; class IfcRelSpaceBoundary2ndLevel; class IfcRelVoidsElement; class IfcRelationship; class IfcReparametrisedCompositeCurveSegment; class IfcRepresentation; class IfcRepresentationContext; class IfcRepresentationItem; class IfcRepresentationMap; class IfcResource; class IfcResourceApprovalRelationship; class IfcResourceConstraintRelationship; class IfcResourceLevelRelationship; class IfcResourceTime; class IfcRevolvedAreaSolid; class IfcRevolvedAreaSolidTapered; class IfcRightCircularCone; class IfcRightCircularCylinder; class IfcRoof; class IfcRoofType; class IfcRoot; class IfcRoundedRectangleProfileDef; class IfcSIUnit; class IfcSanitaryTerminal; class IfcSanitaryTerminalType; class IfcSchedulingTime; class IfcSectionProperties; class IfcSectionReinforcementProperties; class IfcSectionedSpine; class IfcSensor; class IfcSensorType; class IfcShadingDevice; class IfcShadingDeviceType; class IfcShapeAspect; class IfcShapeModel; class IfcShapeRepresentation; class IfcShellBasedSurfaceModel; class IfcSimpleProperty; class IfcSimplePropertyTemplate; class IfcSite; class IfcSlab; class IfcSlabElementedCase; class IfcSlabStandardCase; class IfcSlabType; class IfcSlippageConnectionCondition; class IfcSolarDevice; class IfcSolarDeviceType; class IfcSolidModel; class IfcSpace; class IfcSpaceHeater; class IfcSpaceHeaterType; class IfcSpaceType; class IfcSpatialElement; class IfcSpatialElementType; class IfcSpatialStructureElement; class IfcSpatialStructureElementType; class IfcSpatialZone; class IfcSpatialZoneType; class IfcSphere; class IfcStackTerminal; class IfcStackTerminalType; class IfcStair; class IfcStairFlight; class IfcStairFlightType; class IfcStairType; class IfcStructuralAction; class IfcStructuralActivity; class IfcStructuralAnalysisModel; class IfcStructuralConnection; class IfcStructuralConnectionCondition; class IfcStructuralCurveAction; class IfcStructuralCurveConnection; class IfcStructuralCurveMember; class IfcStructuralCurveMemberVarying; class IfcStructuralCurveReaction; class IfcStructuralItem; class IfcStructuralLinearAction; class IfcStructuralLoad; class IfcStructuralLoadCase; class IfcStructuralLoadConfiguration; class IfcStructuralLoadGroup; class IfcStructuralLoadLinearForce; class IfcStructuralLoadOrResult; class IfcStructuralLoadPlanarForce; class IfcStructuralLoadSingleDisplacement; class IfcStructuralLoadSingleDisplacementDistortion; class IfcStructuralLoadSingleForce; class IfcStructuralLoadSingleForceWarping; class IfcStructuralLoadStatic; class IfcStructuralLoadTemperature; class IfcStructuralMember; class IfcStructuralPlanarAction; class IfcStructuralPointAction; class IfcStructuralPointConnection; class IfcStructuralPointReaction; class IfcStructuralReaction; class IfcStructuralResultGroup; class IfcStructuralSurfaceAction; class IfcStructuralSurfaceConnection; class IfcStructuralSurfaceMember; class IfcStructuralSurfaceMemberVarying; class IfcStructuralSurfaceReaction; class IfcStyleModel; class IfcStyledItem; class IfcStyledRepresentation; class IfcSubContractResource; class IfcSubContractResourceType; class IfcSubedge; class IfcSurface; class IfcSurfaceCurveSweptAreaSolid; class IfcSurfaceFeature; class IfcSurfaceOfLinearExtrusion; class IfcSurfaceOfRevolution; class IfcSurfaceReinforcementArea; class IfcSurfaceStyle; class IfcSurfaceStyleLighting; class IfcSurfaceStyleRefraction; class IfcSurfaceStyleRendering; class IfcSurfaceStyleShading; class IfcSurfaceStyleWithTextures; class IfcSurfaceTexture; class IfcSweptAreaSolid; class IfcSweptDiskSolid; class IfcSweptDiskSolidPolygonal; class IfcSweptSurface; class IfcSwitchingDevice; class IfcSwitchingDeviceType; class IfcSystem; class IfcSystemFurnitureElement; class IfcSystemFurnitureElementType; class IfcTShapeProfileDef; class IfcTable; class IfcTableColumn; class IfcTableRow; class IfcTank; class IfcTankType; class IfcTask; class IfcTaskTime; class IfcTaskTimeRecurring; class IfcTaskType; class IfcTelecomAddress; class IfcTendon; class IfcTendonAnchor; class IfcTendonAnchorType; class IfcTendonType; class IfcTessellatedFaceSet; class IfcTessellatedItem; class IfcTextLiteral; class IfcTextLiteralWithExtent; class IfcTextStyle; class IfcTextStyleFontModel; class IfcTextStyleForDefinedFont; class IfcTextStyleTextModel; class IfcTextureCoordinate; class IfcTextureCoordinateGenerator; class IfcTextureMap; class IfcTextureVertex; class IfcTextureVertexList; class IfcTimePeriod; class IfcTimeSeries; class IfcTimeSeriesValue; class IfcTopologicalRepresentationItem; class IfcTopologyRepresentation; class IfcTransformer; class IfcTransformerType; class IfcTransportElement; class IfcTransportElementType; class IfcTrapeziumProfileDef; class IfcTriangulatedFaceSet; class IfcTrimmedCurve; class IfcTubeBundle; class IfcTubeBundleType; class IfcTypeObject; class IfcTypeProcess; class IfcTypeProduct; class IfcTypeResource; class IfcUShapeProfileDef; class IfcUnitAssignment; class IfcUnitaryControlElement; class IfcUnitaryControlElementType; class IfcUnitaryEquipment; class IfcUnitaryEquipmentType; class IfcValve; class IfcValveType; class IfcVector; class IfcVertex; class IfcVertexLoop; class IfcVertexPoint; class IfcVibrationIsolator; class IfcVibrationIsolatorType; class IfcVirtualElement; class IfcVirtualGridIntersection; class IfcVoidingFeature; class IfcWall; class IfcWallElementedCase; class IfcWallStandardCase; class IfcWallType; class IfcWasteTerminal; class IfcWasteTerminalType; class IfcWindow; class IfcWindowLiningProperties; class IfcWindowPanelProperties; class IfcWindowStandardCase; class IfcWindowStyle; class IfcWindowType; class IfcWorkCalendar; class IfcWorkControl; class IfcWorkPlan; class IfcWorkSchedule; class IfcWorkTime; class IfcZShapeProfileDef; class IfcZone; class IfcAbsorbedDoseMeasure; class IfcAccelerationMeasure; class IfcAmountOfSubstanceMeasure; class IfcAngularVelocityMeasure; class IfcAreaDensityMeasure; class IfcAreaMeasure; class IfcBoolean; class IfcBoxAlignment; class IfcCardinalPointReference; class IfcComplexNumber; class IfcCompoundPlaneAngleMeasure; class IfcContextDependentMeasure; class IfcCountMeasure; class IfcCurvatureMeasure; class IfcDate; class IfcDateTime; class IfcDayInMonthNumber; class IfcDayInWeekNumber; class IfcDescriptiveMeasure; class IfcDimensionCount; class IfcDoseEquivalentMeasure; class IfcDuration; class IfcDynamicViscosityMeasure; class IfcElectricCapacitanceMeasure; class IfcElectricChargeMeasure; class IfcElectricConductanceMeasure; class IfcElectricCurrentMeasure; class IfcElectricResistanceMeasure; class IfcElectricVoltageMeasure; class IfcEnergyMeasure; class IfcFontStyle; class IfcFontVariant; class IfcFontWeight; class IfcForceMeasure; class IfcFrequencyMeasure; class IfcGloballyUniqueId; class IfcHeatFluxDensityMeasure; class IfcHeatingValueMeasure; class IfcIdentifier; class IfcIlluminanceMeasure; class IfcInductanceMeasure; class IfcInteger; class IfcIntegerCountRateMeasure; class IfcIonConcentrationMeasure; class IfcIsothermalMoistureCapacityMeasure; class IfcKinematicViscosityMeasure; class IfcLabel; class IfcLanguageId; class IfcLengthMeasure; class IfcLinearForceMeasure; class IfcLinearMomentMeasure; class IfcLinearStiffnessMeasure; class IfcLinearVelocityMeasure; class IfcLogical; class IfcLuminousFluxMeasure; class IfcLuminousIntensityDistributionMeasure; class IfcLuminousIntensityMeasure; class IfcMagneticFluxDensityMeasure; class IfcMagneticFluxMeasure; class IfcMassDensityMeasure; class IfcMassFlowRateMeasure; class IfcMassMeasure; class IfcMassPerLengthMeasure; class IfcModulusOfElasticityMeasure; class IfcModulusOfLinearSubgradeReactionMeasure; class IfcModulusOfRotationalSubgradeReactionMeasure; class IfcModulusOfSubgradeReactionMeasure; class IfcMoistureDiffusivityMeasure; class IfcMolecularWeightMeasure; class IfcMomentOfInertiaMeasure; class IfcMonetaryMeasure; class IfcMonthInYearNumber; class IfcNonNegativeLengthMeasure; class IfcNormalisedRatioMeasure; class IfcNumericMeasure; class IfcPHMeasure; class IfcParameterValue; class IfcPlanarForceMeasure; class IfcPlaneAngleMeasure; class IfcPositiveLengthMeasure; class IfcPositivePlaneAngleMeasure; class IfcPositiveRatioMeasure; class IfcPowerMeasure; class IfcPresentableText; class IfcPressureMeasure; class IfcPropertySetDefinitionSet; class IfcRadioActivityMeasure; class IfcRatioMeasure; class IfcReal; class IfcRotationalFrequencyMeasure; class IfcRotationalMassMeasure; class IfcRotationalStiffnessMeasure; class IfcSectionModulusMeasure; class IfcSectionalAreaIntegralMeasure; class IfcShearModulusMeasure; class IfcSolidAngleMeasure; class IfcSoundPowerLevelMeasure; class IfcSoundPowerMeasure; class IfcSoundPressureLevelMeasure; class IfcSoundPressureMeasure; class IfcSpecificHeatCapacityMeasure; class IfcSpecularExponent; class IfcSpecularRoughness; class IfcTemperatureGradientMeasure; class IfcTemperatureRateOfChangeMeasure; class IfcText; class IfcTextAlignment; class IfcTextDecoration; class IfcTextFontName; class IfcTextTransformation; class IfcThermalAdmittanceMeasure; class IfcThermalConductivityMeasure; class IfcThermalExpansionCoefficientMeasure; class IfcThermalResistanceMeasure; class IfcThermalTransmittanceMeasure; class IfcThermodynamicTemperatureMeasure; class IfcTime; class IfcTimeMeasure; class IfcTimeStamp; class IfcTorqueMeasure; class IfcURIReference; class IfcVaporPermeabilityMeasure; class IfcVolumeMeasure; class IfcVolumetricFlowRateMeasure; class IfcWarpingConstantMeasure; class IfcWarpingMomentMeasure; 
+class IfcActionRequest; class IfcActor; class IfcActorRole; class IfcActuator; class IfcActuatorType; class IfcAddress; class IfcAdvancedBrep; class IfcAdvancedBrepWithVoids; class IfcAdvancedFace; class IfcAirTerminal; class IfcAirTerminalBox; class IfcAirTerminalBoxType; class IfcAirTerminalType; class IfcAirToAirHeatRecovery; class IfcAirToAirHeatRecoveryType; class IfcAlarm; class IfcAlarmType; class IfcAnnotation; class IfcAnnotationFillArea; class IfcApplication; class IfcAppliedValue; class IfcApproval; class IfcApprovalRelationship; class IfcArbitraryClosedProfileDef; class IfcArbitraryOpenProfileDef; class IfcArbitraryProfileDefWithVoids; class IfcAsset; class IfcAsymmetricIShapeProfileDef; class IfcAudioVisualAppliance; class IfcAudioVisualApplianceType; class IfcAxis1Placement; class IfcAxis2Placement2D; class IfcAxis2Placement3D; class IfcBSplineCurve; class IfcBSplineCurveWithKnots; class IfcBSplineSurface; class IfcBSplineSurfaceWithKnots; class IfcBeam; class IfcBeamStandardCase; class IfcBeamType; class IfcBlobTexture; class IfcBlock; class IfcBoiler; class IfcBoilerType; class IfcBooleanClippingResult; class IfcBooleanResult; class IfcBoundaryCondition; class IfcBoundaryCurve; class IfcBoundaryEdgeCondition; class IfcBoundaryFaceCondition; class IfcBoundaryNodeCondition; class IfcBoundaryNodeConditionWarping; class IfcBoundedCurve; class IfcBoundedSurface; class IfcBoundingBox; class IfcBoxedHalfSpace; class IfcBuilding; class IfcBuildingElement; class IfcBuildingElementPart; class IfcBuildingElementPartType; class IfcBuildingElementProxy; class IfcBuildingElementProxyType; class IfcBuildingElementType; class IfcBuildingStorey; class IfcBuildingSystem; class IfcBurner; class IfcBurnerType; class IfcCShapeProfileDef; class IfcCableCarrierFitting; class IfcCableCarrierFittingType; class IfcCableCarrierSegment; class IfcCableCarrierSegmentType; class IfcCableFitting; class IfcCableFittingType; class IfcCableSegment; class IfcCableSegmentType; class IfcCartesianPoint; class IfcCartesianPointList; class IfcCartesianPointList2D; class IfcCartesianPointList3D; class IfcCartesianTransformationOperator; class IfcCartesianTransformationOperator2D; class IfcCartesianTransformationOperator2DnonUniform; class IfcCartesianTransformationOperator3D; class IfcCartesianTransformationOperator3DnonUniform; class IfcCenterLineProfileDef; class IfcChiller; class IfcChillerType; class IfcChimney; class IfcChimneyType; class IfcCircle; class IfcCircleHollowProfileDef; class IfcCircleProfileDef; class IfcCivilElement; class IfcCivilElementType; class IfcClassification; class IfcClassificationReference; class IfcClosedShell; class IfcCoil; class IfcCoilType; class IfcColourRgb; class IfcColourRgbList; class IfcColourSpecification; class IfcColumn; class IfcColumnStandardCase; class IfcColumnType; class IfcCommunicationsAppliance; class IfcCommunicationsApplianceType; class IfcComplexProperty; class IfcComplexPropertyTemplate; class IfcCompositeCurve; class IfcCompositeCurveOnSurface; class IfcCompositeCurveSegment; class IfcCompositeProfileDef; class IfcCompressor; class IfcCompressorType; class IfcCondenser; class IfcCondenserType; class IfcConic; class IfcConnectedFaceSet; class IfcConnectionCurveGeometry; class IfcConnectionGeometry; class IfcConnectionPointEccentricity; class IfcConnectionPointGeometry; class IfcConnectionSurfaceGeometry; class IfcConnectionVolumeGeometry; class IfcConstraint; class IfcConstructionEquipmentResource; class IfcConstructionEquipmentResourceType; class IfcConstructionMaterialResource; class IfcConstructionMaterialResourceType; class IfcConstructionProductResource; class IfcConstructionProductResourceType; class IfcConstructionResource; class IfcConstructionResourceType; class IfcContext; class IfcContextDependentUnit; class IfcControl; class IfcController; class IfcControllerType; class IfcConversionBasedUnit; class IfcConversionBasedUnitWithOffset; class IfcCooledBeam; class IfcCooledBeamType; class IfcCoolingTower; class IfcCoolingTowerType; class IfcCoordinateOperation; class IfcCoordinateReferenceSystem; class IfcCostItem; class IfcCostSchedule; class IfcCostValue; class IfcCovering; class IfcCoveringType; class IfcCrewResource; class IfcCrewResourceType; class IfcCsgPrimitive3D; class IfcCsgSolid; class IfcCurrencyRelationship; class IfcCurtainWall; class IfcCurtainWallType; class IfcCurve; class IfcCurveBoundedPlane; class IfcCurveBoundedSurface; class IfcCurveStyle; class IfcCurveStyleFont; class IfcCurveStyleFontAndScaling; class IfcCurveStyleFontPattern; class IfcCylindricalSurface; class IfcDamper; class IfcDamperType; class IfcDerivedProfileDef; class IfcDerivedUnit; class IfcDerivedUnitElement; class IfcDimensionalExponents; class IfcDirection; class IfcDiscreteAccessory; class IfcDiscreteAccessoryType; class IfcDistributionChamberElement; class IfcDistributionChamberElementType; class IfcDistributionCircuit; class IfcDistributionControlElement; class IfcDistributionControlElementType; class IfcDistributionElement; class IfcDistributionElementType; class IfcDistributionFlowElement; class IfcDistributionFlowElementType; class IfcDistributionPort; class IfcDistributionSystem; class IfcDocumentInformation; class IfcDocumentInformationRelationship; class IfcDocumentReference; class IfcDoor; class IfcDoorLiningProperties; class IfcDoorPanelProperties; class IfcDoorStandardCase; class IfcDoorStyle; class IfcDoorType; class IfcDraughtingPreDefinedColour; class IfcDraughtingPreDefinedCurveFont; class IfcDuctFitting; class IfcDuctFittingType; class IfcDuctSegment; class IfcDuctSegmentType; class IfcDuctSilencer; class IfcDuctSilencerType; class IfcEdge; class IfcEdgeCurve; class IfcEdgeLoop; class IfcElectricAppliance; class IfcElectricApplianceType; class IfcElectricDistributionBoard; class IfcElectricDistributionBoardType; class IfcElectricFlowStorageDevice; class IfcElectricFlowStorageDeviceType; class IfcElectricGenerator; class IfcElectricGeneratorType; class IfcElectricMotor; class IfcElectricMotorType; class IfcElectricTimeControl; class IfcElectricTimeControlType; class IfcElement; class IfcElementAssembly; class IfcElementAssemblyType; class IfcElementComponent; class IfcElementComponentType; class IfcElementQuantity; class IfcElementType; class IfcElementarySurface; class IfcEllipse; class IfcEllipseProfileDef; class IfcEnergyConversionDevice; class IfcEnergyConversionDeviceType; class IfcEngine; class IfcEngineType; class IfcEvaporativeCooler; class IfcEvaporativeCoolerType; class IfcEvaporator; class IfcEvaporatorType; class IfcEvent; class IfcEventTime; class IfcEventType; class IfcExtendedProperties; class IfcExternalInformation; class IfcExternalReference; class IfcExternalReferenceRelationship; class IfcExternalSpatialElement; class IfcExternalSpatialStructureElement; class IfcExternallyDefinedHatchStyle; class IfcExternallyDefinedSurfaceStyle; class IfcExternallyDefinedTextFont; class IfcExtrudedAreaSolid; class IfcExtrudedAreaSolidTapered; class IfcFace; class IfcFaceBasedSurfaceModel; class IfcFaceBound; class IfcFaceOuterBound; class IfcFaceSurface; class IfcFacetedBrep; class IfcFacetedBrepWithVoids; class IfcFailureConnectionCondition; class IfcFan; class IfcFanType; class IfcFastener; class IfcFastenerType; class IfcFeatureElement; class IfcFeatureElementAddition; class IfcFeatureElementSubtraction; class IfcFillAreaStyle; class IfcFillAreaStyleHatching; class IfcFillAreaStyleTiles; class IfcFilter; class IfcFilterType; class IfcFireSuppressionTerminal; class IfcFireSuppressionTerminalType; class IfcFixedReferenceSweptAreaSolid; class IfcFlowController; class IfcFlowControllerType; class IfcFlowFitting; class IfcFlowFittingType; class IfcFlowInstrument; class IfcFlowInstrumentType; class IfcFlowMeter; class IfcFlowMeterType; class IfcFlowMovingDevice; class IfcFlowMovingDeviceType; class IfcFlowSegment; class IfcFlowSegmentType; class IfcFlowStorageDevice; class IfcFlowStorageDeviceType; class IfcFlowTerminal; class IfcFlowTerminalType; class IfcFlowTreatmentDevice; class IfcFlowTreatmentDeviceType; class IfcFooting; class IfcFootingType; class IfcFurnishingElement; class IfcFurnishingElementType; class IfcFurniture; class IfcFurnitureType; class IfcGeographicElement; class IfcGeographicElementType; class IfcGeometricCurveSet; class IfcGeometricRepresentationContext; class IfcGeometricRepresentationItem; class IfcGeometricRepresentationSubContext; class IfcGeometricSet; class IfcGrid; class IfcGridAxis; class IfcGridPlacement; class IfcGroup; class IfcHalfSpaceSolid; class IfcHeatExchanger; class IfcHeatExchangerType; class IfcHumidifier; class IfcHumidifierType; class IfcIShapeProfileDef; class IfcImageTexture; class IfcIndexedColourMap; class IfcIndexedPolyCurve; class IfcIndexedTextureMap; class IfcIndexedTriangleTextureMap; class IfcInterceptor; class IfcInterceptorType; class IfcInventory; class IfcIrregularTimeSeries; class IfcIrregularTimeSeriesValue; class IfcJunctionBox; class IfcJunctionBoxType; class IfcLShapeProfileDef; class IfcLaborResource; class IfcLaborResourceType; class IfcLagTime; class IfcLamp; class IfcLampType; class IfcLibraryInformation; class IfcLibraryReference; class IfcLightDistributionData; class IfcLightFixture; class IfcLightFixtureType; class IfcLightIntensityDistribution; class IfcLightSource; class IfcLightSourceAmbient; class IfcLightSourceDirectional; class IfcLightSourceGoniometric; class IfcLightSourcePositional; class IfcLightSourceSpot; class IfcLine; class IfcLocalPlacement; class IfcLoop; class IfcManifoldSolidBrep; class IfcMapConversion; class IfcMappedItem; class IfcMaterial; class IfcMaterialClassificationRelationship; class IfcMaterialConstituent; class IfcMaterialConstituentSet; class IfcMaterialDefinition; class IfcMaterialDefinitionRepresentation; class IfcMaterialLayer; class IfcMaterialLayerSet; class IfcMaterialLayerSetUsage; class IfcMaterialLayerWithOffsets; class IfcMaterialList; class IfcMaterialProfile; class IfcMaterialProfileSet; class IfcMaterialProfileSetUsage; class IfcMaterialProfileSetUsageTapering; class IfcMaterialProfileWithOffsets; class IfcMaterialProperties; class IfcMaterialRelationship; class IfcMaterialUsageDefinition; class IfcMeasureWithUnit; class IfcMechanicalFastener; class IfcMechanicalFastenerType; class IfcMedicalDevice; class IfcMedicalDeviceType; class IfcMember; class IfcMemberStandardCase; class IfcMemberType; class IfcMetric; class IfcMirroredProfileDef; class IfcMonetaryUnit; class IfcMotorConnection; class IfcMotorConnectionType; class IfcNamedUnit; class IfcObject; class IfcObjectDefinition; class IfcObjectPlacement; class IfcObjective; class IfcOccupant; class IfcOffsetCurve2D; class IfcOffsetCurve3D; class IfcOpenShell; class IfcOpeningElement; class IfcOpeningStandardCase; class IfcOrganization; class IfcOrganizationRelationship; class IfcOrientedEdge; class IfcOuterBoundaryCurve; class IfcOutlet; class IfcOutletType; class IfcOwnerHistory; class IfcParameterizedProfileDef; class IfcPath; class IfcPcurve; class IfcPerformanceHistory; class IfcPermeableCoveringProperties; class IfcPermit; class IfcPerson; class IfcPersonAndOrganization; class IfcPhysicalComplexQuantity; class IfcPhysicalQuantity; class IfcPhysicalSimpleQuantity; class IfcPile; class IfcPileType; class IfcPipeFitting; class IfcPipeFittingType; class IfcPipeSegment; class IfcPipeSegmentType; class IfcPixelTexture; class IfcPlacement; class IfcPlanarBox; class IfcPlanarExtent; class IfcPlane; class IfcPlate; class IfcPlateStandardCase; class IfcPlateType; class IfcPoint; class IfcPointOnCurve; class IfcPointOnSurface; class IfcPolyLoop; class IfcPolygonalBoundedHalfSpace; class IfcPolyline; class IfcPort; class IfcPostalAddress; class IfcPreDefinedColour; class IfcPreDefinedCurveFont; class IfcPreDefinedItem; class IfcPreDefinedProperties; class IfcPreDefinedPropertySet; class IfcPreDefinedTextFont; class IfcPresentationItem; class IfcPresentationLayerAssignment; class IfcPresentationLayerWithStyle; class IfcPresentationStyle; class IfcPresentationStyleAssignment; class IfcProcedure; class IfcProcedureType; class IfcProcess; class IfcProduct; class IfcProductDefinitionShape; class IfcProductRepresentation; class IfcProfileDef; class IfcProfileProperties; class IfcProject; class IfcProjectLibrary; class IfcProjectOrder; class IfcProjectedCRS; class IfcProjectionElement; class IfcProperty; class IfcPropertyAbstraction; class IfcPropertyBoundedValue; class IfcPropertyDefinition; class IfcPropertyDependencyRelationship; class IfcPropertyEnumeratedValue; class IfcPropertyEnumeration; class IfcPropertyListValue; class IfcPropertyReferenceValue; class IfcPropertySet; class IfcPropertySetDefinition; class IfcPropertySetTemplate; class IfcPropertySingleValue; class IfcPropertyTableValue; class IfcPropertyTemplate; class IfcPropertyTemplateDefinition; class IfcProtectiveDevice; class IfcProtectiveDeviceTrippingUnit; class IfcProtectiveDeviceTrippingUnitType; class IfcProtectiveDeviceType; class IfcProxy; class IfcPump; class IfcPumpType; class IfcQuantityArea; class IfcQuantityCount; class IfcQuantityLength; class IfcQuantitySet; class IfcQuantityTime; class IfcQuantityVolume; class IfcQuantityWeight; class IfcRailing; class IfcRailingType; class IfcRamp; class IfcRampFlight; class IfcRampFlightType; class IfcRampType; class IfcRationalBSplineCurveWithKnots; class IfcRationalBSplineSurfaceWithKnots; class IfcRectangleHollowProfileDef; class IfcRectangleProfileDef; class IfcRectangularPyramid; class IfcRectangularTrimmedSurface; class IfcRecurrencePattern; class IfcReference; class IfcRegularTimeSeries; class IfcReinforcementBarProperties; class IfcReinforcementDefinitionProperties; class IfcReinforcingBar; class IfcReinforcingBarType; class IfcReinforcingElement; class IfcReinforcingElementType; class IfcReinforcingMesh; class IfcReinforcingMeshType; class IfcRelAggregates; class IfcRelAssigns; class IfcRelAssignsToActor; class IfcRelAssignsToControl; class IfcRelAssignsToGroup; class IfcRelAssignsToGroupByFactor; class IfcRelAssignsToProcess; class IfcRelAssignsToProduct; class IfcRelAssignsToResource; class IfcRelAssociates; class IfcRelAssociatesApproval; class IfcRelAssociatesClassification; class IfcRelAssociatesConstraint; class IfcRelAssociatesDocument; class IfcRelAssociatesLibrary; class IfcRelAssociatesMaterial; class IfcRelConnects; class IfcRelConnectsElements; class IfcRelConnectsPathElements; class IfcRelConnectsPortToElement; class IfcRelConnectsPorts; class IfcRelConnectsStructuralActivity; class IfcRelConnectsStructuralMember; class IfcRelConnectsWithEccentricity; class IfcRelConnectsWithRealizingElements; class IfcRelContainedInSpatialStructure; class IfcRelCoversBldgElements; class IfcRelCoversSpaces; class IfcRelDeclares; class IfcRelDecomposes; class IfcRelDefines; class IfcRelDefinesByObject; class IfcRelDefinesByProperties; class IfcRelDefinesByTemplate; class IfcRelDefinesByType; class IfcRelFillsElement; class IfcRelFlowControlElements; class IfcRelInterferesElements; class IfcRelNests; class IfcRelProjectsElement; class IfcRelReferencedInSpatialStructure; class IfcRelSequence; class IfcRelServicesBuildings; class IfcRelSpaceBoundary; class IfcRelSpaceBoundary1stLevel; class IfcRelSpaceBoundary2ndLevel; class IfcRelVoidsElement; class IfcRelationship; class IfcReparametrisedCompositeCurveSegment; class IfcRepresentation; class IfcRepresentationContext; class IfcRepresentationItem; class IfcRepresentationMap; class IfcResource; class IfcResourceApprovalRelationship; class IfcResourceConstraintRelationship; class IfcResourceLevelRelationship; class IfcResourceTime; class IfcRevolvedAreaSolid; class IfcRevolvedAreaSolidTapered; class IfcRightCircularCone; class IfcRightCircularCylinder; class IfcRoof; class IfcRoofType; class IfcRoot; class IfcRoundedRectangleProfileDef; class IfcSIUnit; class IfcSanitaryTerminal; class IfcSanitaryTerminalType; class IfcSchedulingTime; class IfcSectionProperties; class IfcSectionReinforcementProperties; class IfcSectionedSpine; class IfcSensor; class IfcSensorType; class IfcShadingDevice; class IfcShadingDeviceType; class IfcShapeAspect; class IfcShapeModel; class IfcShapeRepresentation; class IfcShellBasedSurfaceModel; class IfcSimpleProperty; class IfcSimplePropertyTemplate; class IfcSite; class IfcSlab; class IfcSlabElementedCase; class IfcSlabStandardCase; class IfcSlabType; class IfcSlippageConnectionCondition; class IfcSolarDevice; class IfcSolarDeviceType; class IfcSolidModel; class IfcSpace; class IfcSpaceHeater; class IfcSpaceHeaterType; class IfcSpaceType; class IfcSpatialElement; class IfcSpatialElementType; class IfcSpatialStructureElement; class IfcSpatialStructureElementType; class IfcSpatialZone; class IfcSpatialZoneType; class IfcSphere; class IfcStackTerminal; class IfcStackTerminalType; class IfcStair; class IfcStairFlight; class IfcStairFlightType; class IfcStairType; class IfcStructuralAction; class IfcStructuralActivity; class IfcStructuralAnalysisModel; class IfcStructuralConnection; class IfcStructuralConnectionCondition; class IfcStructuralCurveAction; class IfcStructuralCurveConnection; class IfcStructuralCurveMember; class IfcStructuralCurveMemberVarying; class IfcStructuralCurveReaction; class IfcStructuralItem; class IfcStructuralLinearAction; class IfcStructuralLoad; class IfcStructuralLoadCase; class IfcStructuralLoadConfiguration; class IfcStructuralLoadGroup; class IfcStructuralLoadLinearForce; class IfcStructuralLoadOrResult; class IfcStructuralLoadPlanarForce; class IfcStructuralLoadSingleDisplacement; class IfcStructuralLoadSingleDisplacementDistortion; class IfcStructuralLoadSingleForce; class IfcStructuralLoadSingleForceWarping; class IfcStructuralLoadStatic; class IfcStructuralLoadTemperature; class IfcStructuralMember; class IfcStructuralPlanarAction; class IfcStructuralPointAction; class IfcStructuralPointConnection; class IfcStructuralPointReaction; class IfcStructuralReaction; class IfcStructuralResultGroup; class IfcStructuralSurfaceAction; class IfcStructuralSurfaceConnection; class IfcStructuralSurfaceMember; class IfcStructuralSurfaceMemberVarying; class IfcStructuralSurfaceReaction; class IfcStyleModel; class IfcStyledItem; class IfcStyledRepresentation; class IfcSubContractResource; class IfcSubContractResourceType; class IfcSubedge; class IfcSurface; class IfcSurfaceCurveSweptAreaSolid; class IfcSurfaceFeature; class IfcSurfaceOfLinearExtrusion; class IfcSurfaceOfRevolution; class IfcSurfaceReinforcementArea; class IfcSurfaceStyle; class IfcSurfaceStyleLighting; class IfcSurfaceStyleRefraction; class IfcSurfaceStyleRendering; class IfcSurfaceStyleShading; class IfcSurfaceStyleWithTextures; class IfcSurfaceTexture; class IfcSweptAreaSolid; class IfcSweptDiskSolid; class IfcSweptDiskSolidPolygonal; class IfcSweptSurface; class IfcSwitchingDevice; class IfcSwitchingDeviceType; class IfcSystem; class IfcSystemFurnitureElement; class IfcSystemFurnitureElementType; class IfcTShapeProfileDef; class IfcTable; class IfcTableColumn; class IfcTableRow; class IfcTank; class IfcTankType; class IfcTask; class IfcTaskTime; class IfcTaskTimeRecurring; class IfcTaskType; class IfcTelecomAddress; class IfcTendon; class IfcTendonAnchor; class IfcTendonAnchorType; class IfcTendonType; class IfcTessellatedFaceSet; class IfcTessellatedItem; class IfcTextLiteral; class IfcTextLiteralWithExtent; class IfcTextStyle; class IfcTextStyleFontModel; class IfcTextStyleForDefinedFont; class IfcTextStyleTextModel; class IfcTextureCoordinate; class IfcTextureCoordinateGenerator; class IfcTextureMap; class IfcTextureVertex; class IfcTextureVertexList; class IfcTimePeriod; class IfcTimeSeries; class IfcTimeSeriesValue; class IfcTopologicalRepresentationItem; class IfcTopologyRepresentation; class IfcTransformer; class IfcTransformerType; class IfcTransportElement; class IfcTransportElementType; class IfcTrapeziumProfileDef; class IfcTriangulatedFaceSet; class IfcTrimmedCurve; class IfcTubeBundle; class IfcTubeBundleType; class IfcTypeObject; class IfcTypeProcess; class IfcTypeProduct; class IfcTypeResource; class IfcUShapeProfileDef; class IfcUnitAssignment; class IfcUnitaryControlElement; class IfcUnitaryControlElementType; class IfcUnitaryEquipment; class IfcUnitaryEquipmentType; class IfcValve; class IfcValveType; class IfcVector; class IfcVertex; class IfcVertexLoop; class IfcVertexPoint; class IfcVibrationIsolator; class IfcVibrationIsolatorType; class IfcVirtualElement; class IfcVirtualGridIntersection; class IfcVoidingFeature; class IfcWall; class IfcWallElementedCase; class IfcWallStandardCase; class IfcWallType; class IfcWasteTerminal; class IfcWasteTerminalType; class IfcWindow; class IfcWindowLiningProperties; class IfcWindowPanelProperties; class IfcWindowStandardCase; class IfcWindowStyle; class IfcWindowType; class IfcWorkCalendar; class IfcWorkControl; class IfcWorkPlan; class IfcWorkSchedule; class IfcWorkTime; class IfcZShapeProfileDef; class IfcZone; class IfcAbsorbedDoseMeasure; class IfcAccelerationMeasure; class IfcAmountOfSubstanceMeasure; class IfcAngularVelocityMeasure; class IfcArcIndex; class IfcAreaDensityMeasure; class IfcAreaMeasure; class IfcBinary; class IfcBoolean; class IfcBoxAlignment; class IfcCardinalPointReference; class IfcComplexNumber; class IfcCompoundPlaneAngleMeasure; class IfcContextDependentMeasure; class IfcCountMeasure; class IfcCurvatureMeasure; class IfcDate; class IfcDateTime; class IfcDayInMonthNumber; class IfcDayInWeekNumber; class IfcDescriptiveMeasure; class IfcDimensionCount; class IfcDoseEquivalentMeasure; class IfcDuration; class IfcDynamicViscosityMeasure; class IfcElectricCapacitanceMeasure; class IfcElectricChargeMeasure; class IfcElectricConductanceMeasure; class IfcElectricCurrentMeasure; class IfcElectricResistanceMeasure; class IfcElectricVoltageMeasure; class IfcEnergyMeasure; class IfcFontStyle; class IfcFontVariant; class IfcFontWeight; class IfcForceMeasure; class IfcFrequencyMeasure; class IfcGloballyUniqueId; class IfcHeatFluxDensityMeasure; class IfcHeatingValueMeasure; class IfcIdentifier; class IfcIlluminanceMeasure; class IfcInductanceMeasure; class IfcInteger; class IfcIntegerCountRateMeasure; class IfcIonConcentrationMeasure; class IfcIsothermalMoistureCapacityMeasure; class IfcKinematicViscosityMeasure; class IfcLabel; class IfcLanguageId; class IfcLengthMeasure; class IfcLineIndex; class IfcLinearForceMeasure; class IfcLinearMomentMeasure; class IfcLinearStiffnessMeasure; class IfcLinearVelocityMeasure; class IfcLogical; class IfcLuminousFluxMeasure; class IfcLuminousIntensityDistributionMeasure; class IfcLuminousIntensityMeasure; class IfcMagneticFluxDensityMeasure; class IfcMagneticFluxMeasure; class IfcMassDensityMeasure; class IfcMassFlowRateMeasure; class IfcMassMeasure; class IfcMassPerLengthMeasure; class IfcModulusOfElasticityMeasure; class IfcModulusOfLinearSubgradeReactionMeasure; class IfcModulusOfRotationalSubgradeReactionMeasure; class IfcModulusOfSubgradeReactionMeasure; class IfcMoistureDiffusivityMeasure; class IfcMolecularWeightMeasure; class IfcMomentOfInertiaMeasure; class IfcMonetaryMeasure; class IfcMonthInYearNumber; class IfcNonNegativeLengthMeasure; class IfcNormalisedRatioMeasure; class IfcNumericMeasure; class IfcPHMeasure; class IfcParameterValue; class IfcPlanarForceMeasure; class IfcPlaneAngleMeasure; class IfcPositiveInteger; class IfcPositiveLengthMeasure; class IfcPositivePlaneAngleMeasure; class IfcPositiveRatioMeasure; class IfcPowerMeasure; class IfcPresentableText; class IfcPressureMeasure; class IfcPropertySetDefinitionSet; class IfcRadioActivityMeasure; class IfcRatioMeasure; class IfcReal; class IfcRotationalFrequencyMeasure; class IfcRotationalMassMeasure; class IfcRotationalStiffnessMeasure; class IfcSectionModulusMeasure; class IfcSectionalAreaIntegralMeasure; class IfcShearModulusMeasure; class IfcSolidAngleMeasure; class IfcSoundPowerLevelMeasure; class IfcSoundPowerMeasure; class IfcSoundPressureLevelMeasure; class IfcSoundPressureMeasure; class IfcSpecificHeatCapacityMeasure; class IfcSpecularExponent; class IfcSpecularRoughness; class IfcTemperatureGradientMeasure; class IfcTemperatureRateOfChangeMeasure; class IfcText; class IfcTextAlignment; class IfcTextDecoration; class IfcTextFontName; class IfcTextTransformation; class IfcThermalAdmittanceMeasure; class IfcThermalConductivityMeasure; class IfcThermalExpansionCoefficientMeasure; class IfcThermalResistanceMeasure; class IfcThermalTransmittanceMeasure; class IfcThermodynamicTemperatureMeasure; class IfcTime; class IfcTimeMeasure; class IfcTimeStamp; class IfcTorqueMeasure; class IfcURIReference; class IfcVaporPermeabilityMeasure; class IfcVolumeMeasure; class IfcVolumetricFlowRateMeasure; class IfcWarpingConstantMeasure; class IfcWarpingMomentMeasure; 
 
 /// The actor select type allows a person, or an organization, or a person associated with an organization to be referenced.
 /// 
@@ -457,6 +457,8 @@ typedef IfcUtil::IfcBaseClass IfcResourceSelect;
 /// 
 /// HISTORY: New type in IFC 2x4.
 typedef IfcUtil::IfcBaseClass IfcRotationalStiffnessSelect;
+
+typedef IfcUtil::IfcBaseClass IfcSegmentIndexSelect;
 /// Definition from ISO/CD 10303-42:1992 This type collects together, for reference when constructing more complex models, the subtypes which have the characteristics of a shell. A shell is a connected object of fixed dimensionality d = 0; 1; or 2, typically used to bound a region. The domain of a shell, if present, includes its bounds and 0 £ X < ¥.  
 /// 
 /// A shell of dimensionality 0 is represented by a graph consisting of a single vertex. The vertex shall not have any associated edges. 
@@ -4423,7 +4425,7 @@ namespace IfcSensorTypeEnum {
 /// WINDSENSOR: A device that senses or detects airflow speed and direction. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcSensorType_CONDUCTANCESENSOR, IfcSensorType_CONTACTSENSOR, IfcSensorType_FIRESENSOR, IfcSensorType_FLOWSENSOR, IfcSensorType_GASSENSOR, IfcSensorType_HEATSENSOR, IfcSensorType_HUMIDITYSENSOR, IfcSensorType_IONCONCENTRATIONSENSOR, IfcSensorType_LEVELSENSOR, IfcSensorType_LIGHTSENSOR, IfcSensorType_MOISTURESENSOR, IfcSensorType_MOVEMENTSENSOR, IfcSensorType_PHSENSOR, IfcSensorType_PRESSURESENSOR, IfcSensorType_RADIATIONSENSOR, IfcSensorType_RADIOACTIVITYSENSOR, IfcSensorType_SMOKESENSOR, IfcSensorType_SOUNDSENSOR, IfcSensorType_TEMPERATURESENSOR, IfcSensorType_WINDSENSOR, IfcSensorType_USERDEFINED, IfcSensorType_NOTDEFINED} IfcSensorTypeEnum;
+typedef enum {IfcSensorType_CO2SENSOR, IfcSensorType_CONDUCTANCESENSOR, IfcSensorType_CONTACTSENSOR, IfcSensorType_FIRESENSOR, IfcSensorType_FLOWSENSOR, IfcSensorType_FROSTSENSOR, IfcSensorType_GASSENSOR, IfcSensorType_HEATSENSOR, IfcSensorType_HUMIDITYSENSOR, IfcSensorType_IDENTIFIERSENSOR, IfcSensorType_IONCONCENTRATIONSENSOR, IfcSensorType_LEVELSENSOR, IfcSensorType_LIGHTSENSOR, IfcSensorType_MOISTURESENSOR, IfcSensorType_MOVEMENTSENSOR, IfcSensorType_PHSENSOR, IfcSensorType_PRESSURESENSOR, IfcSensorType_RADIATIONSENSOR, IfcSensorType_RADIOACTIVITYSENSOR, IfcSensorType_SMOKESENSOR, IfcSensorType_SOUNDSENSOR, IfcSensorType_TEMPERATURESENSOR, IfcSensorType_WINDSENSOR, IfcSensorType_USERDEFINED, IfcSensorType_NOTDEFINED} IfcSensorTypeEnum;
 const char* ToString(IfcSensorTypeEnum v);
 IfcSensorTypeEnum FromString(const std::string& s);
 }
@@ -5805,6 +5807,18 @@ public:
     operator double() const;
 };
 
+class IfcArcIndex : public IfcUtil::IfcBaseType {
+public:
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
+    virtual Argument* getArgument(unsigned int i) const;
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
+    static Type::Enum Class();
+    explicit IfcArcIndex (IfcAbstractEntity* e);
+    IfcArcIndex (std::vector< int > /*[3:3]*/ v);
+    operator std::vector< int > /*[3:3]*/() const;
+};
+
 class IfcAreaDensityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
@@ -5833,6 +5847,18 @@ public:
     explicit IfcAreaMeasure (IfcAbstractEntity* e);
     IfcAreaMeasure (double v);
     operator double() const;
+};
+
+class IfcBinary : public IfcUtil::IfcBaseType {
+public:
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
+    virtual Argument* getArgument(unsigned int i) const;
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
+    static Type::Enum Class();
+    explicit IfcBinary (IfcAbstractEntity* e);
+    IfcBinary (boost::dynamic_bitset<> v);
+    operator boost::dynamic_bitset<>() const;
 };
 /// IfcBoolean is a defined data type of simple data type Boolean. It is required since a select type (IfcSimpleValue) cannot directly include simple types in its select list.  A boolean type can have value TRUE or FALSE.
 /// 
@@ -6722,6 +6748,18 @@ public:
     IfcLengthMeasure (double v);
     operator double() const;
 };
+
+class IfcLineIndex : public IfcUtil::IfcBaseType {
+public:
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
+    virtual Argument* getArgument(unsigned int i) const;
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
+    static Type::Enum Class();
+    explicit IfcLineIndex (IfcAbstractEntity* e);
+    IfcLineIndex (std::vector< int > /*[2:?]*/ v);
+    operator std::vector< int > /*[2:?]*/() const;
+};
 /// IfcLinearForceMeasure is a measure of linear force.
 /// Usually measured in N/m.
 /// Type: REAL
@@ -7254,6 +7292,18 @@ public:
     explicit IfcPlaneAngleMeasure (IfcAbstractEntity* e);
     IfcPlaneAngleMeasure (double v);
     operator double() const;
+};
+
+class IfcPositiveInteger : public IfcInteger {
+public:
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
+    virtual Argument* getArgument(unsigned int i) const;
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
+    static Type::Enum Class();
+    explicit IfcPositiveInteger (IfcAbstractEntity* e);
+    IfcPositiveInteger (int v);
+    operator int() const;
 };
 /// Definition from ISO/CD 10303-41:1992: A positive length measure is a length measure that is greater than zero.
 /// Type: IfcLengthMeasure
@@ -8871,8 +8921,6 @@ public:
 /// HISTORY  New entity in IFC2x4.
 class IfcCoordinateReferenceSystem : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcCoordinateReferenceSystem
-    bool hasName() const;
     /// Name by which the coordinate reference system is identified.
     /// Note  The name shall be taken from the list recognized by the European Petroleum Survey Group EPSG.
     std::string Name() const;
@@ -8882,6 +8930,8 @@ public:
     /// Informal description of this coordinate reference system.
     std::string Description() const;
     void setDescription(std::string v);
+    /// Whether the optional attribute GeodeticDatum is defined for this IfcCoordinateReferenceSystem
+    bool hasGeodeticDatum() const;
     /// Name by which this datum is identified. The geodetic datum is associated with the coordinate reference system and indicates the shape and size of the rotation ellipsoid and this ellipsoid's connection and orientation to the actual globe/earth. Examples for geodetic datums include:
     /// 
     /// ED50
@@ -8902,11 +8952,12 @@ public:
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcIdentifier; case 3: return Type::IfcIdentifier; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "GeodeticDatum"; case 3: return "VerticalDatum"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
+    IfcTemplatedEntityList< IfcCoordinateOperation >::ptr HasCoordinateOperation() const; // INVERSE IfcCoordinateOperation::SourceCRS
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcCoordinateReferenceSystem (IfcAbstractEntity* e);
-    IfcCoordinateReferenceSystem (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, std::string v3_GeodeticDatum, boost::optional< std::string > v4_VerticalDatum);
+    IfcCoordinateReferenceSystem (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_GeodeticDatum, boost::optional< std::string > v4_VerticalDatum);
     typedef IfcTemplatedEntityList< IfcCoordinateReferenceSystem > list;
 };
 /// IfcCostValue is an amount of money or a value that affects an amount of money. 
@@ -10052,6 +10103,8 @@ public:
     /// Reference source for data values.
     std::string ValueSource() const;
     void setValueSource(std::string v);
+    /// Whether the optional attribute DataValue is defined for this IfcMetric
+    bool hasDataValue() const;
     /// The value with data type defined by the underlying type accesses via IfcMetricValueSelect.
     IfcMetricValueSelect* DataValue() const;
     void setDataValue(IfcMetricValueSelect* v);
@@ -10600,7 +10653,7 @@ public:
     void setLayerStyles(IfcTemplatedEntityList< IfcPresentationStyle >::ptr v);
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_BOOL; case 5: return IfcUtil::Argument_BOOL; case 6: return IfcUtil::Argument_BOOL; case 7: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } return IfcPresentationLayerAssignment::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::UNDEFINED; case 5: return Type::UNDEFINED; case 6: return Type::UNDEFINED; case 7: return Type::IfcPresentationStyle; } return IfcPresentationLayerAssignment::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcLogical; case 5: return Type::IfcLogical; case 6: return Type::IfcLogical; case 7: return Type::IfcPresentationStyle; } return IfcPresentationLayerAssignment::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "LayerOn"; case 5: return "LayerFrozen"; case 6: return "LayerBlocked"; case 7: return "LayerStyles"; } return IfcPresentationLayerAssignment::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -10950,7 +11003,7 @@ public:
     Type::Enum type() const;
     static Type::Enum Class();
     IfcProjectedCRS (IfcAbstractEntity* e);
-    IfcProjectedCRS (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, std::string v3_GeodeticDatum, boost::optional< std::string > v4_VerticalDatum, boost::optional< std::string > v5_MapProjection, boost::optional< std::string > v6_MapZone, IfcNamedUnit* v7_MapUnit);
+    IfcProjectedCRS (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_GeodeticDatum, boost::optional< std::string > v4_VerticalDatum, boost::optional< std::string > v5_MapProjection, boost::optional< std::string > v6_MapZone, IfcNamedUnit* v7_MapUnit);
     typedef IfcTemplatedEntityList< IfcProjectedCRS > list;
 };
 
@@ -11310,7 +11363,7 @@ public:
     void setInnerReference(IfcReference* v);
     virtual unsigned int getArgumentCount() const { return 5; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_INT; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcIdentifier; case 2: return Type::IfcLabel; case 3: return Type::UNDEFINED; case 4: return Type::IfcReference; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcIdentifier; case 2: return Type::IfcLabel; case 3: return Type::IfcInteger; case 4: return Type::IfcReference; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TypeIdentifier"; case 1: return "AttributeIdentifier"; case 2: return "InstanceName"; case 3: return "ListPositions"; case 4: return "InnerReference"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -11719,7 +11772,7 @@ public:
     void setPartOfProductDefinitionShape(IfcProductRepresentationSelect* v);
     virtual unsigned int getArgumentCount() const { return 5; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_BOOL; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcShapeModel; case 1: return Type::IfcLabel; case 2: return Type::IfcText; case 3: return Type::UNDEFINED; case 4: return Type::IfcProductRepresentationSelect; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcShapeModel; case 1: return Type::IfcLabel; case 2: return Type::IfcText; case 3: return Type::IfcLogical; case 4: return Type::IfcProductRepresentationSelect; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ShapeRepresentations"; case 1: return "Name"; case 2: return "Description"; case 3: return "ProductDefinitional"; case 4: return "PartOfProductDefinitionShape"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -12482,7 +12535,7 @@ public:
     void setParameter(std::vector< std::string > /*[1:?]*/ v);
     virtual unsigned int getArgumentCount() const { return 5; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_BOOL; case 1: return IfcUtil::Argument_BOOL; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_AGGREGATE_OF_STRING; } return IfcPresentationItem::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; case 1: return Type::UNDEFINED; case 2: return Type::IfcIdentifier; case 3: return Type::IfcCartesianTransformationOperator2D; case 4: return Type::IfcIdentifier; } return IfcPresentationItem::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcBoolean; case 1: return Type::IfcBoolean; case 2: return Type::IfcIdentifier; case 3: return Type::IfcCartesianTransformationOperator2D; case 4: return Type::IfcIdentifier; } return IfcPresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RepeatS"; case 1: return "RepeatT"; case 2: return "Mode"; case 3: return "TextureTransform"; case 4: return "Parameter"; } return IfcPresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcTextureCoordinate >::ptr IsMappedBy() const; // INVERSE IfcTextureCoordinate::Maps
@@ -12608,10 +12661,9 @@ public:
     void setIsHeading(bool v);
     virtual unsigned int getArgumentCount() const { return 2; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_BOOL; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcValue; case 1: return Type::UNDEFINED; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcValue; case 1: return Type::IfcBoolean; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RowCells"; case 1: return "IsHeading"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
-    IfcTemplatedEntityList< IfcTable >::ptr OfTable() const; // INVERSE IfcTable::Rows
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
@@ -12770,7 +12822,7 @@ public:
     void setCompletion(double v);
     virtual unsigned int getArgumentCount() const { return 20; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_ENUMERATION; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_STRING; case 8: return IfcUtil::Argument_STRING; case 9: return IfcUtil::Argument_STRING; case 10: return IfcUtil::Argument_STRING; case 11: return IfcUtil::Argument_STRING; case 12: return IfcUtil::Argument_STRING; case 13: return IfcUtil::Argument_BOOL; case 14: return IfcUtil::Argument_STRING; case 15: return IfcUtil::Argument_STRING; case 16: return IfcUtil::Argument_STRING; case 17: return IfcUtil::Argument_STRING; case 18: return IfcUtil::Argument_STRING; case 19: return IfcUtil::Argument_DOUBLE; } return IfcSchedulingTime::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcTaskDurationEnum; case 4: return Type::IfcDuration; case 5: return Type::IfcDateTime; case 6: return Type::IfcDateTime; case 7: return Type::IfcDateTime; case 8: return Type::IfcDateTime; case 9: return Type::IfcDateTime; case 10: return Type::IfcDateTime; case 11: return Type::IfcDuration; case 12: return Type::IfcDuration; case 13: return Type::UNDEFINED; case 14: return Type::IfcDateTime; case 15: return Type::IfcDuration; case 16: return Type::IfcDateTime; case 17: return Type::IfcDateTime; case 18: return Type::IfcDuration; case 19: return Type::IfcPositiveRatioMeasure; } return IfcSchedulingTime::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcTaskDurationEnum; case 4: return Type::IfcDuration; case 5: return Type::IfcDateTime; case 6: return Type::IfcDateTime; case 7: return Type::IfcDateTime; case 8: return Type::IfcDateTime; case 9: return Type::IfcDateTime; case 10: return Type::IfcDateTime; case 11: return Type::IfcDuration; case 12: return Type::IfcDuration; case 13: return Type::IfcBoolean; case 14: return Type::IfcDateTime; case 15: return Type::IfcDuration; case 16: return Type::IfcDateTime; case 17: return Type::IfcDateTime; case 18: return Type::IfcDuration; case 19: return Type::IfcPositiveRatioMeasure; } return IfcSchedulingTime::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "DurationType"; case 4: return "ScheduleDuration"; case 5: return "ScheduleStart"; case 6: return "ScheduleFinish"; case 7: return "EarlyStart"; case 8: return "EarlyFinish"; case 9: return "LateStart"; case 10: return "LateFinish"; case 11: return "FreeFloat"; case 12: return "TotalFloat"; case 13: return "IsCritical"; case 14: return "StatusTime"; case 15: return "ActualDuration"; case 16: return "ActualStart"; case 17: return "ActualFinish"; case 18: return "RemainingTime"; case 19: return "Completion"; } return IfcSchedulingTime::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -12785,18 +12837,18 @@ public:
 /// HISTORY: New entity in IFC2x4.
 class IfcTaskTimeRecurring : public IfcTaskTime {
 public:
-    IfcRecurrencePattern* Recurrance() const;
-    void setRecurrance(IfcRecurrencePattern* v);
+    IfcRecurrencePattern* Recurrence() const;
+    void setRecurrence(IfcRecurrencePattern* v);
     virtual unsigned int getArgumentCount() const { return 21; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 20: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcTaskTime::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 20: return Type::IfcRecurrencePattern; } return IfcTaskTime::getArgumentEntity(i); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 20: return "Recurrance"; } return IfcTaskTime::getArgumentName(i); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 20: return "Recurrence"; } return IfcTaskTime::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcTaskTimeRecurring (IfcAbstractEntity* e);
-    IfcTaskTimeRecurring (boost::optional< std::string > v1_Name, boost::optional< IfcDataOriginEnum::IfcDataOriginEnum > v2_DataOrigin, boost::optional< std::string > v3_UserDefinedDataOrigin, boost::optional< IfcTaskDurationEnum::IfcTaskDurationEnum > v4_DurationType, boost::optional< std::string > v5_ScheduleDuration, boost::optional< std::string > v6_ScheduleStart, boost::optional< std::string > v7_ScheduleFinish, boost::optional< std::string > v8_EarlyStart, boost::optional< std::string > v9_EarlyFinish, boost::optional< std::string > v10_LateStart, boost::optional< std::string > v11_LateFinish, boost::optional< std::string > v12_FreeFloat, boost::optional< std::string > v13_TotalFloat, boost::optional< bool > v14_IsCritical, boost::optional< std::string > v15_StatusTime, boost::optional< std::string > v16_ActualDuration, boost::optional< std::string > v17_ActualStart, boost::optional< std::string > v18_ActualFinish, boost::optional< std::string > v19_RemainingTime, boost::optional< double > v20_Completion, IfcRecurrencePattern* v21_Recurrance);
+    IfcTaskTimeRecurring (boost::optional< std::string > v1_Name, boost::optional< IfcDataOriginEnum::IfcDataOriginEnum > v2_DataOrigin, boost::optional< std::string > v3_UserDefinedDataOrigin, boost::optional< IfcTaskDurationEnum::IfcTaskDurationEnum > v4_DurationType, boost::optional< std::string > v5_ScheduleDuration, boost::optional< std::string > v6_ScheduleStart, boost::optional< std::string > v7_ScheduleFinish, boost::optional< std::string > v8_EarlyStart, boost::optional< std::string > v9_EarlyFinish, boost::optional< std::string > v10_LateStart, boost::optional< std::string > v11_LateFinish, boost::optional< std::string > v12_FreeFloat, boost::optional< std::string > v13_TotalFloat, boost::optional< bool > v14_IsCritical, boost::optional< std::string > v15_StatusTime, boost::optional< std::string > v16_ActualDuration, boost::optional< std::string > v17_ActualStart, boost::optional< std::string > v18_ActualFinish, boost::optional< std::string > v19_RemainingTime, boost::optional< double > v20_Completion, IfcRecurrencePattern* v21_Recurrence);
     typedef IfcTemplatedEntityList< IfcTaskTimeRecurring > list;
 };
 /// Definition: Address to which telephone, electronic mail and other forms of telecommunications should be addressed.
@@ -12907,7 +12959,7 @@ public:
     void setModelOrDraughting(bool v);
     virtual unsigned int getArgumentCount() const { return 5; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_BOOL; } return IfcPresentationStyle::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcTextStyleForDefinedFont; case 2: return Type::IfcTextStyleTextModel; case 3: return Type::IfcTextFontSelect; case 4: return Type::UNDEFINED; } return IfcPresentationStyle::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcTextStyleForDefinedFont; case 2: return Type::IfcTextStyleTextModel; case 3: return Type::IfcTextFontSelect; case 4: return Type::IfcBoolean; } return IfcPresentationStyle::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "TextCharacterAppearance"; case 2: return "TextStyle"; case 3: return "TextFontStyle"; case 4: return "ModelOrDraughting"; } return IfcPresentationStyle::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -13741,7 +13793,7 @@ public:
     void setRasterCode(boost::dynamic_bitset<> v);
     virtual unsigned int getArgumentCount() const { return 7; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_BINARY; } return IfcSurfaceTexture::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcIdentifier; case 6: return Type::UNDEFINED; } return IfcSurfaceTexture::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcIdentifier; case 6: return Type::IfcBinary; } return IfcSurfaceTexture::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "RasterFormat"; case 6: return "RasterCode"; } return IfcSurfaceTexture::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -14366,7 +14418,7 @@ public:
     void setModelOrDraughting(bool v);
     virtual unsigned int getArgumentCount() const { return 5; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_BOOL; } return IfcPresentationStyle::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcCurveFontOrScaledCurveFontSelect; case 2: return Type::IfcSizeSelect; case 3: return Type::IfcColour; case 4: return Type::UNDEFINED; } return IfcPresentationStyle::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcCurveFontOrScaledCurveFontSelect; case 2: return Type::IfcSizeSelect; case 3: return Type::IfcColour; case 4: return Type::IfcBoolean; } return IfcPresentationStyle::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "CurveFont"; case 2: return "CurveWidth"; case 3: return "CurveColour"; case 4: return "ModelOrDraughting"; } return IfcPresentationStyle::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -14875,7 +14927,7 @@ public:
     void setSameSense(bool v);
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_BOOL; } return IfcEdge::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcCurve; case 3: return Type::UNDEFINED; } return IfcEdge::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcCurve; case 3: return Type::IfcBoolean; } return IfcEdge::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "EdgeGeometry"; case 3: return "SameSense"; } return IfcEdge::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -15075,7 +15127,7 @@ public:
     void setOrientation(bool v);
     virtual unsigned int getArgumentCount() const { return 2; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_BOOL; } return IfcTopologicalRepresentationItem::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLoop; case 1: return Type::UNDEFINED; } return IfcTopologicalRepresentationItem::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLoop; case 1: return Type::IfcBoolean; } return IfcTopologicalRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Bound"; case 1: return "Orientation"; } return IfcTopologicalRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -15150,7 +15202,7 @@ public:
     void setSameSense(bool v);
     virtual unsigned int getArgumentCount() const { return 3; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_BOOL; } return IfcFace::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcSurface; case 2: return Type::UNDEFINED; } return IfcFace::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcSurface; case 2: return Type::IfcBoolean; } return IfcFace::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "FaceSurface"; case 2: return "SameSense"; } return IfcFace::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -15256,7 +15308,7 @@ public:
     void setModelorDraughting(bool v);
     virtual unsigned int getArgumentCount() const { return 3; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_BOOL; } return IfcPresentationStyle::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcFillStyleSelect; case 2: return Type::UNDEFINED; } return IfcPresentationStyle::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 1: return Type::IfcFillStyleSelect; case 2: return Type::IfcBoolean; } return IfcPresentationStyle::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 1: return "FillStyles"; case 2: return "ModelorDraughting"; } return IfcPresentationStyle::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -15335,10 +15387,11 @@ public:
     void setTrueNorth(IfcDirection* v);
     virtual unsigned int getArgumentCount() const { return 6; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_INT; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcRepresentationContext::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcDimensionCount; case 3: return Type::UNDEFINED; case 4: return Type::IfcAxis2Placement; case 5: return Type::IfcDirection; } return IfcRepresentationContext::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcDimensionCount; case 3: return Type::IfcReal; case 4: return Type::IfcAxis2Placement; case 5: return Type::IfcDirection; } return IfcRepresentationContext::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "CoordinateSpaceDimension"; case 3: return "Precision"; case 4: return "WorldCoordinateSystem"; case 5: return "TrueNorth"; } return IfcRepresentationContext::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcGeometricRepresentationSubContext >::ptr HasSubContexts() const; // INVERSE IfcGeometricRepresentationSubContext::ParentContext
+    IfcTemplatedEntityList< IfcCoordinateOperation >::ptr HasCoordinateOperation() const; // INVERSE IfcCoordinateOperation::SourceCRS
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
@@ -15550,7 +15603,7 @@ public:
     void setAgreementFlag(bool v);
     virtual unsigned int getArgumentCount() const { return 2; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_BOOL; } return IfcGeometricRepresentationItem::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurface; case 1: return Type::UNDEFINED; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurface; case 1: return Type::IfcBoolean; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BaseSurface"; case 1: return "AgreementFlag"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -15627,7 +15680,7 @@ public:
     void setColourIndex(std::vector< int > /*[1:?]*/ v);
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_AGGREGATE_OF_INT; } return IfcPresentationItem::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcTessellatedFaceSet; case 1: return Type::IfcSurfaceStyleShading; case 2: return Type::IfcColourRgbList; case 3: return Type::UNDEFINED; } return IfcPresentationItem::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcTessellatedFaceSet; case 1: return Type::IfcSurfaceStyleShading; case 2: return Type::IfcColourRgbList; case 3: return Type::IfcPositiveInteger; } return IfcPresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MappedTo"; case 1: return "Overrides"; case 2: return "Colours"; case 3: return "ColourIndex"; } return IfcPresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -15665,7 +15718,7 @@ public:
     void setTexCoordIndex(std::vector< std::vector< int > > v);
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT; } return IfcIndexedTextureMap::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::UNDEFINED; } return IfcIndexedTextureMap::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcPositiveInteger; } return IfcIndexedTextureMap::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "TexCoordIndex"; } return IfcIndexedTextureMap::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -16856,7 +16909,7 @@ public:
     void setOrientation(bool v);
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_BOOL; } return IfcEdge::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcEdge; case 3: return Type::UNDEFINED; } return IfcEdge::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcEdge; case 3: return Type::IfcBoolean; } return IfcEdge::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "EdgeElement"; case 3: return "Orientation"; } return IfcEdge::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -17033,7 +17086,7 @@ public:
     void setPixel(std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v);
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_INT; case 6: return IfcUtil::Argument_INT; case 7: return IfcUtil::Argument_INT; case 8: return IfcUtil::Argument_AGGREGATE_OF_BINARY; } return IfcSurfaceTexture::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcInteger; case 6: return Type::IfcInteger; case 7: return Type::IfcInteger; case 8: return Type::UNDEFINED; } return IfcSurfaceTexture::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcInteger; case 6: return Type::IfcInteger; case 7: return Type::IfcInteger; case 8: return Type::IfcBinary; } return IfcSurfaceTexture::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "Width"; case 6: return "Height"; case 7: return "ColourComponents"; case 8: return "Pixel"; } return IfcSurfaceTexture::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -17450,6 +17503,8 @@ public:
     IfcTemplatedEntityList< IfcPropertyDependencyRelationship >::ptr PropertyForDependance() const; // INVERSE IfcPropertyDependencyRelationship::DependingProperty
     IfcTemplatedEntityList< IfcPropertyDependencyRelationship >::ptr PropertyDependsOn() const; // INVERSE IfcPropertyDependencyRelationship::DependantProperty
     IfcTemplatedEntityList< IfcComplexProperty >::ptr PartOfComplex() const; // INVERSE IfcComplexProperty::HasProperties
+    IfcTemplatedEntityList< IfcResourceConstraintRelationship >::ptr HasConstraints() const; // INVERSE IfcResourceConstraintRelationship::RelatedResourceObjects
+    IfcTemplatedEntityList< IfcResourceApprovalRelationship >::ptr HasApprovals() const; // INVERSE IfcResourceApprovalRelationship::RelatedResourceObjects
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
@@ -17962,7 +18017,7 @@ public:
     void setCompletion(double v);
     virtual unsigned int getArgumentCount() const { return 18; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_STRING; case 8: return IfcUtil::Argument_STRING; case 9: return IfcUtil::Argument_BOOL; case 10: return IfcUtil::Argument_STRING; case 11: return IfcUtil::Argument_STRING; case 12: return IfcUtil::Argument_DOUBLE; case 13: return IfcUtil::Argument_STRING; case 14: return IfcUtil::Argument_STRING; case 15: return IfcUtil::Argument_STRING; case 16: return IfcUtil::Argument_DOUBLE; case 17: return IfcUtil::Argument_DOUBLE; } return IfcSchedulingTime::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcDuration; case 4: return Type::IfcPositiveRatioMeasure; case 5: return Type::IfcDateTime; case 6: return Type::IfcDateTime; case 7: return Type::IfcLabel; case 8: return Type::IfcDuration; case 9: return Type::UNDEFINED; case 10: return Type::IfcDateTime; case 11: return Type::IfcDuration; case 12: return Type::IfcPositiveRatioMeasure; case 13: return Type::IfcDateTime; case 14: return Type::IfcDateTime; case 15: return Type::IfcDuration; case 16: return Type::IfcPositiveRatioMeasure; case 17: return Type::IfcPositiveRatioMeasure; } return IfcSchedulingTime::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcDuration; case 4: return Type::IfcPositiveRatioMeasure; case 5: return Type::IfcDateTime; case 6: return Type::IfcDateTime; case 7: return Type::IfcLabel; case 8: return Type::IfcDuration; case 9: return Type::IfcBoolean; case 10: return Type::IfcDateTime; case 11: return Type::IfcDuration; case 12: return Type::IfcPositiveRatioMeasure; case 13: return Type::IfcDateTime; case 14: return Type::IfcDateTime; case 15: return Type::IfcDuration; case 16: return Type::IfcPositiveRatioMeasure; case 17: return Type::IfcPositiveRatioMeasure; } return IfcSchedulingTime::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "ScheduleWork"; case 4: return "ScheduleUsage"; case 5: return "ScheduleStart"; case 6: return "ScheduleFinish"; case 7: return "ScheduleContour"; case 8: return "LevelingDelay"; case 9: return "IsOverAllocated"; case 10: return "StatusTime"; case 11: return "ActualWork"; case 12: return "ActualUsage"; case 13: return "ActualStart"; case 14: return "ActualFinish"; case 15: return "RemainingWork"; case 16: return "RemainingUsage"; case 17: return "Completion"; } return IfcSchedulingTime::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -19595,7 +19650,7 @@ public:
     void setSizeable(bool v);
     virtual unsigned int getArgumentCount() const { return 12; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return IfcUtil::Argument_ENUMERATION; case 9: return IfcUtil::Argument_ENUMERATION; case 10: return IfcUtil::Argument_BOOL; case 11: return IfcUtil::Argument_BOOL; } return IfcTypeProduct::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 8: return Type::IfcWindowStyleConstructionEnum; case 9: return Type::IfcWindowStyleOperationEnum; case 10: return Type::UNDEFINED; case 11: return Type::UNDEFINED; } return IfcTypeProduct::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 8: return Type::IfcWindowStyleConstructionEnum; case 9: return Type::IfcWindowStyleOperationEnum; case 10: return Type::IfcBoolean; case 11: return Type::IfcBoolean; } return IfcTypeProduct::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 8: return "ConstructionType"; case 9: return "OperationType"; case 10: return "ParameterTakesPrecedence"; case 11: return "Sizeable"; } return IfcTypeProduct::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -20189,6 +20244,23 @@ public:
     typedef IfcTemplatedEntityList< IfcCartesianPointList > list;
 };
 
+class IfcCartesianPointList2D : public IfcCartesianPointList {
+public:
+    std::vector< std::vector< double > > CoordList() const;
+    void setCoordList(std::vector< std::vector< double > > v);
+    virtual unsigned int getArgumentCount() const { return 1; }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE; } return IfcCartesianPointList::getArgumentType(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLengthMeasure; } return IfcCartesianPointList::getArgumentEntity(i); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "CoordList"; } return IfcCartesianPointList::getArgumentName(i); }
+    virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
+    static Type::Enum Class();
+    IfcCartesianPointList2D (IfcAbstractEntity* e);
+    IfcCartesianPointList2D (std::vector< std::vector< double > > v1_CoordList);
+    typedef IfcTemplatedEntityList< IfcCartesianPointList2D > list;
+};
+
 class IfcCartesianPointList3D : public IfcCartesianPointList {
 public:
     std::vector< std::vector< double > > CoordList() const;
@@ -20257,7 +20329,7 @@ public:
     void setScale(double v);
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDirection; case 1: return Type::IfcDirection; case 2: return Type::IfcCartesianPoint; case 3: return Type::UNDEFINED; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDirection; case 1: return Type::IfcDirection; case 2: return Type::IfcCartesianPoint; case 3: return Type::IfcReal; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Axis1"; case 1: return "Axis2"; case 2: return "LocalOrigin"; case 3: return "Scale"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -20305,7 +20377,7 @@ public:
     void setScale2(double v);
     virtual unsigned int getArgumentCount() const { return 5; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 4: return IfcUtil::Argument_DOUBLE; } return IfcCartesianTransformationOperator2D::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::UNDEFINED; } return IfcCartesianTransformationOperator2D::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 4: return Type::IfcReal; } return IfcCartesianTransformationOperator2D::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 4: return "Scale2"; } return IfcCartesianTransformationOperator2D::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -20364,7 +20436,7 @@ public:
     void setScale3(double v);
     virtual unsigned int getArgumentCount() const { return 7; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_DOUBLE; case 6: return IfcUtil::Argument_DOUBLE; } return IfcCartesianTransformationOperator3D::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::UNDEFINED; case 6: return Type::UNDEFINED; } return IfcCartesianTransformationOperator3D::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcReal; case 6: return Type::IfcReal; } return IfcCartesianTransformationOperator3D::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "Scale2"; case 6: return "Scale3"; } return IfcCartesianTransformationOperator3D::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -20551,7 +20623,7 @@ public:
     void setParentCurve(IfcCurve* v);
     virtual unsigned int getArgumentCount() const { return 3; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_BOOL; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcTransitionCode; case 1: return Type::UNDEFINED; case 2: return Type::IfcCurve; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcTransitionCode; case 1: return Type::IfcBoolean; case 2: return Type::IfcCurve; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Transition"; case 1: return "SameSense"; case 2: return "ParentCurve"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcCompositeCurve >::ptr UsingCurves() const; // INVERSE IfcCompositeCurve::Segments
@@ -20857,7 +20929,7 @@ public:
     void setImplicitOuter(bool v);
     virtual unsigned int getArgumentCount() const { return 3; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_BOOL; } return IfcBoundedSurface::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurface; case 1: return Type::IfcBoundaryCurve; case 2: return Type::UNDEFINED; } return IfcBoundedSurface::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurface; case 1: return Type::IfcBoundaryCurve; case 2: return Type::IfcBoolean; } return IfcBoundedSurface::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisSurface"; case 1: return "Boundaries"; case 2: return "ImplicitOuter"; } return IfcBoundedSurface::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -20881,7 +20953,7 @@ public:
     void setDirectionRatios(std::vector< double > /*[2:3]*/ v);
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } return IfcGeometricRepresentationItem::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcReal; } return IfcGeometricRepresentationItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DirectionRatios"; } return IfcGeometricRepresentationItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -20933,7 +21005,7 @@ public:
     void setSizeable(bool v);
     virtual unsigned int getArgumentCount() const { return 12; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return IfcUtil::Argument_ENUMERATION; case 9: return IfcUtil::Argument_ENUMERATION; case 10: return IfcUtil::Argument_BOOL; case 11: return IfcUtil::Argument_BOOL; } return IfcTypeProduct::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 8: return Type::IfcDoorStyleOperationEnum; case 9: return Type::IfcDoorStyleConstructionEnum; case 10: return Type::UNDEFINED; case 11: return Type::UNDEFINED; } return IfcTypeProduct::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 8: return Type::IfcDoorStyleOperationEnum; case 9: return Type::IfcDoorStyleConstructionEnum; case 10: return Type::IfcBoolean; case 11: return Type::IfcBoolean; } return IfcTypeProduct::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 8: return "OperationType"; case 9: return "ConstructionType"; case 10: return "ParameterTakesPrecedence"; case 11: return "Sizeable"; } return IfcTypeProduct::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -22305,7 +22377,7 @@ public:
     void setSelfIntersect(bool v);
     virtual unsigned int getArgumentCount() const { return 3; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_BOOL; } return IfcCurve::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurve; case 1: return Type::IfcLengthMeasure; case 2: return Type::UNDEFINED; } return IfcCurve::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurve; case 1: return Type::IfcLengthMeasure; case 2: return Type::IfcLogical; } return IfcCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisCurve"; case 1: return "Distance"; case 2: return "SelfIntersect"; } return IfcCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -22346,7 +22418,7 @@ public:
     void setRefDirection(IfcDirection* v);
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_BOOL; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } return IfcCurve::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurve; case 1: return Type::IfcLengthMeasure; case 2: return Type::UNDEFINED; case 3: return Type::IfcDirection; } return IfcCurve::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurve; case 1: return Type::IfcLengthMeasure; case 2: return Type::IfcLogical; case 3: return Type::IfcDirection; } return IfcCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisCurve"; case 1: return "Distance"; case 2: return "SelfIntersect"; case 3: return "RefDirection"; } return IfcCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -22356,7 +22428,13 @@ public:
     IfcOffsetCurve3D (IfcCurve* v1_BasisCurve, double v2_Distance, bool v3_SelfIntersect, IfcDirection* v4_RefDirection);
     typedef IfcTemplatedEntityList< IfcOffsetCurve3D > list;
 };
-
+/// Definition from ISO/CD 10303-42:1992: A pcurve is a curve which lies on the basis of a surface and is defined in the parameter space of that surface. The basis curve is a curve defined in the two-dimensional parametric space of a reference basis surface. Although it is defined by a curve in two dimensional space, the variables involved are u and v, which occur in the parametric representation of the referenced surface, rather than the x, y, Cartesian coordinates.
+/// 
+/// The basis curve is only defined within the parametric range of the surface.
+/// 
+/// NOTE Corresponding ISO 10303 entity: pcurve. Please refer to ISO/IS 10303-42:1994, p.59 for the final definition of the formal standard. The definition of IfcPCurve derivates from pcurve. The following changes have been made: The BasisCurve replaces the definition of reference_to_curve since there is no requirement of having same dimensionality within the representation context.
+/// 
+/// HISTORY New class in IFC2x4.
 class IfcPcurve : public IfcCurve {
 public:
     IfcSurface* BasisSurface() const;
@@ -23896,7 +23974,7 @@ public:
     void setVsense(bool v);
     virtual unsigned int getArgumentCount() const { return 7; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_BOOL; case 6: return IfcUtil::Argument_BOOL; } return IfcBoundedSurface::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurface; case 1: return Type::IfcParameterValue; case 2: return Type::IfcParameterValue; case 3: return Type::IfcParameterValue; case 4: return Type::IfcParameterValue; case 5: return Type::UNDEFINED; case 6: return Type::UNDEFINED; } return IfcBoundedSurface::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurface; case 1: return Type::IfcParameterValue; case 2: return Type::IfcParameterValue; case 3: return Type::IfcParameterValue; case 4: return Type::IfcParameterValue; case 5: return Type::IfcBoolean; case 6: return Type::IfcBoolean; } return IfcBoundedSurface::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisSurface"; case 1: return "U1"; case 2: return "V1"; case 3: return "U2"; case 4: return "V2"; case 5: return "Usense"; case 6: return "Vsense"; } return IfcBoundedSurface::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -24605,11 +24683,11 @@ public:
 class IfcRelConnectsPathElements : public IfcRelConnectsElements {
 public:
     /// Priorities for connection. It refers to the layers of the RelatingObject.
-    std::vector< double > /*[0:?]*/ RelatingPriorities() const;
-    void setRelatingPriorities(std::vector< double > /*[0:?]*/ v);
+    std::vector< int > /*[0:?]*/ RelatingPriorities() const;
+    void setRelatingPriorities(std::vector< int > /*[0:?]*/ v);
     /// Priorities for connection. It refers to the layers of the RelatedObject.
-    std::vector< double > /*[0:?]*/ RelatedPriorities() const;
-    void setRelatedPriorities(std::vector< double > /*[0:?]*/ v);
+    std::vector< int > /*[0:?]*/ RelatedPriorities() const;
+    void setRelatedPriorities(std::vector< int > /*[0:?]*/ v);
     /// Indication of the connection type in relation to the path of the RelatingObject.
     IfcConnectionTypeEnum::IfcConnectionTypeEnum RelatedConnectionType() const;
     void setRelatedConnectionType(IfcConnectionTypeEnum::IfcConnectionTypeEnum v);
@@ -24617,15 +24695,15 @@ public:
     IfcConnectionTypeEnum::IfcConnectionTypeEnum RelatingConnectionType() const;
     void setRelatingConnectionType(IfcConnectionTypeEnum::IfcConnectionTypeEnum v);
     virtual unsigned int getArgumentCount() const { return 11; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; case 8: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; case 9: return IfcUtil::Argument_ENUMERATION; case 10: return IfcUtil::Argument_ENUMERATION; } return IfcRelConnectsElements::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::UNDEFINED; case 8: return Type::UNDEFINED; case 9: return Type::IfcConnectionTypeEnum; case 10: return Type::IfcConnectionTypeEnum; } return IfcRelConnectsElements::getArgumentEntity(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_AGGREGATE_OF_INT; case 8: return IfcUtil::Argument_AGGREGATE_OF_INT; case 9: return IfcUtil::Argument_ENUMERATION; case 10: return IfcUtil::Argument_ENUMERATION; } return IfcRelConnectsElements::getArgumentType(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::IfcInteger; case 8: return Type::IfcInteger; case 9: return Type::IfcConnectionTypeEnum; case 10: return Type::IfcConnectionTypeEnum; } return IfcRelConnectsElements::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "RelatingPriorities"; case 8: return "RelatedPriorities"; case 9: return "RelatedConnectionType"; case 10: return "RelatingConnectionType"; } return IfcRelConnectsElements::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcRelConnectsPathElements (IfcAbstractEntity* e);
-    IfcRelConnectsPathElements (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcConnectionGeometry* v5_ConnectionGeometry, IfcElement* v6_RelatingElement, IfcElement* v7_RelatedElement, std::vector< double > /*[0:?]*/ v8_RelatingPriorities, std::vector< double > /*[0:?]*/ v9_RelatedPriorities, IfcConnectionTypeEnum::IfcConnectionTypeEnum v10_RelatedConnectionType, IfcConnectionTypeEnum::IfcConnectionTypeEnum v11_RelatingConnectionType);
+    IfcRelConnectsPathElements (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcConnectionGeometry* v5_ConnectionGeometry, IfcElement* v6_RelatingElement, IfcElement* v7_RelatedElement, std::vector< int > /*[0:?]*/ v8_RelatingPriorities, std::vector< int > /*[0:?]*/ v9_RelatedPriorities, IfcConnectionTypeEnum::IfcConnectionTypeEnum v10_RelatedConnectionType, IfcConnectionTypeEnum::IfcConnectionTypeEnum v11_RelatingConnectionType);
     typedef IfcTemplatedEntityList< IfcRelConnectsPathElements > list;
 };
 /// The objectified relationship
@@ -28087,7 +28165,7 @@ public:
     void setPredefinedType(IfcTaskTypeEnum::IfcTaskTypeEnum v);
     virtual unsigned int getArgumentCount() const { return 13; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_STRING; case 8: return IfcUtil::Argument_STRING; case 9: return IfcUtil::Argument_BOOL; case 10: return IfcUtil::Argument_INT; case 11: return IfcUtil::Argument_ENTITY_INSTANCE; case 12: return IfcUtil::Argument_ENUMERATION; } return IfcProcess::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::IfcLabel; case 8: return Type::IfcLabel; case 9: return Type::UNDEFINED; case 10: return Type::UNDEFINED; case 11: return Type::IfcTaskTime; case 12: return Type::IfcTaskTypeEnum; } return IfcProcess::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::IfcLabel; case 8: return Type::IfcLabel; case 9: return Type::IfcBoolean; case 10: return Type::IfcInteger; case 11: return Type::IfcTaskTime; case 12: return Type::IfcTaskTypeEnum; } return IfcProcess::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "Status"; case 8: return "WorkMethod"; case 9: return "IsMilestone"; case 10: return "Priority"; case 11: return "TaskTime"; case 12: return "PredefinedType"; } return IfcProcess::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -28175,7 +28253,7 @@ public:
     void setClosed(bool v);
     virtual unsigned int getArgumentCount() const { return 3; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE; case 2: return IfcUtil::Argument_BOOL; } return IfcTessellatedItem::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCartesianPointList3D; case 1: return Type::IfcParameterValue; case 2: return Type::UNDEFINED; } return IfcTessellatedItem::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCartesianPointList3D; case 1: return Type::IfcParameterValue; case 2: return Type::IfcBoolean; } return IfcTessellatedItem::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Coordinates"; case 1: return "Normals"; case 2: return "Closed"; } return IfcTessellatedItem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcIndexedColourMap >::ptr HasColours() const; // INVERSE IfcIndexedColourMap::MappedTo
@@ -28278,7 +28356,7 @@ public:
     void setNormalIndex(std::vector< std::vector< int > > v);
     virtual unsigned int getArgumentCount() const { return 5; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 3: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT; case 4: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT; } return IfcTessellatedFaceSet::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::UNDEFINED; case 4: return Type::UNDEFINED; } return IfcTessellatedFaceSet::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 3: return Type::IfcPositiveInteger; case 4: return Type::IfcPositiveInteger; } return IfcTessellatedFaceSet::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 3: return "CoordIndex"; case 4: return "NormalIndex"; } return IfcTessellatedFaceSet::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -28949,7 +29027,7 @@ public:
     void setSelfIntersect(bool v);
     virtual unsigned int getArgumentCount() const { return 7; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_INT; case 2: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENUMERATION; case 4: return IfcUtil::Argument_BOOL; case 5: return IfcUtil::Argument_BOOL; case 6: return IfcUtil::Argument_BOOL; } return IfcBoundedSurface::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; case 1: return Type::UNDEFINED; case 2: return Type::IfcCartesianPoint; case 3: return Type::IfcBSplineSurfaceForm; case 4: return Type::UNDEFINED; case 5: return Type::UNDEFINED; case 6: return Type::UNDEFINED; } return IfcBoundedSurface::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcInteger; case 1: return Type::IfcInteger; case 2: return Type::IfcCartesianPoint; case 3: return Type::IfcBSplineSurfaceForm; case 4: return Type::IfcLogical; case 5: return Type::IfcLogical; case 6: return Type::IfcLogical; } return IfcBoundedSurface::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "UDegree"; case 1: return "VDegree"; case 2: return "ControlPointsList"; case 3: return "SurfaceForm"; case 4: return "UClosed"; case 5: return "VClosed"; case 6: return "SelfIntersect"; } return IfcBoundedSurface::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -28985,7 +29063,7 @@ public:
     void setKnotSpec(IfcKnotType::IfcKnotType v);
     virtual unsigned int getArgumentCount() const { return 12; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 7: return IfcUtil::Argument_AGGREGATE_OF_INT; case 8: return IfcUtil::Argument_AGGREGATE_OF_INT; case 9: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; case 10: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; case 11: return IfcUtil::Argument_ENUMERATION; } return IfcBSplineSurface::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::UNDEFINED; case 8: return Type::UNDEFINED; case 9: return Type::IfcParameterValue; case 10: return Type::IfcParameterValue; case 11: return Type::IfcKnotType; } return IfcBSplineSurface::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 7: return Type::IfcInteger; case 8: return Type::IfcInteger; case 9: return Type::IfcParameterValue; case 10: return Type::IfcParameterValue; case 11: return Type::IfcKnotType; } return IfcBSplineSurface::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 7: return "UMultiplicities"; case 8: return "VMultiplicities"; case 9: return "UKnots"; case 10: return "VKnots"; case 11: return "KnotSpec"; } return IfcBSplineSurface::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -29921,7 +29999,7 @@ public:
     void setSelfIntersect(bool v);
     virtual unsigned int getArgumentCount() const { return 2; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_BOOL; } return IfcBoundedCurve::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCompositeCurveSegment; case 1: return Type::UNDEFINED; } return IfcBoundedCurve::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCompositeCurveSegment; case 1: return Type::IfcLogical; } return IfcBoundedCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Segments"; case 1: return "SelfIntersect"; } return IfcBoundedCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -31107,7 +31185,7 @@ public:
     void setUserDefinedOperationType(std::string v);
     virtual unsigned int getArgumentCount() const { return 13; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_ENUMERATION; case 10: return IfcUtil::Argument_ENUMERATION; case 11: return IfcUtil::Argument_BOOL; case 12: return IfcUtil::Argument_STRING; } return IfcBuildingElementType::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::IfcDoorTypeEnum; case 10: return Type::IfcDoorTypeOperationEnum; case 11: return Type::UNDEFINED; case 12: return Type::IfcLabel; } return IfcBuildingElementType::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::IfcDoorTypeEnum; case 10: return Type::IfcDoorTypeOperationEnum; case 11: return Type::IfcBoolean; case 12: return Type::IfcLabel; } return IfcBuildingElementType::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 9: return "PredefinedType"; case 10: return "OperationType"; case 11: return "ParameterTakesPrecedence"; case 12: return "UserDefinedOperationType"; } return IfcBuildingElementType::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -31306,6 +31384,7 @@ public:
     IfcTemplatedEntityList< IfcRelSpaceBoundary >::ptr ProvidesBoundaries() const; // INVERSE IfcRelSpaceBoundary::RelatedBuildingElement
     IfcTemplatedEntityList< IfcRelConnectsElements >::ptr ConnectedFrom() const; // INVERSE IfcRelConnectsElements::RelatedElement
     IfcTemplatedEntityList< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
+    IfcTemplatedEntityList< IfcRelCoversBldgElements >::ptr HasCoverings() const; // INVERSE IfcRelCoversBldgElements::RelatingBuildingElement
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
@@ -33208,6 +33287,31 @@ public:
     IfcHumidifierType (IfcAbstractEntity* e);
     IfcHumidifierType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcHumidifierTypeEnum::IfcHumidifierTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcHumidifierType > list;
+};
+
+class IfcIndexedPolyCurve : public IfcBoundedCurve {
+public:
+    IfcCartesianPointList* Points() const;
+    void setPoints(IfcCartesianPointList* v);
+    /// Whether the optional attribute Segments is defined for this IfcIndexedPolyCurve
+    bool hasSegments() const;
+    IfcEntityList::ptr Segments() const;
+    void setSegments(IfcEntityList::ptr v);
+    /// Whether the optional attribute SelfIntersect is defined for this IfcIndexedPolyCurve
+    bool hasSelfIntersect() const;
+    bool SelfIntersect() const;
+    void setSelfIntersect(bool v);
+    virtual unsigned int getArgumentCount() const { return 3; }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_BOOL; } return IfcBoundedCurve::getArgumentType(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCartesianPointList; case 1: return Type::IfcSegmentIndexSelect; case 2: return Type::IfcBoolean; } return IfcBoundedCurve::getArgumentEntity(i); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Points"; case 1: return "Segments"; case 2: return "SelfIntersect"; } return IfcBoundedCurve::getArgumentName(i); }
+    virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
+    bool is(Type::Enum v) const;
+    Type::Enum type() const;
+    static Type::Enum Class();
+    IfcIndexedPolyCurve (IfcAbstractEntity* e);
+    IfcIndexedPolyCurve (IfcCartesianPointList* v1_Points, boost::optional< IfcEntityList::ptr > v2_Segments, boost::optional< bool > v3_SelfIntersect);
+    typedef IfcTemplatedEntityList< IfcIndexedPolyCurve > list;
 };
 /// The flow treatment device type IfcInterceptorType defines commonly shared information for occurrences of interceptors.  The set of shared information may include: 
 /// 
@@ -35283,7 +35387,7 @@ public:
     void setWeightsData(std::vector< std::vector< double > > v);
     virtual unsigned int getArgumentCount() const { return 13; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 12: return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE; } return IfcBSplineSurfaceWithKnots::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 12: return Type::UNDEFINED; } return IfcBSplineSurfaceWithKnots::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 12: return Type::IfcReal; } return IfcBSplineSurfaceWithKnots::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 12: return "WeightsData"; } return IfcBSplineSurfaceWithKnots::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -36628,7 +36732,7 @@ public:
     void setDestabilizingLoad(bool v);
     virtual unsigned int getArgumentCount() const { return 10; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_BOOL; } return IfcStructuralActivity::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::UNDEFINED; } return IfcStructuralActivity::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::IfcBoolean; } return IfcStructuralActivity::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 9: return "DestabilizingLoad"; } return IfcStructuralActivity::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -37191,7 +37295,7 @@ public:
     void setIsLinear(bool v);
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_BOOL; } return IfcGroup::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcAnalysisTheoryTypeEnum; case 6: return Type::IfcStructuralLoadGroup; case 7: return Type::UNDEFINED; } return IfcGroup::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcAnalysisTheoryTypeEnum; case 6: return Type::IfcStructuralLoadGroup; case 7: return Type::IfcBoolean; } return IfcGroup::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "TheoryType"; case 6: return "ResultForLoadGroup"; case 7: return "IsLinear"; } return IfcGroup::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcStructuralAnalysisModel >::ptr ResultGroupFor() const; // INVERSE IfcStructuralAnalysisModel::HasResults
@@ -37967,7 +38071,7 @@ public:
     void setMasterRepresentation(IfcTrimmingPreference::IfcTrimmingPreference v);
     virtual unsigned int getArgumentCount() const { return 5; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_BOOL; case 4: return IfcUtil::Argument_ENUMERATION; } return IfcBoundedCurve::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurve; case 1: return Type::IfcTrimmingSelect; case 2: return Type::IfcTrimmingSelect; case 3: return Type::UNDEFINED; case 4: return Type::IfcTrimmingPreference; } return IfcBoundedCurve::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurve; case 1: return Type::IfcTrimmingSelect; case 2: return Type::IfcTrimmingSelect; case 3: return Type::IfcBoolean; case 4: return Type::IfcTrimmingPreference; } return IfcBoundedCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BasisCurve"; case 1: return "Trim1"; case 2: return "Trim2"; case 3: return "SenseAgreement"; case 4: return "MasterRepresentation"; } return IfcBoundedCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -38658,7 +38762,7 @@ public:
     void setUserDefinedPartitioningType(std::string v);
     virtual unsigned int getArgumentCount() const { return 13; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 9: return IfcUtil::Argument_ENUMERATION; case 10: return IfcUtil::Argument_ENUMERATION; case 11: return IfcUtil::Argument_BOOL; case 12: return IfcUtil::Argument_STRING; } return IfcBuildingElementType::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::IfcWindowTypeEnum; case 10: return Type::IfcWindowTypePartitioningEnum; case 11: return Type::UNDEFINED; case 12: return Type::IfcLabel; } return IfcBuildingElementType::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 9: return Type::IfcWindowTypeEnum; case 10: return Type::IfcWindowTypePartitioningEnum; case 11: return Type::IfcBoolean; case 12: return Type::IfcLabel; } return IfcBuildingElementType::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 9: return "PredefinedType"; case 10: return "PartitioningType"; case 11: return "ParameterTakesPrecedence"; case 12: return "UserDefinedPartitioningType"; } return IfcBuildingElementType::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -39439,7 +39543,7 @@ public:
     void setSelfIntersect(bool v);
     virtual unsigned int getArgumentCount() const { return 5; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_BOOL; case 4: return IfcUtil::Argument_BOOL; } return IfcBoundedCurve::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; case 1: return Type::IfcCartesianPoint; case 2: return Type::IfcBSplineCurveForm; case 3: return Type::UNDEFINED; case 4: return Type::UNDEFINED; } return IfcBoundedCurve::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcInteger; case 1: return Type::IfcCartesianPoint; case 2: return Type::IfcBSplineCurveForm; case 3: return Type::IfcLogical; case 4: return Type::IfcLogical; } return IfcBoundedCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Degree"; case 1: return "ControlPointsList"; case 2: return "CurveForm"; case 3: return "ClosedCurve"; case 4: return "SelfIntersect"; } return IfcBoundedCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -39479,7 +39583,7 @@ public:
     void setKnotSpec(IfcKnotType::IfcKnotType v);
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_AGGREGATE_OF_INT; case 6: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; case 7: return IfcUtil::Argument_ENUMERATION; } return IfcBSplineCurve::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::UNDEFINED; case 6: return Type::IfcParameterValue; case 7: return Type::IfcKnotType; } return IfcBSplineCurve::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcInteger; case 6: return Type::IfcParameterValue; case 7: return Type::IfcKnotType; } return IfcBSplineCurve::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "KnotMultiplicities"; case 6: return "Knots"; case 7: return "KnotSpec"; } return IfcBSplineCurve::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -40041,7 +40145,6 @@ public:
     virtual Type::Enum getArgumentEntity(unsigned int i) const { return IfcElement::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { return IfcElement::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
-    IfcTemplatedEntityList< IfcRelCoversBldgElements >::ptr HasCoverings() const; // INVERSE IfcRelCoversBldgElements::RelatingBuildingElement
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
@@ -40408,16 +40511,20 @@ public:
     /// Predefined types of distribution systems.
     IfcBuildingSystemTypeEnum::IfcBuildingSystemTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBuildingSystemTypeEnum::IfcBuildingSystemTypeEnum v);
-    virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENUMERATION; } return IfcSystem::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcBuildingSystemTypeEnum; } return IfcSystem::getArgumentEntity(i); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "PredefinedType"; } return IfcSystem::getArgumentName(i); }
+    /// Whether the optional attribute LongName is defined for this IfcBuildingSystem
+    bool hasLongName() const;
+    std::string LongName() const;
+    void setLongName(std::string v);
+    virtual unsigned int getArgumentCount() const { return 7; }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_STRING; } return IfcSystem::getArgumentType(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 5: return Type::IfcBuildingSystemTypeEnum; case 6: return Type::IfcLabel; } return IfcSystem::getArgumentEntity(i); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 5: return "PredefinedType"; case 6: return "LongName"; } return IfcSystem::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcBuildingSystem (IfcAbstractEntity* e);
-    IfcBuildingSystem (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< IfcBuildingSystemTypeEnum::IfcBuildingSystemTypeEnum > v6_PredefinedType);
+    IfcBuildingSystem (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< IfcBuildingSystemTypeEnum::IfcBuildingSystemTypeEnum > v6_PredefinedType, boost::optional< std::string > v7_LongName);
     typedef IfcTemplatedEntityList< IfcBuildingSystem > list;
 };
 /// The energy conversion device type IfcBurnerType defines commonly shared information for occurrences of burners.  The set of shared information may include: 
@@ -47485,7 +47592,7 @@ public:
     void setWeightsData(std::vector< double > /*[2:?]*/ v);
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } return IfcBSplineCurveWithKnots::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 8: return Type::UNDEFINED; } return IfcBSplineCurveWithKnots::getArgumentEntity(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 8: return Type::IfcReal; } return IfcBSplineCurveWithKnots::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 8: return "WeightsData"; } return IfcBSplineCurveWithKnots::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
@@ -49148,13 +49255,10 @@ public:
 /// Figure 131 — Stair flight body
 class IfcStairFlight : public IfcBuildingElement {
 public:
-    /// Whether the optional attribute NumberOfRiser is defined for this IfcStairFlight
-    bool hasNumberOfRiser() const;
-    /// Number of the risers included in the stair flight
-    /// 
-    /// IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a NIL value. Use Pset_StairFlightCommon.NumberOfRisers instead.
-    int NumberOfRiser() const;
-    void setNumberOfRiser(int v);
+    /// Whether the optional attribute NumberOfRisers is defined for this IfcStairFlight
+    bool hasNumberOfRisers() const;
+    int NumberOfRisers() const;
+    void setNumberOfRisers(int v);
     /// Whether the optional attribute NumberOfTreads is defined for this IfcStairFlight
     bool hasNumberOfTreads() const;
     /// Number of treads included in the stair flight.
@@ -49186,14 +49290,14 @@ public:
     void setPredefinedType(IfcStairFlightTypeEnum::IfcStairFlightTypeEnum v);
     virtual unsigned int getArgumentCount() const { return 13; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 8: return IfcUtil::Argument_INT; case 9: return IfcUtil::Argument_INT; case 10: return IfcUtil::Argument_DOUBLE; case 11: return IfcUtil::Argument_DOUBLE; case 12: return IfcUtil::Argument_ENUMERATION; } return IfcBuildingElement::getArgumentType(i); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 8: return Type::UNDEFINED; case 9: return Type::UNDEFINED; case 10: return Type::IfcPositiveLengthMeasure; case 11: return Type::IfcPositiveLengthMeasure; case 12: return Type::IfcStairFlightTypeEnum; } return IfcBuildingElement::getArgumentEntity(i); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 8: return "NumberOfRiser"; case 9: return "NumberOfTreads"; case 10: return "RiserHeight"; case 11: return "TreadLength"; case 12: return "PredefinedType"; } return IfcBuildingElement::getArgumentName(i); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 8: return Type::IfcInteger; case 9: return Type::IfcInteger; case 10: return Type::IfcPositiveLengthMeasure; case 11: return Type::IfcPositiveLengthMeasure; case 12: return Type::IfcStairFlightTypeEnum; } return IfcBuildingElement::getArgumentEntity(i); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 8: return "NumberOfRisers"; case 9: return "NumberOfTreads"; case 10: return "RiserHeight"; case 11: return "TreadLength"; case 12: return "PredefinedType"; } return IfcBuildingElement::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
     static Type::Enum Class();
     IfcStairFlight (IfcAbstractEntity* e);
-    IfcStairFlight (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< int > v9_NumberOfRiser, boost::optional< int > v10_NumberOfTreads, boost::optional< double > v11_RiserHeight, boost::optional< double > v12_TreadLength, boost::optional< IfcStairFlightTypeEnum::IfcStairFlightTypeEnum > v13_PredefinedType);
+    IfcStairFlight (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< int > v9_NumberOfRisers, boost::optional< int > v10_NumberOfTreads, boost::optional< double > v11_RiserHeight, boost::optional< double > v12_TreadLength, boost::optional< IfcStairFlightTypeEnum::IfcStairFlightTypeEnum > v13_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStairFlight > list;
 };
 /// Definition from IAI: The IfcStructuralAnalysisModel is used to assemble all information needed to represent a structural analysis model.  It encompasses certain general properties (such as analysis type), references to all contained structural members, structural supports or connections, as well as loads and the respective load results.
