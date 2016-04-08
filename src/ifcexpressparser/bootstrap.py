@@ -122,6 +122,8 @@ actions = {
     'inverse_attr'              : "lambda t: InverseAttribute(t)",
     'bound_spec'                : "lambda t: BoundSpecification(t)",
     'explicit_attr'             : "lambda t: ExplicitAttribute(t)",
+    'width_spec'                : "lambda t: WidthSpec(t)",
+    'string_type'               : "lambda t: StringType(t)",
 }
 
 to_emit = set(id for id, expr in express)

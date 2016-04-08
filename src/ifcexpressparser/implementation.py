@@ -20,6 +20,8 @@
 import codegen
 import templates
 
+from schema import OrderedCaseInsensitiveDict
+
 class Implementation(codegen.Base):
     def __init__(self, mapping):
         enumeration_functions = []
@@ -132,7 +134,7 @@ class Implementation(codegen.Base):
                     
             def get_attribute_index(entity, attr_name):
                 related_entity = mapping.schema.entities[entity]
-                return [a['name'] for a in mapping.get_assignable_arguments(related_entity, include_derived=True)].index(attr_name)
+                return [a['name'].lower() for a in mapping.get_assignable_arguments(related_entity, include_derived=True)].index(attr_name.lower())
 
             inverse = [templates.const_function % {
                 'class_name'  : name,
@@ -167,6 +169,13 @@ class Implementation(codegen.Base):
             'name'           : name,
             'padding'        : ' ' * (max_len - len(name))
         } for name in enumerable_types]
+        
+        enumeration_index_by_str = OrderedCaseInsensitiveDict((j,i) for i,j in enumerate(enumerable_types))
+        def get_parent_id(s):
+            e = mapping.schema.entities.get(s)
+            if e and e.supertypes:
+                return enumeration_index_by_str[e.supertypes[0]]
+            else: return -1
 
         parent_type_statements = [templates.parent_type_stmt % {
             'name'    : name,
