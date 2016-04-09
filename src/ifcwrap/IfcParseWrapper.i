@@ -124,6 +124,18 @@ namespace IfcUtil {
 		unsigned i = IfcSchema::Type::GetAttributeIndex($self->type(), a);
 		return std::pair<IfcUtil::ArgumentType,Argument*>($self->getArgumentType(i), $self->getArgument(i));
 	}
+
+	bool __eq__(IfcParse::IfcLateBoundEntity* other) const {
+		if ($self == other) {
+			return true;
+		}
+		return $self->id() == other->id() && $self->entity->file == other->entity->file;
+	}
+
+	// Just something to have a somewhat sensible value to hash
+	size_t file_pointer() const {
+		return reinterpret_cast<size_t>($self->entity->file);
+	}
 }
 
 %extend IfcParse::IfcSpfHeader {
