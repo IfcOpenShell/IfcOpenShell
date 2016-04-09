@@ -96,7 +96,7 @@ public:
 		*this = other;
 	}
 
-	Kernel& Kernel::operator=(const Kernel& other) {
+	Kernel& operator=(const Kernel& other) {
 		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
 		setValue(GV_WIRE_CREATION_TOLERANCE,  other.getValue(GV_WIRE_CREATION_TOLERANCE));
 		setValue(GV_MINIMAL_FACE_AREA,        other.getValue(GV_MINIMAL_FACE_AREA));

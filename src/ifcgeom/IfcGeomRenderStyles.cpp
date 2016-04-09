@@ -112,14 +112,14 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepr
 
 const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcMaterial* material) {
 	IfcSchema::IfcMaterialDefinitionRepresentation::list::ptr defs = material->HasRepresentation();
-	for (auto jt = defs->begin(); jt != defs->end(); ++jt) {
+	for (IfcSchema::IfcMaterialDefinitionRepresentation::list::it jt = defs->begin(); jt != defs->end(); ++jt) {
 		IfcSchema::IfcRepresentation::list::ptr reps = (*jt)->Representations();
 		IfcSchema::IfcStyledItem::list::ptr styles(new IfcSchema::IfcStyledItem::list);
-		for (auto it = reps->begin(); it != reps->end(); ++it) {
+		for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
 			styles->push((**it).Items()->as<IfcSchema::IfcStyledItem>());
 		}
-		for (auto it = styles->begin(); it != styles->end(); ++it) {
-			auto ss = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(*it);
+		for (IfcSchema::IfcStyledItem::list::it it = styles->begin(); it != styles->end(); ++it) {
+			const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*> ss = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(*it);
 			if (ss.second) {
 				return internalize_surface_style(ss);
 			}

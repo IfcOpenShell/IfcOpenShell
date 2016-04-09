@@ -1400,7 +1400,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 	}
 
 	int connection_type_count[2] = {0,0};
-	for (auto it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
+	for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
 		const int idx = it->first.first == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART;
 		connection_type_count[idx] ++;
 	}
@@ -1414,8 +1414,8 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 	{
 		// Copy the unfolded surfaces
 		result.resize(surfaces.size());
-		auto result_it = result.begin() + 1;
-		auto input_it = surfaces.begin() + 1;
+		std::vector< std::vector<Handle_Geom_Surface> >::iterator result_it = result.begin() + 1;
+		std::vector<Handle_Geom_Surface>::const_iterator input_it = surfaces.begin() + 1;
 		for(; input_it != surfaces.end() - 1; ++result_it, ++input_it) {
 			result_it->push_back(*input_it);
 		}
@@ -1434,7 +1434,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 			: IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATEND;
 				
 		std::set<const IfcSchema::IfcProduct*> others;
-		endpoint_connections_t::const_iterator it = endpoint_connections.begin();
+		endpoint_connections_t::iterator it = endpoint_connections.begin();
 		while (it != endpoint_connections.end()) {
 			const IfcSchema::IfcProduct* other = it->second;
 			if (others.find(other) != others.end()) {
