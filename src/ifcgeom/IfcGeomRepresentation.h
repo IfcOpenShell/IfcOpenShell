@@ -76,9 +76,11 @@ namespace IfcGeom {
 		private:
 			int _id;
 			std::string _brep_data;
+			std::vector<double> _surface_styles;
 		public:
 			int id() const { return _id; }
 			const std::string& brep_data() const { return _brep_data; }
+			const std::vector<double>& surface_styles() const { return _surface_styles; }
 			Serialization(const BRep& brep);
 			virtual ~Serialization() {}
 		private:

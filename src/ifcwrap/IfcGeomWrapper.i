@@ -168,6 +168,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			# Hide the getters with read-only property implementations
 			id = property(id)
 			brep_data = property(brep_data)
+			surface_styles = property(surface_styles)
 	%}
 };
 
