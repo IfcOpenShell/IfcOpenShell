@@ -98,6 +98,8 @@
 
 #include <Standard_Version.hxx>
 
+#include <TopTools_ListIteratorOfListOfShape.hxx>
+
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& shape) {
@@ -445,6 +447,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 	bool facesAdded = false;
 	const unsigned int num_faces = (unsigned)faces->size();
 	bool valid_shell = false;
+	TopTools_ListOfShape face_list;
 	if ( num_faces < getValue(GV_MAX_FACES_TO_SEW) ) {
 		BRepOffsetAPI_Sewing builder;
 		builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
@@ -458,6 +461,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 			} catch (...) {}
 			if ( converted_face && face_area(face) > getValue(GV_MINIMAL_FACE_AREA) ) {
 				builder.Add(face);
+				face_list.Append(face);
 				facesAdded = true;
 			} else {
 				Logger::Message(Logger::LOG_WARNING,"Invalid face:",(*it)->entity);
@@ -489,18 +493,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
-		for( IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++ it ) {
-			TopoDS_Face face;
-			bool converted_face = false;
-			try {
-				converted_face = convert_face(*it,face);
-			} catch (...) {}
-			if ( converted_face && face_area(face) > getValue(GV_MINIMAL_FACE_AREA) ) {
-				builder.Add(compound,face);
-				facesAdded = true;
-			} else {
-				Logger::Message(Logger::LOG_WARNING,"Invalid face:",(*it)->entity);
-			}
+		TopTools_ListIteratorOfListOfShape face_iterator;
+		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+			builder.Add(compound, face_iterator.Value());
+			facesAdded = true;
 		}
 		if ( ! facesAdded ) return false;
 		shape = compound;
