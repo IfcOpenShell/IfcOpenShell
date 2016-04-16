@@ -128,6 +128,8 @@ public:
 	void remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
 	bool wire_to_sequence_of_point(const TopoDS_Wire&, TColgp_SequenceOfPnt&);
 	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
+	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&);
+	bool flatten_wire(TopoDS_Wire&);
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
