@@ -444,30 +444,38 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& shape) {
 	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
-	bool facesAdded = false;
-	const unsigned int num_faces = (unsigned)faces->size();
-	bool valid_shell = false;
+
 	TopTools_ListOfShape face_list;
-	if ( num_faces < getValue(GV_MAX_FACES_TO_SEW) ) {
+	for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
+		TopoDS_Face face;
+		try {
+			convert_face(*it, face);
+		} catch (...) {
+			continue;
+		}
+		if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
+			face_list.Append(face);
+		} else {
+			Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it)->entity);
+		}
+	}
+
+	if (face_list.Extent() == 0) {
+		return false;
+	}
+	
+	bool valid_shell = false;
+
+	TopTools_ListIteratorOfListOfShape face_iterator;
+	
+	if ( face_list.Extent() < getValue(GV_MAX_FACES_TO_SEW) ) {
 		BRepOffsetAPI_Sewing builder;
 		builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 		builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 		builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		for( IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++ it ) {
-			TopoDS_Face face;
-			bool converted_face = false;
-			try {
-				converted_face = convert_face(*it,face);
-			} catch (...) {}
-			if ( converted_face && face_area(face) > getValue(GV_MINIMAL_FACE_AREA) ) {
-				builder.Add(face);
-				face_list.Append(face);
-				facesAdded = true;
-			} else {
-				Logger::Message(Logger::LOG_WARNING,"Invalid face:",(*it)->entity);
-			}
+		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+			builder.Add(face_iterator.Value());
 		}
-		if ( ! facesAdded ) return false;
 		try {
 			builder.Perform();
 			shape = builder.SewedShape();
@@ -493,12 +501,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
-		TopTools_ListIteratorOfListOfShape face_iterator;
 		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
 			builder.Add(compound, face_iterator.Value());
-			facesAdded = true;
 		}
-		if ( ! facesAdded ) return false;
 		shape = compound;
 	}
 	return true;
