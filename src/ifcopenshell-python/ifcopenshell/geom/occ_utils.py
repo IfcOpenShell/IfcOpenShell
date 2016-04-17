@@ -81,7 +81,9 @@ def yield_subshapes(shape):
         yield it.Value()
         it.Next()
     
-def display_shape(shape, clr=None):
+def display_shape(shape, clr=None, viewer_handle=None):
+    if viewer_handle is None: viewer_handle = handle
+
     if isinstance(shape, shape_tuple): 
         shape, representation = shape.geometry, shape
     else: representation is None
@@ -145,9 +147,11 @@ def display_shape(shape, clr=None):
             if len(default_style_applied) == 3: default_style_applied += (1.,)
             applied_styles += (default_style_applied,)
         
-        min_transp = min(map(operator.itemgetter(3), applied_styles))
-        if min_transp < 1.:
-            ais.SetTransparency(1.)
+        if len(applied_styles):
+            # The only way for this not to be true if is the entire shape is NULL
+            min_transp = min(map(operator.itemgetter(3), applied_styles))
+            if min_transp < 1.:
+                ais.SetTransparency(1.)
 
     else:
         ais = OCC.AIS.AIS_Shape(shape)
@@ -158,7 +162,7 @@ def display_shape(shape, clr=None):
         ais.SetColor(clr)
         
     ais_handle = ais.GetHandle()
-    handle.Context.Display(ais_handle, False)
+    viewer_handle.Context.Display(ais_handle, False)
         
     return ais_handle
 

@@ -220,4 +220,15 @@ namespace IfcUtil {
 	const char* const version() {
 		return IFCOPENSHELL_VERSION;
 	}
+
+	std::string get_supertype(std::string n) {
+		boost::to_upper(n);
+		/// @todo: Redo without copy once Parent() function from performance_improvements branch is in.
+		IfcSchema::Type::Enum t = IfcSchema::Type::FromString(n);
+		if (IfcSchema::Type::Parent(t) != -1) {
+			return IfcSchema::Type::ToString(IfcSchema::Type::Parent(t));
+		} else {
+			return "";
+		}
+	}
 %}

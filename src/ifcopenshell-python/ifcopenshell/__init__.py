@@ -92,6 +92,7 @@ class entity_instance(object):
 	def is_a(self, *args): return self.wrapped_data.is_a(*args)
 	def id(self): return self.wrapped_data.id()
 	def __eq__(self, other):
+		if type(self) != type(other): return False
 		return self.wrapped_data == other.wrapped_data
 	def __hash__(self):
 		return hash((self.id(), self.wrapped_data.file_pointer()))
@@ -151,3 +152,4 @@ def create_entity(type,*args,**kwargs):
 
 version = ifcopenshell_wrapper.version()
 schema_identifier = ifcopenshell_wrapper.schema_identifier()
+get_supertype = ifcopenshell_wrapper.get_supertype
