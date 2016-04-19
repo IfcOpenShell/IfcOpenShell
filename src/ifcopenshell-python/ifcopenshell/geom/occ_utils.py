@@ -86,7 +86,7 @@ def display_shape(shape, clr=None, viewer_handle=None):
 
     if isinstance(shape, shape_tuple): 
         shape, representation = shape.geometry, shape
-    else: representation is None
+    else: representation = None
         
     material = OCC.Graphic3d.Graphic3d_MaterialAspect(OCC.Graphic3d.Graphic3d_NOM_PLASTER)
     material.SetDiffuse(1)
