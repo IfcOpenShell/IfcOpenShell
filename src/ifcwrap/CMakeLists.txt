@@ -73,6 +73,8 @@ IF(PYTHONINTERP_FOUND)
             DESTINATION "${python_package_dir}/ifcopenshell")
         INSTALL(FILES
                 "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/__init__.py"
+                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/app.py"
+                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/main.py"
                 "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/occ_utils.py"
                 DESTINATION "${python_package_dir}/ifcopenshell/geom")
         INSTALL(TARGETS _ifcopenshell_wrapper DESTINATION "${python_package_dir}/ifcopenshell")
