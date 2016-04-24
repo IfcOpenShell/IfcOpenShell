@@ -37,7 +37,7 @@ set -e
 PROJECT_NAME=IfcOpenShell
 OCE_VERSION=0.16
 PYTHON_VERSIONS=(2.7.10 3.2.6 3.3.6 3.4.4 3.5.1)
-BOOST_VERSION=1.55.0
+BOOST_VERSION=1.59.0
 PCRE_VERSION=8.38
 LIBXML_VERSION=2.9.3
 CMAKE_VERSION=3.4.1
@@ -277,14 +277,14 @@ build_dependency pcre-$PCRE_VERSION autoconf "--disable-shared" ftp://ftp.csx.ca
 build_dependency swig autoconf "--with-pcre-prefix=$DEPS_DIR/install/pcre-$PCRE_VERSION" https://github.com/swig/swig.git swig git_clone rel-3.0.8
 
 build_dependency oce-$OCE_VERSION cmake "-DOCE_DISABLE_TKSERVICE_FONT=ON -DOCE_TESTING=OFF -DOCE_BUILD_SHARED_LIB=OFF -DOCE_DISABLE_X11=ON -DOCE_VISUALISATION=OFF -DOCE_OCAF=OFF -DOCE_INSTALL_PREFIX=$DEPS_DIR/install/oce-$OCE_VERSION/" https://github.com/tpaviot/oce/archive/ OCE-$OCE_VERSION.tar.gz download
-build_dependency libxml2-$LIBXML_VERSION autoconf "--without-python --disable-shared --without-zlib --without-iconv" ftp://xmlsoft.org/libxml2/ libxml2-$LIBXML_VERSION.tar.gz download
+build_dependency libxml2-$LIBXML_VERSION autoconf "--without-python --disable-shared --without-zlib --without-iconv --without-lzma" ftp://xmlsoft.org/libxml2/ libxml2-$LIBXML_VERSION.tar.gz download
 build_dependency OpenCOLLADA cmake "
 -DLIBXML2_INCLUDE_DIR=$DEPS_DIR/install/libxml2-$LIBXML_VERSION/include/libxml2
 -DLIBXML2_LIBRARIES=$DEPS_DIR/install/libxml2-$LIBXML_VERSION/lib/libxml2.a
 -DPCRE_INCLUDE_DIR=$DEPS_DIR/install/pcre-$PCRE_VERSION/include
 -DPCRE_PCREPOSIX_LIBRARY=$DEPS_DIR/install/pcre-$PCRE_VERSION/lib/libpcreposix.a
 -DPCRE_PCRE_LIBRARY=$DEPS_DIR/install/pcre-$PCRE_VERSION/lib/libpcre.a
--DCMAKE_INSTALL_PREFIX=$DEPS_DIR/install/OpenCOLLADA/" https://github.com/KhronosGroup/OpenCOLLADA.git OpenCOLLADA git_clone
+-DCMAKE_INSTALL_PREFIX=$DEPS_DIR/install/OpenCOLLADA/" https://github.com/KhronosGroup/OpenCOLLADA.git OpenCOLLADA git_clone $OPENCOLLADA_COMMIT
 
 # Python should not be built with -fvisibility=hidden, from experience that introduces segfaults
 
@@ -306,7 +306,7 @@ done
 export CXXFLAGS=$OLD_CXX_FLAGS
 export CFLAGS=$OLD_C_FLAGS
 
-build_dependency boost-$BOOST_VERSION bjam "--stagedir=$DEPS_DIR/install/boost-$BOOST_VERSION --with-program_options link=static $BOOST_ADDRESS_MODEL cxxflags=\"$CXXFLAGS\" linkflags=\"$LDFLAGS\" stage" http://downloads.sourceforge.net/project/boost/boost/$BOOST_VERSION/ boost_$BOOST_VERSION_UNDERSCORE.tar.bz2 download
+build_dependency boost-$BOOST_VERSION bjam "--stagedir=$DEPS_DIR/install/boost-$BOOST_VERSION --with-system --with-program_options --with-regex --with-thread --with-date_time link=static $BOOST_ADDRESS_MODEL cxxflags=\"$CXXFLAGS\" linkflags=\"$LDFLAGS\" stage" http://downloads.sourceforge.net/project/boost/boost/$BOOST_VERSION/ boost_$BOOST_VERSION_UNDERSCORE.tar.bz2 download
 
 build_dependency icu-$ICU_VERSION icu "--enable-static --disable-shared" http://download.icu-project.org/files/icu4c/$ICU_VERSION/ icu4c-${ICU_VERSION_UNDERSCORE}-src.tgz download
 

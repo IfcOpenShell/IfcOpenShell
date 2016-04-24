@@ -38,6 +38,23 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
 		const TopoDS_Shape& s = it->Shape();
 		gp_GTrsf trsf = it->Placement();
+		
+		if (it->hasStyle() && it->Style().Diffuse()) {
+			const IfcGeom::SurfaceStyle::ColorComponent& clr = *it->Style().Diffuse();
+			_surface_styles.push_back(clr.R());
+			_surface_styles.push_back(clr.G());
+			_surface_styles.push_back(clr.B());
+		} else {
+			_surface_styles.push_back(-1.);
+			_surface_styles.push_back(-1.);
+			_surface_styles.push_back(-1.);
+		}
+		if (it->hasStyle() && it->Style().Transparency()) {
+			_surface_styles.push_back(1. - *it->Style().Transparency());
+		} else {
+			_surface_styles.push_back(1.);
+		}
+		
 		if (settings().get(IteratorSettings::CONVERT_BACK_UNITS)) {
 			gp_Trsf scale;
 			scale.SetScaleFactor(1.0 / settings().unit_magnitude());

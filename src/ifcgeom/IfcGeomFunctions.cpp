@@ -75,6 +75,8 @@
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
 
+#include <BRepAlgo_NormalProjection.hxx>
+
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Solid.hxx>
@@ -94,6 +96,7 @@
 
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRepTools.hxx>
+#include <BRepTools_WireExplorer.hxx>
 
 #include <Poly_Triangulation.hxx>
 #include <Poly_Array1OfTriangle.hxx>
@@ -1396,3 +1399,73 @@ bool IfcGeom::Kernel::is_identity_transform(IfcUtil::IfcBaseClass* l) {
 	}
 }
 
+bool IfcGeom::Kernel::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane) {
+	// Newell's Method is used for the normal calculation
+	// as a simple edge cross product can give opposite results
+	// for a concave face boundary.
+	// Reference: Graphics Gems III p. 231
+
+	double x = 0, y = 0, z = 0;
+	gp_Pnt current, previous, first;
+	gp_XYZ center;
+	int n = 0;
+	
+	BRepTools_WireExplorer exp(wire);
+
+	for (;; exp.Next()) {
+		const bool has_more = exp.More();
+		if (has_more) {
+			const TopoDS_Vertex& v = exp.CurrentVertex();
+			current = BRep_Tool::Pnt(v);
+			center += current.XYZ();
+		} else {
+			current = first;
+		}
+		if (n) {
+			const double& xn = previous.X();
+			const double& yn = previous.Y();
+			const double& zn = previous.Z();
+			const double& xn1 = current.X();
+			const double& yn1 = current.Y();
+			const double& zn1 = current.Z();
+			x += (yn - yn1)*(zn + zn1);
+			y += (xn + xn1)*(zn - zn1);
+			z += (xn - xn1)*(yn + yn1);
+		} else {
+			first = current;
+		}
+		if (!has_more) {
+			break;
+		}
+		previous = current;
+		++n;
+	}
+
+	if (n < 3) {
+		return false;
+	}
+
+	plane = gp_Pln(center / n, gp_Dir(x, y, z));
+	return true;
+}
+
+bool IfcGeom::Kernel::flatten_wire(TopoDS_Wire& wire) {
+	gp_Pln pln;
+	if (!approximate_plane_through_wire(wire, pln)) {
+		return false;
+	}
+	TopoDS_Face face = BRepBuilderAPI_MakeFace(pln).Face();
+	BRepAlgo_NormalProjection proj(face);
+	proj.Add(wire);
+	proj.Build();
+	if (!proj.IsDone()) {
+		return false;
+	}
+	TopTools_ListOfShape list;
+	proj.BuildWire(list);
+	if (list.Extent() != 1) {
+		return false;
+	}
+	wire = TopoDS::Wire(list.First());
+	return true;
+}
