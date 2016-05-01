@@ -46,7 +46,9 @@
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 #include "../ifcgeom/IfcGeomShapeType.h"
 
-#define NO_CACHE
+// Define this in case you want to conserve memory usage at all cost. This has been
+// benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
+// #define NO_CACHE
 
 #ifdef NO_CACHE
 
