@@ -46,22 +46,37 @@
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 #include "../ifcgeom/IfcGeomShapeType.h"
 
+// Define this in case you want to conserve memory usage at all cost. This has been
+// benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
+// #define NO_CACHE
+
+#ifdef NO_CACHE
+
+#define IN_CACHE(T,E,t,e)
+#define CACHE(T,E,e)
+
+#else
+
 #define IN_CACHE(T,E,t,e) std::map<int,t>::const_iterator it = cache.T.find(E->entity->id());\
 if ( it != cache.T.end() ) { e = it->second; return true; }
 #define CACHE(T,E,e) cache.T[E->entity->id()] = e;
+
+#endif
 
 namespace IfcGeom {
 
 class Cache {
 public:
 #include "IfcRegisterCreateCache.h"
-	std::map<int, SurfaceStyle> Style;
 	std::map<int, TopoDS_Shape> Shape;
 };
 
 class Kernel {
 private:
+#ifndef NO_CACHE
 	Cache cache;
+#endif
+	std::map<int, SurfaceStyle> style_cache;
 public:
 	// Tolerances and settings for various geometrical operations:
 	enum GeomValue {
@@ -131,12 +146,19 @@ public:
 	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&);
 	bool flatten_wire(TopoDS_Wire&);
 
+	bool is_identity_transform(IfcUtil::IfcBaseClass*);
+
+	IfcSchema::IfcRelVoidsElement::list::ptr find_openings(IfcSchema::IfcProduct* product);
+
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
 	IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
 
 	template <typename P>
 	IfcGeom::BRepElement<P>* create_brep_for_representation_and_product(const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
+
+	template <typename P>
+	IfcGeom::BRepElement<P>* create_brep_for_processed_representation(const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P>*);
 
 	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem* representation_item);
 	
@@ -182,6 +204,15 @@ public:
 		}
 
 		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
+	}
+
+	void purge_cache() { 
+		// Rather hack-ish, but a stopgap solution to keep memory under control
+		// for large files. SurfaceStyles need to be kept at all costs, as they
+		// are read later on when serializing Collada files.
+#ifndef NO_CACHE
+		cache = Cache(); 
+#endif
 	}
 
 #include "IfcRegisterGeomHeader.h"

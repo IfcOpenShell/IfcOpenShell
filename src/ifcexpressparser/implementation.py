@@ -177,11 +177,7 @@ class Implementation(codegen.Base):
                 return enumeration_index_by_str[e.supertypes[0]]
             else: return -1
 
-        parent_type_statements = [templates.parent_type_stmt % {
-            'name'    : name,
-            'parent'  : type.supertypes[0],
-            'padding' : ' ' * (max_len - len(name))
-        } for name, type in mapping.schema.entities.items() if type.supertypes and len(type.supertypes) == 1]
+        parent_type_statements = ",".join(map(str, map(get_parent_id, enumerable_types)))
 
         max_id = len(enumerable_types)
 
@@ -234,7 +230,7 @@ class Implementation(codegen.Base):
             'type_name_strings'        : type_name_strings,
             'string_map_statements'    : catnl(string_map_statements),
             'simple_type_statement'    : simple_type_statements,
-            'parent_type_statements'   : catnl(parent_type_statements),
+            'parent_type_statements'   : parent_type_statements,
             'entity_implementations'   : catnl(entity_implementations),
             'simple_type_impl'         : catnl(simple_type_impl)
         }

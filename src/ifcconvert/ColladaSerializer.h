@@ -117,7 +117,7 @@ private:
 		};
 		class DeferredObject {
 		public:
-			std::string unique_id, type;
+			std::string unique_id, representation_id, type;
 			std::vector<real_t> matrix;
 			std::vector<real_t> vertices;
 			std::vector<real_t> normals;
@@ -127,11 +127,12 @@ private:
 			std::vector<IfcGeom::Material> materials;
 			std::vector<std::string> material_references;
             std::vector<real_t> uvs;
-            DeferredObject(const std::string& unique_id, const std::string& type, const std::vector<real_t>& matrix,
+            DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const std::vector<real_t>& matrix,
                 const std::vector<real_t>& vertices, const std::vector<real_t>& normals, const std::vector<int>& faces,
                 const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
                 const std::vector<std::string>& material_references, const std::vector<real_t>& uvs)
 				: unique_id(unique_id)
+				, representation_id(representation_id)
 				, type(type)
 				, matrix(matrix)
 				, vertices(vertices)

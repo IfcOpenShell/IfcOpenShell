@@ -994,15 +994,20 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 			}
 
 			IfcSchema::Type::Enum ty = entity->type();
-			do {
+			for (;;) {
 				IfcEntityList::ptr instances_by_type = entitiesByType(ty);
 				if (!instances_by_type) {
 					instances_by_type = IfcEntityList::ptr(new IfcEntityList());
 					bytype[ty] = instances_by_type;
 				}
 				instances_by_type->push(entity);
-				ty = IfcSchema::Type::Parent(ty);
-			} while ( ty > -1 );
+				boost::optional<IfcSchema::Type::Enum> pt = IfcSchema::Type::Parent(ty);
+				if (pt) {
+					ty = *pt;
+				} else {
+					break;
+				}
+			}
 			
 			if ( byid.find(currentId) != byid.end() ) {
 				std::stringstream ss;
@@ -1200,15 +1205,21 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 
 	// The mapping by entity type is updated.
 	IfcSchema::Type::Enum ty = entity->type();
-	do {
+	for (;;) {
 		IfcEntityList::ptr instances_by_type = entitiesByType(ty);
 		if (!instances_by_type) {
 			instances_by_type = IfcEntityList::ptr(new IfcEntityList());
 			bytype[ty] = instances_by_type;
 		}
 		instances_by_type->push(entity);
-		ty = IfcSchema::Type::Parent(ty);
-	} while ( ty > -1 );
+		boost::optional<IfcSchema::Type::Enum> pt = IfcSchema::Type::Parent(ty);
+		if (pt) {
+			ty = *pt;
+		}
+		else {
+			break;
+		}
+	}
 	
 	int new_id = -1;
 	if (entity->entity->isWritable() && !entity->entity->file) {

@@ -131,11 +131,13 @@ bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, T
 	}
 	builder.Perform();
 	shape = builder.SewedShape();
-	try {
-	ShapeFix_Solid sf_solid;
-	sf_solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-	shape = sf_solid.SolidFromShell(TopoDS::Shell(shape));
-	} catch(...) {}
+	if (shape.ShapeType() == TopAbs_SHELL) {
+		try {
+			ShapeFix_Solid sf_solid;
+			sf_solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+			shape = sf_solid.SolidFromShell(TopoDS::Shell(shape));
+		} catch(...) {}
+	}
 	return true;
 }
 
@@ -1053,8 +1055,40 @@ void IfcGeom::Kernel::sequence_of_point_to_wire(const TColgp_SequenceOfPnt& p, T
 	w = builder.Wire();	
 }
 
+IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchema::IfcProduct* product) {
+	
+	IfcSchema::IfcRelVoidsElement::list::ptr openings(new IfcSchema::IfcRelVoidsElement::list);
+	if ( product->is(IfcSchema::Type::IfcElement) && !product->is(IfcSchema::Type::IfcOpeningElement) ) {
+		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
+		openings = element->HasOpenings();
+	}
+
+	// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
+	IfcSchema::IfcObjectDefinition* obdef = product->as<IfcSchema::IfcObjectDefinition>();
+	for (;;) {
+#ifdef USE_IFC4
+		IfcSchema::IfcRelAggregates::list::ptr decomposes = obdef->Decomposes();
+		for ( IfcSchema::IfcRelAggregates::list::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
+#else
+		IfcSchema::IfcRelDecomposes::list::ptr decomposes = obdef->Decomposes();
+		if (decomposes->size() != 1) break;
+
+#endif
+		IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->RelatingObject();
+		if ( rel_obdef->is(IfcSchema::Type::IfcElement) && !rel_obdef->is(IfcSchema::Type::IfcOpeningElement) ) {
+			IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)rel_obdef;
+			openings->push(element->HasOpenings());
+		}
+
+		obdef = rel_obdef;
+	}
+
+	return openings;
+}
+
 template <typename P>
 IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_product(const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product) {
+	
 	IfcGeom::Representation::BRep* shape;
 	IfcGeom::IfcRepresentationShapeItems shapes;
 
@@ -1080,28 +1114,7 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 
 	// Does the IfcElement have any IfcOpenings?
 	// Note that openings for IfcOpeningElements are not processed
-	IfcSchema::IfcRelVoidsElement::list::ptr openings;
-	if ( product->is(IfcSchema::Type::IfcElement) && !product->is(IfcSchema::Type::IfcOpeningElement) ) {
-		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
-		openings = element->HasOpenings();
-	}
-	// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
-	if ( product->is(IfcSchema::Type::IfcBuildingElementPart ) ) {
-		IfcSchema::IfcBuildingElementPart* part = (IfcSchema::IfcBuildingElementPart*)product;
-#ifdef USE_IFC4
-		IfcSchema::IfcRelAggregates::list::ptr decomposes = part->Decomposes();
-		for ( IfcSchema::IfcRelAggregates::list::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
-#else
-		IfcSchema::IfcRelDecomposes::list::ptr decomposes = part->Decomposes();
-		for ( IfcSchema::IfcRelDecomposes::list::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
-#endif
-			IfcSchema::IfcObjectDefinition* obdef = (*it)->RelatingObject();
-			if ( obdef->is(IfcSchema::Type::IfcElement) ) {
-				IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)obdef;
-				openings->push(element->HasOpenings());
-			}
-		}
-	}
+	IfcSchema::IfcRelVoidsElement::list::ptr openings = find_openings(product);
 
 	const std::string product_type = IfcSchema::Type::ToString(product->type());
 	ElementSettings element_settings(settings, getValue(GV_LENGTH_UNIT), product_type);
@@ -1158,7 +1171,47 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 		guid,
 		context_string,
 		trsf,
-		shape
+		boost::shared_ptr<IfcGeom::Representation::BRep>(shape)
+	);
+}
+
+template <typename P>
+IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_processed_representation(const IteratorSettings& /*settings*/, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::BRepElement<P>* brep) {
+	
+	int parent_id = -1;
+	try {
+		IfcSchema::IfcObjectDefinition* parent_object = get_decomposing_entity(product);
+		if (parent_object) {
+			parent_id = parent_object->entity->id();
+		}
+	} catch (...) {}
+		
+	const std::string name = product->hasName() ? product->Name() : "";
+	const std::string guid = product->GlobalId();
+		
+	gp_Trsf trsf;
+	try {
+		convert(product->ObjectPlacement(),trsf);
+	} catch (...) {}
+
+	std::string context_string = "";
+	if (representation->hasRepresentationIdentifier()) {
+		context_string = representation->RepresentationIdentifier();
+	} else if (representation->ContextOfItems()->hasContextType()) {
+		context_string = representation->ContextOfItems()->ContextType();
+	}
+
+	const std::string product_type = IfcSchema::Type::ToString(product->type());
+
+	return new BRepElement<P>(
+		product->entity->id(),
+		parent_id,
+		name, 
+		product_type,
+		guid,
+		context_string,
+		trsf,
+		brep->geometry_pointer()
 	);
 }
 
@@ -1219,6 +1272,9 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 
 template IfcGeom::BRepElement<float>* IfcGeom::Kernel::create_brep_for_representation_and_product<float>(const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
 template IfcGeom::BRepElement<double>* IfcGeom::Kernel::create_brep_for_representation_and_product<double>(const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
+
+template IfcGeom::BRepElement<float>* IfcGeom::Kernel::create_brep_for_processed_representation<float>(const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::BRepElement<float>* brep);
+template IfcGeom::BRepElement<double>* IfcGeom::Kernel::create_brep_for_processed_representation<double>(const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::BRepElement<double>* brep);
 
 std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUnitAssignment* unit_assignment) {
 	// Set default units, set length to meters, angles to undefined
@@ -1303,6 +1359,44 @@ const IfcSchema::IfcRepresentationItem* IfcGeom::Kernel::find_item_carrying_styl
 	// distinctly styled union operands.
 
 	return item;
+}
+
+bool IfcGeom::Kernel::is_identity_transform(IfcUtil::IfcBaseClass* l) {
+	IfcSchema::IfcAxis2Placement2D* ax2d;
+	IfcSchema::IfcAxis2Placement3D* ax3d;
+
+	IfcSchema::IfcCartesianTransformationOperator2D* op2d;
+	IfcSchema::IfcCartesianTransformationOperator3D* op3d;
+	IfcSchema::IfcCartesianTransformationOperator2DnonUniform* op2dnonu;
+	IfcSchema::IfcCartesianTransformationOperator3DnonUniform* op3dnonu;
+
+	if((op2dnonu = l->as<IfcSchema::IfcCartesianTransformationOperator2DnonUniform>()) != 0) {
+		gp_GTrsf2d gtrsf2d;
+		convert(op2dnonu, gtrsf2d);
+		return gtrsf2d.Form() == gp_Identity;
+	} else if ((op2d = l->as<IfcSchema::IfcCartesianTransformationOperator2D>()) != 0) {
+		gp_Trsf2d trsf2d;
+		convert(op2d, trsf2d);
+		return trsf2d.Form() == gp_Identity;
+	} else if((op3dnonu = l->as<IfcSchema::IfcCartesianTransformationOperator3DnonUniform>()) != 0) {
+		gp_GTrsf gtrsf;
+		convert(op3dnonu, gtrsf);
+		return gtrsf.Form() == gp_Identity;
+	} else if ((op3d = l->as<IfcSchema::IfcCartesianTransformationOperator3D>()) != 0) {
+		gp_Trsf trsf;
+		convert(op3d, trsf);
+		return trsf.Form() == gp_Identity;
+	} else if((ax2d = l->as<IfcSchema::IfcAxis2Placement2D>()) != 0) {
+		gp_Trsf2d trsf2d;
+		convert(ax2d, trsf2d);
+		return trsf2d.Form() == gp_Identity;
+	} else if ((ax3d = l->as<IfcSchema::IfcAxis2Placement3D>()) != 0) {
+		gp_Trsf trsf;
+		convert(ax3d, trsf);
+		return trsf.Form() == gp_Identity;
+	} else {
+		throw IfcParse::IfcException("Invalid valuation for IfcAxis2Placement / IfcCartesianTransformationOperator");
+	}
 }
 
 bool IfcGeom::Kernel::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane) {

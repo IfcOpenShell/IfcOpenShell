@@ -56,8 +56,8 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepr
 		return 0;
 	}
 	int surface_style_id = shading_styles.first->entity->id();
-	std::map<int,SurfaceStyle>::const_iterator it = cache.Style.find(surface_style_id);
-	if (it != cache.Style.end()) {
+	std::map<int,SurfaceStyle>::const_iterator it = style_cache.find(surface_style_id);
+	if (it != style_cache.end()) {
 		return &(it->second);
 	}
 	SurfaceStyle surface_style;
@@ -104,7 +104,7 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepr
 			surface_style.Transparency().reset(d);
 		}
 	}
-	return &(cache.Style[surface_style_id] = surface_style);
+	return &(style_cache[surface_style_id] = surface_style);
 }
 
 static std::map<std::string, IfcGeom::SurfaceStyle> default_materials;

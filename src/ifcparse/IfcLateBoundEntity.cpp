@@ -68,8 +68,8 @@ unsigned int IfcParse::IfcLateBoundEntity::id() const {
 bool IfcParse::IfcLateBoundEntity::is(IfcSchema::Type::Enum v) const {
 	IfcSchema::Type::Enum _ty = _type;
 	if (v == _ty) return true;
-	while (_ty != -1) {
-		_ty = IfcSchema::Type::Parent(_ty);
+	while (IfcSchema::Type::Parent(_ty)) {
+		_ty = *IfcSchema::Type::Parent(_ty);
 		if (v == _ty) return true;
 	}
 	return false;	
