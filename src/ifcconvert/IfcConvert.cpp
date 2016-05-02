@@ -172,6 +172,9 @@ int main(int argc, char** argv) {
 		("disable-opening-subtractions", 
 			"Specifies whether to disable the boolean subtraction of "
 			"IfcOpeningElement Representations from their RelatingElements.")
+		("enable-layerset-slicing", 
+			"Specifies whether to enable the slicing of products according "
+			"to their associated IfcMaterialLayerSet.")
 		("include", 
             "Specifies that the entities listed after --entities or --names are to be included")
 		("exclude", 
@@ -267,6 +270,7 @@ int main(int argc, char** argv) {
 	bool include_entities = vmap.count("include") != 0;
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
+	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
     const bool use_element_names = vmap.count("use-element-names") != 0;
     const bool use_element_guids = vmap.count("use-element-guids") != 0 ;
     const bool use_material_names = vmap.count("use-material-names") != 0;
@@ -274,6 +278,7 @@ int main(int argc, char** argv) {
     bool center_model = vmap.count("center-model") != 0 ;
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
     const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
+
 	boost::optional<int> bounding_width, bounding_height;
 	if (vmap.count("bounds") == 1) {
 		int w, h;
@@ -366,6 +371,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
 	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
+	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
     settings.set(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS, use_element_guids);
     settings.set(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES, use_material_names);

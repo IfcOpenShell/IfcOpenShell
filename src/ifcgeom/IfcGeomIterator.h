@@ -378,17 +378,28 @@ namespace IfcGeom {
 					const int repid = representation->entity->id();
 					
 					bool has_openings = false;
+					bool has_layers = false;
+
 					for (IfcSchema::IfcProduct::list::it it = unfiltered_products->begin(); it != unfiltered_products->end(); ++it) {
 						if (kernel.find_openings(*it)->size()) {
 							has_openings = true;
-							break;
+						}
+						IfcSchema::IfcRelAssociates::list::ptr associations = (*it)->HasAssociations();
+						for (auto jt = associations->begin(); jt != associations->end(); ++jt) {
+							IfcSchema::IfcRelAssociatesMaterial* assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
+							if (assoc) {
+								if (assoc->RelatingMaterial()->is(IfcSchema::Type::IfcMaterialLayerSetUsage)) {
+									has_layers = true;
+								}
+							}
 						}
 					}
 					
 					// With world coords enabled, object transformations are directly applied to
 					// the BRep. There is no way to re-use the geometry for multiple products.
 					const bool process_maps_for_current_representation = !settings.get(IteratorSettings::USE_WORLD_COORDS) &&
-						(!has_openings || settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS));
+						(!has_openings || settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) &&
+						(!has_layers || !settings.get(IteratorSettings::APPLY_LAYERSETS));
 					bool representation_processed_as_mapped_item = false;
 
 					IfcSchema::IfcRepresentation* representation_mapped_to = 0;
