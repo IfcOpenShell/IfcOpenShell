@@ -36,12 +36,18 @@ bool OpenCascadeBasedSerializer::ready() {
 	return succeeded;
 }
 
-void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<double>* o) {		
+void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
 		gp_GTrsf gtrsf = it->Placement();
 
 		const gp_Trsf& o_trsf = o->transformation().data();
 		gtrsf.PreMultiply(o_trsf);
+
+        if (o->geometry().settings().get(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS)) {
+			gp_Trsf scale;
+			scale.SetScaleFactor(1.0 / o->geometry().settings().unit_magnitude());
+			gtrsf.PreMultiply(scale);
+		}
 		
 		const TopoDS_Shape& s = it->Shape();			
 			

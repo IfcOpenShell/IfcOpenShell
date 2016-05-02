@@ -21,7 +21,7 @@
 
 #include "IfcGeom.h"
 
-bool process_colour(IfcSchema::IfcColourRgb* colour, std::tr1::array<double, 3>& rgb) {
+bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
 	if (colour != 0) {
 		rgb[0] = colour->Red();
 		rgb[1] = colour->Green();
@@ -30,7 +30,7 @@ bool process_colour(IfcSchema::IfcColourRgb* colour, std::tr1::array<double, 3>&
 	return colour != 0;
 }
 
-bool process_colour(IfcSchema::IfcNormalisedRatioMeasure* factor, std::tr1::array<double, 3>& rgb) {
+bool process_colour(IfcSchema::IfcNormalisedRatioMeasure* factor, double* rgb) {
 	if (factor != 0) {
 		const double f = *factor;
 		rgb[0] = rgb[1] = rgb[2] = f;
@@ -38,7 +38,7 @@ bool process_colour(IfcSchema::IfcNormalisedRatioMeasure* factor, std::tr1::arra
 	return factor != 0;
 }
 
-bool process_colour(IfcSchema::IfcColourOrFactor* colour_or_factor, std::tr1::array<double, 3>& rgb) {
+bool process_colour(IfcSchema::IfcColourOrFactor* colour_or_factor, double* rgb) {
 	if (colour_or_factor == 0) {
 		return false;
 	} else if (colour_or_factor->is(IfcSchema::Type::IfcColourRgb)) {
@@ -55,8 +55,8 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const st
 		return 0;
 	}
 	int surface_style_id = shading_styles.first->entity->id();
-	std::map<int,SurfaceStyle>::const_iterator it = cache.Style.find(surface_style_id);
-	if (it != cache.Style.end()) {
+	std::map<int,SurfaceStyle>::const_iterator it = style_cache.find(surface_style_id);
+	if (it != style_cache.end()) {
 		return &(it->second);
 	}
 	SurfaceStyle surface_style;
@@ -65,7 +65,7 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const st
 	} else {
 		surface_style = SurfaceStyle(surface_style_id);
 	}
-	std::tr1::array<double, 3> rgb;
+	double rgb[3];
 	if (process_colour(shading_styles.second->SurfaceColour(), rgb)) {
 		surface_style.Diffuse().reset(SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
 	}
@@ -103,7 +103,7 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const st
 			surface_style.Transparency().reset(d);
 		}
 	}
-	return &(cache.Style[surface_style_id] = surface_style);
+	return &(style_cache[surface_style_id] = surface_style);
 }
 
 const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepresentationItem* item) {

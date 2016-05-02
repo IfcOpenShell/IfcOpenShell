@@ -64,6 +64,7 @@ namespace IfcParse {
 		IfcSpfStream(const std::string& fn);
 		IfcSpfStream(std::istream& f, int len);
 		IfcSpfStream(void* data, int len);
+		~IfcSpfStream();
 		/// Returns the character at the cursor 
 		char Peek();
 		/// Returns the character at specified offset

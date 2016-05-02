@@ -23,13 +23,17 @@ header = """
 
 #include <string>
 #include <vector>
-#include <map>
 
 #include <boost/optional.hpp>
 
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/%(schema_name)senum.h"
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4100)
+#endif
 
 #define IfcSchema %(schema_name)s
 
@@ -47,12 +51,18 @@ void InitStringMap();
 IfcUtil::IfcBaseClass* SchemaEntity(IfcAbstractEntity* e = 0);
 }
 
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 #endif
 """
 
 enum_header = """
 #ifndef %(schema_name_upper)sENUM_H
 #define %(schema_name_upper)sENUM_H
+
+#include <boost/optional.hpp>
 
 #define IfcSchema %(schema_name)s
 
@@ -62,7 +72,7 @@ namespace Type {
     typedef enum {
         %(types)s, UNDEFINED
     } Enum;
-    Enum Parent(Enum v);
+    boost::optional<Enum> Parent(Enum v);
     Enum FromString(const std::string& s);
     std::string ToString(Enum v);
     bool IsSimple(Enum v);
@@ -107,6 +117,8 @@ implementation= """
 #include "../ifcparse/IfcWrite.h"
 #include "../ifcparse/IfcWritableEntity.h"
 
+#include <map>
+
 using namespace %(schema_name)s;
 using namespace IfcParse;
 using namespace IfcWrite;
@@ -136,10 +148,14 @@ Type::Enum Type::FromString(const std::string& s) {
     else return it->second;
 }
 
-Type::Enum Type::Parent(Enum v){
-    if (v < 0 || v >= %(max_id)d) return (Enum)-1;
-%(parent_type_statements)s
-    return (Enum)-1;
+static int parent_map[] = {%(parent_type_statements)s};
+boost::optional<Type::Enum> Type::Parent(Enum v){
+    const int p = parent_map[static_cast<int>(v)];
+    if (p >= 0) {
+        return static_cast<Type::Enum>(p);
+    } else {
+        return boost::none;
+    }
 }
 
 bool Type::IsSimple(Enum v) {
@@ -261,49 +277,61 @@ std::pair<const char*, int> Type::GetEnumerationIndex(Enum t, const std::string&
 }
 
 std::pair<Type::Enum, unsigned> Type::GetInverseAttribute(Enum t, const std::string& a) {
-	if (inverse_map.empty()) ::InitInverseMap();
-	inverse_map_t::const_iterator it;
-	inverse_map_t::mapped_type::const_iterator jt;
-    while (true) {
+    if (inverse_map.empty()) ::InitInverseMap();
+    inverse_map_t::const_iterator it;
+    inverse_map_t::mapped_type::const_iterator jt;
+    for(;;) {
         it = inverse_map.find(t);
         if (it != inverse_map.end()) {
-			jt = it->second.find(a);
-			if (jt != it->second.end()) {
-				return jt->second;
-			}
-		}
-        if ((t = Parent(t)) == -1) break;
+            jt = it->second.find(a);
+            if (jt != it->second.end()) {
+                return jt->second;
+            }
+        }
+        boost::optional<Enum> pt = Parent(t);
+        if (pt) {
+            t = *pt;
+        }
+        else {
+            break;
+        }
     }
     throw IfcException("Attribute not found");
 }
 
 std::set<std::string> Type::GetInverseAttributeNames(Enum t) {
-	if (inverse_map.empty()) ::InitInverseMap();
-	inverse_map_t::const_iterator it;
-	inverse_map_t::mapped_type::const_iterator jt;
+    if (inverse_map.empty()) ::InitInverseMap();
+    inverse_map_t::const_iterator it;
+    inverse_map_t::mapped_type::const_iterator jt;
 
-	std::set<std::string> return_value;
+    std::set<std::string> return_value;
 
-    while (true) {
+    for (;;) {
         it = inverse_map.find(t);
         if (it != inverse_map.end()) {
-			for (jt = it->second.begin(); jt != it->second.end(); ++jt) {
-				return_value.insert(jt->first);
-			}
-		}
-        if ((t = Parent(t)) == -1) break;
+            for (jt = it->second.begin(); jt != it->second.end(); ++jt) {
+                return_value.insert(jt->first);
+            }
+        }
+        boost::optional<Enum> pt = Parent(t);
+        if (pt) {
+            t = *pt;
+        }
+        else {
+            break;
+        }
     }
-    
-	return return_value;
+
+    return return_value;
 }
 
 void Type::PopulateDerivedFields(IfcWrite::IfcWritableEntity* e) {
     std::map<Type::Enum, std::set<int> >::const_iterator i = derived_map.find(e->type());
-	if (i != derived_map.end()) {
-		for (std::set<int>::const_iterator it = i->second.begin(); it != i->second.end(); ++it) {
-			e->setArgumentDerived(*it);
-		}
-	}
+    if (i != derived_map.end()) {
+        for (std::set<int>::const_iterator it = i->second.begin(); it != i->second.end(); ++it) {
+            e->setArgumentDerived(*it);
+        }
+    }
 }
 """
 

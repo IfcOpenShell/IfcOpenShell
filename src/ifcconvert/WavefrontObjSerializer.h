@@ -26,6 +26,7 @@
 
 #include "../ifcconvert/GeometrySerializer.h"
 
+// http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
 class WaveFrontOBJSerializer : public GeometrySerializer {
 private:
 	const std::string mtl_filename;
@@ -34,8 +35,8 @@ private:
 	unsigned int vcount_total;
 	std::set<std::string> materials;
 public:
-	WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename)
-		: GeometrySerializer()
+	WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename, const IfcGeom::IteratorSettings &settings)
+		: GeometrySerializer(settings)
 		, obj_stream(obj_filename.c_str())
 		, mtl_filename(mtl_filename)
 		, mtl_stream(mtl_filename.c_str())		
@@ -45,11 +46,11 @@ public:
 	bool ready();
 	void writeHeader();
 	void writeMaterial(const IfcGeom::Material& style);
-	void write(const IfcGeom::TriangulationElement<double>* o);
-	void write(const IfcGeom::BRepElement<double>* o) {}
+	void write(const IfcGeom::TriangulationElement<real_t>* o);
+	void write(const IfcGeom::BRepElement<real_t>* /*o*/) {}
 	void finalize() {}
 	bool isTesselated() const { return true; }
-	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {}
+	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(IfcParse::IfcFile*) {}
 };
 

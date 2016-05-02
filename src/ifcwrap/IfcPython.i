@@ -17,6 +17,36 @@
  *                                                                              *
  ********************************************************************************/
 
+%begin %{
+#if defined(_DEBUG) && defined(SWIG_PYTHON_INTERPRETER_NO_DEBUG)
+/* https://github.com/swig/swig/issues/325 */
+# include <basetsd.h>
+# include <assert.h>
+# include <ctype.h>
+# include <errno.h>
+# include <io.h>
+# include <math.h>
+# include <sal.h>
+# include <stdarg.h>
+# include <stddef.h>
+# include <stdio.h>
+# include <stdlib.h>
+# include <string.h>
+# include <sys/stat.h>
+# include <time.h>
+# include <wchar.h>
+#endif
+
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable : 4127 4244 4702 4510 4512 4610)
+# if _MSC_VER > 1800
+#  pragma warning(disable : 4456 4459)
+# endif
+#endif
+// TODO add '# pragma warning(pop)' to the very end of the file
+%}
+
 %include "std_string.i"
 %include "exception.i"
 

@@ -17,10 +17,11 @@
 #                                                                             #
 ###############################################################################
 
+import codegen
 import templates
 import documentation
 
-class Header:
+class Header(codegen.Base):
     def __init__(self, mapping):
         declarations = []
 
@@ -40,15 +41,18 @@ class Header:
         emitted_simpletypes = set()
         while len(emitted_simpletypes) < len(mapping.schema.simpletypes):
             for name, type in mapping.schema.simpletypes.items():
-                if name in emitted_simpletypes: continue
+                if name.lower() in emitted_simpletypes: continue
                 type_str = mapping.make_type_string(mapping.flatten_type_string(type))
                 attr_type = mapping.make_argument_type(type)
                 superclass = mapping.simple_type_parent(name)
                 if superclass is None: 
                     superclass = "IfcUtil::IfcBaseType"
-                elif superclass not in emitted_simpletypes:
+                elif superclass.lower() not in emitted_simpletypes:
                     continue
-                emitted_simpletypes.add(name)
+                else:
+                    # Case normalize
+                    superclass = [k for k in mapping.schema.simpletypes.keys() if k.lower() == superclass.lower()][0]
+                emitted_simpletypes.add(name.lower())
                 write(templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass)
 
         class_definitions = []
@@ -59,14 +63,14 @@ class Header:
         emitted_entities = set()
         while len(emitted_entities) < len(mapping.schema.entities):
             for name, type in mapping.schema.entities.items():
-                if name in emitted_entities: continue
-                if len(type.supertypes) == 0 or set(type.supertypes) < emitted_entities:
+                if name.lower() in emitted_entities: continue
+                if len(type.supertypes) == 0 or set(map(str.lower, type.supertypes)) <= emitted_entities:
                     attr_lines = []
                     def write_method(attr):
                         if attr.optional:
                             attr_lines.append(templates.optional_attribute_description % (attr.name, name))
                             attr_lines.append("bool has%s() const;"%(attr.name))
-                        attr_lines.extend(["/// %s"%d for d in documentation.description((name, attr.name))])
+                        attr_lines.extend(["/// %s"%d for d in documentation.description(".".join((name, attr.name)))])
                         type_str = mapping.get_parameter_type(attr, allow_optional=False, allow_entities=False)
                         if mapping.make_argument_type(attr) != "IfcUtil::Argument_UNKNOWN":
                             attr_lines.append("%s %s() const;"%(type_str, attr.name))
@@ -87,7 +91,11 @@ class Header:
                     inverse = "\n".join(["%s%s"%(' '*4, a) for a in inv_lines])
                     if len(inverse): inverse += '\n'
 
-                    supertypes = type.supertypes if len(type.supertypes) else ['IfcUtil::IfcBaseEntity']
+                    def case_norm(n):
+                        n = n.lower()
+                        return [k for k in mapping.schema.entities.keys() if k.lower() == n][0]
+                    
+                    supertypes = map(case_norm, type.supertypes) if len(type.supertypes) else ['IfcUtil::IfcBaseEntity']
                     superclass = ": %s "%(", ".join(["public %s"%c for c in supertypes]))
 
                     argument_count = mapping.argument_count(type)
@@ -123,10 +131,9 @@ class Header:
         }
 
         self.schema_name = mapping.schema.name.capitalize()
+        
+        self.file_name = '%s.h'%self.schema_name
+        
+        
     def __repr__(self):
         return self.str
-    def emit(self):
-        f = open('%s.h'%self.schema_name, 'w', encoding='utf-8')
-        f.write(str(self))
-        f.close()
-

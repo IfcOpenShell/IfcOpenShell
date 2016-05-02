@@ -66,10 +66,14 @@ void InitDescriptorMap() {
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
     current = entity_descriptor_map[Type::IfcAngularVelocityMeasure] = new IfcEntityDescriptor(Type::IfcAngularVelocityMeasure,0);
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
+    current = entity_descriptor_map[Type::IfcArcIndex] = new IfcEntityDescriptor(Type::IfcArcIndex,0);
+    current->add("wrappedValue",false,IfcUtil::Argument_AGGREGATE_OF_INT);
     current = entity_descriptor_map[Type::IfcAreaDensityMeasure] = new IfcEntityDescriptor(Type::IfcAreaDensityMeasure,0);
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
     current = entity_descriptor_map[Type::IfcAreaMeasure] = new IfcEntityDescriptor(Type::IfcAreaMeasure,0);
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
+    current = entity_descriptor_map[Type::IfcBinary] = new IfcEntityDescriptor(Type::IfcBinary,0);
+    current->add("wrappedValue",false,IfcUtil::Argument_BINARY);
     current = entity_descriptor_map[Type::IfcBoolean] = new IfcEntityDescriptor(Type::IfcBoolean,0);
     current->add("wrappedValue",false,IfcUtil::Argument_BOOL);
     current = entity_descriptor_map[Type::IfcBoxAlignment] = new IfcEntityDescriptor(Type::IfcBoxAlignment,0);
@@ -156,6 +160,8 @@ void InitDescriptorMap() {
     current->add("wrappedValue",false,IfcUtil::Argument_STRING);
     current = entity_descriptor_map[Type::IfcLengthMeasure] = new IfcEntityDescriptor(Type::IfcLengthMeasure,0);
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
+    current = entity_descriptor_map[Type::IfcLineIndex] = new IfcEntityDescriptor(Type::IfcLineIndex,0);
+    current->add("wrappedValue",false,IfcUtil::Argument_AGGREGATE_OF_INT);
     current = entity_descriptor_map[Type::IfcLinearForceMeasure] = new IfcEntityDescriptor(Type::IfcLinearForceMeasure,0);
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
     current = entity_descriptor_map[Type::IfcLinearMomentMeasure] = new IfcEntityDescriptor(Type::IfcLinearMomentMeasure,0);
@@ -216,6 +222,8 @@ void InitDescriptorMap() {
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
     current = entity_descriptor_map[Type::IfcPlaneAngleMeasure] = new IfcEntityDescriptor(Type::IfcPlaneAngleMeasure,0);
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
+    current = entity_descriptor_map[Type::IfcPositiveInteger] = new IfcEntityDescriptor(Type::IfcPositiveInteger,0);
+    current->add("wrappedValue",false,IfcUtil::Argument_INT);
     current = entity_descriptor_map[Type::IfcPositiveLengthMeasure] = new IfcEntityDescriptor(Type::IfcPositiveLengthMeasure,0);
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
     current = entity_descriptor_map[Type::IfcPositivePlaneAngleMeasure] = new IfcEntityDescriptor(Type::IfcPositivePlaneAngleMeasure,0);
@@ -389,9 +397,9 @@ void InitDescriptorMap() {
     current->add("SourceCRS",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCoordinateReferenceSystemSelect);
     current->add("TargetCRS",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCoordinateReferenceSystem);
     current = entity_descriptor_map[Type::IfcCoordinateReferenceSystem] = new IfcEntityDescriptor(Type::IfcCoordinateReferenceSystem,0);
-    current->add("Name",true,IfcUtil::Argument_STRING,Type::IfcLabel);
+    current->add("Name",false,IfcUtil::Argument_STRING,Type::IfcLabel);
     current->add("Description",true,IfcUtil::Argument_STRING,Type::IfcText);
-    current->add("GeodeticDatum",false,IfcUtil::Argument_STRING,Type::IfcIdentifier);
+    current->add("GeodeticDatum",true,IfcUtil::Argument_STRING,Type::IfcIdentifier);
     current->add("VerticalDatum",true,IfcUtil::Argument_STRING,Type::IfcIdentifier);
     current = entity_descriptor_map[Type::IfcCostValue] = new IfcEntityDescriptor(Type::IfcCostValue,entity_descriptor_map.find(Type::IfcAppliedValue)->second);
 
@@ -498,7 +506,7 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcMetric] = new IfcEntityDescriptor(Type::IfcMetric,entity_descriptor_map.find(Type::IfcConstraint)->second);
     current->add("Benchmark",false,IfcUtil::Argument_ENUMERATION,Type::IfcBenchmarkEnum);
     current->add("ValueSource",true,IfcUtil::Argument_STRING,Type::IfcLabel);
-    current->add("DataValue",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcMetricValueSelect);
+    current->add("DataValue",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcMetricValueSelect);
     current->add("ReferencePath",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcReference);
     current = entity_descriptor_map[Type::IfcMonetaryUnit] = new IfcEntityDescriptor(Type::IfcMonetaryUnit,0);
     current->add("Currency",false,IfcUtil::Argument_STRING,Type::IfcLabel);
@@ -561,9 +569,9 @@ void InitDescriptorMap() {
     current->add("AssignedItems",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcLayeredItem);
     current->add("Identifier",true,IfcUtil::Argument_STRING,Type::IfcIdentifier);
     current = entity_descriptor_map[Type::IfcPresentationLayerWithStyle] = new IfcEntityDescriptor(Type::IfcPresentationLayerWithStyle,entity_descriptor_map.find(Type::IfcPresentationLayerAssignment)->second);
-    current->add("LayerOn",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("LayerFrozen",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("LayerBlocked",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("LayerOn",false,IfcUtil::Argument_BOOL,Type::IfcLogical);
+    current->add("LayerFrozen",false,IfcUtil::Argument_BOOL,Type::IfcLogical);
+    current->add("LayerBlocked",false,IfcUtil::Argument_BOOL,Type::IfcLogical);
     current->add("LayerStyles",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcPresentationStyle);
     current = entity_descriptor_map[Type::IfcPresentationStyle] = new IfcEntityDescriptor(Type::IfcPresentationStyle,0);
     current->add("Name",true,IfcUtil::Argument_STRING,Type::IfcLabel);
@@ -617,7 +625,7 @@ void InitDescriptorMap() {
     current->add("TypeIdentifier",true,IfcUtil::Argument_STRING,Type::IfcIdentifier);
     current->add("AttributeIdentifier",true,IfcUtil::Argument_STRING,Type::IfcIdentifier);
     current->add("InstanceName",true,IfcUtil::Argument_STRING,Type::IfcLabel);
-    current->add("ListPositions",true,IfcUtil::Argument_AGGREGATE_OF_INT,Type::UNDEFINED);
+    current->add("ListPositions",true,IfcUtil::Argument_AGGREGATE_OF_INT,Type::IfcInteger);
     current->add("InnerReference",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcReference);
     current = entity_descriptor_map[Type::IfcRepresentation] = new IfcEntityDescriptor(Type::IfcRepresentation,0);
     current->add("ContextOfItems",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcRepresentationContext);
@@ -651,7 +659,7 @@ void InitDescriptorMap() {
     current->add("ShapeRepresentations",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcShapeModel);
     current->add("Name",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current->add("Description",true,IfcUtil::Argument_STRING,Type::IfcText);
-    current->add("ProductDefinitional",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("ProductDefinitional",false,IfcUtil::Argument_BOOL,Type::IfcLogical);
     current->add("PartOfProductDefinitionShape",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcProductRepresentationSelect);
     current = entity_descriptor_map[Type::IfcShapeModel] = new IfcEntityDescriptor(Type::IfcShapeModel,entity_descriptor_map.find(Type::IfcRepresentation)->second);
 
@@ -700,8 +708,8 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcSurfaceStyleWithTextures] = new IfcEntityDescriptor(Type::IfcSurfaceStyleWithTextures,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
     current->add("Textures",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcSurfaceTexture);
     current = entity_descriptor_map[Type::IfcSurfaceTexture] = new IfcEntityDescriptor(Type::IfcSurfaceTexture,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
-    current->add("RepeatS",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("RepeatT",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("RepeatS",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
+    current->add("RepeatT",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current->add("Mode",true,IfcUtil::Argument_STRING,Type::IfcIdentifier);
     current->add("TextureTransform",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCartesianTransformationOperator2D);
     current->add("Parameter",true,IfcUtil::Argument_AGGREGATE_OF_STRING,Type::IfcIdentifier);
@@ -717,7 +725,7 @@ void InitDescriptorMap() {
     current->add("ReferencePath",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcReference);
     current = entity_descriptor_map[Type::IfcTableRow] = new IfcEntityDescriptor(Type::IfcTableRow,0);
     current->add("RowCells",true,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcValue);
-    current->add("IsHeading",true,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("IsHeading",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcTaskTime] = new IfcEntityDescriptor(Type::IfcTaskTime,entity_descriptor_map.find(Type::IfcSchedulingTime)->second);
     current->add("DurationType",true,IfcUtil::Argument_ENUMERATION,Type::IfcTaskDurationEnum);
     current->add("ScheduleDuration",true,IfcUtil::Argument_STRING,Type::IfcDuration);
@@ -729,7 +737,7 @@ void InitDescriptorMap() {
     current->add("LateFinish",true,IfcUtil::Argument_STRING,Type::IfcDateTime);
     current->add("FreeFloat",true,IfcUtil::Argument_STRING,Type::IfcDuration);
     current->add("TotalFloat",true,IfcUtil::Argument_STRING,Type::IfcDuration);
-    current->add("IsCritical",true,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("IsCritical",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current->add("StatusTime",true,IfcUtil::Argument_STRING,Type::IfcDateTime);
     current->add("ActualDuration",true,IfcUtil::Argument_STRING,Type::IfcDuration);
     current->add("ActualStart",true,IfcUtil::Argument_STRING,Type::IfcDateTime);
@@ -737,7 +745,7 @@ void InitDescriptorMap() {
     current->add("RemainingTime",true,IfcUtil::Argument_STRING,Type::IfcDuration);
     current->add("Completion",true,IfcUtil::Argument_DOUBLE,Type::IfcPositiveRatioMeasure);
     current = entity_descriptor_map[Type::IfcTaskTimeRecurring] = new IfcEntityDescriptor(Type::IfcTaskTimeRecurring,entity_descriptor_map.find(Type::IfcTaskTime)->second);
-    current->add("Recurrance",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcRecurrencePattern);
+    current->add("Recurrence",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcRecurrencePattern);
     current = entity_descriptor_map[Type::IfcTelecomAddress] = new IfcEntityDescriptor(Type::IfcTelecomAddress,entity_descriptor_map.find(Type::IfcAddress)->second);
     current->add("TelephoneNumbers",true,IfcUtil::Argument_AGGREGATE_OF_STRING,Type::IfcLabel);
     current->add("FacsimileNumbers",true,IfcUtil::Argument_AGGREGATE_OF_STRING,Type::IfcLabel);
@@ -749,7 +757,7 @@ void InitDescriptorMap() {
     current->add("TextCharacterAppearance",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcTextStyleForDefinedFont);
     current->add("TextStyle",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcTextStyleTextModel);
     current->add("TextFontStyle",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcTextFontSelect);
-    current->add("ModelOrDraughting",true,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("ModelOrDraughting",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcTextStyleForDefinedFont] = new IfcEntityDescriptor(Type::IfcTextStyleForDefinedFont,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
     current->add("Colour",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcColour);
     current->add("BackgroundColour",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcColour);
@@ -815,7 +823,7 @@ void InitDescriptorMap() {
     current->add("InnerCurves",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcCurve);
     current = entity_descriptor_map[Type::IfcBlobTexture] = new IfcEntityDescriptor(Type::IfcBlobTexture,entity_descriptor_map.find(Type::IfcSurfaceTexture)->second);
     current->add("RasterFormat",false,IfcUtil::Argument_STRING,Type::IfcIdentifier);
-    current->add("RasterCode",false,IfcUtil::Argument_BINARY,Type::UNDEFINED);
+    current->add("RasterCode",false,IfcUtil::Argument_BINARY,Type::IfcBinary);
     current = entity_descriptor_map[Type::IfcCenterLineProfileDef] = new IfcEntityDescriptor(Type::IfcCenterLineProfileDef,entity_descriptor_map.find(Type::IfcArbitraryOpenProfileDef)->second);
     current->add("Thickness",false,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current = entity_descriptor_map[Type::IfcClassification] = new IfcEntityDescriptor(Type::IfcClassification,entity_descriptor_map.find(Type::IfcExternalInformation)->second);
@@ -863,7 +871,7 @@ void InitDescriptorMap() {
     current->add("CurveFont",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCurveFontOrScaledCurveFontSelect);
     current->add("CurveWidth",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcSizeSelect);
     current->add("CurveColour",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcColour);
-    current->add("ModelOrDraughting",true,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("ModelOrDraughting",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcCurveStyleFont] = new IfcEntityDescriptor(Type::IfcCurveStyleFont,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
     current->add("Name",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current->add("PatternList",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcCurveStyleFontPattern);
@@ -908,7 +916,7 @@ void InitDescriptorMap() {
     current->add("EdgeEnd",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcVertex);
     current = entity_descriptor_map[Type::IfcEdgeCurve] = new IfcEntityDescriptor(Type::IfcEdgeCurve,entity_descriptor_map.find(Type::IfcEdge)->second);
     current->add("EdgeGeometry",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCurve);
-    current->add("SameSense",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("SameSense",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcEventTime] = new IfcEntityDescriptor(Type::IfcEventTime,entity_descriptor_map.find(Type::IfcSchedulingTime)->second);
     current->add("ActualDate",true,IfcUtil::Argument_STRING,Type::IfcDateTime);
     current->add("EarlyDate",true,IfcUtil::Argument_STRING,Type::IfcDateTime);
@@ -925,12 +933,12 @@ void InitDescriptorMap() {
     current->add("Bounds",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcFaceBound);
     current = entity_descriptor_map[Type::IfcFaceBound] = new IfcEntityDescriptor(Type::IfcFaceBound,entity_descriptor_map.find(Type::IfcTopologicalRepresentationItem)->second);
     current->add("Bound",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcLoop);
-    current->add("Orientation",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("Orientation",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcFaceOuterBound] = new IfcEntityDescriptor(Type::IfcFaceOuterBound,entity_descriptor_map.find(Type::IfcFaceBound)->second);
 
     current = entity_descriptor_map[Type::IfcFaceSurface] = new IfcEntityDescriptor(Type::IfcFaceSurface,entity_descriptor_map.find(Type::IfcFace)->second);
     current->add("FaceSurface",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcSurface);
-    current->add("SameSense",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("SameSense",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcFailureConnectionCondition] = new IfcEntityDescriptor(Type::IfcFailureConnectionCondition,entity_descriptor_map.find(Type::IfcStructuralConnectionCondition)->second);
     current->add("TensionFailureX",true,IfcUtil::Argument_DOUBLE,Type::IfcForceMeasure);
     current->add("TensionFailureY",true,IfcUtil::Argument_DOUBLE,Type::IfcForceMeasure);
@@ -940,10 +948,10 @@ void InitDescriptorMap() {
     current->add("CompressionFailureZ",true,IfcUtil::Argument_DOUBLE,Type::IfcForceMeasure);
     current = entity_descriptor_map[Type::IfcFillAreaStyle] = new IfcEntityDescriptor(Type::IfcFillAreaStyle,entity_descriptor_map.find(Type::IfcPresentationStyle)->second);
     current->add("FillStyles",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcFillStyleSelect);
-    current->add("ModelorDraughting",true,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("ModelorDraughting",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcGeometricRepresentationContext] = new IfcEntityDescriptor(Type::IfcGeometricRepresentationContext,entity_descriptor_map.find(Type::IfcRepresentationContext)->second);
     current->add("CoordinateSpaceDimension",false,IfcUtil::Argument_INT,Type::IfcDimensionCount);
-    current->add("Precision",true,IfcUtil::Argument_DOUBLE,Type::UNDEFINED);
+    current->add("Precision",true,IfcUtil::Argument_DOUBLE,Type::IfcReal);
     current->add("WorldCoordinateSystem",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcAxis2Placement);
     current->add("TrueNorth",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcDirection);
     current = entity_descriptor_map[Type::IfcGeometricRepresentationItem] = new IfcEntityDescriptor(Type::IfcGeometricRepresentationItem,entity_descriptor_map.find(Type::IfcRepresentationItem)->second);
@@ -960,19 +968,19 @@ void InitDescriptorMap() {
     current->add("PlacementRefDirection",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcGridPlacementDirectionSelect);
     current = entity_descriptor_map[Type::IfcHalfSpaceSolid] = new IfcEntityDescriptor(Type::IfcHalfSpaceSolid,entity_descriptor_map.find(Type::IfcGeometricRepresentationItem)->second);
     current->add("BaseSurface",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcSurface);
-    current->add("AgreementFlag",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("AgreementFlag",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcImageTexture] = new IfcEntityDescriptor(Type::IfcImageTexture,entity_descriptor_map.find(Type::IfcSurfaceTexture)->second);
     current->add("URLReference",false,IfcUtil::Argument_STRING,Type::IfcURIReference);
     current = entity_descriptor_map[Type::IfcIndexedColourMap] = new IfcEntityDescriptor(Type::IfcIndexedColourMap,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
     current->add("MappedTo",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcTessellatedFaceSet);
     current->add("Overrides",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcSurfaceStyleShading);
     current->add("Colours",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcColourRgbList);
-    current->add("ColourIndex",false,IfcUtil::Argument_AGGREGATE_OF_INT,Type::UNDEFINED);
+    current->add("ColourIndex",false,IfcUtil::Argument_AGGREGATE_OF_INT,Type::IfcPositiveInteger);
     current = entity_descriptor_map[Type::IfcIndexedTextureMap] = new IfcEntityDescriptor(Type::IfcIndexedTextureMap,entity_descriptor_map.find(Type::IfcTextureCoordinate)->second);
     current->add("MappedTo",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcTessellatedFaceSet);
     current->add("TexCoords",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcTextureVertexList);
     current = entity_descriptor_map[Type::IfcIndexedTriangleTextureMap] = new IfcEntityDescriptor(Type::IfcIndexedTriangleTextureMap,entity_descriptor_map.find(Type::IfcIndexedTextureMap)->second);
-    current->add("TexCoordIndex",true,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT,Type::UNDEFINED);
+    current->add("TexCoordIndex",true,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT,Type::IfcPositiveInteger);
     current = entity_descriptor_map[Type::IfcIrregularTimeSeries] = new IfcEntityDescriptor(Type::IfcIrregularTimeSeries,entity_descriptor_map.find(Type::IfcTimeSeries)->second);
     current->add("Values",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcIrregularTimeSeriesValue);
     current = entity_descriptor_map[Type::IfcLagTime] = new IfcEntityDescriptor(Type::IfcLagTime,entity_descriptor_map.find(Type::IfcSchedulingTime)->second);
@@ -1059,7 +1067,7 @@ void InitDescriptorMap() {
     current->add("RelatedOrganizations",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcOrganization);
     current = entity_descriptor_map[Type::IfcOrientedEdge] = new IfcEntityDescriptor(Type::IfcOrientedEdge,entity_descriptor_map.find(Type::IfcEdge)->second);
     current->add("EdgeElement",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcEdge);
-    current->add("Orientation",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("Orientation",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcParameterizedProfileDef] = new IfcEntityDescriptor(Type::IfcParameterizedProfileDef,entity_descriptor_map.find(Type::IfcProfileDef)->second);
     current->add("Position",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcAxis2Placement2D);
     current = entity_descriptor_map[Type::IfcPath] = new IfcEntityDescriptor(Type::IfcPath,entity_descriptor_map.find(Type::IfcTopologicalRepresentationItem)->second);
@@ -1073,7 +1081,7 @@ void InitDescriptorMap() {
     current->add("Width",false,IfcUtil::Argument_INT,Type::IfcInteger);
     current->add("Height",false,IfcUtil::Argument_INT,Type::IfcInteger);
     current->add("ColourComponents",false,IfcUtil::Argument_INT,Type::IfcInteger);
-    current->add("Pixel",false,IfcUtil::Argument_AGGREGATE_OF_BINARY,Type::UNDEFINED);
+    current->add("Pixel",false,IfcUtil::Argument_AGGREGATE_OF_BINARY,Type::IfcBinary);
     current = entity_descriptor_map[Type::IfcPlacement] = new IfcEntityDescriptor(Type::IfcPlacement,entity_descriptor_map.find(Type::IfcGeometricRepresentationItem)->second);
     current->add("Location",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCartesianPoint);
     current = entity_descriptor_map[Type::IfcPlanarExtent] = new IfcEntityDescriptor(Type::IfcPlanarExtent,entity_descriptor_map.find(Type::IfcGeometricRepresentationItem)->second);
@@ -1146,7 +1154,7 @@ void InitDescriptorMap() {
     current->add("ScheduleFinish",true,IfcUtil::Argument_STRING,Type::IfcDateTime);
     current->add("ScheduleContour",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current->add("LevelingDelay",true,IfcUtil::Argument_STRING,Type::IfcDuration);
-    current->add("IsOverAllocated",true,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("IsOverAllocated",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current->add("StatusTime",true,IfcUtil::Argument_STRING,Type::IfcDateTime);
     current->add("ActualWork",true,IfcUtil::Argument_STRING,Type::IfcDuration);
     current->add("ActualUsage",true,IfcUtil::Argument_DOUBLE,Type::IfcPositiveRatioMeasure);
@@ -1298,8 +1306,8 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcWindowStyle] = new IfcEntityDescriptor(Type::IfcWindowStyle,entity_descriptor_map.find(Type::IfcTypeProduct)->second);
     current->add("ConstructionType",false,IfcUtil::Argument_ENUMERATION,Type::IfcWindowStyleConstructionEnum);
     current->add("OperationType",false,IfcUtil::Argument_ENUMERATION,Type::IfcWindowStyleOperationEnum);
-    current->add("ParameterTakesPrecedence",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("Sizeable",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("ParameterTakesPrecedence",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
+    current->add("Sizeable",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcZShapeProfileDef] = new IfcEntityDescriptor(Type::IfcZShapeProfileDef,entity_descriptor_map.find(Type::IfcParameterizedProfileDef)->second);
     current->add("Depth",false,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current->add("FlangeWidth",false,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
@@ -1355,22 +1363,24 @@ void InitDescriptorMap() {
     current->add("Coordinates",false,IfcUtil::Argument_AGGREGATE_OF_DOUBLE,Type::IfcLengthMeasure);
     current = entity_descriptor_map[Type::IfcCartesianPointList] = new IfcEntityDescriptor(Type::IfcCartesianPointList,entity_descriptor_map.find(Type::IfcGeometricRepresentationItem)->second);
 
+    current = entity_descriptor_map[Type::IfcCartesianPointList2D] = new IfcEntityDescriptor(Type::IfcCartesianPointList2D,entity_descriptor_map.find(Type::IfcCartesianPointList)->second);
+    current->add("CoordList",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::IfcLengthMeasure);
     current = entity_descriptor_map[Type::IfcCartesianPointList3D] = new IfcEntityDescriptor(Type::IfcCartesianPointList3D,entity_descriptor_map.find(Type::IfcCartesianPointList)->second);
     current->add("CoordList",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::IfcLengthMeasure);
     current = entity_descriptor_map[Type::IfcCartesianTransformationOperator] = new IfcEntityDescriptor(Type::IfcCartesianTransformationOperator,entity_descriptor_map.find(Type::IfcGeometricRepresentationItem)->second);
     current->add("Axis1",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcDirection);
     current->add("Axis2",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcDirection);
     current->add("LocalOrigin",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCartesianPoint);
-    current->add("Scale",true,IfcUtil::Argument_DOUBLE,Type::UNDEFINED);
+    current->add("Scale",true,IfcUtil::Argument_DOUBLE,Type::IfcReal);
     current = entity_descriptor_map[Type::IfcCartesianTransformationOperator2D] = new IfcEntityDescriptor(Type::IfcCartesianTransformationOperator2D,entity_descriptor_map.find(Type::IfcCartesianTransformationOperator)->second);
 
     current = entity_descriptor_map[Type::IfcCartesianTransformationOperator2DnonUniform] = new IfcEntityDescriptor(Type::IfcCartesianTransformationOperator2DnonUniform,entity_descriptor_map.find(Type::IfcCartesianTransformationOperator2D)->second);
-    current->add("Scale2",true,IfcUtil::Argument_DOUBLE,Type::UNDEFINED);
+    current->add("Scale2",true,IfcUtil::Argument_DOUBLE,Type::IfcReal);
     current = entity_descriptor_map[Type::IfcCartesianTransformationOperator3D] = new IfcEntityDescriptor(Type::IfcCartesianTransformationOperator3D,entity_descriptor_map.find(Type::IfcCartesianTransformationOperator)->second);
     current->add("Axis3",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcDirection);
     current = entity_descriptor_map[Type::IfcCartesianTransformationOperator3DnonUniform] = new IfcEntityDescriptor(Type::IfcCartesianTransformationOperator3DnonUniform,entity_descriptor_map.find(Type::IfcCartesianTransformationOperator3D)->second);
-    current->add("Scale2",true,IfcUtil::Argument_DOUBLE,Type::UNDEFINED);
-    current->add("Scale3",true,IfcUtil::Argument_DOUBLE,Type::UNDEFINED);
+    current->add("Scale2",true,IfcUtil::Argument_DOUBLE,Type::IfcReal);
+    current->add("Scale3",true,IfcUtil::Argument_DOUBLE,Type::IfcReal);
     current = entity_descriptor_map[Type::IfcCircleProfileDef] = new IfcEntityDescriptor(Type::IfcCircleProfileDef,entity_descriptor_map.find(Type::IfcParameterizedProfileDef)->second);
     current->add("Radius",false,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current = entity_descriptor_map[Type::IfcClosedShell] = new IfcEntityDescriptor(Type::IfcClosedShell,entity_descriptor_map.find(Type::IfcConnectedFaceSet)->second);
@@ -1384,7 +1394,7 @@ void InitDescriptorMap() {
     current->add("HasProperties",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcProperty);
     current = entity_descriptor_map[Type::IfcCompositeCurveSegment] = new IfcEntityDescriptor(Type::IfcCompositeCurveSegment,entity_descriptor_map.find(Type::IfcGeometricRepresentationItem)->second);
     current->add("Transition",false,IfcUtil::Argument_ENUMERATION,Type::IfcTransitionCode);
-    current->add("SameSense",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("SameSense",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current->add("ParentCurve",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCurve);
     current = entity_descriptor_map[Type::IfcConstructionResourceType] = new IfcEntityDescriptor(Type::IfcConstructionResourceType,entity_descriptor_map.find(Type::IfcTypeResource)->second);
     current->add("BaseCosts",true,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcAppliedValue);
@@ -1410,14 +1420,14 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcCurveBoundedSurface] = new IfcEntityDescriptor(Type::IfcCurveBoundedSurface,entity_descriptor_map.find(Type::IfcBoundedSurface)->second);
     current->add("BasisSurface",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcSurface);
     current->add("Boundaries",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcBoundaryCurve);
-    current->add("ImplicitOuter",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("ImplicitOuter",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcDirection] = new IfcEntityDescriptor(Type::IfcDirection,entity_descriptor_map.find(Type::IfcGeometricRepresentationItem)->second);
-    current->add("DirectionRatios",false,IfcUtil::Argument_AGGREGATE_OF_DOUBLE,Type::UNDEFINED);
+    current->add("DirectionRatios",false,IfcUtil::Argument_AGGREGATE_OF_DOUBLE,Type::IfcReal);
     current = entity_descriptor_map[Type::IfcDoorStyle] = new IfcEntityDescriptor(Type::IfcDoorStyle,entity_descriptor_map.find(Type::IfcTypeProduct)->second);
     current->add("OperationType",false,IfcUtil::Argument_ENUMERATION,Type::IfcDoorStyleOperationEnum);
     current->add("ConstructionType",false,IfcUtil::Argument_ENUMERATION,Type::IfcDoorStyleConstructionEnum);
-    current->add("ParameterTakesPrecedence",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("Sizeable",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("ParameterTakesPrecedence",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
+    current->add("Sizeable",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcEdgeLoop] = new IfcEntityDescriptor(Type::IfcEdgeLoop,entity_descriptor_map.find(Type::IfcLoop)->second);
     current->add("EdgeList",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcOrientedEdge);
     current = entity_descriptor_map[Type::IfcElementQuantity] = new IfcEntityDescriptor(Type::IfcElementQuantity,entity_descriptor_map.find(Type::IfcQuantitySet)->second);
@@ -1492,11 +1502,11 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcOffsetCurve2D] = new IfcEntityDescriptor(Type::IfcOffsetCurve2D,entity_descriptor_map.find(Type::IfcCurve)->second);
     current->add("BasisCurve",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCurve);
     current->add("Distance",false,IfcUtil::Argument_DOUBLE,Type::IfcLengthMeasure);
-    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::IfcLogical);
     current = entity_descriptor_map[Type::IfcOffsetCurve3D] = new IfcEntityDescriptor(Type::IfcOffsetCurve3D,entity_descriptor_map.find(Type::IfcCurve)->second);
     current->add("BasisCurve",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCurve);
     current->add("Distance",false,IfcUtil::Argument_DOUBLE,Type::IfcLengthMeasure);
-    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::IfcLogical);
     current->add("RefDirection",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcDirection);
     current = entity_descriptor_map[Type::IfcPcurve] = new IfcEntityDescriptor(Type::IfcPcurve,entity_descriptor_map.find(Type::IfcCurve)->second);
     current->add("BasisSurface",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcSurface);
@@ -1572,8 +1582,8 @@ void InitDescriptorMap() {
     current->add("V1",false,IfcUtil::Argument_DOUBLE,Type::IfcParameterValue);
     current->add("U2",false,IfcUtil::Argument_DOUBLE,Type::IfcParameterValue);
     current->add("V2",false,IfcUtil::Argument_DOUBLE,Type::IfcParameterValue);
-    current->add("Usense",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("Vsense",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("Usense",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
+    current->add("Vsense",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcReinforcementDefinitionProperties] = new IfcEntityDescriptor(Type::IfcReinforcementDefinitionProperties,entity_descriptor_map.find(Type::IfcPreDefinedPropertySet)->second);
     current->add("DefinitionType",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current->add("ReinforcementSectionDefinitions",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcSectionReinforcementProperties);
@@ -1618,8 +1628,8 @@ void InitDescriptorMap() {
     current->add("RelatingElement",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcElement);
     current->add("RelatedElement",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcElement);
     current = entity_descriptor_map[Type::IfcRelConnectsPathElements] = new IfcEntityDescriptor(Type::IfcRelConnectsPathElements,entity_descriptor_map.find(Type::IfcRelConnectsElements)->second);
-    current->add("RelatingPriorities",false,IfcUtil::Argument_AGGREGATE_OF_DOUBLE,Type::UNDEFINED);
-    current->add("RelatedPriorities",false,IfcUtil::Argument_AGGREGATE_OF_DOUBLE,Type::UNDEFINED);
+    current->add("RelatingPriorities",false,IfcUtil::Argument_AGGREGATE_OF_INT,Type::IfcInteger);
+    current->add("RelatedPriorities",false,IfcUtil::Argument_AGGREGATE_OF_INT,Type::IfcInteger);
     current->add("RelatedConnectionType",false,IfcUtil::Argument_ENUMERATION,Type::IfcConnectionTypeEnum);
     current->add("RelatingConnectionType",false,IfcUtil::Argument_ENUMERATION,Type::IfcConnectionTypeEnum);
     current = entity_descriptor_map[Type::IfcRelConnectsPortToElement] = new IfcEntityDescriptor(Type::IfcRelConnectsPortToElement,entity_descriptor_map.find(Type::IfcRelConnects)->second);
@@ -1788,8 +1798,8 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcTask] = new IfcEntityDescriptor(Type::IfcTask,entity_descriptor_map.find(Type::IfcProcess)->second);
     current->add("Status",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current->add("WorkMethod",true,IfcUtil::Argument_STRING,Type::IfcLabel);
-    current->add("IsMilestone",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("Priority",true,IfcUtil::Argument_INT,Type::UNDEFINED);
+    current->add("IsMilestone",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
+    current->add("Priority",true,IfcUtil::Argument_INT,Type::IfcInteger);
     current->add("TaskTime",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcTaskTime);
     current->add("PredefinedType",true,IfcUtil::Argument_ENUMERATION,Type::IfcTaskTypeEnum);
     current = entity_descriptor_map[Type::IfcTaskType] = new IfcEntityDescriptor(Type::IfcTaskType,entity_descriptor_map.find(Type::IfcTypeProcess)->second);
@@ -1798,12 +1808,12 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcTessellatedFaceSet] = new IfcEntityDescriptor(Type::IfcTessellatedFaceSet,entity_descriptor_map.find(Type::IfcTessellatedItem)->second);
     current->add("Coordinates",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCartesianPointList3D);
     current->add("Normals",true,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::IfcParameterValue);
-    current->add("Closed",true,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("Closed",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcTransportElementType] = new IfcEntityDescriptor(Type::IfcTransportElementType,entity_descriptor_map.find(Type::IfcElementType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcTransportElementTypeEnum);
     current = entity_descriptor_map[Type::IfcTriangulatedFaceSet] = new IfcEntityDescriptor(Type::IfcTriangulatedFaceSet,entity_descriptor_map.find(Type::IfcTessellatedFaceSet)->second);
-    current->add("CoordIndex",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT,Type::UNDEFINED);
-    current->add("NormalIndex",true,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT,Type::UNDEFINED);
+    current->add("CoordIndex",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT,Type::IfcPositiveInteger);
+    current->add("NormalIndex",true,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT,Type::IfcPositiveInteger);
     current = entity_descriptor_map[Type::IfcWindowLiningProperties] = new IfcEntityDescriptor(Type::IfcWindowLiningProperties,entity_descriptor_map.find(Type::IfcPreDefinedPropertySet)->second);
     current->add("LiningDepth",true,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current->add("LiningThickness",true,IfcUtil::Argument_DOUBLE,Type::IfcNonNegativeLengthMeasure);
@@ -1832,16 +1842,16 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcAnnotation] = new IfcEntityDescriptor(Type::IfcAnnotation,entity_descriptor_map.find(Type::IfcProduct)->second);
 
     current = entity_descriptor_map[Type::IfcBSplineSurface] = new IfcEntityDescriptor(Type::IfcBSplineSurface,entity_descriptor_map.find(Type::IfcBoundedSurface)->second);
-    current->add("UDegree",false,IfcUtil::Argument_INT,Type::UNDEFINED);
-    current->add("VDegree",false,IfcUtil::Argument_INT,Type::UNDEFINED);
+    current->add("UDegree",false,IfcUtil::Argument_INT,Type::IfcInteger);
+    current->add("VDegree",false,IfcUtil::Argument_INT,Type::IfcInteger);
     current->add("ControlPointsList",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcCartesianPoint);
     current->add("SurfaceForm",false,IfcUtil::Argument_ENUMERATION,Type::IfcBSplineSurfaceForm);
-    current->add("UClosed",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("VClosed",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("UClosed",false,IfcUtil::Argument_BOOL,Type::IfcLogical);
+    current->add("VClosed",false,IfcUtil::Argument_BOOL,Type::IfcLogical);
+    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::IfcLogical);
     current = entity_descriptor_map[Type::IfcBSplineSurfaceWithKnots] = new IfcEntityDescriptor(Type::IfcBSplineSurfaceWithKnots,entity_descriptor_map.find(Type::IfcBSplineSurface)->second);
-    current->add("UMultiplicities",false,IfcUtil::Argument_AGGREGATE_OF_INT,Type::UNDEFINED);
-    current->add("VMultiplicities",false,IfcUtil::Argument_AGGREGATE_OF_INT,Type::UNDEFINED);
+    current->add("UMultiplicities",false,IfcUtil::Argument_AGGREGATE_OF_INT,Type::IfcInteger);
+    current->add("VMultiplicities",false,IfcUtil::Argument_AGGREGATE_OF_INT,Type::IfcInteger);
     current->add("UKnots",false,IfcUtil::Argument_AGGREGATE_OF_DOUBLE,Type::IfcParameterValue);
     current->add("VKnots",false,IfcUtil::Argument_AGGREGATE_OF_DOUBLE,Type::IfcParameterValue);
     current->add("KnotSpec",false,IfcUtil::Argument_ENUMERATION,Type::IfcKnotType);
@@ -1875,7 +1885,7 @@ void InitDescriptorMap() {
     current->add("HasPropertyTemplates",true,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcPropertyTemplate);
     current = entity_descriptor_map[Type::IfcCompositeCurve] = new IfcEntityDescriptor(Type::IfcCompositeCurve,entity_descriptor_map.find(Type::IfcBoundedCurve)->second);
     current->add("Segments",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcCompositeCurveSegment);
-    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::IfcLogical);
     current = entity_descriptor_map[Type::IfcCompositeCurveOnSurface] = new IfcEntityDescriptor(Type::IfcCompositeCurveOnSurface,entity_descriptor_map.find(Type::IfcCompositeCurve)->second);
 
     current = entity_descriptor_map[Type::IfcConic] = new IfcEntityDescriptor(Type::IfcConic,entity_descriptor_map.find(Type::IfcCurve)->second);
@@ -1936,7 +1946,7 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcDoorType] = new IfcEntityDescriptor(Type::IfcDoorType,entity_descriptor_map.find(Type::IfcBuildingElementType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcDoorTypeEnum);
     current->add("OperationType",false,IfcUtil::Argument_ENUMERATION,Type::IfcDoorTypeOperationEnum);
-    current->add("ParameterTakesPrecedence",true,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("ParameterTakesPrecedence",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current->add("UserDefinedOperationType",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current = entity_descriptor_map[Type::IfcDraughtingPreDefinedColour] = new IfcEntityDescriptor(Type::IfcDraughtingPreDefinedColour,entity_descriptor_map.find(Type::IfcPreDefinedColour)->second);
 
@@ -2020,6 +2030,10 @@ void InitDescriptorMap() {
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcHeatExchangerTypeEnum);
     current = entity_descriptor_map[Type::IfcHumidifierType] = new IfcEntityDescriptor(Type::IfcHumidifierType,entity_descriptor_map.find(Type::IfcEnergyConversionDeviceType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcHumidifierTypeEnum);
+    current = entity_descriptor_map[Type::IfcIndexedPolyCurve] = new IfcEntityDescriptor(Type::IfcIndexedPolyCurve,entity_descriptor_map.find(Type::IfcBoundedCurve)->second);
+    current->add("Points",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCartesianPointList);
+    current->add("Segments",true,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcSegmentIndexSelect);
+    current->add("SelfIntersect",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcInterceptorType] = new IfcEntityDescriptor(Type::IfcInterceptorType,entity_descriptor_map.find(Type::IfcFlowTreatmentDeviceType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcInterceptorTypeEnum);
     current = entity_descriptor_map[Type::IfcInventory] = new IfcEntityDescriptor(Type::IfcInventory,entity_descriptor_map.find(Type::IfcGroup)->second);
@@ -2103,7 +2117,7 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcRampType] = new IfcEntityDescriptor(Type::IfcRampType,entity_descriptor_map.find(Type::IfcBuildingElementType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcRampTypeEnum);
     current = entity_descriptor_map[Type::IfcRationalBSplineSurfaceWithKnots] = new IfcEntityDescriptor(Type::IfcRationalBSplineSurfaceWithKnots,entity_descriptor_map.find(Type::IfcBSplineSurfaceWithKnots)->second);
-    current->add("WeightsData",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::UNDEFINED);
+    current->add("WeightsData",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::IfcReal);
     current = entity_descriptor_map[Type::IfcReinforcingElement] = new IfcEntityDescriptor(Type::IfcReinforcingElement,entity_descriptor_map.find(Type::IfcElementComponent)->second);
     current->add("SteelGrade",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current = entity_descriptor_map[Type::IfcReinforcingElementType] = new IfcEntityDescriptor(Type::IfcReinforcingElementType,entity_descriptor_map.find(Type::IfcElementComponentType)->second);
@@ -2164,7 +2178,7 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcStairType] = new IfcEntityDescriptor(Type::IfcStairType,entity_descriptor_map.find(Type::IfcBuildingElementType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcStairTypeEnum);
     current = entity_descriptor_map[Type::IfcStructuralAction] = new IfcEntityDescriptor(Type::IfcStructuralAction,entity_descriptor_map.find(Type::IfcStructuralActivity)->second);
-    current->add("DestabilizingLoad",true,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("DestabilizingLoad",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcStructuralConnection] = new IfcEntityDescriptor(Type::IfcStructuralConnection,entity_descriptor_map.find(Type::IfcStructuralItem)->second);
     current->add("AppliedCondition",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcBoundaryCondition);
     current = entity_descriptor_map[Type::IfcStructuralCurveAction] = new IfcEntityDescriptor(Type::IfcStructuralCurveAction,entity_descriptor_map.find(Type::IfcStructuralAction)->second);
@@ -2196,7 +2210,7 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcStructuralResultGroup] = new IfcEntityDescriptor(Type::IfcStructuralResultGroup,entity_descriptor_map.find(Type::IfcGroup)->second);
     current->add("TheoryType",false,IfcUtil::Argument_ENUMERATION,Type::IfcAnalysisTheoryTypeEnum);
     current->add("ResultForLoadGroup",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcStructuralLoadGroup);
-    current->add("IsLinear",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("IsLinear",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcStructuralSurfaceAction] = new IfcEntityDescriptor(Type::IfcStructuralSurfaceAction,entity_descriptor_map.find(Type::IfcStructuralAction)->second);
     current->add("ProjectedOrTrue",true,IfcUtil::Argument_ENUMERATION,Type::IfcProjectedOrTrueLengthEnum);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcStructuralSurfaceActivityTypeEnum);
@@ -2240,7 +2254,7 @@ void InitDescriptorMap() {
     current->add("BasisCurve",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCurve);
     current->add("Trim1",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcTrimmingSelect);
     current->add("Trim2",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcTrimmingSelect);
-    current->add("SenseAgreement",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("SenseAgreement",false,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current->add("MasterRepresentation",false,IfcUtil::Argument_ENUMERATION,Type::IfcTrimmingPreference);
     current = entity_descriptor_map[Type::IfcTubeBundleType] = new IfcEntityDescriptor(Type::IfcTubeBundleType,entity_descriptor_map.find(Type::IfcEnergyConversionDeviceType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcTubeBundleTypeEnum);
@@ -2263,7 +2277,7 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcWindowType] = new IfcEntityDescriptor(Type::IfcWindowType,entity_descriptor_map.find(Type::IfcBuildingElementType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcWindowTypeEnum);
     current->add("PartitioningType",false,IfcUtil::Argument_ENUMERATION,Type::IfcWindowTypePartitioningEnum);
-    current->add("ParameterTakesPrecedence",true,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("ParameterTakesPrecedence",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current->add("UserDefinedPartitioningType",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current = entity_descriptor_map[Type::IfcWorkCalendar] = new IfcEntityDescriptor(Type::IfcWorkCalendar,entity_descriptor_map.find(Type::IfcControl)->second);
     current->add("WorkingTimes",true,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcWorkTime);
@@ -2306,13 +2320,13 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcAudioVisualApplianceType] = new IfcEntityDescriptor(Type::IfcAudioVisualApplianceType,entity_descriptor_map.find(Type::IfcFlowTerminalType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcAudioVisualApplianceTypeEnum);
     current = entity_descriptor_map[Type::IfcBSplineCurve] = new IfcEntityDescriptor(Type::IfcBSplineCurve,entity_descriptor_map.find(Type::IfcBoundedCurve)->second);
-    current->add("Degree",false,IfcUtil::Argument_INT,Type::UNDEFINED);
+    current->add("Degree",false,IfcUtil::Argument_INT,Type::IfcInteger);
     current->add("ControlPointsList",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcCartesianPoint);
     current->add("CurveForm",false,IfcUtil::Argument_ENUMERATION,Type::IfcBSplineCurveForm);
-    current->add("ClosedCurve",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("ClosedCurve",false,IfcUtil::Argument_BOOL,Type::IfcLogical);
+    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::IfcLogical);
     current = entity_descriptor_map[Type::IfcBSplineCurveWithKnots] = new IfcEntityDescriptor(Type::IfcBSplineCurveWithKnots,entity_descriptor_map.find(Type::IfcBSplineCurve)->second);
-    current->add("KnotMultiplicities",false,IfcUtil::Argument_AGGREGATE_OF_INT,Type::UNDEFINED);
+    current->add("KnotMultiplicities",false,IfcUtil::Argument_AGGREGATE_OF_INT,Type::IfcInteger);
     current->add("Knots",false,IfcUtil::Argument_AGGREGATE_OF_DOUBLE,Type::IfcParameterValue);
     current->add("KnotSpec",false,IfcUtil::Argument_ENUMERATION,Type::IfcKnotType);
     current = entity_descriptor_map[Type::IfcBeamType] = new IfcEntityDescriptor(Type::IfcBeamType,entity_descriptor_map.find(Type::IfcBuildingElementType)->second);
@@ -2333,6 +2347,7 @@ void InitDescriptorMap() {
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcBuildingElementProxyTypeEnum);
     current = entity_descriptor_map[Type::IfcBuildingSystem] = new IfcEntityDescriptor(Type::IfcBuildingSystem,entity_descriptor_map.find(Type::IfcSystem)->second);
     current->add("PredefinedType",true,IfcUtil::Argument_ENUMERATION,Type::IfcBuildingSystemTypeEnum);
+    current->add("LongName",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current = entity_descriptor_map[Type::IfcBurnerType] = new IfcEntityDescriptor(Type::IfcBurnerType,entity_descriptor_map.find(Type::IfcEnergyConversionDeviceType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcBurnerTypeEnum);
     current = entity_descriptor_map[Type::IfcCableCarrierFittingType] = new IfcEntityDescriptor(Type::IfcCableCarrierFittingType,entity_descriptor_map.find(Type::IfcFlowFittingType)->second);
@@ -2508,7 +2523,7 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcRampFlight] = new IfcEntityDescriptor(Type::IfcRampFlight,entity_descriptor_map.find(Type::IfcBuildingElement)->second);
     current->add("PredefinedType",true,IfcUtil::Argument_ENUMERATION,Type::IfcRampFlightTypeEnum);
     current = entity_descriptor_map[Type::IfcRationalBSplineCurveWithKnots] = new IfcEntityDescriptor(Type::IfcRationalBSplineCurveWithKnots,entity_descriptor_map.find(Type::IfcBSplineCurveWithKnots)->second);
-    current->add("WeightsData",false,IfcUtil::Argument_AGGREGATE_OF_DOUBLE,Type::UNDEFINED);
+    current->add("WeightsData",false,IfcUtil::Argument_AGGREGATE_OF_DOUBLE,Type::IfcReal);
     current = entity_descriptor_map[Type::IfcReinforcingBar] = new IfcEntityDescriptor(Type::IfcReinforcingBar,entity_descriptor_map.find(Type::IfcReinforcingElement)->second);
     current->add("NominalDiameter",true,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current->add("CrossSectionArea",true,IfcUtil::Argument_DOUBLE,Type::IfcAreaMeasure);
@@ -2546,8 +2561,8 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcStair] = new IfcEntityDescriptor(Type::IfcStair,entity_descriptor_map.find(Type::IfcBuildingElement)->second);
     current->add("PredefinedType",true,IfcUtil::Argument_ENUMERATION,Type::IfcStairTypeEnum);
     current = entity_descriptor_map[Type::IfcStairFlight] = new IfcEntityDescriptor(Type::IfcStairFlight,entity_descriptor_map.find(Type::IfcBuildingElement)->second);
-    current->add("NumberOfRiser",true,IfcUtil::Argument_INT,Type::UNDEFINED);
-    current->add("NumberOfTreads",true,IfcUtil::Argument_INT,Type::UNDEFINED);
+    current->add("NumberOfRisers",true,IfcUtil::Argument_INT,Type::IfcInteger);
+    current->add("NumberOfTreads",true,IfcUtil::Argument_INT,Type::IfcInteger);
     current->add("RiserHeight",true,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current->add("TreadLength",true,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current->add("PredefinedType",true,IfcUtil::Argument_ENUMERATION,Type::IfcStairFlightTypeEnum);
@@ -4212,13 +4227,16 @@ void InitDescriptorMap() {
     values.push_back("TAPERED");
     current_enum = enumeration_descriptor_map[Type::IfcSectionTypeEnum] = new IfcEnumerationDescriptor(Type::IfcSectionTypeEnum, values);
     values.clear(); values.reserve(128);
+    values.push_back("CO2SENSOR");
     values.push_back("CONDUCTANCESENSOR");
     values.push_back("CONTACTSENSOR");
     values.push_back("FIRESENSOR");
     values.push_back("FLOWSENSOR");
+    values.push_back("FROSTSENSOR");
     values.push_back("GASSENSOR");
     values.push_back("HEATSENSOR");
     values.push_back("HUMIDITYSENSOR");
+    values.push_back("IDENTIFIERSENSOR");
     values.push_back("IONCONCENTRATIONSENSOR");
     values.push_back("LEVELSENSOR");
     values.push_back("LIGHTSENSOR");
@@ -4738,7 +4756,6 @@ void InitInverseMap() {
     inverse_map[Type::IfcApproval].insert(std::make_pair("ApprovedResources", std::make_pair(Type::IfcResourceApprovalRelationship, 3)));
     inverse_map[Type::IfcApproval].insert(std::make_pair("IsRelatedWith", std::make_pair(Type::IfcApprovalRelationship, 3)));
     inverse_map[Type::IfcApproval].insert(std::make_pair("Relates", std::make_pair(Type::IfcApprovalRelationship, 2)));
-    inverse_map[Type::IfcBuildingElement].insert(std::make_pair("HasCoverings", std::make_pair(Type::IfcRelCoversBldgElements, 4)));
     inverse_map[Type::IfcClassification].insert(std::make_pair("ClassificationForObjects", std::make_pair(Type::IfcRelAssociatesClassification, 5)));
     inverse_map[Type::IfcClassification].insert(std::make_pair("HasReferences", std::make_pair(Type::IfcClassificationReference, 3)));
     inverse_map[Type::IfcClassificationReference].insert(std::make_pair("ClassificationRefForObjects", std::make_pair(Type::IfcRelAssociatesClassification, 5)));
@@ -4751,6 +4768,7 @@ void InitInverseMap() {
     inverse_map[Type::IfcContextDependentUnit].insert(std::make_pair("HasExternalReference", std::make_pair(Type::IfcExternalReferenceRelationship, 3)));
     inverse_map[Type::IfcControl].insert(std::make_pair("Controls", std::make_pair(Type::IfcRelAssignsToControl, 6)));
     inverse_map[Type::IfcConversionBasedUnit].insert(std::make_pair("HasExternalReference", std::make_pair(Type::IfcExternalReferenceRelationship, 3)));
+    inverse_map[Type::IfcCoordinateReferenceSystem].insert(std::make_pair("HasCoordinateOperation", std::make_pair(Type::IfcCoordinateOperation, 0)));
     inverse_map[Type::IfcCovering].insert(std::make_pair("CoversSpaces", std::make_pair(Type::IfcRelCoversSpaces, 5)));
     inverse_map[Type::IfcCovering].insert(std::make_pair("CoversElements", std::make_pair(Type::IfcRelCoversBldgElements, 5)));
     inverse_map[Type::IfcDistributionControlElement].insert(std::make_pair("AssignedToFlowElement", std::make_pair(Type::IfcRelFlowControlElements, 4)));
@@ -4772,12 +4790,14 @@ void InitInverseMap() {
     inverse_map[Type::IfcElement].insert(std::make_pair("ProvidesBoundaries", std::make_pair(Type::IfcRelSpaceBoundary, 5)));
     inverse_map[Type::IfcElement].insert(std::make_pair("ConnectedFrom", std::make_pair(Type::IfcRelConnectsElements, 6)));
     inverse_map[Type::IfcElement].insert(std::make_pair("ContainedInStructure", std::make_pair(Type::IfcRelContainedInSpatialStructure, 4)));
+    inverse_map[Type::IfcElement].insert(std::make_pair("HasCoverings", std::make_pair(Type::IfcRelCoversBldgElements, 4)));
     inverse_map[Type::IfcExternalReference].insert(std::make_pair("ExternalReferenceForResources", std::make_pair(Type::IfcExternalReferenceRelationship, 2)));
     inverse_map[Type::IfcExternalSpatialElement].insert(std::make_pair("BoundedBy", std::make_pair(Type::IfcRelSpaceBoundary, 4)));
     inverse_map[Type::IfcFace].insert(std::make_pair("HasTextureMaps", std::make_pair(Type::IfcTextureMap, 2)));
     inverse_map[Type::IfcFeatureElementAddition].insert(std::make_pair("ProjectsElements", std::make_pair(Type::IfcRelProjectsElement, 5)));
     inverse_map[Type::IfcFeatureElementSubtraction].insert(std::make_pair("VoidsElements", std::make_pair(Type::IfcRelVoidsElement, 5)));
     inverse_map[Type::IfcGeometricRepresentationContext].insert(std::make_pair("HasSubContexts", std::make_pair(Type::IfcGeometricRepresentationSubContext, 6)));
+    inverse_map[Type::IfcGeometricRepresentationContext].insert(std::make_pair("HasCoordinateOperation", std::make_pair(Type::IfcCoordinateOperation, 0)));
     inverse_map[Type::IfcGrid].insert(std::make_pair("ContainedInStructure", std::make_pair(Type::IfcRelContainedInSpatialStructure, 4)));
     inverse_map[Type::IfcGridAxis].insert(std::make_pair("PartOfW", std::make_pair(Type::IfcGrid, 9)));
     inverse_map[Type::IfcGridAxis].insert(std::make_pair("PartOfV", std::make_pair(Type::IfcGrid, 8)));
@@ -4832,6 +4852,8 @@ void InitInverseMap() {
     inverse_map[Type::IfcProperty].insert(std::make_pair("PropertyForDependance", std::make_pair(Type::IfcPropertyDependencyRelationship, 2)));
     inverse_map[Type::IfcProperty].insert(std::make_pair("PropertyDependsOn", std::make_pair(Type::IfcPropertyDependencyRelationship, 3)));
     inverse_map[Type::IfcProperty].insert(std::make_pair("PartOfComplex", std::make_pair(Type::IfcComplexProperty, 3)));
+    inverse_map[Type::IfcProperty].insert(std::make_pair("HasConstraints", std::make_pair(Type::IfcResourceConstraintRelationship, 3)));
+    inverse_map[Type::IfcProperty].insert(std::make_pair("HasApprovals", std::make_pair(Type::IfcResourceApprovalRelationship, 2)));
     inverse_map[Type::IfcPropertyAbstraction].insert(std::make_pair("HasExternalReferences", std::make_pair(Type::IfcExternalReferenceRelationship, 3)));
     inverse_map[Type::IfcPropertyDefinition].insert(std::make_pair("HasContext", std::make_pair(Type::IfcRelDeclares, 5)));
     inverse_map[Type::IfcPropertyDefinition].insert(std::make_pair("HasAssociations", std::make_pair(Type::IfcRelAssociates, 4)));
@@ -4868,7 +4890,6 @@ void InitInverseMap() {
     inverse_map[Type::IfcSurfaceTexture].insert(std::make_pair("IsMappedBy", std::make_pair(Type::IfcTextureCoordinate, 0)));
     inverse_map[Type::IfcSurfaceTexture].insert(std::make_pair("UsedInStyles", std::make_pair(Type::IfcSurfaceStyleWithTextures, 0)));
     inverse_map[Type::IfcSystem].insert(std::make_pair("ServicesBuildings", std::make_pair(Type::IfcRelServicesBuildings, 4)));
-    inverse_map[Type::IfcTableRow].insert(std::make_pair("OfTable", std::make_pair(Type::IfcTable, 1)));
     inverse_map[Type::IfcTessellatedFaceSet].insert(std::make_pair("HasColours", std::make_pair(Type::IfcIndexedColourMap, 0)));
     inverse_map[Type::IfcTessellatedFaceSet].insert(std::make_pair("HasTextures", std::make_pair(Type::IfcIndexedTextureMap, 1)));
     inverse_map[Type::IfcTimeSeries].insert(std::make_pair("HasExternalReference", std::make_pair(Type::IfcExternalReferenceRelationship, 3)));
@@ -4941,48 +4962,60 @@ std::pair<const char*, int> Type::GetEnumerationIndex(Enum t, const std::string&
 }
 
 std::pair<Type::Enum, unsigned> Type::GetInverseAttribute(Enum t, const std::string& a) {
-	if (inverse_map.empty()) ::InitInverseMap();
-	inverse_map_t::const_iterator it;
-	inverse_map_t::mapped_type::const_iterator jt;
-    while (true) {
+    if (inverse_map.empty()) ::InitInverseMap();
+    inverse_map_t::const_iterator it;
+    inverse_map_t::mapped_type::const_iterator jt;
+    for(;;) {
         it = inverse_map.find(t);
         if (it != inverse_map.end()) {
-			jt = it->second.find(a);
-			if (jt != it->second.end()) {
-				return jt->second;
-			}
-		}
-        if ((t = Parent(t)) == -1) break;
+            jt = it->second.find(a);
+            if (jt != it->second.end()) {
+                return jt->second;
+            }
+        }
+        boost::optional<Enum> pt = Parent(t);
+        if (pt) {
+            t = *pt;
+        }
+        else {
+            break;
+        }
     }
     throw IfcException("Attribute not found");
 }
 
 std::set<std::string> Type::GetInverseAttributeNames(Enum t) {
-	if (inverse_map.empty()) ::InitInverseMap();
-	inverse_map_t::const_iterator it;
-	inverse_map_t::mapped_type::const_iterator jt;
+    if (inverse_map.empty()) ::InitInverseMap();
+    inverse_map_t::const_iterator it;
+    inverse_map_t::mapped_type::const_iterator jt;
 
-	std::set<std::string> return_value;
+    std::set<std::string> return_value;
 
-    while (true) {
+    for (;;) {
         it = inverse_map.find(t);
         if (it != inverse_map.end()) {
-			for (jt = it->second.begin(); jt != it->second.end(); ++jt) {
-				return_value.insert(jt->first);
-			}
-		}
-        if ((t = Parent(t)) == -1) break;
+            for (jt = it->second.begin(); jt != it->second.end(); ++jt) {
+                return_value.insert(jt->first);
+            }
+        }
+        boost::optional<Enum> pt = Parent(t);
+        if (pt) {
+            t = *pt;
+        }
+        else {
+            break;
+        }
     }
-    
-	return return_value;
+
+    return return_value;
 }
 
 void Type::PopulateDerivedFields(IfcWrite::IfcWritableEntity* e) {
     std::map<Type::Enum, std::set<int> >::const_iterator i = derived_map.find(e->type());
-	if (i != derived_map.end()) {
-		for (std::set<int>::const_iterator it = i->second.begin(); it != i->second.end(); ++it) {
-			e->setArgumentDerived(*it);
-		}
-	}
+    if (i != derived_map.end()) {
+        for (std::set<int>::const_iterator it = i->second.begin(); it != i->second.end(); ++it) {
+            e->setArgumentDerived(*it);
+        }
+    }
 }
 #endif

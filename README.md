@@ -1,52 +1,63 @@
 IfcOpenShell 
 ============
-open source (LGPL) software library for working with the IFC file format
+IfcOpenShell is an open source ([LGPL]) software library for working with the Industry Foundation Classes ([IFC]) 
+file format. Currently supported IFC releases are [IFC2x3 TC1] and [IFC4].
 
-[http://ifcopenshell.org](http://ifcopenshell.org)  
-[http://academy.ifcopenshell.org](http://academy.ifcopenshell.org)
+For more information, see
+* [http://ifcopenshell.org](http://ifcopenshell.org)  
+* [http://academy.ifcopenshell.org](http://academy.ifcopenshell.org)
 
+Prerequisites
+-------------
+* Git
+* CMake (2.6 or newer)
+* Windows: Visual Studio 2008 or newer with C++ toolset, MinGW not supported currently
+* *nix: GCC 4.7 or newer, or Clang (any version should work, but not tested)
 
 Dependencies
-============
+-------------
 * [Boost](http://www.boost.org/)
-* Open Cascade *optional*, but required for building IfcGeom)  
-  [Official](http://www.opencascade.org/getocc/download/loadocc/) or [community edition](https://github.com/tpaviot/oce)  
+* Open Cascade - *optional*, but required for building IfcGeom
+  ([official](http://www.opencascade.org/getocc/download/loadocc/) or [community edition](https://github.com/tpaviot/oce))  
   For converting IFC representation items into BRep solids and tesselated meshes
-* [ICU](http://site.icu-project.org/) *optional*  
+* [ICU](http://site.icu-project.org/) - *optional*  
   For handling code pages and Unicode in the parser
-* [OpenCOLLADA](https://github.com/khronosGroup/OpenCOLLADA/) *optional*  
+* [OpenCOLLADA](https://github.com/khronosGroup/OpenCOLLADA/) - *optional*  
   For IfcConvert to be able to write tessellated Collada (.dae) files
-* [SWIG](http://www.swig.org/), [Python](https://www.python.org/) libraries *optional*  
+* [SWIG](http://www.swig.org/) and [Python](https://www.python.org/) - *optional*  
   For building the IfcOpenShell Python interface and the Blender add-on
-* 3ds max SDK *optional*  
-  For building the 3ds max plug-in
+* [3ds Max SDK](http://www.autodesk.com/products/3ds-max/free-trial) - *optional*  
+  For building the 3ds Max plug-in.
+  All recent versions of 3ds Max (2014 and newer) are 64-bit only, so a 64-bit installation is assumed.
 
+Building IfcOpenShell
+---------------------
+### Compiling on Windows
+The preferred way to fetch and build this project's dependencies is to use the build scripts
+in win/ folder. **See [win/readme.md] for more information**. Instructions in a nutshell
+(**assuming Visual Studio 2015 x64 environment variables set**):
 
-Compiling on Windows
-====================
-Users are advised to use the Visual Studio .sln file in the win/ folder.
-For Windows users a prebuilt Open CASCADE version is available from the
-http://opencascade.org website. Download and install this version and
-provide the paths to the Open CASCADE header and library files to MS
-Visual Studio C++.
+    > git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+    > cd IfcOpenShell\win
+    > build-deps.cmd
+    > run-cmake.bat
 
-For building the Autodesk 3ds Max plugin, the 3ds Max SDK needs to be
-installed as well as 3ds Max itself. Please provide the include and
-library paths to Visual Studio.
+You can now open and build the solution file in Visual Studio:
 
-For building the IfcPython wrapper, SWIG needs to be installed. Please
-download the latest swigwin version from http://www.swig.org/download.html.
-After extracting the .zip file, please add the extracted folder to the PATH
-environment variable. Python needs to be installed, please provide the
-include and library paths to Visual Studio.
+    > ..\build-vs2015-x64\IfcOpenShell.sln
 
+As the scripts default to using the `RelWithDebInfo` configuration, and a freshly created solution by CMake defaults
+to `Debug`, make sure to switch the used build configuration. Build the `INSTALL` project (right-click -> Project
+Only) to deploy the headers and binaries into a single location if wanted/needed.
 
-Compiling on *nix
-=================
-Users are advised to build IfcOpenShell using the cmake file provided in
-the cmake/ folder. There might be an Open CASCADE package in your operating
-system's software repository. If not, you will need to compile Open 
-CASCADE yourself. See http://opencascade.org.
+Alternatively, one can use the utility batch files to build and install the project easily from the command-line:
+
+    > build-ifcopenshell.cmd
+    > install-ifcopenshell.cmd
+
+### Compiling on *nix
+There might be an Open CASCADE package in your operating system's software repository. If not, you will need to compile
+Open CASCADE yourself. See http://opencascade.org.
 
 For building the IfcPython wrapper, SWIG and Python development are
 required.
@@ -75,7 +86,10 @@ To build IfcOpenShell please take the following steps:
     $ cmake ../
     $ make
 
-If all worked out correctly you can now use IfcOpenShell. For example:
+If all worked out correctly you can now use IfcOpenShell. See the examples below.
+
+Usage examples
+--------------
 
 **Invoking IfcConvert from the command line**
 
@@ -83,8 +97,6 @@ If all worked out correctly you can now use IfcOpenShell. For example:
     $ unzip Munkerud_hus6_BE.zip
     $ ./IfcConvert Munkerud_hus6_BE.ifc
     $ less Munkerud_hus6_BE.obj
-
-Or:
 
 **Using the IfcOpenShell Python interface**
 
@@ -146,3 +158,9 @@ Or:
     >>>
     >>> # Writing IFC-SPF files to disk:
     >>> f.write("out.ifc")
+
+[LGPL]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/COPYING "LGPL"
+[IFC]: http://www.buildingsmart-tech.org/specifications/ifc-overview "IFC"
+[IFC2x3 TC1]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc2x3-tc1-release "IFC2x3 TC1"
+[IFC4]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc4-release "IFC4"
+[win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"

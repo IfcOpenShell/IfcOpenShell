@@ -17,9 +17,10 @@
 #                                                                             #
 ###############################################################################
 
+import codegen
 import templates
 
-class LateBoundImplementation:
+class LateBoundImplementation(codegen.Base):
     def __init__(self, mapping):
         schema_name = mapping.schema.name.capitalize()
         
@@ -40,11 +41,10 @@ class LateBoundImplementation:
             })
             
         emitted_entities = set()
-        entities_to_emit = mapping.schema.entities.keys()
         while len(emitted_entities) < len(mapping.schema.entities):
             for name, type in mapping.schema.entities.items():
-                if name in emitted_entities: continue
-                if len(type.supertypes) == 0 or set(type.supertypes) < emitted_entities:
+                if name.lower() in emitted_entities: continue
+                if len(type.supertypes) == 0 or set(map(str.lower, type.supertypes)) <= emitted_entities:
                     constructor_arguments = mapping.get_assignable_arguments(type, include_derived = True)
                     entity_descriptor_attributes = []
                     for arg in constructor_arguments:
@@ -60,8 +60,9 @@ class LateBoundImplementation:
                             })
                         
                     emitted_entities.add(name)
+                    
                     parent_statement = '0' if len(type.supertypes) != 1 else templates.entity_descriptor_parent % {
-                        'type' : type.supertypes[0]
+                        'type' : [k for k in mapping.schema.entities.keys() if k.lower() == type.supertypes[0].lower()][0]
                     }
                     entity_descriptors.append(templates.entity_descriptor % {
                         'type'                         : name,
@@ -91,13 +92,13 @@ class LateBoundImplementation:
             if type.inverse:
                 for attr in type.inverse.elements:
                     related_entity = mapping.schema.entities[attr.entity]
-                    related_attrs = [a['name'] for a in mapping.get_assignable_arguments(related_entity, include_derived=True)]
+                    related_attrs = [a['name'].lower() for a in mapping.get_assignable_arguments(related_entity, include_derived=True)]
 
                     inverse_implementations.append(templates.inverse_implementation % {
                         'type'         : name,
                         'name'         : attr.name,
                         'related_type' : attr.entity,
-                        'index'        : related_attrs.index(attr.attribute)
+                        'index'        : related_attrs.index(attr.attribute.lower())
                     })
 
         self.str = templates.lb_implementation % {
@@ -110,10 +111,9 @@ class LateBoundImplementation:
         }
 
         self.schema_name = mapping.schema.name.capitalize()
+        
+        self.file_name = '%s-latebound.cpp'%self.schema_name
+        
+        
     def __repr__(self):
         return self.str
-    def emit(self):
-        f = open('%s-latebound.cpp'%self.schema_name, 'w', encoding='utf-8')
-        f.write(str(self))
-        f.close()
-

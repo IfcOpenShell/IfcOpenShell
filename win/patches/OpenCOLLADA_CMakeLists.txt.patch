@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9e28557..7549c16 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -271,7 +271,7 @@ add_subdirectory(COLLADASaxFrameworkLoader)
+ add_subdirectory(COLLADAStreamWriter)
+ 
+ # building COLLADAValidator app
+-add_subdirectory(COLLADAValidator)
++#add_subdirectory(COLLADAValidator)
+ 
+ 
+ # Library export

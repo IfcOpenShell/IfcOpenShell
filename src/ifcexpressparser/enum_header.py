@@ -18,8 +18,9 @@
 ###############################################################################
 
 import templates
+import codegen
 
-class EnumHeader:
+class EnumHeader(codegen.Base):
     def __init__(self, mapping):
         enumerable_types = sorted(set([name for name, type in mapping.schema.types.items()] + [name for name, type in mapping.schema.entities.items()]))
         
@@ -30,9 +31,9 @@ class EnumHeader:
         }
         
         self.schema_name = mapping.schema.name.capitalize()
+        
+        self.file_name = '%senum.h'%self.schema_name
+        
+        
     def __repr__(self):
         return self.str
-    def emit(self):
-        f = open('%senum.h'%self.schema_name, 'w', encoding='utf-8')
-        f.write(str(self))
-        f.close()

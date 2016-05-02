@@ -52,21 +52,34 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 #include "../ifcgeom/IfcGeomShapeType.h"
 
+// Define this in case you want to conserve memory usage at all cost. This has been
+// benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
+// #define NO_CACHE
+
+#ifdef NO_CACHE
+
+#define IN_CACHE(T,E,t,e)
+#define CACHE(T,E,e)
+
+#else
+
 #define IN_CACHE(T,E,t,e) std::map<int,t>::const_iterator it = cache.T.find(E->entity->id());\
 if ( it != cache.T.end() ) { e = it->second; return true; }
 #define CACHE(T,E,e) cache.T[E->entity->id()] = e;
+
+#endif
 
 namespace IfcGeom {
 
 class Cache {
 public:
 #include "IfcRegisterCreateCache.h"
-	std::map<int, SurfaceStyle> Style;
 	std::map<int, TopoDS_Shape> Shape;
 };
 
 class Kernel {
 private:
+
 	double deflection_tolerance;
 	double wire_creation_tolerance;
 	double minimal_face_area;
@@ -77,7 +90,12 @@ private:
 	double modelling_precision;
 	double dimensionality;
 
+#ifndef NO_CACHE
 	Cache cache;
+#endif
+
+	std::map<int, SurfaceStyle> style_cache;
+
 	const SurfaceStyle* internalize_surface_style(const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*>& shading_style);
 public:
 	Kernel()
@@ -179,6 +197,7 @@ public:
 	bool find_wall_end_points(const IfcSchema::IfcWall*, gp_Pnt& start, gp_Pnt& end);
 
 	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
+	const IfcSchema::IfcRepresentationItem* find_item_carrying_style(const IfcSchema::IfcRepresentationItem* item);
 	bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid);
 	bool is_compound(const TopoDS_Shape& shape);
 	bool is_convex(const TopoDS_Wire& wire);
@@ -193,7 +212,16 @@ public:
 	void setValue(GeomValue var, double value);
 	double getValue(GeomValue var) const;
 	bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
-	void remove_redundant_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
+	void remove_duplicate_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
+	void remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
+	bool wire_to_sequence_of_point(const TopoDS_Wire&, TColgp_SequenceOfPnt&);
+	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
+	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&);
+	bool flatten_wire(TopoDS_Wire&);
+
+	bool is_identity_transform(IfcUtil::IfcBaseClass*);
+
+	IfcSchema::IfcRelVoidsElement::list::ptr find_openings(IfcSchema::IfcProduct* product);
 
 	IfcSchema::IfcRepresentation* find_representation(const IfcSchema::IfcProduct*, const std::string&);
 
@@ -204,6 +232,9 @@ public:
 	template <typename P>
 	IfcGeom::BRepElement<P>* create_brep_for_representation_and_product(const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
 
+	template <typename P>
+	IfcGeom::BRepElement<P>* create_brep_for_processed_representation(const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P>*);
+	
 	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem*);
 	const SurfaceStyle* get_style(const IfcSchema::IfcMaterial*);
 	
@@ -241,6 +272,10 @@ public:
 	}
 
 	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcRepresentationItem* representation_item) {
+  		// For certain representation items, most notably boolean operands,
+		// a style definition might reside on one of its operands.
+		representation_item = find_item_carrying_style(representation_item);
+
 		if (representation_item->as<IfcSchema::IfcStyledItem>()) {
 			return _get_surface_style<T>(representation_item->as<IfcSchema::IfcStyledItem>());
 		}
@@ -250,6 +285,15 @@ public:
 			return _get_surface_style<T>(*jt);
 		}
 		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
+	}
+
+	void purge_cache() { 
+		// Rather hack-ish, but a stopgap solution to keep memory under control
+		// for large files. SurfaceStyles need to be kept at all costs, as they
+		// are read later on when serializing Collada files.
+#ifndef NO_CACHE
+		cache = Cache(); 
+#endif
 	}
 
 #include "IfcRegisterGeomHeader.h"

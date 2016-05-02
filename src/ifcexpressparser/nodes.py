@@ -21,8 +21,8 @@ import string
 import collections
 
 class Node:
-    def __init__(self, tokens):
-        self.tokens = tokens
+    def __init__(self, tokens = None):
+        self.tokens = tokens or []
         self.init()
     def tokens_of_type(self, cls):
         return [t for t in self.tokens if isinstance(t, cls)]
@@ -128,7 +128,7 @@ class AttributeList(Node):
 class InverseAttribute(Node):
     name = property(lambda self: self.tokens[0])
     type = property(lambda self: self.tokens[2])
-    bounds = property(lambda self: None if len(self.tokens) == 6 else self.tokens[3])
+    bounds = property(lambda self: None if len(self.tokens) != 9 else self.tokens[3])
     entity = property(lambda self: self.tokens[-4])
     attribute = property(lambda self: self.tokens[-2])
     def init(self):
@@ -170,6 +170,23 @@ class ExplicitAttribute(Node):
     def init(self):
         # NB: This assumes a single name per attribute
         # definition, which is not necessarily the case.
+        if self.tokens[0] == "self":
+            i = list(self.tokens).index(":")
+            self.tokens = self.tokens[i-1:]
         assert self.tokens[1] == ':'
     def __repr__(self):
         return "%s : %s%s" % (self.name, self.type, " ?" if self.optional else "")
+
+        
+class WidthSpec(Node):
+    def init(self):
+        if self.tokens[-1] == "fixed":
+            self.tokens[-1:] = []
+        assert (self.tokens[0], self.tokens[-1]) == ("(", ")")
+        self.width = int("".join(self.tokens[1:-1]))
+        
+class StringType(Node):
+    def init(self):
+        pass
+    def __repr__(self):
+        return "string"

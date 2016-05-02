@@ -47,6 +47,7 @@
 #define ENDEXTENDED_0						(1 << 20)
 #define FOURTH_SOLIDUS						(1 << 21)
 #define IGNORED_DIRECTIVE					(1 << 22)
+#define ENCOUNTERED_HEX                     (1 << 23) 
 
 // FIXME: These probably need to be less forgiving in terms of wrongly defined sequences
 #define EXPECTS_ALPHABET(S)					(S & FIRST_SOLIDUS)
@@ -64,7 +65,7 @@
 #define IS_VALID_ALPHABET_DEFINITION(C)		(C >= 0x40 && C <= 0x4A)
 #define IS_HEXADECIMAL(C)					((C >= 0x30 && C <= 0x39 ) || (C >= 0x41 && C <= 0x46 ))
 #define HEX_TO_INT(C)						((C >= 0x30 && C <= 0x39 ) ? C - 0x30 : (C+10) - 0x41)
-#define CLEAR_HEX(C)						(C &= ~(HEX(1)&HEX(2)&HEX(3)&HEX(4)&HEX(5)&HEX(6)&HEX(7)&HEX(8)))
+#define CLEAR_HEX(C)						(C &= ~(HEX(1)|HEX(2)|HEX(3)|HEX(4)|HEX(5)|HEX(6)|HEX(7)|HEX(8)))
 
 using namespace IfcParse;
 using namespace IfcWrite;
@@ -117,6 +118,7 @@ IfcCharacterDecoder::~IfcCharacterDecoder() {
   destination = 0;
   converter = 0;
   compatibility_converter = 0;
+  ucnv_flushCache();
 #endif
 }
 IfcCharacterDecoder::operator std::string() {
@@ -130,12 +132,12 @@ IfcCharacterDecoder::operator std::string() {
 #ifdef HAVE_ICU
 	unsigned int old_hex = 0; // for compatibility_mode
 #endif  
-	while ( current_char = file->Peek() ) {
+	while ( (current_char = file->Peek()) != 0 ) {
 		if ( EXPECTS_CHARACTER(parse_state) ) {
 #ifdef HAVE_ICU
 			if ( previous_codepage != codepage ) {
 				if ( converter ) ucnv_close(converter);
-				char encoder[11] = {'i','s','o','-','8','8','5','9','-',codepage + 0x30};
+				char encoder[11] = {'i','s','o','-','8','8','5','9','-', (char)codepage + 0x30};
 				converter = ucnv_open(encoder, &status);
 			}
 			const char characters[2] = { current_char + 0x80 };
@@ -155,7 +157,10 @@ IfcCharacterDecoder::operator std::string() {
 			if ( parse_state & ALPHABET_DEFINITION || 
 				parse_state & IGNORED_DIRECTIVE || 
 				parse_state & ENDEXTENDED_0 ) parse_state = hex = hex_count = 0;
-			else if ( parse_state & HEX(3) ) parse_state += THIRD_SOLIDUS;
+			else if ( parse_state & ENCOUNTERED_HEX ) {
+				parse_state += THIRD_SOLIDUS;
+				parse_state -= ENCOUNTERED_HEX;
+			}
 			else parse_state += SECOND_SOLIDUS;
 		} else if ( current_char == 'X' && EXPECTS_ENDEXTENDED_X(parse_state) ) {
 			parse_state += ENDEXTENDED_X;
@@ -188,7 +193,7 @@ IfcCharacterDecoder::operator std::string() {
 						if (old_hex == 0) {
 							old_hex = hex;
 						} else {
-							char characters[3] = { old_hex, hex };
+							char characters[3] = { (char)old_hex, (char)hex };
 							const char* char_array = &characters[0];
 							UChar32 ch = ucnv_getNextUChar(compatibility_converter,&char_array,char_array+2,&status);
 							addChar(s,ch);
@@ -202,7 +207,10 @@ IfcCharacterDecoder::operator std::string() {
 					}
 #endif
 					if ( hex_count == 2 ) parse_state = 0;
-					else CLEAR_HEX(parse_state);
+					else {
+						CLEAR_HEX(parse_state);
+						parse_state |= ENCOUNTERED_HEX;
+					}
 					hex = hex_count = 0;
 			}
 		} else if ( parse_state && !(
@@ -227,7 +235,7 @@ void IfcCharacterDecoder::dryRun() {
 	unsigned int parse_state = 0;
 	char current_char;
 	unsigned int hex_count = 0;
-	while ( current_char = file->Peek() ) {
+	while ((current_char = file->Peek()) != 0) {
 		if ( EXPECTS_CHARACTER(parse_state) ) {
 			parse_state = 0;
 		} else if ( current_char == '\'' && ! parse_state ) {
@@ -238,7 +246,10 @@ void IfcCharacterDecoder::dryRun() {
 			if ( parse_state & ALPHABET_DEFINITION || 
 				parse_state & IGNORED_DIRECTIVE || 
 				parse_state & ENDEXTENDED_0 ) parse_state = hex_count = 0;
-			else if ( parse_state & HEX(3) ) parse_state += THIRD_SOLIDUS;
+			else if ( parse_state & ENCOUNTERED_HEX ) {
+				parse_state += THIRD_SOLIDUS;
+				parse_state -= ENCOUNTERED_HEX;
+			}
 			else parse_state += SECOND_SOLIDUS;
 		} else if ( current_char == 'X' && EXPECTS_ENDEXTENDED_X(parse_state) ) {
 			parse_state += ENDEXTENDED_X;
@@ -264,7 +275,10 @@ void IfcCharacterDecoder::dryRun() {
 				(hex_count == 4 && !(parse_state & EXTENDED4)) ||
 				(hex_count == 8) ) {
 					if ( hex_count == 2 ) parse_state = 0;
-					else CLEAR_HEX(parse_state);
+					else {
+						CLEAR_HEX(parse_state);
+						parse_state |= ENCOUNTERED_HEX;
+					}
 					hex_count = 0;
 			}
 		} else if ( parse_state && !(
@@ -340,8 +354,8 @@ IfcCharacterEncoder::operator std::string() {
 			oss << "\\X" << num_bytes_str << "\\";
 		}
 		if ( within_spf_range ) {
-			oss.put(ch);
-			if ( ch == '\\' || ch == '\'' ) oss.put(ch);
+			oss.put((char)ch);
+			if ( ch == '\\' || ch == '\'' ) oss.put((char)ch);
 		} else {
 			oss << std::hex << std::setw(num_bytes*2) << std::uppercase << std::setfill('0') << (int) ch;
 		}

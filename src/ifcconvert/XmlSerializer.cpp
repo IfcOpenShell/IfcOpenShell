@@ -1,11 +1,31 @@
+/********************************************************************************
+*                                                                              *
+* This file is part of IfcOpenShell.                                           *
+*                                                                              *
+* IfcOpenShell is free software: you can redistribute it and/or modify         *
+* it under the terms of the Lesser GNU General Public License as published by  *
+* the Free Software Foundation, either version 3.0 of the License, or          *
+* (at your option) any later version.                                          *
+*                                                                              *
+* IfcOpenShell is distributed in the hope that it will be useful,              *
+* but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+* Lesser GNU General Public License for more details.                          *
+*                                                                              *
+* You should have received a copy of the Lesser GNU General Public License     *
+* along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+*                                                                              *
+********************************************************************************/
+
 #include <map>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
-#include <boost/foreach.hpp>
 #include <boost/version.hpp>
 
 #include "XmlSerializer.h"
+
+#include <algorithm>
 
 using boost::property_tree::ptree;
 using namespace IfcSchema;
@@ -58,7 +78,8 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 					unit_name = unit->Name();
 				}
 
-				for (std::string::iterator c = unit_name.begin(); c != unit_name.end(); ++c) *c = tolower(*c);
+				// TODO add toLower() and toUpper() string helper functions for the project
+				std::transform(unit_name.begin(), unit_name.end(), unit_name.begin(), ::tolower);
 
 				value = unit_name;
 			}
@@ -142,6 +163,16 @@ void descend(IfcProduct* product, ptree& tree) {
 		}
 	}
 
+    if (product->is(Type::IfcElement)) {
+        IfcElement* element = static_cast<IfcElement*>(product);
+        IfcOpeningElement::list::ptr openings = get_related<IfcElement, IfcRelVoidsElement, IfcOpeningElement>(
+            element, &IfcElement::HasOpenings, &IfcRelVoidsElement::RelatedOpeningElement);
+
+        for (IfcOpeningElement::list::it it = openings->begin(); it != openings->end(); ++it) {
+            descend(*it, child);
+        }
+    }
+
 #ifdef USE_IFC2x3
 	IfcObjectDefinition::list::ptr structures = get_related
 		<IfcProduct, IfcRelDecomposes, IfcObjectDefinition>
@@ -224,16 +255,16 @@ void XmlSerializer::finalize() {
 	ptree root, header, decomposition, properties;
 	
 	// Write the SPF header as XML nodes.
-	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
+	foreach(const std::string& s, file->header().file_description().description()) {
 		header.add_child("file_description.description", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_name().author()) {
+	foreach(const std::string& s, file->header().file_name().author()) {
 		header.add_child("file_name.author", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_name().organization()) {
+	foreach(const std::string& s, file->header().file_name().organization()) {
 		header.add_child("file_name.organization", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_schema().schema_identifiers()) {
+	foreach(const std::string& s, file->header().file_schema().schema_identifiers()) {
 		header.add_child("file_schema.schema_identifiers", ptree(s));
 	}
 	header.put("file_description.implementation_level", file->header().file_description().implementation_level());

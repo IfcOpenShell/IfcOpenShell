@@ -20,48 +20,53 @@
 #include <map>
 #include <set>
 
-#include <Max.h>
 #include <stdmat.h>
 #include <istdplug.h>
 
-#include "../ifcmax/IfcMax.h"
+#include "IfcMax.h"
 #include "../ifcgeom/IfcGeomIterator.h"
 
 static const int NUM_MATERIAL_SLOTS = 24;
 
-int controlsInit = false;
-
-BOOL WINAPI DllMain(HINSTANCE hinstDLL,ULONG fdwReason,LPVOID lpvReserved) {	
+BOOL WINAPI DllMain(HINSTANCE /*hinstDLL*/, ULONG /*fdwReason*/, LPVOID /*lpvReserved*/) {
+    static int controlsInit = false;
 	if (!controlsInit) {
 		controlsInit = true;
 		InitCommonControls();
-	}	
-	return true;
+	}
+	return TRUE;
 }
 
-__declspec( dllexport ) const TCHAR* LibDescription() {
-	return _T("IfcOpenShell IFC Importer");
-}
-
-__declspec( dllexport ) int LibNumberClasses() { return 1; }
-
-static class IFCImpClassDesc:public ClassDesc {
+static class IFCImpClassDesc :public ClassDesc {
 public:
-	int                     IsPublic() {return 1;}
-	void *                  Create(BOOL loading = FALSE) {return new IFCImp;} 
-	const TCHAR *			ClassName() {return _T("IFCImp");}
-	SClass_ID               SuperClassID() {return SCENE_IMPORT_CLASS_ID;} 
-	Class_ID                ClassID() {return Class_ID(0x3f230dbf, 0x5b3015c2);}
-	const TCHAR*			Category() {return _T("Chrutilities");}
+    int                     IsPublic() { return 1; }
+    void *                  Create(BOOL /*loading = FALSE*/) { return new IFCImp; }
+    // TODO Delete() function?
+    const TCHAR *			ClassName() { return _T("IFCImp"); }
+    SClass_ID               SuperClassID() { return SCENE_IMPORT_CLASS_ID; }
+    Class_ID                ClassID() { return Class_ID(0x3f230dbf, 0x5b3015c2); }
+    const TCHAR*			Category() { return _T("Chrutilities"); }
 } IFCImpDesc;
 
-__declspec( dllexport ) ClassDesc* LibClassDesc(int i) {
-	return i == 0 ? &IFCImpDesc : 0;
+#define DLLEXPORT __declspec(dllexport)
+
+extern "C" {
+
+DLLEXPORT const TCHAR* LibDescription() {
+    return _T("IfcOpenShell IFC Importer");
 }
 
-__declspec( dllexport ) ULONG LibVersion() {
-	return VERSION_3DSMAX;
+DLLEXPORT int LibNumberClasses() { return 1; }
+
+DLLEXPORT ClassDesc* LibClassDesc(int i) {
+    return i == 0 ? &IFCImpDesc : 0;
 }
+
+DLLEXPORT ULONG LibVersion() {
+    return VERSION_3DSMAX;
+}
+
+} // extern "C"
 
 int IFCImp::ExtCount() { return 1; }
 
@@ -82,7 +87,7 @@ const TCHAR * IFCImp::AuthorName() {
 }
 
 const TCHAR * IFCImp::CopyrightMessage() {
-	return _T("Copyight (c) 2011 IfcOpenShell");
+	return _T("Copyright (c) 2011-2016 IfcOpenShell");
 }
 
 const TCHAR * IFCImp::OtherMessage1() {
@@ -97,13 +102,14 @@ unsigned int IFCImp::Version() {
 	return 12;
 }
 
-static BOOL CALLBACK AboutBoxDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	return TRUE;
-}       
+// TODO Use this in IFCImp::ShowAbout() if/when wanted
+//static BOOL CALLBACK AboutBoxDlgProc(HWND /*hWnd*/, UINT /*msg*/, WPARAM /*wParam*/, LPARAM /*lParam*/) {
+//	return TRUE;
+//}
 
-void IFCImp::ShowAbout(HWND hWnd) {} 
+void IFCImp::ShowAbout(HWND /*hWnd*/) {}
 
-DWORD WINAPI fn(LPVOID arg) { return 0; }
+DWORD WINAPI fn(LPVOID /*arg*/) { return 0; }
 
 #if MAX_RELEASE > 14000
 # define S(x) (TSTR::FromCStr(x.c_str()))
@@ -113,8 +119,9 @@ DWORD WINAPI fn(LPVOID arg) { return 0; }
 # define S(x) (CStr(x.c_str()))
 #endif
 
-Mtl* FindMaterialByName(MtlBaseLib* library, const std::string& material_name) {
-	const int mat_index = library->FindMtlByName(S(material_name));
+static Mtl* FindMaterialByName(MtlBaseLib* library, const std::string& material_name) {
+    TSTR mat_name = S(material_name);
+	const int mat_index = library->FindMtlByName(mat_name);
 	Mtl* m = 0;
 	if (mat_index != -1) {
 		m = static_cast<Mtl*>((*library)[mat_index]);
@@ -122,7 +129,7 @@ Mtl* FindMaterialByName(MtlBaseLib* library, const std::string& material_name) {
 	return m;
 }
 
-Mtl* FindOrCreateMaterial(MtlBaseLib* library, Interface* max_interface, int& slot, const IfcGeom::Material& material) {
+static Mtl* FindOrCreateMaterial(MtlBaseLib* library, Interface* max_interface, int& slot, const IfcGeom::Material& material) {
 	Mtl* m = FindMaterialByName(library, material.name());
 	if (m == 0) {
 		StdMat2* stdm = NewDefaultStdMat();
@@ -136,10 +143,10 @@ Mtl* FindOrCreateMaterial(MtlBaseLib* library, Interface* max_interface, int& sl
 			stdm->SetSpecular(Color(specular[0], specular[1], specular[2]),t);
 		}
 		if (material.hasSpecularity()) {
-			stdm->SetShininess(material.specularity(), t);
+			stdm->SetShininess((float)material.specularity(), t);
 		}
 		if (material.hasTransparency()) {
-			stdm->SetOpacity(1.0 - material.transparency(), t);
+			stdm->SetOpacity(1.0f - (float)material.transparency(), t);
 		}
 		m = stdm;
 		m->SetName(S(material.name()));
@@ -151,7 +158,10 @@ Mtl* FindOrCreateMaterial(MtlBaseLib* library, Interface* max_interface, int& sl
 	return m;
 }
 
-Mtl* ComposeMultiMaterial(std::map<std::vector<std::string>, Mtl*>& multi_mats, MtlBaseLib* library, Interface* max_interface, int& slot, const std::vector<IfcGeom::Material>& materials, const std::string& object_type, const std::vector<int>& material_ids) {
+static Mtl* ComposeMultiMaterial(std::map<std::vector<std::string>, Mtl*>& multi_mats, MtlBaseLib* library,
+    Interface* max_interface, int& slot, const std::vector<IfcGeom::Material>& materials,
+    const std::string& object_type, const std::vector<int>& material_ids)
+{
 	std::vector<std::string> material_names;
 	bool needs_default = std::find(material_ids.begin(), material_ids.end(), -1) != material_ids.end();
 	if (needs_default) {
@@ -184,7 +194,7 @@ Mtl* ComposeMultiMaterial(std::map<std::vector<std::string>, Mtl*>& multi_mats, 
 		return i->second;
 	}
 	MultiMtl* multi_mat = NewDefaultMultiMtl();
-	multi_mat->SetNumSubMtls(material_names.size());
+	multi_mat->SetNumSubMtls((int)material_names.size());
 	int mtl_id = 0;
 	if (needs_default) {
 		multi_mat->SetSubMtlAndName(mtl_id ++, default_material, default_material->GetName());
@@ -201,12 +211,12 @@ Mtl* ComposeMultiMaterial(std::map<std::vector<std::string>, Mtl*>& multi_mats, 
 	return multi_mat;
 }
 
-int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, BOOL suppressPrompts) {
+int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, BOOL /*suppressPrompts*/) {
 
 	IfcGeom::IteratorSettings settings;
-	settings.use_world_coords() = false;
-	settings.weld_vertices() = true;
-	settings.sew_shells() = true;
+    settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
+    settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, true);
+    settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
 
 #ifdef _UNICODE
 	int fn_buffer_size = WideCharToMultiByte(CP_UTF8, 0, name, -1, 0, 0, 0, 0);
@@ -217,7 +227,7 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 #endif
 
 	IfcGeom::Iterator<float> iterator(settings, fn_mb);
-
+    delete fn_mb;
 	if (!iterator.initialize()) return false;
 
 	itfc->ProgressStart(_T("Importing file..."), TRUE, fn, NULL);
@@ -237,12 +247,12 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 
 		TriObject* tri = CreateNewTriObject();
 
-		const int numVerts = o->geometry().verts().size()/3;
+		const int numVerts = (int)o->geometry().verts().size()/3;
 		tri->mesh.setNumVerts(numVerts);
 		for( int i = 0; i < numVerts; i ++ ) {
 			tri->mesh.setVert(i,o->geometry().verts()[3*i+0],o->geometry().verts()[3*i+1],o->geometry().verts()[3*i+2]);
 		}
-		const int numFaces = o->geometry().faces().size()/3;
+		const int numFaces = (int)o->geometry().faces().size()/3;
 		tri->mesh.setNumFaces(numFaces);
 
 		bool needs_default = std::find(o->geometry().material_ids().begin(), o->geometry().material_ids().end(), -1) != o->geometry().material_ids().end();
@@ -274,7 +284,7 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 			tri->mesh.faces[i].setVerts(v1, v2, v3);
 			tri->mesh.faces[i].setEdgeVisFlags(b1, b2, b3);
 
-			MtlID mtlid = o->geometry().material_ids()[i];
+			MtlID mtlid = (MtlID)o->geometry().material_ids()[i];
 			if (needs_default) {
 				mtlid ++;
 			}

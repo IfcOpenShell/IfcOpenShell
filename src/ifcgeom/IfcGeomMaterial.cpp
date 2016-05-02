@@ -30,5 +30,6 @@ const double* IfcGeom::Material::diffuse() const { if (hasDiffuse()) return &((*
 const double* IfcGeom::Material::specular() const { if (hasSpecular()) return &((*style->Specular()).R()); else return black; }
 double IfcGeom::Material::transparency() const { if (hasTransparency()) return *style->Transparency(); else return 0; }
 double IfcGeom::Material::specularity() const { if (hasSpecularity()) return *style->Specularity(); else return 0; }
-const std::string IfcGeom::Material::name() const { return style->Name(); }
+const std::string &IfcGeom::Material::name() const { return style->Name(); }
+const std::string &IfcGeom::Material::original_name() const { return style->original_name(); }
 bool IfcGeom::Material::operator==(const IfcGeom::Material& other) const { return style == other.style; }

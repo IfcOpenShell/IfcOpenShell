@@ -27,18 +27,25 @@
 #                                                                             #
 ###############################################################################
 
-import re,csv
+import re
+import os
 import csv
+
+from schema import OrderedCaseInsensitiveDict 
+
 try: from html.entities import entitydefs
 except: from htmlentitydefs import entitydefs
 
-name_to_oid = {}
+make_absolute = lambda fn: os.path.join(os.path.dirname(os.path.realpath(__file__)), fn)
+
+name_to_oid = OrderedCaseInsensitiveDict()
 oid_to_desc = {}
 oid_to_name = {}
 oid_to_pid = {}
 regices = list(zip([re.compile(s,re.M) for s in [r'<[\w\n=" \-/\.;_\t:%#,\?\(\)]+>',r'(\n[\t ]*){2,}',r'^[\t ]+']],['','\n\n','  ']))
 
 definition_files = ['DocEntity.csv', 'DocEnumeration.csv', 'DocDefined.csv', 'DocSelect.csv']
+definition_files = map(make_absolute, definition_files)
 for fn in definition_files:
     with open(fn) as f:
         for oid, name, desc in csv.reader(f, delimiter=';', quotechar='"'):
@@ -46,15 +53,15 @@ for fn in definition_files:
             oid_to_name[oid] = name
             oid_to_desc[oid] = desc
 
-with open('DocEntityAttributes.csv') as f:
+with open(make_absolute('DocEntityAttributes.csv')) as f:
     for pid, x, oid in csv.reader(f, delimiter=';', quotechar='"'):
         oid_to_pid[oid] = pid
 
-with open('DocAttribute.csv') as f:
+with open(make_absolute('DocAttribute.csv')) as f:
     for oid, name, desc in csv.reader(f, delimiter=';', quotechar='"'):
         pid = oid_to_pid[oid]
         pname = oid_to_name[pid]
-        name_to_oid[(pname, name)] = oid
+        name_to_oid[".".join((pname, name))] = oid
         oid_to_desc[oid] = desc
 
 def description(item):

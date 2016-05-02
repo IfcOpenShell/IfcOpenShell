@@ -28,6 +28,7 @@
 #include <TColgp_Array1OfPnt2d.hxx>
 
 #include <TopExp_Explorer.hxx>
+#include <BRepTools.hxx>
 
 #include <BRepAdaptor_Curve.hxx>
 #include <GCPnts_QuasiUniformDeflection.hxx>
@@ -41,6 +42,8 @@ namespace IfcGeom {
 	namespace Representation {
 
 		class Representation {
+			Representation(const Representation&); //N/A
+			Representation& operator =(const Representation&); //N/A
 		protected:
 			const ElementSettings _settings;
 		public:
@@ -74,9 +77,11 @@ namespace IfcGeom {
 		private:
 			int _id;
 			std::string _brep_data;
+			std::vector<double> _surface_styles;
 		public:
 			int id() const { return _id; }
 			const std::string& brep_data() const { return _brep_data; }
+			const std::vector<double>& surface_styles() const { return _surface_styles; }
 			Serialization(const BRep& brep);
 			virtual ~Serialization() {}
 		private:
@@ -100,6 +105,7 @@ namespace IfcGeom {
 			std::vector<int> _faces;
 			std::vector<int> _edges;
 			std::vector<P> _normals;
+            std::vector<P> uvs_;
 			std::vector<int> _material_ids;
 			std::vector<Material> _materials;
 			VertexKeyMap welds;
@@ -110,39 +116,41 @@ namespace IfcGeom {
 			const std::vector<int>& faces() const { return _faces; }
 			const std::vector<int>& edges() const { return _edges; }
 			const std::vector<P>& normals() const { return _normals; }
+            const std::vector<P>& uvs() const { return uvs_; }
 			const std::vector<int>& material_ids() const { return _material_ids; }
 			const std::vector<Material>& materials() const { return _materials; }
+
 			Triangulation(const BRep& shape_model)
 					: Representation(shape_model.settings())
 					, _id(shape_model.getId())
 			{
-				for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it = shape_model.begin(); it != shape_model.end(); ++ it ) {
+				for ( IfcGeom::IfcRepresentationShapeItems::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++ iit ) {
 
 					int surface_style_id = -1;
-					if (it->hasStyle()) {
-						Material adapter(&it->Style());
+					if (iit->hasStyle()) {
+						Material adapter(&iit->Style());
 						std::vector<Material>::const_iterator jt = std::find(_materials.begin(), _materials.end(), adapter);
 						if (jt == _materials.end()) {
-							surface_style_id = _materials.size();
+							surface_style_id = (int)_materials.size();
 							_materials.push_back(adapter);
 						} else {
-							surface_style_id = jt - _materials.begin();
+							surface_style_id = (int)(jt - _materials.begin());
 						}
 					}
 
-					if (settings().apply_default_materials() && surface_style_id == -1) {
+					if (settings().get(IteratorSettings::APPLY_DEFAULT_MATERIALS) && surface_style_id == -1) {
 						Material material(IfcGeom::get_default_style(settings().element_type()));
-						std::vector<Material>::const_iterator it = std::find(_materials.begin(), _materials.end(), material);
-						if (it == _materials.end()) {
-							surface_style_id = _materials.size();
+						std::vector<Material>::const_iterator mit = std::find(_materials.begin(), _materials.end(), material);
+						if (mit == _materials.end()) {
+							surface_style_id = (int)_materials.size();
 							_materials.push_back(material);
 						} else {
-							surface_style_id = it - _materials.begin();
+							surface_style_id = (int)(mit - _materials.begin());
 						}
 					}
 
-					const TopoDS_Shape& s = it->Shape();
-					const gp_GTrsf& trsf = it->Placement();
+					const TopoDS_Shape& s = iit->Shape();
+					const gp_GTrsf& trsf = iit->Placement();
 
 					// Triangulate the shape
 					try {
@@ -179,8 +187,9 @@ namespace IfcGeom {
 							BRepGProp_Face prop(face);
 							std::map<int,int> dict;
 
-							// Vertex normals are only calculated if vertices are not welded
-							const bool calculate_normals = !settings().weld_vertices();
+                            // Vertex normals are only calculated if vertices are not welded and calculation is not disable explicitly.
+                            const bool calculate_normals = !settings().get(IteratorSettings::WELD_VERTICES) &&
+                                !settings().get(IteratorSettings::NO_NORMALS);
 
 							for( int i = 1; i <= nodes.Length(); ++ i ) {
 								coords.push_back(nodes(i).Transformed(loc).XYZ());
@@ -233,25 +242,29 @@ namespace IfcGeom {
 								addEdge(dict[n2], dict[n3], edgecount, edges_temp);
 								addEdge(dict[n3], dict[n1], edgecount, edges_temp);
 							}
-							for ( std::vector<std::pair<int,int> >::const_iterator it = edges_temp.begin(); it != edges_temp.end(); ++it ) {
-								if (edgecount[*it] == 1) {
+							for ( std::vector<std::pair<int,int> >::const_iterator jt = edges_temp.begin(); jt != edges_temp.end(); ++jt ) {
+								if (edgecount[*jt] == 1) {
 									// non manifold edge, face boundary
-									_edges.push_back(it->first);
-									_edges.push_back(it->second);
+									_edges.push_back(jt->first);
+									_edges.push_back(jt->second);
 								}
 							}
 						}
 					}
 
+                    if (!_normals.empty() && settings().get(IfcGeom::IteratorSettings::GENERATE_UVS)) {
+                        uvs_ = box_project_uvs(_verts, _normals);
+                    }
+
 					if (num_faces == 0) {
 						// Edges are only emitted if there are no faces. A mixed representation of faces
 						// and loose edges is discouraged by the standard. An alternative would be to use
 						// TopExp::MapShapesAndAncestors() to find edges that do not belong to any face.
-						for (TopExp_Explorer exp(s, TopAbs_EDGE); exp.More(); exp.Next()) {
-							BRepAdaptor_Curve crv(TopoDS::Edge(exp.Current()));
+						for (TopExp_Explorer texp(s, TopAbs_EDGE); texp.More(); texp.Next()) {
+							BRepAdaptor_Curve crv(TopoDS::Edge(texp.Current()));
 							GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
 							int n = tessellater.NbPoints();
-							int start = _verts.size() / 3;
+							int start = (int)_verts.size() / 3;
 							for (int i = 1; i <= n; ++i) {
 								gp_XYZ p = tessellater.Value(i).XYZ();
 								trsf.Transforms(p);
@@ -270,17 +283,50 @@ namespace IfcGeom {
 						}
 					}
 
+                    BRepTools::Clean(s);
 				}
 			}
 			virtual ~Triangulation() {}
+
+            /// Generates UVs for a single mesh using box projection.
+            /// @todo Very simple impl. Assumes that input vertices and normals match 1:1.
+            static std::vector<P> box_project_uvs(const std::vector<P> &vertices, const std::vector<P> &normals)
+            {
+                std::vector<P> uvs;
+                uvs.resize(vertices.size() / 3 * 2);
+                for (size_t uv_idx = 0, v_idx = 0;
+                uv_idx < uvs.size() && v_idx < vertices.size() && v_idx < normals.size();
+                    uv_idx += 2, v_idx += 3) {
+
+                    P n_x = normals[v_idx], n_y = normals[v_idx + 1], n_z = normals[v_idx + 2];
+                    P v_x = vertices[v_idx], v_y = vertices[v_idx + 1], v_z = vertices[v_idx + 2];
+
+                    if (std::abs(n_x) > std::abs(n_y) && std::abs(n_x) > std::abs(n_z)) {
+                        uvs[uv_idx] = v_z;
+                        uvs[uv_idx + 1] = v_y;
+                    }
+                    if (std::abs(n_y) > std::abs(n_x) && std::abs(n_y) > std::abs(n_z)) {
+                        uvs[uv_idx] = v_x;
+                        uvs[uv_idx + 1] = v_z;
+                    }
+                    if (std::abs(n_z) > std::abs(n_x) && std::abs(n_z) > std::abs(n_y)) {
+                        uvs[uv_idx] = v_x;
+                        uvs[uv_idx + 1] = v_y;
+                    }
+                }
+
+                return uvs;
+            }
+
 		private:
 			// Welds vertices that belong to different faces
 			int addVertex(int material_index, const gp_XYZ& p) {
-				const P X = static_cast<P>(settings().convert_back_units() ? (p.X() / settings().unit_magnitude()) : p.X());
-				const P Y = static_cast<P>(settings().convert_back_units() ? (p.Y() / settings().unit_magnitude()) : p.Y());
-				const P Z = static_cast<P>(settings().convert_back_units() ? (p.Z() / settings().unit_magnitude()) : p.Z());
+                const bool convert = settings().get(IteratorSettings::CONVERT_BACK_UNITS);
+				const P X = static_cast<P>(convert ? (p.X() / settings().unit_magnitude()) : p.X());
+				const P Y = static_cast<P>(convert ? (p.Y() / settings().unit_magnitude()) : p.Y());
+				const P Z = static_cast<P>(convert ? (p.Z() / settings().unit_magnitude()) : p.Z());
 				int i = (int) _verts.size() / 3;
-				if (settings().weld_vertices()) {
+				if (settings().get(IteratorSettings::WELD_VERTICES)) {
 					const VertexKey key = std::make_pair(material_index, std::make_pair(X, std::make_pair(Y, Z)));
 					typename VertexKeyMap::const_iterator it = welds.find(key);
 					if ( it != welds.end() ) return it->second;

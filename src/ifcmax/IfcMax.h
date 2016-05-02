@@ -21,12 +21,6 @@
 #define IFCMAX_H
 
 #include "Max.h"
-#include "istdplug.h"
-#include "stdmat.h"
-#include "decomp.h"
-#include "shape.h"
-#include "splshape.h"
-#include "dummy.h"
 
 extern ClassDesc* GetIFCImpDesc();
 
@@ -38,7 +32,7 @@ public:
 	const TCHAR * LongDesc();         //  = "IfcOpenShell IFC Importer for 3ds Max"
 	const TCHAR * ShortDesc();        //  = "Industry Foundation Classes"
 	const TCHAR * AuthorName();       //  = "Thomas Krijnen"
-	const TCHAR * CopyrightMessage(); //  = "Copyight (c) 2011 IfcOpenShell"
+	const TCHAR * CopyrightMessage(); //  = "Copyright (c) 2011-2016 IfcOpenShell"
 	const TCHAR * OtherMessage1();    //  = ""
 	const TCHAR * OtherMessage2();    //  = ""
 	unsigned int Version();           //  = 12

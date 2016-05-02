@@ -43,7 +43,7 @@
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <gp_Ax22d.hxx>
-
+#include <Standard_Version.hxx>
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "SvgSerializer.h"
@@ -168,7 +168,8 @@ SvgSerializer::path_object& SvgSerializer::start_path(IfcSchema::IfcBuildingStor
 	return p;
 }
 
-void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
+void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
+{
 	IfcSchema::IfcBuildingStorey* storey = 0;
 	IfcSchema::IfcObjectDefinition* obdef = static_cast<IfcSchema::IfcObjectDefinition*>(file->entityById(o->id()));
 
@@ -178,7 +179,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
 	typedef IfcSchema::IfcRelAggregates decomposition_element;
 #endif
 
-	while (true) {
+	for (;;) {
 		// Iterate over the decomposing element to find the parent IfcBuildingStorey
 		decomposition_element::list::ptr decomposes = obdef->Decomposes();
 		if (!decomposes->size()) {
@@ -218,6 +219,8 @@ void SvgSerializer::write(const IfcGeom::BRepElement<double>* o) {
 		gp_GTrsf gtrsf = it->Placement();
 		
 		const gp_Trsf& o_trsf = o->transformation().data();
+		gtrsf.PreMultiply(o_trsf);
+
 		const TopoDS_Shape& s = it->Shape();			
 			
 		bool trsf_valid = false;
@@ -294,7 +297,7 @@ void SvgSerializer::finalize() {
 		const double cx = xmin * sc;
 		const double cy = ymin * sc;
 
-		{std::vector< SHARED_PTR<util::string_buffer::float_item> >::const_iterator it;
+		{std::vector< boost::shared_ptr<util::string_buffer::float_item> >::const_iterator it;
 		for (it = xcoords.begin(); it != xcoords.end(); ++it) {
 			double& v = (*it)->value();
 			v = v * sc - cx;
@@ -338,10 +341,14 @@ void SvgSerializer::writeHeader() {
 	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
 }
 
-std::string SvgSerializer::nameElement(const IfcGeom::Element<double>* elem) {
+std::string SvgSerializer::nameElement(const IfcGeom::Element<real_t>* elem)
+{
 	std::ostringstream oss;
 	const std::string type = "product";
-	oss << "id=\"" << type << "-" << elem->unique_id() << "\"";
+    const std::string name = (settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS)
+        ? elem->guid() : (settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES)
+        ? elem->name() : elem->unique_id()));
+	oss << "id=\"" << type << "-" << name<< "\"";
 	return oss.str();
 }
 

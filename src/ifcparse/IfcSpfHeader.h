@@ -29,6 +29,9 @@ class HeaderEntity : public IfcAbstractEntity {
 private:	
 	ArgumentList* _list;
 	const char * const _datatype;
+
+	HeaderEntity(const HeaderEntity&); //N/A
+	HeaderEntity& operator =(const HeaderEntity&); //N/A
 protected:
 	HeaderEntity(const char * const datatype, IfcSpfLexer* lexer) 
 		: _datatype(datatype), _list(0)
@@ -40,7 +43,7 @@ protected:
 		}
 	}
 
-	~HeaderEntity() {
+	virtual ~HeaderEntity() {
 		delete _list;
 	}
 
@@ -65,7 +68,7 @@ public:
 		return (*_list)[i];
 	}
 
-	IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index) {
+	IfcEntityList::ptr getInverse(IfcSchema::Type::Enum /*type*/, int /*attribute_index*/) {
 		return IfcEntityList::ptr(new IfcEntityList);
 	}
 
@@ -81,7 +84,7 @@ public:
 		return (IfcSchema::Type::Enum) -1;
 	}
 
-	bool is(IfcSchema::Type::Enum v) const {
+	bool is(IfcSchema::Type::Enum /*v*/) const {
 		return false;
 	}
 
@@ -163,7 +166,14 @@ public:
 		_file_name = new FileName();
 		_file_schema = new FileSchema();
 	}
-	
+
+	~IfcSpfHeader()
+	{
+		delete _file_schema;
+		delete _file_name;
+		delete _file_description;
+	}
+
 	IfcSpfLexer* lexer() { return _lexer; }
 	void lexer(IfcSpfLexer* l) { _lexer = l; }
 

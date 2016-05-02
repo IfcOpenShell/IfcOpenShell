@@ -290,7 +290,7 @@ void IfcHierarchyHelper::addBox(IfcSchema::IfcShapeRepresentation* rep, double w
 	IfcSchema::IfcAxis2Placement2D* place, IfcSchema::IfcAxis2Placement3D* place2, 
 	IfcSchema::IfcDirection* dir, IfcSchema::IfcRepresentationContext* context) 
 {
-	if (false) {
+	if (false) { // TODO What's this?
 		IfcSchema::IfcRectangleProfileDef* profile = new IfcSchema::IfcRectangleProfileDef(
 			IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, boost::none, place ? place : addPlacement2d(), w, d);
 		IfcSchema::IfcExtrudedAreaSolid* solid = new IfcSchema::IfcExtrudedAreaSolid(profile, 
@@ -303,10 +303,10 @@ void IfcHierarchyHelper::addBox(IfcSchema::IfcShapeRepresentation* rep, double w
 		rep->setItems(items);
 	} else {
 		std::vector<std::pair<double, double> > points;
-		points.push_back(std::pair<double, double>(-w/2, -d/2));
-		points.push_back(std::pair<double, double>(w/2, -d/2));
-		points.push_back(std::pair<double, double>(w/2, d/2));
-		points.push_back(std::pair<double, double>(-w/2, d/2));
+		points.push_back(std::make_pair(-w/2, -d/2));
+		points.push_back(std::make_pair(w/2, -d/2));
+		points.push_back(std::make_pair(w/2, d/2));
+		points.push_back(std::make_pair(-w/2, d/2));
 		// The call to addExtrudedPolyline() closes the polyline
 		addExtrudedPolyline(rep, points, h, place, place2, dir, context);
 	}

@@ -20,21 +20,20 @@
 #ifndef IGESSERIALIZER_H
 #define IGESSERIALIZER_H
 
-#include <IGESControl_Controller.hxx>
+#include "OpenCascadeBasedSerializer.h"
+
 #include <IGESControl_Writer.hxx>
 #include <Interface_Static.hxx>
-
-#include "../ifcgeom/IfcGeomIterator.h"
-
-#include "../ifcconvert/OpenCascadeBasedSerializer.h"
 
 class IgesSerializer : public OpenCascadeBasedSerializer
 {
 private:
-	IGESControl_Writer writer;	
+	IGESControl_Writer writer;
 public:
-	explicit IgesSerializer(const std::string& out_filename) 
-		: OpenCascadeBasedSerializer(out_filename) 
+    /// @note IGESControl_Controller::Init() must be called prior to instantiating IgesSerializer.
+    /// See http://tracker.dev.opencascade.org/view.php?id=23679 for more information.
+    IgesSerializer(const std::string& out_filename, const IfcGeom::IteratorSettings &settings)
+        : OpenCascadeBasedSerializer(out_filename, settings)
 	{}
 	virtual ~IgesSerializer() {}
 	void writeShape(const TopoDS_Shape& shape) {
@@ -43,9 +42,10 @@ public:
 	void finalize() {
 		writer.Write(out_filename.c_str());
 	}
-	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {
+	void setUnitNameAndMagnitude(const std::string& /*name*/, float magnitude) {
 		const char* symbol = getSymbolForUnitMagnitude(magnitude);
 		if (symbol) {
+			Interface_Static::SetCVal("xstep.cascade.unit", symbol);
 			Interface_Static::SetCVal("write.iges.unit", symbol);
 		}
 	}
