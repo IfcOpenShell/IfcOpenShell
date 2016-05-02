@@ -1117,11 +1117,11 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 				std::vector<const SurfaceStyle*> styles;
 				if (convert_layerset(product, layers, styles, thickness)) {
 					if (product->as<IfcSchema::IfcWall>() && fold_layers(product->as<IfcSchema::IfcWall>(), shapes, layers, thickness, folded_layers)) {
-						if (apply_folded_layerset(shapes, folded_layers, styles, thickness, shapes2)) {
+						if (apply_folded_layerset(shapes, folded_layers, styles, shapes2)) {
 							std::swap(shapes, shapes2);
 						}
 					} else {
-						if (apply_layerset(shapes, layers, styles, thickness, shapes2)) {
+						if (apply_layerset(shapes, layers, styles, shapes2)) {
 							std::swap(shapes, shapes2);
 						}
 					}
@@ -1412,13 +1412,11 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 		TopExp_Explorer exp(axis_shape, TopAbs_EDGE);
 		TopoDS_Edge axis_edge;
 		int edge_count = 0;
-		for (; exp.More(); exp.Next()) {
+
+		if (exp.More()) {
 			axis_edge = TopoDS::Edge(exp.Current());
 			++ edge_count;
-			break;
-		}
-
-		if (edge_count == 0) {
+		} else {
 			Logger::Message(Logger::LOG_WARNING, "No edge found in axis representation:", product->entity);
 			return false;
 		}
@@ -1521,7 +1519,7 @@ const Handle_Geom_Curve IfcGeom::Kernel::intersect(const TopoDS_Face& a, const H
 	return intersect(BRep_Tool::Surface(a), b);
 }
 
-bool IfcGeom::Kernel::intersect(const Handle_Geom_Curve& a, const Handle_Geom_Surface& b, gp_Pnt& p, double& u, double& v, double& w) {
+bool IfcGeom::Kernel::intersect(const Handle_Geom_Curve& a, const Handle_Geom_Surface& b, gp_Pnt& p) {
 	GeomAPI_IntCS x(a, b);
 	if (x.IsDone() && x.NbPoints() == 1) {
 		p = x.Point(1);
@@ -1532,8 +1530,7 @@ bool IfcGeom::Kernel::intersect(const Handle_Geom_Curve& a, const Handle_Geom_Su
 }
 
 bool IfcGeom::Kernel::intersect(const Handle_Geom_Curve& a, const TopoDS_Face& b, gp_Pnt &c) {
-	double u,v,w;
-	return intersect(a, BRep_Tool::Surface(b), c, u, v, w);
+	return intersect(a, BRep_Tool::Surface(b), c);
 }
 
 bool IfcGeom::Kernel::intersect(const Handle_Geom_Curve& a, const TopoDS_Shape& b, std::vector<gp_Pnt>& out) {
@@ -1691,10 +1688,12 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 			continue;
 		}
 		
+		/*
 		IfcSchema::IfcConnectionTypeEnum::IfcConnectionTypeEnum connection_type = idx == 1
 			? IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
 			: IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATEND;
-				
+		*/
+
 		std::set<const IfcSchema::IfcProduct*> others;
 		endpoint_connections_t::iterator it = endpoint_connections.begin();
 		while (it != endpoint_connections.end()) {
@@ -1801,8 +1800,8 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 			exp.Next();
 
 			for (; exp.More(); exp.Next()) {
-				TopoDS_Edge axis_edge = TopoDS::Edge(exp.Current());
-				TopExp_Explorer exp2(axis_edge, TopAbs_VERTEX);
+				TopoDS_Edge axis_edge2 = TopoDS::Edge(exp.Current());
+				TopExp_Explorer exp2(axis_edge2, TopAbs_VERTEX);
 				for (; exp2.More(); exp2.Next()) {
 					gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(exp2.Current()));
 					gp_Pnt pp;
@@ -1866,19 +1865,19 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 				Handle_Geom_Curve layer_body_intersection;
 				Handle_Geom_Surface body_surface;
 				double mind = std::numeric_limits<double>::infinity();
-				for (curves_on_surfaces_t::const_iterator it = layer_ends.begin(); it != layer_ends.end(); ++it) {
+				for (curves_on_surfaces_t::const_iterator kt = layer_ends.begin(); kt != layer_ends.end(); ++kt) {
 					gp_Pnt p;
 					gp_Vec v;
 					double u, d;
-					it->second->D1(0., p, v);
+					kt->second->D1(0., p, v);
 					if (ALMOST_THE_SAME(0., v.Dot(gp::DZ()))) {
 						// Filter horizontal curves
 						continue;
 					}
-					if (project(it->second, own_end_point, p, u, d)) {
+					if (project(kt->second, own_end_point, p, u, d)) {
 						if (d < mind) {
-							body_surface = it->first;
-							layer_body_intersection = it->second;
+							body_surface = kt->first;
+							layer_body_intersection = kt->second;
 							mind = d;
 						}
 					}
@@ -1924,7 +1923,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 	return folds_made;
 }
 
-bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& items, const std::vector< std::vector<Handle_Geom_Surface> >& surfaces, const std::vector<const SurfaceStyle*>& styles, const std::vector<double>& thickness, IfcRepresentationShapeItems& result) {
+bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& items, const std::vector< std::vector<Handle_Geom_Surface> >& surfaces, const std::vector<const SurfaceStyle*>& styles, IfcRepresentationShapeItems& result) {
 	Bnd_Box bb;
 	TopoDS_Shape input;
 	flatten_shape_list(items, input, false);
@@ -1989,8 +1988,8 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 			}
 
 			BRepOffsetAPI_Sewing builder;
-			for (faces_with_mass_t::const_iterator it = solids.begin(); it != solids.end(); ++it) {
-				builder.Add(it->first);
+			for (faces_with_mass_t::const_iterator kt = solids.begin(); kt != solids.end(); ++kt) {
+				builder.Add(kt->first);
 			}
 		
 			builder.Perform();
@@ -2060,7 +2059,7 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 
 }
 
-bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<const SurfaceStyle*>& styles, const std::vector<double>& thickness, IfcRepresentationShapeItems& result) {
+bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<const SurfaceStyle*>& styles, IfcRepresentationShapeItems& result) {
 	if (surfaces.size() < 3) {
 
 		return false;
