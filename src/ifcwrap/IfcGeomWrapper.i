@@ -83,6 +83,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_IfcGeom__TriangulationElementT_double_t, SWIG_POINTER_OWN);
 		} else if (serialized_elem) {
 			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElementT_double_t, SWIG_POINTER_OWN);
+		} else {
+			throw std::runtime_error("Invalid element encountered");
 		}
 	}
     PyObject* operator()(IfcGeom::Representation::Representation* representation) const {
@@ -92,6 +94,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_representation), SWIGTYPE_p_IfcGeom__Representation__Serialization, SWIG_POINTER_OWN);
 		} else if (triangulated_representation) {
 			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulated_representation), SWIGTYPE_p_IfcGeom__Representation__TriangulationT_double_t, SWIG_POINTER_OWN);
+		} else {
+			throw std::runtime_error("Invalid element encountered");
 		}
 	}
 };
