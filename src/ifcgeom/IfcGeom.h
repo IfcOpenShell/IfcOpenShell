@@ -219,6 +219,9 @@ public:
 	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&);
 	bool flatten_wire(TopoDS_Wire&);
 
+	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
+	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
+	
 	bool is_identity_transform(IfcUtil::IfcBaseClass*);
 
 	IfcSchema::IfcRelVoidsElement::list::ptr find_openings(IfcSchema::IfcProduct* product);

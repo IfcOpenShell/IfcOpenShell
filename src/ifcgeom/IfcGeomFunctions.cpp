@@ -103,6 +103,7 @@
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>
 
+#include <BRepBuilderAPI_Transform.hxx>
 #include <BRepBuilderAPI_GTransform.hxx>
 
 #include <BRepCheck_Analyzer.hxx>
@@ -231,13 +232,10 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 		TopoDS_Shape entity_shape_solid;
 		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
 		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
-		TopoDS_Shape entity_shape;
 		if ( entity_shape_gtrsf.Form() == gp_Other ) {
-			Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to:",entity->entity);
-			entity_shape = BRepBuilderAPI_GTransform(entity_shape_unlocated,entity_shape_gtrsf,true).Shape();
-		} else {
-			entity_shape = entity_shape_unlocated.Moved(entity_shape_gtrsf.Trsf());
+			Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity->entity);
 		}
+		TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
 
 		// Iterate over the shapes of the IfcOpeningElements
 		for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it4 = opening_shapes.begin(); it4 != opening_shapes.end(); ++ it4 ) {
@@ -247,9 +245,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 			if ( opening_shape_gtrsf.Form() == gp_Other ) {
 				Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to opening of:",entity->entity);
 			}
-			const TopoDS_Shape& opening_shape = opening_shape_gtrsf.Form() == gp_Other
-				? BRepBuilderAPI_GTransform(opening_shape_unlocated,opening_shape_gtrsf,true).Shape()
-				: opening_shape_unlocated.Moved(opening_shape_gtrsf.Trsf());
+			TopoDS_Shape opening_shape = apply_transformation(opening_shape_unlocated, opening_shape_gtrsf);
 					
 			double opening_volume;
 			if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
@@ -397,10 +393,8 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
 				gp_GTrsf gtrsf = opening_shapes[i].Placement();
 				gtrsf.PreMultiply(opening_trsf);
-				const TopoDS_Shape& opening_shape = gtrsf.Form() == gp_Other
-					? BRepBuilderAPI_GTransform(opening_shapes[i].Shape(),gtrsf,true).Shape()
-					: (opening_shapes[i].Shape()).Moved(gtrsf.Trsf());
-				builder.Add(opening_compound,opening_shape);
+				TopoDS_Shape opening_shape = apply_transformation(opening_shapes[i].Shape(), gtrsf);
+				builder.Add(opening_compound, opening_shape);
 			}
 
 		}
@@ -411,13 +405,10 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 		TopoDS_Shape entity_shape_solid;
 		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
 		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
-		TopoDS_Shape entity_shape;
-		if ( entity_shape_gtrsf.Form() == gp_Other ) {
-			Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to:",entity->entity);
-			entity_shape = BRepBuilderAPI_GTransform(entity_shape_unlocated,entity_shape_gtrsf,true).Shape();
-		} else {
-			entity_shape = entity_shape_unlocated.Moved(entity_shape_gtrsf.Trsf());
+		if (entity_shape_gtrsf.Form() == gp_Other) {
+			Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity->entity);
 		}
+		TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
 
 		BRepAlgoAPI_Cut brep_cut(entity_shape,opening_compound);
 
@@ -477,9 +468,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
 				gp_GTrsf gtrsf = opening_shapes[i].Placement();
 				gtrsf.PreMultiply(opening_trsf);
-				const TopoDS_Shape& opening_shape = gtrsf.Form() == gp_Other
-					? BRepBuilderAPI_GTransform(opening_shapes[i].Shape(),gtrsf,true).Shape()
-					: (opening_shapes[i].Shape()).Moved(gtrsf.Trsf());
+				TopoDS_Shape opening_shape = apply_transformation(opening_shapes[i].Shape(), gtrsf);
 				opening_shapelist.Append(opening_shape);
 			}
 
@@ -491,14 +480,11 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 		TopoDS_Shape entity_shape_solid;
 		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
 		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
-		TopoDS_Shape entity_shape;
-		if ( entity_shape_gtrsf.Form() == gp_Other ) {
-			Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to:",entity->entity);
-			entity_shape = BRepBuilderAPI_GTransform(entity_shape_unlocated,entity_shape_gtrsf,true).Shape();
-		} else {
-			entity_shape = entity_shape_unlocated.Moved(entity_shape_gtrsf.Trsf());
+		if (entity_shape_gtrsf.Form() == gp_Other) {
+			Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity->entity);
 		}
-
+		TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
+		
 		BRepAlgoAPI_Cut brep_cut;
 		TopTools_ListOfShape s1s;
 		s1s.Append(entity_shape);
@@ -921,20 +907,7 @@ bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::IfcRepresentationShapeIt
 			merged = s;
 		}
 		const gp_GTrsf& trsf = it->Placement();
-		bool trsf_valid = false;
-		gp_Trsf _trsf;
-		try {
-			_trsf = trsf.Trsf();
-			trsf_valid = true;
-		} catch (...) {}
-
-		const TopoDS_Shape moved_shape = trsf.Form() == gp_Identity
-			? merged
-			: (
-			trsf_valid 
-			? merged.Moved(_trsf)
-			: BRepBuilderAPI_GTransform(merged,trsf,true).Shape()
-			);
+		const TopoDS_Shape moved_shape = apply_transformation(merged, trsf);
 
 		if (shapes.size() == 1) {
 			result = moved_shape;
@@ -1772,6 +1745,8 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		TopoDS_Shape axis_shape;
 		flatten_shape_list(axis_items, axis_shape, false);
 		
+		// local and other are IfcLocalPlacements and therefore have a unit
+		// scale factor that can be applied by means of TopoDS_Shape::Move()
 		axis_shape.Move(other);
 		axis_shape.Move(local);
 		
@@ -2410,3 +2385,27 @@ bool IfcGeom::Kernel::flatten_wire(TopoDS_Wire& wire) {
 	wire = TopoDS::Wire(list.First());
 	return true;
 }
+
+
+TopoDS_Shape IfcGeom::Kernel::apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t) {
+	if (t.Form() == gp_Identity) {
+		return s;
+	} else {
+		/// @todo set to 1. and exactly 1. or use epsilon?
+		if (t.ScaleFactor() != 1.) {
+			return BRepBuilderAPI_Transform(s, t, true);
+		} else {
+			return s.Moved(t);
+		}
+	}
+}
+
+TopoDS_Shape IfcGeom::Kernel::apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t) {
+	if (t.Form() == gp_Other) {
+		return BRepBuilderAPI_GTransform(s, t, true);
+	} else {
+
+		return apply_transformation(s, t.Trsf());
+	}
+}
+

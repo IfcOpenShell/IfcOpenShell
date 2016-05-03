@@ -22,7 +22,6 @@
 #include <BRep_Builder.hxx>
 
 #include <TopoDS_Compound.hxx>
-#include <BRepBuilderAPI_GTransform.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
 
@@ -60,15 +59,10 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 			scale.SetScaleFactor(1.0 / settings().unit_magnitude());
 			trsf.PreMultiply(scale);
 		}
-		bool trsf_valid = false;
-		gp_Trsf _trsf;
-		try {
-			_trsf = trsf.Trsf();
-			trsf_valid = true;
-		} catch (...) {}
-		const TopoDS_Shape moved_shape = trsf_valid ? s.Moved(_trsf) :
-			BRepBuilderAPI_GTransform(s,trsf,true).Shape();
-		builder.Add(compound,moved_shape);
+		
+		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, trsf);
+
+		builder.Add(compound, moved_shape);
 	}
 	std::stringstream sstream;
 	BRepTools::Write(compound,sstream);

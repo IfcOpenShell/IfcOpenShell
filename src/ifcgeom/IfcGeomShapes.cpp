@@ -146,7 +146,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 		shape = BRepPrimAPI_MakePrism(face, height*dir);
 	}
 
+	// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+	// and therefore has a unit scale factor
 	shape.Move(trsf);
+
 	return ! shape.IsNull();
 }
 
@@ -166,7 +169,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfLinearExtrusion* l, T
 	convert(l->ExtrudedDirection(),dir);
 
 	shape = BRepPrimAPI_MakePrism(wire, height*dir);
+	
+	// IfcSweptSurface.Position (trsf) is an IfcAxis2Placement3D
+	// and therefore has a unit scale factor
 	shape.Move(trsf);
+	
 	return !shape.IsNull();
 }
 
@@ -187,7 +194,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfRevolution* l, TopoDS
 	
 	shape = BRepPrimAPI_MakeRevol(wire, ax1);
 
+	// IfcSweptSurface.Position (trsf) is an IfcAxis2Placement3D
+	// and therefore has a unit scale factor
 	shape.Move(trsf);
+
 	return !shape.IsNull();
 }
 
@@ -209,7 +219,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 		shape = BRepPrimAPI_MakeRevol(face, ax1, ang);
 	}
 
+	// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+	// and therefore has a unit scale factor
 	shape.Move(trsf);
+
 	return !shape.IsNull();
 }
 
@@ -269,7 +282,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, 
 
 	TopoDS_Shape prism = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,200));
 	gp_Trsf down; down.SetTranslation(gp_Vec(0,0,-100.0));
-	prism.Move(trsf*down);
+	
+	// `trsf` and `down` both have a unit scale factor
+	prism.Move(trsf*down);	
+	
 	shape = BRepAlgoAPI_Common(halfspace,prism);
 	return true;
 }
@@ -608,7 +624,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBlock* l, TopoDS_Shape& shape)
 	BRepPrimAPI_MakeBox builder(dx, dy, dz);
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
+
+	// IfcCsgPrimitive3D.Position has unit scale factor
 	shape = builder.Solid().Moved(trsf);
+
 	return true;
 }
 
@@ -641,7 +660,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRightCircularCylinder* l, Topo
 	BRepPrimAPI_MakeCylinder builder(r, h);
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
+	
+	// IfcCsgPrimitive3D.Position has unit scale factor
 	shape = builder.Solid().Moved(trsf);
+
 	return true;
 }
 
@@ -652,7 +674,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRightCircularCone* l, TopoDS_S
 	BRepPrimAPI_MakeCone builder(r, 0., h);
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
+
+	// IfcCsgPrimitive3D.Position has unit scale factor
 	shape = builder.Solid().Moved(trsf);
+
 	return true;
 }
 
@@ -662,7 +687,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSphere* l, TopoDS_Shape& shape
 	BRepPrimAPI_MakeSphere builder(r);
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
+	
+	// IfcCsgPrimitive3D.Position has unit scale factor
 	shape = builder.Solid().Moved(trsf);
+
 	return true;
 }
 
@@ -694,6 +722,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCurveBoundedPlane* l, TopoDS_S
 
 	ShapeFix_Shape sfs(mf.Face());
 	sfs.Perform();
+
+	// `trsf` consitutes the placement of the plane and therefore has unit scale factor
 	face = TopoDS::Face(sfs.Shape()).Moved(trsf);
 	
 	return true;
@@ -782,6 +812,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	builder.Build();
 	builder.MakeSolid();
 	shape = builder.Shape();
+
+	// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+	// and therefore has a unit scale factor
 	shape.Move(position);
 
 	return true;
@@ -873,6 +906,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCylindricalSurface* l, TopoDS_
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
 	
+	// IfcElementarySurface.Position has unit scale factor
 #if OCC_VERSION_HEX < 0x60502
 	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius())).Face().Moved(trsf);
 #else
