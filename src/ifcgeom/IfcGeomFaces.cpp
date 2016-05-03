@@ -224,7 +224,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				if (mf->IsDone()) {
 					TopoDS_Face outer_face_bound = mf->Face();
 
-					if (BRepCheck_Face(outer_face_bound).OrientationOfWires() == BRepCheck_BadOrientationOfSubshape) {
+					// BRepCheck_Face might raise exceptions in case of face surfaces. Therefore fix orientation regardless.
+					if (!face_surface.IsNull()) {
+						ShapeFix_Face fix(outer_face_bound);
+						fix.FixOrientation();
+						fix.Perform();
+						outer_face_bound = fix.Face();
+					} else if (BRepCheck_Face(outer_face_bound).OrientationOfWires() == BRepCheck_BadOrientationOfSubshape) {
 						wire.Reverse();
 						same_sense = !same_sense;
 						delete mf;
