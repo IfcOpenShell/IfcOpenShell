@@ -173,7 +173,7 @@ void descend(IfcProduct* product, ptree& tree) {
         }
     }
 
-#ifdef USE_IFC2x3
+#ifndef USE_IFC4
 	IfcObjectDefinition::list::ptr structures = get_related
 		<IfcProduct, IfcRelDecomposes, IfcObjectDefinition>
 		(product, &IfcProduct::IsDecomposedBy, &IfcRelDecomposes::RelatedObjects);
@@ -209,7 +209,7 @@ template <>
 void descend(IfcProject* project, ptree& tree) {
 	ptree& child = format_entity_instance(project, tree);
 	
-#ifdef USE_IFC2x3
+#ifndef USE_IFC4
 	IfcObjectDefinition::list::ptr structures = get_related
 		<IfcProject, IfcRelDecomposes, IfcObjectDefinition>
 		(project, &IfcProject::IsDecomposedBy, &IfcRelDecomposes::RelatedObjects);
