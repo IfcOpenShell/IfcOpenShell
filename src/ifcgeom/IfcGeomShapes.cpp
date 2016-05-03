@@ -950,7 +950,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 		const int min_index = *std::min_element(tri.begin(), tri.end());
 		const int max_index = *std::max_element(tri.begin(), tri.end());
 
-		if (min_index < 1 || max_index > points.size()) {
+		if (min_index < 1 || max_index > (int) points.size()) {
 			Logger::Message(Logger::LOG_ERROR, "Contents of CoordIndex out of bounds", l->entity);
 			return false;
 		}
