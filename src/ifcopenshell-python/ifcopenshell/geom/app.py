@@ -100,7 +100,7 @@ class application(QtGui.QApplication):
                 if len(decompositions):
                     return decompositions[0].RelatingObject
                     
-        def load_file(self, f):
+        def load_file(self, f, **kwargs):
             products = list(f.by_type("IfcProduct")) + list(f.by_type("IfcProject"))
             parents = list(map(self.parent, products))
             items = {}
@@ -131,7 +131,7 @@ class application(QtGui.QApplication):
     
         ATTRIBUTES = ['Name']
                             
-        def load_file(self, f):
+        def load_file(self, f, **kwargs):
             products = list(f.by_type("IfcProduct"))
             types = set(map(lambda i: i.is_a(), products))
             items = {}
@@ -192,10 +192,11 @@ class application(QtGui.QApplication):
             self.InitDriver()
             self._display.Select = self.HandleSelection
         
-        def load_file(self, f):
+        def load_file(self, f, setting=None):
         
-            s = settings()
-            s.set(s.USE_PYTHON_OPENCASCADE, True)
+            if setting is None:
+                setting = settings()
+                setting.set(setting.USE_PYTHON_OPENCASCADE, True)
             
             v = self._display            
             
@@ -213,7 +214,7 @@ class application(QtGui.QApplication):
             for p in f.by_type("IfcProduct"):
                 if terminate[0]: break
                 if p.Representation is None: continue
-                shape = create_shape(s, p)
+                shape = create_shape(setting, p)
                 ais = display_shape(shape, viewer_handle=v)
                 ais.GetObject().SetSelectionPriority(self.counter)
                 self.ais_to_product[self.counter] = p
@@ -311,7 +312,7 @@ class application(QtGui.QApplication):
                     c.select(inst)
         return handler
         
-    def __init__(self):
+    def __init__(self, settings=None):
         QtGui.QApplication.__init__(self, sys.argv)
         self.window = application.window()
         self.tree = application.decomposition_treeview()
@@ -340,7 +341,9 @@ class application(QtGui.QApplication):
         for t in [self.tree, self.tree2]:
             t.instanceVisibilityChanged.connect(functools.partial(self.change_visibility, t))
             t.instanceDisplayModeChanged.connect(functools.partial(self.change_displaymode, t))
-            
+
+        self.settings = settings
+
     def change_visibility(self, tree, inst, flag):
         insts = tree.get_children(inst)
         self.canvas.toggle_visibility(insts, flag)
@@ -367,4 +370,4 @@ class application(QtGui.QApplication):
         f = ifcopenshell.open(fn)
         self.files[fn] = f
         for c in self.components:
-            c.load_file(f)
+            c.load_file(f, setting=self.settings)
