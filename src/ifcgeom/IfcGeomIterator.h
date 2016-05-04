@@ -385,7 +385,7 @@ namespace IfcGeom {
 							has_openings = true;
 						}
 						IfcSchema::IfcRelAssociates::list::ptr associations = (*it)->HasAssociations();
-						for (auto jt = associations->begin(); jt != associations->end(); ++jt) {
+						for (IfcSchema::IfcRelAssociates::list::it jt = associations->begin(); jt != associations->end(); ++jt) {
 							IfcSchema::IfcRelAssociatesMaterial* assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
 							if (assoc) {
 								if (assoc->RelatingMaterial()->is(IfcSchema::Type::IfcMaterialLayerSetUsage)) {
