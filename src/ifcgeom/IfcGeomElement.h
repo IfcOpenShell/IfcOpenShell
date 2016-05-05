@@ -129,9 +129,9 @@ namespace IfcGeom {
 		const boost::shared_ptr< Representation::Triangulation<P> >& geometry_pointer() const { return _geometry; }
 		TriangulationElement(const BRepElement<P>& shape_model)
 			: Element<P>(shape_model)
-			, _geometry(boost::shared_ptr<Representation::Triangulation<P>>(new Representation::Triangulation<P>(shape_model.geometry())))
+			, _geometry(boost::shared_ptr<Representation::Triangulation<P> >(new Representation::Triangulation<P>(shape_model.geometry())))
 		{}
-		TriangulationElement(const Element<P>& element, const boost::shared_ptr<Representation::Triangulation<P>>& geometry)
+		TriangulationElement(const Element<P>& element, const boost::shared_ptr<Representation::Triangulation<P> >& geometry)
 			: Element<P>(element)
 			, _geometry(geometry)
 		{}
