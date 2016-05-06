@@ -28,9 +28,7 @@
 
 
 void Logger::SetProduct(boost::optional<IfcSchema::IfcProduct*> product) {
-	if (current_product) {
-		current_product = product;
-	}
+	current_product = product;
 }
 void Logger::SetOutput(std::ostream* l1, std::ostream* l2) { 
 	log1 = l1; 
@@ -42,7 +40,7 @@ void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
 void Logger::Message(Logger::Severity type, const std::string& message, IfcAbstractEntity* entity) {
 	if ( log2 && type >= verbosity ) {
 		(*log2) << "[" << severity_strings[type] << "] ";
-		if ( current_product != NULL) {
+		if ( current_product ) {
 		    (*log2) << "{" << (*current_product)->GlobalId() << "} ";
 		}
 		(*log2) << message << std::endl;
