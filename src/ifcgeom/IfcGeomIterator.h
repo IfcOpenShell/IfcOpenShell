@@ -522,6 +522,8 @@ namespace IfcGeom {
 				}
 
 				IfcSchema::IfcProduct* product = *ifcproduct_iterator;
+
+				Logger::SetProduct(product);
                 
                 BRepElement<P>* element;
 				if (ifcproduct_iterator == ifcproducts->begin() || !settings.get(IteratorSettings::USE_WORLD_COORDS)) {
