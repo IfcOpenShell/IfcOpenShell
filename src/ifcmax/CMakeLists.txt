@@ -28,7 +28,7 @@ LINK_DIRECTORIES(${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DI
 
 ADD_LIBRARY(IfcMax SHARED IfcMax.h IfcMax.cpp)
 
-TARGET_LINK_LIBRARIES(IfcMax IfcParse IfcGeom Comctl32.lib zlibdll.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib
+TARGET_LINK_LIBRARIES(IfcMax ${IFCLIBS} Comctl32.lib zlibdll.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib
     flt.lib geom.lib gfx.lib gup.lib imageViewers.lib ManipSys.lib maxnet.lib Maxscrpt.lib
     maxutil.lib MenuMan.lib menus.lib mesh.lib MNMath.lib Paramblk2.lib particle.lib Poly.lib RenderUtil.lib
     tessint.lib viewfile.lib ${OPENCASCADE_LIBRARIES}
@@ -36,4 +36,4 @@ TARGET_LINK_LIBRARIES(IfcMax IfcParse IfcGeom Comctl32.lib zlibdll.lib bmm.lib c
 
 SET_TARGET_PROPERTIES(IfcMax PROPERTIES SUFFIX ".dli")
 
-INSTALL(TARGETS IfcMax RUNTIME DESTINATION bin)
+INSTALL(TARGETS IfcMax RUNTIME DESTINATION ${BINDIR})

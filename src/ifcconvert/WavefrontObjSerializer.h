@@ -37,8 +37,8 @@ private:
 public:
 	WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename, const IfcGeom::IteratorSettings &settings)
 		: GeometrySerializer(settings)
-		, obj_stream(obj_filename.c_str())
 		, mtl_filename(mtl_filename)
+		, obj_stream(obj_filename.c_str())
 		, mtl_stream(mtl_filename.c_str())		
 		, vcount_total(1)
 	{}

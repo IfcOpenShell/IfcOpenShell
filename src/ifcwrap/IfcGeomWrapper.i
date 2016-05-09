@@ -387,6 +387,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				throw IfcParse::IfcException("Invalid additional representation specified");
 			}
 		}
+		return boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*>();
 	}
 %}
 

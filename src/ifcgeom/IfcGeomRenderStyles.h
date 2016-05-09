@@ -58,7 +58,7 @@ namespace IfcGeom {
 			this->name = sstr.str(); 
 		}
         SurfaceStyle(const std::string& name) : name(name), original_name_(name) {}
-        SurfaceStyle(int id, const std::string& name) : id(id), original_name_(name)
+        SurfaceStyle(int id, const std::string& name) : original_name_(name), id(id)
         {
 			std::stringstream sstr; 
 			std::string sanitized = name;

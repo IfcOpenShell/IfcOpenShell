@@ -106,8 +106,8 @@ private:
 		public:
 			explicit ColladaMaterials(COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryMaterials(&stream)
-				, effects(stream)
-                , serializer(_serializer)
+				, serializer(_serializer)
+		                , effects(stream)
 			{}
 			void add(const IfcGeom::Material& material);
 			bool contains(const IfcGeom::Material& material);
@@ -152,10 +152,10 @@ private:
 		ColladaExporter(const std::string& scene_name, const std::string& fn, ColladaSerializer *_serializer)
             : filename(fn)
             , stream(filename, sizeof(real_t) == sizeof(double)) // utilise Collada stream's double precision feature
-			, geometries(stream, _serializer)
 			, scene(scene_name, stream, _serializer)
 			, materials(stream, _serializer)
-            , serializer(_serializer)
+			, geometries(stream, _serializer)
+			, serializer(_serializer)
 		{
         }
         ColladaMaterials materials;
