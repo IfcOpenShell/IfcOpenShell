@@ -241,7 +241,10 @@ namespace IfcGeom {
 				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, 1.e-5);
 			}
 
-			if (representations->size() == 0) return false;
+			if (representations->size() == 0) {
+                          Logger::Message(Logger::LOG_ERROR, "No geometries found");
+                          return false;
+            }
 
 			representation_iterator = representations->begin();
 			ifcproducts.reset();
@@ -625,6 +628,7 @@ namespace IfcGeom {
 					try {
 						next_serialization = new SerializedElement<P>(*next_shape_model);
 					} catch (...) {
+                        Logger::Message(Logger::LOG_ERROR, "Getting a serialized element from model failed.");
 						success = false;
 					}
 				} else if (!settings.get(IteratorSettings::DISABLE_TRIANGULATION)) {
@@ -635,10 +639,12 @@ namespace IfcGeom {
 							next_triangulation = new TriangulationElement<P>(*next_shape_model, current_triangulation->geometry_pointer());
 						}
 					} catch (...) {
+                        Logger::Message(Logger::LOG_ERROR, "Getting a triangulation element from model failed.");
 						success = false;
 					}
 				}
 			} else {
+                Logger::Message(Logger::LOG_ERROR, "No shape models found.");
 				success = false;
 			}
 

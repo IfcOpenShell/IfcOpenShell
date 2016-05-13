@@ -79,6 +79,8 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
             ? o->name() : o->unique_id()));
     obj_stream << "g " << name << "\n";
 	obj_stream << "s 1" << "\n";
+	
+	obj_stream << std::setprecision(std::numeric_limits<double>::digits10);
 
     const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
 	
