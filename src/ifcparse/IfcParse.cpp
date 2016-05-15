@@ -320,7 +320,6 @@ Token IfcSpfLexer::Next() {
 
 	int len = 0;
 
-	char p = 0;
 	while ( ! stream->eof ) {
 
 		// Read character and increment pointer if not starting a new token
@@ -331,8 +330,6 @@ Token IfcSpfLexer::Next() {
 
 		// If a string is encountered defer processing to the IfcCharacterDecoder
 		if ( c == '\'' ) decoder->dryRun();
-
-		p = c;
 	}
 	if ( len ) return TokenPtr(this,pos);
 	else return TokenPtr();
@@ -348,7 +345,6 @@ std::string IfcSpfLexer::TokenString(unsigned int offset) {
 	stream->Seek(offset);
 	std::string buffer;
 	buffer.reserve(128);
-	char p = 0;
 	while ( ! stream->eof ) {
 		char c = stream->Peek();
 		if ( buffer.size() && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '/') ) break;
@@ -356,7 +352,6 @@ std::string IfcSpfLexer::TokenString(unsigned int offset) {
 		if ( c == ' ' || c == '\r' || c == '\n' || c == '\t' ) continue;
 		else if ( c == '\'' ) return *decoder;
 		else buffer.push_back(c);
-		p = c;
 	}
 	if ( was_eof ) stream->eof = true;
 	else stream->Seek(old_offset);
@@ -790,7 +785,7 @@ EntityArgument::~EntityArgument() { delete entity; }
 //
 // Reads an Entity from the list of Tokens
 //
-Entity::Entity(unsigned int i, IfcFile* f) : _id(i), args(0) {
+Entity::Entity(unsigned int i, IfcFile* f) : args(0), _id(i) {
 	file = f;
 	Token datatype = f->tokens->Next();
 	if ( ! TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity");
@@ -904,10 +899,10 @@ IfcWrite::IfcWritableEntity* Entity::isWritable() {
 
 IfcFile::IfcFile(bool create_latebound_entities)
 	: _create_latebound_entities(create_latebound_entities)
-	, stream(0)
 	, lastId(0)
-	, tokens(0)
 	, MaxId(0)
+	, tokens(0)
+	, stream(0)
 {
 	setDefaultHeaderValues();
 }

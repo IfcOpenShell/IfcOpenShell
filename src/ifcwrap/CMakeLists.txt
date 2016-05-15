@@ -52,14 +52,15 @@ ENDIF()
 
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
 SWIG_ADD_MODULE(ifcopenshell_wrapper python IfcPython.i)
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper IfcParse IfcGeom ${PYTHON_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${ICU_LIBRARIES})
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCLIBS} ${PYTHON_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${ICU_LIBRARIES})
+SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR};${ICU_LIBRARY_DIR}")
 
 # Try to find the Python interpreter to get the site-packages
 # directory in which the wrapper can be installed.
 FIND_PACKAGE(PythonInterp)
 IF(PYTHONINTERP_FOUND)
     EXECUTE_PROCESS(
-        COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils.sysconfig import get_python_lib; sys.stdout.write(get_python_lib())"
+        COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils.sysconfig import get_python_lib; sys.stdout.write(get_python_lib(1))"
         OUTPUT_VARIABLE python_package_dir
     )
 
