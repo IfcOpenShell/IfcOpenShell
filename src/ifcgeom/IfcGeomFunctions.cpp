@@ -1052,12 +1052,10 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 	for (;;) {
 #ifdef USE_IFC4
 		IfcSchema::IfcRelAggregates::list::ptr decomposes = obdef->Decomposes();
-		for ( IfcSchema::IfcRelAggregates::list::it it = decomposes->begin(); it != decomposes->end(); ++ it ) {
 #else
 		IfcSchema::IfcRelDecomposes::list::ptr decomposes = obdef->Decomposes();
-		if (decomposes->size() != 1) break;
-
 #endif
+		if (decomposes->size() != 1) break;
 		IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->RelatingObject();
 		if ( rel_obdef->is(IfcSchema::Type::IfcElement) && !rel_obdef->is(IfcSchema::Type::IfcOpeningElement) ) {
 			IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)rel_obdef;
