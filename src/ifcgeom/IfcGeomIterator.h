@@ -644,7 +644,6 @@ namespace IfcGeom {
 					}
 				}
 			} else {
-                Logger::Message(Logger::LOG_ERROR, "No shape models found.");
 				success = false;
 			}
 
