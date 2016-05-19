@@ -21,13 +21,6 @@ import random
 import operator
 from collections import namedtuple, Iterable
 
-import OCC.gp
-import OCC.V3d
-import OCC.AIS
-import OCC.Quantity
-import OCC.BRepTools
-import OCC.Display.SimpleGui
-
 shape_tuple = namedtuple('shape_tuple', ('data', 'geometry', 'styles'))
 
 handle, main_loop, add_menu, add_function_to_menu = None, None, None, None
@@ -48,6 +41,9 @@ DEFAULT_STYLES = {
 }
 
 def initialize_display():
+    import OCC.V3d
+    import OCC.Display.SimpleGui
+    
     global handle, main_loop, add_menu, add_function_to_menu
     handle, main_loop, add_menu, add_function_to_menu = OCC.Display.SimpleGui.init_display()
 
@@ -76,12 +72,18 @@ def initialize_display():
     return handle
 
 def yield_subshapes(shape):
+    import OCC.TopoDS
+    
     it = OCC.TopoDS.TopoDS_Iterator(shape)
     while it.More():
         yield it.Value()
         it.Next()
     
 def display_shape(shape, clr=None, viewer_handle=None):
+    import OCC.gp
+    import OCC.AIS
+    import OCC.Quantity
+    
     if viewer_handle is None: viewer_handle = handle
 
     if isinstance(shape, shape_tuple): 
@@ -172,12 +174,16 @@ def set_shape_transparency(ais, t):
 
 
 def get_bounding_box_center(bbox):
+    import OCC.gp
+    
     bbmin = [0.]*3; bbmax = [0.]*3
     bbmin[0], bbmin[1], bbmin[2], bbmax[0], bbmax[1], bbmax[2] = bbox.Get()
     return OCC.gp.gp_Pnt(*map(lambda xy: (xy[0]+xy[1])/2., zip(bbmin, bbmax)))
 
 
 def create_shape_from_serialization(brep_object):
+    import OCC.BRepTools
+    
     brep_data, occ_shape, styles = None, None, ()
     
     is_product_shape = True
