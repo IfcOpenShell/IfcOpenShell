@@ -21,6 +21,7 @@ import os
 import sys
 
 from .. import ifcopenshell_wrapper
+from ..entity_instance import entity_instance
 
 def has_occ():
     try: import OCC.BRepTools
@@ -82,5 +83,19 @@ def iterate(settings, filename):
         while True:
             yield it.get()
             if not it.next(): break
-
-
+            
+def make_shape_function(fn):
+    entity_instance_or_none = lambda e: None if e is None else entity_instance(e)
+    if has_occ:
+        import OCC.TopoDS
+        def _(string_or_shape, *args):
+            if isinstance(string_or_shape, OCC.TopoDS.TopoDS_Shape):
+                string_or_shape = utils.serialize_shape(string_or_shape)
+            return entity_instance_or_none(fn(string_or_shape, *args))
+    else:
+        def _(string, *args):
+            return entity_instance_or_none(fn(string, *args))
+    return _
+  
+serialise = make_shape_function(ifcopenshell_wrapper.serialise)
+tesselate = make_shape_function(ifcopenshell_wrapper.tesselate)

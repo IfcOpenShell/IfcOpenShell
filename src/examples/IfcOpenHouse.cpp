@@ -262,12 +262,11 @@ int main() {
 	// will be tesselated using the deflection specified.
 	TopoDS_Shape shape;
 	createGroundShape(shape);
-	IfcEntityList::ptr geometrical_entities(new IfcEntityList);
-	IfcSchema::IfcProductDefinitionShape* ground_representation = IfcGeom::tesselate(shape, 100., geometrical_entities);
+	IfcSchema::IfcProductDefinitionShape* ground_representation = IfcGeom::tesselate(shape, 100.);
 	file.getSingle<IfcSchema::IfcSite>()->setRepresentation(ground_representation);
-	file.addEntities(geometrical_entities);
-	IfcSchema::IfcShapeRepresentation::list::ptr ground_reps = geometrical_entities->as<IfcSchema::IfcShapeRepresentation>();
-	for (IfcSchema::IfcShapeRepresentation::list::it it = ground_reps->begin(); it != ground_reps->end(); ++it) {
+	
+	IfcSchema::IfcRepresentation::list::ptr ground_reps = file.getSingle<IfcSchema::IfcSite>()->Representation()->Representations();
+	for (IfcSchema::IfcRepresentation::list::it it = ground_reps->begin(); it != ground_reps->end(); ++it) {
 		(*it)->setContextOfItems(file.getRepresentationContext("Model"));
 	}
 	file.setSurfaceColour(ground_representation, 0.15, 0.25, 0.05);

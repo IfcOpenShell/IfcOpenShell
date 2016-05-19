@@ -259,7 +259,8 @@ namespace IfcGeom {
 					if (num_faces == 0) {
 						// Edges are only emitted if there are no faces. A mixed representation of faces
 						// and loose edges is discouraged by the standard. An alternative would be to use
-						// TopExp::MapShapesAndAncestors() to find edges that do not belong to any face.
+						// TopExp_Explorer texp(s, TopAbs_EDGE, TopAbs_FACE) to find edges that do not
+						// belong to any face.
 						for (TopExp_Explorer texp(s, TopAbs_EDGE); texp.More(); texp.Next()) {
 							BRepAdaptor_Curve crv(TopoDS::Edge(texp.Current()));
 							GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
@@ -267,6 +268,40 @@ namespace IfcGeom {
 							int start = (int)_verts.size() / 3;
 							for (int i = 1; i <= n; ++i) {
 								gp_XYZ p = tessellater.Value(i).XYZ();
+								
+								/*
+								// In case you want direction arrows on your edges
+								double u = tessellater.Parameter(i);
+								gp_XYZ p2, p3;
+								gp_Pnt tmp;
+								gp_Vec tmp2;
+								crv.D1(u, tmp, tmp2);
+								gp_Dir d1, d2, d3, d4;
+								d1 = tmp2;
+								if (texp.Current().Orientation() == TopAbs_REVERSED) {
+									d1 = -d1;
+								}
+								if (fabs(d1.Z()) < 0.5) {
+									d2 = d1.Crossed(gp::DZ());
+								} else {
+									d2 = d1.Crossed(gp::DY());
+								}
+								d3 = d1.XYZ() + d2.XYZ();
+								d4 = d1.XYZ() - d2.XYZ();
+								p2 = p - d3.XYZ() / 10.;
+								p3 = p - d4.XYZ() / 10.;
+								trsf.Transforms(p2);
+								trsf.Transforms(p3);
+								_material_ids.push_back(surface_style_id);
+								_material_ids.push_back(surface_style_id);
+								_verts.push_back(static_cast<P>(p2.X()));
+								_verts.push_back(static_cast<P>(p2.Y()));
+								_verts.push_back(static_cast<P>(p2.Z()));
+								_verts.push_back(static_cast<P>(p3.X()));
+								_verts.push_back(static_cast<P>(p3.Y()));
+								_verts.push_back(static_cast<P>(p3.Z()));
+								*/
+
 								trsf.Transforms(p);
 								
 								_material_ids.push_back(surface_style_id);
@@ -278,7 +313,14 @@ namespace IfcGeom {
 								if (i > 1) {
 									_edges.push_back(start + i - 2);
 									_edges.push_back(start + i - 1);
+									// _edges.push_back(start + 3 * (i - 2) + 2);
+									// _edges.push_back(start + 3 * (i - 1) + 2);
 								}
+
+								// _edges.push_back(start + 3 * (i - 1) + 0);
+								// _edges.push_back(start + 3 * (i - 1) + 2);
+								// _edges.push_back(start + 3 * (i - 1) + 1);
+								// _edges.push_back(start + 3 * (i - 1) + 2);
 							}
 						}
 					}

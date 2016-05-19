@@ -144,17 +144,32 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& c
 #ifdef USE_IFC4
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineCurveWithKnots* l, Handle(Geom_Curve)& curve) {
 
+	const bool is_rational = l->is(IfcSchema::Type::IfcRationalBSplineCurveWithKnots);
+
 	const IfcSchema::IfcCartesianPoint::list::ptr cps = l->ControlPointsList();
 	const std::vector<int> mults = l->KnotMultiplicities();
 	const std::vector<double> knots = l->Knots();
 
 	TColgp_Array1OfPnt      Poles(0,  cps->size() - 1);
+	TColStd_Array1OfReal    Weights(0, cps->size() - 1);
 	TColStd_Array1OfReal    Knots(0, (int)knots.size() - 1);
 	TColStd_Array1OfInteger Mults(0, (int)mults.size() - 1);
 	Standard_Integer        Degree = l->Degree();
 	Standard_Boolean        Periodic = l->ClosedCurve();
+	
+	int i;
 
-	int i = 0;
+	if (is_rational) {
+		IfcSchema::IfcRationalBSplineCurveWithKnots* rl = (IfcSchema::IfcRationalBSplineCurveWithKnots*)l;
+		std::vector<double> weights = rl->WeightsData();
+
+		i = 0;
+		for (std::vector<double>::const_iterator it = weights.begin(); it != weights.end(); ++it, ++i) {
+			Weights(i) = *it;
+		}
+	}
+
+	i = 0;
 	for (IfcSchema::IfcCartesianPoint::list::it it = cps->begin(); it != cps->end(); ++it, ++i) {
 		gp_Pnt pnt;
 		if (!convert(*it, pnt)) return false;
@@ -171,7 +186,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineCurveWithKnots* l, Hand
 		Knots(i) = *it;
 	}
 	
-	curve = new Geom_BSplineCurve(Poles, Knots, Mults, Degree, Periodic);
+	if (is_rational) {
+		curve = new Geom_BSplineCurve(Poles, Weights, Knots, Mults, Degree, Periodic);
+	} else {
+		curve = new Geom_BSplineCurve(Poles, Knots, Mults, Degree, Periodic);
+	}
 	return true;
 }
 #endif

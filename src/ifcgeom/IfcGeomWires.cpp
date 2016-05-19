@@ -83,6 +83,9 @@
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Solid.hxx>
 
+#include <Geom_BSplineCurve.hxx>
+#include <BRepTools_WireExplorer.hxx>
+
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire& wire) {
@@ -390,29 +393,46 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeCurve* l, TopoDS_Wire& res
 		result = mw;
 		return true;
 	} else if (is_bounded && convert_wire(l->EdgeGeometry(), result)) {
-		if (!l->SameSense()) std::swap(pnt1, pnt2);
-		TopExp_Explorer exp(result, TopAbs_EDGE);
+		if (!l->SameSense()) {
+			result.Reverse();
+		}
+		
 		bool first = true;
+		TopExp_Explorer exp(result, TopAbs_EDGE);
+		
 		while (exp.More()) {
 			const TopoDS_Edge& ed = TopoDS::Edge(exp.Current());
 			Standard_Real u1, u2;
 			Handle(Geom_Curve) ecrv = BRep_Tool::Curve(ed, u1, u2);
 			exp.Next();
 			const bool last = !exp.More();
-			first = false;
+
+			gp_Pnt a, b;
+
 			if (first && last) {
-				mw.Add(BRepBuilderAPI_MakeEdge(ecrv, p1, p2));
+				a = p1;
+				b = p2;				
 			} else if (first) {
-				gp_Pnt pu;
-				ecrv->D0(u2, pu);
-				mw.Add(BRepBuilderAPI_MakeEdge(ecrv, p1, pu));
+				a = p1;
+				ecrv->D0(u2, b);
 			} else if (last) {
-				gp_Pnt pu;
-				ecrv->D0(u1, pu);
-				mw.Add(BRepBuilderAPI_MakeEdge(ecrv, pu, p2));
+				ecrv->D0(u1, a);
+				b = p2;
 			} else {
 				mw.Add(BRepBuilderAPI_MakeEdge(ecrv, u1, u2));
+				first = false;
+				continue;
 			}
+
+			BRep_Builder builder;
+			TopoDS_Vertex v1, v2;
+			/// @todo project first and emit warnings accordingly
+			builder.MakeVertex(v1, a, getValue(GV_PRECISION));
+			builder.MakeVertex(v2, b, getValue(GV_PRECISION));
+
+			mw.Add(BRepBuilderAPI_MakeEdge(ecrv, v1, v2));
+
+			first = false;
 		}
 		result = mw;
 		return true;
@@ -427,13 +447,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeLoop* l, TopoDS_Wire& resu
 	for (IfcSchema::IfcOrientedEdge::list::it it = li->begin(); it != li->end(); ++it) {
 		TopoDS_Wire w;
 		if (convert_wire(*it, w)) {
-			if (!(*it)->Orientation()) w.Reverse();
-			TopoDS_Iterator topoit(w, false);
-			for (; topoit.More(); topoit.Next()) {
-				const TopoDS_Edge& e = TopoDS::Edge(topoit.Value());
-				mw.Add(e);
-			}
-			// mw.Add(w);
+			mw.Add(TopoDS::Edge(TopoDS_Iterator(w).Value()));
 		}
 	}
 	result = mw;

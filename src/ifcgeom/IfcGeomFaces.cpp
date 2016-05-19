@@ -75,6 +75,7 @@
 
 #include <BRepAlgoAPI_Cut.hxx>
 
+#include <ShapeFix_Edge.hxx>
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Solid.hxx>
@@ -210,7 +211,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				if (face_surface.IsNull()) {
 					mf = new BRepBuilderAPI_MakeFace(wire);
 				} else {
-					mf = new BRepBuilderAPI_MakeFace(face_surface, wire); 
+					/// @todo check necessity of false here
+					mf = new BRepBuilderAPI_MakeFace(face_surface, wire, false); 
 				}				
 
 				/* BRepBuilderAPI_FaceError er = mf->Error();
@@ -224,13 +226,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				if (mf->IsDone()) {
 					TopoDS_Face outer_face_bound = mf->Face();
 
-					// BRepCheck_Face might raise exceptions in case of face surfaces. Therefore fix orientation regardless.
+					// In case of (non-planar) face surface, p-curves need to be computed.
+					// For planar faces, Open Cascade generates p-curves on the fly.
 					if (!face_surface.IsNull()) {
-						ShapeFix_Face fix(outer_face_bound);
-						fix.FixOrientation();
-						fix.Perform();
-						outer_face_bound = fix.Face();
-					} else if (BRepCheck_Face(outer_face_bound).OrientationOfWires() == BRepCheck_BadOrientationOfSubshape) {
+						TopExp_Explorer exp(outer_face_bound, TopAbs_EDGE);
+						for (; exp.More(); exp.Next()) {
+							const TopoDS_Edge& edge = TopoDS::Edge(exp.Current());
+							ShapeFix_Edge fix_edge;
+							fix_edge.FixAddPCurve(edge, outer_face_bound, false, getValue(GV_PRECISION));
+						}
+					}
+					
+					if (BRepCheck_Face(outer_face_bound).OrientationOfWires() == BRepCheck_BadOrientationOfSubshape) {
 						wire.Reverse();
 						same_sense = !same_sense;
 						delete mf;
