@@ -410,7 +410,6 @@ int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool adva
 		for (; exp.More(); exp.Next()) {
 			IfcSchema::IfcEdge* edge;
 			// With advanced set to true convert_to_ifc(TopoDS_Edge&) will always create an IfcOrientedEdge
-			std::cerr << exp.Orientation() << " " << exp.Current().Orientation() << std::endl;
 			if (!convert_to_ifc(exp.Current(), edge, true)) {
 				double a, b;
 				if (BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b).IsNull()) {
