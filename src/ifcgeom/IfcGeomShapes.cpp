@@ -238,6 +238,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFacetedBrep* l, IfcRepresentat
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, IfcRepresentationShapeItems& shapes) {
+	bool part_success = false;
 	IfcSchema::IfcConnectedFaceSet::list::ptr facesets = l->FbsmFaces();
 	const SurfaceStyle* collective_style = get_style(l);
 	for( IfcSchema::IfcConnectedFaceSet::list::it it = facesets->begin(); it != facesets->end(); ++ it ) {
@@ -245,9 +246,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, IfcR
 		const SurfaceStyle* shell_style = get_style(*it);
 		if (convert_shape(*it,s)) {
 			shapes.push_back(IfcRepresentationShapeItem(s, shell_style ? shell_style : collective_style));
+			part_success |= true;
 		}
 	}
-	return true;
+	return part_success;
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, TopoDS_Shape& shape) {
