@@ -37,3 +37,30 @@ double IfcParse::IfcSIPrefixToValue(IfcSchema::IfcSIPrefix::IfcSIPrefix v) {
 	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_ATTO  ) return 1.e-18;
 	else return 1.;
 }
+
+double IfcParse::get_SI_equivalent(IfcSchema::IfcNamedUnit* named_unit) {
+	double scale =  1.;
+	IfcSchema::IfcSIUnit* si_unit = 0;
+
+	if (named_unit->is(IfcSchema::Type::IfcConversionBasedUnit)) {
+		IfcSchema::IfcConversionBasedUnit* conv_unit = named_unit->as<IfcSchema::IfcConversionBasedUnit>();
+		IfcSchema::IfcMeasureWithUnit* factor = conv_unit->ConversionFactor();
+		IfcSchema::IfcUnit* component = factor->UnitComponent();
+		if (component->is(IfcSchema::Type::IfcSIUnit)) {
+			si_unit = component->as<IfcSchema::IfcSIUnit>();
+			IfcSchema::IfcValue* v = factor->ValueComponent();
+			scale = *v->entity->getArgument(0);
+		}		
+	} else if (named_unit->is(IfcSchema::Type::IfcSIUnit)) {
+		si_unit = named_unit->as<IfcSchema::IfcSIUnit>();
+	}
+	if (si_unit) {
+		if (si_unit->hasPrefix()) {
+			scale *= IfcSIPrefixToValue(si_unit->Prefix());
+		}
+	} else {
+		scale = 0.;
+	}
+
+	return scale;
+}

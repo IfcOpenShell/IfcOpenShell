@@ -27,6 +27,8 @@
 
 #include <algorithm>
 
+#include "../ifcparse/IfcSIPrefix.h"
+
 using boost::property_tree::ptree;
 using namespace IfcSchema;
 
@@ -77,9 +79,6 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 					IfcSchema::IfcConversionBasedUnit* unit = (IfcSchema::IfcConversionBasedUnit*) e;
 					unit_name = unit->Name();
 				}
-
-				// TODO add toLower() and toUpper() string helper functions for the project
-				std::transform(unit_name.begin(), unit_name.end(), unit_name.begin(), ::tolower);
 
 				value = unit_name;
 			}
@@ -252,7 +251,7 @@ void XmlSerializer::finalize() {
 	}
 	IfcProject* project = *projects->begin();
 
-	ptree root, header, decomposition, properties;
+	ptree root, header, units, decomposition, properties;
 	
 	// Write the SPF header as XML nodes.
 	foreach(const std::string& s, file->header().file_description().description()) {
@@ -285,7 +284,20 @@ void XmlSerializer::finalize() {
 		format_properties(pset->HasProperties(), node);
 	}
 
+	// Write all assigned units as XML nodes.
+	IfcEntityList::ptr unit_assignments = project->UnitsInContext()->Units();
+	for (IfcEntityList::it it = unit_assignments->begin(); it != unit_assignments->end(); ++it) {
+		if ((*it)->is(IfcSchema::Type::IfcNamedUnit)) {
+			IfcSchema::IfcNamedUnit* named_unit = (*it)->as<IfcSchema::IfcNamedUnit>();
+			ptree& node = format_entity_instance(named_unit, units);
+			node.put("<xmlattr>.SI_equivalent", IfcParse::get_SI_equivalent(named_unit));
+		} else if ((*it)->is(IfcSchema::Type::IfcMonetaryUnit)) {
+			format_entity_instance((*it)->as<IfcSchema::IfcMonetaryUnit>(), units);
+		}
+	}
+
 	root.add_child("ifc.header",        header);
+	root.add_child("ifc.units",         units);
 	root.add_child("ifc.properties",    properties);
 	root.add_child("ifc.decomposition", decomposition);
 

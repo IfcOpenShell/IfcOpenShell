@@ -1293,43 +1293,36 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 		if (!units || !units->size()) {
 			Logger::Message(Logger::LOG_ERROR, "No unit information found");
 		} else {
-			for ( IfcEntityList::it it = units->begin(); it != units->end(); ++ it ) {
+			for (IfcEntityList::it it = units->begin(); it != units->end(); ++it) {
 				std::string current_unit_name = "";
 				IfcUtil::IfcBaseClass* base = *it;
 				IfcSchema::IfcSIUnit* unit = 0;
-				double value = 1.f;
-				if ( base->is(IfcSchema::Type::IfcConversionBasedUnit) ) {
-					IfcSchema::IfcConversionBasedUnit* u = (IfcSchema::IfcConversionBasedUnit*)base;
-					current_unit_name = u->Name();
-					IfcSchema::IfcMeasureWithUnit* u2 = u->ConversionFactor();
-					IfcSchema::IfcUnit* u3 = u2->UnitComponent();
-					if ( u3->is(IfcSchema::Type::IfcSIUnit) ) {
-						unit = (IfcSchema::IfcSIUnit*) u3;
-					}
-					IfcSchema::IfcValue* v = u2->ValueComponent();
-					// Quick hack to get the numeric value from an IfcValue:
-					const double f = *v->entity->getArgument(0);
-					value *= f;
-				} else if ( base->is(IfcSchema::Type::IfcSIUnit) ) {
-					unit = (IfcSchema::IfcSIUnit*)base;
-				}
-				if ( unit ) {
-					if ( unit->hasPrefix() ) {
-						value *= IfcParse::IfcSIPrefixToValue(unit->Prefix());
-					}
-					IfcSchema::IfcUnitEnum::IfcUnitEnum type = unit->UnitType();
-					if ( type == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ) {
-						setValue(IfcGeom::Kernel::GV_LENGTH_UNIT,value);
-						if (current_unit_name.empty()) {
-							if (unit->hasPrefix()) {
-								current_unit_name = IfcSchema::IfcSIPrefix::ToString(unit->Prefix());
+				if (base->is(IfcSchema::Type::IfcNamedUnit)) {
+					IfcSchema::IfcNamedUnit* named_unit = base->as<IfcSchema::IfcNamedUnit>();
+					if (named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ||
+						named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT)
+					{
+						std::string current_unit_name;
+						const double current_unit_magnitude = IfcParse::get_SI_equivalent(named_unit);
+						if (current_unit_magnitude != 0.) {
+							if (named_unit->is(IfcSchema::Type::IfcConversionBasedUnit)) {
+								IfcSchema::IfcConversionBasedUnit* u = (IfcSchema::IfcConversionBasedUnit*)base;
+								current_unit_name = u->Name();
+							} else if (named_unit->is(IfcSchema::Type::IfcSIUnit)) {
+								IfcSchema::IfcSIUnit* si_unit = named_unit->as<IfcSchema::IfcSIUnit>();
+								if (si_unit->hasPrefix()) {
+									current_unit_name = IfcSchema::IfcSIPrefix::ToString(si_unit->Prefix()) + unit_name;
+								}
+								current_unit_name += IfcSchema::IfcSIUnitName::ToString(si_unit->Name());
 							}
-							current_unit_name += IfcSchema::IfcSIUnitName::ToString(unit->Name());
+							if (named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT) {
+								unit_name = current_unit_name;
+								unit_magnitude = current_unit_magnitude;
+								setValue(IfcGeom::Kernel::GV_LENGTH_UNIT, current_unit_magnitude);
+							} else {
+								setValue(IfcGeom::Kernel::GV_PLANEANGLE_UNIT, current_unit_magnitude);
+							}
 						}
-						unit_magnitude = value;
-						unit_name = current_unit_name;
-					} else if ( type == IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT ) {
-						setValue(IfcGeom::Kernel::GV_PLANEANGLE_UNIT, value);
 					}
 				}
 			}

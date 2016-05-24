@@ -23,7 +23,9 @@
 #include "../ifcparse/IfcParse.h"
 
 namespace IfcParse {
-	double IfcSIPrefixToValue(IfcSchema::IfcSIPrefix::IfcSIPrefix v);
+	double IfcSIPrefixToValue(IfcSchema::IfcSIPrefix::IfcSIPrefix);
+
+	double get_SI_equivalent(IfcSchema::IfcNamedUnit*);
 }
 
 #endif
