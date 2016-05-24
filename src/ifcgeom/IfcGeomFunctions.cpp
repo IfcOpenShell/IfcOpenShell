@@ -666,9 +666,6 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_WIRE_CREATION_TOLERANCE:
 		wire_creation_tolerance = value;
 		break;
-	case GV_MINIMAL_FACE_AREA:
-		minimal_face_area = value;
-		break;
 	case GV_POINT_EQUALITY_TOLERANCE:
 		point_equality_tolerance = value;
 		break;
@@ -699,7 +696,9 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 	case GV_WIRE_CREATION_TOLERANCE:
 		return wire_creation_tolerance;
 	case GV_MINIMAL_FACE_AREA:
-		return minimal_face_area;
+		// Considering a right-angled triangle, this about the smallest
+		// area you can obtain without the vertices being confused.
+		return modelling_precision * modelling_precision / 2.;
 	case GV_POINT_EQUALITY_TOLERANCE:
 		return point_equality_tolerance;
 	case GV_MAX_FACES_TO_SEW:

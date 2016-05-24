@@ -82,7 +82,6 @@ private:
 
 	double deflection_tolerance;
 	double wire_creation_tolerance;
-	double minimal_face_area;
 	double point_equality_tolerance;
 	double max_faces_to_sew;
 	double ifc_length_unit;
@@ -101,7 +100,6 @@ public:
 	Kernel()
 		: deflection_tolerance(0.001)
 		, wire_creation_tolerance(0.0001)
-		, minimal_face_area(0.000001)
 		, point_equality_tolerance(0.00001)
 		, max_faces_to_sew(-1.0)
 		, ifc_length_unit(1.0)
@@ -117,7 +115,6 @@ public:
 	Kernel& operator=(const Kernel& other) {
 		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
 		setValue(GV_WIRE_CREATION_TOLERANCE,  other.getValue(GV_WIRE_CREATION_TOLERANCE));
-		setValue(GV_MINIMAL_FACE_AREA,        other.getValue(GV_MINIMAL_FACE_AREA));
 		setValue(GV_POINT_EQUALITY_TOLERANCE, other.getValue(GV_POINT_EQUALITY_TOLERANCE));
 		setValue(GV_MAX_FACES_TO_SEW,         other.getValue(GV_MAX_FACES_TO_SEW));
 		setValue(GV_LENGTH_UNIT,              other.getValue(GV_LENGTH_UNIT));
@@ -137,7 +134,7 @@ public:
 		// Defailt: 0.0001m / 0.1mm
 		GV_WIRE_CREATION_TOLERANCE,
 		// Specifies the minimal area of a face to be included in an IfcConnectedFaceset
-		// Default: 0.000001m 0.01cm2
+		// Read-only
 		GV_MINIMAL_FACE_AREA,
 		// Specifies the treshold distance under which cartesian points are deemed equal
 		// Default: 0.00001m / 0.01mm
