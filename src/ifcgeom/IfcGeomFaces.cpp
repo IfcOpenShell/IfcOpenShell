@@ -199,9 +199,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				wire.Reverse();
 			}
 
-			ShapeFix_ShapeTolerance FTol;
-			FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
-
 			bool flattened_wire = false;
 
 			if (!mf) {
