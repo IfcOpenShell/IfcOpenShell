@@ -109,6 +109,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
 	std::vector<int>::const_iterator material_it = mesh.material_ids().begin();
 
     const bool has_uvs = !mesh.uvs().empty();
+	const bool has_normals = !mesh.normals().empty();
 	for ( std::vector<int>::const_iterator it = mesh.faces().begin(); it != mesh.faces().end(); ) {
 		
 		const int material_id = *(material_it++);
@@ -128,9 +129,18 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
 		const int v1 = *(it++)+vcount_total;
 		const int v2 = *(it++)+vcount_total;
 		const int v3 = *(it++)+vcount_total;
-        obj_stream << "f " << v1 << "/" << (has_uvs ? boost::lexical_cast<std::string>(v1) : "") << "/" << v1 << " "
-            << v2 << "/" << (has_uvs ? boost::lexical_cast<std::string>(v2) : "") << "/" << v2 << " "
-            << v3 << "/" << (has_uvs ? boost::lexical_cast<std::string>(v3) : "") << "/" << v3 << "\n";
+
+		if (has_normals && has_uvs) {
+			obj_stream << "f " << v1 << "/" << v1 << "/" << v1 << " "
+				<< v2 << "/" << v2 << "/" << v2 << " "
+				<< v3 << "/" << v3 << "/" << v3 << "\n";
+		} else if (has_normals) {
+			obj_stream << "f " << v1 << "//" << v1 << " "
+				<< v2 << "//" << v2 << " "
+				<< v3 << "//" << v3 << "\n";
+		} else {
+			obj_stream << "f " << v1 << " " << v2 << " " << v3 << "\n";
+		}
 
 	}
 
