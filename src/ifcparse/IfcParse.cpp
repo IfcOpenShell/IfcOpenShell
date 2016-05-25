@@ -303,11 +303,11 @@ unsigned int IfcSpfLexer::skipComment() {
 //
 Token IfcSpfLexer::Next() {
 
-	if ( stream->eof ) return TokenPtr();
+	if ( stream->eof ) return NoneTokenPtr();
 
 	while (skipWhitespace() || skipComment()) {}
 	
-	if ( stream->eof ) return TokenPtr();
+	if ( stream->eof ) return NoneTokenPtr();
 	unsigned int pos = stream->Tell();
 
 	char c = stream->Peek();
@@ -315,7 +315,7 @@ Token IfcSpfLexer::Next() {
 	// If the cursor is at [()=,;$*] we know token consists of single char
 	if (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '$' || c == '*') {
 		stream->Inc();
-		return TokenPtr(this, pos, pos+1);
+		return OperatorTokenPtr(this, pos, pos+1);
 	}
 
 	int len = 0;
@@ -331,8 +331,8 @@ Token IfcSpfLexer::Next() {
 		// If a string is encountered defer processing to the IfcCharacterDecoder
 		if ( c == '\'' ) decoder->dryRun();
 	}
-	if ( len ) return TokenPtr(this, pos);
-	else return TokenPtr();
+	if ( len ) return GeneralTokenPtr(this, pos, stream->Tell());
+	else return NoneTokenPtr();
 }
 
 //
@@ -358,10 +358,10 @@ std::string IfcSpfLexer::TokenString(unsigned int offset) {
 	return buffer;
 }
 
-//according to STEP standard, there may be newlines in tokens
-inline bool RemoveTokenSeparators(const char *pStart, const char *pEnd, char *pDest, char *pDestEnd) {
-	for (; pStart != pEnd; pStart++) {
-		char c = *pStart;
+//Note: according to STEP standard, there may be newlines in tokens
+inline bool RemoveTokenSeparators(IfcSpfStream* stream, unsigned start, unsigned end, char *pDest, char *pDestEnd) {
+	for (unsigned i = start; i < end; i++) {
+		char c = stream->Read(i);
 		if (c == ' ' || c == '\r' || c == '\n' || c == '\t')
 			continue;
 		*pDest++ = c;
@@ -372,85 +372,83 @@ inline bool RemoveTokenSeparators(const char *pStart, const char *pEnd, char *pD
 	return true;
 }
 
-bool ParseInt(const char *pStart, const char *pEnd, int &val) {
+bool ParseInt(IfcSpfLexer* lexer, unsigned start, unsigned end, int &val) {
 	char buff[32];
-	if (!RemoveTokenSeparators(pStart, pEnd, buff, buff+32))
+	if (!RemoveTokenSeparators(lexer->stream, start, end, buff, buff+32))
 		return false;
-	char* end;
-	long result = strtol(buff, &end, 10);
-	if (*end != 0)
+	char* pEnd;
+	long result = strtol(buff, &pEnd, 10);
+	if (*pEnd != 0)
 		return false;
 	val = (int)result;
 	return true;
 }
 
-bool ParseFloat(const char *pStart, const char *pEnd, double &val) {
+bool ParseFloat(IfcSpfLexer* lexer, unsigned start, unsigned end, double &val) {
 	char buff[32];
-	if (!RemoveTokenSeparators(pStart, pEnd, buff, buff+32))
+	if (!RemoveTokenSeparators(lexer->stream, start, end, buff, buff+32))
 		return false;
-	char* end;
+	char* pEnd;
 #ifdef _MSC_VER
-	double result = _strtod_l(pStart, &end, locale);
+	double result = _strtod_l(buff, &pEnd, locale);
 #else
-	double result = strtod_l(pStart, &end, locale);
+	double result = strtod_l(buff, &pEnd, locale);
 #endif
-	if (*end != 0)
+	if (*pEnd != 0)
 		return false;
 	val = result;
 	return true;
 }
 
-//
-// Functions for creating Tokens from an arbitary file offset.
-// The first 4 bits are reserved for Tokens of type ()=,;$*
-//
-Token IfcParse::TokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned end) {
-	//note: first char cannot be affected by encoding or spaces/eols
-	char first = lexer->stream->Read(start);
-
-	if (end != unsigned(-1)) {
-		//always a single-char operator: see Lexer::Next
-		Token token(lexer, start, end, Token_OPERATOR);
-		token.value_char = first;
-		return token;
-	}
-	else {
-		//determine end position (TODO: move to Lexer::Next)
-		std::string tokenStr = lexer->TokenString(start);
-		end = start + (unsigned)tokenStr.size();
-		Token token(lexer, start, end, Token_NONE);
-
-		//determine type of the token
-		if (first == '#') {
-			token.type = Token_IDENTIFIER;
-			if (!ParseInt(tokenStr.c_str() + 1, token.value_int))
-				throw IfcException("Identifier token as not integer");
-		}
-		else if (first == '\'')
-			token.type = Token_STRING;
-		else if (first == '.') {
-			token.type = Token_ENUMERATION;
-			if (end == start + 3) { //bool is also enumeration
-				char second = tokenStr[1];
-				if (second == 'F' || second == 'T') {
-					token.type = Token_BOOL;
-					token.value_bool = (second == 'T');
-				}
-			}
-		}
-		else if (first == '"')
-			token.type = Token_BINARY;
-		else if (ParseInt(tokenStr.c_str(), token.value_int))
-			token.type = Token_INT;
-		else if (ParseFloat(tokenStr.c_str(), token.value_double))
-			token.type = Token_FLOAT;
-		else
-			token.type = Token_KEYWORD;
-
-		return token;
-	}
+bool ParseBool(IfcSpfLexer* lexer, unsigned start, unsigned end, bool &val) {
+	char buff[32];
+	if (!RemoveTokenSeparators(lexer->stream, start, end, buff, buff+32))
+		return false;
+	if (strlen(buff) != 3 || buff[0] != '.' || buff[2] != '.')
+		return false;
+	char mid = buff[1];
+	if (!(mid == 'T' || mid == 'F'))
+		return false;
+	val = (mid == 'T');
+	return true;
 }
-Token IfcParse::TokenPtr() { return Token(); }
+
+Token IfcParse::OperatorTokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned end) {
+	char first = lexer->stream->Read(start);
+	Token token(lexer, start, end, Token_OPERATOR);
+	token.value_char = first;
+	return token;
+}
+
+Token IfcParse::GeneralTokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned end) {
+	Token token(lexer, start, end, Token_NONE);
+
+	//determine type of the token
+	char first = lexer->stream->Read(start);
+	if (first == '#') {
+		token.type = Token_IDENTIFIER;
+		if (!ParseInt(lexer, start + 1, end, token.value_int))
+			throw IfcException("Identifier token as not integer");
+	}
+	else if (first == '\'')
+		token.type = Token_STRING;
+	else if (first == '.') {
+		token.type = Token_ENUMERATION;
+		if (ParseBool(lexer, start, end, token.value_bool)) //bool is also enumeration
+			token.type = Token_BOOL;
+	}
+	else if (first == '"')
+		token.type = Token_BINARY;
+	else if (ParseInt(lexer, start, end, token.value_int))
+		token.type = Token_INT;
+	else if (ParseFloat(lexer, start, end, token.value_double))
+		token.type = Token_FLOAT;
+	else
+		token.type = Token_KEYWORD;
+
+	return token;
+}
+Token IfcParse::NoneTokenPtr() { return Token(); }
 
 
 bool TokenFunc::isOperator(const Token& t) {
@@ -971,8 +969,8 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 		Logger::Message(Logger::LOG_ERROR, std::string("File schema encountered different from expected '") + IfcSchema::Identifier + "'");
 	}
 
-	Token token = TokenPtr();
-	Token previous = TokenPtr();
+	Token token = NoneTokenPtr();
+	Token previous = NoneTokenPtr();
 
 	unsigned int currentId = 0;
 	lastId = 0;
@@ -1041,7 +1039,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 			currentId = 0;
 		} else {
 			try { token = tokens->Next(); }
-			catch (... ) { token = TokenPtr(); }
+			catch (... ) { token = NoneTokenPtr(); }
 		}
 
 		if ( ! (token.startPos || token.lexer) ) break;

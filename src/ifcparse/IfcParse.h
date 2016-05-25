@@ -137,8 +137,9 @@ namespace IfcParse {
 	// Functions for creating Tokens from an arbitary file offset
 	// The first 4 bits are reserved for Tokens of type ()=,;$*
 	//
-	Token TokenPtr(IfcSpfLexer* tokens, unsigned start, unsigned end = unsigned(-1));
-	Token TokenPtr();
+	Token OperatorTokenPtr(IfcSpfLexer* tokens, unsigned start, unsigned end);
+	Token GeneralTokenPtr(IfcSpfLexer* tokens, unsigned start, unsigned end);
+	Token NoneTokenPtr();
 
 	/// A stream of tokens to be read from a IfcSpfStream.
 	class IfcParse_EXPORT IfcSpfLexer {
