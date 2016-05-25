@@ -315,7 +315,7 @@ Token IfcSpfLexer::Next() {
 	// If the cursor is at [()=,;$*] we know token consists of single char
 	if (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '$' || c == '*') {
 		stream->Inc();
-		return TokenPtr(this,pos);
+		return TokenPtr(this, pos, pos+1);
 	}
 
 	int len = 0;
@@ -331,7 +331,7 @@ Token IfcSpfLexer::Next() {
 		// If a string is encountered defer processing to the IfcCharacterDecoder
 		if ( c == '\'' ) decoder->dryRun();
 	}
-	if ( len ) return TokenPtr(this,pos);
+	if ( len ) return TokenPtr(this, pos);
 	else return TokenPtr();
 }
 
@@ -362,8 +362,14 @@ std::string IfcSpfLexer::TokenString(unsigned int offset) {
 // Functions for creating Tokens from an arbitary file offset.
 // The first 4 bits are reserved for Tokens of type ()=,;$*
 //
-Token IfcParse::TokenPtr(IfcSpfLexer* tokens, unsigned int offset) { return Token(tokens,offset); }
-Token IfcParse::TokenPtr() { return Token((IfcSpfLexer*)0,0); }
+Token IfcParse::TokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned end) {
+	if (end == unsigned(-1)) {
+		std::string tokenStr = lexer->TokenString(start);
+		end = start + (unsigned)tokenStr.size();
+	}
+	return Token(lexer, start, end);
+}
+Token IfcParse::TokenPtr() { return Token(); }
 
 //
 // Functions to convert Tokens to binary data

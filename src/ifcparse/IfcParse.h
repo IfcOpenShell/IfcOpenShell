@@ -64,8 +64,8 @@ namespace IfcParse {
 		IfcSpfLexer* lexer; //TODO: remove it from here
 		unsigned startPos, endPos;
 
-		Token() : lexer(0), startPos(0), endPos((unsigned)-1) {}
-		Token(IfcSpfLexer* _lexer, unsigned _startPos) : lexer(_lexer), startPos(_startPos), endPos((unsigned)-1) {}
+		Token() : lexer(0), startPos(0), endPos(0) {}
+		Token(IfcSpfLexer* _lexer, unsigned _startPos, unsigned _endPos) : lexer(_lexer), startPos(_startPos), endPos(_endPos) {}
 	};
 
 	/// Provides functions to convert Tokens to binary data
@@ -112,7 +112,7 @@ namespace IfcParse {
 	// Functions for creating Tokens from an arbitary file offset
 	// The first 4 bits are reserved for Tokens of type ()=,;$*
 	//
-	Token TokenPtr(IfcSpfLexer* tokens, unsigned int offset);
+	Token TokenPtr(IfcSpfLexer* tokens, unsigned start, unsigned end = unsigned(-1));
 	Token TokenPtr();
 
 	/// A stream of tokens to be read from a IfcSpfStream.
