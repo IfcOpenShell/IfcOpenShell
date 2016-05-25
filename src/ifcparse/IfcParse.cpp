@@ -372,27 +372,21 @@ inline bool RemoveTokenSeparators(IfcSpfStream* stream, unsigned start, unsigned
 	return true;
 }
 
-bool ParseInt(IfcSpfLexer* lexer, unsigned start, unsigned end, int &val) {
-	char buff[32];
-	if (!RemoveTokenSeparators(lexer->stream, start, end, buff, buff+32))
-		return false;
+bool ParseInt(const char *pStart, int &val) {
 	char* pEnd;
-	long result = strtol(buff, &pEnd, 10);
+	long result = strtol(pStart, &pEnd, 10);
 	if (*pEnd != 0)
 		return false;
 	val = (int)result;
 	return true;
 }
 
-bool ParseFloat(IfcSpfLexer* lexer, unsigned start, unsigned end, double &val) {
-	char buff[32];
-	if (!RemoveTokenSeparators(lexer->stream, start, end, buff, buff+32))
-		return false;
+bool ParseFloat(const char *pStart, double &val) {
 	char* pEnd;
 #ifdef _MSC_VER
-	double result = _strtod_l(buff, &pEnd, locale);
+	double result = _strtod_l(pStart, &pEnd, locale);
 #else
-	double result = strtod_l(buff, &pEnd, locale);
+	double result = strtod_l(pStart, &pEnd, locale);
 #endif
 	if (*pEnd != 0)
 		return false;
@@ -400,13 +394,10 @@ bool ParseFloat(IfcSpfLexer* lexer, unsigned start, unsigned end, double &val) {
 	return true;
 }
 
-bool ParseBool(IfcSpfLexer* lexer, unsigned start, unsigned end, bool &val) {
-	char buff[32];
-	if (!RemoveTokenSeparators(lexer->stream, start, end, buff, buff+32))
+bool ParseBool(const char *pStart, bool &val) {
+	if (strlen(pStart) != 3 || pStart[0] != '.' || pStart[2] != '.')
 		return false;
-	if (strlen(buff) != 3 || buff[0] != '.' || buff[2] != '.')
-		return false;
-	char mid = buff[1];
+	char mid = pStart[1];
 	if (!(mid == 'T' || mid == 'F'))
 		return false;
 	val = (mid == 'T');
@@ -423,25 +414,30 @@ Token IfcParse::OperatorTokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned en
 Token IfcParse::GeneralTokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned end) {
 	Token token(lexer, start, end, Token_NONE);
 
+	//extract token into local buffer, if it is short enough (remove eol-s, no encoding changes)
+	char tokenStr[64];
+	bool isShort = RemoveTokenSeparators(lexer->stream, start, end, tokenStr, tokenStr + sizeof(tokenStr));
+	if (!isShort) strcpy(tokenStr, "%");
+
 	//determine type of the token
 	char first = lexer->stream->Read(start);
 	if (first == '#') {
 		token.type = Token_IDENTIFIER;
-		if (!ParseInt(lexer, start + 1, end, token.value_int))
+		if (!ParseInt(tokenStr + 1, token.value_int))
 			throw IfcException("Identifier token as not integer");
 	}
 	else if (first == '\'')
 		token.type = Token_STRING;
 	else if (first == '.') {
 		token.type = Token_ENUMERATION;
-		if (ParseBool(lexer, start, end, token.value_bool)) //bool is also enumeration
+		if (ParseBool(tokenStr, token.value_bool)) //bool is also enumeration
 			token.type = Token_BOOL;
 	}
 	else if (first == '"')
 		token.type = Token_BINARY;
-	else if (ParseInt(lexer, start, end, token.value_int))
+	else if (ParseInt(tokenStr, token.value_int))
 		token.type = Token_INT;
-	else if (ParseFloat(lexer, start, end, token.value_double))
+	else if (ParseFloat(tokenStr, token.value_double))
 		token.type = Token_FLOAT;
 	else
 		token.type = Token_KEYWORD;
