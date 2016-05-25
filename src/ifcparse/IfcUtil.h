@@ -291,22 +291,22 @@ namespace IfcParse {
 
 class IfcParse_EXPORT Argument {
 public:
-	virtual operator int() const = 0;
-	virtual operator bool() const = 0;
-	virtual operator double() const = 0;
-	virtual operator std::string() const = 0;
-	virtual operator boost::dynamic_bitset<>() const = 0;
-	virtual operator IfcUtil::IfcBaseClass*() const = 0;
+	virtual operator int() const;
+	virtual operator bool() const;
+	virtual operator double() const;
+	virtual operator std::string() const;
+	virtual operator boost::dynamic_bitset<>() const;
+	virtual operator IfcUtil::IfcBaseClass*() const;
 
-	virtual operator std::vector<int>() const = 0;
-	virtual operator std::vector<double>() const = 0;
-	virtual operator std::vector<std::string>() const = 0;
-	virtual operator std::vector<boost::dynamic_bitset<> >() const = 0;
-	virtual operator IfcEntityList::ptr() const = 0;
+	virtual operator std::vector<int>() const;
+	virtual operator std::vector<double>() const;
+	virtual operator std::vector<std::string>() const;
+	virtual operator std::vector<boost::dynamic_bitset<> >() const;
+	virtual operator IfcEntityList::ptr() const;
 
-	virtual operator std::vector< std::vector<int> >() const = 0;
-	virtual operator std::vector< std::vector<double> >() const = 0;
-	virtual operator IfcEntityListList::ptr() const = 0;
+	virtual operator std::vector< std::vector<int> >() const;
+	virtual operator std::vector< std::vector<double> >() const;
+	virtual operator IfcEntityListList::ptr() const;
 
 	virtual bool isNull() const = 0;
 	virtual unsigned int size() const = 0;

@@ -76,6 +76,24 @@ unsigned int IfcUtil::IfcBaseType::getArgumentCount() const { return 1; }
 Argument* IfcUtil::IfcBaseType::getArgument(unsigned int i) const { return entity->getArgument(i); }
 const char* IfcUtil::IfcBaseType::getArgumentName(unsigned int i) const { if (i == 0) { return "wrappedValue"; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 
+
+//Note: some of these methods are overloaded in derived classes
+Argument::operator int() const { throw IfcParse::IfcException("Argument is not an integer"); }
+Argument::operator bool() const { throw IfcParse::IfcException("Argument is not a boolean"); }
+Argument::operator double() const { throw IfcParse::IfcException("Argument is not a number"); }
+Argument::operator std::string() const { throw IfcParse::IfcException("Argument is not a string"); }
+Argument::operator boost::dynamic_bitset<>() const { throw IfcParse::IfcException("Argument is not a binary"); }
+Argument::operator IfcUtil::IfcBaseClass*() const { throw IfcParse::IfcException("Argument is not an entity instance"); }
+Argument::operator std::vector<double>() const { throw IfcParse::IfcException("Argument is not a list of floats"); }
+Argument::operator std::vector<int>() const { throw IfcParse::IfcException("Argument is not a list of ints"); }
+Argument::operator std::vector<std::string>() const { throw IfcParse::IfcException("Argument is not a list of strings"); }
+Argument::operator std::vector<boost::dynamic_bitset<> >() const { throw IfcParse::IfcException("Argument is not a list of binaries"); }
+Argument::operator IfcEntityList::ptr() const { throw IfcParse::IfcException("Argument is not a list of entity instances"); }
+Argument::operator std::vector< std::vector<int> >() const { throw IfcParse::IfcException("Argument is not a list of list of ints"); }
+Argument::operator std::vector< std::vector<double> >() const { throw IfcParse::IfcException("Argument is not a list of list of floats"); }
+Argument::operator IfcEntityListList::ptr() const { throw IfcParse::IfcException("Argument is not a list of list of entity instances"); }
+
+
 static const char* const argument_type_string[] = {
 	"NULL",
 	"DERIVED",
