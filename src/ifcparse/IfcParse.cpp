@@ -369,12 +369,12 @@ Token IfcParse::TokenPtr() { return Token((IfcSpfLexer*)0,0); }
 // Functions to convert Tokens to binary data
 //
 bool TokenFunc::startsWith(const Token& t, char c) {
-	return t.first->stream->Read(t.second) == c;
+	return t.lexer->stream->Read(t.startPos) == c;
 }
 
 bool TokenFunc::isOperator(const Token& t, char op) { //todo: separate overload for op==0 ?
 	//extract first char
-	char sym = (t.first ? t.first->stream->Read(t.second) : 0);
+	char sym = (t.lexer ? t.lexer->stream->Read(t.startPos) : 0);
 	//check it for being operator
 	if (!(sym == '(' || sym == ')' || sym == '=' || sym == ',' || sym == ';' || sym == '$' || sym == '*'))
 		return false;
@@ -382,7 +382,7 @@ bool TokenFunc::isOperator(const Token& t, char op) { //todo: separate overload 
 	if (op != 0 && sym != op)
 		return false;
 	return true;
-	//return (!t.first) && (!op || (unsigned)op == t.second);
+	//return (!t.lexer) && (!op || (unsigned)op == t.startPos);
 }
 
 bool TokenFunc::isIdentifier(const Token& t) {
@@ -469,7 +469,7 @@ double TokenFunc::asFloat(const Token& t) {
 std::string TokenFunc::asString(const Token& t) {
 	if ( isOperator(t,'$') ) return "";
 	else if ( isOperator(t) ) throw IfcException("Token is not a string");
-	std::string str = t.first->TokenString(t.second);
+	std::string str = t.lexer->TokenString(t.startPos);
 	return isString(t) || isEnumeration(t) || isBinary(t) ? str.substr(1,str.size()-2) : str;
 }
 
@@ -504,8 +504,8 @@ boost::dynamic_bitset<> TokenFunc::asBinary(const Token& t) {
 }
 
 std::string TokenFunc::toString(const Token& t) {
-	if ( isOperator(t) ) return std::string ( (char*) &t.second	, 1 );
-	else return t.first->TokenString(t.second);
+	if ( isOperator(t) ) return std::string ( (char*) &t.startPos	, 1 );
+	else return t.lexer->TokenString(t.startPos);
 }
 
 
@@ -514,11 +514,11 @@ TokenArgument::TokenArgument(const Token& t) {
 }
 
 EntityArgument::EntityArgument(const Token& t) {
-	IfcParse::IfcFile* file = t.first->file;
+	IfcParse::IfcFile* file = t.lexer->file;
 	if (file->create_latebound_entities()) {
-		entity = new IfcLateBoundEntity(new Entity(0, file, t.second));
+		entity = new IfcLateBoundEntity(new Entity(0, file, t.startPos));
 	} else {
-		entity = IfcSchema::SchemaEntity(new Entity(0, file, t.second));
+		entity = IfcSchema::SchemaEntity(new Entity(0, file, t.startPos));
 	}
 }
 
@@ -529,7 +529,7 @@ EntityArgument::EntityArgument(const Token& t) {
 void ArgumentList::read(IfcSpfLexer* t, std::vector<unsigned int>& ids) {
 	//IfcParse::IfcFile* file = t->file;
 	Token next = t->Next();
-	while( next.second || next.first ) {
+	while( next.startPos || next.lexer ) {
 		if ( TokenFunc::isOperator(next,',') ) {
 			// do nothing
 		} else if ( TokenFunc::isOperator(next,')') ) {
@@ -732,7 +732,7 @@ TokenArgument::operator bool() const { return TokenFunc::asBool(token); }
 TokenArgument::operator double() const { return TokenFunc::asFloat(token); }
 TokenArgument::operator std::string() const { return TokenFunc::asString(token); }
 TokenArgument::operator boost::dynamic_bitset<>() const { return TokenFunc::asBinary(token); }
-TokenArgument::operator IfcUtil::IfcBaseClass*() const { return token.first->file->entityById(TokenFunc::asInt(token)); }
+TokenArgument::operator IfcUtil::IfcBaseClass*() const { return token.lexer->file->entityById(TokenFunc::asInt(token)); }
 unsigned int TokenArgument::size() const { return 1; }
 Argument* TokenArgument::operator [] (unsigned int /*i*/) const { throw IfcException("Argument is not a list of attributes"); }
 std::string TokenArgument::toString(bool upper) const { 
@@ -769,7 +769,7 @@ Entity::Entity(unsigned int i, IfcFile* f) : args(0), _id(i) {
 	Token datatype = f->tokens->Next();
 	if ( ! TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity");
 	_type = IfcSchema::Type::FromString(TokenFunc::asString(datatype));
-	offset = datatype.second;
+	offset = datatype.startPos;
 }
 
 //
@@ -997,9 +997,9 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 			catch (... ) { token = TokenPtr(); }
 		}
 
-		if ( ! (token.second || token.first) ) break;
+		if ( ! (token.startPos || token.lexer) ) break;
 		
-		if ( (previous.second || previous.first) && TokenFunc::isIdentifier(previous) ) {
+		if ( (previous.startPos || previous.lexer) && TokenFunc::isIdentifier(previous) ) {
 			int id = TokenFunc::asInt(previous);
 			if ( TokenFunc::isOperator(token,'=') ) {
 				currentId = id;

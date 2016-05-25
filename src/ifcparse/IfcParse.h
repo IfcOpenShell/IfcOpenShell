@@ -60,7 +60,13 @@ namespace IfcParse {
 	class IfcFile;
 	class IfcSpfLexer;
 
-	typedef std::pair<IfcSpfLexer*, unsigned> Token;
+	struct Token {
+		IfcSpfLexer* lexer; //TODO: remove it from here
+		unsigned startPos, endPos;
+
+		Token() : lexer(0), startPos(0), endPos((unsigned)-1) {}
+		Token(IfcSpfLexer* _lexer, unsigned _startPos) : lexer(_lexer), startPos(_startPos), endPos((unsigned)-1) {}
+	};
 
 	/// Provides functions to convert Tokens to binary data
 	/// Tokens are merely offsets to where they can be read in the file
