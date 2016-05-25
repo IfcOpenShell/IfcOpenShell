@@ -358,6 +358,28 @@ std::string IfcSpfLexer::TokenString(unsigned int offset) {
 	return buffer;
 }
 
+bool ParseInt(const char *pStart, int &val) {
+	char* pEnd;
+	long result = strtol(pStart, &pEnd, 10);
+	if (*pEnd != 0)
+		return false;
+	val = (int)result;
+	return true;
+}
+
+bool ParseFloat(const char *pStart, double &val) {
+	char* pEnd;
+#ifdef _MSC_VER
+	double result = _strtod_l(pStart, &pEnd, locale);
+#else
+	double result = strtod_l(pStart, &pEnd, locale);
+#endif
+	if (*pEnd != 0)
+		return false;
+	val = result;
+	return true;
+}
+
 //
 // Functions for creating Tokens from an arbitary file offset.
 // The first 4 bits are reserved for Tokens of type ()=,;$*
@@ -365,185 +387,108 @@ std::string IfcSpfLexer::TokenString(unsigned int offset) {
 Token IfcParse::TokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned end) {
 	if (end != unsigned(-1)) {
 		//always a single-char operator: see Lexer::Next
-		return Token(lexer, start, end, Token_OPERATOR);
+		Token token(lexer, start, end, Token_OPERATOR);
+		token.value_char = lexer->stream->Read(start);
+		return token;
 	}
 	else {
 		//determine end position (TODO: move to Lexer::Next)
 		std::string tokenStr = lexer->TokenString(start);
 		end = start + (unsigned)tokenStr.size();
+		Token token(lexer, start, end, Token_NONE);
 
-		//determine type by the first char
+		//determine type of the token
 		char first = tokenStr[0];
-		TokenType type = Token_NONE;
-		if (first == '#')
-			type = Token_IDENTIFIER;
+		if (first == '#') {
+			token.type = Token_IDENTIFIER;
+			if (!ParseInt(tokenStr.c_str() + 1, token.value_int))
+				throw IfcException("Identifier token as not integer");
+		}
 		else if (first == '\'')
-			type = Token_STRING;
+			token.type = Token_STRING;
 		else if (first == '.') {
-			type = Token_ENUMERATION;
+			token.type = Token_ENUMERATION;
 			if (end == start + 3) { //bool is also enumeration
 				char second = tokenStr[1];
-				if (second == 'F' || second == 'T')
-					type = Token_BOOL;
+				if (second == 'F' || second == 'T') {
+					token.type = Token_BOOL;
+					token.value_bool = (second == 'T');
+				}
 			}
 		}
 		else if (first == '"')
-			type = Token_BINARY;
+			token.type = Token_BINARY;
+		else if (ParseInt(tokenStr.c_str(), token.value_int))
+			token.type = Token_INT;
+		else if (ParseFloat(tokenStr.c_str(), token.value_double))
+			token.type = Token_FLOAT;
+		else
+			token.type = Token_KEYWORD;
 
-		//check if it is a number
-		if (type == Token_NONE) {
-			const char* pStart = tokenStr.c_str();
-			char* pEnd;
-			/*long result =*/ strtol(pStart, &pEnd, 10);
-			if (pEnd - pStart == (ptrdiff_t)tokenStr.length())
-				type = Token_INT;
-		}
-		if (type == Token_NONE) {
-			const char* pStart = tokenStr.c_str();
-			char* pEnd;
-#ifdef _MSC_VER
-			/*double result =*/ _strtod_l(pStart,&pEnd,locale);
-#else
-			double result = strtod_l(pStart,&pEnd,locale);
-#endif
-			if (pEnd - pStart == (ptrdiff_t)tokenStr.length())
-				type = Token_FLOAT;
-		}
-
-		//anything else must be a keyword
-		if (type == Token_NONE)
-			type = Token_KEYWORD;
-
-		return Token(lexer, start, end, type);
+		return token;
 	}
 }
 Token IfcParse::TokenPtr() { return Token(); }
 
 
-bool TokenFunc::isOperator(const Token& t, char op) {
-	if (t.type != Token_OPERATOR)
-		return false;
-	char sym = t.lexer->stream->Read(t.startPos);
-	if (op != 0 && sym != op)
-		return false;
-	return true;
+bool TokenFunc::isOperator(const Token& t) {
+	return t.type == Token_OPERATOR;
 }
-/*bool TokenFunc::isOperator(const Token& t, char op) { //todo: separate overload for op==0 ?
-	//extract first char
-	char sym = (t.lexer ? t.lexer->stream->Read(t.startPos) : 0);
-	//check it for being operator
-	if (!(sym == '(' || sym == ')' || sym == '=' || sym == ',' || sym == ';' || sym == '$' || sym == '*'))
-		return false;
-	//if required, check if it is prescribed one
-	if (op != 0 && sym != op)
-		return false;
-	return true;
-	//return (!t.lexer) && (!op || (unsigned)op == t.startPos);
-}*/
+
+bool TokenFunc::isOperator(const Token& t, char op) {
+	return t.type == Token_OPERATOR && t.value_char == op;
+}
 
 bool TokenFunc::isIdentifier(const Token& t) {
 	return t.type == Token_IDENTIFIER;
 }
-/*bool TokenFunc::isIdentifier(const Token& t) {
-	return ! isOperator(t) && startsWith(t, '#');
-}*/
 
 bool TokenFunc::isString(const Token& t) {
 	return t.type == Token_STRING;
 }
-/*bool TokenFunc::isString(const Token& t) {
-	return ! isOperator(t) && startsWith(t, '\'');
-}*/
 
 bool TokenFunc::isEnumeration(const Token& t) {
 	return t.type == Token_ENUMERATION || t.type == Token_BOOL;
 }
-/*bool TokenFunc::isString(const Token& t) {
-	return ! isOperator(t) && startsWith(t, '\'');
-}*/
 
 bool TokenFunc::isBinary(const Token& t) {
 	return t.type == Token_BINARY;
 }
-/*bool TokenFunc::isBinary(const Token& t) {
-	return ! isOperator(t) && startsWith(t, '"');
-}*/
 
 bool TokenFunc::isKeyword(const Token& t) {
 	return t.type == Token_KEYWORD;
 }
-/*bool TokenFunc::isKeyword(const Token& t) {
-	// bool is a subtype of enumeration, no need to test for that
-	return !isOperator(t) && !isIdentifier(t) && !isString(t) && !isEnumeration(t) && !isInt(t) && !isFloat(t) && !isBinary(t);
-}*/
 
 bool TokenFunc::isInt(const Token& t) {
 	return t.type == Token_INT;
 }
-/*bool TokenFunc::isInt(const Token& t) {
-	if (isOperator(t) || isString(t) || isEnumeration(t)) {
-		return false;
-	}
-	const std::string str = asString(t);
-	const char* start = str.c_str();
-	char* end;
-	strtol(start,&end,10);
-	return ((end - start) == (ptrdiff_t)str.length());
-}*/
 
 bool TokenFunc::isBool(const Token& t) {
 	return t.type == Token_BOOL;
 }
-/*bool TokenFunc::isBool(const Token& t) {
-	if (!isEnumeration(t)) return false;
-	const std::string str = asString(t);
-	return str == "T" || str == "F";
-}*/
 
 bool TokenFunc::isFloat(const Token& t) {
 	return t.type == Token_FLOAT || t.type == Token_INT;
 }
-/*bool TokenFunc::isFloat(const Token& t) {
-	if (isOperator(t) || isString(t) || isEnumeration(t)) {
-		return false;
-	}
-	const std::string str = asString(t);
-	const char* start = str.c_str();
-	char* end;
-#ifdef _MSC_VER
-	_strtod_l(start,&end,locale);
-#else
-	double result = strtod_l(start,&end,locale);
-#endif
-	return ((end - start) == (ptrdiff_t)str.length());
-}*/
 
 int TokenFunc::asInt(const Token& t) {
-	const std::string str = asString(t);
-	// In case of an ENTITY_INSTANCE_NAME skip the leading #
-	const char* start = str.c_str() + (isIdentifier(t) ? 1 : 0);
-	char* end;
-	long result = strtol(start,&end,10);
-	if ( start == end ) throw IfcException("Token is not an integer or identifier");
-	return (int) result;
+	//assert(t.type == Token_INT);
+	return t.value_int;
+}
+
+int TokenFunc::asIdentifier(const Token& t) {
+	//assert(t.type == Token_IDENTIFIER);
+	return t.value_int;
 }
 
 bool TokenFunc::asBool(const Token& t) {
-	const std::string str = asString(t);
-	return str == "T";
+	//assert(t.type == Token_BOOL);
+	return t.value_bool;
 }
 
 double TokenFunc::asFloat(const Token& t) {
-	const std::string str = asString(t);
-	const char* start = str.c_str();
-	char* end;
-#ifdef _MSC_VER
-	double result = _strtod_l(start,&end,locale);
-#else
-	double result = strtod_l(start,&end,locale);
-#endif
-	if ( start == end ) throw IfcException("Token is not a real");
-	return result;
+	//assert(t.type == Token_FLOAT);
+	return t.value_double;
 }
 
 std::string TokenFunc::asString(const Token& t) {
@@ -620,7 +565,7 @@ void ArgumentList::read(IfcSpfLexer* t, std::vector<unsigned int>& ids) {
 			push(alist);
 		} else {
 			if ( TokenFunc::isIdentifier(next) ) {
-				ids.push_back(TokenFunc::asInt(next));
+				ids.push_back(TokenFunc::asIdentifier(next));
 			} if ( TokenFunc::isKeyword(next) ) {
 				t->Next();
 				try {
@@ -812,7 +757,7 @@ TokenArgument::operator bool() const { return TokenFunc::asBool(token); }
 TokenArgument::operator double() const { return TokenFunc::asFloat(token); }
 TokenArgument::operator std::string() const { return TokenFunc::asString(token); }
 TokenArgument::operator boost::dynamic_bitset<>() const { return TokenFunc::asBinary(token); }
-TokenArgument::operator IfcUtil::IfcBaseClass*() const { return token.lexer->file->entityById(TokenFunc::asInt(token)); }
+TokenArgument::operator IfcUtil::IfcBaseClass*() const { return token.lexer->file->entityById(TokenFunc::asIdentifier(token)); }
 unsigned int TokenArgument::size() const { return 1; }
 Argument* TokenArgument::operator [] (unsigned int /*i*/) const { throw IfcException("Argument is not a list of attributes"); }
 std::string TokenArgument::toString(bool upper) const { 
@@ -1080,7 +1025,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 		if ( ! (token.startPos || token.lexer) ) break;
 		
 		if ( (previous.startPos || previous.lexer) && TokenFunc::isIdentifier(previous) ) {
-			int id = TokenFunc::asInt(previous);
+			int id = TokenFunc::asIdentifier(previous);
 			if ( TokenFunc::isOperator(token,'=') ) {
 				currentId = id;
 			} else if (entity) {

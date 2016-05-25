@@ -77,6 +77,12 @@ namespace IfcParse {
 		IfcSpfLexer* lexer; //TODO: remove it from here
 		unsigned startPos, endPos;
 		TokenType type;
+		union {
+			bool value_bool;      //types: BOOL
+			char value_char;      //types: OPERATOR
+			int value_int;        //types: INT, IDENTIFIER
+			double value_double;  //types: FLOAT
+		};
 
 		Token() : lexer(0), startPos(0), endPos(0), type(Token_NONE) {}
 		Token(IfcSpfLexer* _lexer, unsigned _startPos, unsigned _endPos, TokenType _type)
@@ -96,7 +102,9 @@ namespace IfcParse {
 		/// Returns whether the token can be interpreted as an identifier
 		static bool isIdentifier(const Token& t);
 		/// Returns whether the token can be interpreted as a syntactical operator
-		static bool isOperator(const Token& t, char op = 0);
+		static bool isOperator(const Token& t);
+		/// Returns whether the token is a given operator
+		static bool isOperator(const Token& t, char op);
 		/// Returns whether the token can be interpreted as an enumerated value
 		static bool isEnumeration(const Token& t);
 		/// Returns whether the token can be interpreted as a datatype name
@@ -111,6 +119,8 @@ namespace IfcParse {
 		static bool isBinary(const Token& t);
 		/// Returns the token interpreted as an integer
 		static int asInt(const Token& t);
+		/// Returns the token interpreted as an identifier
+		static int asIdentifier(const Token& t);
 		/// Returns the token interpreted as an boolean (.T. or .F.)
 		static bool asBool(const Token& t);
 		/// Returns the token as a floating point number
