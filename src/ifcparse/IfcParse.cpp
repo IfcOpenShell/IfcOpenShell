@@ -358,23 +358,43 @@ std::string IfcSpfLexer::TokenString(unsigned int offset) {
 	return buffer;
 }
 
-bool ParseInt(const char *pStart, int &val) {
-	char* pEnd;
-	long result = strtol(pStart, &pEnd, 10);
-	if (*pEnd != 0)
+//according to STEP standard, there may be newlines in tokens
+inline bool RemoveTokenSeparators(const char *pStart, const char *pEnd, char *pDest, char *pDestEnd) {
+	for (; pStart != pEnd; pStart++) {
+		char c = *pStart;
+		if (c == ' ' || c == '\r' || c == '\n' || c == '\t')
+			continue;
+		*pDest++ = c;
+		if (pDest == pDestEnd)
+			return false;
+	}
+	*pDest = 0;
+	return true;
+}
+
+bool ParseInt(const char *pStart, const char *pEnd, int &val) {
+	char buff[32];
+	if (!RemoveTokenSeparators(pStart, pEnd, buff, buff+32))
+		return false;
+	char* end;
+	long result = strtol(buff, &end, 10);
+	if (*end != 0)
 		return false;
 	val = (int)result;
 	return true;
 }
 
-bool ParseFloat(const char *pStart, double &val) {
-	char* pEnd;
+bool ParseFloat(const char *pStart, const char *pEnd, double &val) {
+	char buff[32];
+	if (!RemoveTokenSeparators(pStart, pEnd, buff, buff+32))
+		return false;
+	char* end;
 #ifdef _MSC_VER
-	double result = _strtod_l(pStart, &pEnd, locale);
+	double result = _strtod_l(pStart, &end, locale);
 #else
-	double result = strtod_l(pStart, &pEnd, locale);
+	double result = strtod_l(pStart, &end, locale);
 #endif
-	if (*pEnd != 0)
+	if (*end != 0)
 		return false;
 	val = result;
 	return true;
@@ -385,10 +405,13 @@ bool ParseFloat(const char *pStart, double &val) {
 // The first 4 bits are reserved for Tokens of type ()=,;$*
 //
 Token IfcParse::TokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned end) {
+	//note: first char cannot be affected by encoding or spaces/eols
+	char first = lexer->stream->Read(start);
+
 	if (end != unsigned(-1)) {
 		//always a single-char operator: see Lexer::Next
 		Token token(lexer, start, end, Token_OPERATOR);
-		token.value_char = lexer->stream->Read(start);
+		token.value_char = first;
 		return token;
 	}
 	else {
@@ -398,7 +421,6 @@ Token IfcParse::TokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned end) {
 		Token token(lexer, start, end, Token_NONE);
 
 		//determine type of the token
-		char first = tokenStr[0];
 		if (first == '#') {
 			token.type = Token_IDENTIFIER;
 			if (!ParseInt(tokenStr.c_str() + 1, token.value_int))
