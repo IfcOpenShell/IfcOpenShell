@@ -60,12 +60,27 @@ namespace IfcParse {
 	class IfcFile;
 	class IfcSpfLexer;
 
+	enum TokenType {
+		Token_NONE,
+		Token_STRING,
+		Token_IDENTIFIER,
+		Token_OPERATOR,
+		Token_ENUMERATION,
+		Token_KEYWORD,
+		Token_INT,
+		Token_BOOL,
+		Token_FLOAT,
+		Token_BINARY
+	};
+
 	struct Token {
 		IfcSpfLexer* lexer; //TODO: remove it from here
 		unsigned startPos, endPos;
+		TokenType type;
 
-		Token() : lexer(0), startPos(0), endPos(0) {}
-		Token(IfcSpfLexer* _lexer, unsigned _startPos, unsigned _endPos) : lexer(_lexer), startPos(_startPos), endPos(_endPos) {}
+		Token() : lexer(0), startPos(0), endPos(0), type(Token_NONE) {}
+		Token(IfcSpfLexer* _lexer, unsigned _startPos, unsigned _endPos, TokenType _type)
+			: lexer(_lexer), startPos(_startPos), endPos(_endPos), type(_type) {}
 	};
 
 	/// Provides functions to convert Tokens to binary data
