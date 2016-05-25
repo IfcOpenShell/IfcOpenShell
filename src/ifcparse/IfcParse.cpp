@@ -315,7 +315,7 @@ Token IfcSpfLexer::Next() {
 	// If the cursor is at [()=,;$*] we know token consists of single char
 	if (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '$' || c == '*') {
 		stream->Inc();
-		return TokenPtr(c);
+		return TokenPtr(this,pos);
 	}
 
 	int len = 0;
@@ -363,7 +363,6 @@ std::string IfcSpfLexer::TokenString(unsigned int offset) {
 // The first 4 bits are reserved for Tokens of type ()=,;$*
 //
 Token IfcParse::TokenPtr(IfcSpfLexer* tokens, unsigned int offset) { return Token(tokens,offset); }
-Token IfcParse::TokenPtr(char c) { return Token((IfcSpfLexer*)0,(unsigned) c); }
 Token IfcParse::TokenPtr() { return Token((IfcSpfLexer*)0,0); }
 
 //
@@ -373,8 +372,17 @@ bool TokenFunc::startsWith(const Token& t, char c) {
 	return t.first->stream->Read(t.second) == c;
 }
 
-bool TokenFunc::isOperator(const Token& t, char op) {
-	return (!t.first) && (!op || (unsigned)op == t.second);
+bool TokenFunc::isOperator(const Token& t, char op) { //todo: separate overload for op==0 ?
+	//extract first char
+	char sym = (t.first ? t.first->stream->Read(t.second) : 0);
+	//check it for being operator
+	if (!(sym == '(' || sym == ')' || sym == '=' || sym == ',' || sym == ';' || sym == '$' || sym == '*'))
+		return false;
+	//if required, check if it is prescribed one
+	if (op != 0 && sym != op)
+		return false;
+	return true;
+	//return (!t.first) && (!op || (unsigned)op == t.second);
 }
 
 bool TokenFunc::isIdentifier(const Token& t) {

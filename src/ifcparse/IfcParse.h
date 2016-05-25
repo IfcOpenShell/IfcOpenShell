@@ -107,7 +107,6 @@ namespace IfcParse {
 	// The first 4 bits are reserved for Tokens of type ()=,;$*
 	//
 	Token TokenPtr(IfcSpfLexer* tokens, unsigned int offset);
-	Token TokenPtr(char c);	
 	Token TokenPtr();
 
 	/// A stream of tokens to be read from a IfcSpfStream.
