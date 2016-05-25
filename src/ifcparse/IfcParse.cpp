@@ -661,7 +661,7 @@ Argument* ArgumentList::operator [] (unsigned int i) const {
 
 void ArgumentList::set(unsigned int i, Argument* argument) {
 	while (size() < i) {
-		push(new TokenArgument(Token(static_cast<IfcSpfLexer*>(0), '$')));
+		push(new NullArgument());
 	}
 	if (i < size()) {
 		delete list[i];

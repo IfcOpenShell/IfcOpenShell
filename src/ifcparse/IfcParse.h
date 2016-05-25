@@ -158,6 +158,19 @@ namespace IfcParse {
 		std::string toString(bool upper=false) const;
 	};
 
+
+	/// Argument being null, e.g. '$'
+	///              == ===
+	class IfcParse_EXPORT NullArgument : public Argument {
+	public:
+		NullArgument() {}
+		IfcUtil::ArgumentType type() const { return IfcUtil::Argument_NULL; }
+		bool isNull() const { return true; }
+		unsigned int size() const { return 1; }
+		Argument* operator [] (unsigned int /*i*/) const { throw IfcException("Argument is not a list of attributes"); }
+		std::string toString(bool /*upper=false*/) const { return "$"; }
+	};
+
 	/// Argument of type scalar or string, e.g.
 	/// #1=IfcVector(#2,1.0);
 	///              == ===
