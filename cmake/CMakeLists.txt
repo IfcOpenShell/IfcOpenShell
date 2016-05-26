@@ -361,6 +361,13 @@ else()
     endif()
 endif()
 
+LINK_DIRECTORIES(${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} ${OPENCOLLADA_LIBRARY_DIR}
+	${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}
+)
+if(NOT WIN32)
+	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
+endif()
+
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
 file(GLOB IFCPARSE_CPP_FILES ../src/ifcparse/*.cpp)
@@ -389,13 +396,6 @@ set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 ADD_LIBRARY(IfcGeom STATIC ${IFCGEOM_FILES})
 
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
-
-LINK_DIRECTORIES(${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} ${OPENCOLLADA_LIBRARY_DIR}
-	${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}
-)
-if(NOT WIN32)
-	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
-endif()
 
 # IfcConvert
 if (IFCCONVERT_DOUBLE_PRECISION)
