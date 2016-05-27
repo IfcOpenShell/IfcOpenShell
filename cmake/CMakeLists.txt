@@ -382,6 +382,9 @@ endforeach()
 
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
+# add macro for every project: use IfcParse as static lib
+add_definitions(-DIFCPARSE_STATIC_DEFINE)
+
 ADD_LIBRARY(IfcParse STATIC ${IFCPARSE_FILES})
 
 IF(UNICODE_SUPPORT)
