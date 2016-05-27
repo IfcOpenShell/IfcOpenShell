@@ -32,6 +32,8 @@
 
 #include <boost/optional.hpp>
 
+#include "../ifcparse/IfcParse_Export.h"
+
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/Ifc4enum.h"
@@ -5742,7 +5744,7 @@ IfcWorkScheduleTypeEnum FromString(const std::string& s);
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcAbsorbedDoseMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcAbsorbedDoseMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -5758,7 +5760,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcAccelerationMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcAccelerationMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -5777,7 +5779,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: amount_of_substance_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcAmountOfSubstanceMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcAmountOfSubstanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -5793,7 +5795,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcAngularVelocityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcAngularVelocityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -5805,7 +5807,7 @@ public:
     operator double() const;
 };
 
-class IfcAreaDensityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcAreaDensityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -5823,7 +5825,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: area_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcAreaMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcAreaMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -5839,7 +5841,7 @@ public:
 /// Type: BOOLEAN
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcBoolean : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcBoolean : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -5893,7 +5895,7 @@ public:
 /// Figure 284 illustrates an example extrusion shape with arbitrary profile (IfcArbitraryClosedProfileDef), aligned "mid-depth right" on the member axis. The line of sight follows the extrusion direction Z which points into the drawing plane of above illustration. Hence, "left" is in the positive X direction of the IfcProfileDef. "Top" is in the positive Y direction of the IfcProfileDef.
 /// 
 /// Figure 284 — Cardinal point extrusion
-class IfcCardinalPointReference : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcCardinalPointReference : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -5915,7 +5917,7 @@ public:
 /// Type: ARRAY [1:2] OF REAL
 /// 
 /// HISTORY New type in IFC Release 2x2.
-class IfcComplexNumber : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcComplexNumber : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -5974,7 +5976,7 @@ public:
 ///      + FORMAT(ABS(c[4]), '##');  -- -50° 58' 33" 110400
 /// 
 /// Another often encountered display format of latitudes and longitudes is to omit the signs and print N, S, E, W indicators instead, for example, 50°58'33"S.  When stored as IfcCompoundPlaneAngleMeasure however, a compound plane angle measure is always signed, with same sign of all components.
-class IfcCompoundPlaneAngleMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcCompoundPlaneAngleMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -5991,7 +5993,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: context_dependent_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcContextDependentMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcContextDependentMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6008,7 +6010,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: count_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcCountMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcCountMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6026,7 +6028,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC2x2.
-class IfcCurvatureMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcCurvatureMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6043,7 +6045,7 @@ public:
 /// 
 /// Use definitions
 /// All given values should be provided in context and converted into a Gregorian date context and be shall be processable by a receiving application.
-class IfcDate : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcDate : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6072,7 +6074,7 @@ public:
 ///   otherwise they are forbidden. The year 0000 is prohibited.
 /// 
 /// HISTORY: New type in IFC2x4
-class IfcDateTime : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcDateTime : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6095,7 +6097,7 @@ public:
 /// Release 1.5.1.
 /// IFC2x4 CHANGE Where rule
 /// ValidRange added.
-class IfcDayInMonthNumber : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcDayInMonthNumber : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6140,7 +6142,7 @@ public:
 /// Type: INTEGER
 /// HISTORY New type in
 /// IFC2x4.
-class IfcDayInWeekNumber : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcDayInWeekNumber : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6157,7 +6159,7 @@ public:
 /// NOTE Corresponding ISO 10303 name:descriptive_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcDescriptiveMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcDescriptiveMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6175,7 +6177,7 @@ public:
 /// NOTE Corresponding ISO 10303 type: dimension_count, please refer to ISO/IS 10303-42:1994, p. 14 for the final definition of the formal standard.
 /// 
 /// HISTORY New Type in IFC Release 1.5
-class IfcDimensionCount : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcDimensionCount : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6191,7 +6193,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcDoseEquivalentMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcDoseEquivalentMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6207,7 +6209,7 @@ public:
 /// EXAMPLE: P0002-10-15T10:30:20 (duration of two years, 10 months, 15 days, 10 hours, 30 minutes and 20 seconds).
 /// 
 /// HISTORY: New type in IFC2x4
-class IfcDuration : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcDuration : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6224,7 +6226,7 @@ public:
 /// Type: REAL 
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcDynamicViscosityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcDynamicViscosityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6240,7 +6242,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcElectricCapacitanceMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcElectricCapacitanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6256,7 +6258,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcElectricChargeMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcElectricChargeMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6272,7 +6274,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcElectricConductanceMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcElectricConductanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6290,7 +6292,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: electric_current_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcElectricCurrentMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcElectricCurrentMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6306,7 +6308,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcElectricResistanceMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcElectricResistanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6322,7 +6324,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcElectricVoltageMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcElectricVoltageMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6338,7 +6340,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcEnergyMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcEnergyMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6363,7 +6365,7 @@ public:
 /// NOTE  Corresponding CSS1 definitions is font-style.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IfcFontStyle : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcFontStyle : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6386,7 +6388,7 @@ public:
 /// NOTE  Corresponding CSS1 definitions is font-variant.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IfcFontVariant : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcFontVariant : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6420,7 +6422,7 @@ public:
 /// NOTE  Corresponding CSS1 definitions is font-weight.
 /// 
 /// HISTORY  New type in IFC2x2 Addendum 2.
-class IfcFontWeight : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcFontWeight : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6436,7 +6438,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcForceMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcForceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6452,7 +6454,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcFrequencyMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcFrequencyMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6478,7 +6480,7 @@ public:
 /// Refer to the BuildingSMART website (www.buildingsmart-tech.org) for more information and sample encoding algorithms.
 /// 
 /// HISTORY  New type in IFC R1.5.1.
-class IfcGloballyUniqueId : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcGloballyUniqueId : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6494,7 +6496,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcHeatFluxDensityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcHeatFluxDensityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6508,7 +6510,7 @@ public:
 /// IfcHeatingValueMeasure defines the amount of energy released (usually in MJ/kg) when a fuel is burned.
 /// 
 /// HISTORY: This is new type in IFC2x2.
-class IfcHeatingValueMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcHeatingValueMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6533,7 +6535,7 @@ public:
 /// Per ISO 10303-11, the set of characters that may appear in STRINGs is defined in ISO 10646.  The encoding of characters in case of file-based exchange is defined in ISO 10303-21 (STEP physical files) and ISO 10303-28 (XML files).  Among else, these specifications define the encoding of 8-bit characters from ISO 8859-1...-16 and of 2-byte Unicode characters.
 /// 
 /// Note that while IfcIdentifier is restricted to 255 characters, the size in exchange files after encoding may be considerably larger than 255 octets, depending on the particular encoding and on the contents of the identifier.
-class IfcIdentifier : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcIdentifier : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6549,7 +6551,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcIlluminanceMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcIlluminanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6565,7 +6567,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcInductanceMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcInductanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6583,7 +6585,7 @@ public:
 /// Type: INTEGER
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcInteger : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcInteger : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6601,7 +6603,7 @@ public:
 /// Type: INTEGER
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcIntegerCountRateMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcIntegerCountRateMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6615,7 +6617,7 @@ public:
 /// IfcIonConcentrationMeasure is a measure of particular ion concentration in a liquid, given in mg/L.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IfcIonConcentrationMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcIonConcentrationMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6631,7 +6633,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcIsothermalMoistureCapacityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcIsothermalMoistureCapacityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6647,7 +6649,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcKinematicViscosityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcKinematicViscosityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6672,7 +6674,7 @@ public:
 /// Per ISO 10303-11, the set of characters that may appear in STRINGs is defined in ISO 10646.  The encoding of characters in case of file-based exchange is defined in ISO 10303-21 (STEP physical files) and ISO 10303-28 (XML files).  Among else, these specifications define the encoding of 8-bit characters from ISO 8859-1...-16 and of 2-byte Unicode characters.
 /// 
 /// Note that while IfcLabel is restricted to 255 characters, the size in exchange files after encoding may be considerably larger than 255 octets, depending on the particular encoding and on the contents of the label.
-class IfcLabel : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcLabel : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6693,7 +6695,7 @@ public:
 /// NOTE  The use of IfcLanguageId should conform to the use of language tags in HTML and XML as published by the W3C consortium.
 /// 
 /// HISTORY  New defined datatype in IFC2x4.
-class IfcLanguageId : public IfcIdentifier {
+class IfcParse_EXPORT IfcLanguageId : public IfcIdentifier {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6711,7 +6713,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: length_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcLengthMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcLengthMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6727,7 +6729,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcLinearForceMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcLinearForceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6743,7 +6745,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcLinearMomentMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcLinearMomentMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6759,7 +6761,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcLinearStiffnessMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcLinearStiffnessMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6775,7 +6777,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcLinearVelocityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcLinearVelocityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6791,7 +6793,7 @@ public:
 /// Type: LOGICAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcLogical : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcLogical : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6807,7 +6809,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcLuminousFluxMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcLuminousFluxMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6825,7 +6827,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IfcLuminousIntensityDistributionMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcLuminousIntensityDistributionMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6843,7 +6845,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: luminous_intensity_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcLuminousIntensityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcLuminousIntensityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6859,7 +6861,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcMagneticFluxDensityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcMagneticFluxDensityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6875,7 +6877,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcMagneticFluxMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcMagneticFluxMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6891,7 +6893,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcMassDensityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcMassDensityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6907,7 +6909,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcMassFlowRateMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcMassFlowRateMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6925,7 +6927,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: mass_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcMassMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcMassMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6943,7 +6945,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC2x2.
-class IfcMassPerLengthMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcMassPerLengthMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6959,7 +6961,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcModulusOfElasticityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcModulusOfElasticityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6975,7 +6977,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC Release 2x2.
-class IfcModulusOfLinearSubgradeReactionMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcModulusOfLinearSubgradeReactionMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -6991,7 +6993,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IfcModulusOfRotationalSubgradeReactionMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcModulusOfRotationalSubgradeReactionMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7011,7 +7013,7 @@ public:
 /// Figure 290 illustrates elastic support of a planar member.
 /// 
 /// Figure 290 — Modulus of subgrade reaction measure
-class IfcModulusOfSubgradeReactionMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcModulusOfSubgradeReactionMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7027,7 +7029,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcMoistureDiffusivityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcMoistureDiffusivityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7043,7 +7045,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcMolecularWeightMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcMolecularWeightMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7059,7 +7061,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcMomentOfInertiaMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcMomentOfInertiaMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7074,7 +7076,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcMonetaryMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcMonetaryMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7141,7 +7143,7 @@ public:
 /// standard.
 /// HISTORY New type in IFC
 /// Release 1.5.1.
-class IfcMonthInYearNumber : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcMonthInYearNumber : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7157,7 +7159,7 @@ public:
 /// Type: IfcLengthMeasure
 /// 
 /// HISTORY New type in IFC Release 2x4.
-class IfcNonNegativeLengthMeasure : public IfcLengthMeasure {
+class IfcParse_EXPORT IfcNonNegativeLengthMeasure : public IfcLengthMeasure {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7174,7 +7176,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: numeric_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcNumericMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcNumericMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7188,7 +7190,7 @@ public:
 /// IfcPHMeasure is a measure of the molar hydrogen ion concentration in a liquid (usually defined as the measure of acidity) in a range from 0 to 14.
 /// 
 /// HISTORY: New type in IFC 2x2.
-class IfcPHMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcPHMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7206,7 +7208,7 @@ public:
 /// NOTE Corresponding STEP name: parameter_value, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcParameterValue : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcParameterValue : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7222,7 +7224,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcPlanarForceMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcPlanarForceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7244,7 +7246,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: plane_angle_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcPlaneAngleMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcPlaneAngleMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7261,7 +7263,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: positive_length_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcPositiveLengthMeasure : public IfcLengthMeasure {
+class IfcParse_EXPORT IfcPositiveLengthMeasure : public IfcLengthMeasure {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7278,7 +7280,7 @@ public:
 /// NOTE Corresponding STEP name: positive_plane_angle_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcPositivePlaneAngleMeasure : public IfcPlaneAngleMeasure {
+class IfcParse_EXPORT IfcPositivePlaneAngleMeasure : public IfcPlaneAngleMeasure {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7294,7 +7296,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcPowerMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcPowerMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7314,7 +7316,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: presentable_text. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
 /// 
 /// HISTORY  New type in IFC2x2.
-class IfcPresentableText : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcPresentableText : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7330,7 +7332,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcPressureMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcPressureMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7342,7 +7344,7 @@ public:
     operator double() const;
 };
 
-class IfcPropertySetDefinitionSet : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcPropertySetDefinitionSet : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7358,7 +7360,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcRadioActivityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcRadioActivityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7379,7 +7381,7 @@ public:
 /// NOTE Corresponding STEP name: ratio_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcRatioMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcRatioMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7397,7 +7399,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY: New type in IFC Release 1.5.1.
-class IfcReal : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcReal : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7413,7 +7415,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcRotationalFrequencyMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcRotationalFrequencyMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7430,7 +7432,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IfcRotationalMassMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcRotationalMassMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7446,7 +7448,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcRotationalStiffnessMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcRotationalStiffnessMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7462,7 +7464,7 @@ public:
 /// Type: REAL 
 /// 
 /// HISTORY New type in IFC Release 2x2.
-class IfcSectionModulusMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcSectionModulusMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7478,7 +7480,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IfcSectionalAreaIntegralMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcSectionalAreaIntegralMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7494,7 +7496,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcShearModulusMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcShearModulusMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7512,7 +7514,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: solid_angle_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcSolidAngleMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcSolidAngleMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7524,7 +7526,7 @@ public:
     operator double() const;
 };
 
-class IfcSoundPowerLevelMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcSoundPowerLevelMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7540,7 +7542,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IfcSoundPowerMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcSoundPowerMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7552,7 +7554,7 @@ public:
     operator double() const;
 };
 
-class IfcSoundPressureLevelMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcSoundPressureLevelMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7568,7 +7570,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IfcSoundPressureMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcSoundPressureMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7584,7 +7586,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcSpecificHeatCapacityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcSpecificHeatCapacityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7602,7 +7604,7 @@ public:
 /// NOTE: The datatype relates to the definition of specular_exponent in ISO 10303-46 entity surface_style_reflectance_ambient_diffuse_specular.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IfcSpecularExponent : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcSpecularExponent : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7622,7 +7624,7 @@ public:
 /// NOTE: The datatype relates to the definition of "shiness" in VRML97, which is the reciprocate value to the specular roughness.
 /// 
 /// HISTORY: New type in Release IFC2x2.
-class IfcSpecularRoughness : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcSpecularRoughness : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7638,7 +7640,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IfcTemperatureGradientMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcTemperatureGradientMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7654,7 +7656,7 @@ public:
 /// Type: REAL 
 /// 
 /// HISTORY  New type in IFC2x4.
-class IfcTemperatureRateOfChangeMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcTemperatureRateOfChangeMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7676,7 +7678,7 @@ public:
 /// Per ISO 10303-11, the set of characters that may appear in STRINGs is defined in ISO 10646.  The encoding of characters in case of file-based exchange is defined in ISO 10303-21 (STEP physical files) and ISO 10303-28 (XML files).  Among else, these specifications define the encoding of 8-bit characters from ISO 8859-1...-16 and of 2-byte Unicode characters.
 /// 
 /// Note that while IfcText is not formally restricted in length, the size of a string in ISO 10303-21:2002 conforming exchange files must not exceed 32767 octets after encoding and escaping.
-class IfcText : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcText : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7697,7 +7699,7 @@ public:
 /// NOTE  Corresponding CSS1 definition is text-align.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IfcTextAlignment : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcTextAlignment : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7721,7 +7723,7 @@ public:
 /// NOTE  Corresponding CSS1 definition is text-decoration.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IfcTextDecoration : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcTextDecoration : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7751,7 +7753,7 @@ public:
 /// HISTORY  New type in IFC2x2 Addendum 2.
 /// 
 /// IFC2x2 Addendum 2 CHANGE: The IfcFontFamily has been added.
-class IfcTextFontName : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcTextFontName : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7772,7 +7774,7 @@ public:
 /// NOTE  Corresponding CSS1 definition is text-transform.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IfcTextTransformation : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcTextTransformation : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7788,7 +7790,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcThermalAdmittanceMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcThermalAdmittanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7804,7 +7806,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcThermalConductivityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcThermalConductivityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7819,7 +7821,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IfcThermalExpansionCoefficientMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcThermalExpansionCoefficientMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7834,7 +7836,7 @@ public:
 /// Usually measured in m2 Kelvin/Watt.
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcThermalResistanceMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcThermalResistanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7850,7 +7852,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcThermalTransmittanceMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcThermalTransmittanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7868,7 +7870,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: thermodynamic_temperature_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcThermodynamicTemperatureMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcThermodynamicTemperatureMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7887,7 +7889,7 @@ public:
 ///   13:20:00-05:00.
 /// 
 /// HISTORY: New type in IFC2x4
-class IfcTime : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcTime : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7905,7 +7907,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: time_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcTimeMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcTimeMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7920,7 +7922,7 @@ public:
 /// Type: INTEGER
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcTimeStamp : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcTimeStamp : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7936,7 +7938,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcTorqueMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcTorqueMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7954,7 +7956,7 @@ public:
 /// designed to make it easy to map other namespaces (that share the properties of URNs) into URN-space.
 /// 
 /// HISTORY New defined datatype in IFC 2x4.
-class IfcURIReference : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcURIReference : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7970,7 +7972,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcVaporPermeabilityMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcVaporPermeabilityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -7988,7 +7990,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: volume_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcVolumeMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcVolumeMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -8004,7 +8006,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IfcVolumetricFlowRateMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcVolumetricFlowRateMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -8020,7 +8022,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IfcWarpingConstantMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcWarpingConstantMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -8036,7 +8038,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IfcWarpingMomentMeasure : public IfcUtil::IfcBaseType {
+class IfcParse_EXPORT IfcWarpingMomentMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -8072,7 +8074,7 @@ public:
 /// HISTORY  New type in IFC2x2 Addendum2.
 /// 
 /// IFC2x3 CHANGE  The IfcBoxAlignment has been added.
-class IfcBoxAlignment : public IfcLabel {
+class IfcParse_EXPORT IfcBoxAlignment : public IfcLabel {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -8088,7 +8090,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IfcNormalisedRatioMeasure : public IfcRatioMeasure {
+class IfcParse_EXPORT IfcNormalisedRatioMeasure : public IfcRatioMeasure {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -8105,7 +8107,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: positive_ratio_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcPositiveRatioMeasure : public IfcRatioMeasure {
+class IfcParse_EXPORT IfcPositiveRatioMeasure : public IfcRatioMeasure {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -8128,7 +8130,7 @@ public:
 /// Corresponds to the following entity in ISO-10303-41: organization_role and person_role.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1
-class IfcActorRole : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcActorRole : public IfcUtil::IfcBaseEntity {
 public:
     /// The name of the role played by an actor. If the Role has value USERDEFINED, then
     /// the user defined role shall be provided as a value of the attribute UserDefinedRole.
@@ -8165,7 +8167,7 @@ public:
 /// NOTE Corresponds to the following entity in ISO-10303-41: address.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IfcAddress : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcAddress : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Purpose is defined for this IfcAddress
     bool hasPurpose() const;
@@ -8202,7 +8204,7 @@ public:
 /// IfcApplication holds the information about an IFC compliant application developed by an application developer. The IfcApplication utilizes a short identifying name as provided by the application developer.
 /// 
 /// HISTORY  New entity in IFC R1.5.
-class IfcApplication : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcApplication : public IfcUtil::IfcBaseEntity {
 public:
     /// Name of the application developer, being requested to be member of the IAI.
     IfcOrganization* ApplicationDeveloper() const;
@@ -8242,7 +8244,7 @@ public:
 /// An instance of IfcAppliedValue may have a unit basis asserted.  This is defined as an IfcMeasureWithUnit that determines the extent of the unit value for application purposes. It is assumed that when this attribute is asserted, then the value given to IfcAppliedValue is that for unit quantity. This is not enforced within the IFC schema and thus needs to be controlled within an application.
 /// 
 /// Applied values may be referenced from a document (such as a price list). The relationship between one or more occurrences of IfcAppliedValue (or its subtypes) is achieved through the use of the IfcExternalReferenceRelationship in which the document provides the IfcExternalReferenceRelationship.RelatingExtReference and the value occurrences are the IfcExternalReferenceRelationship.RelatedResourceObjects.
-class IfcAppliedValue : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcAppliedValue : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcAppliedValue
     bool hasName() const;
@@ -8316,7 +8318,7 @@ public:
 /// HISTORY New Entity in IFC Release 2.0
 /// 
 /// IFC2x Edition 4 CHANGE  Attributes Identifier and Name made optional, where rule added to require at least one of them being asserted. Inverse attributes ApprovedObjects, ApprovedResources and HasExternalReferences added. Inverse attribute Properties deleted (more general relationship via inverse ApprovedResources to be used instead).
-class IfcApproval : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcApproval : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Identifier is defined for this IfcApproval
     bool hasIdentifier() const;
@@ -8401,7 +8403,7 @@ public:
 /// HISTORY: New entity
 /// in Release IFC2x Edition
 /// 2.
-class IfcBoundaryCondition : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcBoundaryCondition : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcBoundaryCondition
     bool hasName() const;
@@ -8430,7 +8432,7 @@ public:
 /// IFC 2x4 change: Attributes LinearStiffnessX/Y/Z renamed to TranslationalStiffnessX/Y/Z.
 /// 
 /// IFC 2x4 change: All attribute data types changed from numeric to SELECT between Boolean and numeric.  Stiffnesses may now also be negative, for example to capture destabilizing effects in boundary conditions.  The IFC 2x3 convention of -1. representing infinite stiffness is no longer valid and must not be used.  Infinite stiffness, i.e. fixed supports, are now modeled by the Boolean value TRUE.
-class IfcBoundaryEdgeCondition : public IfcBoundaryCondition {
+class IfcParse_EXPORT IfcBoundaryEdgeCondition : public IfcBoundaryCondition {
 public:
     /// Whether the optional attribute TranslationalStiffnessByLengthX is defined for this IfcBoundaryEdgeCondition
     bool hasTranslationalStiffnessByLengthX() const;
@@ -8484,7 +8486,7 @@ public:
 /// IFC 2x4 change: Attributes LinearStiffnessX/Y/Z renamed to TranslationalStiffnessX/Y/Z.
 /// 
 /// IFC 2x4 change: All attribute data types changed from numeric to SELECT between Boolean and numeric.  Stiffnesses may now also be negative, for example to capture destabilizing effects in boundary conditions.  The IFC 2x3 convention of -1. representing infinite stiffness is no longer valid and must not be used.  Infinite stiffness, i.e. fixed supports, are now modeled by the Boolean value TRUE.
-class IfcBoundaryFaceCondition : public IfcBoundaryCondition {
+class IfcParse_EXPORT IfcBoundaryFaceCondition : public IfcBoundaryCondition {
 public:
     /// Whether the optional attribute TranslationalStiffnessByAreaX is defined for this IfcBoundaryFaceCondition
     bool hasTranslationalStiffnessByAreaX() const;
@@ -8523,7 +8525,7 @@ public:
 /// IFC 2x4 change: Attributes LinearStiffnessX/Y/Z renamed to TranslationalStiffnessX/Y/Z.
 /// 
 /// IFC 2x4 change: All attribute data types changed from numeric to SELECT between Boolean and numeric.  Stiffnesses may now also be negative, for example to capture destabilizing effects in boundary conditions.  The IFC 2x3 convention of -1. representing infinite stiffness is no longer valid and must not be used.  Infinite stiffness, i.e. fixed supports, are now modeled by the Boolean value TRUE.
-class IfcBoundaryNodeCondition : public IfcBoundaryCondition {
+class IfcParse_EXPORT IfcBoundaryNodeCondition : public IfcBoundaryCondition {
 public:
     /// Whether the optional attribute TranslationalStiffnessX is defined for this IfcBoundaryNodeCondition
     bool hasTranslationalStiffnessX() const;
@@ -8576,7 +8578,7 @@ public:
 /// HISTORY: New entity in IFC 2x2. 
 /// 
 /// IFC 2x4 change: All attribute data types changed from numeric to SELECT between Boolean and numeric.  Stiffnesses may now also be negative, for example to capture destabilizing effects in boundary conditions.  The IFC 2x3 convention of -1. representing infinite stiffness is no longer valid and must not be used.  Infinite stiffness, i.e. fixed supports, are now modeled by the Boolean value TRUE.
-class IfcBoundaryNodeConditionWarping : public IfcBoundaryNodeCondition {
+class IfcParse_EXPORT IfcBoundaryNodeConditionWarping : public IfcBoundaryNodeCondition {
 public:
     /// Whether the optional attribute WarpingStiffness is defined for this IfcBoundaryNodeConditionWarping
     bool hasWarpingStiffness() const;
@@ -8609,7 +8611,7 @@ public:
 /// HISTORY  New entity in IFC Release 1.5.
 /// 
 /// IFC2x Edition 3 CHANGE  The definition of the subtypes has been enhanced by allowing either geometric representation items (point | curve | surface) or topological representation items with associated geometry (vertex point | edge curve | face  surface).
-class IfcConnectionGeometry : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcConnectionGeometry : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
@@ -8639,7 +8641,7 @@ public:
 /// 
 /// Geometry use definitions
 /// The IfcPoint (or the IfcVertexPoint with an associated IfcPoint) at the PointOnRelatingElement attribute defines the point where the basic geometry items of the connected elements connect. The point coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnectsSubtype that utilizes the IfcConnectionPointGeometry. Optionally, the same point coordinates can also be provided within the local coordinate system of the RelatedElement by using the PointOnRelatedElement attribute. If both point coordinates are not identical within a common parent coordinate system (ultimately within the world coordinate system), the subtype IfcConnectionPointEccentricity shall be used.
-class IfcConnectionPointGeometry : public IfcConnectionGeometry {
+class IfcParse_EXPORT IfcConnectionPointGeometry : public IfcConnectionGeometry {
 public:
     /// Point at which the connected object is aligned at the relating element, given in the LCS of the relating element.
     IfcPointOrVertexPoint* PointOnRelatingElement() const;
@@ -8669,7 +8671,7 @@ public:
 /// 
 /// Geometry use definitions 
 /// The IfcSurface (or the IfcFaceSurface with an associated IfcSurface) at the SurfaceOnRelatingElement attribute defines the surface where the basic geometry items of the connected elements connects. The surface geometry and coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnectsSubtype that utilizes the IfcConnectionSurfaceGeometry. Optionally, the same surface geometry and coordinates can also be provided within the local coordinate system of the RelatedElement by using the SurfaceOnRelatedElement attribute.
-class IfcConnectionSurfaceGeometry : public IfcConnectionGeometry {
+class IfcParse_EXPORT IfcConnectionSurfaceGeometry : public IfcConnectionGeometry {
 public:
     /// Surface at which related object is aligned at the relating element, given in the LCS of the relating element.
     IfcSurfaceOrFaceSurface* SurfaceOnRelatingElement() const;
@@ -8697,7 +8699,7 @@ public:
 /// 
 /// Geometry use definitions 
 /// The IfcSolidModel (or the IfcClosedShell) at the VolumeOnRelatingElement attribute defines the volume where the basic geometry items of the interfering elements overlap. The volume geometry and coordinates are provided within the local coordinate system of the RelatingElement, as specified at the subtypes of the relationship IfcRelConnects that utilizes the IfcConnectionSurfaceGeometry. Optionally, the sameÿvolume geometry and coordinates can also be provided within the local coordinate system of the RelatedElement by using the VolumeOnRelatedElement attribute.
-class IfcConnectionVolumeGeometry : public IfcConnectionGeometry {
+class IfcParse_EXPORT IfcConnectionVolumeGeometry : public IfcConnectionGeometry {
 public:
     /// Volume at which related object overlaps with the relating element, given in the LCS of the relating element.
     IfcSolidOrShell* VolumeOnRelatingElement() const;
@@ -8731,7 +8733,7 @@ public:
 /// A constraint must have a name applied through the IfcConstraint.Name attribute and optionally, a description through IfcConstraint.Description. The grade of the constraint (hard, soft, advisory) must be specified through IfcConstraint.ConstraintGrade or IfcConstraint.UserDefinedGrade whilst the source, creating actor and time at which the constraint is created may be optionally asserted through IfcConstraint.ConstraintSource, IfcConstraint.CreatingActor and IfcConstraint.CreationTime. 
 /// 
 /// A constraint may also have additional external information (such as classification or document information) associated to it by IfcExternalReferenceRelationship, accessible through inverse attribute IfcConstraint.HasExternalReferences
-class IfcConstraint : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcConstraint : public IfcUtil::IfcBaseEntity {
 public:
     /// A name to be used for the constraint (e.g., ChillerCoefficientOfPerformance).
     std::string Name() const;
@@ -8827,7 +8829,7 @@ public:
 ///   and any map or other coordinate reference system.
 /// 
 /// HISTORY  New entity in IFC2x4.
-class IfcCoordinateOperation : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcCoordinateOperation : public IfcUtil::IfcBaseEntity {
 public:
     /// Source coordinate reference system for the operation.
     IfcCoordinateReferenceSystemSelect* SourceCRS() const;
@@ -8869,7 +8871,7 @@ public:
 /// Specifications.
 /// 
 /// HISTORY  New entity in IFC2x4.
-class IfcCoordinateReferenceSystem : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcCoordinateReferenceSystem : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcCoordinateReferenceSystem
     bool hasName() const;
@@ -8951,7 +8953,7 @@ public:
 /// Whole life
 /// 
 /// In the absence of any well-defined standard, it is recommended that local agreements should be made to define allowable and understandable cost value types within a project or region.
-class IfcCostValue : public IfcAppliedValue {
+class IfcParse_EXPORT IfcCostValue : public IfcAppliedValue {
 public:
     virtual unsigned int getArgumentCount() const { return 10; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcAppliedValue::getArgumentType(i); }
@@ -8972,7 +8974,7 @@ public:
 /// NOTE: Corresponding ISO 10303 name: derived_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.5.1.
-class IfcDerivedUnit : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcDerivedUnit : public IfcUtil::IfcBaseEntity {
 public:
     /// The group of units and their exponents that define the derived unit.
     IfcTemplatedEntityList< IfcDerivedUnitElement >::ptr Elements() const;
@@ -9005,7 +9007,7 @@ public:
 /// NOTE: Corresponding ISO 10303 name: derived_unit_element, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IfcDerivedUnitElement : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcDerivedUnitElement : public IfcUtil::IfcBaseEntity {
 public:
     /// The fixed quantity which is used as the mathematical factor.
     IfcNamedUnit* Unit() const;
@@ -9042,7 +9044,7 @@ public:
 ///   for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IfcDimensionalExponents : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcDimensionalExponents : public IfcUtil::IfcBaseEntity {
 public:
     /// The power of the length base quantity.
     int LengthExponent() const;
@@ -9083,7 +9085,7 @@ public:
 /// all external information entities.
 /// 
 /// HISTORY New entity in IFC2x4.
-class IfcExternalInformation : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcExternalInformation : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
@@ -9106,7 +9108,7 @@ public:
 /// IfcExternalReference is an abstract supertype of all external reference entities.
 /// 
 /// HISTORY New entity in IFC2x.
-class IfcExternalReference : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcExternalReference : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Location is defined for this IfcExternalReference
     bool hasLocation() const;
@@ -9154,7 +9156,7 @@ public:
 /// the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IfcExternallyDefinedHatchStyle : public IfcExternalReference {
+class IfcParse_EXPORT IfcExternallyDefinedHatchStyle : public IfcExternalReference {
 public:
     virtual unsigned int getArgumentCount() const { return 3; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcExternalReference::getArgumentType(i); }
@@ -9175,7 +9177,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The spelling has been corrected from IfcExternallyDefinedSufaceStyle with no upward compatibility.
-class IfcExternallyDefinedSurfaceStyle : public IfcExternalReference {
+class IfcParse_EXPORT IfcExternallyDefinedSurfaceStyle : public IfcExternalReference {
 public:
     virtual unsigned int getArgumentCount() const { return 3; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcExternalReference::getArgumentType(i); }
@@ -9196,7 +9198,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: externally_defined_text_font. Please refer to ISO/IS 10303-46:1994, p. 137 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcExternallyDefinedTextFont : public IfcExternalReference {
+class IfcParse_EXPORT IfcExternallyDefinedTextFont : public IfcExternalReference {
 public:
     virtual unsigned int getArgumentCount() const { return 3; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcExternalReference::getArgumentType(i); }
@@ -9233,7 +9235,7 @@ public:
 /// underlying AxisCurve supports this concept.
 /// 
 /// Figure 242 — Grid axis
-class IfcGridAxis : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcGridAxis : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute AxisTag is defined for this IfcGridAxis
     bool hasAxisTag() const;
@@ -9265,7 +9267,7 @@ public:
 /// The IfcIrregularTimeSeriesValue describes a value (or set of values) at a particular time point. 
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcIrregularTimeSeriesValue : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcIrregularTimeSeriesValue : public IfcUtil::IfcBaseEntity {
 public:
     /// The specification of the time point.
     std::string TimeStamp() const;
@@ -9293,7 +9295,7 @@ public:
 /// Entity in IFC2x.
 /// 
 /// IFC2x4 CHANGE  Location attribute added, HasLibraryReferences inverse attribute added (previous LibraryReference changed to inverse).
-class IfcLibraryInformation : public IfcExternalInformation {
+class IfcParse_EXPORT IfcLibraryInformation : public IfcExternalInformation {
 public:
     /// The name which is used to identify the library.
     std::string Name() const;
@@ -9347,7 +9349,7 @@ public:
 /// HISTORY  New Entity in IFC2.0.
 /// 
 /// IFC2x4 CHANGE  Description and Language attribute added; ReferencedLibrary attribute added (reversing previous ReferenceIntoLibrary inverse relationship).
-class IfcLibraryReference : public IfcExternalReference {
+class IfcParse_EXPORT IfcLibraryReference : public IfcExternalReference {
 public:
     /// Whether the optional attribute Description is defined for this IfcLibraryReference
     bool hasDescription() const;
@@ -9396,7 +9398,7 @@ public:
 /// For each pair of MainPlaneAngle and SecondaryPlaneAngle the LuminousIntensity is provided (the unit is given by the IfcUnitAssignment referring to the LuminousIntensityDistributionUnit, normally cd/klm). 
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IfcLightDistributionData : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcLightDistributionData : public IfcUtil::IfcBaseEntity {
 public:
     /// The main plane angle (A, B or C angles, according to the light distribution curve chosen).
     double MainPlaneAngle() const;
@@ -9424,7 +9426,7 @@ public:
 /// IfcLightIntensityDistribution defines the the luminous intensity of a light source that changes according to the direction of the ray. It is based on some standardized light distribution curves, which are defined by the LightDistributionCurve attribute. 
 /// 
 /// New entity in IFC2x2.
-class IfcLightIntensityDistribution : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcLightIntensityDistribution : public IfcUtil::IfcBaseEntity {
 public:
     /// Standardized  light distribution curve used to define the luminous intensity of the light in all directions.
     IfcLightDistributionCurveEnum::IfcLightDistributionCurveEnum LightDistributionCurve() const;
@@ -9455,7 +9457,7 @@ public:
 /// The scale factor can be used when the length unit for the 3 axes of the map coordinate system are not identical with the length unit established for this project (seeÿIfcProject.UnitsInContext), if omitted, the scale factor 1.0 is assumed.
 /// 
 /// HISTORY  New entity in IFC2x4.
-class IfcMapConversion : public IfcCoordinateOperation {
+class IfcParse_EXPORT IfcMapConversion : public IfcCoordinateOperation {
 public:
     /// Specifies the location along the easting of the coordinate system of the target map coordinate reference system.
     /// NOTE  for right-handed Cartesian coordinate systems this would establish the location along the x axis
@@ -9505,7 +9507,7 @@ public:
 /// HISTORYÿ New entity in IFC2x.
 /// 
 /// IFC2x4 CHANGEÿ The entity IfcMaterialClassificationRelationship is deprecated since IFC2x4 and shall no longer be used. Use IfcExternalReferenceRelationship instead.
-class IfcMaterialClassificationRelationship : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcMaterialClassificationRelationship : public IfcUtil::IfcBaseEntity {
 public:
     /// The material classifications identifying the type of material.
     IfcEntityList::ptr MaterialClassifications() const;
@@ -9549,7 +9551,7 @@ public:
 /// IfcRelAssociatesMaterial.
 /// 
 /// HISTORYÿ New entity in IFC2x4
-class IfcMaterialDefinition : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcMaterialDefinition : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
@@ -9589,7 +9591,7 @@ public:
 /// HISTORY  New entity in IFC 1.5
 /// 
 /// IFC2x4 CHANGE  The attributes Name, Description, Category, Priority have been added at the end of attribute list. Data type of LayerThickness relaxed to IfcNonNegativeLengthMeasure.
-class IfcMaterialLayer : public IfcMaterialDefinition {
+class IfcParse_EXPORT IfcMaterialLayer : public IfcMaterialDefinition {
 public:
     /// Whether the optional attribute Material is defined for this IfcMaterialLayer
     bool hasMaterial() const;
@@ -9678,7 +9680,7 @@ public:
 /// placed on top of the previous (no gaps or overlaps).
 /// 
 /// Figure 285 — Material layer set
-class IfcMaterialLayerSet : public IfcMaterialDefinition {
+class IfcParse_EXPORT IfcMaterialLayerSet : public IfcMaterialDefinition {
 public:
     /// Identification of the layers from which the material layer set is composed.
     IfcTemplatedEntityList< IfcMaterialLayer >::ptr MaterialLayers() const;
@@ -9750,7 +9752,7 @@ public:
 /// Figure 289 shows an example of applying the OffsetValues to the material layers of a standard wall.
 /// 
 /// Figure 289 — Material layer with offsets
-class IfcMaterialLayerWithOffsets : public IfcMaterialLayer {
+class IfcParse_EXPORT IfcMaterialLayerWithOffsets : public IfcMaterialLayer {
 public:
     /// Orientation of the offset; shall be perpendicular to the parent layer set direction.
     IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum OffsetDirection() const;
@@ -9787,7 +9789,7 @@ public:
 /// 
 /// IFC2x4 CHANGEÿ The entity IfcMaterialList is deprecated and shall no longer
 /// be used. Use IfcMaterialConstituentSet instead.
-class IfcMaterialList : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcMaterialList : public IfcUtil::IfcBaseEntity {
 public:
     /// Materials used in a composition of substances.
     IfcTemplatedEntityList< IfcMaterial >::ptr Materials() const;
@@ -9809,7 +9811,7 @@ public:
 /// NOTE ÿ In case of multiple MaterialProfiles, the relative positioning of individual profiles in IfcMaterialProfileSet are defined using the concept of IfcCompositeProfileDef in IfcProfileResource schema; otherwise, only one MaterialProfile is given and defined by an individual IfcProfileDef (subtype).
 /// 
 /// HISTORYÿNew Entity in IFC2x4
-class IfcMaterialProfile : public IfcMaterialDefinition {
+class IfcParse_EXPORT IfcMaterialProfile : public IfcMaterialDefinition {
 public:
     /// Whether the optional attribute Name is defined for this IfcMaterialProfile
     bool hasName() const;
@@ -9857,7 +9859,7 @@ public:
 /// NOTE ÿ In case of multiple MaterialProfiles, the relative positioning of individual profiles in IfcMaterialProfileSet are defined using the concept of IfcCompositeProfileDef in IfcProfileResource schema; otherwise, only one MaterialProfile is given and defined by an individual IfcProfileDef (subtype).
 /// 
 /// HISTORYÿNew Entity in IFC2x4.
-class IfcMaterialProfileSet : public IfcMaterialDefinition {
+class IfcParse_EXPORT IfcMaterialProfileSet : public IfcMaterialDefinition {
 public:
     /// Whether the optional attribute Name is defined for this IfcMaterialProfileSet
     bool hasName() const;
@@ -9897,7 +9899,7 @@ public:
 /// Relative positions of IfcMaterialProfileWithOffsets in the longitudinal direction of an element can be defined giving offsets at the start and end. This shall not be used for relative positions of individual profiles in the plane of profile definition, which is given in composite profile definition itself. Also, care should be taken especially when used with IfcMaterialProfileSetUsageTapering for correct start and end offset assignement.
 /// 
 /// HISTORYÿ New Entity in IFC2x4.
-class IfcMaterialProfileWithOffsets : public IfcMaterialProfile {
+class IfcParse_EXPORT IfcMaterialProfileWithOffsets : public IfcMaterialProfile {
 public:
     /// The numerical value of profile offset, in the direction of the axis direction - always AXIS1 i.e. the axis along the extrusion path. The OffsetValues[1] identifies the offset from the lower position along the axis direction (normally the start of the standard extrusion), the OffsetValues[2] identifies the offset from the upper position along the axis direction (normally the end of the standard extrusion),
     std::vector< double > /*[1:2]*/ OffsetValues() const;
@@ -9945,7 +9947,7 @@ public:
 /// IfcMaterialUsageDefinition to a subtype of
 /// IfcElementType, it shall only be assigned to an element
 /// occurrence.
-class IfcMaterialUsageDefinition : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcMaterialUsageDefinition : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
@@ -9970,7 +9972,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: measure_with_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IfcMeasureWithUnit : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcMeasureWithUnit : public IfcUtil::IfcBaseEntity {
 public:
     /// The value of the physical quantity when expressed in the specified units.
     IfcValue* ValueComponent() const;
@@ -10042,7 +10044,7 @@ public:
 ///   HARD 
 /// 
 /// This constraint (instantiated as IfcMetric) uses a Date/Time value in IfcMetric.DataValue through IfcMetricValueSelect. An appropriate benchmark is applied according to the requirement of the constraint (as indicated) by IfcMetric.Benchmark. The grade of the constraint (hard, soft, advisory) must be specified through		IfcConstraint.ConstraintGrade whilst the time at which the constraint is	created may be optionally asserted through IfcConstraint.CreationTime.
-class IfcMetric : public IfcConstraint {
+class IfcParse_EXPORT IfcMetric : public IfcConstraint {
 public:
     /// Enumeration that identifies the type of benchmark data.
     IfcBenchmarkEnum::IfcBenchmarkEnum Benchmark() const;
@@ -10076,7 +10078,7 @@ public:
 /// HISTORY: New entity in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE: Type of the attribute Currency changed.
-class IfcMonetaryUnit : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcMonetaryUnit : public IfcUtil::IfcBaseEntity {
 public:
     /// Code or name of the currency.  Permissible values are the three-letter alphabetic currency codes as per ISO 4217, for example CNY, EUR, GBP, JPY, USD.
     std::string Currency() const;
@@ -10098,7 +10100,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: named_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IfcNamedUnit : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcNamedUnit : public IfcUtil::IfcBaseEntity {
 public:
     /// The dimensional exponents of the SI base units by which the named unit is defined.
     IfcDimensionalExponents* Dimensions() const;
@@ -10129,7 +10131,7 @@ public:
 /// In any case the object placement has to unambiguously define the object coordinate system as either two-dimensional axis placement (IfcAxis2Placement2D) or three-dimensional axis placement (IfcAxis2Placement3D). The axis placement may have to be calculated.
 /// 
 /// HISTORY New entity in IFC Release 2x.
-class IfcObjectPlacement : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcObjectPlacement : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
@@ -10154,7 +10156,7 @@ public:
 /// IfcObjective is a subtype of IfcConstraint and may be associated with any subtype of IfcRoot through the IfcRelAssociatesConstraint relationship in the IfcControlExtension schema, or may be associated with IfcProperty by IfcPropertyConstraintRelationship.
 /// 
 /// The aim of IfcObjective is to specify the purpose for which the constraint is applied and to capture the values of the constraint. These may be both the benchmark values that are intended to indicate the constraint extent and the resulting values in use that enable performance comparisons to be applied.
-class IfcObjective : public IfcConstraint {
+class IfcParse_EXPORT IfcObjective : public IfcConstraint {
 public:
     /// Whether the optional attribute BenchmarkValues is defined for this IfcObjective
     bool hasBenchmarkValues() const;
@@ -10193,7 +10195,7 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
 /// IFC 2x4 change: attribute Id renamed to Identification.
-class IfcOrganization : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcOrganization : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Identification is defined for this IfcOrganization
     bool hasIdentification() const;
@@ -10244,7 +10246,7 @@ public:
 /// 
 /// If LastModifiedDate is defined but ChangeAction is not asserted, then the state of ChangeAction is assumed to be UNDEFINED.	  
 /// If both LastModifiedDate and ChangeAction are asserted, then the state of ChangeAction applies to the value asserted in LastModifiedDate.
-class IfcOwnerHistory : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcOwnerHistory : public IfcUtil::IfcBaseEntity {
 public:
     /// Direct reference to the end user who currently "owns" this object. Note that IFC includes the concept of ownership transfer from one user to another and therefore distinguishes between the Owning User and Creating User.
     IfcPersonAndOrganization* OwningUser() const;
@@ -10301,7 +10303,7 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
 /// IFC 2x4 change: attribute Id renamed to Identification.  WHERE rule relaxed to allow omission of names if Identification is provided.
-class IfcPerson : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcPerson : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Identification is defined for this IfcPerson
     bool hasIdentification() const;
@@ -10367,7 +10369,7 @@ public:
 /// NOTE Corresponds to the following entity in ISO-10303-41: person_and_organization.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1
-class IfcPersonAndOrganization : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcPersonAndOrganization : public IfcUtil::IfcBaseEntity {
 public:
     /// The person who is related to the organization.
     IfcPerson* ThePerson() const;
@@ -10397,7 +10399,7 @@ public:
 /// The Name attribute defines the actual usage or kind of measure. The interpretation of the name label has to be established within the actual exchange context. In addition an informative text may be associated to each quantity by the Description attribute. 
 /// 
 /// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IfcPhysicalQuantity : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcPhysicalQuantity : public IfcUtil::IfcBaseEntity {
 public:
     /// Name of the element quantity or measure. The name attribute has to be made recognizable by further agreements.
     std::string Name() const;
@@ -10430,7 +10432,7 @@ public:
 /// HISTORY New entity in IFC2x2 Addendum 1.
 /// 
 /// IFC2x2 ADDENDUM 1 CHANGE  The abstract entity IfcPhysicalSimpleQuantity has been added. Upward compatibility for file based exchange is guaranteed.
-class IfcPhysicalSimpleQuantity : public IfcPhysicalQuantity {
+class IfcParse_EXPORT IfcPhysicalSimpleQuantity : public IfcPhysicalQuantity {
 public:
     /// Whether the optional attribute Unit is defined for this IfcPhysicalSimpleQuantity
     bool hasUnit() const;
@@ -10452,7 +10454,7 @@ public:
 /// Definition: The address for delivery of paper based mail.
 /// 
 /// HISTORY New entity in IFC Release 2x.
-class IfcPostalAddress : public IfcAddress {
+class IfcParse_EXPORT IfcPostalAddress : public IfcAddress {
 public:
     /// Whether the optional attribute InternalLocation is defined for this IfcPostalAddress
     bool hasInternalLocation() const;
@@ -10508,7 +10510,7 @@ public:
     typedef IfcTemplatedEntityList< IfcPostalAddress > list;
 };
 
-class IfcPresentationItem : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcPresentationItem : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
@@ -10537,7 +10539,7 @@ public:
 /// Figure 305 illustrates assignment of items by shape representation or representation item. The set of AssignedItems can either include a whole shape representation, or individual geometric representation items. If both, the IfcShapeRepresentation has a layer assignment, and an individual geometric representation item in the set of IfcShapeRepresentation.Items, then the layer assignment of the IfcGeometricRepresentationItem overides the layer assignment of the IfcShapeRepresentation.
 /// 
 /// Figure 305 — Presentation layer assignment
-class IfcPresentationLayerAssignment : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcPresentationLayerAssignment : public IfcUtil::IfcBaseEntity {
 public:
     /// Name of the layer.
     std::string Name() const;
@@ -10580,7 +10582,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The attributes have been modified without upward compatibility.
-class IfcPresentationLayerWithStyle : public IfcPresentationLayerAssignment {
+class IfcParse_EXPORT IfcPresentationLayerWithStyle : public IfcPresentationLayerAssignment {
 public:
     /// A logical setting, TRUE indicates that the layer is set to 'On', FALSE that the layer is set to 'Off', UNKNOWN that such information is not available.
     bool LayerOn() const;
@@ -10615,7 +10617,7 @@ public:
 /// Each subtype of  IfcPresentationStyle can be assigned to IfcGeometricRepresentationItem's via the IfcPresentationStyleAssignment through an intermediate IfcStyledItem or one of its subtypes.
 /// 
 /// HISTORY  New entity in IFC2x3.
-class IfcPresentationStyle : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcPresentationStyle : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcPresentationStyle
     bool hasName() const;
@@ -10639,7 +10641,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: presentation_style_assignment. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in Release IFC2x2.
-class IfcPresentationStyleAssignment : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcPresentationStyleAssignment : public IfcUtil::IfcBaseEntity {
 public:
     /// A set of presentation styles that are assigned to styled items.
     IfcEntityList::ptr Styles() const;
@@ -10673,7 +10675,7 @@ public:
 /// IFC2x3 NOTE ÿUsers should not instantiate the entity from IFC2x Edition 3 onwards.
 /// 
 /// IFC2x4 CHANGE  Entity made abstract.
-class IfcProductRepresentation : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcProductRepresentation : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcProductRepresentation
     bool hasName() const;
@@ -10870,7 +10872,7 @@ public:
 /// possible to directly instantiate IfcProfileDef and further specify
 /// the profile only by external reference or by profile properties. The latter
 /// are tracked by the inverse attribute HasProperties.
-class IfcProfileDef : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcProfileDef : public IfcUtil::IfcBaseEntity {
 public:
     /// Defines the type of geometry into which this profile definition shall be resolved, either a curve or a surface area. In case of curve the profile should be referenced by a swept surface, in case of area the profile should be referenced by a swept area solid.
     IfcProfileTypeEnum::IfcProfileTypeEnum ProfileType() const;
@@ -10917,7 +10919,7 @@ public:
 ///   length unit used by the map.
 /// 
 /// HISTORY  New entity in IFC2x4.
-class IfcProjectedCRS : public IfcCoordinateReferenceSystem {
+class IfcParse_EXPORT IfcProjectedCRS : public IfcCoordinateReferenceSystem {
 public:
     /// Whether the optional attribute MapProjection is defined for this IfcProjectedCRS
     bool hasMapProjection() const;
@@ -10954,7 +10956,7 @@ public:
     typedef IfcTemplatedEntityList< IfcProjectedCRS > list;
 };
 
-class IfcPropertyAbstraction : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcPropertyAbstraction : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
@@ -11015,7 +11017,7 @@ public:
 ///    
 /// 
 /// HISTORY  New Entity in IFC Release 2.0, capabilities enhanced in IFC Release 2x. Entity has been renamed from IfcEnumeration in IFC Release 2x.
-class IfcPropertyEnumeration : public IfcPropertyAbstraction {
+class IfcParse_EXPORT IfcPropertyEnumeration : public IfcPropertyAbstraction {
 public:
     /// Name of this enumeration.
     std::string Name() const;
@@ -11045,7 +11047,7 @@ public:
 /// EXAMPLE  An opening may have an opening area used to deduct it from the wall surface area. The actual size of the area depends on the method of measurement used.
 /// 
 /// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IfcQuantityArea : public IfcPhysicalSimpleQuantity {
+class IfcParse_EXPORT IfcQuantityArea : public IfcPhysicalSimpleQuantity {
 public:
     /// Area measure value of this quantity.
     double AreaValue() const;
@@ -11074,7 +11076,7 @@ public:
 /// EXAMPLE  An radiator may be measured according to its number of coils. The actual counting method depends on the method of measurement used.
 /// 
 /// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IfcQuantityCount : public IfcPhysicalSimpleQuantity {
+class IfcParse_EXPORT IfcQuantityCount : public IfcPhysicalSimpleQuantity {
 public:
     /// Count measure value of this quantity.
     double CountValue() const;
@@ -11103,7 +11105,7 @@ public:
 /// EXAMPLE  A rafter within a roof construction may be measured according to its length (taking a common cross section into account). The actual size of the length depends on the method of measurement used.
 /// 
 /// HISTORY  New entity in IFC Release 2.x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IfcQuantityLength : public IfcPhysicalSimpleQuantity {
+class IfcParse_EXPORT IfcQuantityLength : public IfcPhysicalSimpleQuantity {
 public:
     /// Length measure value of this quantity.
     double LengthValue() const;
@@ -11132,7 +11134,7 @@ public:
 /// EXAMPLE  The amount of time needed to pour concrete for a wall is given as a time quantity for the labor part of the recipe information.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcQuantityTime : public IfcPhysicalSimpleQuantity {
+class IfcParse_EXPORT IfcQuantityTime : public IfcPhysicalSimpleQuantity {
 public:
     /// Time measure value of this quantity.
     double TimeValue() const;
@@ -11161,7 +11163,7 @@ public:
 /// EXAMPLE  A thick brick wall may be measured according to its volume. The actual size of the volume depends on the method of measurement used.
 /// 
 /// HISTORY New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IfcQuantityVolume : public IfcPhysicalSimpleQuantity {
+class IfcParse_EXPORT IfcQuantityVolume : public IfcPhysicalSimpleQuantity {
 public:
     /// Volume measure value of this quantity.
     double VolumeValue() const;
@@ -11190,7 +11192,7 @@ public:
 /// EXAMPLE  The amount of reinforcement used within a building element may be measured according to its weight. The actual size of the weight depends on the method of measurement used.
 /// 
 /// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IfcQuantityWeight : public IfcPhysicalSimpleQuantity {
+class IfcParse_EXPORT IfcQuantityWeight : public IfcPhysicalSimpleQuantity {
 public:
     /// Mass measure value of this quantity.
     double WeightValue() const;
@@ -11220,7 +11222,7 @@ public:
 /// 
 /// Use definitions
 /// IfcRecurrencePattern supports various recurrence patterns that are differentiated by a type definition (IfcRecurrencePattern.RecurrenceType), which is required to provide the meaning of the given values. It can be further constrained by applicable times through specified IfcTimePeriod instances, thus enabling time periods such as between 7:00 and 12:00 and between 13:00 and 17:00 for each of the applicable days, weeks or months.
-class IfcRecurrencePattern : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcRecurrencePattern : public IfcUtil::IfcBaseEntity {
 public:
     /// Defines the recurrence type that gives meaning to the used
     ///   attributes and decides about possible attribute
@@ -11286,7 +11288,7 @@ public:
     typedef IfcTemplatedEntityList< IfcRecurrencePattern > list;
 };
 
-class IfcReference : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcReference : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute TypeIdentifier is defined for this IfcReference
     bool hasTypeIdentifier() const;
@@ -11366,7 +11368,7 @@ public:
 /// IFC2x4 CHANGE  Entity
 ///   IfcRepresentation has been changed into an ABSTRACT
 ///   supertype.
-class IfcRepresentation : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcRepresentation : public IfcUtil::IfcBaseEntity {
 public:
     /// Definition of the representation context for which the different subtypes of representation are valid.
     IfcRepresentationContext* ContextOfItems() const;
@@ -11410,7 +11412,7 @@ public:
 /// 
 /// IFC2x4 CHANGE Entity made abstract, had been deprecated from instantiation since
 /// IFC2x2.
-class IfcRepresentationContext : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcRepresentationContext : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute ContextIdentifier is defined for this IfcRepresentationContext
     bool hasContextIdentifier() const;
@@ -11467,7 +11469,7 @@ public:
 /// HISTORY  New entity in IFC Release 2x.
 /// 
 /// IFC2x3 CHANGE  The inverse attributes StyledByItem and LayerAssignments have been added. Upward compatibility for file based exchange is guaranteed.
-class IfcRepresentationItem : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcRepresentationItem : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
@@ -11494,7 +11496,7 @@ public:
 /// NOTE  The definition of a mapping which is used to specify a new representation item comprises a representation map and a mapped item entity. Without both entities, the mapping is not fully defined. Two entities are specified to allow the same source representation to be mapped into multiple new representations.
 /// 
 /// HISTORY  New entity in IFC Release 2x.
-class IfcRepresentationMap : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcRepresentationMap : public IfcUtil::IfcBaseEntity {
 public:
     /// An axis2 placement that defines the position about which the mapped
     /// representation is mapped.
@@ -11520,7 +11522,7 @@ public:
 /// IfcResourceLevelRelationship is an abstract base class for relationships between resource-level entities.
 /// 
 /// HISTORY New Entity in IFC 2x4
-class IfcResourceLevelRelationship : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcResourceLevelRelationship : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcResourceLevelRelationship
     bool hasName() const;
@@ -11553,7 +11555,7 @@ public:
 /// HISTORY New entity in IFC Release 1.0
 /// 
 /// IFC2x4 CHANGE The attribute OwnerHistory has been made OPTIONAL.
-class IfcRoot : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcRoot : public IfcUtil::IfcBaseEntity {
 public:
     /// Assignment of a globally unique identifier within the entire software world.
     std::string GlobalId() const;
@@ -11596,7 +11598,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: si_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IfcSIUnit : public IfcNamedUnit {
+class IfcParse_EXPORT IfcSIUnit : public IfcNamedUnit {
 public:
     /// Whether the optional attribute Prefix is defined for this IfcSIUnit
     bool hasPrefix() const;
@@ -11623,7 +11625,7 @@ public:
 /// IfcSchedulingTime is the abstract supertype of entities that capture time-related information of processes.
 /// 
 /// HISTORY: New entity in IFC2x4.
-class IfcSchedulingTime : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcSchedulingTime : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcSchedulingTime
     bool hasName() const;
@@ -11690,7 +11692,7 @@ public:
 ///   IfcRepresentationMap's that are used by an
 ///   IfcTypeProduct through the
 ///   RepresentationMaps attribute.
-class IfcShapeAspect : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcShapeAspect : public IfcUtil::IfcBaseEntity {
 public:
     /// List of shape representations. Each member defines a valid representation of a particular type within a particular representation context as being an aspect (or part) of a product definition.
     /// IFC2x Edition 3 CHANGE  The data type has been changed from IfcShapeRepresentation to IfcShapeModel with upward compatibility
@@ -11747,7 +11749,7 @@ public:
 /// shape (via IfcShapeAspect).
 /// 
 /// HISTORY  New entity in IFC2x3.
-class IfcShapeModel : public IfcRepresentation {
+class IfcParse_EXPORT IfcShapeModel : public IfcRepresentation {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcRepresentation::getArgumentType(i); }
@@ -11897,7 +11899,7 @@ public:
 /// HISTORY  New entity in IFC Release 1.5.
 /// 
 /// IFC2x4 CHANGE  The RepresentationType's 'Curve3D', 'Surface2D', 'Surface3D', 'AdvancedBrep', 'LightSource', and the RepresentationIdentifier 'Lighting' have been added.
-class IfcShapeRepresentation : public IfcShapeModel {
+class IfcParse_EXPORT IfcShapeRepresentation : public IfcShapeModel {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcShapeModel::getArgumentType(i); }
@@ -11914,7 +11916,7 @@ public:
 /// Definition from IAI: Describe more rarely needed connection properties.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcStructuralConnectionCondition : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcStructuralConnectionCondition : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcStructuralConnectionCondition
     bool hasName() const;
@@ -11936,7 +11938,7 @@ public:
 /// Definition from IAI: The abstract entity IfcStructuralLoadOrResult is the supertype of all loads (actions or reactions) or of certain requirements resulting from structural analysis, or certain provisions which influence structural analysis.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcStructuralLoad : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcStructuralLoad : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcStructuralLoad
     bool hasName() const;
@@ -11966,7 +11968,7 @@ public:
 ///   If the loads or results comprise a surface activity, 2-dimensional locations shall be given, measured in the surface activity's local x and y directions.  The location shall not exceed the bounds of the surface activity.
 /// 
 /// NOTE  There are no ordering requirements in the 2-dimensional case, but the 1-dimensional case shall be spatially ordered for simplicity.
-class IfcStructuralLoadConfiguration : public IfcStructuralLoad {
+class IfcParse_EXPORT IfcStructuralLoadConfiguration : public IfcStructuralLoad {
 public:
     /// List of load or result values.
     IfcTemplatedEntityList< IfcStructuralLoadOrResult >::ptr Values() const;
@@ -11991,7 +11993,7 @@ public:
 /// Definition from IAI: Abstract superclass of simple load or result classes.
 /// 
 /// HISTORY: New abstract superclass in IFC 2x4, upwards compatibility of all subtypes is preserved.
-class IfcStructuralLoadOrResult : public IfcStructuralLoad {
+class IfcParse_EXPORT IfcStructuralLoadOrResult : public IfcStructuralLoad {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralLoad::getArgumentType(i); }
@@ -12008,7 +12010,7 @@ public:
 /// Definition from IAI: The abstract entity IfcStructuralLoadStatic is the supertype of all static loads (actions or reactions) which can be defined.  Within scope are single i.e. concentrated forces and moments, linear i.e. one-dimensionally distributed forces and moments, planar i.e. two-dimensionally distributed forces, furthermore displacements and temperature loads.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcStructuralLoadStatic : public IfcStructuralLoadOrResult {
+class IfcParse_EXPORT IfcStructuralLoadStatic : public IfcStructuralLoadOrResult {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralLoadOrResult::getArgumentType(i); }
@@ -12027,7 +12029,7 @@ public:
 /// HISTORY  New entity in IFC2x2. 
 /// 
 /// Figure 332 — Structural load temperature
-class IfcStructuralLoadTemperature : public IfcStructuralLoadStatic {
+class IfcParse_EXPORT IfcStructuralLoadTemperature : public IfcStructuralLoadStatic {
 public:
     /// Whether the optional attribute DeltaTConstant is defined for this IfcStructuralLoadTemperature
     bool hasDeltaTConstant() const;
@@ -12067,7 +12069,7 @@ public:
 /// IfcStyleModel can be a style representation (presentation style) of a material (via IfcMaterialDefinitionRepresentation), potentially differentiated for different representation contexts (for example, different material hatching depending on the scale of the target representation context).
 /// 
 /// HISTORY  New entity in IFC2x3.
-class IfcStyleModel : public IfcRepresentation {
+class IfcParse_EXPORT IfcStyleModel : public IfcRepresentation {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcRepresentation::getArgumentType(i); }
@@ -12109,7 +12111,7 @@ public:
 /// NOTE  The new IfcStyleAssignmentSelect allows the direct assignment styles, such as IfcCurveStyle, IfcSurfaceStyle without using the intermediate IfcPresentationStyleAssignment
 /// 
 /// Figure 293 — Styled item
-class IfcStyledItem : public IfcRepresentationItem {
+class IfcParse_EXPORT IfcStyledItem : public IfcRepresentationItem {
 public:
     /// Whether the optional attribute Item is defined for this IfcStyledItem
     bool hasItem() const;
@@ -12150,7 +12152,7 @@ public:
 /// A styled representation has to include one or several styled items with the associated style information (curve, symbol, text, fill area, or surface styles). It shall not contain the geometric representation items that are styled.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcStyledRepresentation : public IfcStyleModel {
+class IfcParse_EXPORT IfcStyledRepresentation : public IfcStyleModel {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcStyleModel::getArgumentType(i); }
@@ -12169,7 +12171,7 @@ public:
 /// NOTE  Member design parameters like concrete cover, effective depth, orientation of meshes or rebars (two, optionally three directions) etc. are not specified in IfcStructuralLoadResource schema.  They shall be specified at the level of structural members.
 /// 
 /// HISTORY: New entity in IFC 2x4.
-class IfcSurfaceReinforcementArea : public IfcStructuralLoadOrResult {
+class IfcParse_EXPORT IfcSurfaceReinforcementArea : public IfcStructuralLoadOrResult {
 public:
     /// Whether the optional attribute SurfaceReinforcement1 is defined for this IfcSurfaceReinforcementArea
     bool hasSurfaceReinforcement1() const;
@@ -12205,7 +12207,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: surface_style_usage and surface_side_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard. The surface style definition in regard to support of rendering has been greatly expanded beyond the scope of ISO/IS 10303-46.
 /// 
 /// HISTORY New Entity in IFC 2.x.
-class IfcSurfaceStyle : public IfcPresentationStyle {
+class IfcParse_EXPORT IfcSurfaceStyle : public IfcPresentationStyle {
 public:
     /// An indication of which side of the surface to apply the style.
     IfcSurfaceSide::IfcSurfaceSide Side() const;
@@ -12236,7 +12238,7 @@ public:
 /// EXAMPLE  A green glass transmits only green light, so its transmission factor is 0.0 for red, between 0.0 and 1.0 for green and 0.0 for blue. A green surface reflects only green light, so the reflectance factor is 0.0 for red, between 0.0 and 1.0 for green and 0.0 for blue.
 /// 
 /// HISTORY  New entity in IFC 2x2.
-class IfcSurfaceStyleLighting : public IfcPresentationItem {
+class IfcParse_EXPORT IfcSurfaceStyleLighting : public IfcPresentationItem {
 public:
     /// The degree of diffusion of the transmitted light. In the case of completely transparent materials there is no diffusion. The greater the diffusing power, the smaller the direct component of the transmitted light, up to the point where only diffuse light is produced.A value of 1 means totally diffuse for that colour part of the light.
     /// The factor can be measured physically and has three ratios for the red, green and blue part of the light.
@@ -12271,7 +12273,7 @@ public:
 /// NOTE: If such refraction properties are used, the IfcSurfaceStyle should include within its set of Styles (depending on whether rendering or lighting is used) an instance of IfcSurfaceStyleLighting and IfcSurfaceStyleRefraction, or an instance of IfcSurfaceStyleRendering and IfcSurfaceStyleRefraction.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcSurfaceStyleRefraction : public IfcPresentationItem {
+class IfcParse_EXPORT IfcSurfaceStyleRefraction : public IfcPresentationItem {
 public:
     /// Whether the optional attribute RefractionIndex is defined for this IfcSurfaceStyleRefraction
     bool hasRefractionIndex() const;
@@ -12302,7 +12304,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: surface_style_rendering. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard. No rendering method is defined for each surface style (such as constant, colour, dot or normal shading), therefore the attribute rendering_method has been omitted.
 /// 
 /// HISTORY: New entity in IFC 2x.
-class IfcSurfaceStyleShading : public IfcPresentationItem {
+class IfcParse_EXPORT IfcSurfaceStyleShading : public IfcPresentationItem {
 public:
     /// The colour used to render the surface. The surface colour for visualisation is defined by specifying the intensity of red, green and blue.
     IfcColourRgb* SurfaceColour() const;
@@ -12337,7 +12339,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  inverse attribute HasTextureCoordinates deleted.
-class IfcSurfaceStyleWithTextures : public IfcPresentationItem {
+class IfcParse_EXPORT IfcSurfaceStyleWithTextures : public IfcPresentationItem {
 public:
     /// The textures applied to the surface. In case of more than one surface texture is included, the IfcSurfaceStyleWithTexture defines a multi texture.
     IfcTemplatedEntityList< IfcSurfaceTexture >::ptr Textures() const;
@@ -12446,7 +12448,7 @@ public:
 /// HISTORY  New entity in IFC 2x2.
 /// 
 /// IFC2x4 CHANGE  Attribute TextureType replaces by Mode, attributes Parameter and MapsTo aded, new inverse attribute UsedInStyle.
-class IfcSurfaceTexture : public IfcPresentationItem {
+class IfcParse_EXPORT IfcSurfaceTexture : public IfcPresentationItem {
 public:
     /// The RepeatS field specifies how the texture wraps in the S direction. If RepeatS is TRUE (the default), the texture map is repeated outside the [0.0, 1.0] texture coordinate range in the S direction so that it fills the shape. If RepeatS is FALSE, the texture coordinates are clamped in the S direction to lie within the [0.0, 1.0] range.
     bool RepeatS() const;
@@ -12509,7 +12511,7 @@ public:
 /// HISTORY  New entity in IFC R1.5.
 /// 
 /// IFC2x4 CHANGE  Columns attribute added.
-class IfcTable : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcTable : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcTable
     bool hasName() const;
@@ -12543,7 +12545,7 @@ public:
 /// The use of IfcTableColumn supercedes the IsHeading flag associated with IfcTableRow. 
 /// 
 /// HISTORY  New entity in IFC2x4.
-class IfcTableColumn : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcTableColumn : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Identifier is defined for this IfcTableColumn
     bool hasIdentifier() const;
@@ -12594,7 +12596,7 @@ public:
 /// Figure 338 — Table row use alternative
 /// 
 /// HISTORY  New entity in IFC R1.5.
-class IfcTableRow : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcTableRow : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute RowCells is defined for this IfcTableRow
     bool hasRowCells() const;
@@ -12627,7 +12629,7 @@ public:
 /// All given values should be provided by the application; the IFC schema does not deal with dependencies between task time values. There is also no consistency check through where rules that guarantee a meaningful population of time values. Thus, an application is responsible to provide reasonable values and, if an application receives task times, has to make consistency checks by their own.
 /// 
 /// IfcTaskTime furthermore provides a generic mechanism to differentiate between user given time values and time values derived from user given time values and other constraints such as work calendars and assigned resources.
-class IfcTaskTime : public IfcSchedulingTime {
+class IfcParse_EXPORT IfcTaskTime : public IfcSchedulingTime {
 public:
     /// Whether the optional attribute DurationType is defined for this IfcTaskTime
     bool hasDurationType() const;
@@ -12783,7 +12785,7 @@ public:
 /// IfcTaskTimeRecurring is a recurring instance of IfcTaskTime for handling regularly scheduled or repetitive tasks.
 /// 
 /// HISTORY: New entity in IFC2x4.
-class IfcTaskTimeRecurring : public IfcTaskTime {
+class IfcParse_EXPORT IfcTaskTimeRecurring : public IfcTaskTime {
 public:
     IfcRecurrencePattern* Recurrance() const;
     void setRecurrance(IfcRecurrencePattern* v);
@@ -12805,7 +12807,7 @@ public:
 /// 
 /// IFC 2x4 change:  Added attribute MessagingIDs.
 /// Type of attribute WWWHomePageURL compatibly changed from IfcLabel to IfcURIReference.
-class IfcTelecomAddress : public IfcAddress {
+class IfcParse_EXPORT IfcTelecomAddress : public IfcAddress {
 public:
     /// Whether the optional attribute TelephoneNumbers is defined for this IfcTelecomAddress
     bool hasTelephoneNumbers() const;
@@ -12880,7 +12882,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The IfcTextStyle has been changed by adding TextFontStyle and different data types for TextStyle and IfcCharacterStyleSelect.
-class IfcTextStyle : public IfcPresentationStyle {
+class IfcParse_EXPORT IfcTextStyle : public IfcPresentationStyle {
 public:
     /// Whether the optional attribute TextCharacterAppearance is defined for this IfcTextStyle
     bool hasTextCharacterAppearance() const;
@@ -12934,7 +12936,7 @@ public:
 /// HISTORY  New entity in IFC2x3.
 /// 
 /// IFC2x3 CHANGE  The IfcTextStyleForDefinedFont has been added and replaces IfcColour at the IfcCharacterStyleSelect.
-class IfcTextStyleForDefinedFont : public IfcPresentationItem {
+class IfcParse_EXPORT IfcTextStyleForDefinedFont : public IfcPresentationItem {
 public:
     /// This property describes the text color of an element (often referred to as the foreground color).
     IfcColour* Colour() const;
@@ -12963,7 +12965,7 @@ public:
 /// NOTE  Corresponding CSS1 definitions are Text properties (word-spacing, letter-spacing, text-decoration, vertical-align, text-transform, text-align, text-indent, line-height).
 /// 
 /// HISTORY  New entity in IFC2x3.
-class IfcTextStyleTextModel : public IfcPresentationItem {
+class IfcParse_EXPORT IfcTextStyleTextModel : public IfcPresentationItem {
 public:
     /// Whether the optional attribute TextIndent is defined for this IfcTextStyleTextModel
     bool hasTextIndent() const;
@@ -13030,7 +13032,7 @@ public:
 /// IFC2x3 CHANGE  The attribute Texture is deleted.
 /// 
 /// IFC2x4 CHANGE  The inverse attribute AnnotatedSurface is deleted, and the inverse AppliesTextures is added.
-class IfcTextureCoordinate : public IfcPresentationItem {
+class IfcParse_EXPORT IfcTextureCoordinate : public IfcPresentationItem {
 public:
     IfcTemplatedEntityList< IfcSurfaceTexture >::ptr Maps() const;
     void setMaps(IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v);
@@ -13072,7 +13074,7 @@ public:
 /// HISTORY New entity in IFC2x2.
 /// 
 /// IFC2x2 Addendum 2 CHANGE  The attribute Texturehas been deleted.
-class IfcTextureCoordinateGenerator : public IfcTextureCoordinate {
+class IfcParse_EXPORT IfcTextureCoordinateGenerator : public IfcTextureCoordinate {
 public:
     /// The Mode attribute describes the algorithm used to compute texture coordinates.
     /// 
@@ -13149,7 +13151,7 @@ public:
 /// Informal propositions:
 /// 
 /// The FaceBound referenced in AppliedTo shall be used by the vertex based geometry, to which this texture map is assigned to by through the IfcStyledItem.
-class IfcTextureMap : public IfcTextureCoordinate {
+class IfcParse_EXPORT IfcTextureMap : public IfcTextureCoordinate {
 public:
     /// List of texture coordinate vertices that are applied to the corresponding points of the polyloop defining a face bound.
     /// 
@@ -13197,7 +13199,7 @@ public:
 /// Texture coordinates may be transformed (scaled, rotated, translated) by supplying a TextureTransform as a component of the texture's definition. 
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcTextureVertex : public IfcPresentationItem {
+class IfcParse_EXPORT IfcTextureVertex : public IfcPresentationItem {
 public:
     /// The first coordinate[1] is the S, the second coordinate[2] is the T parameter value.
     std::vector< double > /*[2:2]*/ Coordinates() const;
@@ -13215,7 +13217,7 @@ public:
     typedef IfcTemplatedEntityList< IfcTextureVertex > list;
 };
 
-class IfcTextureVertexList : public IfcPresentationItem {
+class IfcParse_EXPORT IfcTextureVertexList : public IfcPresentationItem {
 public:
     std::vector< std::vector< double > > TexCoordsList() const;
     void setTexCoordsList(std::vector< std::vector< double > > v);
@@ -13237,7 +13239,7 @@ public:
 /// 
 /// Use definitions
 /// A time period is defined by a start and an end time, which is defined by IfcTime. The given time period should be within reasonable values (for example, the start time must be before the end time). It is furthermore expected that both time definitions use the same time zone and, if given, the same daylight saving offset.
-class IfcTimePeriod : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcTimePeriod : public IfcUtil::IfcBaseEntity {
 public:
     /// Start time of the time period.
     std::string StartTime() const;
@@ -13262,7 +13264,7 @@ public:
 /// The modeling of buildings and their performance involves data that are generated and recorded over a period of time.  Such data cover a large spectrum, from weather data to schedules of all kinds to status measurements to reporting to everything else that has a time related aspect. Their correct placement in time is essential for their proper understanding and use, and the IfcTimeSeries subtypes provide the appropriate data structures to accommodate these types of data.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcTimeSeries : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcTimeSeries : public IfcUtil::IfcBaseEntity {
 public:
     /// An unique name for the time series.
     std::string Name() const;
@@ -13316,7 +13318,7 @@ public:
 /// Figure 241 — Time series value 
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcTimeSeriesValue : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcTimeSeriesValue : public IfcUtil::IfcBaseEntity {
 public:
     /// A list of time-series values. At least one value is required.
     IfcEntityList::ptr ListValues() const;
@@ -13338,7 +13340,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: topological_representation_item. Please refer to ISO/IS 10303-42:1994, p.129 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.5
-class IfcTopologicalRepresentationItem : public IfcRepresentationItem {
+class IfcParse_EXPORT IfcTopologicalRepresentationItem : public IfcRepresentationItem {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcRepresentationItem::getArgumentType(i); }
@@ -13386,7 +13388,7 @@ public:
 /// given as a string value at the inherited attribute 'RepresentationType'.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcTopologyRepresentation : public IfcShapeModel {
+class IfcParse_EXPORT IfcTopologyRepresentation : public IfcShapeModel {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcShapeModel::getArgumentType(i); }
@@ -13405,7 +13407,7 @@ public:
 /// NOTE  A project (IfcProject) has a unit assignment which establishes a set of units which will be used globally within the project, if not otherwise defined. Other objects may have local unit assignments if there is a requirement for them to make use of units which do not fall within the project unit assignment.
 /// 
 /// HISTORY  New entity in IFC Release 1.5.1.
-class IfcUnitAssignment : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcUnitAssignment : public IfcUtil::IfcBaseEntity {
 public:
     /// Units to be included within a unit assignment.
     IfcEntityList::ptr Units() const;
@@ -13432,7 +13434,7 @@ public:
 /// 
 /// The vertex has dimensionality 0. This is a fundamental property of the vertex.
 /// The extent of a vertex is defined to be zero.
-class IfcVertex : public IfcTopologicalRepresentationItem {
+class IfcParse_EXPORT IfcVertex : public IfcTopologicalRepresentationItem {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcTopologicalRepresentationItem::getArgumentType(i); }
@@ -13455,7 +13457,7 @@ public:
 /// Informal proposition: 
 /// 
 /// The domain of the vertex is formally defined to be the domain of its vertex point.
-class IfcVertexPoint : public IfcVertex {
+class IfcParse_EXPORT IfcVertexPoint : public IfcVertex {
 public:
     /// The geometric point, which defines the position in geometric space of the vertex.
     IfcPoint* VertexGeometry() const;
@@ -13531,7 +13533,7 @@ public:
 /// OffsetDistances[1] is a negative length measure
 /// 
 /// Figure 248 — Virtual grid intersection negative offset
-class IfcVirtualGridIntersection : public IfcUtil::IfcBaseEntity {
+class IfcParse_EXPORT IfcVirtualGridIntersection : public IfcUtil::IfcBaseEntity {
 public:
     /// Two grid axes which intersects at exactly one intersection (see also informal proposition at IfcGrid). If attribute OffsetDistances is omitted, the intersection defines the placement or ref direction of a grid placement directly. If OffsetDistances are given, the intersection is defined by the offset curves to the grid axes.
     IfcTemplatedEntityList< IfcGridAxis >::ptr IntersectingAxes() const;
@@ -13559,7 +13561,7 @@ public:
 /// A work time should have a meaningful name that describes the time periods (for example, working week, holiday name). Non-recurring time periods should have a start date (IfcWorkTime.Start) and a finish date (IfcWorkTime.Finish). In that case it is assumed that the time period begins at 0:00 on the start date and ends at 24:00 on the finish date.
 /// 
 /// The start and finish date is optional if a recurrence pattern is given (IfcWorkTime.RecurrencePattern).  They then restrict never-ending recurrence patterns.
-class IfcWorkTime : public IfcSchedulingTime {
+class IfcParse_EXPORT IfcWorkTime : public IfcSchedulingTime {
 public:
     /// Whether the optional attribute RecurrencePattern is defined for this IfcWorkTime
     bool hasRecurrencePattern() const;
@@ -13599,7 +13601,7 @@ public:
 /// HISTORY: New entity in Release IFC2x2.
 /// 
 /// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship, order of attributes changed.
-class IfcApprovalRelationship : public IfcResourceLevelRelationship {
+class IfcParse_EXPORT IfcApprovalRelationship : public IfcResourceLevelRelationship {
 public:
     /// The approval that other approval is related to.
     IfcApproval* RelatingApproval() const;
@@ -13637,7 +13639,7 @@ public:
 /// attribute defines a two dimensional closed bounded curve.
 /// 
 /// Figure 307 — Arbitrary closed profile
-class IfcArbitraryClosedProfileDef : public IfcProfileDef {
+class IfcParse_EXPORT IfcArbitraryClosedProfileDef : public IfcProfileDef {
 public:
     /// Bounded curve, defining the outer boundaries of the arbitrary profile.
     IfcCurve* OuterCurve() const;
@@ -13669,7 +13671,7 @@ public:
 /// The Curve attribute defines a two dimensional open bounded curve.
 /// 
 /// Figure 308 — Arbitrary open profile
-class IfcArbitraryOpenProfileDef : public IfcProfileDef {
+class IfcParse_EXPORT IfcArbitraryOpenProfileDef : public IfcProfileDef {
 public:
     /// Open bounded curve defining the profile.
     IfcBoundedCurve* Curve() const;
@@ -13705,7 +13707,7 @@ public:
 /// or in case of sectioned spines the xy plane of each list member of IfcSectionedSpine.CrossSectionPositions.  The OuterCurve attribute defines a two dimensional closed bounded curve, the InnerCurves define a set of two dimensional closed bounded curves.
 /// 
 /// Figure 309 — Arbitrary profile with voids
-class IfcArbitraryProfileDefWithVoids : public IfcArbitraryClosedProfileDef {
+class IfcParse_EXPORT IfcArbitraryProfileDefWithVoids : public IfcArbitraryClosedProfileDef {
 public:
     /// Set of bounded curves, defining the inner boundaries of the arbitrary profile.
     IfcTemplatedEntityList< IfcCurve >::ptr InnerCurves() const;
@@ -13731,7 +13733,7 @@ public:
 /// HISTORY  New class in IFC2x3.
 /// 
 /// IFC2x4 CHANGE  Data type of RasterCode has been corrected to BINARY.
-class IfcBlobTexture : public IfcSurfaceTexture {
+class IfcParse_EXPORT IfcBlobTexture : public IfcSurfaceTexture {
 public:
     /// The format of the RasterCode often using a compression.
     std::string RasterFormat() const;
@@ -13780,7 +13782,7 @@ public:
 /// The Curve attribute defines a two dimensional open bounded curve. The Thickness attribute defines a constant thickness along the curve.
 /// 
 /// Figure 311 — Centerline profile
-class IfcCenterLineProfileDef : public IfcArbitraryOpenProfileDef {
+class IfcParse_EXPORT IfcCenterLineProfileDef : public IfcArbitraryOpenProfileDef {
 public:
     /// Constant thickness applied along the center line.
     double Thickness() const;
@@ -13812,7 +13814,7 @@ public:
 /// 
 /// Including the classification system structure within the dataset: Here a hierarchical tree of IfcClassificationItem's is included that defines the classification system including the relationship between the classification items. An IfcClassificationNotation is used to classify an object.
 /// Referencing the classification system by a classification key or id: Here the IfcClassificationReference is used to assign a classification id or key to each classified object.
-class IfcClassification : public IfcExternalInformation {
+class IfcParse_EXPORT IfcClassification : public IfcExternalInformation {
 public:
     /// Whether the optional attribute Source is defined for this IfcClassification
     bool hasSource() const;
@@ -13909,7 +13911,7 @@ public:
 /// The IfcClassificationReference can be used to only assign classification keys to objects, or to hold a fully classification hierarchy. The first is refered to as "lightweight classification", and the second as "full classification"
 /// 
 /// The IfcClassificationReference can be used as a form of 'lightweight' classification through the 'Identification' attribute inherited from the abstract IfcExternalReference class. In this case, the 'Identification' could take (for instance) the Uniclass notation "L6814" which, if the classification was well understood by all parties and was known to be taken from a particular classification source, would be sufficient. The Name attribute could be the title "Tanking". This would remove the need for the overhead of the more complete classification structure of the model.
-class IfcClassificationReference : public IfcExternalReference {
+class IfcParse_EXPORT IfcClassificationReference : public IfcExternalReference {
 public:
     /// Whether the optional attribute ReferencedSource is defined for this IfcClassificationReference
     bool hasReferencedSource() const;
@@ -13942,7 +13944,7 @@ public:
     typedef IfcTemplatedEntityList< IfcClassificationReference > list;
 };
 
-class IfcColourRgbList : public IfcPresentationItem {
+class IfcParse_EXPORT IfcColourRgbList : public IfcPresentationItem {
 public:
     std::vector< std::vector< double > > ColourList() const;
     void setColourList(std::vector< std::vector< double > > v);
@@ -13963,7 +13965,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: colour_specification. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcColourSpecification : public IfcPresentationItem {
+class IfcParse_EXPORT IfcColourSpecification : public IfcPresentationItem {
 public:
     /// Whether the optional attribute Name is defined for this IfcColourSpecification
     bool hasName() const;
@@ -14021,7 +14023,7 @@ public:
 ///  
 /// double_L : IfcCompositeProfileDef := IfcCompositeProfileDef(AREA, 'double angle',
 ///     (single_L, IfcMirroredProfileDef(AREA, ?, single_L, ?)), 'twin profile');
-class IfcCompositeProfileDef : public IfcProfileDef {
+class IfcParse_EXPORT IfcCompositeProfileDef : public IfcProfileDef {
 public:
     /// The profiles which are used to define the composite profile.
     IfcTemplatedEntityList< IfcProfileDef >::ptr Profiles() const;
@@ -14052,7 +14054,7 @@ public:
 /// Informal proposition: 
 /// 
 /// The union of the domains of the faces and their bounding loops shall be arcwise connected.
-class IfcConnectedFaceSet : public IfcTopologicalRepresentationItem {
+class IfcParse_EXPORT IfcConnectedFaceSet : public IfcTopologicalRepresentationItem {
 public:
     /// The set of faces arcwise connected along common edges or vertices.
     IfcTemplatedEntityList< IfcFace >::ptr CfsFaces() const;
@@ -14082,7 +14084,7 @@ public:
 /// 
 /// Geometry use definitions
 /// The IfcCurve (or the IfcEdgeCurve with an associated IfcCurve) at the CurveOnRelatingElement attribute defines the curve where the basic geometry items of the connected elements connects. The curve geometry and coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnects Subtype that utilizes the IfcConnectionCurveGeometry. Optionally, the same curve geometry and coordinates can also be provided within the local coordinate system of the RelatedElement by using the CurveOnRelatedElement attribute.
-class IfcConnectionCurveGeometry : public IfcConnectionGeometry {
+class IfcParse_EXPORT IfcConnectionCurveGeometry : public IfcConnectionGeometry {
 public:
     /// The bounded curve at which the connected objects are aligned at the relating element, given in the LCS of the relating element.
     IfcCurveOrEdgeCurve* CurveOnRelatingElement() const;
@@ -14123,7 +14125,7 @@ public:
 /// 
 /// Geometry use definitions
 /// The IfcPoint (or the IfcVertexPoint with an associated IfcPoint) at the PointOnRelatingElement attribute defines the point where the basic geometry items of the connected elements connects. The point coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnects subtype that utilizes the IfcConnectionPointGeometry. Optionally, the same point coordinates can also be provided within the local coordinate system of the RelatedElement by using the PointOnRelatedElement attribute, otherwise the distance to the point at the RelatedElement has to be given by the three eccentricity values.
-class IfcConnectionPointEccentricity : public IfcConnectionPointGeometry {
+class IfcParse_EXPORT IfcConnectionPointEccentricity : public IfcConnectionPointGeometry {
 public:
     /// Whether the optional attribute EccentricityInX is defined for this IfcConnectionPointEccentricity
     bool hasEccentricityInX() const;
@@ -14159,7 +14161,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: context_dependent_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IfcContextDependentUnit : public IfcNamedUnit {
+class IfcParse_EXPORT IfcContextDependentUnit : public IfcNamedUnit {
 public:
     /// The word, or group of words, by which the context dependent unit is referred to.
     std::string Name() const;
@@ -14224,7 +14226,7 @@ public:
 ///   'hour'		Time measure equal to 3600 s
 ///   'day'		Time measure equal to 86400 s
 ///   'btu'		Energy measure equal to 1055.056 J, British Thermal Unit
-class IfcConversionBasedUnit : public IfcNamedUnit {
+class IfcParse_EXPORT IfcConversionBasedUnit : public IfcNamedUnit {
 public:
     /// The word, or group of words, by which the conversion based unit is referred to.
     std::string Name() const;
@@ -14263,7 +14265,7 @@ public:
 ///         IfcThermodynamicTemperatureMeasure(1.8),
 ///         IfcSiUnit(THERMODYNAMICTEMPERATUREUNIT, ?, KELVIN)),
 ///     -459.67);
-class IfcConversionBasedUnitWithOffset : public IfcConversionBasedUnit {
+class IfcParse_EXPORT IfcConversionBasedUnitWithOffset : public IfcConversionBasedUnit {
 public:
     /// A positive or negative offset to add after the inherited ConversionFactor was applied.
     double ConversionOffset() const;
@@ -14291,7 +14293,7 @@ public:
 /// Use definitions
 /// An IfcCurrencyRelationship is used where there may be a need to reference an IfcCostValue in one currency to an IfcCostValue in another currency. It takes account of fact that currency exchange rates may vary by requiring the recording the date and time of the currency exchange rate used and the source that publishes the rate. There may be many sources and there are different strategies for currency conversion (spot rate, forward buying of currency at a fixed rate).
 /// The source for the currency exchange is defined as an instance of IfcLibraryInformation that includes a name and a URL.
-class IfcCurrencyRelationship : public IfcResourceLevelRelationship {
+class IfcParse_EXPORT IfcCurrencyRelationship : public IfcResourceLevelRelationship {
 public:
     /// The monetary unit from which an exchange is derived. For instance, in the case of a conversion from GBP to USD, the relating monetary unit is GBP.
     IfcMonetaryUnit* RelatingMonetaryUnit() const;
@@ -14343,7 +14345,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: curve_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcCurveStyle : public IfcPresentationStyle {
+class IfcParse_EXPORT IfcCurveStyle : public IfcPresentationStyle {
 public:
     /// Whether the optional attribute CurveFont is defined for this IfcCurveStyle
     bool hasCurveFont() const;
@@ -14381,7 +14383,7 @@ public:
 /// NOTE: Corresponding ISO 10303 name: curve_style_font. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IfcCurveStyleFont : public IfcPresentationItem {
+class IfcParse_EXPORT IfcCurveStyleFont : public IfcPresentationItem {
 public:
     /// Whether the optional attribute Name is defined for this IfcCurveStyleFont
     bool hasName() const;
@@ -14414,7 +14416,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: curve_style_font_and_scaling. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcCurveStyleFontAndScaling : public IfcPresentationItem {
+class IfcParse_EXPORT IfcCurveStyleFontAndScaling : public IfcPresentationItem {
 public:
     /// Whether the optional attribute Name is defined for this IfcCurveStyleFontAndScaling
     bool hasName() const;
@@ -14444,7 +14446,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: curve_style_font_pattern. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IfcCurveStyleFontPattern : public IfcPresentationItem {
+class IfcParse_EXPORT IfcCurveStyleFontPattern : public IfcPresentationItem {
 public:
     /// The length of the visible segment in the pattern definition.
     /// 
@@ -14552,7 +14554,7 @@ public:
 ///   show the position coordinate system of the derived profile
 /// 
 /// Figure 316 — Derived profile
-class IfcDerivedProfileDef : public IfcProfileDef {
+class IfcParse_EXPORT IfcDerivedProfileDef : public IfcProfileDef {
 public:
     /// The parent profile provides the origin of the transformation.
     IfcProfileDef* ParentProfile() const;
@@ -14580,7 +14582,7 @@ public:
 /// IfcDocumentInformation captures "metadata" of an external document. The actual content of the document is not defined in IFC; instead, it can be found following the reference given to IfcDocumentReference. 
 /// 
 /// HISTORY: New entity in IFC 2x.
-class IfcDocumentInformation : public IfcExternalInformation {
+class IfcParse_EXPORT IfcDocumentInformation : public IfcExternalInformation {
 public:
     std::string Identification() const;
     void setIdentification(std::string v);
@@ -14700,7 +14702,7 @@ public:
 /// 
 /// Use definitions
 /// This class can be used to describe relationships in which one document may reference one or more other sub documents or where a document is used as a replacement for another document (but where both the original and the replacing document need to be retained).
-class IfcDocumentInformationRelationship : public IfcResourceLevelRelationship {
+class IfcParse_EXPORT IfcDocumentInformationRelationship : public IfcResourceLevelRelationship {
 public:
     /// The document that acts as the parent, referencing or original document in a relationship.
     IfcDocumentInformation* RelatingDocument() const;
@@ -14736,7 +14738,7 @@ public:
 /// 
 /// HISTORY: New Entity in IFC Release 2.0.
 ///   Modified in IFC 2x.
-class IfcDocumentReference : public IfcExternalReference {
+class IfcParse_EXPORT IfcDocumentReference : public IfcExternalReference {
 public:
     /// Whether the optional attribute Description is defined for this IfcDocumentReference
     bool hasDescription() const;
@@ -14812,7 +14814,7 @@ public:
 /// 
 /// The edge has dimensionality 1.
 /// The extend of an edge shall be finite and nonzero.
-class IfcEdge : public IfcTopologicalRepresentationItem {
+class IfcParse_EXPORT IfcEdge : public IfcTopologicalRepresentationItem {
 public:
     /// Start point (vertex) of the edge.
     IfcVertex* EdgeStart() const;
@@ -14865,7 +14867,7 @@ public:
 /// The edge start is not a part of the edge domain.
 /// The edge end is not a part of the edge domain.
 /// Vertex geometry shall be consistent with edge geometry.
-class IfcEdgeCurve : public IfcEdge {
+class IfcParse_EXPORT IfcEdgeCurve : public IfcEdge {
 public:
     /// The curve which defines the shape and spatial location of the edge. This curve may be unbounded and is implicitly trimmed by the vertices of the edge; this defines the edge domain. Multiple edges can reference the same curve.
     IfcCurve* EdgeGeometry() const;
@@ -14908,7 +14910,7 @@ public:
 ///   resources (derived from the process graph). The data origin flag 
 ///   is provided as a single attribute applying to all date time related attributes 
 ///   of IfcEventTime.
-class IfcEventTime : public IfcSchedulingTime {
+class IfcParse_EXPORT IfcEventTime : public IfcSchedulingTime {
 public:
     /// Whether the optional attribute ActualDate is defined for this IfcEventTime
     bool hasActualDate() const;
@@ -14945,7 +14947,7 @@ public:
     typedef IfcTemplatedEntityList< IfcEventTime > list;
 };
 
-class IfcExtendedProperties : public IfcPropertyAbstraction {
+class IfcParse_EXPORT IfcExtendedProperties : public IfcPropertyAbstraction {
 public:
     /// Whether the optional attribute Name is defined for this IfcExtendedProperties
     bool hasName() const;
@@ -14976,7 +14978,7 @@ public:
 /// do not inherit from IfcRoot. It has a similar functionality as the subtypes of IfcRelAssociates.
 /// 
 /// HISTORY New Entity in IFC 2x4
-class IfcExternalReferenceRelationship : public IfcResourceLevelRelationship {
+class IfcParse_EXPORT IfcExternalReferenceRelationship : public IfcResourceLevelRelationship {
 public:
     /// An external reference that can be used to tag an object within the range of IfcResourceObjectSelect.
     /// 
@@ -15042,7 +15044,7 @@ public:
 ///   intersect.  
 ///   The face shall satisfy the Euler Equation: (number of vertices) -
 ///   (number of edges) - (number of loops) + (sum of genus for loops) = 0.
-class IfcFace : public IfcTopologicalRepresentationItem {
+class IfcParse_EXPORT IfcFace : public IfcTopologicalRepresentationItem {
 public:
     /// Boundaries of the face.
     IfcTemplatedEntityList< IfcFaceBound >::ptr Bounds() const;
@@ -15065,7 +15067,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: face_bound. Please refer to ISO/IS 10303-42:1994, p. 139 for the final definition of the formal standard.
 /// 
 /// HISTORY  New class in IFC Release 1.0
-class IfcFaceBound : public IfcTopologicalRepresentationItem {
+class IfcParse_EXPORT IfcFaceBound : public IfcTopologicalRepresentationItem {
 public:
     /// The loop which will be used as a face boundary.
     IfcLoop* Bound() const;
@@ -15090,7 +15092,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: face_outer_bound. Please refer to ISO/IS 10303-42:1994, p. 139 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC Release 1.0
-class IfcFaceOuterBound : public IfcFaceBound {
+class IfcParse_EXPORT IfcFaceOuterBound : public IfcFaceBound {
 public:
     virtual unsigned int getArgumentCount() const { return 2; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcFaceBound::getArgumentType(i); }
@@ -15140,7 +15142,7 @@ public:
 ///   that any edge - curves or vertex points used in defining the loops bounding the
 ///   face surface shall lie on the face geometry.
 ///   The loops of the face shall not intersect.
-class IfcFaceSurface : public IfcFace {
+class IfcParse_EXPORT IfcFaceSurface : public IfcFace {
 public:
     /// The surface which defines the internal shape of the face. This surface may be unbounded. The domain of the face is defined by this surface and the bounding loops in the inherited attribute SELF\FaceBounds.
     IfcSurface* FaceSurface() const;
@@ -15167,7 +15169,7 @@ public:
 /// Point supports and connections.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcFailureConnectionCondition : public IfcStructuralConnectionCondition {
+class IfcParse_EXPORT IfcFailureConnectionCondition : public IfcStructuralConnectionCondition {
 public:
     /// Whether the optional attribute TensionFailureX is defined for this IfcFailureConnectionCondition
     bool hasTensionFailureX() const;
@@ -15245,7 +15247,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: fill_area_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcFillAreaStyle : public IfcPresentationStyle {
+class IfcParse_EXPORT IfcFillAreaStyle : public IfcPresentationStyle {
 public:
     /// The set of fill area styles to use in presenting visible curve segments, annotation fill areas or surfaces.
     IfcEntityList::ptr FillStyles() const;
@@ -15313,7 +15315,7 @@ public:
 /// HISTORY ÿNew Entity in IFC Release 2.0
 /// 
 /// IFC2x3 CHANGE ÿApplicable values for ContextType are only 'Model',ÿ 'Plan', andÿ'NotDefined'. All other sub contexts are now handled by the new subtype in IFC2x Edition 2 IfcGeometricRepresentationSubContext. Upward compatibility for file based exchange is guaranteed.
-class IfcGeometricRepresentationContext : public IfcRepresentationContext {
+class IfcParse_EXPORT IfcGeometricRepresentationContext : public IfcRepresentationContext {
 public:
     /// The integer dimension count of the coordinate space modeled in a geometric representation context.
     int CoordinateSpaceDimension() const;
@@ -15365,7 +15367,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: geometric_representation_item. Please refer to ISO/IS 10303-42:1994, p. 22 for the final definition of the formal standard. The following changes have been made: It does not inherit from ISO/IS 10303-43:1994 entity representation_item. The derived attribute Dim is demoted to the appropriate subtypes. The WR1 has not been incorporated. Not all subtypes that are in ISO/IS 10303-42:1994 have been added to the current IFC Release.
 /// 
 /// HISTORY: New entity in IFC Release 1.5
-class IfcGeometricRepresentationItem : public IfcRepresentationItem {
+class IfcParse_EXPORT IfcGeometricRepresentationItem : public IfcRepresentationItem {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcRepresentationItem::getArgumentType(i); }
@@ -15392,7 +15394,7 @@ public:
 /// EXAMPLE  Instances of IfcGeometricRepresentationSubContext can be used to handle the multi-view blocks or macros, which are used in CAD programs to store several scale and/or view dependent geometric representations of the same object.
 /// 
 /// HISTORY  New entity in Release IFC 2x2.
-class IfcGeometricRepresentationSubContext : public IfcGeometricRepresentationContext {
+class IfcParse_EXPORT IfcGeometricRepresentationSubContext : public IfcGeometricRepresentationContext {
 public:
     /// Parent context from which the sub context derives its world coordinate system, precision, space coordinate dimension and true north.
     IfcGeometricRepresentationContext* ParentContext() const;
@@ -15439,7 +15441,7 @@ public:
 /// NOTE: Corresponding ISO 10303-42 entity: geometric_set. The derived attribute Dim has been added at this level and was therefore demoted from the geometric_representation_item. Please refer to ISO/IS 10303-42:1994, p. 190 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IfcGeometricSet : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcGeometricSet : public IfcGeometricRepresentationItem {
 public:
     /// The geometric elements which make up the geometric set, these may be points, curves or surfaces; but are required to be of the same coordinate space dimensionality.
     IfcEntityList::ptr Elements() const;
@@ -15501,7 +15503,7 @@ public:
 /// its x-axis direction: given by the tangent of the line between the virtual grid intersection of the PlacementLocation and the virtual grid intersection of the PlacementRefDirection.
 /// 
 /// Figure 245 — Grid placement with intersection
-class IfcGridPlacement : public IfcObjectPlacement {
+class IfcParse_EXPORT IfcGridPlacement : public IfcObjectPlacement {
 public:
     /// Placement of the object coordinate system defined by the intersection of two grid axes.
     IfcVirtualGridIntersection* PlacementLocation() const;
@@ -15540,7 +15542,7 @@ public:
 /// Figure 258 illustrates the definition of the IfcHalfSpaceSolid within a given coordinate system. The base surface is given by an unbounded plane, the red boundary is shown for visualization purposes only. 
 /// 
 /// Figure 258 — Half space solid geometry
-class IfcHalfSpaceSolid : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcHalfSpaceSolid : public IfcGeometricRepresentationItem {
 public:
     /// Surface defining side of half space.
     IfcSurface* BaseSurface() const;
@@ -15595,7 +15597,7 @@ public:
 /// NOTE  The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
 /// 
 /// HISTORY  New entity in Release IFC2x2.
-class IfcImageTexture : public IfcSurfaceTexture {
+class IfcParse_EXPORT IfcImageTexture : public IfcSurfaceTexture {
 public:
     /// Location, provided as an URI, at which the image texture is electronically published.
     std::string URLReference() const;
@@ -15613,7 +15615,7 @@ public:
     typedef IfcTemplatedEntityList< IfcImageTexture > list;
 };
 
-class IfcIndexedColourMap : public IfcPresentationItem {
+class IfcParse_EXPORT IfcIndexedColourMap : public IfcPresentationItem {
 public:
     IfcTessellatedFaceSet* MappedTo() const;
     void setMappedTo(IfcTessellatedFaceSet* v);
@@ -15638,7 +15640,7 @@ public:
     typedef IfcTemplatedEntityList< IfcIndexedColourMap > list;
 };
 
-class IfcIndexedTextureMap : public IfcTextureCoordinate {
+class IfcParse_EXPORT IfcIndexedTextureMap : public IfcTextureCoordinate {
 public:
     IfcTessellatedFaceSet* MappedTo() const;
     void setMappedTo(IfcTessellatedFaceSet* v);
@@ -15657,7 +15659,7 @@ public:
     typedef IfcTemplatedEntityList< IfcIndexedTextureMap > list;
 };
 
-class IfcIndexedTriangleTextureMap : public IfcIndexedTextureMap {
+class IfcParse_EXPORT IfcIndexedTriangleTextureMap : public IfcIndexedTextureMap {
 public:
     /// Whether the optional attribute TexCoordIndex is defined for this IfcIndexedTriangleTextureMap
     bool hasTexCoordIndex() const;
@@ -15680,7 +15682,7 @@ public:
 /// EXAMPLE: A circulating pump cycles on and off at unpredictable times as dictated by the demands on the piping system; the amount of light in a classroom varies depending on when the lights are manually switched on and off and and how many lamps are controlled by each switch.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcIrregularTimeSeries : public IfcTimeSeries {
+class IfcParse_EXPORT IfcIrregularTimeSeries : public IfcTimeSeries {
 public:
     /// The collection of time series values.
     IfcTemplatedEntityList< IfcIrregularTimeSeriesValue >::ptr Values() const;
@@ -15734,7 +15736,7 @@ public:
 /// 
 /// The time unit for the task duration may also be set and
 ///   this may be set to any allowed unit of time measure.
-class IfcLagTime : public IfcSchedulingTime {
+class IfcParse_EXPORT IfcLagTime : public IfcSchedulingTime {
 public:
     /// Value of the time lag selected as being either a ratio or a
     ///   time measure.
@@ -15763,7 +15765,7 @@ public:
 /// NOTE: In addition to the attributes as defined in ISO10303-46 the following additional properties from ISO/IEC 14772-1:1997 (VRML) are added: ambientIntensity and Intensity. The attribute Name has been added as well (as it is not inherited via representation_item).
 /// 
 /// HISTORY: This is a new Entity in IFC 2x, renamed and enhanced in IFC2x2.
-class IfcLightSource : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcLightSource : public IfcGeometricRepresentationItem {
 public:
     /// Whether the optional attribute Name is defined for this IfcLightSource
     bool hasName() const;
@@ -15803,7 +15805,7 @@ public:
 /// NOTE: In addition to the attributes as defined in ISO 10303-46 the additional property from ISO/IEC 14772-1:1997 (VRML) AmbientIntensity is inherited from the supertype.
 /// 
 /// HISTORY: This is a new entity in IFC 2x, renamed and enhanced in IFC2x2.
-class IfcLightSourceAmbient : public IfcLightSource {
+class IfcParse_EXPORT IfcLightSourceAmbient : public IfcLightSource {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcLightSource::getArgumentType(i); }
@@ -15826,7 +15828,7 @@ public:
 /// NOTE: In addition to the attributes as defined in ISO 10303-46 the additional property from ISO/IEC 14772-1:1997 (VRML) AmbientIntensity and Intensity are inherited from the supertype.
 /// 
 /// HISTORY: This is a new entity in IFC 2x, renamed and enhanced in IFC2x2.
-class IfcLightSourceDirectional : public IfcLightSource {
+class IfcParse_EXPORT IfcLightSourceDirectional : public IfcLightSource {
 public:
     /// Definition from ISO/CD 10303-46:1992: This direction is the direction of the light source.
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: The direction field specifies the direction vector of the illumination emanating from the light source in the local coordinate system. Light is emitted along parallel rays from an infinite distance away.
@@ -15851,7 +15853,7 @@ public:
 /// Figure 303 — Light source goniometric
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IfcLightSourceGoniometric : public IfcLightSource {
+class IfcParse_EXPORT IfcLightSourceGoniometric : public IfcLightSource {
 public:
     /// The position of the light source. It is used to orientate the light distribution curves.
     IfcAxis2Placement3D* Position() const;
@@ -15900,7 +15902,7 @@ public:
 /// NOTE: In addition to the attributes as defined in ISO10303-46 the additional property from ISO/IEC 14772-1:1997 (VRML) Radius and QuadricAttenuation are added to this subtype and the AmbientIntensity and Intensity are inherited from the supertype.
 /// 
 /// HISTORY: This is a new entity in IFC 2x, renamed and enhanced in IFC2x2.
-class IfcLightSourcePositional : public IfcLightSource {
+class IfcParse_EXPORT IfcLightSourcePositional : public IfcLightSource {
 public:
     /// Definition from ISO/CD 10303-46:1992: The Cartesian point indicates the position of the light source.
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: A Point light node illuminates geometry within radius of its location.
@@ -15946,7 +15948,7 @@ public:
 /// NOTE  In addition to the attributes as defined in ISO10303-46 the additional property from ISO/IEC 14772-1:1997 (VRML) Radius, BeamWidth, and QuadricAttenuation are added to this subtype and the AmbientIntensity and Intensity are inherited from the supertype.
 /// 
 /// HISTORY  This is a new entity in IFC 2x, renamed and enhanced in IFC2x2.
-class IfcLightSourceSpot : public IfcLightSourcePositional {
+class IfcParse_EXPORT IfcLightSourceSpot : public IfcLightSourcePositional {
 public:
     /// Definition from ISO/CD 10303-46:1992: This is the direction of the axis of the cone of the light source specified in the coordinate space of the representation being projected..
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: The direction field specifies the direction vector of the light's central axis defined in the local coordinate system.
@@ -16029,7 +16031,7 @@ public:
 /// 
 /// If the PlacementRelTo relationship is not given, then it defaults to an absolute placement within the world
 /// coordinate system established by the referenced geometric representation context within the project.
-class IfcLocalPlacement : public IfcObjectPlacement {
+class IfcParse_EXPORT IfcLocalPlacement : public IfcObjectPlacement {
 public:
     /// Whether the optional attribute PlacementRelTo is defined for this IfcLocalPlacement
     bool hasPlacementRelTo() const;
@@ -16077,7 +16079,7 @@ public:
 /// A loop has a finite extent. 
 ///   A loop describes a closed (topological) curve with coincident start
 ///   and end vertices.
-class IfcLoop : public IfcTopologicalRepresentationItem {
+class IfcParse_EXPORT IfcLoop : public IfcTopologicalRepresentationItem {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcTopologicalRepresentationItem::getArgumentType(i); }
@@ -16110,7 +16112,7 @@ public:
 /// 
 /// A mapped item shall not be self-defining by participating in the definition of the representation being mapped.
 ///   The dimensionality of the mapping source and the mapping target has to be the same, if the mapping source is a geometric representation item.
-class IfcMappedItem : public IfcRepresentationItem {
+class IfcParse_EXPORT IfcMappedItem : public IfcRepresentationItem {
 public:
     /// A representation map that is the source of the mapped item. It can be seen as a block (or cell or marco) definition.
     IfcRepresentationMap* MappingSource() const;
@@ -16157,7 +16159,7 @@ public:
 /// HISTORYÿNew entity in IFC2x4
 /// 
 /// IFC2x4 CHANGEÿ The attributes Description and Category have been added.
-class IfcMaterial : public IfcMaterialDefinition {
+class IfcParse_EXPORT IfcMaterial : public IfcMaterialDefinition {
 public:
     /// Name of the material. 
     /// 
@@ -16202,7 +16204,7 @@ public:
 /// NOTE See the "Material Use Definition" at the individual element to which an IfcMaterialConstituentSet may apply for a required or recommended definition of such keywords as value for IfcMaterialConstituent.Name.
 /// 
 /// HISTORYÿNew Entity in IFC2x4
-class IfcMaterialConstituent : public IfcMaterialDefinition {
+class IfcParse_EXPORT IfcMaterialConstituent : public IfcMaterialDefinition {
 public:
     /// Whether the optional attribute Name is defined for this IfcMaterialConstituent
     bool hasName() const;
@@ -16254,7 +16256,7 @@ public:
 /// keywords.
 /// 
 /// HISTORYÿNew Entity in IFC2x4.
-class IfcMaterialConstituentSet : public IfcMaterialDefinition {
+class IfcParse_EXPORT IfcMaterialConstituentSet : public IfcMaterialDefinition {
 public:
     /// Whether the optional attribute Name is defined for this IfcMaterialConstituentSet
     bool hasName() const;
@@ -16313,7 +16315,7 @@ public:
 /// As shown in Figure 331, the presentation assignment can be specific to a representation context by adding one and more IfcStyledRepresentation's. Each of them includes a single IfcStyledItem with exactly zero or one style for either curve, fill area, surface, text or symbol style that is applicable.
 /// 
 /// Figure 331 — Material definition representation
-class IfcMaterialDefinitionRepresentation : public IfcProductRepresentation {
+class IfcParse_EXPORT IfcMaterialDefinitionRepresentation : public IfcProductRepresentation {
 public:
     /// Reference to the material to which the representation applies.
     IfcMaterial* RepresentedMaterial() const;
@@ -16430,7 +16432,7 @@ public:
 /// geometry.
 /// 
 /// Figure 288 — Material layer set usage for roof slab
-class IfcMaterialLayerSetUsage : public IfcMaterialUsageDefinition {
+class IfcParse_EXPORT IfcMaterialLayerSetUsage : public IfcMaterialUsageDefinition {
 public:
     /// The IfcMaterialLayerSet set to which the usage is applied.
     IfcMaterialLayerSet* ForLayerSet() const;
@@ -16480,7 +16482,7 @@ public:
 /// profile, or a composite profile with two or more material profiles.
 /// 
 /// HISTORYÿNew Entity in IFC2x4.
-class IfcMaterialProfileSetUsage : public IfcMaterialUsageDefinition {
+class IfcParse_EXPORT IfcMaterialProfileSetUsage : public IfcMaterialUsageDefinition {
 public:
     /// The IfcMaterialProfileSet set to which the usage is applied.
     IfcMaterialProfileSet* ForProfileSet() const;
@@ -16537,7 +16539,7 @@ public:
 /// ForProfileEndSet at its end. Start and end correspond to
 /// the edge direction in the topological representation of the curve
 /// member.
-class IfcMaterialProfileSetUsageTapering : public IfcMaterialProfileSetUsage {
+class IfcParse_EXPORT IfcMaterialProfileSetUsageTapering : public IfcMaterialProfileSetUsage {
 public:
     /// The second IfcMaterialProfileSet set to which the usage is applied.
     IfcMaterialProfileSet* ForProfileEndSet() const;
@@ -16581,7 +16583,7 @@ public:
 /// HISTORY  New Entity in IFC 2x.
 /// 
 /// IFC2x4 CHANGE  The subtypes that represented a fixed list of statically defined material properties, IfcMechanicalMaterialProperties, IfcThermalMaterialProperties, IfcHygroscopicMaterialProperties, IfcGeneralMaterialProperties, IfcOpticalMaterialProperties, IfcWaterProperties, IfcFuelProperties, IfcProductsOfCombustionProperties have been deleted, use the generic IfcExtendedMaterialProperties instead.
-class IfcMaterialProperties : public IfcExtendedProperties {
+class IfcParse_EXPORT IfcMaterialProperties : public IfcExtendedProperties {
 public:
     /// Reference to the material definition to which the set of properties is assigned.
     /// 
@@ -16603,7 +16605,7 @@ public:
 /// IfcMaterialRelationship  defines a relationship between part and whole in material definitions (as in composite materials). The parts, expressed by the set of RelatedMaterials, are material constituents of which a single material aggregate is composed.
 /// 
 /// HISTORYÿNew Entity in IFC2x4
-class IfcMaterialRelationship : public IfcResourceLevelRelationship {
+class IfcParse_EXPORT IfcMaterialRelationship : public IfcResourceLevelRelationship {
 public:
     /// Reference to the relating material (the composite).
     IfcMaterial* RelatingMaterial() const;
@@ -16655,7 +16657,7 @@ public:
 /// was performed.
 /// 
 /// HISTORY  New entity in IFC2x4.
-class IfcMirroredProfileDef : public IfcDerivedProfileDef {
+class IfcParse_EXPORT IfcMirroredProfileDef : public IfcDerivedProfileDef {
 public:
     virtual unsigned int getArgumentCount() const { return 5; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDerivedProfileDef::getArgumentType(i); }
@@ -16719,7 +16721,7 @@ public:
 /// HISTORY New abstract entity in IFC2x3.
 /// 
 /// IFC2x4 CHANGE The new subtype IfcContext and the relationship to context HasContext has been added . The decomposition relationship is split into ordered nesting (Nests, IsNestedBy) and un-ordered aggregating (Decomposes, IsDecomposedBy).
-class IfcObjectDefinition : public IfcRoot {
+class IfcParse_EXPORT IfcObjectDefinition : public IfcRoot {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcRoot::getArgumentType(i); }
@@ -16799,7 +16801,7 @@ public:
 /// 
 /// The Euler equation shall be satisfied. Note: Please refer to ISO/IS
 ///   10303-42:1994, p.148 for the equation.
-class IfcOpenShell : public IfcConnectedFaceSet {
+class IfcParse_EXPORT IfcOpenShell : public IfcConnectedFaceSet {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcConnectedFaceSet::getArgumentType(i); }
@@ -16819,7 +16821,7 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 2x.
 /// IFC 2x4 change: attribute Name made optional.
-class IfcOrganizationRelationship : public IfcResourceLevelRelationship {
+class IfcParse_EXPORT IfcOrganizationRelationship : public IfcResourceLevelRelationship {
 public:
     /// Organization which is the relating part of the relationship between organizations.
     IfcOrganization* RelatingOrganization() const;
@@ -16846,7 +16848,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: oriented_edge. Please refer to ISO/IS 10303-42:1994, p. 133 for the final definition of the formal standard.
 /// 
 /// HISTORY  New Entity in IFC Release 2.0.
-class IfcOrientedEdge : public IfcEdge {
+class IfcParse_EXPORT IfcOrientedEdge : public IfcEdge {
 public:
     /// Edge entity used to construct this oriented edge.
     IfcEdge* EdgeElement() const;
@@ -16908,7 +16910,7 @@ public:
 /// IFC2x4 CHANGE  Position attribute made optional (default: identity transformation).
 /// Several radius parameters in subtypes have been changed from optional IfcPositiveLengthMeasure (assumed default: 0.) to optional IfcNonNegativeLengthMeasure (default: unspecified).  This change allows to explicitly specify zero radius.  Sending systems shall export 0. values if parameters are known to be 0.
 /// Subtypes IfcCraneRailAShapeProfileDef and IfcCraneRailFShapeProfileDef deleted.  Rail profiles shall be modeled as IfcArbitraryClosedProfileDef or as IfcAsymmetricIShapeProfileDef together with appropriate external reference.
-class IfcParameterizedProfileDef : public IfcProfileDef {
+class IfcParse_EXPORT IfcParameterizedProfileDef : public IfcProfileDef {
 public:
     /// Whether the optional attribute Position is defined for this IfcParameterizedProfileDef
     bool hasPosition() const;
@@ -16941,7 +16943,7 @@ public:
 /// A path is arcwise connected.
 /// The edges of the path do not intersect except at common vertices.
 /// A path has a finite, non-zero extent.
-class IfcPath : public IfcTopologicalRepresentationItem {
+class IfcParse_EXPORT IfcPath : public IfcTopologicalRepresentationItem {
 public:
     /// The list of oriented edges which are concatenated together to form this path.
     IfcTemplatedEntityList< IfcOrientedEdge >::ptr EdgeList() const;
@@ -16967,7 +16969,7 @@ public:
 /// HISTORY  New entity in IFC2x2 Addendum 1.
 /// 
 /// IFC2x2 ADDENDUM 1 CHANGE  The entity IfcPhysicalComplexQuantity has been added. Upward compatibility for file based exchange is guaranteed.
-class IfcPhysicalComplexQuantity : public IfcPhysicalQuantity {
+class IfcParse_EXPORT IfcPhysicalComplexQuantity : public IfcPhysicalQuantity {
 public:
     /// Set of physical quantities that are grouped by this complex physical quantity according to a given discrimination.
     IfcTemplatedEntityList< IfcPhysicalQuantity >::ptr HasQuantities() const;
@@ -17015,7 +17017,7 @@ public:
 /// Note that alpha equals (1.0 -transparency), if alpha and transparency each range from 0.0 to 1.0.
 /// 
 /// HISTORY: New class in IFC2x2.
-class IfcPixelTexture : public IfcSurfaceTexture {
+class IfcParse_EXPORT IfcPixelTexture : public IfcSurfaceTexture {
 public:
     /// The number of pixels in width (S) direction.
     int Width() const;
@@ -17052,7 +17054,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: placement. Please refer to ISO/IS 10303-42:1994, p. 27 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.0
-class IfcPlacement : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcPlacement : public IfcGeometricRepresentationItem {
 public:
     /// The geometric position of a reference point, such as the center of a circle, of the item to be located.
     IfcCartesianPoint* Location() const;
@@ -17074,7 +17076,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: planar_extent. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcPlanarExtent : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcPlanarExtent : public IfcGeometricRepresentationItem {
 public:
     /// The extent in the direction of the x-axis.
     double SizeInX() const;
@@ -17099,7 +17101,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: point. Only the subtypes cartesian_point, point_on_curve, point_on_surface have been incorporated in the current release of IFC. Please refer to ISO/IS 10303-42:1994, p. 22 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.5
-class IfcPoint : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcPoint : public IfcGeometricRepresentationItem {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentType(i); }
@@ -17122,7 +17124,7 @@ public:
 /// Informal Propositions: 
 /// 
 /// The value of the point parameter shall not be outside the parametric range of the curve.
-class IfcPointOnCurve : public IfcPoint {
+class IfcParse_EXPORT IfcPointOnCurve : public IfcPoint {
 public:
     /// The curve to which point parameter relates.
     IfcCurve* BasisCurve() const;
@@ -17151,7 +17153,7 @@ public:
 /// Informal Propositions: 
 /// 
 /// The parametric values specified for u and v shall not be outside the parametric range of the basis surface.
-class IfcPointOnSurface : public IfcPoint {
+class IfcParse_EXPORT IfcPointOnSurface : public IfcPoint {
 public:
     /// The surface to which the parameter values relate.
     IfcSurface* BasisSurface() const;
@@ -17213,7 +17215,7 @@ public:
 /// 
 /// All the points in the polygon defining the poly loop shall be coplanar.
 ///   The first and the last Polygon shall be different by value.
-class IfcPolyLoop : public IfcLoop {
+class IfcParse_EXPORT IfcPolyLoop : public IfcLoop {
 public:
     /// List of points defining the loop. There are no repeated points in the list.
     IfcTemplatedEntityList< IfcCartesianPoint >::ptr Polygon() const;
@@ -17286,7 +17288,7 @@ public:
 /// bounds the effectiveness of the half space in Boolean expressions. The BaseSurface
 /// is defined by a plane, and the normal of the plane together with the AgreementFlag
 /// defines the side of the material of the half space.
-class IfcPolygonalBoundedHalfSpace : public IfcHalfSpaceSolid {
+class IfcParse_EXPORT IfcPolygonalBoundedHalfSpace : public IfcHalfSpaceSolid {
 public:
     /// Definition of the position coordinate system for the bounding polyline and the base surface.
     IfcAxis2Placement3D* Position() const;
@@ -17315,7 +17317,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: pre_defined_item. Please refer to ISO/IS 10303-41:1994, page 137 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcPreDefinedItem : public IfcPresentationItem {
+class IfcParse_EXPORT IfcPreDefinedItem : public IfcPresentationItem {
 public:
     /// The string by which the pre defined item is identified. Allowable values for the string are declared at the level of subtypes.
     std::string Name() const;
@@ -17333,7 +17335,7 @@ public:
     typedef IfcTemplatedEntityList< IfcPreDefinedItem > list;
 };
 
-class IfcPreDefinedProperties : public IfcPropertyAbstraction {
+class IfcParse_EXPORT IfcPreDefinedProperties : public IfcPropertyAbstraction {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcPropertyAbstraction::getArgumentType(i); }
@@ -17358,7 +17360,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The IfcTextStyleFontModel has been added as new subtype.
-class IfcPreDefinedTextFont : public IfcPreDefinedItem {
+class IfcParse_EXPORT IfcPreDefinedTextFont : public IfcPreDefinedItem {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedItem::getArgumentType(i); }
@@ -17384,7 +17386,7 @@ public:
 /// NOTE  The definition of this entity relates to the ISO 10303 entity product_definition_shape. Please refer to ISO/IS 10303-41:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY  New Entity in IFC Release 1.5
-class IfcProductDefinitionShape : public IfcProductRepresentation {
+class IfcParse_EXPORT IfcProductDefinitionShape : public IfcProductRepresentation {
 public:
     virtual unsigned int getArgumentCount() const { return 3; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcProductRepresentation::getArgumentType(i); }
@@ -17411,7 +17413,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x4 CHANGE  Entity made non-abstract.  Subtypes IfcGeneralProfileProperties, IfcStructuralProfileProperties, and IfcStructuralSteelProfileProperties deleted. Attribute ProfileName deleted, use ProfileDefinition.ProfileName instead. Attribute ProfileDefinition made mandatory. Attributes Name, Description, and HasProperties added.
-class IfcProfileProperties : public IfcExtendedProperties {
+class IfcParse_EXPORT IfcProfileProperties : public IfcExtendedProperties {
 public:
     /// Profile definition which is qualified by these properties.
     IfcProfileDef* ProfileDefinition() const;
@@ -17431,7 +17433,7 @@ public:
 /// IfcProperty is an abstract generalization for all types of properties that can be associated with IFC objects through the property set mechanism. 
 /// 
 /// HISTORY  New entity in IFC Release 1.0.
-class IfcProperty : public IfcPropertyAbstraction {
+class IfcParse_EXPORT IfcProperty : public IfcPropertyAbstraction {
 public:
     /// Name for this property. This label is the significant name string that defines the semantic meaning for the property.
     std::string Name() const;
@@ -17507,7 +17509,7 @@ public:
 /// Subtypes are included in more specific relationships, see
 /// IfcPropertySetDefinition and
 /// IfcPropertyTemplateDefinition for details.
-class IfcPropertyDefinition : public IfcRoot {
+class IfcParse_EXPORT IfcPropertyDefinition : public IfcRoot {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcRoot::getArgumentType(i); }
@@ -17531,7 +17533,7 @@ public:
 /// 
 /// Use Definition
 /// Whilst the IfcPropertyDependencyRelationship may be used to describe the dependency, and it may do so in terms of the expression of how the dependency operates, it is not possible through the current IFC model for the value of the related property to be actually derived from the value of the relating property. The determination of value according to the dependency is required to be performed by an application that can then use the Expression attribute to flag the form of the dependency.
-class IfcPropertyDependencyRelationship : public IfcResourceLevelRelationship {
+class IfcParse_EXPORT IfcPropertyDependencyRelationship : public IfcResourceLevelRelationship {
 public:
     /// The property on which the relationship depends.
     IfcProperty* DependingProperty() const;
@@ -17598,7 +17600,7 @@ public:
 /// with all included properties, to the object occurrence.
 /// 
 /// NOTE  Properties assigned to object occurrences may override properties assigned to the object type. See IfcRelDefinesByType for further information.
-class IfcPropertySetDefinition : public IfcPropertyDefinition {
+class IfcParse_EXPORT IfcPropertySetDefinition : public IfcPropertyDefinition {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcPropertyDefinition::getArgumentType(i); }
@@ -17640,7 +17642,7 @@ public:
 /// using the inherited HasContext inverse attribute.
 /// 
 /// HISTORY  New Entity in IFC2x4.
-class IfcPropertyTemplateDefinition : public IfcPropertyDefinition {
+class IfcParse_EXPORT IfcPropertyTemplateDefinition : public IfcPropertyDefinition {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcPropertyDefinition::getArgumentType(i); }
@@ -17655,7 +17657,7 @@ public:
     typedef IfcTemplatedEntityList< IfcPropertyTemplateDefinition > list;
 };
 
-class IfcQuantitySet : public IfcPropertySetDefinition {
+class IfcParse_EXPORT IfcQuantitySet : public IfcPropertySetDefinition {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcPropertySetDefinition::getArgumentType(i); }
@@ -17703,7 +17705,7 @@ public:
 /// rectangle (half along the positive y-axis).
 /// 
 /// Figure 323 — Rectangle profile
-class IfcRectangleProfileDef : public IfcParameterizedProfileDef {
+class IfcParse_EXPORT IfcRectangleProfileDef : public IfcParameterizedProfileDef {
 public:
     /// The extent of the rectangle in the direction of the x-axis.
     double XDim() const;
@@ -17728,7 +17730,7 @@ public:
 /// EXAMPLE: A smoke detector samples the concentration of particulates in a space at a fixed rate (for example, every six seconds); a control system measures the outside air temperature every hour.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcRegularTimeSeries : public IfcTimeSeries {
+class IfcParse_EXPORT IfcRegularTimeSeries : public IfcTimeSeries {
 public:
     /// A duration of time intervals between values.
     double TimeStep() const;
@@ -17753,7 +17755,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// The total cross section area for the specific steel grade is always provided. Additionally also general reinforcing bar configurations as a count of bars may be provided as defined in attribute BarCount. In this case the nominal bar diameter should be identical for all given bars as defined in attribute NominalBarDiameter.
-class IfcReinforcementBarProperties : public IfcPreDefinedProperties {
+class IfcParse_EXPORT IfcReinforcementBarProperties : public IfcPreDefinedProperties {
 public:
     /// The total effective cross-section area of the reinforcement of a specific steel grade.
     double TotalCrossSectionArea() const;
@@ -17801,7 +17803,7 @@ public:
 /// In case of the 1-to-many relationship, the related side of the relationship shall be an aggregate SET 1:N 
 /// 
 /// HISTORY: New entity in IFC Release 1.0.
-class IfcRelationship : public IfcRoot {
+class IfcParse_EXPORT IfcRelationship : public IfcRoot {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcRoot::getArgumentType(i); }
@@ -17821,7 +17823,7 @@ public:
 /// 
 /// HISTORY  New
 /// Entity in IFC Release 2x4
-class IfcResourceApprovalRelationship : public IfcResourceLevelRelationship {
+class IfcParse_EXPORT IfcResourceApprovalRelationship : public IfcResourceLevelRelationship {
 public:
     /// Resource objects that are approved.
     IfcEntityList::ptr RelatedResourceObjects() const;
@@ -17861,7 +17863,7 @@ public:
 /// Figure 238 shows how a constraint may be applied to a property within a property set. For simplicity, only the mandatory attributes are shown as asserted. It shows how a property 'ThingWeight' which has a nominal value of 19.5 kg has two constraints that are logically aggregated by an AND connection. One of the constraints has a benchmark of 'GREATERTHANOREQUALTO' whilst the second has a benchmark of 'LESSTHANOREQUALTO'. This means that the constraint must lie between these two bounding values. The relating constraint is instantiated as an objective named as 'Weight Constraint' and qualified as a SPECIFICATION constraint. The two related constraints are both specified as metrics since they can have specific values.
 /// 
 /// Figure 238 — Resource constraint relationship
-class IfcResourceConstraintRelationship : public IfcResourceLevelRelationship {
+class IfcParse_EXPORT IfcResourceConstraintRelationship : public IfcResourceLevelRelationship {
 public:
     /// The constraint that is to be related.
     IfcConstraint* RelatingConstraint() const;
@@ -17883,7 +17885,7 @@ public:
 };
 /// IfcResourceTime captures the time-related information about a construction resource.
 ///   HISTORY: New entity in IFC2x4.
-class IfcResourceTime : public IfcSchedulingTime {
+class IfcParse_EXPORT IfcResourceTime : public IfcSchedulingTime {
 public:
     /// Whether the optional attribute ScheduleWork is defined for this IfcResourceTime
     bool hasScheduleWork() const;
@@ -18009,7 +18011,7 @@ public:
 /// of curvature in all four corners of the rectangle.
 /// 
 /// Figure 324 — Rounded rectangle profile
-class IfcRoundedRectangleProfileDef : public IfcRectangleProfileDef {
+class IfcParse_EXPORT IfcRoundedRectangleProfileDef : public IfcRectangleProfileDef {
 public:
     /// Radius of the circular arcs by which all four corners of the rectangle are equally rounded.
     double RoundingRadius() const;
@@ -18031,7 +18033,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// The section piece may be either uniform or tapered. In the latter case an end profile should also be provided. The start and end profiles are assumed to be of the same profile type. Generally only rectangular or circular cross section profiles are assumed to be used.
-class IfcSectionProperties : public IfcPreDefinedProperties {
+class IfcParse_EXPORT IfcSectionProperties : public IfcPreDefinedProperties {
 public:
     /// An indicator whether a specific piece of a cross section is uniform or tapered in longitudinal direction.
     IfcSectionTypeEnum::IfcSectionTypeEnum SectionType() const;
@@ -18063,7 +18065,7 @@ public:
 /// Several sets of cross section reinforcement properties represented by instances of IfcReinforcementProperties may be attached to the section reinforcement properties
 /// (IfcReinforcementDefinitionProperties of IfcStructuralElementsDomain schema),
 /// one for each combination of steel grades and reinforcement bar types and sizes.
-class IfcSectionReinforcementProperties : public IfcPreDefinedProperties {
+class IfcParse_EXPORT IfcSectionReinforcementProperties : public IfcPreDefinedProperties {
 public:
     /// The start position in longitudinal direction for the section reinforcement properties.
     double LongitudinalStartPosition() const;
@@ -18150,7 +18152,7 @@ public:
 /// none of the cross sections, after being placed by the cross section positions, shall intersect
 /// none of the cross sections, after being placed by the cross section positions, shall lie in the same plane
 /// the local origin of each cross section position shall lie at the beginning or end of a composite curve segment.
-class IfcSectionedSpine : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcSectionedSpine : public IfcGeometricRepresentationItem {
 public:
     /// A single composite curve, that defines the spine curve. Each of the composite curve segments correspond to the part between two cross-sections.
     IfcCompositeCurve* SpineCurve() const;
@@ -18185,7 +18187,7 @@ public:
 /// 
 /// The dimensionality of the shell based surface model is 2.  
 /// The shells shall not overlap or intersect except at common faces, edges or vertices.
-class IfcShellBasedSurfaceModel : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcShellBasedSurfaceModel : public IfcGeometricRepresentationItem {
 public:
     IfcEntityList::ptr SbsmBoundary() const;
     void setSbsmBoundary(IfcEntityList::ptr v);
@@ -18204,7 +18206,7 @@ public:
 /// IfcSimpleProperty is a generalization of a single property object. The various subtypes of IfcSimpleProperty establish different ways in which a property value can be set. 
 /// 
 /// HISTORY  New Entity in IFC Release 1.0, definition changed in IFC Release 2x.
-class IfcSimpleProperty : public IfcProperty {
+class IfcParse_EXPORT IfcSimpleProperty : public IfcProperty {
 public:
     virtual unsigned int getArgumentCount() const { return 2; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcProperty::getArgumentType(i); }
@@ -18227,7 +18229,7 @@ public:
 ///   surface supports and connections.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcSlippageConnectionCondition : public IfcStructuralConnectionCondition {
+class IfcParse_EXPORT IfcSlippageConnectionCondition : public IfcStructuralConnectionCondition {
 public:
     /// Whether the optional attribute SlippageX is defined for this IfcSlippageConnectionCondition
     bool hasSlippageX() const;
@@ -18261,7 +18263,7 @@ public:
 /// NOTE: Corresponding ISO 10303-42 entity: solid_model, only three subtypes have been incorporated into the current IFC Release - subset of manifold_solid_brep (IfcManifoldSolidBrep, constraint to faceted B-rep), swept_area_solid (IfcSweptAreaSolid), the swept_disk_solid (IfcSweptDiskSolid) and subset of csg_solid (IfcCsgSolid). The derived attribute Dim has been added at this level and was therefore demoted from the geometric_representation_item. Please refer to ISO/IS 10303-42:1994, p. 170 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.5
-class IfcSolidModel : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcSolidModel : public IfcGeometricRepresentationItem {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentType(i); }
@@ -18280,7 +18282,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x
 ///   edition 2.
-class IfcStructuralLoadLinearForce : public IfcStructuralLoadStatic {
+class IfcParse_EXPORT IfcStructuralLoadLinearForce : public IfcStructuralLoadStatic {
 public:
     /// Whether the optional attribute LinearForceX is defined for this IfcStructuralLoadLinearForce
     bool hasLinearForceX() const;
@@ -18329,7 +18331,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x
 ///   edition 2.
-class IfcStructuralLoadPlanarForce : public IfcStructuralLoadStatic {
+class IfcParse_EXPORT IfcStructuralLoadPlanarForce : public IfcStructuralLoadStatic {
 public:
     /// Whether the optional attribute PlanarForceX is defined for this IfcStructuralLoadPlanarForce
     bool hasPlanarForceX() const;
@@ -18363,7 +18365,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x
 ///   edition 2.
-class IfcStructuralLoadSingleDisplacement : public IfcStructuralLoadStatic {
+class IfcParse_EXPORT IfcStructuralLoadSingleDisplacement : public IfcStructuralLoadStatic {
 public:
     /// Whether the optional attribute DisplacementX is defined for this IfcStructuralLoadSingleDisplacement
     bool hasDisplacementX() const;
@@ -18410,7 +18412,7 @@ public:
 /// Definition from IAI: Defines a displacement with warping.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcStructuralLoadSingleDisplacementDistortion : public IfcStructuralLoadSingleDisplacement {
+class IfcParse_EXPORT IfcStructuralLoadSingleDisplacementDistortion : public IfcStructuralLoadSingleDisplacement {
 public:
     /// Whether the optional attribute Distortion is defined for this IfcStructuralLoadSingleDisplacementDistortion
     bool hasDistortion() const;
@@ -18435,7 +18437,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x
 ///   edition 2.
-class IfcStructuralLoadSingleForce : public IfcStructuralLoadStatic {
+class IfcParse_EXPORT IfcStructuralLoadSingleForce : public IfcStructuralLoadStatic {
 public:
     /// Whether the optional attribute ForceX is defined for this IfcStructuralLoadSingleForce
     bool hasForceX() const;
@@ -18487,7 +18489,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x
 ///   edition 2.
-class IfcStructuralLoadSingleForceWarping : public IfcStructuralLoadSingleForce {
+class IfcParse_EXPORT IfcStructuralLoadSingleForceWarping : public IfcStructuralLoadSingleForce {
 public:
     /// Whether the optional attribute WarpingMoment is defined for this IfcStructuralLoadSingleForceWarping
     bool hasWarpingMoment() const;
@@ -18516,7 +18518,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: subedge. Please refer to ISO/DIS 10303-42:1999(E), p. 194 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcSubedge : public IfcEdge {
+class IfcParse_EXPORT IfcSubedge : public IfcEdge {
 public:
     /// The Edge, or Subedge, which contains the Subedge.
     IfcEdge* ParentEdge() const;
@@ -18543,7 +18545,7 @@ public:
 /// 
 /// A surface has non zero area. 
 /// A surface is arcwise connected.
-class IfcSurface : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcSurface : public IfcGeometricRepresentationItem {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentType(i); }
@@ -18602,7 +18604,7 @@ public:
 /// In addition to the attributes as defined in ISO 10303-46, (ambient_reflectance, diffuse_reflectance, specular_reflectance, specular_exponent, and specular_colour), the current IFC definition adds other colours, reflectance factors and specular roughness.
 /// 
 /// HISTORY: New Entity in IFC 2x.
-class IfcSurfaceStyleRendering : public IfcSurfaceStyleShading {
+class IfcParse_EXPORT IfcSurfaceStyleRendering : public IfcSurfaceStyleShading {
 public:
     /// Whether the optional attribute Transparency is defined for this IfcSurfaceStyleRendering
     bool hasTransparency() const;
@@ -18683,7 +18685,7 @@ public:
 /// NOTE Corresponding ISO 10303-42 entity: swept_area_solid, The data type of SweptArea is modified and given by a profile definition (IfcProfileDef). A position coordinate system is defined by the Position attribute has been added. Please refer to ISO/IS 10303-42:1994, p. 183 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5, the capabilities have been enhanced in IFC Release 2x.
-class IfcSweptAreaSolid : public IfcSolidModel {
+class IfcParse_EXPORT IfcSweptAreaSolid : public IfcSolidModel {
 public:
     /// The surface defining the area to be swept. It is given as a profile definition within the xy plane of the position coordinate system.
     IfcProfileDef* SweptArea() const;
@@ -18758,7 +18760,7 @@ public:
 /// disk Radius
 /// The Directrix shall not be based on an intersecting
 /// curve.
-class IfcSweptDiskSolid : public IfcSolidModel {
+class IfcParse_EXPORT IfcSweptDiskSolid : public IfcSolidModel {
 public:
     /// The curve used to define the sweeping operation. The solid is generated by sweeping a circular disk along the Directrix.
     IfcCurve* Directrix() const;
@@ -18807,7 +18809,7 @@ public:
 /// or equal to the length of the start and end segment of the
 /// IfcPolyline, and smaller then or equal to one half of the
 /// lenght of the shortest inner segment.
-class IfcSweptDiskSolidPolygonal : public IfcSweptDiskSolid {
+class IfcParse_EXPORT IfcSweptDiskSolidPolygonal : public IfcSweptDiskSolid {
 public:
     /// Whether the optional attribute FilletRadius is defined for this IfcSweptDiskSolidPolygonal
     bool hasFilletRadius() const;
@@ -18831,7 +18833,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: swept_surface. Please refer to ISO/IS 10303-42:1994, p.76 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IfcSweptSurface : public IfcSurface {
+class IfcParse_EXPORT IfcSweptSurface : public IfcSurface {
 public:
     /// The curve to be swept in defining the surface. The curve is defined as a profile within the position coordinate system.
     IfcProfileDef* SweptCurve() const;
@@ -18881,7 +18883,7 @@ public:
 /// relative to the profile.
 /// 
 /// Figure 326 — T-shape profile
-class IfcTShapeProfileDef : public IfcParameterizedProfileDef {
+class IfcParse_EXPORT IfcTShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     /// Web lengths, see illustration above (= h).
     double Depth() const;
@@ -18933,7 +18935,7 @@ public:
     typedef IfcTemplatedEntityList< IfcTShapeProfileDef > list;
 };
 
-class IfcTessellatedItem : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcTessellatedItem : public IfcGeometricRepresentationItem {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentType(i); }
@@ -18957,7 +18959,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The IfcTextLiteral has been changed by removing Font and Alignment.
-class IfcTextLiteral : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcTextLiteral : public IfcGeometricRepresentationItem {
 public:
     /// The text literal to be presented.
     std::string Literal() const;
@@ -18990,7 +18992,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The IfcTextLiteralWithExtent has been changed by adding BoxAlignment.
-class IfcTextLiteralWithExtent : public IfcTextLiteral {
+class IfcParse_EXPORT IfcTextLiteralWithExtent : public IfcTextLiteral {
 public:
     /// The extent in the x and y direction of the text literal.
     IfcPlanarExtent* Extent() const;
@@ -19075,7 +19077,7 @@ public:
 /// NOTE  Corresponding CSS1 definitions are Font properties ('font-family', 'font-style', 'font-variant',  'font-weight').
 /// 
 /// HISTORY  New entity in IFC2x3.
-class IfcTextStyleFontModel : public IfcPreDefinedTextFont {
+class IfcParse_EXPORT IfcTextStyleFontModel : public IfcPreDefinedTextFont {
 public:
     /// The value is a prioritized list of font family names and/or generic family names. The first list entry has the highest priority, if this font fails, the next list item shall be used. The last list item should (if possible) be a generic family.
     std::vector< std::string > /*[1:?]*/ FontFamily() const;
@@ -19151,7 +19153,7 @@ public:
 /// the positive x-axis.
 /// 
 /// Figure 325 — Trapezium profile
-class IfcTrapeziumProfileDef : public IfcParameterizedProfileDef {
+class IfcParse_EXPORT IfcTrapeziumProfileDef : public IfcParameterizedProfileDef {
 public:
     /// The extent of the bottom line measured along the implicit x-axis.
     double BottomXDim() const;
@@ -19208,7 +19210,7 @@ public:
 /// IFC2x3 CHANGE The IfcTypeObject is now subtyped from the new supertype IfcObjectDefinition, and the attribute HasPropertySets has been changed from a LIST into a SET.
 /// 
 /// IFC2x4 CHANGE (1) The entity IfcTypeObject shall not be instantiated from IFC2x4 onwards. It will be changed into an ABSTRACT supertype in future releases of IFC. (2) The inverse attribute Types has been renamed from ObjectTypeOf.
-class IfcTypeObject : public IfcObjectDefinition {
+class IfcParse_EXPORT IfcTypeObject : public IfcObjectDefinition {
 public:
     /// Whether the optional attribute ApplicableOccurrence is defined for this IfcTypeObject
     bool hasApplicableOccurrence() const;
@@ -19269,7 +19271,7 @@ public:
 /// occurrence property set that is assigned at the process
 /// occurrence, overrides the same property assigned to the process
 /// type.
-class IfcTypeProcess : public IfcTypeObject {
+class IfcParse_EXPORT IfcTypeProcess : public IfcTypeObject {
 public:
     /// Whether the optional attribute Identification is defined for this IfcTypeProcess
     bool hasIdentification() const;
@@ -19367,7 +19369,7 @@ public:
 /// multiple placement.
 /// 
 /// Figure 11 — Product type geometry with multiple placement
-class IfcTypeProduct : public IfcTypeObject {
+class IfcParse_EXPORT IfcTypeProduct : public IfcTypeObject {
 public:
     /// Whether the optional attribute RepresentationMaps is defined for this IfcTypeProduct
     bool hasRepresentationMaps() const;
@@ -19404,7 +19406,7 @@ public:
 /// An IfcTypeResource may have a list of property sets attached, accessible by the attribute SELF\IfcTypeObject.HasPropertySets. Currently there are no predefined property sets defined as part of the IFC specification.
 /// 
 /// NOTE: For property sets, a property within an occurrence property set that is assigned at the resource occurrence, overrides the same property assigned to the resource type.
-class IfcTypeResource : public IfcTypeObject {
+class IfcParse_EXPORT IfcTypeResource : public IfcTypeObject {
 public:
     /// Whether the optional attribute Identification is defined for this IfcTypeResource
     bool hasIdentification() const;
@@ -19464,7 +19466,7 @@ public:
 /// relative to the profile.
 /// 
 /// Figure 327 — U-shape profile
-class IfcUShapeProfileDef : public IfcParameterizedProfileDef {
+class IfcParse_EXPORT IfcUShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     /// Web lengths, see illustration above (= h).
     double Depth() const;
@@ -19512,7 +19514,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: vector. Please refer to ISO/IS 10303-42:1994, p.27 for the final definition of the formal standard. The derived attribute Dim has been added (see also note at IfcGeometricRepresentationItem).
 /// 
 /// HISTORY: New entity in IFC Release 1.0
-class IfcVector : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcVector : public IfcGeometricRepresentationItem {
 public:
     /// The direction of the vector.
     IfcDirection* Orientation() const;
@@ -19544,7 +19546,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: vertex_loop. Please refer to ISO/IS 10303-42:1994, p. 121 for the final definition of the formal standard.
 /// 
 /// HISTORY  New Entity in IFC2x2.
-class IfcVertexLoop : public IfcLoop {
+class IfcParse_EXPORT IfcVertexLoop : public IfcLoop {
 public:
     /// The vertex which defines the entire loop.
     IfcVertex* LoopVertex() const;
@@ -19579,7 +19581,7 @@ public:
 /// The IfcWindowStyleOperationTypeEnum defines the general layout of the window style. Depending on the enumerator, the
 /// appropriate instances of IfcWindowLiningProperties and IfcWindowPanelProperties are attached in the list of
 /// HasPropertySets. See geometry use definitions there.
-class IfcWindowStyle : public IfcTypeProduct {
+class IfcParse_EXPORT IfcWindowStyle : public IfcTypeProduct {
 public:
     /// Type defining the basic construction and material type of the window.
     IfcWindowStyleConstructionEnum::IfcWindowStyleConstructionEnum ConstructionType() const;
@@ -19630,7 +19632,7 @@ public:
 /// relative to the profile.
 /// 
 /// Figure 328 — Z-shape profile
-class IfcZShapeProfileDef : public IfcParameterizedProfileDef {
+class IfcParse_EXPORT IfcZShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     /// Web length, see illustration above (= h).
     double Depth() const;
@@ -19679,7 +19681,7 @@ public:
 /// the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x4
-class IfcAdvancedFace : public IfcFaceSurface {
+class IfcParse_EXPORT IfcAdvancedFace : public IfcFaceSurface {
 public:
     virtual unsigned int getArgumentCount() const { return 3; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcFaceSurface::getArgumentType(i); }
@@ -19713,7 +19715,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The two attributes OuterBoundary and InnerBoundaries are added and replace the previous single boundary.
-class IfcAnnotationFillArea : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcAnnotationFillArea : public IfcGeometricRepresentationItem {
 public:
     /// A closed curve that defines the outer boundary of the fill area. The areas defined by the outer boundary (minus potentially defined inner boundaries) is filled by the fill area style.
     /// 
@@ -19776,7 +19778,7 @@ public:
 /// relative to the profile. The parameterized profile is defined by a set of parameter attributes.  In the illustrated example, the 'CentreOfGravityInY' property in IfcExtendedProfileProperties, if provided, is negative.
 /// 
 /// Figure 310 — Assymetric I-shape profile
-class IfcAsymmetricIShapeProfileDef : public IfcParameterizedProfileDef {
+class IfcParse_EXPORT IfcAsymmetricIShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     double BottomFlangeWidth() const;
     void setBottomFlangeWidth(double v);
@@ -19840,7 +19842,7 @@ public:
 /// Figure 274 illustrates the definition of the IfcAxis1Placement within the three-dimensional coordinate system.
 /// 
 /// Figure 274 — Axis1 placement
-class IfcAxis1Placement : public IfcPlacement {
+class IfcParse_EXPORT IfcAxis1Placement : public IfcPlacement {
 public:
     /// Whether the optional attribute Axis is defined for this IfcAxis1Placement
     bool hasAxis() const;
@@ -19870,7 +19872,7 @@ public:
 /// Figure 275 illustrates the definition of the IfcAxis2Placement2D within the two-dimensional coordinate system. 
 /// 
 /// Figure 275 — Axis2 placement 2D
-class IfcAxis2Placement2D : public IfcPlacement {
+class IfcParse_EXPORT IfcAxis2Placement2D : public IfcPlacement {
 public:
     /// Whether the optional attribute RefDirection is defined for this IfcAxis2Placement2D
     bool hasRefDirection() const;
@@ -19902,7 +19904,7 @@ public:
 /// Figure 276 illustrates the definition of the IfcAxis2Placement3D within the three-dimensional coordinate system.
 /// 
 /// Figure 276 — Axis2 placement 3D
-class IfcAxis2Placement3D : public IfcPlacement {
+class IfcParse_EXPORT IfcAxis2Placement3D : public IfcPlacement {
 public:
     /// Whether the optional attribute Axis is defined for this IfcAxis2Placement3D
     bool hasAxis() const;
@@ -19952,7 +19954,7 @@ public:
 /// NOTE Corresponding ISO 10303-42 entity: boolean_result. The derived attribute Dim has been added at this level and was therefore demoted from the geometric_representation_item. Please refer to ISO/IS 10303-42:1994, p.175 for the final definition of the formal standard.
 /// 
 /// HISTORY: New class in IFC Release 1.5.1.
-class IfcBooleanResult : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcBooleanResult : public IfcGeometricRepresentationItem {
 public:
     /// The Boolean operator used in the operation to create the result.
     IfcBooleanOperator::IfcBooleanOperator Operator() const;
@@ -19987,7 +19989,7 @@ public:
 /// 
 /// A bounded surface has finite non-zero surface area.
 /// A bounded surface has boundary curves.
-class IfcBoundedSurface : public IfcSurface {
+class IfcParse_EXPORT IfcBoundedSurface : public IfcSurface {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcSurface::getArgumentType(i); }
@@ -20023,7 +20025,7 @@ public:
 /// As shown in Figure 252, the IfcBoundingBox is defined with its own location which can be used to place the IfcBoundingBox relative to the geometric coordinate system. The IfcBoundingBox is defined by the lower left corner (Corner) and the upper right corner (XDim, YDim, ZDim measured within the parent co-ordinate system).
 /// 
 /// Figure 252 — Bounding box
-class IfcBoundingBox : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcBoundingBox : public IfcGeometricRepresentationItem {
 public:
     /// Location of the bottom left corner (having the minimum values).
     IfcCartesianPoint* Corner() const;
@@ -20079,7 +20081,7 @@ public:
 /// The Enclosure therefore helps to prevent dealing with infinite-size related issues. The enclosure box is positioned within the object coordinate system, established by the ObjectPlacement of the element represented (for example, by IfcLocalPlacement).  Figure 254 shows the Enclosure box being sufficiently large to fully enclose the Boolean result.
 /// 
 /// Figure 254 — Boxed half space geometry
-class IfcBoxedHalfSpace : public IfcHalfSpaceSolid {
+class IfcParse_EXPORT IfcBoxedHalfSpace : public IfcHalfSpaceSolid {
 public:
     /// The box which bounds the resulting solid of the Boolean operation involving the half space solid for computational purposes only.
     IfcBoundingBox* Enclosure() const;
@@ -20118,7 +20120,7 @@ public:
 /// By using offsets of the position location, the parameterized profile can be positioned centric (using x,y offsets = 0.), or at any position relative to the profile. The parameterized profile is defined by a set of parameter attributes. In the illustrated example, the 'CentreOfGravityInX' property in IfcExtendedProfileProperties, if provided, is negative.
 /// 
 /// Figure 315 — C-shape profile
-class IfcCShapeProfileDef : public IfcParameterizedProfileDef {
+class IfcParse_EXPORT IfcCShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     /// Profile depth, see illustration above (= h).
     double Depth() const;
@@ -20156,7 +20158,7 @@ public:
 /// NOTE: Corresponding STEP entity: cartesian_point, please refer to ISO/IS 10303-42:1994, p. 23 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.0
-class IfcCartesianPoint : public IfcPoint {
+class IfcParse_EXPORT IfcCartesianPoint : public IfcPoint {
 public:
     /// The first, second, and third coordinate of the point location. If placed in a two or three dimensional rectangular Cartesian coordinate system, Coordinates[1] is the X coordinate, Coordinates[2] is the Y coordinate, and Coordinates[3] is the Z coordinate.
     std::vector< double > /*[1:3]*/ Coordinates() const;
@@ -20174,7 +20176,7 @@ public:
     typedef IfcTemplatedEntityList< IfcCartesianPoint > list;
 };
 
-class IfcCartesianPointList : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcCartesianPointList : public IfcGeometricRepresentationItem {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentType(i); }
@@ -20189,7 +20191,7 @@ public:
     typedef IfcTemplatedEntityList< IfcCartesianPointList > list;
 };
 
-class IfcCartesianPointList3D : public IfcCartesianPointList {
+class IfcParse_EXPORT IfcCartesianPointList3D : public IfcCartesianPointList {
 public:
     std::vector< std::vector< double > > CoordList() const;
     void setCoordList(std::vector< std::vector< double > > v);
@@ -20235,7 +20237,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: cartesian_transformation_operator, please refer to ISO/IS 10303-42:1994, p. 32 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IfcCartesianTransformationOperator : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcCartesianTransformationOperator : public IfcGeometricRepresentationItem {
 public:
     /// Whether the optional attribute Axis1 is defined for this IfcCartesianTransformationOperator
     bool hasAxis1() const;
@@ -20272,7 +20274,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity : cartesian_transformation_operator_2d, please refer to ISO/IS 10303-42:1994, p. 36 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IfcCartesianTransformationOperator2D : public IfcCartesianTransformationOperator {
+class IfcParse_EXPORT IfcCartesianTransformationOperator2D : public IfcCartesianTransformationOperator {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcCartesianTransformationOperator::getArgumentType(i); }
@@ -20296,7 +20298,7 @@ public:
 /// NOTE: The scale factor (Scl) defined at the supertype IfcCartesianTransformationOperator is used to express the calculated Scale factor (normally x axis scale factor).
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IfcCartesianTransformationOperator2DnonUniform : public IfcCartesianTransformationOperator2D {
+class IfcParse_EXPORT IfcCartesianTransformationOperator2DnonUniform : public IfcCartesianTransformationOperator2D {
 public:
     /// Whether the optional attribute Scale2 is defined for this IfcCartesianTransformationOperator2DnonUniform
     bool hasScale2() const;
@@ -20320,7 +20322,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: cartesian_transformation_operator_3d, please refer to ISO/IS 10303-42:1994, p. 33 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IfcCartesianTransformationOperator3D : public IfcCartesianTransformationOperator {
+class IfcParse_EXPORT IfcCartesianTransformationOperator3D : public IfcCartesianTransformationOperator {
 public:
     /// Whether the optional attribute Axis3 is defined for this IfcCartesianTransformationOperator3D
     bool hasAxis3() const;
@@ -20350,7 +20352,7 @@ public:
 /// NOTE: The scale factor (Scl) defined at the supertype IfcCartesianTransformationOperator is used to express the calculated Scale factor (normally x axis scale factor).
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IfcCartesianTransformationOperator3DnonUniform : public IfcCartesianTransformationOperator3D {
+class IfcParse_EXPORT IfcCartesianTransformationOperator3DnonUniform : public IfcCartesianTransformationOperator3D {
 public:
     /// Whether the optional attribute Scale2 is defined for this IfcCartesianTransformationOperator3DnonUniform
     bool hasScale2() const;
@@ -20386,7 +20388,7 @@ public:
 /// Or in case of sectioned spines, it is the xy plane of each list member of IfcSectionedSpine.CrossSectionPositions. By using offsets of the position location, the parameterized profile can be positioned centric (using x,y offsets = 0.), or at any position relative to the profile. Explicit coordinate offsets are used to define cardinal points (e.g. upper-left bound). The Position attribute defines the 2D position coordinate system of the circle. The Radius attribute defines the radius of the circle.
 /// 
 /// Figure 313 — Circle profile
-class IfcCircleProfileDef : public IfcParameterizedProfileDef {
+class IfcParse_EXPORT IfcCircleProfileDef : public IfcParameterizedProfileDef {
 public:
     /// The radius of the circle.
     double Radius() const;
@@ -20452,7 +20454,7 @@ public:
 ///   The closed shell shall be an oriented arcwise connected 2-manifold. 
 ///   The Euler equation shall be satisfied. Note: Please refer to ISO/IS
 ///   10303-42:1994, p.149 for the equation.
-class IfcClosedShell : public IfcConnectedFaceSet {
+class IfcParse_EXPORT IfcClosedShell : public IfcConnectedFaceSet {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcConnectedFaceSet::getArgumentType(i); }
@@ -20474,7 +20476,7 @@ public:
 /// refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcColourRgb : public IfcColourSpecification {
+class IfcParse_EXPORT IfcColourRgb : public IfcColourSpecification {
 public:
     /// The intensity of the red colour component.
     /// 
@@ -20508,7 +20510,7 @@ public:
 /// NOTE  Since an IfcComplexProperty may contain other complex properties, sets of properties can be nested. This nesting may be restricted by view definitions and implementer agreements.
 /// 
 /// HISTORY New Entity in IFC Release 2.0, capabilities enhanced in IFC Release 2x.
-class IfcComplexProperty : public IfcProperty {
+class IfcParse_EXPORT IfcComplexProperty : public IfcProperty {
 public:
     /// Usage description of the IfcComplexProperty within the property set which references the IfcComplexProperty.
     ///   NOTE: Consider a complex property for glazing properties. The Name attribute of the IfcComplexProperty could be Pset_GlazingProperties, and the UsageName attribute could be OuterGlazingPane.
@@ -20536,7 +20538,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: composite_curve_segment. Please refer to ISO/IS 10303-42:1994, p.57 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC Release 1.0
-class IfcCompositeCurveSegment : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcCompositeCurveSegment : public IfcGeometricRepresentationItem {
 public:
     /// The state of transition (i.e., geometric continuity from the last point of this segment to the first point of the next segment) in a composite curve.
     IfcTransitionCode::IfcTransitionCode Transition() const;
@@ -20577,7 +20579,7 @@ public:
 /// Resource types may be assigned to process types (IfcTypeProcess subtypes) using the IfcRelAssignsToProcess relationship as shown in Figure 193.  Such relationship indicates that the resource type applies to the process type for the use indicated (e.g. IfcTaskType.PredefinedType).  Such relationship enables a scenario of placing an IfcProduct of a particular IfcTypeProduct, querying for a set of IfcTypeProcess process types for constructing such product (e.g. IfcTaskTypeEnum.CONSTRUCTION), querying each IfcTypeProcess for a set of IfcTypeResource resource types for carrying out the process, and finally choosing an IfcTypeProcess and IfcTypeResource combination resulting in the shortest time for instantiated IfcTask occurrence(s) and/or lowest-cost for instantiated IfcConstructionResource occurrence(s).
 /// 
 /// Figure 193 — Construction resource type assignment
-class IfcConstructionResourceType : public IfcTypeResource {
+class IfcParse_EXPORT IfcConstructionResourceType : public IfcTypeResource {
 public:
     /// Whether the optional attribute BaseCosts is defined for this IfcConstructionResourceType
     bool hasBaseCosts() const;
@@ -20612,7 +20614,7 @@ public:
 /// IfcContext) by using IfcRelDeclares
 /// 
 /// More specific relationships are introduced at the level of subtypes.
-class IfcContext : public IfcObjectDefinition {
+class IfcParse_EXPORT IfcContext : public IfcObjectDefinition {
 public:
     /// Whether the optional attribute ObjectType is defined for this IfcContext
     bool hasObjectType() const;
@@ -20667,7 +20669,7 @@ public:
 /// Occurrences of the IfcCrewResourceType are represented by instances of IfcCrewResource.
 /// 
 /// HISTORY New entity in IFC2x4.
-class IfcCrewResourceType : public IfcConstructionResourceType {
+class IfcParse_EXPORT IfcCrewResourceType : public IfcConstructionResourceType {
 public:
     /// Defines types of crew resources.
     IfcCrewResourceTypeEnum::IfcCrewResourceTypeEnum PredefinedType() const;
@@ -20689,7 +20691,7 @@ public:
 /// NOTEÿ No directly corresponding ISO 10303-42 entity, the select type primitive_3d covers the same individual 3D CSG primitives, the position attribute has been added to apply equally to all subtypes. Please refer to ISO/IS 10303-42:1994, p. 234 for the final definition of the formal standard.
 /// 
 /// HISTORYÿ New entity in IFC2x3.
-class IfcCsgPrimitive3D : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcCsgPrimitive3D : public IfcGeometricRepresentationItem {
 public:
     /// The placement coordinate system to which the parameters of each individual CSG primitive apply.
     IfcAxis2Placement3D* Position() const;
@@ -20747,7 +20749,7 @@ public:
 /// NOTE Corresponding ISO 10303-42 entity: csg_solid, please refer to ISO/IS 10303-42:1994, p.174 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC Release 1.5.1
-class IfcCsgSolid : public IfcSolidModel {
+class IfcParse_EXPORT IfcCsgSolid : public IfcSolidModel {
 public:
     /// Boolean expression of primitives and regularized operators describing the solid. The root of the tree of Boolean expressions is given explicitly as an IfcBooleanResult entitiy or as a primitive (subtypes of IfcCsgPrimitive3D).
     IfcCsgSelect* TreeRootExpression() const;
@@ -20774,7 +20776,7 @@ public:
 /// 
 /// A curve shall be arcwise connected 
 /// A curve shall have an arc length greater than zero.
-class IfcCurve : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcCurve : public IfcGeometricRepresentationItem {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcGeometricRepresentationItem::getArgumentType(i); }
@@ -20801,7 +20803,7 @@ public:
 /// HISTORY  New entity in IFC Release 1.5
 /// 
 /// IFC2x PLATFORM CHANGE: The data type of the attribute OuterBoundary and InnerBoundaries has been changed from Ifc2DCompositeCurve to its supertype IfcCurve with upward compatibility for file based exchange.
-class IfcCurveBoundedPlane : public IfcBoundedSurface {
+class IfcParse_EXPORT IfcCurveBoundedPlane : public IfcBoundedSurface {
 public:
     /// The surface to be bound.
     IfcPlane* BasisSurface() const;
@@ -20845,7 +20847,7 @@ public:
 /// Each curve in the set of Boundaries shall be closed.
 /// No two curves in the set of Boundaries shall intersect.
 /// At most one of the boundary curves may enclose any other boundary curve. If an IfcOuterBoundaryCurve is designated, only that curve may enclose any other boundary curve.
-class IfcCurveBoundedSurface : public IfcBoundedSurface {
+class IfcParse_EXPORT IfcCurveBoundedSurface : public IfcBoundedSurface {
 public:
     /// The surface to be bounded.
     IfcSurface* BasisSurface() const;
@@ -20874,7 +20876,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: direction. Please refer to ISO/IS 10303-42:1994, p.26 for the final definition of the formal standard. The derived attribute Dim has been added (see also note at IfcGeometricRepresentationItem).
 /// 
 /// HISTORY: New entity in IFC Release 1.0
-class IfcDirection : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcDirection : public IfcGeometricRepresentationItem {
 public:
     /// The components in the direction of X axis (DirectionRatios[1]), of Y axis (DirectionRatios[2]), and of Z axis (DirectionRatios[3])
     std::vector< double > /*[2:3]*/ DirectionRatios() const;
@@ -20917,7 +20919,7 @@ public:
 /// operation (swinging, sliding, folding, etc.)ÿand the number of panels.
 /// 
 /// See geometry use definitions at IfcDoorStyleOperationTypeEnum for the correct usage of opening symbols for different operation types.
-class IfcDoorStyle : public IfcTypeProduct {
+class IfcParse_EXPORT IfcDoorStyle : public IfcTypeProduct {
 public:
     /// Type defining the general layout and operation of the door style.
     IfcDoorStyleOperationEnum::IfcDoorStyleOperationEnum OperationType() const;
@@ -20954,7 +20956,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: edge_loop. Please refer to ISO/IS 10303-42:1994, p. 122 for the final definition of the formal standard.
 /// 
 /// HISTORY  New Entity in IFC2x2.
-class IfcEdgeLoop : public IfcLoop {
+class IfcParse_EXPORT IfcEdgeLoop : public IfcLoop {
 public:
     /// A list of oriented edge entities which are concatenated together to form this path.
     IfcTemplatedEntityList< IfcOrientedEdge >::ptr EdgeList() const;
@@ -21048,7 +21050,7 @@ public:
 /// IfcElementQuantity.Quantities = SET of subtypes of
 /// IfcPhysicalSimpleQuantity with values for the Name
 /// attribute as published as part of the IFC specifciation.
-class IfcElementQuantity : public IfcQuantitySet {
+class IfcParse_EXPORT IfcElementQuantity : public IfcQuantitySet {
 public:
     /// Whether the optional attribute MethodOfMeasurement is defined for this IfcElementQuantity
     bool hasMethodOfMeasurement() const;
@@ -21094,7 +21096,7 @@ public:
 /// 
 /// HISTORY New entity in
 ///   Release IFC2x Edition 2
-class IfcElementType : public IfcTypeProduct {
+class IfcParse_EXPORT IfcElementType : public IfcTypeProduct {
 public:
     /// Whether the optional attribute ElementType is defined for this IfcElementType
     bool hasElementType() const;
@@ -21118,7 +21120,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: elementary_surface. Only the subtype plane is incorporated as IfcPlane. The derived attribute Dim has been added (see also note at IfcGeometricRepresentationItem). Please refer to ISO/IS 10303-42:1994, p. 69 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC Release 1.5
-class IfcElementarySurface : public IfcSurface {
+class IfcParse_EXPORT IfcElementarySurface : public IfcSurface {
 public:
     /// The position and orientation of the surface. This attribute is used in the definition of the parameterization of the surface.
     IfcAxis2Placement3D* Position() const;
@@ -21151,7 +21153,7 @@ public:
 /// NOTE  The semi axes of the ellipse are rectangular to each other by definition.
 /// 
 /// Figure 317 — Ellipse profile
-class IfcEllipseProfileDef : public IfcParameterizedProfileDef {
+class IfcParse_EXPORT IfcEllipseProfileDef : public IfcParameterizedProfileDef {
 public:
     /// The first radius of the ellipse. It is measured along the direction of Position.P[1].
     double SemiAxis1() const;
@@ -21177,7 +21179,7 @@ public:
 /// 
 /// An IfcEventType provides for all forms of types of event that may be specified.
 ///   Usage of IfcEventType defines the parameters for one or more occurrences of IfcEvent. Parameters may be specified through property sets that may be enumerated in the IfcEventTypeEnum data type or through explicit attributes of IfcEvent. Event occurrences (IfcEvent entities) are linked to the event type through the IfcRelDefinesByType relationship.
-class IfcEventType : public IfcTypeProcess {
+class IfcParse_EXPORT IfcEventType : public IfcTypeProcess {
 public:
     /// Identifies the predefined types of an event from which 
     ///   the type required may be set.
@@ -21274,7 +21276,7 @@ public:
 /// -0.5*IfcIShapeProfileDef.OverallDepth).
 /// 
 /// Figure 256 — Extruded area solid textures
-class IfcExtrudedAreaSolid : public IfcSweptAreaSolid {
+class IfcParse_EXPORT IfcExtrudedAreaSolid : public IfcSweptAreaSolid {
 public:
     /// The direction in which the surface, provided by SweptArea is to be swept.
     IfcDirection* ExtrudedDirection() const;
@@ -21393,7 +21395,7 @@ public:
 /// 
 /// Mirroring within IfcDerivedProfileDef.Operator shall
 /// not be used
-class IfcExtrudedAreaSolidTapered : public IfcExtrudedAreaSolid {
+class IfcParse_EXPORT IfcExtrudedAreaSolidTapered : public IfcExtrudedAreaSolid {
 public:
     /// The surface defining the end of the swept area. It is given as a profile definition. The position coordinate system of the EndSwptArea is generated by translating the SELF\IfcSweptAreaSolid.Position along the SELF\IfcExtrudedAreaSolid.ExtrudedDirection by the distance of SELF\IfcExtrudedAreaSolid.Depth.
     IfcProfileDef* EndSweptArea() const;
@@ -21422,7 +21424,7 @@ public:
 /// 
 /// The connected face sets shall not overlap or intersect except at common faces, edges or vertices.
 /// The fbsm faces have dimensionality 2.
-class IfcFaceBasedSurfaceModel : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcFaceBasedSurfaceModel : public IfcGeometricRepresentationItem {
 public:
     /// The set of connected face sets comprising the face based surface model.
     IfcTemplatedEntityList< IfcConnectedFaceSet >::ptr FbsmFaces() const;
@@ -21486,7 +21488,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The IfcFillAreaStyleHatching has been changed by making the attributes PatternStart and PointOfReferenceHatchLine OPTIONAL. The attribute StartOfNextHatchLine has changed to a SELECT with the additional choice of IfcPositiveLengthMeasure. Upward compatibility for file based exchange is guaranteed.
-class IfcFillAreaStyleHatching : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcFillAreaStyleHatching : public IfcGeometricRepresentationItem {
 public:
     /// The curve style of the hatching lines. Any curve style pattern shall start at the origin of each hatch line.
     IfcCurveStyle* HatchLineAppearance() const;
@@ -21532,7 +21534,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: fill_area_style_tiles. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IfcFillAreaStyleTiles : public IfcGeometricRepresentationItem {
+class IfcParse_EXPORT IfcFillAreaStyleTiles : public IfcGeometricRepresentationItem {
 public:
     /// A two direction repeat factor defining the shape and relative positioning of the tiles.
     IfcTemplatedEntityList< IfcVector >::ptr TilingPattern() const;
@@ -21613,7 +21615,7 @@ public:
 /// The FixedReference shall not be parallel to a tangent
 /// vector to the directrix at any point along this curve.
 /// The Directrix curve shall be tangent continuous.
-class IfcFixedReferenceSweptAreaSolid : public IfcSweptAreaSolid {
+class IfcParse_EXPORT IfcFixedReferenceSweptAreaSolid : public IfcSweptAreaSolid {
 public:
     /// The curve used to define the sweeping operation. The solid is generated by sweeping the SELF\IfcSweptAreaSolid.SweptArea along the Directrix.
     IfcCurve* Directrix() const;
@@ -21671,7 +21673,7 @@ public:
 /// IFC2x4 CHANGE The entity is marked
 /// as deprecated for instantiation - will be made ABSTRACT after
 /// IFC2x4.
-class IfcFurnishingElementType : public IfcElementType {
+class IfcParse_EXPORT IfcFurnishingElementType : public IfcElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElementType::getArgumentType(i); }
@@ -21722,7 +21724,7 @@ public:
 /// The IfcFurnitureType may be decomposed into components using IfcRelAggregates where RelatingObject refers to the enclosing IfcFurnitureType and RelatedObjects contains one or more components.  Components are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Composition use is defined for the following predefined types:
 /// 
 /// (All Types): May contain IfcSystemFurnitureElement components.  Modular furniture may be aggregated into components.
-class IfcFurnitureType : public IfcFurnishingElementType {
+class IfcParse_EXPORT IfcFurnitureType : public IfcFurnishingElementType {
 public:
     /// A designation of where the assembly is intended to take place. A selection of alternatives s provided in an enumerated list.
     IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum AssemblyPlace() const;
@@ -21804,7 +21806,7 @@ public:
 ///   notation and additional description; in which case, any
 ///   further attributes required would still need to be captured
 ///   in property sets.
-class IfcGeographicElementType : public IfcElementType {
+class IfcParse_EXPORT IfcGeographicElementType : public IfcElementType {
 public:
     /// Predefined types to define the particular type of the geographic element. There may be property set definitions available for each predefined type.
     IfcGeographicElementTypeEnum::IfcGeographicElementTypeEnum PredefinedType() const;
@@ -21828,7 +21830,7 @@ public:
 /// NOTE: Corresponding ISO 10303-42 entity: geometric_set. Please refer to ISO/IS 10303-42:1994, p. 190 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IfcGeometricCurveSet : public IfcGeometricSet {
+class IfcParse_EXPORT IfcGeometricCurveSet : public IfcGeometricSet {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcGeometricSet::getArgumentType(i); }
@@ -21905,7 +21907,7 @@ public:
 /// and flanges.
 /// 
 /// Figure 318 — I-shape profile
-class IfcIShapeProfileDef : public IfcParameterizedProfileDef {
+class IfcParse_EXPORT IfcIShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     /// Total extent of the width, defined parallel to the x axis of the position coordinate system.
     double OverallWidth() const;
@@ -21995,7 +21997,7 @@ public:
 /// In the illustrated example, the x and y value of Position.Location, i.e. the measures |CentreOfGravityInX| and |CentreOfGravityInY| are both positive.  On the other hand, the properties named 'CentreOfGravityInX' and 'CentreOfGravityInY' in IfcExtendedProfileProperties, if provided, must both be set to 0 now because the centre of gravity of the resulting profile definition is located in the coordinate origin.
 /// 
 /// Figure 319 — L-shape profile
-class IfcLShapeProfileDef : public IfcParameterizedProfileDef {
+class IfcParse_EXPORT IfcLShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     /// Leg length, see illustration above (= h). Same as the overall depth.
     double Depth() const;
@@ -22046,7 +22048,7 @@ public:
 /// Occurrences of the IfcLaborResourceType are represented by instances of IfcLaborResource.
 /// 
 /// HISTORY New entity in IFC2x4.
-class IfcLaborResourceType : public IfcConstructionResourceType {
+class IfcParse_EXPORT IfcLaborResourceType : public IfcConstructionResourceType {
 public:
     /// Defines types of labor resources.
     IfcLaborResourceTypeEnum::IfcLaborResourceTypeEnum PredefinedType() const;
@@ -22076,7 +22078,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: line. Please refer to ISO/IS 10303-42:1994, p.37 for the final definition of the formal standard. The derived attribute Dim has been added at this level and was therefore demoted from the geometric_representation_item.
 /// 
 /// HISTORY New class in IFC Release 1.0
-class IfcLine : public IfcCurve {
+class IfcParse_EXPORT IfcLine : public IfcCurve {
 public:
     /// The location of the line.
     IfcCartesianPoint* Pnt() const;
@@ -22159,7 +22161,7 @@ public:
 /// The Euler equation shall be satisfied for the boundary
 /// representation, where the genus term "shell term" us the sum of
 /// the genus values for the shells of the brep.
-class IfcManifoldSolidBrep : public IfcSolidModel {
+class IfcParse_EXPORT IfcManifoldSolidBrep : public IfcSolidModel {
 public:
     /// A closed shell defining the exterior boundary of the solid. The shell normal shall point away from the interior of the solid.
     IfcClosedShell* Outer() const;
@@ -22258,7 +22260,7 @@ public:
 /// IsDeclaredBy, or Declares shall only be used, if
 /// the object is part of a decomposition, i.e. if either
 /// IsDecomposedBy, or Decomposes is exerted.
-class IfcObject : public IfcObjectDefinition {
+class IfcParse_EXPORT IfcObject : public IfcObjectDefinition {
 public:
     /// Whether the optional attribute ObjectType is defined for this IfcObject
     bool hasObjectType() const;
@@ -22292,7 +22294,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: offset_curve_2d, Please refer to ISO/IS 10303-42:1994, p.65 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 2.x
-class IfcOffsetCurve2D : public IfcCurve {
+class IfcParse_EXPORT IfcOffsetCurve2D : public IfcCurve {
 public:
     /// The curve that is being offset.
     IfcCurve* BasisCurve() const;
@@ -22330,7 +22332,7 @@ public:
 /// Informal propositions: 
 /// 
 /// At no point on the curve shall ref direction be parallel, or opposite to, the direction of the tangent vector.
-class IfcOffsetCurve3D : public IfcCurve {
+class IfcParse_EXPORT IfcOffsetCurve3D : public IfcCurve {
 public:
     /// The curve that is being offset.
     IfcCurve* BasisCurve() const;
@@ -22357,7 +22359,7 @@ public:
     typedef IfcTemplatedEntityList< IfcOffsetCurve3D > list;
 };
 
-class IfcPcurve : public IfcCurve {
+class IfcParse_EXPORT IfcPcurve : public IfcCurve {
 public:
     IfcSurface* BasisSurface() const;
     void setBasisSurface(IfcSurface* v);
@@ -22381,7 +22383,7 @@ public:
 /// ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcPlanarBox : public IfcPlanarExtent {
+class IfcParse_EXPORT IfcPlanarBox : public IfcPlanarExtent {
 public:
     /// The IfcAxis2Placement positions a local coordinate system for the definition of the rectangle. The origin of this local coordinate system serves as the lower left corner of the rectangular box.
     ///   NOTE  In case of a 3D placement by IfcAxisPlacement3D the IfcPlanarBox is defined within the xy plane of the definition coordinate system.
@@ -22435,7 +22437,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: plane. Please refer to ISO/IS 10303-42:1994, p.69 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC Release 1.5
-class IfcPlane : public IfcElementarySurface {
+class IfcParse_EXPORT IfcPlane : public IfcElementarySurface {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElementarySurface::getArgumentType(i); }
@@ -22454,7 +22456,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: pre_defined_colour. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcPreDefinedColour : public IfcPreDefinedItem {
+class IfcParse_EXPORT IfcPreDefinedColour : public IfcPreDefinedItem {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedItem::getArgumentType(i); }
@@ -22475,7 +22477,7 @@ public:
 /// NOTE: Corresponding ISO 10303 name: pre_defined_curve_font. Please refer to ISO/IS 10303-46:1994, p. 103 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IfcPreDefinedCurveFont : public IfcPreDefinedItem {
+class IfcParse_EXPORT IfcPreDefinedCurveFont : public IfcPreDefinedItem {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedItem::getArgumentType(i); }
@@ -22509,7 +22511,7 @@ public:
 /// using the inverse attribute DefinesOccurrence.
 /// Type Object: using a direct link by inverse attribute
 /// DefinesType.
-class IfcPreDefinedPropertySet : public IfcPropertySetDefinition {
+class IfcParse_EXPORT IfcPreDefinedPropertySet : public IfcPropertySetDefinition {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcPropertySetDefinition::getArgumentType(i); }
@@ -22536,7 +22538,7 @@ public:
 ///   through explict attributes of IfcProcedure. Procedure occurrences
 ///   (IfcProcedure entities) are linked to the procedure type
 ///   through the IfcRelDefinesByType relationship.
-class IfcProcedureType : public IfcTypeProcess {
+class IfcParse_EXPORT IfcProcedureType : public IfcTypeProcess {
 public:
     /// Identifies the predefined types of a procedure from which 
     ///   the type required may be set.
@@ -22594,7 +22596,7 @@ public:
 /// control onto the process can be assigned to a process, such as for cost management (a cost item assigned to a work task).
 /// Having a resource assigned to the process as consumed by the process : IfcRelAssignsToProcess - Items that act
 /// as a mechanism to a process, such as labor, material and equipment in cost calculations.
-class IfcProcess : public IfcObject {
+class IfcParse_EXPORT IfcProcess : public IfcObject {
 public:
     /// Whether the optional attribute Identification is defined for this IfcProcess
     bool hasIdentification() const;
@@ -22717,7 +22719,7 @@ public:
 /// IfcProductDefinitionShape being either a geometric shape
 /// representation, or a topology representation (with or without
 /// underlying geometry of the topological items).
-class IfcProduct : public IfcObject {
+class IfcParse_EXPORT IfcProduct : public IfcObject {
 public:
     /// Whether the optional attribute ObjectPlacement is defined for this IfcProduct
     bool hasObjectPlacement() const;
@@ -22786,7 +22788,7 @@ public:
 /// Informal propositions:
 /// 
 /// There shall only be one project within the exchange context. This is enforced by the global rule IfcSingleProjectInstance.
-class IfcProject : public IfcContext {
+class IfcParse_EXPORT IfcProject : public IfcContext {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcContext::getArgumentType(i); }
@@ -22824,7 +22826,7 @@ public:
 /// Instances of IfcProjectLibrary are assigned to the project context using the IfcRelDeclares relationship and accessible through the inverse attribute HasContext. Individual object types and property (set) templates are assigned to the IfcProjectLibrary using the IfcRelDeclares relationship and are accessible through the inverse attribute Declares.
 /// 
 /// An IfcProjectLibrary may be decomposed into sub libraries using the relationship IfcRelNests. Sub libraries are accessed by the IfcProjectLibrary through the inverse attribute IsNestedBy.
-class IfcProjectLibrary : public IfcContext {
+class IfcParse_EXPORT IfcProjectLibrary : public IfcContext {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcContext::getArgumentType(i); }
@@ -22942,7 +22944,7 @@ public:
 /// If the measure type for the upper and lover bound value
 ///   is a numeric measure, then the following shall be true: 
 ///   UpperBoundValue > LowerBoundValue.
-class IfcPropertyBoundedValue : public IfcSimpleProperty {
+class IfcParse_EXPORT IfcPropertyBoundedValue : public IfcSimpleProperty {
 public:
     /// Whether the optional attribute UpperBoundValue is defined for this IfcPropertyBoundedValue
     bool hasUpperBoundValue() const;
@@ -23055,7 +23057,7 @@ public:
 /// 
 /// IFC2x4 CHANGE Attribute EnumerationValues has been made OPTIONAL with upward
 /// compatibility for file based exchange.
-class IfcPropertyEnumeratedValue : public IfcSimpleProperty {
+class IfcParse_EXPORT IfcPropertyEnumeratedValue : public IfcSimpleProperty {
 public:
     /// Whether the optional attribute EnumerationValues is defined for this IfcPropertyEnumeratedValue
     bool hasEnumerationValues() const;
@@ -23146,7 +23148,7 @@ public:
 /// HISTORY  New Entity in Release IFC 2x Edition 2.
 /// 
 /// IFC2x4 CHANGE  Attribute ListValues has been made OPTIONAL with upward compatibility for file based exchange.
-class IfcPropertyListValue : public IfcSimpleProperty {
+class IfcParse_EXPORT IfcPropertyListValue : public IfcSimpleProperty {
 public:
     /// Whether the optional attribute ListValues is defined for this IfcPropertyListValue
     bool hasListValues() const;
@@ -23187,7 +23189,7 @@ public:
 /// IFC2x4 CHANGE  Attribute
 ///   PropertyReference has been made OPTIONAL with upward
 ///   compatibility for file based exchange.
-class IfcPropertyReferenceValue : public IfcSimpleProperty {
+class IfcParse_EXPORT IfcPropertyReferenceValue : public IfcSimpleProperty {
 public:
     /// Whether the optional attribute UsageName is defined for this IfcPropertyReferenceValue
     bool hasUsageName() const;
@@ -23266,7 +23268,7 @@ public:
 /// Property sets that are not declared as part of the IFC
 /// specification shall have a Name value not including the
 /// "Pset_" prefix.
-class IfcPropertySet : public IfcPropertySetDefinition {
+class IfcParse_EXPORT IfcPropertySet : public IfcPropertySetDefinition {
 public:
     /// Contained set of properties. For property sets defined as part of the IFC Object model, the property objects within a property set are defined as part of the standard. If a property is not contained within the set of predefined properties, its value has not been set at this time.
     IfcTemplatedEntityList< IfcProperty >::ptr HasProperties() const;
@@ -23314,7 +23316,7 @@ public:
 /// Figure 5 illustrates relationships used for property set templates.
 /// 
 /// Figure 5 — Property set template relationships
-class IfcPropertySetTemplate : public IfcPropertyTemplateDefinition {
+class IfcParse_EXPORT IfcPropertySetTemplate : public IfcPropertyTemplateDefinition {
 public:
     /// Whether the optional attribute TemplateType is defined for this IfcPropertySetTemplate
     bool hasTemplateType() const;
@@ -23396,7 +23398,7 @@ public:
 /// HISTORY ÿNew entity in IFC Release 1.0. The entity has been renamed from IfcSimpleProperty in IFC Release 2x.
 /// 
 /// IFC2x3 CHANGE ÿAttribute NominalValue has been made OPTIONAL with upward compatibility for file based exchange.
-class IfcPropertySingleValue : public IfcSimpleProperty {
+class IfcParse_EXPORT IfcPropertySingleValue : public IfcSimpleProperty {
 public:
     /// Whether the optional attribute NominalValue is defined for this IfcPropertySingleValue
     bool hasNominalValue() const;
@@ -23570,7 +23572,7 @@ public:
 /// 
 /// The list of DefinedValues and the list of
 ///   DefiningValues are corresponding lists.
-class IfcPropertyTableValue : public IfcSimpleProperty {
+class IfcParse_EXPORT IfcPropertyTableValue : public IfcSimpleProperty {
 public:
     /// Whether the optional attribute DefiningValues is defined for this IfcPropertyTableValue
     bool hasDefiningValues() const;
@@ -23644,7 +23646,7 @@ public:
 /// NOTE Property templates can form part of a property library used and attached as part of a project library. In general the IfcPropertySetTemplate, containing the subtypes of IfcPropertyTemplate would be directly linked to the IfcProjectLibrary.
 /// 
 /// HISTORY New Entity in IFC2x4.
-class IfcPropertyTemplate : public IfcPropertyTemplateDefinition {
+class IfcParse_EXPORT IfcPropertyTemplate : public IfcPropertyTemplateDefinition {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcPropertyTemplateDefinition::getArgumentType(i); }
@@ -23676,7 +23678,7 @@ public:
 /// representations assigned.
 /// 
 /// HISTORY  New entity in IFC Release 1.5.
-class IfcProxy : public IfcProduct {
+class IfcParse_EXPORT IfcProxy : public IfcProduct {
 public:
     /// High level (and only) semantic meaning attached to the IfcProxy, defining the basic construct type behind the Proxy, e.g. Product or Process.
     IfcObjectTypeEnum::IfcObjectTypeEnum ProxyType() const;
@@ -23718,7 +23720,7 @@ public:
 /// relative to the profile.
 /// 
 /// Figure 322 — Rectangle hollow profile
-class IfcRectangleHollowProfileDef : public IfcRectangleProfileDef {
+class IfcParse_EXPORT IfcRectangleHollowProfileDef : public IfcRectangleProfileDef {
 public:
     /// Thickness of the material.
     double WallThickness() const;
@@ -23833,7 +23835,7 @@ public:
 /// +Y
 /// 
 /// Figure 261 — Right circular cone textures
-class IfcRectangularPyramid : public IfcCsgPrimitive3D {
+class IfcParse_EXPORT IfcRectangularPyramid : public IfcCsgPrimitive3D {
 public:
     /// The length of the base measured along the placement X axis. It is provided by the inherited axis placement through SELF\IfcCsgPrimitive3D.Position.P[1].
     double XLength() const;
@@ -23871,7 +23873,7 @@ public:
 /// Informal propositions: 
 /// 
 /// The domain of the trimmed surface shall be within the domain of the surface being trimmed.
-class IfcRectangularTrimmedSurface : public IfcBoundedSurface {
+class IfcParse_EXPORT IfcRectangularTrimmedSurface : public IfcBoundedSurface {
 public:
     /// Surface being trimmed.
     IfcSurface* BasisSurface() const;
@@ -23932,7 +23934,7 @@ public:
 ///   bar role), which in turn have a section cross section property defined as a
 ///   profile and a number of reinforcement properties, one for each steel grade /
 ///   bar type.
-class IfcReinforcementDefinitionProperties : public IfcPreDefinedPropertySet {
+class IfcParse_EXPORT IfcReinforcementDefinitionProperties : public IfcPreDefinedPropertySet {
 public:
     /// Whether the optional attribute DefinitionType is defined for this IfcReinforcementDefinitionProperties
     bool hasDefinitionType() const;
@@ -23965,7 +23967,7 @@ public:
 /// The assignment relationship establishs a bi-directional relationship among the participating objects and does not imply any dependency. The subtypes of IfcRelAssigns establishes the particular semantic meaning of the assignment relationship.
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IfcRelAssigns : public IfcRelationship {
+class IfcParse_EXPORT IfcRelAssigns : public IfcRelationship {
 public:
     /// Related objects, which are assigned to a single object. The type of the single (or relating) object is defined in the subtypes of IfcRelAssigns.
     IfcTemplatedEntityList< IfcObjectDefinition >::ptr RelatedObjects() const;
@@ -23997,7 +23999,7 @@ public:
 /// Reference to the objects (or single object) on which the actor acts upon in a certain role (if given) is specified in the inherited RelatedObjects attribute.  
 /// 
 /// HISTORY New Entity in IFC Release 2.0. Has been renamed from IfcRelActsUpon in IFC Release 2x.
-class IfcRelAssignsToActor : public IfcRelAssigns {
+class IfcParse_EXPORT IfcRelAssignsToActor : public IfcRelAssigns {
 public:
     /// Reference to the information about the actor. It comprises the information about the person or organization and its addresses.
     IfcActor* RelatingActor() const;
@@ -24024,7 +24026,7 @@ public:
 /// EXAMPLEÿ The assignment of a performance history (as subtype of IfcControl) for a building service element (as subtype of IfcObject) is an application of this generic relationship.
 /// 
 /// HISTORYÿ New Entity in IFC Release 2.0. Has been renamed from IfcRelControls in IFC Release 2x.
-class IfcRelAssignsToControl : public IfcRelAssigns {
+class IfcParse_EXPORT IfcRelAssignsToControl : public IfcRelAssigns {
 public:
     /// Reference to the IfcControl that applies a control upon objects.
     IfcControl* RelatingControl() const;
@@ -24054,7 +24056,7 @@ public:
 /// The group assignment relationship shall be acyclic, that is, a group shall not participate in its own grouping relationship.
 /// 
 /// HISTORY New entity in IFC Release 1.0. It has been renamed from IfcRelGroups in IFC Release 2x.
-class IfcRelAssignsToGroup : public IfcRelAssigns {
+class IfcParse_EXPORT IfcRelAssignsToGroup : public IfcRelAssigns {
 public:
     /// Reference to group that contains all assigned group members.
     IfcGroup* RelatingGroup() const;
@@ -24080,7 +24082,7 @@ public:
 /// The same object or object type may be included with the same or different Factor values to many groups. Grouping relationships are not hierarchical.
 /// 
 /// HISTORY New entity in IFC2x4.
-class IfcRelAssignsToGroupByFactor : public IfcRelAssignsToGroup {
+class IfcParse_EXPORT IfcRelAssignsToGroupByFactor : public IfcRelAssignsToGroup {
 public:
     /// Factor provided as a ratio measure that identifies the fraction or weighted factor that applies to the group assignment.
     double Factor() const;
@@ -24119,7 +24121,7 @@ public:
 /// HISTORY New entity in IFC Release 1.5. Has been renamed from IfcRelProcessOperatesOn in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE The data type RelatingProcess has been extended to cover also IfcTypeProcess
-class IfcRelAssignsToProcess : public IfcRelAssigns {
+class IfcParse_EXPORT IfcRelAssignsToProcess : public IfcRelAssigns {
 public:
     /// Reference to the process to which the objects are assigned to.
     /// 
@@ -24151,7 +24153,7 @@ public:
 /// HISTORY New Entity in IFC Release 2x
 /// 
 /// IFC2x3 CHANGE ÿThe reference of a product within a spatial structure is now handled by a new relationship object IfcRelReferencedInSpatialStructure. The IfcRelAssignsToProduct shall not be used to represent this relation from IFC2x3 onwards.
-class IfcRelAssignsToProduct : public IfcRelAssigns {
+class IfcParse_EXPORT IfcRelAssignsToProduct : public IfcRelAssigns {
 public:
     /// Reference to the product or product type to which the objects are assigned to.
     /// 
@@ -24176,7 +24178,7 @@ public:
 /// EXAMPLE The assignment of a resource usage to a construction resource is an application of this generic relationship. It could be an actor, as person or organization assigned to a labor resource, or a raw product assigned to a construction product or material resource).
 /// 
 /// HISTORY New Entity in IFC Release 2x.
-class IfcRelAssignsToResource : public IfcRelAssigns {
+class IfcParse_EXPORT IfcRelAssignsToResource : public IfcRelAssigns {
 public:
     /// Reference to the resource to which the objects are assigned to.
     /// 
@@ -24236,7 +24238,7 @@ public:
 /// HISTORY New entity in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE Entity has been changed into an ABSTRACT supertype
-class IfcRelAssociates : public IfcRelationship {
+class IfcParse_EXPORT IfcRelAssociates : public IfcRelationship {
 public:
     /// Set of object or property definitions to which the external references or information is associated. It includes object and type objects, property set templates, property templates and property sets and contexts.
     /// 
@@ -24258,7 +24260,7 @@ public:
 /// The entity IfcRelAssociatesApproval is used to apply approval information defined by IfcApproval, in IfcApprovalResource schema, to subtypes of IfcRoot.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IfcRelAssociatesApproval : public IfcRelAssociates {
+class IfcParse_EXPORT IfcRelAssociatesApproval : public IfcRelAssociates {
 public:
     /// Reference to approval that is being applied using this relationship.
     IfcApproval* RelatingApproval() const;
@@ -24305,7 +24307,7 @@ public:
 /// multiple objects.
 /// 
 /// HISTORY New entity in IFC Release 2x.
-class IfcRelAssociatesClassification : public IfcRelAssociates {
+class IfcParse_EXPORT IfcRelAssociatesClassification : public IfcRelAssociates {
 public:
     /// Classification applied to the objects.
     IfcClassificationSelect* RelatingClassification() const;
@@ -24325,7 +24327,7 @@ public:
 /// The entity IfcRelAssociatesConstraint is used to apply constraint information defined by IfcConstraint, in the IfcConstraintResource schema, to subtypes of IfcRoot.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IfcRelAssociatesConstraint : public IfcRelAssociates {
+class IfcParse_EXPORT IfcRelAssociatesConstraint : public IfcRelAssociates {
 public:
     /// Whether the optional attribute Intent is defined for this IfcRelAssociatesConstraint
     bool hasIntent() const;
@@ -24354,7 +24356,7 @@ public:
 /// The inherited attribute RelatedObjects define the objects to which the document association is applied. The attribute RelatingDocument is the reference to a document reference, applied to the object(s). 
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IfcRelAssociatesDocument : public IfcRelAssociates {
+class IfcParse_EXPORT IfcRelAssociatesDocument : public IfcRelAssociates {
 public:
     /// Document information or reference which is applied to the objects.
     IfcDocumentSelect* RelatingDocument() const;
@@ -24378,7 +24380,7 @@ public:
 /// The inherited attribute RelatedObjects define the items to which the library association is applied. The attribute RelatingLibrary is the reference to a library reference, applied to the item(s). 
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IfcRelAssociatesLibrary : public IfcRelAssociates {
+class IfcParse_EXPORT IfcRelAssociatesLibrary : public IfcRelAssociates {
 public:
     /// Reference to a library, from which the definition of the property set is taken.
     IfcLibrarySelect* RelatingLibrary() const;
@@ -24489,7 +24491,7 @@ public:
 /// An IfcMaterialProfileSetUsage shall not be associated
 /// with a subtype of IfcElementType, it should only be
 /// associated with individual occurrences
-class IfcRelAssociatesMaterial : public IfcRelAssociates {
+class IfcParse_EXPORT IfcRelAssociatesMaterial : public IfcRelAssociates {
 public:
     /// Material definition assigned to the elements or element types.
     IfcMaterialSelect* RelatingMaterial() const;
@@ -24509,7 +24511,7 @@ public:
 /// IfcRelConnects is a connectivity relationship that connects objects under some criteria. As a general connectivity it does not imply constraints, however subtypes of the relationship define the applicable object types for the connectivity relationship and the semantics of the particular connectivity. 
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IfcRelConnects : public IfcRelationship {
+class IfcParse_EXPORT IfcRelConnects : public IfcRelationship {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcRelationship::getArgumentType(i); }
@@ -24545,7 +24547,7 @@ public:
 /// 
 /// HISTORY New entity in IFC
 ///   Release 1.0.
-class IfcRelConnectsElements : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelConnectsElements : public IfcRelConnects {
 public:
     /// Whether the optional attribute ConnectionGeometry is defined for this IfcRelConnectsElements
     bool hasConnectionGeometry() const;
@@ -24602,7 +24604,7 @@ public:
 /// 
 /// Figure 116 — Path connection T-Type
 /// Figure 117 — Path connection L-Type
-class IfcRelConnectsPathElements : public IfcRelConnectsElements {
+class IfcParse_EXPORT IfcRelConnectsPathElements : public IfcRelConnectsElements {
 public:
     /// Priorities for connection. It refers to the layers of the RelatingObject.
     std::vector< double > /*[0:?]*/ RelatingPriorities() const;
@@ -24653,7 +24655,7 @@ public:
 /// entity in Release IFC2x Edition 2.
 /// IFC2x4 CHANGE  The
 /// definition has been extended to include element types.
-class IfcRelConnectsPortToElement : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelConnectsPortToElement : public IfcRelConnects {
 public:
     /// Reference to an Port that is connected by the objectified relationship.
     IfcPort* RelatingPort() const;
@@ -24688,7 +24690,7 @@ public:
 /// 
 /// HISTORY New entity in IFC
 ///   2.0, modified in IFC2x.
-class IfcRelConnectsPorts : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelConnectsPorts : public IfcRelConnects {
 public:
     /// Reference to the first port that is connected by the objectified relationship.
     IfcPort* RelatingPort() const;
@@ -24716,7 +24718,7 @@ public:
 /// Definition from IAI: The IfcRelConnectsStructuralActivity relationship connects a structural activity (either an action or reaction) to a structural member, structural connection, or element.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcRelConnectsStructuralActivity : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelConnectsStructuralActivity : public IfcRelConnects {
 public:
     /// Reference to a structural item or element to which the specified activity is applied.
     IfcStructuralActivityAssignmentSelect* RelatingElement() const;
@@ -24760,7 +24762,7 @@ public:
 /// Figure 235 illustrates the appropriate definition of support lengths.
 /// 
 /// Figure 235 — Structural member support lengths
-class IfcRelConnectsStructuralMember : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelConnectsStructuralMember : public IfcRelConnects {
 public:
     /// Reference to an instance of IfcStructuralMember (or its subclasses) which is connected to the specified structural connection.
     IfcStructuralMember* RelatingStructuralMember() const;
@@ -24817,7 +24819,7 @@ public:
 /// 
 /// Surface Connection
 /// ConnectionConstraint shall be of type IfcConnectionSurfaceGeometry and shall refer to two instances of IfcFaceSurface.
-class IfcRelConnectsWithEccentricity : public IfcRelConnectsStructuralMember {
+class IfcParse_EXPORT IfcRelConnectsWithEccentricity : public IfcRelConnectsStructuralMember {
 public:
     /// The connection constraint explicitly states the eccentricity between a structural member and a structural connection by means of two topological objects (vertex and vertex, or edge and edge, or face and face).
     IfcConnectionGeometry* ConnectionConstraint() const;
@@ -24857,7 +24859,7 @@ public:
 /// 
 /// HISTORY: New entity in
 ///   Release IFC2x Edition 2.
-class IfcRelConnectsWithRealizingElements : public IfcRelConnectsElements {
+class IfcParse_EXPORT IfcRelConnectsWithRealizingElements : public IfcRelConnectsElements {
 public:
     /// Defines the elements that realize a connection relationship.
     IfcTemplatedEntityList< IfcElement >::ptr RealizingElements() const;
@@ -24941,7 +24943,7 @@ public:
 /// ÿ
 /// 
 /// Figure 39 — Relationship for spatial structure containment
-class IfcRelContainedInSpatialStructure : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelContainedInSpatialStructure : public IfcRelConnects {
 public:
     /// Set of elements products, which are contained within this level of the spatial structure hierarchy.
     /// 
@@ -24979,7 +24981,7 @@ public:
 /// type of the attribute RelatingElement has been changed
 /// from IfcElement to its subtype
 /// IfcBuildingElement.
-class IfcRelCoversBldgElements : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelCoversBldgElements : public IfcRelConnects {
 public:
     /// Relationship to the building element that is covered. 
     /// 
@@ -25027,7 +25029,7 @@ public:
 /// 
 /// HISTORYÿ New Entity in Release
 ///   IFC 2x Edition 3.
-class IfcRelCoversSpaces : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelCoversSpaces : public IfcRelConnects {
 public:
     /// Relationship to the space object that is covered.
     /// 
@@ -25060,7 +25062,7 @@ public:
 /// The RelatingContext is the project, or project library that comprises all elements. The unit assignments and the presentation contexts defined at IfcProject or IfcProjectLibrary apply to all these elements.
 /// 
 /// HISTORY New entity in Release IFC2x4.
-class IfcRelDeclares : public IfcRelationship {
+class IfcParse_EXPORT IfcRelDeclares : public IfcRelationship {
 public:
     /// Reference to the IfcProject to which additional information is assigned.
     IfcContext* RelatingContext() const;
@@ -25110,7 +25112,7 @@ public:
 /// HISTORY New entity in IFC Release 1.5, it is a generalisation of the IFC2.0 entity IfcRelNests.
 /// 
 /// IFC2x4 CHANGE The differentiation between the aggregation and nesting is determined to be a non-ordered or an ordered collection of parts. The attributes RelatingObject and RelatedObjects have been demoted to the subtypes.
-class IfcRelDecomposes : public IfcRelationship {
+class IfcParse_EXPORT IfcRelDecomposes : public IfcRelationship {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcRelationship::getArgumentType(i); }
@@ -25151,7 +25153,7 @@ public:
 /// 
 /// IFC2x4 CHANGE The attribute RelatedObjects had been demoted to the subtypes IfcRelDefinesByProperties and
 /// IfcRelDefinesByType.
-class IfcRelDefines : public IfcRelationship {
+class IfcParse_EXPORT IfcRelDefines : public IfcRelationship {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcRelationship::getArgumentType(i); }
@@ -25180,7 +25182,7 @@ public:
 /// The IfcRelDefinesByObject can be used together with the shape representations of the product type as shown in Figure 7. The IfcShapeRepresentation of the "declaring part" is referenced by the "reflected part". The IfcObjectPlacement of the model occurrence (the whole) determines the position within the project context.
 /// 
 /// Figure 7 — Part definition relationships with shape representation
-class IfcRelDefinesByObject : public IfcRelDefines {
+class IfcParse_EXPORT IfcRelDefinesByObject : public IfcRelDefines {
 public:
     /// Objects being part of an object occurrence decomposition, acting as the "reflecting parts" in the relationship.
     IfcTemplatedEntityList< IfcObject >::ptr RelatedObjects() const;
@@ -25215,7 +25217,7 @@ public:
 /// HISTORY New Entity in IFC Release 2.0. Has been renamed from IfcRelAssignsProperties in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE The attribute RelatedObjects had been demoted from the supertype IfcRelDefines to IfcRelDefinesByProperties.
-class IfcRelDefinesByProperties : public IfcRelDefines {
+class IfcParse_EXPORT IfcRelDefinesByProperties : public IfcRelDefines {
 public:
     /// Reference to the objects (or single object) to which the property definition applies.
     IfcTemplatedEntityList< IfcObjectDefinition >::ptr RelatedObjects() const;
@@ -25247,7 +25249,7 @@ public:
 /// the same property set template definition.
 /// 
 /// HISTORY New Entity in IFC2x4.
-class IfcRelDefinesByTemplate : public IfcRelDefines {
+class IfcParse_EXPORT IfcRelDefinesByTemplate : public IfcRelDefines {
 public:
     /// One or many property sets defined by a single property set template.
     IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr RelatedPropertySets() const;
@@ -25338,7 +25340,7 @@ public:
 /// ÿ-ÿExtendToStructure = FALSE
 /// ÿ-ÿExtendToStructure = TRUE
 /// FALSE
-class IfcRelDefinesByType : public IfcRelDefines {
+class IfcParse_EXPORT IfcRelDefinesByType : public IfcRelDefines {
 public:
     IfcTemplatedEntityList< IfcObject >::ptr RelatedObjects() const;
     void setRelatedObjects(IfcTemplatedEntityList< IfcObject >::ptr v);
@@ -25366,7 +25368,7 @@ public:
 /// As shown in Figure 40, the insertion of a door into a wall is represented by two separate relationships. First the door opening is created within the wall by IfcWall(StandardCase) o-- IfcRelVoidsElement --o IfcOpeningElement, then the door is inserted within the opening by IfcOpeningElement o-- IfcRelFillsElement --o IfcDoor.
 /// 
 /// Figure 40 — Relationships for element filling
-class IfcRelFillsElement : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelFillsElement : public IfcRelConnects {
 public:
     /// Opening Element being filled by virtue of this relationship.
     IfcOpeningElement* RelatingOpeningElement() const;
@@ -25395,7 +25397,7 @@ public:
 /// This relationship implies a sensing or controlling relationship; if elements are merely connected without any control relationship, then IfcRelConnectsElements should be used.
 /// 
 /// HISTORY: New entity in IFC R2x.
-class IfcRelFlowControlElements : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelFlowControlElements : public IfcRelConnects {
 public:
     /// References control elements which may be used to impart control on the Distribution Element.
     IfcTemplatedEntityList< IfcDistributionControlElement >::ptr RelatedControlElements() const;
@@ -25462,7 +25464,7 @@ public:
 /// 
 /// HISTORYÿ New entity in
 /// IFC2x4.
-class IfcRelInterferesElements : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelInterferesElements : public IfcRelConnects {
 public:
     /// Reference to a subtype of IfcElement that is the RelatingElement in the interference relationship. Depending on the value of ImpliedOrder the RelatingElement may carry the notion to be the element from which the interference geometry should be subtracted.
     IfcElement* RelatingElement() const;
@@ -25520,7 +25522,7 @@ public:
 /// HISTORY New entity in IFC Release 2.0
 /// 
 /// IFC2x4 CHANGE The attributes RelatingObject and RelatedObjects are demoted from the supertype IfcRelDecomposes, and RelatedObjects is refined to be a list. The use of IfcRelNests is repurposed to be a nesting of an ordered collections of parts.
-class IfcRelNests : public IfcRelDecomposes {
+class IfcParse_EXPORT IfcRelNests : public IfcRelDecomposes {
 public:
     /// The object definition, either an non-product object type or a non-product object occurrence, that represents the nest. It is the whole within the whole/part relationship.
     /// 
@@ -25576,7 +25578,7 @@ public:
 /// Release IFC2x Edition 2.
 /// IFC2x4 CHANGE 
 /// Supertype changed to IfcRelDecomposes.
-class IfcRelProjectsElement : public IfcRelDecomposes {
+class IfcParse_EXPORT IfcRelProjectsElement : public IfcRelDecomposes {
 public:
     /// Element at which a projection is created by the associated IfcProjectionElement.
     IfcElement* RelatingElement() const;
@@ -25645,7 +25647,7 @@ public:
 /// Figure 41 shows the use of IfcRelContainedInSpatialStructure and IfcRelReferencedInSpatialStructure to assign an IfcCurtainWallÿto two different levels within the spatial structure. It is primarily contained within the ground floor, and additionally referenced within the first and second floor.
 /// 
 /// Figure 41 — Relationship for spatial structure referencing
-class IfcRelReferencedInSpatialStructure : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelReferencedInSpatialStructure : public IfcRelConnects {
 public:
     /// Set of products, which are referenced within this level of the spatial structure hierarchy.
     /// NOTE  Referenced elements are contained elsewhere within the spatial structure, they are referenced additionally by this spatial structure element, e.g., because they span several stories.
@@ -25722,7 +25724,7 @@ public:
 ///   depending on the setting of the sequence type since there
 ///   is no checking that the time lag value is in keeping with
 ///   the sequence type set.
-class IfcRelSequence : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelSequence : public IfcRelConnects {
 public:
     /// Reference to the process, that is the predecessor.
     IfcProcess* RelatingProcess() const;
@@ -25788,7 +25790,7 @@ public:
 ///   for file based exchange. The name
 ///   IfcRelServicesBuildings is a knownÿanomaly, as the
 ///   relationship is not restricted to buildings anymore.
-class IfcRelServicesBuildings : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelServicesBuildings : public IfcRelConnects {
 public:
     /// System that services the Buildings.
     IfcSystem* RelatingSystem() const;
@@ -25974,7 +25976,7 @@ public:
 /// 
 /// Curve: IfcPolyline, IfcTrimmedCurve or
 /// IfcCompositeCurve
-class IfcRelSpaceBoundary : public IfcRelConnects {
+class IfcParse_EXPORT IfcRelSpaceBoundary : public IfcRelConnects {
 public:
     /// Reference to one spaces that is delimited by this boundary.
     IfcSpaceBoundarySelect* RelatingSpace() const;
@@ -26058,7 +26060,7 @@ public:
 /// See the definition at the supertype IfcRelSpaceBoundary for
 /// guidance on using the connection geometry for first level space
 /// boundaries.
-class IfcRelSpaceBoundary1stLevel : public IfcRelSpaceBoundary {
+class IfcParse_EXPORT IfcRelSpaceBoundary1stLevel : public IfcRelSpaceBoundary {
 public:
     /// Whether the optional attribute ParentBoundary is defined for this IfcRelSpaceBoundary1stLevel
     bool hasParentBoundary() const;
@@ -26110,7 +26112,7 @@ public:
 /// See the definition at the supertype IfcRelSpaceBoundary
 /// for guidance on using the connection geometry for second level
 /// space boundaries.
-class IfcRelSpaceBoundary2ndLevel : public IfcRelSpaceBoundary1stLevel {
+class IfcParse_EXPORT IfcRelSpaceBoundary2ndLevel : public IfcRelSpaceBoundary1stLevel {
 public:
     /// Whether the optional attribute CorrespondingBoundary is defined for this IfcRelSpaceBoundary2ndLevel
     bool hasCorrespondingBoundary() const;
@@ -26137,7 +26139,7 @@ public:
 /// Figure 50 — Relationship for element voiding
 /// 
 /// HISTORY New entity in IFC Release 1.0
-class IfcRelVoidsElement : public IfcRelDecomposes {
+class IfcParse_EXPORT IfcRelVoidsElement : public IfcRelDecomposes {
 public:
     IfcElement* RelatingBuildingElement() const;
     void setRelatingBuildingElement(IfcElement* v);
@@ -26178,7 +26180,7 @@ public:
 /// NOTE Corresponding STEP entity: reparametrised_composite_curve_segment. Please refer to ISO/IS 10303-42:1994, p.59 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC2x4
-class IfcReparametrisedCompositeCurveSegment : public IfcCompositeCurveSegment {
+class IfcParse_EXPORT IfcReparametrisedCompositeCurveSegment : public IfcCompositeCurveSegment {
 public:
     double ParamLength() const;
     void setParamLength(double v);
@@ -26207,7 +26209,7 @@ public:
 /// HISTORY New entity in IFC Release 1.0
 /// 
 /// IFC2x PLATFORM CHANGE: The attributes BaseUnit and ResourceConsumption have been removed from the abstract entity; they are reintroduced at a lower level in the hierarchy.
-class IfcResource : public IfcObject {
+class IfcParse_EXPORT IfcResource : public IfcObject {
 public:
     /// Whether the optional attribute Identification is defined for this IfcResource
     bool hasIdentification() const;
@@ -26313,7 +26315,7 @@ public:
 /// Figure 263 illustrates default texture mapping with a repeated texture (RepeatS=True and RepeatT=True). The image on the left shows the texture where the S axis points to the right and the T axis points up. The image on the right shows the texture applied to the geometry where the X axis points back to the right, the Y axis points back to the left, and the Z axis points up. For an IfcRevolvedAreaSolid having a profile of IfcTShapeProfileDef and revolved at 22.5 degrees, the side texture coordinate origin is the first corner counter-clockwise from the +Y axis, which equals (-0.5*IfcTShapeProfileDef.OverallWidth, +0.5*IfcTShapeProfileDef.OverallDepth), while the top (end cap) texture coordinates start at (-0.5*IfcTShapeProfileDef.OverallWidth, -0.5*IfcTShapeProfileDef.OverallDepth).
 /// 
 /// Figure 263 — Revolved area solid textures
-class IfcRevolvedAreaSolid : public IfcSweptAreaSolid {
+class IfcParse_EXPORT IfcRevolvedAreaSolid : public IfcSweptAreaSolid {
 public:
     /// Axis about which revolution will take place.
     IfcAxis1Placement* Axis() const;
@@ -26391,7 +26393,7 @@ public:
 /// 
 /// Mirroring within IfcDerivedProfileDef.Operator shall
 /// not be used
-class IfcRevolvedAreaSolidTapered : public IfcRevolvedAreaSolid {
+class IfcParse_EXPORT IfcRevolvedAreaSolidTapered : public IfcRevolvedAreaSolid {
 public:
     IfcProfileDef* EndSweptArea() const;
     void setEndSweptArea(IfcProfileDef* v);
@@ -26472,7 +26474,7 @@ public:
 /// +Y
 /// 
 /// Figure 265 — Right circular cone textures
-class IfcRightCircularCone : public IfcCsgPrimitive3D {
+class IfcParse_EXPORT IfcRightCircularCone : public IfcCsgPrimitive3D {
 public:
     /// The distance between the base of the cone and the apex.
     double Height() const;
@@ -26573,7 +26575,7 @@ public:
 /// +Y
 /// 
 /// Figure 267 — Right circular cylinder textures
-class IfcRightCircularCylinder : public IfcCsgPrimitive3D {
+class IfcParse_EXPORT IfcRightCircularCylinder : public IfcCsgPrimitive3D {
 public:
     /// The distance between the planar circular faces of the cylinder.
     double Height() const;
@@ -26638,7 +26640,7 @@ public:
 /// are unique.
 /// 
 /// Figure 9 — Property template relationships
-class IfcSimplePropertyTemplate : public IfcPropertyTemplate {
+class IfcParse_EXPORT IfcSimplePropertyTemplate : public IfcPropertyTemplate {
 public:
     /// Whether the optional attribute TemplateType is defined for this IfcSimplePropertyTemplate
     bool hasTemplateType() const;
@@ -26746,7 +26748,7 @@ public:
 /// 
 /// HISTORY New entity in IFC
 ///   Release 2x Edition 4.
-class IfcSpatialElement : public IfcProduct {
+class IfcParse_EXPORT IfcSpatialElement : public IfcProduct {
 public:
     /// Whether the optional attribute LongName is defined for this IfcSpatialElement
     bool hasLongName() const;
@@ -26801,7 +26803,7 @@ public:
 /// 
 /// HISTORY ÿNew entity in Release
 /// IFC2x Edition 4.
-class IfcSpatialElementType : public IfcTypeProduct {
+class IfcParse_EXPORT IfcSpatialElementType : public IfcTypeProduct {
 public:
     /// Whether the optional attribute ElementType is defined for this IfcSpatialElementType
     bool hasElementType() const;
@@ -26894,7 +26896,7 @@ public:
 /// Figure 62 shows the use of IfcRelAggregates to establish a spatial structure including site, building, building section and storey. More information is provided at the level of the subtypes.
 /// 
 /// Figure 62 — Spatial structure element composition
-class IfcSpatialStructureElement : public IfcSpatialElement {
+class IfcParse_EXPORT IfcSpatialStructureElement : public IfcSpatialElement {
 public:
     /// Whether the optional attribute CompositionType is defined for this IfcSpatialStructureElement
     bool hasCompositionType() const;
@@ -26950,7 +26952,7 @@ public:
 /// 
 /// HISTORY ÿNew entity in
 ///   Release IFC2x Edition 3.
-class IfcSpatialStructureElementType : public IfcSpatialElementType {
+class IfcParse_EXPORT IfcSpatialStructureElementType : public IfcSpatialElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcSpatialElementType::getArgumentType(i); }
@@ -27013,7 +27015,7 @@ public:
 /// 
 /// HISTORY New entity in
 /// IFC Release 2x Edition 4.
-class IfcSpatialZone : public IfcSpatialElement {
+class IfcParse_EXPORT IfcSpatialZone : public IfcSpatialElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSpatialZone
     bool hasPredefinedType() const;
@@ -27062,7 +27064,7 @@ public:
 /// 
 /// HISTORY ÿNew entity in Release
 /// IFC2x Edition 4.
-class IfcSpatialZoneType : public IfcSpatialElementType {
+class IfcParse_EXPORT IfcSpatialZoneType : public IfcSpatialElementType {
 public:
     /// Predefined types to define the particular type of the spatial zone. There may be property set definitions available for each predefined type.
     IfcSpatialZoneTypeEnum::IfcSpatialZoneTypeEnum PredefinedType() const;
@@ -27133,7 +27135,7 @@ public:
 /// (+Y, then curving towards top)
 /// 
 /// Figure 271 — Sphere textures
-class IfcSphere : public IfcCsgPrimitive3D {
+class IfcParse_EXPORT IfcSphere : public IfcCsgPrimitive3D {
 public:
     /// The radius of the sphere.
     double Radius() const;
@@ -27243,7 +27245,7 @@ public:
 /// 
 /// RepresentationIdentifier: 'Level set'
 ///   RepresentationType: 'GeometricCurveSet'
-class IfcStructuralActivity : public IfcProduct {
+class IfcParse_EXPORT IfcStructuralActivity : public IfcProduct {
 public:
     /// Load or result resource object which defines the load type, direction, and load values.
     /// 
@@ -27369,7 +27371,7 @@ public:
 /// NOTE  This rule is necessary to achieve consistent topology representations.  The topology representations of structural items in an analysis model are meant to share vertices and edges und must therefore have the same object placement.
 /// 
 /// NOTE  A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
-class IfcStructuralItem : public IfcProduct {
+class IfcParse_EXPORT IfcStructuralItem : public IfcProduct {
 public:
     virtual unsigned int getArgumentCount() const { return 7; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcProduct::getArgumentType(i); }
@@ -27388,7 +27390,7 @@ public:
 /// 
 /// HISTORY: New entity in IFC 2x2.
 /// IFC 2x4 change:  Use definitions moved to supertype and subtypes.
-class IfcStructuralMember : public IfcStructuralItem {
+class IfcParse_EXPORT IfcStructuralMember : public IfcStructuralItem {
 public:
     virtual unsigned int getArgumentCount() const { return 7; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralItem::getArgumentType(i); }
@@ -27423,7 +27425,7 @@ public:
 /// IfcRelAssignsToProduct relationship object.  IfcRelAssignsToProduct.Name is set to
 /// 'Causes' and IfcRelAssignsToProduct.RelatingProduct refers to an instance of a subtype of
 /// IfcStructuralAction.
-class IfcStructuralReaction : public IfcStructuralActivity {
+class IfcParse_EXPORT IfcStructuralReaction : public IfcStructuralActivity {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralActivity::getArgumentType(i); }
@@ -27457,7 +27459,7 @@ public:
 /// Topology Use Definitions:
 /// 
 /// Direct instances of IfcStructuralSurfaceMember shall have a topology representation which consists of one IfcFaceSurface, representing the reference surface of the surface member.  See definitions at IfcStructuralItem for further specifications.
-class IfcStructuralSurfaceMember : public IfcStructuralMember {
+class IfcParse_EXPORT IfcStructuralSurfaceMember : public IfcStructuralMember {
 public:
     /// Type of member with respect to its load carrying behavior in this analysis idealization.
     IfcStructuralSurfaceMemberTypeEnum::IfcStructuralSurfaceMemberTypeEnum PredefinedType() const;
@@ -27497,7 +27499,7 @@ public:
 /// Topology Use Definitions:
 /// 
 /// In case of aggregation, instances of IfcStructuralSurfaceMemberVarying may have a topology representation which contains a single IfcConnectedFaceSet, based upon the faces of the parts.  Otherwise, definitions at IfcStructuralSurfaceMember apply.
-class IfcStructuralSurfaceMemberVarying : public IfcStructuralSurfaceMember {
+class IfcParse_EXPORT IfcStructuralSurfaceMemberVarying : public IfcStructuralSurfaceMember {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralSurfaceMember::getArgumentType(i); }
@@ -27533,7 +27535,7 @@ public:
 ///   NOTE   Isocontours are represented as IfcPCurves which are defined in terms of surface parameters u,v, while result locations are given in local surface item coordinates x,y.  It is strongly recommended that the surface parameterization u,v is scaled 1:1 in order to avoid different scales of u,v versus x,y.  If u,v are scaled 1:1 and the IfcPCurve's base surface is identical with the surface item's base surface, u,v and local x,y are identical.
 /// 
 /// All items in SELF\IfcStructuralActivity.AppliedLoad\IfcStructuralLoadConfiguration.Values shall be of the same entity type.
-class IfcStructuralSurfaceReaction : public IfcStructuralReaction {
+class IfcParse_EXPORT IfcStructuralSurfaceReaction : public IfcStructuralReaction {
 public:
     /// Type of reaction according to its distribution of load values.
     IfcStructuralSurfaceActivityTypeEnum::IfcStructuralSurfaceActivityTypeEnum PredefinedType() const;
@@ -27561,7 +27563,7 @@ public:
 /// Occurrences of the IfcSubContractResourceType are represented by instances of IfcSubContractResource.
 /// 
 /// HISTORY New entity in IFC2x4.
-class IfcSubContractResourceType : public IfcConstructionResourceType {
+class IfcParse_EXPORT IfcSubContractResourceType : public IfcConstructionResourceType {
 public:
     /// Defines types of subcontract resources.
     IfcSubContractResourceTypeEnum::IfcSubContractResourceTypeEnum PredefinedType() const;
@@ -27640,7 +27642,7 @@ public:
 /// The SweptArea shall lie in the plane z = 0.
 /// The Directrix shall lie on the
 /// ReferenceSurface.
-class IfcSurfaceCurveSweptAreaSolid : public IfcSweptAreaSolid {
+class IfcParse_EXPORT IfcSurfaceCurveSweptAreaSolid : public IfcSweptAreaSolid {
 public:
     /// The curve used to define the sweeping operation. The solid is generated by sweeping the SELF\IfcSweptAreaSolid.SweptArea along the Directrix.
     IfcCurve* Directrix() const;
@@ -27687,7 +27689,7 @@ public:
 /// Informal propositions: 
 /// 
 /// The surface shall not self-intersect
-class IfcSurfaceOfLinearExtrusion : public IfcSweptSurface {
+class IfcParse_EXPORT IfcSurfaceOfLinearExtrusion : public IfcSweptSurface {
 public:
     /// The direction of the extrusion.
     IfcDirection* ExtrudedDirection() const;
@@ -27724,7 +27726,7 @@ public:
 /// 
 /// The surface shall not self-intersect 
 /// The swept curve shall not be coincident with the axis line for any finite part of its legth.
-class IfcSurfaceOfRevolution : public IfcSweptSurface {
+class IfcParse_EXPORT IfcSurfaceOfRevolution : public IfcSweptSurface {
 public:
     /// A point on the axis of revolution and the direction of the axis of revolution.
     IfcAxis1Placement* AxisPosition() const;
@@ -27771,7 +27773,7 @@ public:
 /// 'Hardware': Finish hardware such as knobs or handles. 
 /// 'Padding': Padding such as cushions. 
 /// 'Panel': Panels such as glass.
-class IfcSystemFurnitureElementType : public IfcFurnishingElementType {
+class IfcParse_EXPORT IfcSystemFurnitureElementType : public IfcFurnishingElementType {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSystemFurnitureElementType
     bool hasPredefinedType() const;
@@ -28034,7 +28036,7 @@ public:
 ///   require attention.
 ///   Use LongDescription or else identify sub-tasks to
 ///   track punch list items individually via IfcRelNests.
-class IfcTask : public IfcProcess {
+class IfcParse_EXPORT IfcTask : public IfcProcess {
 public:
     /// Whether the optional attribute Status is defined for this IfcTask
     bool hasStatus() const;
@@ -28137,7 +28139,7 @@ public:
 ///   define task times (for example, duration) and/or a task sequence.
 /// 
 /// Figure 16 — Task type relationships
-class IfcTaskType : public IfcTypeProcess {
+class IfcParse_EXPORT IfcTaskType : public IfcTypeProcess {
 public:
     /// Identifies the predefined types of a task type from which 
     ///   the type required may be set.
@@ -28161,7 +28163,7 @@ public:
     typedef IfcTemplatedEntityList< IfcTaskType > list;
 };
 
-class IfcTessellatedFaceSet : public IfcTessellatedItem {
+class IfcParse_EXPORT IfcTessellatedFaceSet : public IfcTessellatedItem {
 public:
     IfcCartesianPointList3D* Coordinates() const;
     void setCoordinates(IfcCartesianPointList3D* v);
@@ -28250,7 +28252,7 @@ public:
 /// RepresentationIdentifier and RepresentationType of
 /// IfcShapeRepresentation are restricted in the same way as
 /// those for IfcTransportElementType.
-class IfcTransportElementType : public IfcElementType {
+class IfcParse_EXPORT IfcTransportElementType : public IfcElementType {
 public:
     /// Predefined types to define the particular type of the transport element. There may be property set definitions available for each predefined type.
     IfcTransportElementTypeEnum::IfcTransportElementTypeEnum PredefinedType() const;
@@ -28268,7 +28270,7 @@ public:
     typedef IfcTemplatedEntityList< IfcTransportElementType > list;
 };
 
-class IfcTriangulatedFaceSet : public IfcTessellatedFaceSet {
+class IfcParse_EXPORT IfcTriangulatedFaceSet : public IfcTessellatedFaceSet {
 public:
     std::vector< std::vector< int > > CoordIndex() const;
     void setCoordIndex(std::vector< std::vector< int > > v);
@@ -28386,7 +28388,7 @@ public:
 /// NOTE
 /// 
 /// All offsets are given as a normalized ratio measure.
-class IfcWindowLiningProperties : public IfcPreDefinedPropertySet {
+class IfcParse_EXPORT IfcWindowLiningProperties : public IfcPreDefinedPropertySet {
 public:
     /// Whether the optional attribute LiningDepth is defined for this IfcWindowLiningProperties
     bool hasLiningDepth() const;
@@ -28513,7 +28515,7 @@ public:
 /// As shown in Figure 176, the panel is applied to the position within the lining as defined by the panel position attribute. The following parameter apply to that panel: FrameDepth, FrameThickness.
 /// 
 /// Figure 176 — Window panel properties
-class IfcWindowPanelProperties : public IfcPreDefinedPropertySet {
+class IfcParse_EXPORT IfcWindowPanelProperties : public IfcPreDefinedPropertySet {
 public:
     /// Types of window panel operations. Also used to assign standard symbolic presentations according to national building standards.
     IfcWindowPanelOperationEnum::IfcWindowPanelOperationEnum OperationType() const;
@@ -28565,7 +28567,7 @@ public:
 /// IfcRelDefinesByProperties relationship. They are accessible by the inverse IsDefinedBy relationship. The following property set definitions specific to IfcActor are part of this IFC release:
 /// 
 /// Pset_ActorCommon: common property set for all actor occurrences
-class IfcActor : public IfcObject {
+class IfcParse_EXPORT IfcActor : public IfcObject {
 public:
     /// Information about the actor.
     IfcActorSelect* TheActor() const;
@@ -28616,7 +28618,7 @@ public:
 /// Figure 249 illustrates use of IfcAdvancedBrep for boundary representation models with b-spline surfaces. The diagram shows the topological and geometric representation items that are used for advanced B-reps, based on IfcAdvancedFace.
 /// 
 /// Figure 249 — Advanced Brep
-class IfcAdvancedBrep : public IfcManifoldSolidBrep {
+class IfcParse_EXPORT IfcAdvancedBrep : public IfcManifoldSolidBrep {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcManifoldSolidBrep::getArgumentType(i); }
@@ -28651,7 +28653,7 @@ public:
 /// All the faces of all the shells in the IfcAdvancedBrep
 /// and the IfcAdvancedBrepWithVoids.Voids shall be of type
 /// IfcAdvancedFace.
-class IfcAdvancedBrepWithVoids : public IfcAdvancedBrep {
+class IfcParse_EXPORT IfcAdvancedBrepWithVoids : public IfcAdvancedBrep {
 public:
     IfcTemplatedEntityList< IfcClosedShell >::ptr Voids() const;
     void setVoids(IfcTemplatedEntityList< IfcClosedShell >::ptr v);
@@ -28840,7 +28842,7 @@ public:
 /// RepresentationIdentifier : 'Annotation'
 /// 
 /// RepresentationType : 'GeometricSet'
-class IfcAnnotation : public IfcProduct {
+class IfcParse_EXPORT IfcAnnotation : public IfcProduct {
 public:
     virtual unsigned int getArgumentCount() const { return 7; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcProduct::getArgumentType(i); }
@@ -28924,7 +28926,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: b_spline_surface. Please refer to ISO/IS 10303-42:1994, p. 78 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x4.
-class IfcBSplineSurface : public IfcBoundedSurface {
+class IfcParse_EXPORT IfcBSplineSurface : public IfcBoundedSurface {
 public:
     /// Algebraic degree of basis functions in u.
     int UDegree() const;
@@ -28966,7 +28968,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: b_spline_surface_with_knots. Please refer to ISO/IS 10303-42:1994, p. 81 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x4.
-class IfcBSplineSurfaceWithKnots : public IfcBSplineSurface {
+class IfcParse_EXPORT IfcBSplineSurfaceWithKnots : public IfcBSplineSurface {
 public:
     /// The multiplicities of the knots in the u parameter direction.
     std::vector< int > /*[2:?]*/ UMultiplicities() const;
@@ -29092,7 +29094,7 @@ public:
 /// +Y
 /// 
 /// Figure 251 — Block textures
-class IfcBlock : public IfcCsgPrimitive3D {
+class IfcParse_EXPORT IfcBlock : public IfcCsgPrimitive3D {
 public:
     /// The size of the block along the placement X axis. It is provided by the inherited axis placement through SELF\IfcCsgPrimitive3D.Position.P[1].
     double XLength() const;
@@ -29122,7 +29124,7 @@ public:
 /// NOTE The IfcBooleanClippingResult is defined as a special case of the boolean_result, as defined in ISO 10303-42:1994, p. 175. It has been added to apply further constraints to the CSG representation type.
 /// 
 /// HISTORY New entity in IFC Release 2.x.
-class IfcBooleanClippingResult : public IfcBooleanResult {
+class IfcParse_EXPORT IfcBooleanClippingResult : public IfcBooleanResult {
 public:
     virtual unsigned int getArgumentCount() const { return 3; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcBooleanResult::getArgumentType(i); }
@@ -29146,7 +29148,7 @@ public:
 /// 
 /// A bounded curve has finite arc length. 
 /// A bounded curve has a start point and an end point.
-class IfcBoundedCurve : public IfcCurve {
+class IfcParse_EXPORT IfcBoundedCurve : public IfcCurve {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcCurve::getArgumentType(i); }
@@ -29335,7 +29337,7 @@ public:
 /// building elements, an independent shape representation shall only
 /// be given, if the building is exposed independently from its
 /// constituting elements.
-class IfcBuilding : public IfcSpatialStructureElement {
+class IfcParse_EXPORT IfcBuilding : public IfcSpatialStructureElement {
 public:
     /// Whether the optional attribute ElevationOfRefHeight is defined for this IfcBuilding
     bool hasElevationOfRefHeight() const;
@@ -29393,7 +29395,7 @@ public:
 /// 
 /// HISTORY  New entity in
 ///   Release IFC2x Edition 2.
-class IfcBuildingElementType : public IfcElementType {
+class IfcParse_EXPORT IfcBuildingElementType : public IfcElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElementType::getArgumentType(i); }
@@ -29584,7 +29586,7 @@ public:
 /// exterior building elements, an independent shape representation
 /// shall only be given, if the building storey is exposed
 /// independently from its constituting elements.
-class IfcBuildingStorey : public IfcSpatialStructureElement {
+class IfcParse_EXPORT IfcBuildingStorey : public IfcSpatialStructureElement {
 public:
     /// Whether the optional attribute Elevation is defined for this IfcBuildingStorey
     bool hasElevation() const;
@@ -29628,7 +29630,7 @@ public:
 /// 
 /// HISTORY New entity in Release
 ///   IFC2x4.
-class IfcChimneyType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcChimneyType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a chimney element from which the type required may be set.
     IfcChimneyTypeEnum::IfcChimneyTypeEnum PredefinedType() const;
@@ -29663,7 +29665,7 @@ public:
 /// By using offsets of the position location, the parameterized profile can be positioned centric (using x,y offsets = 0.), or at any position relative to the profile. Explicit coordinate offsets are used to define cardinal points (for example, upper-left bound). The parameterized profile is defined by a set of parameter attributes.
 /// 
 /// Figure 312 — Circle hollow profile
-class IfcCircleHollowProfileDef : public IfcCircleProfileDef {
+class IfcParse_EXPORT IfcCircleHollowProfileDef : public IfcCircleProfileDef {
 public:
     /// Thickness of the material, it is the difference between the outer and inner radius.
     double WallThickness() const;
@@ -29681,7 +29683,7 @@ public:
     typedef IfcTemplatedEntityList< IfcCircleHollowProfileDef > list;
 };
 
-class IfcCivilElementType : public IfcElementType {
+class IfcParse_EXPORT IfcCivilElementType : public IfcElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElementType::getArgumentType(i); }
@@ -29793,7 +29795,7 @@ public:
 /// IfcShapeRepresentation are restricted in the same way as
 /// those for IfcColumn and
 /// IfcColumnStandardCase
-class IfcColumnType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcColumnType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a column element from which the type required may be set.
     IfcColumnTypeEnum::IfcColumnTypeEnum PredefinedType() const;
@@ -29818,7 +29820,7 @@ public:
 /// attribute.
 /// 
 /// HISTORY  New entity in IFC2x4.
-class IfcComplexPropertyTemplate : public IfcPropertyTemplate {
+class IfcParse_EXPORT IfcComplexPropertyTemplate : public IfcPropertyTemplate {
 public:
     /// Whether the optional attribute UsageName is defined for this IfcComplexPropertyTemplate
     bool hasUsageName() const;
@@ -29911,7 +29913,7 @@ public:
 ///   correctly specifies the senses of the component curves.
 ///   When traversed in the direction indicated by
 ///   SameSense, the segments shall join end-to-end.
-class IfcCompositeCurve : public IfcBoundedCurve {
+class IfcParse_EXPORT IfcCompositeCurve : public IfcBoundedCurve {
 public:
     /// The component bounded curves, their transitions and senses. The transition attribute for the last segment defines the transition between the end of the last segment and the start of the first; this transition attribute may take the value discontinuous, which indicates an open curve.
     IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr Segments() const;
@@ -29942,7 +29944,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: composite_curve_on_surface. Please refer to ISO/IS 10303-42:1994, p.64 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x4.
-class IfcCompositeCurveOnSurface : public IfcCompositeCurve {
+class IfcParse_EXPORT IfcCompositeCurveOnSurface : public IfcCompositeCurve {
 public:
     virtual unsigned int getArgumentCount() const { return 2; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcCompositeCurve::getArgumentType(i); }
@@ -29961,7 +29963,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: conic, only the following subtypes have been incorporated into IFC 1.0, 1.5 & 2.0: circle as IfcCircle, ellipse as IfcEllipse. The derived attribute Dim has been added at this level and was therefore demoted from the geometric_representation_item. Please refer to ISO/IS 10303-42:1994, p. 38 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC Release 1.0
-class IfcConic : public IfcCurve {
+class IfcParse_EXPORT IfcConic : public IfcCurve {
 public:
     /// The location and orientation of the conic. Further details of the interpretation of this attribute are given for the individual subtypes."
     IfcAxis2Placement* Position() const;
@@ -29991,7 +29993,7 @@ public:
 /// 
 /// Assignment use definition
 /// In addition to assignments specified at the base class IfcConstructionResourceType, a construction equipment resource type may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionEquipmentResourceType and RelatedObjects contains one or more IfcTypeProduct subtypes.  Such relationship indicates the type of equipment to be used as input, which is instantiated as an occurrence assigned for each resource occurrence.  There may be multiple chains of production where such product type may have its own task and resource types assigned indicating how to assemble such equipment.
-class IfcConstructionEquipmentResourceType : public IfcConstructionResourceType {
+class IfcParse_EXPORT IfcConstructionEquipmentResourceType : public IfcConstructionResourceType {
 public:
     /// Defines types of construction equipment resources.
     IfcConstructionEquipmentResourceTypeEnum::IfcConstructionEquipmentResourceTypeEnum PredefinedType() const;
@@ -30021,7 +30023,7 @@ public:
 /// 
 /// Assignment Use Definition
 /// In addition to assignments specified at the base class IfcConstructionResourceType, a construction material resource type may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionMaterialResourceType and RelatedObjects contains one or more IfcTypeProduct subtypes.  Such relationship indicates material specifications to be used as input, which is instantiated as an occurrence assigned for each resource occurrence.  The IfcGeographicElementType product type may be used to hold the material representation (via IfcRelAssociatesMaterial. There may be multiple chains of production where such product type may have its own task and resource types assigned indicating how to transport or extract such material.
-class IfcConstructionMaterialResourceType : public IfcConstructionResourceType {
+class IfcParse_EXPORT IfcConstructionMaterialResourceType : public IfcConstructionResourceType {
 public:
     /// Defines types of construction material resources.
     IfcConstructionMaterialResourceTypeEnum::IfcConstructionMaterialResourceTypeEnum PredefinedType() const;
@@ -30051,7 +30053,7 @@ public:
 /// 
 /// Assignment use definition
 /// In addition to assignments specified at the base class IfcConstructionResourceType, a construction product resource type may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionProductResourceType and RelatedObjects contains one or more IfcTypeProduct subtypes.  Such relationship indicates the type of product to be used as input, which is instantiated as an occurrence assigned for each resource occurrence.  There may be multiple chains of production where such product type may have its own task and resource types assigned.
-class IfcConstructionProductResourceType : public IfcConstructionResourceType {
+class IfcParse_EXPORT IfcConstructionProductResourceType : public IfcConstructionResourceType {
 public:
     /// Defines types of construction product resources.
     IfcConstructionProductResourceTypeEnum::IfcConstructionProductResourceTypeEnum PredefinedType() const;
@@ -30140,7 +30142,7 @@ public:
 /// IfcWorkSchedule.Name indicating the name of the baseline.
 /// 
 /// Figure 192 — Construction resource baseline use
-class IfcConstructionResource : public IfcResource {
+class IfcParse_EXPORT IfcConstructionResource : public IfcResource {
 public:
     /// Whether the optional attribute Usage is defined for this IfcConstructionResource
     bool hasUsage() const;
@@ -30176,7 +30178,7 @@ public:
 /// 
 /// Relationship use definition
 /// Controls have assignments from products, processes, or other objects by using the relationship object IfcRelAssignsToControl.
-class IfcControl : public IfcObject {
+class IfcParse_EXPORT IfcControl : public IfcObject {
 public:
     /// Whether the optional attribute Identification is defined for this IfcControl
     bool hasIdentification() const;
@@ -30235,7 +30237,7 @@ public:
 /// Figure 158 illustrates cost item assignment derived from building elements.  The IfcRelAssignsToControl relationship indicates building elements for which quantities are derived.  Not shown, costs may also be derived from building elements by traversing assignment relationships from the assigned IfcProduct to IfcProcess to IfcResource, where all costs ultimately originate at resources.  It is also possible for cost items to have assignments from processes or resources directly.
 /// 
 /// Figure 168 — Cost assignment
-class IfcCostItem : public IfcControl {
+class IfcParse_EXPORT IfcCostItem : public IfcControl {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCostItem
     bool hasPredefinedType() const;
@@ -30297,7 +30299,7 @@ public:
 /// 
 /// Approval Use Definition 
 /// Approvals may be associated to indicate the status of acceptance or rejection using the IfcRelAssociatesApproval relationship where RelatingApproval refers to an IfcApproval and RelatedObjects contains the IfcCostSchedule.  Approvals may be split into sub-approvals using IfcApprovalRelationship to track approval status separately for each party where RelatingApproval refers to the higher-level approval and RelatedApprovals contains one or more lower-level approvals.  The hierarchy of approvals implies sequencing such that a higher-level approval is not executed until all of its lower-level approvals have been accepted.
-class IfcCostSchedule : public IfcControl {
+class IfcParse_EXPORT IfcCostSchedule : public IfcControl {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCostSchedule
     bool hasPredefinedType() const;
@@ -30422,7 +30424,7 @@ public:
 /// RepresentationIdentifier and RepresentationType of
 /// IfcShapeRepresentation are restricted in the same way as
 /// those for IfcCoveringType.
-class IfcCoveringType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcCoveringType : public IfcBuildingElementType {
 public:
     /// Predefined types to define the particular type of the covering. There may be property set definitions available for each predefined type.
     IfcCoveringTypeEnum::IfcCoveringTypeEnum PredefinedType() const;
@@ -30449,7 +30451,7 @@ public:
 /// 
 /// Type use definition
 /// IfcCrewResource defines the occurrence of any crew resource; common information about crew resource types is handled by IfcCrewResourceType.  The IfcCrewResourceType (if present) may establish the common type name, common properties, and common productivities for various task types using IfcRelAssignsToProcess.  The IfcCrewResourceType is attached using the IfcRelDefinesByType.RelatingType objectified relationship and is accessible by the inverse IsTypedBy attribute.
-class IfcCrewResource : public IfcConstructionResource {
+class IfcParse_EXPORT IfcCrewResource : public IfcConstructionResource {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCrewResource
     bool hasPredefinedType() const;
@@ -30490,7 +30492,7 @@ public:
 /// 
 /// HISTORY
 /// New entity in Release IFC2x Editon 3.
-class IfcCurtainWallType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcCurtainWallType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a curtain wall element from which the type required may be set.
     IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum PredefinedType() const;
@@ -30561,7 +30563,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: plane. Please refer to ISO/IS 10303-42:1994, p.70 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC2x4.
-class IfcCylindricalSurface : public IfcElementarySurface {
+class IfcParse_EXPORT IfcCylindricalSurface : public IfcElementarySurface {
 public:
     /// The radius of the cylindrical surface.
     double Radius() const;
@@ -30606,7 +30608,7 @@ public:
 /// IFC2x4 CHANGE The entity is marked
 /// as deprecated for instantiation - will be made ABSTRACT after
 /// IFC2x4.
-class IfcDistributionElementType : public IfcElementType {
+class IfcParse_EXPORT IfcDistributionElementType : public IfcElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElementType::getArgumentType(i); }
@@ -30685,7 +30687,7 @@ public:
 /// If an element type is defined parametrically (such as a flow segment type defining common material profile but no particular length or path), then no representations shall be asserted at the type.
 /// 
 /// NOTE: The product representations are defined as representation maps (at the level of the supertype IfcTypeProduct, which get assigned by an element occurrence instance through the IfcShapeRepresentation.Item[1] being an IfcMappedItem.
-class IfcDistributionFlowElementType : public IfcDistributionElementType {
+class IfcParse_EXPORT IfcDistributionFlowElementType : public IfcDistributionElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionElementType::getArgumentType(i); }
@@ -30794,7 +30796,7 @@ public:
 /// Figure 172 — Door lining properties
 /// 
 /// NOTE LiningDepth describes the length of the lining along the reveal of the door opening. It can be given by an absolute value if the door lining has a specific depth depending on the door style. However often it is equal to the wall thickness. If the same door style is used (like the same type of single swing door), but inserted into different walls with different thicknesses, it would be necessary to create a special door style for each wall thickness. Therefore several CAD systems allow to set the value to "automatically aligned" to wall thickness. This should be exchanged by leaving the optional attribute LiningDepth unassigned. The same agreement applies to ThresholdDepth.
-class IfcDoorLiningProperties : public IfcPreDefinedPropertySet {
+class IfcParse_EXPORT IfcDoorLiningProperties : public IfcPreDefinedPropertySet {
 public:
     /// Whether the optional attribute LiningDepth is defined for this IfcDoorLiningProperties
     bool hasLiningDepth() const;
@@ -30924,7 +30926,7 @@ public:
 /// PanelWidth
 /// 
 /// Figure 173 — Door panel properties
-class IfcDoorPanelProperties : public IfcPreDefinedPropertySet {
+class IfcParse_EXPORT IfcDoorPanelProperties : public IfcPreDefinedPropertySet {
 public:
     /// Whether the optional attribute PanelDepth is defined for this IfcDoorPanelProperties
     bool hasPanelDepth() const;
@@ -31089,7 +31091,7 @@ public:
 /// IfcShapeRepresentation are restricted in the same way as
 /// those for IfcDoor and
 /// IfcDoorStandardCase
-class IfcDoorType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcDoorType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a door element from which the type required may be set.
     IfcDoorTypeEnum::IfcDoorTypeEnum PredefinedType() const;
@@ -31189,7 +31191,7 @@ public:
 /// Informal proposition
 /// 
 /// The value 'by layer' shall only be inserted, if the geometric representation item using the colour definition has an association to IfcPresentationLayerWithStyle, and if that instance of IfcPresentationLayerWithStyle has a valid colour definition for IfcCurveStyle, IfcSymbolStyle, or IfcSurfaceStyle (depending on what is applicable).
-class IfcDraughtingPreDefinedColour : public IfcPreDefinedColour {
+class IfcParse_EXPORT IfcDraughtingPreDefinedColour : public IfcPreDefinedColour {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedColour::getArgumentType(i); }
@@ -31216,7 +31218,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: pre_defined_curve_font. Please refer to ISO/IS 10303-46:1994 TC2, page 12 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IfcDraughtingPreDefinedCurveFont : public IfcPreDefinedCurveFont {
+class IfcParse_EXPORT IfcDraughtingPreDefinedCurveFont : public IfcPreDefinedCurveFont {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcPreDefinedCurveFont::getArgumentType(i); }
@@ -31283,7 +31285,7 @@ public:
 /// representations. A detailed specification for the local placement
 /// and shape representaion is introduced at the level of subtypes of
 /// IfcElement.
-class IfcElement : public IfcProduct {
+class IfcParse_EXPORT IfcElement : public IfcProduct {
 public:
     /// Whether the optional attribute Tag is defined for this IfcElement
     bool hasTag() const;
@@ -31407,7 +31409,7 @@ public:
 /// The IfcElementAssembly shall have an aggregation
 /// relationship to the contained parts, i.e. the (INV)
 /// IsDecomposedBy relationship shall be utilzed.
-class IfcElementAssembly : public IfcElement {
+class IfcParse_EXPORT IfcElementAssembly : public IfcElement {
 public:
     /// Whether the optional attribute AssemblyPlace is defined for this IfcElementAssembly
     bool hasAssemblyPlace() const;
@@ -31455,7 +31457,7 @@ public:
 /// represented by instances of IfcElementAssembly.
 /// HISTORYÿ New entity in
 /// Release IFC2x Edition 4.
-class IfcElementAssemblyType : public IfcElementType {
+class IfcParse_EXPORT IfcElementAssemblyType : public IfcElementType {
 public:
     /// Predefined types to define the particular type of the transport element. There may be property set definitions available for each predefined type.
     IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum PredefinedType() const;
@@ -31549,7 +31551,7 @@ public:
 /// Representation identifier and type are the same as in single mapped representation.
 /// The number of mapped items in the representation corresponds with the count of
 /// element components in the IfcElementQuantity.
-class IfcElementComponent : public IfcElement {
+class IfcParse_EXPORT IfcElementComponent : public IfcElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
@@ -31572,7 +31574,7 @@ public:
 /// 
 /// HISTORY New entity in IFC
 ///   Release 2x2
-class IfcElementComponentType : public IfcElementType {
+class IfcParse_EXPORT IfcElementComponentType : public IfcElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElementType::getArgumentType(i); }
@@ -31613,7 +31615,7 @@ public:
 /// Figure 280 illustrates the definition of the IfcEllipse within the (in this case three-dimensional) position coordinate system. 
 /// 
 /// Figure 280 — Ellipse geometry
-class IfcEllipse : public IfcConic {
+class IfcParse_EXPORT IfcEllipse : public IfcConic {
 public:
     /// The first radius of the ellipse which shall be positive. Placement.Axes[1] gives the direction of the SemiAxis1.
     double SemiAxis1() const;
@@ -31658,7 +31660,7 @@ public:
 ///   by instances of IfcEnergyConversionDevice. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IfcEnergyConversionDeviceType : public IfcDistributionFlowElementType {
+class IfcParse_EXPORT IfcEnergyConversionDeviceType : public IfcDistributionFlowElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
@@ -31698,7 +31700,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcEngineType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcEngine for standard port definitions.
-class IfcEngineType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcEngineType : public IfcEnergyConversionDeviceType {
 public:
     IfcEngineTypeEnum::IfcEngineTypeEnum PredefinedType() const;
     void setPredefinedType(IfcEngineTypeEnum::IfcEngineTypeEnum v);
@@ -31740,7 +31742,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcEvaporativeCoolerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcEvaporativeCooler for standard port definitions.
-class IfcEvaporativeCoolerType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcEvaporativeCoolerType : public IfcEnergyConversionDeviceType {
 public:
     /// Defines the type of evaporative cooler.
     IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum PredefinedType() const;
@@ -31783,7 +31785,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcEvaporatorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcEvaporator for standard port definitions.
-class IfcEvaporatorType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcEvaporatorType : public IfcEnergyConversionDeviceType {
 public:
     /// Defines the type of evaporator.
     IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum PredefinedType() const;
@@ -31877,7 +31879,7 @@ public:
 ///   IfcRelAssignsToProduct), then the IfcEvent must be assigned
 ///   to one or more occurrences of the specified product type
 ///   using IfcRelAssignsToProduct.
-class IfcEvent : public IfcProcess {
+class IfcParse_EXPORT IfcEvent : public IfcProcess {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcEvent
     bool hasPredefinedType() const;
@@ -31920,7 +31922,7 @@ public:
 /// external spaces, regions, and volumes.
 /// HISTORY New entity in
 /// IFC2x4.
-class IfcExternalSpatialStructureElement : public IfcSpatialElement {
+class IfcParse_EXPORT IfcExternalSpatialStructureElement : public IfcSpatialElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcSpatialElement::getArgumentType(i); }
@@ -31958,7 +31960,7 @@ public:
 /// Figure 257 illustrates use of IfcFacetedBrep for boundary representation models with planar surfaces only. The diagram shows the topological and geometric representation items that are used for faceted breps. Each IfcCartesianPoint, used within the IfcFacetedBrep shall be referenced three times by an IfcPolyLoop bounding a different IfcFace.
 /// 
 /// Figure 257 — Faceted B-rep
-class IfcFacetedBrep : public IfcManifoldSolidBrep {
+class IfcParse_EXPORT IfcFacetedBrep : public IfcManifoldSolidBrep {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcManifoldSolidBrep::getArgumentType(i); }
@@ -31996,7 +31998,7 @@ public:
 /// All the bounding loops of all the faces of all the shells in
 /// the IfcFacetedBrep shall be of type
 /// IfcPolyLoop.
-class IfcFacetedBrepWithVoids : public IfcFacetedBrep {
+class IfcParse_EXPORT IfcFacetedBrepWithVoids : public IfcFacetedBrep {
 public:
     /// Set of closed shells defining voids within the solid.
     IfcTemplatedEntityList< IfcClosedShell >::ptr Voids() const;
@@ -32021,7 +32023,7 @@ public:
 /// 
 /// IFC 2x4 change:
 /// Attribute PredefinedType added.
-class IfcFastener : public IfcElementComponent {
+class IfcParse_EXPORT IfcFastener : public IfcElementComponent {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcFastener
     bool hasPredefinedType() const;
@@ -32063,7 +32065,7 @@ public:
 /// The following property set definitions are applicable to this entity according to the PredefinedType attribute:
 /// 
 /// Pset_FastenerWeld (WELD)
-class IfcFastenerType : public IfcElementComponentType {
+class IfcParse_EXPORT IfcFastenerType : public IfcElementComponentType {
 public:
     /// Subtype of fastener
     IfcFastenerTypeEnum::IfcFastenerTypeEnum PredefinedType() const;
@@ -32174,7 +32176,7 @@ public:
 /// In some cases it may be useful to also expose a simple
 /// representation as a bounding box representation of the same
 /// complex shape.
-class IfcFeatureElement : public IfcElement {
+class IfcParse_EXPORT IfcFeatureElement : public IfcElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
@@ -32243,7 +32245,7 @@ public:
 /// The geometry use definitions for the shape representation
 ///   of the IfcFeatureElementAddition is given at the
 ///   level of its subtypes.
-class IfcFeatureElementAddition : public IfcFeatureElement {
+class IfcParse_EXPORT IfcFeatureElementAddition : public IfcFeatureElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcFeatureElement::getArgumentType(i); }
@@ -32308,7 +32310,7 @@ public:
 /// The geometry use definitions for the shape representation of the
 /// IfcFeatureElementSubtraction is given at the level of its
 /// subtypes.
-class IfcFeatureElementSubtraction : public IfcFeatureElement {
+class IfcParse_EXPORT IfcFeatureElementSubtraction : public IfcFeatureElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcFeatureElement::getArgumentType(i); }
@@ -32347,7 +32349,7 @@ public:
 ///   by instances of IfcFlowController or its subtypes. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IfcFlowControllerType : public IfcDistributionFlowElementType {
+class IfcParse_EXPORT IfcFlowControllerType : public IfcDistributionFlowElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
@@ -32386,7 +32388,7 @@ public:
 ///   by instances of IfcFlowFitting or its subtypes. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IfcFlowFittingType : public IfcDistributionFlowElementType {
+class IfcParse_EXPORT IfcFlowFittingType : public IfcDistributionFlowElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
@@ -32432,7 +32434,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcFlowMeterType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcFlowMeter for standard port definitions.
-class IfcFlowMeterType : public IfcFlowControllerType {
+class IfcParse_EXPORT IfcFlowMeterType : public IfcFlowControllerType {
 public:
     /// Defines the type of flow meter.
     IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum PredefinedType() const;
@@ -32472,7 +32474,7 @@ public:
 ///   by instances of IfcFlowMovingDevice. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IfcFlowMovingDeviceType : public IfcDistributionFlowElementType {
+class IfcParse_EXPORT IfcFlowMovingDeviceType : public IfcDistributionFlowElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
@@ -32518,7 +32520,7 @@ public:
 /// IfcMaterialConstituentSet : For elements containing multiple materials where profiles are not applicable, this indicates materials at named aspects.
 /// 
 /// IfcMaterial : For elements comprised of a single material where profiles are not applicable, this indicates the material.
-class IfcFlowSegmentType : public IfcDistributionFlowElementType {
+class IfcParse_EXPORT IfcFlowSegmentType : public IfcDistributionFlowElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
@@ -32539,7 +32541,7 @@ public:
 /// The occurrences of the IfcFlowStorageDeviceType are represented by instances of IfcFlowStorageDevice or its subtypes. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IfcFlowStorageDeviceType : public IfcDistributionFlowElementType {
+class IfcParse_EXPORT IfcFlowStorageDeviceType : public IfcDistributionFlowElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
@@ -32560,7 +32562,7 @@ public:
 /// The occurrences of the IfcFlowTerminalType are represented by instances of IfcFlowTerminal or its subtypes. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IfcFlowTerminalType : public IfcDistributionFlowElementType {
+class IfcParse_EXPORT IfcFlowTerminalType : public IfcDistributionFlowElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
@@ -32583,7 +32585,7 @@ public:
 /// The occurrences of the IfcFlowTreatmentDeviceType are represented by instances of IfcFlowTreatmentDevice or its subtypes. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IfcFlowTreatmentDeviceType : public IfcDistributionFlowElementType {
+class IfcParse_EXPORT IfcFlowTreatmentDeviceType : public IfcDistributionFlowElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElementType::getArgumentType(i); }
@@ -32606,7 +32608,7 @@ public:
 /// Material Use Definition:
 /// 
 /// Material profile set or material layer set association analogous to IfcBeamStandardCase or IfcSlabStandardCase should be used when applicable.
-class IfcFootingType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcFootingType : public IfcBuildingElementType {
 public:
     /// Subtype of footing.
     IfcFootingTypeEnum::IfcFootingTypeEnum PredefinedType() const;
@@ -32727,7 +32729,7 @@ public:
 /// 'FootPrint', or 'Body' (depending of the representation map)
 /// IfcShapeRepresentation.RepresentationType =
 /// 'MappedRepresentation'
-class IfcFurnishingElement : public IfcElement {
+class IfcParse_EXPORT IfcFurnishingElement : public IfcElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
@@ -32772,7 +32774,7 @@ public:
 /// The IfcFurniture may be decomposed into components using IfcRelAggregates where RelatingObject refers to the enclosing IfcFurniture and RelatedObjects contains one or more components.  Composition use is defined for the following predefined types:
 /// 
 /// (All Types): May contain IfcSystemFurnitureElement components.  Modular furniture may be aggregated into components.
-class IfcFurniture : public IfcFurnishingElement {
+class IfcParse_EXPORT IfcFurniture : public IfcFurnishingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcFurniture
     bool hasPredefinedType() const;
@@ -32930,7 +32932,7 @@ public:
 /// RepresentationIdentifier : 'FootPrint' for 2D
 /// representation, 'Body' for 3D representation
 /// RepresentationType :ÿ'MappedRepresentation'
-class IfcGeographicElement : public IfcElement {
+class IfcParse_EXPORT IfcGeographicElement : public IfcElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcGeographicElement
     bool hasPredefinedType() const;
@@ -33045,7 +33047,7 @@ public:
 /// As shown in Figure 33, the attributes UAxes and VAxes define lists of IfcGridAxis within the context of the grid. Each instance of IfcGridAxis refers to the same instance of IfcCurve (here the subtype IfcPolyline) that is contained within the IfcGeometricCurveSet that represents the IfcGrid.
 /// 
 /// Figure 33 — Grid representation
-class IfcGrid : public IfcProduct {
+class IfcParse_EXPORT IfcGrid : public IfcProduct {
 public:
     /// List of grid axes defining the first row of grid lines.
     IfcTemplatedEntityList< IfcGridAxis >::ptr UAxes() const;
@@ -33105,7 +33107,7 @@ public:
 /// Groups can be subjected to a control. The control information is then assigned:
 /// 
 /// Controls: affecting the group using IfcRelAssignsToControl
-class IfcGroup : public IfcObject {
+class IfcParse_EXPORT IfcGroup : public IfcObject {
 public:
     virtual unsigned int getArgumentCount() const { return 5; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcObject::getArgumentType(i); }
@@ -33149,7 +33151,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcHeatExchangerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcHeatExchanger for standard port definitions.
-class IfcHeatExchangerType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcHeatExchangerType : public IfcEnergyConversionDeviceType {
 public:
     /// Defines the basic types of heat exchanger (e.g., plate, shell and tube, etc.).
     IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum PredefinedType() const;
@@ -33192,7 +33194,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcHumidifierType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcHumidifier for standard port definitions.
-class IfcHumidifierType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcHumidifierType : public IfcEnergyConversionDeviceType {
 public:
     /// Defines the type of humidifier.
     IfcHumidifierTypeEnum::IfcHumidifierTypeEnum PredefinedType() const;
@@ -33242,7 +33244,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcInterceptorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcInterceptor for standard port definitions.
-class IfcInterceptorType : public IfcFlowTreatmentDeviceType {
+class IfcParse_EXPORT IfcInterceptorType : public IfcFlowTreatmentDeviceType {
 public:
     IfcInterceptorTypeEnum::IfcInterceptorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcInterceptorTypeEnum::IfcInterceptorTypeEnum v);
@@ -33269,7 +33271,7 @@ public:
 /// IfcElement: Elements such as furniture included in the inventory.
 /// 
 /// IfcSpace: Spaces included in the inventory.
-class IfcInventory : public IfcGroup {
+class IfcParse_EXPORT IfcInventory : public IfcGroup {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcInventory
     bool hasPredefinedType() const;
@@ -33344,7 +33346,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcJunctionBoxType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcJunctionBox for standard port definitions.
-class IfcJunctionBoxType : public IfcFlowFittingType {
+class IfcParse_EXPORT IfcJunctionBoxType : public IfcFlowFittingType {
 public:
     /// Identifies the predefined types of junction boxes from which the type required may be set.
     IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum PredefinedType() const;
@@ -33385,7 +33387,7 @@ public:
 /// In addition to assignments specified at the base class IfcConstructionResource, a labor resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcLaborResource and RelatedObjects contains one or more IfcActor subtypes as shown in Figure 194.  Such relationship indicates the specific people used as input for the resource.  Such actors are nested according to organizational structure with the root organization assigned to the IfcProject.  The IfcActor entity is used to represent the people or organizations.
 /// 
 /// Figure 194 — Labor resource assignment use
-class IfcLaborResource : public IfcConstructionResource {
+class IfcParse_EXPORT IfcLaborResource : public IfcConstructionResource {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcLaborResource
     bool hasPredefinedType() const;
@@ -33434,7 +33436,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcLampType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcLamp for standard port definitions.
-class IfcLampType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcLampType : public IfcFlowTerminalType {
 public:
     /// Identifies the predefined types of lamp from which the type required may be set.
     IfcLampTypeEnum::IfcLampTypeEnum PredefinedType() const;
@@ -33482,7 +33484,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcLightFixtureType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcLightFixture for standard port definitions.
-class IfcLightFixtureType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcLightFixtureType : public IfcFlowTerminalType {
 public:
     /// Identifies the predefined types of light fixture from which the type required may be set.
     IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum PredefinedType() const;
@@ -33528,7 +33530,7 @@ public:
 /// the IfcMechanicalFastener via IfcRelDefinesByProperties.  The quantity should contain an
 /// IfcQuantityCount named 'Count' with the number of fasteners and an IfcQuantityLength
 /// named 'Spacing' which expresses the center-to-center distances of fasteners.
-class IfcMechanicalFastener : public IfcElementComponent {
+class IfcParse_EXPORT IfcMechanicalFastener : public IfcElementComponent {
 public:
     /// Whether the optional attribute NominalDiameter is defined for this IfcMechanicalFastener
     bool hasNominalDiameter() const;
@@ -33590,7 +33592,7 @@ public:
 /// The following property set definitions are applicable to this entity according to the PredefinedType attribute:
 /// 
 /// Pset_MechanicalFastenerBolt (BOLT)
-class IfcMechanicalFastenerType : public IfcElementComponentType {
+class IfcParse_EXPORT IfcMechanicalFastenerType : public IfcElementComponentType {
 public:
     /// Subtype of mechanical fastener
     IfcMechanicalFastenerTypeEnum::IfcMechanicalFastenerTypeEnum PredefinedType() const;
@@ -33643,7 +33645,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcMedicalDeviceType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcMedicalDevice for standard port definitions.
-class IfcMedicalDeviceType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcMedicalDeviceType : public IfcFlowTerminalType {
 public:
     IfcMedicalDeviceTypeEnum::IfcMedicalDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcMedicalDeviceTypeEnum::IfcMedicalDeviceTypeEnum v);
@@ -33760,7 +33762,7 @@ public:
 /// IfcShapeRepresentation are restricted in the same way as
 /// those for IfcMember and
 /// IfcMemberStandardCase
-class IfcMemberType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcMemberType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a linear structural member element from which the type required may be set.
     IfcMemberTypeEnum::IfcMemberTypeEnum PredefinedType() const;
@@ -33804,7 +33806,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcMotorConnectionType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcMotorConnection for standard port definitions.
-class IfcMotorConnectionType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcMotorConnectionType : public IfcEnergyConversionDeviceType {
 public:
     /// Identifies the predefined types of motor connection from which the type required may be set.
     IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum PredefinedType() const;
@@ -33828,7 +33830,7 @@ public:
 /// Assignment Use Definition 
 ///   The IfcOccupant may have assignments of its own using the IfcRelAssignsToActor relationship where RelatingActor refers to the IfcOccupant and RelatedObjects contains one or more objects of the following types:  
 /// IfcSpatialStructureElement: Indicates the property to be occupied. Particular details of the agreement relating to the occupancy of a property are dealt within the Pset_PropertyAgreement that is defined for the instance of IfcSpatialStructureElement. This means that an occupant may be related to a site, building, building storey or space through the IfcSpatialStructureElement.ElementComposition attribute. For instance, if the property concerned is several office spaces on a building storey, it might be appropriate to reference IfcBuildingStorey.ElementComposition=PARTIAL.  Occupants of a property may be considered to be the parties to an agreement. The roles that the occupant may play in respect to an agreement are defined in the IfcOccupantTypeEnum enumeration. If the role is not specified by the predefined contents of this enumeration, the value USERDEFINED may be set and the ObjectType attribute asserted.
-class IfcOccupant : public IfcActor {
+class IfcParse_EXPORT IfcOccupant : public IfcActor {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcOccupant
     bool hasPredefinedType() const;
@@ -34051,7 +34053,7 @@ public:
 /// NOTE  The local placement directions for the IfcOpeningElement are only given as an example, other directions are valid as well.
 /// 
 /// Figure 36 — Opening with multiple extrusions
-class IfcOpeningElement : public IfcFeatureElementSubtraction {
+class IfcParse_EXPORT IfcOpeningElement : public IfcFeatureElementSubtraction {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcOpeningElement
     bool hasPredefinedType() const;
@@ -34166,7 +34168,7 @@ public:
 /// opening height
 /// 
 /// Figure 37 — Opening standard representation
-class IfcOpeningStandardCase : public IfcOpeningElement {
+class IfcParse_EXPORT IfcOpeningStandardCase : public IfcOpeningElement {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcOpeningElement::getArgumentType(i); }
@@ -34209,7 +34211,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcOutletType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcOutlet for standard port definitions.
-class IfcOutletType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcOutletType : public IfcFlowTerminalType {
 public:
     /// Identifies the predefined types of outlet from which the type required may be set.
     IfcOutletTypeEnum::IfcOutletTypeEnum PredefinedType() const;
@@ -34231,7 +34233,7 @@ public:
 /// IfcPerformanceHistory is assigned to other objects (represented by subtypes of IfcObjectDefinition, excluding subtypes of IfcControl), by the objectified relationship IfcRelAssignsToControl.
 /// 
 /// HISTORY: New entity in Release IFC2x Edition 2.
-class IfcPerformanceHistory : public IfcControl {
+class IfcParse_EXPORT IfcPerformanceHistory : public IfcControl {
 public:
     /// Describes the applicable building life-cycle phase. Typical values should be DESIGNDEVELOPMENT, SCHEMATICDEVELOPMENT, CONSTRUCTIONDOCUMENT, CONSTRUCTION, ASBUILT, COMMISSIONING, OPERATION, etc.
     std::string LifeCyclePhase() const;
@@ -34286,7 +34288,7 @@ public:
 /// As shown in Figure 174, the panel is applied to the position within the lining, as defined by the panel position attribute. The following parameters apply to that panel: FrameDepth, FrameThickness.
 /// 
 /// Figure 174 — Permeable covering properties
-class IfcPermeableCoveringProperties : public IfcPreDefinedPropertySet {
+class IfcParse_EXPORT IfcPermeableCoveringProperties : public IfcPreDefinedPropertySet {
 public:
     /// Types of permeable covering operations. Also used to assign standard symbolic presentations according to national building standards.
     IfcPermeableCoveringOperationEnum::IfcPermeableCoveringOperationEnum OperationType() const;
@@ -34358,7 +34360,7 @@ public:
 /// 
 /// Approval Use Definition 
 /// Approvals may be associated to indicate the status of acceptance or rejection using the IfcRelAssociatesApproval relationship where RelatingApproval refers to an IfcApproval and RelatedObjects contains the IfcPermit.  Approvals may be split into sub-approvals using IfcApprovalRelationship to track approval status separately for each party where RelatingApproval refers to the higher-level approval and RelatedApprovals contains one or more lower-level approvals.  The hierarchy of approvals implies sequencing such that a higher-level approval is not executed until all of its lower-level approvals have been accepted.
-class IfcPermit : public IfcControl {
+class IfcParse_EXPORT IfcPermit : public IfcControl {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcPermit
     bool hasPredefinedType() const;
@@ -34400,7 +34402,7 @@ public:
 /// Material Use Definition:
 /// 
 /// Material profile set association analogous to IfcColumnStandardCase should be used when applicable.
-class IfcPileType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcPileType : public IfcBuildingElementType {
 public:
     /// Subtype of pile.
     IfcPileTypeEnum::IfcPileTypeEnum PredefinedType() const;
@@ -34446,7 +34448,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcPipeFittingType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcPipeFitting for standard port definitions.
-class IfcPipeFittingType : public IfcFlowFittingType {
+class IfcParse_EXPORT IfcPipeFittingType : public IfcFlowFittingType {
 public:
     /// The type of pipe fitting.
     IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum PredefinedType() const;
@@ -34496,7 +34498,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcPipeSegmentType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcPipeSegment for standard port definitions.
-class IfcPipeSegmentType : public IfcFlowSegmentType {
+class IfcParse_EXPORT IfcPipeSegmentType : public IfcFlowSegmentType {
 public:
     /// The type of pipe segment.
     IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum PredefinedType() const;
@@ -34590,7 +34592,7 @@ public:
 /// 
 /// Pset_PlateCommon: common property set for all
 /// plate types.
-class IfcPlateType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcPlateType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a planar member element from which the type required may be set.
     IfcPlateTypeEnum::IfcPlateTypeEnum PredefinedType() const;
@@ -34621,7 +34623,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: polyline. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
 /// 
 /// HISTORY  New class in IFC Release 1.0
-class IfcPolyline : public IfcBoundedCurve {
+class IfcParse_EXPORT IfcPolyline : public IfcBoundedCurve {
 public:
     /// The points defining the polyline.
     IfcTemplatedEntityList< IfcCartesianPoint >::ptr Points() const;
@@ -34691,7 +34693,7 @@ public:
 /// The geometry use definitions for the shape representation
 ///   of the IfcPort is given at the level of
 ///   its subtypes.
-class IfcPort : public IfcProduct {
+class IfcParse_EXPORT IfcPort : public IfcProduct {
 public:
     virtual unsigned int getArgumentCount() const { return 7; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcProduct::getArgumentType(i); }
@@ -34812,7 +34814,7 @@ public:
 ///   item as a whole but provides inner detail of the item.
 /// 
 /// Figure 12 — Procedure relationships
-class IfcProcedure : public IfcProcess {
+class IfcParse_EXPORT IfcProcedure : public IfcProcess {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcProcedure
     bool hasPredefinedType() const;
@@ -34875,7 +34877,7 @@ public:
 /// 
 /// Approval Use Definition 
 /// Approvals may be associated to indicate the status of acceptance or rejection using the IfcRelAssociatesApproval relationship where RelatingApproval refers to an IfcApproval and RelatedObjects contains the IfcProjectOrder.  Approvals may be split into sub-approvals using IfcApprovalRelationship to track approval status separately for each party where RelatingApproval refers to the higher-level approval and RelatedApprovals contains one or more lower-level approvals.  The hierarchy of approvals implies sequencing such that a higher-level approval is not executed until all of its lower-level approvals have been accepted.
-class IfcProjectOrder : public IfcControl {
+class IfcParse_EXPORT IfcProjectOrder : public IfcControl {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcProjectOrder
     bool hasPredefinedType() const;
@@ -35021,7 +35023,7 @@ public:
 /// 
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'Brep'
-class IfcProjectionElement : public IfcFeatureElementAddition {
+class IfcParse_EXPORT IfcProjectionElement : public IfcFeatureElementAddition {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcProjectionElement
     bool hasPredefinedType() const;
@@ -35077,7 +35079,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcProtectiveDeviceType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcProtectiveDevice for standard port definitions.
-class IfcProtectiveDeviceType : public IfcFlowControllerType {
+class IfcParse_EXPORT IfcProtectiveDeviceType : public IfcFlowControllerType {
 public:
     /// Identifies the predefined types of protective device from which the type required may be set.
     IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum PredefinedType() const;
@@ -35122,7 +35124,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcPumpType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcPump for standard port definitions.
-class IfcPumpType : public IfcFlowMovingDeviceType {
+class IfcParse_EXPORT IfcPumpType : public IfcFlowMovingDeviceType {
 public:
     /// Defines the type of pump typically used in building services.
     IfcPumpTypeEnum::IfcPumpTypeEnum PredefinedType() const;
@@ -35159,7 +35161,7 @@ public:
 /// 
 /// HISTORY New entity in Release IFC2x
 ///   Editon 2.
-class IfcRailingType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcRailingType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a railing element from which the type required may be set.
     IfcRailingTypeEnum::IfcRailingTypeEnum PredefinedType() const;
@@ -35196,7 +35198,7 @@ public:
 /// 
 /// HISTORY New entity in Release IFC2x
 ///   Edition 2.
-class IfcRampFlightType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcRampFlightType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a ramp flight element from which the type required may be set.
     IfcRampFlightTypeEnum::IfcRampFlightTypeEnum PredefinedType() const;
@@ -35246,7 +35248,7 @@ public:
 /// 
 /// HISTORY New entity in Release
 ///   IFC2x Edition 4.
-class IfcRampType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcRampType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a ramp element from which the type required may be set.
     IfcRampTypeEnum::IfcRampTypeEnum PredefinedType() const;
@@ -35276,7 +35278,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: rational_b_spline_surface. Please refer to ISO/IS 10303-42:1994, p. 85 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC2x4.
-class IfcRationalBSplineSurfaceWithKnots : public IfcBSplineSurfaceWithKnots {
+class IfcParse_EXPORT IfcRationalBSplineSurfaceWithKnots : public IfcBSplineSurfaceWithKnots {
 public:
     /// The weights associated with the control points in the rational case.
     std::vector< std::vector< double > > WeightsData() const;
@@ -35301,7 +35303,7 @@ public:
 /// Subtypes IfcTendon and IfcTendonAnchor removed.
 /// Attribute SteelGrade removed.
 /// Attributes PredefinedType and Role added.
-class IfcReinforcingElement : public IfcElementComponent {
+class IfcParse_EXPORT IfcReinforcingElement : public IfcElementComponent {
 public:
     /// Whether the optional attribute SteelGrade is defined for this IfcReinforcingElement
     bool hasSteelGrade() const;
@@ -35322,7 +35324,7 @@ public:
 /// Definition from IAI: Types of bars, wires, strands, meshes, tendons, and other components embedded in concrete in such a manner that the reinforcement and the concrete act together in resisting forces.
 /// 
 /// HISTORY New entity in IFC Release 2x4
-class IfcReinforcingElementType : public IfcElementComponentType {
+class IfcParse_EXPORT IfcReinforcingElementType : public IfcElementComponentType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElementComponentType::getArgumentType(i); }
@@ -35360,7 +35362,7 @@ public:
 /// 
 /// Simplified Geometric Representation
 /// Simplified geometric representations may be used based on local agreements.
-class IfcReinforcingMesh : public IfcReinforcingElement {
+class IfcParse_EXPORT IfcReinforcingMesh : public IfcReinforcingElement {
 public:
     /// Whether the optional attribute MeshLength is defined for this IfcReinforcingMesh
     bool hasMeshLength() const;
@@ -35422,7 +35424,7 @@ public:
 /// Geometry Use Definition:
 /// 
 /// The IfcReinforcingMeshType may define the shared geometric representation for all mesh occurrences. The RepresentationMaps attribute refers to a list of IfcRepresentationMap's, that allow for multiple geometric representations.
-class IfcReinforcingMeshType : public IfcReinforcingElementType {
+class IfcParse_EXPORT IfcReinforcingMeshType : public IfcReinforcingElementType {
 public:
     /// The predefined type is always MESH.
     IfcReinforcingMeshTypeEnum::IfcReinforcingMeshTypeEnum PredefinedType() const;
@@ -35509,7 +35511,7 @@ public:
 /// HISTORY New entity in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE The attributes RelatingObject and RelatedObjects are demoted from the supertype IfcRelDecomposes.
-class IfcRelAggregates : public IfcRelDecomposes {
+class IfcParse_EXPORT IfcRelAggregates : public IfcRelDecomposes {
 public:
     /// The object definition, either an object type or an object occurrence, that represents the aggregation. It is the whole within the whole/part relationship.
     /// 
@@ -35565,7 +35567,7 @@ public:
 /// 
 /// HISTORY New entity in Release
 ///   IFC2x Edition 4.
-class IfcRoofType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcRoofType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a roof element from which the type required may be set.
     IfcRoofTypeEnum::IfcRoofTypeEnum PredefinedType() const;
@@ -35619,7 +35621,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcSanitaryTerminalType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcSanitaryTerminal for standard port definitions.
-class IfcSanitaryTerminalType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcSanitaryTerminalType : public IfcFlowTerminalType {
 public:
     /// Identifies the predefined types of sanitary terminal from which the type required may be set.
     IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum PredefinedType() const;
@@ -35657,7 +35659,7 @@ public:
 /// represented by instances of IfcShadingDevice.
 /// HISTORY New entity in
 /// Release IFC2x4.
-class IfcShadingDeviceType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcShadingDeviceType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a shading device element from which the type required may be set.
     IfcShadingDeviceTypeEnum::IfcShadingDeviceTypeEnum PredefinedType() const;
@@ -35863,7 +35865,7 @@ public:
 /// 'Body'
 /// IfcShapeRepresentation.RepresentationType = 'Brep', or
 /// 'SurfaceModel'
-class IfcSite : public IfcSpatialStructureElement {
+class IfcParse_EXPORT IfcSite : public IfcSpatialStructureElement {
 public:
     /// Whether the optional attribute RefLatitude is defined for this IfcSite
     bool hasRefLatitude() const;
@@ -35982,7 +35984,7 @@ public:
 /// 
 /// Pset_SlabCommon: common property set for all
 /// slab types.
-class IfcSlabType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcSlabType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a slab element from which the type required may be set.
     IfcSlabTypeEnum::IfcSlabTypeEnum PredefinedType() const;
@@ -36025,7 +36027,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcSolarDeviceType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcSolarDevice for standard port definitions.
-class IfcSolarDeviceType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcSolarDeviceType : public IfcEnergyConversionDeviceType {
 public:
     IfcSolarDeviceTypeEnum::IfcSolarDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSolarDeviceTypeEnum::IfcSolarDeviceTypeEnum v);
@@ -36291,7 +36293,7 @@ public:
 /// 'Body'
 /// IfcShapeRepresentation.RepresentationType :
 /// 'Brep'
-class IfcSpace : public IfcSpatialStructureElement {
+class IfcParse_EXPORT IfcSpace : public IfcSpatialStructureElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSpace
     bool hasPredefinedType() const;
@@ -36351,7 +36353,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcSpaceHeaterType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcSpaceHeater for standard port definitions.
-class IfcSpaceHeaterType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcSpaceHeaterType : public IfcFlowTerminalType {
 public:
     /// Enumeration of possible types of space heater (e.g., baseboard heater, convector, radiator, etc.).
     IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum PredefinedType() const;
@@ -36449,7 +36451,7 @@ public:
 /// agreements may prevent the usage of shared geometry for
 /// spaces.
 /// .
-class IfcSpaceType : public IfcSpatialStructureElementType {
+class IfcParse_EXPORT IfcSpaceType : public IfcSpatialStructureElementType {
 public:
     /// Predefined types to define the particular type of space. There may be property set definitions available for each predefined type.
     IfcSpaceTypeEnum::IfcSpaceTypeEnum PredefinedType() const;
@@ -36496,7 +36498,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcStackTerminalType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcStackTerminal for standard port definitions.
-class IfcStackTerminalType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcStackTerminalType : public IfcFlowTerminalType {
 public:
     /// Identifies the predefined types of stack terminal from which the type required may be set.
     IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum PredefinedType() const;
@@ -36533,7 +36535,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x
 ///   Edition 2.
-class IfcStairFlightType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcStairFlightType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a stair flight element from which the type required may be set.
     IfcStairFlightTypeEnum::IfcStairFlightTypeEnum PredefinedType() const;
@@ -36583,7 +36585,7 @@ public:
 /// 
 /// HISTORY New entity in Release
 ///   IFC2x Edition 4.
-class IfcStairType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcStairType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a stair element from which the type required may be set.
     IfcStairTypeEnum::IfcStairTypeEnum PredefinedType() const;
@@ -36619,7 +36621,7 @@ public:
 /// IfcRelAssignsToProduct relationship object.  IfcRelAssignsToProduct.Name is set to
 /// 'Causes' and IfcRelAssignsToProduct.RelatedObjects refers to an instance of a subtype of
 /// IfcStructuralReaction.
-class IfcStructuralAction : public IfcStructuralActivity {
+class IfcParse_EXPORT IfcStructuralAction : public IfcStructuralActivity {
 public:
     /// Whether the optional attribute DestabilizingLoad is defined for this IfcStructuralAction
     bool hasDestabilizingLoad() const;
@@ -36641,7 +36643,7 @@ public:
 /// Definition from IAI: An IfcStructuralConnection represents a structural connection object (node i.e. vertex connection, or edge connection, or surface connection) or supports.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IfcStructuralConnection : public IfcStructuralItem {
+class IfcParse_EXPORT IfcStructuralConnection : public IfcStructuralItem {
 public:
     /// Whether the optional attribute AppliedCondition is defined for this IfcStructuralConnection
     bool hasAppliedCondition() const;
@@ -36717,7 +36719,7 @@ public:
 ///   (Single point loads are modeled by IfcStructuralPointAction.)
 ///   All items in SELF\IfcStructuralActivity.AppliedLoad\IfcStructuralLoadConfiguration.Values
 ///   shall be of the same entity type.
-class IfcStructuralCurveAction : public IfcStructuralAction {
+class IfcParse_EXPORT IfcStructuralCurveAction : public IfcStructuralAction {
 public:
     /// Whether the optional attribute ProjectedOrTrue is defined for this IfcStructuralCurveAction
     bool hasProjectedOrTrue() const;
@@ -36756,7 +36758,7 @@ public:
 /// Informal propositions:
 /// 
 /// The reference curve must not be parallel with Axis at any point within the curve connections's domain.
-class IfcStructuralCurveConnection : public IfcStructuralConnection {
+class IfcParse_EXPORT IfcStructuralCurveConnection : public IfcStructuralConnection {
 public:
     /// Direction which is used in the definition of the local z axis.  Axis is specified relative to the so-called global coordinate system, i.e. the SELF\IfcProduct.ObjectPlacement.
     /// 
@@ -36812,7 +36814,7 @@ public:
 /// Informal propositions:
 /// 
 /// The reference curve must not be parallel with Axis at any point within the curve member's domain.
-class IfcStructuralCurveMember : public IfcStructuralMember {
+class IfcParse_EXPORT IfcStructuralCurveMember : public IfcStructuralMember {
 public:
     /// Type of member with respect to its load carrying behavior in this analysis idealization.
     IfcStructuralCurveMemberTypeEnum::IfcStructuralCurveMemberTypeEnum PredefinedType() const;
@@ -36854,7 +36856,7 @@ public:
 /// Topology Use Definitions:
 /// 
 /// Instances of IfcStructuralCurveMemberVarying may have a topology representation which contains a single IfcEdgeLoop, based upon the edges of the parts.
-class IfcStructuralCurveMemberVarying : public IfcStructuralCurveMember {
+class IfcParse_EXPORT IfcStructuralCurveMemberVarying : public IfcStructuralCurveMember {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralCurveMember::getArgumentType(i); }
@@ -36918,7 +36920,7 @@ public:
 ///   item are located at the beginning and end of the result distribution, respectively.
 ///   All items in SELF\IfcStructuralActivity.AppliedLoad\IfcStructuralLoadConfiguration.Values
 ///   shall be of the same entity type.
-class IfcStructuralCurveReaction : public IfcStructuralReaction {
+class IfcParse_EXPORT IfcStructuralCurveReaction : public IfcStructuralReaction {
 public:
     /// Type of reaction according to its distribution of load values.
     IfcStructuralCurveActivityTypeEnum::IfcStructuralCurveActivityTypeEnum PredefinedType() const;
@@ -36942,7 +36944,7 @@ public:
 /// IFC 2x4 change:  Intermediate supertype IfcStructuralCurveAction inserted.  Derived attribute PredefinedType added.
 /// 
 /// NOTE  Like its supertype IfcStructuralCurveAction, this action type may also act on curved edges.
-class IfcStructuralLinearAction : public IfcStructuralCurveAction {
+class IfcParse_EXPORT IfcStructuralLinearAction : public IfcStructuralCurveAction {
 public:
     virtual unsigned int getArgumentCount() const { return 12; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralCurveAction::getArgumentType(i); }
@@ -36989,7 +36991,7 @@ public:
 ///   Instances of IfcStructuralLoadCase shall only contain instances of IfcStructuralAction
 ///   or/ and instances of IfcStructuralLoadGroup of type LOAD_GROUP.
 ///   Load groups of type LOAD_COMBINATION shall only contain instances of IfcStructuralLoadCase.
-class IfcStructuralLoadGroup : public IfcGroup {
+class IfcParse_EXPORT IfcStructuralLoadGroup : public IfcGroup {
 public:
     /// Selects a predefined type for the load group.  It can be differentiated between load groups, load cases, load combinations, or userdefined grouping levels.
     IfcLoadGroupTypeEnum::IfcLoadGroupTypeEnum PredefinedType() const;
@@ -37069,7 +37071,7 @@ public:
 /// SELF\IfcStructuralActivity.AppliedLoad shall be of type
 ///   IfcStructuralLoadSingleForce or
 ///   IfcStructuralLoadSingleDisplacement.
-class IfcStructuralPointAction : public IfcStructuralAction {
+class IfcParse_EXPORT IfcStructuralPointAction : public IfcStructuralAction {
 public:
     virtual unsigned int getArgumentCount() const { return 10; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralAction::getArgumentType(i); }
@@ -37096,7 +37098,7 @@ public:
 /// Topology Use Definitions:
 /// 
 /// Instances of IfcStructuralPointConnection shall have a topology representation which consists of one IfcVertexPoint, representing the reference point of the point connection.  See definitions at IfcStructuralItem for further specifications.
-class IfcStructuralPointConnection : public IfcStructuralConnection {
+class IfcParse_EXPORT IfcStructuralPointConnection : public IfcStructuralConnection {
 public:
     /// Whether the optional attribute ConditionCoordinateSystem is defined for this IfcStructuralPointConnection
     bool hasConditionCoordinateSystem() const;
@@ -37158,7 +37160,7 @@ public:
 /// SELF\IfcStructuralActivity.AppliedLoad shall be of type
 ///   IfcStructuralLoadSingleForce or
 ///   IfcStructuralLoadSingleDisplacement.
-class IfcStructuralPointReaction : public IfcStructuralReaction {
+class IfcParse_EXPORT IfcStructuralPointReaction : public IfcStructuralReaction {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralReaction::getArgumentType(i); }
@@ -37176,7 +37178,7 @@ public:
 /// 
 /// HISTORY: New entity in IFC 2x2.
 /// IFC 2x4 change: WHERE rule added.
-class IfcStructuralResultGroup : public IfcGroup {
+class IfcParse_EXPORT IfcStructuralResultGroup : public IfcGroup {
 public:
     /// Specifies the analysis theory used to obtain the respective results.
     IfcAnalysisTheoryTypeEnum::IfcAnalysisTheoryTypeEnum TheoryType() const;
@@ -37254,7 +37256,7 @@ public:
 ///   (Single point loads are modeled by IfcStructuralPointLoad.)
 ///   All items in SELF\IfcStructuralActivity.AppliedLoad\IfcStructuralLoadConfiguration.Values
 ///   shall be of the same entity type.
-class IfcStructuralSurfaceAction : public IfcStructuralAction {
+class IfcParse_EXPORT IfcStructuralSurfaceAction : public IfcStructuralAction {
 public:
     /// Whether the optional attribute ProjectedOrTrue is defined for this IfcStructuralSurfaceAction
     bool hasProjectedOrTrue() const;
@@ -37288,7 +37290,7 @@ public:
 /// Topology Use Definitions:
 /// 
 /// Instances of IfcStructuralSurfaceConnection shall have a topology representation which consists of one IfcFaceSurface, representing the reference surface of the surface connection.  See definitions at IfcStructuralItem for further specifications.
-class IfcStructuralSurfaceConnection : public IfcStructuralConnection {
+class IfcParse_EXPORT IfcStructuralSurfaceConnection : public IfcStructuralConnection {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralConnection::getArgumentType(i); }
@@ -37326,7 +37328,7 @@ public:
 /// In addition to assignments specified at the base class IfcConstructionResource, a subcontract resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcSubContractResource and RelatedObjects contains one or more IfcActor, IfcCostSchedule, and/or IfcWorkOrder objects as shown in Figure 195.  An IfcActor indicates a specific organization to be considered to fulfill the resource or invited to bid on the resource.  An IfcCostSchedule indicates a bid or price quote made on behalf of an organization.  An IfcProjectOrder indicates a specific work order committed to fulfill the resource.
 /// 
 /// Figure 195 — Subcontract assignment use
-class IfcSubContractResource : public IfcConstructionResource {
+class IfcParse_EXPORT IfcSubContractResource : public IfcConstructionResource {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSubContractResource
     bool hasPredefinedType() const;
@@ -37378,7 +37380,7 @@ public:
 ///   Surface representations of treated parts of the lement surface by means of IfcShellBasedSurfaceModel.  The faces within the surface model may be included into a B-Rep model within a representation map of the parent element type.
 /// 
 /// Higher-level parameters (geometric and non-geometric) may be provided by property sets based on local agreements.
-class IfcSurfaceFeature : public IfcFeatureElement {
+class IfcParse_EXPORT IfcSurfaceFeature : public IfcFeatureElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSurfaceFeature
     bool hasPredefinedType() const;
@@ -37437,7 +37439,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcSwitchingDeviceType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcSwitchingDevice for standard port definitions.
-class IfcSwitchingDeviceType : public IfcFlowControllerType {
+class IfcParse_EXPORT IfcSwitchingDeviceType : public IfcFlowControllerType {
 public:
     /// Identifies the predefined types of switch from which the type required may be set.
     IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum PredefinedType() const;
@@ -37471,7 +37473,7 @@ public:
 /// 
 /// HISTORY: New entity in
 ///   IFC Release 1.0
-class IfcSystem : public IfcGroup {
+class IfcParse_EXPORT IfcSystem : public IfcGroup {
 public:
     virtual unsigned int getArgumentCount() const { return 5; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcGroup::getArgumentType(i); }
@@ -37510,7 +37512,7 @@ public:
 /// 'Hardware': Finish hardware such as knobs or handles. 
 /// 'Padding': Padding such as cushions. 
 /// 'Panel': Panels such as glass.
-class IfcSystemFurnitureElement : public IfcFurnishingElement {
+class IfcParse_EXPORT IfcSystemFurnitureElement : public IfcFurnishingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSystemFurnitureElement
     bool hasPredefinedType() const;
@@ -37560,7 +37562,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcTankType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcTank for standard port definitions.
-class IfcTankType : public IfcFlowStorageDeviceType {
+class IfcParse_EXPORT IfcTankType : public IfcFlowStorageDeviceType {
 public:
     /// Defines the type of tank.
     IfcTankTypeEnum::IfcTankTypeEnum PredefinedType() const;
@@ -37578,7 +37580,7 @@ public:
     typedef IfcTemplatedEntityList< IfcTankType > list;
 };
 
-class IfcTendon : public IfcReinforcingElement {
+class IfcParse_EXPORT IfcTendon : public IfcReinforcingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcTendon
     bool hasPredefinedType() const;
@@ -37625,7 +37627,7 @@ public:
     typedef IfcTemplatedEntityList< IfcTendon > list;
 };
 
-class IfcTendonAnchor : public IfcReinforcingElement {
+class IfcParse_EXPORT IfcTendonAnchor : public IfcReinforcingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcTendonAnchor
     bool hasPredefinedType() const;
@@ -37644,7 +37646,7 @@ public:
     typedef IfcTemplatedEntityList< IfcTendonAnchor > list;
 };
 
-class IfcTendonAnchorType : public IfcReinforcingElementType {
+class IfcParse_EXPORT IfcTendonAnchorType : public IfcReinforcingElementType {
 public:
     IfcTendonAnchorTypeEnum::IfcTendonAnchorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTendonAnchorTypeEnum::IfcTendonAnchorTypeEnum v);
@@ -37661,7 +37663,7 @@ public:
     typedef IfcTemplatedEntityList< IfcTendonAnchorType > list;
 };
 
-class IfcTendonType : public IfcReinforcingElementType {
+class IfcParse_EXPORT IfcTendonType : public IfcReinforcingElementType {
 public:
     IfcTendonTypeEnum::IfcTendonTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTendonTypeEnum::IfcTendonTypeEnum v);
@@ -37716,7 +37718,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcTransformerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcTransformer for standard port definitions.
-class IfcTransformerType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcTransformerType : public IfcEnergyConversionDeviceType {
 public:
     /// Identifies the predefined types of transformer from which the type required may be set.
     IfcTransformerTypeEnum::IfcTransformerTypeEnum PredefinedType() const;
@@ -37849,7 +37851,7 @@ public:
 /// 
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'MappedRepresentation'
-class IfcTransportElement : public IfcElement {
+class IfcParse_EXPORT IfcTransportElement : public IfcElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcTransportElement
     bool hasPredefinedType() const;
@@ -37948,7 +37950,7 @@ public:
 /// required to be consistent with the parameter values of Trim1
 /// and Trim1, so the rule (sense = parameter 1
 /// < parameter 2) may not be fulfilled.
-class IfcTrimmedCurve : public IfcBoundedCurve {
+class IfcParse_EXPORT IfcTrimmedCurve : public IfcBoundedCurve {
 public:
     /// The curve to be trimmed. For curves with multiple representations any parameter values given as Trim1 or Trim2 refer to the master representation of the BasisCurve only.
     IfcCurve* BasisCurve() const;
@@ -38006,7 +38008,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcTubeBundleType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcTubeBundle for standard port definitions.
-class IfcTubeBundleType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcTubeBundleType : public IfcEnergyConversionDeviceType {
 public:
     /// Defines the type of tube bundle.
     IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum PredefinedType() const;
@@ -38051,7 +38053,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcUnitaryEquipmentType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcUnitaryEquipment for standard port definitions.
-class IfcUnitaryEquipmentType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcUnitaryEquipmentType : public IfcEnergyConversionDeviceType {
 public:
     /// The type of unitary equipment.
     IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum PredefinedType() const;
@@ -38106,7 +38108,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcValveType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcValve for standard port definitions.
-class IfcValveType : public IfcFlowControllerType {
+class IfcParse_EXPORT IfcValveType : public IfcFlowControllerType {
 public:
     /// The type of valve.
     IfcValveTypeEnum::IfcValveTypeEnum PredefinedType() const;
@@ -38157,7 +38159,7 @@ public:
 /// 
 /// Body: The primary material from which the object is constructed.
 /// Damping: Material from which the damping element of the vibration isolator is constructed.
-class IfcVibrationIsolator : public IfcElementComponent {
+class IfcParse_EXPORT IfcVibrationIsolator : public IfcElementComponent {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcVibrationIsolator
     bool hasPredefinedType() const;
@@ -38197,7 +38199,7 @@ public:
 /// The material of the IfcVibrationIsolatorType is defined by IfcMaterialConstituentSet or as a fallback by IfcMaterial, and attached by the RelatingMaterial attribute on the IfcRelAssociatesMaterial relationship.  It is accessible by the HasAssociations inverse attribute.    The following keywords for IfcMaterialConstituentSet.MaterialConstituents[n].Name shall be used: 
 /// 
 /// 'Damping': Material from which the damping element of the vibration isolator is constructed.
-class IfcVibrationIsolatorType : public IfcElementComponentType {
+class IfcParse_EXPORT IfcVibrationIsolatorType : public IfcElementComponentType {
 public:
     /// Defines the type of vibration isolator.
     IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum PredefinedType() const;
@@ -38300,7 +38302,7 @@ public:
 /// 
 /// 'GeometricSet': a list of 3D surfaces within the constraints
 /// shown above.
-class IfcVirtualElement : public IfcElement {
+class IfcParse_EXPORT IfcVirtualElement : public IfcElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
@@ -38346,7 +38348,7 @@ public:
 ///   Surface representations of cutting planes by means of IfcShellBasedSurfaceModel.  The faces within the surface model may be included into a B-Rep model within a representation map of the parent element type.
 /// 
 /// Higher-level parameters (geometric and non-geometric) may be provided by property sets based on local agreements.
-class IfcVoidingFeature : public IfcFeatureElementSubtraction {
+class IfcParse_EXPORT IfcVoidingFeature : public IfcFeatureElementSubtraction {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcVoidingFeature
     bool hasPredefinedType() const;
@@ -38449,7 +38451,7 @@ public:
 /// 
 /// Pset_WallCommon: common property set for all
 /// wall types.
-class IfcWallType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcWallType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a wall element from which the type required may be set.
     IfcWallTypeEnum::IfcWallTypeEnum PredefinedType() const;
@@ -38502,7 +38504,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcWasteTerminalType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcWasteTerminal for standard port definitions.
-class IfcWasteTerminalType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcWasteTerminalType : public IfcFlowTerminalType {
 public:
     /// Identifies the predefined types of waste terminal from which the type required may be set.
     IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum PredefinedType() const;
@@ -38640,7 +38642,7 @@ public:
 /// IfcShapeRepresentation are restricted in the same way as
 /// those for IfcWindow and
 /// IfcWindowStandardCase
-class IfcWindowType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcWindowType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a window element from which the type required may be set.
     IfcWindowTypeEnum::IfcWindowTypeEnum PredefinedType() const;
@@ -38681,7 +38683,7 @@ public:
 /// Figure 17 shows the definition of a work calendar, which is defined by a set of work times and exception times. The work times are defined as recurring patterns with optional boundaries (applying from and/or to a specific date). The shown example defines a simple work calendar with working times Monday to Thursday 8:00 to 12:00 and 13:00 to 17:00, Friday 8:00 to 14:00 and as exception every 1st Monday in a month the work starts one hour later - i.e. the working time on every 1st Monday in a month is overriden to be 9:00 to 12:00 and 13:00 to 17:00. Both the working time and the exception time is valid for the period of 01.09.2010 till 30.08.2011.
 /// 
 /// Figure 17 — Work calendar instantiation
-class IfcWorkCalendar : public IfcControl {
+class IfcParse_EXPORT IfcWorkCalendar : public IfcControl {
 public:
     /// Whether the optional attribute WorkingTimes is defined for this IfcWorkCalendar
     bool hasWorkingTimes() const;
@@ -38761,7 +38763,7 @@ public:
 /// 
 /// Pset_WorkControlCommon: common
 ///   property set for work control
-class IfcWorkControl : public IfcControl {
+class IfcParse_EXPORT IfcWorkControl : public IfcControl {
 public:
     /// The date that the plan is created.
     std::string CreationDate() const;
@@ -38831,7 +38833,7 @@ public:
 ///   through IfcRelAssignsToControl.
 /// 
 /// Figure 18 — Work plan relationships
-class IfcWorkPlan : public IfcWorkControl {
+class IfcParse_EXPORT IfcWorkPlan : public IfcWorkControl {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcWorkPlan
     bool hasPredefinedType() const;
@@ -38891,7 +38893,7 @@ public:
 ///   task and not the work schedule.
 /// 
 /// Figure 19 — Work schedule relationships
-class IfcWorkSchedule : public IfcWorkControl {
+class IfcParse_EXPORT IfcWorkSchedule : public IfcWorkControl {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcWorkSchedule
     bool hasPredefinedType() const;
@@ -38996,7 +38998,7 @@ public:
 /// Pset_SpaceThermalRequirements: common
 /// property set for all types of zones to capture the thermal
 /// requirements
-class IfcZone : public IfcSystem {
+class IfcParse_EXPORT IfcZone : public IfcSystem {
 public:
     /// Whether the optional attribute LongName is defined for this IfcZone
     bool hasLongName() const;
@@ -39057,7 +39059,7 @@ public:
 /// 
 /// Approval Use Definition 
 /// Approvals may be associated to indicate the status of acceptance or rejection using the IfcRelAssociatesApproval relationship where RelatingApproval refers to an IfcApproval and RelatedObjects contains the IfcActionRequest.  Approvals may be split into sub-approvals using IfcApprovalRelationship to track approval status separately for each party where RelatingApproval refers to the higher-level approval and RelatedApprovals contains one or more lower-level approvals.  The hierarchy of approvals implies sequencing such that a higher-level approval is not executed until all of its lower-level approvals have been accepted.
-class IfcActionRequest : public IfcControl {
+class IfcParse_EXPORT IfcActionRequest : public IfcControl {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcActionRequest
     bool hasPredefinedType() const;
@@ -39122,7 +39124,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcAirTerminalBoxType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcAirTerminalBox for standard port definitions.
-class IfcAirTerminalBoxType : public IfcFlowControllerType {
+class IfcParse_EXPORT IfcAirTerminalBoxType : public IfcFlowControllerType {
 public:
     /// The air terminal box type.
     IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum PredefinedType() const;
@@ -39165,7 +39167,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcAirTerminalType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcAirTerminal for standard port definitions.
-class IfcAirTerminalType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcAirTerminalType : public IfcFlowTerminalType {
 public:
     IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum PredefinedType() const;
     void setPredefinedType(IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum v);
@@ -39207,7 +39209,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcAirToAirHeatRecoveryType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcAirToAirHeatRecovery for standard port definitions.
-class IfcAirToAirHeatRecoveryType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcAirToAirHeatRecoveryType : public IfcEnergyConversionDeviceType {
 public:
     /// Defines the type of air to air heat recovery device.
     IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum PredefinedType() const;
@@ -39248,7 +39250,7 @@ public:
 /// 
 /// The IfcAsset may have assignments of its own using the IfcRelAssignsToGroup relationship where RelatingGroup refers to the IfcAsset and RelatedObjects contains one or more objects of the following types:  
 /// IfcElement: Physical elements that comprise the asset.
-class IfcAsset : public IfcGroup {
+class IfcParse_EXPORT IfcAsset : public IfcGroup {
 public:
     /// Whether the optional attribute Identification is defined for this IfcAsset
     bool hasIdentification() const;
@@ -39354,7 +39356,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcAudioVisualApplianceType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcAudioVisualAppliance for standard port definitions.
-class IfcAudioVisualApplianceType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcAudioVisualApplianceType : public IfcFlowTerminalType {
 public:
     /// Identifies the predefined types of audio-visual appliance from which the type required may be set.
     IfcAudioVisualApplianceTypeEnum::IfcAudioVisualApplianceTypeEnum PredefinedType() const;
@@ -39420,7 +39422,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: b_spline_curve. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in Release IFC2x2.
-class IfcBSplineCurve : public IfcBoundedCurve {
+class IfcParse_EXPORT IfcBSplineCurve : public IfcBoundedCurve {
 public:
     /// The algebraic degree of the basis functions.
     int Degree() const;
@@ -39466,7 +39468,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: b_spline_curve_with_knots. Please refer to ISO/IS 10303-42:1994, p. 46 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x4.
-class IfcBSplineCurveWithKnots : public IfcBSplineCurve {
+class IfcParse_EXPORT IfcBSplineCurveWithKnots : public IfcBSplineCurve {
 public:
     /// The multiplicities of the knots. This list defines the number of times each knot in the knots list is to be repeated in constructing the knot array.
     std::vector< int > /*[2:?]*/ KnotMultiplicities() const;
@@ -39587,7 +39589,7 @@ public:
 /// IfcShapeRepresentation are restricted in the same way as
 /// those for IfcBeam and
 /// IfcBeamStandardCase
-class IfcBeamType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcBeamType : public IfcBuildingElementType {
 public:
     /// Identifies the predefined types of a beam element from which the type required may be set.
     IfcBeamTypeEnum::IfcBeamTypeEnum PredefinedType() const;
@@ -39633,7 +39635,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcBoilerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcBoiler for standard port definitions.
-class IfcBoilerType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcBoilerType : public IfcEnergyConversionDeviceType {
 public:
     /// Defines types of boilers.
     IfcBoilerTypeEnum::IfcBoilerTypeEnum PredefinedType() const;
@@ -39657,7 +39659,7 @@ public:
 /// NOTEÿ Corresponding ISO 10303 entity: boundary_curve. Please refer to ISO/IS 10303-42:1994, p.89 for the final definition of the formal standard.
 /// 
 /// HISTORYÿ New entity in IFC2x4.
-class IfcBoundaryCurve : public IfcCompositeCurveOnSurface {
+class IfcParse_EXPORT IfcBoundaryCurve : public IfcCompositeCurveOnSurface {
 public:
     virtual unsigned int getArgumentCount() const { return 2; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcCompositeCurveOnSurface::getArgumentType(i); }
@@ -40034,7 +40036,7 @@ public:
 /// 'AdvancedBrep' geometric representation, shall apply to the
 /// MappedRepresentation of the
 /// IfcRepresentationMap.
-class IfcBuildingElement : public IfcElement {
+class IfcParse_EXPORT IfcBuildingElement : public IfcElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
@@ -40066,7 +40068,7 @@ public:
 /// Moved from from IfcStructuralElementsDomain schema to
 /// IfcSharedComponentElements schema, compatible change of supertype,
 /// attribute PredefinedType added.
-class IfcBuildingElementPart : public IfcElementComponent {
+class IfcParse_EXPORT IfcBuildingElementPart : public IfcElementComponent {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcBuildingElementPart
     bool hasPredefinedType() const;
@@ -40089,7 +40091,7 @@ public:
 /// lists of commonly shared property set definitions and representation maps of parts of a building element.
 /// 
 /// HISTORY New entity in IFC Release 2x4
-class IfcBuildingElementPartType : public IfcElementComponentType {
+class IfcParse_EXPORT IfcBuildingElementPartType : public IfcElementComponentType {
 public:
     /// Subtype of building element part
     IfcBuildingElementPartTypeEnum::IfcBuildingElementPartTypeEnum PredefinedType() const;
@@ -40296,7 +40298,7 @@ public:
 /// 
 /// No further restrictions (e.g., for the depths of the CSG tree)
 /// are defined at this level.
-class IfcBuildingElementProxy : public IfcBuildingElement {
+class IfcParse_EXPORT IfcBuildingElementProxy : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcBuildingElementProxy
     bool hasPredefinedType() const;
@@ -40348,7 +40350,7 @@ public:
 /// 
 /// HISTORYÿ New entity in
 ///   Release IFC2x Edition 3.
-class IfcBuildingElementProxyType : public IfcBuildingElementType {
+class IfcParse_EXPORT IfcBuildingElementProxyType : public IfcBuildingElementType {
 public:
     /// Predefined types to define the particular type of an building element proxy. There may be property set definitions available for each predefined or user defined type.
     IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum PredefinedType() const;
@@ -40401,7 +40403,7 @@ public:
 /// 
 /// Pset_BuildingSystemCommon: common property
 /// set for building system occurrences
-class IfcBuildingSystem : public IfcSystem {
+class IfcParse_EXPORT IfcBuildingSystem : public IfcSystem {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcBuildingSystem
     bool hasPredefinedType() const;
@@ -40447,7 +40449,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcBurnerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcBurner for standard port definitions.
-class IfcBurnerType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcBurnerType : public IfcEnergyConversionDeviceType {
 public:
     IfcBurnerTypeEnum::IfcBurnerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBurnerTypeEnum::IfcBurnerTypeEnum v);
@@ -40489,7 +40491,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCableCarrierFittingType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCableCarrierFitting for standard port definitions.
-class IfcCableCarrierFittingType : public IfcFlowFittingType {
+class IfcParse_EXPORT IfcCableCarrierFittingType : public IfcFlowFittingType {
 public:
     /// Identifies the predefined types of cable carrier fitting from which the type required may be set.
     IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum PredefinedType() const;
@@ -40538,7 +40540,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCableCarrierSegmentType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCableCarrierSegment for standard port definitions.
-class IfcCableCarrierSegmentType : public IfcFlowSegmentType {
+class IfcParse_EXPORT IfcCableCarrierSegmentType : public IfcFlowSegmentType {
 public:
     /// Identifies the predefined types of cable carrier segment from which the type required may be set.
     IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum PredefinedType() const;
@@ -40583,7 +40585,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCableFittingType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCableFitting for standard port definitions.
-class IfcCableFittingType : public IfcFlowFittingType {
+class IfcParse_EXPORT IfcCableFittingType : public IfcFlowFittingType {
 public:
     /// Identifies the predefined types of cable fitting from which the type required may be set.
     IfcCableFittingTypeEnum::IfcCableFittingTypeEnum PredefinedType() const;
@@ -40641,7 +40643,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCableSegmentType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCableSegment for standard port definitions.
-class IfcCableSegmentType : public IfcFlowSegmentType {
+class IfcParse_EXPORT IfcCableSegmentType : public IfcFlowSegmentType {
 public:
     /// Identifies the predefined types of cable segment from which the type required may be set.
     IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum PredefinedType() const;
@@ -40690,7 +40692,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcChillerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcChiller for standard port definitions.
-class IfcChillerType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcChillerType : public IfcEnergyConversionDeviceType {
 public:
     /// Defines the typical types of chillers (e.g., air-cooled, water-cooled, etc.).
     IfcChillerTypeEnum::IfcChillerTypeEnum PredefinedType() const;
@@ -40748,7 +40750,7 @@ public:
 /// 
 /// Qto_ChimneyBaseQuantities: base quantities
 /// for all chimney occurrences.
-class IfcChimney : public IfcBuildingElement {
+class IfcParse_EXPORT IfcChimney : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcChimney
     bool hasPredefinedType() const;
@@ -40795,7 +40797,7 @@ public:
 /// Figure 278 illustrates the definition of the IfcCircle within the (in this case three-dimensional) position coordinate system. 
 /// 
 /// Figure 278 — Circle geometry
-class IfcCircle : public IfcConic {
+class IfcParse_EXPORT IfcCircle : public IfcConic {
 public:
     /// The radius of the circle, which shall be greater than zero.
     double Radius() const;
@@ -40813,7 +40815,7 @@ public:
     typedef IfcTemplatedEntityList< IfcCircle > list;
 };
 
-class IfcCivilElement : public IfcElement {
+class IfcParse_EXPORT IfcCivilElement : public IfcElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
@@ -40854,7 +40856,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCoilType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCoil for standard port definitions.
-class IfcCoilType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcCoilType : public IfcEnergyConversionDeviceType {
 public:
     /// Defines typical types of coils (e.g., Cooling, Heating, etc.)
     IfcCoilTypeEnum::IfcCoilTypeEnum PredefinedType() const;
@@ -41142,7 +41144,7 @@ public:
 /// geometric representation, shall apply to the
 /// MappedRepresentation of the
 /// IfcRepresentationMap.
-class IfcColumn : public IfcBuildingElement {
+class IfcParse_EXPORT IfcColumn : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcColumn
     bool hasPredefinedType() const;
@@ -41409,7 +41411,7 @@ public:
 /// Profile Position : see 'SweptSolid' geometric
 /// representation
 /// Extrusion:ÿnot applicable
-class IfcColumnStandardCase : public IfcColumn {
+class IfcParse_EXPORT IfcColumnStandardCase : public IfcColumn {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcColumn::getArgumentType(i); }
@@ -41455,7 +41457,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCommunicationsApplianceType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCommunicationsAppliance for standard port definitions.
-class IfcCommunicationsApplianceType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcCommunicationsApplianceType : public IfcFlowTerminalType {
 public:
     /// Identifies the predefined types of communications  appliance from which the type required may be set.
     IfcCommunicationsApplianceTypeEnum::IfcCommunicationsApplianceTypeEnum PredefinedType() const;
@@ -41499,7 +41501,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCompressorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCompressor for standard port definitions.
-class IfcCompressorType : public IfcFlowMovingDeviceType {
+class IfcParse_EXPORT IfcCompressorType : public IfcFlowMovingDeviceType {
 public:
     /// Defines the type of compressor (e.g., hermetic, reciprocating, etc.).
     IfcCompressorTypeEnum::IfcCompressorTypeEnum PredefinedType() const;
@@ -41543,7 +41545,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCondenserType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCondenser for standard port definitions.
-class IfcCondenserType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcCondenserType : public IfcEnergyConversionDeviceType {
 public:
     /// Defines the type of condenser.
     IfcCondenserTypeEnum::IfcCondenserTypeEnum PredefinedType() const;
@@ -41582,7 +41584,7 @@ public:
 /// In addition to assignments specified at the base class IfcConstructionResource, a construction equipment resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionEquipmentResource and RelatedObjects contains one or more IfcProduct subtypes as shown in Figure 183.  Such relationship indicates the equipment used as input for the resource.  Such products are not contained within a building structure but are referenced within a construction spatial zone, specifically IfcSpatialZone with PredefinedType=CONSTRUCTION, which is aggregated within the IfcProject.  There may be multiple chains of production such that the assigned equipment may have their own task and resource assignments for assembling such equipment.
 /// 
 /// Figure 183 — Construction equipment resource assignment
-class IfcConstructionEquipmentResource : public IfcConstructionResource {
+class IfcParse_EXPORT IfcConstructionEquipmentResource : public IfcConstructionResource {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcConstructionEquipmentResource
     bool hasPredefinedType() const;
@@ -41628,7 +41630,7 @@ public:
 /// In addition to assignments specified at the base class IfcConstructionResource, a construction material resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionMaterialResource and RelatedObjects contains one or more IfcProduct subtypes as shown in Figure 184.  Such relationship indicates the physical material used as input for the resource.  Such products are not contained within a building structure but are referenced within a construction spatial zone, specifically IfcSpatialZone with PredefinedType=CONSTRUCTION, which is aggregated within the IfcProject.  The IfcGeographicElement object is used to represent the physical material occurrence, which may optionally have placement and representation indicating intended storage on the construction site.  There may be multiple chains of production such that the assigned product material(s) may have their own task and resource assignments for transporting or extracting such material.
 /// 
 /// Figure 184 — Construction material resource assignment
-class IfcConstructionMaterialResource : public IfcConstructionResource {
+class IfcParse_EXPORT IfcConstructionMaterialResource : public IfcConstructionResource {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcConstructionMaterialResource
     bool hasPredefinedType() const;
@@ -41663,7 +41665,7 @@ public:
 /// In addition to assignments specified at the base class IfcConstructionResource, a construction product resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionProductResource and RelatedObjects contains one or more IfcProduct subtypes as shown in Figure 185.  Such relationship indicates the products used as input for the resource.  Such products are not contained within a building structure but are referenced within a construction spatial zone, specifically IfcSpatialZone with PredefinedType=CONSTRUCTION, which is aggregated within the IfcProject.  There may be multiple chains of production such that the assigned products may have their own task and resource assignments.
 /// 
 /// Figure 185 — Construction product resource assignment
-class IfcConstructionProductResource : public IfcConstructionResource {
+class IfcParse_EXPORT IfcConstructionProductResource : public IfcConstructionResource {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcConstructionProductResource
     bool hasPredefinedType() const;
@@ -41712,7 +41714,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCooledBeamType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCooledBeam for standard port definitions.
-class IfcCooledBeamType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcCooledBeamType : public IfcEnergyConversionDeviceType {
 public:
     /// Defines the type of cooled beam.
     IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum PredefinedType() const;
@@ -41762,7 +41764,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCoolingTowerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCoolingTower for standard port definitions.
-class IfcCoolingTowerType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcCoolingTowerType : public IfcEnergyConversionDeviceType {
 public:
     /// Defines the typical types of cooling towers (e.g., OpenTower, ClosedTower, CrossFlow, etc.).
     IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum PredefinedType() const;
@@ -42003,7 +42005,7 @@ public:
 /// IfcArbitraryClosedProfileDef - in cases of faceted representation also a closed IfcPolyline). It is extruded along the plane of the base surface using the Depth parameter of the IfcSurfaceOfLinearExtrusion.
 /// 
 /// Figure 95 — Covering body circular
-class IfcCovering : public IfcBuildingElement {
+class IfcParse_EXPORT IfcCovering : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCovering
     bool hasPredefinedType() const;
@@ -42162,7 +42164,7 @@ public:
 /// 
 /// An own 'Body' representation shall only be included if no
 /// components of the curtain wall are defined.
-class IfcCurtainWall : public IfcBuildingElement {
+class IfcParse_EXPORT IfcCurtainWall : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCurtainWall
     bool hasPredefinedType() const;
@@ -42218,7 +42220,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcDamperType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcDamper for standard port definitions.
-class IfcDamperType : public IfcFlowControllerType {
+class IfcParse_EXPORT IfcDamperType : public IfcFlowControllerType {
 public:
     /// Type of damper.
     IfcDamperTypeEnum::IfcDamperTypeEnum PredefinedType() const;
@@ -42408,7 +42410,7 @@ public:
 /// 'Support section' 
 ///   A section of material that is used as an intermediate support upon
 ///   which multiple brackets can be mounted.
-class IfcDiscreteAccessory : public IfcElementComponent {
+class IfcParse_EXPORT IfcDiscreteAccessory : public IfcElementComponent {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcDiscreteAccessory
     bool hasPredefinedType() const;
@@ -42615,7 +42617,7 @@ public:
 /// 'Support section' 
 ///   A section of material that is used as an intermediate support upon
 ///   which multiple brackets can be mounted.
-class IfcDiscreteAccessoryType : public IfcElementComponentType {
+class IfcParse_EXPORT IfcDiscreteAccessoryType : public IfcElementComponentType {
 public:
     /// Subtype of discrete accessory
     IfcDiscreteAccessoryTypeEnum::IfcDiscreteAccessoryTypeEnum PredefinedType() const;
@@ -42669,7 +42671,7 @@ public:
 /// 'Cover': The material from which the access cover to the chamber is constructed.
 /// 'Fill': The material that is used to fill the duct (where used).
 /// 'Wall': The material from which the wall of the duct is constructed.
-class IfcDistributionChamberElementType : public IfcDistributionFlowElementType {
+class IfcParse_EXPORT IfcDistributionChamberElementType : public IfcDistributionFlowElementType {
 public:
     /// Predefined types of distribution chambers.
     IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum PredefinedType() const;
@@ -42740,7 +42742,7 @@ public:
 /// 'Clearance': Represents the 3D clearance volume of the item having RepresentationType of 'Surface3D'.  Such clearance region indicates space that should not intersect with the 'Body' representation between element occurrences, though may intersect with the 'Clearance' representation of other element occurrences.  The particular use of clearance space may be for safety, maintenance, or other purpose.
 /// 
 /// NOTE: The product representations are defined as representation maps (at the level of the supertype IfcTypeProduct, which get assigned by an element occurrence instance through the IfcShapeRepresentation.Item[1] being an IfcMappedItem.
-class IfcDistributionControlElementType : public IfcDistributionElementType {
+class IfcParse_EXPORT IfcDistributionControlElementType : public IfcDistributionElementType {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionElementType::getArgumentType(i); }
@@ -42916,7 +42918,7 @@ public:
 /// 
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'SectionedSpine'
-class IfcDistributionElement : public IfcElement {
+class IfcParse_EXPORT IfcDistributionElement : public IfcElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcElement::getArgumentType(i); }
@@ -42999,7 +43001,7 @@ public:
 /// If materials are defined, geometry of each representation (most typically the 'Body' representation) may be organized into shape aspects where styles may be derived by correlating IfcShapeAspect.Name to a corresponding material (IfcMaterialConstituent.Name or IfcMaterialProfile.Name).
 /// 
 /// Representations are further defined at subtypes; for example, parametric flow segments align material profiles with the 'Axis' representation.
-class IfcDistributionFlowElement : public IfcDistributionElement {
+class IfcParse_EXPORT IfcDistributionFlowElement : public IfcDistributionElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionElement::getArgumentType(i); }
@@ -43096,7 +43098,7 @@ public:
 /// IfcShapeRepresentation: The optional shape representation describes the connection volume and supports indication of the port position and orientation.  The position is typically the midpoint of the physical connection, and the orientation points in the flow direction normal to the physical connection. Upon connecting elements through ports with rigid connections, each object is aligned such that the effective Location, Axis, and RefDirection of each port is aligned to be equal.
 /// 
 /// 'Body': The shape of the port.
-class IfcDistributionPort : public IfcPort {
+class IfcParse_EXPORT IfcDistributionPort : public IfcPort {
 public:
     /// Whether the optional attribute FlowDirection is defined for this IfcDistributionPort
     bool hasFlowDirection() const;
@@ -43164,7 +43166,7 @@ public:
 /// Figure 150 illustrates a distribution system for an electrical circuit.
 /// 
 /// Figure 150 — Distribution system assignment
-class IfcDistributionSystem : public IfcSystem {
+class IfcParse_EXPORT IfcDistributionSystem : public IfcSystem {
 public:
     /// Whether the optional attribute LongName is defined for this IfcDistributionSystem
     bool hasLongName() const;
@@ -43546,7 +43548,7 @@ public:
 /// pictures).
 /// 
 /// Figure 97 — Door swing
-class IfcDoor : public IfcBuildingElement {
+class IfcParse_EXPORT IfcDoor : public IfcBuildingElement {
 public:
     /// Whether the optional attribute OverallHeight is defined for this IfcDoor
     bool hasOverallHeight() const;
@@ -43699,7 +43701,7 @@ public:
 /// IfcDoorLiningProperties.TransomOffset starting at the bottom edge of the rectangle (along local x axis) into the inner side of the rectangle, distance provided as percentage of overall height. Distance to the centre line of the transom.
 /// 
 /// Figure 98 — Door profile
-class IfcDoorStandardCase : public IfcDoor {
+class IfcParse_EXPORT IfcDoorStandardCase : public IfcDoor {
 public:
     virtual unsigned int getArgumentCount() const { return 13; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDoor::getArgumentType(i); }
@@ -43742,7 +43744,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcDuctFittingType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcDuctFitting for standard port definitions.
-class IfcDuctFittingType : public IfcFlowFittingType {
+class IfcParse_EXPORT IfcDuctFittingType : public IfcFlowFittingType {
 public:
     /// The type of duct fitting.
     IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum PredefinedType() const;
@@ -43788,7 +43790,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcDuctSegmentType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcDuctSegment for standard port definitions.
-class IfcDuctSegmentType : public IfcFlowSegmentType {
+class IfcParse_EXPORT IfcDuctSegmentType : public IfcFlowSegmentType {
 public:
     /// The type of duct segment.
     IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum PredefinedType() const;
@@ -43831,7 +43833,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcDuctSilencerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcDuctSilencer for standard port definitions.
-class IfcDuctSilencerType : public IfcFlowTreatmentDeviceType {
+class IfcParse_EXPORT IfcDuctSilencerType : public IfcFlowTreatmentDeviceType {
 public:
     /// The type of duct silencer.
     IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum PredefinedType() const;
@@ -43877,7 +43879,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcElectricApplianceType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcElectricAppliance for standard port definitions.
-class IfcElectricApplianceType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcElectricApplianceType : public IfcFlowTerminalType {
 public:
     /// Identifies the predefined types of electrical appliance from which the type required may be set.
     IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum PredefinedType() const;
@@ -43921,7 +43923,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcElectricDistributionBoardType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcElectricDistributionBoard for standard port definitions.
-class IfcElectricDistributionBoardType : public IfcFlowControllerType {
+class IfcParse_EXPORT IfcElectricDistributionBoardType : public IfcFlowControllerType {
 public:
     /// Identifies the predefined types of electric distribution type from which the type required may be set.
     IfcElectricDistributionBoardTypeEnum::IfcElectricDistributionBoardTypeEnum PredefinedType() const;
@@ -43965,7 +43967,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcElectricFlowStorageDeviceType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcElectricFlowStorageDevice for standard port definitions.
-class IfcElectricFlowStorageDeviceType : public IfcFlowStorageDeviceType {
+class IfcParse_EXPORT IfcElectricFlowStorageDeviceType : public IfcFlowStorageDeviceType {
 public:
     /// Identifies the predefined types of electric flow storage devices from which the type required may be set.
     IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum PredefinedType() const;
@@ -44014,7 +44016,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcElectricGeneratorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcElectricGenerator for standard port definitions.
-class IfcElectricGeneratorType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcElectricGeneratorType : public IfcEnergyConversionDeviceType {
 public:
     /// Identifies the predefined types of electric generators from which the type required may be set.
     IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum PredefinedType() const;
@@ -44058,7 +44060,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcElectricMotorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcElectricMotor for standard port definitions.
-class IfcElectricMotorType : public IfcEnergyConversionDeviceType {
+class IfcParse_EXPORT IfcElectricMotorType : public IfcEnergyConversionDeviceType {
 public:
     /// Identifies the predefined types of electric motor from which the type required may be set.
     IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum PredefinedType() const;
@@ -44102,7 +44104,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcElectricTimeControlType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcElectricTimeControl for standard port definitions.
-class IfcElectricTimeControlType : public IfcFlowControllerType {
+class IfcParse_EXPORT IfcElectricTimeControlType : public IfcFlowControllerType {
 public:
     /// Identifies the predefined types of electrical time control from which the type required may be set.
     IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum PredefinedType() const;
@@ -44128,7 +44130,7 @@ public:
 /// HISTORY: New entity in IFC R2.0.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IfcEnergyConversionDevice : public IfcDistributionFlowElement {
+class IfcParse_EXPORT IfcEnergyConversionDevice : public IfcDistributionFlowElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
@@ -44183,7 +44185,7 @@ public:
 /// 
 /// Fuel (GAS, SINK): The fuel inlet.
 /// Drive (NOTDEFINED, SOURCE): Connection to the driven source.
-class IfcEngine : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcEngine : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcEngine
     bool hasPredefinedType() const;
@@ -44245,7 +44247,7 @@ public:
 /// WaterIn (DOMESTICCOLDWATER, SINK): Incoming water.
 /// AirIn (AIRCONDITIONING, SINK): Incoming air.
 /// AirOut (AIRCONDITIONING, SOURCE): Outgoing air saturated with vapor.
-class IfcEvaporativeCooler : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcEvaporativeCooler : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcEvaporativeCooler
     bool hasPredefinedType() const;
@@ -44327,7 +44329,7 @@ public:
 /// 
 /// Figure 223 illustrates evaporator port use.
 /// Figure 223 — Evaporator port use
-class IfcEvaporator : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcEvaporator : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcEvaporator
     bool hasPredefinedType() const;
@@ -44360,7 +44362,7 @@ public:
 /// 
 /// HISTORY New entity in
 /// IFC2x4.
-class IfcExternalSpatialElement : public IfcExternalSpatialStructureElement {
+class IfcParse_EXPORT IfcExternalSpatialElement : public IfcExternalSpatialStructureElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcExternalSpatialElement
     bool hasPredefinedType() const;
@@ -44408,7 +44410,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcFanType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcFan for standard port definitions.
-class IfcFanType : public IfcFlowMovingDeviceType {
+class IfcParse_EXPORT IfcFanType : public IfcFlowMovingDeviceType {
 public:
     /// Defines the type of fan typically used in building services.
     IfcFanTypeEnum::IfcFanTypeEnum PredefinedType() const;
@@ -44454,7 +44456,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcFilterType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcFilter for standard port definitions.
-class IfcFilterType : public IfcFlowTreatmentDeviceType {
+class IfcParse_EXPORT IfcFilterType : public IfcFlowTreatmentDeviceType {
 public:
     /// The type of air filter.
     IfcFilterTypeEnum::IfcFilterTypeEnum PredefinedType() const;
@@ -44504,7 +44506,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcFireSuppressionTerminalType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcFireSuppressionTerminal for standard port definitions.
-class IfcFireSuppressionTerminalType : public IfcFlowTerminalType {
+class IfcParse_EXPORT IfcFireSuppressionTerminalType : public IfcFlowTerminalType {
 public:
     /// Identifies the predefined types of fire suppression terminal from which the type required may be set.
     IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum PredefinedType() const;
@@ -44530,7 +44532,7 @@ public:
 /// HISTORY: New entity in IFC R2.0.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IfcFlowController : public IfcDistributionFlowElement {
+class IfcParse_EXPORT IfcFlowController : public IfcDistributionFlowElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
@@ -44549,7 +44551,7 @@ public:
 /// HISTORY: New entity in IFC R2.0.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IfcFlowFitting : public IfcDistributionFlowElement {
+class IfcParse_EXPORT IfcFlowFitting : public IfcDistributionFlowElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
@@ -44593,7 +44595,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcFlowInstrumentType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcFlowInstrument for standard port definitions.
-class IfcFlowInstrumentType : public IfcDistributionControlElementType {
+class IfcParse_EXPORT IfcFlowInstrumentType : public IfcDistributionControlElementType {
 public:
     /// Identifies the predefined types of flow instrument from which the type required may be set.
     IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum PredefinedType() const;
@@ -44690,7 +44692,7 @@ public:
 /// 
 /// Figure 226 illustrates flow meter port use.
 /// Figure 226 — Flow meter port use
-class IfcFlowMeter : public IfcFlowController {
+class IfcParse_EXPORT IfcFlowMeter : public IfcFlowController {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcFlowMeter
     bool hasPredefinedType() const;
@@ -44713,7 +44715,7 @@ public:
 /// HISTORY: New entity in IFC R2x.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IfcFlowMovingDevice : public IfcDistributionFlowElement {
+class IfcParse_EXPORT IfcFlowMovingDevice : public IfcDistributionFlowElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
@@ -44750,7 +44752,7 @@ public:
 /// Representation Use Definition
 /// 
 /// Standard representations are defined at the supertype IfcDistrubutionFlowElement.  For parametric flow segments where IfcMaterialProfileSetUsage is defined and an 'Axis' representation is defined, then the 'Body' representation may be generated using the 'SweptSolid' or 'AdvancedSweptSolid' representation types by sweeping the profile(s) along the axis.
-class IfcFlowSegment : public IfcDistributionFlowElement {
+class IfcParse_EXPORT IfcFlowSegment : public IfcDistributionFlowElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
@@ -44774,7 +44776,7 @@ public:
 /// HISTORY: New entity in IFC R2x.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IfcFlowStorageDevice : public IfcDistributionFlowElement {
+class IfcParse_EXPORT IfcFlowStorageDevice : public IfcDistributionFlowElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
@@ -44799,7 +44801,7 @@ public:
 /// HISTORY: New entity in IFC R2.0.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IfcFlowTerminal : public IfcDistributionFlowElement {
+class IfcParse_EXPORT IfcFlowTerminal : public IfcDistributionFlowElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
@@ -44818,7 +44820,7 @@ public:
 /// HISTORY: New entity in IFC R2x.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IfcFlowTreatmentDevice : public IfcDistributionFlowElement {
+class IfcParse_EXPORT IfcFlowTreatmentDevice : public IfcDistributionFlowElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionFlowElement::getArgumentType(i); }
@@ -44854,7 +44856,7 @@ public:
 /// Geometry Use Definition
 /// 
 /// Local placement and product representations are defined by the supertype IfcBuildingElement.  Standard representations as defined at IfcBeamStandardCase or IfcSlabStandardCase should be used when applicable.
-class IfcFooting : public IfcBuildingElement {
+class IfcParse_EXPORT IfcFooting : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcFooting
     bool hasPredefinedType() const;
@@ -44925,7 +44927,7 @@ public:
 /// HeatingOutlet (NOTDEFINED, SOURCE): Outlet of substance to be heated.
 /// CoolingInlet (NOTDEFINED, SINK): Inlet of substance to be cooled.
 /// CoolingOutlet (NOTDEFINED, SOURCE): Outlet of substance to be cooled.
-class IfcHeatExchanger : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcHeatExchanger : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcHeatExchanger
     bool hasPredefinedType() const;
@@ -44986,7 +44988,7 @@ public:
 /// WaterIn (DOMESTICCOLDWATER, SINK): Incoming water.
 /// AirIn (AIRCONDITIONING, SINK): Incoming air.
 /// AirOut (AIRCONDITIONING, SOURCE): Outgoing air saturated with vapor.
-class IfcHumidifier : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcHumidifier : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcHumidifier
     bool hasPredefinedType() const;
@@ -45061,7 +45063,7 @@ public:
 /// 
 /// Inlet (DRAINAGE, SINK): Inlet drainage.
 /// Outlet (DRAINAGE, SOURCE): Outlet drainage.
-class IfcInterceptor : public IfcFlowTreatmentDevice {
+class IfcParse_EXPORT IfcInterceptor : public IfcFlowTreatmentDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcInterceptor
     bool hasPredefinedType() const;
@@ -45145,7 +45147,7 @@ public:
 /// 
 /// Figure 201 illustrates junction box port use.
 /// Figure 201 — Junction box port use
-class IfcJunctionBox : public IfcFlowFitting {
+class IfcParse_EXPORT IfcJunctionBox : public IfcFlowFitting {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcJunctionBox
     bool hasPredefinedType() const;
@@ -45210,7 +45212,7 @@ public:
 /// 
 /// Figure 203 illustrates lamp port use.
 /// Figure 203 — Lamp port use
-class IfcLamp : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcLamp : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcLamp
     bool hasPredefinedType() const;
@@ -45294,7 +45296,7 @@ public:
 /// 
 /// Figure 205 illustrates light fixture port use.
 /// Figure 205 — Light fixture port use
-class IfcLightFixture : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcLightFixture : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcLightFixture
     bool hasPredefinedType() const;
@@ -45356,7 +45358,7 @@ public:
 /// 
 /// Power (ELECTRICAL, SINK): Receives electrical power.
 /// VacuumOut (VACUUM, SOURCE): Provides suction.
-class IfcMedicalDevice : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcMedicalDevice : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcMedicalDevice
     bool hasPredefinedType() const;
@@ -45624,7 +45626,7 @@ public:
 /// geometric representation, shall apply to the
 /// MappedRepresentation of the
 /// IfcRepresentationMap.
-class IfcMember : public IfcBuildingElement {
+class IfcParse_EXPORT IfcMember : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcMember
     bool hasPredefinedType() const;
@@ -45885,7 +45887,7 @@ public:
 /// Profile Position : see 'SweptSolid' geometric
 /// representation
 /// Extrusion:ÿnot applicable
-class IfcMemberStandardCase : public IfcMember {
+class IfcParse_EXPORT IfcMemberStandardCase : public IfcMember {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcMember::getArgumentType(i); }
@@ -45940,7 +45942,7 @@ public:
 /// 
 /// Motor (NOTDEFINED, SINK): Connection from the motor.
 /// Drive (NOTDEFINED, SOURCE): Connection to the driven device.
-class IfcMotorConnection : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcMotorConnection : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcMotorConnection
     bool hasPredefinedType() const;
@@ -45963,7 +45965,7 @@ public:
 /// NOTEÿ Corresponding ISO 10303 entity: outer_boundary_curve. Please refer to ISO/IS 10303-42:1994, p.89 for the final definition of the formal standard.
 /// 
 /// HISTORYÿ New entity in IFC2x4.
-class IfcOuterBoundaryCurve : public IfcBoundaryCurve {
+class IfcParse_EXPORT IfcOuterBoundaryCurve : public IfcBoundaryCurve {
 public:
     virtual unsigned int getArgumentCount() const { return 2; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcBoundaryCurve::getArgumentType(i); }
@@ -46043,7 +46045,7 @@ public:
 /// 
 /// Figure 207 illustrates outlet port use.
 /// Figure 207 — Outlet port use
-class IfcOutlet : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcOutlet : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcOutlet
     bool hasPredefinedType() const;
@@ -46079,7 +46081,7 @@ public:
 /// Geometry Use Definition
 /// 
 /// Local placement and product representations are defined by the supertype IfcBuildingElement.  Standard representations as defined at IfcColumnStandardCase should be used when applicable.
-class IfcPile : public IfcBuildingElement {
+class IfcParse_EXPORT IfcPile : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcPile
     bool hasPredefinedType() const;
@@ -46192,7 +46194,7 @@ public:
 /// 
 /// Figure 227 illustrates pipe fitting port use.
 /// Figure 227 — Pipe fitting port use
-class IfcPipeFitting : public IfcFlowFitting {
+class IfcParse_EXPORT IfcPipeFitting : public IfcFlowFitting {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcPipeFitting
     bool hasPredefinedType() const;
@@ -46270,7 +46272,7 @@ public:
 /// 
 /// Figure 228 illustrates pipe segment port use.
 /// Figure 228 — Pipe segment port use
-class IfcPipeSegment : public IfcFlowSegment {
+class IfcParse_EXPORT IfcPipeSegment : public IfcFlowSegment {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcPipeSegment
     bool hasPredefinedType() const;
@@ -46516,7 +46518,7 @@ public:
 /// 'Clipping', 'SurfaceModel', and 'Brep' geometric representation,
 /// shall apply to the MappedRepresentation of the
 /// IfcRepresentationMap.
-class IfcPlate : public IfcBuildingElement {
+class IfcParse_EXPORT IfcPlate : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcPlate
     bool hasPredefinedType() const;
@@ -46691,7 +46693,7 @@ public:
 /// Figure 110 illustrates a 'Clipping' geometric representation with definition of a plate using advanced geometric representation. The profile is extruded non-perpendicular and the plate body is clipped at the eave.
 /// 
 /// Figure 110 — Plate body clipping
-class IfcPlateStandardCase : public IfcPlate {
+class IfcParse_EXPORT IfcPlateStandardCase : public IfcPlate {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcPlate::getArgumentType(i); }
@@ -46781,7 +46783,7 @@ public:
 /// 
 /// Line (ELECTRICAL, SINK): The supply line, typically connected from a slot in a distribution board.
 /// Load (ELECTRICAL, SOURCE): The load protected by this device, typically a cable connected to a device or the first junction box of a circuit.
-class IfcProtectiveDevice : public IfcFlowController {
+class IfcParse_EXPORT IfcProtectiveDevice : public IfcFlowController {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcProtectiveDevice
     bool hasPredefinedType() const;
@@ -46839,7 +46841,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcProtectiveDeviceTrippingUnitType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcProtectiveDeviceTrippingUnit for standard port definitions.
-class IfcProtectiveDeviceTrippingUnitType : public IfcDistributionControlElementType {
+class IfcParse_EXPORT IfcProtectiveDeviceTrippingUnitType : public IfcDistributionControlElementType {
 public:
     /// Identifies the predefined types of protective device tripping unit types from which the type required may be set.
     IfcProtectiveDeviceTrippingUnitTypeEnum::IfcProtectiveDeviceTrippingUnitTypeEnum PredefinedType() const;
@@ -46905,7 +46907,7 @@ public:
 /// 
 /// Figure 229 illustrates pump port use.
 /// Figure 229 — Pump port use
-class IfcPump : public IfcFlowMovingDevice {
+class IfcParse_EXPORT IfcPump : public IfcFlowMovingDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcPump
     bool hasPredefinedType() const;
@@ -47055,7 +47057,7 @@ public:
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'SurfaceModel', 'Brep',
 /// 'MappedRepresentation'
-class IfcRailing : public IfcBuildingElement {
+class IfcParse_EXPORT IfcRailing : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcRailing
     bool hasPredefinedType() const;
@@ -47209,7 +47211,7 @@ public:
 /// Figure 111 illustrates IfcRamp defining the local placement for all components.
 /// 
 /// Figure 111 — Ramp placement
-class IfcRamp : public IfcBuildingElement {
+class IfcParse_EXPORT IfcRamp : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcRamp
     bool hasPredefinedType() const;
@@ -47420,7 +47422,7 @@ public:
 /// Figure 114 illustrates the body representation.
 /// 
 /// Figure 114 — Ramp flight body
-class IfcRampFlight : public IfcBuildingElement {
+class IfcParse_EXPORT IfcRampFlight : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcRampFlight
     bool hasPredefinedType() const;
@@ -47478,7 +47480,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: rational_b_spline_curve. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x4.
-class IfcRationalBSplineCurveWithKnots : public IfcBSplineCurveWithKnots {
+class IfcParse_EXPORT IfcRationalBSplineCurveWithKnots : public IfcBSplineCurveWithKnots {
 public:
     /// The supplied values of the weights.
     std::vector< double > /*[2:?]*/ WeightsData() const;
@@ -47523,7 +47525,7 @@ public:
 /// 
 /// Simplified Geometric Representation
 /// Simplified geometric representations may be used based on local agreements.
-class IfcReinforcingBar : public IfcReinforcingElement {
+class IfcParse_EXPORT IfcReinforcingBar : public IfcReinforcingElement {
 public:
     /// Whether the optional attribute NominalDiameter is defined for this IfcReinforcingBar
     bool hasNominalDiameter() const;
@@ -47574,7 +47576,7 @@ public:
 /// A 'Body' representation map should contain one IfcSweptDiskSolidPolygonal.
 /// 
 /// Simplified geometric representations may be used based on local agreements.
-class IfcReinforcingBarType : public IfcReinforcingElementType {
+class IfcParse_EXPORT IfcReinforcingBarType : public IfcReinforcingElementType {
 public:
     /// The predefined type is always BAR.
     IfcReinforcingBarTypeEnum::IfcReinforcingBarTypeEnum PredefinedType() const;
@@ -47764,7 +47766,7 @@ public:
 /// Figure 119 illustrates roof placement, with an IfcRoof defining the local placement for all aggregated elements.
 /// 
 /// Figure 119 — Roof placement
-class IfcRoof : public IfcBuildingElement {
+class IfcParse_EXPORT IfcRoof : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcRoof
     bool hasPredefinedType() const;
@@ -47911,7 +47913,7 @@ public:
 /// ColdWater (DOMESTICCOLDWATER, SINK): Cold water supply.
 /// HotWater (DOMESTICHOTWATER, SINK): Hot water supply.
 /// Drainage (DRAINAGE, SOURCE): Drainage.
-class IfcSanitaryTerminal : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcSanitaryTerminal : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSanitaryTerminal
     bool hasPredefinedType() const;
@@ -47977,7 +47979,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcSensorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcSensor for standard port definitions.
-class IfcSensorType : public IfcDistributionControlElementType {
+class IfcParse_EXPORT IfcSensorType : public IfcDistributionControlElementType {
 public:
     /// Identifies the predefined types of sensor from which the type required may be set.
     IfcSensorTypeEnum::IfcSensorTypeEnum PredefinedType() const;
@@ -48008,7 +48010,7 @@ public:
 /// building elements.
 /// HISTORY New entity in
 /// IFC2x4
-class IfcShadingDevice : public IfcBuildingElement {
+class IfcParse_EXPORT IfcShadingDevice : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcShadingDevice
     bool hasPredefinedType() const;
@@ -48288,7 +48290,7 @@ public:
 /// geometric representation. The profile is extruded non-perpendicular and the slab body is clipped at the eave.
 /// 
 /// Figure 121 — Slab body clipping
-class IfcSlab : public IfcBuildingElement {
+class IfcParse_EXPORT IfcSlab : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSlab
     bool hasPredefinedType() const;
@@ -48393,7 +48395,7 @@ public:
 /// for reduced Level of Detail representation). It should suppress
 /// the geometric details of the parts in the
 /// decomposition.
-class IfcSlabElementedCase : public IfcSlab {
+class IfcParse_EXPORT IfcSlabElementedCase : public IfcSlab {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcSlab::getArgumentType(i); }
@@ -48566,7 +48568,7 @@ public:
 /// Figure 126 illustrates a 'Clipping' geometric representation with definition of a roof slab using advanced geometric representation. The profile is extruded non-perpendicular and the slab body is clipped at the eave.
 /// 
 /// Figure 126 — Slab body clipping
-class IfcSlabStandardCase : public IfcSlab {
+class IfcParse_EXPORT IfcSlabStandardCase : public IfcSlab {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcSlab::getArgumentType(i); }
@@ -48627,7 +48629,7 @@ public:
 /// SOLARPANEL
 /// 
 /// PowerGeneration (POWERGENERATION, SOURCE): Converted electrical power.
-class IfcSolarDevice : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcSolarDevice : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSolarDevice
     bool hasPredefinedType() const;
@@ -48707,7 +48709,7 @@ public:
 /// 
 /// Figure 230 illustrates space heater port use.
 /// Figure 230 — Space heater port use
-class IfcSpaceHeater : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcSpaceHeater : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSpaceHeater
     bool hasPredefinedType() const;
@@ -48775,7 +48777,7 @@ public:
 /// RAINWATERHOPPER
 /// 
 /// Rain (RAINWATER, SOURCE): Rainwater outlet.
-class IfcStackTerminal : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcStackTerminal : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcStackTerminal
     bool hasPredefinedType() const;
@@ -48958,7 +48960,7 @@ public:
 /// Figure 128 illustrates stair placement, where the IfcStair defines the local placement for all components and the common 'Axis' representation, and each component has its own 'Body' representation.
 /// 
 /// Figure 128 — Stair placement
-class IfcStair : public IfcBuildingElement {
+class IfcParse_EXPORT IfcStair : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcStair
     bool hasPredefinedType() const;
@@ -49146,7 +49148,7 @@ public:
 /// Figure 131 illustrates the body representation.
 /// 
 /// Figure 131 — Stair flight body
-class IfcStairFlight : public IfcBuildingElement {
+class IfcParse_EXPORT IfcStairFlight : public IfcBuildingElement {
 public:
     /// Whether the optional attribute NumberOfRiser is defined for this IfcStairFlight
     bool hasNumberOfRiser() const;
@@ -49219,7 +49221,7 @@ public:
 /// NOTE  This rule is necessary to achieve consistent topology representations.  The topology representations of structural items in an analysis model are meant to share vertices and edges und must therefore have the same object placement.
 /// 
 /// NOTE  A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
-class IfcStructuralAnalysisModel : public IfcSystem {
+class IfcParse_EXPORT IfcStructuralAnalysisModel : public IfcSystem {
 public:
     /// Defines the type of the structural analysis model.
     IfcAnalysisModelTypeEnum::IfcAnalysisModelTypeEnum PredefinedType() const;
@@ -49272,7 +49274,7 @@ public:
 /// Definition from IAI: A load case is a load group, commonly used to group loads from the same action source.
 /// 
 /// HISTORY: New entity in IFC 2x4.
-class IfcStructuralLoadCase : public IfcStructuralLoadGroup {
+class IfcParse_EXPORT IfcStructuralLoadCase : public IfcStructuralLoadGroup {
 public:
     /// Whether the optional attribute SelfWeightCoefficients is defined for this IfcStructuralLoadCase
     bool hasSelfWeightCoefficients() const;
@@ -49302,7 +49304,7 @@ public:
 /// IFC 2x4 change:  Intermediate supertype IfcStructuralSurfaceAction inserted.  Derived attribute PredefinedType added.
 /// 
 /// NOTE  Like its supertype IfcStructuralSurfaceAction, this action type may also act on curved faces.
-class IfcStructuralPlanarAction : public IfcStructuralSurfaceAction {
+class IfcParse_EXPORT IfcStructuralPlanarAction : public IfcStructuralSurfaceAction {
 public:
     virtual unsigned int getArgumentCount() const { return 12; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcStructuralSurfaceAction::getArgumentType(i); }
@@ -49404,7 +49406,7 @@ public:
 /// 
 /// Figure 209 illustrates switching device port use.
 /// Figure 209 — Switching device port use
-class IfcSwitchingDevice : public IfcFlowController {
+class IfcParse_EXPORT IfcSwitchingDevice : public IfcFlowController {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSwitchingDevice
     bool hasPredefinedType() const;
@@ -49482,7 +49484,7 @@ public:
 /// 
 /// Inlet (NOTDEFINED, SINK): Inlet.
 /// Outlet (NOTDEFINED, SOURCE): Outlet.
-class IfcTank : public IfcFlowStorageDevice {
+class IfcParse_EXPORT IfcTank : public IfcFlowStorageDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcTank
     bool hasPredefinedType() const;
@@ -49542,7 +49544,7 @@ public:
 /// 
 /// Line (ELECTRICAL, SINK): Line to be transformed.
 /// Load (ELECTRICAL, SOURCE): Transformed load.
-class IfcTransformer : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcTransformer : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcTransformer
     bool hasPredefinedType() const;
@@ -49607,7 +49609,7 @@ public:
 /// 
 /// Inlet (NOTDEFINED, SINK): Inlet.
 /// Outlet (NOTDEFINED, SOURCE): Outlet.
-class IfcTubeBundle : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcTubeBundle : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcTubeBundle
     bool hasPredefinedType() const;
@@ -49651,7 +49653,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcUnitaryControlElementType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcUnitaryControlElement for standard port definitions.
-class IfcUnitaryControlElementType : public IfcDistributionControlElementType {
+class IfcParse_EXPORT IfcUnitaryControlElementType : public IfcDistributionControlElementType {
 public:
     /// Identifies the predefined types of unitary control element from which the type required may be set.
     IfcUnitaryControlElementTypeEnum::IfcUnitaryControlElementTypeEnum PredefinedType() const;
@@ -49740,7 +49742,7 @@ public:
 /// 
 /// Figure 232 illustrates unitary equipment port use.
 /// Figure 232 — Unitary equipment port use
-class IfcUnitaryEquipment : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcUnitaryEquipment : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcUnitaryEquipment
     bool hasPredefinedType() const;
@@ -49944,7 +49946,7 @@ public:
 /// 
 /// Figure 233 illustrates valve port use.
 /// Figure 233 — Valve port use
-class IfcValve : public IfcFlowController {
+class IfcParse_EXPORT IfcValve : public IfcFlowController {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcValve
     bool hasPredefinedType() const;
@@ -50204,7 +50206,7 @@ public:
 /// that relationship object is defined at the level of the subtypes
 /// of IfcWall and at the
 /// IfcRelConnectsPathElements.
-class IfcWall : public IfcBuildingElement {
+class IfcParse_EXPORT IfcWall : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcWall
     bool hasPredefinedType() const;
@@ -50324,7 +50326,7 @@ public:
 /// for reduced Level of Detail representation). It could suppress
 /// the geometric details of the parts in the
 /// decomposition.
-class IfcWallElementedCase : public IfcWall {
+class IfcParse_EXPORT IfcWallElementedCase : public IfcWall {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcWall::getArgumentType(i); }
@@ -50540,7 +50542,7 @@ public:
 /// 
 /// Figure 139 — Wall body clipping straight
 /// Figure 140 — Wall body clipping curved
-class IfcWallStandardCase : public IfcWall {
+class IfcParse_EXPORT IfcWallStandardCase : public IfcWall {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcWall::getArgumentType(i); }
@@ -50658,7 +50660,7 @@ public:
 /// 
 /// Inlet (WASTE, SINK): Waste inlet.
 /// Outlet (WASTE, SOURCE): Waste outlet.
-class IfcWasteTerminal : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcWasteTerminal : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcWasteTerminal
     bool hasPredefinedType() const;
@@ -51034,7 +51036,7 @@ public:
 /// .
 /// 
 /// Figure 144 — Window operations
-class IfcWindow : public IfcBuildingElement {
+class IfcParse_EXPORT IfcWindow : public IfcBuildingElement {
 public:
     /// Whether the optional attribute OverallHeight is defined for this IfcWindow
     bool hasOverallHeight() const;
@@ -51197,7 +51199,7 @@ public:
 /// SecondMullionOffset defined accordingly.
 /// 
 /// Figure 145 — Window profile
-class IfcWindowStandardCase : public IfcWindow {
+class IfcParse_EXPORT IfcWindowStandardCase : public IfcWindow {
 public:
     virtual unsigned int getArgumentCount() const { return 13; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcWindow::getArgumentType(i); }
@@ -51242,7 +51244,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcActuatorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcActuator for standard port definitions.
-class IfcActuatorType : public IfcDistributionControlElementType {
+class IfcParse_EXPORT IfcActuatorType : public IfcDistributionControlElementType {
 public:
     /// Identifies the predefined types of actuator from which the type required may be set.
     IfcActuatorTypeEnum::IfcActuatorTypeEnum PredefinedType() const;
@@ -51316,7 +51318,7 @@ public:
 /// 
 /// Figure 211 illustrates air terminal port use.
 /// Figure 211 — Air terminal port use
-class IfcAirTerminal : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcAirTerminal : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcAirTerminal
     bool hasPredefinedType() const;
@@ -51376,7 +51378,7 @@ public:
 /// 
 /// Inlet (AIRCONDITIONING, SINK): Incoming air.
 /// Outlet (AIRCONDITIONING, SOURCE): Outgoing regulated air.
-class IfcAirTerminalBox : public IfcFlowController {
+class IfcParse_EXPORT IfcAirTerminalBox : public IfcFlowController {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcAirTerminalBox
     bool hasPredefinedType() const;
@@ -51439,7 +51441,7 @@ public:
 /// AirOutlet (AIRCONDITIONING, SOURCE): Colder air out.
 /// ExhaustInlet (VENTILATION, SINK): Hot return air in.
 /// ExhaustOutlet (VENTILATION, SOURCE): Hotter return air out.
-class IfcAirToAirHeatRecovery : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcAirToAirHeatRecovery : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcAirToAirHeatRecovery
     bool hasPredefinedType() const;
@@ -51483,7 +51485,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcAlarmType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcAlarm for standard port definitions.
-class IfcAlarmType : public IfcDistributionControlElementType {
+class IfcParse_EXPORT IfcAlarmType : public IfcDistributionControlElementType {
 public:
     /// Identifies the predefined types of alarm from which the type required may be set.
     IfcAlarmTypeEnum::IfcAlarmTypeEnum PredefinedType() const;
@@ -51678,7 +51680,7 @@ public:
 /// Control (CONTROL, SINK): Receives control signal.
 /// Input (TV, SINK): Receives modulated data feed such as satellite, cable, or over-the-air.
 /// Output (AUDIOVISUAL, SOURCE): Rendered media content.
-class IfcAudioVisualAppliance : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcAudioVisualAppliance : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcAudioVisualAppliance
     bool hasPredefinedType() const;
@@ -51933,7 +51935,7 @@ public:
 /// 'AdvancedSweptSolid', 'SurfaceModel', and 'Brep' geometric
 /// representation, shall apply to the MappedRepresentation of
 /// the IfcRepresentationMap.
-class IfcBeam : public IfcBuildingElement {
+class IfcParse_EXPORT IfcBeam : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcBeam
     bool hasPredefinedType() const;
@@ -52206,7 +52208,7 @@ public:
 /// Profile Position : see 'SweptSolid' geometric
 /// representation
 /// Extrusion: not applicable
-class IfcBeamStandardCase : public IfcBeam {
+class IfcParse_EXPORT IfcBeamStandardCase : public IfcBeam {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcBeam::getArgumentType(i); }
@@ -52289,7 +52291,7 @@ public:
 /// 
 /// Figure 213 illustrates boiler port use.
 /// Figure 213 — Boiler port use
-class IfcBoiler : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcBoiler : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcBoiler
     bool hasPredefinedType() const;
@@ -52348,7 +52350,7 @@ public:
 ///   Ports are specific to the IfcBurner PredefinedType as follows indicated by the IfcDistributionPort Name, PredefinedType, and FlowDirection:
 /// 
 /// Gas (GAS, SINK): Gas inlet for burner.
-class IfcBurner : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcBurner : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcBurner
     bool hasPredefinedType() const;
@@ -52427,7 +52429,7 @@ public:
 /// Head (NOTDEFINED, SINK): Head connection.
 /// Left (NOTDEFINED, SOURCE): Left connection.
 /// Right (NOTDEFINED, SOURCE): Right connection.
-class IfcCableCarrierFitting : public IfcFlowFitting {
+class IfcParse_EXPORT IfcCableCarrierFitting : public IfcFlowFitting {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCableCarrierFitting
     bool hasPredefinedType() const;
@@ -52505,7 +52507,7 @@ public:
 /// 
 /// Head (NOTDEFINED, SINK): Head connection.
 /// Tail (NOTDEFINED, SOURCE): Tail connection.
-class IfcCableCarrierSegment : public IfcFlowSegment {
+class IfcParse_EXPORT IfcCableCarrierSegment : public IfcFlowSegment {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCableCarrierSegment
     bool hasPredefinedType() const;
@@ -52598,7 +52600,7 @@ public:
 /// 
 /// Input (NOTDEFINED, SINK): The input of the connector.
 /// Output (NOTDEFINED, SOURCE): The output of the connector.
-class IfcCableFitting : public IfcFlowFitting {
+class IfcParse_EXPORT IfcCableFitting : public IfcFlowFitting {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCableFitting
     bool hasPredefinedType() const;
@@ -52704,7 +52706,7 @@ public:
 /// 
 /// Input (NOTDEFINED, SINK): Input end of the conductor.
 /// Output (NOTDEFINED, SOURCE): Output end of the cable.
-class IfcCableSegment : public IfcFlowSegment {
+class IfcParse_EXPORT IfcCableSegment : public IfcFlowSegment {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCableSegment
     bool hasPredefinedType() const;
@@ -52792,7 +52794,7 @@ public:
 /// 
 /// Figure 215 illustrates chiller port use.
 /// Figure 215 — Chiller port use
-class IfcChiller : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcChiller : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcChiller
     bool hasPredefinedType() const;
@@ -52876,7 +52878,7 @@ public:
 /// 
 /// Figure 216 illustrates coil port use.
 /// Figure 216 — Coil port use
-class IfcCoil : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcCoil : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCoil
     bool hasPredefinedType() const;
@@ -52996,7 +52998,7 @@ public:
 /// Link#6 (DATA, SOURCE): A network link to a routed device such as a cable connecting to a computer.
 /// Link#7 (DATA, SOURCE): A network link to a routed device such as a cable connecting to a computer.
 /// Link#8 (DATA, SOURCE): A network link to a routed device such as a cable connecting to a computer.
-class IfcCommunicationsAppliance : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcCommunicationsAppliance : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCommunicationsAppliance
     bool hasPredefinedType() const;
@@ -53060,7 +53062,7 @@ public:
 /// 
 /// Figure 217 illustrates compressor port use.
 /// Figure 217 — Compressor port use
-class IfcCompressor : public IfcFlowMovingDevice {
+class IfcParse_EXPORT IfcCompressor : public IfcFlowMovingDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCompressor
     bool hasPredefinedType() const;
@@ -53144,7 +53146,7 @@ public:
 /// 
 /// Figure 218 illustrates condenser port use.
 /// Figure 218 — Condenser port use
-class IfcCondenser : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcCondenser : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCondenser
     bool hasPredefinedType() const;
@@ -53198,7 +53200,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcControllerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcController for standard port definitions.
-class IfcControllerType : public IfcDistributionControlElementType {
+class IfcParse_EXPORT IfcControllerType : public IfcDistributionControlElementType {
 public:
     /// Identifies the predefined types of controller from which the type required may be set.
     IfcControllerTypeEnum::IfcControllerTypeEnum PredefinedType() const;
@@ -53264,7 +53266,7 @@ public:
 /// 
 /// ChilledWaterIn (CHILLEDWATER, SINK): Chilled water entering.
 /// ChilledWaterOut (CHILLEDWATER, SOURCE): Chilled water leaving.
-class IfcCooledBeam : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcCooledBeam : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCooledBeam
     bool hasPredefinedType() const;
@@ -53339,7 +53341,7 @@ public:
 /// 
 /// Figure 219 illustrates cooling tower port use.
 /// Figure 219 — Cooling tower port use
-class IfcCoolingTower : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcCoolingTower : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCoolingTower
     bool hasPredefinedType() const;
@@ -53428,7 +53430,7 @@ public:
 /// 
 /// Figure 220 illustrates damper port use.
 /// Figure 220 — Damper port use
-class IfcDamper : public IfcFlowController {
+class IfcParse_EXPORT IfcDamper : public IfcFlowController {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcDamper
     bool hasPredefinedType() const;
@@ -53477,7 +53479,7 @@ public:
 /// 'Cover': The material from which the access cover to the chamber is constructed.
 /// 'Fill': The material that is used to fill the duct (where used).
 /// 'Wall': The material from which the wall of the duct is constructed.
-class IfcDistributionChamberElement : public IfcDistributionFlowElement {
+class IfcParse_EXPORT IfcDistributionChamberElement : public IfcDistributionFlowElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcDistributionChamberElement
     bool hasPredefinedType() const;
@@ -53496,7 +53498,7 @@ public:
     typedef IfcTemplatedEntityList< IfcDistributionChamberElement > list;
 };
 
-class IfcDistributionCircuit : public IfcDistributionSystem {
+class IfcParse_EXPORT IfcDistributionCircuit : public IfcDistributionSystem {
 public:
     virtual unsigned int getArgumentCount() const { return 7; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionSystem::getArgumentType(i); }
@@ -53588,7 +53590,7 @@ public:
 /// For all representations, if a IfcDistributionControlElement occurrence is defined by a IfcDistributionControlElementType having a representation of the same identifier, then 'MappedRepresentation' should be used at the occurrence unless overridden.
 /// 
 /// If materials are defined, geometry of each representation (most typically the 'Body' representation) may be organized into shape aspects where styles may be derived by correlating IfcShapeAspect.Name to a corresponding material (IfcMaterialConstituent.Name).
-class IfcDistributionControlElement : public IfcDistributionElement {
+class IfcParse_EXPORT IfcDistributionControlElement : public IfcDistributionElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { return IfcDistributionElement::getArgumentType(i); }
@@ -53678,7 +53680,7 @@ public:
 /// 
 /// Figure 221 illustrates duct fitting port use.
 /// Figure 221 — Duct fitting port use
-class IfcDuctFitting : public IfcFlowFitting {
+class IfcParse_EXPORT IfcDuctFitting : public IfcFlowFitting {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcDuctFitting
     bool hasPredefinedType() const;
@@ -53745,7 +53747,7 @@ public:
 /// 
 /// Figure 222 illustrates duct segment port use.
 /// Figure 222 — Duct segment port use
-class IfcDuctSegment : public IfcFlowSegment {
+class IfcParse_EXPORT IfcDuctSegment : public IfcFlowSegment {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcDuctSegment
     bool hasPredefinedType() const;
@@ -53805,7 +53807,7 @@ public:
 /// 
 /// Inlet (NOTDEFINED, SINK): The flow inlet.
 /// Outlet (NOTDEFINED, SOURCE): The flow outlet.
-class IfcDuctSilencer : public IfcFlowTreatmentDevice {
+class IfcParse_EXPORT IfcDuctSilencer : public IfcFlowTreatmentDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcDuctSilencer
     bool hasPredefinedType() const;
@@ -53921,7 +53923,7 @@ public:
 /// 
 /// Figure 197 illustrates electric appliance port use.
 /// Figure 197 — Electric appliance port use
-class IfcElectricAppliance : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcElectricAppliance : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcElectricAppliance
     bool hasPredefinedType() const;
@@ -53996,7 +53998,7 @@ public:
 /// 
 /// Figure 199 illustrates electric distribution board port use.
 /// Figure 199 — Electric distribution board port use
-class IfcElectricDistributionBoard : public IfcFlowController {
+class IfcParse_EXPORT IfcElectricDistributionBoard : public IfcFlowController {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcElectricDistributionBoard
     bool hasPredefinedType() const;
@@ -54055,7 +54057,7 @@ public:
 /// 
 /// Line (ELECTRICAL, SINK): Incoming power used to charge the flow storage device.
 /// Load (ELECTRICAL, SOURCE): Outgoing power backed by the flow storage device.
-class IfcElectricFlowStorageDevice : public IfcFlowStorageDevice {
+class IfcParse_EXPORT IfcElectricFlowStorageDevice : public IfcFlowStorageDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcElectricFlowStorageDevice
     bool hasPredefinedType() const;
@@ -54120,7 +54122,7 @@ public:
 ///   Ports are specific to the IfcElectricGenerator PredefinedType as follows indicated by the IfcDistributionPort Name, PredefinedType, and FlowDirection:
 /// 
 /// Load (ELECTRICAL, SOURCE): Outgoing power from generator.
-class IfcElectricGenerator : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcElectricGenerator : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcElectricGenerator
     bool hasPredefinedType() const;
@@ -54179,7 +54181,7 @@ public:
 /// 
 /// Line (ELECTRICAL, SINK): Receives electrical power.
 /// Drive (NOTDEFINED, SOURCE): Motor connection to a driven device.
-class IfcElectricMotor : public IfcEnergyConversionDevice {
+class IfcParse_EXPORT IfcElectricMotor : public IfcEnergyConversionDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcElectricMotor
     bool hasPredefinedType() const;
@@ -54238,7 +54240,7 @@ public:
 /// 
 /// Line (ELECTRICAL, SINK): Receives electrical power.
 /// Load (ELECTRICAL, SOURCE): Transmits electrical power according to time.
-class IfcElectricTimeControl : public IfcFlowController {
+class IfcParse_EXPORT IfcElectricTimeControl : public IfcFlowController {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcElectricTimeControl
     bool hasPredefinedType() const;
@@ -54310,7 +54312,7 @@ public:
 /// 
 /// Figure 224 illustrates fan port use.
 /// Figure 224 — Fan port use
-class IfcFan : public IfcFlowMovingDevice {
+class IfcParse_EXPORT IfcFan : public IfcFlowMovingDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcFan
     bool hasPredefinedType() const;
@@ -54415,7 +54417,7 @@ public:
 /// 
 /// Figure 225 illustrates filter port use.
 /// Figure 225 — Filter port use
-class IfcFilter : public IfcFlowTreatmentDevice {
+class IfcParse_EXPORT IfcFilter : public IfcFlowTreatmentDevice {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcFilter
     bool hasPredefinedType() const;
@@ -54499,7 +54501,7 @@ public:
 /// SPRINKLER
 /// 
 /// Line (FIREPROTECTION, SINK): Fire protection.
-class IfcFireSuppressionTerminal : public IfcFlowTerminal {
+class IfcParse_EXPORT IfcFireSuppressionTerminal : public IfcFlowTerminal {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcFireSuppressionTerminal
     bool hasPredefinedType() const;
@@ -54569,7 +54571,7 @@ public:
 ///   Ports are specific to the IfcFlowInstrument PredefinedType as follows indicated by the IfcDistributionPort Name, PredefinedType, and FlowDirection:
 /// 
 /// Input (SIGNAL, SINK): Receives signal.
-class IfcFlowInstrument : public IfcDistributionControlElement {
+class IfcParse_EXPORT IfcFlowInstrument : public IfcDistributionControlElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcFlowInstrument
     bool hasPredefinedType() const;
@@ -54639,7 +54641,7 @@ public:
 /// In this case a valid value for MethodOfMeasurement shall be provided. 
 /// 
 /// Qto_ProtectiveDeviceTrippingUnitBaseQuantities
-class IfcProtectiveDeviceTrippingUnit : public IfcDistributionControlElement {
+class IfcParse_EXPORT IfcProtectiveDeviceTrippingUnit : public IfcDistributionControlElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcProtectiveDeviceTrippingUnit
     bool hasPredefinedType() const;
@@ -54791,7 +54793,7 @@ public:
 /// 
 /// Figure 180 illustrates sensor port use.
 /// Figure 180 — Sensor port use
-class IfcSensor : public IfcDistributionControlElement {
+class IfcParse_EXPORT IfcSensor : public IfcDistributionControlElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSensor
     bool hasPredefinedType() const;
@@ -54864,7 +54866,7 @@ public:
 /// 
 /// Figure 182 illustrates unitary control element port use.
 /// Figure 182 — Unitary control element port use
-class IfcUnitaryControlElement : public IfcDistributionControlElement {
+class IfcParse_EXPORT IfcUnitaryControlElement : public IfcDistributionControlElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcUnitaryControlElement
     bool hasPredefinedType() const;
@@ -54944,7 +54946,7 @@ public:
 ///   Ports are specific to the IfcActuator PredefinedType as follows indicated by the IfcDistributionPort Name, PredefinedType, and FlowDirection:
 /// 
 /// Input (SIGNAL, SINK): Receives signal.
-class IfcActuator : public IfcDistributionControlElement {
+class IfcParse_EXPORT IfcActuator : public IfcDistributionControlElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcActuator
     bool hasPredefinedType() const;
@@ -55004,7 +55006,7 @@ public:
 ///   Ports are specific to the IfcAlarm PredefinedType as follows indicated by the IfcDistributionPort Name, PredefinedType, and FlowDirection:
 /// 
 /// Input (SIGNAL, SINK): Receives signal.
-class IfcAlarm : public IfcDistributionControlElement {
+class IfcParse_EXPORT IfcAlarm : public IfcDistributionControlElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcAlarm
     bool hasPredefinedType() const;
@@ -55128,7 +55130,7 @@ public:
 /// 
 /// Figure 178 illustrates controller port use.
 /// Figure 178 — Controller port use
-class IfcController : public IfcDistributionControlElement {
+class IfcParse_EXPORT IfcController : public IfcDistributionControlElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcController
     bool hasPredefinedType() const;
