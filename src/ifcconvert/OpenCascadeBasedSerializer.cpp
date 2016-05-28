@@ -21,9 +21,6 @@
 #include <fstream>
 #include <cstdio>
 
-#include <BRepBuilderAPI_GTransform.hxx>
-#include <BRepBuilderAPI_Transform.hxx>
-
 #include <Standard_Version.hxx>
 
 #include "OpenCascadeBasedSerializer.h"
@@ -36,31 +33,21 @@ bool OpenCascadeBasedSerializer::ready() {
 	return succeeded;
 }
 
-void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<double>* o) {		
+void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
 		gp_GTrsf gtrsf = it->Placement();
 
 		const gp_Trsf& o_trsf = o->transformation().data();
 		gtrsf.PreMultiply(o_trsf);
 
-		if (o->geometry().settings().convert_back_units()) {
+        if (o->geometry().settings().get(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS)) {
 			gp_Trsf scale;
 			scale.SetScaleFactor(1.0 / o->geometry().settings().unit_magnitude());
 			gtrsf.PreMultiply(scale);
 		}
 		
-		const TopoDS_Shape& s = it->Shape();			
-			
-		bool trsf_valid = false;
-		gp_Trsf trsf;
-		try {
-			trsf = gtrsf.Trsf();
-			trsf_valid = true;
-		} catch (...) {}
-			
-		const TopoDS_Shape moved_shape = trsf_valid
-			? BRepBuilderAPI_Transform(s, trsf, true).Shape()
-			: BRepBuilderAPI_GTransform(s, gtrsf, true).Shape();
+		const TopoDS_Shape& s = it->Shape();
+		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, gtrsf);
 			
 		writeShape(moved_shape);
 	}

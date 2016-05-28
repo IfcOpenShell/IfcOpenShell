@@ -58,7 +58,7 @@ std::string sread(std::istream& s) {
 	buf[len] = 0;
 	while (len++ % 4) s.get();
 	std::string str(buf);
-	delete buf;
+	delete[] buf;
 	return str;
 }
 
@@ -318,10 +318,10 @@ int main () {
 			memcpy(data, m.string().c_str(), len);
 
 			IfcGeom::IteratorSettings settings;
-			settings.use_world_coords() = false;
-			settings.weld_vertices() = false;
-			settings.convert_back_units() = true;
-			settings.include_curves() = true;
+            settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
+            settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
+            settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
+            settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES, true);
 
 			iterator = new IfcGeom::Iterator<float>(settings, data, (int)len);
 			has_more = iterator->initialize();

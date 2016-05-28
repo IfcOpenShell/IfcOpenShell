@@ -17,39 +17,23 @@
 #                                                                              #
 ################################################################################
 
-# Find QT header files
-SET(QT_MIN_VERSION "4.5.0")
-FIND_PACKAGE(Qt4 REQUIRED)
-FIND_PACKAGE(Qt4 COMPONENTS QtCore QtGui QtOpenGL)
-
-INCLUDE(${QT_USE_FILE})
-SET(CMAKE_PACKAGE_QTGUI TRUE)
-
-# Find QT header files
-IF("$ENV{QT_INCLUDE_DIR}" STREQUAL "") 
-        SET(QT_INCLUDE_DIR "/usr/include/QT4/" CACHE FILEPATH "QT4 header files")
-        MESSAGE(STATUS "Looking for QT4 include files in: ${QT_INCLUDE_DIR}")
-        MESSAGE(STATUS "Use QT_INCLUDE_DIR to specify another directory")
-ELSE()
-        SET(QT_INCLUDE_DIR $ENV{QT_INCLUDE_DIR} CACHE FILEPATH "QT4 header files")
-        MESSAGE(STATUS "Looking for QT4 include files in: ${QT_INCLUDE_DIR}")
-ENDIF()
-
-
-INCLUDE_DIRECTORIES(${QT_INCLUDE_DIR})
-
-SET(QTviewer_SRCS
-        ../../src/qtviewer/mainwindow.h
-        ../../src/qtviewer/mainwindow.cpp
-        ../../src/qtviewer/main.cpp
-)
-SET(QTviewer_MOC_SRCS 
-        ../../src/qtviewer/mainwindow.h
+INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS} ${ICU_INCLUDE_DIR}
+    ${Boost_INCLUDE_DIRS} ${THREEDS_MAX_SDK_HOME}/include
 )
 
-QT_WRAP_CPP(QTviewer QTviewer_SRCS ${QTviewer_MOC_SRCS})
+# All recent versions of 3ds Max (2014 and newer) are 64-bit only so assume lib/x64 directory
+LINK_DIRECTORIES(${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} ${OPENCOLLADA_LIBRARY_DIR}
+    ${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS} ${THREEDS_MAX_SDK_HOME}/lib/x64/Release
+)
 
-ADD_EXECUTABLE(  QTviewer ${QTviewer_SRCS} ${QTviewer_MOC_SRCS})
-#http://www.qtcentre.org/wiki/index.php?title=Compiling_Qt4_apps_with_CMake
+ADD_LIBRARY(IfcMax SHARED IfcMax.h IfcMax.cpp)
 
-TARGET_LINK_LIBRARIES (QTviewer ${IFCLIBS} ${QT_LIBRARIES} ${OPENCASCADE_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcMax ${IFCLIBS} Comctl32.lib zlibdll.lib bmm.lib core.lib CustDlg.lib edmodel.lib expr.lib
+    flt.lib geom.lib gfx.lib gup.lib imageViewers.lib ManipSys.lib maxnet.lib Maxscrpt.lib
+    maxutil.lib MenuMan.lib menus.lib mesh.lib MNMath.lib Paramblk2.lib particle.lib Poly.lib RenderUtil.lib
+    tessint.lib viewfile.lib ${OPENCASCADE_LIBRARIES}
+)
+
+SET_TARGET_PROPERTIES(IfcMax PROPERTIES SUFFIX ".dli")
+
+INSTALL(TARGETS IfcMax RUNTIME DESTINATION ${BINDIR})

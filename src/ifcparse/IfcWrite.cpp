@@ -111,7 +111,10 @@ std::string IfcWritableEntity::toString(bool upper) const {
 
 	return ss.str();
 }
-unsigned int IfcWritableEntity::id() { 
+unsigned int IfcWritableEntity::id() {
+	if (!file) {
+		return 0;
+	}
 	if ( !_id ) {
 		_id = new int(file->FreshId()); 
 	}
@@ -414,8 +417,8 @@ public:
 	void operator()(const IfcEntityListList::ptr& i) { 
 		data << "(";
 		for (IfcEntityListList::outer_it outer_it = i->begin(); outer_it != i->end(); ++outer_it) {
-			data << "(";
 			if (outer_it != i->begin()) data << ",";
+			data << "(";
 			for (IfcEntityListList::inner_it inner_it = outer_it->begin(); inner_it != outer_it->end(); ++inner_it) {
 				if (inner_it != outer_it->begin()) data << ",";
 				(*this)(*inner_it);
@@ -501,7 +504,7 @@ IfcWriteArgument::operator std::vector< boost::dynamic_bitset<> >() const { retu
 IfcWriteArgument::operator IfcEntityList::ptr() const { return as<IfcEntityList::ptr>(); }
 IfcWriteArgument::operator std::vector< std::vector<int> >() const { return as<std::vector< std::vector<int> > >(); }
 IfcWriteArgument::operator std::vector< std::vector<double> >() const { return as<std::vector< std::vector<double> > >(); }
-IfcWriteArgument::operator IfcEntityListList::ptr() const { throw; }
+IfcWriteArgument::operator IfcEntityListList::ptr() const { return as<IfcEntityListList::ptr>(); }
 bool IfcWriteArgument::isNull() const { return type() == IfcUtil::Argument_NULL; }
 Argument* IfcWriteArgument::operator [] (unsigned int /*i*/) const { throw IfcParse::IfcException("Invalid cast"); }
 std::string IfcWriteArgument::toString(bool upper) const {

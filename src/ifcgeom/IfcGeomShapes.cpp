@@ -98,6 +98,8 @@
 
 #include <Standard_Version.hxx>
 
+#include <TopTools_ListIteratorOfListOfShape.hxx>
+
 #include "../ifcgeom/IfcGeom.h"
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& shape) {
@@ -144,7 +146,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 		shape = BRepPrimAPI_MakePrism(face, height*dir);
 	}
 
+	// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+	// and therefore has a unit scale factor
 	shape.Move(trsf);
+
 	return ! shape.IsNull();
 }
 
@@ -164,7 +169,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfLinearExtrusion* l, T
 	convert(l->ExtrudedDirection(),dir);
 
 	shape = BRepPrimAPI_MakePrism(wire, height*dir);
+	
+	// IfcSweptSurface.Position (trsf) is an IfcAxis2Placement3D
+	// and therefore has a unit scale factor
 	shape.Move(trsf);
+	
 	return !shape.IsNull();
 }
 
@@ -185,7 +194,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfRevolution* l, TopoDS
 	
 	shape = BRepPrimAPI_MakeRevol(wire, ax1);
 
+	// IfcSweptSurface.Position (trsf) is an IfcAxis2Placement3D
+	// and therefore has a unit scale factor
 	shape.Move(trsf);
+
 	return !shape.IsNull();
 }
 
@@ -207,7 +219,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 		shape = BRepPrimAPI_MakeRevol(face, ax1, ang);
 	}
 
+	// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+	// and therefore has a unit scale factor
 	shape.Move(trsf);
+
 	return !shape.IsNull();
 }
 
@@ -223,6 +238,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFacetedBrep* l, IfcRepresentat
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, IfcRepresentationShapeItems& shapes) {
+	bool part_success = false;
 	IfcSchema::IfcConnectedFaceSet::list::ptr facesets = l->FbsmFaces();
 	const SurfaceStyle* collective_style = get_style(l);
 	for( IfcSchema::IfcConnectedFaceSet::list::it it = facesets->begin(); it != facesets->end(); ++ it ) {
@@ -230,9 +246,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, IfcR
 		const SurfaceStyle* shell_style = get_style(*it);
 		if (convert_shape(*it,s)) {
 			shapes.push_back(IfcRepresentationShapeItem(s, shell_style ? shell_style : collective_style));
+			part_success |= true;
 		}
 	}
-	return true;
+	return part_success;
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, TopoDS_Shape& shape) {
@@ -267,7 +284,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, 
 
 	TopoDS_Shape prism = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,200));
 	gp_Trsf down; down.SetTranslation(gp_Vec(0,0,-100.0));
-	prism.Move(trsf*down);
+	
+	// `trsf` and `down` both have a unit scale factor
+	prism.Move(trsf*down);	
+	
 	shape = BRepAlgoAPI_Common(halfspace,prism);
 	return true;
 }
@@ -442,28 +462,38 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& shape) {
 	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
-	bool facesAdded = false;
-	const unsigned int num_faces = (unsigned)faces->size();
+
+	TopTools_ListOfShape face_list;
+	for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
+		TopoDS_Face face;
+		try {
+			convert_face(*it, face);
+		} catch (...) {
+			continue;
+		}
+		if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
+			face_list.Append(face);
+		} else {
+			Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it)->entity);
+		}
+	}
+
+	if (face_list.Extent() == 0) {
+		return false;
+	}
+	
 	bool valid_shell = false;
-	if ( num_faces < getValue(GV_MAX_FACES_TO_SEW) ) {
+
+	TopTools_ListIteratorOfListOfShape face_iterator;
+	
+	if ( face_list.Extent() < getValue(GV_MAX_FACES_TO_SEW) ) {
 		BRepOffsetAPI_Sewing builder;
 		builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 		builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 		builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		for( IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++ it ) {
-			TopoDS_Face face;
-			bool converted_face = false;
-			try {
-				converted_face = convert_face(*it,face);
-			} catch (...) {}
-			if ( converted_face && face_area(face) > getValue(GV_MINIMAL_FACE_AREA) ) {
-				builder.Add(face);
-				facesAdded = true;
-			} else {
-				Logger::Message(Logger::LOG_WARNING,"Invalid face:",(*it)->entity);
-			}
+		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+			builder.Add(face_iterator.Value());
 		}
-		if ( ! facesAdded ) return false;
 		try {
 			builder.Perform();
 			shape = builder.SewedShape();
@@ -489,20 +519,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
-		for( IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++ it ) {
-			TopoDS_Face face;
-			bool converted_face = false;
-			try {
-				converted_face = convert_face(*it,face);
-			} catch (...) {}
-			if ( converted_face && face_area(face) > getValue(GV_MINIMAL_FACE_AREA) ) {
-				builder.Add(compound,face);
-				facesAdded = true;
-			} else {
-				Logger::Message(Logger::LOG_WARNING,"Invalid face:",(*it)->entity);
-			}
+		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+			builder.Add(compound, face_iterator.Value());
 		}
-		if ( ! facesAdded ) return false;
 		shape = compound;
 	}
 	return true;
@@ -607,7 +626,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBlock* l, TopoDS_Shape& shape)
 	BRepPrimAPI_MakeBox builder(dx, dy, dz);
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
+
+	// IfcCsgPrimitive3D.Position has unit scale factor
 	shape = builder.Solid().Moved(trsf);
+
 	return true;
 }
 
@@ -640,7 +662,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRightCircularCylinder* l, Topo
 	BRepPrimAPI_MakeCylinder builder(r, h);
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
+	
+	// IfcCsgPrimitive3D.Position has unit scale factor
 	shape = builder.Solid().Moved(trsf);
+
 	return true;
 }
 
@@ -651,7 +676,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRightCircularCone* l, TopoDS_S
 	BRepPrimAPI_MakeCone builder(r, 0., h);
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
+
+	// IfcCsgPrimitive3D.Position has unit scale factor
 	shape = builder.Solid().Moved(trsf);
+
 	return true;
 }
 
@@ -661,7 +689,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSphere* l, TopoDS_Shape& shape
 	BRepPrimAPI_MakeSphere builder(r);
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
+	
+	// IfcCsgPrimitive3D.Position has unit scale factor
 	shape = builder.Solid().Moved(trsf);
+
 	return true;
 }
 
@@ -693,6 +724,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCurveBoundedPlane* l, TopoDS_S
 
 	ShapeFix_Shape sfs(mf.Face());
 	sfs.Perform();
+
+	// `trsf` consitutes the placement of the plane and therefore has unit scale factor
 	face = TopoDS::Face(sfs.Shape()).Moved(trsf);
 	
 	return true;
@@ -781,6 +814,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	builder.Build();
 	builder.MakeSolid();
 	shape = builder.Shape();
+
+	// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+	// and therefore has a unit scale factor
 	shape.Move(position);
 
 	return true;
@@ -872,6 +908,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCylindricalSurface* l, TopoDS_
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
 	
+	// IfcElementarySurface.Position has unit scale factor
 #if OCC_VERSION_HEX < 0x60502
 	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius())).Face().Moved(trsf);
 #else
@@ -915,7 +952,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 		const int min_index = *std::min_element(tri.begin(), tri.end());
 		const int max_index = *std::max_element(tri.begin(), tri.end());
 
-		if (min_index < 1 || max_index > points.size()) {
+		if (min_index < 1 || max_index > (int) points.size()) {
 			Logger::Message(Logger::LOG_ERROR, "Contents of CoordIndex out of bounds", l->entity);
 			return false;
 		}

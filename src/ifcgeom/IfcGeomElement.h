@@ -44,7 +44,7 @@ namespace IfcGeom {
 			for(int i = 1; i < 5; ++i) {
 				for (int j = 1; j < 4; ++j) {
 					const double trsf_value = trsf.Value(j,i);
-					const double matrix_value = i == 4 && settings.convert_back_units()
+                    const double matrix_value = i == 4 && settings.get(IteratorSettings::CONVERT_BACK_UNITS)
 						? trsf_value / settings.unit_magnitude()
 						: trsf_value;
 					_data.push_back(static_cast<P>(matrix_value));
@@ -107,16 +107,14 @@ namespace IfcGeom {
 	template <typename P>
 	class BRepElement : public Element<P> {
 	private:
-		Representation::BRep* _geometry;
+		boost::shared_ptr<Representation::BRep> _geometry;
 	public:
+		const boost::shared_ptr<Representation::BRep>& geometry_pointer() const { return _geometry; }
 		const Representation::BRep& geometry() const { return *_geometry; }
-		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const gp_Trsf& trsf, Representation::BRep* geometry)
+		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const gp_Trsf& trsf, const boost::shared_ptr<Representation::BRep>& geometry)
 			: Element<P>(geometry->settings(),id,parent_id,name,type,guid,context,trsf)
 			, _geometry(geometry)
 		{}
-		virtual ~BRepElement() {
-			delete _geometry;
-		}
 	private:
 		BRepElement(const BRepElement& other);
 		BRepElement& operator=(const BRepElement& other);		
@@ -125,16 +123,18 @@ namespace IfcGeom {
 	template <typename P>
 	class TriangulationElement : public Element<P> {
 	private:
-		Representation::Triangulation<P>* _geometry;
+		boost::shared_ptr< Representation::Triangulation<P> > _geometry;
 	public:
 		const Representation::Triangulation<P>& geometry() const { return *_geometry; }
+		const boost::shared_ptr< Representation::Triangulation<P> >& geometry_pointer() const { return _geometry; }
 		TriangulationElement(const BRepElement<P>& shape_model)
 			: Element<P>(shape_model)
-			, _geometry(new Representation::Triangulation<P>(shape_model.geometry()))
+			, _geometry(boost::shared_ptr<Representation::Triangulation<P> >(new Representation::Triangulation<P>(shape_model.geometry())))
 		{}
-		virtual ~TriangulationElement() {
-			delete _geometry;
-		}
+		TriangulationElement(const Element<P>& element, const boost::shared_ptr<Representation::Triangulation<P> >& geometry)
+			: Element<P>(element)
+			, _geometry(geometry)
+		{}
 	private:
 		TriangulationElement(const TriangulationElement& other);
 		TriangulationElement& operator=(const TriangulationElement& other);

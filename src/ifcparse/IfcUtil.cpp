@@ -17,12 +17,15 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "IfcUtil.h"
+#include "../ifcparse/IfcException.h"
+
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/optional.hpp>
+
 #include <iostream>
 #include <algorithm>
 
-#include "../ifcparse/IfcException.h"
-
-#include "IfcUtil.h"
 
 void IfcEntityList::push(IfcUtil::IfcBaseClass* l) {
 	if (l) {
@@ -73,43 +76,6 @@ unsigned int IfcUtil::IfcBaseType::getArgumentCount() const { return 1; }
 Argument* IfcUtil::IfcBaseType::getArgument(unsigned int i) const { return entity->getArgument(i); }
 const char* IfcUtil::IfcBaseType::getArgumentName(unsigned int i) const { if (i == 0) { return "wrappedValue"; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
 
-void Logger::SetOutput(std::ostream* l1, std::ostream* l2) { 
-	log1 = l1; 
-	log2 = l2; 
-	if ( ! log2 ) {
-		log2 = &log_stream;
-	}
-}
-void Logger::Message(Logger::Severity type, const std::string& message, IfcAbstractEntity* entity) {
-	if ( log2 && type >= verbosity ) {
-		(*log2) << "[" << severity_strings[type] << "] " << message << std::endl;
-		if ( entity ) (*log2) << entity->toString() << std::endl;
-	}
-}
-void Logger::Status(const std::string& message, bool new_line) {
-	if ( log1 ) {
-		(*log1) << message;
-		if ( new_line ) (*log1) << std::endl;
-		else (*log1) << std::flush;
-	}
-}
-void Logger::ProgressBar(int progress) {
-	if ( log1 ) {
-		Status("\r[" + std::string(progress,'#') + std::string(50 - progress,' ') + "]", false);
-	}
-}
-std::string Logger::GetLog() {
-	return log_stream.str();
-}
-void Logger::Verbosity(Logger::Severity v) { verbosity = v; }
-Logger::Severity Logger::Verbosity() { return verbosity; }
-
-std::ostream* Logger::log1 = 0;
-std::ostream* Logger::log2 = 0;
-std::stringstream Logger::log_stream;
-Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
-const char* Logger::severity_strings[] = { "Notice","Warning","Error" };
-
 static const char* const argument_type_string[] = {
 	"NULL",
 	"DERIVED",
@@ -143,4 +109,43 @@ bool IfcUtil::valid_binary_string(const std::string& s) {
 		if (*it != '0' && *it != '1') return false;
 	}
 	return true;
+}
+
+boost::regex IfcUtil::wildcard_string_to_regex(std::string str)
+{
+    // Escape all non-"*?" regex special chars
+    std::string special_chars = "\\^.$|()[]+/";
+    foreach(char c, special_chars) {
+        std::string char_str(1, c);
+        boost::replace_all(str, char_str, "\\"+ char_str);
+    }
+    // Convert "*?" to their regex equivalents
+    boost::replace_all(str, "?", ".");
+    boost::replace_all(str, "*", ".*");
+    return boost::regex(str);
+}
+
+void IfcUtil::sanitate_material_name(std::string &str)
+{
+    // Spaces in material names have been observed to cause problems with obj and dae importers.
+    // Handle other potential problematic characters here too if observing problems.
+    boost::replace_all(str, " ", "_");
+}
+
+void IfcUtil::escape_xml(std::string &str)
+{
+    boost::replace_all(str, "\"", "&quot;");
+    boost::replace_all(str, "'", "&apos;");
+    boost::replace_all(str, "<", "&lt;");
+    boost::replace_all(str, ">", "&gt;");
+    boost::replace_all(str, "&", "&amp;");
+}
+
+void IfcUtil::unescape_xml(std::string &str)
+{
+    boost::replace_all(str, "&quot;", "\"");
+    boost::replace_all(str, "&apos;", "'");
+    boost::replace_all(str, "&lt;", "<");
+    boost::replace_all(str, "&gt;", ">");
+    boost::replace_all(str, "&amp;", "&");
 }

@@ -24,13 +24,42 @@ project (IfcOpenShell)
 OPTION(UNICODE_SUPPORT "Build IfcOpenShell with Unicode support (requires ICU)." ON)
 OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
-#TODO OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." OFF)
+OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." ON)
 OPTION(USE_IFC4 "Use IFC 4 instead of IFC 2x3 (full rebuild recommended when switching this)" OFF)
 OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
+OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
+OPTION(BUILD_SHARED_LIBS "Build ifcparse and ifcgeom libs shared." OFF)
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
+
+
+# Specify where to install files
+IF(NOT BINDIR)
+    set(BINDIR bin)
+ENDIF()
+IF(NOT IS_ABSOLUTE ${BINDIR})
+    set(BINDIR ${CMAKE_INSTALL_PREFIX}/${BINDIR})
+ENDIF()
+MESSAGE(STATUS "BINDIR: ${BINDIR}")
+
+IF(NOT INCLUDEDIR)
+    set(INCLUDEDIR include)
+ENDIF()
+IF(NOT IS_ABSOLUTE ${INCLUDEDIR})
+    set(INCLUDEDIR ${CMAKE_INSTALL_PREFIX}/${INCLUDEDIR})
+ENDIF()
+MESSAGE(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
+
+IF(NOT LIBDIR)
+    set(LIBDIR lib)
+ENDIF()
+IF(NOT IS_ABSOLUTE ${LIBDIR})
+    set(LIBDIR ${CMAKE_INSTALL_PREFIX}/${LIBDIR})
+ENDIF()
+MESSAGE(STATUS "LIBDIR: ${LIBDIR}")
+
 
 
 # Create cache entries if absent for environment variables
@@ -48,6 +77,23 @@ UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(PCRE_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
+IF(WIN32)
+    UNIFY_ENVVARS_AND_CACHE(THREEDS_MAX_SDK_HOME)
+ENDIF()
+
+
+# Set INSTALL_RPATH for target
+MACRO(SET_INSTALL_RPATHS _target _paths)
+    SET(${_target}_rpaths "")
+    FOREACH(_path ${_paths})
+        LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${_path}" isSystemDir)
+	IF("${isSystemDir}" STREQUAL "-1")
+            LIST(APPEND ${_target}_rpaths ${_path})
+        ENDIF()
+    ENDFOREACH()
+    MESSAGE(STATUS "Set INSTALL_RPATH for ${_target}: ${${_target}_rpaths}")
+    SET_TARGET_PROPERTIES(${_target} PROPERTIES INSTALL_RPATH "${${_target}_rpaths}")
+ENDMACRO()
 
 # Find Boost
 IF(MSVC)
@@ -55,7 +101,7 @@ IF(MSVC)
 	SET(Boost_USE_STATIC_RUNTIME ON)
 	SET(Boost_USE_MULTITHREADED ON)
 ENDIF()
-FIND_PACKAGE(Boost REQUIRED COMPONENTS program_options)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS system program_options regex thread date_time)
 MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
@@ -131,7 +177,7 @@ IF(UNICODE_SUPPORT)
 		SET(ICU_LIBRARY_DIR "${ICU_LIBRARY_DIR}" CACHE FILEPATH "ICU library files")
 	ENDIF()
 
-	FIND_LIBRARY(icu NAMES icuuc icuucd PATHS /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 ${ICU_LIBRARY_DIR})
+	FIND_LIBRARY(icu NAMES icuuc icuucd PATHS /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib ${ICU_LIBRARY_DIR})
 
 	IF(icu)
 		ADD_DEFINITIONS(-DHAVE_ICU)
@@ -161,10 +207,10 @@ IF(COLLADA_SUPPORT)
 
 	IF("${OPENCOLLADA_LIBRARY_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No OpenCOLLADA library directory specified")
-		SET(OPENCOLLADA_LIBRARY_DIR "/usr/lib/opencollada" CACHE FILEPATH "OpenCOLLADA library files")
-	ElSE()
-		SET(OPENCOLLADA_LIBRARY_DIR "${OPENCOLLADA_LIBRARY_DIR}" CACHE FILEPATH "OpenCOLLADA library files")
+		FIND_LIBRARY(OPENCOLLADA_FRAMEWORK_LIB NAMES OpenCOLLADAFramework PATHS /usr/lib64/opencollada /usr/lib/opencollada /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib)
+		GET_FILENAME_COMPONENT(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_FRAMEWORK_LIB} PATH)
 	ENDIF()
+	SET(OPENCOLLADA_LIBRARY_DIR "${OPENCOLLADA_LIBRARY_DIR}" CACHE FILEPATH "OpenCOLLADA library files")
 
 	SET(OPENCOLLADA_INCLUDE_DIRS "${OPENCOLLADA_INCLUDE_DIR}/COLLADABaseUtils" "${OPENCOLLADA_INCLUDE_DIR}/COLLADAStreamWriter")
 
@@ -239,6 +285,11 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
 endif()
 
 IF(MSVC)
+    # Enable solution folders (free VS versions prior to 2012 don't support solution folders)
+    if (MSVC_VERSION GREATER 1600)
+        set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+    endif()
+
 	IF(USE_VLD)
 		ADD_DEFINITIONS(-DUSE_VLD)
 	ENDIF()
@@ -352,6 +403,11 @@ else()
     endif()
 endif()
 
+# Boost >= 1.58 requires BOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE to build
+if(NOT Boost_VERSION LESS 105800)
+    add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE)
+endif()
+
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
 file(GLOB IFCPARSE_CPP_FILES ../src/ifcparse/*.cpp)
@@ -369,7 +425,7 @@ set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 ADD_LIBRARY(IfcParse STATIC ${IFCPARSE_FILES})
 
 IF(UNICODE_SUPPORT)
-	TARGET_LINK_LIBRARIES(IfcParse ${ICU_LIBRARIES})
+	TARGET_LINK_LIBRARIES(IfcParse ${ICU_LIBRARIES} ${Boost_LIBRARIES})
 ENDIF()
 
 # IfcGeom
@@ -377,7 +433,15 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
 
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
-ADD_LIBRARY(IfcGeom STATIC ${IFCGEOM_FILES})
+IF(BUILD_SHARED_LIBS)
+    ADD_LIBRARY(IfcGeom SHARED ${IFCGEOM_FILES})
+    SET(IFCLIBS "IfcGeom")
+    SET(IFCDIRS "${LIBDIR}")
+ELSE()
+    ADD_LIBRARY(IfcGeom STATIC ${IFCGEOM_FILES})
+    SET(IFCLIBS "IfcParse;IfcGeom")
+    SET(IFCDIRS "")
+ENDIF()
 
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
@@ -388,6 +452,10 @@ if(NOT WIN32)
 	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
 endif()
 
+# IfcConvert
+if (IFCCONVERT_DOUBLE_PRECISION)
+    add_definitions(-DIFCCONVERT_DOUBLE_PRECISION)
+endif()
 file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
 file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
 set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
@@ -398,10 +466,16 @@ ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
 get_filename_component(libTKernelExt ${libTKernel} EXT)
 if("${libTKernelExt}" STREQUAL ".a")
     find_package(Threads)
-    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} rt dl)
+    if (NOT APPLE)
+        set(LIB_RT "rt")
+    endif()
+    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${LIB_RT} dl)
 endif()
 
-TARGET_LINK_LIBRARIES(IfcConvert IfcParse IfcGeom ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcConvert ${IFCLIBS} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
+if (NOT WIN32)
+    SET_INSTALL_RPATHS(IfcConvert "${IFCDIRS};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR};${ICU_LIBRARY_DIR}")
+endif()
 
 # IfcGeomServer
 file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
@@ -409,7 +483,10 @@ file(GLOB H_FILES ../src/ifcgeomserver/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_EXECUTABLE(IfcGeomServer ${SOURCE_FILES})
 
-TARGET_LINK_LIBRARIES(IfcGeomServer IfcParse IfcGeom ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${ICU_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcGeomServer ${IFCLIBS} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${ICU_LIBRARIES})
+if (NOT WIN32)
+    SET_INSTALL_RPATHS(IfcGeomServer "${IFCDIRS};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${ICU_LIBRARY_DIR}")
+endif()
 
 IF(BUILD_IFCPYTHON)
 	ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
@@ -419,8 +496,12 @@ IF(BUILD_EXAMPLES)
 	ADD_SUBDIRECTORY(../src/examples examples)
 ENDIF()
 
+IF(BUILD_IFCMAX)
+	ADD_SUBDIRECTORY(../src/ifcmax ifcmax)
+ENDIF()
+
 # CMake installation targets
-INSTALL(FILES ${IFCPARSE_H_FILES} DESTINATION include/ifcparse)
-INSTALL(FILES ${IFCGEOM_H_FILES} DESTINATION include/ifcgeom)
-INSTALL(TARGETS IfcConvert IfcGeomServer DESTINATION bin)
-INSTALL(TARGETS IfcParse IfcGeom DESTINATION lib)
+INSTALL(FILES ${IFCPARSE_H_FILES} DESTINATION ${INCLUDEDIR}/ifcparse)
+INSTALL(FILES ${IFCGEOM_H_FILES} DESTINATION ${INCLUDEDIR}/ifcgeom)
+INSTALL(TARGETS IfcConvert IfcGeomServer DESTINATION ${BINDIR})
+INSTALL(TARGETS ${IFCLIBS} DESTINATION ${LIBDIR})

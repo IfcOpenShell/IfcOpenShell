@@ -50,14 +50,13 @@ bool process_colour(IfcSchema::IfcColourOrFactor* colour_or_factor, double* rgb)
 	}
 }
 
-const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepresentationItem* item) {
-	std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*> shading_styles = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(item);
+const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*>& shading_styles) {
 	if (shading_styles.second == 0) {
 		return 0;
 	}
 	int surface_style_id = shading_styles.first->entity->id();
-	std::map<int,SurfaceStyle>::const_iterator it = cache.Style.find(surface_style_id);
-	if (it != cache.Style.end()) {
+	std::map<int,SurfaceStyle>::const_iterator it = style_cache.find(surface_style_id);
+	if (it != style_cache.end()) {
 		return &(it->second);
 	}
 	SurfaceStyle surface_style;
@@ -104,7 +103,29 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepr
 			surface_style.Transparency().reset(d);
 		}
 	}
-	return &(cache.Style[surface_style_id] = surface_style);
+	return &(style_cache[surface_style_id] = surface_style);
+}
+
+const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcRepresentationItem* item) {
+	return internalize_surface_style(get_surface_style<IfcSchema::IfcSurfaceStyleShading>(item));	
+}
+
+const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcMaterial* material) {
+	IfcSchema::IfcMaterialDefinitionRepresentation::list::ptr defs = material->HasRepresentation();
+	for (IfcSchema::IfcMaterialDefinitionRepresentation::list::it jt = defs->begin(); jt != defs->end(); ++jt) {
+		IfcSchema::IfcRepresentation::list::ptr reps = (*jt)->Representations();
+		IfcSchema::IfcStyledItem::list::ptr styles(new IfcSchema::IfcStyledItem::list);
+		for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
+			styles->push((**it).Items()->as<IfcSchema::IfcStyledItem>());
+		}
+		for (IfcSchema::IfcStyledItem::list::it it = styles->begin(); it != styles->end(); ++it) {
+			const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*> ss = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(*it);
+			if (ss.second) {
+				return internalize_surface_style(ss);
+			}
+		}
+	}
+	return 0;
 }
 
 static std::map<std::string, IfcGeom::SurfaceStyle> default_materials;

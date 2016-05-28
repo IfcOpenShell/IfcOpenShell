@@ -57,7 +57,7 @@ class Mapping:
         return None if str(parent) in self.express_to_cpp_typemapping else parent
 
     def make_type_string(self, type):
-        if isinstance(type, (str, nodes.BinaryType)):
+        if isinstance(type, (str, nodes.BinaryType, nodes.StringType)):
             return self.express_to_cpp_typemapping.get(str(type), type)
         else:
             is_list = self.schema.is_entity(type.type)
@@ -89,6 +89,8 @@ class Mapping:
                 return "ENTITY_INSTANCE"
             elif isinstance(type, nodes.BinaryType):
                 return "BINARY"
+            elif isinstance(type, nodes.StringType):
+                return "STRING"
             elif isinstance(type, nodes.EnumerationType):
                 return "ENUMERATION"
             elif isinstance(type, nodes.AggregationType):
@@ -128,10 +130,11 @@ class Mapping:
                 type_str = templates.untyped_list
             elif self.schema.is_simpletype(ty) or str(ty) in self.express_to_cpp_typemapping.values():
                 tmpl = templates.nested_array_type if is_nested_list else templates.array_type
+                bounds = (attr_type.bounds.lower, attr_type.bounds.upper) if attr_type.bounds else (-1, -1)
                 type_str = tmpl % {
                     'instance_type' : ty,
-                    'lower'         : attr_type.bounds.lower,
-                    'upper'         : attr_type.bounds.upper
+                    'lower'         : bounds[0],
+                    'upper'         : bounds[1]
                 }
             else:
                 tmpl = templates.list_list_type if is_nested_list else templates.list_type

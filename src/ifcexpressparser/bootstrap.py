@@ -19,7 +19,13 @@
 
 import sys
 import string
+import operator
+import itertools
+
 from pyparsing import *
+
+try: from functools import reduce
+except: pass
 
 class Expression:
     def __init__(self, contents):
@@ -56,12 +62,12 @@ class Keyword:
 class Terminal:
     def __init__(self, contents):
         self.contents = contents[0]
-    def __repr__(self):
         s = self.contents
-        is_keyword = len(s) >= 4 and s[0::len(s)-1] == '""' and \
+        self.is_keyword = len(s) >= 4 and s[0::len(s)-1] == '""' and \
             all(c in alphanums+"_" for c in s[1:-1])
-        ty = "CaselessKeyword" if is_keyword else "CaselessLiteral"
-        return "%s(%s)" % (ty, s)
+    def __repr__(self):
+        ty = "CaselessKeyword" if self.is_keyword else "CaselessLiteral"
+        return "%s(%s)" % (ty, self.contents)
 
 
 LPAREN = Suppress("(")
@@ -94,16 +100,16 @@ grammar.ignore(HASH + restOfLine)
 
 express = grammar.parseFile(sys.argv[1])
 
-def find_keywords(expr, li = None):
+def find_bytype(expr, ty, li = None):
     if li is None: li = []
     if isinstance(expr, Term):
         expr = expr.contents
-    if isinstance(expr, Keyword):
-        li.append(repr(expr))
-        return li
+    if isinstance(expr, ty):
+        li.append(expr)
+        return set(li)
     elif isinstance(expr, Expression):
         for term in expr:
-            find_keywords(term, li)
+            find_bytype(term, ty, li)
     return set(li)
 
 actions = {
@@ -122,6 +128,8 @@ actions = {
     'inverse_attr'              : "lambda t: InverseAttribute(t)",
     'bound_spec'                : "lambda t: BoundSpecification(t)",
     'explicit_attr'             : "lambda t: ExplicitAttribute(t)",
+    'width_spec'                : "lambda t: WidthSpec(t)",
+    'string_type'               : "lambda t: StringType(t)",
 }
 
 to_emit = set(id for id, expr in express)
@@ -129,18 +137,22 @@ emitted = set()
 to_combine = set(["simple_id"])
 to_ignore = set(["where_clause", "supertype_constraint", "unique_clause"])
 statements = []
+    
+terminals = reduce(lambda x,y: x | y, (find_bytype(e, Terminal) for id, e in express))
+keywords = list(filter(operator.attrgetter('is_keyword'), terminals))
+negated_keywords = map(lambda s: "~%s" % s, keywords)
 
 while True:
     emitted_in_loop = set()
     for id, expr in express:
-        kws = find_keywords(expr)
+        kws = map(repr, find_bytype(expr, Keyword))
         found = [k in emitted for k in kws]
         if id in to_emit and all(found):
             emitted_in_loop.add(id)
             emitted.add(id)
             stmt = "(%s)" % expr
             if id in to_combine:
-                stmt = "originalTextFor(Combine%s)" % stmt
+                stmt = " + ".join(itertools.chain(negated_keywords, ("originalTextFor(Combine%s)" % stmt,)))
             if id in actions:
                 stmt = "%s.setParseAction(%s)" % (stmt, actions[id])
             statements.append("%s = %s" % (id, stmt))

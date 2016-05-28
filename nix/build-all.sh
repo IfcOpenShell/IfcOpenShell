@@ -24,7 +24,11 @@
 # Prerequisites for this script to function correctly:                        #
 #     * git * bzip2 * tar * c(++) compilers * yacc * autoconf                 #
 #     on debian 7.8 these can be obtained with:                               #
-#          $ apt-get install git bzip2 bizon autoconf gcc g++                 #
+#          $ apt-get install git gcc g++ autoconf bison bzip2                 #
+#     on ubuntu 14.04:                                                        #
+#          $ apt-get install git gcc g++ autoconf bison make                  #
+#     on OS X El Capitan with homebrew:                                       #
+#          $ brew install git bison autoconf automake                         #
 #                                                                             #
 ###############################################################################
 
@@ -32,8 +36,8 @@ set -e
 
 PROJECT_NAME=IfcOpenShell
 OCE_VERSION=0.16
-PYTHON_VERSIONS=(2.7.9 3.3.6 3.4.2)
-BOOST_VERSION=1.55.0
+PYTHON_VERSIONS=(2.7.10 3.2.6 3.3.6 3.4.4 3.5.1)
+BOOST_VERSION=1.59.0
 PCRE_VERSION=8.38
 LIBXML_VERSION=2.9.3
 CMAKE_VERSION=3.4.1
@@ -50,6 +54,10 @@ function cecho {
     printf "$1$2\033[0m\n"
 }
 
+function fullpath {
+	python -c "import os, sys; print os.path.realpath(os.path.dirname(sys.argv[1]))" "$1"
+}
+
 # Set defaults for missing empty environment variables
 
 if [ -z "$IFCOS_NUM_BUILD_PROCS" ]; then
@@ -60,13 +68,13 @@ if [ -z "$TARGET_ARCH" ]; then
 TARGET_ARCH="$(uname -m)"
 fi
 
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-CMAKE_DIR="$SCRIPT_DIR/../../cmake/"
+SCRIPT_DIR=`fullpath "$0"`
+CMAKE_DIR="$SCRIPT_DIR/../cmake/"
 
 if [ -z "$DEPS_DIR" ]; then
-DEPS_DIR="$SCRIPT_DIR/../../build/$(uname)/"
+DEPS_DIR="$SCRIPT_DIR/../build/$(uname)/$TARGET_ARCH/"
 [ -d $DEPS_DIR ] || mkdir -p $DEPS_DIR
-DEPS_DIR=`readlink -f $DEPS_DIR`
+DEPS_DIR=`fullpath $DEPS_DIR`
 fi
 
 if [ -z "$BUILD_CFG" ]; then
@@ -102,7 +110,7 @@ echo ""
 
 # Check that required tools are in PATH
 
-for cmd in git bunzip2 tar cc c++ autoconf yacc
+for cmd in git bunzip2 tar cc c++ autoconf automake yacc make
 do
     which $cmd > /dev/null || { cecho $RED "Required tool '$cmd' not installed or not added to PATH" ; exit 1 ; }
 done
@@ -136,7 +144,7 @@ function download {
 }
 
 function run_autoconf  {
-    if [ ! -f configure ]; then 
+    if [ ! -f ../configure ]; then 
         pushd . >>$LOG_FILE 2>&1
         cd ..
         ./autogen.sh >>$LOG_FILE 2>&1
@@ -166,7 +174,7 @@ function git_clone {
     [ -d $2 ] || git clone $1 >>$LOG_FILE 2>&1
     if [ ! -z "$3" ]; then
         cd $2
-        git checkout $3
+        git checkout $3 >>$LOG_FILE 2>&1
         cd ..
     fi
 }
@@ -203,7 +211,7 @@ function build_dependency {
         printf "\rConfiguring $1..."
         ./bootstrap.sh >>$LOG_FILE 2>&1
         printf "\rBuilding $1...   "
-        ./b2 $3 >>$LOG_FILE 2>&1
+        eval ./b2 $3 >>$LOG_FILE 2>&1
         printf "\rInstalling $1... "
         cp -R boost $DEPS_DIR/install/boost-$BOOST_VERSION/ >>$LOG_FILE 2>&1
         printf "\rInstalled $1     \n"
@@ -213,30 +221,32 @@ function build_dependency {
 cecho $GREEN "Collecting dependencies:"
 
 # Set compiler flags for 32bit builds on 64bit system
+# TODO: This is untested
 
 if [ "$TARGET_ARCH" == "i686" ] && [ "$(uname -m)" == "x86_64" ]; then
 ADDITIONAL_ARGS="-m32 -arch i386"
+BOOST_ADDRESS_MODEL="architecture=x86 address-model=32"
 fi
 
 if [ "$(uname)" == "Darwin" ]; then
-ADDITIONAL_ARGS="-macosx_version_min 10.6 $ADDITIONAL_ARGS"
+ADDITIONAL_ARGS="-mmacosx-version-min=10.6 $ADDITIONAL_ARGS"
 fi
 
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
 
 if man ld 2> /dev/null | grep gc-sections &> /dev/null; then
+export CXXFLAGS_MINIMAL="$CXXFLAGS -fPIC $ADDITIONAL_ARGS"
+export   CFLAGS_MINIMAL="$CFLAGS   -fPIC $ADDITIONAL_ARGS"
 export CXXFLAGS="$CXXFLAGS -fPIC -fdata-sections -ffunction-sections -fvisibility=hidden -fvisibility-inlines-hidden $ADDITIONAL_ARGS"
 export   CFLAGS="$CFLAGS   -fPIC -fdata-sections -ffunction-sections -fvisibility=hidden $ADDITIONAL_ARGS"
 export  LDFLAGS="$LDFLAGS  -Wl,--gc-sections $ADDITIONAL_ARGS"
-export CXXFLAGS_MINIMAL="$CXXFLAGS_MINIMAL -fPIC $ADDITIONAL_ARGS"
-export   CFLAGS_MINIMAL="$CFLAGS_MINIMAL   -fPIC $ADDITIONAL_ARGS"
 else
+export CXXFLAGS_MINIMAL="$CXXFLAGS -fPIC $ADDITIONAL_ARGS"
+export   CFLAGS_MINIMAL="$CFLAGS   -fPIC $ADDITIONAL_ARGS"
 export CXXFLAGS="$CXXFLAGS -fPIC -fvisibility=hidden -fvisibility-inlines-hidden $ADDITIONAL_ARGS"
 export   CFLAGS="$CFLAGS   -fPIC -fvisibility=hidden -fvisibility-inlines-hidden $ADDITIONAL_ARGS"
-export  LDFLAGS="$LDFLAGS  -s -death_code $ADDITIONAL_ARGS"
-export CXXFLAGS_MINIMAL="$CXXFLAGS_MINIMAL -fPIC $ADDITIONAL_ARGS"
-export   CFLAGS_MINIMAL="$CFLAGS_MINIMAL   -fPIC $ADDITIONAL_ARGS"
+export  LDFLAGS="$LDFLAGS $ADDITIONAL_ARGS"
 fi
 
 # Some dependencies need a more recent CMake version than most distros provide
@@ -247,13 +257,15 @@ CMAKE_FLAG_EXTRACT_DIR=ifcopenshell_cmake_test_`cat /dev/urandom | env LC_CTYPE=
 [ -e $CMAKE_FLAG_EXTRACT_DIR ] && rm -rf $CMAKE_FLAG_EXTRACT_DIR
 mkdir $CMAKE_FLAG_EXTRACT_DIR
 cd $CMAKE_FLAG_EXTRACT_DIR
-BUILD_CFG_UPPER=${BUILD_CFG^^}
-for FL in C CXX LD; do
+BUILD_CFG_UPPER=`echo $BUILD_CFG | awk '{print toupper($0)}'`
+for FL in C CXX; do
     echo "
     message(\"\${CMAKE_${FL}_FLAGS_${BUILD_CFG_UPPER}}\")
     " > CMakeLists.txt
-    declare ${FL}FLAGS="`$DEPS_DIR/install/cmake-$CMAKE_VERSION/bin/cmake . 2>&1 >/dev/null`"
-    declare ${FL}FLAGS_MINIMAL="`$DEPS_DIR/install/cmake-$CMAKE_VERSION/bin/cmake . 2>&1 >/dev/null`"
+    FL=${FL}FLAGS
+    FLM=${FL}FLAGS_MINIMAL
+    declare ${FL}FLAGS="`$DEPS_DIR/install/cmake-$CMAKE_VERSION/bin/cmake . 2>&1 >/dev/null` ${!FL}"
+    declare ${FL}FLAGS_MINIMAL="`$DEPS_DIR/install/cmake-$CMAKE_VERSION/bin/cmake . 2>&1 >/dev/null` ${!FLM}"
 done
 cd ..
 rm -rf $CMAKE_FLAG_EXTRACT_DIR
@@ -265,36 +277,36 @@ build_dependency pcre-$PCRE_VERSION autoconf "--disable-shared" ftp://ftp.csx.ca
 build_dependency swig autoconf "--with-pcre-prefix=$DEPS_DIR/install/pcre-$PCRE_VERSION" https://github.com/swig/swig.git swig git_clone rel-3.0.8
 
 build_dependency oce-$OCE_VERSION cmake "-DOCE_DISABLE_TKSERVICE_FONT=ON -DOCE_TESTING=OFF -DOCE_BUILD_SHARED_LIB=OFF -DOCE_DISABLE_X11=ON -DOCE_VISUALISATION=OFF -DOCE_OCAF=OFF -DOCE_INSTALL_PREFIX=$DEPS_DIR/install/oce-$OCE_VERSION/" https://github.com/tpaviot/oce/archive/ OCE-$OCE_VERSION.tar.gz download
-build_dependency libxml2-$LIBXML_VERSION autoconf "--without-python --disable-shared" ftp://xmlsoft.org/libxml2/ libxml2-$LIBXML_VERSION.tar.gz download
+build_dependency libxml2-$LIBXML_VERSION autoconf "--without-python --disable-shared --without-zlib --without-iconv --without-lzma" ftp://xmlsoft.org/libxml2/ libxml2-$LIBXML_VERSION.tar.gz download
 build_dependency OpenCOLLADA cmake "
 -DLIBXML2_INCLUDE_DIR=$DEPS_DIR/install/libxml2-$LIBXML_VERSION/include/libxml2
 -DLIBXML2_LIBRARIES=$DEPS_DIR/install/libxml2-$LIBXML_VERSION/lib/libxml2.a
 -DPCRE_INCLUDE_DIR=$DEPS_DIR/install/pcre-$PCRE_VERSION/include
 -DPCRE_PCREPOSIX_LIBRARY=$DEPS_DIR/install/pcre-$PCRE_VERSION/lib/libpcreposix.a
 -DPCRE_PCRE_LIBRARY=$DEPS_DIR/install/pcre-$PCRE_VERSION/lib/libpcre.a
--DCMAKE_INSTALL_PREFIX=$DEPS_DIR/install/OpenCOLLADA/" https://github.com/KhronosGroup/OpenCOLLADA.git OpenCOLLADA git_clone
+-DCMAKE_INSTALL_PREFIX=$DEPS_DIR/install/OpenCOLLADA/" https://github.com/KhronosGroup/OpenCOLLADA.git OpenCOLLADA git_clone $OPENCOLLADA_COMMIT
 
 # Python should not be built with -fvisibility=hidden, from experience that introduces segfaults
 
 OLD_CXX_FLAGS=$CXXFLAGS
 OLD_C_FLAGS=$CFLAGS
-OLD_LD_FLAGS=$LDFLAGS
 export CXXFLAGS=$CXXFLAGS_MINIMAL
 export CFLAGS=$CFLAGS_MINIMAL
-export LDFLAGS=$LDFLAGS_MINIMAL
-  
+
+# On OSX a dynamic python library is built or it would not be compatible
+# with the system python because of some threading initialization
+if [ "$(uname)" == "Darwin" ]; then
+PYTHON_CONFIGURE_ARGS="--disable-static --enable-shared" 
+fi
+
 for PYTHON_VERSION in "${PYTHON_VERSIONS[@]}"; do
-    build_dependency python-$PYTHON_VERSION autoconf "" http://www.python.org/ftp/python/$PYTHON_VERSION/ Python-$PYTHON_VERSION.tgz download
+    build_dependency python-$PYTHON_VERSION autoconf "$PYTHON_CONFIGURE_ARGS" http://www.python.org/ftp/python/$PYTHON_VERSION/ Python-$PYTHON_VERSION.tgz download
 done
 
 export CXXFLAGS=$OLD_CXX_FLAGS
 export CFLAGS=$OLD_C_FLAGS
-export LDFLAGS=$OLD_LD_FLAGS
 
-if [ "$(uname)" == "Darwin" ] && [ "$1" == "32" ]; then
-BOOST_ADDRESS_MODEL="toolset=darwin architecture=x86 target-os=darwin address-model=32"
-fi
-build_dependency boost-$BOOST_VERSION bjam "--stagedir=$DEPS_DIR/install/boost-$BOOST_VERSION --with-program_options link=static $BOOST_ADDRESS_MODEL stage" http://downloads.sourceforge.net/project/boost/boost/$BOOST_VERSION/ boost_$BOOST_VERSION_UNDERSCORE.tar.bz2 download
+build_dependency boost-$BOOST_VERSION bjam "--stagedir=$DEPS_DIR/install/boost-$BOOST_VERSION --with-system --with-program_options --with-regex --with-thread --with-date_time link=static $BOOST_ADDRESS_MODEL cxxflags=\"$CXXFLAGS\" linkflags=\"$LDFLAGS\" stage" http://downloads.sourceforge.net/project/boost/boost/$BOOST_VERSION/ boost_$BOOST_VERSION_UNDERSCORE.tar.bz2 download
 
 build_dependency icu-$ICU_VERSION icu "--enable-static --disable-shared" http://download.icu-project.org/files/icu4c/$ICU_VERSION/ icu4c-${ICU_VERSION_UNDERSCORE}-src.tgz download
 
@@ -326,9 +338,25 @@ printf "\rBuilding executables...   "
 
 make -j$IFCOS_NUM_BUILD_PROCS >>$LOG_FILE 2>&1
 
-strip -s IfcConvert IfcGeomServer
+if [ "$(uname)" == "Darwin" ]; then
+    STRIP_OPTION=-x
+else
+    STRIP_OPTION=-s
+fi
+
+strip $STRIP_OPTION IfcConvert IfcGeomServer
 
 cd ..
+
+# On OSX the actual Python library is not linked against.
+ADDITIONAL_ARGS=
+if [ "$(uname)" == "Darwin" ]; then
+ADDITIONAL_ARGS="-Wl,-flat_namespace,-undefined,suppress"
+fi
+
+export CXXFLAGS="$CXXFLAGS_MINIMAL $ADDITIONAL_ARGS"
+export CFLAGS="$CFLAGS_MINIMAL $ADDITIONAL_ARGS"
+export LDFLAGS="$LDFLAGS $ADDITIONAL_ARGS"
 
 for PYTHON_VERSION in "${PYTHON_VERSIONS[@]}"; do
     
@@ -337,7 +365,7 @@ for PYTHON_VERSION in "${PYTHON_VERSIONS[@]}"; do
     mkdir -p python-$PYTHON_VERSION
     cd python-$PYTHON_VERSION
 
-    PYTHON_LIBRARY=`ls    $DEPS_DIR/install/python-$PYTHON_VERSION/lib/libpython*.a`
+    PYTHON_LIBRARY=`ls    $DEPS_DIR/install/python-$PYTHON_VERSION/lib/libpython*.*`
     PYTHON_INCLUDE=`ls -d $DEPS_DIR/install/python-$PYTHON_VERSION/include/python*`
     PYTHON_EXECUTABLE=$DEPS_DIR/install/python-$PYTHON_VERSION/bin/python
     export PYTHON_LIBRARY_BASENAME=`basename $PYTHON_LIBRARY`
@@ -356,16 +384,18 @@ for PYTHON_VERSION in "${PYTHON_VERSIONS[@]}"; do
     -DSWIG_EXECUTABLE=$DEPS_DIR/install/swig/bin/swig
     " $CMAKE_DIR
     
-    # This still needs to be tested
-    # test "$(uname)" == "Darwin" && sed -i~ "s/-o/-flat_namespace -undefined suppress -o/" ifcwrap/CMakeFiles/_ifcopenshell_wrapper.dir/link.txt
-    
     printf "\rBuilding python $PYTHON_VERSION wrapper...   "
     
     make -j$IFCOS_NUM_BUILD_PROCS _ifcopenshell_wrapper >>$LOG_FILE 2>&1
     
-    strip -s \
-        -K PyInit__ifcopenshell_wrapper \
-        ifcwrap/_ifcopenshell_wrapper.so
+    if [ "$(uname)" != "Darwin" ]; then
+        # TODO: This symbol name depends on the Python version?
+        strip -s \
+            -K PyInit__ifcopenshell_wrapper \
+            ifcwrap/_ifcopenshell_wrapper.so
+    fi
+    
+    cd ..
         
 done
 

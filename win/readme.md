@@ -40,7 +40,8 @@ After this, one can build the project using the `IfcOpenShell.sln` file in the b
 if wanted. Convenience batch files `build-ifcopenshell.cmd` and `install-ifcopenshell.cmd` can also be used. The batch files
 expect `%1` and `%2` in same fashion as above and possible extra parameters are passed for the `MSBuild` call. The project will
 be installed to `installed-vs<VERSION>-<ARCHITECTURE>\` folder in the project's root folder and the required IfcOpenShell-Python
-parts are deployed to the `<PYTHONHOME>\Lib\site-packages\` folder.
+parts are deployed to the `<PYTHONHOME>\Lib\site-packages\` folder. The 3ds Max plug-in, IfcMax.dli, needs to be copied manually
+to the 3ds Max's `plugins` folder.
 
 **Note:** All of the dependencies are build as static libraries against the static run-time allowing the developer
 to effortlessly deploy standalone IFCOS binaries.
@@ -82,6 +83,5 @@ Directory Structure
 |   run-cmake.bat                   - Sets environment variables for the dependencies and runs CMake for IFCOS
 |   set-python-to-path.bat          - Utility for setting PYTHONHOME (read from BuildDepsCache-<ARCH>.txt) to PATH
 |   vs-cfg.cmd                      - Utility file used by the build scripts
-+---sln                             - Contains the old Visual Studio solution and project files
 \---utils                           - Contains various utilities for the build scripts
 ```

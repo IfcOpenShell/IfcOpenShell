@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -17,27 +17,46 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCMAX_H
-#define IFCMAX_H
+#ifndef IFCLOGGER_H
+#define IFCLOGGER_H
 
-#include "Max.h"
+#include <set>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <algorithm>
 
-extern ClassDesc* GetIFCImpDesc();
+#ifdef USE_IFC4
+#include "../ifcparse/Ifc4.h"
+#else
+#include "../ifcparse/Ifc2x3.h"
+#endif
 
-class IFCImp : public SceneImport 
-{
+#include <boost/optional.hpp>
+
+
+class Logger {
 public:
-	int ExtCount();                   //  = 1
-	const TCHAR * Ext(int n);         //  = "IFC"
-	const TCHAR * LongDesc();         //  = "IfcOpenShell IFC Importer for 3ds Max"
-	const TCHAR * ShortDesc();        //  = "Industry Foundation Classes"
-	const TCHAR * AuthorName();       //  = "Thomas Krijnen"
-	const TCHAR * CopyrightMessage(); //  = "Copyright (c) 2011-2016 IfcOpenShell"
-	const TCHAR * OtherMessage1();    //  = ""
-	const TCHAR * OtherMessage2();    //  = ""
-	unsigned int Version();           //  = 12
-	void	ShowAbout(HWND hWnd);
-	int		DoImport(const TCHAR *name,ImpInterface *ei,Interface *i, BOOL suppressPrompts);
+	typedef enum { LOG_NOTICE, LOG_WARNING, LOG_ERROR } Severity;
+private:
+	static std::ostream* log1;
+	static std::ostream* log2;
+	static std::stringstream log_stream;
+	static Severity verbosity;
+	static const char* severity_strings[];
+	static boost::optional<IfcSchema::IfcProduct*> current_product;
+public:
+	static void SetProduct(boost::optional<IfcSchema::IfcProduct*> product);
+	/// Determines to what stream respectively progress and errors are logged
+	static void SetOutput(std::ostream* l1, std::ostream* l2);
+	/// Determines the types of log messages to get logged
+	static void Verbosity(Severity v);
+	static Severity Verbosity();
+	/// Log a message to the output stream
+	static void Message(Severity type, const std::string& message, IfcAbstractEntity* entity=0);
+	static void Status(const std::string& message, bool new_line=true);
+	static void ProgressBar(int progress);
+	static std::string GetLog();
 };
 
 #endif

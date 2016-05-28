@@ -205,7 +205,8 @@ IF EXIST "%DEPS_DIR%\icu-55.1-vs%VS_VER%\". (
 :: Note OpenCOLLADA has only Release and Debug builds.
 set DEPENDENCY_NAME=OpenCOLLADA
 set DEPENDENCY_DIR=%DEPS_DIR%\OpenCOLLADA
-call :GitCloneOrPullRepository https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%"
+:: Use a fixed revision in order to prevent introducing breaking changes
+call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" 064a60b65c2c31b94f013820856bc84fb1937cc6
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 :: Debug build of OpenCOLLADAValidator fails (https://github.com/KhronosGroup/OpenCOLLADA/issues/377) so
@@ -386,6 +387,28 @@ IF NOT EXIST %2. (
 popd
 exit /b %RET%
 
+:: GitCloneAndCheckoutRevision - Clones a Git repository and checks out a specific revision
+:: Params: %1 gitUrl, %2 destDir, %3 revision
+:: F.ex. call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" 064a60b65c2c31b94f013820856bc84fb1937cc6
+:GitCloneAndCheckoutRevision
+IF NOT EXIST "%2". (
+    call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %2."
+    pushd "%DEPS_DIR%"
+    call git clone %1 %2
+    set RET=%ERRORLEVEL%
+    if not %RET%==0 exit /b %RET%
+    popd
+) ELSE (
+    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned."
+    set RET=0
+)
+pushd "%2"
+call cecho.cmd 0 13 "Checking out %DEPENDENCY_NAME% revision %3."
+call git checkout %3
+set RET=%ERRORLEVEL%
+popd
+exit /b %RET%
+ 
 :: RunCMake - Runs CMake for a CMake-based project
 :: Params: %* cmakeOptions
 :: NOTE cd to root CMakeLists.txt folder before calling this if the CMakeLists.txt is not in the repo root.
@@ -434,4 +457,3 @@ echo   - https://www.visualstudio.com/
 echo  5. Run this batch script with Visual Studio environment variables set.
 echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
 echo.
-REM TODO 3ds Max SDK instructions?

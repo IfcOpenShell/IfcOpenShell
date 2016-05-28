@@ -21,12 +21,13 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
-#include <boost/foreach.hpp>
 #include <boost/version.hpp>
 
 #include "XmlSerializer.h"
 
 #include <algorithm>
+
+#include "../ifcparse/IfcSIPrefix.h"
 
 using boost::property_tree::ptree;
 using namespace IfcSchema;
@@ -78,9 +79,6 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 					IfcSchema::IfcConversionBasedUnit* unit = (IfcSchema::IfcConversionBasedUnit*) e;
 					unit_name = unit->Name();
 				}
-
-				// TODO add toLower() and toUpper() string helper functions for the project
-				std::transform(unit_name.begin(), unit_name.end(), unit_name.begin(), ::tolower);
 
 				value = unit_name;
 			}
@@ -164,7 +162,17 @@ void descend(IfcProduct* product, ptree& tree) {
 		}
 	}
 
-#ifdef USE_IFC2x3
+    if (product->is(Type::IfcElement)) {
+        IfcElement* element = static_cast<IfcElement*>(product);
+        IfcOpeningElement::list::ptr openings = get_related<IfcElement, IfcRelVoidsElement, IfcOpeningElement>(
+            element, &IfcElement::HasOpenings, &IfcRelVoidsElement::RelatedOpeningElement);
+
+        for (IfcOpeningElement::list::it it = openings->begin(); it != openings->end(); ++it) {
+            descend(*it, child);
+        }
+    }
+
+#ifndef USE_IFC4
 	IfcObjectDefinition::list::ptr structures = get_related
 		<IfcProduct, IfcRelDecomposes, IfcObjectDefinition>
 		(product, &IfcProduct::IsDecomposedBy, &IfcRelDecomposes::RelatedObjects);
@@ -200,7 +208,7 @@ template <>
 void descend(IfcProject* project, ptree& tree) {
 	ptree& child = format_entity_instance(project, tree);
 	
-#ifdef USE_IFC2x3
+#ifndef USE_IFC4
 	IfcObjectDefinition::list::ptr structures = get_related
 		<IfcProject, IfcRelDecomposes, IfcObjectDefinition>
 		(project, &IfcProject::IsDecomposedBy, &IfcRelDecomposes::RelatedObjects);
@@ -243,19 +251,19 @@ void XmlSerializer::finalize() {
 	}
 	IfcProject* project = *projects->begin();
 
-	ptree root, header, decomposition, properties;
+	ptree root, header, units, decomposition, properties;
 	
 	// Write the SPF header as XML nodes.
-	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
+	foreach(const std::string& s, file->header().file_description().description()) {
 		header.add_child("file_description.description", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_name().author()) {
+	foreach(const std::string& s, file->header().file_name().author()) {
 		header.add_child("file_name.author", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_name().organization()) {
+	foreach(const std::string& s, file->header().file_name().organization()) {
 		header.add_child("file_name.organization", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_schema().schema_identifiers()) {
+	foreach(const std::string& s, file->header().file_schema().schema_identifiers()) {
 		header.add_child("file_schema.schema_identifiers", ptree(s));
 	}
 	header.put("file_description.implementation_level", file->header().file_description().implementation_level());
@@ -276,7 +284,20 @@ void XmlSerializer::finalize() {
 		format_properties(pset->HasProperties(), node);
 	}
 
+	// Write all assigned units as XML nodes.
+	IfcEntityList::ptr unit_assignments = project->UnitsInContext()->Units();
+	for (IfcEntityList::it it = unit_assignments->begin(); it != unit_assignments->end(); ++it) {
+		if ((*it)->is(IfcSchema::Type::IfcNamedUnit)) {
+			IfcSchema::IfcNamedUnit* named_unit = (*it)->as<IfcSchema::IfcNamedUnit>();
+			ptree& node = format_entity_instance(named_unit, units);
+			node.put("<xmlattr>.SI_equivalent", IfcParse::get_SI_equivalent(named_unit));
+		} else if ((*it)->is(IfcSchema::Type::IfcMonetaryUnit)) {
+			format_entity_instance((*it)->as<IfcSchema::IfcMonetaryUnit>(), units);
+		}
+	}
+
 	root.add_child("ifc.header",        header);
+	root.add_child("ifc.units",         units);
 	root.add_child("ifc.properties",    properties);
 	root.add_child("ifc.decomposition", decomposition);
 

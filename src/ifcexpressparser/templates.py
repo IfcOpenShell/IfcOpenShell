@@ -62,6 +62,8 @@ enum_header = """
 #ifndef %(schema_name_upper)sENUM_H
 #define %(schema_name_upper)sENUM_H
 
+#include <boost/optional.hpp>
+
 #define IfcSchema %(schema_name)s
 
 namespace %(schema_name)s {
@@ -70,7 +72,7 @@ namespace Type {
     typedef enum {
         %(types)s, UNDEFINED
     } Enum;
-    Enum Parent(Enum v);
+    boost::optional<Enum> Parent(Enum v);
     Enum FromString(const std::string& s);
     std::string ToString(Enum v);
     bool IsSimple(Enum v);
@@ -146,10 +148,14 @@ Type::Enum Type::FromString(const std::string& s) {
     else return it->second;
 }
 
-Type::Enum Type::Parent(Enum v){
-    if (v < 0 || v >= %(max_id)d) return (Enum)-1;
-%(parent_type_statements)s
-    return (Enum)-1;
+static int parent_map[] = {%(parent_type_statements)s};
+boost::optional<Type::Enum> Type::Parent(Enum v){
+    const int p = parent_map[static_cast<int>(v)];
+    if (p >= 0) {
+        return static_cast<Type::Enum>(p);
+    } else {
+        return boost::none;
+    }
 }
 
 bool Type::IsSimple(Enum v) {
@@ -282,7 +288,13 @@ std::pair<Type::Enum, unsigned> Type::GetInverseAttribute(Enum t, const std::str
                 return jt->second;
             }
         }
-        if ((t = Parent(t)) == -1) break;
+        boost::optional<Enum> pt = Parent(t);
+        if (pt) {
+            t = *pt;
+        }
+        else {
+            break;
+        }
     }
     throw IfcException("Attribute not found");
 }
@@ -301,7 +313,13 @@ std::set<std::string> Type::GetInverseAttributeNames(Enum t) {
                 return_value.insert(jt->first);
             }
         }
-        if ((t = Parent(t)) == -1) break;
+        boost::optional<Enum> pt = Parent(t);
+        if (pt) {
+            t = *pt;
+        }
+        else {
+            break;
+        }
     }
 
     return return_value;
