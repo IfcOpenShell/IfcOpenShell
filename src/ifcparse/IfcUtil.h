@@ -36,7 +36,9 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
-#include <boost/regex.hpp>
+#ifndef IFCPARSE_NO_REGEX //allow builds without boost.regex
+  #include <boost/regex.hpp> 
+#endif
 #include <boost/foreach.hpp>
 
 #define foreach BOOST_FOREACH
@@ -118,7 +120,9 @@ namespace IfcUtil {
 
 	bool valid_binary_string(const std::string& s);
 
+#ifndef IFCPARSE_NO_REGEX
     boost::regex wildcard_string_to_regex(std::string str);
+#endif
 
     /// Replaces spaces and potentially other problem causing characters with underscores.
     void sanitate_material_name(std::string &str);
