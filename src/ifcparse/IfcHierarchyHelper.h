@@ -30,6 +30,8 @@
 
 #include <map>
 
+#include "../ifcparse/IfcParse_Export.h"
+
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4.h"
 #else
@@ -40,7 +42,7 @@
 #include "../ifcparse/IfcWrite.h"
 #include "../ifcparse/IfcGlobalId.h"
 
-class IfcHierarchyHelper : public IfcParse::IfcFile {
+class IfcParse_EXPORT IfcHierarchyHelper : public IfcParse::IfcFile {
 public:
 	template <class T> 
 	T* addTriplet(double x, double y, double z) {

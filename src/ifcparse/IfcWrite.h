@@ -32,6 +32,8 @@
 #include <boost/optional.hpp>
 #include <boost/dynamic_bitset.hpp>
 
+#include "../ifcparse/IfcParse_Export.h"
+
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcParse.h"
 
@@ -42,7 +44,7 @@ namespace IfcWrite {
 	/// IfcParse namespace is that this class has a Boost.Variant member
 	/// for storing its value, whereas the IfcParse classes only contain
 	/// lazy references to byte offsets in the IFC-SPF file.
-	class IfcWriteArgument : public Argument {
+	class IfcParse_EXPORT IfcWriteArgument : public Argument {
 	public:
 		class EnumerationReference {
 		public:

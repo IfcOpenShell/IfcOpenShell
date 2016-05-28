@@ -26,6 +26,8 @@
 #include <sstream>
 #include <algorithm>
 
+#include "../ifcparse/IfcParse_Export.h"
+
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4enum.h"
 #else
@@ -75,7 +77,7 @@ namespace IfcUtil {
 
 	const char* ArgumentTypeToString(ArgumentType argument_type);
 
-	class IfcBaseClass {
+	class IfcParse_EXPORT IfcBaseClass {
 	public:
 		IfcAbstractEntity* entity;
 		virtual bool is(IfcSchema::Type::Enum v) const = 0;
@@ -102,11 +104,11 @@ namespace IfcUtil {
 		}
 	};
 
-	class IfcBaseEntity : public IfcBaseClass {
+	class IfcParse_EXPORT IfcBaseEntity : public IfcBaseClass {
 	};
 
 	// TODO: Investigate whether these should be template classes instead
-	class IfcBaseType : public IfcBaseEntity {
+	class IfcParse_EXPORT IfcBaseType : public IfcBaseEntity {
 	public:
 		unsigned int getArgumentCount() const;
 		Argument* getArgument(unsigned int i) const;
@@ -127,7 +129,7 @@ namespace IfcUtil {
 template <class T>
 class IfcTemplatedEntityList;
 
-class IfcEntityList {
+class IfcParse_EXPORT IfcEntityList {
 	std::vector<IfcUtil::IfcBaseClass*> ls;
 public:
 	typedef boost::shared_ptr<IfcEntityList> ptr;
@@ -185,7 +187,7 @@ public:
 template <class T>
 class IfcTemplatedEntityListList;
 
-class IfcEntityListList {
+class IfcParse_EXPORT IfcEntityListList {
 	std::vector< std::vector<IfcUtil::IfcBaseClass*> > ls;
 public:
 	typedef boost::shared_ptr< IfcEntityListList > ptr;
@@ -283,7 +285,7 @@ namespace IfcParse {
 	class IfcFile;
 }
 
-class Argument {
+class IfcParse_EXPORT Argument {
 public:
 	virtual operator int() const = 0;
 	virtual operator bool() const = 0;
@@ -312,7 +314,7 @@ public:
 	virtual ~Argument() {};
 };
 
-class IfcAbstractEntity {
+class IfcParse_EXPORT IfcAbstractEntity {
 public:
 	IfcParse::IfcFile* file;
 	virtual IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index) = 0;

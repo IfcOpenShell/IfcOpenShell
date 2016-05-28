@@ -22,6 +22,8 @@
 
 #include <string>
 
+#include "../ifcparse/IfcParse_Export.h"
+
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcWrite.h"
 #include "../ifcparse/IfcWritableEntity.h"
@@ -32,7 +34,7 @@ namespace IfcParse {
 	// that in the IfcFile class the distinction what entity type to be created is 
 	// no longer necessary and weird diagonal casts when creating geometry from
 	// IfcLateBoundEntities are eliminated.
-	class IfcLateBoundEntity : public IfcUtil::IfcBaseEntity {
+	class IfcParse_EXPORT IfcLateBoundEntity : public IfcUtil::IfcBaseEntity {
 	private:
 		IfcSchema::Type::Enum _type;
 		IfcWrite::IfcWritableEntity* writable_entity();
