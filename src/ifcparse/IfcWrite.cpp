@@ -44,6 +44,8 @@ IfcWritableEntity::IfcWritableEntity(IfcSchema::Type::Enum t) {
 }
 IfcWritableEntity::~IfcWritableEntity() {
 	delete _id;
+	for (std::map<int,Argument*>::iterator it = args.begin(); it != args.end(); ++it)
+		delete it->second;
 }
 int IfcWritableEntity::setId(int i) {
 	if (i > 0) {
