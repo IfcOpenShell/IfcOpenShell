@@ -785,7 +785,7 @@ std::string EntityArgument::toString(bool upper) const {
 }
 //return entity->entity->toString(); }
 bool EntityArgument::isNull() const { return false; }
-EntityArgument::~EntityArgument() { delete entity; }
+EntityArgument::~EntityArgument() { delete entity->entity; delete entity;}
 
 //
 // Reads an Entity from the list of Tokens
