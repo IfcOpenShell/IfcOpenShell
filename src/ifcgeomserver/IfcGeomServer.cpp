@@ -113,6 +113,8 @@ const int32_t NEXT      = MORE      + 1;
 const int32_t BYE       = NEXT      + 1;
 const int32_t GET_LOG   = BYE       + 1;
 const int32_t LOG       = GET_LOG   + 1;
+const int32_t DEFLECTION = LOG        + 1;
+const int32_t SETTING    = DEFLECTION + 1;
 
 class Hello : public Command {
 private:
@@ -126,7 +128,7 @@ protected:
 	}
 public:
 	const std::string& string() { return str; }
-	Hello() : Command(HELLO), str("IfcOpenShell-" IFCOPENSHELL_VERSION) {}
+	Hello() : Command(HELLO), str("IfcOpenShell-" IFCOPENSHELL_VERSION "-2") {}
 };
 
 class More : public Command {
@@ -286,6 +288,40 @@ public:
 	Bye() : Command(BYE) {};
 };
 
+class Deflection : public Command {
+private:
+	double deflection_;
+protected:
+	void read_content(std::istream& s) {
+		deflection_ = sread<double>(s);
+	}
+	void write_content(std::ostream& s) {
+		swrite(s, deflection_);
+	}
+public:
+	Deflection(double d = 0.) : Command(DEFLECTION), deflection_(d) {};
+	double deflection() const { return deflection_; }
+};
+
+class Setting : public Command {
+private:
+	uint32_t id_;
+	uint32_t value_;
+protected:
+	void read_content(std::istream& s) {
+		id_ = sread<uint32_t>(s);
+		value_ = sread<uint32_t>(s);
+	}
+	void write_content(std::ostream& s) {
+		swrite(s, id_);
+		swrite(s, value_);
+	}
+public:
+	Setting(uint32_t k = 0, uint32_t v = 0) : Command(DEFLECTION), id_(k), value_(v) {};
+	uint32_t id() const { return id_; }
+	uint32_t value() const { return value_; }
+};
+
 int main () {
 	// Redirect stdout to this stream, so that involuntary 
 	// writes to stdout do not interfere with our protocol.
@@ -301,9 +337,11 @@ int main () {
 	std::cin.setf(std::ios_base::binary);
 #endif
 
+	double deflection = 1.e-3;
 	bool has_more = false;
 
 	IfcGeom::Iterator<float>* iterator = 0;
+	std::vector< std::pair<uint32_t, uint32_t> > setting_pairs;
 
 	Hello().write(std::cout);
 
@@ -322,6 +360,13 @@ int main () {
             settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
             settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
             settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES, true);
+
+			std::vector< std::pair<uint32_t, uint32_t> >::const_iterator it = setting_pairs.begin();
+			for (; it != setting_pairs.end(); ++it) {
+				settings.set(it->first, it->second != 0);
+			}
+
+			settings.set_deflection_tolerance(deflection);
 
 			iterator = new IfcGeom::Iterator<float>(settings, data, (int)len);
 			has_more = iterator->initialize();
@@ -359,7 +404,27 @@ int main () {
 			exit_code = 0;
 			break;
 		}
-		default: 
+		case DEFLECTION: {
+			Deflection d; d.read(std::cin);
+			if (!iterator) {
+				deflection = d.deflection();
+				continue;
+			} else {
+				exit_code = 1;
+				break;
+			}
+		}
+		case SETTING: {
+			Setting s; s.read(std::cin);
+			if (!iterator) {
+				setting_pairs.push_back(std::make_pair(s.id(), s.value()));
+				continue;
+			} else {
+				exit_code = 1;
+				break;
+			}
+		}
+		default:
 			exit_code = 1; 
 			break;
 		}
