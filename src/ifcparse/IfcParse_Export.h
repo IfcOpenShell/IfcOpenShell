@@ -1,22 +1,18 @@
 #ifndef IfcParse_EXPORT_H
 #define IfcParse_EXPORT_H
 
-#ifdef IFCPARSE_STATIC_DEFINE
-  #define IfcParse_EXPORT
-#else
-  #ifdef _WIN32
-    #ifndef IfcParse_EXPORT
-      #ifdef IfcParse_EXPORTS
-        #define IfcParse_EXPORT __declspec(dllexport)
-      #else
-        #define IfcParse_EXPORT __declspec(dllimport)
-      #endif
+#ifdef BUILD_SHARED_LIBS
+  #ifdef _MSC_VER
+    #ifdef IfcParse_EXPORTS
+      #define IfcParse_EXPORT __declspec(dllexport)
+    #else
+      #define IfcParse_EXPORT __declspec(dllimport)
     #endif
-  #elif __linux__
+  #else // simply assume GCC-like
     #define IfcParse_EXPORT __attribute__((visibility("default")))
-  #else
-    #define IfcParse_EXPORT
   #endif
+#else
+  #define IfcParse_EXPORT
 #endif
 
 #endif

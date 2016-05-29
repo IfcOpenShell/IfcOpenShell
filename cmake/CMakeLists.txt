@@ -30,7 +30,7 @@ OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
-OPTION(BUILD_SHARED_LIBS "Build ifcparse and ifcgeom libs shared." OFF)
+OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
 
@@ -60,7 +60,12 @@ IF(NOT IS_ABSOLUTE ${LIBDIR})
 ENDIF()
 MESSAGE(STATUS "LIBDIR: ${LIBDIR}")
 
-
+if (BUILD_SHARED_LIBS)
+    add_definitions(-DBUILD_SHARED_LIBS)
+    if (MSVC)
+        message(WARNING "Building DLLs against the static VC run-time. This is not recommended if the DLLs are to be redistributed.")
+    endif()
+endif()
 
 # Create cache entries if absent for environment variables
 MACRO(UNIFY_ENVVARS_AND_CACHE VAR)
@@ -305,6 +310,7 @@ IF(MSVC)
 		ADD_DEFINITIONS(-wd4458)
 	ENDIF()
 	# Link against the static VC runtime
+    # TODO Make this configurable
 	FOREACH(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
 			CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
 			CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
@@ -403,7 +409,7 @@ else()
     endif()
 endif()
 
-# Boost >= 1.58 requires BOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE to build
+# Boost >= 1.58 requires BOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE to build on some Linux distros.
 if(NOT Boost_VERSION LESS 105800)
     add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE)
 endif()
@@ -429,7 +435,12 @@ endforeach()
 
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
-ADD_LIBRARY(IfcParse STATIC ${IFCPARSE_FILES})
+if (BUILD_SHARED_LIBS)
+    add_library(IfcParse SHARED ${IFCPARSE_FILES})
+else()
+    add_library(IfcParse STATIC ${IFCPARSE_FILES})
+endif()
+set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIfcParse_EXPORTS)
 
 IF(UNICODE_SUPPORT)
 	TARGET_LINK_LIBRARIES(IfcParse ${ICU_LIBRARIES} ${Boost_LIBRARIES})
@@ -441,28 +452,30 @@ file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
 
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 IF(BUILD_SHARED_LIBS)
-    ADD_LIBRARY(IfcGeom SHARED ${IFCGEOM_FILES})
+    if (MSVC)
+        message(WARNING "Building IfcGeom as DLL not currently supported on Windows/MSVC!")
+        add_library(IfcGeom STATIC ${IFCGEOM_FILES})
+    else()
+        add_library(IfcGeom SHARED ${IFCGEOM_FILES})
+    endif()
     SET(IFCLIBS "IfcGeom")
     SET(IFCDIRS "${LIBDIR}")
 ELSE()
     ADD_LIBRARY(IfcGeom STATIC ${IFCGEOM_FILES})
     SET(IFCLIBS "IfcParse;IfcGeom")
     SET(IFCDIRS "")
-    
-    # add macro for every project: use IfcParse as static lib
-    ADD_DEFINITIONS(-DIFCPARSE_STATIC_DEFINE)
 ENDIF()
 
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
 # IfcConvert
-if (IFCCONVERT_DOUBLE_PRECISION)
-    add_definitions(-DIFCCONVERT_DOUBLE_PRECISION)
-endif()
 file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
 file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
 set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
 ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
+if (IFCCONVERT_DOUBLE_PRECISION)
+    set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS -DIFCCONVERT_DOUBLE_PRECISION)
+endif()
 
 # Make sure cross-referenced symbols between static OCC libraries get
 # resolved. Also add thread and rt libraries.
