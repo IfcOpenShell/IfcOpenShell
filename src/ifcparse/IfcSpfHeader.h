@@ -36,7 +36,7 @@ private:
 	HeaderEntity& operator =(const HeaderEntity&); //N/A
 protected:
 	HeaderEntity(const char * const datatype, IfcSpfLexer* lexer) 
-		: _datatype(datatype), _list(0)
+		: _list(0), _datatype(datatype)
 	{
 		std::vector<unsigned int> ids;
 		_list = new ArgumentList();

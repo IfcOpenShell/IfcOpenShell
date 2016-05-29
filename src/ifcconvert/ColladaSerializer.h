@@ -106,8 +106,8 @@ private:
 		public:
 			explicit ColladaMaterials(COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryMaterials(&stream)
-				, effects(stream)
-                , serializer(_serializer)
+				, serializer(_serializer)
+		                , effects(stream)
 			{}
 			void add(const IfcGeom::Material& material);
 			bool contains(const IfcGeom::Material& material);
@@ -117,7 +117,7 @@ private:
 		};
 		class DeferredObject {
 		public:
-			std::string unique_id, type;
+			std::string unique_id, representation_id, type;
 			std::vector<real_t> matrix;
 			std::vector<real_t> vertices;
 			std::vector<real_t> normals;
@@ -127,11 +127,12 @@ private:
 			std::vector<IfcGeom::Material> materials;
 			std::vector<std::string> material_references;
             std::vector<real_t> uvs;
-            DeferredObject(const std::string& unique_id, const std::string& type, const std::vector<real_t>& matrix,
+            DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const std::vector<real_t>& matrix,
                 const std::vector<real_t>& vertices, const std::vector<real_t>& normals, const std::vector<int>& faces,
                 const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
                 const std::vector<std::string>& material_references, const std::vector<real_t>& uvs)
 				: unique_id(unique_id)
+				, representation_id(representation_id)
 				, type(type)
 				, matrix(matrix)
 				, vertices(vertices)
@@ -151,10 +152,10 @@ private:
 		ColladaExporter(const std::string& scene_name, const std::string& fn, ColladaSerializer *_serializer)
             : filename(fn)
             , stream(filename, sizeof(real_t) == sizeof(double)) // utilise Collada stream's double precision feature
-			, geometries(stream, _serializer)
 			, scene(scene_name, stream, _serializer)
 			, materials(stream, _serializer)
-            , serializer(_serializer)
+			, geometries(stream, _serializer)
+			, serializer(_serializer)
 		{
         }
         ColladaMaterials materials;

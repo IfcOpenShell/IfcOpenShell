@@ -21,6 +21,7 @@
 #include "../ifcparse/IfcException.h"
 
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/optional.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -74,43 +75,6 @@ IfcEntityList::ptr IfcEntityList::filtered(const std::set<IfcSchema::Type::Enum>
 unsigned int IfcUtil::IfcBaseType::getArgumentCount() const { return 1; }
 Argument* IfcUtil::IfcBaseType::getArgument(unsigned int i) const { return entity->getArgument(i); }
 const char* IfcUtil::IfcBaseType::getArgumentName(unsigned int i) const { if (i == 0) { return "wrappedValue"; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
-
-void Logger::SetOutput(std::ostream* l1, std::ostream* l2) { 
-	log1 = l1; 
-	log2 = l2; 
-	if ( ! log2 ) {
-		log2 = &log_stream;
-	}
-}
-void Logger::Message(Logger::Severity type, const std::string& message, IfcAbstractEntity* entity) {
-	if ( log2 && type >= verbosity ) {
-		(*log2) << "[" << severity_strings[type] << "] " << message << std::endl;
-		if ( entity ) (*log2) << entity->toString() << std::endl;
-	}
-}
-void Logger::Status(const std::string& message, bool new_line) {
-	if ( log1 ) {
-		(*log1) << message;
-		if ( new_line ) (*log1) << std::endl;
-		else (*log1) << std::flush;
-	}
-}
-void Logger::ProgressBar(int progress) {
-	if ( log1 ) {
-		Status("\r[" + std::string(progress,'#') + std::string(50 - progress,' ') + "]", false);
-	}
-}
-std::string Logger::GetLog() {
-	return log_stream.str();
-}
-void Logger::Verbosity(Logger::Severity v) { verbosity = v; }
-Logger::Severity Logger::Verbosity() { return verbosity; }
-
-std::ostream* Logger::log1 = 0;
-std::ostream* Logger::log2 = 0;
-std::stringstream Logger::log_stream;
-Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
-const char* Logger::severity_strings[] = { "Notice","Warning","Error" };
 
 static const char* const argument_type_string[] = {
 	"NULL",

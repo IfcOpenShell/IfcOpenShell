@@ -58,7 +58,7 @@ std::string sread(std::istream& s) {
 	buf[len] = 0;
 	while (len++ % 4) s.get();
 	std::string str(buf);
-	delete buf;
+	delete[] buf;
 	return str;
 }
 

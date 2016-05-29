@@ -31,12 +31,14 @@ import re
 import os
 import csv
 
+from schema import OrderedCaseInsensitiveDict 
+
 try: from html.entities import entitydefs
 except: from htmlentitydefs import entitydefs
 
 make_absolute = lambda fn: os.path.join(os.path.dirname(os.path.realpath(__file__)), fn)
 
-name_to_oid = {}
+name_to_oid = OrderedCaseInsensitiveDict()
 oid_to_desc = {}
 oid_to_name = {}
 oid_to_pid = {}
@@ -59,7 +61,7 @@ with open(make_absolute('DocAttribute.csv')) as f:
     for oid, name, desc in csv.reader(f, delimiter=';', quotechar='"'):
         pid = oid_to_pid[oid]
         pname = oid_to_name[pid]
-        name_to_oid[(pname, name)] = oid
+        name_to_oid[".".join((pname, name))] = oid
         oid_to_desc[oid] = desc
 
 def description(item):

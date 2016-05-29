@@ -17,41 +17,46 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef WAVEFRONTOBJSERIALIZER_H
-#define WAVEFRONTOBJSERIALIZER_H
+#ifndef IFCLOGGER_H
+#define IFCLOGGER_H
 
 #include <set>
 #include <string>
-#include <fstream>
+#include <vector>
+#include <sstream>
+#include <algorithm>
 
-#include "../ifcconvert/GeometrySerializer.h"
+#ifdef USE_IFC4
+#include "../ifcparse/Ifc4.h"
+#else
+#include "../ifcparse/Ifc2x3.h"
+#endif
 
-// http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
-class WaveFrontOBJSerializer : public GeometrySerializer {
-private:
-	const std::string mtl_filename;
-	std::ofstream obj_stream;
-	std::ofstream mtl_stream;
-	unsigned int vcount_total;
-	std::set<std::string> materials;
+#include <boost/optional.hpp>
+
+
+class Logger {
 public:
-	WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename, const IfcGeom::IteratorSettings &settings)
-		: GeometrySerializer(settings)
-		, mtl_filename(mtl_filename)
-		, obj_stream(obj_filename.c_str())
-		, mtl_stream(mtl_filename.c_str())		
-		, vcount_total(1)
-	{}
-	virtual ~WaveFrontOBJSerializer() {}
-	bool ready();
-	void writeHeader();
-	void writeMaterial(const IfcGeom::Material& style);
-	void write(const IfcGeom::TriangulationElement<real_t>* o);
-	void write(const IfcGeom::BRepElement<real_t>* /*o*/) {}
-	void finalize() {}
-	bool isTesselated() const { return true; }
-	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
-	void setFile(IfcParse::IfcFile*) {}
+	typedef enum { LOG_NOTICE, LOG_WARNING, LOG_ERROR } Severity;
+private:
+	static std::ostream* log1;
+	static std::ostream* log2;
+	static std::stringstream log_stream;
+	static Severity verbosity;
+	static const char* severity_strings[];
+	static boost::optional<IfcSchema::IfcProduct*> current_product;
+public:
+	static void SetProduct(boost::optional<IfcSchema::IfcProduct*> product);
+	/// Determines to what stream respectively progress and errors are logged
+	static void SetOutput(std::ostream* l1, std::ostream* l2);
+	/// Determines the types of log messages to get logged
+	static void Verbosity(Severity v);
+	static Severity Verbosity();
+	/// Log a message to the output stream
+	static void Message(Severity type, const std::string& message, IfcAbstractEntity* entity=0);
+	static void Status(const std::string& message, bool new_line=true);
+	static void ProgressBar(int progress);
+	static std::string GetLog();
 };
 
 #endif

@@ -29,6 +29,7 @@
 #include "../ifcparse/IfcGlobalId.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcLogger.h"
 
 static const char* chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
 

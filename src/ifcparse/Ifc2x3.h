@@ -14466,6 +14466,7 @@ public:
 /// HISTORY  New entity in Release IFC2x2.
 class IfcParse_EXPORT IfcImageTexture : public IfcSurfaceTexture {
 public:
+    /// Location, provided as an URI, at which the image texture is electronically published.
     std::string UrlReference() const;
     void setUrlReference(std::string v);
     virtual unsigned int getArgumentCount() const { return 5; }

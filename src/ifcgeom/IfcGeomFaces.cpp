@@ -199,10 +199,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				wire.Reverse();
 			}
 
-			ShapeFix_ShapeTolerance FTol;
-			FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
+			bool flattened_wire = false;
 
 			if (!mf) {
+			process_wire:
+
 				if (face_surface.IsNull()) {
 					mf = new BRepBuilderAPI_MakeFace(wire);
 				} else {
@@ -220,7 +221,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				if (mf->IsDone()) {
 					TopoDS_Face outer_face_bound = mf->Face();
 
-					if (BRepCheck_Face(outer_face_bound).OrientationOfWires() == BRepCheck_BadOrientationOfSubshape) {
+					// BRepCheck_Face might raise exceptions in case of face surfaces. Therefore fix orientation regardless.
+					if (!face_surface.IsNull()) {
+						ShapeFix_Face fix(outer_face_bound);
+						fix.FixOrientation();
+						fix.Perform();
+						outer_face_bound = fix.Face();
+					} else if (BRepCheck_Face(outer_face_bound).OrientationOfWires() == BRepCheck_BadOrientationOfSubshape) {
 						wire.Reverse();
 						same_sense = !same_sense;
 						delete mf;
@@ -264,9 +271,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 						success = true;
 					}
 				} else {
-					Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary", bound->entity);
+					const bool non_planar = mf->Error() == BRepBuilderAPI_NotPlanar;
 					delete mf;
-					return false;
+					if (!non_planar || flattened_wire || !flatten_wire(wire)) {
+						Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary", bound->entity);
+						return false;
+					} else {
+						Logger::Message(Logger::LOG_ERROR, "Flattening face boundary", bound->entity);
+						flattened_wire = true;
+						goto process_wire;
+					}
 				}
 
 			} else {

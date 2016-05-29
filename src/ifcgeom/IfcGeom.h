@@ -20,8 +20,14 @@
 #ifndef IFCGEOM_H
 #define IFCGEOM_H
 
-#define ALMOST_ZERO (1e-9)
-#define ALMOST_THE_SAME(a,b) (fabs(a-b) < ALMOST_ZERO)
+#include <cmath>
+
+static const double ALMOST_ZERO = 1.e-9;
+
+template <typename T>
+inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMOST_ZERO) {
+	return fabs(a-b) < tolerance; 
+}
 
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
@@ -46,23 +52,79 @@
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 #include "../ifcgeom/IfcGeomShapeType.h"
 
+// Define this in case you want to conserve memory usage at all cost. This has been
+// benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
+// #define NO_CACHE
+
+#ifdef NO_CACHE
+
+#define IN_CACHE(T,E,t,e)
+#define CACHE(T,E,e)
+
+#else
+
 #define IN_CACHE(T,E,t,e) std::map<int,t>::const_iterator it = cache.T.find(E->entity->id());\
 if ( it != cache.T.end() ) { e = it->second; return true; }
 #define CACHE(T,E,e) cache.T[E->entity->id()] = e;
+
+#endif
 
 namespace IfcGeom {
 
 class Cache {
 public:
 #include "IfcRegisterCreateCache.h"
-	std::map<int, SurfaceStyle> Style;
 	std::map<int, TopoDS_Shape> Shape;
 };
 
 class Kernel {
 private:
+
+	double deflection_tolerance;
+	double wire_creation_tolerance;
+	double point_equality_tolerance;
+	double max_faces_to_sew;
+	double ifc_length_unit;
+	double ifc_planeangle_unit;
+	double modelling_precision;
+	double dimensionality;
+
+#ifndef NO_CACHE
 	Cache cache;
+#endif
+
+	std::map<int, SurfaceStyle> style_cache;
+
+	const SurfaceStyle* internalize_surface_style(const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*>& shading_style);
 public:
+	Kernel()
+		: deflection_tolerance(0.001)
+		, wire_creation_tolerance(0.0001)
+		, point_equality_tolerance(0.00001)
+		, max_faces_to_sew(-1.0)
+		, ifc_length_unit(1.0)
+		, ifc_planeangle_unit(-1.0)
+		, modelling_precision(0.00001)
+		, dimensionality(1.)
+	{}
+
+	Kernel(const Kernel& other) {
+		*this = other;
+	}
+
+	Kernel& operator=(const Kernel& other) {
+		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
+		setValue(GV_WIRE_CREATION_TOLERANCE,  other.getValue(GV_WIRE_CREATION_TOLERANCE));
+		setValue(GV_POINT_EQUALITY_TOLERANCE, other.getValue(GV_POINT_EQUALITY_TOLERANCE));
+		setValue(GV_MAX_FACES_TO_SEW,         other.getValue(GV_MAX_FACES_TO_SEW));
+		setValue(GV_LENGTH_UNIT,              other.getValue(GV_LENGTH_UNIT));
+		setValue(GV_PLANEANGLE_UNIT,          other.getValue(GV_PLANEANGLE_UNIT));
+		setValue(GV_PRECISION,                other.getValue(GV_PRECISION));
+		setValue(GV_DIMENSIONALITY,           other.getValue(GV_DIMENSIONALITY));
+		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
+		return *this;
+	}
+
 	// Tolerances and settings for various geometrical operations:
 	enum GeomValue {
 		// Specifies the deflection of the mesher
@@ -72,7 +134,7 @@ public:
 		// Defailt: 0.0001m / 0.1mm
 		GV_WIRE_CREATION_TOLERANCE,
 		// Specifies the minimal area of a face to be included in an IfcConnectedFaceset
-		// Default: 0.000001m 0.01cm2
+		// Read-only
 		GV_MINIMAL_FACE_AREA,
 		// Specifies the treshold distance under which cartesian points are deemed equal
 		// Default: 0.00001m / 0.01mm
@@ -108,6 +170,29 @@ public:
 	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
 	bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
 	bool convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
+	
+	bool convert_layerset(const IfcSchema::IfcProduct*, std::vector<Handle_Geom_Surface>&, std::vector<const SurfaceStyle*>&, std::vector<double>&);
+	bool apply_layerset(const IfcRepresentationShapeItems&, const std::vector<Handle_Geom_Surface>&, const std::vector<const SurfaceStyle*>&, IfcRepresentationShapeItems&);
+	bool apply_folded_layerset(const IfcRepresentationShapeItems&, const std::vector< std::vector<Handle_Geom_Surface> >&, const std::vector<const SurfaceStyle*>&, IfcRepresentationShapeItems&);
+	bool fold_layers(const IfcSchema::IfcWall*, const IfcRepresentationShapeItems&, const std::vector<Handle_Geom_Surface>&, const std::vector<double>&, std::vector< std::vector<Handle_Geom_Surface> >&);
+
+	bool split_solid_by_surface(const TopoDS_Shape&, const Handle_Geom_Surface&, TopoDS_Shape&, TopoDS_Shape&);
+	bool split_solid_by_shell(const TopoDS_Shape&, const TopoDS_Shape& s, TopoDS_Shape&, TopoDS_Shape&);
+
+	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const Handle_Geom_Surface&);
+	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const TopoDS_Face&);
+	const Handle_Geom_Curve intersect(const TopoDS_Face&, const Handle_Geom_Surface&);
+	bool intersect(const Handle_Geom_Curve&, const Handle_Geom_Surface&, gp_Pnt&);
+	bool intersect(const Handle_Geom_Curve&, const TopoDS_Face&, gp_Pnt&);
+	bool intersect(const Handle_Geom_Curve&, const TopoDS_Shape&, std::vector<gp_Pnt>&);
+	bool intersect(const Handle_Geom_Surface&, const TopoDS_Shape&, std::vector< std::pair<Handle_Geom_Surface, Handle_Geom_Curve> >&);
+	bool closest(const gp_Pnt&, const std::vector<gp_Pnt>&, gp_Pnt&);
+	bool project(const Handle_Geom_Curve&, const gp_Pnt&, gp_Pnt& p, double& u, double& d);
+	bool project(const Handle_Geom_Surface&, const TopoDS_Shape&, double& u1, double& v1, double& u2, double& v2, double widen=0.1);
+	int count(const TopoDS_Shape&, TopAbs_ShapeEnum);
+
+	bool find_wall_end_points(const IfcSchema::IfcWall*, gp_Pnt& start, gp_Pnt& end);
+
 	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
 	const IfcSchema::IfcRepresentationItem* find_item_carrying_style(const IfcSchema::IfcRepresentationItem* item);
 	bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid);
@@ -128,6 +213,17 @@ public:
 	void remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
 	bool wire_to_sequence_of_point(const TopoDS_Wire&, TColgp_SequenceOfPnt&);
 	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
+	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&);
+	bool flatten_wire(TopoDS_Wire&);
+
+	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
+	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
+	
+	bool is_identity_transform(IfcUtil::IfcBaseClass*);
+
+	IfcSchema::IfcRelVoidsElement::list::ptr find_openings(IfcSchema::IfcProduct* product);
+
+	IfcSchema::IfcRepresentation* find_representation(const IfcSchema::IfcProduct*, const std::string&);
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
@@ -136,50 +232,68 @@ public:
 	template <typename P>
 	IfcGeom::BRepElement<P>* create_brep_for_representation_and_product(const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
 
-	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem* representation_item);
+	template <typename P>
+	IfcGeom::BRepElement<P>* create_brep_for_processed_representation(const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P>*);
 	
-	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcRepresentationItem* representation_item) {
-		// For certain representation items, most notably boolean operands,
-		// a style definition might reside on one of its operands.
-		representation_item = find_item_carrying_style(representation_item);
-
-		IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
-		for (IfcSchema::IfcStyledItem::list::it jt = styled_items->begin(); jt != styled_items->end(); ++jt) {
+	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem*);
+	const SurfaceStyle* get_style(const IfcSchema::IfcMaterial*);
+	
+	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> _get_surface_style(const IfcSchema::IfcStyledItem* si) {
 #ifdef USE_IFC4
-			IfcEntityList::ptr style_assignments = (*jt)->Styles();
-			for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-				if (!(*kt)->is(IfcSchema::Type::IfcPresentationStyleAssignment)) {
-					continue;
-				}
-				IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
+		IfcEntityList::ptr style_assignments = si->Styles();
+		for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+			if (!(*kt)->is(IfcSchema::Type::IfcPresentationStyleAssignment)) {
+				continue;
+			}
+			IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
 #else
-			IfcSchema::IfcPresentationStyleAssignment::list::ptr style_assignments = (*jt)->Styles();
-			for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-				IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
+		IfcSchema::IfcPresentationStyleAssignment::list::ptr style_assignments = si->Styles();
+		for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+			IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
 #endif
-				IfcEntityList::ptr styles = style_assignment->Styles();
-				for (IfcEntityList::it lt = styles->begin(); lt != styles->end(); ++lt) {
-					IfcUtil::IfcBaseClass* style = *lt;
-					if (style->is(IfcSchema::Type::IfcSurfaceStyle)) {
-						IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
-						if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
-							IfcEntityList::ptr styles_elements = surface_style->Styles();
-							for (IfcEntityList::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
-								if ((*mt)->is(T::Class())) {
-									return std::make_pair(surface_style, (T*) *mt);
-								}
+			IfcEntityList::ptr styles = style_assignment->Styles();
+			for (IfcEntityList::it lt = styles->begin(); lt != styles->end(); ++lt) {
+				IfcUtil::IfcBaseClass* style = *lt;
+				if (style->is(IfcSchema::Type::IfcSurfaceStyle)) {
+					IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
+					if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
+						IfcEntityList::ptr styles_elements = surface_style->Styles();
+						for (IfcEntityList::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
+							if ((*mt)->is(T::Class())) {
+								return std::make_pair(surface_style, (T*) *mt);
 							}
 						}
 					}
 				}
 			}
-
-			// StyledByItem is a SET [0:1] OF IfcStyledItem, so we
-			// break after encountering the first IfcStyledItem
-			break;
 		}
 
 		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
+	}
+
+	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcRepresentationItem* representation_item) {
+  		// For certain representation items, most notably boolean operands,
+		// a style definition might reside on one of its operands.
+		representation_item = find_item_carrying_style(representation_item);
+
+		if (representation_item->as<IfcSchema::IfcStyledItem>()) {
+			return _get_surface_style<T>(representation_item->as<IfcSchema::IfcStyledItem>());
+		}
+		IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
+		for (IfcSchema::IfcStyledItem::list::it jt = styled_items->begin(); jt != styled_items->end(); ++jt) {
+			// StyledByItem is a SET [0:1] OF IfcStyledItem, so we return after the first IfcStyledItem:
+			return _get_surface_style<T>(*jt);
+		}
+		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
+	}
+
+	void purge_cache() { 
+		// Rather hack-ish, but a stopgap solution to keep memory under control
+		// for large files. SurfaceStyles need to be kept at all costs, as they
+		// are read later on when serializing Collada files.
+#ifndef NO_CACHE
+		cache = Cache(); 
+#endif
 	}
 
 #include "IfcRegisterGeomHeader.h"

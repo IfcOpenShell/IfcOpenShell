@@ -52,14 +52,17 @@ ENDIF()
 
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
 SWIG_ADD_MODULE(ifcopenshell_wrapper python IfcPython.i)
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper IfcParse IfcGeom ${PYTHON_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${ICU_LIBRARIES})
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCLIBS} ${PYTHON_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${ICU_LIBRARIES})
+if (NOT WIN32)
+    SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR};${ICU_LIBRARY_DIR}")
+endif()
 
 # Try to find the Python interpreter to get the site-packages
 # directory in which the wrapper can be installed.
 FIND_PACKAGE(PythonInterp)
 IF(PYTHONINTERP_FOUND)
     EXECUTE_PROCESS(
-        COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils.sysconfig import get_python_lib; sys.stdout.write(get_python_lib())"
+        COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils.sysconfig import get_python_lib; sys.stdout.write(get_python_lib(1))"
         OUTPUT_VARIABLE python_package_dir
     )
 
@@ -73,6 +76,8 @@ IF(PYTHONINTERP_FOUND)
             DESTINATION "${python_package_dir}/ifcopenshell")
         INSTALL(FILES
                 "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/__init__.py"
+                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/app.py"
+                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/main.py"
                 "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/occ_utils.py"
                 DESTINATION "${python_package_dir}/ifcopenshell/geom")
         INSTALL(TARGETS _ifcopenshell_wrapper DESTINATION "${python_package_dir}/ifcopenshell")

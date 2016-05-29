@@ -21,9 +21,6 @@
 #include <fstream>
 #include <cstdio>
 
-#include <BRepBuilderAPI_GTransform.hxx>
-#include <BRepBuilderAPI_Transform.hxx>
-
 #include <Standard_Version.hxx>
 
 #include "OpenCascadeBasedSerializer.h"
@@ -49,18 +46,8 @@ void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 			gtrsf.PreMultiply(scale);
 		}
 		
-		const TopoDS_Shape& s = it->Shape();			
-			
-		bool trsf_valid = false;
-		gp_Trsf trsf;
-		try {
-			trsf = gtrsf.Trsf();
-			trsf_valid = true;
-		} catch (...) {}
-			
-		const TopoDS_Shape moved_shape = trsf_valid
-			? BRepBuilderAPI_Transform(s, trsf, true).Shape()
-			: BRepBuilderAPI_GTransform(s, gtrsf, true).Shape();
+		const TopoDS_Shape& s = it->Shape();
+		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, gtrsf);
 			
 		writeShape(moved_shape);
 	}

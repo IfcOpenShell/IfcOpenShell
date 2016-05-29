@@ -1,5 +1,3 @@
-# Taken from http://sourceforge.net/p/exp-engine/expresso/ci/master/tree/docs/iso-10303-11--2004.bnf
-
 ABS = "abs" .
 ABSTRACT = "abstract" .
 ACOS = "acos" .
@@ -202,7 +200,7 @@ constructed_types = enumeration_type | select_type .
 declaration = entity_decl | function_decl | procedure_decl | subtype_constraint_decl | type_decl .
 derived_attr = attribute_decl ":" parameter_type ":=" expression ";" .
 derive_clause = DERIVE derived_attr { derived_attr } .
-domain_rule = rule_label_id ":" expression .
+domain_rule = [ rule_label_id ":" ] expression .
 element = expression [ ":" repetition ] .
 entity_body = { explicit_attr } [ derive_clause ] [ inverse_clause ] [ unique_clause ] [ where_clause ] .
 entity_constructor = entity_ref "(" [ expression { "," expression } ] ")" .
@@ -334,7 +332,7 @@ type_label_id = simple_id .
 unary_op = "+" | "-" | NOT .
 underlying_type = constructed_types | concrete_types .
 unique_clause = UNIQUE unique_rule ";" { unique_rule ";" } .
-unique_rule = rule_label_id ":" referenced_attribute { "," referenced_attribute } .
+unique_rule = [ rule_label_id ":" ] referenced_attribute { "," referenced_attribute } .
 until_control = UNTIL logical_expression .
 use_clause = USE FROM schema_ref [ "(" named_type_or_rename { "," named_type_or_rename } ")" ] ";" .
 variable_id = simple_id .

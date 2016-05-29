@@ -52,4 +52,4 @@ QT_WRAP_CPP(QTviewer QTviewer_SRCS ${QTviewer_MOC_SRCS})
 ADD_EXECUTABLE(  QTviewer ${QTviewer_SRCS} ${QTviewer_MOC_SRCS})
 #http://www.qtcentre.org/wiki/index.php?title=Compiling_Qt4_apps_with_CMake
 
-TARGET_LINK_libRARIES (QTviewer IfcParse IfcGeom ${QT_LIBRARIES} ${OPENCASCADE_LIBRARIES})
+TARGET_LINK_LIBRARIES (QTviewer ${IFCLIBS} ${QT_LIBRARIES} ${OPENCASCADE_LIBRARIES})

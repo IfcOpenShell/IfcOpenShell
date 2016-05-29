@@ -36,7 +36,6 @@ namespace IfcParse {
 	// IfcLateBoundEntities are eliminated.
 	class IfcParse_EXPORT IfcLateBoundEntity : public IfcUtil::IfcBaseEntity {
 	private:
-		IfcSchema::Type::Enum _type;
 		IfcWrite::IfcWritableEntity* writable_entity();
 		void invalid_argument(unsigned int i, const std::string& t);
 	public:

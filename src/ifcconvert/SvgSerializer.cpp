@@ -28,8 +28,6 @@
 #include <gp_Pln.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
-#include <BRepBuilderAPI_GTransform.hxx>
-#include <BRepBuilderAPI_Transform.hxx>
 #include <TopExp_Explorer.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepAlgo_Section.hxx>
@@ -222,17 +220,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 		gtrsf.PreMultiply(o_trsf);
 
 		const TopoDS_Shape& s = it->Shape();			
-			
-		bool trsf_valid = false;
-		gp_Trsf trsf;
-		try {
-			trsf = gtrsf.Trsf();
-			trsf_valid = true;
-		} catch (...) {}
-			
-		const TopoDS_Shape moved_shape = trsf_valid
-			? BRepBuilderAPI_Transform(s, trsf, true).Shape()
-			: BRepBuilderAPI_GTransform(s, gtrsf, true).Shape();
+		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, gtrsf);
 			
 		const double inf = std::numeric_limits<double>::infinity();
 		double zmin = inf;

@@ -320,7 +320,6 @@ Token IfcSpfLexer::Next() {
 
 	int len = 0;
 
-	char p = 0;
 	while ( ! stream->eof ) {
 
 		// Read character and increment pointer if not starting a new token
@@ -331,8 +330,6 @@ Token IfcSpfLexer::Next() {
 
 		// If a string is encountered defer processing to the IfcCharacterDecoder
 		if ( c == '\'' ) decoder->dryRun();
-
-		p = c;
 	}
 	if ( len ) return TokenPtr(this,pos);
 	else return TokenPtr();
@@ -348,7 +345,6 @@ std::string IfcSpfLexer::TokenString(unsigned int offset) {
 	stream->Seek(offset);
 	std::string buffer;
 	buffer.reserve(128);
-	char p = 0;
 	while ( ! stream->eof ) {
 		char c = stream->Peek();
 		if ( buffer.size() && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '/') ) break;
@@ -356,7 +352,6 @@ std::string IfcSpfLexer::TokenString(unsigned int offset) {
 		if ( c == ' ' || c == '\r' || c == '\n' || c == '\t' ) continue;
 		else if ( c == '\'' ) return *decoder;
 		else buffer.push_back(c);
-		p = c;
 	}
 	if ( was_eof ) stream->eof = true;
 	else stream->Seek(old_offset);
@@ -790,7 +785,7 @@ EntityArgument::~EntityArgument() { delete entity->entity; delete entity;}
 //
 // Reads an Entity from the list of Tokens
 //
-Entity::Entity(unsigned int i, IfcFile* f) : _id(i), args(0) {
+Entity::Entity(unsigned int i, IfcFile* f) : args(0), _id(i) {
 	file = f;
 	Token datatype = f->tokens->Next();
 	if ( ! TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity");
@@ -904,10 +899,10 @@ IfcWrite::IfcWritableEntity* Entity::isWritable() {
 
 IfcFile::IfcFile(bool create_latebound_entities)
 	: _create_latebound_entities(create_latebound_entities)
-	, stream(0)
 	, lastId(0)
-	, tokens(0)
 	, MaxId(0)
+	, tokens(0)
+	, stream(0)
 {
 	setDefaultHeaderValues();
 }
@@ -994,15 +989,20 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 			}
 
 			IfcSchema::Type::Enum ty = entity->type();
-			do {
+			for (;;) {
 				IfcEntityList::ptr instances_by_type = entitiesByType(ty);
 				if (!instances_by_type) {
 					instances_by_type = IfcEntityList::ptr(new IfcEntityList());
 					bytype[ty] = instances_by_type;
 				}
 				instances_by_type->push(entity);
-				ty = IfcSchema::Type::Parent(ty);
-			} while ( ty > -1 );
+				boost::optional<IfcSchema::Type::Enum> pt = IfcSchema::Type::Parent(ty);
+				if (pt) {
+					ty = *pt;
+				} else {
+					break;
+				}
+			}
 			
 			if ( byid.find(currentId) != byid.end() ) {
 				std::stringstream ss;
@@ -1200,15 +1200,21 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 
 	// The mapping by entity type is updated.
 	IfcSchema::Type::Enum ty = entity->type();
-	do {
+	for (;;) {
 		IfcEntityList::ptr instances_by_type = entitiesByType(ty);
 		if (!instances_by_type) {
 			instances_by_type = IfcEntityList::ptr(new IfcEntityList());
 			bytype[ty] = instances_by_type;
 		}
 		instances_by_type->push(entity);
-		ty = IfcSchema::Type::Parent(ty);
-	} while ( ty > -1 );
+		boost::optional<IfcSchema::Type::Enum> pt = IfcSchema::Type::Parent(ty);
+		if (pt) {
+			ty = *pt;
+		}
+		else {
+			break;
+		}
+	}
 	
 	int new_id = -1;
 	if (entity->entity->isWritable() && !entity->entity->file) {

@@ -22,7 +22,6 @@
 #include <BRep_Builder.hxx>
 
 #include <TopoDS_Compound.hxx>
-#include <BRepBuilderAPI_GTransform.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
 
@@ -38,20 +37,32 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
 		const TopoDS_Shape& s = it->Shape();
 		gp_GTrsf trsf = it->Placement();
+		
+		if (it->hasStyle() && it->Style().Diffuse()) {
+			const IfcGeom::SurfaceStyle::ColorComponent& clr = *it->Style().Diffuse();
+			_surface_styles.push_back(clr.R());
+			_surface_styles.push_back(clr.G());
+			_surface_styles.push_back(clr.B());
+		} else {
+			_surface_styles.push_back(-1.);
+			_surface_styles.push_back(-1.);
+			_surface_styles.push_back(-1.);
+		}
+		if (it->hasStyle() && it->Style().Transparency()) {
+			_surface_styles.push_back(1. - *it->Style().Transparency());
+		} else {
+			_surface_styles.push_back(1.);
+		}
+		
 		if (settings().get(IteratorSettings::CONVERT_BACK_UNITS)) {
 			gp_Trsf scale;
 			scale.SetScaleFactor(1.0 / settings().unit_magnitude());
 			trsf.PreMultiply(scale);
 		}
-		bool trsf_valid = false;
-		gp_Trsf _trsf;
-		try {
-			_trsf = trsf.Trsf();
-			trsf_valid = true;
-		} catch (...) {}
-		const TopoDS_Shape moved_shape = trsf_valid ? s.Moved(_trsf) :
-			BRepBuilderAPI_GTransform(s,trsf,true).Shape();
-		builder.Add(compound,moved_shape);
+		
+		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, trsf);
+
+		builder.Add(compound, moved_shape);
 	}
 	std::stringstream sstream;
 	BRepTools::Write(compound,sstream);

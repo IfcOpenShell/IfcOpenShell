@@ -29,6 +29,8 @@
 #include <COLLADASWBaseInputElement.h>
 #include <COLLADASWAsset.h>
 
+#include <boost/lexical_cast.hpp>
+
 #include <string>
 #include <cmath>
 
@@ -87,8 +89,15 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
 	std::vector<int>::const_iterator material_it = material_ids.begin();
 	int previous_material_id = -1;
 	for (std::vector<int>::const_iterator it = faces.begin(); !faces.empty(); it += 3) {
-		const int current_material_id = *(material_it++);
-        const size_t num_triangles = std::distance(index_range_start, it) / 3;
+
+		int current_material_id = 0;
+		if (material_it != material_ids.end()) {
+			// In order for the last range of equal material ids to be output as well, this loop iterates
+			// one element past the end of the vector. This needs to be observed when incrementing.
+			current_material_id = *(material_it++);
+		}
+
+		const size_t num_triangles = std::distance(index_range_start, it) / 3;
 		if ((previous_material_id != current_material_id && num_triangles > 0) || (it == faces.end())) {
 			COLLADASW::Triangles triangles(mSW);
             std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
@@ -295,6 +304,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
     const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
     const std::string name = serializer->settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS) ?
            o->guid() : (serializer->settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES) ? o->name() : o->unique_id());
+    const std::string representation_id = "representation-" + boost::lexical_cast<std::string>(o->geometry().id());
 
 	std::vector<std::string> material_references;
     foreach(const IfcGeom::Material& material, mesh.materials()) {
@@ -308,7 +318,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 	}
 
 	deferreds.push_back(
-        DeferredObject(name, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
+        DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
             mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs())
     );
 }
@@ -317,14 +327,18 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	// In fact due the XML based nature of Collada and its dependency on library nodes,
 	// only at this point all objects are written to the stream.
 	materials.write();
+	std::set<std::string> geometries_written;
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
-		const std::string object_name = it->unique_id + "-representation";
-		geometries.write(object_name, it->type, it->vertices, it->normals, it->faces, it->edges, it->material_ids, it->materials, it->uvs);
+		if (geometries_written.find(it->representation_id) != geometries_written.end()) {
+			continue;
+		}
+		geometries_written.insert(it->representation_id);
+		geometries.write(it->representation_id, it->type, it->vertices, it->normals, it->faces, it->edges, it->material_ids, it->materials, it->uvs);
 	}
 	geometries.close();
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		const std::string object_name = it->unique_id;
-		scene.add(object_name, object_name, object_name + "-representation", it->material_references, it->matrix);
+		scene.add(object_name, object_name, it->representation_id, it->material_references, it->matrix);
 	}
 	scene.write();
 	stream.endDocument();
