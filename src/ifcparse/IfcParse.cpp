@@ -54,10 +54,12 @@ void init_locale() {
 		locale = _create_locale(LC_NUMERIC, "C");
 	}
 }
-#else
+//#else
+#endif
+
 #ifdef __APPLE__
 #include <xlocale.h>
-#endif
+//#endif
 static locale_t locale = (locale_t) 0;
 void init_locale() {
 	if (locale == (locale_t) 0) {
@@ -65,6 +67,28 @@ void init_locale() {
 	}
 }
 #endif
+
+#ifdef __MINGW64__
+#include <locale>
+#include <sstream>
+
+typedef void* locale_t;
+static locale_t locale = (locale_t) 0;
+
+void init_locale() {}
+
+double strtod_l(const char* start, char** end, locale_t loc) {
+    double d;
+    std::stringstream ss;
+    ss.imbue(std::locale::classic());
+    ss << start;
+    ss >> d;
+    size_t nread = ss.tellg();
+    *end = const_cast<char*>(start) + nread;
+    return d;
+}
+#endif
+
 
 // 
 // Opens the file, gets the filesize and reads a chunk in memory
