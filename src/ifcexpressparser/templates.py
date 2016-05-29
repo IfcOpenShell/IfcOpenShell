@@ -26,6 +26,8 @@ header = """
 
 #include <boost/optional.hpp>
 
+#include "../ifcparse/IfcParse_Export.h"
+
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/%(schema_name)senum.h"
@@ -62,6 +64,8 @@ enum_header = """
 #ifndef %(schema_name_upper)sENUM_H
 #define %(schema_name_upper)sENUM_H
 
+#include "../ifcparse/IfcParse_Export.h"
+
 #include <boost/optional.hpp>
 
 #define IfcSchema %(schema_name)s
@@ -72,10 +76,10 @@ namespace Type {
     typedef enum {
         %(types)s, UNDEFINED
     } Enum;
-    boost::optional<Enum> Parent(Enum v);
-    Enum FromString(const std::string& s);
-    std::string ToString(Enum v);
-    bool IsSimple(Enum v);
+    IfcParse_EXPORT boost::optional<Enum> Parent(Enum v);
+    IfcParse_EXPORT Enum FromString(const std::string& s);
+    IfcParse_EXPORT std::string ToString(Enum v);
+    IfcParse_EXPORT bool IsSimple(Enum v);
 }
 
 }
@@ -352,7 +356,7 @@ derived_field_statement = '    {std::set<int> idxs; %(statements)sderived_map[Ty
 derived_field_statement_attrs = 'idxs.insert(%d); '
 
 simpletype = """%(documentation)s
-class %(name)s : public %(superclass)s {
+class IfcParse_EXPORT %(name)s : public %(superclass)s {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -391,7 +395,7 @@ const char* ToString(%(name)s v);
 """
 
 entity = """%(documentation)s
-class %(name)s %(superclass)s{
+class IfcParse_EXPORT %(name)s %(superclass)s{
 public:
 %(attributes)s    virtual unsigned int getArgumentCount() const { return %(argument_count)d; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const {%(argument_type_function_body)s}

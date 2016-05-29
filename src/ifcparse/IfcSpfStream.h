@@ -30,6 +30,8 @@
 #include <fstream>
 #include <string>
 
+#include "../ifcparse/IfcParse_Export.h"
+
 // As of IfcOpenShell version 0.3.0 the paging functionality, which
 // loads a file on disk into multiple chunks, has been disabled.
 // It proved to be an inefficient way of working with large files,
@@ -46,7 +48,7 @@ namespace IfcParse {
 	/// which only one is simultaneously kept in memory, for files
 	/// that define their entities not in a sequential nature, this is
 	/// detrimental for the performance of the parser.
-	class IfcSpfStream {
+	class IfcParse_EXPORT IfcSpfStream {
 	private:
 		FILE* stream;
 		char* buffer;

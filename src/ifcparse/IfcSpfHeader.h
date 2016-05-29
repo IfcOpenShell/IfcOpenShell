@@ -20,12 +20,14 @@
 #ifndef IFCSPFHEADER_H
 #define IFCSPFHEADER_H
 
+#include "../ifcparse/IfcParse_Export.h"
+
 #include "../ifcparse/IfcSpfStream.h"
 #include "../ifcparse/IfcWrite.h"
 
 namespace IfcParse {
 
-class HeaderEntity : public IfcAbstractEntity {
+class IfcParse_EXPORT HeaderEntity : public IfcAbstractEntity {
 private:	
 	ArgumentList* _list;
 	const char * const _datatype;
@@ -103,7 +105,7 @@ public:
 	}
 };
 
-class FileDescription : public HeaderEntity {
+class IfcParse_EXPORT FileDescription : public HeaderEntity {
 public:
 	explicit FileDescription(IfcSpfLexer* = 0);
 
@@ -114,7 +116,7 @@ public:
 	void implementation_level(const std::string& value) { setArgument(1, value); }
 };
 
-class FileName : public HeaderEntity  {
+class IfcParse_EXPORT FileName : public HeaderEntity  {
 public:
 	explicit FileName(IfcSpfLexer* = 0);
 
@@ -135,7 +137,7 @@ public:
 	void authorization(const std::string& value) { setArgument(6, value); }
 };
 
-class FileSchema : public HeaderEntity  {
+class IfcParse_EXPORT FileSchema : public HeaderEntity  {
 public:
 	explicit FileSchema(IfcSpfLexer* = 0);
 
@@ -144,7 +146,7 @@ public:
 	void schema_identifiers(const std::vector<std::string>& value) { setArgument(0, value); }
 };
 
-class IfcSpfHeader {
+class IfcParse_EXPORT IfcSpfHeader {
 private:
 	IfcSpfLexer* _lexer;
 	FileDescription* _file_description;

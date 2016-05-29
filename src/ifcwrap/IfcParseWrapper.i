@@ -199,6 +199,7 @@ namespace IfcUtil {
 	%}
 };
 
+%include "../ifcparse/IfcParse_Export.h"
 %include "../ifcparse/IfcSpfHeader.h"
 %include "../ifcparse/IfcFile.h"
 %include "../ifcparse/IfcLateBoundEntity.h"

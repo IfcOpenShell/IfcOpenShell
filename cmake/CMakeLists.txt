@@ -408,6 +408,13 @@ if(NOT Boost_VERSION LESS 105800)
     add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE)
 endif()
 
+LINK_DIRECTORIES(${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} ${OPENCOLLADA_LIBRARY_DIR}
+	${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}
+)
+if(NOT WIN32)
+	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
+endif()
+
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
 file(GLOB IFCPARSE_CPP_FILES ../src/ifcparse/*.cpp)
@@ -421,6 +428,9 @@ foreach(IFC_RELEASE ${IFC_RELEASE_NOT_USED})
 endforeach()
 
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
+
+# add macro for every project: use IfcParse as static lib
+add_definitions(-DIFCPARSE_STATIC_DEFINE)
 
 ADD_LIBRARY(IfcParse STATIC ${IFCPARSE_FILES})
 
@@ -444,13 +454,6 @@ ELSE()
 ENDIF()
 
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
-
-LINK_DIRECTORIES(${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} ${OPENCOLLADA_LIBRARY_DIR}
-	${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}
-)
-if(NOT WIN32)
-	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
-endif()
 
 # IfcConvert
 if (IFCCONVERT_DOUBLE_PRECISION)

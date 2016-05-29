@@ -322,7 +322,7 @@ IfcCharacterEncoder::IfcCharacterEncoder(const std::string& input) {
 
 IfcCharacterEncoder::~IfcCharacterEncoder() {
 #ifdef HAVE_ICU
-	if ( !converter) ucnv_close(converter);
+	if ( converter) ucnv_close(converter);
 	converter = 0;
 #endif
 }
