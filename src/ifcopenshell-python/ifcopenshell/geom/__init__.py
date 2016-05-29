@@ -17,5 +17,8 @@
 #                                                                             #
 ###############################################################################
 
-from . import occ_utils as utils
+try:
+    from . import occ_utils as utils
+except:
+    print "PythonOCC not found - some functionality is disabled"
 from .main import *
