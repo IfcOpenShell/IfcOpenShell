@@ -64,6 +64,8 @@ if (BUILD_SHARED_LIBS)
     add_definitions(-DBUILD_SHARED_LIBS)
     if (MSVC)
         message(WARNING "Building DLLs against the static VC run-time. This is not recommended if the DLLs are to be redistributed.")
+        # There will be couple hundreds of these so suppress them away.
+        add_definitions(-wd4251)
     endif()
 endif()
 

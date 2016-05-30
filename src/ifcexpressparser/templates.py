@@ -93,23 +93,24 @@ lb_header = """
 
 #define IfcSchema %(schema_name)s
 
+#include "../ifcparse/IfcParse_Export.h"
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcEntityDescriptor.h"
 #include "../ifcparse/IfcWritableEntity.h"
 
 namespace %(schema_name)s {
 namespace Type {
-    int GetAttributeCount(Enum t);
-    int GetAttributeIndex(Enum t, const std::string& a);
-    IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
-    Enum GetAttributeEntity(Enum t, unsigned char a);
-    const std::string& GetAttributeName(Enum t, unsigned char a);
-    bool GetAttributeOptional(Enum t, unsigned char a);
-    bool GetAttributeDerived(Enum t, unsigned char a);
-    std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
-    std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
-    std::set<std::string> GetInverseAttributeNames(Enum t);
-    void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
+    IfcParse_EXPORT int GetAttributeCount(Enum t);
+    IfcParse_EXPORT int GetAttributeIndex(Enum t, const std::string& a);
+    IfcParse_EXPORT IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
+    IfcParse_EXPORT Enum GetAttributeEntity(Enum t, unsigned char a);
+    IfcParse_EXPORT const std::string& GetAttributeName(Enum t, unsigned char a);
+    IfcParse_EXPORT bool GetAttributeOptional(Enum t, unsigned char a);
+    IfcParse_EXPORT bool GetAttributeDerived(Enum t, unsigned char a);
+    IfcParse_EXPORT std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
+    IfcParse_EXPORT std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
+    IfcParse_EXPORT std::set<std::string> GetInverseAttributeNames(Enum t);
+    IfcParse_EXPORT void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
 }}
 
 #endif
@@ -389,8 +390,8 @@ typedef IfcUtil::IfcBaseClass %(name)s;
 enumeration = """namespace %(name)s {
 %(documentation)s
 typedef enum {%(values)s} %(name)s;
-const char* ToString(%(name)s v);
-%(name)s FromString(const std::string& s);
+IfcParse_EXPORT const char* ToString(%(name)s v);
+IfcParse_EXPORT %(name)s FromString(const std::string& s);
 }
 """
 
