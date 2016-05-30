@@ -20,11 +20,13 @@
 #ifndef IFCEXCEPTION_H
 #define IFCEXCEPTION_H
 
+#include "IfcParse_Export.h"
+
 #include <exception>
 #include <string>
 
 namespace IfcParse {
-	class IfcException : public std::exception {
+	class IfcParse_EXPORT IfcException : public std::exception {
 	private:
 		std::string message;
 	public:
