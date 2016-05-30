@@ -217,7 +217,7 @@ protected:
 			std::vector<int32_t> indices;
 			const std::vector<int>& faces = geom->geometry().faces();
 			indices.reserve(faces.size());
-			for (std::vector<int>::const_iterator it = indices.begin(); it != indices.end(); ++it) {
+			for (std::vector<int>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
 				indices.push_back(*it);
 			} 
 			swrite(s, std::string((char*) indices.data(), indices.size() * sizeof(int32_t)));
@@ -269,7 +269,7 @@ protected:
 		swrite(s, std::string((char*) material_indices.data(), material_indices.size() * sizeof(int32_t))); }
 	}
 public:
-	Entity(const IfcGeom::TriangulationElement<float>* geom) : Command(ENTITY), geom(geom), append_line_data(true) {};
+	Entity(const IfcGeom::TriangulationElement<float>* geom) : Command(ENTITY), geom(geom), append_line_data(false) {};
 };
 
 class Next : public Command {
@@ -359,7 +359,7 @@ int main () {
             settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
             settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
             settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
-            settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES, true);
+            // settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES, true);
 
 			std::vector< std::pair<uint32_t, uint32_t> >::const_iterator it = setting_pairs.begin();
 			for (; it != setting_pairs.end(); ++it) {
