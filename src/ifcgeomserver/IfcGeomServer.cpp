@@ -27,7 +27,7 @@
 #include <iostream>
 #include <boost/cstdint.hpp>
 
-#if defined(_WIN32) && !defined(__CYGWIN__)
+#if defined(_WIN32) && defined(__CYGWIN__)
 #define SET_BINARY_STREAMS
 #endif
 #ifdef SET_BINARY_STREAMS
