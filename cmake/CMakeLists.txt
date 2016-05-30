@@ -60,6 +60,8 @@ IF(NOT IS_ABSOLUTE ${LIBDIR})
 ENDIF()
 MESSAGE(STATUS "LIBDIR: ${LIBDIR}")
 
+set(IFCDIRS "") # for *nix rpaths
+
 if (BUILD_SHARED_LIBS)
     add_definitions(-DBUILD_SHARED_LIBS)
     if (MSVC)
@@ -67,6 +69,7 @@ if (BUILD_SHARED_LIBS)
         # There will be couple hundreds of these so suppress them away.
         add_definitions(-wd4251)
     endif()
+    set(IFCDIRS "${LIBDIR}")
 endif()
 
 # Create cache entries if absent for environment variables
@@ -425,7 +428,6 @@ endif()
 
 SET(IFCLIBS "")
 SET(IFCBINS "")
-SET(IFCDIRS "")
 
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
@@ -470,7 +472,6 @@ IF(BUILD_SHARED_LIBS)
         add_library(IfcGeom SHARED ${IFCGEOM_FILES})
         set(IFCBINS "${IFCBINS};IfcGeom")
     endif()
-    SET(IFCDIRS "${LIBDIR}")
 ELSE()
     ADD_LIBRARY(IfcGeom STATIC ${IFCGEOM_FILES})
     set(IFCLIBS "${IFCLIBS};IfcGeom")
