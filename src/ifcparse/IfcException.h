@@ -39,8 +39,8 @@ namespace IfcParse {
 	public:
 		IfcException(const std::string& m)
 			 : message(m) {}
-		~IfcException () throw () {}
-		const char* what() const throw() {
+		virtual ~IfcException () throw () {}
+		virtual const char* what() const throw() {
 			return message.c_str(); 
 		}
 	};
