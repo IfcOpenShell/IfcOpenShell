@@ -36,9 +36,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
-#ifndef IFCPARSE_NO_REGEX //allow builds without boost.regex
-  #include <boost/regex.hpp> 
-#endif
 #include <boost/foreach.hpp>
 
 #define foreach BOOST_FOREACH
@@ -119,11 +116,6 @@ namespace IfcUtil {
 	};
 
 	IfcParse_EXPORT bool valid_binary_string(const std::string& s);
-
-#ifndef IFCPARSE_NO_REGEX
-    IfcParse_EXPORT boost::regex wildcard_string_to_regex(std::string str);
-#endif
-
     /// Replaces spaces and potentially other problem causing characters with underscores.
     IfcParse_EXPORT void sanitate_material_name(std::string &str);
     IfcParse_EXPORT void escape_xml(std::string &str);

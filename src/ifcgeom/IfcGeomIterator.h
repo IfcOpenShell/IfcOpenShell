@@ -65,6 +65,7 @@
 #include <algorithm>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/regex.hpp>
 
 #include <gp_Mat.hxx>
 #include <gp_Mat2d.hxx>
@@ -308,7 +309,7 @@ namespace IfcGeom {
         {
             names_to_include_or_exclude.clear();
             foreach(const std::string &name, names)
-                names_to_include_or_exclude.insert(IfcUtil::wildcard_string_to_regex(name));
+                names_to_include_or_exclude.insert(wildcard_string_to_regex(name));
             include_entities_in_processing = true;
         }
 
@@ -317,8 +318,22 @@ namespace IfcGeom {
         {
             names_to_include_or_exclude.clear();
             foreach(const std::string &name, names)
-                names_to_include_or_exclude.insert(IfcUtil::wildcard_string_to_regex(name));
+                names_to_include_or_exclude.insert(wildcard_string_to_regex(name));
             include_entities_in_processing = false;
+        }
+
+        static boost::regex wildcard_string_to_regex(std::string str)
+        {
+            // Escape all non-"*?" regex special chars
+            std::string special_chars = "\\^.$|()[]+/";
+            foreach(char c, special_chars) {
+                std::string char_str(1, c);
+                boost::replace_all(str, char_str, "\\" + char_str);
+            }
+            // Convert "*?" to their regex equivalents
+            boost::replace_all(str, "?", ".");
+            boost::replace_all(str, "*", ".*");
+            return boost::regex(str);
         }
 
         const gp_XYZ& bounds_min() const { return bounds_min_; }
