@@ -25,6 +25,13 @@
 #include <exception>
 #include <string>
 
+#ifdef _MSC_VER
+// "C4275 can be ignored in Visual C++ if you are deriving from a type in the Standard C++ Library",
+// https://msdn.microsoft.com/en-us/library/3tdb471s.aspx
+#pragma warning(push)
+#pragma warning(disable : 4275)
+#endif
+
 namespace IfcParse {
 	class IfcParse_EXPORT IfcException : public std::exception {
 	private:
@@ -38,12 +45,16 @@ namespace IfcParse {
 		}
 	};
 
-	class IfcAttributeOutOfRangeException : public IfcException {
+	class IfcParse_EXPORT IfcAttributeOutOfRangeException : public IfcException {
 	public:
 		IfcAttributeOutOfRangeException(const std::string& e)
 			: IfcException(e) {}
 		~IfcAttributeOutOfRangeException () throw () {}
 	};
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #endif
