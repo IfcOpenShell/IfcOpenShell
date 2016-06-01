@@ -70,8 +70,8 @@ void init_locale() {
 // Opens the file, gets the filesize and reads a chunk in memory
 //
 IfcSpfStream::IfcSpfStream(const std::string& fn)
-    : stream(0)
-    , buffer(0)
+		: stream(0)
+		, buffer(0)
 {
 	eof = false;
 #ifdef _MSC_VER
@@ -104,8 +104,8 @@ IfcSpfStream::IfcSpfStream(const std::string& fn)
 }
 
 IfcSpfStream::IfcSpfStream(std::istream& f, int l)
-    : stream(0)
-    , buffer(0)
+		: stream(0)
+		, buffer(0)
 {
 	eof = false;
 	size = l;
@@ -121,8 +121,8 @@ IfcSpfStream::IfcSpfStream(std::istream& f, int l)
 }
 
 IfcSpfStream::IfcSpfStream(void* data, int l)
-    : stream(0)
-    , buffer(0)
+		: stream(0)
+		, buffer(0)
 {
 	eof = false;
 	size = l;
