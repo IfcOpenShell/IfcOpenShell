@@ -815,7 +815,7 @@ Entity::Entity(unsigned int i, IfcFile* f) : args(0), _id(i) {
 	file = f;
 	Token datatype = f->tokens->Next();
 	if ( ! TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity");
-	_type = IfcSchema::Type::FromString(TokenFunc::asString(datatype));
+	_type = IfcSchema::Type::FromString(TokenFunc::asStringRef(datatype));
 	offset = datatype.startPos;
 }
 
@@ -857,7 +857,7 @@ void Entity::Load(std::vector<unsigned int>& ids, bool seek) const {
 		file->tokens->stream->Seek(offset);
 		Token datatype = file->tokens->Next();
 		if ( ! TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity");
-		_type = IfcSchema::Type::FromString(TokenFunc::asString(datatype));
+		_type = IfcSchema::Type::FromString(TokenFunc::asStringRef(datatype));
 	}
 	Token open = file->tokens->Next();
 	args = new ArgumentList();
