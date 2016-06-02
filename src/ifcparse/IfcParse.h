@@ -145,9 +145,12 @@ namespace IfcParse {
 	class IfcParse_EXPORT IfcSpfLexer {
 	private:
 		IfcCharacterDecoder* decoder;
+		//storage for temporary string without allocation
+		mutable std::string _tempString;
 		unsigned int skipWhitespace();
 		unsigned int skipComment();
 	public:
+		std::string &GetTempString() const { return _tempString; }
 		IfcSpfStream* stream;
 		IfcFile* file;
 		IfcSpfLexer(IfcSpfStream* s, IfcFile* f);

@@ -359,17 +359,14 @@ std::string IfcSpfLexer::TokenString(unsigned int offset) {
 }
 
 //Note: according to STEP standard, there may be newlines in tokens
-inline bool RemoveTokenSeparators(IfcSpfStream* stream, unsigned start, unsigned end, char *pDest, char *pDestEnd) {
+inline void RemoveTokenSeparators(IfcSpfStream* stream, unsigned start, unsigned end, std::string &oDestination) {
+	oDestination.clear();
 	for (unsigned i = start; i < end; i++) {
 		char c = stream->Read(i);
 		if (c == ' ' || c == '\r' || c == '\n' || c == '\t')
 			continue;
-		*pDest++ = c;
-		if (pDest == pDestEnd)
-			return false;
+		oDestination += c;
 	}
-	*pDest = 0;
-	return true;
 }
 
 bool ParseInt(const char *pStart, int &val) {
@@ -414,30 +411,29 @@ Token IfcParse::OperatorTokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned en
 Token IfcParse::GeneralTokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned end) {
 	Token token(lexer, start, end, Token_NONE);
 
-	//extract token into local buffer, if it is short enough (remove eol-s, no encoding changes)
-	char tokenStr[64];
-	bool isShort = RemoveTokenSeparators(lexer->stream, start, end, tokenStr, tokenStr + sizeof(tokenStr));
-	if (!isShort) strcpy(tokenStr, "%");
-
+	//extract token into temp buffer (remove eol-s, no encoding changes)
+	std::string &tokenStr = lexer->GetTempString();
+	RemoveTokenSeparators(lexer->stream, start, end, tokenStr);
+	
 	//determine type of the token
 	char first = lexer->stream->Read(start);
 	if (first == '#') {
 		token.type = Token_IDENTIFIER;
-		if (!ParseInt(tokenStr + 1, token.value_int))
+		if (!ParseInt(tokenStr.c_str() + 1, token.value_int))
 			throw IfcException("Identifier token as not integer");
 	}
 	else if (first == '\'')
 		token.type = Token_STRING;
 	else if (first == '.') {
 		token.type = Token_ENUMERATION;
-		if (ParseBool(tokenStr, token.value_bool)) //bool is also enumeration
+		if (ParseBool(tokenStr.c_str(), token.value_bool)) //bool is also enumeration
 			token.type = Token_BOOL;
 	}
 	else if (first == '"')
 		token.type = Token_BINARY;
-	else if (ParseInt(tokenStr, token.value_int))
+	else if (ParseInt(tokenStr.c_str(), token.value_int))
 		token.type = Token_INT;
-	else if (ParseFloat(tokenStr, token.value_double))
+	else if (ParseFloat(tokenStr.c_str(), token.value_double))
 		token.type = Token_FLOAT;
 	else
 		token.type = Token_KEYWORD;
