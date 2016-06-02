@@ -339,23 +339,24 @@ Token IfcSpfLexer::Next() {
 // Reads a std::string from the file at specified offset
 // Omits whitespace and comments
 //
-std::string IfcSpfLexer::TokenString(unsigned int offset) {
+void IfcSpfLexer::TokenString(unsigned int offset, std::string &buffer) {
 	const bool was_eof = stream->eof;
 	unsigned int old_offset = stream->Tell();
 	stream->Seek(offset);
-	std::string buffer;
-	buffer.reserve(128);
+	buffer.clear();
 	while ( ! stream->eof ) {
 		char c = stream->Peek();
 		if ( buffer.size() && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '/') ) break;
 		stream->Inc();
 		if ( c == ' ' || c == '\r' || c == '\n' || c == '\t' ) continue;
-		else if ( c == '\'' ) return *decoder;
+		else if ( c == '\'' ) {
+			buffer = *decoder;
+			return;
+		}
 		else buffer.push_back(c);
 	}
 	if ( was_eof ) stream->eof = true;
 	else stream->Seek(old_offset);
-	return buffer;
 }
 
 //Note: according to STEP standard, there may be newlines in tokens
@@ -503,15 +504,23 @@ double TokenFunc::asFloat(const Token& t) {
 	return t.value_double;
 }
 
+const std::string &TokenFunc::asStringRef(const Token& t) {
+	std::string &str = t.lexer->GetTempString();
+	t.lexer->TokenString(t.startPos, str);
+	if (isString(t) || isEnumeration(t) || isBinary(t)) {
+		//remove start+end characters in-place
+		str.pop_back();
+		str.erase(str.begin());
+	}
+	return str;
+}
+
 std::string TokenFunc::asString(const Token& t) {
-	if ( isOperator(t,'$') ) return "";
-	else if ( isOperator(t) ) throw IfcException("Token is not a string");
-	std::string str = t.lexer->TokenString(t.startPos);
-	return isString(t) || isEnumeration(t) || isBinary(t) ? str.substr(1,str.size()-2) : str;
+	return asStringRef(t);
 }
 
 boost::dynamic_bitset<> TokenFunc::asBinary(const Token& t) {
-	const std::string str = asString(t);
+	const std::string &str = asStringRef(t);
 	if (str.size() < 1) {
 		throw IfcException("Token is not a valid binary sequence");
 	}
@@ -541,8 +550,9 @@ boost::dynamic_bitset<> TokenFunc::asBinary(const Token& t) {
 }
 
 std::string TokenFunc::toString(const Token& t) {
-	if ( isOperator(t) ) return std::string ( (char*) &t.startPos	, 1 );
-	else return t.lexer->TokenString(t.startPos);
+	std::string result;
+	t.lexer->TokenString(t.startPos, result);
+	return result;
 }
 
 

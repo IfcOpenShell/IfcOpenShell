@@ -127,6 +127,8 @@ namespace IfcParse {
 		static double asFloat(const Token& t);
 		/// Returns the token as a string (without the dot or apostrophe)
 		static std::string asString(const Token& t);
+		/// Returns the token as a string in internal buffer (for optimization purposes)
+		static const std::string &asStringRef(const Token& t);
 		/// Returns the token as a string (without the dot or apostrophe)
 		static boost::dynamic_bitset<> asBinary(const Token& t);
 		/// Returns a string representation of the token (including the dot or apostrophe)
@@ -156,7 +158,7 @@ namespace IfcParse {
 		IfcSpfLexer(IfcSpfStream* s, IfcFile* f);
 		Token Next();
 		~IfcSpfLexer();
-		std::string TokenString(unsigned int offset);
+		void TokenString(unsigned int offset, std::string &result);
 	};
 
 	/// Argument of type list, e.g.
