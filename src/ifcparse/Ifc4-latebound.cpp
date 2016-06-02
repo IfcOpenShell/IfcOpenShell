@@ -20,7 +20,7 @@
 /********************************************************************************
  *                                                                              *
  * This file has been generated from                                            *
- * http://www.buildingsmart-tech.org/ifc/IFC4/Add1/IFC4_ADD1.exp.               *
+ * http://www.buildingsmart-tech.org/ifc/IFC4/Add1/IFC4_ADD1.exp                *
  * Do not make modifications but instead modify the Python script that has been *
  * used to generate this.                                                       *
  *                                                                              *

@@ -17,12 +17,14 @@
  *                                                                              *
  ********************************************************************************/
 
-/********************************************************************************
- *                                                                              *
- * This file has been generated from IFC2X3_TC1.exp. Do not make modifications  *
- * but instead modify the python script that has been used to generate this.    *
- *                                                                              *
- ********************************************************************************/
+/********************************************************************************************
+ *                                                                                          *
+ * This file has been generated from                                                        *
+ * http://www.buildingsmart-tech.org/downloads/ifc/ifc2x3tc/IFC2X3_TC1_EXPRESS_longform.zip *
+ * Do not make modifications but instead modify the Python script that has been             *
+ * used to generate this.                                                                   *
+ *                                                                                          *
+ ********************************************************************************************/
 
 #ifndef IFC2X3RT_H
 #define IFC2X3RT_H
