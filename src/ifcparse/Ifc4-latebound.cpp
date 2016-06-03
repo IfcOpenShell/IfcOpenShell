@@ -19,8 +19,10 @@
 
 /********************************************************************************
  *                                                                              *
- * This file has been generated from IFC4.exp. Do not make modifications        *
- * but instead modify the python script that has been used to generate this.    *
+ * This file has been generated from                                            *
+ * http://www.buildingsmart-tech.org/ifc/IFC4/Add1/IFC4_ADD1.exp                *
+ * Do not make modifications but instead modify the Python script that has been *
+ * used to generate this.                                                       *
  *                                                                              *
  ********************************************************************************/
 
@@ -272,6 +274,8 @@ void InitDescriptorMap() {
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
     current = entity_descriptor_map[Type::IfcSpecularRoughness] = new IfcEntityDescriptor(Type::IfcSpecularRoughness,0);
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
+    current = entity_descriptor_map[Type::IfcStrippedOptional] = new IfcEntityDescriptor(Type::IfcStrippedOptional,0);
+    current->add("wrappedValue",false,IfcUtil::Argument_BOOL);
     current = entity_descriptor_map[Type::IfcTemperatureGradientMeasure] = new IfcEntityDescriptor(Type::IfcTemperatureGradientMeasure,0);
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
     current = entity_descriptor_map[Type::IfcTemperatureRateOfChangeMeasure] = new IfcEntityDescriptor(Type::IfcTemperatureRateOfChangeMeasure,0);
@@ -474,7 +478,7 @@ void InitDescriptorMap() {
     current->add("Name",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current->add("Description",true,IfcUtil::Argument_STRING,Type::IfcText);
     current->add("Category",true,IfcUtil::Argument_STRING,Type::IfcLabel);
-    current->add("Priority",true,IfcUtil::Argument_DOUBLE,Type::IfcNormalisedRatioMeasure);
+    current->add("Priority",true,IfcUtil::Argument_INT,Type::IfcInteger);
     current = entity_descriptor_map[Type::IfcMaterialLayerSet] = new IfcEntityDescriptor(Type::IfcMaterialLayerSet,entity_descriptor_map.find(Type::IfcMaterialDefinition)->second);
     current->add("MaterialLayers",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcMaterialLayer);
     current->add("LayerSetName",true,IfcUtil::Argument_STRING,Type::IfcLabel);
@@ -489,7 +493,7 @@ void InitDescriptorMap() {
     current->add("Description",true,IfcUtil::Argument_STRING,Type::IfcText);
     current->add("Material",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcMaterial);
     current->add("Profile",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcProfileDef);
-    current->add("Priority",true,IfcUtil::Argument_DOUBLE,Type::IfcNormalisedRatioMeasure);
+    current->add("Priority",true,IfcUtil::Argument_INT,Type::IfcInteger);
     current->add("Category",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current = entity_descriptor_map[Type::IfcMaterialProfileSet] = new IfcEntityDescriptor(Type::IfcMaterialProfileSet,entity_descriptor_map.find(Type::IfcMaterialDefinition)->second);
     current->add("Name",true,IfcUtil::Argument_STRING,Type::IfcLabel);
@@ -705,6 +709,7 @@ void InitDescriptorMap() {
     current->add("DispersionFactor",true,IfcUtil::Argument_DOUBLE,Type::IfcReal);
     current = entity_descriptor_map[Type::IfcSurfaceStyleShading] = new IfcEntityDescriptor(Type::IfcSurfaceStyleShading,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
     current->add("SurfaceColour",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcColourRgb);
+    current->add("Transparency",true,IfcUtil::Argument_DOUBLE,Type::IfcNormalisedRatioMeasure);
     current = entity_descriptor_map[Type::IfcSurfaceStyleWithTextures] = new IfcEntityDescriptor(Type::IfcSurfaceStyleWithTextures,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
     current->add("Textures",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcSurfaceTexture);
     current = entity_descriptor_map[Type::IfcSurfaceTexture] = new IfcEntityDescriptor(Type::IfcSurfaceTexture,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
@@ -973,7 +978,7 @@ void InitDescriptorMap() {
     current->add("URLReference",false,IfcUtil::Argument_STRING,Type::IfcURIReference);
     current = entity_descriptor_map[Type::IfcIndexedColourMap] = new IfcEntityDescriptor(Type::IfcIndexedColourMap,entity_descriptor_map.find(Type::IfcPresentationItem)->second);
     current->add("MappedTo",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcTessellatedFaceSet);
-    current->add("Overrides",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcSurfaceStyleShading);
+    current->add("Opacity",true,IfcUtil::Argument_DOUBLE,Type::IfcNormalisedRatioMeasure);
     current->add("Colours",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcColourRgbList);
     current->add("ColourIndex",false,IfcUtil::Argument_AGGREGATE_OF_INT,Type::IfcPositiveInteger);
     current = entity_descriptor_map[Type::IfcIndexedTextureMap] = new IfcEntityDescriptor(Type::IfcIndexedTextureMap,entity_descriptor_map.find(Type::IfcTextureCoordinate)->second);
@@ -1224,7 +1229,6 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcSurface] = new IfcEntityDescriptor(Type::IfcSurface,entity_descriptor_map.find(Type::IfcGeometricRepresentationItem)->second);
 
     current = entity_descriptor_map[Type::IfcSurfaceStyleRendering] = new IfcEntityDescriptor(Type::IfcSurfaceStyleRendering,entity_descriptor_map.find(Type::IfcSurfaceStyleShading)->second);
-    current->add("Transparency",true,IfcUtil::Argument_DOUBLE,Type::IfcNormalisedRatioMeasure);
     current->add("DiffuseColour",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcColourOrFactor);
     current->add("TransmissionColour",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcColourOrFactor);
     current->add("DiffuseTransmissionColour",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcColourOrFactor);

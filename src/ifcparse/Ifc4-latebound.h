@@ -19,8 +19,10 @@
 
 /********************************************************************************
  *                                                                              *
- * This file has been generated from IFC4.exp. Do not make modifications        *
- * but instead modify the python script that has been used to generate this.    *
+ * This file has been generated from                                            *
+ * http://www.buildingsmart-tech.org/ifc/IFC4/Add1/IFC4_ADD1.exp                *
+ * Do not make modifications but instead modify the Python script that has been *
+ * used to generate this.                                                       *
  *                                                                              *
  ********************************************************************************/
 
@@ -29,23 +31,24 @@
 
 #define IfcSchema Ifc4
 
+#include "../ifcparse/IfcParse_Export.h"
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcEntityDescriptor.h"
 #include "../ifcparse/IfcWritableEntity.h"
 
 namespace Ifc4 {
 namespace Type {
-    int GetAttributeCount(Enum t);
-    int GetAttributeIndex(Enum t, const std::string& a);
-    IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
-    Enum GetAttributeEntity(Enum t, unsigned char a);
-    const std::string& GetAttributeName(Enum t, unsigned char a);
-    bool GetAttributeOptional(Enum t, unsigned char a);
-    bool GetAttributeDerived(Enum t, unsigned char a);
-    std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
-    std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
-    std::set<std::string> GetInverseAttributeNames(Enum t);
-    void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
+    IfcParse_EXPORT int GetAttributeCount(Enum t);
+    IfcParse_EXPORT int GetAttributeIndex(Enum t, const std::string& a);
+    IfcParse_EXPORT IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
+    IfcParse_EXPORT Enum GetAttributeEntity(Enum t, unsigned char a);
+    IfcParse_EXPORT const std::string& GetAttributeName(Enum t, unsigned char a);
+    IfcParse_EXPORT bool GetAttributeOptional(Enum t, unsigned char a);
+    IfcParse_EXPORT bool GetAttributeDerived(Enum t, unsigned char a);
+    IfcParse_EXPORT std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
+    IfcParse_EXPORT std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
+    IfcParse_EXPORT std::set<std::string> GetInverseAttributeNames(Enum t);
+    IfcParse_EXPORT void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
 }}
 
 #endif

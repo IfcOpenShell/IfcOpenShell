@@ -1,7 +1,7 @@
 IfcOpenShell 
 ============
 IfcOpenShell is an open source ([LGPL]) software library for working with the Industry Foundation Classes ([IFC]) 
-file format. Currently supported IFC releases are [IFC2x3 TC1] and [IFC4].
+file format. Currently supported IFC releases are [IFC2x3 TC1] and [IFC4 Add1].
 
 For more information, see
 * [http://ifcopenshell.org](http://ifcopenshell.org)  
@@ -162,5 +162,5 @@ Usage examples
 [LGPL]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/COPYING "LGPL"
 [IFC]: http://www.buildingsmart-tech.org/specifications/ifc-overview "IFC"
 [IFC2x3 TC1]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc2x3-tc1-release "IFC2x3 TC1"
-[IFC4]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc4-release "IFC4"
+[IFC4 Add1]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc4-add1-release "IFC4 Add1"
 [win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"

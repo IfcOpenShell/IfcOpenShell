@@ -36,9 +36,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
-#ifndef IFCPARSE_NO_REGEX //allow builds without boost.regex
-  #include <boost/regex.hpp> 
-#endif
 #include <boost/foreach.hpp>
 
 #define foreach BOOST_FOREACH
@@ -77,7 +74,7 @@ namespace IfcUtil {
 		Argument_UNKNOWN
 	};
 
-	const char* ArgumentTypeToString(ArgumentType argument_type);
+    IfcParse_EXPORT const char* ArgumentTypeToString(ArgumentType argument_type);
 
 	class IfcParse_EXPORT IfcBaseClass {
 	public:
@@ -118,16 +115,11 @@ namespace IfcUtil {
 		IfcSchema::Type::Enum getArgumentEntity(unsigned int /*i*/) const { return IfcSchema::Type::UNDEFINED; }
 	};
 
-	bool valid_binary_string(const std::string& s);
-
-#ifndef IFCPARSE_NO_REGEX
-    boost::regex wildcard_string_to_regex(std::string str);
-#endif
-
+	IfcParse_EXPORT bool valid_binary_string(const std::string& s);
     /// Replaces spaces and potentially other problem causing characters with underscores.
-    void sanitate_material_name(std::string &str);
-    void escape_xml(std::string &str);
-    void unescape_xml(std::string &str);
+    IfcParse_EXPORT void sanitate_material_name(std::string &str);
+    IfcParse_EXPORT void escape_xml(std::string &str);
+    IfcParse_EXPORT void unescape_xml(std::string &str);
 }
 
 template <class T>

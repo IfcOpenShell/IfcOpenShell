@@ -4,7 +4,8 @@
 /install*/
 /win/BuildDepsCache*.txt
 # IfcExpressParser residue
-/src/ifcexpressparser/__pycache__
 /src/ifcexpressparser/express_parser.py
-# Python test residue
-/test/__pycache__
+# General Python residue
+__pycache__
+# Visual Studio Code files
+.vscode

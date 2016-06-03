@@ -111,22 +111,6 @@ bool IfcUtil::valid_binary_string(const std::string& s) {
 	return true;
 }
 
-#ifndef IFCPARSE_NO_REGEX
-boost::regex IfcUtil::wildcard_string_to_regex(std::string str)
-{
-    // Escape all non-"*?" regex special chars
-    std::string special_chars = "\\^.$|()[]+/";
-    foreach(char c, special_chars) {
-        std::string char_str(1, c);
-        boost::replace_all(str, char_str, "\\"+ char_str);
-    }
-    // Convert "*?" to their regex equivalents
-    boost::replace_all(str, "?", ".");
-    boost::replace_all(str, "*", ".*");
-    return boost::regex(str);
-}
-#endif
-
 void IfcUtil::sanitate_material_name(std::string &str)
 {
     // Spaces in material names have been observed to cause problems with obj and dae importers.
