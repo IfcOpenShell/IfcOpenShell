@@ -223,7 +223,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::write() {
 		closeVisualScene();
 		closeLibrary();
 
-		COLLADASW::Scene scene (mSW, COLLADASW::URI ("#" + scene_id), COLLADASW::URI ("#" + scene_id));
+		COLLADASW::Scene scene (mSW, COLLADASW::URI ("#" + scene_id));
 		scene.add();		
 	}
 }
