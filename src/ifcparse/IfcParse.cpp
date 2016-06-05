@@ -47,48 +47,54 @@ using namespace IfcParse;
 // strtod_l() is used and a reference to the "C" locale is obtained here. The alternative is 
 // to use std::istringstream::imbue(std::locale::classic()), but there are subtleties in 
 // parsing in MSVC2010 and it appears to be much slower. 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
+
 static _locale_t locale = (_locale_t) 0;
 void init_locale() {
 	if (locale == (_locale_t) 0) {
 		locale = _create_locale(LC_NUMERIC, "C");
 	}
 }
-//#else
-#endif
 
-#ifdef __APPLE__
-#include <xlocale.h>
-//#endif
-static locale_t locale = (locale_t) 0;
-void init_locale() {
-	if (locale == (locale_t) 0) {
-		locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t) 0);
-	}
-}
-#endif
+#else
 
-#ifdef __MINGW64__
+#if defined(__MINGW64__) || defined(__MINGW32__)
 #include <locale>
 #include <sstream>
 
 typedef void* locale_t;
-static locale_t locale = (locale_t) 0;
+static locale_t locale = (locale_t)0;
 
 void init_locale() {}
 
 double strtod_l(const char* start, char** end, locale_t loc) {
-    double d;
-    std::stringstream ss;
-    ss.imbue(std::locale::classic());
-    ss << start;
-    ss >> d;
-    size_t nread = ss.tellg();
-    *end = const_cast<char*>(start) + nread;
-    return d;
+	double d;
+	std::stringstream ss;
+	ss.imbue(std::locale::classic());
+	ss << start;
+	ss >> d;
+	size_t nread = ss.tellg();
+	*end = const_cast<char*>(start) + nread;
+	return d;
 }
+
+#else
+
+#ifdef __APPLE__
+#include <xlocale.h>
+#endif
+#include <locale.h>
+
+static locale_t locale = (locale_t)0;
+void init_locale() {
+	if (locale == (locale_t)0) {
+		locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
+	}
+}
+
 #endif
 
+#endif
 
 // 
 // Opens the file, gets the filesize and reads a chunk in memory

@@ -27,9 +27,12 @@
 #include <iostream>
 #include <boost/cstdint.hpp>
 
-#if defined(_WIN32) && defined(__CYGWIN__)
+// NB: Streams are only re-opened as binary when compiled with MSVC currently.
+//     It is unclear what the correct behaviour would be compiled with e.g MinGW
+#if defined(_MSC_VER)
 #define SET_BINARY_STREAMS
 #endif
+
 #ifdef SET_BINARY_STREAMS
 #include <io.h>
 #include <fcntl.h>

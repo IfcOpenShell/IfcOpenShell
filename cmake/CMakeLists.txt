@@ -316,7 +316,12 @@ IF(MSVC)
 		ENDIF()
 	ENDFOREACH()
 ElSE()
-	ADD_DEFINITIONS(-fPIC -Wno-non-virtual-dtor)
+    IF(WIN32)
+        # -fPIC is not relevant on Windows and create pointless warnings
+        ADD_DEFINITIONS(-Wno-non-virtual-dtor)
+    ELSE()
+        ADD_DEFINITIONS(-fPIC -Wno-non-virtual-dtor)
+    ENDIF()
 ENDIF()
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
