@@ -184,7 +184,7 @@ IF(UNICODE_SUPPORT)
 		MESSAGE(STATUS "ICU libraries found")
 		# NOTE icudata appears to be icudt on Windows/MSVC and icudata on others
 		#      dl is included to resolve dlopen and friends symbols
-		IF(MSVC)
+		IF(MSVC OR MINGW)
 			SET(ICU_LIBRARIES icuuc icudt)
 			ADD_DEBUG_VARIANTS(ICU_LIBRARIES "${ICU_LIBRARIES}" "d")
 			ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
