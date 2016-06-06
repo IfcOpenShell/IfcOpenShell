@@ -37,14 +37,19 @@ Note that building IfcOpenShell as 64-bit is recommended as many of real life IF
 easily more than 2 GBs of RAM while converting.
 
 After this, one can build the project using the `IfcOpenShell.sln` file in the build folder. Build the `INSTALL` project
-if wanted. Convenience batch files `build-ifcopenshell.cmd` and `install-ifcopenshell.cmd` can also be used. The batch files
-expect `%1` and `%2` in same fashion as above and possible extra parameters are passed for the `MSBuild` call. The project will
-be installed to `installed-vs<VERSION>-<ARCHITECTURE>\` folder in the project's root folder and the required IfcOpenShell-Python
+if wanted. Convenience batch files `build-ifcopenshell.bat` and `install-ifcopenshell.bat` can also be used. The batch files
+expect `%1` and `%2` in same fashion as above and possible extra parameters are passed for the `MSBuild` call. `run-cmake.bat`,
+`build-ifcopenshell.bat`, and `install-ifcopenshell.bat` can also be directly invoked from Filer Explorer or regular Command
+Prompt if BuildDepsCache file exists (x64 version takes precedence). Running the scripts without extra parameters reads the build
+options from an existing CMakeCache.txt.
+
+
+The project will be installed to `installed-vs<VERSION>-<ARCHITECTURE>\` folder in the project's root folder and the required IfcOpenShell-Python
 parts are deployed to the `<PYTHONHOME>\Lib\site-packages\` folder. The 3ds Max plug-in, IfcMax.dli, needs to be copied manually
 to the 3ds Max's `plugins` folder.
 
 **Note:** All of the dependencies are build as static libraries against the static run-time allowing the developer
-to effortlessly deploy standalone IFCOS binaries.
+to effortlessly deploy standalone IFCOS executables.
 
 Using an already existing Python installation
 ---------------------------------------------
@@ -76,9 +81,9 @@ Directory Structure
 |   build-all.cmd                   - Runs all of the build scripts for IFCOS and it dependencies in a row without pauses
 |   build-deps.cmd                  - Fetches and builds all needed dependencies for IFCOS
 |   BuildDepsCache-<ARCH>.txt       - Cache file created by build-deps.cmd
-|   build-ifcopenshell.cmd          - Builds IFCOS
+|   build-ifcopenshell.bat          - Builds IFCOS
 |   build-type-cfg.cmd              - Utility file used by the build scripts
-|   install-ifcopenshell.cmd        - Builds IFCOS's INSTALL project
+|   install-ifcopenshell.bat        - Builds IFCOS's INSTALL project
 |   readme.md                       - This file
 |   run-cmake.bat                   - Sets environment variables for the dependencies and runs CMake for IFCOS
 |   set-python-to-path.bat          - Utility for setting PYTHONHOME (read from BuildDepsCache-<ARCH>.txt) to PATH

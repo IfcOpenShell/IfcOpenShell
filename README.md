@@ -12,7 +12,7 @@ Prerequisites
 * Git
 * CMake (2.6 or newer)
 * Windows: Visual Studio 2008 or newer with C++ toolset, MinGW not supported currently
-* *nix: GCC 4.7 or newer, or Clang (any version should work, but not tested)
+* *nix: GCC 4.7 or newer, or Clang (any version)
 
 Dependencies
 -------------
@@ -52,8 +52,8 @@ Only) to deploy the headers and binaries into a single location if wanted/needed
 
 Alternatively, one can use the utility batch files to build and install the project easily from the command-line:
 
-    > build-ifcopenshell.cmd
-    > install-ifcopenshell.cmd
+    > build-ifcopenshell.bat
+    > install-ifcopenshell.bat
 
 ### Compiling on *nix
 There might be an Open CASCADE package in your operating system's software repository. If not, you will need to compile

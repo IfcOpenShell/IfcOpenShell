@@ -27,7 +27,17 @@ echo.
 
 :: Enable the delayed environment variable expansion needed in VSConfig.cmd.
 setlocal EnableDelayedExpansion
-call vs-cfg.cmd %1
+:: Read cached variables (GEN_SHORTHAND, PY_VER_MAJOR_MINOR, PYTHONHOME, and possible others) from BuildDepsCache.txt.
+:: TODO Simply make x64 to take precedence over x86, but it would be niced that the last used target arch would be used.
+if exist BuildDepsCache-x86.txt for /f "delims== tokens=1,2" %%G in (BuildDepsCache-x86.txt) do set %%G=%%H
+if exist BuildDepsCache-x64.txt. for /f "delims== tokens=1,2" %%G in (BuildDepsCache-x64.txt) do set %%G=%%H
+set GENERATOR=%1
+if (%1)==() if defined GEN_SHORTHAND (
+    set GENERATOR=%GEN_SHORTHAND%
+    echo Generator not passed, but GEN_SHORTHAND=!GENERATOR! read from BuildDepsCache
+    echo.
+)
+call vs-cfg.cmd %GENERATOR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call build-type-cfg.cmd %2
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -37,19 +47,19 @@ IF "%IFCOS_NUM_BUILD_PROCS%"=="" set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo.
 
-call cecho.cmd 0 13 "Building %VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME%"
-MSBuild ..\%BUILD_DIR%\%PROJECT_NAME%.sln /nologo /m:%IFCOS_NUM_BUILD_PROCS% /p:Platform=%VS_PLATFORM% ^
+call cecho.cmd 0 13 "Installing %VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME%"
+cmake --build ..\%BUILD_DIR% --target INSTALL -- /nologo /m:%IFCOS_NUM_BUILD_PROCS% /p:Platform=%VS_PLATFORM% ^
     /p:Configuration=%BUILD_CFG% %3 %4 %5 %6 %7 %8 %9
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 echo.
-call cecho.cmd 0 10 "%VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME% build finished."
+call cecho.cmd 0 10 "%VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME% installation finished."
 set IFCOS_SCRIPT_RET=0
 goto :End
 
 :Error
 echo.
-call %~dp0\utils\cecho.cmd 0 12 "%VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME% build failed!"
+call %~dp0\utils\cecho.cmd 0 12 "%VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME% installation failed!"
 set IFCOS_SCRIPT_RET=1
 
 :End
