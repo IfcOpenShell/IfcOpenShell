@@ -485,22 +485,26 @@ bool TokenFunc::isFloat(const Token& t) {
 }
 
 int TokenFunc::asInt(const Token& t) {
-	//assert(t.type == Token_INT);
+	if (t.type != Token_INT)
+		throw IfcException("Token is not an integer");
 	return t.value_int;
 }
 
 int TokenFunc::asIdentifier(const Token& t) {
-	//assert(t.type == Token_IDENTIFIER);
+	if (t.type != Token_IDENTIFIER)
+		throw IfcException("Token is not an identifier");
 	return t.value_int;
 }
 
 bool TokenFunc::asBool(const Token& t) {
-	//assert(t.type == Token_BOOL);
+	if (t.type != Token_BOOL)
+		throw IfcException("Token is not a boolean");
 	return t.value_bool;
 }
 
 double TokenFunc::asFloat(const Token& t) {
-	//assert(t.type == Token_FLOAT);
+	if (t.type != Token_FLOAT)
+		throw IfcException("Token is not a float");
 	return t.value_double;
 }
 
