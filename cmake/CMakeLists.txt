@@ -60,7 +60,7 @@ IF(NOT IS_ABSOLUTE ${LIBDIR})
 ENDIF()
 MESSAGE(STATUS "LIBDIR: ${LIBDIR}")
 
-set(IFCDIRS "") # for *nix rpaths
+set(IFCOPENSHELL_LIBARY_DIR "") # for *nix rpaths
 
 if (BUILD_SHARED_LIBS)
     add_definitions(-DBUILD_SHARED_LIBS)
@@ -70,7 +70,7 @@ if (BUILD_SHARED_LIBS)
         # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
         add_definitions(-wd4251)
     endif()
-    set(IFCDIRS "${LIBDIR}")
+    set(IFCOPENSHELL_LIBARY_DIR "${LIBDIR}")
 endif()
 
 # Create cache entries if absent for environment variables
@@ -432,8 +432,7 @@ if(NOT WIN32)
 	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
 endif()
 
-SET(IFCLIBS "")
-SET(IFCBINS "")
+SET(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom)
 
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
@@ -449,16 +448,7 @@ endforeach()
 
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
-if (BUILD_SHARED_LIBS)
-    add_library(IfcParse SHARED ${IFCPARSE_FILES})
-    set(IFCBINS "${IFCBINS};IfcParse")
-    if (MSVC)
-        set(IFCLIBS "${IFCLIBS};IfcParse") # import lib for the DLL
-    endif()
-else()
-    add_library(IfcParse STATIC ${IFCPARSE_FILES})
-    set(IFCLIBS "${IFCLIBS};IfcParse")
-endif()
+add_library(IfcParse ${IFCPARSE_FILES})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIfcParse_EXPORTS)
 
 IF(UNICODE_SUPPORT)
@@ -470,17 +460,10 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 IF(BUILD_SHARED_LIBS)
-    if (MSVC)
-        message(WARNING "Building IfcGeom as DLL not currently supported on Windows/MSVC!")
+	message(WARNING "Building IfcGeom as shared library not currently supported")
         add_library(IfcGeom STATIC ${IFCGEOM_FILES})
-        set(IFCLIBS "${IFCLIBS};IfcGeom")
-    else()
-        add_library(IfcGeom SHARED ${IFCGEOM_FILES})
-        set(IFCBINS "${IFCBINS};IfcGeom")
-    endif()
 ELSE()
-    ADD_LIBRARY(IfcGeom STATIC ${IFCGEOM_FILES})
-    set(IFCLIBS "${IFCLIBS};IfcGeom")
+        add_library(IfcGeom ${IFCGEOM_FILES})
 ENDIF()
 
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
@@ -493,7 +476,6 @@ ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
 if (IFCCONVERT_DOUBLE_PRECISION)
     set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS -DIFCCONVERT_DOUBLE_PRECISION)
 endif()
-set(IFCBINS "${IFCBINS};IfcConvert")
 
 # Make sure cross-referenced symbols between static OCC libraries get
 # resolved. Also add thread and rt libraries.
@@ -506,9 +488,9 @@ if("${libTKernelExt}" STREQUAL ".a")
     set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${LIB_RT} dl)
 endif()
 
-TARGET_LINK_LIBRARIES(IfcConvert ${IFCLIBS} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
 if (NOT WIN32)
-    SET_INSTALL_RPATHS(IfcConvert "${IFCDIRS};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR};${ICU_LIBRARY_DIR}")
+    SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR};${ICU_LIBRARY_DIR}")
 endif()
 
 # IfcGeomServer
@@ -516,11 +498,10 @@ file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
 file(GLOB H_FILES ../src/ifcgeomserver/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_EXECUTABLE(IfcGeomServer ${SOURCE_FILES})
-TARGET_LINK_LIBRARIES(IfcGeomServer ${IFCLIBS} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${ICU_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcGeomServer ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${ICU_LIBRARIES})
 if (NOT WIN32)
-    SET_INSTALL_RPATHS(IfcGeomServer "${IFCDIRS};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${ICU_LIBRARY_DIR}")
+    SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${ICU_LIBRARY_DIR}")
 endif()
-set(IFCBINS "${IFCBINS};IfcGeomServer")
 
 IF(BUILD_IFCPYTHON)
 	ADD_SUBDIRECTORY(../src/ifcwrap ifcwrap)
@@ -535,7 +516,16 @@ IF(BUILD_IFCMAX)
 ENDIF()
 
 # CMake installation targets
-INSTALL(FILES ${IFCPARSE_H_FILES} DESTINATION ${INCLUDEDIR}/ifcparse)
-INSTALL(FILES ${IFCGEOM_H_FILES} DESTINATION ${INCLUDEDIR}/ifcgeom)
-INSTALL(TARGETS ${IFCBINS} RUNTIME DESTINATION ${BINDIR})
-INSTALL(TARGETS ${IFCLIBS} ARCHIVE DESTINATION ${LIBDIR})
+INSTALL(FILES ${IFCPARSE_H_FILES} 
+	DESTINATION ${INCLUDEDIR}/ifcparse
+)
+
+INSTALL(FILES ${IFCGEOM_H_FILES} 
+	DESTINATION ${INCLUDEDIR}/ifcgeom
+)
+
+INSTALL(TARGETS IfcParse IfcGeom IfcConvert IfcGeomServer
+	ARCHIVE DESTINATION ${LIBDIR}
+	LIBRARY DESTINATION ${LIBDIR}
+	RUNTIME DESTINATION ${BINDIR}
+)
