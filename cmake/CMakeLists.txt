@@ -195,7 +195,7 @@ IF(UNICODE_SUPPORT)
 		MESSAGE(STATUS "ICU libraries found")
 		# NOTE icudata appears to be icudt on Windows/MSVC and icudata on others
 		#      dl is included to resolve dlopen and friends symbols
-		IF(MSVC)
+		IF(MSVC OR MINGW)
 			SET(ICU_LIBRARIES icuuc icudt)
 			ADD_DEBUG_VARIANTS(ICU_LIBRARIES "${ICU_LIBRARIES}" "d")
 			ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
@@ -328,7 +328,12 @@ IF(MSVC)
 		ENDIF()
 	ENDFOREACH()
 ElSE()
-	ADD_DEFINITIONS(-fPIC -Wno-non-virtual-dtor -Wall -Wextra)
+    IF(WIN32)
+        # -fPIC is not relevant on Windows and create pointless warnings
+        ADD_DEFINITIONS(-Wno-non-virtual-dtor -Wall -Wextra)
+    ELSE()
+        ADD_DEFINITIONS(-fPIC -Wno-non-virtual-dtor -Wall -Wextra)
+    ENDIF()
 ENDIF()
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
