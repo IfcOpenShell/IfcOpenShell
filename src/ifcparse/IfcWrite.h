@@ -146,7 +146,7 @@ namespace IfcWrite {
 
 	// Accumulates all schema instances created from constructors
 	// This way they can be added in a single batch to the IfcFile
-	class EntityBuffer {
+	class IfcParse_EXPORT EntityBuffer {
 	private:
 		IfcEntityList::ptr buffer;
 		static EntityBuffer* i;

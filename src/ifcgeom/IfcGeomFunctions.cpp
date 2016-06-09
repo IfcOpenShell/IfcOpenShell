@@ -1294,9 +1294,7 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 			Logger::Message(Logger::LOG_ERROR, "No unit information found");
 		} else {
 			for (IfcEntityList::it it = units->begin(); it != units->end(); ++it) {
-				std::string current_unit_name = "";
 				IfcUtil::IfcBaseClass* base = *it;
-				IfcSchema::IfcSIUnit* unit = 0;
 				if (base->is(IfcSchema::Type::IfcNamedUnit)) {
 					IfcSchema::IfcNamedUnit* named_unit = base->as<IfcSchema::IfcNamedUnit>();
 					if (named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ||
@@ -1387,7 +1385,7 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 		double u1, u2;
 		Handle_Geom_Curve axis_curve = BRep_Tool::Curve(axis_edge, u1, u2);
 
-		if (true) {
+		if (true) { /**< @todo Why always true? */
 			if (axis_curve->DynamicType() == STANDARD_TYPE(Geom_Line)) {
 				Handle_Geom_Line axis_line = Handle_Geom_Line::DownCast(axis_curve);
 				reference_surface = new Geom_Plane(axis_line->Lin().Location(), axis_line->Lin().Direction() ^ gp::DZ());
