@@ -244,8 +244,8 @@ IfcSchema::IfcBuildingStorey* IfcHierarchyHelper::addBuildingProduct(IfcSchema::
 }
 
 void IfcHierarchyHelper::addExtrudedPolyline(IfcSchema::IfcShapeRepresentation* rep, const std::vector<std::pair<double, double> >& points, double h, 
-	IfcSchema::IfcAxis2Placement2D* place, IfcSchema::IfcAxis2Placement3D* place2, 
-	IfcSchema::IfcDirection* dir, IfcSchema::IfcRepresentationContext* context) 
+	IfcSchema::IfcAxis2Placement2D* /*place*/, IfcSchema::IfcAxis2Placement3D* place2, 
+	IfcSchema::IfcDirection* dir, IfcSchema::IfcRepresentationContext* /*context*/) 
 {
 	IfcSchema::IfcCartesianPoint::list::ptr cartesian_points (new IfcSchema::IfcCartesianPoint::list);
 	for (std::vector<std::pair<double, double> >::const_iterator i = points.begin(); i != points.end(); ++i) {
@@ -312,7 +312,7 @@ void IfcHierarchyHelper::addBox(IfcSchema::IfcShapeRepresentation* rep, double w
 	}
 }
 
-void IfcHierarchyHelper::addAxis(IfcSchema::IfcShapeRepresentation* rep, double l, IfcSchema::IfcRepresentationContext* context) {
+void IfcHierarchyHelper::addAxis(IfcSchema::IfcShapeRepresentation* rep, double l, IfcSchema::IfcRepresentationContext* /*context*/) {
 	IfcSchema::IfcCartesianPoint* p1 = addDoublet<IfcSchema::IfcCartesianPoint>(-l / 2., 0.);
 	IfcSchema::IfcCartesianPoint* p2 = addDoublet<IfcSchema::IfcCartesianPoint>(+l / 2., 0.);
 	IfcSchema::IfcCartesianPoint::list::ptr pts(new IfcSchema::IfcCartesianPoint::list);
