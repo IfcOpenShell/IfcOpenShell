@@ -40,6 +40,8 @@
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcSIPrefix.h"
 
+#define PERMISSIVE_FLOAT
+
 using namespace IfcParse;
 
 // A static locale for the real number parser. strtod() is locale-dependent, causing issues 
@@ -511,31 +513,47 @@ bool TokenFunc::isBool(const Token& t) {
 }
 
 bool TokenFunc::isFloat(const Token& t) {
+#ifdef PERMISSIVE_FLOAT
+	/// NB: We are being more permissive here then allowed by the standard
 	return t.type == Token_FLOAT || t.type == Token_INT;
+#else
+	return t.type == Token_FLOAT;
+#endif
 }
 
 int TokenFunc::asInt(const Token& t) {
-	if (t.type != Token_INT)
-		throw IfcException("Token is not an integer");
+	if (t.type != Token_INT) {
+		throw IfcInvalidTokenException(t.startPos, toString(t), "integer");
+	}
 	return t.value_int;
 }
 
 int TokenFunc::asIdentifier(const Token& t) {
-	if (t.type != Token_IDENTIFIER)
-		throw IfcException("Token is not an identifier");
+	if (t.type != Token_IDENTIFIER) {
+		throw IfcInvalidTokenException(t.startPos, toString(t), "instance name");
+	}
 	return t.value_int;
 }
 
 bool TokenFunc::asBool(const Token& t) {
-	if (t.type != Token_BOOL)
-		throw IfcException("Token is not a boolean");
+	if (t.type != Token_BOOL) {
+		throw IfcInvalidTokenException(t.startPos, toString(t), "boolean");
+	}
 	return t.value_bool;
 }
 
 double TokenFunc::asFloat(const Token& t) {
-	if (t.type != Token_FLOAT)
-		throw IfcException("Token is not a float");
-	return t.value_double;
+#ifdef PERMISSIVE_FLOAT
+	if (t.type == Token_INT) {
+		/// NB: We are being more permissive here then allowed by the standard
+		return t.value_int;
+	} else // ----> continues beyond preprocessor directive
+#endif
+	if (t.type == Token_FLOAT) {
+		return t.value_double;
+	} else {
+		throw IfcInvalidTokenException(t.startPos, toString(t), "real");
+	}
 }
 
 const std::string &TokenFunc::asStringRef(const Token& t) {
@@ -550,7 +568,11 @@ const std::string &TokenFunc::asStringRef(const Token& t) {
 }
 
 std::string TokenFunc::asString(const Token& t) {
-	return asStringRef(t);
+	if (isString(t) || isEnumeration(t) || isBinary(t)) {
+		return asStringRef(t);
+	} else {
+		throw IfcInvalidTokenException(t.startPos, toString(t), "string");
+	}
 }
 
 boost::dynamic_bitset<> TokenFunc::asBinary(const Token& t) {

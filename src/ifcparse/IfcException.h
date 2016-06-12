@@ -22,6 +22,8 @@
 
 #include "IfcParse_Export.h"
 
+#include <boost/lexical_cast.hpp>
+
 #include <exception>
 #include <string>
 
@@ -50,6 +52,22 @@ namespace IfcParse {
 		IfcAttributeOutOfRangeException(const std::string& e)
 			: IfcException(e) {}
 		~IfcAttributeOutOfRangeException () throw () {}
+	};
+
+	class IfcInvalidTokenException : public IfcException {
+	public:
+		IfcInvalidTokenException(
+			int token_start,
+			const std::string& token_string,
+			const std::string& expected_type
+		)
+			: IfcException(
+				std::string("Token ") + token_string + " at " + 
+				boost::lexical_cast<std::string>(token_start) + 
+				" invalid " + expected_type
+			)
+		{}
+		~IfcInvalidTokenException() throw () {}
 	};
 }
 

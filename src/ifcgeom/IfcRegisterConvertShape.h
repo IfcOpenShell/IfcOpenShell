@@ -6,8 +6,17 @@
 			if ( convert((T*)l,r) ) { \
 				success = true; \
 			} \
-		} catch(...) {  } \
-		if ( !success) { \
+		} catch (const std::exception& e) { \
+			Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", l->entity); \
+			return false; \
+		} catch (const Standard_Failure& f) { \
+			if (f.GetMessageString()) \
+				Logger::Message(Logger::LOG_ERROR, std::string("Error in: ") + f.GetMessageString() + "\nFailed to convert:", l->entity); \
+			else \
+				Logger::Message(Logger::LOG_ERROR, "Failed to convert:", l->entity); \
+			return false; \
+		} \
+		if (!success) { \
 			Logger::Message(Logger::LOG_ERROR,"Failed to convert:",l->entity); \
 			return false; \
 		} \
