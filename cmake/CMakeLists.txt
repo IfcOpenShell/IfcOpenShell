@@ -432,7 +432,11 @@ if(NOT WIN32)
 	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
 endif()
 
-SET(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom)
+if(BUILD_SHARED_LIBS)
+    SET(IFCOPENSHELL_LIBRARIES IfcGeom)
+else()
+    SET(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom)
+endif()
 
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
@@ -448,7 +452,7 @@ endforeach()
 
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
-add_library(IfcParse ${IFCPARSE_FILES})
+add_library(IfcParse STATIC ${IFCPARSE_FILES})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIfcParse_EXPORTS)
 
 IF(UNICODE_SUPPORT)
@@ -461,7 +465,7 @@ file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 IF(BUILD_SHARED_LIBS)
 	message(WARNING "Building IfcGeom as shared library not currently supported")
-        add_library(IfcGeom STATIC ${IFCGEOM_FILES})
+	add_library(IfcGeom SHARED ${IFCGEOM_FILES})
 ELSE()
         add_library(IfcGeom ${IFCGEOM_FILES})
 ENDIF()
@@ -524,7 +528,7 @@ INSTALL(FILES ${IFCGEOM_H_FILES}
 	DESTINATION ${INCLUDEDIR}/ifcgeom
 )
 
-INSTALL(TARGETS IfcParse IfcGeom IfcConvert IfcGeomServer
+INSTALL(TARGETS ${IFCOPENSHELL_LIBRARIES} IfcConvert IfcGeomServer
 	ARCHIVE DESTINATION ${LIBDIR}
 	LIBRARY DESTINATION ${LIBDIR}
 	RUNTIME DESTINATION ${BINDIR}
