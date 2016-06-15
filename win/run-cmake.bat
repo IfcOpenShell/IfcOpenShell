@@ -23,13 +23,20 @@ echo.
 set PROJECT_NAME=IfcOpenShell
 
 setlocal EnableDelayedExpansion
+set IFCOS_PAUSE_ON_ERROR=
 
-:: Read cached variables (GEN_SHORTHAND, PY_VER_MAJOR_MINOR, PYTHONHOME, and possible others) from BuildDepsCache.txt.
-:: TODO Simply make x64 takes precedence over x86, but it would be niced that the last used target arch would be used.
-if exist BuildDepsCache-x86.txt for /f "delims== tokens=1,2" %%G in (BuildDepsCache-x86.txt) do set %%G=%%H
-if exist BuildDepsCache-x64.txt. for /f "delims== tokens=1,2" %%G in (BuildDepsCache-x64.txt) do set %%G=%%H
+:: Read cached variables from the most recently modified BuildDepsCache.txt.
+for /f "tokens=*" %%f in ('dir BuildDepsCache-*.txt /o:-n /t:a /b') do (
+    for /f "delims== tokens=1,2" %%G in (%%f) do set %%G=%%H
+)
+
 set GENERATOR=%1
-if (%1)==() if defined GEN_SHORTHAND (
+if (%1)==() (
+    if not defined GEN_SHORTHAND (
+        echo BuildDepsCache file does and/or GEN_SHORTHAND missing from it. Run build-deps.cmd to create it.
+        set IFCOS_PAUSE_ON_ERROR=pause
+        goto :Error
+    )
     set GENERATOR=%GEN_SHORTHAND%
     echo Generator not passed, but GEN_SHORTHAND=!GENERATOR! read from BuildDepsCache
     echo.
@@ -107,6 +114,7 @@ goto :Finish
 :Error
 echo.
 call %~dp0\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
+%IFCOS_PAUSE_ON_ERROR%
 set IFCOS_SCRIPT_RET=1
 goto :Finish
 

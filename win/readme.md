@@ -44,7 +44,7 @@ After this, one can build the project using the `IfcOpenShell.sln` file in the b
 if wanted. Convenience batch files `build-ifcopenshell.bat` and `install-ifcopenshell.bat` can also be used. The batch
 files expect `%1` and `%2` in same fashion as above and possible extra parameters are passed for the `MSBuild` call.
 `run-cmake.bat`, `build-ifcopenshell.bat`, and `install-ifcopenshell.bat` can also be directly invoked from Filer Explorer
-or regular Command Prompt if BuildDepsCache file exists (x64 version takes precedence). Running the scripts without extra
+or regular Command Prompt if BuildDepsCache file exists (the last modified version is used). Running the scripts without extra
 parameters reads the build options from an existing CMakeCache.txt.
 
 The project will be installed to `installed-vs<VERSION>-<ARCHITECTURE>\` folder in the project's root folder and the
