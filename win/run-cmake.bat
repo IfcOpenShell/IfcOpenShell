@@ -23,8 +23,25 @@ echo.
 set PROJECT_NAME=IfcOpenShell
 
 setlocal EnableDelayedExpansion
+set IFCOS_PAUSE_ON_ERROR=
 
-call vs-cfg.cmd %1
+:: Read cached variables from the most recently modified BuildDepsCache.txt.
+for /f "tokens=*" %%f in ('dir BuildDepsCache-*.txt /o:-n /t:a /b') do (
+    for /f "delims== tokens=1,2" %%G in (%%f) do set %%G=%%H
+)
+
+set GENERATOR=%1
+if (%1)==() (
+    if not defined GEN_SHORTHAND (
+        echo BuildDepsCache file does and/or GEN_SHORTHAND missing from it. Run build-deps.cmd to create it.
+        set IFCOS_PAUSE_ON_ERROR=pause
+        goto :Error
+    )
+    set GENERATOR=%GEN_SHORTHAND%
+    echo Generator not passed, but GEN_SHORTHAND=!GENERATOR! read from BuildDepsCache
+    echo.
+)
+call vs-cfg.cmd %GENERATOR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: As CMake options are typically of format -DSOMETHING:BOOL=ON or -DSOMETHING=1, i.e. they contain an equal sign,
 :: they will mess up the batch file argument parsing if the arguments are passed on by splitting them %2 %3 %4 %5
@@ -33,9 +50,6 @@ if not (%1)==() (
     set ARGUMENTS=%*
     call set ARGUMENTS=%%ARGUMENTS:%1=%%
 )
-
-:: Read Python related variables from BuildDepsCache.txt
-for /f "delims== tokens=1,2" %%G in (BuildDepsCache-%TARGET_ARCH%.txt) do set %%G=%%H
 
 pushd ..
 set CMAKE_INSTALL_PREFIX=%CD%\installed-vs%VS_VER%-%TARGET_ARCH%
@@ -86,8 +100,8 @@ echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
 echo.
 
 set CMAKELISTS_DIR=..\cmake
-:: For now clear CMakeCache.txt always in order to assure that when changing build options everything goes smoothly.
-IF EXIST CMakeCache.txt. del /Q CMakeCache.txt
+:: Delete CMakeCache.txt if command-line options were provided for this batch script.
+if not (%1)==() if exist CMakeCache.txt. del /Q CMakeCache.txt
 call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
 cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" %ARGUMENTS%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -100,6 +114,7 @@ goto :Finish
 :Error
 echo.
 call %~dp0\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
+%IFCOS_PAUSE_ON_ERROR%
 set IFCOS_SCRIPT_RET=1
 goto :Finish
 

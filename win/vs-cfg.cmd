@@ -66,6 +66,7 @@ echo(!GENERATOR! | findstr /c:"vs20" >nul && (
 :GeneratorShorthandCheckDone
 
 :: Deduce desired architecture from the location of cl.exe
+:: TODO harmless "INFO: Could not find files for the given pattern(s)." spam if cl.exe not in path
 where cl.exe | findstr /c:"amd64" >nul
 set START=%ERRORLEVEL%
 
@@ -136,6 +137,7 @@ set GENERATOR=%GENERATOR: 2012=%
 set GENERATOR=%GENERATOR: 2010=%
 :CMake3AndNewer
 
+set GEN_SHORTHAND=vs%VS_VER%-%TARGET_ARCH%
 :: VS project file extension is different on older VS versions
 set VCPROJ_FILE_EXT=vcxproj
 IF %VS_VER%==2008 set VCPROJ_FILE_EXT=vcproj
@@ -150,10 +152,10 @@ set PATH=%PATH%;%~dp0utils
 :: set DEPS_DIR=%CD%\deps-%VS_VER%-%TARGET_ARCH%
 pushd ..
 set DEPS_DIR=%CD%\deps
-set INSTALL_DIR=%CD%\deps-vs%VS_VER%-%TARGET_ARCH%-installed
+set INSTALL_DIR=%CD%\deps-%GEN_SHORTHAND%-installed
 REM set INSTALL_DIR=%CD%\deps-vs%VS_VER%-%TARGET_ARCH%-%DEBUG_OR_RELEASE_LOWERCASE%-installed
 :: BUILD_DIR is a relative build directory used for CMake-based projects
-set BUILD_DIR=build-vs%VS_VER%-%TARGET_ARCH%
+set BUILD_DIR=build-%GEN_SHORTHAND%
 popd
 
 GOTO :EOF

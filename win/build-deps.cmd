@@ -121,6 +121,10 @@ echo.
 call cecho.cmd black cyan "If you are not ready with the above, press Ctrl-C to abort!"
 
 pause
+
+:: Cache last used CMake generator for other scripts to use
+if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+
 echo.
 set START_TIME=%TIME%
 echo Build started at %START_TIME%.
@@ -265,7 +269,7 @@ set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
 :: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     REM Store Python versions to BuildDepsCache.txt for run-cmake.bat
-    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
 
     cd "%DEPS_DIR%"
