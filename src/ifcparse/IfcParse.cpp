@@ -428,7 +428,8 @@ bool ParseBool(const char *pStart, bool &val) {
 	if (strlen(pStart) != 3 || pStart[0] != '.' || pStart[2] != '.')
 		return false;
 	char mid = pStart[1];
-	if (!(mid == 'T' || mid == 'F'))
+	/// @todo https://github.com/IfcOpenShell/IfcOpenShell/issues/95
+	if (!(mid == 'T' || mid == 'F' || mid == 'U'))
 		return false;
 	val = (mid == 'T');
 	return true;
