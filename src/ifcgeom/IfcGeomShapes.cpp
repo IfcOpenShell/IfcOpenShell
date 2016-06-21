@@ -67,6 +67,7 @@
 #include <TopoDS_Face.hxx>
 #include <TopoDS_CompSolid.hxx>
 
+#include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 
 #include <BRepPrimAPI_MakePrism.hxx>
@@ -113,7 +114,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 	if ( !convert_face(l->SweptArea(),face) ) return false;
 
 	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(l->Position(),trsf);
+	bool has_position = true;
+#ifdef USE_IFC4
+	has_position = l->hasPosition();
+#endif
+	if (has_position) {
+		IfcGeom::Kernel::convert(l->Position(), trsf);
+	}
 
 	gp_Dir dir;
 	convert(l->ExtrudedDirection(),dir);
@@ -146,11 +153,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 		shape = BRepPrimAPI_MakePrism(face, height*dir);
 	}
 
-	// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
-	// and therefore has a unit scale factor
-	shape.Move(trsf);
+	if (has_position && !shape.IsNull()) {
+		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+		// and therefore has a unit scale factor
+		shape.Move(trsf);
+	}
 
-	return ! shape.IsNull();
+	return !shape.IsNull();
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfLinearExtrusion* l, TopoDS_Shape& shape) {
@@ -162,17 +171,26 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfLinearExtrusion* l, T
 		wire = TopoDS::Wire(exp.Current());
 	}
 	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
+	
 	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(l->Position(),trsf);
+	bool has_position = true;
+#ifdef USE_IFC4
+	has_position = l->hasPosition();
+#endif
+	if (has_position) {
+		IfcGeom::Kernel::convert(l->Position(), trsf);
+	}
 
 	gp_Dir dir;
 	convert(l->ExtrudedDirection(),dir);
 
 	shape = BRepPrimAPI_MakePrism(wire, height*dir);
 	
-	// IfcSweptSurface.Position (trsf) is an IfcAxis2Placement3D
-	// and therefore has a unit scale factor
-	shape.Move(trsf);
+	if (has_position) {
+		// IfcSweptSurface.Position (trsf) is an IfcAxis2Placement3D
+		// and therefore has a unit scale factor
+		shape.Move(trsf);
+	}
 	
 	return !shape.IsNull();
 }
@@ -190,13 +208,21 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfRevolution* l, TopoDS
 	IfcGeom::Kernel::convert(l->AxisPosition(), ax1);
 
 	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(l->Position(),trsf);
+	bool has_position = true;
+#ifdef USE_IFC4
+	has_position = l->hasPosition();
+#endif
+	if (has_position) {
+		IfcGeom::Kernel::convert(l->Position(), trsf);
+	}
 	
 	shape = BRepPrimAPI_MakeRevol(wire, ax1);
 
-	// IfcSweptSurface.Position (trsf) is an IfcAxis2Placement3D
-	// and therefore has a unit scale factor
-	shape.Move(trsf);
+	if (has_position) {
+		// IfcSweptSurface.Position (trsf) is an IfcAxis2Placement3D
+		// and therefore has a unit scale factor
+		shape.Move(trsf);
+	}
 
 	return !shape.IsNull();
 }
@@ -211,7 +237,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 	IfcGeom::Kernel::convert(l->Axis(), ax1);
 
 	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(l->Position(),trsf);
+	bool has_position = true;
+#ifdef USE_IFC4
+	has_position = l->hasPosition();
+#endif
+	if (has_position) {
+		IfcGeom::Kernel::convert(l->Position(), trsf);
+	}
 
 	if (ang >= M_PI * 2. - ALMOST_ZERO) {
 		shape = BRepPrimAPI_MakeRevol(face, ax1);
@@ -219,9 +251,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 		shape = BRepPrimAPI_MakeRevol(face, ax1, ang);
 	}
 
-	// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
-	// and therefore has a unit scale factor
-	shape.Move(trsf);
+	if (has_position) {
+		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+		// and therefore has a unit scale factor
+		shape.Move(trsf);
+	}
 
 	return !shape.IsNull();
 }
@@ -756,8 +790,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 		return false;
 	}
 	
-	if (!IfcGeom::Kernel::convert(l->Position(), position)   || 
-		!convert_face(l->SweptArea(), face) || 
+	gp_Trsf trsf;
+	bool has_position = true;
+#ifdef USE_IFC4
+	has_position = l->hasPosition();
+#endif
+	if (has_position) {
+		IfcGeom::Kernel::convert(l->Position(), trsf);
+	}
+
+	if (!convert_face(l->SweptArea(), face) || 
 		!convert_wire(l->Directrix(), wire)    ) {
 		return false;
 	}
@@ -815,9 +857,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	builder.MakeSolid();
 	shape = builder.Shape();
 
-	// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
-	// and therefore has a unit scale factor
-	shape.Move(position);
+	if (has_position) {
+		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+		// and therefore has a unit scale factor
+		shape.Move(position);
+	}
 
 	return true;
 }
