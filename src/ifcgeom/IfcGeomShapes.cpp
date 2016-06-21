@@ -162,6 +162,108 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 	return !shape.IsNull();
 }
 
+#ifdef USE_IFC4
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, TopoDS_Shape& shape) {
+	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
+	if (height < getValue(GV_PRECISION)) {
+		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l->entity);
+		return false;
+	}
+
+	TopoDS_Shape face1, face2;
+	if (!convert_face(l->SweptArea(), face1)) return false;
+	if (!convert_face(l->EndSweptArea(), face2)) return false;
+
+	gp_Trsf trsf;
+	bool has_position = true;
+#ifdef USE_IFC4
+	has_position = l->hasPosition();
+#endif
+	if (has_position) {
+		IfcGeom::Kernel::convert(l->Position(), trsf);
+	}
+
+	gp_Dir dir;
+	convert(l->ExtrudedDirection(), dir);
+
+	gp_Trsf end_profile;
+	end_profile.SetTranslation(height * dir);
+
+	TopoDS_Edge spine_edge = BRepBuilderAPI_MakeEdge(gp_Pnt(), gp_Pnt((height * dir).XYZ())).Edge();
+	TopoDS_Wire wire = BRepBuilderAPI_MakeWire(spine_edge).Wire();
+
+	shape.Nullify();
+
+	TopExp_Explorer exp1(face1, TopAbs_WIRE);
+	TopExp_Explorer exp2(face2, TopAbs_WIRE);
+
+	TopoDS_Vertex v1, v2;
+	TopExp::Vertices(wire, v1, v2);
+
+	TopoDS_Shape shell;
+	TopoDS_Compound compound;
+	BRep_Builder compound_builder;
+
+	for (; exp1.More() && exp2.More(); exp1.Next(), exp2.Next()) {
+		const TopoDS_Wire& w1 = TopoDS::Wire(exp1.Current());
+		const TopoDS_Wire& w2 = TopoDS::Wire(exp2.Current());
+
+		BRepOffsetAPI_MakePipeShell builder(wire);
+		builder.Add(w1, v1);
+		builder.Add(w2.Moved(end_profile), v2);
+
+		TopoDS_Shape result = builder.Shape();
+
+		BRepOffsetAPI_Sewing sewer;
+		sewer.SetTolerance(getValue(GV_PRECISION));
+		sewer.SetMaxTolerance(getValue(GV_PRECISION));
+		sewer.SetMinTolerance(getValue(GV_PRECISION));
+
+		sewer.Add(result);
+		sewer.Add(BRepBuilderAPI_MakeFace(w1).Face());
+		sewer.Add(BRepBuilderAPI_MakeFace(w2).Face().Moved(end_profile));
+
+		sewer.Perform();
+
+		result = sewer.SewedShape();
+
+		if (shell.IsNull()) {
+			shell = result;
+		} else if (l->SweptArea()->is(IfcSchema::Type::IfcCircleHollowProfileDef) ||
+			l->SweptArea()->is(IfcSchema::Type::IfcRectangleHollowProfileDef))
+		{
+			/// @todo a bit of of a hack, should be sufficient
+			shell = BRepAlgoAPI_Cut(shell, result).Shape();
+			break;
+		} else {
+			if (compound.IsNull()) {
+				compound_builder.MakeCompound(compound);
+				compound_builder.Add(compound, shell);
+			}
+			compound_builder.Add(compound, result);
+		}
+	}
+
+	if (!compound.IsNull()) {
+		shell = compound;
+	}
+
+	shape = shell;
+
+	if (exp1.More() != exp2.More()) {
+		Logger::Message(Logger::LOG_ERROR, "Inconsistent profiles encountered for:", l->entity);
+	}
+
+	if (has_position && !shape.IsNull()) {
+		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+		// and therefore has a unit scale factor
+		shape.Move(trsf);
+	}
+
+	return !shape.IsNull();
+}
+#endif
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfLinearExtrusion* l, TopoDS_Shape& shape) {
 	TopoDS_Wire wire;
 	if ( !convert_wire(l->SweptCurve(), wire) ) {
