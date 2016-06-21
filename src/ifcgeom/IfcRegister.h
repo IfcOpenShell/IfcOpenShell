@@ -45,7 +45,11 @@ SHAPES(IfcShellBasedSurfaceModel);
 SHAPES(IfcFaceBasedSurfaceModel);
 SHAPES(IfcRepresentation);
 SHAPES(IfcMappedItem);
-SHAPES(IfcFacetedBrep);
+// IfcFacetedBrep included
+// IfcAdvancedBrep included
+// IfcFacetedBrepWithVoids included
+// IfcAdvancedBrepWithVoids included
+SHAPES(IfcManifoldSolidBrep);
 SHAPES(IfcGeometricSet);
 
 #ifdef USE_IFC4

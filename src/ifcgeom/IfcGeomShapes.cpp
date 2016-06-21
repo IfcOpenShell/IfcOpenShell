@@ -260,11 +260,31 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 	return !shape.IsNull();
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcFacetedBrep* l, IfcRepresentationShapeItems& shape) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, IfcRepresentationShapeItems& shape) {
 	TopoDS_Shape s;
 	const SurfaceStyle* collective_style = get_style(l);
 	if (convert_shape(l->Outer(),s) ) {
 		const SurfaceStyle* indiv_style = get_style(l->Outer());
+
+		IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
+		if (l->is(IfcSchema::Type::IfcFacetedBrepWithVoids)) {
+			voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
+		}
+#ifdef USE_IFC4
+		if (l->is(IfcSchema::Type::IfcAdvancedBrepWithVoids)) {
+			voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
+		}
+#endif
+
+		for (IfcSchema::IfcClosedShell::list::it it = voids->begin(); it != voids->end(); ++it) {
+			TopoDS_Shape s2;
+			/// @todo No extensive shapefixing since shells should be disjoint.
+			/// @todo Awaiting generalized boolean ops module with appropriate checking
+			if (convert_shape(l->Outer(), s2)) {
+				s = BRepAlgoAPI_Cut(s, s2).Shape();
+			}
+		}
+
 		shape.push_back(IfcRepresentationShapeItem(s, indiv_style ? indiv_style : collective_style));
 		return true;
 	}
