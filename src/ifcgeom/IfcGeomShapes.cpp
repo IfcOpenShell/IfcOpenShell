@@ -621,12 +621,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 
 	TopTools_ListOfShape face_list;
 	for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
+		bool success = false;
 		TopoDS_Face face;
+		
 		try {
-			convert_face(*it, face);
-		} catch (...) {
+			success = convert_face(*it, face);
+		} catch (...) {}
+
+		if (!success) {
+			Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", (*it)->entity);
 			continue;
 		}
+
 		if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
 			face_list.Append(face);
 		} else {
