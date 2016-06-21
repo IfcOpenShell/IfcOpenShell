@@ -47,7 +47,7 @@ void IfcSpfHeader::readParen() {
 }
 
 void IfcSpfHeader::readTerminal(const std::string& term, Trail trail) {
-	if (TokenFunc::asString(_lexer->Next()) != term) {
+	if (TokenFunc::asStringRef(_lexer->Next()) != term) {
 		throw IfcException(std::string("Expected " + term));
 	}
 	if (trail == TRAILING_SEMICOLON) {
