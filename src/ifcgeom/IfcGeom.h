@@ -300,7 +300,8 @@ public:
 
 };
 
-IfcSchema::IfcProductDefinitionShape* tesselate(TopoDS_Shape& shape, double deflection, IfcEntityList::ptr es);
+IfcSchema::IfcProductDefinitionShape* tesselate(const TopoDS_Shape& shape, double deflection);
+IfcSchema::IfcProductDefinitionShape* serialise(const TopoDS_Shape& shape, bool advanced);
 
 }
 #endif

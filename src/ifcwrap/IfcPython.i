@@ -76,6 +76,8 @@
 	#else
 	#include "../ifcparse/Ifc2x3-latebound.h"
 	#endif
+
+	#include <BRepTools_ShapeSet.hxx>
 %}
 
 %include "utils/type_conversion.i"

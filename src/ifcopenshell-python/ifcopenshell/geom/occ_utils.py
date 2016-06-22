@@ -180,7 +180,12 @@ def get_bounding_box_center(bbox):
     bbmin[0], bbmin[1], bbmin[2], bbmax[0], bbmax[1], bbmax[2] = bbox.Get()
     return OCC.gp.gp_Pnt(*map(lambda xy: (xy[0]+xy[1])/2., zip(bbmin, bbmax)))
 
-
+    
+def serialize_shape(shape):
+    shapes = OCC.BRepTools.BRepTools_ShapeSet()
+    shapes.Add(shape)
+    return shapes.WriteToString()
+    
 def create_shape_from_serialization(brep_object):
     import OCC.BRepTools
     

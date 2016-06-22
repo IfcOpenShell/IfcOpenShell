@@ -119,6 +119,7 @@ CURVE(IfcCircle);
 CURVE(IfcEllipse);
 CURVE(IfcLine);
 #ifdef USE_IFC4
+// IfcRationalBSplineCurveWithKnots included
 CURVE(IfcBSplineCurveWithKnots);
 #endif
 
