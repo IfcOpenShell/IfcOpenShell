@@ -560,9 +560,9 @@ double TokenFunc::asFloat(const Token& t) {
 const std::string &TokenFunc::asStringRef(const Token& t) {
 	std::string &str = t.lexer->GetTempString();
 	t.lexer->TokenString(t.startPos, str);
-	if (isString(t) || isEnumeration(t) || isBinary(t)) {
+	if ((isString(t) || isEnumeration(t) || isBinary(t)) && !str.empty()) {
 		//remove start+end characters in-place
-		str.pop_back();
+		str.erase(str.end()-1);
 		str.erase(str.begin());
 	}
 	return str;
