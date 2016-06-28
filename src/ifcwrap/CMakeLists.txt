@@ -73,6 +73,8 @@ IF(PYTHONINTERP_FOUND)
                 "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
                 "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/__init__.py"
                 "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/guid.py"
+                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/file.py"
+                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/entity_instance.py"
             DESTINATION "${python_package_dir}/ifcopenshell")
         INSTALL(FILES
                 "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/__init__.py"
