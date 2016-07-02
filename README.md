@@ -11,7 +11,7 @@ Prerequisites
 -------------
 * Git
 * CMake (2.6 or newer)
-* Windows: Visual Studio 2008 or newer with C++ toolset, MinGW not supported currently
+* Windows: Visual Studio 2008 or newer with C++ toolset or [MSYS2] + MinGW
 * *nix: GCC 4.7 or newer, or Clang (any version)
 
 Dependencies
@@ -34,10 +34,11 @@ Building IfcOpenShell
 ---------------------
 ### Compiling on Windows
 The preferred way to fetch and build this project's dependencies is to use the build scripts
-in win/ folder. **See [win/readme.md] for more information**. Instructions in a nutshell
-(**assuming Visual Studio 2015 x64 environment variables set**):
+in win/ folder. **See [win/readme.md] for more information**.
 
-    > git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+#### Compiling using Visual Studio
+Instructions in a nutshell (**assuming Visual Studio 2015 x64 environment variables set**):
+
     > cd IfcOpenShell\win
     > build-deps.cmd
     > run-cmake.bat
@@ -54,6 +55,16 @@ Alternatively, one can use the utility batch files to build and install the proj
 
     > build-ifcopenshell.bat
     > install-ifcopenshell.bat
+
+#### Compiling using MSYS2 + MinGW
+
+Start the MSYS2 Shell and then:
+
+    $ cd IfcOpenShell/win
+    $ ./build-deps.sh
+    $ ./run-cmake.sh
+    $ ./build-ifcopenshell.sh
+    $ ./install-ifcopenshell.sh
 
 ### Compiling on *nix
 There might be an Open CASCADE package in your operating system's software repository. If not, you will need to compile
@@ -163,4 +174,5 @@ Usage examples
 [IFC]: http://www.buildingsmart-tech.org/specifications/ifc-overview "IFC"
 [IFC2x3 TC1]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc2x3-tc1-release "IFC2x3 TC1"
 [IFC4 Add1]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc4-add1-release "IFC4 Add1"
+[MSYS2]: https://msys2.github.io/ "MSYS2"
 [win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"
