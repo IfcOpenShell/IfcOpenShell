@@ -98,7 +98,7 @@ MACRO(SET_INSTALL_RPATHS _target _paths)
     SET(${_target}_rpaths "")
     FOREACH(_path ${_paths})
         LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${_path}" isSystemDir)
-	IF("${isSystemDir}" STREQUAL "-1")
+        IF("${isSystemDir}" STREQUAL "-1")
             LIST(APPEND ${_target}_rpaths ${_path})
         ENDIF()
     ENDFOREACH()
@@ -107,7 +107,7 @@ MACRO(SET_INSTALL_RPATHS _target _paths)
 ENDMACRO()
 
 # Find Boost
-IF(MSVC)
+IF(WIN32)
 	SET(Boost_USE_STATIC_LIBS ON)
 	SET(Boost_USE_STATIC_RUNTIME ON)
 	SET(Boost_USE_MULTITHREADED ON)
@@ -195,10 +195,11 @@ IF(UNICODE_SUPPORT)
 		MESSAGE(STATUS "ICU libraries found")
 		# NOTE icudata appears to be icudt on Windows/MSVC and icudata on others
 		#      dl is included to resolve dlopen and friends symbols
-		IF(MSVC OR MINGW)
+		IF(WIN32)
 			SET(ICU_LIBRARIES icuuc icudt)
 			ADD_DEBUG_VARIANTS(ICU_LIBRARIES "${ICU_LIBRARIES}" "d")
-			ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
+            # TODO MinGW build would appear to be using dynamic ICU regardless of this definition.
+            ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
 		ELSE()
 			SET(ICU_LIBRARIES icuuc icudata dl)
 		ENDIF()
@@ -273,12 +274,12 @@ IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
 ENDIF()
 
-# NOTE: RelWithDebInfo and Release use O2 (= /Ox /Gl /Gy/ = Og /Oi /Ot /Oy /Ob2 /Gs /GF /Gy) by default,
-# with the exception with RelWithDebInfo has /Ob1 instead. /Ob2 has been observed to improve the performance
-# of IfcConvert significantly.
-# TODO Setting of /GL and /LTCG don't seem to apply for static libraries (IfcGeom, IfcParse)
 if(ENABLE_BUILD_OPTIMIZATIONS)
 	if(MSVC)
+        # NOTE: RelWithDebInfo and Release use O2 (= /Ox /Gl /Gy/ = Og /Oi /Ot /Oy /Ob2 /Gs /GF /Gy) by default,
+        # with the exception with RelWithDebInfo has /Ob1 instead. /Ob2 has been observed to improve the performance
+        # of IfcConvert significantly.
+        # TODO Setting of /GL and /LTCG don't seem to apply for static libraries (IfcGeom, IfcParse)
 		# C++
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Ob2 /GL")
 		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
@@ -328,12 +329,16 @@ IF(MSVC)
 		ENDIF()
 	ENDFOREACH()
 ElSE()
-    IF(WIN32)
-        # -fPIC is not relevant on Windows and create pointless warnings
-        ADD_DEFINITIONS(-Wno-non-virtual-dtor -Wall -Wextra)
-    ELSE()
-        ADD_DEFINITIONS(-fPIC -Wno-non-virtual-dtor -Wall -Wextra)
-    ENDIF()
+    add_definitions(-Wno-non-virtual-dtor -Wall)
+    # TODO Preferably use -Wextra too, but currently too much warning spam coming from the dependencies' headers.
+    add_definitions(-std=c++03)
+    # TODO For now suppress unused parameter warning due to excessive warning spam coming from Ifc2x3.h & Ifc4.h
+    # These are suppressed in code for MSVC, but fix these properly to the source (the code generator script).
+    add_definitions(-Wno-unused-parameter)
+    # -fPIC is not relevant on Windows and creates pointless warnings
+    if (UNIX)
+        add_definitions(-fPIC)
+    endif()
 ENDIF()
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
@@ -490,10 +495,14 @@ endif()
 get_filename_component(libTKernelExt ${libTKernel} EXT)
 if("${libTKernelExt}" STREQUAL ".a")
     find_package(Threads)
-    if (NOT APPLE)
-        set(LIB_RT "rt")
+    # TODO why OPENCASCADE_LIBRARIES is repeated three times below?
+    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    if (NOT APPLE AND NOT WIN32)
+        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
     endif()
-    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${LIB_RT} dl)
+    if (NOT WIN32)
+        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "dl")
+    endif()
 endif()
 
 TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
