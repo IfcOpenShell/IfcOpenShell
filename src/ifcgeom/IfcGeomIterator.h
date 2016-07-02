@@ -393,8 +393,6 @@ namespace IfcGeom {
 						}
 					}
 
-					const int repid = representation->entity->id();
-					
 					bool has_openings = false;
 					bool has_layers = false;
 

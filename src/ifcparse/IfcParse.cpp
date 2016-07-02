@@ -916,7 +916,7 @@ void Entity::Load(std::vector<unsigned int>& ids, bool seek) const {
 		if ( ! TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity");
 		_type = IfcSchema::Type::FromString(TokenFunc::asStringRef(datatype));
 	}
-	Token open = file->tokens->Next();
+	/*Token open =*/ file->tokens->Next();
 	args = new ArgumentList();
 	args->read(file->tokens, ids);
 	unsigned int old_offset = file->tokens->stream->Tell();

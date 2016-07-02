@@ -1366,7 +1366,6 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 	const IfcSchema::IfcMaterialLayerSet* layerset = usage->ForLayerSet();
 	const bool positive = usage->DirectionSense() == IfcSchema::IfcDirectionSenseEnum::IfcDirectionSense_POSITIVE;
 	double offset = usage->OffsetFromReferenceLine() * getValue(GV_LENGTH_UNIT);
-	const int axis = usage->LayerSetDirection();
 
 	IfcSchema::IfcMaterialLayer::list::ptr material_layers = layerset->MaterialLayers();
 
@@ -1723,7 +1722,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 
 			bool found_intersection = false;
 			boost::optional<gp_Pnt> point_outside_param_range;
-			double param;
+			//double param;
 				
 			const Handle_Geom_Surface& surface = *jt;
 
@@ -1734,7 +1733,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 				intersections.Parameters(1, u, v, w);
 				if (w < axis_u1 || w > axis_u2) {
 					point_outside_param_range = p;
-					param = w;
+					//param = w;
 				} else {
 					// Found an intersection. Layer end point is covered by connecting wall
 					found_intersection = true;
