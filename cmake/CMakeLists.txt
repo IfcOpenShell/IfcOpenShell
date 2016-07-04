@@ -332,9 +332,6 @@ ElSE()
     add_definitions(-Wno-non-virtual-dtor -Wall)
     # TODO Preferably use -Wextra too, but currently too much warning spam coming from the dependencies' headers.
     add_definitions(-std=c++03)
-    # TODO For now suppress unused parameter warning due to excessive warning spam coming from Ifc2x3.h & Ifc4.h
-    # These are suppressed in code for MSVC, but fix these properly to the source (the code generator script).
-    add_definitions(-Wno-unused-parameter)
     # -fPIC is not relevant on Windows and creates pointless warnings
     if (UNIX)
         add_definitions(-fPIC)

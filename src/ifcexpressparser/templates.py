@@ -32,11 +32,6 @@ header = """
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/%(schema_name)senum.h"
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4100)
-#endif
-
 #define IfcSchema %(schema_name)s
 
 namespace %(schema_name)s {
@@ -52,10 +47,6 @@ const char* const Identifier = "%(schema_name_upper)s";
 void InitStringMap();
 IfcUtil::IfcBaseClass* SchemaEntity(IfcAbstractEntity* e = 0);
 }
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 #endif
 """
