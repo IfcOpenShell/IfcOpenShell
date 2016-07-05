@@ -43,6 +43,7 @@ int convert_to_ifc(const gp_Ax2& a, IfcSchema::IfcAxis2Placement3D*& ax, bool ad
 	IfcSchema::IfcCartesianPoint* p;
 	IfcSchema::IfcDirection *x, *z;
 	if (!(convert_to_ifc(a.Location(), p, advanced) && convert_to_ifc(a.Direction(), z, advanced) && convert_to_ifc(a.XDirection(), x, advanced))) {
+        ax = 0;
 		return 0;
 	}
 	ax = new IfcSchema::IfcAxis2Placement3D(p, z, x);
