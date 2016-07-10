@@ -200,7 +200,6 @@ void InitDescriptorMap() {
     IfcEntityDescriptor* current;
 %(entity_descriptors)s
     // Enumerations
-    IfcEnumerationDescriptor* current_enum;
     std::vector<std::string> values;
 %(enumeration_descriptors)s
 }
@@ -340,7 +339,7 @@ entity_descriptor_attribute_with_entity = '    current->add("%(name)s",%(optiona
 
 enumeration_descriptor = """    values.clear(); values.reserve(128);
 %(enumeration_descriptor_values)s
-    current_enum = enumeration_descriptor_map[Type::%(type)s] = new IfcEnumerationDescriptor(Type::%(type)s, values);"""
+    enumeration_descriptor_map[Type::%(type)s] = new IfcEnumerationDescriptor(Type::%(type)s, values);"""
 
 enumeration_descriptor_value = '    values.push_back("%(name)s");'
 
