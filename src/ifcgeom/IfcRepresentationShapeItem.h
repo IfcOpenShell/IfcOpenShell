@@ -26,7 +26,7 @@
 #include "../ifcgeom/IfcGeomRenderStyles.h"
 
 namespace IfcGeom {	
-	class IfcRepresentationShapeItem {
+	class IFC_GEOM_API IfcRepresentationShapeItem {
 	private:
 		gp_GTrsf placement;
 		TopoDS_Shape shape;

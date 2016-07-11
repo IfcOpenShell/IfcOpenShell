@@ -20,12 +20,13 @@
 #ifndef IFCGEOMITERATORSETTINGS_H
 #define IFCGEOMITERATORSETTINGS_H
 
+#include "ifc_geom_api.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcUtil.h"
 
 namespace IfcGeom
 {
-    class IteratorSettings
+    class IFC_GEOM_API IteratorSettings
     {
     public:
         /// Enumeration of setting identifiers. These settings define the
@@ -142,7 +143,7 @@ namespace IfcGeom
         double deflection_tolerance_;
     };
 
-    class ElementSettings : public IteratorSettings
+    class IFC_GEOM_API ElementSettings : public IteratorSettings
     {
     public:
         ElementSettings(const IteratorSettings& settings,

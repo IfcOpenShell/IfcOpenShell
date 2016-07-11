@@ -432,11 +432,7 @@ if(NOT WIN32)
 	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
 endif()
 
-if(BUILD_SHARED_LIBS)
-    SET(IFCOPENSHELL_LIBRARIES IfcGeom)
-else()
-    SET(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom)
-endif()
+set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom)
 
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
@@ -464,17 +460,10 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-IF(BUILD_SHARED_LIBS)
-	message(WARNING "Building IfcGeom as shared library currently not supported depending on platform and compiler options")
-ENDIF()
+add_library(IfcGeom ${IFCGEOM_FILES})
+set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
 
-if(WIN32)
-    add_library(IfcGeom STATIC ${IFCGEOM_FILES})
-else()
-    add_library(IfcGeom ${IFCGEOM_FILES})
-endif()
-
-TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
+TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${OPENCASCADE_LIBRARIES})
 
 # IfcConvert
 file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)

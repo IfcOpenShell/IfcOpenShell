@@ -26,7 +26,7 @@
 
 namespace IfcGeom {	
 
-	class Material {
+	class IFC_GEOM_API Material {
 	private:
 		const IfcGeom::SurfaceStyle* style;
 	public:

@@ -1004,8 +1004,9 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 }
 
 template <typename P>
-IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_product(const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product) {
-	
+IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_product(
+    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product)
+{
 	IfcGeom::Representation::BRep* shape;
 	IfcGeom::IfcRepresentationShapeItems shapes, shapes2;
 
@@ -1116,8 +1117,10 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 }
 
 template <typename P>
-IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_processed_representation(const IteratorSettings& /*settings*/, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::BRepElement<P>* brep) {
-	
+IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_processed_representation(
+    const IteratorSettings& /*settings*/, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product,
+    IfcGeom::BRepElement<P>* brep)
+{
 	int parent_id = -1;
 	try {
 		IfcSchema::IfcObjectDefinition* parent_object = get_decomposing_entity(product);
@@ -1210,11 +1213,15 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 	return parent;
 }
 
-template IfcGeom::BRepElement<float>* IfcGeom::Kernel::create_brep_for_representation_and_product<float>(const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
-template IfcGeom::BRepElement<double>* IfcGeom::Kernel::create_brep_for_representation_and_product<double>(const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
+template IFC_GEOM_API IfcGeom::BRepElement<float>* IfcGeom::Kernel::create_brep_for_representation_and_product<float>(
+    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
+template IFC_GEOM_API IfcGeom::BRepElement<double>* IfcGeom::Kernel::create_brep_for_representation_and_product<double>(
+    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
 
-template IfcGeom::BRepElement<float>* IfcGeom::Kernel::create_brep_for_processed_representation<float>(const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::BRepElement<float>* brep);
-template IfcGeom::BRepElement<double>* IfcGeom::Kernel::create_brep_for_processed_representation<double>(const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::BRepElement<double>* brep);
+template IFC_GEOM_API IfcGeom::BRepElement<float>* IfcGeom::Kernel::create_brep_for_processed_representation<float>(
+    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::BRepElement<float>* brep);
+template IFC_GEOM_API IfcGeom::BRepElement<double>* IfcGeom::Kernel::create_brep_for_processed_representation<double>(
+    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::BRepElement<double>* brep);
 
 std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUnitAssignment* unit_assignment) {
 	// Set default units, set length to meters, angles to undefined
