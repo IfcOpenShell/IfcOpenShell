@@ -27,7 +27,7 @@
     #else
       #define IFC_GEOM_API __declspec(dllimport)
     #endif
-  #else // simply assume GCC-like
+  #else // simply assume *nix + GCC-like compiler
     #define IFC_GEOM_API __attribute__((visibility("default")))
   #endif
 #else

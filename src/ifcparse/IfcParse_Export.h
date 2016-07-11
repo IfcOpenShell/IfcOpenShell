@@ -27,7 +27,7 @@
     #else
       #define IfcParse_EXPORT __declspec(dllimport)
     #endif
-  #else // simply assume GCC-like
+  #else // simply assume *nix + GCC-like compiler
     #define IfcParse_EXPORT __attribute__((visibility("default")))
   #endif
 #else
