@@ -291,8 +291,9 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
 		set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG /OPT:REF")
 		set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG /OPT:NOICF")
 	else()
-		#TODO GCC (& Clang?) optimizations
-		message(STATUS "ENABLE_BUILD_OPTIMIZATIONS not implemented for GCC/non-MSVC compilers.)")
+        # GCC-like: Release should use O3 but RelWithDebInfo 02 so enforce 03. Anything other useful that could be added here?
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 	endif()
 endif()
 
