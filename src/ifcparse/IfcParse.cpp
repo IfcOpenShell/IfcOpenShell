@@ -29,6 +29,7 @@
 #endif
 
 #include <boost/algorithm/string.hpp>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcParse.h"
@@ -916,7 +917,7 @@ void Entity::Load(std::vector<unsigned int>& ids, bool seek) const {
 		if ( ! TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity");
 		_type = IfcSchema::Type::FromString(TokenFunc::asStringRef(datatype));
 	}
-	Token open = file->tokens->Next();
+	/*Token open =*/ file->tokens->Next();
 	args = new ArgumentList();
 	args->read(file->tokens, ids);
 	unsigned int old_offset = file->tokens->stream->Tell();
@@ -1207,7 +1208,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		
 		// In case an entity is added that contains geometry, the unit
 		// information needs to be accounted for for IfcLengthMeasures.
-		boost::optional<double> conversion_factor;
+        double conversion_factor = std::numeric_limits<double>::quiet_NaN();
 
 		for (unsigned i = 0; i < we->getArgumentCount(); ++i) {
 			Argument* attr = we->getArgument(i);
@@ -1241,18 +1242,18 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 			} else if (entity->getArgumentEntity(i) == IfcSchema::Type::IfcLengthMeasure ||
 				entity->getArgumentEntity(i) == IfcSchema::Type::IfcPositiveLengthMeasure) 
 			{
-				if (!conversion_factor) {
+				if (boost::math::isnan(conversion_factor)) {
 					conversion_factor = other_file->getUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT).second / 
 						getUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT).second;
 				}
 				if (attr_type == IfcUtil::Argument_DOUBLE) {
 					double v = *attr;
-					v *= *conversion_factor;
+					v *= conversion_factor;
 					we->setArgument(i, v);
 				} else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
 					std::vector<double> v = *attr;
 					for (std::vector<double>::iterator it = v.begin(); it != v.end(); ++it) {
-						(*it) *= *conversion_factor;
+						(*it) *= conversion_factor;
 					}
 					we->setArgument(i, v);
 				}

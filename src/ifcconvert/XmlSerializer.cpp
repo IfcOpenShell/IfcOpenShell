@@ -83,6 +83,8 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 				value = unit_name;
 			}
 			break; }
+        default:
+            break;
 	}
 	return value;
 }
