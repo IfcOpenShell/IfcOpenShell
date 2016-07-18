@@ -82,6 +82,10 @@ namespace IfcUtil {
 	IfcEntityList::ptr traverse(IfcParse::IfcLateBoundEntity* e, int max_level=-1) {
 		return $self->traverse(e, max_level);
 	}
+	IfcEntityList::ptr get_inverse(IfcParse::IfcLateBoundEntity* e) {
+		return $self->getInverse(e->id(), IfcSchema::Type::UNDEFINED, -1);
+	}
+
 	void write(const std::string& fn) {
 		std::ofstream f(fn.c_str());
 		f << (*$self);
