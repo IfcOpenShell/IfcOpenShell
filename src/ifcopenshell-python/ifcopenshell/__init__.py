@@ -24,35 +24,35 @@ import sys
 import platform
 
 python_distribution = os.path.join(platform.system().lower(),
-	platform.architecture()[0],
-	'python%s.%s' % platform.python_version_tuple()[:2])
+    platform.architecture()[0],
+    'python%s.%s' % platform.python_version_tuple()[:2])
 sys.path.append(os.path.abspath(os.path.join(
-	os.path.dirname(__file__),
-	'lib', python_distribution)))
+    os.path.dirname(__file__),
+    'lib', python_distribution)))
 
 try:
-	from . import ifcopenshell_wrapper
+    from . import ifcopenshell_wrapper
 except Exception as e:
     if int(platform.python_version_tuple()[0]) == 2:
         import traceback
         traceback.print_exc()
         print('-' * 64)
-	raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
+    raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
     
 from . import guid
 from .file import file
 from .entity_instance import entity_instance
 
 def open(fn=None):
-	return file(ifcopenshell_wrapper.open(os.path.abspath(fn))) if fn else file()
+    return file(ifcopenshell_wrapper.open(os.path.abspath(fn))) if fn else file()
 
 
 def create_entity(type,*args,**kwargs):
-	e = entity_instance(ifcopenshell_wrapper.entity_instance(type))
-	attrs = list(enumerate(args)) + \
-		[(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
-	for idx, arg in attrs: e[idx] = arg
-	return e
+    e = entity_instance(ifcopenshell_wrapper.entity_instance(type))
+    attrs = list(enumerate(args)) + \
+        [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+    for idx, arg in attrs: e[idx] = arg
+    return e
 
 
 version = ifcopenshell_wrapper.version()
