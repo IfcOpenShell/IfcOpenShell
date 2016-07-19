@@ -47,10 +47,16 @@
 using namespace boost;
 
 template <typename T>
+union data_field {
+    char buffer[sizeof(T)];
+    T value;
+};
+
+template <typename T>
 T sread(std::istream& s) {
-	char buf[sizeof(T)];
-	s.read(buf, sizeof(T));
-	return *((T*)buf);
+    data_field<T> data;
+    s.read(data.buffer, sizeof(T));
+    return data.value;
 }
 
 template <>
