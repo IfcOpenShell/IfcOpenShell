@@ -548,6 +548,8 @@ namespace IfcGeom {
 					element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
 				}
 
+				Logger::SetProduct(boost::none);
+
 				if ( !element ) {
 					_nextShape();
 					continue;
