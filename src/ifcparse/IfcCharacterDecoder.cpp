@@ -218,7 +218,7 @@ IfcCharacterDecoder::operator std::string() {
 			(current_char == '\'' && parse_state == APOSTROPHE)
 			) ) {
 				if ( parse_state == APOSTROPHE && current_char != '\'' ) break;
-				throw IfcException("Invalid character encountered");
+				throw IfcInvalidTokenException(file->Tell(), current_char);
 		} else {
 			parse_state = hex = hex_count = 0;
 			// NOTE: this is in fact wrong, this ought to be the representation of the character.
@@ -286,7 +286,7 @@ void IfcCharacterDecoder::dryRun() {
 			(current_char == '\'' && parse_state == APOSTROPHE)
 			) ) {
 				if ( parse_state == APOSTROPHE && current_char != '\'' ) break;
-				throw IfcException("Invalid character encountered");
+				throw IfcInvalidTokenException(file->Tell(), current_char);
 		} else {
 			parse_state = hex_count = 0;
 		}

@@ -1098,8 +1098,15 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 			MaxId = (std::max)(MaxId,currentId);
 			currentId = 0;
 		} else {
-			try { token = tokens->Next(); }
-			catch (... ) { token = NoneTokenPtr(); }
+			try {
+				token = tokens->Next();
+			} catch (const IfcException& e) {
+				Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + ". Parsing terminated");
+				token = NoneTokenPtr();
+			} catch (...) {
+				Logger::Message(Logger::LOG_ERROR, "Parsing terminated");
+				token = NoneTokenPtr();
+			}
 		}
 
 		if ( ! (token.startPos || token.lexer) ) break;
