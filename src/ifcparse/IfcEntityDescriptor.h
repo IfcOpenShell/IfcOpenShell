@@ -39,7 +39,7 @@
 
 namespace IfcUtil {
 
-	class IfcParse_EXPORT IfcEnumerationDescriptor {
+	class IFC_PARSE_API IfcEnumerationDescriptor {
 	private:
 		IfcSchema::Type::Enum type;
 		std::vector<std::string> values;
@@ -62,7 +62,7 @@ namespace IfcUtil {
 		}
 	};
 
-	class IfcParse_EXPORT IfcEntityDescriptor {
+	class IFC_PARSE_API IfcEntityDescriptor {
 	public:
 		class IfcArgumentDescriptor
 		{

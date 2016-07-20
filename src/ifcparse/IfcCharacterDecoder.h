@@ -40,7 +40,7 @@ typedef unsigned int UChar32;
 
 namespace IfcParse {
 
-	class IfcParse_EXPORT IfcCharacterDecoder {
+	class IFC_PARSE_API IfcCharacterDecoder {
 	private:
 		IfcParse::IfcSpfStream* file;
 #ifdef HAVE_ICU
@@ -75,7 +75,7 @@ namespace IfcParse {
 
 namespace IfcWrite {
 
-	class IfcParse_EXPORT IfcCharacterEncoder {
+	class IFC_PARSE_API IfcCharacterEncoder {
 	private:
 		std::string str;
 #ifdef HAVE_ICU

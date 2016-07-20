@@ -26,7 +26,7 @@ header = """
 
 #include <boost/optional.hpp>
 
-#include "../ifcparse/IfcParse_Export.h"
+#include "../ifcparse/ifc_parse_api.h"
 
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcException.h"
@@ -64,7 +64,7 @@ enum_header = """
 #ifndef %(schema_name_upper)sENUM_H
 #define %(schema_name_upper)sENUM_H
 
-#include "../ifcparse/IfcParse_Export.h"
+#include "../ifcparse/ifc_parse_api.h"
 
 #include <boost/optional.hpp>
 
@@ -76,10 +76,10 @@ namespace Type {
     typedef enum {
         %(types)s, UNDEFINED
     } Enum;
-    IfcParse_EXPORT boost::optional<Enum> Parent(Enum v);
-    IfcParse_EXPORT Enum FromString(const std::string& s);
-    IfcParse_EXPORT std::string ToString(Enum v);
-    IfcParse_EXPORT bool IsSimple(Enum v);
+    IFC_PARSE_API boost::optional<Enum> Parent(Enum v);
+    IFC_PARSE_API Enum FromString(const std::string& s);
+    IFC_PARSE_API std::string ToString(Enum v);
+    IFC_PARSE_API bool IsSimple(Enum v);
 }
 
 }
@@ -93,24 +93,24 @@ lb_header = """
 
 #define IfcSchema %(schema_name)s
 
-#include "../ifcparse/IfcParse_Export.h"
+#include "../ifcparse/ifc_parse_api.h"
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcEntityDescriptor.h"
 #include "../ifcparse/IfcWritableEntity.h"
 
 namespace %(schema_name)s {
 namespace Type {
-    IfcParse_EXPORT int GetAttributeCount(Enum t);
-    IfcParse_EXPORT int GetAttributeIndex(Enum t, const std::string& a);
-    IfcParse_EXPORT IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
-    IfcParse_EXPORT Enum GetAttributeEntity(Enum t, unsigned char a);
-    IfcParse_EXPORT const std::string& GetAttributeName(Enum t, unsigned char a);
-    IfcParse_EXPORT bool GetAttributeOptional(Enum t, unsigned char a);
-    IfcParse_EXPORT bool GetAttributeDerived(Enum t, unsigned char a);
-    IfcParse_EXPORT std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
-    IfcParse_EXPORT std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
-    IfcParse_EXPORT std::set<std::string> GetInverseAttributeNames(Enum t);
-    IfcParse_EXPORT void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
+    IFC_PARSE_API int GetAttributeCount(Enum t);
+    IFC_PARSE_API int GetAttributeIndex(Enum t, const std::string& a);
+    IFC_PARSE_API IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
+    IFC_PARSE_API Enum GetAttributeEntity(Enum t, unsigned char a);
+    IFC_PARSE_API const std::string& GetAttributeName(Enum t, unsigned char a);
+    IFC_PARSE_API bool GetAttributeOptional(Enum t, unsigned char a);
+    IFC_PARSE_API bool GetAttributeDerived(Enum t, unsigned char a);
+    IFC_PARSE_API std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
+    IFC_PARSE_API std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
+    IFC_PARSE_API std::set<std::string> GetInverseAttributeNames(Enum t);
+    IFC_PARSE_API void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
 }}
 
 #endif
@@ -357,7 +357,7 @@ derived_field_statement = '    {std::set<int> idxs; %(statements)sderived_map[Ty
 derived_field_statement_attrs = 'idxs.insert(%d); '
 
 simpletype = """%(documentation)s
-class IfcParse_EXPORT %(name)s : public %(superclass)s {
+class IFC_PARSE_API %(name)s : public %(superclass)s {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
     virtual Argument* getArgument(unsigned int i) const;
@@ -390,13 +390,13 @@ typedef IfcUtil::IfcBaseClass %(name)s;
 enumeration = """namespace %(name)s {
 %(documentation)s
 typedef enum {%(values)s} %(name)s;
-IfcParse_EXPORT const char* ToString(%(name)s v);
-IfcParse_EXPORT %(name)s FromString(const std::string& s);
+IFC_PARSE_API const char* ToString(%(name)s v);
+IFC_PARSE_API %(name)s FromString(const std::string& s);
 }
 """
 
 entity = """%(documentation)s
-class IfcParse_EXPORT %(name)s %(superclass)s{
+class IFC_PARSE_API %(name)s %(superclass)s{
 public:
 %(attributes)s    virtual unsigned int getArgumentCount() const { return %(argument_count)d; }
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const {%(argument_type_function_body)s}

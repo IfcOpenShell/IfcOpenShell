@@ -23,7 +23,7 @@
 #include <map>
 #include <set>
 
-#include "../ifcparse/IfcParse_Export.h"
+#include "ifc_parse_api.h"
 
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcSpfHeader.h"
@@ -32,7 +32,7 @@ namespace IfcParse {
 
 /// This class provides several static convenience functions and variables
 /// and provide access to the entities in an IFC file
-class IfcParse_EXPORT IfcFile {
+class IFC_PARSE_API IfcFile {
 public:
 	typedef std::map<IfcSchema::Type::Enum, IfcEntityList::ptr> entities_by_type_t;
 	typedef std::map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;

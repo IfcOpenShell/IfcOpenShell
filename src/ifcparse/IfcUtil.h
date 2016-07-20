@@ -26,7 +26,7 @@
 #include <sstream>
 #include <algorithm>
 
-#include "../ifcparse/IfcParse_Export.h"
+#include "ifc_parse_api.h"
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4enum.h"
@@ -74,9 +74,9 @@ namespace IfcUtil {
 		Argument_UNKNOWN
 	};
 
-    IfcParse_EXPORT const char* ArgumentTypeToString(ArgumentType argument_type);
+    IFC_PARSE_API const char* ArgumentTypeToString(ArgumentType argument_type);
 
-	class IfcParse_EXPORT IfcBaseClass {
+	class IFC_PARSE_API IfcBaseClass {
 	public:
 		IfcAbstractEntity* entity;
 		virtual bool is(IfcSchema::Type::Enum v) const = 0;
@@ -103,11 +103,11 @@ namespace IfcUtil {
 		}
 	};
 
-	class IfcParse_EXPORT IfcBaseEntity : public IfcBaseClass {
+	class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
 	};
 
 	// TODO: Investigate whether these should be template classes instead
-	class IfcParse_EXPORT IfcBaseType : public IfcBaseEntity {
+	class IFC_PARSE_API IfcBaseType : public IfcBaseEntity {
 	public:
 		unsigned int getArgumentCount() const;
 		Argument* getArgument(unsigned int i) const;
@@ -115,17 +115,17 @@ namespace IfcUtil {
 		IfcSchema::Type::Enum getArgumentEntity(unsigned int /*i*/) const { return IfcSchema::Type::UNDEFINED; }
 	};
 
-	IfcParse_EXPORT bool valid_binary_string(const std::string& s);
+	IFC_PARSE_API bool valid_binary_string(const std::string& s);
     /// Replaces spaces and potentially other problem causing characters with underscores.
-    IfcParse_EXPORT void sanitate_material_name(std::string &str);
-    IfcParse_EXPORT void escape_xml(std::string &str);
-    IfcParse_EXPORT void unescape_xml(std::string &str);
+    IFC_PARSE_API void sanitate_material_name(std::string &str);
+    IFC_PARSE_API void escape_xml(std::string &str);
+    IFC_PARSE_API void unescape_xml(std::string &str);
 }
 
 template <class T>
 class IfcTemplatedEntityList;
 
-class IfcParse_EXPORT IfcEntityList {
+class IFC_PARSE_API IfcEntityList {
 	std::vector<IfcUtil::IfcBaseClass*> ls;
 public:
 	typedef boost::shared_ptr<IfcEntityList> ptr;
@@ -183,7 +183,7 @@ public:
 template <class T>
 class IfcTemplatedEntityListList;
 
-class IfcParse_EXPORT IfcEntityListList {
+class IFC_PARSE_API IfcEntityListList {
 	std::vector< std::vector<IfcUtil::IfcBaseClass*> > ls;
 public:
 	typedef boost::shared_ptr< IfcEntityListList > ptr;
@@ -281,7 +281,7 @@ namespace IfcParse {
 	class IfcFile;
 }
 
-class IfcParse_EXPORT Argument {
+class IFC_PARSE_API Argument {
 public:
 	virtual operator int() const;
 	virtual operator bool() const;
@@ -310,7 +310,7 @@ public:
 	virtual ~Argument() {};
 };
 
-class IfcParse_EXPORT IfcAbstractEntity {
+class IFC_PARSE_API IfcAbstractEntity {
 public:
 	IfcParse::IfcFile* file;
 	virtual IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index) = 0;
