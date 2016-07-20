@@ -63,7 +63,7 @@ MESSAGE(STATUS "LIBDIR: ${LIBDIR}")
 set(IFCOPENSHELL_LIBARY_DIR "") # for *nix rpaths
 
 if (BUILD_SHARED_LIBS)
-    add_definitions(-DBUILD_SHARED_LIBS)
+    add_definitions(-DIFC_SHARED_BUILD)
     if (MSVC)
         message(WARNING "Building DLLs against the static VC run-time. This is not recommended if the DLLs are to be redistributed.")
         # C4521: 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'

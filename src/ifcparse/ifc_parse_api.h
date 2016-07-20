@@ -20,7 +20,7 @@
 #ifndef IFC_PARSE_API_H
 #define IFC_PARSE_API_H
 
-#ifdef BUILD_SHARED_LIBS
+#ifdef IFC_SHARED_BUILD
   #ifdef _WIN32
     #ifdef IFC_PARSE_EXPORTS
       #define IFC_PARSE_API __declspec(dllexport)
