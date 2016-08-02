@@ -161,8 +161,9 @@ namespace IfcGeom {
 				// just for backwards compatibility:
 				context_types.insert("model");
 				context_types.insert("design");
-				// DDS likes to output 'model view'
+				// Some earlier (?) versions DDS-CAD output their own ContextTypes
 				context_types.insert("model view");
+				context_types.insert("detail view");
 			}
             if (settings.get(IteratorSettings::INCLUDE_CURVES)) {
 				context_types.insert("plan");

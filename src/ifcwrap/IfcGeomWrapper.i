@@ -305,6 +305,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 							context_types.insert("model");
 							context_types.insert("design");
 							context_types.insert("model view");
+							context_types.insert("detail view");
 						}
 						if (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES)) {
 							context_types.insert("plan");
