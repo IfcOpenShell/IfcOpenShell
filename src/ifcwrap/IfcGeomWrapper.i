@@ -274,6 +274,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				// First, try to find a representation based on the settings
 				for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
 					IfcSchema::IfcRepresentation* rep = *it;
+					if (!rep->hasRepresentationIdentifier()) {
+						continue;
+					}
 					if (!settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
 						if (rep->RepresentationIdentifier() == "Body") {
 							ifc_representation = rep;
