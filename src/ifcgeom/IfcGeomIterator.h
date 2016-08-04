@@ -154,6 +154,11 @@ namespace IfcGeom {
 				initUnits();
 			} catch (...) {}
 
+			std::set<std::string> allowed_context_types;
+			allowed_context_types.insert("model");
+			allowed_context_types.insert("plan");
+			allowed_context_types.insert("notdefined");
+
 			std::set<std::string> context_types;
             if (!settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
 				// Really this should only be 'Model', as per 
@@ -192,6 +197,10 @@ namespace IfcGeom {
 					if (context->hasContextType()) {
 						std::string context_type = context->ContextType();
 						boost::to_lower(context_type);
+
+						if (allowed_context_types.find(context_type) == allowed_context_types.end()) {
+							Logger::Message(Logger::LOG_ERROR, std::string("ContextType '") + context->ContextType() + "' not allowed:", context->entity);
+						}
 						if (context_types.find(context_type) != context_types.end()) {
 							filtered_contexts->push(context);
 						}
