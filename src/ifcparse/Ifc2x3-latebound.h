@@ -31,24 +31,24 @@
 
 #define IfcSchema Ifc2x3
 
-#include "../ifcparse/IfcParse_Export.h"
+#include "../ifcparse/ifc_parse_api.h"
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcEntityDescriptor.h"
 #include "../ifcparse/IfcWritableEntity.h"
 
 namespace Ifc2x3 {
 namespace Type {
-    IfcParse_EXPORT int GetAttributeCount(Enum t);
-    IfcParse_EXPORT int GetAttributeIndex(Enum t, const std::string& a);
-    IfcParse_EXPORT IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
-    IfcParse_EXPORT Enum GetAttributeEntity(Enum t, unsigned char a);
-    IfcParse_EXPORT const std::string& GetAttributeName(Enum t, unsigned char a);
-    IfcParse_EXPORT bool GetAttributeOptional(Enum t, unsigned char a);
-    IfcParse_EXPORT bool GetAttributeDerived(Enum t, unsigned char a);
-    IfcParse_EXPORT std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
-    IfcParse_EXPORT std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
-    IfcParse_EXPORT std::set<std::string> GetInverseAttributeNames(Enum t);
-    IfcParse_EXPORT void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
+    IFC_PARSE_API int GetAttributeCount(Enum t);
+    IFC_PARSE_API int GetAttributeIndex(Enum t, const std::string& a);
+    IFC_PARSE_API IfcUtil::ArgumentType GetAttributeType(Enum t, unsigned char a);
+    IFC_PARSE_API Enum GetAttributeEntity(Enum t, unsigned char a);
+    IFC_PARSE_API const std::string& GetAttributeName(Enum t, unsigned char a);
+    IFC_PARSE_API bool GetAttributeOptional(Enum t, unsigned char a);
+    IFC_PARSE_API bool GetAttributeDerived(Enum t, unsigned char a);
+    IFC_PARSE_API std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
+    IFC_PARSE_API std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
+    IFC_PARSE_API std::set<std::string> GetInverseAttributeNames(Enum t);
+    IFC_PARSE_API void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
 }}
 
 #endif

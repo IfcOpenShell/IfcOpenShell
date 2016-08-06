@@ -82,6 +82,14 @@
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 
+// The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+
 namespace IfcGeom {
 	
 	template <typename P>

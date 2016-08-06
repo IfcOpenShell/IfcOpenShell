@@ -32,7 +32,7 @@
 #include <boost/optional.hpp>
 #include <boost/dynamic_bitset.hpp>
 
-#include "../ifcparse/IfcParse_Export.h"
+#include "ifc_parse_api.h"
 
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcParse.h"
@@ -44,7 +44,7 @@ namespace IfcWrite {
 	/// IfcParse namespace is that this class has a Boost.Variant member
 	/// for storing its value, whereas the IfcParse classes only contain
 	/// lazy references to byte offsets in the IFC-SPF file.
-	class IfcParse_EXPORT IfcWriteArgument : public Argument {
+	class IFC_PARSE_API IfcWriteArgument : public Argument {
 	public:
 		class EnumerationReference {
 		public:
@@ -146,7 +146,7 @@ namespace IfcWrite {
 
 	// Accumulates all schema instances created from constructors
 	// This way they can be added in a single batch to the IfcFile
-	class IfcParse_EXPORT EntityBuffer {
+	class IFC_PARSE_API EntityBuffer {
 	private:
 		IfcEntityList::ptr buffer;
 		static EntityBuffer* i;

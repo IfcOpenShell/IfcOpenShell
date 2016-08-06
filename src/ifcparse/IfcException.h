@@ -20,7 +20,7 @@
 #ifndef IFCEXCEPTION_H
 #define IFCEXCEPTION_H
 
-#include "IfcParse_Export.h"
+#include "ifc_parse_api.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -35,7 +35,7 @@
 #endif
 
 namespace IfcParse {
-	class IfcParse_EXPORT IfcException : public std::exception {
+	class IFC_PARSE_API IfcException : public std::exception {
 	private:
 		std::string message;
 	public:
@@ -47,7 +47,7 @@ namespace IfcParse {
 		}
 	};
 
-	class IfcParse_EXPORT IfcAttributeOutOfRangeException : public IfcException {
+	class IFC_PARSE_API IfcAttributeOutOfRangeException : public IfcException {
 	public:
 		IfcAttributeOutOfRangeException(const std::string& e)
 			: IfcException(e) {}

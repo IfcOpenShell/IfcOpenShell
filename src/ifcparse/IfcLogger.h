@@ -34,9 +34,9 @@
 
 #include <boost/optional.hpp>
 
-#include "IfcParse_Export.h"
+#include "ifc_parse_api.h"
 
-class IfcParse_EXPORT Logger {
+class IFC_PARSE_API Logger {
 public:
 	typedef enum { LOG_NOTICE, LOG_WARNING, LOG_ERROR } Severity;
 private:

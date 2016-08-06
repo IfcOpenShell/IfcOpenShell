@@ -20,6 +20,7 @@
 #ifndef IFCGEOMRENDERSTYLES_H
 #define IFCGEOMRENDERSTYLES_H
 
+#include "ifc_geom_api.h"
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4.h"
 #else
@@ -27,7 +28,7 @@
 #endif
 
 namespace IfcGeom {
-	class SurfaceStyle {
+	class IFC_GEOM_API SurfaceStyle {
 	public:
 		class ColorComponent {
 		private:
@@ -92,7 +93,7 @@ namespace IfcGeom {
 		boost::optional<double>& Specularity() { return specularity; }
 	};
 
-	const SurfaceStyle* get_default_style(const std::string& ifc_type);
+    IFC_GEOM_API const SurfaceStyle* get_default_style(const std::string& ifc_type);
 }
 
 #endif

@@ -20,12 +20,13 @@
 #ifndef IFCGEOMITERATORSETTINGS_H
 #define IFCGEOMITERATORSETTINGS_H
 
+#include "ifc_geom_api.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcUtil.h"
 
 namespace IfcGeom
 {
-    class IteratorSettings
+    class IFC_GEOM_API IteratorSettings
     {
     public:
         /// Enumeration of setting identifiers. These settings define the
@@ -87,7 +88,7 @@ namespace IfcGeom
             /// Generates UVs by using simple box projection. Requires normals.
             /// Applicable only for DAE output currently.
             GENERATE_UVS = 1 << 16,
-            /// Specifies whether to slide representations according to associated IfcLayerSets.
+            /// Specifies whether to slice representations according to associated IfcLayerSets.
             APPLY_LAYERSETS = 1 << 17,
             /// Number of different setting flags.
             NUM_SETTINGS = 17
@@ -142,7 +143,7 @@ namespace IfcGeom
         double deflection_tolerance_;
     };
 
-    class ElementSettings : public IteratorSettings
+    class IFC_GEOM_API ElementSettings : public IteratorSettings
     {
     public:
         ElementSettings(const IteratorSettings& settings,
