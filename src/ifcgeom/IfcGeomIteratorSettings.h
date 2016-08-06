@@ -88,7 +88,7 @@ namespace IfcGeom
             /// Generates UVs by using simple box projection. Requires normals.
             /// Applicable only for DAE output currently.
             GENERATE_UVS = 1 << 16,
-            /// Specifies whether to slide representations according to associated IfcLayerSets.
+            /// Specifies whether to slice representations according to associated IfcLayerSets.
             APPLY_LAYERSETS = 1 << 17,
             /// Number of different setting flags.
             NUM_SETTINGS = 17
