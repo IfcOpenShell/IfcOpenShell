@@ -29,7 +29,7 @@
 #ifndef IFC2X3ENUM_H
 #define IFC2X3ENUM_H
 
-#include "../ifcparse/IFC_PARSE_API.h"
+#include "../ifcparse/ifc_parse_api.h"
 
 #include <boost/optional.hpp>
 
