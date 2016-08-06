@@ -117,7 +117,8 @@ To build IfcOpenShell please take the following steps:
     $ cd /path/to/IfcOpenShell
     $ mkdir build
     $ cd build
-    Optionally, if required:        $ OCC_INCLUDE_PATH="/path/to/OpenCASCADE/include"
+    Optionally, if required:
+        $ OCC_INCLUDE_PATH="/path/to/OpenCASCADE/include"
         $ OCC_LIBRARY_PATH="/path/to/OpenCASCADE/lib"
         $ export OCC_INCLUDE_PATH
         $ export OCC_LIBRARY_PATH
