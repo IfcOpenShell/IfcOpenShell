@@ -88,7 +88,7 @@ for additional information):
 
 If not, you will need to compile Open CASCADE yourself:
 
-    $ sudo apt-get install git libftgl-dev libtbb2 libtbb-dev libgl1-mesa-dev libfreetype6-dev
+    $ sudo apt-get install libftgl-dev libtbb2 libtbb-dev libgl1-mesa-dev libfreetype6-dev
     $ git clone https://github.com/tpaviot/oce.git
     $ cd oce
     $ mkdir build && cd build
