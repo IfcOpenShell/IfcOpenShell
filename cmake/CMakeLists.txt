@@ -142,21 +142,17 @@ ELSE()
 	MESSAGE(STATUS "Looking for opencascade include files in: ${OCC_INCLUDE_DIR}")
 ENDIF()
 
-FIND_FILE(gp_Pnt_hxx "gp_Pnt.hxx" ${OCC_INCLUDE_DIR} /usr/inc /usr/local/inc /usr/local/include/oce)
+FIND_FILE(gp_Pnt_hxx "gp_Pnt.hxx" ${OCC_INCLUDE_DIR})
 IF(gp_Pnt_hxx)
 	MESSAGE(STATUS "Header files found")
 ELSE()
 	MESSAGE(FATAL_ERROR "Unable to find header files, aborting")
 ENDIF()
 
-SET(OPENCASCADE_LIBRARIES
+SET(OPENCASCADE_LIBRARY_NAMES
 	TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
 	TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset
 )
-
-IF(MSVC)
-	ADD_DEBUG_VARIANTS(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" "d")
-ENDIF()
 
 IF("${OCC_LIBRARY_DIR}" STREQUAL "")
 	SET(OCC_LIBRARY_DIR "/usr/lib/" CACHE FILEPATH "Open CASCADE library files")
@@ -167,41 +163,53 @@ ELSE()
 	MESSAGE(STATUS "Looking for opencascade library files in: ${OCC_LIBRARY_DIR}")
 ENDIF()
 
-FIND_LIBRARY(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
+FIND_LIBRARY(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
 IF(libTKernel)
 	MESSAGE(STATUS "Library files found")
 ELSE()
 	MESSAGE(FATAL_ERROR "Unable to find library files, aborting")
 ENDIF()
 
+# Use the found libTKernel as a template for all other OCC libraries
+foreach(lib ${OPENCASCADE_LIBRARY_NAMES})
+    string(REPLACE TKernel "${lib}" lib_path "${libTKernel}")
+    list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
+endforeach()
+
+IF(MSVC)
+	ADD_DEBUG_VARIANTS(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" "d")
+ENDIF()
+
 IF(UNICODE_SUPPORT)
 	# Find ICU 
 	IF("${ICU_INCLUDE_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No ICU include directory specified")
-	ElSE()
-		SET(ICU_INCLUDE_DIR "${ICU_INCLUDE_DIR}" CACHE FILEPATH "ICU header files")
 	ENDIF()
 
 	IF("${ICU_LIBRARY_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No ICU library directory specified")
-	ElSE()
-		SET(ICU_LIBRARY_DIR "${ICU_LIBRARY_DIR}" CACHE FILEPATH "ICU library files")
+		FIND_LIBRARY(icu NAMES icuuc icuucd PATHS ${ICU_LIBRARY_DIR})
+	ELSE()
+		FIND_LIBRARY(icu NAMES icuuc icuucd PATHS ${ICU_LIBRARY_DIR} NO_DEFAULT_PATH)
 	ENDIF()
 
-	FIND_LIBRARY(icu NAMES icuuc icuucd PATHS /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib ${ICU_LIBRARY_DIR})
-
 	IF(icu)
+		GET_FILENAME_COMPONENT(ICU_LIBRARY_DIR ${icu} PATH)
+
 		ADD_DEFINITIONS(-DHAVE_ICU)
 		MESSAGE(STATUS "ICU libraries found")
 		# NOTE icudata appears to be icudt on Windows/MSVC and icudata on others
 		#      dl is included to resolve dlopen and friends symbols
 		IF(WIN32)
-			SET(ICU_LIBRARIES icuuc icudt)
+			FIND_LIBRARY(icudt NAMES icudt PATHS ${ICU_LIBRARY_DIR} NO_DEFAULT_PATH)
+			SET(ICU_LIBRARIES ${icu} ${icudt})
 			ADD_DEBUG_VARIANTS(ICU_LIBRARIES "${ICU_LIBRARIES}" "d")
-            # TODO MinGW build would appear to be using dynamic ICU regardless of this definition.
-            ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
+			# TODO MinGW build would appear to be using dynamic ICU regardless of this definition.
+			ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
 		ELSE()
-			SET(ICU_LIBRARIES icuuc icudata dl)
+			FIND_LIBRARY(icudt NAMES icudata PATHS ${ICU_LIBRARY_DIR} NO_DEFAULT_PATH)
+			FIND_LIBRARY(dl NAMES dl)
+			SET(ICU_LIBRARIES ${icu} ${icudt} ${dl})
 		ENDIF()
 	ELSE()
 		MESSAGE(FATAL_ERROR "UNICODE_SUPPORT enabled, but unable to find ICU. Disable UNICODE_SUPPORT or fix ICU paths to proceed.")
@@ -219,9 +227,13 @@ IF(COLLADA_SUPPORT)
 
 	IF("${OPENCOLLADA_LIBRARY_DIR}" STREQUAL "")
 		MESSAGE(STATUS "No OpenCOLLADA library directory specified")
-		FIND_LIBRARY(OPENCOLLADA_FRAMEWORK_LIB NAMES OpenCOLLADAFramework PATHS /usr/lib64/opencollada /usr/lib/opencollada /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib)
+		FIND_LIBRARY(OPENCOLLADA_FRAMEWORK_LIB NAMES OpenCOLLADAFramework
+			PATHS /usr/lib64/opencollada /usr/lib/opencollada /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib)
 		GET_FILENAME_COMPONENT(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_FRAMEWORK_LIB} PATH)
 	ENDIF()
+
+	FIND_LIBRARY(OpenCOLLADAFramework NAMES OpenCOLLADAFramework PATHS ${OPENCOLLADA_LIBRARY_DIR} NO_DEFAULT_PATH)
+
 	SET(OPENCOLLADA_LIBRARY_DIR "${OPENCOLLADA_LIBRARY_DIR}" CACHE FILEPATH "OpenCOLLADA library files")
 
 	SET(OPENCOLLADA_INCLUDE_DIRS "${OPENCOLLADA_INCLUDE_DIR}/COLLADABaseUtils" "${OPENCOLLADA_INCLUDE_DIR}/COLLADAStreamWriter")
@@ -230,13 +242,29 @@ IF(COLLADA_SUPPORT)
 	IF(COLLADASWStreamWriter_h)
 		MESSAGE(STATUS "OpenCOLLADA header files found")
 		ADD_DEFINITIONS(-DWITH_OPENCOLLADA)
-		SET(OPENCOLLADA_LIBRARIES
+		SET(OPENCOLLADA_LIBRARY_NAMES
 			GeneratedSaxParser MathMLSolver OpenCOLLADABaseUtils OpenCOLLADAFramework OpenCOLLADASaxFrameworkLoader
-			OpenCOLLADAStreamWriter UTF buffer ftoa pcre
+			OpenCOLLADAStreamWriter UTF buffer ftoa
 		)
-		IF(NOT "${PCRE_LIBRARY_DIR}" STREQUAL "")
+
+		# Use the found libTKernel as a template for all other OCC libraries
+		foreach(lib ${OPENCOLLADA_LIBRARY_NAMES})
+			string(REPLACE OpenCOLLADAFramework "${lib}" lib_path "${OpenCOLLADAFramework}")
+			list(APPEND OPENCOLLADA_LIBRARIES "${lib_path}")
+		endforeach()
+
+		IF("${PCRE_LIBRARY_DIR}" STREQUAL "")
+			find_library(pcre_library NAMES pcre PATHS ${OPENCOLLADA_LIBRARY_DIR})
+			GET_FILENAME_COMPONENT(PCRE_LIBRARY_DIR ${pcre_library} PATH)
+		else()
+			find_library(pcre_library NAMES pcre PATHS ${PCRE_LIBRARY_DIR} NO_DEFAULT_PATH)
+		endif()
+		
+		if (${pcre_library})
 			SET(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_LIBRARY_DIR} ${PCRE_LIBRARY_DIR})
-		ENDIF()
+			list(APPEND OPENCOLLADA_LIBRARIES "${pcre_library}")
+		endif()
+		
 		IF(MSVC)
 			ADD_DEBUG_VARIANTS(OPENCOLLADA_LIBRARIES "${OPENCOLLADA_LIBRARIES}" "d")
 		ENDIF()
@@ -317,9 +345,6 @@ ENDIF()
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS}
 )
-if(NOT WIN32)
-	INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} /usr/inc /usr/local/inc /usr/local/include/oce)
-endif()
 
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)
     set(IFC_PARSE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse)
@@ -401,13 +426,6 @@ endif()
 # Boost >= 1.58 requires BOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE to build on some Linux distros.
 if(NOT Boost_VERSION LESS 105800)
     add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE)
-endif()
-
-LINK_DIRECTORIES(${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} ${OPENCOLLADA_LIBRARY_DIR}
-	${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}
-)
-if(NOT WIN32)
-	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
 endif()
 
 if(BUILD_SHARED_LIBS)
