@@ -244,6 +244,17 @@ IF(COLLADA_SUPPORT)
 	ENDIF()
 ENDIF()
 
+# Make sure cross-referenced symbols between static OCC libraries get
+# resolved. Also add thread and rt libraries.
+get_filename_component(libTKernelExt ${libTKernel} EXT)
+if("${libTKernelExt}" STREQUAL ".a")
+    find_package(Threads)
+    if (NOT APPLE)
+        set(LIB_RT "rt")
+    endif()
+    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${LIB_RT} dl)
+endif()
+
  # TODO Are these needed on other platforms still or can these be removed for good?
 IF (NOT WIN32)
 	INCLUDE(CheckIncludeFileCXX)
@@ -472,17 +483,6 @@ set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
 ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
 if (IFCCONVERT_DOUBLE_PRECISION)
     set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS -DIFCCONVERT_DOUBLE_PRECISION)
-endif()
-
-# Make sure cross-referenced symbols between static OCC libraries get
-# resolved. Also add thread and rt libraries.
-get_filename_component(libTKernelExt ${libTKernel} EXT)
-if("${libTKernelExt}" STREQUAL ".a")
-    find_package(Threads)
-    if (NOT APPLE)
-        set(LIB_RT "rt")
-    endif()
-    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${LIB_RT} dl)
 endif()
 
 TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
