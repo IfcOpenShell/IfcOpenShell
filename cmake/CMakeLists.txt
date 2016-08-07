@@ -335,7 +335,6 @@ IF(MSVC)
 ElSE()
     add_definitions(-Wno-non-virtual-dtor -Wall)
     # TODO Preferably use -Wextra too, but currently too much warning spam coming from the dependencies' headers.
-    add_definitions(-std=c++03)
     # -fPIC is not relevant on Windows and creates pointless warnings
     if (UNIX)
         add_definitions(-fPIC)
@@ -426,6 +425,54 @@ endif()
 # Boost >= 1.58 requires BOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE to build on some Linux distros.
 if(NOT Boost_VERSION LESS 105800)
     add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE)
+endif()
+
+# Detect OCC version on gcc/clang/mingw as
+# -std=c++11 is needed for OCCT >= 7.0.0
+if(NOT MSVC)
+    FIND_FILE(Standard_Version "Standard_Version.hxx" ${OCC_INCLUDE_DIR})
+
+    set(CMAKE_CONFIGURABLE_FILE_CONTENT "
+        #include <Standard_Version.hxx>
+        #include <iostream>
+        int main(int argc, char** argv) {
+            std::cout << OCC_VERSION_COMPLETE;
+        }")
+    configure_file(
+        "${CMAKE_ROOT}/Modules/CMakeConfigurableFile.in"
+        "${CMAKE_BINARY_DIR}/version.cxx" @ONLY)
+
+    try_compile(VERSION_CHECK
+        ${CMAKE_BINARY_DIR}
+        "${CMAKE_BINARY_DIR}/version.cxx"
+        CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${OCC_INCLUDE_DIR}"
+        COPY_FILE "${CMAKE_BINARY_DIR}/version"
+        OUTPUT_VARIABLE OUT
+        COPY_FILE_ERROR ERR
+    )
+
+    if(${VERSION_CHECK})
+        EXECUTE_PROCESS(COMMAND ${CMAKE_BINARY_DIR}/version OUTPUT_VARIABLE OCC_VERSION)
+    else()
+        message(FATAL_ERROR "Failed to compile OCC version test:
+        ${OUT}
+        ------
+        ${ERR}")
+    endif()
+
+    MESSAGE(STATUS "OCC version is ${OCC_VERSION}. Detected from: ${Standard_Version}")
+
+    if(NOT ("${OCC_VERSION}" LESS "7.0.0"))
+        include(CheckCXXCompilerFlag)
+        CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+        if(COMPILER_SUPPORTS_CXX11)
+            add_definitions(-std=c++11)
+        else()
+            message(FATAL_ERROR "OCCT7 requires a compiler with C++11 support")
+        endif()
+    else()
+        add_definitions(-std=c++03)
+    endif()
 endif()
 
 if(BUILD_SHARED_LIBS)
