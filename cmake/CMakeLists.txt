@@ -63,7 +63,7 @@ MESSAGE(STATUS "LIBDIR: ${LIBDIR}")
 set(IFCOPENSHELL_LIBARY_DIR "") # for *nix rpaths
 
 if (BUILD_SHARED_LIBS)
-    add_definitions(-DBUILD_SHARED_LIBS)
+    add_definitions(-DIFC_SHARED_BUILD)
     if (MSVC)
         message(WARNING "Building DLLs against the static VC run-time. This is not recommended if the DLLs are to be redistributed.")
         # C4521: 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
@@ -245,6 +245,21 @@ IF(COLLADA_SUPPORT)
 	ENDIF()
 ENDIF()
 
+# Make sure cross-referenced symbols between static OCC libraries get
+# resolved. Also add thread and rt libraries.
+get_filename_component(libTKernelExt ${libTKernel} EXT)
+if("${libTKernelExt}" STREQUAL ".a")
+    find_package(Threads)
+    # OPENCASCADE_LIBRARIES repeated three times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
+    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    if (NOT APPLE AND NOT WIN32)
+        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
+    endif()
+    if (NOT WIN32)
+        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "dl")
+    endif()
+endif()
+
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
 ENDIF()
@@ -410,11 +425,7 @@ if(NOT WIN32)
 	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
 endif()
 
-if(BUILD_SHARED_LIBS)
-    SET(IFCOPENSHELL_LIBRARIES IfcGeom)
-else()
-    SET(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom)
-endif()
+set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom)
 
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
@@ -431,7 +442,7 @@ endforeach()
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
 add_library(IfcParse ${IFCPARSE_FILES})
-set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIfcParse_EXPORTS)
+set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS)
 
 IF(UNICODE_SUPPORT)
 	TARGET_LINK_LIBRARIES(IfcParse ${ICU_LIBRARIES} ${Boost_LIBRARIES})
@@ -442,17 +453,10 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-IF(BUILD_SHARED_LIBS)
-	message(WARNING "Building IfcGeom as shared library currently not supported depending on platform and compiler options")
-ENDIF()
+add_library(IfcGeom ${IFCGEOM_FILES})
+set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
 
-if(WIN32)
-    add_library(IfcGeom STATIC ${IFCGEOM_FILES})
-else()
-    add_library(IfcGeom ${IFCGEOM_FILES})
-endif()
-
-TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
+TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${OPENCASCADE_LIBRARIES})
 
 # IfcConvert
 file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
@@ -461,21 +465,6 @@ set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
 ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
 if (IFCCONVERT_DOUBLE_PRECISION)
     set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS -DIFCCONVERT_DOUBLE_PRECISION)
-endif()
-
-# Make sure cross-referenced symbols between static OCC libraries get
-# resolved. Also add thread and rt libraries.
-get_filename_component(libTKernelExt ${libTKernel} EXT)
-if("${libTKernelExt}" STREQUAL ".a")
-    find_package(Threads)
-    # OPENCASCADE_LIBRARIES repeated three times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
-    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-    if (NOT APPLE AND NOT WIN32)
-        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
-    endif()
-    if (NOT WIN32)
-        set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "dl")
-    endif()
 endif()
 
 TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})

@@ -35,12 +35,12 @@
 
 #include <boost/dynamic_bitset.hpp>
 
-#include "../ifcparse/IfcParse_Export.h"
+#include "ifc_parse_api.h"
 
 #include "IfcUtil.h"
 
 namespace IfcWrite {
-	class IfcParse_EXPORT IfcWritableEntity : public IfcAbstractEntity {
+	class IFC_PARSE_API IfcWritableEntity : public IfcAbstractEntity {
 	private:
 		std::map<int,bool> writemask;
 		std::map<int,Argument*> args;

@@ -40,7 +40,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
 
-#include "../ifcparse/IfcParse_Export.h"
+#include "ifc_parse_api.h"
 
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcUtil.h"
@@ -91,7 +91,7 @@ namespace IfcParse {
 
 	/// Provides functions to convert Tokens to binary data
 	/// Tokens are merely offsets to where they can be read in the file
-	class IfcParse_EXPORT TokenFunc {
+	class IFC_PARSE_API TokenFunc {
 	private:
 		static bool startsWith(const Token& t, char c);
 	public:
@@ -144,7 +144,7 @@ namespace IfcParse {
 	Token NoneTokenPtr();
 
 	/// A stream of tokens to be read from a IfcSpfStream.
-	class IfcParse_EXPORT IfcSpfLexer {
+	class IFC_PARSE_API IfcSpfLexer {
 	private:
 		IfcCharacterDecoder* decoder;
 		//storage for temporary string without allocation
@@ -164,7 +164,7 @@ namespace IfcParse {
 	/// Argument of type list, e.g.
 	/// #1=IfcDirection((1.,0.,0.));
 	///                 ==========
-	class IfcParse_EXPORT ArgumentList: public Argument {
+	class IFC_PARSE_API ArgumentList: public Argument {
 	private:
 		std::vector<Argument*> list;
 		void push(Argument* l);
@@ -197,7 +197,7 @@ namespace IfcParse {
 
 	/// Argument being null, e.g. '$'
 	///              == ===
-	class IfcParse_EXPORT NullArgument : public Argument {
+	class IFC_PARSE_API NullArgument : public Argument {
 	public:
 		NullArgument() {}
 		IfcUtil::ArgumentType type() const { return IfcUtil::Argument_NULL; }
@@ -210,7 +210,7 @@ namespace IfcParse {
 	/// Argument of type scalar or string, e.g.
 	/// #1=IfcVector(#2,1.0);
 	///              == ===
-	class IfcParse_EXPORT TokenArgument : public Argument {
+	class IFC_PARSE_API TokenArgument : public Argument {
 	private:
 		
 	public: 
@@ -236,7 +236,7 @@ namespace IfcParse {
 	/// Argument of an IFC simple type
 	/// #1=IfcTrimmedCurve(#2,(IFCPARAMETERVALUE(0.)),(IFCPARAMETERVALUE(1.)),.T.,.PARAMETER.);
 	///                        =====================   =====================
-	class IfcParse_EXPORT EntityArgument : public Argument {
+	class IFC_PARSE_API EntityArgument : public Argument {
 	private:		
 		IfcUtil::IfcBaseClass* entity;
 	public:
@@ -257,7 +257,7 @@ namespace IfcParse {
 	/// Entity defined in an IFC file, e.g.
 	/// #1=IfcDirection((1.,0.,0.));
 	/// ============================
-	class IfcParse_EXPORT Entity : public IfcAbstractEntity {
+	class IFC_PARSE_API Entity : public IfcAbstractEntity {
 	private:
 		mutable ArgumentList* args;
 		mutable IfcSchema::Type::Enum _type;
@@ -283,6 +283,6 @@ namespace IfcParse {
 
 }
 
-IfcParse_EXPORT std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);
+IFC_PARSE_API std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);
 
 #endif

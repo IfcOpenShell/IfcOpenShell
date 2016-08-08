@@ -51,6 +51,7 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include "../ifcgeom/IfcGeomRepresentation.h" 
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 #include "../ifcgeom/IfcGeomShapeType.h"
+#include "ifc_geom_api.h"
 
 // Define this in case you want to conserve memory usage at all cost. This has been
 // benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
@@ -71,13 +72,13 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 namespace IfcGeom {
 
-class Cache {
+class IFC_GEOM_API Cache {
 public:
 #include "IfcRegisterCreateCache.h"
 	std::map<int, TopoDS_Shape> Shape;
 };
 
-class Kernel {
+class IFC_GEOM_API Kernel {
 private:
 
 	double deflection_tolerance;
@@ -230,10 +231,12 @@ public:
 	IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
 
 	template <typename P>
-	IfcGeom::BRepElement<P>* create_brep_for_representation_and_product(const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
+    IfcGeom::BRepElement<P>* create_brep_for_representation_and_product(
+        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
 
 	template <typename P>
-	IfcGeom::BRepElement<P>* create_brep_for_processed_representation(const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P>*);
+    IfcGeom::BRepElement<P>* create_brep_for_processed_representation(
+        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P>*);
 	
 	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem*);
 	const SurfaceStyle* get_style(const IfcSchema::IfcMaterial*);
@@ -300,8 +303,8 @@ public:
 
 };
 
-IfcSchema::IfcProductDefinitionShape* tesselate(const TopoDS_Shape& shape, double deflection);
-IfcSchema::IfcProductDefinitionShape* serialise(const TopoDS_Shape& shape, bool advanced);
+IFC_GEOM_API IfcSchema::IfcProductDefinitionShape* tesselate(const TopoDS_Shape& shape, double deflection);
+IFC_GEOM_API IfcSchema::IfcProductDefinitionShape* serialise(const TopoDS_Shape& shape, bool advanced);
 
 }
 #endif

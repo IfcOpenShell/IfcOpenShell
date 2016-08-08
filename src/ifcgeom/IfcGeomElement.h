@@ -27,6 +27,7 @@
 
 #include "../ifcgeom/IfcGeomRepresentation.h"
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
+#include "ifc_geom_api.h"
 
 namespace IfcGeom {
 

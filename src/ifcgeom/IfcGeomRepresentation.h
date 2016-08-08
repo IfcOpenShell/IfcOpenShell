@@ -41,7 +41,7 @@ namespace IfcGeom {
 
 	namespace Representation {
 
-		class Representation {
+		class IFC_GEOM_API Representation {
 			Representation(const Representation&); //N/A
 			Representation& operator =(const Representation&); //N/A
 		protected:
@@ -54,7 +54,7 @@ namespace IfcGeom {
 			virtual ~Representation() {}
 		};
 
-		class BRep : public Representation {
+		class IFC_GEOM_API BRep : public Representation {
 		private:
 			unsigned int id;
 			const IfcGeom::IfcRepresentationShapeItems _shapes;
@@ -73,7 +73,7 @@ namespace IfcGeom {
 			const unsigned int& getId() const { return id; }
 		};
 
-		class Serialization : public Representation  {
+		class IFC_GEOM_API Serialization : public Representation  {
 		private:
 			int _id;
 			std::string _brep_data;

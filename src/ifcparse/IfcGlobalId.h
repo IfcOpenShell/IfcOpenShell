@@ -23,12 +23,12 @@
 #include <string>
 #include <boost/uuid/uuid.hpp>
 
-#include "../ifcparse/IfcParse_Export.h"
+#include "ifc_parse_api.h"
 
 namespace IfcParse {
 
 	/// A helper class for the creation of IFC GlobalIds.
-	class IfcParse_EXPORT IfcGlobalId {
+	class IFC_PARSE_API IfcGlobalId {
 	private:
 		std::string string_data, formatted_string;
 		boost::uuids::uuid uuid_data;
