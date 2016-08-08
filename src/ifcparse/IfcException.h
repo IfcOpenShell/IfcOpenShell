@@ -54,7 +54,7 @@ namespace IfcParse {
 		~IfcAttributeOutOfRangeException () throw () {}
 	};
 
-	class IfcParse_EXPORT IfcInvalidTokenException : public IfcException {
+	class IFC_PARSE_API IfcInvalidTokenException : public IfcException {
 	public:
 		IfcInvalidTokenException(
 			int token_start,
