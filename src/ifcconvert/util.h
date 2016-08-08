@@ -31,6 +31,7 @@ namespace util {
 		class item {
 		public:
 			virtual std::string str() const = 0;
+			virtual ~item() {};
 		};
 		class string_item : public item {
 			std::string s;
@@ -40,6 +41,7 @@ namespace util {
 			const std::string& value() const { return s; }
 			std::string& value() { return s; }
 			std::string str() const { return s; }
+			virtual ~string_item() {};
 		};
 		class float_item : public item {
 			double d;
@@ -49,6 +51,7 @@ namespace util {
 			const double& value() const { return d; }
 			double& value() { return d; }
 			std::string str() const { std::stringstream ss; ss << d; return ss.str(); }
+			virtual ~float_item() {};
 		};
 	private:
 		std::vector< boost::shared_ptr<item> > items;
