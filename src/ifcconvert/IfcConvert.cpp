@@ -40,7 +40,6 @@
 
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/optional/optional_io.hpp>
 
 #include <fstream>
 #include <sstream>
@@ -279,10 +278,10 @@ int main(int argc, char** argv) {
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
     const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
 
-	boost::optional<int> bounding_width, bounding_height;
+	int bounding_width = -1, bounding_height = -1;
 	if (vmap.count("bounds") == 1) {
 		int w, h;
-		if (sscanf(bounds.c_str(), "%ux%u", &w, &h) == 2) {
+		if (sscanf(bounds.c_str(), "%ux%u", &w, &h) == 2 && w > 0 && h > 0) {
 			bounding_width = w;
 			bounding_height = h;
 		} else {
@@ -404,7 +403,7 @@ int main(int argc, char** argv) {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = new SvgSerializer(output_temp_filename, settings);
 		if (bounding_width && bounding_height) {
-            static_cast<SvgSerializer*>(serializer)->setBoundingRectangle(*bounding_width, *bounding_height);
+            static_cast<SvgSerializer*>(serializer)->setBoundingRectangle(bounding_width, bounding_height);
 		}
 	} else {
 		Logger::Message(Logger::LOG_ERROR, "Unknown output filename extension '" + output_extension + "'");

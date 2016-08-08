@@ -283,9 +283,9 @@ public:
 			return _get_surface_style<T>(representation_item->as<IfcSchema::IfcStyledItem>());
 		}
 		IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
-		for (IfcSchema::IfcStyledItem::list::it jt = styled_items->begin(); jt != styled_items->end(); ++jt) {
+		if (styled_items->size()) {
 			// StyledByItem is a SET [0:1] OF IfcStyledItem, so we return after the first IfcStyledItem:
-			return _get_surface_style<T>(*jt);
+			return _get_surface_style<T>(*styled_items->begin());
 		}
 		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
 	}

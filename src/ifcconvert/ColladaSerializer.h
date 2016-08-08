@@ -159,8 +159,8 @@ private:
 		{
         }
         ColladaMaterials materials;
-        ColladaSerializer *serializer;
         ColladaGeometries geometries;
+        ColladaSerializer *serializer;
 		std::vector<DeferredObject> deferreds;
 		virtual ~ColladaExporter() {}
 		void startDocument(const std::string& unit_name, float unit_magnitude);

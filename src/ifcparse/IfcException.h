@@ -54,7 +54,7 @@ namespace IfcParse {
 		~IfcAttributeOutOfRangeException () throw () {}
 	};
 
-	class IfcInvalidTokenException : public IfcException {
+	class IfcParse_EXPORT IfcInvalidTokenException : public IfcException {
 	public:
 		IfcInvalidTokenException(
 			int token_start,
@@ -67,8 +67,18 @@ namespace IfcParse {
 				" invalid " + expected_type
 			)
 		{}
+		IfcInvalidTokenException(
+			int token_start,
+			char c
+		)
+			: IfcException(
+				std::string("Unexpected '") + std::string(1, c) + "' at " +
+				boost::lexical_cast<std::string>(token_start)
+			)
+		{}
 		~IfcInvalidTokenException() throw () {}
 	};
+
 }
 
 #ifdef _MSC_VER

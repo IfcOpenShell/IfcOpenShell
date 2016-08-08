@@ -17,44 +17,14 @@
 #                                                                             #
 ###############################################################################
 
-from __future__ import print_function
+set -e
 
-import os
-import sys
-import platform
+export PATH=/mingw64/bin/:$PATH
 
-python_distribution = os.path.join(platform.system().lower(),
-    platform.architecture()[0],
-    'python%s.%s' % platform.python_version_tuple()[:2])
-sys.path.append(os.path.abspath(os.path.join(
-    os.path.dirname(__file__),
-    'lib', python_distribution)))
+if [ -z "$IFCOS_NUM_BUILD_PROCS" ]; then
+IFCOS_NUM_BUILD_PROCS=$(expr $(sysctl -n hw.ncpu 2> /dev/null || cat /proc/cpuinfo | grep processor | wc -l) + 1)
+fi
 
-try:
-    from . import ifcopenshell_wrapper
-except Exception as e:
-    if int(platform.python_version_tuple()[0]) == 2:
-        import traceback
-        traceback.print_exc()
-        print('-' * 64)
-    raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
-    
-from . import guid
-from .file import file
-from .entity_instance import entity_instance
-
-def open(fn=None):
-    return file(ifcopenshell_wrapper.open(os.path.abspath(fn))) if fn else file()
-
-
-def create_entity(type,*args,**kwargs):
-    e = entity_instance(ifcopenshell_wrapper.entity_instance(type))
-    attrs = list(enumerate(args)) + \
-        [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
-    for idx, arg in attrs: e[idx] = arg
-    return e
-
-
-version = ifcopenshell_wrapper.version()
-schema_identifier = ifcopenshell_wrapper.schema_identifier()
-get_supertype = ifcopenshell_wrapper.get_supertype
+pushd ../build-msys
+make install -j$IFCOS_NUM_BUILD_PROCS
+popd

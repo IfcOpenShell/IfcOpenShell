@@ -162,6 +162,11 @@ namespace IfcGeom {
 				initUnits();
 			} catch (...) {}
 
+			std::set<std::string> allowed_context_types;
+			allowed_context_types.insert("model");
+			allowed_context_types.insert("plan");
+			allowed_context_types.insert("notdefined");
+
 			std::set<std::string> context_types;
             if (!settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES)) {
 				// Really this should only be 'Model', as per 
@@ -169,8 +174,9 @@ namespace IfcGeom {
 				// just for backwards compatibility:
 				context_types.insert("model");
 				context_types.insert("design");
-				// DDS likes to output 'model view'
+				// Some earlier (?) versions DDS-CAD output their own ContextTypes
 				context_types.insert("model view");
+				context_types.insert("detail view");
 			}
             if (settings.get(IteratorSettings::INCLUDE_CURVES)) {
 				context_types.insert("plan");
@@ -199,6 +205,10 @@ namespace IfcGeom {
 					if (context->hasContextType()) {
 						std::string context_type = context->ContextType();
 						boost::to_lower(context_type);
+
+						if (allowed_context_types.find(context_type) == allowed_context_types.end()) {
+							Logger::Message(Logger::LOG_ERROR, std::string("ContextType '") + context->ContextType() + "' not allowed:", context->entity);
+						}
 						if (context_types.find(context_type) != context_types.end()) {
 							filtered_contexts->push(context);
 						}
@@ -401,8 +411,6 @@ namespace IfcGeom {
 						}
 					}
 
-					const int repid = representation->entity->id();
-					
 					bool has_openings = false;
 					bool has_layers = false;
 
@@ -557,6 +565,8 @@ namespace IfcGeom {
 				} else {
 					element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
 				}
+
+				Logger::SetProduct(boost::none);
 
 				if ( !element ) {
 					_nextShape();

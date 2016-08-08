@@ -137,10 +137,10 @@ IfcCharacterDecoder::operator std::string() {
 #ifdef HAVE_ICU
 			if ( previous_codepage != codepage ) {
 				if ( converter ) ucnv_close(converter);
-				char encoder[11] = {'i','s','o','-','8','8','5','9','-', (char)codepage + 0x30};
+				char encoder[11] = {'i','s','o','-','8','8','5','9','-', static_cast<char>(codepage + 0x30) };
 				converter = ucnv_open(encoder, &status);
 			}
-			const char characters[2] = { current_char + 0x80 };
+			const char characters[2] = { static_cast<char>(current_char + 0x80) };
 			const char* char_array = &characters[0];
 			UChar32 ch = ucnv_getNextUChar(converter,&char_array,char_array+1,&status);
 			addChar(s,ch);
@@ -218,7 +218,7 @@ IfcCharacterDecoder::operator std::string() {
 			(current_char == '\'' && parse_state == APOSTROPHE)
 			) ) {
 				if ( parse_state == APOSTROPHE && current_char != '\'' ) break;
-				throw IfcException("Invalid character encountered");
+				throw IfcInvalidTokenException(file->Tell(), current_char);
 		} else {
 			parse_state = hex = hex_count = 0;
 			// NOTE: this is in fact wrong, this ought to be the representation of the character.
@@ -286,7 +286,7 @@ void IfcCharacterDecoder::dryRun() {
 			(current_char == '\'' && parse_state == APOSTROPHE)
 			) ) {
 				if ( parse_state == APOSTROPHE && current_char != '\'' ) break;
-				throw IfcException("Invalid character encountered");
+				throw IfcInvalidTokenException(file->Tell(), current_char);
 		} else {
 			parse_state = hex_count = 0;
 		}

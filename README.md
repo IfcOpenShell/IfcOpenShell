@@ -11,7 +11,7 @@ Prerequisites
 -------------
 * Git
 * CMake (2.6 or newer)
-* Windows: Visual Studio 2008 or newer with C++ toolset, MinGW not supported currently
+* Windows: [Visual Studio] 2008 or newer with C++ toolset (or [Visual C++ Build Tools]) or [MSYS2] + MinGW
 * *nix: GCC 4.7 or newer, or Clang (any version)
 
 Dependencies
@@ -34,10 +34,11 @@ Building IfcOpenShell
 ---------------------
 ### Compiling on Windows
 The preferred way to fetch and build this project's dependencies is to use the build scripts
-in win/ folder. **See [win/readme.md] for more information**. Instructions in a nutshell
-(**assuming Visual Studio 2015 x64 environment variables set**):
+in win/ folder. **See [win/readme.md] for more information**.
 
-    > git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+#### Using Visual Studio
+Instructions in a nutshell (**assuming Visual Studio 2015 x64 environment variables set**):
+
     > cd IfcOpenShell\win
     > build-deps.cmd
     > run-cmake.bat
@@ -55,38 +56,85 @@ Alternatively, one can use the utility batch files to build and install the proj
     > build-ifcopenshell.bat
     > install-ifcopenshell.bat
 
+#### Using MSYS2 + MinGW
+
+Start the MSYS2 Shell and then:
+
+    $ cd IfcOpenShell/win
+    $ ./build-deps.sh
+    $ ./run-cmake.sh
+    $ ./build-ifcopenshell.sh
+    $ ./install-ifcopenshell.sh
+
+#### Using Bash on Ubuntu on Windows
+
+Start Bash on Ubuntu on Windows and follow the instructions below. Ubuntu 14.04.4 LTS with GCC 4.8.4 has been
+confirmed to work.
+
 ### Compiling on *nix
-There might be an Open CASCADE package in your operating system's software repository. If not, you will need to compile
-Open CASCADE yourself. See http://opencascade.org.
 
-For building the IfcPython wrapper, SWIG and Python development are
-required.
+The following instructions are for Ubuntu, modify as required for other operating systems. [nix/build-all.sh] script
+can be experimented with and studied for pointers for other operating systems, but note that this script is not currently
+meant to be used for a typical IfcOpenShell workspace setup.
 
-Additionally, on Ubuntu (and possibly other linux flavors) the following steps
-install some of the prerequisites:
+Install most of the prerequisites and dependencies:
 
-    $ sudo apt-get install git swig cmake gcc g++ libftgl-dev libtbb2 libtbb-dev libboost-all-dev libgl1-mesa-dev libfreetype6-dev
+    $ sudo apt-get install git cmake gcc g++ libboost-all-dev libicu-dev
+
+There might be an Open CASCADE package in your operating system's software repository (see http://opencascade.org
+for additional information):
+
+    $ sudo apt-get install liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
+
+If not, you will need to compile Open CASCADE yourself:
+
+    $ sudo apt-get install libftgl-dev libtbb2 libtbb-dev libgl1-mesa-dev libfreetype6-dev
     $ git clone https://github.com/tpaviot/oce.git
     $ cd oce
     $ mkdir build && cd build
     $ cmake ..
     $ make
-    $ sudo make install   
+    $ sudo make install
+
+For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA is needed:
+
+    $ sudo apt-get install libpcre3-dev
+    $ git clone https://github.com/KhronosGroup/OpenCOLLADA.git
+    $ cd OpenCOLLADA
+    Using a known good revision, but HEAD should work too:
+    $ git checkout 064a60b65c2c31b94f013820856bc84fb1937cc6
+    $ mkdir build && cd build
+    $ cmake ..
+    $ make
+    $ sudo make install
+
+For building the IfcPython wrapper (on by default), SWIG and Python development are needed, if not already available:
+
+    $ sudo apt-get install python-all-dev swig
 
 To build IfcOpenShell please take the following steps:
 
-    $ cd /path/to/IfcOpenShell/cmake
+    $ cd /path/to/IfcOpenShell
     $ mkdir build
     $ cd build
-    Optionally:
+    Optionally, if required:
         $ OCC_INCLUDE_PATH="/path/to/OpenCASCADE/include"
         $ OCC_LIBRARY_PATH="/path/to/OpenCASCADE/lib"
         $ export OCC_INCLUDE_PATH
         $ export OCC_LIBRARY_PATH
-    $ cmake ../
+    If building with COLLADA support (path might vary):
+        $ OPENCOLLADA_INCLUDE_DIR="/usr/local/include/opencollada"
+        $ OPENCOLLADA_LIBRARY_DIR="/usr/local/lib/opencollada"
+        $ export OPENCOLLADA_INCLUDE_DIR
+        $ export OPENCOLLADA_LIBRARY_DIR
+    $ cmake ../cmake
     $ make
 
 If all worked out correctly you can now use IfcOpenShell. See the examples below.
+
+Install the project if wanted:
+
+    $ sudo make install
 
 Usage examples
 --------------
@@ -163,4 +211,8 @@ Usage examples
 [IFC]: http://www.buildingsmart-tech.org/specifications/ifc-overview "IFC"
 [IFC2x3 TC1]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc2x3-tc1-release "IFC2x3 TC1"
 [IFC4 Add1]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc4-add1-release "IFC4 Add1"
+[Visual Studio]: https://www.visualstudio.com/ "Visual Studio"
+[Visual C++ Build Tools]: http://landinghub.visualstudio.com/visual-cpp-build-tools "Visual C++ Build Tools"
+[MSYS2]: https://msys2.github.io/ "MSYS2"
 [win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"
+[nix/build-all.sh]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/nix/build-all.sh "nix/build-all.sh"

@@ -78,6 +78,7 @@ namespace IfcUtil {
 
 	class IFC_PARSE_API IfcBaseClass {
 	public:
+        virtual ~IfcBaseClass() {}
 		IfcAbstractEntity* entity;
 		virtual bool is(IfcSchema::Type::Enum v) const = 0;
 		virtual IfcSchema::Type::Enum type() const = 0;

@@ -240,7 +240,6 @@ call :GitCloneOrPullRepository https://github.com/QbProg/oce-win-bundle.git "%DE
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 cd "%DEPENDENCY_DIR%"
-set OCE_BUNDLE_ROOT_PATH="%INSTALL_DIR%\oce-win-bundle"
 :: NOTE Specify OCE_NO_LIBRARY_VERSION as rc.exe can fail due to long filenames and huge command-line parameter
 :: input (more than 32,000 characters). Could maybe try using subst for the build dir to overcome this.
 call :RunCMake  -DOCE_BUILD_SHARED_LIB=0 -DOCE_INSTALL_PREFIX="%INSTALL_DIR%\oce" -DOCE_TESTING=0 ^

@@ -40,11 +40,6 @@
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/Ifc2x3enum.h"
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4100)
-#endif
-
 #define IfcSchema Ifc2x3
 
 namespace Ifc2x3 {
@@ -6618,9 +6613,9 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcRoleEnum; case 1: return Type::IfcLabel; case 2: return Type::IfcText; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Role"; case 1: return "UserDefinedRole"; case 2: return "Description"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcRoleEnum; case 1: return Type::IfcLabel; case 2: return Type::IfcText; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Role"; case 1: return "UserDefinedRole"; case 2: return "Description"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -6655,9 +6650,9 @@ public:
     std::string UserDefinedPurpose() const;
     void setUserDefinedPurpose(std::string v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAddressTypeEnum; case 1: return Type::IfcText; case 2: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Purpose"; case 1: return "Description"; case 2: return "UserDefinedPurpose"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAddressTypeEnum; case 1: return Type::IfcText; case 2: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Purpose"; case 1: return "Description"; case 2: return "UserDefinedPurpose"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcPerson >::ptr OfPerson() const; // INVERSE IfcPerson::Addresses
     IfcTemplatedEntityList< IfcOrganization >::ptr OfOrganization() const; // INVERSE IfcOrganization::Addresses
@@ -6686,9 +6681,9 @@ public:
     std::string ApplicationIdentifier() const;
     void setApplicationIdentifier(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcOrganization; case 1: return Type::IfcLabel; case 2: return Type::IfcLabel; case 3: return Type::IfcIdentifier; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ApplicationDeveloper"; case 1: return "Version"; case 2: return "ApplicationFullName"; case 3: return "ApplicationIdentifier"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcOrganization; case 1: return Type::IfcLabel; case 2: return Type::IfcLabel; case 3: return Type::IfcIdentifier; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ApplicationDeveloper"; case 1: return "Version"; case 2: return "ApplicationFullName"; case 3: return "ApplicationIdentifier"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -6752,9 +6747,9 @@ public:
     IfcDateTimeSelect* FixedUntilDate() const;
     void setFixedUntilDate(IfcDateTimeSelect* v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcAppliedValueSelect; case 3: return Type::IfcMeasureWithUnit; case 4: return Type::IfcDateTimeSelect; case 5: return Type::IfcDateTimeSelect; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "AppliedValue"; case 3: return "UnitBasis"; case 4: return "ApplicableDate"; case 5: return "FixedUntilDate"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcAppliedValueSelect; case 3: return Type::IfcMeasureWithUnit; case 4: return Type::IfcDateTimeSelect; case 5: return Type::IfcDateTimeSelect; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "AppliedValue"; case 3: return "UnitBasis"; case 4: return "ApplicableDate"; case 5: return "FixedUntilDate"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcReferencesValueDocument >::ptr ValuesReferenced() const; // INVERSE IfcReferencesValueDocument::ReferencingValues
     IfcTemplatedEntityList< IfcAppliedValueRelationship >::ptr ValueOfComponents() const; // INVERSE IfcAppliedValueRelationship::ComponentOfTotal
@@ -6810,9 +6805,9 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAppliedValue; case 1: return Type::IfcAppliedValue; case 2: return Type::IfcArithmeticOperatorEnum; case 3: return Type::IfcLabel; case 4: return Type::IfcText; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ComponentOfTotal"; case 1: return "Components"; case 2: return "ArithmeticOperator"; case 3: return "Name"; case 4: return "Description"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAppliedValue; case 1: return Type::IfcAppliedValue; case 2: return Type::IfcArithmeticOperatorEnum; case 3: return Type::IfcLabel; case 4: return Type::IfcText; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ComponentOfTotal"; case 1: return "Components"; case 2: return "ArithmeticOperator"; case 3: return "Name"; case 4: return "Description"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -6854,9 +6849,9 @@ public:
     std::string Identifier() const;
     void setIdentifier(std::string v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcText; case 1: return Type::IfcDateTimeSelect; case 2: return Type::IfcLabel; case 3: return Type::IfcLabel; case 4: return Type::IfcText; case 5: return Type::IfcLabel; case 6: return Type::IfcIdentifier; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Description"; case 1: return "ApprovalDateTime"; case 2: return "ApprovalStatus"; case 3: return "ApprovalLevel"; case 4: return "ApprovalQualifier"; case 5: return "Name"; case 6: return "Identifier"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcText; case 1: return Type::IfcDateTimeSelect; case 2: return Type::IfcLabel; case 3: return Type::IfcLabel; case 4: return Type::IfcText; case 5: return Type::IfcLabel; case 6: return Type::IfcIdentifier; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Description"; case 1: return "ApprovalDateTime"; case 2: return "ApprovalStatus"; case 3: return "ApprovalLevel"; case 4: return "ApprovalQualifier"; case 5: return "Name"; case 6: return "Identifier"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcApprovalActorRelationship >::ptr Actors() const; // INVERSE IfcApprovalActorRelationship::Approval
     IfcTemplatedEntityList< IfcApprovalRelationship >::ptr IsRelatedWith() const; // INVERSE IfcApprovalRelationship::RelatedApproval
@@ -6878,9 +6873,9 @@ public:
     IfcActorRole* Role() const;
     void setRole(IfcActorRole* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcActorSelect; case 1: return Type::IfcApproval; case 2: return Type::IfcActorRole; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Actor"; case 1: return "Approval"; case 2: return "Role"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcActorSelect; case 1: return Type::IfcApproval; case 2: return Type::IfcActorRole; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Actor"; case 1: return "Approval"; case 2: return "Role"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -6897,9 +6892,9 @@ public:
     IfcApproval* Approval() const;
     void setApproval(IfcApproval* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcProperty; case 1: return Type::IfcApproval; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ApprovedProperties"; case 1: return "Approval"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcProperty; case 1: return Type::IfcApproval; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ApprovedProperties"; case 1: return "Approval"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -6929,9 +6924,9 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcApproval; case 1: return Type::IfcApproval; case 2: return Type::IfcText; case 3: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatedApproval"; case 1: return "RelatingApproval"; case 2: return "Description"; case 3: return "Name"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcApproval; case 1: return Type::IfcApproval; case 2: return Type::IfcText; case 3: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatedApproval"; case 1: return "RelatingApproval"; case 2: return "Description"; case 3: return "Name"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -6963,9 +6958,9 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7150,9 +7145,9 @@ public:
     int YearComponent() const;
     void setYearComponent(int v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_INT; case 2: return IfcUtil::Argument_INT; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDayInMonthNumber; case 1: return Type::IfcMonthInYearNumber; case 2: return Type::IfcYearNumber; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DayComponent"; case 1: return "MonthComponent"; case 2: return "YearComponent"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_INT; case 2: return IfcUtil::Argument_INT; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDayInMonthNumber; case 1: return Type::IfcMonthInYearNumber; case 2: return Type::IfcYearNumber; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DayComponent"; case 1: return "MonthComponent"; case 2: return "YearComponent"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7205,9 +7200,9 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcLabel; case 2: return Type::IfcCalendarDate; case 3: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Source"; case 1: return "Edition"; case 2: return "EditionDate"; case 3: return "Name"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcLabel; case 2: return Type::IfcCalendarDate; case 3: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Source"; case 1: return "Edition"; case 2: return "EditionDate"; case 3: return "Name"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcClassificationItem >::ptr Contains() const; // INVERSE IfcClassificationItem::ItemOf
     bool is(Type::Enum v) const;
@@ -7229,9 +7224,9 @@ public:
     std::string Title() const;
     void setTitle(std::string v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClassificationNotationFacet; case 1: return Type::IfcClassification; case 2: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Notation"; case 1: return "ItemOf"; case 2: return "Title"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClassificationNotationFacet; case 1: return Type::IfcClassification; case 2: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Notation"; case 1: return "ItemOf"; case 2: return "Title"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcClassificationItemRelationship >::ptr IsClassifiedItemIn() const; // INVERSE IfcClassificationItemRelationship::RelatedItems
     IfcTemplatedEntityList< IfcClassificationItemRelationship >::ptr IsClassifyingItemIn() const; // INVERSE IfcClassificationItemRelationship::RelatingItem
@@ -7250,9 +7245,9 @@ public:
     IfcTemplatedEntityList< IfcClassificationItem >::ptr RelatedItems() const;
     void setRelatedItems(IfcTemplatedEntityList< IfcClassificationItem >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClassificationItem; case 1: return Type::IfcClassificationItem; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingItem"; case 1: return "RelatedItems"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClassificationItem; case 1: return Type::IfcClassificationItem; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingItem"; case 1: return "RelatedItems"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7267,9 +7262,9 @@ public:
     IfcTemplatedEntityList< IfcClassificationNotationFacet >::ptr NotationFacets() const;
     void setNotationFacets(IfcTemplatedEntityList< IfcClassificationNotationFacet >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClassificationNotationFacet; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "NotationFacets"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClassificationNotationFacet; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "NotationFacets"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7284,9 +7279,9 @@ public:
     std::string NotationValue() const;
     void setNotationValue(std::string v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "NotationValue"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "NotationValue"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7311,9 +7306,9 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7339,9 +7334,9 @@ public:
 class IFC_PARSE_API IfcConnectionGeometry : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7490,9 +7485,9 @@ public:
     std::string UserDefinedGrade() const;
     void setUserDefinedGrade(std::string v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcConstraintEnum; case 3: return Type::IfcLabel; case 4: return Type::IfcActorSelect; case 5: return Type::IfcDateTimeSelect; case 6: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "ConstraintGrade"; case 3: return "ConstraintSource"; case 4: return "CreatingActor"; case 5: return "CreationTime"; case 6: return "UserDefinedGrade"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcConstraintEnum; case 3: return Type::IfcLabel; case 4: return Type::IfcActorSelect; case 5: return Type::IfcDateTimeSelect; case 6: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "ConstraintGrade"; case 3: return "ConstraintSource"; case 4: return "CreatingActor"; case 5: return "CreationTime"; case 6: return "UserDefinedGrade"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcConstraintClassificationRelationship >::ptr ClassifiedAs() const; // INVERSE IfcConstraintClassificationRelationship::ClassifiedConstraint
     IfcTemplatedEntityList< IfcConstraintRelationship >::ptr RelatesConstraints() const; // INVERSE IfcConstraintRelationship::RelatingConstraint
@@ -7536,9 +7531,9 @@ public:
     IfcLogicalOperatorEnum::IfcLogicalOperatorEnum LogicalAggregator() const;
     void setLogicalAggregator(IfcLogicalOperatorEnum::IfcLogicalOperatorEnum v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENUMERATION; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcConstraint; case 3: return Type::IfcConstraint; case 4: return Type::IfcLogicalOperatorEnum; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingConstraint"; case 3: return "RelatedConstraints"; case 4: return "LogicalAggregator"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENUMERATION; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcConstraint; case 3: return Type::IfcConstraint; case 4: return Type::IfcLogicalOperatorEnum; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingConstraint"; case 3: return "RelatedConstraints"; case 4: return "LogicalAggregator"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7555,9 +7550,9 @@ public:
     IfcEntityList::ptr RelatedClassifications() const;
     void setRelatedClassifications(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcConstraint; case 1: return Type::IfcClassificationNotationSelect; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ClassifiedConstraint"; case 1: return "RelatedClassifications"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcConstraint; case 1: return Type::IfcClassificationNotationSelect; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ClassifiedConstraint"; case 1: return "RelatedClassifications"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7592,9 +7587,9 @@ public:
     IfcTemplatedEntityList< IfcConstraint >::ptr RelatedConstraints() const;
     void setRelatedConstraints(IfcTemplatedEntityList< IfcConstraint >::ptr v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcConstraint; case 3: return Type::IfcConstraint; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingConstraint"; case 3: return "RelatedConstraints"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcConstraint; case 3: return Type::IfcConstraint; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingConstraint"; case 3: return "RelatedConstraints"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7615,9 +7610,9 @@ public:
     IfcAheadOrBehind::IfcAheadOrBehind Sense() const;
     void setSense(IfcAheadOrBehind::IfcAheadOrBehind v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_INT; case 2: return IfcUtil::Argument_ENUMERATION; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcHourInDay; case 1: return Type::IfcMinuteInHour; case 2: return Type::IfcAheadOrBehind; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "HourOffset"; case 1: return "MinuteOffset"; case 2: return "Sense"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_INT; case 2: return IfcUtil::Argument_ENUMERATION; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcHourInDay; case 1: return Type::IfcMinuteInHour; case 2: return Type::IfcAheadOrBehind; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "HourOffset"; case 1: return "MinuteOffset"; case 2: return "Sense"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7727,9 +7722,9 @@ public:
     IfcLibraryInformation* RateSource() const;
     void setRateSource(IfcLibraryInformation* v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMonetaryUnit; case 1: return Type::IfcMonetaryUnit; case 2: return Type::IfcPositiveRatioMeasure; case 3: return Type::IfcDateAndTime; case 4: return Type::IfcLibraryInformation; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingMonetaryUnit"; case 1: return "RelatedMonetaryUnit"; case 2: return "ExchangeRate"; case 3: return "RateDateTime"; case 4: return "RateSource"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMonetaryUnit; case 1: return Type::IfcMonetaryUnit; case 2: return Type::IfcPositiveRatioMeasure; case 3: return Type::IfcDateAndTime; case 4: return Type::IfcLibraryInformation; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingMonetaryUnit"; case 1: return "RelatedMonetaryUnit"; case 2: return "ExchangeRate"; case 3: return "RateDateTime"; case 4: return "RateSource"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7754,9 +7749,9 @@ public:
     IfcTemplatedEntityList< IfcCurveStyleFontPattern >::ptr PatternList() const;
     void setPatternList(IfcTemplatedEntityList< IfcCurveStyleFontPattern >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcCurveStyleFontPattern; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "PatternList"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcCurveStyleFontPattern; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "PatternList"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7790,9 +7785,9 @@ public:
     double CurveFontScaling() const;
     void setCurveFontScaling(double v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_DOUBLE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcCurveStyleFontSelect; case 2: return Type::IfcPositiveRatioMeasure; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "CurveFont"; case 2: return "CurveFontScaling"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_DOUBLE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcCurveStyleFontSelect; case 2: return Type::IfcPositiveRatioMeasure; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "CurveFont"; case 2: return "CurveFontScaling"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7819,9 +7814,9 @@ public:
     double InvisibleSegmentLength() const;
     void setInvisibleSegmentLength(double v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLengthMeasure; case 1: return Type::IfcPositiveLengthMeasure; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "VisibleSegmentLength"; case 1: return "InvisibleSegmentLength"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLengthMeasure; case 1: return Type::IfcPositiveLengthMeasure; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "VisibleSegmentLength"; case 1: return "InvisibleSegmentLength"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7838,9 +7833,9 @@ public:
     IfcLocalTime* TimeComponent() const;
     void setTimeComponent(IfcLocalTime* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCalendarDate; case 1: return Type::IfcLocalTime; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DateComponent"; case 1: return "TimeComponent"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCalendarDate; case 1: return Type::IfcLocalTime; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DateComponent"; case 1: return "TimeComponent"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7869,9 +7864,9 @@ public:
     std::string UserDefinedType() const;
     void setUserDefinedType(std::string v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENUMERATION; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDerivedUnitElement; case 1: return Type::IfcDerivedUnitEnum; case 2: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Elements"; case 1: return "UnitType"; case 2: return "UserDefinedType"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENUMERATION; case 2: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDerivedUnitElement; case 1: return Type::IfcDerivedUnitEnum; case 2: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Elements"; case 1: return "UnitType"; case 2: return "UserDefinedType"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7898,9 +7893,9 @@ public:
     int Exponent() const;
     void setExponent(int v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_INT; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcNamedUnit; case 1: return Type::UNDEFINED; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Unit"; case 1: return "Exponent"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_INT; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcNamedUnit; case 1: return Type::UNDEFINED; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Unit"; case 1: return "Exponent"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7950,9 +7945,9 @@ public:
     int LuminousIntensityExponent() const;
     void setLuminousIntensityExponent(int v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_INT; case 2: return IfcUtil::Argument_INT; case 3: return IfcUtil::Argument_INT; case 4: return IfcUtil::Argument_INT; case 5: return IfcUtil::Argument_INT; case 6: return IfcUtil::Argument_INT; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; case 1: return Type::UNDEFINED; case 2: return Type::UNDEFINED; case 3: return Type::UNDEFINED; case 4: return Type::UNDEFINED; case 5: return Type::UNDEFINED; case 6: return Type::UNDEFINED; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "LengthExponent"; case 1: return "MassExponent"; case 2: return "TimeExponent"; case 3: return "ElectricCurrentExponent"; case 4: return "ThermodynamicTemperatureExponent"; case 5: return "AmountOfSubstanceExponent"; case 6: return "LuminousIntensityExponent"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_INT; case 2: return IfcUtil::Argument_INT; case 3: return IfcUtil::Argument_INT; case 4: return IfcUtil::Argument_INT; case 5: return IfcUtil::Argument_INT; case 6: return IfcUtil::Argument_INT; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; case 1: return Type::UNDEFINED; case 2: return Type::UNDEFINED; case 3: return Type::UNDEFINED; case 4: return Type::UNDEFINED; case 5: return Type::UNDEFINED; case 6: return Type::UNDEFINED; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "LengthExponent"; case 1: return "MassExponent"; case 2: return "TimeExponent"; case 3: return "ElectricCurrentExponent"; case 4: return "ThermodynamicTemperatureExponent"; case 5: return "AmountOfSubstanceExponent"; case 6: return "LuminousIntensityExponent"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -7982,9 +7977,9 @@ public:
     std::string MimeSubtype() const;
     void setMimeSubtype(std::string v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcLabel; case 2: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "FileExtension"; case 1: return "MimeContentType"; case 2: return "MimeSubtype"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcLabel; case 2: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "FileExtension"; case 1: return "MimeContentType"; case 2: return "MimeSubtype"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8091,9 +8086,9 @@ public:
     IfcDocumentStatusEnum::IfcDocumentStatusEnum Status() const;
     void setStatus(IfcDocumentStatusEnum::IfcDocumentStatusEnum v);
     virtual unsigned int getArgumentCount() const { return 17; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_STRING; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; case 9: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 10: return IfcUtil::Argument_ENTITY_INSTANCE; case 11: return IfcUtil::Argument_ENTITY_INSTANCE; case 12: return IfcUtil::Argument_ENTITY_INSTANCE; case 13: return IfcUtil::Argument_ENTITY_INSTANCE; case 14: return IfcUtil::Argument_ENTITY_INSTANCE; case 15: return IfcUtil::Argument_ENUMERATION; case 16: return IfcUtil::Argument_ENUMERATION; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcLabel; case 2: return Type::IfcText; case 3: return Type::IfcDocumentReference; case 4: return Type::IfcText; case 5: return Type::IfcText; case 6: return Type::IfcText; case 7: return Type::IfcLabel; case 8: return Type::IfcActorSelect; case 9: return Type::IfcActorSelect; case 10: return Type::IfcDateAndTime; case 11: return Type::IfcDateAndTime; case 12: return Type::IfcDocumentElectronicFormat; case 13: return Type::IfcCalendarDate; case 14: return Type::IfcCalendarDate; case 15: return Type::IfcDocumentConfidentialityEnum; case 16: return Type::IfcDocumentStatusEnum; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DocumentId"; case 1: return "Name"; case 2: return "Description"; case 3: return "DocumentReferences"; case 4: return "Purpose"; case 5: return "IntendedUse"; case 6: return "Scope"; case 7: return "Revision"; case 8: return "DocumentOwner"; case 9: return "Editors"; case 10: return "CreationTime"; case 11: return "LastRevisionTime"; case 12: return "ElectronicFormat"; case 13: return "ValidFrom"; case 14: return "ValidUntil"; case 15: return "Confidentiality"; case 16: return "Status"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_STRING; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_STRING; case 8: return IfcUtil::Argument_ENTITY_INSTANCE; case 9: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 10: return IfcUtil::Argument_ENTITY_INSTANCE; case 11: return IfcUtil::Argument_ENTITY_INSTANCE; case 12: return IfcUtil::Argument_ENTITY_INSTANCE; case 13: return IfcUtil::Argument_ENTITY_INSTANCE; case 14: return IfcUtil::Argument_ENTITY_INSTANCE; case 15: return IfcUtil::Argument_ENUMERATION; case 16: return IfcUtil::Argument_ENUMERATION; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcLabel; case 2: return Type::IfcText; case 3: return Type::IfcDocumentReference; case 4: return Type::IfcText; case 5: return Type::IfcText; case 6: return Type::IfcText; case 7: return Type::IfcLabel; case 8: return Type::IfcActorSelect; case 9: return Type::IfcActorSelect; case 10: return Type::IfcDateAndTime; case 11: return Type::IfcDateAndTime; case 12: return Type::IfcDocumentElectronicFormat; case 13: return Type::IfcCalendarDate; case 14: return Type::IfcCalendarDate; case 15: return Type::IfcDocumentConfidentialityEnum; case 16: return Type::IfcDocumentStatusEnum; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DocumentId"; case 1: return "Name"; case 2: return "Description"; case 3: return "DocumentReferences"; case 4: return "Purpose"; case 5: return "IntendedUse"; case 6: return "Scope"; case 7: return "Revision"; case 8: return "DocumentOwner"; case 9: return "Editors"; case 10: return "CreationTime"; case 11: return "LastRevisionTime"; case 12: return "ElectronicFormat"; case 13: return "ValidFrom"; case 14: return "ValidUntil"; case 15: return "Confidentiality"; case 16: return "Status"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcDocumentInformationRelationship >::ptr IsPointedTo() const; // INVERSE IfcDocumentInformationRelationship::RelatedDocuments
     IfcTemplatedEntityList< IfcDocumentInformationRelationship >::ptr IsPointer() const; // INVERSE IfcDocumentInformationRelationship::RelatingDocument
@@ -8126,9 +8121,9 @@ public:
     std::string RelationshipType() const;
     void setRelationshipType(std::string v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDocumentInformation; case 1: return Type::IfcDocumentInformation; case 2: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingDocument"; case 1: return "RelatedDocuments"; case 2: return "RelationshipType"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDocumentInformation; case 1: return Type::IfcDocumentInformation; case 2: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingDocument"; case 1: return "RelatedDocuments"; case 2: return "RelationshipType"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8153,9 +8148,9 @@ public:
     IfcDraughtingCallout* RelatedDraughtingCallout() const;
     void setRelatedDraughtingCallout(IfcDraughtingCallout* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcDraughtingCallout; case 3: return Type::IfcDraughtingCallout; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingDraughtingCallout"; case 3: return "RelatedDraughtingCallout"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcDraughtingCallout; case 3: return Type::IfcDraughtingCallout; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingDraughtingCallout"; case 3: return "RelatedDraughtingCallout"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8215,9 +8210,9 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcIdentifier; case 2: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Location"; case 1: return "ItemReference"; case 2: return "Name"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcIdentifier; case 2: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Location"; case 1: return "ItemReference"; case 2: return "Name"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8350,9 +8345,9 @@ public:
     bool SameSense() const;
     void setSameSense(bool v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_BOOL; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcCurve; case 2: return Type::IfcBoolean; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "AxisTag"; case 1: return "AxisCurve"; case 2: return "SameSense"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_BOOL; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcCurve; case 2: return Type::IfcBoolean; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "AxisTag"; case 1: return "AxisCurve"; case 2: return "SameSense"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcGrid >::ptr PartOfW() const; // INVERSE IfcGrid::WAxes
     IfcTemplatedEntityList< IfcGrid >::ptr PartOfV() const; // INVERSE IfcGrid::VAxes
@@ -8377,9 +8372,9 @@ public:
     IfcEntityList::ptr ListValues() const;
     void setListValues(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDateTimeSelect; case 1: return Type::IfcValue; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TimeStamp"; case 1: return "ListValues"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDateTimeSelect; case 1: return Type::IfcValue; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TimeStamp"; case 1: return "ListValues"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8423,9 +8418,9 @@ public:
     IfcTemplatedEntityList< IfcLibraryReference >::ptr LibraryReference() const;
     void setLibraryReference(IfcTemplatedEntityList< IfcLibraryReference >::ptr v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcLabel; case 2: return Type::IfcOrganization; case 3: return Type::IfcCalendarDate; case 4: return Type::IfcLibraryReference; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Version"; case 2: return "Publisher"; case 3: return "VersionDate"; case 4: return "LibraryReference"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcLabel; case 2: return Type::IfcOrganization; case 3: return Type::IfcCalendarDate; case 4: return Type::IfcLibraryReference; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Version"; case 2: return "Publisher"; case 3: return "VersionDate"; case 4: return "LibraryReference"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8485,9 +8480,9 @@ public:
     std::vector< double > /*[1:?]*/ LuminousIntensity() const;
     void setLuminousIntensity(std::vector< double > /*[1:?]*/ v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; case 2: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPlaneAngleMeasure; case 1: return Type::IfcPlaneAngleMeasure; case 2: return Type::IfcLuminousIntensityDistributionMeasure; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MainPlaneAngle"; case 1: return "SecondaryPlaneAngle"; case 2: return "LuminousIntensity"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; case 2: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPlaneAngleMeasure; case 1: return Type::IfcPlaneAngleMeasure; case 2: return Type::IfcLuminousIntensityDistributionMeasure; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MainPlaneAngle"; case 1: return "SecondaryPlaneAngle"; case 2: return "LuminousIntensity"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8508,9 +8503,9 @@ public:
     IfcTemplatedEntityList< IfcLightDistributionData >::ptr DistributionData() const;
     void setDistributionData(IfcTemplatedEntityList< IfcLightDistributionData >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLightDistributionCurveEnum; case 1: return Type::IfcLightDistributionData; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "LightDistributionCurve"; case 1: return "DistributionData"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLightDistributionCurveEnum; case 1: return Type::IfcLightDistributionData; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "LightDistributionCurve"; case 1: return "DistributionData"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8541,9 +8536,9 @@ public:
     int DaylightSavingOffset() const;
     void setDaylightSavingOffset(int v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_INT; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_INT; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcHourInDay; case 1: return Type::IfcMinuteInHour; case 2: return Type::IfcSecondInMinute; case 3: return Type::IfcCoordinatedUniversalTimeOffset; case 4: return Type::IfcDaylightSavingHour; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "HourComponent"; case 1: return "MinuteComponent"; case 2: return "SecondComponent"; case 3: return "Zone"; case 4: return "DaylightSavingOffset"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_INT; case 1: return IfcUtil::Argument_INT; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_INT; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcHourInDay; case 1: return Type::IfcMinuteInHour; case 2: return Type::IfcSecondInMinute; case 3: return Type::IfcCoordinatedUniversalTimeOffset; case 4: return Type::IfcDaylightSavingHour; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "HourComponent"; case 1: return "MinuteComponent"; case 2: return "SecondComponent"; case 3: return "Zone"; case 4: return "DaylightSavingOffset"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8589,9 +8584,9 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcMaterialDefinitionRepresentation >::ptr HasRepresentation() const; // INVERSE IfcMaterialDefinitionRepresentation::RepresentedMaterial
     IfcTemplatedEntityList< IfcMaterialClassificationRelationship >::ptr ClassifiedAs() const; // INVERSE IfcMaterialClassificationRelationship::ClassifiedMaterial
@@ -8616,9 +8611,9 @@ public:
     IfcMaterial* ClassifiedMaterial() const;
     void setClassifiedMaterial(IfcMaterial* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClassificationNotationSelect; case 1: return Type::IfcMaterial; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MaterialClassifications"; case 1: return "ClassifiedMaterial"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcClassificationNotationSelect; case 1: return Type::IfcMaterial; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MaterialClassifications"; case 1: return "ClassifiedMaterial"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8674,9 +8669,9 @@ public:
     bool IsVentilated() const;
     void setIsVentilated(bool v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_BOOL; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterial; case 1: return Type::IfcPositiveLengthMeasure; case 2: return Type::IfcLogical; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Material"; case 1: return "LayerThickness"; case 2: return "IsVentilated"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_BOOL; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterial; case 1: return Type::IfcPositiveLengthMeasure; case 2: return Type::IfcLogical; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Material"; case 1: return "LayerThickness"; case 2: return "IsVentilated"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcMaterialLayerSet >::ptr ToMaterialLayerSet() const; // INVERSE IfcMaterialLayerSet::MaterialLayers
     bool is(Type::Enum v) const;
@@ -8730,9 +8725,9 @@ public:
     std::string LayerSetName() const;
     void setLayerSetName(std::string v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterialLayer; case 1: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MaterialLayers"; case 1: return "LayerSetName"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterialLayer; case 1: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MaterialLayers"; case 1: return "LayerSetName"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8861,9 +8856,9 @@ public:
     double OffsetFromReferenceLine() const;
     void setOffsetFromReferenceLine(double v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENUMERATION; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_DOUBLE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterialLayerSet; case 1: return Type::IfcLayerSetDirectionEnum; case 2: return Type::IfcDirectionSenseEnum; case 3: return Type::IfcLengthMeasure; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ForLayerSet"; case 1: return "LayerSetDirection"; case 2: return "DirectionSense"; case 3: return "OffsetFromReferenceLine"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENUMERATION; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_DOUBLE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterialLayerSet; case 1: return Type::IfcLayerSetDirectionEnum; case 2: return Type::IfcDirectionSenseEnum; case 3: return Type::IfcLengthMeasure; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ForLayerSet"; case 1: return "LayerSetDirection"; case 2: return "DirectionSense"; case 3: return "OffsetFromReferenceLine"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8895,9 +8890,9 @@ public:
     IfcTemplatedEntityList< IfcMaterial >::ptr Materials() const;
     void setMaterials(IfcTemplatedEntityList< IfcMaterial >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterial; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Materials"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterial; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Materials"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8936,9 +8931,9 @@ public:
     IfcMaterial* Material() const;
     void setMaterial(IfcMaterial* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterial; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Material"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcMaterial; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Material"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -8966,9 +8961,9 @@ public:
     IfcUnit* UnitComponent() const;
     void setUnitComponent(IfcUnit* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcValue; case 1: return Type::IfcUnit; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ValueComponent"; case 1: return "UnitComponent"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcValue; case 1: return Type::IfcUnit; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ValueComponent"; case 1: return "UnitComponent"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9143,9 +9138,9 @@ public:
     IfcCurrencyEnum::IfcCurrencyEnum Currency() const;
     void setCurrency(IfcCurrencyEnum::IfcCurrencyEnum v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurrencyEnum; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Currency"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcCurrencyEnum; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Currency"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9168,9 +9163,9 @@ public:
     IfcUnitEnum::IfcUnitEnum UnitType() const;
     void setUnitType(IfcUnitEnum::IfcUnitEnum v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENUMERATION; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDimensionalExponents; case 1: return Type::IfcUnitEnum; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Dimensions"; case 1: return "UnitType"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENUMERATION; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDimensionalExponents; case 1: return Type::IfcUnitEnum; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Dimensions"; case 1: return "UnitType"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9193,9 +9188,9 @@ public:
 class IFC_PARSE_API IfcObjectPlacement : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcProduct >::ptr PlacesObject() const; // INVERSE IfcProduct::ObjectPlacement
     IfcTemplatedEntityList< IfcLocalPlacement >::ptr ReferencedByPlacements() const; // INVERSE IfcLocalPlacement::PlacementRelTo
@@ -9332,9 +9327,9 @@ public:
     IfcTemplatedEntityList< IfcAddress >::ptr Addresses() const;
     void setAddresses(IfcTemplatedEntityList< IfcAddress >::ptr v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcLabel; case 2: return Type::IfcText; case 3: return Type::IfcActorRole; case 4: return Type::IfcAddress; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Id"; case 1: return "Name"; case 2: return "Description"; case 3: return "Roles"; case 4: return "Addresses"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcLabel; case 2: return Type::IfcText; case 3: return Type::IfcActorRole; case 4: return Type::IfcAddress; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Id"; case 1: return "Name"; case 2: return "Description"; case 3: return "Roles"; case 4: return "Addresses"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcOrganizationRelationship >::ptr IsRelatedBy() const; // INVERSE IfcOrganizationRelationship::RelatedOrganizations
     IfcTemplatedEntityList< IfcOrganizationRelationship >::ptr Relates() const; // INVERSE IfcOrganizationRelationship::RelatingOrganization
@@ -9369,9 +9364,9 @@ public:
     IfcTemplatedEntityList< IfcOrganization >::ptr RelatedOrganizations() const;
     void setRelatedOrganizations(IfcTemplatedEntityList< IfcOrganization >::ptr v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcOrganization; case 3: return Type::IfcOrganization; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingOrganization"; case 3: return "RelatedOrganizations"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcOrganization; case 3: return Type::IfcOrganization; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "RelatingOrganization"; case 3: return "RelatedOrganizations"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9425,9 +9420,9 @@ public:
     int CreationDate() const;
     void setCreationDate(int v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_ENUMERATION; case 4: return IfcUtil::Argument_INT; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_INT; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPersonAndOrganization; case 1: return Type::IfcApplication; case 2: return Type::IfcStateEnum; case 3: return Type::IfcChangeActionEnum; case 4: return Type::IfcTimeStamp; case 5: return Type::IfcPersonAndOrganization; case 6: return Type::IfcApplication; case 7: return Type::IfcTimeStamp; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "OwningUser"; case 1: return "OwningApplication"; case 2: return "State"; case 3: return "ChangeAction"; case 4: return "LastModifiedDate"; case 5: return "LastModifyingUser"; case 6: return "LastModifyingApplication"; case 7: return "CreationDate"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_ENUMERATION; case 4: return IfcUtil::Argument_INT; case 5: return IfcUtil::Argument_ENTITY_INSTANCE; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_INT; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPersonAndOrganization; case 1: return Type::IfcApplication; case 2: return Type::IfcStateEnum; case 3: return Type::IfcChangeActionEnum; case 4: return Type::IfcTimeStamp; case 5: return Type::IfcPersonAndOrganization; case 6: return Type::IfcApplication; case 7: return Type::IfcTimeStamp; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "OwningUser"; case 1: return "OwningApplication"; case 2: return "State"; case 3: return "ChangeAction"; case 4: return "LastModifiedDate"; case 5: return "LastModifyingUser"; case 6: return "LastModifyingApplication"; case 7: return "CreationDate"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9493,9 +9488,9 @@ public:
     IfcTemplatedEntityList< IfcAddress >::ptr Addresses() const;
     void setAddresses(IfcTemplatedEntityList< IfcAddress >::ptr v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 4: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 5: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 6: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcLabel; case 2: return Type::IfcLabel; case 3: return Type::IfcLabel; case 4: return Type::IfcLabel; case 5: return Type::IfcLabel; case 6: return Type::IfcActorRole; case 7: return Type::IfcAddress; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Id"; case 1: return "FamilyName"; case 2: return "GivenName"; case 3: return "MiddleNames"; case 4: return "PrefixTitles"; case 5: return "SuffixTitles"; case 6: return "Roles"; case 7: return "Addresses"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 4: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 5: return IfcUtil::Argument_AGGREGATE_OF_STRING; case 6: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcLabel; case 2: return Type::IfcLabel; case 3: return Type::IfcLabel; case 4: return Type::IfcLabel; case 5: return Type::IfcLabel; case 6: return Type::IfcActorRole; case 7: return Type::IfcAddress; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Id"; case 1: return "FamilyName"; case 2: return "GivenName"; case 3: return "MiddleNames"; case 4: return "PrefixTitles"; case 5: return "SuffixTitles"; case 6: return "Roles"; case 7: return "Addresses"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcPersonAndOrganization >::ptr EngagedIn() const; // INVERSE IfcPersonAndOrganization::ThePerson
     bool is(Type::Enum v) const;
@@ -9524,9 +9519,9 @@ public:
     IfcTemplatedEntityList< IfcActorRole >::ptr Roles() const;
     void setRoles(IfcTemplatedEntityList< IfcActorRole >::ptr v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPerson; case 1: return Type::IfcOrganization; case 2: return Type::IfcActorRole; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ThePerson"; case 1: return "TheOrganization"; case 2: return "Roles"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPerson; case 1: return Type::IfcOrganization; case 2: return Type::IfcActorRole; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ThePerson"; case 1: return "TheOrganization"; case 2: return "Roles"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9551,9 +9546,9 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcPhysicalComplexQuantity >::ptr PartOfComplex() const; // INVERSE IfcPhysicalComplexQuantity::HasQuantities
     bool is(Type::Enum v) const;
@@ -9662,9 +9657,9 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9768,9 +9763,9 @@ public:
     std::string Identifier() const;
     void setIdentifier(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcLayeredItem; case 3: return Type::IfcIdentifier; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "AssignedItems"; case 3: return "Identifier"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcLayeredItem; case 3: return Type::IfcIdentifier; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "AssignedItems"; case 3: return "Identifier"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9835,9 +9830,9 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9857,9 +9852,9 @@ public:
     IfcEntityList::ptr Styles() const;
     void setStyles(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPresentationStyleSelect; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Styles"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPresentationStyleSelect; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Styles"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -9901,9 +9896,9 @@ public:
     IfcTemplatedEntityList< IfcRepresentation >::ptr Representations() const;
     void setRepresentations(IfcTemplatedEntityList< IfcRepresentation >::ptr v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcRepresentation; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "Representations"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcRepresentation; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "Representations"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10124,9 +10119,9 @@ public:
     std::string ProfileName() const;
     void setProfileName(std::string v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcProfileTypeEnum; case 1: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ProfileType"; case 1: return "ProfileName"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcProfileTypeEnum; case 1: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ProfileType"; case 1: return "ProfileName"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10158,9 +10153,9 @@ public:
     IfcProfileDef* ProfileDefinition() const;
     void setProfileDefinition(IfcProfileDef* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcProfileDef; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ProfileName"; case 1: return "ProfileDefinition"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcProfileDef; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ProfileName"; case 1: return "ProfileDefinition"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10183,9 +10178,9 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcText; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcIdentifier; case 1: return Type::IfcText; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcPropertyDependencyRelationship >::ptr PropertyForDependance() const; // INVERSE IfcPropertyDependencyRelationship::DependingProperty
     IfcTemplatedEntityList< IfcPropertyDependencyRelationship >::ptr PropertyDependsOn() const; // INVERSE IfcPropertyDependencyRelationship::DependantProperty
@@ -10213,9 +10208,9 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcConstraint; case 1: return Type::IfcProperty; case 2: return Type::IfcLabel; case 3: return Type::IfcText; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingConstraint"; case 1: return "RelatedProperties"; case 2: return "Name"; case 3: return "Description"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcConstraint; case 1: return Type::IfcProperty; case 2: return Type::IfcLabel; case 3: return Type::IfcText; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelatingConstraint"; case 1: return "RelatedProperties"; case 2: return "Name"; case 3: return "Description"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10254,9 +10249,9 @@ public:
     std::string Expression() const;
     void setExpression(std::string v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcProperty; case 1: return Type::IfcProperty; case 2: return Type::IfcLabel; case 3: return Type::IfcText; case 4: return Type::IfcText; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DependingProperty"; case 1: return "DependantProperty"; case 2: return "Name"; case 3: return "Description"; case 4: return "Expression"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; case 4: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcProperty; case 1: return Type::IfcProperty; case 2: return Type::IfcLabel; case 3: return Type::IfcText; case 4: return Type::IfcText; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DependingProperty"; case 1: return "DependantProperty"; case 2: return "Name"; case 3: return "Description"; case 4: return "Expression"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10325,9 +10320,9 @@ public:
     IfcUnit* Unit() const;
     void setUnit(IfcUnit* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcValue; case 2: return Type::IfcUnit; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "EnumerationValues"; case 2: return "Unit"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcValue; case 2: return Type::IfcUnit; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "EnumerationValues"; case 2: return "Unit"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10484,9 +10479,9 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDocumentSelect; case 1: return Type::IfcAppliedValue; case 2: return Type::IfcLabel; case 3: return Type::IfcText; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ReferencedDocument"; case 1: return "ReferencingValues"; case 2: return "Name"; case 3: return "Description"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcDocumentSelect; case 1: return Type::IfcAppliedValue; case 2: return Type::IfcLabel; case 3: return Type::IfcText; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ReferencedDocument"; case 1: return "ReferencingValues"; case 2: return "Name"; case 3: return "Description"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10529,9 +10524,9 @@ public:
     double BarCount() const;
     void setBarCount(double v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_DOUBLE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAreaMeasure; case 1: return Type::IfcLabel; case 2: return Type::IfcReinforcingBarSurfaceEnum; case 3: return Type::IfcLengthMeasure; case 4: return Type::IfcPositiveLengthMeasure; case 5: return Type::IfcCountMeasure; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TotalCrossSectionArea"; case 1: return "SteelGrade"; case 2: return "BarSurface"; case 3: return "EffectiveDepth"; case 4: return "NominalBarDiameter"; case 5: return "BarCount"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_DOUBLE; case 5: return IfcUtil::Argument_DOUBLE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAreaMeasure; case 1: return Type::IfcLabel; case 2: return Type::IfcReinforcingBarSurfaceEnum; case 3: return Type::IfcLengthMeasure; case 4: return Type::IfcPositiveLengthMeasure; case 5: return Type::IfcCountMeasure; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TotalCrossSectionArea"; case 1: return "SteelGrade"; case 2: return "BarSurface"; case 3: return "EffectiveDepth"; case 4: return "NominalBarDiameter"; case 5: return "BarCount"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10548,9 +10543,9 @@ public:
     double InitialStress() const;
     void setInitialStress(double v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcNormalisedRatioMeasure; case 1: return Type::IfcNormalisedRatioMeasure; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelaxationValue"; case 1: return "InitialStress"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcNormalisedRatioMeasure; case 1: return Type::IfcNormalisedRatioMeasure; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RelaxationValue"; case 1: return "InitialStress"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10625,9 +10620,9 @@ public:
     IfcTemplatedEntityList< IfcRepresentationItem >::ptr Items() const;
     void setItems(IfcTemplatedEntityList< IfcRepresentationItem >::ptr v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcRepresentationContext; case 1: return Type::IfcLabel; case 2: return Type::IfcLabel; case 3: return Type::IfcRepresentationItem; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ContextOfItems"; case 1: return "RepresentationIdentifier"; case 2: return "RepresentationType"; case 3: return "Items"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcRepresentationContext; case 1: return Type::IfcLabel; case 2: return Type::IfcLabel; case 3: return Type::IfcRepresentationItem; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ContextOfItems"; case 1: return "RepresentationIdentifier"; case 2: return "RepresentationType"; case 3: return "Items"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcRepresentationMap >::ptr RepresentationMap() const; // INVERSE IfcRepresentationMap::MappedRepresentation
     IfcTemplatedEntityList< IfcPresentationLayerAssignment >::ptr LayerAssignments() const; // INVERSE IfcPresentationLayerAssignment::AssignedItems
@@ -10662,9 +10657,9 @@ public:
     std::string ContextType() const;
     void setContextType(std::string v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ContextIdentifier"; case 1: return "ContextType"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ContextIdentifier"; case 1: return "ContextType"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcRepresentation >::ptr RepresentationsInContext() const; // INVERSE IfcRepresentation::ContextOfItems
     bool is(Type::Enum v) const;
@@ -10709,9 +10704,9 @@ public:
 class IFC_PARSE_API IfcRepresentationItem : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcPresentationLayerAssignment >::ptr LayerAssignments() const; // INVERSE IfcPresentationLayerAssignment::AssignedItems
     IfcTemplatedEntityList< IfcStyledItem >::ptr StyledByItem() const; // INVERSE IfcStyledItem::Item
@@ -10743,9 +10738,9 @@ public:
     IfcRepresentation* MappedRepresentation() const;
     void setMappedRepresentation(IfcRepresentation* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAxis2Placement; case 1: return Type::IfcRepresentation; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MappingOrigin"; case 1: return "MappedRepresentation"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcAxis2Placement; case 1: return Type::IfcRepresentation; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "MappingOrigin"; case 1: return "MappedRepresentation"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcMappedItem >::ptr MapUsage() const; // INVERSE IfcMappedItem::MappingSource
     bool is(Type::Enum v) const;
@@ -10820,9 +10815,9 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcGloballyUniqueId; case 1: return Type::IfcOwnerHistory; case 2: return Type::IfcLabel; case 3: return Type::IfcText; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "GlobalId"; case 1: return "OwnerHistory"; case 2: return "Name"; case 3: return "Description"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcGloballyUniqueId; case 1: return Type::IfcOwnerHistory; case 2: return Type::IfcLabel; case 3: return Type::IfcText; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "GlobalId"; case 1: return "OwnerHistory"; case 2: return "Name"; case 3: return "Description"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10881,9 +10876,9 @@ public:
     IfcProfileDef* EndProfile() const;
     void setEndProfile(IfcProfileDef* v);
     virtual unsigned int getArgumentCount() const { return 3; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSectionTypeEnum; case 1: return Type::IfcProfileDef; case 2: return Type::IfcProfileDef; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SectionType"; case 1: return "StartProfile"; case 2: return "EndProfile"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENUMERATION; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSectionTypeEnum; case 1: return Type::IfcProfileDef; case 2: return Type::IfcProfileDef; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SectionType"; case 1: return "StartProfile"; case 2: return "EndProfile"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10922,9 +10917,9 @@ public:
     IfcTemplatedEntityList< IfcReinforcementBarProperties >::ptr CrossSectionReinforcementDefinitions() const;
     void setCrossSectionReinforcementDefinitions(IfcTemplatedEntityList< IfcReinforcementBarProperties >::ptr v);
     virtual unsigned int getArgumentCount() const { return 6; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_ENUMERATION; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLengthMeasure; case 1: return Type::IfcLengthMeasure; case 2: return Type::IfcLengthMeasure; case 3: return Type::IfcReinforcingBarRoleEnum; case 4: return Type::IfcSectionProperties; case 5: return Type::IfcReinforcementBarProperties; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "LongitudinalStartPosition"; case 1: return "LongitudinalEndPosition"; case 2: return "TransversePosition"; case 3: return "ReinforcementRole"; case 4: return "SectionDefinition"; case 5: return "CrossSectionReinforcementDefinitions"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_ENUMERATION; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLengthMeasure; case 1: return Type::IfcLengthMeasure; case 2: return Type::IfcLengthMeasure; case 3: return Type::IfcReinforcingBarRoleEnum; case 4: return Type::IfcSectionProperties; case 5: return Type::IfcReinforcementBarProperties; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "LongitudinalStartPosition"; case 1: return "LongitudinalEndPosition"; case 2: return "TransversePosition"; case 3: return "ReinforcementRole"; case 4: return "SectionDefinition"; case 5: return "CrossSectionReinforcementDefinitions"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -10996,9 +10991,9 @@ public:
     IfcProductDefinitionShape* PartOfProductDefinitionShape() const;
     void setPartOfProductDefinitionShape(IfcProductDefinitionShape* v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_BOOL; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcShapeModel; case 1: return Type::IfcLabel; case 2: return Type::IfcText; case 3: return Type::UNDEFINED; case 4: return Type::IfcProductDefinitionShape; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ShapeRepresentations"; case 1: return "Name"; case 2: return "Description"; case 3: return "ProductDefinitional"; case 4: return "PartOfProductDefinitionShape"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_BOOL; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcShapeModel; case 1: return Type::IfcLabel; case 2: return Type::IfcText; case 3: return Type::UNDEFINED; case 4: return Type::IfcProductDefinitionShape; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ShapeRepresentations"; case 1: return "Name"; case 2: return "Description"; case 3: return "ProductDefinitional"; case 4: return "PartOfProductDefinitionShape"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11217,9 +11212,9 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11239,9 +11234,9 @@ public:
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11457,9 +11452,9 @@ public:
     IfcColourRgb* ReflectanceColour() const;
     void setReflectanceColour(IfcColourRgb* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcColourRgb; case 1: return Type::IfcColourRgb; case 2: return Type::IfcColourRgb; case 3: return Type::IfcColourRgb; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DiffuseTransmissionColour"; case 1: return "DiffuseReflectionColour"; case 2: return "TransmissionColour"; case 3: return "ReflectanceColour"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcColourRgb; case 1: return Type::IfcColourRgb; case 2: return Type::IfcColourRgb; case 3: return Type::IfcColourRgb; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "DiffuseTransmissionColour"; case 1: return "DiffuseReflectionColour"; case 2: return "TransmissionColour"; case 3: return "ReflectanceColour"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11486,9 +11481,9 @@ public:
     double DispersionFactor() const;
     void setDispersionFactor(double v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcReal; case 1: return Type::IfcReal; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RefractionIndex"; case 1: return "DispersionFactor"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcReal; case 1: return Type::IfcReal; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RefractionIndex"; case 1: return "DispersionFactor"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11510,9 +11505,9 @@ public:
     IfcColourRgb* SurfaceColour() const;
     void setSurfaceColour(IfcColourRgb* v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcColourRgb; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SurfaceColour"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcColourRgb; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "SurfaceColour"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11545,9 +11540,9 @@ public:
     IfcTemplatedEntityList< IfcSurfaceTexture >::ptr Textures() const;
     void setTextures(IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurfaceTexture; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Textures"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSurfaceTexture; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Textures"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11666,9 +11661,9 @@ public:
     IfcCartesianTransformationOperator2D* TextureTransform() const;
     void setTextureTransform(IfcCartesianTransformationOperator2D* v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_BOOL; case 1: return IfcUtil::Argument_BOOL; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; case 1: return Type::UNDEFINED; case 2: return Type::IfcSurfaceTextureEnum; case 3: return Type::IfcCartesianTransformationOperator2D; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RepeatS"; case 1: return "RepeatT"; case 2: return "TextureType"; case 3: return "TextureTransform"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_BOOL; case 1: return IfcUtil::Argument_BOOL; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; case 1: return Type::UNDEFINED; case 2: return Type::IfcSurfaceTextureEnum; case 3: return Type::IfcCartesianTransformationOperator2D; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RepeatS"; case 1: return "RepeatT"; case 2: return "TextureType"; case 3: return "TextureTransform"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11723,9 +11718,9 @@ public:
     IfcTemplatedEntityList< IfcTableRow >::ptr Rows() const;
     void setRows(IfcTemplatedEntityList< IfcTableRow >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; case 1: return Type::IfcTableRow; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Rows"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::UNDEFINED; case 1: return Type::IfcTableRow; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Rows"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -11756,9 +11751,9 @@ public:
     bool IsHeading() const;
     void setIsHeading(bool v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_BOOL; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcValue; case 1: return Type::UNDEFINED; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RowCells"; case 1: return "IsHeading"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_BOOL; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcValue; case 1: return Type::UNDEFINED; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "RowCells"; case 1: return "IsHeading"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcTable >::ptr OfTable() const; // INVERSE IfcTable::Rows
     bool is(Type::Enum v) const;
@@ -12010,9 +12005,9 @@ public:
     IfcColour* BackgroundColour() const;
     void setBackgroundColour(IfcColour* v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcColour; case 1: return Type::IfcColour; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Colour"; case 1: return "BackgroundColour"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcColour; case 1: return Type::IfcColour; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Colour"; case 1: return "BackgroundColour"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -12073,9 +12068,9 @@ public:
     IfcSizeSelect* LineHeight() const;
     void setLineHeight(IfcSizeSelect* v);
     virtual unsigned int getArgumentCount() const { return 7; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSizeSelect; case 1: return Type::IfcTextAlignment; case 2: return Type::IfcTextDecoration; case 3: return Type::IfcSizeSelect; case 4: return Type::IfcSizeSelect; case 5: return Type::IfcTextTransformation; case 6: return Type::IfcSizeSelect; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TextIndent"; case 1: return "TextAlign"; case 2: return "TextDecoration"; case 3: return "LetterSpacing"; case 4: return "WordSpacing"; case 5: return "TextTransform"; case 6: return "LineHeight"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_STRING; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; case 5: return IfcUtil::Argument_STRING; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcSizeSelect; case 1: return Type::IfcTextAlignment; case 2: return Type::IfcTextDecoration; case 3: return Type::IfcSizeSelect; case 4: return Type::IfcSizeSelect; case 5: return Type::IfcTextTransformation; case 6: return Type::IfcSizeSelect; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TextIndent"; case 1: return "TextAlign"; case 2: return "TextDecoration"; case 3: return "LetterSpacing"; case 4: return "WordSpacing"; case 5: return "TextTransform"; case 6: return "LineHeight"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -12129,9 +12124,9 @@ public:
     IfcSizeSelect* CharacterSpacing() const;
     void setCharacterSpacing(IfcSizeSelect* v);
     virtual unsigned int getArgumentCount() const { return 5; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPositiveLengthMeasure; case 1: return Type::IfcPositiveLengthMeasure; case 2: return Type::IfcPlaneAngleMeasure; case 3: return Type::IfcPlaneAngleMeasure; case 4: return Type::IfcSizeSelect; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BoxHeight"; case 1: return "BoxWidth"; case 2: return "BoxSlantAngle"; case 3: return "BoxRotateAngle"; case 4: return "CharacterSpacing"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DOUBLE; case 1: return IfcUtil::Argument_DOUBLE; case 2: return IfcUtil::Argument_DOUBLE; case 3: return IfcUtil::Argument_DOUBLE; case 4: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcPositiveLengthMeasure; case 1: return Type::IfcPositiveLengthMeasure; case 2: return Type::IfcPlaneAngleMeasure; case 3: return Type::IfcPlaneAngleMeasure; case 4: return Type::IfcSizeSelect; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "BoxHeight"; case 1: return "BoxWidth"; case 2: return "BoxSlantAngle"; case 3: return "BoxRotateAngle"; case 4: return "CharacterSpacing"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -12154,9 +12149,9 @@ public:
 class IFC_PARSE_API IfcTextureCoordinate : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcAnnotationSurface >::ptr AnnotatedSurface() const; // INVERSE IfcAnnotationSurface::TextureCoordinates
     bool is(Type::Enum v) const;
@@ -12316,9 +12311,9 @@ public:
     std::vector< double > /*[2:2]*/ Coordinates() const;
     void setCoordinates(std::vector< double > /*[2:2]*/ v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcParameterValue; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Coordinates"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcParameterValue; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Coordinates"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -12396,9 +12391,9 @@ public:
     IfcUnit* Unit() const;
     void setUnit(IfcUnit* v);
     virtual unsigned int getArgumentCount() const { return 8; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENUMERATION; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcDateTimeSelect; case 3: return Type::IfcDateTimeSelect; case 4: return Type::IfcTimeSeriesDataTypeEnum; case 5: return Type::IfcDataOriginEnum; case 6: return Type::IfcLabel; case 7: return Type::IfcUnit; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "StartTime"; case 3: return "EndTime"; case 4: return "TimeSeriesDataType"; case 5: return "DataOrigin"; case 6: return "UserDefinedDataOrigin"; case 7: return "Unit"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_STRING; case 1: return IfcUtil::Argument_STRING; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_ENTITY_INSTANCE; case 4: return IfcUtil::Argument_ENUMERATION; case 5: return IfcUtil::Argument_ENUMERATION; case 6: return IfcUtil::Argument_STRING; case 7: return IfcUtil::Argument_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcLabel; case 1: return Type::IfcText; case 2: return Type::IfcDateTimeSelect; case 3: return Type::IfcDateTimeSelect; case 4: return Type::IfcTimeSeriesDataTypeEnum; case 5: return Type::IfcDataOriginEnum; case 6: return Type::IfcLabel; case 7: return Type::IfcUnit; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Name"; case 1: return "Description"; case 2: return "StartTime"; case 3: return "EndTime"; case 4: return "TimeSeriesDataType"; case 5: return "DataOrigin"; case 6: return "UserDefinedDataOrigin"; case 7: return "Unit"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     IfcTemplatedEntityList< IfcTimeSeriesReferenceRelationship >::ptr DocumentedBy() const; // INVERSE IfcTimeSeriesReferenceRelationship::ReferencedTimeSeries
     bool is(Type::Enum v) const;
@@ -12416,9 +12411,9 @@ public:
     IfcEntityList::ptr TimeSeriesReferences() const;
     void setTimeSeriesReferences(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcTimeSeries; case 1: return Type::IfcDocumentSelect; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ReferencedTimeSeries"; case 1: return "TimeSeriesReferences"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcTimeSeries; case 1: return Type::IfcDocumentSelect; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ReferencedTimeSeries"; case 1: return "TimeSeriesReferences"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -12442,9 +12437,9 @@ public:
     IfcEntityList::ptr ListValues() const;
     void setListValues(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcValue; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ListValues"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcValue; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "ListValues"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -12531,9 +12526,9 @@ public:
     IfcEntityList::ptr Units() const;
     void setUnits(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 1; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcUnit; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Units"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcUnit; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "Units"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -12574,9 +12569,9 @@ public:
     IfcTemplatedEntityList< IfcCartesianPoint >::ptr TexturePoints() const;
     void setTexturePoints(IfcTemplatedEntityList< IfcCartesianPoint >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcTextureVertex; case 1: return Type::IfcCartesianPoint; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TextureVertices"; case 1: return "TexturePoints"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcTextureVertex; case 1: return Type::IfcCartesianPoint; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "TextureVertices"; case 1: return "TexturePoints"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -12679,9 +12674,9 @@ public:
     std::vector< double > /*[2:3]*/ OffsetDistances() const;
     void setOffsetDistances(std::vector< double > /*[2:3]*/ v);
     virtual unsigned int getArgumentCount() const { return 2; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcGridAxis; case 1: return Type::IfcLengthMeasure; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
-    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "IntersectingAxes"; case 1: return "OffsetDistances"; } throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE; case 1: return IfcUtil::Argument_AGGREGATE_OF_DOUBLE; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 0: return Type::IfcGridAxis; case 1: return Type::IfcLengthMeasure; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
+    virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 0: return "IntersectingAxes"; case 1: return "OffsetDistances"; } (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
     bool is(Type::Enum v) const;
     Type::Enum type() const;
@@ -41591,9 +41586,5 @@ public:
 void InitStringMap();
 IfcUtil::IfcBaseClass* SchemaEntity(IfcAbstractEntity* e = 0);
 }
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 #endif

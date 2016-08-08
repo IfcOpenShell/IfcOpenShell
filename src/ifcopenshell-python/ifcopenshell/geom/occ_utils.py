@@ -30,14 +30,14 @@ DEFAULT_STYLES = {
     "IfcWall"            : (.8 , .8, .8     ),
     "IfcSite"            : (.75, .8, .65    ),
     "IfcSlab"            : (.4 , .4, .4     ),
-	"IfcWallStandardCase": (.9 , .9, .9     ),
-	"IfcWall"            : (.9 , .9, .9     ),
-	"IfcWindow"          : (.75, .8, .75, .3),
-	"IfcDoor"            : (.55, .3, .15    ),
-	"IfcBeam"            : (.75, .7, .7     ),
-	"IfcRailing"         : (.65, .6, .6     ),
-	"IfcMember"          : (.65, .6, .6     ),
-	"IfcPlate"           : (.8 , .8, .8     )
+    "IfcWallStandardCase": (.9 , .9, .9     ),
+    "IfcWall"            : (.9 , .9, .9     ),
+    "IfcWindow"          : (.75, .8, .75, .3),
+    "IfcDoor"            : (.55, .3, .15    ),
+    "IfcBeam"            : (.75, .7, .7     ),
+    "IfcRailing"         : (.65, .6, .6     ),
+    "IfcMember"          : (.65, .6, .6     ),
+    "IfcPlate"           : (.8 , .8, .8     )
 }
 
 def initialize_display():
