@@ -106,7 +106,7 @@ IfcSpfStream::IfcSpfStream(const std::string& fn)
 		: stream(0)
 		, buffer(0)
 {
-	eof = false;
+	eof = false
 #ifdef _MSC_VER
 	int fn_buffer_size = MultiByteToWideChar(CP_UTF8, 0, fn.c_str(), -1, 0, 0);
 	wchar_t* fn_wide = new wchar_t[fn_buffer_size];
