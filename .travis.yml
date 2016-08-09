@@ -35,5 +35,5 @@ script:
   - cd cmake
   - mkdir build
   - cd build
-  - cmake -DCOLLADA_SUPPORT=False -DUSE_IFC4=False -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True  ..
+  - cmake -DCOLLADA_SUPPORT=False -DUSE_IFC4=False -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu  ..
   - make -j2
