@@ -30,10 +30,26 @@ install:
   - sudo apt-get install -y liboce-visualization-dev
   - sudo apt-get install -y liboce-ocaf-lite-dev
 
+  - sudo apt-get install -y libpcre3-dev
 
 script:
+  - pwd
+  - cd ..
+  - git clone https://github.com/KhronosGroup/OpenCOLLADA.git
+  - cd OpenCOLLADA
+  - git checkout 064a60b65c2c31b94f013820856bc84fb1937cc6
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make
+  - sudo make install
+  - cd ..
+  - cd ..
+  - pwd
+  - cd IfcOpenShell
+  - pwd
   - cd cmake
   - mkdir build
   - cd build
-  - cmake -DCOLLADA_SUPPORT=False -DUSE_IFC4=False -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu  ..
+  - cmake -DCOLLADA_SUPPORT=True -DOPENCOLLADA_INCLUDE_DIR=/usr/local/include/opencollada -DOPENCOLLADA_LIBRARY_DIR=/usr/local/lib/opencollada -DUSE_IFC4=False -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu  ..
   - make -j2
