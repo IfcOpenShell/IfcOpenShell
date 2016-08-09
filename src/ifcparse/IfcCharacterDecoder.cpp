@@ -86,6 +86,7 @@ void IfcCharacterDecoder::addChar(std::stringstream& s,const UChar32& ch) {
 		s << s2.str();
 	}
 #else
+	(void)ch;
 	s.put(substitution_character);
 #endif
 }
