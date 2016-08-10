@@ -260,7 +260,7 @@ IF(COLLADA_SUPPORT)
 			find_library(pcre_library NAMES pcre PATHS ${PCRE_LIBRARY_DIR} NO_DEFAULT_PATH)
 		endif()
 		
-		if (${pcre_library})
+		if (pcre_library)
 			SET(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_LIBRARY_DIR} ${PCRE_LIBRARY_DIR})
 			list(APPEND OPENCOLLADA_LIBRARIES "${pcre_library}")
 		endif()
