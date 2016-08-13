@@ -247,7 +247,7 @@ IF(COLLADA_SUPPORT)
 			OpenCOLLADAStreamWriter UTF buffer ftoa
 		)
 
-		# Use the found libTKernel as a template for all other OCC libraries
+		# Use the found OpenCOLLADAFramework as a template for all other OpenCOLLADA libraries
 		foreach(lib ${OPENCOLLADA_LIBRARY_NAMES})
 			string(REPLACE OpenCOLLADAFramework "${lib}" lib_path "${OpenCOLLADAFramework}")
 			list(APPEND OPENCOLLADA_LIBRARIES "${lib_path}")
