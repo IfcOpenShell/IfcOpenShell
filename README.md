@@ -88,14 +88,14 @@ for additional information):
 
     $ sudo apt-get install liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
 
-If not, you will need to compile Open CASCADE yourself:
+If not, you will need to compile Open CASCADE yourself (note that the build takes a long time):
 
     $ sudo apt-get install libftgl-dev libtbb2 libtbb-dev libgl1-mesa-dev libfreetype6-dev
     $ git clone https://github.com/tpaviot/oce.git
     $ cd oce
     $ mkdir build && cd build
     $ cmake ..
-    $ make
+    $ make -j
     $ sudo make install
 
 For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA is needed:
@@ -107,30 +107,24 @@ For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA
     $ git checkout 064a60b65c2c31b94f013820856bc84fb1937cc6
     $ mkdir build && cd build
     $ cmake ..
-    $ make
+    $ make -j
     $ sudo make install
 
 For building the IfcPython wrapper (on by default), SWIG and Python development are needed, if not already available:
 
     $ sudo apt-get install python-all-dev swig
 
-To build IfcOpenShell please take the following steps:
+To build IfcOpenShell please take the following steps. Alternatively use environment variables for setting the
+dependencies' paths. `OCC_INCLUDE_DIR` might be needed to set also. `OPENCOLLADA_INCLUDE_DIR` and `OPENCOLLADA_LIBRARY_DIR`
+(and potentially `PCRE_LIBRARY_DIR`) are needed if building with COLLADA support. (`-DCOLLADA_SUPPORT=0` disables it).
 
     $ cd /path/to/IfcOpenShell
-    $ mkdir build
-    $ cd build
-    Optionally, if required:
-        $ OCC_INCLUDE_PATH="/path/to/OpenCASCADE/include"
-        $ OCC_LIBRARY_PATH="/path/to/OpenCASCADE/lib"
-        $ export OCC_INCLUDE_PATH
-        $ export OCC_LIBRARY_PATH
-    If building with COLLADA support (path might vary):
-        $ OPENCOLLADA_INCLUDE_DIR="/usr/local/include/opencollada"
-        $ OPENCOLLADA_LIBRARY_DIR="/usr/local/lib/opencollada"
-        $ export OPENCOLLADA_INCLUDE_DIR
-        $ export OPENCOLLADA_LIBRARY_DIR
-    $ cmake ../cmake
-    $ make
+    $ mkdir build && cd build
+    $ cmake ../cmake -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/ \
+          -DOPENCOLLADA_INCLUDE_DIR="/usr/local/include/opencollada" \
+          -DOPENCOLLADA_LIBRARY_DIR="/usr/local/lib/opencollada"  \
+          -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/
+    $ make -j
 
 If all worked out correctly you can now use IfcOpenShell. See the examples below.
 
