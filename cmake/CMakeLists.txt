@@ -259,12 +259,15 @@ IF(COLLADA_SUPPORT)
 		else()
 			find_library(pcre_library NAMES pcre PATHS ${PCRE_LIBRARY_DIR} NO_DEFAULT_PATH)
 		endif()
-		
+
 		if (pcre_library)
 			SET(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_LIBRARY_DIR} ${PCRE_LIBRARY_DIR})
 			list(APPEND OPENCOLLADA_LIBRARIES "${pcre_library}")
+        else()
+            message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find PCRE. "
+                "Disable COLLADA_SUPPORT or fix PCRE_LIBRARY_DIR path to proceed.")
 		endif()
-		
+
 		IF(MSVC)
 			ADD_DEBUG_VARIANTS(OPENCOLLADA_LIBRARIES "${OPENCOLLADA_LIBRARIES}" "d")
 		ENDIF()
