@@ -2259,7 +2259,7 @@ bool IfcGeom::Kernel::approximate_plane_through_wire(const TopoDS_Wire& wire, gp
 	BRepTools_WireExplorer exp(wire);
 
 	for (;; exp.Next()) {
-		const bool has_more = exp.More();
+		const bool has_more = exp.More() != 0;
 		if (has_more) {
 			const TopoDS_Vertex& v = exp.CurrentVertex();
 			current = BRep_Tool::Pnt(v);

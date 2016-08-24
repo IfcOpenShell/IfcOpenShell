@@ -433,9 +433,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, 
 
 	TColgp_SequenceOfPnt points;
 	if (wire_to_sequence_of_point(wire, points)) {
-		remove_duplicate_points_from_loop(points, wire.Closed()); // Note: wire always closed, as per if statement above
-		remove_collinear_points_from_loop(points, wire.Closed());
-		sequence_of_point_to_wire(points, wire, wire.Closed());
+		remove_duplicate_points_from_loop(points, wire.Closed() != 0); // Note: wire always closed, as per if statement above
+		remove_collinear_points_from_loop(points, wire.Closed() != 0);
+		sequence_of_point_to_wire(points, wire, wire.Closed() != 0);
 	}
 
 	TopoDS_Shape prism = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire),gp_Vec(0,0,200));
@@ -659,7 +659,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 		try {
 			builder.Perform();
 			shape = builder.SewedShape();
-			valid_shell = BRepCheck_Analyzer(shape).IsValid();
+			valid_shell = BRepCheck_Analyzer(shape).IsValid() != 0;
 		} catch(...) {}
 		if (valid_shell) {
 			try {
@@ -720,10 +720,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 
 	const IfcGeom::SurfaceStyle* mapped_item_style = get_style(l);
 	
-	const unsigned int previous_size = (const unsigned int) shapes.size();
+	const size_t previous_size = shapes.size();
 	bool b = convert_shapes(map->MappedRepresentation(), shapes);
 	
-	for ( unsigned int i = previous_size; i < shapes.size(); ++ i ) {
+	for (size_t i = previous_size; i < shapes.size(); ++ i ) {
 		shapes[i].append(gtrsf);
 
 		// Apply styles assigned to the mapped item only if on
