@@ -335,6 +335,9 @@ endforeach()
 if (NOT BUILD_SHARED_LIBS)
   list (REMOVE_ITEM BUILD_TOOLKITS DRAWEXE)
   message (STATUS "Info: DRAWEXE is not included due to ${BUILD_LIBRARY_TYPE} build library type")
+  # IfcOpenShell begin
+  add_definitions(-DHAVE_NO_DLL)
+  # IfcOpenShell end
 endif()
 
 # accumulate all used toolkits
@@ -555,9 +558,11 @@ endif()
 string (REGEX REPLACE ";" " " 3RDPARTY_NOT_INCLUDED "${3RDPARTY_NOT_INCLUDED}")
 
 # check all 3rdparty paths
+# IfcOpenShell begin
 #if (3RDPARTY_NOT_INCLUDED)
 #  message (FATAL_ERROR "NOT FOUND: ${3RDPARTY_NOT_INCLUDED}" )
 #endif()
+# IfcOpenShell end
 
 if (3RDPARTY_INCLUDE_DIRS)
   list (REMOVE_DUPLICATES 3RDPARTY_INCLUDE_DIRS)
