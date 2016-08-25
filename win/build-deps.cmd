@@ -268,19 +268,24 @@ if not %ERRORLEVEL%==0 goto :Error
 call :ExtractArchive %OCCT_FILENAME%.tar "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
 
-echo Patching %DEPENDENCY_NAME%'s CMake files
-:: OCCT insists on finding FreeType DLL even if using static FreeType build + define HAVE_NO_DLL
-copy /y "%~dp0patches\occt-V7_0_0-9059ca1_CMakeLists.txt" "%DEPENDENCY_DIR%\CMakeLists.txt"
-if not %ERRORLEVEL%==0 goto :Error
-:: Patch OCCT to be built against the static MSVC run-time.
-copy /y "%~dp0patches\occt-V7_0_0-9059ca1_occt_defs_flags.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_defs_flags.cmake"
-if not %ERRORLEVEL%==0 goto :Error
-:: OCCT tries to deploy PDBs from the bin directory even if static build is used.
-copy /y "%~dp0patches\occt-V7_0_0-9059ca1_occt_toolkit.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_toolkit.cmake"
-if not %ERRORLEVEL%==0 goto :Error
-:: Defining HAVE_NO_DLL causes compilation error due to Win32 GetObject macro
-copy /y "%~dp0patches\occt-V7_0_0-9059ca1_XCAFDoc_Dimension.cxx" "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_Dimension.cxx"
-if not %ERRORLEVEL%==0 goto :Error
+:: Patching always blindly would trigger a rebuild each time
+findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
+if not %ERRORLEVEL%==0 (
+    echo Patching %DEPENDENCY_NAME%'s CMake files
+    :: OCCT insists on finding FreeType DLL even if using static FreeType build + define HAVE_NO_DLL
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_CMakeLists.txt" "%DEPENDENCY_DIR%\CMakeLists.txt"
+    if not %ERRORLEVEL%==0 goto :Error
+    :: Patch OCCT to be built against the static MSVC run-time.
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_occt_defs_flags.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_defs_flags.cmake"
+    if not %ERRORLEVEL%==0 goto :Error
+    :: OCCT tries to deploy PDBs from the bin directory even if static build is used.
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_occt_toolkit.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_toolkit.cmake"
+    if not %ERRORLEVEL%==0 goto :Error
+    :: Defining HAVE_NO_DLL causes compilation errors due to Win32 GetObject and max macros
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_XCAFDoc_Dimension.cxx" "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_Dimension.cxx"
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_OpenGl_PrimitiveArray" "%DEPENDENCY_DIR%\src\OpenGl\OpenGl_PrimitiveArray.cxx"
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_XCAFDoc_GeomTolerance.cxx" "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_GeomTolerance.cxx"
+)
 
 cd "%DEPENDENCY_DIR%"
 call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\opencascade" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
