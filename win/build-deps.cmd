@@ -261,7 +261,7 @@ set DEPENDENCY_NAME=Open CASCADE 7.0.0
 set OCCT_FILENAME=occt-V7_0_0-9059ca1
 set DEPENDENCY_DIR=%DEPS_DIR%\%OCCT_FILENAME%
 cd "%DEPS_DIR%"
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=snapshot;h=V7_0_0;sf=tgz" "%DEPS_DIR%" %OCCT_ZIP%
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=snapshot;h=V7_0_0;sf=tgz" "%DEPS_DIR%" %OCCT_FILENAME%.tar.gz
 if not %ERRORLEVEL%==0 goto :Error
 call :ExtractArchive %OCCT_FILENAME%.tar.gz "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
