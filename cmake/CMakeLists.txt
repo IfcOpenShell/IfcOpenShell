@@ -361,8 +361,7 @@ IF(MSVC)
 		ENDIF()
 	ENDFOREACH()
 ElSE()
-    add_definitions(-Wno-non-virtual-dtor -Wall)
-    # TODO Preferably use -Wextra too, but currently too much warning spam coming from the dependencies' headers.
+    add_definitions(-Wall -Wextra)
     # -fPIC is not relevant on Windows and creates pointless warnings
     if (UNIX)
         add_definitions(-fPIC)
