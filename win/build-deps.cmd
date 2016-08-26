@@ -283,7 +283,7 @@ if not %ERRORLEVEL%==0 (
     if not %ERRORLEVEL%==0 goto :Error
     :: Defining HAVE_NO_DLL causes compilation errors due to Win32 GetObject and max macros
     copy /y "%~dp0patches\occt-V7_0_0-9059ca1_XCAFDoc_Dimension.cxx" "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_Dimension.cxx"
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_OpenGl_PrimitiveArray" "%DEPENDENCY_DIR%\src\OpenGl\OpenGl_PrimitiveArray.cxx"
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_OpenGl_PrimitiveArray.cxx" "%DEPENDENCY_DIR%\src\OpenGl\OpenGl_PrimitiveArray.cxx"
     copy /y "%~dp0patches\occt-V7_0_0-9059ca1_XCAFDoc_GeomTolerance.cxx" "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_GeomTolerance.cxx"
 )
 
