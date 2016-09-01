@@ -147,7 +147,7 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& tree, boo
 template <typename A>
 ptree& descend(A* instance, ptree& tree) {
 	if (instance->is(IfcSchema::Type::IfcObjectDefinition)) {
-		return descend(instance->as<IfcSchema::IfcObjectDefinition>(), tree);
+		return descend(instance->template as<IfcSchema::IfcObjectDefinition>(), tree);
 	} else {
 		return format_entity_instance(instance, tree);
 	}
