@@ -67,6 +67,7 @@ IF NOT EXIST %INSTALL_DIR%. mkdir %INSTALL_DIR%
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
+IF NOT DEFINED IFCOS_USE_OCCT set IFCOS_USE_OCCT=FALSE
 IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
 IF NOT DEFINED IFCOS_USE_PYTHON2 set IFCOS_USE_PYTHON2=FALSE
 IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
@@ -102,6 +103,8 @@ IF %BUILD_CFG%==MinSizeRel call cecho.cmd 0 14 "     WARNING: MinSizeRel build c
 call cecho.cmd 0 13 "* Build Type`t`t= %BUILD_TYPE%"
 echo   - The used build type for the dependencies (Build, Rebuild, Clean).
 echo     Defaults to Build if not specified. Rebuild/Clean also uninstalls Python (if it was installed by this script).
+call cecho.cmd 0 13 "* IFCOS_USE_OCCT`t= %IFCOS_USE_OCCT%"
+echo   - Use the official Open CASCADE instead of the community edition.
 call cecho.cmd 0 13 "* IFCOS_INSTALL_PYTHON`t= %IFCOS_INSTALL_PYTHON%"
 echo   - Download and install Python.
 echo     Set to something other than TRUE if you wish to use an already installed version of Python.
@@ -230,7 +233,86 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
+if %IFCOS_USE_OCCT%==FALSE goto :OCE
+:OCCT
+set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade\inc>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade\win%ARCH_BITS%\lib>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+:: OCCT has many dependencies but FreeType is the only mandatory
+set DEPENDENCY_NAME=FreeType
+set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.6.5
+set FREETYPE_ZIP=ft265.zip
+cd "%DEPS_DIR%"
+call :DownloadFile http://download.savannah.gnu.org/releases/freetype/%FREETYPE_ZIP% "%DEPS_DIR%" %FREETYPE_ZIP%
+if not %ERRORLEVEL%==0 goto :Error
+call :ExtractArchive %FREETYPE_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
+if not %ERRORLEVEL%==0 goto :Error
+cd "%DEPENDENCY_DIR%"
+:: NOTE FreeType is built as a static library by default
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\freetype"
+if not %ERRORLEVEL%==0 goto :Error
+call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\freetype.sln" %BUILD_CFG%
+if not %ERRORLEVEL%==0 goto :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+if not %ERRORLEVEL%==0 goto :Error 
+
+set DEPENDENCY_NAME=Open CASCADE 7.0.0
+set OCCT_FILENAME=occt-V7_0_0-9059ca1
+set DEPENDENCY_DIR=%DEPS_DIR%\%OCCT_FILENAME%
+cd "%DEPS_DIR%"
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=snapshot;h=V7_0_0;sf=tgz" "%DEPS_DIR%" %OCCT_FILENAME%.tar.gz
+if not %ERRORLEVEL%==0 goto :Error
+call :ExtractArchive %OCCT_FILENAME%.tar.gz "%DEPS_DIR%" "%DEPENDENCY_DIR%"
+if not %ERRORLEVEL%==0 goto :Error
+call :ExtractArchive %OCCT_FILENAME%.tar "%DEPS_DIR%" "%DEPENDENCY_DIR%"
+if not %ERRORLEVEL%==0 goto :Error
+
+:: Patching always blindly would trigger a rebuild each time
+findstr IfcOpenShell "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_GeomTolerance.cxx">NUL
+if not %ERRORLEVEL%==0 (
+    echo Patching %DEPENDENCY_NAME%'s CMake files
+    REM OCCT insists on finding FreeType DLL even if using static FreeType build + define HAVE_NO_DLL
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_CMakeLists.txt" "%DEPENDENCY_DIR%\CMakeLists.txt"
+    REM Patch OCCT to be built against the static MSVC run-time.
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_occt_defs_flags.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_defs_flags.cmake"
+    REM OCCT tries to deploy PDBs from the bin directory even if static build is used.
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_occt_toolkit.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_toolkit.cmake"
+    REM Defining HAVE_NO_DLL causes compilation errors due to Win32 GetObject and max macros
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_XCAFDoc_Dimension.cxx" "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_Dimension.cxx"
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_OpenGl_PrimitiveArray.cxx" "%DEPENDENCY_DIR%\src\OpenGl\OpenGl_PrimitiveArray.cxx"
+    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_XCAFDoc_GeomTolerance.cxx" "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_GeomTolerance.cxx"
+    REM NOTE If adding a new patch, adjust the checks above and below accordingly
+)
+findstr IfcOpenShell "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_GeomTolerance.cxx">NUL
+if not %ERRORLEVEL%==0 goto :Error
+
+cd "%DEPENDENCY_DIR%"
+call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\opencascade" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
+    -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype"
+if not %ERRORLEVEL%==0 goto :Error
+call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCCT.sln" %BUILD_CFG%
+if not %ERRORLEVEL%==0 goto :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+if not %ERRORLEVEL%==0 goto :Error
+:: Use a single lib directory for for release and debug libraries as is done with OCE
+if not exist "%OCC_LIBRARY_DIR%". mkdir "%OCC_LIBRARY_DIR%"
+move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%VC_VER%\libi\*.*" "%OCC_LIBRARY_DIR%"
+move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%VC_VER%\libd\*.*" "%OCC_LIBRARY_DIR%"
+rmdir /s /q "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%VC_VER%"
+:: Removed unneeded bits
+rmdir /s /q "%INSTALL_DIR%\opencascade\data"
+rmdir /s /q "%INSTALL_DIR%\opencascade\samples"
+del "%INSTALL_DIR%\opencascade\*.bat"
+
+goto :Python
+
 :OCE
+set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+
 set DEPENDENCY_NAME=Open CASCADE Community Edition
 set DEPENDENCY_DIR=%DEPS_DIR%\oce
 call :GitCloneOrPullRepository https://github.com/tpaviot/oce.git "%DEPENDENCY_DIR%"
@@ -428,6 +510,8 @@ set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
 
+:: TODO add BuildCMakeProject which utilizes cmake --build
+
 :: BuildSolution - Builds/Rebuilds/Cleans a solution using MSBuild
 :: Params: %1 solutioName, %2 configuration
 :BuildSolution
@@ -438,6 +522,7 @@ exit /b %ERRORLEVEL%
 :: InstallCMakeProject - Builds the INSTALL project of CMake-based project
 :: Params: %1 buildDir, %2 == configuration
 :: NOTE the actual install dir is set during cmake run.
+:: TODO Utilize cmake --build --target INSTALL
 :InstallCMakeProject
 pushd %1
 call cecho.cmd 0 13 "Installing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."

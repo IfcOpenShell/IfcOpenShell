@@ -5,14 +5,15 @@ and its dependencies.
 
 As a general guideline, `.cmd` files are non-standalone batch files that need to be run from command prompt or from
 another batch file, and/or while the Visual Studio environment variables set, and `.bat` files are standalone batch
-files that can also be invoked e.g. by double-clicking in the File Explorer. `.sh` files are for MSYS2 + MinGW compilation.
+files that can also be invoked e.g. by double-clicking in the File Explorer. `.sh` files are for MSYS2 + MinGW ("MSYS"
+hereafter) compilation.
 
 Usage Instructions
 ------------------
 ### MSYS2 + MinGW
 
-Building using MSYS2 + MinGW is very similar to using the Visual Studio batch files, but instead the shell scripts
-are used. Note that the MSYS2 + MinGW support is currently a bit experimental. It is advised to check out the contents
+Building using MSYS is very similar to using the Visual Studio batch files, but instead the shell scripts
+are used. Note that the MSYS support is currently a bit experimental. It is advised to check out the contents
 of the shell scripts before using them. Note that contrary to Visual Studio, with MinGW all of the dependencies are not
 built or used as static libaries. Currently Release build is used for all libraries.
 
@@ -62,6 +63,16 @@ required IfcOpenShell-Python parts are deployed to the `<PYTHONHOME>\Lib\site-pa
 **Note:** Currently all of the dependencies are build as static libraries against the static run-time allowing the
 developer to effortlessly deploy standalone IFCOS executables.
 
+Using the official Open CASCADE release instead of community edition
+---------------------------------------------
+Before building the dependencies, enable the OCCT usage:
+```
+> set IFCOS_USE_OCCT=TRUE
+> buid-deps.cmd
+```
+
+Please note that this option is not yet available in the MSYS build scripts.
+
 Using an already existing Python installation
 ---------------------------------------------
 
@@ -93,16 +104,16 @@ Directory Structure
 \---win
 |   build-all.cmd                   - Runs all of the build scripts for IFCOS and it dependencies in a row without pauses
 |   build-deps.cmd                  - Fetches and builds all needed dependencies for IFCOS using Visual Studio
-|   build-deps.sh                   - Fetches and builds all needed dependencies for IFCOS using MSYS2 + MinGW
+|   build-deps.sh                   - Fetches and builds all needed dependencies for IFCOS using MSYS
 |   BuildDepsCache-<ARCH>.txt       - Cache file created by build-deps.cmd
 |   build-ifcopenshell.bat          - Builds IFCOS using Visual Studio
-|   build-ifcopenshell.sh           - Builds IFCOS using MSYS2 + MinGW
+|   build-ifcopenshell.sh           - Builds IFCOS using MSYS
 |   build-type-cfg.cmd              - Utility file used by the build scripts
 |   install-ifcopenshell.bat        - Installs/deployes IFCOS using Visual Studio.
-|   install-ifcopenshell.sh         - Installs/deployes IFCOS using MSYS2 + MinGW.
+|   install-ifcopenshell.sh         - Installs/deployes IFCOS using MSYS.
 |   readme.md                       - This file
 |   run-cmake.bat                   - Sets environment variables for the dependencies and runs CMake for IFCOS using Visual Studio
-|   run-cmake.sh                    - Sets environment variables for the dependencies and runs CMake for IFCOS using MSYS2 + MinGW
+|   run-cmake.sh                    - Sets environment variables for the dependencies and runs CMake for IFCOS using MSYS
 |   set-python-to-path.bat          - Utility for setting PYTHONHOME (read from BuildDepsCache-<ARCH>.txt) to PATH
 |   vs-cfg.cmd                      - Utility file used by the build scripts
 \---patches                         - Contains patches for the dependencies

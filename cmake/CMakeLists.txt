@@ -117,29 +117,41 @@ MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
 # Usage:
-# SET(SOME_LIRARIES foo bar)
-# ADD_DEBUG_VARIANTS(SOME_LIRARIES "${SOME_LIRARIES}" "d")
+# set(SOME_LIRARIES foo bar)
+# add_debug_variants(SOME_LIRARIES "${SOME_LIRARIES}" "d")
 # "foo bar" -> "optimized foo debug food optimized bar debug bard"
-FUNCTION(ADD_DEBUG_VARIANTS NAME LIBRARIES POSTFIX)
-	SET(LIBRARIES_STR "${LIBRARIES}")
-	SET(LIBRARIES "")
-	FOREACH(lib ${LIBRARIES_STR})
-		SET(LIBRARIES "${LIBRARIES} optimized ${lib}")
-		SET(LIBRARIES "${LIBRARIES} debug ${lib}${POSTFIX}")
-	ENDFOREACH()
-	STRING(STRIP ${LIBRARIES} LIBRARIES) # leading and trailing whitespace cause confusion
-	SEPARATE_ARGUMENTS(LIBRARIES) # "optimized <lib> debug <lib>" needs to be a list instead of a string
-	SET(${NAME} ${LIBRARIES} PARENT_SCOPE)
-ENDFUNCTION()
+# or
+# set(SOME_LIRARIES path/foo.lib)
+# add_debug_variants(SOME_LIRARIES "${SOME_LIRARIES}" "d")
+# "path/foo.lib" -> "optimized path/foo.lib debug path/food.lib"
+# TODO Could be refined: take the library file extension as a parameter and
+# make sure the lib variable ends with not just contains it.
+function(add_debug_variants NAME LIBRARIES POSTFIX)
+    set(LIBRARIES_STR "${LIBRARIES}")
+    set(LIBRARIES "")
+    foreach(lib ${LIBRARIES_STR})
+        if("${lib}" MATCHES ".lib")
+            string(REPLACE ".lib" "" lib ${lib})
+            set(LIBRARIES "${LIBRARIES} optimized ${lib}.lib")
+            set(LIBRARIES "${LIBRARIES} debug ${lib}${POSTFIX}.lib")
+        else()
+            set(LIBRARIES "${LIBRARIES} optimized ${lib}")
+            set(LIBRARIES "${LIBRARIES} debug ${lib}${POSTFIX}")
+        endif()
+    endforeach()
+    string(STRIP ${LIBRARIES} LIBRARIES) # leading and trailing whitespace cause confusion
+    separate_arguments(LIBRARIES) # "optimized <lib> debug <lib>" needs to be a list instead of a string
+    set(${NAME} ${LIBRARIES} PARENT_SCOPE)
+endfunction()
 
 # Find Open CASCADE
 IF("${OCC_INCLUDE_DIR}" STREQUAL "")
 	SET(OCC_INCLUDE_DIR "/usr/include/oce/" CACHE FILEPATH "Open CASCADE header files")
-	MESSAGE(STATUS "Looking for opencascade include files in: ${OCC_INCLUDE_DIR}")
+	MESSAGE(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
 	MESSAGE(STATUS "Use OCC_INCLUDE_DIR to specify another directory")
 ELSE()
 	SET(OCC_INCLUDE_DIR ${OCC_INCLUDE_DIR} CACHE FILEPATH "Open CASCADE header files")
-	MESSAGE(STATUS "Looking for opencascade include files in: ${OCC_INCLUDE_DIR}")
+	MESSAGE(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
 ENDIF()
 
 FIND_FILE(gp_Pnt_hxx "gp_Pnt.hxx" ${OCC_INCLUDE_DIR})
@@ -156,11 +168,11 @@ SET(OPENCASCADE_LIBRARY_NAMES
 
 IF("${OCC_LIBRARY_DIR}" STREQUAL "")
 	SET(OCC_LIBRARY_DIR "/usr/lib/" CACHE FILEPATH "Open CASCADE library files")
-	MESSAGE(STATUS "Looking for opencascade library files in: ${OCC_LIBRARY_DIR}")
+	MESSAGE(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
 	MESSAGE(STATUS "Use OCC_LIBRARY_DIR to specify another directory")
 ELSE()
 	SET(OCC_LIBRARY_DIR ${OCC_LIBRARY_DIR} CACHE FILEPATH "Open CASCADE library files")
-	MESSAGE(STATUS "Looking for opencascade library files in: ${OCC_LIBRARY_DIR}")
+	MESSAGE(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
 ENDIF()
 
 FIND_LIBRARY(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
@@ -176,9 +188,10 @@ foreach(lib ${OPENCASCADE_LIBRARY_NAMES})
     list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
 endforeach()
 
-IF(MSVC)
-	ADD_DEBUG_VARIANTS(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" "d")
-ENDIF()
+if(MSVC)
+    add_definitions(-DHAVE_NO_DLL)
+    add_debug_variants(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" "d")
+endif()
 
 IF(UNICODE_SUPPORT)
 	# Find ICU 
@@ -203,7 +216,7 @@ IF(UNICODE_SUPPORT)
 		IF(WIN32)
 			FIND_LIBRARY(icudt NAMES icudt PATHS ${ICU_LIBRARY_DIR} NO_DEFAULT_PATH)
 			SET(ICU_LIBRARIES ${icu} ${icudt})
-			ADD_DEBUG_VARIANTS(ICU_LIBRARIES "${ICU_LIBRARIES}" "d")
+			add_debug_variants(ICU_LIBRARIES "${ICU_LIBRARIES}" "d")
 			# TODO MinGW build would appear to be using dynamic ICU regardless of this definition.
 			ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
 		ELSE()
@@ -269,7 +282,7 @@ IF(COLLADA_SUPPORT)
 		endif()
 
 		IF(MSVC)
-			ADD_DEBUG_VARIANTS(OPENCOLLADA_LIBRARIES "${OPENCOLLADA_LIBRARIES}" "d")
+			add_debug_variants(OPENCOLLADA_LIBRARIES "${OPENCOLLADA_LIBRARIES}" "d")
 		ENDIF()
 	ELSE()
 		MESSAGE(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA. Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
@@ -351,8 +364,7 @@ IF(MSVC)
 		ENDIF()
 	ENDFOREACH()
 ElSE()
-    add_definitions(-Wno-non-virtual-dtor -Wall)
-    # TODO Preferably use -Wextra too, but currently too much warning spam coming from the dependencies' headers.
+    add_definitions(-Wall -Wextra)
     # -fPIC is not relevant on Windows and creates pointless warnings
     if (UNIX)
         add_definitions(-fPIC)

@@ -218,11 +218,11 @@ namespace IfcUtil {
 		return f;
 	}
 
-	const char* const schema_identifier() {
+	const char* schema_identifier() {
 		return IfcSchema::Identifier;
 	}
 
-	const char* const version() {
+	const char* version() {
 		return IFCOPENSHELL_VERSION;
 	}
 

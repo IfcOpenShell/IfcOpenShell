@@ -25,6 +25,9 @@
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4201 4512)
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
 #endif
 #include <COLLADASWStreamWriter.h>
 #include <COLLADASWLibraryGeometries.h>
@@ -33,6 +36,8 @@
 #include <COLLADASWLibraryMaterials.h>
 #ifdef _MSC_VER
 #pragma warning(pop)
+#else
+#pragma GCC diagnostic pop
 #endif
 
 #include "../ifcgeom/IfcGeomIterator.h"
