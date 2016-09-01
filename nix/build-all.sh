@@ -382,6 +382,7 @@ for PYTHON_VERSION in "${PYTHON_VERSIONS[@]}"; do
     -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE
     -DPYTHON_INCLUDE_DIR=$PYTHON_INCLUDE
     -DSWIG_EXECUTABLE=$DEPS_DIR/install/swig/bin/swig
+    -DCOLLADA_SUPPORT=OFF
     " $CMAKE_DIR
     
     printf "\rBuilding python $PYTHON_VERSION wrapper...   "
