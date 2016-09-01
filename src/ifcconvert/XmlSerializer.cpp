@@ -28,6 +28,7 @@
 #include <algorithm>
 
 #include "../ifcparse/IfcSIPrefix.h"
+#include "../ifcgeom/IfcGeom.h"
 
 using boost::property_tree::ptree;
 using namespace IfcSchema;
@@ -81,6 +82,21 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 				}
 
 				value = unit_name;
+			} else if (e->is(IfcSchema::Type::IfcLocalPlacement)) {
+				IfcSchema::IfcLocalPlacement* placement = e->as<IfcSchema::IfcLocalPlacement>();
+				gp_Trsf trsf;
+				IfcGeom::Kernel kernel;
+				if (kernel.convert(placement, trsf)) {
+					std::stringstream stream;
+					for (int i = 1; i < 5; ++i) {
+						for (int j = 1; j < 4; ++j) {
+							const double trsf_value = trsf.Value(j, i);
+							stream << trsf_value << " ";
+						}
+						stream << ((i == 4) ? "1" : "0 ");
+					}
+					value = stream.str();
+				}				
 			}
 			break; }
         default:
@@ -129,8 +145,12 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& tree, boo
 // A function to be called recursively. Template specialization is used 
 // to descend into decomposition, containment and property relationships.
 template <typename A>
-void descend(A* instance, ptree& tree) {
-	format_entity_instance(instance, tree);
+ptree& descend(A* instance, ptree& tree) {
+	if (instance->is(IfcSchema::Type::IfcObjectDefinition)) {
+		return descend(instance->as<IfcSchema::IfcObjectDefinition>(), tree);
+	} else {
+		return format_entity_instance(instance, tree);
+	}
 }
 
 // Returns related entity instances using IFC's objectified relationship
@@ -147,19 +167,19 @@ typename V::list::ptr get_related(T* t, F f, G g) {
 }
 
 // Descends into the tree by recursing into IfcRelContainedInSpatialStructure,
-// IfcRelDecomposes and IfcRelDefinesByProperties relations.
+// IfcRelDecomposes, IfcRelDefinesByType, IfcRelDefinesByProperties relations.
 template <>
-void descend(IfcProduct* product, ptree& tree) {
+ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 	ptree& child = format_entity_instance(product, tree);
 	
 	if (product->is(Type::IfcSpatialStructureElement)) {
 		IfcSpatialStructureElement* structure = (IfcSpatialStructureElement*) product;
 
-		IfcProduct::list::ptr elements = get_related
-			<IfcSpatialStructureElement, IfcRelContainedInSpatialStructure, IfcProduct>
+		IfcObjectDefinition::list::ptr elements = get_related
+			<IfcSpatialStructureElement, IfcRelContainedInSpatialStructure, IfcObjectDefinition>
 			(structure, &IfcSpatialStructureElement::ContainsElements, &IfcRelContainedInSpatialStructure::RelatedElements);
 	
-		for (IfcProduct::list::it it = elements->begin(); it != elements->end(); ++it) {
+		for (IfcObjectDefinition::list::it it = elements->begin(); it != elements->end(); ++it) {
 			descend(*it, child);
 		}
 	}
@@ -176,58 +196,44 @@ void descend(IfcProduct* product, ptree& tree) {
 
 #ifndef USE_IFC4
 	IfcObjectDefinition::list::ptr structures = get_related
-		<IfcProduct, IfcRelDecomposes, IfcObjectDefinition>
-		(product, &IfcProduct::IsDecomposedBy, &IfcRelDecomposes::RelatedObjects);
+		<IfcObjectDefinition, IfcRelDecomposes, IfcObjectDefinition>
+		(product, &IfcObjectDefinition::IsDecomposedBy, &IfcRelDecomposes::RelatedObjects);
 #else
 	IfcObjectDefinition::list::ptr structures = get_related
-		<IfcProduct, IfcRelAggregates, IfcObjectDefinition>
+		<IfcObjectDefinition, IfcRelAggregates, IfcObjectDefinition>
 		(product, &IfcProduct::IsDecomposedBy, &IfcRelAggregates::RelatedObjects);
 #endif
 
 	for (IfcObjectDefinition::list::it it = structures->begin(); it != structures->end(); ++it) {
 		IfcObjectDefinition* ob = *it;
-		if (ob->is(Type::IfcSpatialStructureElement)) {
-			descend((IfcProduct*)ob, child);
-		} else {
-			descend(ob, child);
+		descend(ob, child);
+	}
+
+	if (product->is(IfcSchema::Type::IfcObject)) {
+		IfcSchema::IfcObject* object = product->as<IfcSchema::IfcObject>();
+
+		IfcPropertySetDefinition::list::ptr property_sets = get_related
+			<IfcObject, IfcRelDefinesByProperties, IfcPropertySetDefinition>
+			(object, &IfcObject::IsDefinedBy, &IfcRelDefinesByProperties::RelatingPropertyDefinition);
+
+		for (IfcPropertySetDefinition::list::it it = property_sets->begin(); it != property_sets->end(); ++it) {
+			IfcPropertySetDefinition* pset = *it;
+			if (pset->is(Type::IfcPropertySet)) {
+				format_entity_instance(pset, child, true);
+			}
+		}
+
+		IfcTypeObject::list::ptr types = get_related
+			<IfcObject, IfcRelDefinesByType, IfcTypeObject>
+			(object, &IfcObject::IsDefinedBy, &IfcRelDefinesByType::RelatingType);
+
+		for (IfcTypeObject::list::it it = types->begin(); it != types->end(); ++it) {
+			IfcTypeObject* type = *it;
+			format_entity_instance(type, child, true);
 		}
 	}
 
-	IfcPropertySetDefinition::list::ptr property_sets = get_related
-		<IfcProduct, IfcRelDefinesByProperties, IfcPropertySetDefinition>
-		(product, &IfcProduct::IsDefinedBy, &IfcRelDefinesByProperties::RelatingPropertyDefinition);
-
-	for (IfcPropertySetDefinition::list::it it = property_sets->begin(); it != property_sets->end(); ++it) {
-		IfcPropertySetDefinition* pset = *it;
-		if (pset->is(Type::IfcPropertySet)) {
-			format_entity_instance(pset, child, true);
-		}
-	}
-}
-
-// Descends into the tree by recursing into IfcRelDecomposes relations.
-template <>
-void descend(IfcProject* project, ptree& tree) {
-	ptree& child = format_entity_instance(project, tree);
-	
-#ifndef USE_IFC4
-	IfcObjectDefinition::list::ptr structures = get_related
-		<IfcProject, IfcRelDecomposes, IfcObjectDefinition>
-		(project, &IfcProject::IsDecomposedBy, &IfcRelDecomposes::RelatedObjects);
-#else
-	IfcObjectDefinition::list::ptr structures = get_related
-		<IfcProject, IfcRelAggregates, IfcObjectDefinition>
-		(project, &IfcProduct::IsDecomposedBy, &IfcRelAggregates::RelatedObjects);
-#endif
-	
-	for (IfcObjectDefinition::list::it it = structures->begin(); it != structures->end(); ++it) {
-		IfcObjectDefinition* ob = *it;
-		if (ob->is(Type::IfcSpatialStructureElement)) {
-			descend((IfcProduct*)ob, child);
-		} else {
-			descend(ob, child);
-		}
-	}
+	return child;
 }
 
 // Format IfcProperty instances and insert into the DOM. IfcComplexProperties are flattened out.
@@ -253,7 +259,7 @@ void XmlSerializer::finalize() {
 	}
 	IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties;
+	ptree root, header, units, decomposition, properties, types;
 	
 	// Write the SPF header as XML nodes.
 	foreach(const std::string& s, file->header().file_description().description()) {
@@ -286,6 +292,22 @@ void XmlSerializer::finalize() {
 		format_properties(pset->HasProperties(), node);
 	}
 
+	// Write all type objects as XML nodes.
+	IfcTypeObject::list::ptr type_objects = file->entitiesByType<IfcTypeObject>();
+	for (IfcTypeObject::list::it it = type_objects->begin(); it != type_objects->end(); ++it) {
+		IfcTypeObject* type_object = *it;
+		ptree& node = descend(type_object, types);
+		// ptree& node = format_entity_instance(type_object, types);	
+		
+		IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
+		for (IfcPropertySetDefinition::list::it jt = property_sets->begin(); jt != property_sets->end(); ++jt) {
+			IfcPropertySetDefinition* pset = *jt;
+			if (pset->is(Type::IfcPropertySet)) {
+				format_entity_instance(pset, node, true);
+			}
+		}
+	}
+
 	// Write all assigned units as XML nodes.
 	IfcEntityList::ptr unit_assignments = project->UnitsInContext()->Units();
 	for (IfcEntityList::it it = unit_assignments->begin(); it != unit_assignments->end(); ++it) {
@@ -301,6 +323,7 @@ void XmlSerializer::finalize() {
 	root.add_child("ifc.header",        header);
 	root.add_child("ifc.units",         units);
 	root.add_child("ifc.properties",    properties);
+	root.add_child("ifc.types",         types);
 	root.add_child("ifc.decomposition", decomposition);
 
 	root.put("ifc.<xmlattr>.xmlns:xlink", "http://www.w3.org/1999/xlink");
