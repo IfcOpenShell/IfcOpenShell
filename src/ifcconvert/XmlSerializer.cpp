@@ -299,11 +299,13 @@ void XmlSerializer::finalize() {
 		ptree& node = descend(type_object, types);
 		// ptree& node = format_entity_instance(type_object, types);	
 		
-		IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
-		for (IfcPropertySetDefinition::list::it jt = property_sets->begin(); jt != property_sets->end(); ++jt) {
-			IfcPropertySetDefinition* pset = *jt;
-			if (pset->is(Type::IfcPropertySet)) {
-				format_entity_instance(pset, node, true);
+		if (type_object->hasHasPropertySets()) {
+			IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
+			for (IfcPropertySetDefinition::list::it jt = property_sets->begin(); jt != property_sets->end(); ++jt) {
+				IfcPropertySetDefinition* pset = *jt;
+				if (pset->is(Type::IfcPropertySet)) {
+					format_entity_instance(pset, node, true);
+				}
 			}
 		}
 	}
