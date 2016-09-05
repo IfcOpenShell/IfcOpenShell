@@ -43,6 +43,53 @@
 %include "../ifcgeom/IfcGeomRepresentation.h"
 %include "../ifcgeom/IfcGeomIterator.h"
 
+// A Template instantantation should be defined before it is used as a base class. 
+// But frankly I don't care as most methods are subtlely different anyway.
+%include "../ifcgeom/IfcGeomTree.h"
+
+%extend IfcGeom::tree {
+
+	static IfcEntityList::ptr vector_to_list(const std::vector<IfcSchema::IfcProduct*>& ps) const {
+		IfcEntityList::ptr r(new IfcEntityList);
+		for (std::vector<IfcSchema::IfcProduct*>::const_iterator it = ps.begin(); it != ps.end(); ++it) {
+			r->push(*it);
+		}
+		return r;
+	}
+
+	IfcEntityList::ptr select_box(IfcParse::IfcLateBoundEntity* e, bool completely_within = false, double extend=-1.e-5) const {
+		if (!e->is(IfcSchema::Type::IfcProduct)) {
+			throw IfcParse::IfcException("Instance should be an IfcProduct");
+		}
+		std::vector<IfcSchema::IfcProduct*> ps = $self->select_box((IfcSchema::IfcProduct*)e, completely_within, extend);
+		return IfcGeom_tree_vector_to_list(ps);
+	}
+
+	IfcEntityList::ptr select_box(const gp_Pnt& p) const {
+		std::vector<IfcSchema::IfcProduct*> ps = $self->select_box(p);
+		return IfcGeom_tree_vector_to_list(ps);
+	}
+
+	IfcEntityList::ptr select_box(const Bnd_Box& b, bool completely_within = false) const {
+		std::vector<IfcSchema::IfcProduct*> ps = $self->select_box(b, completely_within);
+		return IfcGeom_tree_vector_to_list(ps);
+	}
+
+	IfcEntityList::ptr select(IfcParse::IfcLateBoundEntity* e, bool completely_within = false) const {
+		if (!e->is(IfcSchema::Type::IfcProduct)) {
+			throw IfcParse::IfcException("Instance should be an IfcProduct");
+		}
+		std::vector<IfcSchema::IfcProduct*> ps = $self->select((IfcSchema::IfcProduct*)e, completely_within);
+		return IfcGeom_tree_vector_to_list(ps);
+	}
+
+	IfcEntityList::ptr select(const gp_Pnt& p) const {
+		std::vector<IfcSchema::IfcProduct*> ps = $self->select(p);
+		return IfcGeom_tree_vector_to_list(ps);
+	}
+
+}
+
 // Using RTTI return a more specialized type of Element
 // Note that these elements are not to be owned by SWIG/Python as they will be freed automatically upon the next iteration
 // except for the IfcGeom::Element instances which are returned by Iterator::getObject() calls

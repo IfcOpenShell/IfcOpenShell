@@ -37,6 +37,8 @@
 #include "../ifcgeom/IfcGeomMaterial.h"
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 
+#include <TopoDS_Compound.hxx>
+
 namespace IfcGeom {
 
 	namespace Representation {
@@ -71,6 +73,7 @@ namespace IfcGeom {
 			IfcGeom::IfcRepresentationShapeItems::const_iterator end() const { return _shapes.end(); }
 			const IfcGeom::IfcRepresentationShapeItems& shapes() const { return _shapes; }
 			const unsigned int& getId() const { return id; }
+			TopoDS_Compound as_compound() const;
 		};
 
 		class IFC_GEOM_API Serialization : public Representation  {

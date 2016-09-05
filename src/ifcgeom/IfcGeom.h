@@ -190,7 +190,7 @@ public:
 	bool closest(const gp_Pnt&, const std::vector<gp_Pnt>&, gp_Pnt&);
 	bool project(const Handle_Geom_Curve&, const gp_Pnt&, gp_Pnt& p, double& u, double& d);
 	bool project(const Handle_Geom_Surface&, const TopoDS_Shape&, double& u1, double& v1, double& u2, double& v2, double widen=0.1);
-	int count(const TopoDS_Shape&, TopAbs_ShapeEnum);
+	static int count(const TopoDS_Shape&, TopAbs_ShapeEnum);
 
 	bool find_wall_end_points(const IfcSchema::IfcWall*, gp_Pnt& start, gp_Pnt& end);
 

@@ -67,6 +67,46 @@ class iterator(_iterator):
             return wrap_shape_creation(self.settings, _iterator.get(self))
 
 
+class tree(ifcopenshell_wrapper.tree):
+    
+    def __init__(self, file=None, settings=None):
+        args = [self]
+        if file is not None: 
+            args.append(file.wrapped_data)
+            if settings is not None:
+                args.append(settings)
+        ifcopenshell_wrapper.tree.__init__(*args)
+        
+    def add_file(self, file, settings):
+        ifcopenshell_wrapper.tree.add_file(self, file.wrapped_data, settings)
+        
+    def select(self, value, **kwargs):
+        def unwrap(value):
+            if isinstance(value, entity_instance):
+                return value.wrapped_data
+            elif all(map(lambda v: hasattr(value, v), "XYZ")):
+                return value.X(), value.Y(), value.Z()
+            return value
+        args = [self, unwrap(value)]
+        if isinstance(value, entity_instance):
+            args.append(kwargs.get("completely_within", False))
+        return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select(*args)]
+        
+    def select_box(self, value, **kwargs):
+        def unwrap(value):
+            if isinstance(value, entity_instance):
+                return value.wrapped_data
+            elif hasattr(value, "Get"):
+                return value.Get()[:3], value.Get()[3:]
+            return value
+        args = [self, unwrap(value)]
+        if "extend" in kwargs or "completely_within" in kwargs:
+            args.append(kwargs.get("completely_within", False))
+        if "extend" in kwargs:
+            args.append(kwargs.get("extend", -1.e-5))
+        return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select_box(*args)]
+
+
 def create_shape(settings, inst, repr=None): 
     return wrap_shape_creation(
         settings,

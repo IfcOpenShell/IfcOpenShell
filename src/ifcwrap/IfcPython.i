@@ -67,6 +67,7 @@
 %module ifcopenshell_wrapper %{
 	#include "../ifcgeom/IfcGeom.h"
 	#include "../ifcgeom/IfcGeomIterator.h"
+	#include "../ifcgeom/IfcGeomTree.h"
 
 	#include "../ifcparse/IfcFile.h"
 	#include "../ifcparse/IfcLateBoundEntity.h"

@@ -31,13 +31,8 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	: Representation(brep.settings())
 	, _id(brep.getId())
 {
-	TopoDS_Compound compound;
-	BRep_Builder builder;
-	builder.MakeCompound(compound);
+	TopoDS_Compound compound = brep.as_compound();
 	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
-		const TopoDS_Shape& s = it->Shape();
-		gp_GTrsf trsf = it->Placement();
-		
 		if (it->hasStyle() && it->Style().Diffuse()) {
 			const IfcGeom::SurfaceStyle::ColorComponent& clr = *it->Style().Diffuse();
 			_surface_styles.push_back(clr.R());
@@ -53,18 +48,28 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 		} else {
 			_surface_styles.push_back(1.);
 		}
-		
+	}
+	std::stringstream sstream;
+	BRepTools::Write(compound,sstream);
+	_brep_data = sstream.str();
+}
+
+TopoDS_Compound IfcGeom::Representation::BRep::as_compound() const {
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	builder.MakeCompound(compound);
+	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = begin(); it != end(); ++it) {
+		const TopoDS_Shape& s = it->Shape();
+		gp_GTrsf trsf = it->Placement();
+
 		if (settings().get(IteratorSettings::CONVERT_BACK_UNITS)) {
 			gp_Trsf scale;
 			scale.SetScaleFactor(1.0 / settings().unit_magnitude());
 			trsf.PreMultiply(scale);
 		}
-		
-		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, trsf);
 
+		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, trsf);
 		builder.Add(compound, moved_shape);
 	}
-	std::stringstream sstream;
-	BRepTools::Write(compound,sstream);
-	_brep_data = sstream.str();
+	return compound;
 }
