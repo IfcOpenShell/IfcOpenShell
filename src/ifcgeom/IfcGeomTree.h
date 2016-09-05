@@ -50,7 +50,7 @@ namespace IfcGeom {
 			}
 
 			std::vector<T> select_box(const T& t, bool completely_within = false, double extend=-1.e-5) const {
-				map_t::const_iterator it = shapes_.find(t);
+				typename map_t::const_iterator it = shapes_.find(t);
 				if (it == shapes_.end()) {
 					return std::vector<T>();
 				}
@@ -84,7 +84,15 @@ namespace IfcGeom {
 						const TopoDS_Shape& shp = shapes_.find(*it)->second;
 						Bnd_Box B;
 						BRepBndLib::AddClose(shp, B);
-						if (!b.IsOut(B.CornerMin()) && !b.IsOut(B.CornerMax())) {
+
+						// BndBox::CornerMin() /-Max() introduced in OCCT 6.8
+						double x1, y1, z1, x2, y2, z2;
+						b.Get(x1, y1, z1, x2, y2, z2);
+						double gap = B.GetGap();
+						gp_Pnt p1(x1 - gap, y1 - gap, z1 - gap);
+						gp_Pnt p2(x2 + gap, y2 + gap, z2 + gap);
+						
+						if (!b.IsOut(p1) && !b.IsOut(p2)) {
 							ts_filtered.push_back(*it);
 						}
 					}
@@ -172,8 +180,8 @@ namespace IfcGeom {
 			{
 			public:
 				selector(const Bnd_Box& b)
-					: bounds_(b)
-					, tree_t::Selector()
+					: tree_t::Selector()
+					, bounds_(b)
 				{}
 
 				Standard_Boolean Reject(const Bnd_Box& b) const {
