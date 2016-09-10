@@ -33,6 +33,11 @@ install:
   - sudo apt-get install -y libpcre3-dev
 
 script:
+# test nix/build-all.py script (before the build following build instructions in order to no mess up installations into /usr/local)
+  - cd nix
+  - python build-all.py
+  - cd ..
+# test build according to build instructions
   - pwd
   - cd ..
   - git clone https://github.com/KhronosGroup/OpenCOLLADA.git
@@ -53,3 +58,9 @@ script:
   - cd build
   - cmake -DCOLLADA_SUPPORT=True -DOPENCOLLADA_INCLUDE_DIR=/usr/local/include/opencollada -DOPENCOLLADA_LIBRARY_DIR=/usr/local/lib/opencollada -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DUSE_IFC4=False -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu  ..
   - make -j2
+  - pwd
+  - cd ..
+  - cd ..
+
+after_failure:
+  - cat build/Linux/x86_64/logs/*.log
