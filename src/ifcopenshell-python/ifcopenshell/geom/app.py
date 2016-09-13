@@ -14,9 +14,16 @@ from PyQt4 import QtGui, QtCore
 try: from OCC.Display.pyqt4Display import qtViewer3d
 except: 
     import OCC.Display
-    OCC.Display.backend.get_backend("qt-pyqt4")
+
+    try: import OCC.Display.backend
+    except: pass
+
+    try: OCC.Display.backend.get_backend("qt-pyqt4")
+    except: OCC.Display.backend.load_backend("qt-pyqt4")
+
     from OCC.Display.qtDisplay import qtViewer3d
-    
+
+
 from .main import create_shape, settings
 from .occ_utils import display_shape
 
