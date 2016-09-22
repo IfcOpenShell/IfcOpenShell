@@ -21,6 +21,7 @@ import os
 import sys
 
 from .. import ifcopenshell_wrapper
+from ..file import file
 from ..entity_instance import entity_instance
 
 def has_occ():
@@ -59,9 +60,13 @@ for ty in (ifcopenshell_wrapper.iterator_single_precision, ifcopenshell_wrapper.
 
 # Make sure people are able to use python's platform agnostic paths
 class iterator(_iterator):
-    def __init__(self, settings, filename):
+    def __init__(self, settings, file_or_filename):
         self.settings = settings
-        _iterator.__init__(self, settings, os.path.abspath(filename))
+        if isinstance(file_or_filename, file):
+            file_or_filename = file_or_filename.wrapped_data
+        else:
+            file_or_filename = os.path.abspath(file_or_filename)
+        _iterator.__init__(self, settings, file_or_filename)
     if has_occ:
         def get(self):
             return wrap_shape_creation(self.settings, _iterator.get(self))
