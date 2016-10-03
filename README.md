@@ -70,8 +70,8 @@ Start the MSYS2 Shell and then:
 
 #### Using Bash on Ubuntu on Windows
 
-Start Bash on Ubuntu on Windows and follow the instructions below. Ubuntu 14.04.4 LTS with GCC 4.8.4 has been
-confirmed to work.
+Start Bash on Ubuntu on Windows and follow the instructions below. Compiling on Ubuntu 14.04.4 LTS using GCC 4.8.4
+or Clang 3.5 has been confirmed to work.
 
 ### Compiling on *nix
 

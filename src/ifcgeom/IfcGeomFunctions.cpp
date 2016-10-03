@@ -2116,7 +2116,7 @@ bool IfcGeom::Kernel::split_solid_by_shell(const TopoDS_Shape& input, const Topo
 
 	for (int i = 0; i < 2; ++i) {
 		TopoDS_Shape& shape = i == 0 ? front : back;
-		const bool result_is_null = is_null[i] = shape.IsNull();
+        const bool result_is_null = is_null[i] = shape.IsNull() != 0;
 		if (result_is_null) {
 			continue;
 		}
