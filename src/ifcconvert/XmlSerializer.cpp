@@ -223,9 +223,15 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 			}
 		}
 
+#ifdef USE_IFC4
+		IfcTypeObject::list::ptr types = get_related
+			<IfcObject, IfcRelDefinesByType, IfcTypeObject>
+			(object, &IfcObject::IsTypedBy, &IfcRelDefinesByType::RelatingType);
+#else
 		IfcTypeObject::list::ptr types = get_related
 			<IfcObject, IfcRelDefinesByType, IfcTypeObject>
 			(object, &IfcObject::IsDefinedBy, &IfcRelDefinesByType::RelatingType);
+#endif
 
 		for (IfcTypeObject::list::it it = types->begin(); it != types->end(); ++it) {
 			IfcTypeObject* type = *it;
