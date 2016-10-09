@@ -26,11 +26,12 @@ static const char * const HEADER			= "HEADER";
 static const char * const FILE_DESCRIPTION	= "FILE_DESCRIPTION";
 static const char * const FILE_NAME			= "FILE_NAME";
 static const char * const FILE_SCHEMA		= "FILE_SCHEMA";
-static const char * const FILE_POPULATION	= "FILE_POPULATION";
-static const char * const SECTION_LANGUAGE	= "SECTION_LANGUAGE";
-static const char * const SECTION_CONTEXT	= "SECTION_CONTEXT";
 static const char * const ENDSEC			= "ENDSEC";
 static const char * const DATA				= "DATA";
+// The following header entities are not normally encountered in IFC files and are not parsed.
+// static const char * const FILE_POPULATION   = "FILE_POPULATION";
+// static const char * const SECTION_LANGUAGE  = "SECTION_LANGUAGE";
+// static const char * const SECTION_CONTEXT   = "SECTION_CONTEXT";
 
 using namespace IfcParse;
 
@@ -60,6 +61,16 @@ void IfcSpfHeader::readTerminal(const std::string& term, Trail trail) {
 void IfcSpfHeader::read() {
 	readTerminal(ISO_10303_21, TRAILING_SEMICOLON);
 	readTerminal(HEADER, TRAILING_SEMICOLON);
+
+	// | The header section of every exchange structure shall contain one 
+	// | instance of each of the following entities: file_description, file_name, 
+	// | and file_schema, and they shall appear in that order. Instances of 
+	// | file_population, section_language and section_context may appear after 
+	// | file_schema. If instances of user-defined header section entities are 
+	// | present, they shall appear after the header section entity instances 
+	// | defined in this section.
+	// 
+	// ISO 10303-21 Second edition 2002-01-15 p. 16
 
 	readTerminal(FILE_DESCRIPTION, TRAILING_PAREN);
 	delete _file_description;
@@ -95,7 +106,6 @@ void IfcSpfHeader::write(std::ostream& os) const {
 	os << ENDSEC << ";" << "\n";
 	os << DATA << ";" << "\n";
 }
-
 
 const FileDescription& IfcSpfHeader::file_description() const {
 	if (_file_description) {
