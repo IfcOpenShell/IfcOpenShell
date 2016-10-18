@@ -223,9 +223,15 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 			}
 		}
 
+#ifdef USE_IFC4
+		IfcTypeObject::list::ptr types = get_related
+			<IfcObject, IfcRelDefinesByType, IfcTypeObject>
+			(object, &IfcObject::IsTypedBy, &IfcRelDefinesByType::RelatingType);
+#else
 		IfcTypeObject::list::ptr types = get_related
 			<IfcObject, IfcRelDefinesByType, IfcTypeObject>
 			(object, &IfcObject::IsDefinedBy, &IfcRelDefinesByType::RelatingType);
+#endif
 
 		for (IfcTypeObject::list::it it = types->begin(); it != types->end(); ++it) {
 			IfcTypeObject* type = *it;
@@ -299,11 +305,13 @@ void XmlSerializer::finalize() {
 		ptree& node = descend(type_object, types);
 		// ptree& node = format_entity_instance(type_object, types);	
 		
-		IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
-		for (IfcPropertySetDefinition::list::it jt = property_sets->begin(); jt != property_sets->end(); ++jt) {
-			IfcPropertySetDefinition* pset = *jt;
-			if (pset->is(Type::IfcPropertySet)) {
-				format_entity_instance(pset, node, true);
+		if (type_object->hasHasPropertySets()) {
+			IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
+			for (IfcPropertySetDefinition::list::it jt = property_sets->begin(); jt != property_sets->end(); ++jt) {
+				IfcPropertySetDefinition* pset = *jt;
+				if (pset->is(Type::IfcPropertySet)) {
+					format_entity_instance(pset, node, true);
+				}
 			}
 		}
 	}

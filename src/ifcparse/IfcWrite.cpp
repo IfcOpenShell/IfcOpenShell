@@ -134,7 +134,7 @@ void IfcWritableEntity::arg_writable(int i, bool b) {
 
 template <typename T> void IfcWritableEntity::_setArgument(int i, const T& t) {
 	if ( arg_writable(i) ) delete args[i];
-	IfcWriteArgument* arg = new IfcWriteArgument(this);
+	IfcWriteArgument* arg = new IfcWriteArgument;
 	args[i] = arg;
 	arg->set(t);
 	arg_writable(i,true);

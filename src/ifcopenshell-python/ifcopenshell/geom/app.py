@@ -1,11 +1,11 @@
+from __future__ import print_function
+
 import sys
 import time
 import operator
 import functools
 
 import OCC.AIS
-
-import ifcopenshell
 
 from collections import defaultdict, Iterable
 
@@ -14,11 +14,20 @@ from PyQt4 import QtGui, QtCore
 try: from OCC.Display.pyqt4Display import qtViewer3d
 except: 
     import OCC.Display
-    OCC.Display.backend.get_backend("qt-pyqt4")
+
+    try: import OCC.Display.backend
+    except: pass
+
+    try: OCC.Display.backend.get_backend("qt-pyqt4")
+    except: OCC.Display.backend.load_backend("qt-pyqt4")
+
     from OCC.Display.qtDisplay import qtViewer3d
-    
-from .main import create_shape, settings
+
+
+from .main import settings, iterator
 from .occ_utils import display_shape
+
+from .. import open, get_supertype
 
 # Depending on Python version and what not there may or may not be a QString
 try:
@@ -137,7 +146,7 @@ class application(QtGui.QApplication):
             items = {}
             for t in types:
                 def add(t):
-                    s = ifcopenshell.get_supertype(t)
+                    s = get_supertype(t)
                     if s: add(s)
                     s2, t2 = map(QString, (s,t))
                     if t2 not in items:
@@ -211,21 +220,37 @@ class application(QtGui.QApplication):
             terminate = [False]
             self.window.window_closed.connect(lambda *args: operator.setitem(terminate, 0, True))
             
-            for p in f.by_type("IfcProduct"):
+            t0 = time.time()
+            
+            it = iterator(setting, f)
+            if not it.initialize():
+                return
+
+            old_progress = -1
+            while True:
                 if terminate[0]: break
-                if p.Representation is None: continue
-                shape = create_shape(setting, p)
+                shape = it.get()
+                product = f[shape.data.id]
                 ais = display_shape(shape, viewer_handle=v)
                 ais.GetObject().SetSelectionPriority(self.counter)
-                self.ais_to_product[self.counter] = p
-                self.product_to_ais[p] = ais
+                self.ais_to_product[self.counter] = product
+                self.product_to_ais[product] = ais
                 self.counter += 1
                 QtGui.QApplication.processEvents()                    
-                if p.is_a() in {'IfcSpace', 'IfcOpeningElement'}:
+                if product.is_a() in {'IfcSpace', 'IfcOpeningElement'}:
                     v.Context.Erase(ais, True)
-                update(0.1)
+                progress = it.progress() // 2
+                if progress > old_progress:
+                    print("\r[" + "#" * progress + " " * (50 - progress) + "]", end="")
+                    old_progress = progress
+                if not it.next():
+                    break
+                update(0.2)
+
+            print("\rOpened file in %.2f seconds%s" % (time.time() - t0, " "*25))
+
             update()
-            
+
         def select(self, product):
             ais = self.product_to_ais.get(product)
             if ais is None: return
@@ -367,7 +392,7 @@ class application(QtGui.QApplication):
         
     def load(self, fn):
         if fn in self.files: return        
-        f = ifcopenshell.open(fn)
+        f = open(fn)
         self.files[fn] = f
         for c in self.components:
             c.load_file(f, setting=self.settings)

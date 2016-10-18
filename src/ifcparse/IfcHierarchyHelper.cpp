@@ -522,6 +522,9 @@ IfcSchema::IfcGeometricRepresentationContext* IfcHierarchyHelper::getRepresentat
 	if (it != contexts.end()) return it->second;
 	else {
 		IfcSchema::IfcProject* project = getSingle<IfcSchema::IfcProject>();
+		if (!project) {
+			project = addProject();
+		}
 		IfcSchema::IfcRepresentationContext::list::ptr project_contexts = project->RepresentationContexts();
 		IfcSchema::IfcGeometricRepresentationContext* context = new IfcSchema::IfcGeometricRepresentationContext(
 			boost::none, s, 3, 1e-5, addPlacement3d(), addDoublet<IfcSchema::IfcDirection>(0, 1));
