@@ -91,6 +91,9 @@
 
 #include <Standard_Version.hxx>
 
+#include <TopTools_DataMapOfShapeInteger.hxx>
+#include <TopTools_ListIteratorOfListOfShape.hxx>
+
 #ifdef USE_IFC4
 #include <Geom_BSplineSurface.hxx>
 #include <TColgp_Array2OfPnt.hxx>
@@ -143,6 +146,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	if (num_outer_bounds > 1) {
 		builder.MakeCompound(compound);
 	}
+
+	TopTools_DataMapOfShapeInteger wire_senses;
 	
 	// The builder is initialized on the heap because of the various different moments
 	// of initialization depending on the configuration of surfaces and boundaries.
@@ -200,6 +205,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				wire.Reverse();
 			}
 
+			wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
+			
 			bool flattened_wire = false;
 
 			if (!mf) {
@@ -245,23 +252,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 						}
 						ShapeFix_Face fix(mf->Face());
 						fix.FixOrientation();
-						fix.Perform();
 						outer_face_bound = fix.Face();
-					}
-
-					// If the wires are reversed the face needs to be reversed as well in order
-					// to maintain the counter-clock-wise ordering of the bounding wire's vertices.
-					bool all_reversed = true;
-					TopoDS_Iterator jt(outer_face_bound, false);
-					for (; jt.More(); jt.Next()) {
-						const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
-						if ((w.Orientation() != TopAbs_REVERSED) == same_sense) {
-							all_reversed = false;
-						}
-					}
-
-					if (all_reversed) {
-						outer_face_bound.Reverse();
 					}
 
 					if (num_outer_bounds > 1) {
@@ -307,11 +298,47 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				if (success) {
 					face = mf->Face();
 				}
+
+				ShapeFix_Face sfs(TopoDS::Face(face));
+				TopTools_DataMapOfShapeListOfShape wire_map;
+				sfs.FixOrientation(wire_map);
+				
+				TopoDS_Iterator jt(face, false);
+				for (; jt.More(); jt.Next()) {
+					const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
+					if (wire_map.IsBound(w)) {
+						TopTools_ListOfShape shapes = wire_map.Find(w);
+						TopTools_ListIteratorOfListOfShape it(shapes);
+						for (; it.More(); it.Next()) {
+							// Apparently the wire got reversed, so register it with opposite orientation in the map
+							wire_senses.Bind(it.Value(), wire_senses.Find(w) == TopAbs_FORWARD ? TopAbs_REVERSED : TopAbs_FORWARD);
+						}
+					}
+				}
+				
+				face = TopoDS::Face(sfs.Face());				
 			}
 		}
 	}
 
 	if (success) {
+		// If the wires are reversed the face needs to be reversed as well in order
+		// to maintain the counter-clock-wise ordering of the bounding wire's vertices.
+		if (num_bounds == 1 || true) {
+			bool all_reversed = true;
+			TopoDS_Iterator jt(face, false);
+			for (; jt.More(); jt.Next()) {
+				const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
+				if (!wire_senses.IsBound(w.Oriented(TopAbs_FORWARD)) || (w.Orientation() == wire_senses.Find(w.Oriented(TopAbs_FORWARD)))) {
+					all_reversed = false;
+				}
+			}
+
+			if (all_reversed) {
+				face.Reverse();
+			}
+		}
+
 		ShapeFix_ShapeTolerance FTol;
 		FTol.SetTolerance(face, getValue(GV_PRECISION), TopAbs_FACE);
 	}

@@ -643,49 +643,19 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 	if (face_list.Extent() == 0) {
 		return false;
 	}
-	
-	bool valid_shell = false;
 
-	TopTools_ListIteratorOfListOfShape face_iterator;
-	
-	if ( face_list.Extent() < getValue(GV_MAX_FACES_TO_SEW) ) {
-		BRepOffsetAPI_Sewing builder;
-		builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
-			builder.Add(face_iterator.Value());
-		}
-		try {
-			builder.Perform();
-			shape = builder.SewedShape();
-			valid_shell = BRepCheck_Analyzer(shape).IsValid() != 0;
-		} catch(...) {}
-		if (valid_shell) {
-			try {
-				ShapeFix_Solid solid;
-				solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-				TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(shape));
-				if (!solid_shape.IsNull()) {
-					try {
-						BRepClass3d_SolidClassifier classifier(solid_shape);
-						shape = solid_shape;
-					} catch (...) {}
-				}
-			} catch(...) {}
-		} else {
-			Logger::Message(Logger::LOG_WARNING,"Failed to sew faceset:",l->entity);
-		}
-	}
-	if (!valid_shell) {
+	if (!create_solid_from_faces(face_list, shape)) {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
+		
+		TopTools_ListIteratorOfListOfShape face_iterator;
 		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
 			builder.Add(compound, face_iterator.Value());
 		}
 		shape = compound;
 	}
+
 	return true;
 }
 
