@@ -307,7 +307,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				for (; jt.More(); jt.Next()) {
 					const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
 					if (wire_map.IsBound(w)) {
-						TopTools_ListOfShape shapes = wire_map.Find(w);
+						const TopTools_ListOfShape& shapes = wire_map.Find(w);
 						TopTools_ListIteratorOfListOfShape it(shapes);
 						for (; it.More(); it.Next()) {
 							// Apparently the wire got reversed, so register it with opposite orientation in the map
