@@ -162,63 +162,61 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 	
 	TopTools_ListIteratorOfListOfShape face_iterator;
 
-	if (face_list.Extent() < getValue(GV_MAX_FACES_TO_SEW)) {
-		BRepOffsetAPI_Sewing builder;
-		builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
-			builder.Add(face_iterator.Value());
-		}
-
-		try {
-			builder.Perform();
-			shape = builder.SewedShape();
-			valid_shell = BRepCheck_Analyzer(shape).IsValid() != 0;
-		} catch (...) {}
-
-		if (valid_shell) {
-			TopoDS_Shape complete_shape;
-			TopExp_Explorer exp(shape, TopAbs_SHELL);
-			for (; exp.More(); exp.Next()) {
-				TopoDS_Shape result_shape = exp.Current();
-
-				try {
-					ShapeFix_Solid solid;
-					solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-					TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(exp.Current()));
-					if (!solid_shape.IsNull()) {
-						try {
-							BRepClass3d_SolidClassifier classifier(solid_shape);
-							result_shape = solid_shape;
-							classifier.PerformInfinitePoint(getValue(GV_PRECISION));
-							if (classifier.State() == TopAbs_IN) {
-								shape.Reverse();
-							}
-						} catch (...) {}
-					}
-				} catch (...) {}
-
-				if (complete_shape.IsNull()) {
-					complete_shape = result_shape;
-				} else {
-					BRep_Builder B;
-					if (complete_shape.ShapeType() != TopAbs_COMPOUND) {
-						TopoDS_Compound C;
-						B.MakeCompound(C);
-						B.Add(C, complete_shape);
-						complete_shape = C;
-						Logger::Message(Logger::LOG_WARNING, "Multiple components in IfcConnectedFaceSet");
-					}
-					B.Add(complete_shape, result_shape);
-				}
-			}
-			shape = complete_shape;
-		} else {
-			Logger::Message(Logger::LOG_WARNING, "Failed to sew faceset");
-		}
+	BRepOffsetAPI_Sewing builder;
+	builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+		builder.Add(face_iterator.Value());
 	}
 
+	try {
+		builder.Perform();
+		shape = builder.SewedShape();
+		valid_shell = BRepCheck_Analyzer(shape).IsValid() != 0;
+	} catch (...) {}
+
+	if (valid_shell) {
+		TopoDS_Shape complete_shape;
+		TopExp_Explorer exp(shape, TopAbs_SHELL);
+		for (; exp.More(); exp.Next()) {
+			TopoDS_Shape result_shape = exp.Current();
+
+			try {
+				ShapeFix_Solid solid;
+				solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+				TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(exp.Current()));
+				if (!solid_shape.IsNull()) {
+					try {
+						BRepClass3d_SolidClassifier classifier(solid_shape);
+						result_shape = solid_shape;
+						classifier.PerformInfinitePoint(getValue(GV_PRECISION));
+						if (classifier.State() == TopAbs_IN) {
+							shape.Reverse();
+						}
+					} catch (...) {}
+				}
+			} catch (...) {}
+
+			if (complete_shape.IsNull()) {
+				complete_shape = result_shape;
+			} else {
+				BRep_Builder B;
+				if (complete_shape.ShapeType() != TopAbs_COMPOUND) {
+					TopoDS_Compound C;
+					B.MakeCompound(C);
+					B.Add(C, complete_shape);
+					complete_shape = C;
+					Logger::Message(Logger::LOG_WARNING, "Multiple components in IfcConnectedFaceSet");
+				}
+				B.Add(complete_shape, result_shape);
+			}
+		}
+		shape = complete_shape;
+	} else {
+		Logger::Message(Logger::LOG_WARNING, "Failed to sew faceset");
+	}
+	
 	return valid_shell;
 }
 
@@ -235,7 +233,10 @@ const TopoDS_Shape& IfcGeom::Kernel::ensure_fit_for_subtraction(const TopoDS_Sha
 	if (!is_comp) {
 		return solid = shape;
 	}
-	create_solid_from_compound(shape, solid);
+	
+	if (!create_solid_from_compound(shape, solid)) {
+		return solid = shape;
+	}
 	
 	// If the SEW_SHELLS option had been set this precision had been applied
 	// at the end of the generic convert_shape() call.
