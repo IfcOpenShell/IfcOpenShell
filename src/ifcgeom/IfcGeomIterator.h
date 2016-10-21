@@ -137,6 +137,7 @@ namespace IfcGeom {
 
         std::set<boost::regex> names_to_include_or_exclude; // regex containing a name or a wildcard expression
 		std::set<IfcSchema::Type::Enum> entities_to_include_or_exclude;
+        std::set<IfcSchema::IfcProduct*> products_to_include;
 		bool include_entities_in_processing;
 
 		void populate_set(const std::set<std::string>& include_or_ignore) {
@@ -340,6 +341,14 @@ namespace IfcGeom {
             include_entities_in_processing = false;
         }
 
+        void includeProducts(IfcTemplatedEntityList< IfcSchema::IfcProduct >::ptr products)
+        {
+          products_to_include.insert(products->begin(), products->end());
+          std::stringstream ss;
+          ss << "Including " << products_to_include.size() << " products...";
+          Logger::Message(Logger::LOG_NOTICE, ss.str());
+        }
+
         static boost::regex wildcard_string_to_regex(std::string str)
         {
             // Escape all non-"*?" regex special chars
@@ -540,8 +549,13 @@ namespace IfcGeom {
                                 break;
                             }
                         }
+
+                        bool in_product_set = true;
+                        if (!products_to_include.empty() && products_to_include.find((*jt)) == products_to_include.end()) {
+                            in_product_set = false;
+                        }
                         
-						if (found == include_entities_in_processing) {
+						if (found == include_entities_in_processing && in_product_set) {
 							ifcproducts->push(*jt);
 						}
 					}

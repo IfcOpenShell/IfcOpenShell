@@ -128,6 +128,7 @@ int main(int argc, char** argv) {
 		("output-file", boost::program_options::value<std::string>(), "output geometry file");
 
     std::vector<std::string> entity_vector, names;
+    std::string building_storey;
     double deflection_tolerance;
     boost::program_options::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -188,6 +189,8 @@ int main(int argc, char** argv) {
             "A list of names or wildcard patterns that should be included in or excluded from the "
             "geometrical output, depending on whether --exclude or --include is specified. "
             "The names are handled case-sensitively. Cannot be placed right before input file argument.")
+        ("building-storey", boost::program_options::value<std::string>(&building_storey),
+            "Only include the specified building storey")
         ("no-normals",
             "Disables computation of normals. Saves time and file size and is useful "
             "in instances where you're going to recompute normals for the exported "
@@ -428,6 +431,29 @@ int main(int argc, char** argv) {
 	}
 
     IfcGeom::Iterator<real_t> context_iterator(settings, input_filename);
+
+    if (!building_storey.empty()) {
+        bool found_storey = false;
+        IfcParse::IfcFile *ifc_file = context_iterator.getFile();
+        IfcEntityList::ptr storeys = ifc_file->entitiesByType("IfcBuildingStorey");
+
+        for (IfcEntityList::it i = storeys->begin(); i != storeys->end(); ++i) {
+            if ((*i)->getArgument(2)->toString().find(building_storey) != std::string::npos) {
+                std::cout << "Selecting " << building_storey << " for filtering..." << std::endl;
+                IfcSchema::IfcBuildingStorey* selected = (*i)->as<IfcSchema::IfcBuildingStorey>();
+                IfcTemplatedEntityList< IfcSchema::IfcRelContainedInSpatialStructure >::ptr in_storey__ =
+                    selected->ContainsElements();
+                std::cout << "IfcRelContainedInSpatialStructure size " << in_storey__->size() << std::endl;
+                IfcSchema::IfcRelContainedInSpatialStructure* in_storey = *(selected->ContainsElements()->begin());
+                context_iterator.includeProducts(in_storey->RelatedElements());
+                found_storey = true;
+            }
+        }
+
+        if (!found_storey) {
+            Logger::Message(Logger::LOG_WARNING, "Unable to find storey " + building_storey);
+        }
+    }
 
 	try {
 		if (include_entities) {
