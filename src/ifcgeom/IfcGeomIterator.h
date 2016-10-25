@@ -284,16 +284,23 @@ namespace IfcGeom {
             for (IfcSchema::IfcProduct::list::it iter = products->begin(); iter != products->end(); ++iter) {
                 IfcSchema::IfcProduct* product = *iter;
                 if (product->hasObjectPlacement()) {
-                    gp_Trsf trsf; // Use a fresh trsf every time in order to prevent the result to be concatenated
-                    if (kernel.convert(product->ObjectPlacement(), trsf)) {
-                        const gp_XYZ& pos = trsf.TranslationPart();
-                        bounds_min_.SetX(std::min(bounds_min_.X(), pos.X()));
-                        bounds_min_.SetY(std::min(bounds_min_.Y(), pos.Y()));
-                        bounds_min_.SetZ(std::min(bounds_min_.Z(), pos.Z()));
-                        bounds_max_.SetX(std::max(bounds_max_.X(), pos.X()));
-                        bounds_max_.SetY(std::max(bounds_max_.Y(), pos.Y()));
-                        bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z()));
-                    }
+					// Use a fresh trsf every time in order to prevent the result to be concatenated
+                    gp_Trsf trsf; 
+					bool success = false;
+					try {
+						success = kernel.convert(product->ObjectPlacement(), trsf);
+					} catch (...) {}
+					if (!success) {
+						continue;
+					}
+
+                    const gp_XYZ& pos = trsf.TranslationPart();
+                    bounds_min_.SetX(std::min(bounds_min_.X(), pos.X()));
+                    bounds_min_.SetY(std::min(bounds_min_.Y(), pos.Y()));
+                    bounds_min_.SetZ(std::min(bounds_min_.Z(), pos.Z()));
+                    bounds_max_.SetX(std::max(bounds_max_.X(), pos.X()));
+                    bounds_max_.SetY(std::max(bounds_max_.Y(), pos.Y()));
+                    bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z()));
                 }
             }
 
