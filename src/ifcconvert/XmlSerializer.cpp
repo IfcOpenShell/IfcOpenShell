@@ -33,7 +33,9 @@
 using boost::property_tree::ptree;
 using namespace IfcSchema;
 
-static std::map<std::string, std::string> argument_name_map;
+namespace {
+
+std::map<std::string, std::string> argument_name_map;
 
 // Format an IFC attribute and maybe returns as string. Only literal scalar 
 // values are converted. Things like entity instances and lists are omitted.
@@ -105,10 +107,8 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 	return value;
 }
 
-// Formats an entity instances as a ptree node, and insert into the DOM. Recurses
-// over the entity attributes and writes them as xml attributes of the node.
-ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& tree, bool as_link = false) {
-	ptree child;
+// Appends to a node with possibly existing attributes
+ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, ptree& tree, bool as_link = false) {
 	const unsigned n = instance->getArgumentCount();
 	for (unsigned i = 0; i < n; ++i) {
 		const Argument* argument = instance->getArgument(i);
@@ -140,6 +140,13 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& tree, boo
 		}
 	}
 	return tree.add_child(Type::ToString(instance->type()), child);
+}
+
+// Formats an entity instances as a ptree node, and insert into the DOM. Recurses
+// over the entity attributes and writes them as xml attributes of the node.
+ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& tree, bool as_link = false) {
+    ptree child;
+    return format_entity_instance(instance, child, tree, as_link);
 }
 
 // A function to be called recursively. Template specialization is used 
@@ -239,6 +246,39 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 		}
 	}
 
+    if (product->is(Type::IfcProduct)) {
+        IfcProduct* prod = product->as<IfcProduct>();
+        if (prod->hasRepresentation()) {
+            IfcEntityList::ptr r = prod->entity->file->traverse(prod->Representation());
+
+            std::map<std::string, IfcPresentationLayerAssignment*> layers;
+            IfcRepresentation::list::ptr representations = r->as<IfcRepresentation>();
+            for (IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
+                IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
+                for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+                    layers[(*jt)->Name()] = *jt;
+                }
+            }
+
+            IfcRepresentationItem::list::ptr items = r->as<IfcRepresentationItem>();
+            for (IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
+                IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
+                for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+                    layers[(*jt)->Name()] = *jt;
+                }
+            }
+
+            for (std::map<std::string, IfcPresentationLayerAssignment*>::const_iterator it = layers.begin(); it != layers.end(); ++it) {
+                // IfcPresentationLayerAssignments don't have GUIDs (only optional Identifier) so use name as the ID.
+                // Note that the IfcPresentationLayerAssignment passed here doesn't really matter as as_link is true
+                // for the format_entity_instance() call.
+                ptree node;
+                node.put("<xmlattr>.xlink:href", "#" + it->first);
+                format_entity_instance(it->second, node, child, true);
+            }
+        }
+    }
+
 	return child;
 }
 
@@ -255,6 +295,8 @@ void format_properties(IfcProperty::list::ptr properties, ptree& node) {
 	}
 }
 
+} // ~unnamed namespace
+
 void XmlSerializer::finalize() {
 	argument_name_map.insert(std::make_pair("GlobalId", "id"));
 
@@ -265,7 +307,7 @@ void XmlSerializer::finalize() {
 	}
 	IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, types;
+	ptree root, header, units, decomposition, properties, types, layers;
 	
 	// Write the SPF header as XML nodes.
 	foreach(const std::string& s, file->header().file_description().description()) {
@@ -328,10 +370,26 @@ void XmlSerializer::finalize() {
 		}
 	}
 
+    // Layer assignments. IfcPresentationLayerAssignments don't have GUIDs (only optional Identifier)
+    // so use names as the IDs and only insert those with unique names. In case of possible duplicate names/IDs
+    // the first IfcPresentationLayerAssignment occurence takes precedence.
+    std::set<std::string> layer_names;
+    IfcPresentationLayerAssignment::list::ptr layer_assignments = file->entitiesByType<IfcPresentationLayerAssignment>();
+    for (IfcPresentationLayerAssignment::list::it it = layer_assignments->begin(); it != layer_assignments->end(); ++it) {
+        const std::string& name = (*it)->Name();
+        if (layer_names.find(name) == layer_names.end()) {
+            layer_names.insert(name);
+            ptree node;
+            node.put("<xmlattr>.id", name);
+            format_entity_instance(*it, node, layers);
+        }
+    }
+
 	root.add_child("ifc.header",        header);
 	root.add_child("ifc.units",         units);
 	root.add_child("ifc.properties",    properties);
 	root.add_child("ifc.types",         types);
+    root.add_child("ifc.layers",        layers);
 	root.add_child("ifc.decomposition", decomposition);
 
 	root.put("ifc.<xmlattr>.xmlns:xlink", "http://www.w3.org/1999/xlink");
