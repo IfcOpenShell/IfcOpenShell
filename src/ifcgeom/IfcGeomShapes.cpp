@@ -724,7 +724,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 	bool b = convert_shapes(map->MappedRepresentation(), shapes);
 	
 	for (size_t i = previous_size; i < shapes.size(); ++ i ) {
-		shapes[i].append(gtrsf);
+		shapes[i].prepend(gtrsf);
 
 		// Apply styles assigned to the mapped item only if on
 		// a more granular level no styles have been applied
