@@ -40,6 +40,7 @@ import subprocess as sp
 import shutil
 import time
 import tarfile
+import multiprocessing
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -104,7 +105,7 @@ def get_os():
 try:
     IFCOS_NUM_BUILD_PROCS = os.environ["IFCOS_NUM_BUILD_PROCS"]
 except KeyError:
-    IFCOS_NUM_BUILD_PROCS=int(sp.check_output([bash, "-c", "sysctl -n hw.ncpu 2> /dev/null || cat /proc/cpuinfo | grep processor | wc -l"]))+1
+    IFCOS_NUM_BUILD_PROCS=multiprocessing.cpu_count() + 1
     os.environ["IFCOS_NUM_BUILD_PROCS"]=str(IFCOS_NUM_BUILD_PROCS)
 
 try:
@@ -188,10 +189,18 @@ if not os.path.exists(LOG_FILE):
 logger.info("using command log file '%s'" % (LOG_FILE,))
 
 def __check_call__(cmds, cwd=None):
-    logger.info("running command '%s' in directory '%s'" % (cmds, cwd))
+    logger.info("running command '%s' in directory '%s'" % (" ".join(cmds), cwd))
     log_file_handle = open(LOG_FILE, "a")
-    sp.check_call(cmds, cwd=cwd, stdout=log_file_handle, stderr=log_file_handle)
+    proc = sp.Popen(cmds, cwd=cwd, stdout=log_file_handle, stderr=sp.PIPE)
+    _, stderr = proc.communicate()
+    log_file_handle.write(stderr)
     log_file_handle.close()
+
+    if proc.returncode != 0:
+        print "-" * 70
+        print stderr
+        print "-" * 70
+        raise Exception("Command `%s` returned exit code %d" % (" ".join(cmds), proc.returncode))
 
 def __check_output__(cmds, cwd=None):
     """Wraps `subprocess.check_output` and logs the command being executed,
@@ -219,9 +228,8 @@ def run_autoconf(arg1, configure_args, cwd):
     configure_path = os.path.realpath(os.path.join(cwd, "..", "configure"))
     if not os.path.exists(configure_path):
         __check_call__([bash, "./autogen.sh"], cwd=os.path.realpath(os.path.join(cwd, ".."))) # only run autogen.sh in the directory it is located and use cwd to achieve that in order to not mess up things
-    __check_call__([bash, configure_path
-        #"../configure"
-        ]+configure_args+["--prefix=%s" % (os.path.realpath("%s/install/%s" % (DEPS_DIR, arg1)),)], cwd=cwd)
+    # Using `sh` over `bash` fixes issues with building swig 
+    __check_call__(["/bin/sh", "../configure"]+configure_args+["--prefix=%s" % (os.path.realpath("%s/install/%s" % (DEPS_DIR, arg1)),)], cwd=cwd)
 
 def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     if cmake_dir is None:
@@ -454,14 +462,14 @@ run_cmake("", cmake_args=["-DBOOST_ROOT=%s/install/boost-%s" % (DEPS_DIR, BOOST_
 
 logger.info("\rBuilding executables...   ")
 
-__check_call__([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,)], cwd=CMAKE_DIR)
+__check_call__([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,)], cwd=executables_dir)
 
 if get_os() == "Darwin":
     STRIP_OPTION="-x"
 else:
     STRIP_OPTION="-s"
 
-__check_call__([strip, STRIP_OPTION, "IfcConvert", "IfcGeomServer"], cwd=CMAKE_DIR)
+__check_call__([strip, STRIP_OPTION, "IfcConvert", "IfcGeomServer"], cwd=executables_dir)
 
 # On OSX the actual Python library is not linked against.
 ADDITIONAL_ARGS=""
@@ -499,10 +507,10 @@ for PYTHON_VERSION in PYTHON_VERSIONS:
     
     logger.info("\rBuilding python %s wrapper...   " % (PYTHON_VERSION,))
     
-    __check_call__([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,), "_ifcopenshell_wrapper"], cwd=CMAKE_DIR)
+    __check_call__([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,), "_ifcopenshell_wrapper"], cwd=python_dir)
     
     if get_os() != "Darwin":
         # TODO: This symbol name depends on the Python version?
-        __check_call__([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "ifcwrap/_ifcopenshell_wrapper.so"])
+        __check_call__([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "ifcwrap/_ifcopenshell_wrapper.so"], cwd=python_dir)
 
 logger.info("\rBuilt IfcOpenShell...\n\n")
