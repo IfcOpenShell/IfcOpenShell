@@ -175,9 +175,9 @@ int main(int argc, char** argv) {
 			"Specifies whether to enable the slicing of products according "
 			"to their associated IfcMaterialLayerSet.")
 		("include", 
-            "Specifies that the entities listed after --entities or --names are to be included")
+            "Specifies that the entities and/or names listed after --entities and/or --names are to be included")
 		("exclude", 
-            "Specifies that the entities listed after --entities or --names are to be excluded")
+            "Specifies that the entities and/or names listed after --entities and/or --names are to be excluded")
 		("entities", boost::program_options::value< std::vector<std::string> >(&entity_vector)->multitoken(),
 			"A list of entities that should be included in or excluded from the "
 			"geometrical output, depending on whether --exclude or --include is specified. "
@@ -196,7 +196,11 @@ int main(int argc, char** argv) {
             "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
         ("generate-uvs",
             "Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
-            "Not guaranteed to work properly if used with --weld-vertices.");
+            "Not guaranteed to work properly if used with --weld-vertices.")
+        ("with-children",
+            "Applies --include or --exclude also to the decomposition and/or containment (IsDecomposedBy, "
+            "HasOpenings, FillsVoid, ContainedInStructure) of the filtered element, e.g. "
+            "--include --with-children --names \"Level 1\" includes element with name \"Level 1\" and all of its children.");
 
     std::string bounds;
     boost::program_options::options_description serializer_options("Serialization options");
@@ -266,7 +270,8 @@ int main(int argc, char** argv) {
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
 #endif
 	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
-	bool include_entities = vmap.count("include") != 0;
+	bool include_entities = vmap.count("include") != 0 && !entity_vector.empty();
+    const bool include_names = vmap.count("include") != 0 && !names.empty();
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
 	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
@@ -276,6 +281,7 @@ int main(int argc, char** argv) {
     const bool no_normals = vmap.count("no-normals") != 0 ;
     bool center_model = vmap.count("center-model") != 0 ;
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
+    const bool with_children = vmap.count("with-children") != 0;
     const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
 
 	int bounding_width = -1, bounding_height = -1;
@@ -377,6 +383,7 @@ int main(int argc, char** argv) {
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, center_model);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
+    settings.set(IfcGeom::IteratorSettings::WITH_CHILDREN, with_children);
     if (deflection_tolerance_specified) {
         settings.set_deflection_tolerance(deflection_tolerance);
     }
@@ -432,15 +439,19 @@ int main(int argc, char** argv) {
 	try {
 		if (include_entities) {
 			context_iterator.includeEntities(entities);
-            context_iterator.include_entity_names(names);
 		} else {
 			context_iterator.excludeEntities(entities);
-            context_iterator.exclude_entity_names(names);
 		}
 	} catch (const IfcParse::IfcException& e) {
 		std::cout << "[Error] " << e.what() << std::endl;
 		return 1;
 	}
+
+    if (include_names) {
+        context_iterator.include_entity_names(names);
+    } else {
+        context_iterator.exclude_entity_names(names);
+    }
 
 	if (!serializer->ready()) {
         Logger::Message(Logger::LOG_ERROR, "Unable to open output '" + output_filename + "' file for writing");
@@ -452,6 +463,8 @@ int main(int argc, char** argv) {
 	time(&start);
 	
 	if (!context_iterator.initialize()) {
+        /// @todo It would be nice to know and print separate error prints for a case where we failed to parse
+        /// the file and for a case where we found no entities that satisfy our filtering criteria.
         Logger::Message(Logger::LOG_ERROR, "Unable to parse input file '" + input_filename + "' or no geometrical entities found");
 		write_log();
 		return 1;
@@ -516,7 +529,7 @@ int main(int argc, char** argv) {
     // Do not remove the temp file as user can salvage the conversion result from it.
     bool successful = rename_file(output_temp_filename, output_filename);
     if (!successful) {
-        Logger::Message(Logger::LOG_ERROR, "Unable to write output file '" + output_filename + "");
+        Logger::Message(Logger::LOG_ERROR, "Unable to write output file '" + output_filename + "'");
     }
 
 	write_log();
