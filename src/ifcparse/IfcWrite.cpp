@@ -144,8 +144,10 @@ void IfcWritableEntity::setArgument(int i) {
 	_setArgument(i, boost::none);
 }
 
-void IfcWritableEntity::setArgument(int i, Argument* a) {
-	IfcUtil::ArgumentType attr_type = a->type();
+void IfcWritableEntity::setArgument(int i, Argument* a, IfcUtil::ArgumentType attr_type) {
+	if (attr_type == IfcUtil::Argument_UNKNOWN) {
+		attr_type = a->type();
+	}
 	switch(attr_type) {
 	case IfcUtil::Argument_NULL:
 		this->setArgument(i);
@@ -224,13 +226,17 @@ void IfcWritableEntity::setArgument(int i, Argument* a) {
 		}		
 		this->setArgument(i, mapped_instances); }
 		break;
+	case IfcUtil::Argument_EMPTY_AGGREGATE: 
+	case IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE: {
+		IfcUtil::ArgumentType t2 = IfcSchema::Type::GetAttributeType(type(), (unsigned) i);
+		this->setArgument(i, a, t2); }
+		break;
 	default:
 	case IfcUtil::Argument_UNKNOWN:
-		throw IfcParse::IfcException("Unknown argument encountered");
+		throw IfcParse::IfcException(std::string("Unknown attribute encountered: '") + a->toString() + "' at index '" + boost::lexical_cast<std::string>(i) + "'");
 		break;
 	}
 }
-
 
 void IfcWritableEntity::setArgumentDerived(int i) {
 	_setArgument(i, IfcWriteArgument::Derived());

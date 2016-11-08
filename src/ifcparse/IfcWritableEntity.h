@@ -65,7 +65,7 @@ namespace IfcWrite {
 		unsigned int id();
 		IfcWritableEntity* isWritable();
 
-		void setArgument(int i, Argument* a);
+		void setArgument(int i, Argument* a, IfcUtil::ArgumentType attr_type = IfcUtil::Argument_UNKNOWN);
 
 		void setArgument(int i);
 		void setArgumentDerived(int i);
