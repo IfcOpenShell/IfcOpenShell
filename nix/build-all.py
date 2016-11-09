@@ -109,10 +109,10 @@ except KeyError:
     os.environ["IFCOS_NUM_BUILD_PROCS"]=str(IFCOS_NUM_BUILD_PROCS)
 
 try:
-    TARGET_ARCH= os.environ["TARGET_ARCH"]
+    TARGET_ARCH = os.environ["TARGET_ARCH"]
+    del os.environ["TARGET_ARCH"]
 except KeyError:
     TARGET_ARCH = sp.check_output([uname, "-m"]).strip()
-    os.environ["TARGET_ARCH"]=TARGET_ARCH
 
 CMAKE_DIR=os.path.realpath(os.path.join("..", "cmake"))
 
