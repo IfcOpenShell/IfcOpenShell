@@ -92,8 +92,8 @@ namespace IfcGeom
             APPLY_LAYERSETS = 1 << 17,
             /// Marks that include/exclude filtering should be applied also to the decomposition
             /// and/or containment (IsDecomposedBy, HasOpenings, FillsVoid, ContainedInStructure)
-            /// of the filtered element.
-            WITH_CHILDREN = 1 << 18,
+            /// of the filtered entity.
+            TRAVERSE = 1 << 18,
             /// Number of different setting flags.
             NUM_SETTINGS = 18
         };

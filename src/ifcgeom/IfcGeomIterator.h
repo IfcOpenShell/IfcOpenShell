@@ -532,9 +532,9 @@ namespace IfcGeom {
 					}
 
                     // Filter the products based on the set of entities and/or names being included or excluded for processing.
-                    // If with_children set, traverse to the parents to see if they satisfy the criteria. E.g. we might be looking for
+                    // If traversal requested, traverse to the parents to see if they satisfy the criteria. E.g. we might be looking for
                     // children of a storey named "Level 20", or children of entities that have no representation, e.g. IfcCurtainWall.
-                    const bool with_children = settings.get(IteratorSettings::WITH_CHILDREN);
+                    const bool traverse = settings.get(IteratorSettings::TRAVERSE);
                     for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
                         IfcSchema::IfcProduct* prod = *jt;
                         bool type_found = false;
@@ -546,7 +546,7 @@ namespace IfcGeom {
                             }
                         }
 
-                        if (!type_found && with_children) {
+                        if (!type_found && traverse) {
                             foreach(IfcSchema::Type::Enum type, entities_to_include_or_exclude) {
                                 IfcSchema::IfcProduct* parent, * current = prod;
                                 while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
@@ -570,7 +570,7 @@ namespace IfcGeom {
                             }
                         }
 
-                        if (!name_found && with_children) {
+                        if (!name_found && traverse) {
                             foreach(const boost::regex& r, names_to_include_or_exclude) {
                                 IfcSchema::IfcProduct* parent, *current = prod;
                                 while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
@@ -699,9 +699,7 @@ namespace IfcGeom {
 
 			try {
 				next_shape_model = create_shape_model_for_next_entity();
-			} catch (IfcParse::IfcInvalidTokenException e) {
-                std::cout << e.what() << std::endl;
-            }
+			} catch (...) {}
 
 			if (next_shape_model) {
 				if (settings.get(IteratorSettings::USE_BREP_DATA)) {

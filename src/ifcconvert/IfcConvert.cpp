@@ -197,10 +197,10 @@ int main(int argc, char** argv) {
         ("generate-uvs",
             "Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
             "Not guaranteed to work properly if used with --weld-vertices.")
-        ("with-children",
+        ("traverse",
             "Applies --include or --exclude also to the decomposition and/or containment (IsDecomposedBy, "
-            "HasOpenings, FillsVoid, ContainedInStructure) of the filtered element, e.g. "
-            "--include --with-children --names \"Level 1\" includes element with name \"Level 1\" and all of its children.");
+            "HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. "
+            "--include --traverse --names \"Level 1\" includes entity with name \"Level 1\" and all of its children.");
 
     std::string bounds;
     boost::program_options::options_description serializer_options("Serialization options");
@@ -281,7 +281,7 @@ int main(int argc, char** argv) {
     const bool no_normals = vmap.count("no-normals") != 0 ;
     bool center_model = vmap.count("center-model") != 0 ;
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
-    const bool with_children = vmap.count("with-children") != 0;
+    const bool traverse = vmap.count("traverse") != 0;
     const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
 
 	int bounding_width = -1, bounding_height = -1;
@@ -383,7 +383,7 @@ int main(int argc, char** argv) {
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, center_model);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
-    settings.set(IfcGeom::IteratorSettings::WITH_CHILDREN, with_children);
+    settings.set(IfcGeom::IteratorSettings::TRAVERSE, traverse);
     if (deflection_tolerance_specified) {
         settings.set_deflection_tolerance(deflection_tolerance);
     }
