@@ -83,15 +83,19 @@ namespace IfcGeom
             /// Applicable for OBJ and DAE output.
             USE_MATERIAL_NAMES = 1 << 14,
             /// Centers the models upon serialization by the applying the center point of
-            /// the scene bounds as an offset. Applicable only for DAE output currently.
+            /// the scene bounds as an offset. Applicable for OBJ and DAE output currently.
             CENTER_MODEL = 1 << 15,
             /// Generates UVs by using simple box projection. Requires normals.
-            /// Applicable only for DAE output currently.
+            /// Applicable for OBJ and DAE output.
             GENERATE_UVS = 1 << 16,
             /// Specifies whether to slice representations according to associated IfcLayerSets.
             APPLY_LAYERSETS = 1 << 17,
+            /// Marks that include/exclude filtering should be applied also to the decomposition
+            /// and/or containment (IsDecomposedBy, HasOpenings, FillsVoid, ContainedInStructure)
+            /// of the filtered entity.
+            TRAVERSE = 1 << 18,
             /// Number of different setting flags.
-            NUM_SETTINGS = 17
+            NUM_SETTINGS = 18
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;

@@ -138,6 +138,7 @@ namespace IfcGeom {
         std::set<boost::regex> names_to_include_or_exclude; // regex containing a name or a wildcard expression
 		std::set<IfcSchema::Type::Enum> entities_to_include_or_exclude;
 		bool include_entities_in_processing;
+        bool include_names_in_processing_;
 
 		void populate_set(const std::set<std::string>& include_or_ignore) {
 			entities_to_include_or_exclude.clear();
@@ -335,7 +336,7 @@ namespace IfcGeom {
             names_to_include_or_exclude.clear();
             foreach(const std::string &name, names)
                 names_to_include_or_exclude.insert(wildcard_string_to_regex(name));
-            include_entities_in_processing = true;
+            include_names_in_processing_ = true;
         }
 
         /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
@@ -344,7 +345,7 @@ namespace IfcGeom {
             names_to_include_or_exclude.clear();
             foreach(const std::string &name, names)
                 names_to_include_or_exclude.insert(wildcard_string_to_regex(name));
-            include_entities_in_processing = false;
+            include_names_in_processing_ = false;
         }
 
         static boost::regex wildcard_string_to_regex(std::string str)
@@ -530,27 +531,64 @@ namespace IfcGeom {
 						}
 					}
 
-					// Filter the products based on the set of entities being included or excluded for
-					// processing. The set is iterated over to able to filter on subtypes.
-					for ( IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt ) {
-						bool found = false;
-						for (std::set<IfcSchema::Type::Enum>::const_iterator kt = entities_to_include_or_exclude.begin(); kt != entities_to_include_or_exclude.end(); ++kt) {
-							if ((*jt)->is(*kt)) {
-								found = true;
-								break;
-							}
-						}
-                        
-                        foreach(const boost::regex& r, names_to_include_or_exclude) {
-                            if (boost::regex_match((*jt)->Name(), r)) {
-                                found = true;
+                    // Filter the products based on the set of entities and/or names being included or excluded for processing.
+                    // If traversal requested, traverse to the parents to see if they satisfy the criteria. E.g. we might be looking for
+                    // children of a storey named "Level 20", or children of entities that have no representation, e.g. IfcCurtainWall.
+                    const bool traverse = settings.get(IteratorSettings::TRAVERSE);
+                    for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
+                        IfcSchema::IfcProduct* prod = *jt;
+                        bool type_found = false;
+                        // The set is iterated over to able to filter on subtypes.
+                        foreach(IfcSchema::Type::Enum type, entities_to_include_or_exclude) {
+                            if (prod->is(type)) {
+                                type_found = true;
                                 break;
                             }
                         }
-                        
-						if (found == include_entities_in_processing) {
-							ifcproducts->push(*jt);
-						}
+
+                        if (!type_found && traverse) {
+                            foreach(IfcSchema::Type::Enum type, entities_to_include_or_exclude) {
+                                IfcSchema::IfcProduct* parent, * current = prod;
+                                while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
+                                    if (parent->is(type)) {
+                                        type_found = true;
+                                        break;
+                                    }
+                                    current = parent;
+                                }
+                                if (type_found) {
+                                    break;
+                                }
+                            }
+                        }
+
+                        bool name_found = false;
+                        foreach(const boost::regex& r, names_to_include_or_exclude) {
+                            if (prod->hasName() && boost::regex_match(prod->Name(), r)) {
+                                name_found = true;
+                                break;
+                            }
+                        }
+
+                        if (!name_found && traverse) {
+                            foreach(const boost::regex& r, names_to_include_or_exclude) {
+                                IfcSchema::IfcProduct* parent, *current = prod;
+                                while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
+                                    if (parent->hasName() && boost::regex_match(parent->Name(), r)) {
+                                        name_found = true;
+                                        break;
+                                    }
+                                    current = parent;
+                                }
+                                if (name_found) {
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (type_found == include_entities_in_processing && name_found == include_names_in_processing_) {
+                            ifcproducts->push(prod);
+                        }
 					}
 
 					ifcproduct_iterator = ifcproducts->begin();
@@ -704,7 +742,8 @@ namespace IfcGeom {
 			// Upon initialisation, the (empty) set of entity names,
 			// should be excluded, or no products would be processed.
 			include_entities_in_processing = false;
-		
+            include_names_in_processing_ = false;
+
 			unit_name = "METER";
 			unit_magnitude = 1.f;
 
