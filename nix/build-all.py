@@ -58,7 +58,8 @@ CMAKE_VERSION="3.4.1"
 ICU_VERSION="56.1"
 
 # binaries
-bash = "bash"
+cp="cp"
+bash="bash"
 uname="uname"
 git="git"
 bunzip2="bunzip2"
@@ -189,7 +190,7 @@ if not os.path.exists(LOG_FILE):
 logger.info("using command log file '%s'" % (LOG_FILE,))
 
 def __check_call__(cmds, cwd=None):
-    logger.info("running command '%s' in directory '%s'" % (" ".join(cmds), cwd))
+    logger.debug("running command %r in directory %r" % (" ".join(cmds), cwd))
     log_file_handle = open(LOG_FILE, "a")
     proc = sp.Popen(cmds, cwd=cwd, stdout=log_file_handle, stderr=sp.PIPE)
     _, stderr = proc.communicate()
@@ -207,9 +208,10 @@ def __check_output__(cmds, cwd=None):
     sets up logging `stderr` to `LOG_FILE` (in append mode) and strips the
     return value because it's unlikely that the newline at the end of output is
     useful and it often causes errors"""
-    logger.info("running command '%s' in directory '%s'" % (cmds, cwd))
+    logger.debug("running command '%s' in directory %r" % (" ".join(cmds), cwd))
     log_file_handle = open(LOG_FILE, "a")
     ret_value = sp.check_output(cmds, cwd=cwd, stderr=log_file_handle).strip()
+    logger.debug("command returned %r" % ret_value)
     log_file_handle.close()
     return ret_value
 
@@ -458,18 +460,22 @@ if not os.path.exists(executables_dir):
 
 logger.info("\rConfiguring executables...")
 
-run_cmake("", cmake_args=["-DBOOST_ROOT=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "-DOCC_INCLUDE_DIR=%s/install/oce-%s/include/oce" % (DEPS_DIR, OCE_VERSION), "-DOCC_LIBRARY_DIR=%s/install/oce-%s/lib" % (DEPS_DIR, OCE_VERSION), "-DOPENCOLLADA_INCLUDE_DIR=%s/install/OpenCOLLADA/include/opencollada" % (DEPS_DIR,), "-DOPENCOLLADA_LIBRARY_DIR=%s/install/OpenCOLLADA/lib/opencollada" % (DEPS_DIR,), "-DICU_INCLUDE_DIR=%s/install/icu-%s/include" % (DEPS_DIR, ICU_VERSION), "-DICU_LIBRARY_DIR=%s/install/icu-%s/lib" % (DEPS_DIR, ICU_VERSION), "-DPCRE_LIBRARY_DIR=%s/install/pcre-%s/lib" % (DEPS_DIR, PCRE_VERSION), "-DBUILD_IFCPYTHON=OFF"], cmake_dir=CMAKE_DIR, cwd=executables_dir)
+run_cmake("", cmake_args=[
+    "-DBOOST_ROOT="              "%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION),
+    "-DOCC_INCLUDE_DIR="         "%s/install/oce-%s/include/oce" % (DEPS_DIR, OCE_VERSION),
+    "-DOCC_LIBRARY_DIR="         "%s/install/oce-%s/lib" % (DEPS_DIR, OCE_VERSION),
+    "-DOPENCOLLADA_INCLUDE_DIR=" "%s/install/OpenCOLLADA/include/opencollada" % (DEPS_DIR,),
+    "-DOPENCOLLADA_LIBRARY_DIR=" "%s/install/OpenCOLLADA/lib/opencollada" % (DEPS_DIR,),
+    "-DICU_INCLUDE_DIR="         "%s/install/icu-%s/include" % (DEPS_DIR, ICU_VERSION),
+    "-DICU_LIBRARY_DIR="         "%s/install/icu-%s/lib" % (DEPS_DIR, ICU_VERSION),
+    "-DPCRE_LIBRARY_DIR="        "%s/install/pcre-%s/lib" % (DEPS_DIR, PCRE_VERSION),
+    "-DBUILD_IFCPYTHON="         "OFF",
+    "-DCMAKE_INSTALL_PREFIX="    "%s/install/ifcopenshell" % (DEPS_DIR,)], cmake_dir=CMAKE_DIR, cwd=executables_dir)
 
 logger.info("\rBuilding executables...   ")
 
 __check_call__([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,)], cwd=executables_dir)
-
-if get_os() == "Darwin":
-    STRIP_OPTION="-x"
-else:
-    STRIP_OPTION="-s"
-
-__check_call__([strip, STRIP_OPTION, "IfcConvert", "IfcGeomServer"], cwd=executables_dir)
+__check_call__([make, "install/strip"], cwd=executables_dir)
 
 # On OSX the actual Python library is not linked against.
 ADDITIONAL_ARGS=""
@@ -489,7 +495,7 @@ for PYTHON_VERSION in PYTHON_VERSIONS:
 
     PYTHON_LIBRARY=__check_output__([bash, "-c", "ls    %s/install/python-%s/lib/libpython*.*" % (DEPS_DIR, PYTHON_VERSION)], cwd=None).strip()
     PYTHON_INCLUDE=__check_output__([bash, "-c", "ls -d %s/install/python-%s/include/python*" % (DEPS_DIR, PYTHON_VERSION)], cwd=None).strip()
-    PYTHON_EXECUTABLE=os.path.join(DEPS_DIR, "install", "python-%s" % (PYTHON_VERSION,), "bin", "python")
+    PYTHON_EXECUTABLE=os.path.join(DEPS_DIR, "install", "python-%s" % (PYTHON_VERSION,), "bin", "python%s" % (PYTHON_VERSION[0],))
     os.environ["PYTHON_LIBRARY_BASENAME"]=os.path.basename(PYTHON_LIBRARY)
     
     run_cmake("", cmake_args=["-DBOOST_ROOT=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION),
@@ -503,14 +509,20 @@ for PYTHON_VERSION in PYTHON_VERSIONS:
     "-DPYTHON_EXECUTABLE=%s" % (PYTHON_EXECUTABLE,),
     "-DPYTHON_INCLUDE_DIR=%s" % (PYTHON_INCLUDE,),
     "-DSWIG_EXECUTABLE=%s/install/swig/bin/swig"  % (DEPS_DIR,),
+    "-DCMAKE_INSTALL_PREFIX=%s/install/ifcopenshell/tmp" % (DEPS_DIR,),
     "-DCOLLADA_SUPPORT=OFF"], cmake_dir=CMAKE_DIR, cwd=python_dir)
     
     logger.info("\rBuilding python %s wrapper...   " % (PYTHON_VERSION,))
     
     __check_call__([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,), "_ifcopenshell_wrapper"], cwd=python_dir)
+    __check_call__([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
+    
+    module_dir = os.path.dirname(__check_output__([PYTHON_EXECUTABLE, "-c", "from __future__ import print_function; import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
     
     if get_os() != "Darwin":
         # TODO: This symbol name depends on the Python version?
-        __check_call__([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "ifcwrap/_ifcopenshell_wrapper.so"], cwd=python_dir)
+        __check_call__([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
+        
+    __check_call__([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", "python-%s" % (PYTHON_VERSION,))])
 
 logger.info("\rBuilt IfcOpenShell...\n\n")
