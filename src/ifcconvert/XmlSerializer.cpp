@@ -39,8 +39,30 @@ std::map<std::string, std::string> argument_name_map;
 
 // Format an IFC attribute and maybe returns as string. Only literal scalar 
 // values are converted. Things like entity instances and lists are omitted.
-boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil::ArgumentType argument_type) {
+boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil::ArgumentType argument_type, const std::string& argument_name) {
 	boost::optional<std::string> value;
+	
+	// Hard-code lat-lon as it represents an array
+	// of integers best emitted as a single decimal
+	if (argument_name == "IfcSite.RefLatitude" ||
+		argument_name == "IfcSite.RefLongitude")
+	{
+		std::vector<int> angle = *argument;
+		double deg;
+		if (angle.size() >= 3) {
+			deg = angle[0] + angle[1] / 60. + angle[2] / 3600.;
+			int prec = 8;
+			if (angle.size() == 4) {
+				deg += angle[3] / (1000000. * 3600.);
+				prec = 14;
+			}
+			std::stringstream stream;
+			stream << std::setprecision(prec) << deg;
+			value = stream.str();
+		}
+		return value;
+	}
+
 	switch(argument_type) {
 		case IfcUtil::Argument_BOOL: {
 			const bool b = *argument;
@@ -66,7 +88,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 			IfcUtil::IfcBaseClass* e = *argument;
 			if (Type::IsSimple(e->type())) {
 				IfcUtil::IfcBaseType* f = (IfcUtil::IfcBaseType*) e;
-				value = format_attribute(f->getArgument(0), f->getArgumentType(0));
+				value = format_attribute(f->getArgument(0), f->getArgumentType(0), argument_name);
 			} else if (e->is(IfcSchema::Type::IfcSIUnit) || e->is(IfcSchema::Type::IfcConversionBasedUnit)) {
 				// Some string concatenation to have a unit name as a XML attribute.
 
@@ -122,9 +144,10 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, pt
 		}
 		const IfcUtil::ArgumentType argument_type = instance->getArgumentType(i);
 
+		const std::string qualified_name = IfcSchema::Type::ToString(instance->type()) + "." + argument_name;
 		boost::optional<std::string> value;
 		try {
-			value = format_attribute(argument, argument_type);
+			value = format_attribute(argument, argument_type, qualified_name);
 		} catch (...) {}
 
 		if (value) {
