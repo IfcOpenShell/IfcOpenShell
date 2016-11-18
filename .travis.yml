@@ -49,7 +49,10 @@ script:
   - cd IfcOpenShell
   - pwd
   - cd cmake
-  - mkdir build
-  - cd build
+  - mkdir build-ifc2x3 build-ifc4
+  - cd build-ifc2x3
   - cmake -DCOLLADA_SUPPORT=True -DOPENCOLLADA_INCLUDE_DIR=/usr/local/include/opencollada -DOPENCOLLADA_LIBRARY_DIR=/usr/local/lib/opencollada -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DUSE_IFC4=False -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu  ..
-  - make -j2
+  - make -j
+  - cd ../build-ifc4
+  - cmake -DCOLLADA_SUPPORT=True -DOPENCOLLADA_INCLUDE_DIR=/usr/local/include/opencollada -DOPENCOLLADA_LIBRARY_DIR=/usr/local/lib/opencollada -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DUSE_IFC4=True -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu  ..
+  - make -j
