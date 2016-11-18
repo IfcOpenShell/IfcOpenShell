@@ -285,7 +285,13 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 
             IfcRepresentationItem::list::ptr items = r->as<IfcRepresentationItem>();
             for (IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
-                IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
+                IfcPresentationLayerAssignment::list::ptr a = (*it)->
+                    // LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
+#ifdef USE_IFC4
+                    LayerAssignment();
+#else
+                    LayerAssignments();
+#endif
                 for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
                     layers[(*jt)->Name()] = *jt;
                 }
