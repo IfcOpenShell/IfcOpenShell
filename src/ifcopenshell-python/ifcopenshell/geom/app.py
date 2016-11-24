@@ -480,7 +480,7 @@ class application(QtGui.QApplication):
         
     def load(self, fn):
         if fn in self.files: return        
-        f = open(fn)
+        f = open(str(fn))
         self.files[fn] = f
         for c in self.components:
             c.load_file(f, setting=self.settings)
