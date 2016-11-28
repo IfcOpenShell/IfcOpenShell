@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import os
 import sys
 import time
 import operator
@@ -7,9 +8,16 @@ import functools
 
 import OCC.AIS
 
-from collections import defaultdict, Iterable
+from collections import defaultdict, Iterable, OrderedDict
+
+os.environ['QT_API'] = 'pyqt4'
+try:
+    from pyqode.qt import QtCore
+except: pass
 
 from PyQt4 import QtGui, QtCore
+
+from .code_editor_pane import code_edit
 
 try: from OCC.Display.pyqt4Display import qtViewer3d
 except: 
@@ -27,13 +35,73 @@ except:
 from .main import settings, iterator
 from .occ_utils import display_shape
 
-from .. import open, get_supertype
+from .. import open as open_ifc_file
+from .. import get_supertype
 
 # Depending on Python version and what not there may or may not be a QString
 try:
     from PyQt4.QtCore import QString
 except ImportError:
     QString = str
+    
+class configuration(object):
+    def __init__(self):
+        try:
+            import ConfigParser
+            Cfg = ConfigParser.RawConfigParser
+        except:
+            import configparser
+            Cfg = configparser.ConfigParser(interpolation=None)
+            
+        conf_file = os.path.expanduser(os.path.join("~", ".ifcopenshell", "app", "snippets.conf"))
+        if conf_file.startswith("~"):
+            conf_file = None
+            return
+            
+        self.config_encode = lambda s: s.replace("\\", "\\\\").replace("\n", "\n|")
+        self.config_decode = lambda s: s.replace("\n|", "\n").replace("\\\\", "\\")
+            
+        if not os.path.exists(os.path.dirname(conf_file)):
+            os.makedirs(os.path.dirname(conf_file))
+            
+        if not os.path.exists(conf_file):
+            config = Cfg()
+            config.add_section("snippets")
+            config.set("snippets", "print all wall ids", self.config_encode("""
+###########################################################################
+# A simple script that iterates over all walls in the current model       #
+# and prints their Globally unique IDs (GUIDS) to the console window      #
+###########################################################################
+
+for wall in model.by_type("IfcWall"):
+    print ("wall with global id: "+str(wall.GlobalId))
+""".lstrip()))
+            
+            config.set("snippets", "print properties of current selection", self.config_encode("""
+###########################################################################
+# A simple script that iterates over all IfcPropertySets of the currently #
+# selected object and prints them to the console                          #
+###########################################################################
+
+# check if something is selected
+if selection:
+    #get the IfcProduct that is stored in the global variable 'selection'
+    obj = selection
+    for relDefinesByProperties in obj.IsDefinedBy:
+         print("[{0}]".format(relDefinesByProperties.RelatingPropertyDefinition.Name))
+         for prop in relDefinesByProperties.RelatingPropertyDefinition.HasProperties:
+             print ("{:<20} :{}".format(prop.Name,prop.NominalValue.wrappedValue))
+         print ("\\n")
+""".lstrip()))
+            with open(conf_file, 'w') as configfile:
+                config.write(configfile)
+        
+        self.config = Cfg()
+        self.config.read(conf_file)
+        
+    def options(self, s):
+        return OrderedDict([(k, self.config_decode(self.config.get(s, k))) for k in self.config.options(s)])
+        
 
 class application(QtGui.QApplication):
 
@@ -168,7 +236,7 @@ class application(QtGui.QApplication):
 
 
     class property_table(QtGui.QWidget):
-        instanceSelected = QtCore.pyqtSignal([object])
+
         def __init__(self):
             QtGui.QWidget.__init__(self)
             self.layout= QtGui.QVBoxLayout(self)
@@ -184,39 +252,49 @@ class application(QtGui.QApplication):
 
         #triggered by selection event in either component of parent
         def select(self, product):
+        
             # Clear the old contents if any
             while self.scrollLayout.count():
                 child = self.scrollLayout.takeAt(0)
                 if child is not None:
                     if child.widget() is not None:
                         child.widget().deleteLater()
+
             self.scroll = QtGui.QScrollArea()
             self.scroll.setWidgetResizable(True)
 
-            scrollContent = QtGui.QWidget(self.scroll)
-            # print ("properties for selection {}".format(self.prop_dict.get(str(product))))
             prop_sets = self.prop_dict.get(str(product))
+            
             if prop_sets is not None:
-                for k,v in prop_sets.items():
+                for k,v in prop_sets:
                     group_box = QtGui.QGroupBox()
 
                     group_box.setTitle(k)
                     group_layout = QtGui.QVBoxLayout()
-
                     group_box.setLayout(group_layout)
+                    
                     for name, value in v.items():
                         prop_name = str(name)
-                        value_str = value.wrappedValue
-                        if isinstance(value_str,unicode):
+                        
+                        value_str = value
+                        if hasattr(value_str, "wrappedValue"):
+                            value_str = value_str.wrappedValue
+                            
+                        if isinstance(value_str, unicode):
                             value_str = value_str.encode('utf-8')
                         else:
                             value_str = str(value_str)
-                        # print (value_str, type(value_str))
-                        type_str = value.is_a()
-                        label = QtGui.QLabel(prop_name+" : "+value_str+" : "+type_str)
+                            
+                        if hasattr(value, "is_a"):
+                            type_str = " <i>(%s)</i>" % value.is_a()
+                        else:
+                            type_str = ""
+                        label = QtGui.QLabel("<b>%s</b>: %s%s" % (prop_name, value_str, type_str))
                         group_layout.addWidget(label)
+                        
                     group_layout.addStretch()
                     self.scrollLayout.addWidget(group_box)
+
                 self.scrollLayout.addStretch()
             else:
                 label = QtGui.QLabel("No IfcPropertySets asscociated with selected entity instance" )
@@ -224,31 +302,46 @@ class application(QtGui.QApplication):
 
 
         def load_file(self, f, **kwargs):
-            products = list(f.by_type("IfcProduct"))
-            for p in products:
-                propset_dict={}
+            for p in f.by_type("IfcProduct"):
+                propsets = []
+                
+                def process_pset(prop_def):
+                    if prop_def is not None:
+                        prop_set_name = prop_def.Name
+                        props = {}
+                        if prop_def.is_a("IfcElementQuantity"):
+                            for q in prop_def.Quantities:
+                                if q.is_a("IfcPhysicalSimpleQuantity"):
+                                    props[q.Name]=q[3]
+                        elif prop_def.is_a("IfcPropertySet"):
+                            for prop in prop_def.HasProperties:
+                                if prop.is_a("IfcPropertySingleValue"):
+                                    props[prop.Name]=prop.NominalValue
+                        else:
+                            # Entity introduced in IFC4
+                            # prop_def.is_a("IfcPreDefinedPropertySet"):
+                            for prop in range(4, len(prop_def)):
+                                props[prop_def.attribute_name(prop)]=prop_def[prop]
+                        return prop_set_name, props
+                
                 try:
                     for is_def_by in p.IsDefinedBy:
-                        if not is_def_by.is_a("IfcRelDefinesByProperties"): continue
-                        if is_def_by.RelatingPropertyDefinition is not None:
-                            prop_def=is_def_by.RelatingPropertyDefinition
-                            prop_set_name = prop_def.Name
-                            props = {}
-                            if prop_def.is_a("IfcElementQuantity"):
-                                for q in prop_def.Quantities:
-                                    if q.is_a("IfcPhysicalSimpleQuantity"):
-                                        props[q.Name]=q[3]
-                            else:
-                                for prop in prop_def.HasProperties:
-                                    if prop.is_a("IfcPropertySingleValue"):
-                                        props[prop.Name]=prop.NominalValue
-
-                        propset_dict[prop_set_name]=props
-
+                        if is_def_by.is_a("IfcRelDefinesByProperties"):
+                            propsets.append(process_pset(is_def_by.RelatingPropertyDefinition))
+                        elif is_def_by.is_a("IfcRelDefinesByType"):
+                            type_psets = is_def_by.RelatingType.HasPropertySets
+                            if type_psets is None: continue
+                            for propset in type_psets:
+                                propsets.append(process_pset(propset))
                 except Exception, e:
+                    import traceback
                     print("failed to load properties: {}".format(e))
-                self.prop_dict[str(p)]=propset_dict
-            print ("property set dictionary has {} entries".format(len(propset_dict)))
+                    traceback.print_exc()
+                    
+                if len(propsets):
+                    self.prop_dict[str(p)] = propsets
+                
+            print ("property set dictionary has {} entries".format(len(self.prop_dict)))
 
     class viewer(qtViewer3d):
 
@@ -436,11 +529,16 @@ class application(QtGui.QApplication):
         self.tabs.addTab(self.tree, 'Decomposition')
         self.tabs.addTab(self.tree2, 'Types')
         self.tabs.addTab(self.propview, "Properties")
-        splitter.addWidget(self.canvas)
+        splitter2 = QtGui.QSplitter(QtCore.Qt.Vertical)
+        splitter2.addWidget(self.canvas)
+        self.editor = code_edit(self.canvas, configuration().options('snippets'))
+        splitter2.addWidget(self.editor)
+        splitter.addWidget(splitter2)
         splitter.setSizes([200,600])
+        splitter2.setSizes([400,200])
         self.window.setCentralWidget(splitter)
         self.canvas.initialize()
-        self.components = [self.tree, self.tree2, self.canvas, self.propview]
+        self.components = [self.tree, self.tree2, self.canvas, self.propview, self.editor]
         self.files = {}
 
         self.window.add_menu_item('File', '&Open', self.browse, shortcut='CTRL+O')
@@ -450,7 +548,6 @@ class application(QtGui.QApplication):
         self.tree.instanceSelected.connect(self.makeSelectionHandler(self.tree))
         self.tree2.instanceSelected.connect(self.makeSelectionHandler(self.tree2))
         self.canvas.instanceSelected.connect(self.makeSelectionHandler(self.canvas))
-        self.propview.instanceSelected.connect(self.makeSelectionHandler(self.propview))
         for t in [self.tree, self.tree2]:
             t.instanceVisibilityChanged.connect(functools.partial(self.change_visibility, t))
             t.instanceDisplayModeChanged.connect(functools.partial(self.change_displaymode, t))
@@ -480,7 +577,10 @@ class application(QtGui.QApplication):
         
     def load(self, fn):
         if fn in self.files: return        
-        f = open(str(fn))
+        f = open_ifc_file(str(fn))
         self.files[fn] = f
         for c in self.components:
             c.load_file(f, setting=self.settings)
+            
+if __name__ == "__main__":
+    application().start()
