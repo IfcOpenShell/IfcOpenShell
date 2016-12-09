@@ -65,9 +65,7 @@ void WaveFrontOBJSerializer::writeMaterial(const IfcGeom::Material& style)
 	if (style.hasTransparency()) {
 		const double transparency = 1.0 - style.transparency();
 		if (transparency < 1) {
-			mtl_stream << "Tr " << transparency << "\n";
 			mtl_stream << "d "  << transparency << "\n";
-			mtl_stream << "D "  << transparency << "\n";
 		}
 	}
 }
