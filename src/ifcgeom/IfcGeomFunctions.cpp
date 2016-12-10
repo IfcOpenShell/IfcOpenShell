@@ -948,7 +948,7 @@ bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::IfcRepresentationShapeIt
 }
 	
 void IfcGeom::Kernel::remove_duplicate_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol) {
-	if (tol <= 0.) tol = getValue(GV_POINT_EQUALITY_TOLERANCE);
+	if (tol <= 0.) tol = getValue(GV_PRECISION);
 	tol *= tol;
 
 	for (;;) {
@@ -972,7 +972,7 @@ void IfcGeom::Kernel::remove_duplicate_points_from_loop(TColgp_SequenceOfPnt& po
 }
 
 void IfcGeom::Kernel::remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol) {
-	if (tol <= 0.) tol = getValue(GV_POINT_EQUALITY_TOLERANCE);
+	if (tol <= 0.) tol = getValue(GV_PRECISION);
 	const int start = closed ? 1 : 2;
 	const int end = polygon.Length() - (closed ? 0 : 1);
 	std::vector<bool> to_remove(polygon.Length(), false);

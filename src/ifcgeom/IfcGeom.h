@@ -43,6 +43,7 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include <Geom_Curve.hxx>
 #include <gp_Pln.hxx>
 #include <TColgp_SequenceOfPnt.hxx>
+#include <TopTools_ListOfShape.hxx>
 
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcUtil.h"
