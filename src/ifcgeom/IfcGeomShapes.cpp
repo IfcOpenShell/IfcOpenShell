@@ -438,7 +438,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, 
 		const double t = getValue(GV_PRECISION) * 10.;
 		remove_duplicate_points_from_loop(points, wire.Closed() != 0, t); // Note: wire always closed, as per if statement above
 		remove_collinear_points_from_loop(points, wire.Closed() != 0, t);
-		if (points.Size() < 3) {
+		if (points.Length() < 3) {
 			Logger::Message(Logger::LOG_ERROR, "Not enough points retained from:", l->PolygonalBoundary()->entity);
 			return false;
 		}
