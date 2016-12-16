@@ -53,6 +53,8 @@
 const std::string DEFAULT_EXTENSION = "obj";
 const std::string TEMP_FILE_EXTENSION = ".tmp";
 
+namespace po = boost::program_options;
+
 void print_version()
 {
     /// @todo Why cerr used for info prints? Change to cout.
@@ -80,7 +82,7 @@ void print_usage(bool suggest_help = true)
     std::cerr << std::endl;
 }
 
-void print_options(const boost::program_options::options_description& options)
+void print_options(const po::options_description& options)
 {
     std::cerr << "\n" << options;
     std::cerr << std::endl;
@@ -114,22 +116,39 @@ bool rename_file(const std::string& old_filename, const std::string& new_filenam
 static std::stringstream log_stream;
 void write_log();
 
-int main(int argc, char** argv) {
-    boost::program_options::options_description generic_options("Command line options");
+/// @todo Make this a feature of IfcGeom::Iterator instead.
+/// Also add GUID filtering.
+struct geom_filter
+{
+    bool include;
+    enum filter_type { ENTITIES, NAMES };
+    filter_type type;
+    std::set<std::string> values;
+};
+// Specialized classes for knowing which type of filter we are validating within validate().
+// Could not figure out easily how else to know it if using single type for both.
+struct inclusion_filter : public geom_filter { inclusion_filter() { include = true; } };
+struct exclusion_filter : public geom_filter { exclusion_filter() { include = false; } };
+
+int main(int argc, char** argv)
+{
+    po::options_description generic_options("Command line options");
 	generic_options.add_options()
 		("help,h", "display usage information")
 		("version", "display version information")
         ("verbose,v", "more verbose output")
-        ("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g overwriting an existing output file)");
+        ("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)");
 
-	boost::program_options::options_description fileio_options;
+    po::options_description fileio_options;
 	fileio_options.add_options()
-		("input-file", boost::program_options::value<std::string>(), "input IFC file")
-		("output-file", boost::program_options::value<std::string>(), "output geometry file");
+		("input-file", po::value<std::string>(), "input IFC file")
+		("output-file", po::value<std::string>(), "output geometry file");
 
-    std::vector<std::string> entity_vector, names;
     double deflection_tolerance;
-    boost::program_options::options_description geom_options("Geometry options");
+    inclusion_filter include_filter;
+    exclusion_filter exclude_filter;
+
+    po::options_description geom_options("Geometry options");
 	geom_options.add_options()
 		("plan",
 			"Specifies whether to include curves in the output result. Typically "
@@ -174,47 +193,44 @@ int main(int argc, char** argv) {
 		("enable-layerset-slicing", 
 			"Specifies whether to enable the slicing of products according "
 			"to their associated IfcMaterialLayerSet.")
-		("include", 
-            "Specifies that the entities and/or names listed after --entities and/or --names are to be included")
-		("exclude", 
-            "Specifies that the entities and/or names listed after --entities and/or --names are to be excluded")
-		("entities", boost::program_options::value< std::vector<std::string> >(&entity_vector)->multitoken(),
-			"A list of entities that should be included in or excluded from the "
-			"geometrical output, depending on whether --exclude or --include is specified. "
-            "Defaults to IfcOpeningElement and IfcSpace to be excluded. SVG output defaults "
-            "to IfcSpace to be included."
-            "The names are handled case-insensitively. Cannot be placed right before input file argument.")
-        ("names", boost::program_options::value< std::vector<std::string> >(&names)->multitoken(),
-            "A list of names or wildcard patterns that should be included in or excluded from the "
-            "geometrical output, depending on whether --exclude or --include is specified. "
-            "The names are handled case-sensitively. Cannot be placed right before input file argument.")
+        ("include", po::value<inclusion_filter>(&include_filter)->multitoken(),
+            "Specifies that the entities or names provided are to be included. "
+            "If --include=entities specified, the following list of types should be included in the geometrical output. "
+            "SVG output defaults to IfcSpace to be included. The entity names are handled case-insensitively. "
+            "If --include=names specified, the following list of names or wildcard patterns should be included in the "
+            "geometrical output. The name patterns are handled case-sensitively. Cannot be placed right before input file argument. "
+            "Only single option supported for now.")
+        ("exclude", po::value<exclusion_filter>(&exclude_filter)->multitoken(),
+            "Specifies that the 'entities' or 'names' provided are to be excluded. Defaults to IfcOpeningElement and IfcSpace "
+            "to be excluded. See --include for syntax and more details.")
         ("no-normals",
             "Disables computation of normals. Saves time and file size and is useful "
             "in instances where you're going to recompute normals for the exported "
             "model in other modelling application in any case.")
-        ("deflection-tolerance", boost::program_options::value<double>(&deflection_tolerance)->default_value(1e-3),
+        ("deflection-tolerance", po::value<double>(&deflection_tolerance)->default_value(1e-3),
             "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
         ("generate-uvs",
             "Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
             "Not guaranteed to work properly if used with --weld-vertices.")
         ("traverse",
             "Applies --include or --exclude also to the decomposition and/or containment (IsDecomposedBy, "
-            "HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. "
-            "--include --traverse --names \"Level 1\" includes entity with name \"Level 1\" and all of its children.");
+            "HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. --include=names \"Level 1\" "
+            "--traverse includes entity with name \"Level 1\" and all of its children.");
 
     std::string bounds, offset_str;
 #ifdef HAVE_ICU
     std::string unicode_mode;
 #endif
     short precision;
-    boost::program_options::options_description serializer_options("Serialization options");
+
+    po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
 #ifdef HAVE_ICU
-        ("unicode", boost::program_options::value<std::string>(&unicode_mode),
+        ("unicode", po::value<std::string>(&unicode_mode),
             "Specifies the Unicode handling behavior when parsing the IFC file. "
             "Accepted values 'utf8' (the default) and 'escape'.")
 #endif
-        ("bounds", boost::program_options::value<std::string>(&bounds),
+        ("bounds", po::value<std::string>(&bounds),
             "Specifies the bounding rectangle, for example 512x512, to which the "
             "output will be scaled. Only used when converting to SVG.")
         ("use-element-names",
@@ -229,39 +245,42 @@ int main(int argc, char** argv) {
         ("center-model",
             "Centers the elements upon serialization by applying the center point of "
             "all placements as an offset. Applicable for OBJ and DAE output.")
-        ("model-offset", boost::program_options::value<std::string>(&offset_str),
+        ("model-offset", PO::value<std::string>(&offset_str),
             "Applies an arbitrary offset of form 'x;y;z' to all placements. Applicable for OBJ and DAE output.")
-        ("precision", boost::program_options::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
+        ("precision", po::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
             "Sets the precision to be used to format floating-point values, 15 by default. "
             "Use a negative value to use the system's default precision (should be 6 typically). "
             "Applicable for OBJ and DAE output. For DAE output, value >= 15 means that up to 16 decimals are used, "
             " and any other value means that 6 or 7 decimals are used.");
 
-	boost::program_options::options_description cmdline_options;
+    po::options_description cmdline_options;
 	cmdline_options.add(generic_options).add(fileio_options).add(geom_options).add(serializer_options);
 
-	boost::program_options::positional_options_description positional_options;
+    po::positional_options_description positional_options;
 	positional_options.add("input-file", 1);
 	positional_options.add("output-file", 1);
 
-	boost::program_options::variables_map vmap;
-	try {
-		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
-				  options(cmdline_options).positional(positional_options).run(), vmap);
-	} catch (const boost::program_options::unknown_option& e) {
-		std::cerr << "[Error] Unknown option '" << e.get_option_name() << "'" << std::endl << std::endl;
+    po::variables_map vmap;
+    try {
+        po::store(po::command_line_parser(argc, argv).
+            options(cmdline_options).positional(positional_options).run(), vmap);
+    } catch (const po::unknown_option& e) {
+        std::cerr << "[Error] Unknown option '" << e.get_option_name() << "'" << "\n\n";
         print_usage();
-        return 1;
+        return EXIT_FAILURE;
+    } catch (const po::error_with_option_name& e) {
+        std::cerr << "[Error] Invalid usage of '" << e.get_option_name() << "': " << e.what() << "\n\n";
+        print_usage();
+        return EXIT_FAILURE;
     } catch (const std::exception& e) {
         std::cerr << "[Error] " << e.what() << "\n\n";
         print_usage();
-        return 1;
-    } catch (...) {
-		// Catch other errors such as invalid command line syntax
+        return EXIT_FAILURE;
+    } catch (...) { // other errors such as invalid command line syntax
         print_usage();
         return 1;
-	}
-	boost::program_options::notify(vmap);
+
+    po::notify(vmap);
 
     print_version();
 
@@ -275,12 +294,7 @@ int main(int argc, char** argv) {
         std::cerr << "[Error] Input file not specified" << std::endl;
         print_usage();
         return 1;
-	} else if (vmap.count("include") && vmap.count("exclude")) {
-        std::cerr << "[Error] --include and --exclude can not be specified together" << std::endl;
-        print_options(geom_options);
-		return 1;
-	}
-
+    }
 	const bool verbose = vmap.count("verbose") != 0;
 	const bool weld_vertices = vmap.count("weld-vertices") != 0;
 	const bool use_world_coords = vmap.count("use-world-coords") != 0;
@@ -290,8 +304,6 @@ int main(int argc, char** argv) {
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
 #endif
 	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
-	bool include_entities = vmap.count("include") != 0 && !entity_vector.empty();
-    const bool include_names = vmap.count("include") != 0 && !names.empty();
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
 	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
@@ -331,9 +343,6 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	// Gets the set ifc types to be ignored from the command line. 
-	std::set<std::string> entities(entity_vector.begin(), entity_vector.end());
-
 	const std::string input_filename = vmap["input-file"].as<std::string>();
     if (!file_exists(input_filename)) {
         std::cerr << "[Error] Input file '" << input_filename << "' does not exist" << std::endl;
@@ -366,19 +375,7 @@ int main(int argc, char** argv) {
 	std::string output_extension = output_filename.substr(output_filename.size()-4);
 	boost::to_lower(output_extension);
 
-	// If no entity or names filters are specified these are the defaults to skip from output
-	if (entities.empty() && names.empty()) {
-        entities.insert("IfcSpace");
-		if (output_extension == ".svg") {
-			include_entities = true;
-		} else {
-            entities.insert("IfcOpeningElement");
-		}
-	}
-
 	Logger::SetOutput(&std::cout, &log_stream);
-	Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
-
 	if (output_extension == ".xml") {
 		int exit_code = 1;
 		try {
@@ -416,7 +413,6 @@ int main(int argc, char** argv) {
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
     settings.set(IfcGeom::IteratorSettings::TRAVERSE, traverse);
-    settings.set_deflection_tolerance(deflection_tolerance);
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
@@ -489,7 +485,6 @@ int main(int argc, char** argv) {
     }
 
 	if (!serializer->ready()) {
-        Logger::Message(Logger::LOG_ERROR, "Unable to open output '" + output_filename + "' file for writing");
 		write_log();
 		return 1;
 	}
@@ -605,4 +600,46 @@ void write_log() {
 	if (!log.empty()) {
 		std::cerr << "\n" << "Log:\n" << log << std::endl;
 	}
+}
+
+/// @todo Duplicate code for inclusion_filter and exclusion_filter validation.
+void validate(boost::any& v, const std::vector<std::string>& values, inclusion_filter*, int)
+{
+    /// @todo For now only single --include or --exclude supported. Support having multiple.
+    po::validators::check_first_occurrence(v);
+    inclusion_filter filter;
+
+    if (values.size() == 0) {
+        throw po::validation_error(po::validation_error::at_least_one_value_required);
+    }
+    std::string type = *values.begin();
+    if (type == "entities") {
+        filter.type = geom_filter::ENTITIES;
+    } else if (type == "names") {
+        filter.type = geom_filter::NAMES;
+    } else {
+        throw po::validation_error(po::validation_error::invalid_option_value);
+    }
+    filter.values.insert(values.begin() + 1, values.end());
+    v = filter;
+}
+
+void validate(boost::any& v, const std::vector<std::string>& values, exclusion_filter*, int)
+{
+    po::validators::check_first_occurrence(v);
+    exclusion_filter filter;
+
+    if (values.size() == 0) {
+        throw po::validation_error(po::validation_error::at_least_one_value_required);
+    }
+    std::string type = *values.begin();
+    if (type == "entities") {
+        filter.type = geom_filter::ENTITIES;
+    } else if (type == "names") {
+        filter.type = geom_filter::NAMES;
+    } else {
+        throw po::validation_error(po::validation_error::invalid_option_value);
+    }
+    filter.values.insert(values.begin() + 1, values.end());
+    v = filter;
 }
