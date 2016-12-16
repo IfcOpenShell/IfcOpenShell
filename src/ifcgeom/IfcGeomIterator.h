@@ -331,7 +331,7 @@ namespace IfcGeom {
 		}
 
         /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
-        void include_entity_names(const std::vector<std::string>& names)
+        void include_entity_names(const std::set<std::string>& names)
         {
             names_to_include_or_exclude.clear();
             foreach(const std::string &name, names)
@@ -340,7 +340,7 @@ namespace IfcGeom {
         }
 
         /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
-        void exclude_entity_names(const std::vector<std::string>& names)
+        void exclude_entity_names(const std::set<std::string>& names)
         {
             names_to_include_or_exclude.clear();
             foreach(const std::string &name, names)
@@ -546,7 +546,7 @@ namespace IfcGeom {
                             }
                         }
 
-                        if (!type_found && traverse) {
+                        if (type_found != include_entities_in_processing && traverse) {
                             foreach(IfcSchema::Type::Enum type, entities_to_include_or_exclude) {
                                 IfcSchema::IfcProduct* parent, * current = prod;
                                 while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
@@ -570,7 +570,7 @@ namespace IfcGeom {
                             }
                         }
 
-                        if (!name_found && traverse) {
+                        if (name_found != include_names_in_processing_ && traverse) {
                             foreach(const boost::regex& r, names_to_include_or_exclude) {
                                 IfcSchema::IfcProduct* parent, *current = prod;
                                 while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
