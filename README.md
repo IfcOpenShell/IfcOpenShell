@@ -34,6 +34,9 @@ Dependencies
 
 Building IfcOpenShell
 ---------------------
+
+**Note:** The path where the source code is cloned to can contain spaces but non-ASCII characters are very likely to cause problems with the build.
+
 ### Compiling on Windows
 The preferred way to fetch and build this project's dependencies is to use the build scripts
 in win/ folder. **See [win/readme.md] for more information**.
@@ -53,9 +56,8 @@ As the scripts default to using the `RelWithDebInfo` configuration, and a freshl
 to `Debug`, make sure to switch the used build configuration. Build the `INSTALL` project (right-click -> Project
 Only) to deploy the headers and binaries into a single location if wanted/needed.
 
-Alternatively, one can use the utility batch files to build and install the project easily from the command-line:
-
-    > build-ifcopenshell.bat
+Alternatively, one can use the utility batch file(s) to build and install the project easily from the command-line
+(installing a project will build it also, if required):
     > install-ifcopenshell.bat
 
 #### Using MSYS2 + MinGW
@@ -65,7 +67,6 @@ Start the MSYS2 Shell and then:
     $ cd IfcOpenShell/win
     $ ./build-deps.sh
     $ ./run-cmake.sh
-    $ ./build-ifcopenshell.sh
     $ ./install-ifcopenshell.sh
 
 #### Using Bash on Ubuntu on Windows
@@ -79,16 +80,16 @@ The following instructions are for Ubuntu, modify as required for other operatin
 can be experimented with and studied for pointers for other operating systems, but note that this script is not currently
 meant to be used for a typical IfcOpenShell workspace setup.
 
-Install most of the prerequisites and dependencies:
+**1)** Install most of the prerequisites and dependencies:
 
     $ sudo apt-get install git cmake gcc g++ libboost-all-dev libicu-dev
 
-There might be an Open CASCADE package in your operating system's software repository (see http://opencascade.org
-for additional information):
+**2a)** Either use an Open CASCADE package from your operating system's software repository (see http://opencascade.org
+for additional information)
 
     $ sudo apt-get install liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
 
-If not, you will need to compile Open CASCADE yourself (note that the build takes a long time):
+**2b)** or (if not available, or the latest code is wanted) compile Open CASCADE yourself (note that the build takes a long time):
 
     $ sudo apt-get install libftgl-dev libtbb2 libtbb-dev libgl1-mesa-dev libfreetype6-dev
     $ git clone https://github.com/tpaviot/oce.git
@@ -98,7 +99,7 @@ If not, you will need to compile Open CASCADE yourself (note that the build take
     $ make -j
     $ sudo make install
 
-For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA is needed:
+**3)** For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA is needed:
 
     $ sudo apt-get install libpcre3-dev
     $ git clone https://github.com/KhronosGroup/OpenCOLLADA.git
@@ -110,11 +111,11 @@ For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA
     $ make -j
     $ sudo make install
 
-For building the IfcPython wrapper (on by default), SWIG and Python development are needed, if not already available:
+**4)** For building the IfcPython wrapper (on by default), SWIG and Python development are needed, if not already available:
 
     $ sudo apt-get install python-all-dev swig
 
-To build IfcOpenShell please take the following steps. Alternatively use environment variables for setting the
+**5)** To build IfcOpenShell please take the following steps. Alternatively use environment variables for setting the
 dependencies' paths. `OCC_INCLUDE_DIR` might be needed to set also. `OPENCOLLADA_INCLUDE_DIR` and `OPENCOLLADA_LIBRARY_DIR`
 (and potentially `PCRE_LIBRARY_DIR`) are needed if building with COLLADA support. (`-DCOLLADA_SUPPORT=0` disables it).
 
@@ -128,7 +129,7 @@ dependencies' paths. `OCC_INCLUDE_DIR` might be needed to set also. `OPENCOLLADA
 
 If all worked out correctly you can now use IfcOpenShell. See the examples below.
 
-Install the project if wanted:
+**6)** Install the project if wanted:
 
     $ sudo make install
 

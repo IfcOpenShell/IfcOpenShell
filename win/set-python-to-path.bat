@@ -22,13 +22,13 @@
 @echo off
 set TARGET_ARCH=%1
 if "%TARGET_ARCH%"=="" set TARGET_ARCH=x64
-if not exist %~dp0BuildDepsCache-%TARGET_ARCH%.txt. (
+if not exist "%~dp0BuildDepsCache-%TARGET_ARCH%.txt". (
     echo %~dp0BuildDepsCache-%TARGET_ARCH%.txt does not exist
     goto :EOF
 )
-for /f "delims== tokens=1,2" %%G in (%~dp0BuildDepsCache-%TARGET_ARCH%.txt) do set %%G=%%H
+for /f "delims== tokens=1,2" %%G in ("%~dp0BuildDepsCache-%TARGET_ARCH%.txt") do set %%G=%%H
 if not defined PYTHONHOME (
-    echo PYTHONHOME PYTHONHOME not defined
+    echo PYTHONHOME not defined
     goto :EOF
 )
 
