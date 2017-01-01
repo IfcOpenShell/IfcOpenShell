@@ -85,3 +85,17 @@ class entity_instance(object):
             self.wrapped_data.get_attribute_names(),
             self.wrapped_data.get_inverse_attribute_names()
         )))
+    def get_info(self):
+        _info = {}
+        try:
+            _info["id"] = self.id()
+            _info["type"] = self.is_a()
+        except:
+            pass
+        for i in range(len(self)):
+            try:
+                _info[self.attribute_name(i)] = self[i]
+            except:
+                pass
+        return _info
+    __dict__ = property(get_info)
