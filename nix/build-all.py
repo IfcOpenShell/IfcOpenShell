@@ -56,6 +56,9 @@ PCRE_VERSION="8.38"
 LIBXML_VERSION="2.9.3"
 CMAKE_VERSION="3.4.1"
 ICU_VERSION="56.1"
+GMP_VERSION="6.1.2"
+MPFR_VERSION="3.1.5"
+
 
 # binaries
 cp="cp"
@@ -161,7 +164,7 @@ cecho(""" - How many compiler processes may be run in parallel.
 
 # Check that required tools are in PATH
 
-for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make]:
+for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make, "m4"]:
     if which(cmd) is None:
         raise ValueError("Required tool '%s' not installed or not added to PATH" % (cmd,))
 
@@ -415,6 +418,8 @@ for FL in ["C", "CXX"]:
 shutil.rmtree(CMAKE_FLAG_EXTRACT_DIR)
 
 build_dependency(name="pcre-%s" % (PCRE_VERSION,), mode="autoconf", build_tool_args=["--disable-shared"], download_url="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/", download_name="pcre-%s.tar.bz2" % (PCRE_VERSION,))
+build_dependency(name="gmp-%s" % (GMP_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://ftp.gnu.org/gnu/gmp/", download_name="gmp-%s.tar.bz2" % (GMP_VERSION,))
+build_dependency(name="mpfr-%s" % (MPFR_VERSION,), mode="autoconf", build_tool_args=["--with-gmp=%s/install/gmp-%s" % (DEPS_DIR, GMP_VERSION)], download_url="http://www.mpfr.org/mpfr-current/", download_name="mpfr-%s.tar.bz2" % (MPFR_VERSION,))
 
 # An issue exists with swig-1.3 and python >= 3.2
 # Therefore, build a recent copy from source
@@ -445,6 +450,8 @@ os.environ["CFLAGS"]=OLD_C_FLAGS
 
 str_concat = lambda prefix: lambda postfix: "=".join((prefix, postfix.strip()))
 build_dependency("boost-%s" % (BOOST_VERSION,), mode="bjam", build_tool_args=["--stagedir=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "--with-system", "--with-program_options", "--with-regex", "--with-thread", "--with-date_time", "link=static"]+BOOST_ADDRESS_MODEL+list(map(str_concat("cxxflags"), CXXFLAGS.strip().split(' '))) + list(map(str_concat("linkflags"), LDFLAGS.strip().split(' '))) + ["stage"], download_url="http://downloads.sourceforge.net/project/boost/boost/%s/" % (BOOST_VERSION,), download_name="boost_%s.tar.bz2" % (BOOST_VERSION_UNDERSCORE,))
+
+build_dependency(name="cgal-master", mode="cmake", build_tool_args=["-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION), "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION), "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION), "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION), "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION)], download_url="https://github.com/CGAL/cgal.git", download_name="cgal", download_tool=download_tool_git)
 
 build_dependency(name="icu-%s" % (ICU_VERSION,), mode="icu", build_tool_args=["--enable-static", "--disable-shared"], download_url="http://download.icu-project.org/files/icu4c/%s/" % (ICU_VERSION,), download_name="icu4c-%s-src.tgz" % (ICU_VERSION_UNDERSCORE,))
 
