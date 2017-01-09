@@ -73,6 +73,8 @@ LIBXML_VERSION="2.9.3"
 CMAKE_VERSION="3.4.1"
 ICU_VERSION="56.1"
 SWIG_VERSION="3.0.12"
+GMP_VERSION="6.1.2"
+MPFR_VERSION="3.1.5"
 
 # binaries
 cp="cp"
@@ -212,7 +214,7 @@ print("Building:", *sorted(targets, key=lambda t: len(list(v(t)))))
 
 # Check that required tools are in PATH
 
-for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make, "patch"]:
+for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make, "patch", "m4"]:
     if which(cmd) is None:
         raise ValueError("Required tool '%s' not installed or not added to PATH" % (cmd,))
 
@@ -643,6 +645,11 @@ if "icu" in targets:
         download_url="http://download.icu-project.org/files/icu4c/{ICU_VERSION}/".format(**locals()),
         download_name="icu4c-{ICU_VERSION_UNDERSCORE}-src.tgz".format(**locals())
     )
+
+if "cgal" in targets:
+    build_dependency(name="gmp-%s" % (GMP_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://ftp.gnu.org/gnu/gmp/", download_name="gmp-%s.tar.bz2" % (GMP_VERSION,))
+    build_dependency(name="mpfr-%s" % (MPFR_VERSION,), mode="autoconf", build_tool_args=["--with-gmp=%s/install/gmp-%s" % (DEPS_DIR, GMP_VERSION)], download_url="http://www.mpfr.org/mpfr-current/", download_name="mpfr-%s.tar.bz2" % (MPFR_VERSION,))
+    build_dependency(name="cgal-master", mode="cmake", build_tool_args=["-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION), "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION), "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION), "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION), "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION)], download_url="https://github.com/CGAL/cgal.git", download_name="cgal", download_tool=download_tool_git)
 
 cecho("Building IfcOpenShell:", GREEN)
 
