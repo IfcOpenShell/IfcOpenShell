@@ -50,7 +50,8 @@ logger.addHandler(ch)
 
 PROJECT_NAME="IfcOpenShell"
 OCE_VERSION="0.16"
-PYTHON_VERSIONS=["2.7.10", "3.2.6", "3.3.6", "3.4.4", "3.5.1"]
+# Don't care about python wrapper for time being
+PYTHON_VERSIONS=[] # "2.7.10", "3.2.6", "3.3.6", "3.4.4", "3.5.1"]
 BOOST_VERSION="1.59.0"
 PCRE_VERSION="8.38"
 LIBXML_VERSION="2.9.3"
@@ -231,10 +232,14 @@ OPENCOLLADA_COMMIT="f99d59e73e565a41715eaebc00c7664e1ee5e628"
 
 def run_autoconf(arg1, configure_args, cwd):
     configure_path = os.path.realpath(os.path.join(cwd, "..", "configure"))
+    install_dir = os.path.realpath("%s/install/%s" % (DEPS_DIR, arg1))
+    if not os.path.exists(install_dir):
+        # Some (MPFR) need to have prefix dir manually created
+        os.mkdir(install_dir)
     if not os.path.exists(configure_path):
         __check_call__([bash, "./autogen.sh"], cwd=os.path.realpath(os.path.join(cwd, ".."))) # only run autogen.sh in the directory it is located and use cwd to achieve that in order to not mess up things
     # Using `sh` over `bash` fixes issues with building swig 
-    __check_call__(["/bin/sh", "../configure"]+configure_args+["--prefix=%s" % (os.path.realpath("%s/install/%s" % (DEPS_DIR, arg1)),)], cwd=cwd)
+    __check_call__(["/bin/sh", "../configure"]+configure_args+["--prefix=%s" % install_dir], cwd=cwd)
 
 def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     if cmake_dir is None:
@@ -242,7 +247,7 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     else:
         P=cmake_dir
     cmake_path= os.path.join(DEPS_DIR, "install", "cmake-%s" % (CMAKE_VERSION,), "bin", "cmake")
-    __check_call__([cmake_path, P]+cmake_args+["-DCMAKE_BUILD_TYPE=%s" % (BUILD_TYPE,)], cwd=cwd)
+    __check_call__([cmake_path, P]+cmake_args+["-DCMAKE_BUILD_TYPE=%s" % (BUILD_CFG,)], cwd=cwd)
 
 def run_icu(arg1, icu_args, cwd):
     PLATFORM=get_os()
@@ -418,8 +423,8 @@ for FL in ["C", "CXX"]:
 shutil.rmtree(CMAKE_FLAG_EXTRACT_DIR)
 
 build_dependency(name="pcre-%s" % (PCRE_VERSION,), mode="autoconf", build_tool_args=["--disable-shared"], download_url="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/", download_name="pcre-%s.tar.bz2" % (PCRE_VERSION,))
-build_dependency(name="gmp-%s" % (GMP_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://ftp.gnu.org/gnu/gmp/", download_name="gmp-%s.tar.bz2" % (GMP_VERSION,))
-build_dependency(name="mpfr-%s" % (MPFR_VERSION,), mode="autoconf", build_tool_args=["--with-gmp=%s/install/gmp-%s" % (DEPS_DIR, GMP_VERSION)], download_url="http://www.mpfr.org/mpfr-current/", download_name="mpfr-%s.tar.bz2" % (MPFR_VERSION,))
+build_dependency(name="gmp-%s" % (GMP_VERSION,), mode="autoconf", build_tool_args=["--disable-shared", "--with-pic"], download_url="https://ftp.gnu.org/gnu/gmp/", download_name="gmp-%s.tar.bz2" % (GMP_VERSION,))
+build_dependency(name="mpfr-%s" % (MPFR_VERSION,), mode="autoconf", build_tool_args=["--disable-shared", "--with-gmp=%s/install/gmp-%s" % (DEPS_DIR, GMP_VERSION)], download_url="http://www.mpfr.org/mpfr-current/", download_name="mpfr-%s.tar.bz2" % (MPFR_VERSION,))
 
 # An issue exists with swig-1.3 and python >= 3.2
 # Therefore, build a recent copy from source
@@ -451,7 +456,12 @@ os.environ["CFLAGS"]=OLD_C_FLAGS
 str_concat = lambda prefix: lambda postfix: "=".join((prefix, postfix.strip()))
 build_dependency("boost-%s" % (BOOST_VERSION,), mode="bjam", build_tool_args=["--stagedir=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "--with-system", "--with-program_options", "--with-regex", "--with-thread", "--with-date_time", "link=static"]+BOOST_ADDRESS_MODEL+list(map(str_concat("cxxflags"), CXXFLAGS.strip().split(' '))) + list(map(str_concat("linkflags"), LDFLAGS.strip().split(' '))) + ["stage"], download_url="http://downloads.sourceforge.net/project/boost/boost/%s/" % (BOOST_VERSION,), download_name="boost_%s.tar.bz2" % (BOOST_VERSION_UNDERSCORE,))
 
-build_dependency(name="cgal-master", mode="cmake", build_tool_args=["-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION), "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION), "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION), "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION), "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION)], download_url="https://github.com/CGAL/cgal.git", download_name="cgal", download_tool=download_tool_git)
+OLD_BUILD_CFG = BUILD_CFG
+if BUILD_CFG != "Debug":
+    # CGAL only supports Debug and Release for CMAKE_BUILD_TYPE
+    BUILD_CFG = "Release"
+build_dependency(name="cgal", mode="cmake", build_tool_args=["-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION), "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION), "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION), "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION), "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "-DCMAKE_INSTALL_PREFIX=%s/install/cgal/" % (DEPS_DIR,)], download_url="https://github.com/CGAL/cgal.git", download_name="cgal", download_tool=download_tool_git)
+BUILD_CFG = OLD_BUILD_CFG
 
 build_dependency(name="icu-%s" % (ICU_VERSION,), mode="icu", build_tool_args=["--enable-static", "--disable-shared"], download_url="http://download.icu-project.org/files/icu4c/%s/" % (ICU_VERSION,), download_name="icu4c-%s-src.tgz" % (ICU_VERSION_UNDERSCORE,))
 
