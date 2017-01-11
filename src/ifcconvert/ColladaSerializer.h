@@ -154,9 +154,11 @@ private:
 		COLLADASW::StreamWriter stream;
 		ColladaScene scene;
 	public:
-		ColladaExporter(const std::string& scene_name, const std::string& fn, ColladaSerializer *_serializer)
+        /// @param double_precision Whether to use "double precision" (up to 16 decimals) or not (6 or 7 decimals).
+		ColladaExporter(const std::string& scene_name, const std::string& fn, ColladaSerializer *_serializer,
+            bool double_precision)
             : filename(fn)
-            , stream(filename, sizeof(real_t) == sizeof(double)) // utilise Collada stream's double precision feature
+            , stream(filename, double_precision)
 			, scene(scene_name, stream, _serializer)
 			, materials(stream, _serializer)
 			, geometries(stream, _serializer)
@@ -178,7 +180,7 @@ private:
 public:
     ColladaSerializer(const std::string& dae_filename, const SerializerSettings& settings)
         : GeometrySerializer(settings)
-		, exporter("IfcOpenShell", dae_filename, this)
+		, exporter("IfcOpenShell", dae_filename, this, settings.precision >= 15)
     {
         exporter.serializer = this;
         exporter.materials.serializer = this;
