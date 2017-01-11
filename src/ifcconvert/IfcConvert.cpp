@@ -363,7 +363,7 @@ int main(int argc, char** argv) {
 		return exit_code;
 	}
 
-	IfcGeom::IteratorSettings settings;
+    SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
 	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
 	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords);
@@ -377,13 +377,13 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
 	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
-    settings.set(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES, use_element_names);
-    settings.set(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS, use_element_guids);
-    settings.set(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES, use_material_names);
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
-    settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, center_model);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
     settings.set(IfcGeom::IteratorSettings::TRAVERSE, traverse);
+    settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
+    settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
+    settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
+    settings.set(SerializerSettings::CENTER_MODEL, center_model);
     if (deflection_tolerance_specified) {
         settings.set_deflection_tolerance(deflection_tolerance);
     }

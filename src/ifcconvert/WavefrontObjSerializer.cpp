@@ -47,7 +47,7 @@ void WaveFrontOBJSerializer::writeHeader() {
 
 void WaveFrontOBJSerializer::writeMaterial(const IfcGeom::Material& style)
 {
-    std::string material_name = (settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+    std::string material_name = (settings().get(SerializerSettings::USE_MATERIAL_NAMES)
         ? style.original_name() : style.name());
     IfcUtil::sanitate_material_name(material_name);
     mtl_stream << "newmtl " << material_name << "\n";
@@ -72,8 +72,8 @@ void WaveFrontOBJSerializer::writeMaterial(const IfcGeom::Material& style)
 
 void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* o)
 {
-    const std::string name = (settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS)
-        ? o->guid() : (settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES)
+    const std::string name = (settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
+        ? o->guid() : (settings().get(SerializerSettings::USE_ELEMENT_NAMES)
             ? o->name() : o->unique_id()));
     obj_stream << "g " << name << "\n";
 	obj_stream << "s 1" << "\n";
@@ -113,7 +113,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
 		const int material_id = *(material_it++);
 		if (material_id != previous_material_id) {
 			const IfcGeom::Material& material = mesh.materials()[material_id];
-            std::string material_name = (settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+            std::string material_name = (settings().get(SerializerSettings::USE_MATERIAL_NAMES)
                 ? material.original_name() : material.name());
             IfcUtil::sanitate_material_name(material_name);
 			obj_stream << "usemtl " << material_name << "\n";
@@ -157,7 +157,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
 
 		if (material_id != previous_material_id) {
 			const IfcGeom::Material& material = mesh.materials()[material_id];
-            std::string material_name = (settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+            std::string material_name = (settings().get(SerializerSettings::USE_MATERIAL_NAMES)
                 ? material.original_name() : material.name());
             IfcUtil::sanitate_material_name(material_name);
 			obj_stream << "usemtl " << material_name << "\n";

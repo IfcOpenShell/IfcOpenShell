@@ -176,7 +176,7 @@ private:
 	std::string unit_name;
 	float unit_magnitude;
 public:
-    ColladaSerializer(const std::string& dae_filename, const IfcGeom::IteratorSettings &settings)
+    ColladaSerializer(const std::string& dae_filename, const SerializerSettings& settings)
         : GeometrySerializer(settings)
 		, exporter("IfcOpenShell", dae_filename, this)
     {

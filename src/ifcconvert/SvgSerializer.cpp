@@ -333,8 +333,8 @@ std::string SvgSerializer::nameElement(const IfcGeom::Element<real_t>* elem)
 {
 	std::ostringstream oss;
 	const std::string type = "product";
-    const std::string name = (settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS)
-        ? elem->guid() : (settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES)
+    const std::string name = (settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
+        ? elem->guid() : (settings().get(SerializerSettings::USE_ELEMENT_NAMES)
         ? elem->name() : elem->unique_id()));
 	oss << "id=\"" << type << "-" << name<< "\"";
 	return oss.str();
