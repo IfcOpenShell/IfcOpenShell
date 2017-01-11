@@ -31,7 +31,7 @@ protected:
 	const std::string out_filename;
 	const char* getSymbolForUnitMagnitude(float mag);
 public:
-	explicit OpenCascadeBasedSerializer(const std::string& out_filename, const IfcGeom::IteratorSettings &settings)
+	explicit OpenCascadeBasedSerializer(const std::string& out_filename, const SerializerSettings& settings)
 		: GeometrySerializer(settings)
 		, out_filename(out_filename)
 	{}

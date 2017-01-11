@@ -73,29 +73,17 @@ namespace IfcGeom
             /// in instances where you're going to recompute normals for the exported
             /// model in other modelling application in any case.
             NO_NORMALS = 1 << 11,
-            /// Use entity names instead of unique IDs for naming elements.
-            /// Applicable for OBJ, DAE, and SVG output.
-            USE_ELEMENT_NAMES = 1 << 12,
-            /// Use entity GUIDs instead of unique IDs for naming elements.
-            /// Applicable for OBJ, DAE, and SVG output.
-            USE_ELEMENT_GUIDS = 1 << 13,
-            /// Use material names instead of unique IDs for naming materials.
-            /// Applicable for OBJ and DAE output.
-            USE_MATERIAL_NAMES = 1 << 14,
-            /// Centers the models upon serialization by the applying the center point of
-            /// the scene bounds as an offset. Applicable for OBJ and DAE output currently.
-            CENTER_MODEL = 1 << 15,
             /// Generates UVs by using simple box projection. Requires normals.
             /// Applicable for OBJ and DAE output.
-            GENERATE_UVS = 1 << 16,
+            GENERATE_UVS = 1 << 12,
             /// Specifies whether to slice representations according to associated IfcLayerSets.
-            APPLY_LAYERSETS = 1 << 17,
+            APPLY_LAYERSETS = 1 << 13,
             /// Marks that include/exclude filtering should be applied also to the decomposition
             /// and/or containment (IsDecomposedBy, HasOpenings, FillsVoid, ContainedInStructure)
             /// of the filtered entity.
-            TRAVERSE = 1 << 18,
+            TRAVERSE = 1 << 14,
             /// Number of different setting flags.
-            NUM_SETTINGS = 18
+            NUM_SETTINGS = 14
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;
@@ -104,11 +92,7 @@ namespace IfcGeom
             : settings_(WELD_VERTICES) // OR options that default to true here
             , deflection_tolerance_(1.e-3)
         {
-            memset(offset, 0, sizeof(offset));
         }
-
-        /// Optional offset that is applied to serialized objects, (0,0,0) by default.
-        double offset[3];
 
         /// Note that this is independent of the IFC length unit, one millimeter by default.
         double deflection_tolerance() const { return deflection_tolerance_; }

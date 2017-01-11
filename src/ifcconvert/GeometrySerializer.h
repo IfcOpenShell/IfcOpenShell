@@ -29,9 +29,39 @@ typedef float real_t;
 #include "../ifcconvert/Serializer.h"
 #include "../ifcgeom/IfcGeomIterator.h"
 
+class SerializerSettings : public IfcGeom::IteratorSettings
+{
+public:
+    enum Setting
+    {
+        /// Use entity names instead of unique IDs for naming elements.
+        /// Applicable for OBJ, DAE, and SVG output.
+        USE_ELEMENT_NAMES = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 1),
+        /// Use entity GUIDs instead of unique IDs for naming elements.
+        /// Applicable for OBJ, DAE, and SVG output.
+        USE_ELEMENT_GUIDS = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 2),
+        /// Use material names instead of unique IDs for naming materials.
+        /// Applicable for OBJ and DAE output.
+        USE_MATERIAL_NAMES = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 3),
+        /// Centers the models upon serialization by the applying the center point of
+        /// the scene bounds as an offset. Applicable for OBJ and DAE output currently.
+        CENTER_MODEL = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 4),
+        /// Number of different setting flags.
+        NUM_SETTINGS = 4
+    };
+
+    SerializerSettings()
+    {
+        memset(offset, 0, sizeof(offset));
+    }
+
+    /// Optional offset that is applied to serialized objects, (0,0,0) by default.
+    double offset[3];
+};
+
 class GeometrySerializer : public Serializer {
 public:
-    GeometrySerializer(const IfcGeom::IteratorSettings &settings) : settings_(settings) {}
+    GeometrySerializer(const SerializerSettings& settings) : settings_(settings) {}
 	virtual ~GeometrySerializer() {} 
 
 	virtual bool isTesselated() const = 0;
@@ -39,11 +69,11 @@ public:
 	virtual void write(const IfcGeom::BRepElement<real_t>* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
 
-    const IfcGeom::IteratorSettings& settings() const { return settings_; }
-    IfcGeom::IteratorSettings& settings() { return settings_; }
+    const SerializerSettings& settings() const { return settings_; }
+    SerializerSettings& settings() { return settings_; }
 
 protected:
-    IfcGeom::IteratorSettings settings_;
+    SerializerSettings settings_;
 };
 
 #endif
