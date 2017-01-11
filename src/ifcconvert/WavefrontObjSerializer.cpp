@@ -51,6 +51,7 @@ void WaveFrontOBJSerializer::writeMaterial(const IfcGeom::Material& style)
         ? style.original_name() : style.name());
     IfcUtil::sanitate_material_name(material_name);
     mtl_stream << "newmtl " << material_name << "\n";
+
 	if (style.hasDiffuse()) {
 		const double* diffuse = style.diffuse();
 		mtl_stream << "Kd " << diffuse[0] << " " << diffuse[1] << " " << diffuse[2] << "\n";
@@ -77,11 +78,9 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
             ? o->name() : o->unique_id()));
     obj_stream << "g " << name << "\n";
 	obj_stream << "s 1" << "\n";
-	
-	obj_stream << std::setprecision(std::numeric_limits<double>::digits10);
 
     const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
-	
+
 	const int vcount = (int)mesh.verts().size() / 3;
     for ( std::vector<real_t>::const_iterator it = mesh.verts().begin(); it != mesh.verts().end(); ) {
         const real_t x = *(it++) + (real_t)settings().offset[0];

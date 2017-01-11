@@ -39,9 +39,13 @@ public:
 		: GeometrySerializer(settings)
 		, mtl_filename(mtl_filename)
 		, obj_stream(obj_filename.c_str())
-		, mtl_stream(mtl_filename.c_str())		
+		, mtl_stream(mtl_filename.c_str())
 		, vcount_total(1)
-	{}
+    {
+        obj_stream << std::setprecision(settings.precision);
+        mtl_stream << std::setprecision(settings.precision);
+    }
+
 	virtual ~WaveFrontOBJSerializer() {}
 	bool ready();
 	void writeHeader();

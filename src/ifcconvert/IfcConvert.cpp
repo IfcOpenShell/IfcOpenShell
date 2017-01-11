@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
             "Disables computation of normals. Saves time and file size and is useful "
             "in instances where you're going to recompute normals for the exported "
             "model in other modelling application in any case.")
-        ("deflection-tolerance", boost::program_options::value<double>(&deflection_tolerance),
+        ("deflection-tolerance", boost::program_options::value<double>(&deflection_tolerance)->default_value(1e-3),
             "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
         ("generate-uvs",
             "Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
@@ -203,6 +203,7 @@ int main(int argc, char** argv) {
             "--include --traverse --names \"Level 1\" includes entity with name \"Level 1\" and all of its children.");
 
     std::string bounds;
+    short precision;
     boost::program_options::options_description serializer_options("Serialization options");
     serializer_options.add_options()
         ("bounds", boost::program_options::value<std::string>(&bounds),
@@ -219,7 +220,12 @@ int main(int argc, char** argv) {
             "Applicable for OBJ and DAE output.")
         ("center-model",
             "Centers the elements upon serialization by applying the center point of "
-            "all placements as an offset. Applicable for OBJ and DAE output.");
+            "all placements as an offset. Applicable for OBJ and DAE output.")
+        ("precision", boost::program_options::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
+            "Sets the decimal precision to be used to format floating-point values, 15 by default. "
+            "Use a negative value to use the system's default precision (should be 6 typically). "
+            "Applicable for OBJ and DAE output. For DAE output, value >= 15 means that up to 16 decimals are used, "
+            " and any other value means that 6 or 7 decimals are used.");
 
 	boost::program_options::options_description cmdline_options;
 	cmdline_options.add(generic_options).add(fileio_options).add(geom_options).add(serializer_options);
@@ -236,7 +242,11 @@ int main(int argc, char** argv) {
 		std::cerr << "[Error] Unknown option '" << e.get_option_name() << "'" << std::endl << std::endl;
         print_usage();
         return 1;
-	} catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Error] " << e.what() << "\n\n";
+        print_usage();
+        return 1;
+    } catch (...) {
 		// Catch other errors such as invalid command line syntax
         print_usage();
         return 1;
@@ -282,7 +292,6 @@ int main(int argc, char** argv) {
     bool center_model = vmap.count("center-model") != 0 ;
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
     const bool traverse = vmap.count("traverse") != 0;
-    const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
 
 	int bounding_width = -1, bounding_height = -1;
 	if (vmap.count("bounds") == 1) {
@@ -380,13 +389,13 @@ int main(int argc, char** argv) {
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
     settings.set(IfcGeom::IteratorSettings::TRAVERSE, traverse);
+    settings.set_deflection_tolerance(deflection_tolerance);
+
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
     settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
     settings.set(SerializerSettings::CENTER_MODEL, center_model);
-    if (deflection_tolerance_specified) {
-        settings.set_deflection_tolerance(deflection_tolerance);
-    }
+    settings.precision = precision;
 
 	GeometrySerializer* serializer;
 	if (output_extension == ".obj") {
