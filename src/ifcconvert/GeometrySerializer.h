@@ -63,7 +63,7 @@ public:
     /// Use a negative value to use the system's default precision (should be 6 typically).
     short precision;
 
-    static const short DEFAULT_PRECISION = 15;
+    enum { DEFAULT_PRECISION = 15 };
 };
 
 class GeometrySerializer : public Serializer {
