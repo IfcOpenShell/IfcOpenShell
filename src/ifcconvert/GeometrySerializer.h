@@ -43,11 +43,8 @@ public:
         /// Use material names instead of unique IDs for naming materials.
         /// Applicable for OBJ and DAE output.
         USE_MATERIAL_NAMES = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 3),
-        /// Centers the models upon serialization by the applying the center point of
-        /// the scene bounds as an offset. Applicable for OBJ and DAE output currently.
-        CENTER_MODEL = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 4),
         /// Number of different setting flags.
-        NUM_SETTINGS = 4
+        NUM_SETTINGS = 3
     };
 
     SerializerSettings()
