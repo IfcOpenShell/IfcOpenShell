@@ -202,7 +202,7 @@ int main(int argc, char** argv) {
             "HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. "
             "--include --traverse --names \"Level 1\" includes entity with name \"Level 1\" and all of its children.");
 
-    std::string bounds;
+    std::string bounds, offset_str;
     short precision;
     boost::program_options::options_description serializer_options("Serialization options");
     serializer_options.add_options()
@@ -221,8 +221,10 @@ int main(int argc, char** argv) {
         ("center-model",
             "Centers the elements upon serialization by applying the center point of "
             "all placements as an offset. Applicable for OBJ and DAE output.")
+        ("model-offset", boost::program_options::value<std::string>(&offset_str),
+            "Applies an arbitrary offset of form 'x;y;z' to all placements. Applicable for OBJ and DAE output.")
         ("precision", boost::program_options::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
-            "Sets the decimal precision to be used to format floating-point values, 15 by default. "
+            "Sets the precision to be used to format floating-point values, 15 by default. "
             "Use a negative value to use the system's default precision (should be 6 typically). "
             "Applicable for OBJ and DAE output. For DAE output, value >= 15 means that up to 16 decimals are used, "
             " and any other value means that 6 or 7 decimals are used.");
@@ -289,7 +291,8 @@ int main(int argc, char** argv) {
     const bool use_element_guids = vmap.count("use-element-guids") != 0 ;
     const bool use_material_names = vmap.count("use-material-names") != 0;
     const bool no_normals = vmap.count("no-normals") != 0 ;
-    bool center_model = vmap.count("center-model") != 0 ;
+    const bool center_model = vmap.count("center-model") != 0 ;
+    const bool model_offset = vmap.count("model-offset") != 0 ;
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
     const bool traverse = vmap.count("traverse") != 0;
 
@@ -394,7 +397,6 @@ int main(int argc, char** argv) {
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
     settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
-    settings.set(SerializerSettings::CENTER_MODEL, center_model);
     settings.precision = precision;
 
 	GeometrySerializer* serializer;
@@ -436,8 +438,8 @@ int main(int argc, char** argv) {
         if (generate_uvs) {
             Logger::Message(Logger::LOG_NOTICE, "Generate UVs setting ignored when writing non-tesselated output");
         }
-        if (center_model) {
-            Logger::Message(Logger::LOG_NOTICE, "Center model setting ignored when writing non-tesselated output");
+        if (center_model || model_offset) {
+            Logger::Message(Logger::LOG_NOTICE, "Centering/offsetting model setting ignored when writing non-tesselated output");
         }
 
         settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
@@ -491,16 +493,25 @@ int main(int argc, char** argv) {
 
 	int old_progress = -1;
 
-	if (center_model) {
-		double* offset = serializer->settings().offset;
-		gp_XYZ center = (context_iterator.bounds_min() + context_iterator.bounds_max()) * 0.5;
-		offset[0] = -center.X();
-		offset[1] = -center.Y();
-		offset[2] = -center.Z();
-		std::stringstream msg;
-		msg << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
-		Logger::Message(Logger::LOG_NOTICE, msg.str());
-	}
+    if (center_model || model_offset) {
+        double* offset = serializer->settings().offset;
+        if (center_model) {
+            gp_XYZ center = (context_iterator.bounds_min() + context_iterator.bounds_max()) * 0.5;
+            offset[0] = -center.X();
+            offset[1] = -center.Y();
+            offset[2] = -center.Z();
+        } else {
+            if (sscanf(offset_str.c_str(), "%lf;%lf;%lf", &offset[0], &offset[1], &offset[2]) != 3) {
+                std::cerr << "[Error] Invalid use of --model-offset\n";
+                print_options(serializer_options);
+                return 1;
+            }
+        }
+
+        std::stringstream msg;
+        msg << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
+        Logger::Message(Logger::LOG_NOTICE, msg.str());
+    }
 
 	Logger::Status("Creating geometry...");
 
