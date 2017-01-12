@@ -366,7 +366,9 @@ int main(int argc, char** argv) {
 				Logger::Message(Logger::LOG_ERROR, "Unable to parse input file '" + input_filename + "'");
 			} else {
 				s.setFile(&f);
+                Logger::Status("Writing XML output...");
 				s.finalize();
+                Logger::Status("Done!");
                 rename_file(output_temp_filename, output_filename);
 				exit_code = 0;
 			}
