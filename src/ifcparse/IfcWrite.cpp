@@ -228,7 +228,7 @@ void IfcWritableEntity::setArgument(int i, Argument* a, IfcUtil::ArgumentType at
 		break;
 	case IfcUtil::Argument_EMPTY_AGGREGATE: 
 	case IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE: {
-		IfcUtil::ArgumentType t2 = IfcSchema::Type::GetAttributeType(type(), (unsigned) i);
+		IfcUtil::ArgumentType t2 = IfcSchema::Type::GetAttributeType(type(), (unsigned char) i);
 		this->setArgument(i, a, t2); }
 		break;
 	default:
