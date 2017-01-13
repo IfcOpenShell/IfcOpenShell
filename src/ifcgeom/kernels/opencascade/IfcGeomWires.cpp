@@ -19,7 +19,7 @@
 
 /********************************************************************************
  *                                                                              *
- * Implementations of the various conversion functions defined in IfcRegister.h *
+ * Implementations of the various conversion functions defined in EntityMapping.h *
  *                                                                              *
  ********************************************************************************/
 
@@ -86,9 +86,10 @@
 #include <Geom_BSplineCurve.hxx>
 #include <BRepTools_WireExplorer.hxx>
 
-#include "../ifcgeom/IfcGeom.h"
+#include "../../../ifcgeom/IfcGeom.h"
+#include "OpenCascadeKernel.h"
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire& wire) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire& wire) {
 	if ( getValue(GV_PLANEANGLE_UNIT)<0 ) {
 		Logger::Message(Logger::LOG_WARNING,"Creating a composite curve without unit information:",l->entity);
 
@@ -103,13 +104,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 		// First try radians
 		TopoDS_Wire wire_radians, wire_degrees;
         try {
-		    succes_radians = IfcGeom::Kernel::convert(l,wire_radians);
+		    succes_radians = IfcGeom::OpenCascadeKernel::convert(l,wire_radians);
         } catch (...) {}
 
 		// Now try degrees
 		setValue(GV_PLANEANGLE_UNIT,0.0174532925199433);
         try {
-		    succes_degrees = IfcGeom::Kernel::convert(l,wire_degrees);
+		    succes_degrees = IfcGeom::OpenCascadeKernel::convert(l,wire_degrees);
         } catch (...) {}
 
 		// Restore to unknown unit state
@@ -197,7 +198,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 	return true;
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& wire) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& wire) {
 	IfcSchema::IfcCurve* basis_curve = l->BasisCurve();
 	bool isConic = basis_curve->is(IfcSchema::Type::IfcConic);
 	double parameterFactor = isConic ? getValue(GV_PLANEANGLE_UNIT) : getValue(GV_LENGTH_UNIT);
@@ -215,7 +216,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	for ( IfcEntityList::it it = trims1->begin(); it != trims1->end(); it ++ ) {
 		IfcUtil::IfcBaseClass* i = *it;
 		if ( i->is(IfcSchema::Type::IfcCartesianPoint) ) {
-			IfcGeom::Kernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[sense_agreement] );
+			IfcGeom::OpenCascadeKernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[sense_agreement] );
 			has_pnts[sense_agreement] = true;
 		} else if ( i->is(IfcSchema::Type::IfcParameterValue) ) {
 			const double value = *((IfcSchema::IfcParameterValue*)i);
@@ -226,7 +227,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	for ( IfcEntityList::it it = trims2->begin(); it != trims2->end(); it ++ ) {
 		IfcUtil::IfcBaseClass* i = *it;
 		if ( i->is(IfcSchema::Type::IfcCartesianPoint) ) {
-			IfcGeom::Kernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[1-sense_agreement] );
+			IfcGeom::OpenCascadeKernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[1-sense_agreement] );
 			has_pnts[1-sense_agreement] = true;
 		} else if ( i->is(IfcSchema::Type::IfcParameterValue) ) {
 			const double value = *((IfcSchema::IfcParameterValue*)i);
@@ -294,14 +295,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	}
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& result) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& result) {
 	IfcSchema::IfcCartesianPoint::list::ptr points = l->Points();
 
 	// Parse and store the points in a sequence
 	TColgp_SequenceOfPnt polygon;
 	for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
 		gp_Pnt pnt;
-		IfcGeom::Kernel::convert(*it, pnt);
+		IfcGeom::OpenCascadeKernel::convert(*it, pnt);
 		polygon.Append(pnt);
 	}
 
@@ -317,14 +318,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& resu
 	return true;
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& result) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& result) {
 	IfcSchema::IfcCartesianPoint::list::ptr points = l->Polygon();
 
 	// Parse and store the points in a sequence
 	TColgp_SequenceOfPnt polygon;
 	for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
 		gp_Pnt pnt;
-		IfcGeom::Kernel::convert(*it, pnt);
+		IfcGeom::OpenCascadeKernel::convert(*it, pnt);
 		polygon.Append(pnt);
 	}
 
@@ -359,11 +360,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& resu
 	return true;
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryOpenProfileDef* l, TopoDS_Wire& result) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcArbitraryOpenProfileDef* l, TopoDS_Wire& result) {
 	return convert_wire(l->Curve(), result);
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeCurve* l, TopoDS_Wire& result) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcEdgeCurve* l, TopoDS_Wire& result) {
 	IfcSchema::IfcPoint* pnt1 = ((IfcSchema::IfcVertexPoint*) l->EdgeStart())->VertexGeometry();
 	IfcSchema::IfcPoint* pnt2 = ((IfcSchema::IfcVertexPoint*) l->EdgeEnd())->VertexGeometry();
 	if (!pnt1->is(IfcSchema::Type::IfcCartesianPoint) || !pnt2->is(IfcSchema::Type::IfcCartesianPoint)) {
@@ -372,8 +373,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeCurve* l, TopoDS_Wire& res
 	}
 	
 	gp_Pnt p1, p2;
-	if (!IfcGeom::Kernel::convert(((IfcSchema::IfcCartesianPoint*)pnt1), p1) ||
-		!IfcGeom::Kernel::convert(((IfcSchema::IfcCartesianPoint*)pnt2), p2))
+	if (!IfcGeom::OpenCascadeKernel::convert(((IfcSchema::IfcCartesianPoint*)pnt1), p1) ||
+		!IfcGeom::OpenCascadeKernel::convert(((IfcSchema::IfcCartesianPoint*)pnt2), p2))
 	{
 		return false;
 	}
@@ -441,7 +442,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeCurve* l, TopoDS_Wire& res
 	}
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeLoop* l, TopoDS_Wire& result) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcEdgeLoop* l, TopoDS_Wire& result) {
 	IfcSchema::IfcOrientedEdge::list::ptr li = l->EdgeList();
 	BRepBuilderAPI_MakeWire mw;
 	for (IfcSchema::IfcOrientedEdge::list::it it = li->begin(); it != li->end(); ++it) {
@@ -454,7 +455,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeLoop* l, TopoDS_Wire& resu
 	return true;
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdge* l, TopoDS_Wire& result) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcEdge* l, TopoDS_Wire& result) {
 	if (!l->EdgeStart()->is(IfcSchema::Type::IfcVertexPoint) || !l->EdgeEnd()->is(IfcSchema::Type::IfcVertexPoint)) {
 		Logger::Message(Logger::LOG_ERROR, "Only IfcVertexPoints are supported for EdgeStart and -End", l->entity);
 		return false;
@@ -481,7 +482,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdge* l, TopoDS_Wire& result) 
 	return true;
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcOrientedEdge* l, TopoDS_Wire& result) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcOrientedEdge* l, TopoDS_Wire& result) {
 	if (convert_wire(l->EdgeElement(), result)) {
 		if (!l->Orientation()) {
 			result.Reverse();
@@ -492,7 +493,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcOrientedEdge* l, TopoDS_Wire& 
 	}
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcSubedge* l, TopoDS_Wire& result) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcSubedge* l, TopoDS_Wire& result) {
 	TopoDS_Wire temp;
 	if (convert_wire(l->ParentEdge(), result) && convert((IfcSchema::IfcEdge*) l, temp)) {
 		TopExp_Explorer exp(result, TopAbs_EDGE);

@@ -36,7 +36,7 @@ namespace IfcGeom {
 	private:
 		std::vector<P> _data;
 	public:
-		Matrix(const ElementSettings& settings, const gp_Trsf& trsf) {
+		Matrix(const ElementSettings& settings, const ConversionResultPlacement* trsf) {
 			// Convert the gp_Trsf into a 4x3 Matrix
 			// Note that in case the CONVERT_BACK_UNITS setting is enabled
 			// the translation component of the matrix needs to be divided
@@ -44,7 +44,7 @@ namespace IfcGeom {
 			// internally in IfcOpenShell everything is measured in meters.
 			for(int i = 1; i < 5; ++i) {
 				for (int j = 1; j < 4; ++j) {
-					const double trsf_value = trsf.Value(j,i);
+					const double trsf_value = trsf->Value(j,i);
                     const double matrix_value = i == 4 && settings.get(IteratorSettings::CONVERT_BACK_UNITS)
 						? trsf_value / settings.unit_magnitude()
 						: trsf_value;
@@ -58,14 +58,14 @@ namespace IfcGeom {
 	template <typename P>
 	class Transformation {
 	private:
-		gp_Trsf trsf;
+		ConversionResultPlacement* trsf;
 		Matrix<P> _matrix;
 	public:
-		Transformation(const ElementSettings& settings, const gp_Trsf& trsf)
-			: trsf(trsf)
+		Transformation(const ElementSettings& settings, const ConversionResultPlacement* trsf)
+			: trsf(trsf->clone())
 			, _matrix(settings, trsf) 
 		{}
-		const gp_Trsf& data() const { return trsf; }
+		const ConversionResultPlacement* data() const { return trsf; }
 		const Matrix<P>& matrix() const { return _matrix; }
 	};
 
@@ -89,7 +89,7 @@ namespace IfcGeom {
 		const std::string& context() const { return _context; }
 		const std::string& unique_id() const { return _unique_id; }
 		const Transformation<P>& transformation() const { return _transformation; }
-		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const gp_Trsf& trsf)
+		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const ConversionResultPlacement* trsf)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
 		{
 			std::ostringstream oss;
@@ -106,19 +106,19 @@ namespace IfcGeom {
 	};
 
 	template <typename P>
-	class BRepElement : public Element<P> {
+	class NativeElement : public Element<P> {
 	private:
-		boost::shared_ptr<Representation::BRep> _geometry;
+		boost::shared_ptr<Representation::Native> _geometry;
 	public:
-		const boost::shared_ptr<Representation::BRep>& geometry_pointer() const { return _geometry; }
-		const Representation::BRep& geometry() const { return *_geometry; }
-		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const gp_Trsf& trsf, const boost::shared_ptr<Representation::BRep>& geometry)
+		const boost::shared_ptr<Representation::Native>& geometry_pointer() const { return _geometry; }
+		const Representation::Native& geometry() const { return *_geometry; }
+		NativeElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const ConversionResultPlacement* trsf, const boost::shared_ptr<Representation::Native>& geometry)
 			: Element<P>(geometry->settings(),id,parent_id,name,type,guid,context,trsf)
 			, _geometry(geometry)
 		{}
 	private:
-		BRepElement(const BRepElement& other);
-		BRepElement& operator=(const BRepElement& other);		
+		NativeElement(const NativeElement& other);
+		NativeElement& operator=(const NativeElement& other);		
 	};
 
 	template <typename P>
@@ -128,7 +128,7 @@ namespace IfcGeom {
 	public:
 		const Representation::Triangulation<P>& geometry() const { return *_geometry; }
 		const boost::shared_ptr< Representation::Triangulation<P> >& geometry_pointer() const { return _geometry; }
-		TriangulationElement(const BRepElement<P>& shape_model)
+		TriangulationElement(const NativeElement<P>& shape_model)
 			: Element<P>(shape_model)
 			, _geometry(boost::shared_ptr<Representation::Triangulation<P> >(new Representation::Triangulation<P>(shape_model.geometry())))
 		{}
@@ -147,7 +147,7 @@ namespace IfcGeom {
 		Representation::Serialization* _geometry;
 	public:
 		const Representation::Serialization& geometry() const { return *_geometry; }
-		SerializedElement(const BRepElement<P>& shape_model)
+		SerializedElement(const NativeElement<P>& shape_model)
 			: Element<P>(shape_model)
 			, _geometry(new Representation::Serialization(shape_model.geometry()))
 		{}

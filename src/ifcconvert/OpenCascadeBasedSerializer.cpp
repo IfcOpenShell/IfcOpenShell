@@ -22,8 +22,11 @@
 #include <cstdio>
 
 #include <Standard_Version.hxx>
+#include <gp_GTrsf.hxx>
 
 #include "OpenCascadeBasedSerializer.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
 
 bool OpenCascadeBasedSerializer::ready() {
 	std::ofstream test_file(out_filename.c_str(), std::ios_base::binary);
@@ -33,11 +36,11 @@ bool OpenCascadeBasedSerializer::ready() {
 	return succeeded;
 }
 
-void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
-	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
-		gp_GTrsf gtrsf = it->Placement();
+void OpenCascadeBasedSerializer::write(const IfcGeom::NativeElement<real_t>* o) {
+	for (IfcGeom::ConversionResults::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
+		gp_GTrsf gtrsf = *(IfcGeom::OpenCascadePlacement*) it->Placement();
 
-		const gp_Trsf& o_trsf = o->transformation().data();
+		const gp_GTrsf& o_trsf = *(IfcGeom::OpenCascadePlacement*) o->transformation().data();
 		gtrsf.PreMultiply(o_trsf);
 
         if (o->geometry().settings().get(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS)) {
@@ -46,10 +49,11 @@ void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 			gtrsf.PreMultiply(scale);
 		}
 		
-		const TopoDS_Shape& s = it->Shape();
-		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, gtrsf);
-			
-		writeShape(moved_shape);
+		const TopoDS_Shape& s = *(IfcGeom::OpenCascadeShape*) it->Shape();
+		const TopoDS_Shape moved_shape = IfcGeom::OpenCascadeKernel::apply_transformation(s, gtrsf);
+		
+		IfcGeom::OpenCascadeShape shp(moved_shape);
+		writeShape(&shp);
 	}
 }
 

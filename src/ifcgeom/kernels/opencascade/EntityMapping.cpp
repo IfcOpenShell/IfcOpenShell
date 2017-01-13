@@ -17,33 +17,36 @@
 *                                                                              *
 ********************************************************************************/
 
-#include "IfcGeom.h"
-#include "IfcGeomShapeType.h"
+#include "../../../ifcgeom/IfcGeomShapeType.h"
+#include "../../../ifcgeom/IfcGeom.h"
+
+#include "OpenCascadeKernel.h"
+#include "OpenCascadeConversionResult.h"
 
 using namespace IfcSchema;
 using namespace IfcUtil;
 
-bool IfcGeom::Kernel::convert_shapes(const IfcBaseClass* l, IfcRepresentationShapeItems& r) {
+bool IfcGeom::OpenCascadeKernel::convert_shapes(const IfcBaseClass* l, ConversionResults& r) {
 	if (shape_type(l) != ST_SHAPELIST) {
 		TopoDS_Shape shp;
 		if (convert_shape(l, shp)) {
-			r.push_back(IfcGeom::IfcRepresentationShapeItem(shp, get_style(l->as<IfcSchema::IfcRepresentationItem>())));
+			r.push_back(IfcGeom::ConversionResult(new OpenCascadeShape(shp), get_style(l->as<IfcSchema::IfcRepresentationItem>())));
 			return true;
 		}
 		return false;
 	}
 
-#include "IfcRegisterConvertShapes.h"
+#include "EntityMappingShapes.h"
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
 	return false;
 }
 
-IfcGeom::ShapeType IfcGeom::Kernel::shape_type(const IfcBaseClass* l) {
-#include "IfcRegisterShapeType.h"
+IfcGeom::ShapeType IfcGeom::OpenCascadeKernel::shape_type(const IfcBaseClass* l) {
+#include "EntityMappingShapeType.h"
 	return ST_OTHER;
 }
 
-bool IfcGeom::Kernel::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
+bool IfcGeom::OpenCascadeKernel::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
 	const unsigned int id = l->entity->id();
 	bool success = false;
 	bool processed = false;
@@ -60,10 +63,10 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
 	ignored = (!include_solids_and_surfaces && (st == ST_SHAPE || st == ST_FACE)) || (!include_curves && (st == ST_WIRE || st == ST_CURVE));
 	if (st == ST_SHAPELIST) {
 		processed = true;
-		IfcRepresentationShapeItems items;
+		ConversionResults items;
 		success = convert_shapes(l, items) && flatten_shape_list(items, r, false);
 	} else if (st == ST_SHAPE && include_solids_and_surfaces) {
-#include "IfcRegisterConvertShape.h"
+#include "EntityMappingShape.h"
 	} else if (st == ST_FACE && include_solids_and_surfaces) {
 		processed = true;
 		success = convert_face(l, r);
@@ -99,24 +102,24 @@ bool IfcGeom::Kernel::convert_shape(const IfcBaseClass* l, TopoDS_Shape& r) {
 	return success;
 }
 
-bool IfcGeom::Kernel::convert_wire(const IfcBaseClass* l, TopoDS_Wire& r) {
-#include "IfcRegisterConvertWire.h"
+bool IfcGeom::OpenCascadeKernel::convert_wire(const IfcBaseClass* l, TopoDS_Wire& r) {
+#include "EntityMappingWire.h"
 	Handle(Geom_Curve) curve;
-	if (IfcGeom::Kernel::convert_curve(l, curve)) {
-		return IfcGeom::Kernel::convert_curve_to_wire(curve, r);
+	if (convert_curve(l, curve)) {
+		return convert_curve_to_wire(curve, r);
 	}
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
 	return false;
 }
 
-bool IfcGeom::Kernel::convert_face(const IfcBaseClass* l, TopoDS_Shape& r) {
-#include "IfcRegisterConvertFace.h"
+bool IfcGeom::OpenCascadeKernel::convert_face(const IfcBaseClass* l, TopoDS_Shape& r) {
+#include "EntityMappingFace.h"
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
 	return false;
 }
 
-bool IfcGeom::Kernel::convert_curve(const IfcBaseClass* l, Handle(Geom_Curve)& r) {
-#include "IfcRegisterConvertCurve.h"
+bool IfcGeom::OpenCascadeKernel::convert_curve(const IfcBaseClass* l, Handle(Geom_Curve)& r) {
+#include "EntityMappingCurve.h"
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
 	return false;
 }

@@ -30,6 +30,8 @@
 #include "../ifcparse/IfcSIPrefix.h"
 #include "../ifcgeom/IfcGeom.h"
 
+#include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
+
 using boost::property_tree::ptree;
 using namespace IfcSchema;
 
@@ -109,7 +111,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 			} else if (e->is(IfcSchema::Type::IfcLocalPlacement)) {
 				IfcSchema::IfcLocalPlacement* placement = e->as<IfcSchema::IfcLocalPlacement>();
 				gp_Trsf trsf;
-				IfcGeom::Kernel kernel;
+				IfcGeom::OpenCascadeKernel kernel;
 				if (kernel.convert(placement, trsf)) {
 					std::stringstream stream;
 					for (int i = 1; i < 5; ++i) {

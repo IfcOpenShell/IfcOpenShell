@@ -483,6 +483,8 @@ int main(int argc, char** argv) {
 	int old_progress = -1;
 
 	if (center_model) {
+		throw std::runtime_error("Not implemented");
+		/*
 		double* offset = serializer->settings().offset;
 		gp_XYZ center = (context_iterator.bounds_min() + context_iterator.bounds_max()) * 0.5;
 		offset[0] = -center.X();
@@ -491,6 +493,7 @@ int main(int argc, char** argv) {
 		std::stringstream msg;
 		msg << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
 		Logger::Message(Logger::LOG_NOTICE, msg.str());
+		*/
 	}
 
 	Logger::Status("Creating geometry...");
@@ -498,7 +501,7 @@ int main(int argc, char** argv) {
 	// The functions IfcGeom::Iterator::get() and IfcGeom::Iterator::next() 
 	// wrap an iterator of all geometrical products in the Ifc file. 
 	// IfcGeom::Iterator::get() returns an IfcGeom::TriangulationElement or 
-	// -BRepElement pointer, based on current settings. (see IfcGeomIterator.h 
+	// -NativeElement pointer, based on current settings. (see IfcGeomIterator.h 
 	// for definition) IfcGeom::Iterator::next() is used to poll whether more 
 	// geometrical entities are available. None of these functions throw 
 	// exceptions, neither for parsing errors or geometrical errors. Upon 
@@ -512,7 +515,7 @@ int main(int argc, char** argv) {
 		if (is_tesselated) {
 			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
 		} else {
-			serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
+			serializer->write(static_cast<const IfcGeom::NativeElement<real_t>*>(geom_object));
 		}
         const int progress = context_iterator.progress() / 2;
         if (old_progress != progress) Logger::ProgressBar(progress);

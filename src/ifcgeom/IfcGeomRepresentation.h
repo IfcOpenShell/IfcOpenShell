@@ -20,22 +20,9 @@
 #ifndef IFCGEOMREPRESENTATION_H
 #define IFCGEOMREPRESENTATION_H
 
-#include <BRepMesh_IncrementalMesh.hxx>
-#include <BRepGProp_Face.hxx>
-
-#include <Poly_Triangulation.hxx>
-#include <TColgp_Array1OfPnt.hxx>
-#include <TColgp_Array1OfPnt2d.hxx>
-
-#include <TopExp_Explorer.hxx>
-#include <BRepTools.hxx>
-
-#include <BRepAdaptor_Curve.hxx>
-#include <GCPnts_QuasiUniformDeflection.hxx>
-
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcGeomMaterial.h"
-#include "../ifcgeom/IfcRepresentationShapeItem.h"
+#include "../ifcgeom/ConversionResult.h"
 
 namespace IfcGeom {
 
@@ -54,22 +41,22 @@ namespace IfcGeom {
 			virtual ~Representation() {}
 		};
 
-		class IFC_GEOM_API BRep : public Representation {
+		class IFC_GEOM_API Native : public Representation {
 		private:
 			unsigned int id;
-			const IfcGeom::IfcRepresentationShapeItems _shapes;
-			BRep(const BRep& other);
-			BRep& operator=(const BRep& other);
+			const IfcGeom::ConversionResults _shapes;
+			Native(const Native& other);
+			Native& operator=(const Native& other);
 		public:
-			BRep(const ElementSettings& settings, unsigned int id, const IfcGeom::IfcRepresentationShapeItems& shapes)
+			Native(const ElementSettings& settings, unsigned int id, const IfcGeom::ConversionResults& shapes)
 				: Representation(settings)
 				, id(id)
 				, _shapes(shapes)
 			{}
-			virtual ~BRep() {}
-			IfcGeom::IfcRepresentationShapeItems::const_iterator begin() const { return _shapes.begin(); }
-			IfcGeom::IfcRepresentationShapeItems::const_iterator end() const { return _shapes.end(); }
-			const IfcGeom::IfcRepresentationShapeItems& shapes() const { return _shapes; }
+			virtual ~Native() {}
+			IfcGeom::ConversionResults::const_iterator begin() const { return _shapes.begin(); }
+			IfcGeom::ConversionResults::const_iterator end() const { return _shapes.end(); }
+			const IfcGeom::ConversionResults& shapes() const { return _shapes; }
 			const unsigned int& getId() const { return id; }
 		};
 
@@ -82,7 +69,7 @@ namespace IfcGeom {
 			int id() const { return _id; }
 			const std::string& brep_data() const { return _brep_data; }
 			const std::vector<double>& surface_styles() const { return _surface_styles; }
-			Serialization(const BRep& brep);
+			Serialization(const Native& brep);
 			virtual ~Serialization() {}
 		private:
 			Serialization();
@@ -91,8 +78,8 @@ namespace IfcGeom {
 		};
 
 		template <typename P>
-		class Triangulation : public Representation {
-		private:
+		class IFC_GEOM_API Triangulation : public Representation {
+		protected:
 			// A nested pair of floats and a material index to be able to store an XYZ coordinate in a map.
 			// TODO: Make this a std::tuple when compilers add support for that.
 			typedef typename std::pair<P, std::pair<P, P> > Coordinate;
@@ -112,6 +99,7 @@ namespace IfcGeom {
 
 		public:
 			int id() const { return _id; }
+            
 			const std::vector<P>& verts() const { return _verts; }
 			const std::vector<int>& faces() const { return _faces; }
 			const std::vector<int>& edges() const { return _edges; }
@@ -119,12 +107,20 @@ namespace IfcGeom {
             const std::vector<P>& uvs() const { return uvs_; }
 			const std::vector<int>& material_ids() const { return _material_ids; }
 			const std::vector<Material>& materials() const { return _materials; }
-
-			Triangulation(const BRep& shape_model)
+            
+            std::vector<P>& verts() { return _verts; }
+			std::vector<int>& faces() { return _faces; }
+			std::vector<int>& edges() { return _edges; }
+			std::vector<P>& normals() { return _normals; }
+            std::vector<P>& uvs() { return uvs_; }
+			std::vector<int>& material_ids() { return _material_ids; }
+			std::vector<Material>& materials() { return _materials; }
+            
+            Triangulation(const Native& shape_model)
 					: Representation(shape_model.settings())
 					, _id(shape_model.getId())
 			{
-				for ( IfcGeom::IfcRepresentationShapeItems::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++ iit ) {
+				for (IfcGeom::ConversionResults::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++iit) {
 
 					int surface_style_id = -1;
 					if (iit->hasStyle()) {
@@ -149,185 +145,10 @@ namespace IfcGeom {
 						}
 					}
 
-					const TopoDS_Shape& s = iit->Shape();
-					const gp_GTrsf& trsf = iit->Placement();
-
-					// Triangulate the shape
-					try {
-						BRepMesh_IncrementalMesh(s, settings().deflection_tolerance());
-					} catch(...) {
-
-						// TODO: Catch outside
-						// Logger::Message(Logger::LOG_ERROR,"Failed to triangulate shape:",ifc_file->entityById(_id)->entity);
-						Logger::Message(Logger::LOG_ERROR,"Failed to triangulate shape");
-						continue;
-					}
-
-					// Iterates over the faces of the shape
-					int num_faces = 0;
-					TopExp_Explorer exp;
-					for ( exp.Init(s,TopAbs_FACE); exp.More(); exp.Next(), ++num_faces ) {
-						TopoDS_Face face = TopoDS::Face(exp.Current());
-						TopLoc_Location loc;
-						Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face,loc);
-
-						if ( ! tri.IsNull() ) {
-
-							// A 3x3 matrix to rotate the vertex normals
-							const gp_Mat rotation_matrix = trsf.VectorialPart();
-			
-							// Keep track of the number of times an edge is used
-							// Manifold edges (i.e. edges used twice) are deemed invisible
-							std::map<std::pair<int,int>,int> edgecount;
-							std::vector<std::pair<int,int> > edges_temp;
-
-							const TColgp_Array1OfPnt& nodes = tri->Nodes();
-							const TColgp_Array1OfPnt2d& uvs = tri->UVNodes();
-							std::vector<gp_XYZ> coords;
-							BRepGProp_Face prop(face);
-							std::map<int,int> dict;
-
-                            // Vertex normals are only calculated if vertices are not welded and calculation is not disable explicitly.
-                            const bool calculate_normals = !settings().get(IteratorSettings::WELD_VERTICES) &&
-                                !settings().get(IteratorSettings::NO_NORMALS);
-
-							for( int i = 1; i <= nodes.Length(); ++ i ) {
-								coords.push_back(nodes(i).Transformed(loc).XYZ());
-								trsf.Transforms(*coords.rbegin());
-								dict[i] = addVertex(surface_style_id, *coords.rbegin());
-					
-								if ( calculate_normals ) {
-									const gp_Pnt2d& uv = uvs(i);
-									gp_Pnt p;
-									gp_Vec normal_direction;
-									prop.Normal(uv.X(),uv.Y(),p,normal_direction);
-									gp_Vec normal(0., 0., 0.);
-									if (normal_direction.Magnitude() > ALMOST_ZERO) {
-										normal = gp_Dir(normal_direction.XYZ() * rotation_matrix);
-									}
-									_normals.push_back(static_cast<P>(normal.X()));
-									_normals.push_back(static_cast<P>(normal.Y()));
-									_normals.push_back(static_cast<P>(normal.Z()));
-								}
-							}
-
-							const Poly_Array1OfTriangle& triangles = tri->Triangles();			
-							for( int i = 1; i <= triangles.Length(); ++ i ) {
-								int n1,n2,n3;
-								if ( face.Orientation() == TopAbs_REVERSED )
-									triangles(i).Get(n3,n2,n1);
-								else triangles(i).Get(n1,n2,n3);
-
-								/* An alternative would be to calculate normals based
-									* on the coordinates of the mesh vertices */
-								/*
-								const gp_XYZ pt1 = coords[n1-1];
-								const gp_XYZ pt2 = coords[n2-1];
-								const gp_XYZ pt3 = coords[n3-1];
-								const gp_XYZ v1 = pt2-pt1;
-								const gp_XYZ v2 = pt3-pt2;
-								gp_Dir normal = gp_Dir(v1^v2);
-								_normals.push_back((float)normal.X());
-								_normals.push_back((float)normal.Y());
-								_normals.push_back((float)normal.Z());
-								*/
-
-								_faces.push_back(dict[n1]);
-								_faces.push_back(dict[n2]);
-								_faces.push_back(dict[n3]);
-
-								_material_ids.push_back(surface_style_id);
-
-								addEdge(dict[n1], dict[n2], edgecount, edges_temp);
-								addEdge(dict[n2], dict[n3], edgecount, edges_temp);
-								addEdge(dict[n3], dict[n1], edgecount, edges_temp);
-							}
-							for ( std::vector<std::pair<int,int> >::const_iterator jt = edges_temp.begin(); jt != edges_temp.end(); ++jt ) {
-								if (edgecount[*jt] == 1) {
-									// non manifold edge, face boundary
-									_edges.push_back(jt->first);
-									_edges.push_back(jt->second);
-								}
-							}
-						}
-					}
-
-                    if (!_normals.empty() && settings().get(IfcGeom::IteratorSettings::GENERATE_UVS)) {
-                        uvs_ = box_project_uvs(_verts, _normals);
-                    }
-
-					if (num_faces == 0) {
-						// Edges are only emitted if there are no faces. A mixed representation of faces
-						// and loose edges is discouraged by the standard. An alternative would be to use
-						// TopExp_Explorer texp(s, TopAbs_EDGE, TopAbs_FACE) to find edges that do not
-						// belong to any face.
-						for (TopExp_Explorer texp(s, TopAbs_EDGE); texp.More(); texp.Next()) {
-							BRepAdaptor_Curve crv(TopoDS::Edge(texp.Current()));
-							GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
-							int n = tessellater.NbPoints();
-							int start = (int)_verts.size() / 3;
-							for (int i = 1; i <= n; ++i) {
-								gp_XYZ p = tessellater.Value(i).XYZ();
-								
-								/*
-								// In case you want direction arrows on your edges
-								double u = tessellater.Parameter(i);
-								gp_XYZ p2, p3;
-								gp_Pnt tmp;
-								gp_Vec tmp2;
-								crv.D1(u, tmp, tmp2);
-								gp_Dir d1, d2, d3, d4;
-								d1 = tmp2;
-								if (texp.Current().Orientation() == TopAbs_REVERSED) {
-									d1 = -d1;
-								}
-								if (fabs(d1.Z()) < 0.5) {
-									d2 = d1.Crossed(gp::DZ());
-								} else {
-									d2 = d1.Crossed(gp::DY());
-								}
-								d3 = d1.XYZ() + d2.XYZ();
-								d4 = d1.XYZ() - d2.XYZ();
-								p2 = p - d3.XYZ() / 10.;
-								p3 = p - d4.XYZ() / 10.;
-								trsf.Transforms(p2);
-								trsf.Transforms(p3);
-								_material_ids.push_back(surface_style_id);
-								_material_ids.push_back(surface_style_id);
-								_verts.push_back(static_cast<P>(p2.X()));
-								_verts.push_back(static_cast<P>(p2.Y()));
-								_verts.push_back(static_cast<P>(p2.Z()));
-								_verts.push_back(static_cast<P>(p3.X()));
-								_verts.push_back(static_cast<P>(p3.Y()));
-								_verts.push_back(static_cast<P>(p3.Z()));
-								*/
-
-								trsf.Transforms(p);
-								
-								_material_ids.push_back(surface_style_id);
-
-								_verts.push_back(static_cast<P>(p.X()));
-								_verts.push_back(static_cast<P>(p.Y()));
-								_verts.push_back(static_cast<P>(p.Z()));
-
-								if (i > 1) {
-									_edges.push_back(start + i - 2);
-									_edges.push_back(start + i - 1);
-									// _edges.push_back(start + 3 * (i - 2) + 2);
-									// _edges.push_back(start + 3 * (i - 1) + 2);
-								}
-
-								// _edges.push_back(start + 3 * (i - 1) + 0);
-								// _edges.push_back(start + 3 * (i - 1) + 2);
-								// _edges.push_back(start + 3 * (i - 1) + 1);
-								// _edges.push_back(start + 3 * (i - 1) + 2);
-							}
-						}
-					}
-
-                    BRepTools::Clean(s);
+					iit->Shape()->Triangulate(settings(), iit->Placement(), this, surface_style_id);
 				}
-			}
+            }
+
 			virtual ~Triangulation() {}
 
             /// Generates UVs for a single mesh using box projection.
@@ -360,13 +181,13 @@ namespace IfcGeom {
                 return uvs;
             }
 
-		private:
+		public:
 			// Welds vertices that belong to different faces
-			int addVertex(int material_index, const gp_XYZ& p) {
+			int addVertex(int material_index, P X, P Y, P Z) {
                 const bool convert = settings().get(IteratorSettings::CONVERT_BACK_UNITS);
-				const P X = static_cast<P>(convert ? (p.X() / settings().unit_magnitude()) : p.X());
-				const P Y = static_cast<P>(convert ? (p.Y() / settings().unit_magnitude()) : p.Y());
-				const P Z = static_cast<P>(convert ? (p.Z() / settings().unit_magnitude()) : p.Z());
+				X = static_cast<P>(convert ? (X / settings().unit_magnitude()) : X);
+				Y = static_cast<P>(convert ? (Y / settings().unit_magnitude()) : Y);
+				Z = static_cast<P>(convert ? (Z / settings().unit_magnitude()) : Z);
 				int i = (int) _verts.size() / 3;
 				if (settings().get(IteratorSettings::WELD_VERTICES)) {
 					const VertexKey key = std::make_pair(material_index, std::make_pair(X, std::make_pair(Y, Z)));
@@ -386,6 +207,8 @@ namespace IfcGeom {
 				else edgecount[e] ++;
 				edges_temp.push_back(e);
 			}
+            
+        private:            
 			Triangulation();
 			Triangulation(const Triangulation&);
 			Triangulation& operator=(const Triangulation&);

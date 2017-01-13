@@ -26,8 +26,10 @@
 #include <algorithm>
 
 #include <gp_Pln.hxx>
+#include <gp_GTrsf.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
+#include <TopoDS_Wire.hxx>
 #include <TopExp_Explorer.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepAlgo_Section.hxx>
@@ -45,6 +47,9 @@
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "SvgSerializer.h"
+
+#include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 const double PI2 = M_PI * 2.;
 
@@ -166,7 +171,7 @@ SvgSerializer::path_object& SvgSerializer::start_path(IfcSchema::IfcBuildingStor
 	return p;
 }
 
-void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
+void SvgSerializer::write(const IfcGeom::NativeElement<real_t>* o)
 {
 	IfcSchema::IfcBuildingStorey* storey = 0;
 	IfcSchema::IfcObjectDefinition* obdef = static_cast<IfcSchema::IfcObjectDefinition*>(file->entityById(o->id()));
@@ -213,14 +218,14 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 
 	path_object& p = start_path(storey, nameElement(o));
 
-	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
-		gp_GTrsf gtrsf = it->Placement();
+	for (IfcGeom::ConversionResults::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
+		gp_GTrsf gtrsf = *(IfcGeom::OpenCascadePlacement*) it->Placement();
 		
-		const gp_Trsf& o_trsf = o->transformation().data();
+		const gp_GTrsf& o_trsf = *(IfcGeom::OpenCascadePlacement*) o->transformation().data();
 		gtrsf.PreMultiply(o_trsf);
 
-		const TopoDS_Shape& s = it->Shape();			
-		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, gtrsf);
+		const TopoDS_Shape& s = *(IfcGeom::OpenCascadeShape*) it->Shape();			
+		const TopoDS_Shape moved_shape = IfcGeom::OpenCascadeKernel::apply_transformation(s, gtrsf);
 			
 		const double inf = std::numeric_limits<double>::infinity();
 		double zmin = inf;

@@ -1,4 +1,4 @@
-﻿#include "IfcRegisterUndef.h"
+﻿#include "EntityMappingUndefine.h"
 #define SHAPE(T) \
 	if ( !processed && l->is(T::Class()) ) { \
 		processed = true; \
@@ -21,6 +21,6 @@
 			return false; \
 		} \
 	}
-#include "IfcRegisterDef.h"
+#include "EntityMappingDefine.h"
 
-#include "IfcRegister.h"
+#include "EntityMapping.h"

@@ -26,6 +26,7 @@
 #include "../ifcgeom/IfcGeomIterator.h"
 
 #include "../ifcconvert/OpenCascadeBasedSerializer.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 class StepSerializer : public OpenCascadeBasedSerializer
 {
@@ -36,10 +37,10 @@ public:
 		: OpenCascadeBasedSerializer(out_filename, settings)
 	{}
 	virtual ~StepSerializer() {}
-	void writeShape(const TopoDS_Shape& shape) {
+	void writeShape(const IfcGeom::ConversionResultShape* shape) {
 		std::stringstream ss;
 		std::streambuf *sb = std::cout.rdbuf(ss.rdbuf());
-		writer.Transfer(shape, STEPControl_AsIs);
+		writer.Transfer(*(IfcGeom::OpenCascadeShape*)shape, STEPControl_AsIs);
 		std::cout.rdbuf(sb);
 	}
 	void finalize() {

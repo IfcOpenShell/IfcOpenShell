@@ -23,20 +23,22 @@
 
 #include <TopoDS_Compound.hxx>
 
-#include "../ifcgeom/IfcGeom.h"
+#include "../../../ifcgeom/IfcGeom.h"
+#include "../../../ifcgeom/IfcGeomRepresentation.h"
 
-#include "IfcGeomRepresentation.h"
+#include "../opencascade/OpenCascadeKernel.h"
+#include "../opencascade/OpenCascadeConversionResult.h"
 
-IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
+IfcGeom::Representation::Serialization::Serialization(const Native& brep)
 	: Representation(brep.settings())
 	, _id(brep.getId())
 {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
-	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
-		const TopoDS_Shape& s = it->Shape();
-		gp_GTrsf trsf = it->Placement();
+	for (IfcGeom::ConversionResults::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
+		const TopoDS_Shape& s = ((OpenCascadeShape*) it->Shape())->shape();
+		gp_GTrsf trsf = ((OpenCascadePlacement*)it->Placement())->trsf();
 		
 		if (it->hasStyle() && it->Style().Diffuse()) {
 			const IfcGeom::SurfaceStyle::ColorComponent& clr = *it->Style().Diffuse();
@@ -60,7 +62,7 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 			trsf.PreMultiply(scale);
 		}
 		
-		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, trsf);
+		const TopoDS_Shape moved_shape = IfcGeom::OpenCascadeKernel::apply_transformation(s, trsf);
 
 		builder.Add(compound, moved_shape);
 	}

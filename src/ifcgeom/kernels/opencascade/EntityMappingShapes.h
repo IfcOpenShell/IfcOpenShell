@@ -1,4 +1,4 @@
-﻿#include "IfcRegisterUndef.h"
+﻿#include "EntityMappingUndefine.h"
 #define SHAPES(T) \
 	if ( l->is(T::Class()) ) { \
 		try { \
@@ -13,6 +13,6 @@
 		} \
 		return false; \
 	}
-#include "IfcRegisterDef.h"
+#include "EntityMappingDefine.h"
 
-#include "IfcRegister.h"
+#include "EntityMapping.h"

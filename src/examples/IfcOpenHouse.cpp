@@ -30,6 +30,7 @@
 #include <BRepBuilderAPI_MakeFace.hxx>
 
 #include <Standard_Version.hxx>
+#include <Precision.hxx>
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4.h"
@@ -40,6 +41,7 @@
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcHierarchyHelper.h"
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeSerialization.h"
 
 #if USE_VLD
 #include <vld.h>

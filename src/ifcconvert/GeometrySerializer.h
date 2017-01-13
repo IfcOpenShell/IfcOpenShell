@@ -36,7 +36,7 @@ public:
 
 	virtual bool isTesselated() const = 0;
 	virtual void write(const IfcGeom::TriangulationElement<real_t>* o) = 0;
-	virtual void write(const IfcGeom::BRepElement<real_t>* o) = 0;
+	virtual void write(const IfcGeom::NativeElement<real_t>* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
 
     const IfcGeom::IteratorSettings& settings() const { return settings_; }

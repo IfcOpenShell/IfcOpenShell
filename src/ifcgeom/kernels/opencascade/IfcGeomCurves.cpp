@@ -19,7 +19,7 @@
 
 /********************************************************************************
  *                                                                              *
- * Implementations of the various conversion functions defined in IfcRegister.h *
+ * Implementations of the various conversion functions defined in EntityMapping.h *
  *                                                                              *
  ********************************************************************************/
 
@@ -81,9 +81,10 @@
 #include <Geom_BSplineCurve.hxx>
 #endif
 
-#include "../ifcgeom/IfcGeom.h"
+#include "../../../ifcgeom/IfcGeom.h"
+#include "OpenCascadeKernel.h"
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)& curve) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)& curve) {
 	const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
 	if ( r < ALMOST_ZERO ) { 
 		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l->entity);
@@ -92,17 +93,17 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)&
 	gp_Trsf trsf;
 	IfcSchema::IfcAxis2Placement* placement = l->Position();
 	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
-		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
+		IfcGeom::OpenCascadeKernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
 		gp_Trsf2d trsf2d;
-		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf2d);
+		IfcGeom::OpenCascadeKernel::convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf2d);
 		trsf = trsf2d;
 	}
 	gp_Ax2 ax = gp_Ax2().Transformed(trsf);
 	curve = new Geom_Circle(ax, r);
 	return true;
 }
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)& curve) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)& curve) {
 	double x = l->SemiAxis1() * getValue(GV_LENGTH_UNIT);
 	double y = l->SemiAxis2() * getValue(GV_LENGTH_UNIT);
 	if (x < ALMOST_ZERO || y < ALMOST_ZERO) { 
@@ -132,7 +133,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)
 	curve = new Geom_Ellipse(ax, x, y);
 	return true;
 }
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& curve) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& curve) {
 	gp_Pnt pnt;gp_Vec vec;
 	convert(l->Pnt(),pnt);
 	convert(l->Dir(),vec);	
@@ -142,7 +143,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& c
 }
 
 #ifdef USE_IFC4
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineCurveWithKnots* l, Handle(Geom_Curve)& curve) {
+bool IfcGeom::OpenCascadeKernel::convert(const IfcSchema::IfcBSplineCurveWithKnots* l, Handle(Geom_Curve)& curve) {
 
 	const bool is_rational = l->is(IfcSchema::Type::IfcRationalBSplineCurveWithKnots);
 

@@ -1,3 +1,8 @@
+﻿#include <BRep_Tool.hxx>
+#include <TopExp_Explorer.hxx>
+#include <BRepMesh_IncrementalMesh.hxx>
+#include <Poly_Triangulation.hxx>
+
 #include <Geom_Line.hxx>
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
@@ -14,7 +19,10 @@
 #include <TColStd_Array2OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
 
-#include "IfcGeom.h"
+#include "../../../ifcgeom/IfcGeom.h"
+
+#include "OpenCascadeKernel.h"
+#include "OpenCascadeSerialization.h"
 
 template <typename T, typename U>
 int convert_to_ifc(const T& t, U*& u, bool /*advanced*/) {

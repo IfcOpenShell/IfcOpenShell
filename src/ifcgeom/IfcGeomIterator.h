@@ -67,20 +67,13 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
 
-#include <gp_Mat.hxx>
-#include <gp_Mat2d.hxx>
-#include <gp_GTrsf.hxx>
-#include <gp_GTrsf2d.hxx>
-#include <gp_Trsf.hxx>
-#include <gp_Trsf2d.hxx>
-
 #include "../ifcparse/IfcFile.h"
 
 #include "../ifcgeom/IfcGeom.h"
 #include "../ifcgeom/IfcGeomElement.h"
 #include "../ifcgeom/IfcGeomMaterial.h"
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
-#include "../ifcgeom/IfcRepresentationShapeItem.h"
+#include "../ifcgeom/ConversionResult.h"
 
 // The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
 #ifdef min
@@ -98,7 +91,7 @@ namespace IfcGeom {
 		Iterator(const Iterator&); // N/I
 		Iterator& operator=(const Iterator&); // N/I
 
-		Kernel kernel;
+		AbstractKernel* kernel;
 		IteratorSettings settings;
 
 		IfcParse::IfcFile* ifc_file;
@@ -109,7 +102,7 @@ namespace IfcGeom {
 
 		// The object is fetched beforehand to be sure that get() returns a valid element
 		TriangulationElement<P>* current_triangulation;
-		BRepElement<P>* current_shape_model;
+		NativeElement<P>* current_shape_model;
 		SerializedElement<P>* current_serialization;
 		
 		// A container and iterator for IfcBuildingElements for the current IfcRepresentation referenced by *representation_iterator
@@ -122,14 +115,14 @@ namespace IfcGeom {
 		std::string unit_name;
 		// double?
 		P unit_magnitude;
-        gp_XYZ bounds_min_;
-        gp_XYZ bounds_max_;
+        /* gp_XYZ bounds_min_;
+        gp_XYZ bounds_max_; */
 
 		void initUnits() {
 			IfcSchema::IfcProject::list::ptr projects = ifc_file->entitiesByType<IfcSchema::IfcProject>();
 			if (projects->size() == 1) {
 				IfcSchema::IfcProject* project = *projects->begin();
-				std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
+				std::pair<std::string, double> length_unit = kernel->initializeUnits(project->UnitsInContext());
 				unit_name = length_unit.first;
 				unit_magnitude = static_cast<P>(length_unit.second);
 			}
@@ -253,12 +246,12 @@ namespace IfcGeom {
 				lowest_precision_encountered *= unit_magnitude;
 				if (lowest_precision_encountered < 1.e-7) {
 					Logger::Message(Logger::LOG_WARNING, "Precision lower than 0.0000001 meter not enforced");
-					kernel.setValue(IfcGeom::Kernel::GV_PRECISION, 1.e-7);
+					kernel->setValue(IfcGeom::AbstractKernel::GV_PRECISION, 1.e-7);
 				} else {
-					kernel.setValue(IfcGeom::Kernel::GV_PRECISION, lowest_precision_encountered);
+					kernel->setValue(IfcGeom::AbstractKernel::GV_PRECISION, lowest_precision_encountered);
 				}
 			} else {
-				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, 1.e-5);
+				kernel->setValue(IfcGeom::AbstractKernel::GV_PRECISION, 1.e-5);
 			}
 
 			if (representations->size() == 0) {
@@ -276,7 +269,8 @@ namespace IfcGeom {
 			done = 0;
 			total = representations->size();
 
-            for (int i = 1; i < 4; ++i) {
+			/*
+			for (int i = 1; i < 4; ++i) {
                 bounds_min_.SetCoord(i, std::numeric_limits<double>::infinity());
                 bounds_max_.SetCoord(i, -std::numeric_limits<double>::infinity());
             }
@@ -289,7 +283,7 @@ namespace IfcGeom {
                     gp_Trsf trsf; 
 					bool success = false;
 					try {
-						success = kernel.convert(product->ObjectPlacement(), trsf);
+						success = kernel->convert(product->ObjectPlacement(), trsf);
 					} catch (...) {}
 					if (!success) {
 						continue;
@@ -304,6 +298,7 @@ namespace IfcGeom {
                     bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z()));
                 }
             }
+            */
 
 			return true;
 		}
@@ -362,8 +357,10 @@ namespace IfcGeom {
             return boost::regex(str);
         }
 
+		/*
         const gp_XYZ& bounds_min() const { return bounds_min_; }
         const gp_XYZ& bounds_max() const { return bounds_max_; }
+		*/
 
 	private:
 		// Move to the next IfcRepresentation
@@ -371,10 +368,14 @@ namespace IfcGeom {
 			// In order to conserve memory and reduce cache insertion times, the cache is
 			// cleared after an arbitary number of processed representations. This has been
 			// benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
+			
+			/*
 			static const int clear_interval = 64;
 			if (done % clear_interval == clear_interval - 1) {
-				kernel.purge_cache();
+				kernel->purge_cache();
 			}
+			*/
+
 			ifcproducts.reset();
 			++ representation_iterator;
 			++ done;
@@ -382,7 +383,7 @@ namespace IfcGeom {
 
 		std::set<IfcSchema::IfcRepresentation*> mapped_representations_processed;
 
-		BRepElement<P>* create_shape_model_for_next_entity() {
+		NativeElement<P>* create_shape_model_for_next_entity() {
 			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
 
@@ -423,7 +424,7 @@ namespace IfcGeom {
 					bool has_layers = false;
 
 					for (IfcSchema::IfcProduct::list::it it = unfiltered_products->begin(); it != unfiltered_products->end(); ++it) {
-						if (kernel.find_openings(*it)->size()) {
+						if (kernel->find_openings(*it)->size()) {
 							has_openings = true;
 						}
 						IfcSchema::IfcRelAssociates::list::ptr associations = (*it)->HasAssociations();
@@ -438,7 +439,7 @@ namespace IfcGeom {
 					}
 					
 					// With world coords enabled, object transformations are directly applied to
-					// the BRep. There is no way to re-use the geometry for multiple products.
+					// the Native. There is no way to re-use the geometry for multiple products.
 					const bool process_maps_for_current_representation = !settings.get(IteratorSettings::USE_WORLD_COORDS) &&
 						(!has_openings || settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) &&
 						(!has_layers || !settings.get(IteratorSettings::APPLY_LAYERSETS));
@@ -453,9 +454,9 @@ namespace IfcGeom {
 							if (item->is(IfcSchema::Type::IfcMappedItem)) {
 								if (item->StyledByItem()->size() == 0) {
 									IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
-									if (kernel.is_identity_transform(mapped_item->MappingTarget())) {
+									if (kernel->is_identity_transform(mapped_item->MappingTarget())) {
 										IfcSchema::IfcRepresentationMap* map = mapped_item->MappingSource();
-										if (kernel.is_identity_transform(map->MappingOrigin())) {
+										if (kernel->is_identity_transform(map->MappingOrigin())) {
 											representation_mapped_to = map->MappedRepresentation();
 											IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation_mapped_to->OfProductRepresentation();
 
@@ -466,7 +467,7 @@ namespace IfcGeom {
 												IfcSchema::IfcProduct::list::ptr products_of_prodrep = (*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>();
 												products->push(products_of_prodrep);
 												for (IfcSchema::IfcProduct::list::it jt = products_of_prodrep->begin(); jt != products_of_prodrep->end(); ++jt) {
-													if (kernel.find_openings(*jt)->size() > 0 && !settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) {
+													if (kernel->find_openings(*jt)->size() > 0 && !settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) {
 														all_product_without_openings = false;
 														break;
 													}
@@ -501,13 +502,13 @@ namespace IfcGeom {
 					
 					if (process_maps_for_current_representation && maps->size() == 1) {
 						IfcSchema::IfcRepresentationMap* map = *maps->begin();
-						if (kernel.is_identity_transform(map->MappingOrigin())) {
+						if (kernel->is_identity_transform(map->MappingOrigin())) {
 							IfcSchema::IfcMappedItem::list::ptr items = map->MapUsage();
 							for (IfcSchema::IfcMappedItem::list::it it = items->begin(); it != items->end(); ++it) {
 								IfcSchema::IfcMappedItem* item = *it;
 								if (item->StyledByItem()->size() != 0) continue;
 								
-								if (!kernel.is_identity_transform(item->MappingTarget())) {
+								if (!kernel->is_identity_transform(item->MappingTarget())) {
 									continue;
 								}
 
@@ -519,7 +520,7 @@ namespace IfcGeom {
 									for (IfcSchema::IfcProductRepresentation::list::it kt = prodreps->begin(); kt != prodreps->end(); ++kt) {
 										IfcSchema::IfcProduct::list::ptr prods = (*kt)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>();
 										for (IfcSchema::IfcProduct::list::it lt = prods->begin(); lt != prods->end(); ++lt) {
-											if (kernel.find_openings(*lt)->size() == 0 || settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) {
+											if (kernel->find_openings(*lt)->size() == 0 || settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) {
                                                 if (!unfiltered_products->contains(*lt)) {
                                                     unfiltered_products->push(*lt);
                                                 }
@@ -549,7 +550,7 @@ namespace IfcGeom {
                         if (!type_found && traverse) {
                             foreach(IfcSchema::Type::Enum type, entities_to_include_or_exclude) {
                                 IfcSchema::IfcProduct* parent, * current = prod;
-                                while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
+                                while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel->get_decomposing_entity(current))) != 0) {
                                     if (parent->is(type)) {
                                         type_found = true;
                                         break;
@@ -573,7 +574,7 @@ namespace IfcGeom {
                         if (!name_found && traverse) {
                             foreach(const boost::regex& r, names_to_include_or_exclude) {
                                 IfcSchema::IfcProduct* parent, *current = prod;
-                                while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
+                                while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel->get_decomposing_entity(current))) != 0) {
                                     if (parent->hasName() && boost::regex_match(parent->Name(), r)) {
                                         name_found = true;
                                         break;
@@ -604,11 +605,11 @@ namespace IfcGeom {
 
 				Logger::SetProduct(product);
                 
-                BRepElement<P>* element;
+                NativeElement<P>* element;
 				if (ifcproduct_iterator == ifcproducts->begin() || !settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-					element = kernel.create_brep_for_representation_and_product<P>(settings, representation, product);
+					element = kernel->create_brep_for_representation_and_product(settings, representation, product);
 				} else {
-					element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
+					element = kernel->create_brep_for_processed_representation(settings, representation, product, current_shape_model);
 				}
 
 				Logger::SetProduct(boost::none);
@@ -655,6 +656,7 @@ namespace IfcGeom {
             return ret;
         }
 
+		/*
 		const Element<P>* getObject(int id) {
 
 			gp_Trsf trsf;
@@ -672,14 +674,14 @@ namespace IfcGeom {
 					
 					parent_id = -1;
 					try {
-						IfcSchema::IfcObjectDefinition* parent_object = kernel.get_decomposing_entity(ifc_product);
+						IfcSchema::IfcObjectDefinition* parent_object = kernel->get_decomposing_entity(ifc_product);
 						if (parent_object) {
 							parent_id = parent_object->entity->id();
 						}
 					} catch (...) {}
 					
 					try {
-						kernel.convert(ifc_product->ObjectPlacement(), trsf);
+						kernel->convert(ifc_product->ObjectPlacement(), trsf);
 					} catch (...) {}
 				}
 			} catch(...) {}
@@ -689,11 +691,12 @@ namespace IfcGeom {
 			
 			return ifc_object;
 		}
+		*/
 
 		bool create() {
 			bool success = true;
 
-			IfcGeom::BRepElement<P>* next_shape_model = 0;
+			IfcGeom::NativeElement<P>* next_shape_model = 0;
 			IfcGeom::SerializedElement<P>* next_serialization = 0;
 			IfcGeom::TriangulationElement<P>* next_triangulation = 0;
 
@@ -747,8 +750,10 @@ namespace IfcGeom {
 			unit_name = "METER";
 			unit_magnitude = 1.f;
 
-            kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.get(IteratorSettings::SEW_SHELLS) ? 1000 : -1);
-            kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
+			kernel = IfcGeom::AbstractKernel::kernel_by_name("opencascade");
+
+            kernel->setValue(IfcGeom::AbstractKernel::GV_MAX_FACES_TO_SEW, settings.get(IteratorSettings::SEW_SHELLS) ? 1000 : -1);
+            kernel->setValue(IfcGeom::AbstractKernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
                 ? (settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 		}
 

@@ -25,6 +25,8 @@
 #include <IGESControl_Writer.hxx>
 #include <Interface_Static.hxx>
 
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
+
 class IgesSerializer : public OpenCascadeBasedSerializer
 {
 private:
@@ -36,8 +38,8 @@ public:
         : OpenCascadeBasedSerializer(out_filename, settings)
 	{}
 	virtual ~IgesSerializer() {}
-	void writeShape(const TopoDS_Shape& shape) {
-		writer.AddShape(shape);
+	void writeShape(const IfcGeom::ConversionResultShape* shape) {
+		writer.AddShape(*(IfcGeom::OpenCascadeShape*)shape);
 	}
 	void finalize() {
 		writer.Write(out_filename.c_str());

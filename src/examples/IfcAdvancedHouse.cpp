@@ -47,6 +47,7 @@
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcHierarchyHelper.h"
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeSerialization.h"
 
 #if USE_VLD
 #include <vld.h>
