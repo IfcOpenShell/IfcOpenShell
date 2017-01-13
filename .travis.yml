@@ -46,7 +46,7 @@ script:
   - cd ..
   - cd ..
   - pwd
-  - cd IfcOpenShell
+  - cd IfcOpenShell_CGAL
   - pwd
   - cd cmake
   - mkdir build-ifc2x3 build-ifc4
