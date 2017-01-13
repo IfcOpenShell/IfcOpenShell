@@ -203,9 +203,17 @@ int main(int argc, char** argv) {
             "--include --traverse --names \"Level 1\" includes entity with name \"Level 1\" and all of its children.");
 
     std::string bounds, offset_str;
+#ifdef HAVE_ICU
+    std::string unicode_mode;
+#endif
     short precision;
     boost::program_options::options_description serializer_options("Serialization options");
     serializer_options.add_options()
+#ifdef HAVE_ICU
+        ("unicode", boost::program_options::value<std::string>(&unicode_mode),
+            "Specifies the Unicode handling behavior when parsing the IFC file. "
+            "Accepted values 'utf8' (the default) and 'escape'.")
+#endif
         ("bounds", boost::program_options::value<std::string>(&bounds),
             "Specifies the bounding rectangle, for example 512x512, to which the "
             "output will be scaled. Only used when converting to SVG.")
@@ -295,6 +303,20 @@ int main(int argc, char** argv) {
     const bool model_offset = vmap.count("model-offset") != 0 ;
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
     const bool traverse = vmap.count("traverse") != 0;
+
+#ifdef HAVE_ICU
+    if (!unicode_mode.empty()) {
+        if (unicode_mode == "utf8") {
+            IfcParse::IfcCharacterDecoder::mode = IfcParse::IfcCharacterDecoder::UTF8;
+        } else if (unicode_mode == "escape") {
+            IfcParse::IfcCharacterDecoder::mode = IfcParse::IfcCharacterDecoder::JSON;
+        } else {
+            std::cerr << "[Error] Invalid value for --unicode" << std::endl;
+            print_options(serializer_options);
+            return 1;
+        }
+    }
+#endif
 
 	int bounding_width = -1, bounding_height = -1;
 	if (vmap.count("bounds") == 1) {
