@@ -90,6 +90,10 @@ class tree(ifcopenshell_wrapper.tree):
         args = [self, unwrap(value)]
         if isinstance(value, entity_instance):
             args.append(kwargs.get("completely_within", False))
+        elif has_occ:
+            import OCC.TopoDS
+            if isinstance(value, OCC.TopoDS.TopoDS_Shape):
+                args[1] = utils.serialize_shape(value)
         return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select(*args)]
         
     def select_box(self, value, **kwargs):

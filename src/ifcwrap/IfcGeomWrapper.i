@@ -88,6 +88,16 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
+	IfcEntityList::ptr select(const std::string& shape_serialization) const {
+		std::stringstream stream(shape_serialization);
+		BRepTools_ShapeSet shapes;
+		shapes.Read(stream);
+		const TopoDS_Shape& shp = shapes.Shape(shapes.NbShapes());
+
+		std::vector<IfcSchema::IfcProduct*> ps = $self->select(shp);
+		return IfcGeom_tree_vector_to_list(ps);
+	}
+
 }
 
 // Using RTTI return a more specialized type of Element

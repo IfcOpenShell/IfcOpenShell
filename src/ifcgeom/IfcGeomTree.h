@@ -144,6 +144,39 @@ namespace IfcGeom {
 				return ts_filtered;
 			}
 
+			std::vector<T> select(const TopoDS_Shape& s) const {
+				Bnd_Box bb;
+				BRepBndLib::AddClose(s, bb);
+
+				std::vector<T> ts;
+
+				if (IfcGeom::Kernel::count(s, TopAbs_SHELL) == 0) {
+					return ts;
+				}
+
+				ts = select_box(bb);
+
+				if (ts.empty()) {
+					return ts;
+				}
+
+				std::vector<T> ts_filtered;
+				ts_filtered.reserve(ts.size());
+
+				typename std::vector<T>::const_iterator it = ts.begin();
+				for (it = ts.begin(); it != ts.end(); ++it) {
+					const TopoDS_Shape& B = shapes_.find(*it)->second;
+					BRepAlgoAPI_Common common(s, B);
+					if (common.IsDone()) {
+						if (IfcGeom::Kernel::count(common.Shape(), TopAbs_SHELL) > 0) {
+							ts_filtered.push_back(*it);
+						}
+					}
+				}
+
+				return ts_filtered;
+			}
+
 			std::vector<T> select(const gp_Pnt& p) const {
 				std::vector<T> ts = select_box(p);
 				if (ts.empty()) {
