@@ -126,6 +126,8 @@
 
 #include <GCPnts_AbscissaPoint.hxx>
 
+#include <BRepClass3d_SolidClassifier.hxx>
+
 #include <Standard_Version.hxx>
 
 #include "../ifcparse/IfcSIPrefix.h"
@@ -141,26 +143,81 @@
 #endif
 
 bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
+	TopTools_ListOfShape face_list;
+	TopExp_Explorer exp(compound, TopAbs_FACE);
+	for (; exp.More(); exp.Next()) {
+		TopoDS_Face face = TopoDS::Face(exp.Current());
+		face_list.Append(face);
+	}
+
+	if (face_list.Extent() == 0) {
+		return false;
+	}
+
+	return create_solid_from_faces(face_list, shape);
+}
+
+bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape) {
+	bool valid_shell = false;
+	
+	TopTools_ListIteratorOfListOfShape face_iterator;
+
 	BRepOffsetAPI_Sewing builder;
 	builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 	builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 	builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-	TopExp_Explorer exp(compound,TopAbs_FACE);
-	if ( ! exp.More() ) return false;
-	for ( ; exp.More(); exp.Next() ) {
-		TopoDS_Face face = TopoDS::Face(exp.Current());
-		builder.Add(face);
+	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+		builder.Add(face_iterator.Value());
 	}
-	builder.Perform();
-	shape = builder.SewedShape();
-	if (shape.ShapeType() == TopAbs_SHELL) {
-		try {
-			ShapeFix_Solid sf_solid;
-			sf_solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-			shape = sf_solid.SolidFromShell(TopoDS::Shell(shape));
-		} catch(...) {}
+
+	try {
+		builder.Perform();
+		shape = builder.SewedShape();
+		valid_shell = BRepCheck_Analyzer(shape).IsValid() != 0;
+	} catch (...) {}
+
+	if (valid_shell) {
+		TopoDS_Shape complete_shape;
+		TopExp_Explorer exp(shape, TopAbs_SHELL);
+		for (; exp.More(); exp.Next()) {
+			TopoDS_Shape result_shape = exp.Current();
+
+			try {
+				ShapeFix_Solid solid;
+				solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+				TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(exp.Current()));
+				if (!solid_shape.IsNull()) {
+					try {
+						BRepClass3d_SolidClassifier classifier(solid_shape);
+						result_shape = solid_shape;
+						classifier.PerformInfinitePoint(getValue(GV_PRECISION));
+						if (classifier.State() == TopAbs_IN) {
+							shape.Reverse();
+						}
+					} catch (...) {}
+				}
+			} catch (...) {}
+
+			if (complete_shape.IsNull()) {
+				complete_shape = result_shape;
+			} else {
+				BRep_Builder B;
+				if (complete_shape.ShapeType() != TopAbs_COMPOUND) {
+					TopoDS_Compound C;
+					B.MakeCompound(C);
+					B.Add(C, complete_shape);
+					complete_shape = C;
+					Logger::Message(Logger::LOG_WARNING, "Multiple components in IfcConnectedFaceSet");
+				}
+				B.Add(complete_shape, result_shape);
+			}
+		}
+		shape = complete_shape;
+	} else {
+		Logger::Message(Logger::LOG_WARNING, "Failed to sew faceset");
 	}
-	return true;
+	
+	return valid_shell;
 }
 
 bool IfcGeom::Kernel::is_compound(const TopoDS_Shape& shape) {
@@ -176,7 +233,10 @@ const TopoDS_Shape& IfcGeom::Kernel::ensure_fit_for_subtraction(const TopoDS_Sha
 	if (!is_comp) {
 		return solid = shape;
 	}
-	create_solid_from_compound(shape, solid);
+	
+	if (!create_solid_from_compound(shape, solid)) {
+		return solid = shape;
+	}
 	
 	// If the SEW_SHELLS option had been set this precision had been applied
 	// at the end of the generic convert_shape() call.
@@ -888,7 +948,7 @@ bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::IfcRepresentationShapeIt
 }
 	
 void IfcGeom::Kernel::remove_duplicate_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol) {
-	if (tol <= 0.) tol = getValue(GV_POINT_EQUALITY_TOLERANCE);
+	if (tol <= 0.) tol = getValue(GV_PRECISION);
 	tol *= tol;
 
 	for (;;) {
@@ -912,7 +972,7 @@ void IfcGeom::Kernel::remove_duplicate_points_from_loop(TColgp_SequenceOfPnt& po
 }
 
 void IfcGeom::Kernel::remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol) {
-	if (tol <= 0.) tol = getValue(GV_POINT_EQUALITY_TOLERANCE);
+	if (tol <= 0.) tol = getValue(GV_PRECISION);
 	const int start = closed ? 1 : 2;
 	const int end = polygon.Length() - (closed ? 0 : 1);
 	std::vector<bool> to_remove(polygon.Length(), false);
@@ -2116,7 +2176,7 @@ bool IfcGeom::Kernel::split_solid_by_shell(const TopoDS_Shape& input, const Topo
 
 	for (int i = 0; i < 2; ++i) {
 		TopoDS_Shape& shape = i == 0 ? front : back;
-		const bool result_is_null = is_null[i] = shape.IsNull();
+        const bool result_is_null = is_null[i] = shape.IsNull() != 0;
 		if (result_is_null) {
 			continue;
 		}

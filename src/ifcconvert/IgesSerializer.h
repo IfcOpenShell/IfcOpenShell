@@ -32,7 +32,7 @@ private:
 public:
     /// @note IGESControl_Controller::Init() must be called prior to instantiating IgesSerializer.
     /// See http://tracker.dev.opencascade.org/view.php?id=23679 for more information.
-    IgesSerializer(const std::string& out_filename, const IfcGeom::IteratorSettings &settings)
+    IgesSerializer(const std::string& out_filename, const SerializerSettings& settings)
         : OpenCascadeBasedSerializer(out_filename, settings)
 	{}
 	virtual ~IgesSerializer() {}

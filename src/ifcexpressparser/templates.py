@@ -321,6 +321,7 @@ std::set<std::string> Type::GetInverseAttributeNames(Enum t) {
 }
 
 void Type::PopulateDerivedFields(IfcWrite::IfcWritableEntity* e) {
+    if (derived_map.empty()) ::InitDerivedMap();
     std::map<Type::Enum, std::set<int> >::const_iterator i = derived_map.find(e->type());
     if (i != derived_map.end()) {
         for (std::set<int>::const_iterator it = i->second.begin(); it != i->second.end(); ++it) {

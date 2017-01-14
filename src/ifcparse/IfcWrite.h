@@ -55,7 +55,6 @@ namespace IfcWrite {
 		};		
 		class Derived {};
 	private:
-		IfcAbstractEntity* entity;
 		boost::variant<
 			// A null argument, it will always serialize to $
 			boost::none_t,
@@ -108,7 +107,6 @@ namespace IfcWrite {
 			IfcEntityListList::ptr
 		> container;
 	public:
-		IfcWriteArgument(IfcAbstractEntity* e) : entity(e) {}
 		template <typename T> const T& as() const {
 			if (const T* val = boost::get<T>(&container)) {
 				return *val;

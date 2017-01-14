@@ -50,13 +50,13 @@ protected:
 	}
 
 	void setArgument(unsigned int i, const std::string& s) {
-		IfcWrite::IfcWriteArgument* argument = new IfcWrite::IfcWriteArgument(this);
+		IfcWrite::IfcWriteArgument* argument = new IfcWrite::IfcWriteArgument;
 		argument->set(s);
 		_list->set(i, argument);
 	}
 
 	void setArgument(unsigned int i, const std::vector<std::string>& s) {
-		IfcWrite::IfcWriteArgument* argument = new IfcWrite::IfcWriteArgument(this);
+		IfcWrite::IfcWriteArgument* argument = new IfcWrite::IfcWriteArgument;
 		argument->set(s);
 		_list->set(i, argument);
 	}

@@ -47,10 +47,11 @@ void WaveFrontOBJSerializer::writeHeader() {
 
 void WaveFrontOBJSerializer::writeMaterial(const IfcGeom::Material& style)
 {
-    std::string material_name = (settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+    std::string material_name = (settings().get(SerializerSettings::USE_MATERIAL_NAMES)
         ? style.original_name() : style.name());
     IfcUtil::sanitate_material_name(material_name);
     mtl_stream << "newmtl " << material_name << "\n";
+
 	if (style.hasDiffuse()) {
 		const double* diffuse = style.diffuse();
 		mtl_stream << "Kd " << diffuse[0] << " " << diffuse[1] << " " << diffuse[2] << "\n";
@@ -65,25 +66,21 @@ void WaveFrontOBJSerializer::writeMaterial(const IfcGeom::Material& style)
 	if (style.hasTransparency()) {
 		const double transparency = 1.0 - style.transparency();
 		if (transparency < 1) {
-			mtl_stream << "Tr " << transparency << "\n";
 			mtl_stream << "d "  << transparency << "\n";
-			mtl_stream << "D "  << transparency << "\n";
 		}
 	}
 }
 
 void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* o)
 {
-    const std::string name = (settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS)
-        ? o->guid() : (settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES)
+    const std::string name = (settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
+        ? o->guid() : (settings().get(SerializerSettings::USE_ELEMENT_NAMES)
             ? o->name() : o->unique_id()));
     obj_stream << "g " << name << "\n";
 	obj_stream << "s 1" << "\n";
-	
-	obj_stream << std::setprecision(std::numeric_limits<double>::digits10);
 
     const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
-	
+
 	const int vcount = (int)mesh.verts().size() / 3;
     for ( std::vector<real_t>::const_iterator it = mesh.verts().begin(); it != mesh.verts().end(); ) {
         const real_t x = *(it++) + (real_t)settings().offset[0];
@@ -115,7 +112,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
 		const int material_id = *(material_it++);
 		if (material_id != previous_material_id) {
 			const IfcGeom::Material& material = mesh.materials()[material_id];
-            std::string material_name = (settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+            std::string material_name = (settings().get(SerializerSettings::USE_MATERIAL_NAMES)
                 ? material.original_name() : material.name());
             IfcUtil::sanitate_material_name(material_name);
 			obj_stream << "usemtl " << material_name << "\n";
@@ -159,7 +156,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
 
 		if (material_id != previous_material_id) {
 			const IfcGeom::Material& material = mesh.materials()[material_id];
-            std::string material_name = (settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+            std::string material_name = (settings().get(SerializerSettings::USE_MATERIAL_NAMES)
                 ? material.original_name() : material.name());
             IfcUtil::sanitate_material_name(material_name);
 			obj_stream << "usemtl " << material_name << "\n";

@@ -175,9 +175,9 @@ int main(int argc, char** argv) {
 			"Specifies whether to enable the slicing of products according "
 			"to their associated IfcMaterialLayerSet.")
 		("include", 
-            "Specifies that the entities listed after --entities or --names are to be included")
+            "Specifies that the entities and/or names listed after --entities and/or --names are to be included")
 		("exclude", 
-            "Specifies that the entities listed after --entities or --names are to be excluded")
+            "Specifies that the entities and/or names listed after --entities and/or --names are to be excluded")
 		("entities", boost::program_options::value< std::vector<std::string> >(&entity_vector)->multitoken(),
 			"A list of entities that should be included in or excluded from the "
 			"geometrical output, depending on whether --exclude or --include is specified. "
@@ -192,15 +192,28 @@ int main(int argc, char** argv) {
             "Disables computation of normals. Saves time and file size and is useful "
             "in instances where you're going to recompute normals for the exported "
             "model in other modelling application in any case.")
-        ("deflection-tolerance", boost::program_options::value<double>(&deflection_tolerance),
+        ("deflection-tolerance", boost::program_options::value<double>(&deflection_tolerance)->default_value(1e-3),
             "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
         ("generate-uvs",
             "Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
-            "Not guaranteed to work properly if used with --weld-vertices.");
+            "Not guaranteed to work properly if used with --weld-vertices.")
+        ("traverse",
+            "Applies --include or --exclude also to the decomposition and/or containment (IsDecomposedBy, "
+            "HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. "
+            "--include --traverse --names \"Level 1\" includes entity with name \"Level 1\" and all of its children.");
 
-    std::string bounds;
+    std::string bounds, offset_str;
+#ifdef HAVE_ICU
+    std::string unicode_mode;
+#endif
+    short precision;
     boost::program_options::options_description serializer_options("Serialization options");
     serializer_options.add_options()
+#ifdef HAVE_ICU
+        ("unicode", boost::program_options::value<std::string>(&unicode_mode),
+            "Specifies the Unicode handling behavior when parsing the IFC file. "
+            "Accepted values 'utf8' (the default) and 'escape'.")
+#endif
         ("bounds", boost::program_options::value<std::string>(&bounds),
             "Specifies the bounding rectangle, for example 512x512, to which the "
             "output will be scaled. Only used when converting to SVG.")
@@ -215,7 +228,14 @@ int main(int argc, char** argv) {
             "Applicable for OBJ and DAE output.")
         ("center-model",
             "Centers the elements upon serialization by applying the center point of "
-            "all placements as an offset. Applicable for OBJ and DAE output.");
+            "all placements as an offset. Applicable for OBJ and DAE output.")
+        ("model-offset", boost::program_options::value<std::string>(&offset_str),
+            "Applies an arbitrary offset of form 'x;y;z' to all placements. Applicable for OBJ and DAE output.")
+        ("precision", boost::program_options::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
+            "Sets the precision to be used to format floating-point values, 15 by default. "
+            "Use a negative value to use the system's default precision (should be 6 typically). "
+            "Applicable for OBJ and DAE output. For DAE output, value >= 15 means that up to 16 decimals are used, "
+            " and any other value means that 6 or 7 decimals are used.");
 
 	boost::program_options::options_description cmdline_options;
 	cmdline_options.add(generic_options).add(fileio_options).add(geom_options).add(serializer_options);
@@ -232,7 +252,11 @@ int main(int argc, char** argv) {
 		std::cerr << "[Error] Unknown option '" << e.get_option_name() << "'" << std::endl << std::endl;
         print_usage();
         return 1;
-	} catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Error] " << e.what() << "\n\n";
+        print_usage();
+        return 1;
+    } catch (...) {
 		// Catch other errors such as invalid command line syntax
         print_usage();
         return 1;
@@ -266,7 +290,8 @@ int main(int argc, char** argv) {
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
 #endif
 	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
-	bool include_entities = vmap.count("include") != 0;
+	bool include_entities = vmap.count("include") != 0 && !entity_vector.empty();
+    const bool include_names = vmap.count("include") != 0 && !names.empty();
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
 	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
@@ -274,9 +299,24 @@ int main(int argc, char** argv) {
     const bool use_element_guids = vmap.count("use-element-guids") != 0 ;
     const bool use_material_names = vmap.count("use-material-names") != 0;
     const bool no_normals = vmap.count("no-normals") != 0 ;
-    bool center_model = vmap.count("center-model") != 0 ;
+    const bool center_model = vmap.count("center-model") != 0 ;
+    const bool model_offset = vmap.count("model-offset") != 0 ;
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
-    const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
+    const bool traverse = vmap.count("traverse") != 0;
+
+#ifdef HAVE_ICU
+    if (!unicode_mode.empty()) {
+        if (unicode_mode == "utf8") {
+            IfcParse::IfcCharacterDecoder::mode = IfcParse::IfcCharacterDecoder::UTF8;
+        } else if (unicode_mode == "escape") {
+            IfcParse::IfcCharacterDecoder::mode = IfcParse::IfcCharacterDecoder::JSON;
+        } else {
+            std::cerr << "[Error] Invalid value for --unicode" << std::endl;
+            print_options(serializer_options);
+            return 1;
+        }
+    }
+#endif
 
 	int bounding_width = -1, bounding_height = -1;
 	if (vmap.count("bounds") == 1) {
@@ -348,7 +388,9 @@ int main(int argc, char** argv) {
 				Logger::Message(Logger::LOG_ERROR, "Unable to parse input file '" + input_filename + "'");
 			} else {
 				s.setFile(&f);
+                Logger::Status("Writing XML output...");
 				s.finalize();
+                Logger::Status("Done!");
                 rename_file(output_temp_filename, output_filename);
 				exit_code = 0;
 			}
@@ -357,7 +399,7 @@ int main(int argc, char** argv) {
 		return exit_code;
 	}
 
-	IfcGeom::IteratorSettings settings;
+    SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
 	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
 	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords);
@@ -371,15 +413,15 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
 	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
-    settings.set(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES, use_element_names);
-    settings.set(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS, use_element_guids);
-    settings.set(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES, use_material_names);
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
-    settings.set(IfcGeom::IteratorSettings::CENTER_MODEL, center_model);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
-    if (deflection_tolerance_specified) {
-        settings.set_deflection_tolerance(deflection_tolerance);
-    }
+    settings.set(IfcGeom::IteratorSettings::TRAVERSE, traverse);
+    settings.set_deflection_tolerance(deflection_tolerance);
+
+    settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
+    settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
+    settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
+    settings.precision = precision;
 
 	GeometrySerializer* serializer;
 	if (output_extension == ".obj") {
@@ -420,8 +462,8 @@ int main(int argc, char** argv) {
         if (generate_uvs) {
             Logger::Message(Logger::LOG_NOTICE, "Generate UVs setting ignored when writing non-tesselated output");
         }
-        if (center_model) {
-            Logger::Message(Logger::LOG_NOTICE, "Center model setting ignored when writing non-tesselated output");
+        if (center_model || model_offset) {
+            Logger::Message(Logger::LOG_NOTICE, "Centering/offsetting model setting ignored when writing non-tesselated output");
         }
 
         settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
@@ -432,15 +474,19 @@ int main(int argc, char** argv) {
 	try {
 		if (include_entities) {
 			context_iterator.includeEntities(entities);
-            context_iterator.include_entity_names(names);
 		} else {
 			context_iterator.excludeEntities(entities);
-            context_iterator.exclude_entity_names(names);
 		}
 	} catch (const IfcParse::IfcException& e) {
 		std::cout << "[Error] " << e.what() << std::endl;
 		return 1;
 	}
+
+    if (include_names) {
+        context_iterator.include_entity_names(names);
+    } else {
+        context_iterator.exclude_entity_names(names);
+    }
 
 	if (!serializer->ready()) {
         Logger::Message(Logger::LOG_ERROR, "Unable to open output '" + output_filename + "' file for writing");
@@ -452,6 +498,8 @@ int main(int argc, char** argv) {
 	time(&start);
 	
 	if (!context_iterator.initialize()) {
+        /// @todo It would be nice to know and print separate error prints for a case where we failed to parse
+        /// the file and for a case where we found no entities that satisfy our filtering criteria.
         Logger::Message(Logger::LOG_ERROR, "Unable to parse input file '" + input_filename + "' or no geometrical entities found");
 		write_log();
 		return 1;
@@ -469,16 +517,25 @@ int main(int argc, char** argv) {
 
 	int old_progress = -1;
 
-	if (center_model) {
-		double* offset = serializer->settings().offset;
-		gp_XYZ center = (context_iterator.bounds_min() + context_iterator.bounds_max()) * 0.5;
-		offset[0] = -center.X();
-		offset[1] = -center.Y();
-		offset[2] = -center.Z();
-		std::stringstream msg;
-		msg << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
-		Logger::Message(Logger::LOG_NOTICE, msg.str());
-	}
+    if (center_model || model_offset) {
+        double* offset = serializer->settings().offset;
+        if (center_model) {
+            gp_XYZ center = (context_iterator.bounds_min() + context_iterator.bounds_max()) * 0.5;
+            offset[0] = -center.X();
+            offset[1] = -center.Y();
+            offset[2] = -center.Z();
+        } else {
+            if (sscanf(offset_str.c_str(), "%lf;%lf;%lf", &offset[0], &offset[1], &offset[2]) != 3) {
+                std::cerr << "[Error] Invalid use of --model-offset\n";
+                print_options(serializer_options);
+                return 1;
+            }
+        }
+
+        std::stringstream msg;
+        msg << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
+        Logger::Message(Logger::LOG_NOTICE, msg.str());
+    }
 
 	Logger::Status("Creating geometry...");
 
@@ -516,7 +573,7 @@ int main(int argc, char** argv) {
     // Do not remove the temp file as user can salvage the conversion result from it.
     bool successful = rename_file(output_temp_filename, output_filename);
     if (!successful) {
-        Logger::Message(Logger::LOG_ERROR, "Unable to write output file '" + output_filename + "");
+        Logger::Message(Logger::LOG_ERROR, "Unable to write output file '" + output_filename + "'");
     }
 
 	write_log();

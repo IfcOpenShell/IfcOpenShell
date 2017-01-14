@@ -43,6 +43,7 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include <Geom_Curve.hxx>
 #include <gp_Pln.hxx>
 #include <TColgp_SequenceOfPnt.hxx>
+#include <TopTools_ListOfShape.hxx>
 
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcUtil.h"
@@ -197,6 +198,7 @@ public:
 	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
 	const IfcSchema::IfcRepresentationItem* find_item_carrying_style(const IfcSchema::IfcRepresentationItem* item);
 	bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid);
+	bool create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& solid);
 	bool is_compound(const TopoDS_Shape& shape);
 	bool is_convex(const TopoDS_Wire& wire);
 	TopoDS_Shape halfspace_from_plane(const gp_Pln& pln,const gp_Pnt& cent);

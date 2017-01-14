@@ -60,8 +60,8 @@ IF NOT "!BUILD_TYPE!"=="Build" IF NOT "!BUILD_TYPE!"=="Rebuild" IF NOT "!BUILD_T
 )
 
 :: Make sure deps and install folders exists.
-IF NOT EXIST %DEPS_DIR%. mkdir %DEPS_DIR%
-IF NOT EXIST %INSTALL_DIR%. mkdir %INSTALL_DIR%
+IF NOT EXIST "%DEPS_DIR%". mkdir "%DEPS_DIR%"
+IF NOT EXIST "%INSTALL_DIR%". mkdir "%INSTALL_DIR%"
 
 :: If we use VS2008, framework path (for MSBuild) may not be correctly set. Manually attempt to add in that case
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
@@ -134,7 +134,7 @@ echo Build started at %START_TIME%.
 set BUILD_STARTED=TRUE
 echo.
 
-cd %DEPS_DIR%
+cd "%DEPS_DIR%"
 
 :: Note all of the depedencies have approriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
@@ -145,7 +145,7 @@ set DEPENDENCY_NAME=Boost %BOOST_VERSION%
 set DEPENDENCY_DIR="%DEPS_DIR%\boost"
 :: Version string with underscores instead of dots.
 set BOOST_VER=%BOOST_VERSION:.=_%
-set BOOST_ROOT=%DEPS_DIR%\boost
+REM set BOOST_ROOT=%DEPS_DIR%\boost
 REM set BOOST_INCLUDEDIR=%DEPS_DIR%\boost
 set BOOST_LIBRARYDIR=%DEPS_DIR%\boost\stage\%VS_PLATFORM%\lib
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
@@ -383,7 +383,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %SWIG_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\swigwin"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
-    pushd %DEPS%
+    pushd "%DEPS_DIR%"
     ren swigwin-%SWIG_VERSION% swigwin
     popd
 )
@@ -391,7 +391,7 @@ IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swi
 
 :Successful
 echo.
-call %~dp0\utils\cecho.cmd 0 10 "%PROJECT_NAME% dependencies built."
+call "%~dp0\utils\cecho.cmd" 0 10 "%PROJECT_NAME% dependencies built."
 set IFCOS_SCRIPT_RET=0
 goto :Finish
 
@@ -400,7 +400,7 @@ echo.
 call :PrintUsage
 :Error
 echo.
-call %~dp0\utils\cecho.cmd 0 12 "An error occurred! Aborting!"
+call "%~dp0\utils\cecho.cmd" 0 12 "An error occurred! Aborting!"
 set IFCOS_SCRIPT_RET=1
 goto :Finish
 
@@ -423,20 +423,20 @@ echo.
 echo Build ended at %END_TIME%. Time elapsed %hh%:%mm%:%ss%.%cc%.
 :BuildTimeSkipped
 set PATH=%ORIGINAL_PATH%
-cd %~dp0
+cd "%~dp0"
 exit /b %IFCOS_SCRIPT_RET%
 
 ::::::::::::::::::::::::::::::::::::: Subroutines :::::::::::::::::::::::::::::::::::::
 
-:: DownloadFile - Downloads a file using wget
+:: DownloadFile - Downloads a file using PowerShell
 :: Params: %1 url, %2 destinationDir, %3 filename
 :DownloadFile
-pushd %2
-IF NOT EXIST "%3". (
-    call cecho.cmd 0 13 "Downloading %DEPENDENCY_NAME% into %2."
+pushd "%2"
+if not exist "%~3". (
+    call cecho.cmd 0 13 "Downloading %DEPENDENCY_NAME% into %~2."
     powershell -Command "$webClient = new-object System.Net.WebClient; $webClient.DownloadFile('%1', '%3')"
     REM Old wget version in case someone has problem with PowerShell: wget --no-check-certificate %1
-) ELSE (
+) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already downloaded. Skipping."
 )
 set RET=%ERRORLEVEL%
@@ -446,11 +446,11 @@ exit /b %RET%
 :: ExtractArchive - Extracts an archive file using 7-zip
 :: Params: %1 filename, %2 destinationDir, %3 dirAfterExtraction
 :ExtractArchive
-IF NOT EXIST "%3". (
-    call cecho.cmd 0 13 "Extracting %DEPENDENCY_NAME% into %2."
+if not exist "%~3". (
+    call cecho.cmd 0 13 "Extracting %DEPENDENCY_NAME% into %~2."
     7za x %1 -y -o%2
-) ELSE (
-    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %3. Skipping."
+) else (
+    call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %~3. Skipping."
 )
 exit /b %ERRORLEVEL%
 
@@ -458,12 +458,12 @@ exit /b %ERRORLEVEL%
 :: Params: %1 gitUrl, %2 destDir
 :: F.ex. call :GitCloneRepository https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPS_DIR%\OpenCOLLADA\"
 :GitCloneOrPullRepository
-IF NOT EXIST %2. (
-    call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %2."
+if not exist "%~2". (
+    call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %~2."
     pushd "%DEPS_DIR%"
     call git clone %1 %2
     set RET=%ERRORLEVEL%
-) ELSE (
+) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned. Pulling latest changes."
     pushd %2
     call git pull
@@ -476,14 +476,14 @@ exit /b %RET%
 :: Params: %1 gitUrl, %2 destDir, %3 revision
 :: F.ex. call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" 064a60b65c2c31b94f013820856bc84fb1937cc6
 :GitCloneAndCheckoutRevision
-IF NOT EXIST "%2". (
-    call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %2."
+if not exist "%~2". (
+    call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %~2."
     pushd "%DEPS_DIR%"
     call git clone %1 %2
     set RET=%ERRORLEVEL%
     if not %RET%==0 exit /b %RET%
     popd
-) ELSE (
+) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned."
     set RET=0
 )
@@ -515,7 +515,7 @@ exit /b %RET%
 :: BuildSolution - Builds/Rebuilds/Cleans a solution using MSBuild
 :: Params: %1 solutioName, %2 configuration
 :BuildSolution
-call cecho.cmd 0 13 "%BUILD_TYPE%ing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
+call cecho.cmd 0 13 "Building %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
 %MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%
 exit /b %ERRORLEVEL%
 
@@ -533,7 +533,7 @@ exit /b %RET%
 
 :: PrintUsage - Prints usage information
 :PrintUsage
-call %~dp0\utils\cecho.cmd 0 10 "Requirements for a successful execution:"
+call "%~dp0\utils\cecho.cmd" 0 10 "Requirements for a successful execution:"
 echo  1. Install PowerShell (preinstalled in Windows ^>= 7) and make sure 'powershell' is accessible from PATH.
 echo   - https://support.microsoft.com/en-us/kb/968929
 echo  2. Install Git and make sure 'git' is accessible from PATH.

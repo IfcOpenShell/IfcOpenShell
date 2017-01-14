@@ -67,7 +67,7 @@ goto :End
 
 :Error
 echo.
-call %~dp0\utils\cecho.cmd 0 12 "%VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME% build failed!"
+call "%~dp0\utils\cecho.cmd" 0 12 "%VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME% build failed!"
 %IFCOS_PAUSE_ON_ERROR%
 set IFCOS_SCRIPT_RET=1
 

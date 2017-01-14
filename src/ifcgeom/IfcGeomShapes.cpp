@@ -433,8 +433,15 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, 
 
 	TColgp_SequenceOfPnt points;
 	if (wire_to_sequence_of_point(wire, points)) {
-		remove_duplicate_points_from_loop(points, wire.Closed() != 0); // Note: wire always closed, as per if statement above
-		remove_collinear_points_from_loop(points, wire.Closed() != 0);
+		// Boolean subtractions not very robust for narrow operands, 
+		// increase minimal point spacing to eliminate such shapes.
+		const double t = getValue(GV_PRECISION) * 10.;
+		remove_duplicate_points_from_loop(points, wire.Closed() != 0, t); // Note: wire always closed, as per if statement above
+		remove_collinear_points_from_loop(points, wire.Closed() != 0, t);
+		if (points.Length() < 3) {
+			Logger::Message(Logger::LOG_ERROR, "Not enough points retained from:", l->PolygonalBoundary()->entity);
+			return false;
+		}
 		sequence_of_point_to_wire(points, wire, wire.Closed() != 0);
 	}
 
@@ -643,49 +650,19 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 	if (face_list.Extent() == 0) {
 		return false;
 	}
-	
-	bool valid_shell = false;
 
-	TopTools_ListIteratorOfListOfShape face_iterator;
-	
-	if ( face_list.Extent() < getValue(GV_MAX_FACES_TO_SEW) ) {
-		BRepOffsetAPI_Sewing builder;
-		builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
-			builder.Add(face_iterator.Value());
-		}
-		try {
-			builder.Perform();
-			shape = builder.SewedShape();
-			valid_shell = BRepCheck_Analyzer(shape).IsValid() != 0;
-		} catch(...) {}
-		if (valid_shell) {
-			try {
-				ShapeFix_Solid solid;
-				solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-				TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(shape));
-				if (!solid_shape.IsNull()) {
-					try {
-						BRepClass3d_SolidClassifier classifier(solid_shape);
-						shape = solid_shape;
-					} catch (...) {}
-				}
-			} catch(...) {}
-		} else {
-			Logger::Message(Logger::LOG_WARNING,"Failed to sew faceset:",l->entity);
-		}
-	}
-	if (!valid_shell) {
+	if (face_list.Extent() > getValue(GV_MAX_FACES_TO_SEW) || !create_solid_from_faces(face_list, shape)) {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
+		
+		TopTools_ListIteratorOfListOfShape face_iterator;
 		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
 			builder.Add(compound, face_iterator.Value());
 		}
 		shape = compound;
 	}
+
 	return true;
 }
 
@@ -724,7 +701,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 	bool b = convert_shapes(map->MappedRepresentation(), shapes);
 	
 	for (size_t i = previous_size; i < shapes.size(); ++ i ) {
-		shapes[i].append(gtrsf);
+		shapes[i].prepend(gtrsf);
 
 		// Apply styles assigned to the mapped item only if on
 		// a more granular level no styles have been applied

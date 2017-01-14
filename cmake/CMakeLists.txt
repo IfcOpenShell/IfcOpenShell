@@ -118,7 +118,7 @@ MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
 # Usage:
 # set(SOME_LIRARIES foo bar)
-# add_debug_variants(SOME_LIRARIES "${SOME_LIRARIES}" "d")
+# add_debug_variants(SOME_LIRARIES "${SOME_LIRARIES}" d)
 # "foo bar" -> "optimized foo debug food optimized bar debug bard"
 # or
 # set(SOME_LIRARIES path/foo.lib)
@@ -128,19 +128,24 @@ MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 # make sure the lib variable ends with not just contains it.
 function(add_debug_variants NAME LIBRARIES POSTFIX)
     set(LIBRARIES_STR "${LIBRARIES}")
-    set(LIBRARIES "")
+    # the result, "optimized <lib> debug <lib>", needs to be a list instead of a string
     foreach(lib ${LIBRARIES_STR})
-        if("${lib}" MATCHES ".lib")
+        list(APPEND LIBRARIES optimized)
+        if ("${lib}" MATCHES ".lib")
             string(REPLACE ".lib" "" lib ${lib})
-            set(LIBRARIES "${LIBRARIES} optimized ${lib}.lib")
-            set(LIBRARIES "${LIBRARIES} debug ${lib}${POSTFIX}.lib")
+            list(APPEND LIBRARIES ${lib}.lib)
         else()
-            set(LIBRARIES "${LIBRARIES} optimized ${lib}")
-            set(LIBRARIES "${LIBRARIES} debug ${lib}${POSTFIX}")
+            list(APPEND LIBRARIES ${lib})
+        endif()
+
+        list(APPEND LIBRARIES debug)
+        if ("${lib}" MATCHES ".lib")
+            string(REPLACE ".lib" "" lib ${lib})
+            list(APPEND LIBRARIES ${lib}${POSTFIX}.lib)
+        else()
+            list(APPEND LIBRARIES ${lib}${POSTFIX})
         endif()
     endforeach()
-    string(STRIP ${LIBRARIES} LIBRARIES) # leading and trailing whitespace cause confusion
-    separate_arguments(LIBRARIES) # "optimized <lib> debug <lib>" needs to be a list instead of a string
     set(${NAME} ${LIBRARIES} PARENT_SCOPE)
 endfunction()
 
@@ -190,7 +195,7 @@ endforeach()
 
 if(MSVC)
     add_definitions(-DHAVE_NO_DLL)
-    add_debug_variants(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" "d")
+    add_debug_variants(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" d)
 endif()
 
 IF(UNICODE_SUPPORT)
@@ -216,7 +221,7 @@ IF(UNICODE_SUPPORT)
 		IF(WIN32)
 			FIND_LIBRARY(icudt NAMES icudt PATHS ${ICU_LIBRARY_DIR} NO_DEFAULT_PATH)
 			SET(ICU_LIBRARIES ${icu} ${icudt})
-			add_debug_variants(ICU_LIBRARIES "${ICU_LIBRARIES}" "d")
+			add_debug_variants(ICU_LIBRARIES "${ICU_LIBRARIES}" d)
 			# TODO MinGW build would appear to be using dynamic ICU regardless of this definition.
 			ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
 		ELSE()
@@ -286,7 +291,7 @@ IF(COLLADA_SUPPORT)
 		endif()
 
 		IF(MSVC)
-			add_debug_variants(OPENCOLLADA_LIBRARIES "${OPENCOLLADA_LIBRARIES}" "d")
+			add_debug_variants(OPENCOLLADA_LIBRARIES "${OPENCOLLADA_LIBRARIES}" d)
 		ENDIF()
 	ELSE()
 		MESSAGE(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA. Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
@@ -369,6 +374,9 @@ IF(MSVC)
 	ENDFOREACH()
 ElSE()
     add_definitions(-Wall -Wextra)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_definitions(-Wno-tautological-constant-out-of-range-compare)
+    endif()
     # -fPIC is not relevant on Windows and creates pointless warnings
     if (UNIX)
         add_definitions(-fPIC)
@@ -552,7 +560,10 @@ if (IFCCONVERT_DOUBLE_PRECISION)
 endif()
 
 TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
-if (NOT WIN32)
+if ((NOT WIN32) AND BUILD_SHARED_LIBS)
+    # Only set RPATHs when building shared libraries (i.e. IfcParse and
+    # IfcGeom are dynamically linked). Not necessarily a perfect solution
+    # but probably a good indication of whether RPATHs are necessary.
     SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR};${ICU_LIBRARY_DIR}")
 endif()
 
@@ -562,7 +573,7 @@ file(GLOB H_FILES ../src/ifcgeomserver/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_EXECUTABLE(IfcGeomServer ${SOURCE_FILES})
 TARGET_LINK_LIBRARIES(IfcGeomServer ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${ICU_LIBRARIES})
-if (NOT WIN32)
+if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${ICU_LIBRARY_DIR}")
 endif()
 

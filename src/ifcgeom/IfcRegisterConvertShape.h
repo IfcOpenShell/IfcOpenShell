@@ -10,7 +10,7 @@
 			Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", l->entity); \
 			return false; \
 		} catch (const Standard_Failure& f) { \
-			if (f.GetMessageString()) \
+			if (f.GetMessageString() && strlen(f.GetMessageString())) \
 				Logger::Message(Logger::LOG_ERROR, std::string("Error in: ") + f.GetMessageString() + "\nFailed to convert:", l->entity); \
 			else \
 				Logger::Message(Logger::LOG_ERROR, "Failed to convert:", l->entity); \

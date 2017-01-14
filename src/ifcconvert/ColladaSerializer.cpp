@@ -100,7 +100,7 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
 		const size_t num_triangles = std::distance(index_range_start, it) / 3;
 		if ((previous_material_id != current_material_id && num_triangles > 0) || (it == faces.end())) {
 			COLLADASW::Triangles triangles(mSW);
-            std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+            std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
                 ? materials[previous_material_id].original_name() : materials[previous_material_id].name());
             collada_id(material_name);
             triangles.setMaterial(material_name);
@@ -157,7 +157,7 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
 
 	for (linelist_t::const_iterator it = linelist.begin(); it != linelist.end(); ++it) {
 		COLLADASW::Lines lines(mSW);
-        std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+        std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
             ? materials[it->first].original_name() : materials[it->first].name());
         collada_id(material_name);
         lines.setMaterial(material_name);
@@ -230,7 +230,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::write() {
 
 void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write(const IfcGeom::Material& material)
 {
-    std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+    std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
         ? material.original_name() : material.name());
     collada_id(material_name);
     openEffect(material_name + "-fx");
@@ -277,7 +277,7 @@ bool ColladaSerializer::ColladaExporter::ColladaMaterials::contains(const IfcGeo
 void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
 	effects.close();
     foreach(const IfcGeom::Material& material, materials) {
-        std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+        std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
             ? material.original_name() : material.name());
         std::string  material_name_unescaped = material_name; // workaround double-escaping that would occur in addInstanceEffect()
         IfcUtil::sanitate_material_name(material_name_unescaped);
@@ -302,8 +302,8 @@ void ColladaSerializer::ColladaExporter::startDocument(const std::string& unit_n
 void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationElement<real_t>* o)
 {
     const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
-    const std::string name = serializer->settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_GUIDS) ?
-           o->guid() : (serializer->settings().get(IfcGeom::IteratorSettings::USE_ELEMENT_NAMES) ? o->name() : o->unique_id());
+    const std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS) ?
+           o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ? o->name() : o->unique_id());
     const std::string representation_id = "representation-" + boost::lexical_cast<std::string>(o->geometry().id());
 
 	std::vector<std::string> material_references;
@@ -311,7 +311,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 		if (!materials.contains(material)) {
 			materials.add(material);
 		}
-        std::string material_name = (serializer->settings().get(IfcGeom::IteratorSettings::USE_MATERIAL_NAMES)
+        std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
             ? material.original_name() : material.name());
         collada_id(material_name);
         material_references.push_back(material_name);

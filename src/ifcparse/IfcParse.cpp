@@ -662,7 +662,10 @@ void ArgumentList::read(IfcSpfLexer* t, std::vector<unsigned int>& ids) {
 }
 
 IfcUtil::ArgumentType ArgumentList::type() const {
-	if (list.empty()) return IfcUtil::Argument_UNKNOWN;
+	if (list.empty()) {
+		return IfcUtil::Argument_EMPTY_AGGREGATE;
+	}
+
 	const IfcUtil::ArgumentType elem_type = list[0]->type();
 	if (elem_type == IfcUtil::Argument_INT) {
 		return IfcUtil::Argument_AGGREGATE_OF_INT;
@@ -680,6 +683,8 @@ IfcUtil::ArgumentType ArgumentList::type() const {
 		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE;
 	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
 		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE;
+	} else if (elem_type == IfcUtil::Argument_EMPTY_AGGREGATE) {
+		return IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE;
 	} else {
 		return IfcUtil::Argument_UNKNOWN;
 	}
