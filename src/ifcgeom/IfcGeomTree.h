@@ -120,7 +120,7 @@ namespace IfcGeom {
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
-					if (IfcGeom::Kernel::count(A, TopAbs_SHELL) == 0) {
+					if (IfcGeom::Kernel::count(B, TopAbs_SHELL) == 0) {
 						continue;
 					}
 
@@ -166,6 +166,11 @@ namespace IfcGeom {
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
+					
+					if (IfcGeom::Kernel::count(B, TopAbs_SHELL) == 0) {
+						continue;
+					}
+
 					BRepAlgoAPI_Common common(s, B);
 					if (common.IsDone()) {
 						if (IfcGeom::Kernel::count(common.Shape(), TopAbs_SHELL) > 0) {
