@@ -737,6 +737,8 @@ namespace IfcGeom {
 			return success;
 		}
 	private:
+		const char* const kernel_name_;
+
 		void _initialize() {
 			current_triangulation = 0;
 			current_shape_model = 0;
@@ -750,7 +752,11 @@ namespace IfcGeom {
 			unit_name = "METER";
 			unit_magnitude = 1.f;
 
-			kernel = IfcGeom::AbstractKernel::kernel_by_name("opencascade");
+			const char* kn = kernel_name_;
+			if (kn == 0) {
+				kn = "cgal";
+			}
+			kernel = IfcGeom::AbstractKernel::kernel_by_name(kn);
 
             kernel->setValue(IfcGeom::AbstractKernel::GV_MAX_FACES_TO_SEW, settings.get(IteratorSettings::SEW_SHELLS) ? 1000 : -1);
             kernel->setValue(IfcGeom::AbstractKernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
@@ -759,33 +765,37 @@ namespace IfcGeom {
 
 		bool owns_ifc_file;
 	public:
-		Iterator(const IteratorSettings& settings, IfcParse::IfcFile* file)
+		Iterator(const IteratorSettings& settings, IfcParse::IfcFile* file, const char* const kernel_name=0)
 			: settings(settings)
 			, ifc_file(file)
 			, owns_ifc_file(false)
+			, kernel_name_(kernel_name)
 		{
 			_initialize();
 		}
-		Iterator(const IteratorSettings& settings, const std::string& filename)
+		Iterator(const IteratorSettings& settings, const std::string& filename, const char* const kernel_name = 0)
 			: settings(settings)
 			, ifc_file(new IfcParse::IfcFile)
 			, owns_ifc_file(true)
+			, kernel_name_(kernel_name)
 		{
 			ifc_file->Init(filename);
 			_initialize();
 		}
-		Iterator(const IteratorSettings& settings, void* data, int length)
+		Iterator(const IteratorSettings& settings, void* data, int length, const char* const kernel_name = 0)
 			: settings(settings)
 			, ifc_file(new IfcParse::IfcFile)
 			, owns_ifc_file(true)
+			, kernel_name_(kernel_name)
 		{
 			ifc_file->Init(data, length);
 			_initialize();
 		}
-		Iterator(const IteratorSettings& settings, std::istream& filestream, int length)
+		Iterator(const IteratorSettings& settings, std::istream& filestream, int length, const char* const kernel_name = 0)
 			: settings(settings)
 			, ifc_file(new IfcParse::IfcFile)
 			, owns_ifc_file(true)
+			, kernel_name_(kernel_name)
 		{
 			ifc_file->Init(filestream, length);
 			_initialize();

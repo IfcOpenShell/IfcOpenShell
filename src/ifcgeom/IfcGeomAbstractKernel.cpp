@@ -2,6 +2,7 @@
 
 #include "IfcGeom.h"
 #include "kernels/opencascade/OpenCascadeKernel.h"
+#include "kernels/cgal/CgalKernel.h"
 
 void IfcGeom::AbstractKernel::setValue(GeomValue var, double value) {
 	switch (var) {
@@ -241,7 +242,7 @@ IfcGeom::AbstractKernel* IfcGeom::AbstractKernel::kernel_by_name(const std::stri
 	if (name == "opencascade") {
 		return new OpenCascadeKernel();
 	} else if (name == "cgal") {
-		throw std::runtime_error("Not implemented");
+		return new CgalKernel();
 	} else {
 		throw std::runtime_error("No kernel named " + name);
 	}

@@ -129,6 +129,7 @@ int main(int argc, char** argv) {
 
     std::vector<std::string> entity_vector, names;
     double deflection_tolerance;
+	std::string kernel;
     boost::program_options::options_description geom_options("Geometry options");
 	geom_options.add_options()
 		("plan",
@@ -143,7 +144,7 @@ int main(int argc, char** argv) {
 			"vector will only contain unique xyz-triplets. This results in a "
 			"manifold mesh which is useful for modelling applications, but might "
 			"result in unwanted shading artefacts in rendering applications.")
-		("use-world-coords", 
+		("use-world-coords",
 			"Specifies whether to apply the local placements of building elements "
 			"directly to the coordinates of the representation mesh rather than "
 			"to represent the local placement in the 4x3 matrix, which will in that "
@@ -152,7 +153,7 @@ int main(int argc, char** argv) {
 			"Specifies whether to convert back geometrical output back to the "
 			"unit of measure in which it is defined in the IFC file. Default is "
 			"to use meters.")
-		("sew-shells", 
+		("sew-shells",
 			"Specifies whether to sew the faces of IfcConnectedFaceSets together. "
 			"This is a potentially time consuming operation, but guarantees a "
 			"consistent orientation of surface normals, even if the faces are not "
@@ -162,45 +163,46 @@ int main(int argc, char** argv) {
 		// arguments where not introduced yet and a work-around was implemented to
 		// subtract multiple openings as a single compound. This hack is obsolete
 		// for newer versions of Open CASCADE.
-		("merge-boolean-operands", 
+		("merge-boolean-operands",
 			"Specifies whether to merge all IfcOpeningElement operands into a single "
 			"operand before applying the subtraction operation. This may "
 			"introduce a performance improvement at the risk of failing, in "
 			"which case the subtraction is applied one-by-one.")
 #endif
-		("disable-opening-subtractions", 
+		("disable-opening-subtractions",
 			"Specifies whether to disable the boolean subtraction of "
 			"IfcOpeningElement Representations from their RelatingElements.")
-		("enable-layerset-slicing", 
+		("enable-layerset-slicing",
 			"Specifies whether to enable the slicing of products according "
 			"to their associated IfcMaterialLayerSet.")
-		("include", 
-            "Specifies that the entities and/or names listed after --entities and/or --names are to be included")
-		("exclude", 
-            "Specifies that the entities and/or names listed after --entities and/or --names are to be excluded")
+		("include",
+			"Specifies that the entities and/or names listed after --entities and/or --names are to be included")
+		("exclude",
+			"Specifies that the entities and/or names listed after --entities and/or --names are to be excluded")
 		("entities", boost::program_options::value< std::vector<std::string> >(&entity_vector)->multitoken(),
 			"A list of entities that should be included in or excluded from the "
 			"geometrical output, depending on whether --exclude or --include is specified. "
-            "Defaults to IfcOpeningElement and IfcSpace to be excluded. SVG output defaults "
-            "to IfcSpace to be included."
-            "The names are handled case-insensitively. Cannot be placed right before input file argument.")
-        ("names", boost::program_options::value< std::vector<std::string> >(&names)->multitoken(),
-            "A list of names or wildcard patterns that should be included in or excluded from the "
-            "geometrical output, depending on whether --exclude or --include is specified. "
-            "The names are handled case-sensitively. Cannot be placed right before input file argument.")
-        ("no-normals",
-            "Disables computation of normals. Saves time and file size and is useful "
-            "in instances where you're going to recompute normals for the exported "
-            "model in other modelling application in any case.")
-        ("deflection-tolerance", boost::program_options::value<double>(&deflection_tolerance),
-            "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
-        ("generate-uvs",
-            "Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
-            "Not guaranteed to work properly if used with --weld-vertices.")
-        ("traverse",
-            "Applies --include or --exclude also to the decomposition and/or containment (IsDecomposedBy, "
-            "HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. "
-            "--include --traverse --names \"Level 1\" includes entity with name \"Level 1\" and all of its children.");
+			"Defaults to IfcOpeningElement and IfcSpace to be excluded. SVG output defaults "
+			"to IfcSpace to be included."
+			"The names are handled case-insensitively. Cannot be placed right before input file argument.")
+		("names", boost::program_options::value< std::vector<std::string> >(&names)->multitoken(),
+			"A list of names or wildcard patterns that should be included in or excluded from the "
+			"geometrical output, depending on whether --exclude or --include is specified. "
+			"The names are handled case-sensitively. Cannot be placed right before input file argument.")
+		("no-normals",
+			"Disables computation of normals. Saves time and file size and is useful "
+			"in instances where you're going to recompute normals for the exported "
+			"model in other modelling application in any case.")
+		("deflection-tolerance", boost::program_options::value<double>(&deflection_tolerance),
+			"Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
+		("generate-uvs",
+			"Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
+			"Not guaranteed to work properly if used with --weld-vertices.")
+		("traverse",
+			"Applies --include or --exclude also to the decomposition and/or containment (IsDecomposedBy, "
+			"HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. "
+			"--include --traverse --names \"Level 1\" includes entity with name \"Level 1\" and all of its children.")
+		("kernel", "Geometry kernel to use ('opencascade' or 'cgal'). Defaults to 'cgal'.");
 
     std::string bounds;
     boost::program_options::options_description serializer_options("Serialization options");
@@ -283,6 +285,11 @@ int main(int argc, char** argv) {
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
     const bool traverse = vmap.count("traverse") != 0;
     const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
+
+	if (vmap.count("kernel") == 0) {
+		std::cerr << "Using default CGAL based kernel" << std::endl;
+		kernel = "cgal";
+	}
 
 	int bounding_width = -1, bounding_height = -1;
 	if (vmap.count("bounds") == 1) {
@@ -434,7 +441,7 @@ int main(int argc, char** argv) {
         settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 	}
 
-    IfcGeom::Iterator<real_t> context_iterator(settings, input_filename);
+    IfcGeom::Iterator<real_t> context_iterator(settings, input_filename, kernel.c_str());
 
 	try {
 		if (include_entities) {
