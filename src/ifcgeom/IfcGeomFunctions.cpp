@@ -173,7 +173,7 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 	try {
 		builder.Perform();
 		shape = builder.SewedShape();
-		valid_shell = BRepCheck_Analyzer(shape).IsValid() != 0;
+		valid_shell = BRepCheck_Analyzer(shape).IsValid() != 0 && count(shape, TopAbs_SHELL) > 0;
 	} catch (...) {}
 
 	if (valid_shell) {
