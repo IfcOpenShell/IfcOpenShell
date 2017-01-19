@@ -52,7 +52,7 @@ PROJECT_NAME="IfcOpenShell"
 OCE_VERSION="0.16"
 PYTHON_VERSIONS=["2.7.10", "3.2.6", "3.3.6", "3.4.4", "3.5.1"]
 BOOST_VERSION="1.59.0"
-PCRE_VERSION="8.38"
+PCRE_VERSION="8.39"
 LIBXML_VERSION="2.9.3"
 CMAKE_VERSION="3.4.1"
 ICU_VERSION="56.1"
@@ -414,7 +414,7 @@ for FL in ["C", "CXX"]:
 #    declare ${FL}FLAGS_MINIMAL="`$DEPS_DIR/install/cmake-$CMAKE_VERSION/bin/cmake . 2>&1 >/dev/null` ${!FLM}"
 shutil.rmtree(CMAKE_FLAG_EXTRACT_DIR)
 
-build_dependency(name="pcre-%s" % (PCRE_VERSION,), mode="autoconf", build_tool_args=["--disable-shared"], download_url="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/", download_name="pcre-%s.tar.bz2" % (PCRE_VERSION,))
+build_dependency(name="pcre-%s" % (PCRE_VERSION,), mode="autoconf", build_tool_args=["--disable-shared"], download_url="https://downloads.sourceforge.net/project/pcre/pcre/%s/" % (PCRE_VERSION,), download_name="pcre-%s.tar.bz2" % (PCRE_VERSION,))
 
 # An issue exists with swig-1.3 and python >= 3.2
 # Therefore, build a recent copy from source
