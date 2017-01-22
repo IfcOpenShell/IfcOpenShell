@@ -655,6 +655,13 @@ namespace IfcGeom {
             return ret;
         }
 
+		/// Gets the native (Open Cascade) representation of the current geometrical entity.
+		BRepElement<P>* get_native()
+		{
+			// TODO: Test settings and throw
+			return current_shape_model;
+		}
+
 		const Element<P>* getObject(int id) {
 
 			gp_Trsf trsf;

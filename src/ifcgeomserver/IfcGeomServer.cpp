@@ -44,6 +44,10 @@
 #include <vld.h>
 #endif
 
+#include <GProp_GProps.hxx>
+#include <BRepGProp.hxx>
+#include <Geom_Plane.hxx>
+
 using namespace boost;
 
 template <typename T>
@@ -69,6 +73,17 @@ std::string sread(std::istream& s) {
 	std::string str(buf);
 	delete[] buf;
 	return str;
+}
+
+template <typename T>
+std::string format_json(const T& t) {
+	return boost::lexical_cast<std::string>(t);
+}
+
+template <>
+std::string format_json(const std::string& s) {
+	// NB: No escaping whatsoever. Only use alphanumeric values.
+	return "\"" + s + "\"";
 }
 
 static std::streambuf *stdout_orig, *stdout_redir;
@@ -199,10 +214,16 @@ public:
 	WriteLog(const std::string& str) : Command(LOG), str(str) {};
 };
 
+class EntityExtension {
+public:
+	virtual void write_contents(std::ostream& s) = 0;
+};
+
 class Entity : public Command {
 private:
 	const IfcGeom::TriangulationElement<float>* geom;
 	bool append_line_data;
+	EntityExtension* eext_;
 protected:
 	void read_content(std::istream& /*s*/) {}
 	void write_content(std::ostream& s) {
@@ -276,9 +297,12 @@ protected:
 			material_indices.push_back(*it);
 		} 
 		swrite(s, std::string((char*) material_indices.data(), material_indices.size() * sizeof(int32_t))); }
+		if (eext_) {
+			eext_->write_contents(s);
+		}
 	}
 public:
-	Entity(const IfcGeom::TriangulationElement<float>* geom) : Command(ENTITY), geom(geom), append_line_data(false) {};
+	Entity(const IfcGeom::TriangulationElement<float>* geom, EntityExtension* eext = 0) : Command(ENTITY), geom(geom), append_line_data(false), eext_(eext) {};
 };
 
 class Next : public Command {
@@ -329,6 +353,102 @@ public:
 	Setting(uint32_t k = 0, uint32_t v = 0) : Command(DEFLECTION), id_(k), value_(v) {};
 	uint32_t id() const { return id_; }
 	uint32_t value() const { return value_; }
+};
+
+static const std::string TOTAL_SURFACE_AREA = "TOTAL_SURFACE_AREA";
+static const std::string TOTAL_SHAPE_VOLUME = "TOTAL_SHAPE_VOLUME";
+static const std::string WALKABLE_SURFACE_AREA = "WALKABLE_SURFACE_AREA";
+static const double MAX_WALKABLE_SURFACE_ANGLE_DEGREES = 15.;
+
+class QuantityWriter : public EntityExtension {
+private:
+	const IfcGeom::BRepElement<float>* elem_;
+public:
+	QuantityWriter(const IfcGeom::BRepElement<float>* elem) :
+		elem_(elem)
+	{}
+	void write_contents(std::ostream& s) {
+		
+		double total_surface_area = 0.;
+		double total_shape_volume = 0.;
+		double walkable_surface_area = 0.;
+
+		for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = elem_->geometry().begin(); it != elem_->geometry().end(); ++it) {
+			gp_GTrsf gtrsf = it->Placement();
+			const gp_Trsf& o_trsf = elem_->transformation().data();
+			gtrsf.PreMultiply(o_trsf);
+			const TopoDS_Shape& shp = it->Shape();
+			const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(shp, gtrsf);
+			
+			{
+				GProp_GProps prop_area;
+				BRepGProp::SurfaceProperties(moved_shape, prop_area);
+				total_surface_area += prop_area.Mass();
+			}
+
+			{
+				GProp_GProps prop_volume;
+				BRepGProp::VolumeProperties(moved_shape, prop_volume);
+				total_shape_volume += prop_volume.Mass();
+			}
+
+			if (elem_->type() == "IfcSpace") {
+				TopExp_Explorer exp(moved_shape, TopAbs_FACE);
+				for (; exp.More(); exp.Next()) {
+					const TopoDS_Face& face = TopoDS::Face(exp.Current());
+					Handle(Geom_Surface) surf = BRep_Tool::Surface(face);
+
+					// Assume we can only walk on planar surfaces
+					if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+						continue;
+					}
+
+					BRepGProp_Face prop(face);
+					double u0, u1, v0, v1;
+					BRepTools::UVBounds(face, u0, u1, v0, v1);
+					gp_Pnt p;
+					gp_Vec normal_direction;
+					prop.Normal((u0 + u1) / 2., (v0 + v1) / 2., p, normal_direction);
+
+					gp_Vec normal(0., 0., 0.);
+					if (normal_direction.Magnitude() > ALMOST_ZERO) {
+						normal = gp_Dir(normal_direction.XYZ());
+					}
+
+					if (normal.Angle(gp::DZ()) < (MAX_WALKABLE_SURFACE_ANGLE_DEGREES * M_PI / 180.0)) {
+						GProp_GProps prop_face;
+						BRepGProp::SurfaceProperties(face, prop_face);
+						walkable_surface_area += prop_face.Mass();
+					}
+				}
+			}
+		}
+		
+		// TODO: Manual JSON formatting is always a bad idea
+		std::ostringstream ss;
+		ss.write("{", 1);
+		ss << format_json(TOTAL_SURFACE_AREA);
+		ss.write(":", 1);
+		ss << format_json(total_surface_area);
+		ss.write(",", 1);
+		ss << format_json(TOTAL_SHAPE_VOLUME);
+		ss.write(":", 1);
+		ss << format_json(total_shape_volume);
+		if (elem_->type() == "IfcSpace") {
+			ss.write(",", 1);
+			ss << format_json(WALKABLE_SURFACE_AREA);
+			ss.write(":", 1);
+			ss << format_json(walkable_surface_area);
+		}
+		ss.write("}", 1);
+
+		// We do a 4-byte manual alignment
+		std::string payload = ss.str();
+		s << payload;
+		if (payload.size() % 4) {
+			s << std::string(4 - (payload.size() % 4), ' ');
+		}
+	}
 };
 
 int main () {
@@ -390,7 +510,8 @@ int main () {
 				break;
 			}
 			const IfcGeom::TriangulationElement<float>* geom = static_cast<const IfcGeom::TriangulationElement<float>*>(iterator->get());
-			Entity(geom).write(std::cout);
+			QuantityWriter eext(iterator->get_native());
+			Entity(geom, &eext).write(std::cout);
 			continue;
 		}
 		case NEXT: {
