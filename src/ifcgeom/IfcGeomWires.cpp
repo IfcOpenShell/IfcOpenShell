@@ -203,7 +203,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	double parameterFactor = isConic ? getValue(GV_PLANEANGLE_UNIT) : getValue(GV_LENGTH_UNIT);
 	Handle(Geom_Curve) curve;
 	if ( !convert_curve(basis_curve,curve) ) return false;
-	bool trim_cartesian = l->MasterRepresentation() == IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN;
+	bool trim_cartesian = l->MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
 	IfcEntityList::ptr trims1 = l->Trim1();
 	IfcEntityList::ptr trims2 = l->Trim2();
 	unsigned sense_agreement = l->SenseAgreement() ? 0 : 1;
