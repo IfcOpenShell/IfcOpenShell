@@ -32,6 +32,7 @@
 
 #include <BRepAdaptor_Curve.hxx>
 #include <GCPnts_QuasiUniformDeflection.hxx>
+#include <Geom_SphericalSurface.hxx>
 
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcGeomMaterial.h"
@@ -204,6 +205,18 @@ namespace IfcGeom {
 									gp_Vec normal(0., 0., 0.);
 									if (normal_direction.Magnitude() > ALMOST_ZERO) {
 										normal = gp_Dir(normal_direction.XYZ() * rotation_matrix);
+									} else {
+										Handle_Geom_Surface surf = BRep_Tool::Surface(face);
+										// Special case the normal at the poles of a spherical surface
+										if (surf->DynamicType() == STANDARD_TYPE(Geom_SphericalSurface)) {
+											if (ALMOST_THE_SAME(fabs(uv.Y()), M_PI / 2.)) {
+												const bool is_top = uv.Y() > 0;
+												const bool is_forward = face.Orientation() == TopAbs_FORWARD;
+												const double z = (is_top == is_forward) ? 1. : -1.;
+												normal = gp_Dir(gp_XYZ(0, 0, z) * rotation_matrix);
+											}
+										}
+										// TODO: Do the same for conical surfaces, but they are rare in IFC.
 									}
 									_normals.push_back(static_cast<P>(normal.X()));
 									_normals.push_back(static_cast<P>(normal.Y()));
