@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -37,12 +37,19 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 #include "../../../ifcgeom/IfcGeom.h"
 
-typedef void* cgal_shape_t;
-typedef void* cgal_face_t;
-typedef void* cgal_wire_t;
-typedef void* cgal_curve_t;
-typedef void* cgal_placement_t;
-typedef void* cgal_point_t;
+#undef Handle
+
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Nef_polyhedron_3.h>
+
+typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
+
+typedef CGAL::Nef_polyhedron_3<Kernel> *cgal_shape_t;
+typedef std::vector<Kernel::Point_3> *cgal_face_t;
+typedef std::vector<Kernel::Point_3> *cgal_wire_t;
+typedef std::vector<Kernel::Point_3> *cgal_curve_t;
+typedef Kernel::Aff_transformation_3 *cgal_placement_t;
+typedef Kernel::Point_3 *cgal_point_t;
 
 namespace IfcGeom {
 

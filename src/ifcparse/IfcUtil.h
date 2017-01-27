@@ -38,7 +38,7 @@
 #include <boost/dynamic_bitset.hpp>
 #include <boost/foreach.hpp>
 
-#define foreach BOOST_FOREACH
+//#define foreach BOOST_FOREACH
 #define rforeach BOOST_REVERSE_FOREACH
 
 class Argument;
