@@ -9,3 +9,4 @@
 __pycache__
 # Visual Studio Code files
 .vscode
+.DS_Store
