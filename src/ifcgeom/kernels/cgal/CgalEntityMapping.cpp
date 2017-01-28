@@ -81,6 +81,80 @@ bool IfcGeom::CgalKernel::convert_shape(const IfcBaseClass* l, cgal_shape_t& r) 
 	return success;
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, ConversionResults& shape) {
+  cgal_shape_t s;
+  const SurfaceStyle* collective_style = get_style(l);
+  if (convert_shape(l->Outer(),s) ) {
+//    const SurfaceStyle* indiv_style = get_style(l->Outer());
+//    
+//    IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
+//    if (l->is(IfcSchema::Type::IfcFacetedBrepWithVoids)) {
+//      voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
+//    }
+//#ifdef USE_IFC4
+//    if (l->is(IfcSchema::Type::IfcAdvancedBrepWithVoids)) {
+//      voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
+//    }
+//#endif
+//    
+//    for (IfcSchema::IfcClosedShell::list::it it = voids->begin(); it != voids->end(); ++it) {
+//      TopoDS_Shape s2;
+//      /// @todo No extensive shapefixing since shells should be disjoint.
+//      /// @todo Awaiting generalized boolean ops module with appropriate checking
+//      if (convert_shape(l->Outer(), s2)) {
+//        s = BRepAlgoAPI_Cut(s, s2).Shape();
+//      }
+//    }
+//    
+//    shape.push_back(ConversionResult(new OpenCascadeShape(s), indiv_style ? indiv_style : collective_style));
+//    return true;
+  }
+  return false;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_shape_t& shape) {
+  IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
+
+//  TopTools_ListOfShape face_list;
+  for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
+    bool success = false;
+    cgal_face_t face;
+    
+    try {
+      success = convert_face(*it, face);
+    } catch (...) {}
+
+    if (!success) {
+      Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", (*it)->entity);
+      continue;
+    }
+
+//    if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
+//      face_list.Append(face);
+//    } else {
+//      Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it)->entity);
+//    }
+  }
+//
+//  if (face_list.Extent() == 0) {
+//    return false;
+//  }
+//  
+//  if (face_list.Extent() > getValue(GV_MAX_FACES_TO_SEW) || !create_solid_from_faces(face_list, shape)) {
+//    TopoDS_Compound compound;
+//    BRep_Builder builder;
+//    builder.MakeCompound(compound);
+//    
+//    TopTools_ListIteratorOfListOfShape face_iterator;
+//    for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+//      builder.Add(compound, face_iterator.Value());
+//    }
+//    shape = compound;
+//  }
+  
+  return true;
+}
+
 bool IfcGeom::CgalKernel::convert_wire(const IfcBaseClass* l, cgal_wire_t& r) {
 #include "CgalEntityMappingWire.h"
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);

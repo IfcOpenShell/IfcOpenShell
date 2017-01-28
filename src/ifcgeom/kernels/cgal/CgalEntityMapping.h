@@ -31,5 +31,12 @@
 SHAPES(IfcRepresentation);
 
 SHAPE(IfcExtrudedAreaSolid);
+// IfcFacetedBrep included
+// IfcAdvancedBrep included
+// IfcFacetedBrepWithVoids included
+// IfcAdvancedBrepWithVoids included
+SHAPES(IfcManifoldSolidBrep);
+
+SHAPE(IfcConnectedFaceSet);
 
 CLASS(IfcCartesianPoint,cgal_point_t);
