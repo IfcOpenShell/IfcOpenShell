@@ -29,14 +29,10 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid*, cgal_s
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianPoint* l, cgal_point_t& point) {
   std::vector<double> xyz = l->Coordinates();
-//  for (const double &coordinate: xyz) std::cout << coordinate << " ";
-//  std::cout << std::endl;
   if (xyz.size() == 3) {
     point = new Kernel::Point_3(xyz[0], xyz[1], xyz[2]);
-//    std::cout << *point << std::endl;
     return true;
   } else {
-    point = new Kernel::Point_3();
-    return false;
+    throw std::runtime_error("Point without 3 coordinates");
   }
 }

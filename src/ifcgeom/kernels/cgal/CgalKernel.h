@@ -44,12 +44,18 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 
-typedef CGAL::Polyhedron_3<Kernel> *cgal_shape_t;
-typedef std::vector<Kernel::Point_3> *cgal_face_t;
-typedef std::vector<Kernel::Point_3> *cgal_wire_t;
-typedef std::vector<Kernel::Point_3> *cgal_curve_t;
 typedef Kernel::Aff_transformation_3 *cgal_placement_t;
 typedef Kernel::Point_3 *cgal_point_t;
+typedef std::vector<Kernel::Point_3> *cgal_curve_t;
+typedef std::vector<Kernel::Point_3> *cgal_wire_t;
+
+struct CgalFace {
+  cgal_wire_t outer;
+  std::vector<cgal_wire_t> inner;
+};
+
+typedef CgalFace *cgal_face_t;
+typedef CGAL::Polyhedron_3<Kernel> *cgal_shape_t;
 
 namespace IfcGeom {
 
