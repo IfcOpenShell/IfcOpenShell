@@ -26,3 +26,15 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRepresentation* l, Convers
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid*, cgal_shape_t&) {
 	throw std::runtime_error("Not implemented IfcExtrudedAreaSolid");
 }
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianPoint* l, cgal_point_t& point) {
+//  IN_CACHE(IfcCartesianPoint,l,gp_Pnt,point)
+//  std::vector<double> xyz = l->Coordinates();
+//  point = gp_Pnt(
+//                 xyz.size()     ? (xyz[0]*getValue(GV_LENGTH_UNIT)) : 0.0f,
+//                 xyz.size() > 1 ? (xyz[1]*getValue(GV_LENGTH_UNIT)) : 0.0f,
+//                 xyz.size() > 2 ? (xyz[2]*getValue(GV_LENGTH_UNIT)) : 0.0f
+//                 );
+//  CACHE(IfcCartesianPoint,l,point)
+  return true;
+}

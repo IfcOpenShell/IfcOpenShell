@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -165,6 +165,268 @@ bool IfcGeom::CgalKernel::convert_face(const IfcBaseClass* l, cgal_face_t& r) {
 #include "CgalEntityMappingFace.h"
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
 	return false;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face) {
+  IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
+  
+//  Handle(Geom_Surface) face_surface;
+//  const bool is_face_surface = l->is(IfcSchema::Type::IfcFaceSurface);
+//  
+//  if (is_face_surface) {
+//    IfcSchema::IfcFaceSurface* fs = (IfcSchema::IfcFaceSurface*) l;
+//    fs->FaceSurface();
+//    // FIXME: Surfaces are interpreted as a TopoDS_Shape
+//    TopoDS_Shape surface_shape;
+//    if (!convert_shape(fs->FaceSurface(), surface_shape)) return false;
+//    
+//    // FIXME: Assert this obtaines the only face
+//    TopExp_Explorer exp(surface_shape, TopAbs_FACE);
+//    if (!exp.More()) return false;
+//    
+//    TopoDS_Face surface = TopoDS::Face(exp.Current());
+//    face_surface = BRep_Tool::Surface(surface);
+//  }
+//  
+//  const int num_bounds = bounds->size();
+//  int num_outer_bounds = 0;
+//  
+//  for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
+//    IfcSchema::IfcFaceBound* bound = *it;
+//    if (bound->is(IfcSchema::Type::IfcFaceOuterBound)) num_outer_bounds ++;
+//  }
+//  
+//  // The number of outer bounds should be one according to the schema. Also Open Cascade
+//  // expects this, but it is not strictly checked. Regardless, if the number is greater,
+//  // the face will still be processed as long as there are no holes. A compound of faces
+//  // is returned in that case.
+//  if (num_bounds > 1 && num_outer_bounds > 1 && num_bounds != num_outer_bounds) {
+//    Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", l->entity);
+//    return false;
+//  }
+//  
+//  TopoDS_Compound compound;
+//  BRep_Builder builder;
+//  if (num_outer_bounds > 1) {
+//    builder.MakeCompound(compound);
+//  }
+//  
+//  TopTools_DataMapOfShapeInteger wire_senses;
+//  
+//  // The builder is initialized on the heap because of the various different moments
+//  // of initialization depending on the configuration of surfaces and boundaries.
+//  BRepBuilderAPI_MakeFace* mf = 0;
+//  
+//  bool success = false;
+//  int processed = 0;
+//  
+//  for (int process_interior = 0; process_interior <= 1; ++process_interior) {
+    for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
+      IfcSchema::IfcFaceBound* bound = *it;
+      IfcSchema::IfcLoop* loop = bound->Bound();
+
+//      bool same_sense = bound->Orientation();
+//      const bool is_interior =
+//      !bound->is(IfcSchema::Type::IfcFaceOuterBound) &&
+//      (num_bounds > 1) &&
+//      (num_outer_bounds < num_bounds);
+//      
+//      // The exterior face boundary is processed first
+//      if (is_interior == !process_interior) continue;
+//      
+      cgal_wire_t wire;
+      if (!convert_wire(loop, wire)) {
+//        Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop->entity);
+//        delete mf;
+//        return false;
+      }
+//
+//      if (!same_sense) {
+//        wire.Reverse();
+//      }
+//      
+//      wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
+//      
+//      bool flattened_wire = false;
+//      
+//      if (!mf) {
+//      process_wire:
+//        
+//        if (face_surface.IsNull()) {
+//          mf = new BRepBuilderAPI_MakeFace(wire);
+//        } else {
+//          /// @todo check necessity of false here
+//          mf = new BRepBuilderAPI_MakeFace(face_surface, wire, false);
+//        }
+//        
+//        /* BRepBuilderAPI_FaceError er = mf->Error();
+//         if (er == BRepBuilderAPI_NotPlanar) {
+//         ShapeFix_ShapeTolerance FTol;
+//         FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
+//         delete mf;
+//         mf = new BRepBuilderAPI_MakeFace(wire);
+//         } */
+//        
+//        if (mf->IsDone()) {
+//          TopoDS_Face outer_face_bound = mf->Face();
+//          
+//          // In case of (non-planar) face surface, p-curves need to be computed.
+//          // For planar faces, Open Cascade generates p-curves on the fly.
+//          if (!face_surface.IsNull()) {
+//            TopExp_Explorer exp(outer_face_bound, TopAbs_EDGE);
+//            for (; exp.More(); exp.Next()) {
+//              const TopoDS_Edge& edge = TopoDS::Edge(exp.Current());
+//              ShapeFix_Edge fix_edge;
+//              fix_edge.FixAddPCurve(edge, outer_face_bound, false, getValue(GV_PRECISION));
+//            }
+//          }
+//          
+//          if (BRepCheck_Face(outer_face_bound).OrientationOfWires() == BRepCheck_BadOrientationOfSubshape) {
+//            wire.Reverse();
+//            same_sense = !same_sense;
+//            delete mf;
+//            if (face_surface.IsNull()) {
+//              mf = new BRepBuilderAPI_MakeFace(wire);
+//            } else {
+//              mf = new BRepBuilderAPI_MakeFace(face_surface, wire);
+//            }
+//            ShapeFix_Face fix(mf->Face());
+//            fix.FixOrientation();
+//            outer_face_bound = fix.Face();
+//          }
+//          
+//          if (num_outer_bounds > 1) {
+//            builder.Add(compound, outer_face_bound);
+//            delete mf; mf = 0;
+//          } else if (num_bounds > 1) {
+//            // Reinitialize the builder to the outer face
+//            // bound in order to add holes more robustly.
+//            delete mf;
+//            // TODO: What about the face_surface?
+//            mf = new BRepBuilderAPI_MakeFace(outer_face_bound);
+//          } else {
+//            face = outer_face_bound;
+//            success = true;
+//          }
+//        } else {
+//          const bool non_planar = mf->Error() == BRepBuilderAPI_NotPlanar;
+//          delete mf;
+//          if (!non_planar || flattened_wire || !flatten_wire(wire)) {
+//            Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary", bound->entity);
+//            return false;
+//          } else {
+//            Logger::Message(Logger::LOG_ERROR, "Flattening face boundary", bound->entity);
+//            flattened_wire = true;
+//            goto process_wire;
+//          }
+//        }
+//        
+//      } else {
+//        mf->Add(wire);
+//      }
+//      processed ++;
+    }
+//  }
+//  
+//  if (!success) {
+//    success = processed == num_bounds;
+//    if (success) {
+//      if (num_outer_bounds > 1) {
+//        face = compound;
+//      } else {
+//        success = success && mf->IsDone();
+//        if (success) {
+//          face = mf->Face();
+//        }
+//        
+//        ShapeFix_Face sfs(TopoDS::Face(face));
+//        TopTools_DataMapOfShapeListOfShape wire_map;
+//        sfs.FixOrientation(wire_map);
+//        
+//        TopoDS_Iterator jt(face, false);
+//        for (; jt.More(); jt.Next()) {
+//          const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
+//          if (wire_map.IsBound(w)) {
+//            const TopTools_ListOfShape& shapes = wire_map.Find(w);
+//            TopTools_ListIteratorOfListOfShape it(shapes);
+//            for (; it.More(); it.Next()) {
+//              // Apparently the wire got reversed, so register it with opposite orientation in the map
+//              wire_senses.Bind(it.Value(), wire_senses.Find(w) == TopAbs_FORWARD ? TopAbs_REVERSED : TopAbs_FORWARD);
+//            }
+//          }
+//        }
+//        
+//        face = TopoDS::Face(sfs.Face());				
+//      }
+//    }
+//  }
+//  
+//  if (success) {
+//    // If the wires are reversed the face needs to be reversed as well in order
+//    // to maintain the counter-clock-wise ordering of the bounding wire's vertices.
+//    if (num_bounds == 1 || true) {
+//      bool all_reversed = true;
+//      TopoDS_Iterator jt(face, false);
+//      for (; jt.More(); jt.Next()) {
+//        const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
+//        if (!wire_senses.IsBound(w.Oriented(TopAbs_FORWARD)) || (w.Orientation() == wire_senses.Find(w.Oriented(TopAbs_FORWARD)))) {
+//          all_reversed = false;
+//        }
+//      }
+//      
+//      if (all_reversed) {
+//        face.Reverse();
+//      }
+//    }
+//    
+//    ShapeFix_ShapeTolerance FTol;
+//    FTol.SetTolerance(face, getValue(GV_PRECISION), TopAbs_FACE);
+//  }
+//  
+//  delete mf;
+  return true;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& result) {
+  IfcSchema::IfcCartesianPoint::list::ptr points = l->Polygon();
+  
+//  // Parse and store the points in a sequence
+//  TColgp_SequenceOfPnt polygon;
+  for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
+    cgal_point_t pnt;
+    IfcGeom::CgalKernel::convert(*it, pnt);
+//    polygon.Append(pnt);
+  }
+//
+//  // A loop should consist of at least three vertices
+//  int original_count = polygon.Length();
+//  if (original_count < 3) {
+//    Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
+//    return false;
+//  }
+//  
+//  // Remove points that are too close to one another
+//  remove_duplicate_points_from_loop(polygon, true);
+//  
+//  int count = polygon.Length();
+//  if (original_count - count != 0) {
+//    std::stringstream ss; ss << (original_count - count) << " edges removed for:";
+//    Logger::Message(Logger::LOG_WARNING, ss.str(), l->entity);
+//  }
+//  
+//  if (count < 3) {
+//    Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
+//    return false;
+//  }
+//  
+//  BRepBuilderAPI_MakePolygon w;
+//  for (int i = 1; i <= polygon.Length(); ++i) {
+//    w.Add(polygon.Value(i));
+//  }
+//  w.Close();
+//  
+//  result = w.Wire();	
+  return true;
 }
 
 bool IfcGeom::CgalKernel::convert_curve(const IfcBaseClass* l, cgal_curve_t& r) {
