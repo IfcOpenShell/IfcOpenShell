@@ -390,14 +390,14 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& result) {
   IfcSchema::IfcCartesianPoint::list::ptr points = l->Polygon();
   
-//  // Parse and store the points in a sequence
-//  TColgp_SequenceOfPnt polygon;
+  // Parse and store the points in a sequence
+  cgal_wire_t polygon;
   for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
     cgal_point_t pnt;
     IfcGeom::CgalKernel::convert(*it, pnt);
-//    polygon.Append(pnt);
+    polygon->push_back(*pnt);
   }
-//
+
 //  // A loop should consist of at least three vertices
 //  int original_count = polygon.Length();
 //  if (original_count < 3) {
@@ -425,7 +425,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& 
 //  }
 //  w.Close();
 //  
-//  result = w.Wire();	
+  result = polygon;
   return true;
 }
 
