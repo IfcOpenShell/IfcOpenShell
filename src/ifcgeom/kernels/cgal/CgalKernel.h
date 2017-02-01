@@ -40,11 +40,11 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #undef Handle
 
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
-#include <CGAL/Nef_polyhedron_3.h>
+#include <CGAL/Polyhedron_3.h>
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 
-typedef CGAL::Nef_polyhedron_3<Kernel> *cgal_shape_t;
+typedef CGAL::Polyhedron_3<Kernel> *cgal_shape_t;
 typedef std::vector<Kernel::Point_3> *cgal_face_t;
 typedef std::vector<Kernel::Point_3> *cgal_wire_t;
 typedef std::vector<Kernel::Point_3> *cgal_curve_t;

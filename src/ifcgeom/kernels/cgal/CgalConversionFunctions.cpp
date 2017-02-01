@@ -33,6 +33,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianPoint* l, cgal_po
 //  std::cout << std::endl;
   if (xyz.size() == 3) {
     point = new Kernel::Point_3(xyz[0], xyz[1], xyz[2]);
+//    std::cout << *point << std::endl;
     return true;
   } else {
     point = new Kernel::Point_3();

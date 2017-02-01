@@ -236,15 +236,15 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face
 //      
       cgal_wire_t wire;
       if (!convert_wire(loop, wire)) {
-//        Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop->entity);
+        Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop->entity);
 //        delete mf;
-//        return false;
+        return false;
       }
-//
+
 //      if (!same_sense) {
 //        wire.Reverse();
 //      }
-//      
+//
 //      wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
 //      
 //      bool flattened_wire = false;
@@ -258,14 +258,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face
 //          /// @todo check necessity of false here
 //          mf = new BRepBuilderAPI_MakeFace(face_surface, wire, false);
 //        }
-//        
-//        /* BRepBuilderAPI_FaceError er = mf->Error();
-//         if (er == BRepBuilderAPI_NotPlanar) {
-//         ShapeFix_ShapeTolerance FTol;
-//         FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
-//         delete mf;
-//         mf = new BRepBuilderAPI_MakeFace(wire);
-//         } */
 //        
 //        if (mf->IsDone()) {
 //          TopoDS_Face outer_face_bound = mf->Face();
@@ -391,20 +383,21 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& 
   IfcSchema::IfcCartesianPoint::list::ptr points = l->Polygon();
   
   // Parse and store the points in a sequence
-  cgal_wire_t polygon;
+  cgal_wire_t polygon = new std::vector<Kernel::Point_3>();
   for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
     cgal_point_t pnt;
     IfcGeom::CgalKernel::convert(*it, pnt);
+//    std::cout << *pnt << std::endl;
     polygon->push_back(*pnt);
   }
 
-//  // A loop should consist of at least three vertices
-//  int original_count = polygon.Length();
-//  if (original_count < 3) {
-//    Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
-//    return false;
-//  }
-//  
+  // A loop should consist of at least three vertices
+  int original_count = polygon->size();
+  if (original_count < 3) {
+    Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
+    return false;
+  }
+
 //  // Remove points that are too close to one another
 //  remove_duplicate_points_from_loop(polygon, true);
 //  
@@ -418,13 +411,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& 
 //    Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
 //    return false;
 //  }
-//  
-//  BRepBuilderAPI_MakePolygon w;
-//  for (int i = 1; i <= polygon.Length(); ++i) {
-//    w.Add(polygon.Value(i));
-//  }
-//  w.Close();
-//  
+
   result = polygon;
   return true;
 }
