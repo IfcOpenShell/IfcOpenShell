@@ -117,11 +117,10 @@ static std::stringstream log_stream;
 void write_log();
 
 /// @todo Make this a feature of IfcGeom::Iterator instead.
-/// Also add GUID filtering.
 struct geom_filter
 {
     bool include;
-    enum filter_type { ENTITIES, NAMES };
+    enum filter_type { ENTITY_TYPE, ENTITY_NAME, ENTITY_GUID, LAYER_NAME };
     filter_type type;
     std::set<std::string> values;
 };
@@ -201,7 +200,7 @@ int main(int argc, char** argv)
             "geometrical output. The name patterns are handled case-sensitively. Cannot be placed right before input file argument. "
             "Only single option supported for now.")
         ("exclude", po::value<exclusion_filter>(&exclude_filter)->multitoken(),
-            "Specifies that the 'entities' or 'names' provided are to be excluded. Defaults to IfcOpeningElement and IfcSpace "
+            "Specifies that the 'entities', 'names', or 'guids' provided are to be excluded. Defaults to IfcOpeningElement and IfcSpace "
             "to be excluded. See --include for syntax and more details.")
         ("no-normals",
             "Disables computation of normals. Saves time and file size and is useful "
@@ -245,7 +244,7 @@ int main(int argc, char** argv)
         ("center-model",
             "Centers the elements upon serialization by applying the center point of "
             "all placements as an offset. Applicable for OBJ and DAE output.")
-        ("model-offset", PO::value<std::string>(&offset_str),
+        ("model-offset", po::value<std::string>(&offset_str),
             "Applies an arbitrary offset of form 'x;y;z' to all placements. Applicable for OBJ and DAE output.")
         ("precision", po::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
             "Sets the precision to be used to format floating-point values, 15 by default. "
@@ -272,13 +271,14 @@ int main(int argc, char** argv)
         std::cerr << "[Error] Invalid usage of '" << e.get_option_name() << "': " << e.what() << "\n\n";
         print_usage();
         return EXIT_FAILURE;
+        return EXIT_FAILURE;
     } catch (const std::exception& e) {
         std::cerr << "[Error] " << e.what() << "\n\n";
         print_usage();
         return EXIT_FAILURE;
     } catch (...) { // other errors such as invalid command line syntax
         print_usage();
-        return 1;
+        return EXIT_FAILURE;
 
     po::notify(vmap);
 
@@ -295,6 +295,18 @@ int main(int argc, char** argv)
         print_usage();
         return 1;
     }
+    if (include_filter.type == geom_filter::ENTITY_GUID) {
+        guids = include_filter.values;
+    } else if (exclude_filter.type == geom_filter::ENTITY_GUID) {
+        guids = exclude_filter.values;
+    }
+
+    if (include_filter.type == geom_filter::LAYER_NAME) {
+        layers = include_filter.values;
+    } else if (exclude_filter.type == geom_filter::LAYER_NAME) {
+        layers = exclude_filter.values;
+    }
+
 	const bool verbose = vmap.count("verbose") != 0;
 	const bool weld_vertices = vmap.count("weld-vertices") != 0;
 	const bool use_world_coords = vmap.count("use-world-coords") != 0;
@@ -304,6 +316,10 @@ int main(int argc, char** argv)
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
 #endif
 	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
+    bool include_entities = include_filter.type == geom_filter::ENTITY_TYPE && !include_filter.values.empty();
+    const bool include_names = include_filter.type == geom_filter::ENTITY_NAME && !include_filter.values.empty();
+    const bool include_guids = include_filter.type == geom_filter::ENTITY_GUID && !include_filter.values.empty();
+    const bool include_layers = include_filter.type == geom_filter::LAYER_NAME && !include_filter.values.empty();
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
 	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
@@ -484,6 +500,18 @@ int main(int argc, char** argv)
         context_iterator.exclude_entity_names(names);
     }
 
+    if (include_guids) {
+        context_iterator.include_entity_guids(guids);
+    } else {
+        context_iterator.exclude_entity_guids(guids);
+    }
+
+    if (include_layers) {
+        context_iterator.include_layer_names(layers);
+    } else {
+        context_iterator.exclude_layer_names(layers);
+    }
+
 	if (!serializer->ready()) {
 		write_log();
 		return 1;
@@ -614,9 +642,13 @@ void validate(boost::any& v, const std::vector<std::string>& values, inclusion_f
     }
     std::string type = *values.begin();
     if (type == "entities") {
-        filter.type = geom_filter::ENTITIES;
+        filter.type = geom_filter::ENTITY_TYPE;
     } else if (type == "names") {
-        filter.type = geom_filter::NAMES;
+        filter.type = geom_filter::ENTITY_NAME;
+    } else if (type == "guids") {
+        filter.type = geom_filter::ENTITY_GUID;
+    //} else if (type == "layers") {
+    //    filter.type = geom_filter::LAYER_NAME;
     } else {
         throw po::validation_error(po::validation_error::invalid_option_value);
     }
@@ -634,9 +666,13 @@ void validate(boost::any& v, const std::vector<std::string>& values, exclusion_f
     }
     std::string type = *values.begin();
     if (type == "entities") {
-        filter.type = geom_filter::ENTITIES;
+        filter.type = geom_filter::ENTITY_TYPE;
     } else if (type == "names") {
-        filter.type = geom_filter::NAMES;
+        filter.type = geom_filter::ENTITY_NAME;
+    } else if (type == "guids") {
+        filter.type = geom_filter::ENTITY_GUID;
+    //} else if (type == "layers") {
+    //    filter.type = geom_filter::LAYER_NAME;
     } else {
         throw po::validation_error(po::validation_error::invalid_option_value);
     }

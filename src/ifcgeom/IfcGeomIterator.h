@@ -135,27 +135,61 @@ namespace IfcGeom {
 			}
 		}
 
-        std::set<boost::regex> names_to_include_or_exclude; // regex containing a name or a wildcard expression
-		std::set<IfcSchema::Type::Enum> entities_to_include_or_exclude;
-		bool include_entities_in_processing;
-        bool include_names_in_processing_;
+        struct wildcard_filter
+        {
+            bool include;
+            std::set<boost::regex> values;
 
-		void populate_set(const std::set<std::string>& include_or_ignore) {
-			entities_to_include_or_exclude.clear();
-			for (std::set<std::string>::const_iterator it = include_or_ignore.begin(); it != include_or_ignore.end(); ++it) {
-				const std::string uppercase_type = boost::to_upper_copy(*it);
-				IfcSchema::Type::Enum ty;
-				try {
-					ty = IfcSchema::Type::FromString(uppercase_type);
-				} catch (const IfcParse::IfcException&) {
-					std::stringstream ss;
-					ss << "'" << *it << "' does not name a valid IFC entity";
-					throw IfcParse::IfcException(ss.str());
-				}
-				entities_to_include_or_exclude.insert(ty);
-				// TODO: Add child classes so that containment in set can be in O(log n)
-			}
-		}
+            void populate(const std::set<std::string>& patterns)
+            {
+                values.clear();
+                foreach(const std::string &pattern, patterns) {
+                    values.insert(wildcard_string_to_regex(pattern));
+                }
+            }
+
+            static boost::regex wildcard_string_to_regex(std::string str)
+            {
+                // Escape all non-"*?" regex special chars
+                std::string special_chars = "\\^.$|()[]+/";
+                foreach(char c, special_chars) {
+                    std::string char_str(1, c);
+                    boost::replace_all(str, char_str, "\\" + char_str);
+                }
+                // Convert "*?" to their regex equivalents
+                boost::replace_all(str, "?", ".");
+                boost::replace_all(str, "*", ".*");
+                return boost::regex(str);
+            }
+        };
+
+        wildcard_filter name_filter_;
+        wildcard_filter guid_filter_;
+        wildcard_filter layer_filter_;
+
+        struct entity_filter
+        {
+            bool include;
+            std::set<IfcSchema::Type::Enum> values;
+
+            void populate(const std::set<std::string>& types)
+            {
+                values.clear();
+                foreach(const std::string& type, types) {
+                    IfcSchema::Type::Enum ty;
+                    try {
+                        ty = IfcSchema::Type::FromString(boost::to_upper_copy(type));
+                    } catch (const IfcParse::IfcException&) {
+                        std::stringstream ss;
+                        ss << "'" << type << "' does not name a valid IFC entity";
+                        throw IfcParse::IfcException(ss.str());
+                    }
+                    values.insert(ty);
+                    // TODO: Add child classes so that containment in set can be in O(log n)
+                }
+            }
+        };
+        entity_filter entity_filter_;
 
 	public:
 		bool initialize() {
@@ -319,47 +353,59 @@ namespace IfcGeom {
 		IfcParse::IfcFile* getFile() const { return ifc_file; }
 
         /// @note Entity names are handled case-insensitively.
-		void includeEntities(const std::set<std::string>& entities) {
-			populate_set(entities);
-			include_entities_in_processing = true;
-		}
+        void includeEntities(const std::set<std::string>& entities)
+        {
+            entity_filter_.populate(entities);
+            entity_filter_.include = true;
+        }
 
-        /// @note Entity names are handled case-insensitively.
-		void excludeEntities(const std::set<std::string>& entities) {
-			populate_set(entities);
-			include_entities_in_processing = false;
-		}
+        /// @copydoc includeEntities()
+        void excludeEntities(const std::set<std::string>& entities)
+        {
+            entity_filter_.populate(entities);
+            entity_filter_.include = false;
+        }
 
         /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
         void include_entity_names(const std::set<std::string>& names)
         {
-            names_to_include_or_exclude.clear();
-            foreach(const std::string &name, names)
-                names_to_include_or_exclude.insert(wildcard_string_to_regex(name));
-            include_names_in_processing_ = true;
+            name_filter_.populate(names);
+            name_filter_.include = true;
+        }
+
+        /// @copydoc include_entity_names()
+        void exclude_entity_names(const std::set<std::string>& names)
+        {
+            name_filter_.populate(names);
+            name_filter_.include = false;
+        }
+
+        /// @note GUIDs (wildcard expressions allowed) are handled case-sensitively.
+        void include_entity_guids(const std::set<std::string>& guids)
+        {
+            guid_filter_.populate(guids);
+            guid_filter_.include = true;
+        }
+
+        /// @copydoc include_entity_guids()
+        void exclude_entity_guids(const std::set<std::string>& guids)
+        {
+            guid_filter_.populate(guids);
+            guid_filter_.include = false;
         }
 
         /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
-        void exclude_entity_names(const std::set<std::string>& names)
+        void include_layer_names(const std::set<std::string>& names)
         {
-            names_to_include_or_exclude.clear();
-            foreach(const std::string &name, names)
-                names_to_include_or_exclude.insert(wildcard_string_to_regex(name));
-            include_names_in_processing_ = false;
+            layer_filter_.populate(names);
+            layer_filter_.include = true;
         }
 
-        static boost::regex wildcard_string_to_regex(std::string str)
+        /// @copydoc include_layer_names()
+        void exclude_layer_names(const std::set<std::string>& names)
         {
-            // Escape all non-"*?" regex special chars
-            std::string special_chars = "\\^.$|()[]+/";
-            foreach(char c, special_chars) {
-                std::string char_str(1, c);
-                boost::replace_all(str, char_str, "\\" + char_str);
-            }
-            // Convert "*?" to their regex equivalents
-            boost::replace_all(str, "?", ".");
-            boost::replace_all(str, "*", ".*");
-            return boost::regex(str);
+            layer_filter_.populate(names);
+            layer_filter_.include = false;
         }
 
         const gp_XYZ& bounds_min() const { return bounds_min_; }
@@ -539,15 +585,15 @@ namespace IfcGeom {
                         IfcSchema::IfcProduct* prod = *jt;
                         bool type_found = false;
                         // The set is iterated over to able to filter on subtypes.
-                        foreach(IfcSchema::Type::Enum type, entities_to_include_or_exclude) {
+                        foreach(IfcSchema::Type::Enum type, entity_filter_.values) {
                             if (prod->is(type)) {
                                 type_found = true;
                                 break;
                             }
                         }
 
-                        if (type_found != include_entities_in_processing && traverse) {
-                            foreach(IfcSchema::Type::Enum type, entities_to_include_or_exclude) {
+                        if (type_found != entity_filter_.include && traverse) {
+                            foreach(IfcSchema::Type::Enum type, entity_filter_.values) {
                                 IfcSchema::IfcProduct* parent, * current = prod;
                                 while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
                                     if (parent->is(type)) {
@@ -563,15 +609,15 @@ namespace IfcGeom {
                         }
 
                         bool name_found = false;
-                        foreach(const boost::regex& r, names_to_include_or_exclude) {
+                        foreach(const boost::regex& r, name_filter_.values) {
                             if (prod->hasName() && boost::regex_match(prod->Name(), r)) {
                                 name_found = true;
                                 break;
                             }
                         }
 
-                        if (name_found != include_names_in_processing_ && traverse) {
-                            foreach(const boost::regex& r, names_to_include_or_exclude) {
+                        if (name_found != name_filter_.include && traverse) {
+                            foreach(const boost::regex& r, name_filter_.values) {
                                 IfcSchema::IfcProduct* parent, *current = prod;
                                 while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
                                     if (parent->hasName() && boost::regex_match(parent->Name(), r)) {
@@ -586,7 +632,31 @@ namespace IfcGeom {
                             }
                         }
 
-                        if (type_found == include_entities_in_processing && name_found == include_names_in_processing_) {
+                        bool guid_found = false;
+                        foreach(const boost::regex& r, guid_filter_.values) {
+                            if (boost::regex_match(prod->GlobalId(), r)) {
+                                guid_found = true;
+                                break;
+                            }
+                        }
+
+                        if (guid_found != guid_filter_.include && traverse) {
+                            foreach(const boost::regex& r, guid_filter_.values) {
+                                IfcSchema::IfcProduct* parent, *current = prod;
+                                while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
+                                    if (boost::regex_match(parent->GlobalId(), r)) {
+                                        guid_found = true;
+                                        break;
+                                    }
+                                    current = parent;
+                                }
+                                if (guid_found) {
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (type_found == entity_filter_.include && name_found == name_filter_.include && guid_found == guid_filter_.include) {
                             ifcproducts->push(prod);
                         }
 					}
@@ -748,8 +818,10 @@ namespace IfcGeom {
 
 			// Upon initialisation, the (empty) set of entity names,
 			// should be excluded, or no products would be processed.
-			include_entities_in_processing = false;
-            include_names_in_processing_ = false;
+            entity_filter_.include = false;
+            name_filter_.include = false;
+            guid_filter_.include = false;
+            layer_filter_.include = false;
 
 			unit_name = "METER";
 			unit_magnitude = 1.f;
