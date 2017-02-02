@@ -115,7 +115,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, Conv
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_shape_t& shape) {
   IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
 
-//  TopTools_ListOfShape face_list;
+  std::list<cgal_face_t> face_list;
   for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
     bool success = false;
     cgal_face_t face;
@@ -128,30 +128,29 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_
       Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", (*it)->entity);
       continue;
     }
-
-//    if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
-//      face_list.Append(face);
-//    } else {
-//      Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it)->entity);
-//    }
+    
+    face_list.push_back(face);
   }
-//
-//  if (face_list.Extent() == 0) {
-//    return false;
-//  }
-//  
-//  if (face_list.Extent() > getValue(GV_MAX_FACES_TO_SEW) || !create_solid_from_faces(face_list, shape)) {
-//    TopoDS_Compound compound;
-//    BRep_Builder builder;
-//    builder.MakeCompound(compound);
-//    
-//    TopTools_ListIteratorOfListOfShape face_iterator;
-//    for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
-//      builder.Add(compound, face_iterator.Value());
-//    }
-//    shape = compound;
-//  }
   
+  for (auto const &face : face_list) {
+    std::cout << "Face" << std::endl;
+    std::cout << "\touter: ";
+    for (auto const &point: *face->outer) {
+      std::cout << "(" << point << ") ";
+    } std::cout << std::endl;
+    for (auto const &inner: face->inner) {
+      std::cout << "\tinner: ";
+      for (auto const &point: *inner) {
+        std::cout << "(" << point << ") ";
+      } std::cout << std::endl;
+    }
+  }
+  
+  cgal_shape_t polyhedron = new CGAL::Polyhedron_3<Kernel>();
+  PolyhedronBuilder builder(&face_list);
+  polyhedron->delegate(builder);
+  
+  shape = polyhedron;
   return true;
 }
 

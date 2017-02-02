@@ -57,6 +57,53 @@ struct CgalFace {
 typedef CgalFace *cgal_face_t;
 typedef CGAL::Polyhedron_3<Kernel> *cgal_shape_t;
 
+struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel>::HalfedgeDS> {
+private:
+  std::list<cgal_face_t> *face_list;
+public:
+  PolyhedronBuilder(std::list<cgal_face_t> *face_list) {
+    this->face_list = face_list;
+  }
+  
+  void operator()(CGAL::Polyhedron_3<Kernel>::HalfedgeDS &hds) {
+    std::map<Kernel::Point_3, std::size_t> points_map;
+    std::list<std::list<std::size_t>> facet_vertices;
+    CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel>::HalfedgeDS> builder(hds, true);
+    
+    for (auto const &face: *face_list) {
+      facet_vertices.push_back(std::list<std::size_t>());
+      for (auto const &point: *face->outer) {
+        if (points_map.count(point) == 0) {
+          facet_vertices.back().push_back(points_map.size());
+          points_map[point] = points_map.size();
+        } else {
+          facet_vertices.back().push_back(points_map[point]);
+        }
+      }
+    }
+    
+    builder.begin_surface(points_map.size(), facet_vertices.size());
+    
+    for (auto const &point: points_map) {
+      std::cout << "Adding point " << point.first << std::endl;
+      builder.add_vertex(point.first);
+    }
+    
+    for (auto const &facet: facet_vertices) {
+      builder.begin_facet();
+      std::cout << "Adding facet ";
+      for (auto const &vertex: facet) {
+        std::cout << vertex << " ";
+        builder.add_vertex_to_facet(vertex);
+      }
+      std::cout << std::endl;
+      builder.end_facet();
+    }
+    
+    builder.end_surface();
+  }
+};
+
 namespace IfcGeom {
 
 	class IFC_GEOM_API CgalCache {
