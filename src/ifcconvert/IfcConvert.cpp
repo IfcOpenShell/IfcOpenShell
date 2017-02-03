@@ -200,8 +200,8 @@ int main(int argc, char** argv)
             "geometrical output. The name patterns are handled case-sensitively. Cannot be placed right before input file argument. "
             "Only single option supported for now.")
         ("exclude", po::value<exclusion_filter>(&exclude_filter)->multitoken(),
-            "Specifies that the 'entities', 'names', or 'guids' provided are to be excluded. Defaults to IfcOpeningElement and IfcSpace "
-            "to be excluded. See --include for syntax and more details.")
+            "Specifies that the 'entities', 'names', 'guids', or 'layers' provided are to be excluded. "
+            "The default value is '--exclude=entities IfcOpeningElement IfcSpace'. See --include for syntax and more details.")
         ("no-normals",
             "Disables computation of normals. Saves time and file size and is useful "
             "in instances where you're going to recompute normals for the exported "
@@ -647,8 +647,8 @@ void validate(boost::any& v, const std::vector<std::string>& values, inclusion_f
         filter.type = geom_filter::ENTITY_NAME;
     } else if (type == "guids") {
         filter.type = geom_filter::ENTITY_GUID;
-    //} else if (type == "layers") {
-    //    filter.type = geom_filter::LAYER_NAME;
+    } else if (type == "layers") {
+        filter.type = geom_filter::LAYER_NAME;
     } else {
         throw po::validation_error(po::validation_error::invalid_option_value);
     }
@@ -671,8 +671,8 @@ void validate(boost::any& v, const std::vector<std::string>& values, exclusion_f
         filter.type = geom_filter::ENTITY_NAME;
     } else if (type == "guids") {
         filter.type = geom_filter::ENTITY_GUID;
-    //} else if (type == "layers") {
-    //    filter.type = geom_filter::LAYER_NAME;
+    } else if (type == "layers") {
+        filter.type = geom_filter::LAYER_NAME;
     } else {
         throw po::validation_error(po::validation_error::invalid_option_value);
     }
