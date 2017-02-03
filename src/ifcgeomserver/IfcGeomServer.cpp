@@ -516,7 +516,7 @@ int main () {
 		}
 		case NEXT: {
 			Next n; n.read(std::cin);
-			has_more = iterator->next();
+			has_more = iterator->next() != 0;
 			if (!has_more) {
 				delete iterator;
 				iterator = 0;

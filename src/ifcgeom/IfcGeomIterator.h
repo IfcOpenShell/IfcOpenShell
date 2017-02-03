@@ -120,8 +120,8 @@ namespace IfcGeom {
 		int total;
 
 		std::string unit_name;
-		// double?
-		P unit_magnitude;
+		double unit_magnitude;
+
         gp_XYZ bounds_min_;
         gp_XYZ bounds_max_;
 
@@ -131,13 +131,21 @@ namespace IfcGeom {
 				IfcSchema::IfcProject* project = *projects->begin();
 				std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 				unit_name = length_unit.first;
-				unit_magnitude = static_cast<P>(length_unit.second);
+				unit_magnitude = length_unit.second;
 			}
 		}
 
-        struct wildcard_filter
+        struct filter
         {
+            /// Should the product be included (true) or excluded (false).
             bool include;
+            /// If traversal requested, traverse to the parents to see if they satisfy the criteria. E.g. we might be looking for
+            /// children of a storey named "Level 20", or children of entities that have no representation, e.g. IfcCurtainWall.
+            bool traverse;
+        };
+
+        struct wildcard_filter : public filter
+        {
             std::set<boost::regex> values;
 
             void populate(const std::set<std::string>& patterns)
@@ -167,9 +175,8 @@ namespace IfcGeom {
         wildcard_filter guid_filter_;
         wildcard_filter layer_filter_;
 
-        struct entity_filter
+        struct entity_filter : public filter
         {
-            bool include;
             std::set<IfcSchema::Type::Enum> values;
 
             void populate(const std::set<std::string>& types)
@@ -180,9 +187,7 @@ namespace IfcGeom {
                     try {
                         ty = IfcSchema::Type::FromString(boost::to_upper_copy(type));
                     } catch (const IfcParse::IfcException&) {
-                        std::stringstream ss;
-                        ss << "'" << type << "' does not name a valid IFC entity";
-                        throw IfcParse::IfcException(ss.str());
+                        throw IfcParse::IfcException("'" +  type + "' does not name a valid IFC entity");
                     }
                     values.insert(ty);
                     // TODO: Add child classes so that containment in set can be in O(log n)
@@ -295,9 +300,9 @@ namespace IfcGeom {
 				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, 1.e-5);
 			}
 
-			if (representations->size() == 0) {
-                          Logger::Message(Logger::LOG_ERROR, "No geometries found");
-                          return false;
+            if (representations->size() == 0) {
+                Logger::Message(Logger::LOG_ERROR, "No geometries found");
+                return false;
             }
 
 			representation_iterator = representations->begin();
@@ -346,66 +351,43 @@ namespace IfcGeom {
 
 		const std::string& getUnitName() const { return unit_name; }
 
-		P getUnitMagnitude() const { return unit_magnitude; }
+        /// @note Double always as per IFC specification.
+        double getUnitMagnitude() const { return unit_magnitude; }
 	
 		std::string getLog() const { return Logger::GetLog(); }
 
 		IfcParse::IfcFile* getFile() const { return ifc_file; }
 
         /// @note Entity names are handled case-insensitively.
-        void includeEntities(const std::set<std::string>& entities)
+        void filter_entities(bool include, const std::set<std::string>& entities, bool traverse)
         {
             entity_filter_.populate(entities);
-            entity_filter_.include = true;
-        }
-
-        /// @copydoc includeEntities()
-        void excludeEntities(const std::set<std::string>& entities)
-        {
-            entity_filter_.populate(entities);
-            entity_filter_.include = false;
+            entity_filter_.include = include;
+            entity_filter_.traverse = traverse;
         }
 
         /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
-        void include_entity_names(const std::set<std::string>& names)
+        void filter_entity_names(bool include, const std::set<std::string>& names, bool traverse)
         {
             name_filter_.populate(names);
-            name_filter_.include = true;
-        }
-
-        /// @copydoc include_entity_names()
-        void exclude_entity_names(const std::set<std::string>& names)
-        {
-            name_filter_.populate(names);
-            name_filter_.include = false;
+            name_filter_.include = include;
+            name_filter_.traverse = traverse;
         }
 
         /// @note GUIDs (wildcard expressions allowed) are handled case-sensitively.
-        void include_entity_guids(const std::set<std::string>& guids)
+        void filter_entity_guids(bool include, const std::set<std::string>& guids, bool traverse)
         {
             guid_filter_.populate(guids);
-            guid_filter_.include = true;
-        }
-
-        /// @copydoc include_entity_guids()
-        void exclude_entity_guids(const std::set<std::string>& guids)
-        {
-            guid_filter_.populate(guids);
-            guid_filter_.include = false;
+            guid_filter_.include = include;
+            guid_filter_.traverse = traverse;
         }
 
         /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
-        void include_layer_names(const std::set<std::string>& names)
+        void filter_layer_names(bool include, const std::set<std::string>& names, bool traverse)
         {
             layer_filter_.populate(names);
-            layer_filter_.include = true;
-        }
-
-        /// @copydoc include_layer_names()
-        void exclude_layer_names(const std::set<std::string>& names)
-        {
-            layer_filter_.populate(names);
-            layer_filter_.include = false;
+            layer_filter_.include = include;
+            layer_filter_.traverse = traverse;
         }
 
         const gp_XYZ& bounds_min() const { return bounds_min_; }
@@ -428,14 +410,17 @@ namespace IfcGeom {
 
 		std::set<IfcSchema::IfcRepresentation*> mapped_representations_processed;
 
-		BRepElement<P>* create_shape_model_for_next_entity() {
+        struct shape_model { BRepElement<P>* element; IfcSchema::IfcProduct* product; };
+
+        shape_model create_shape_model_for_next_entity() {
+            shape_model ret = {0};
 			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
 
 				// Have we reached the end of our list of representations?
 				if ( representation_iterator == representations->end() ) {
 					representations.reset();
-					return 0;
+					return ret;
 				}
 				representation = *representation_iterator;
 
@@ -578,9 +563,6 @@ namespace IfcGeom {
 					}
 
                     // Filter the products based on the set of entities and/or names being included or excluded for processing.
-                    // If traversal requested, traverse to the parents to see if they satisfy the criteria. E.g. we might be looking for
-                    // children of a storey named "Level 20", or children of entities that have no representation, e.g. IfcCurtainWall.
-                    const bool traverse = settings.get(IteratorSettings::TRAVERSE);
                     for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
                         IfcSchema::IfcProduct* prod = *jt;
                         /// @todo Horrible copy-pasta, refactor.
@@ -594,7 +576,7 @@ namespace IfcGeom {
                                 }
                             }
 
-                            if (type_found != entity_filter_.include && traverse) {
+                            if (type_found != entity_filter_.include && entity_filter_.traverse) {
                                 foreach(IfcSchema::Type::Enum type, entity_filter_.values) {
                                     IfcSchema::IfcProduct* parent, *current = prod;
                                     while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
@@ -620,7 +602,7 @@ namespace IfcGeom {
                                 }
                             }
 
-                            if (name_found != name_filter_.include && traverse) {
+                            if (name_found != name_filter_.include && name_filter_.traverse) {
                                 foreach(const boost::regex& r, name_filter_.values) {
                                     IfcSchema::IfcProduct* parent, *current = prod;
                                     while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
@@ -647,7 +629,7 @@ namespace IfcGeom {
                                 }
                             }
 
-                            if (guid_found != guid_filter_.include && traverse) {
+                            if (guid_found != guid_filter_.include && guid_filter_.traverse) {
                                 foreach(const boost::regex& r, guid_filter_.values) {
                                     IfcSchema::IfcProduct* parent, *current = prod;
                                     while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
@@ -680,7 +662,7 @@ namespace IfcGeom {
                                 }
                             }
 
-                            if (layer_found != layer_filter_.include && traverse) {
+                            if (layer_found != layer_filter_.include && layer_filter_.traverse) {
                                 foreach(const boost::regex& r, layer_filter_.values) {
                                     for (lit = layers.begin(); lit != layers.end(); ++lit) {
                                         IfcSchema::IfcProduct* parent, *current = prod;
@@ -714,26 +696,25 @@ namespace IfcGeom {
 					continue;
 				}
 
-				IfcSchema::IfcProduct* product = *ifcproduct_iterator;
+                ret.product = *ifcproduct_iterator;
 
-				Logger::SetProduct(product);
-                
-                BRepElement<P>* element;
+                Logger::SetProduct(ret.product);
+
 				if (ifcproduct_iterator == ifcproducts->begin() || !settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-					element = kernel.create_brep_for_representation_and_product<P>(settings, representation, product);
+					ret.element = kernel.create_brep_for_representation_and_product<P>(settings, representation, ret.product);
 				} else {
-					element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
+					ret.element = kernel.create_brep_for_processed_representation(settings, representation, ret.product, current_shape_model);
 				}
 
 				Logger::SetProduct(boost::none);
 
-				if ( !element ) {
+				if (!ret.element) {
 					_nextShape();
 					continue;
 				}
 
-				return element;
-			}	
+				return ret;
+			}
 		}
 
 		void free_shapes() {
@@ -748,7 +729,19 @@ namespace IfcGeom {
 
 		public:
 
-		bool next() {
+        /// Returns what would be the product for the next shape representation
+        IfcSchema::IfcProduct* peek_next() const
+        {
+            if (ifcproducts && ifcproduct_iterator + 1 != ifcproducts->end()){
+                return *(ifcproduct_iterator + 1);
+            } else {
+                return 0;
+            }
+        }
+
+        /// Moves to the next shape representation and returns the associated product.
+        /// Use get() to retrieve the created geometry.
+		IfcSchema::IfcProduct* next() {
 			// Increment the iterator over the list of products using the current
 			// shape representation
 			if (ifcproducts) {
@@ -811,10 +804,8 @@ namespace IfcGeom {
 			return ifc_object;
 		}
 
-		bool create() {
-			bool success = true;
-
-			IfcGeom::BRepElement<P>* next_shape_model = 0;
+		IfcSchema::IfcProduct* create() {
+            shape_model next_shape_model = {0};
 			IfcGeom::SerializedElement<P>* next_serialization = 0;
 			IfcGeom::TriangulationElement<P>* next_triangulation = 0;
 
@@ -822,37 +813,33 @@ namespace IfcGeom {
 				next_shape_model = create_shape_model_for_next_entity();
 			} catch (...) {}
 
-			if (next_shape_model) {
+			if (next_shape_model.element) {
 				if (settings.get(IteratorSettings::USE_BREP_DATA)) {
 					try {
-						next_serialization = new SerializedElement<P>(*next_shape_model);
+						next_serialization = new SerializedElement<P>(*next_shape_model.element);
 					} catch (...) {
                         Logger::Message(Logger::LOG_ERROR, "Getting a serialized element from model failed.");
-						success = false;
 					}
 				} else if (!settings.get(IteratorSettings::DISABLE_TRIANGULATION)) {
 					try {
 						if (ifcproduct_iterator == ifcproducts->begin() || settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-							next_triangulation = new TriangulationElement<P>(*next_shape_model);
+							next_triangulation = new TriangulationElement<P>(*next_shape_model.element);
 						} else {
-							next_triangulation = new TriangulationElement<P>(*next_shape_model, current_triangulation->geometry_pointer());
+							next_triangulation = new TriangulationElement<P>(*next_shape_model.element, current_triangulation->geometry_pointer());
 						}
 					} catch (...) {
                         Logger::Message(Logger::LOG_ERROR, "Getting a triangulation element from model failed.");
-						success = false;
 					}
 				}
-			} else {
-				success = false;
 			}
 
 			free_shapes();
 
-			current_shape_model = next_shape_model;
+			current_shape_model = next_shape_model.element;
 			current_serialization = next_serialization;
 			current_triangulation = next_triangulation;
 
-			return success;
+			return next_shape_model.product;
 		}
 	private:
 		void _initialize() {

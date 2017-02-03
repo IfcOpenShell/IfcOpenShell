@@ -78,9 +78,6 @@ namespace IfcGeom
             GENERATE_UVS = 1 << 12,
             /// Specifies whether to slice representations according to associated IfcLayerSets.
             APPLY_LAYERSETS = 1 << 13,
-            /// Marks that include/exclude filtering should be applied also to the decomposition
-            /// and/or containment (IsDecomposedBy, HasOpenings, FillsVoid, ContainedInStructure)
-            /// of the filtered entity.
             TRAVERSE = 1 << 14,
             /// Number of different setting flags.
             NUM_SETTINGS = 14
