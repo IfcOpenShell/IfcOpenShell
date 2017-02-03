@@ -270,41 +270,14 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 	}
 
     if (product->is(Type::IfcProduct)) {
-        IfcProduct* prod = product->as<IfcProduct>();
-        if (prod->hasRepresentation()) {
-            IfcEntityList::ptr r = prod->entity->file->traverse(prod->Representation());
-
-            std::map<std::string, IfcPresentationLayerAssignment*> layers;
-            IfcRepresentation::list::ptr representations = r->as<IfcRepresentation>();
-            for (IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
-                IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
-                for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
-                    layers[(*jt)->Name()] = *jt;
-                }
-            }
-
-            IfcRepresentationItem::list::ptr items = r->as<IfcRepresentationItem>();
-            for (IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
-                IfcPresentationLayerAssignment::list::ptr a = (*it)->
-                    // LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
-#ifdef USE_IFC4
-                    LayerAssignment();
-#else
-                    LayerAssignments();
-#endif
-                for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
-                    layers[(*jt)->Name()] = *jt;
-                }
-            }
-
-            for (std::map<std::string, IfcPresentationLayerAssignment*>::const_iterator it = layers.begin(); it != layers.end(); ++it) {
-                // IfcPresentationLayerAssignments don't have GUIDs (only optional Identifier) so use name as the ID.
-                // Note that the IfcPresentationLayerAssignment passed here doesn't really matter as as_link is true
-                // for the format_entity_instance() call.
-                ptree node;
-                node.put("<xmlattr>.xlink:href", "#" + it->first);
-                format_entity_instance(it->second, node, child, true);
-            }
+        std::map<std::string, IfcPresentationLayerAssignment*> layers = IfcGeom::Kernel::get_layers(product->as<IfcProduct>());
+        for (std::map<std::string, IfcPresentationLayerAssignment*>::const_iterator it = layers.begin(); it != layers.end(); ++it) {
+            // IfcPresentationLayerAssignments don't have GUIDs (only optional Identifier) so use name as the ID.
+            // Note that the IfcPresentationLayerAssignment passed here doesn't really matter as as_link is true
+            // for the format_entity_instance() call.
+            ptree node;
+            node.put("<xmlattr>.xlink:href", "#" + it->first);
+            format_entity_instance(it->second, node, child, true);
         }
     }
 

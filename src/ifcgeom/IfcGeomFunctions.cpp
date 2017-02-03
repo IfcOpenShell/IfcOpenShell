@@ -1275,6 +1275,37 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 	return parent;
 }
 
+std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> IfcGeom::Kernel::get_layers(IfcSchema::IfcProduct* prod)
+{
+    using namespace IfcSchema;
+    std::map<std::string, IfcPresentationLayerAssignment*> layers;
+    if (prod->hasRepresentation()) {
+        IfcEntityList::ptr r = prod->entity->file->traverse(prod->Representation());
+        IfcRepresentation::list::ptr representations = r->as<IfcRepresentation>();
+        for (IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
+            IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
+            for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+                layers[(*jt)->Name()] = *jt;
+            }
+        }
+
+        IfcRepresentationItem::list::ptr items = r->as<IfcRepresentationItem>();
+        for (IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
+            IfcPresentationLayerAssignment::list::ptr a = (*it)->
+                // LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
+#ifdef USE_IFC4
+                LayerAssignment();
+#else
+                LayerAssignments();
+#endif
+            for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+                layers[(*jt)->Name()] = *jt;
+            }
+        }
+    }
+    return layers;
+}
+
 template IFC_GEOM_API IfcGeom::BRepElement<float>* IfcGeom::Kernel::create_brep_for_representation_and_product<float>(
     const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
 template IFC_GEOM_API IfcGeom::BRepElement<double>* IfcGeom::Kernel::create_brep_for_representation_and_product<double>(

@@ -241,6 +241,8 @@ public:
 
 	IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
 
+    static std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> get_layers(IfcSchema::IfcProduct* prod);
+
 	template <typename P>
     IfcGeom::BRepElement<P>* create_brep_for_representation_and_product(
         const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);

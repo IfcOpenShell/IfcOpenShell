@@ -583,83 +583,127 @@ namespace IfcGeom {
                     const bool traverse = settings.get(IteratorSettings::TRAVERSE);
                     for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
                         IfcSchema::IfcProduct* prod = *jt;
+                        /// @todo Horrible copy-pasta, refactor.
                         bool type_found = false;
-                        // The set is iterated over to able to filter on subtypes.
-                        foreach(IfcSchema::Type::Enum type, entity_filter_.values) {
-                            if (prod->is(type)) {
-                                type_found = true;
-                                break;
-                            }
-                        }
-
-                        if (type_found != entity_filter_.include && traverse) {
+                        if (!entity_filter_.values.empty()) {
+                            // The set is iterated over to able to filter on subtypes.
                             foreach(IfcSchema::Type::Enum type, entity_filter_.values) {
-                                IfcSchema::IfcProduct* parent, * current = prod;
-                                while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
-                                    if (parent->is(type)) {
-                                        type_found = true;
+                                if (prod->is(type)) {
+                                    type_found = true;
+                                    break;
+                                }
+                            }
+
+                            if (type_found != entity_filter_.include && traverse) {
+                                foreach(IfcSchema::Type::Enum type, entity_filter_.values) {
+                                    IfcSchema::IfcProduct* parent, *current = prod;
+                                    while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
+                                        if (parent->is(type)) {
+                                            type_found = true;
+                                            break;
+                                        }
+                                        current = parent;
+                                    }
+                                    if (type_found) {
                                         break;
                                     }
-                                    current = parent;
-                                }
-                                if (type_found) {
-                                    break;
                                 }
                             }
                         }
 
                         bool name_found = false;
-                        foreach(const boost::regex& r, name_filter_.values) {
-                            if (prod->hasName() && boost::regex_match(prod->Name(), r)) {
-                                name_found = true;
-                                break;
-                            }
-                        }
-
-                        if (name_found != name_filter_.include && traverse) {
+                        if (!name_filter_.values.empty()) {
                             foreach(const boost::regex& r, name_filter_.values) {
-                                IfcSchema::IfcProduct* parent, *current = prod;
-                                while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
-                                    if (parent->hasName() && boost::regex_match(parent->Name(), r)) {
-                                        name_found = true;
+                                if (prod->hasName() && boost::regex_match(prod->Name(), r)) {
+                                    name_found = true;
+                                    break;
+                                }
+                            }
+
+                            if (name_found != name_filter_.include && traverse) {
+                                foreach(const boost::regex& r, name_filter_.values) {
+                                    IfcSchema::IfcProduct* parent, *current = prod;
+                                    while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
+                                        if (parent->hasName() && boost::regex_match(parent->Name(), r)) {
+                                            name_found = true;
+                                            break;
+                                        }
+                                        current = parent;
+                                    }
+                                    if (name_found) {
                                         break;
                                     }
-                                    current = parent;
-                                }
-                                if (name_found) {
-                                    break;
                                 }
                             }
                         }
 
                         bool guid_found = false;
-                        foreach(const boost::regex& r, guid_filter_.values) {
-                            if (boost::regex_match(prod->GlobalId(), r)) {
-                                guid_found = true;
-                                break;
-                            }
-                        }
-
-                        if (guid_found != guid_filter_.include && traverse) {
+                        if (!guid_filter_.values.empty()) {
                             foreach(const boost::regex& r, guid_filter_.values) {
-                                IfcSchema::IfcProduct* parent, *current = prod;
-                                while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
-                                    if (boost::regex_match(parent->GlobalId(), r)) {
-                                        guid_found = true;
-                                        break;
-                                    }
-                                    current = parent;
-                                }
-                                if (guid_found) {
+                                if (boost::regex_match(prod->GlobalId(), r)) {
+                                    std::cout << prod->GlobalId() << std::endl;
+                                    guid_found = true;
                                     break;
                                 }
                             }
+
+                            if (guid_found != guid_filter_.include && traverse) {
+                                foreach(const boost::regex& r, guid_filter_.values) {
+                                    IfcSchema::IfcProduct* parent, *current = prod;
+                                    while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
+                                        if (boost::regex_match(parent->GlobalId(), r)) {
+                                            guid_found = true;
+                                            break;
+                                        }
+                                        current = parent;
+                                    }
+                                    if (guid_found) {
+                                        break;
+                                    }
+                                }
+                            }
                         }
 
-                        if (type_found == entity_filter_.include && name_found == name_filter_.include && guid_found == guid_filter_.include) {
+                        bool layer_found = false;
+                        if (!layer_filter_.values.empty()) {
+                            std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> layers = IfcGeom::Kernel::get_layers(prod);
+                            std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*>::const_iterator lit;
+                            foreach(const boost::regex& r, layer_filter_.values) {
+                                for (lit = layers.begin(); lit != layers.end(); ++lit) {
+                                    if (boost::regex_match(lit->first, r)) {
+                                        layer_found = true;
+                                        break;
+                                    }
+                                }
+                                if (layer_found) {
+                                    break;
+                                }
+                            }
+
+                            if (layer_found != layer_filter_.include && traverse) {
+                                foreach(const boost::regex& r, layer_filter_.values) {
+                                    for (lit = layers.begin(); lit != layers.end(); ++lit) {
+                                        IfcSchema::IfcProduct* parent, *current = prod;
+                                        while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
+                                            if (boost::regex_match(lit->first, r)) {
+                                                layer_found = true;
+                                                break;
+                                            }
+                                            current = parent;
+                                        }
+                                        if (layer_found) {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (type_found == entity_filter_.include && name_found == name_filter_.include &&
+                            guid_found == guid_filter_.include && layer_found == layer_filter_.include) {
                             ifcproducts->push(prod);
                         }
-					}
+                    }
 
 					ifcproduct_iterator = ifcproducts->begin();
 				}
