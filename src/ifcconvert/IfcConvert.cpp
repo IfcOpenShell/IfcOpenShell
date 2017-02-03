@@ -391,7 +391,7 @@ int main(int argc, char** argv)
 	std::string output_extension = output_filename.substr(output_filename.size()-4);
 	boost::to_lower(output_extension);
 
-	Logger::SetOutput(&std::cout, &log_stream);
+
 	if (output_extension == ".xml") {
 		int exit_code = 1;
 		try {
@@ -412,7 +412,7 @@ int main(int argc, char** argv)
 		return exit_code;
 	}
 
-    SerializerSettings settings;
+	    SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
 	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
 	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords);
@@ -428,7 +428,6 @@ int main(int argc, char** argv)
 	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
-    settings.set(IfcGeom::IteratorSettings::TRAVERSE, traverse);
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
@@ -483,34 +482,16 @@ int main(int argc, char** argv)
 
     IfcGeom::Iterator<real_t> context_iterator(settings, input_filename);
 
-	try {
-		if (include_entities) {
-			context_iterator.includeEntities(entities);
-		} else {
-			context_iterator.excludeEntities(entities);
-		}
-	} catch (const IfcParse::IfcException& e) {
-		std::cout << "[Error] " << e.what() << std::endl;
-		return 1;
-	}
-
-    if (include_names) {
-        context_iterator.include_entity_names(names);
-    } else {
-        context_iterator.exclude_entity_names(names);
+    try {
+        context_iterator.filter_entities(include_entities, entities, traverse);
+    } catch (const IfcParse::IfcException& e) {
+        std::cout << "[Error] " << e.what() << std::endl;
+        return 1;
     }
 
-    if (include_guids) {
-        context_iterator.include_entity_guids(guids);
-    } else {
-        context_iterator.exclude_entity_guids(guids);
-    }
-
-    if (include_layers) {
-        context_iterator.include_layer_names(layers);
-    } else {
-        context_iterator.exclude_layer_names(layers);
-    }
+    context_iterator.filter_entity_names(include_names, names, traverse);
+    context_iterator.filter_entity_guids(include_guids, guids, traverse);
+    context_iterator.filter_layer_names(include_layers, layers, traverse);
 
 	if (!serializer->ready()) {
 		write_log();
@@ -570,7 +551,7 @@ int main(int argc, char** argv)
 	// geometrical entities are available. None of these functions throw 
 	// exceptions, neither for parsing errors or geometrical errors. Upon 
 	// calling next() the entity to be returned has already been processed, a 
-	// true return value guarantees that a successfully processed product is 
+	// non-null return value guarantees that a successfully processed product is 
 	// available. 
 	size_t num_created = 0;
 	
