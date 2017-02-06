@@ -35,7 +35,7 @@ namespace IfcGeom {
 		
 		virtual double Value(int i, int j) const {
 			// Get cell from placement as 4x3 matrix as implemented in OCCT. We'll have to check exact semantics.
-			throw std::runtime_error("Not implemented");
+      return CGAL::to_double(trsf_->cartesian(i, j));
 		}
 		virtual void Multiply(const ConversionResultPlacement* other) {
 			// Multiply matrix as implemented in OCCT. We'll have to check exact semantics.
