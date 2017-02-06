@@ -85,29 +85,29 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, Conv
   cgal_shape_t s;
   const SurfaceStyle* collective_style = get_style(l);
   if (convert_shape(l->Outer(),s) ) {
-//    const SurfaceStyle* indiv_style = get_style(l->Outer());
-//    
-//    IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
-//    if (l->is(IfcSchema::Type::IfcFacetedBrepWithVoids)) {
-//      voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
-//    }
-//#ifdef USE_IFC4
-//    if (l->is(IfcSchema::Type::IfcAdvancedBrepWithVoids)) {
-//      voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
-//    }
-//#endif
-//    
-//    for (IfcSchema::IfcClosedShell::list::it it = voids->begin(); it != voids->end(); ++it) {
+    const SurfaceStyle* indiv_style = get_style(l->Outer());
+    
+    IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
+    if (l->is(IfcSchema::Type::IfcFacetedBrepWithVoids)) {
+      voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
+    }
+#ifdef USE_IFC4
+    if (l->is(IfcSchema::Type::IfcAdvancedBrepWithVoids)) {
+      voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
+    }
+#endif
+    
+    for (IfcSchema::IfcClosedShell::list::it it = voids->begin(); it != voids->end(); ++it) {
 //      TopoDS_Shape s2;
 //      /// @todo No extensive shapefixing since shells should be disjoint.
 //      /// @todo Awaiting generalized boolean ops module with appropriate checking
 //      if (convert_shape(l->Outer(), s2)) {
 //        s = BRepAlgoAPI_Cut(s, s2).Shape();
 //      }
-//    }
-//    
-//    shape.push_back(ConversionResult(new OpenCascadeShape(s), indiv_style ? indiv_style : collective_style));
-//    return true;
+    }
+    
+    shape.push_back(ConversionResult(new CgalShape(s), indiv_style ? indiv_style : collective_style));
+    return true;
   }
   return false;
 }
@@ -132,19 +132,19 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_
     face_list.push_back(face);
   }
   
-  for (auto const &face : face_list) {
-    std::cout << "Face" << std::endl;
-    std::cout << "\touter: ";
-    for (auto const &point: *face->outer) {
-      std::cout << "(" << point << ") ";
-    } std::cout << std::endl;
-    for (auto const &inner: face->inner) {
-      std::cout << "\tinner: ";
-      for (auto const &point: *inner) {
-        std::cout << "(" << point << ") ";
-      } std::cout << std::endl;
-    }
-  }
+//  for (auto const &face : face_list) {
+//    std::cout << "Face" << std::endl;
+//    std::cout << "\touter: ";
+//    for (auto const &point: *face->outer) {
+//      std::cout << "(" << point << ") ";
+//    } std::cout << std::endl;
+//    for (auto const &inner: face->inner) {
+//      std::cout << "\tinner: ";
+//      for (auto const &point: *inner) {
+//        std::cout << "(" << point << ") ";
+//      } std::cout << std::endl;
+//    }
+//  }
   
   cgal_shape_t polyhedron = new CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);

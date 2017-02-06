@@ -85,18 +85,18 @@ public:
     builder.begin_surface(points_map.size(), facet_vertices.size());
     
     for (auto const &point: points_map) {
-      std::cout << "Adding point " << point.first << std::endl;
+//      std::cout << "Adding point " << point.first << std::endl;
       builder.add_vertex(point.first);
     }
     
     for (auto const &facet: facet_vertices) {
       builder.begin_facet();
-      std::cout << "Adding facet ";
+//      std::cout << "Adding facet ";
       for (auto const &vertex: facet) {
-        std::cout << vertex << " ";
+//        std::cout << vertex << " ";
         builder.add_vertex_to_facet(vertex);
       }
-      std::cout << std::endl;
+//      std::cout << std::endl;
       builder.end_facet();
     }
     
