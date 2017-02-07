@@ -80,6 +80,7 @@ namespace IfcGeom {
 		std::string _context;
 		std::string _unique_id;
 		Transformation<P> _transformation;
+        IfcSchema::IfcProduct* product_;
 	public:
 		int id() const { return _id; }
 		int parent_id() const { return _parent_id; }
@@ -89,8 +90,12 @@ namespace IfcGeom {
 		const std::string& context() const { return _context; }
 		const std::string& unique_id() const { return _unique_id; }
 		const Transformation<P>& transformation() const { return _transformation; }
-		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const gp_Trsf& trsf)
+        IfcSchema::IfcProduct* product() const { return product_; }
+
+		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type,
+            const std::string& guid, const std::string& context, const gp_Trsf& trsf, IfcSchema::IfcProduct *product)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
+            , product_(product)
 		{
 			std::ostringstream oss;
 			oss << "product-" << IfcParse::IfcGlobalId(guid).formatted();
@@ -112,8 +117,10 @@ namespace IfcGeom {
 	public:
 		const boost::shared_ptr<Representation::BRep>& geometry_pointer() const { return _geometry; }
 		const Representation::BRep& geometry() const { return *_geometry; }
-		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const gp_Trsf& trsf, const boost::shared_ptr<Representation::BRep>& geometry)
-			: Element<P>(geometry->settings(),id,parent_id,name,type,guid,context,trsf)
+		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
+            const std::string& context, const gp_Trsf& trsf, const boost::shared_ptr<Representation::BRep>& geometry,
+            IfcSchema::IfcProduct* product)
+			: Element<P>(geometry->settings(),id,parent_id,name,type,guid,context,trsf, product)
 			, _geometry(geometry)
 		{}
 	private:

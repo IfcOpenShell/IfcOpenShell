@@ -116,18 +116,17 @@ bool rename_file(const std::string& old_filename, const std::string& new_filenam
 static std::stringstream log_stream;
 void write_log();
 
-/// @todo Make this a feature of IfcGeom::Iterator instead.
 struct geom_filter
 {
-    bool include;
-    enum filter_type { ENTITY_TYPE, ENTITY_NAME, ENTITY_GUID, LAYER_NAME };
+    geom_filter() : type(UNUSED) {}
+    enum filter_type { UNUSED, ENTITY_TYPE, ENTITY_NAME, ENTITY_GUID, LAYER_NAME };
     filter_type type;
     std::set<std::string> values;
 };
 // Specialized classes for knowing which type of filter we are validating within validate().
 // Could not figure out easily how else to know it if using single type for both.
-struct inclusion_filter : public geom_filter { inclusion_filter() { include = true; } };
-struct exclusion_filter : public geom_filter { exclusion_filter() { include = false; } };
+struct inclusion_filter : public IfcGeom::filter, public geom_filter { inclusion_filter() : filter(true, false) {} };
+struct exclusion_filter : public IfcGeom::filter, public geom_filter { exclusion_filter() : filter(false, false) {} };
 
 int main(int argc, char** argv)
 {
@@ -271,7 +270,6 @@ int main(int argc, char** argv)
         std::cerr << "[Error] Invalid usage of '" << e.get_option_name() << "': " << e.what() << "\n\n";
         print_usage();
         return EXIT_FAILURE;
-        return EXIT_FAILURE;
     } catch (const std::exception& e) {
         std::cerr << "[Error] " << e.what() << "\n\n";
         print_usage();
@@ -295,18 +293,6 @@ int main(int argc, char** argv)
         print_usage();
         return 1;
     }
-    if (include_filter.type == geom_filter::ENTITY_GUID) {
-        guids = include_filter.values;
-    } else if (exclude_filter.type == geom_filter::ENTITY_GUID) {
-        guids = exclude_filter.values;
-    }
-
-    if (include_filter.type == geom_filter::LAYER_NAME) {
-        layers = include_filter.values;
-    } else if (exclude_filter.type == geom_filter::LAYER_NAME) {
-        layers = exclude_filter.values;
-    }
-
 	const bool verbose = vmap.count("verbose") != 0;
 	const bool weld_vertices = vmap.count("weld-vertices") != 0;
 	const bool use_world_coords = vmap.count("use-world-coords") != 0;
@@ -316,10 +302,6 @@ int main(int argc, char** argv)
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
 #endif
 	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
-    bool include_entities = include_filter.type == geom_filter::ENTITY_TYPE && !include_filter.values.empty();
-    const bool include_names = include_filter.type == geom_filter::ENTITY_NAME && !include_filter.values.empty();
-    const bool include_guids = include_filter.type == geom_filter::ENTITY_GUID && !include_filter.values.empty();
-    const bool include_layers = include_filter.type == geom_filter::LAYER_NAME && !include_filter.values.empty();
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
 	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
@@ -330,6 +312,7 @@ int main(int argc, char** argv)
     const bool center_model = vmap.count("center-model") != 0 ;
     const bool model_offset = vmap.count("model-offset") != 0 ;
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
+    /// @todo For now traversal is a global option for all filters but we could easily make it filter-specific.
     const bool traverse = vmap.count("traverse") != 0;
 
 #ifdef HAVE_ICU
@@ -391,6 +374,67 @@ int main(int argc, char** argv)
 	std::string output_extension = output_filename.substr(output_filename.size()-4);
 	boost::to_lower(output_extension);
 
+
+    // Set up filters. Entity filter is used always by default.
+
+    IfcGeom::entity_filter entity_filter;
+    entity_filter.traverse = traverse;
+    try {
+        if (include_filter.type == geom_filter::ENTITY_TYPE) {
+            entity_filter.include = true;
+            entity_filter.populate(include_filter.values);
+        } else if (exclude_filter.type == geom_filter::ENTITY_TYPE) {
+            entity_filter.include = false;
+            entity_filter.populate(exclude_filter.values);
+        }
+        // If no entity names are specified these are the defaults to skip from output
+        if (entity_filter.values.empty()) {
+            std::set<std::string> entities;
+            entities.insert("IfcSpace");
+            if (output_extension == ".svg") {
+                entity_filter.include = true;
+            } else {
+                entities.insert("IfcOpeningElement");
+            }
+            entity_filter.populate(entities);
+
+            Logger::Message(Logger::LOG_NOTICE, entity_filter.include ? "Including" : "Excluding" +
+                std::string(" by default entities ") + boost::algorithm::join(entities, ", "));
+        }
+    } catch (const IfcParse::IfcException& e) {
+        std::cout << "[Error] " << e.what() << std::endl;
+        return 1;
+    }
+
+    IfcGeom::arg_filter<IfcSchema::IfcRoot, 2, std::string> name_filter;
+    name_filter.traverse = traverse;
+    if (include_filter.type == geom_filter::ENTITY_NAME) {
+        name_filter.include = true;
+        name_filter.populate(include_filter.values);
+    } else if (exclude_filter.type == geom_filter::ENTITY_NAME) {
+        name_filter.include = false;
+        name_filter.populate(exclude_filter.values);
+    }
+
+    IfcGeom::arg_filter<IfcSchema::IfcRoot, 0, std::string> guid_filter;
+    guid_filter.traverse = traverse;
+    if (include_filter.type == geom_filter::ENTITY_GUID) {
+        guid_filter.include = true;
+        guid_filter.populate(include_filter.values);
+    } else if (exclude_filter.type == geom_filter::ENTITY_GUID) {
+        guid_filter.include = false;
+        guid_filter.populate(include_filter.values);
+    }
+
+    IfcGeom::layer_filter layer_filter;
+    layer_filter.traverse = traverse;
+    if (include_filter.type == geom_filter::LAYER_NAME) {
+        layer_filter.include = true;
+        layer_filter.populate(include_filter.values);
+    } else if (exclude_filter.type == geom_filter::LAYER_NAME) {
+        layer_filter.include = false;
+        layer_filter.populate(exclude_filter.values);
+    }
 
 	if (output_extension == ".xml") {
 		int exit_code = 1;
@@ -482,16 +526,18 @@ int main(int argc, char** argv)
 
     IfcGeom::Iterator<real_t> context_iterator(settings, input_filename);
 
-    try {
-        context_iterator.filter_entities(include_entities, entities, traverse);
-    } catch (const IfcParse::IfcException& e) {
-        std::cout << "[Error] " << e.what() << std::endl;
-        return 1;
+    if (!guid_filter.values.empty()) {
+        context_iterator.filters().push_back(boost::ref(guid_filter));
     }
-
-    context_iterator.filter_entity_names(include_names, names, traverse);
-    context_iterator.filter_entity_guids(include_guids, guids, traverse);
-    context_iterator.filter_layer_names(include_layers, layers, traverse);
+    if (!name_filter.values.empty()) {
+        context_iterator.filters().push_back(boost::ref(name_filter));
+    }
+    if (!entity_filter.values.empty()) {
+        context_iterator.filters().push_back(boost::ref(entity_filter));
+    }
+    if (!layer_filter.values.empty()) {
+        context_iterator.filters().push_back(boost::ref(layer_filter));
+    }
 
 	if (!serializer->ready()) {
 		write_log();

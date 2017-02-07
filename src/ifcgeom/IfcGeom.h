@@ -239,7 +239,7 @@ public:
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
-	IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
+    static IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
 
     static std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> get_layers(IfcSchema::IfcProduct* prod);
 
