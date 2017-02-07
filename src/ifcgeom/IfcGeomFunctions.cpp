@@ -1174,7 +1174,8 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 		guid,
 		context_string,
 		trsf,
-		boost::shared_ptr<IfcGeom::Representation::BRep>(shape)
+		boost::shared_ptr<IfcGeom::Representation::BRep>(shape),
+        product
 	);
 }
 
@@ -1216,7 +1217,8 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_processed_representati
 		guid,
 		context_string,
 		trsf,
-		brep->geometry_pointer()
+		brep->geometry_pointer(),
+        product
 	);
 }
 
@@ -1234,7 +1236,7 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 	} else if ( product->is(IfcSchema::Type::IfcElement ) ) {
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
 		IfcSchema::IfcRelFillsElement::list::ptr fills = element->FillsVoids();
-		// Incase of a RelatedBuildingElement parent to the opening element
+		// In case of a RelatedBuildingElement parent to the opening element
 		if ( fills->size() ) {
 			for ( IfcSchema::IfcRelFillsElement::list::it it = fills->begin(); it != fills->end(); ++ it ) {
 				IfcSchema::IfcRelFillsElement* fill = *it;

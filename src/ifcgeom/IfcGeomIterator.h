@@ -65,7 +65,6 @@
 #include <algorithm>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/regex.hpp>
 
 #include <gp_Mat.hxx>
 #include <gp_Mat2d.hxx>
@@ -81,6 +80,7 @@
 #include "../ifcgeom/IfcGeomMaterial.h"
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
+#include "../ifcgeom/IfcGeomFilter.h"
 
 // The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
 #ifdef min
@@ -125,6 +125,16 @@ namespace IfcGeom {
         gp_XYZ bounds_min_;
         gp_XYZ bounds_max_;
 
+        std::vector<filter_t> filters_;
+
+        struct filter_match
+        {
+            filter_match(IfcSchema::IfcProduct *prod) : product(prod) {}
+            bool operator()(const filter_t& filter) const { return filter(product);  }
+
+            IfcSchema::IfcProduct* product;
+        };
+
 		void initUnits() {
 			IfcSchema::IfcProject::list::ptr projects = ifc_file->entitiesByType<IfcSchema::IfcProject>();
 			if (projects->size() == 1) {
@@ -134,67 +144,6 @@ namespace IfcGeom {
 				unit_magnitude = length_unit.second;
 			}
 		}
-
-        struct filter
-        {
-            /// Should the product be included (true) or excluded (false).
-            bool include;
-            /// If traversal requested, traverse to the parents to see if they satisfy the criteria. E.g. we might be looking for
-            /// children of a storey named "Level 20", or children of entities that have no representation, e.g. IfcCurtainWall.
-            bool traverse;
-        };
-
-        struct wildcard_filter : public filter
-        {
-            std::set<boost::regex> values;
-
-            void populate(const std::set<std::string>& patterns)
-            {
-                values.clear();
-                foreach(const std::string &pattern, patterns) {
-                    values.insert(wildcard_string_to_regex(pattern));
-                }
-            }
-
-            static boost::regex wildcard_string_to_regex(std::string str)
-            {
-                // Escape all non-"*?" regex special chars
-                std::string special_chars = "\\^.$|()[]+/";
-                foreach(char c, special_chars) {
-                    std::string char_str(1, c);
-                    boost::replace_all(str, char_str, "\\" + char_str);
-                }
-                // Convert "*?" to their regex equivalents
-                boost::replace_all(str, "?", ".");
-                boost::replace_all(str, "*", ".*");
-                return boost::regex(str);
-            }
-        };
-
-        wildcard_filter name_filter_;
-        wildcard_filter guid_filter_;
-        wildcard_filter layer_filter_;
-
-        struct entity_filter : public filter
-        {
-            std::set<IfcSchema::Type::Enum> values;
-
-            void populate(const std::set<std::string>& types)
-            {
-                values.clear();
-                foreach(const std::string& type, types) {
-                    IfcSchema::Type::Enum ty;
-                    try {
-                        ty = IfcSchema::Type::FromString(boost::to_upper_copy(type));
-                    } catch (const IfcParse::IfcException&) {
-                        throw IfcParse::IfcException("'" +  type + "' does not name a valid IFC entity");
-                    }
-                    values.insert(ty);
-                    // TODO: Add child classes so that containment in set can be in O(log n)
-                }
-            }
-        };
-        entity_filter entity_filter_;
 
 	public:
 		bool initialize() {
@@ -358,37 +307,8 @@ namespace IfcGeom {
 
 		IfcParse::IfcFile* getFile() const { return ifc_file; }
 
-        /// @note Entity names are handled case-insensitively.
-        void filter_entities(bool include, const std::set<std::string>& entities, bool traverse)
-        {
-            entity_filter_.populate(entities);
-            entity_filter_.include = include;
-            entity_filter_.traverse = traverse;
-        }
-
-        /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
-        void filter_entity_names(bool include, const std::set<std::string>& names, bool traverse)
-        {
-            name_filter_.populate(names);
-            name_filter_.include = include;
-            name_filter_.traverse = traverse;
-        }
-
-        /// @note GUIDs (wildcard expressions allowed) are handled case-sensitively.
-        void filter_entity_guids(bool include, const std::set<std::string>& guids, bool traverse)
-        {
-            guid_filter_.populate(guids);
-            guid_filter_.include = include;
-            guid_filter_.traverse = traverse;
-        }
-
-        /// @note Arbitrary names or wildcard expressions are handled case-sensitively.
-        void filter_layer_names(bool include, const std::set<std::string>& names, bool traverse)
-        {
-            layer_filter_.populate(names);
-            layer_filter_.include = include;
-            layer_filter_.traverse = traverse;
-        }
+        const std::vector<filter_t> &filters() const { return filters_; }
+        std::vector<filter_t> &filters() { return filters_; }
 
         const gp_XYZ& bounds_min() const { return bounds_min_; }
         const gp_XYZ& bounds_max() const { return bounds_max_; }
@@ -410,17 +330,14 @@ namespace IfcGeom {
 
 		std::set<IfcSchema::IfcRepresentation*> mapped_representations_processed;
 
-        struct shape_model { BRepElement<P>* element; IfcSchema::IfcProduct* product; };
-
-        shape_model create_shape_model_for_next_entity() {
-            shape_model ret = {0};
+		BRepElement<P>* create_shape_model_for_next_entity() {
 			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
 
 				// Have we reached the end of our list of representations?
 				if ( representation_iterator == representations->end() ) {
 					representations.reset();
-					return ret;
+					return 0;
 				}
 				representation = *representation_iterator;
 
@@ -565,124 +482,7 @@ namespace IfcGeom {
                     // Filter the products based on the set of entities and/or names being included or excluded for processing.
                     for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
                         IfcSchema::IfcProduct* prod = *jt;
-                        /// @todo Horrible copy-pasta, refactor.
-                        bool type_found = false;
-                        if (!entity_filter_.values.empty()) {
-                            // The set is iterated over to able to filter on subtypes.
-                            foreach(IfcSchema::Type::Enum type, entity_filter_.values) {
-                                if (prod->is(type)) {
-                                    type_found = true;
-                                    break;
-                                }
-                            }
-
-                            if (type_found != entity_filter_.include && entity_filter_.traverse) {
-                                foreach(IfcSchema::Type::Enum type, entity_filter_.values) {
-                                    IfcSchema::IfcProduct* parent, *current = prod;
-                                    while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
-                                        if (parent->is(type)) {
-                                            type_found = true;
-                                            break;
-                                        }
-                                        current = parent;
-                                    }
-                                    if (type_found) {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        bool name_found = false;
-                        if (!name_filter_.values.empty()) {
-                            foreach(const boost::regex& r, name_filter_.values) {
-                                if (prod->hasName() && boost::regex_match(prod->Name(), r)) {
-                                    name_found = true;
-                                    break;
-                                }
-                            }
-
-                            if (name_found != name_filter_.include && name_filter_.traverse) {
-                                foreach(const boost::regex& r, name_filter_.values) {
-                                    IfcSchema::IfcProduct* parent, *current = prod;
-                                    while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
-                                        if (parent->hasName() && boost::regex_match(parent->Name(), r)) {
-                                            name_found = true;
-                                            break;
-                                        }
-                                        current = parent;
-                                    }
-                                    if (name_found) {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        bool guid_found = false;
-                        if (!guid_filter_.values.empty()) {
-                            foreach(const boost::regex& r, guid_filter_.values) {
-                                if (boost::regex_match(prod->GlobalId(), r)) {
-                                    std::cout << prod->GlobalId() << std::endl;
-                                    guid_found = true;
-                                    break;
-                                }
-                            }
-
-                            if (guid_found != guid_filter_.include && guid_filter_.traverse) {
-                                foreach(const boost::regex& r, guid_filter_.values) {
-                                    IfcSchema::IfcProduct* parent, *current = prod;
-                                    while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
-                                        if (boost::regex_match(parent->GlobalId(), r)) {
-                                            guid_found = true;
-                                            break;
-                                        }
-                                        current = parent;
-                                    }
-                                    if (guid_found) {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        bool layer_found = false;
-                        if (!layer_filter_.values.empty()) {
-                            std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> layers = IfcGeom::Kernel::get_layers(prod);
-                            std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*>::const_iterator lit;
-                            foreach(const boost::regex& r, layer_filter_.values) {
-                                for (lit = layers.begin(); lit != layers.end(); ++lit) {
-                                    if (boost::regex_match(lit->first, r)) {
-                                        layer_found = true;
-                                        break;
-                                    }
-                                }
-                                if (layer_found) {
-                                    break;
-                                }
-                            }
-
-                            if (layer_found != layer_filter_.include && layer_filter_.traverse) {
-                                foreach(const boost::regex& r, layer_filter_.values) {
-                                    for (lit = layers.begin(); lit != layers.end(); ++lit) {
-                                        IfcSchema::IfcProduct* parent, *current = prod;
-                                        while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel.get_decomposing_entity(current))) != 0) {
-                                            if (boost::regex_match(lit->first, r)) {
-                                                layer_found = true;
-                                                break;
-                                            }
-                                            current = parent;
-                                        }
-                                        if (layer_found) {
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (type_found == entity_filter_.include && name_found == name_filter_.include &&
-                            guid_found == guid_filter_.include && layer_found == layer_filter_.include) {
+                        if (boost::all(filters_, filter_match(prod))) {
                             ifcproducts->push(prod);
                         }
                     }
@@ -696,24 +496,25 @@ namespace IfcGeom {
 					continue;
 				}
 
-                ret.product = *ifcproduct_iterator;
+				IfcSchema::IfcProduct* product = *ifcproduct_iterator;
 
-                Logger::SetProduct(ret.product);
+                Logger::SetProduct(product);
 
+				BRepElement<P>* element;
 				if (ifcproduct_iterator == ifcproducts->begin() || !settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-					ret.element = kernel.create_brep_for_representation_and_product<P>(settings, representation, ret.product);
+					element = kernel.create_brep_for_representation_and_product<P>(settings, representation, product);
 				} else {
-					ret.element = kernel.create_brep_for_processed_representation(settings, representation, ret.product, current_shape_model);
+					element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
 				}
 
 				Logger::SetProduct(boost::none);
 
-				if (!ret.element) {
+				if (!element) {
 					_nextShape();
 					continue;
 				}
 
-				return ret;
+				return element;
 			}
 		}
 
@@ -727,19 +528,22 @@ namespace IfcGeom {
 			current_shape_model = 0;
 		}
 
-		public:
-
+    public:
         /// Returns what would be the product for the next shape representation
-        IfcSchema::IfcProduct* peek_next() const
-        {
-            if (ifcproducts && ifcproduct_iterator + 1 != ifcproducts->end()){
-                return *(ifcproduct_iterator + 1);
-            } else {
-                return 0;
-            }
-        }
+        /// @todo Double-check and test the impl.
+        //IfcSchema::IfcProduct* peek_next() const
+        //{
+        //    if (ifcproducts && ifcproduct_iterator + 1 != ifcproducts->end()){
+        //        return *(ifcproduct_iterator + 1);
+        //    } else {
+        //        return 0;
+        //    }
+        //}
 
-        /// Moves to the next shape representation and returns the associated product.
+        /// @todo Would this be as simple as the following code?
+        //void skip_next() { if (ifcproducts) { ++ifcproduct_iterator; } }
+
+        /// Moves to the next shape representation, create its geometry, and returns the associated product.
         /// Use get() to retrieve the created geometry.
 		IfcSchema::IfcProduct* next() {
 			// Increment the iterator over the list of products using the current
@@ -805,7 +609,7 @@ namespace IfcGeom {
 		}
 
 		IfcSchema::IfcProduct* create() {
-            shape_model next_shape_model = {0};
+			IfcGeom::BRepElement<P>* next_shape_model = 0;
 			IfcGeom::SerializedElement<P>* next_serialization = 0;
 			IfcGeom::TriangulationElement<P>* next_triangulation = 0;
 
@@ -813,19 +617,19 @@ namespace IfcGeom {
 				next_shape_model = create_shape_model_for_next_entity();
 			} catch (...) {}
 
-			if (next_shape_model.element) {
+			if (next_shape_model) {
 				if (settings.get(IteratorSettings::USE_BREP_DATA)) {
 					try {
-						next_serialization = new SerializedElement<P>(*next_shape_model.element);
+						next_serialization = new SerializedElement<P>(*next_shape_model);
 					} catch (...) {
                         Logger::Message(Logger::LOG_ERROR, "Getting a serialized element from model failed.");
 					}
 				} else if (!settings.get(IteratorSettings::DISABLE_TRIANGULATION)) {
 					try {
 						if (ifcproduct_iterator == ifcproducts->begin() || settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-							next_triangulation = new TriangulationElement<P>(*next_shape_model.element);
+							next_triangulation = new TriangulationElement<P>(*next_shape_model);
 						} else {
-							next_triangulation = new TriangulationElement<P>(*next_shape_model.element, current_triangulation->geometry_pointer());
+							next_triangulation = new TriangulationElement<P>(*next_shape_model, current_triangulation->geometry_pointer());
 						}
 					} catch (...) {
                         Logger::Message(Logger::LOG_ERROR, "Getting a triangulation element from model failed.");
@@ -835,24 +639,17 @@ namespace IfcGeom {
 
 			free_shapes();
 
-			current_shape_model = next_shape_model.element;
+			current_shape_model = next_shape_model;
 			current_serialization = next_serialization;
 			current_triangulation = next_triangulation;
 
-			return next_shape_model.product;
+            return next_shape_model ? next_shape_model->product() : 0;
 		}
 	private:
 		void _initialize() {
 			current_triangulation = 0;
 			current_shape_model = 0;
 			current_serialization = 0;
-
-			// Upon initialisation, the (empty) set of entity names,
-			// should be excluded, or no products would be processed.
-            entity_filter_.include = false;
-            name_filter_.include = false;
-            guid_filter_.include = false;
-            layer_filter_.include = false;
 
 			unit_name = "METER";
 			unit_magnitude = 1.f;
