@@ -44,19 +44,18 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 
-typedef Kernel::Aff_transformation_3 *cgal_placement_t;
-typedef Kernel::Point_3 *cgal_point_t;
-typedef Kernel::Vector_3 *cgal_direction_t;
-typedef std::vector<Kernel::Point_3> *cgal_curve_t;
-typedef std::vector<Kernel::Point_3> *cgal_wire_t;
+typedef Kernel::Aff_transformation_3 cgal_placement_t;
+typedef Kernel::Point_3 cgal_point_t;
+typedef Kernel::Vector_3 cgal_direction_t;
+typedef std::vector<Kernel::Point_3> cgal_curve_t;
+typedef std::vector<Kernel::Point_3> cgal_wire_t;
 
-struct CgalFace {
+struct cgal_face_t {
   cgal_wire_t outer;
   std::vector<cgal_wire_t> inner;
 };
 
-typedef CgalFace *cgal_face_t;
-typedef CGAL::Polyhedron_3<Kernel> *cgal_shape_t;
+typedef CGAL::Polyhedron_3<Kernel> cgal_shape_t;
 
 struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel>::HalfedgeDS> {
 private:
@@ -73,7 +72,7 @@ public:
     
     for (auto const &face: *face_list) {
       facet_vertices.push_back(std::list<std::size_t>());
-      for (auto const &point: *face->outer) {
+      for (auto const &point: face.outer) {
         if (points_map.count(point) == 0) {
           facet_vertices.back().push_back(points_map.size());
           points_map[point] = points_map.size();

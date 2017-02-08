@@ -30,9 +30,9 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid*, cgal_s
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianPoint* l, cgal_point_t& point) {
   std::vector<double> xyz = l->Coordinates();
   if (xyz.size() == 3) {
-    point = new Kernel::Point_3(xyz.size()     ? (xyz[0]*getValue(GV_LENGTH_UNIT)) : 0.0f,
-                                xyz.size() > 1 ? (xyz[1]*getValue(GV_LENGTH_UNIT)) : 0.0f,
-                                xyz.size() > 2 ? (xyz[2]*getValue(GV_LENGTH_UNIT)) : 0.0f);
+    point = Kernel::Point_3(xyz.size()     ? (xyz[0]*getValue(GV_LENGTH_UNIT)) : 0.0f,
+                            xyz.size() > 1 ? (xyz[1]*getValue(GV_LENGTH_UNIT)) : 0.0f,
+                            xyz.size() > 2 ? (xyz[2]*getValue(GV_LENGTH_UNIT)) : 0.0f);
     return true;
   } else {
     throw std::runtime_error("Point without 3 coordinates");
@@ -42,9 +42,9 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianPoint* l, cgal_po
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcDirection* l, cgal_direction_t& dir) {
 //  IN_CACHE(IfcDirection,l,cgal_direction_t,dir)
   std::vector<double> xyz = l->DirectionRatios();
-  dir = new Kernel::Vector_3(xyz.size()     ? xyz[0] : 0.0f,
-                             xyz.size() > 1 ? xyz[1] : 0.0f,
-                             xyz.size() > 2 ? xyz[2] : 0.0f);
+  dir = Kernel::Vector_3(xyz.size()     ? xyz[0] : 0.0f,
+                         xyz.size() > 1 ? xyz[1] : 0.0f,
+                         xyz.size() > 2 ? xyz[2] : 0.0f);
 //  CACHE(IfcDirection,l,dir)
   return true;
 }
@@ -52,17 +52,17 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcDirection* l, cgal_directi
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement3D* l, cgal_placement_t& trsf) {
 //  IN_CACHE(IfcAxis2Placement3D,l,gp_Trsf,trsf)
   cgal_point_t o;
-  cgal_direction_t axis = new Kernel::Vector_3(0,0,1);
-  cgal_direction_t refDirection = new Kernel::Vector_3(1,0,0);  // TODO: Put identity for now. Check?
+  cgal_direction_t axis = Kernel::Vector_3(0,0,1);
+  cgal_direction_t refDirection = Kernel::Vector_3(1,0,0);  // TODO: Put identity for now. Check?
   IfcGeom::CgalKernel::convert(l->Location(),o);
   bool hasRef = l->hasRefDirection();
   if ( l->hasAxis() ) IfcGeom::CgalKernel::convert(l->Axis(),axis);
   if ( hasRef ) IfcGeom::CgalKernel::convert(l->RefDirection(),refDirection);
   
   // TODO: From Thomas' email. Should be checked.
-  trsf = new Kernel::Aff_transformation_3(refDirection->cartesian(0), axis->cartesian(0)*refDirection->cartesian(0), axis->cartesian(0), o->cartesian(0),
-                                          refDirection->cartesian(1), axis->cartesian(1)*refDirection->cartesian(1), axis->cartesian(1), o->cartesian(1),
-                                          refDirection->cartesian(2), axis->cartesian(2)*refDirection->cartesian(2), axis->cartesian(2), o->cartesian(2));
+  trsf = Kernel::Aff_transformation_3(refDirection.cartesian(0), axis.cartesian(0)*refDirection.cartesian(0), axis.cartesian(0), o.cartesian(0),
+                                      refDirection.cartesian(1), axis.cartesian(1)*refDirection.cartesian(1), axis.cartesian(1), o.cartesian(1),
+                                      refDirection.cartesian(2), axis.cartesian(2)*refDirection.cartesian(2), axis.cartesian(2), o.cartesian(2));
   
 //  CACHE(IfcAxis2Placement3D,l,trsf)
   return true;
@@ -81,13 +81,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcObjectPlacement* l, cgal_p
     IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
     if ( relplacement->is(IfcSchema::Type::IfcAxis2Placement3D) ) {
       IfcGeom::CgalKernel::convert((IfcSchema::IfcAxis2Placement3D*)relplacement,trsf2);
-      for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
-          std::cout << "trsf " << trsf->m(i, j) << std::endl;
-        }
-      }
-//      std::cout << "trsf2" << trsf2 << std::endl;
-      *trsf = *trsf * *trsf2; // TODO: I think it's fine, but maybe should it be the other way around?
+      trsf = trsf * trsf2; // TODO: I think it's fine, but maybe should it be the other way around?
     }
     if ( current->hasPlacementRelTo() ) {
       IfcSchema::IfcObjectPlacement* relto = current->PlacementRelTo();

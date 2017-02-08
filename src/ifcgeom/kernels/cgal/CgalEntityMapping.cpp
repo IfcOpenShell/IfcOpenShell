@@ -146,9 +146,9 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_
 //    }
 //  }
   
-  cgal_shape_t polyhedron = new CGAL::Polyhedron_3<Kernel>();
+  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
-  polyhedron->delegate(builder);
+  polyhedron.delegate(builder);
   
   shape = polyhedron;
   return true;
@@ -181,7 +181,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face
     return false;
   }
   
-  cgal_face_t mf = new CgalFace();
+  cgal_face_t mf;
 
   for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
     IfcSchema::IfcFaceBound* bound = *it;
@@ -192,14 +192,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face
     cgal_wire_t wire;
     if (!convert_wire(loop, wire)) {
       Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop->entity);
-      delete mf;
       return false;
     }
 
     if (!is_interior) {
-      mf->outer = wire;
+      mf.outer = wire;
     } else {
-      mf->inner.push_back(wire);
+      mf.inner.push_back(wire);
     }
   }
   
@@ -211,15 +210,15 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& 
   IfcSchema::IfcCartesianPoint::list::ptr points = l->Polygon();
   
   // Parse and store the points in a sequence
-  cgal_wire_t polygon = new std::vector<Kernel::Point_3>();
+  cgal_wire_t polygon = std::vector<Kernel::Point_3>();
   for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
     cgal_point_t pnt;
     IfcGeom::CgalKernel::convert(*it, pnt);
-    polygon->push_back(*pnt);
+    polygon.push_back(pnt);
   }
 
   // A loop should consist of at least three vertices
-  std::size_t original_count = polygon->size();
+  std::size_t original_count = polygon.size();
   if (original_count < 3) {
     Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
     return false;
@@ -228,7 +227,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& 
   // TODO: Remove repeated points (and points that are too close to one another?)
 //  remove_duplicate_points_from_loop(polygon, true);
   
-  std::size_t count = polygon->size();
+  std::size_t count = polygon.size();
   if (original_count - count != 0) {
     std::stringstream ss; ss << (original_count - count) << " edges removed for:";
     Logger::Message(Logger::LOG_WARNING, ss.str(), l->entity);
