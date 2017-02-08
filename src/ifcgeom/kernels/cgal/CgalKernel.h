@@ -39,8 +39,12 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 #undef Handle
 
+#include <boost/property_map/property_map.hpp>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
+#include <CGAL/boost/graph/graph_traits_Polyhedron_3.h>
+#include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
+#include <CGAL/Polygon_mesh_processing/compute_normal.h>
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 
@@ -56,6 +60,8 @@ struct cgal_face_t {
 };
 
 typedef CGAL::Polyhedron_3<Kernel> cgal_shape_t;
+typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel>>::vertex_descriptor cgal_vertex_descriptor_t;
+typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel>>::face_descriptor cgal_face_descriptor_t;
 
 struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel>::HalfedgeDS> {
 private:
@@ -70,9 +76,9 @@ public:
     std::list<std::list<std::size_t>> facet_vertices;
     CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel>::HalfedgeDS> builder(hds, true);
     
-    for (auto const &face: *face_list) {
+    for (auto &face: *face_list) {
       facet_vertices.push_back(std::list<std::size_t>());
-      for (auto const &point: face.outer) {
+      for (auto &point: face.outer) {
         if (points_map.count(point) == 0) {
           facet_vertices.back().push_back(points_map.size());
           points_map[point] = points_map.size();
@@ -84,15 +90,15 @@ public:
     
     builder.begin_surface(points_map.size(), facet_vertices.size());
     
-    for (auto const &point: points_map) {
+    for (auto &point: points_map) {
 //      std::cout << "Adding point " << point.first << std::endl;
       builder.add_vertex(point.first);
     }
     
-    for (auto const &facet: facet_vertices) {
+    for (auto &facet: facet_vertices) {
       builder.begin_facet();
 //      std::cout << "Adding facet ";
-      for (auto const &vertex: facet) {
+      for (auto &vertex: facet) {
 //        std::cout << vertex << " ";
         builder.add_vertex_to_facet(vertex);
       }

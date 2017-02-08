@@ -132,20 +132,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_
     face_list.push_back(face);
   }
   
-//  for (auto const &face : face_list) {
-//    std::cout << "Face" << std::endl;
-//    std::cout << "\touter: ";
-//    for (auto const &point: *face->outer) {
-//      std::cout << "(" << point << ") ";
-//    } std::cout << std::endl;
-//    for (auto const &inner: face->inner) {
-//      std::cout << "\tinner: ";
-//      for (auto const &point: *inner) {
-//        std::cout << "(" << point << ") ";
-//      } std::cout << std::endl;
-//    }
-//  }
-  
   cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
