@@ -6,9 +6,9 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
   const cgal_placement_t& trsf = dynamic_cast<const CgalPlacement*>(place)->trsf();
   
   // Apply transformation
-  for (auto &vertex: vertices(s)) {
-    vertex->point() = vertex->point().transform(trsf);
-  }
+//  for (auto &vertex: vertices(s)) {
+//    vertex->point() = vertex->point().transform(trsf);
+//  }
   
   // Triangulate the shape and compute the normals
   std::map<cgal_vertex_descriptor_t, Kernel::Vector_3> vertex_normals;
@@ -36,11 +36,11 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
                    CGAL::to_double(current_halfedge->vertex()->point().cartesian(1)),
                    CGAL::to_double(current_halfedge->vertex()->point().cartesian(2)));
       for (int i = 0; i < 3; ++i) t->normals().push_back(CGAL::to_double(face_normals_map[face].cartesian(i)));
-//      t->faces().push_back(num_vertices);
+      t->faces().push_back(num_vertices);
       ++num_vertices;
       ++current_halfedge;
     } while (current_halfedge != face->facet_begin());
-//    t->material_ids().push_back(surface_style_id);
+    t->material_ids().push_back(surface_style_id);
     ++num_faces;
   }
 }

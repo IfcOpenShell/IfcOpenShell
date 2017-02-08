@@ -40,12 +40,10 @@ namespace IfcGeom {
 		virtual void Multiply(const ConversionResultPlacement* other) {
 			// TODO: Check
       trsf_ = ((CgalPlacement *)other)->trsf_ * trsf_;
-			throw std::runtime_error("Not implemented");
 		}
 		virtual void PreMultiply(const ConversionResultPlacement* other) {
 			// TODO: Check
       trsf_ = trsf_ * ((CgalPlacement *)other)->trsf_;
-			throw std::runtime_error("Not implemented");
 		}
 		virtual ConversionResultPlacement* clone() const {
 			return new CgalPlacement(trsf_);
