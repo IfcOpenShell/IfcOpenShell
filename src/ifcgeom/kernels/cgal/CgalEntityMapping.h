@@ -43,3 +43,4 @@ FACE(IfcFace);
 WIRE(IfcPolyLoop);
 
 CLASS(IfcCartesianPoint,cgal_point_t);
+CLASS(IfcDirection,cgal_direction_t);

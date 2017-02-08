@@ -46,6 +46,7 @@ typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 
 typedef Kernel::Aff_transformation_3 *cgal_placement_t;
 typedef Kernel::Point_3 *cgal_point_t;
+typedef Kernel::Vector_3 *cgal_direction_t;
 typedef std::vector<Kernel::Point_3> *cgal_curve_t;
 typedef std::vector<Kernel::Point_3> *cgal_wire_t;
 

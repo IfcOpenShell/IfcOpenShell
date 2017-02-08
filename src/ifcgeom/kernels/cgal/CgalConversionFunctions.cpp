@@ -30,9 +30,22 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid*, cgal_s
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianPoint* l, cgal_point_t& point) {
   std::vector<double> xyz = l->Coordinates();
   if (xyz.size() == 3) {
-    point = new Kernel::Point_3(xyz[0], xyz[1], xyz[2]);
+    point = new Kernel::Point_3(xyz.size()     ? (xyz[0]*getValue(GV_LENGTH_UNIT)) : 0.0f,
+                                xyz.size() > 1 ? (xyz[1]*getValue(GV_LENGTH_UNIT)) : 0.0f,
+                                xyz.size() > 2 ? (xyz[2]*getValue(GV_LENGTH_UNIT)) : 0.0f);
     return true;
   } else {
     throw std::runtime_error("Point without 3 coordinates");
   }
 }
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcDirection* l, cgal_direction_t& dir) {
+//  IN_CACHE(IfcDirection,l,cgal_direction_t,dir)
+  std::vector<double> xyz = l->DirectionRatios();
+  dir = new Kernel::Vector_3(xyz.size()     ? xyz[0] : 0.0f,
+                             xyz.size() > 1 ? xyz[1] : 0.0f,
+                             xyz.size() > 2 ? xyz[2] : 0.0f);
+//  CACHE(IfcDirection,l,dir)
+  return true;
+}
+
