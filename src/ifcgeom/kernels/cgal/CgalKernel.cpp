@@ -94,7 +94,7 @@ IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_representat
 
 	cgal_placement_t trsf;
 	try {
-		// convert(product->ObjectPlacement(), trsf);
+		 convert(product->ObjectPlacement(), trsf);
 	} catch (...) {}
 
 	// Does the IfcElement have any IfcOpenings?
@@ -146,7 +146,7 @@ IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_processed_r
 
 	cgal_placement_t trsf;
 	try {
-		// convert(product->ObjectPlacement(), trsf);
+		 convert(product->ObjectPlacement(), trsf);
 	} catch (...) {}
 
 	std::string context_string = "";

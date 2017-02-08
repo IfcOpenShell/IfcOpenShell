@@ -49,3 +49,46 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcDirection* l, cgal_directi
   return true;
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement3D* l, cgal_placement_t& trsf) {
+//  IN_CACHE(IfcAxis2Placement3D,l,gp_Trsf,trsf)
+//  cgal_point_t o;cgal_direction_t axis = new Kernel::Vector_3(0,0,1);cgal_direction_t refDirection;
+//  IfcGeom::OpenCascadeKernel::convert(l->Location(),o);
+//  bool hasRef = l->hasRefDirection();
+//  if ( l->hasAxis() ) IfcGeom::OpenCascadeKernel::convert(l->Axis(),axis);
+//  if ( hasRef ) IfcGeom::OpenCascadeKernel::convert(l->RefDirection(),refDirection);
+//  gp_Ax3 ax3;
+//  if ( hasRef ) ax3 = gp_Ax3(o,axis,refDirection);
+//  else ax3 = gp_Ax3(o,axis);
+//  
+//  if (!axis_equal(ax3, (gp_Ax3) gp::XOY(), getValue(GV_PRECISION))) {
+//    trsf.SetTransformation(ax3, gp::XOY());
+//  }
+//  
+//  CACHE(IfcAxis2Placement3D,l,trsf)
+  return true;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcObjectPlacement* l, cgal_placement_t& trsf) {
+//  IN_CACHE(IfcObjectPlacement,l,cgal_placement_t,trsf)
+  if ( ! l->is(IfcSchema::Type::IfcLocalPlacement) ) {
+    Logger::Message(Logger::LOG_ERROR, "Unsupported IfcObjectPlacement:", l->entity);
+    return false;
+  }
+  IfcSchema::IfcLocalPlacement* current = (IfcSchema::IfcLocalPlacement*)l;
+  for (;;) {
+    cgal_placement_t trsf2;
+    IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
+    if ( relplacement->is(IfcSchema::Type::IfcAxis2Placement3D) ) {
+      IfcGeom::CgalKernel::convert((IfcSchema::IfcAxis2Placement3D*)relplacement,trsf2);
+      *trsf = *trsf * *trsf2; // TODO: Or should it be the other way around?
+    }
+    if ( current->hasPlacementRelTo() ) {
+      IfcSchema::IfcObjectPlacement* relto = current->PlacementRelTo();
+      if ( relto->is(IfcSchema::Type::IfcLocalPlacement) )
+        current = (IfcSchema::IfcLocalPlacement*)current->PlacementRelTo();
+      else break;
+    } else break;
+  }
+//  CACHE(IfcObjectPlacement,l,trsf)
+  return true;
+}
