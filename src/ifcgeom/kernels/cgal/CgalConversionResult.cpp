@@ -6,9 +6,9 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
   const cgal_placement_t& trsf = dynamic_cast<const CgalPlacement*>(place)->trsf();
   
   // Apply transformation
-//  for (auto &vertex: vertices(s)) {
-//    vertex->point() = vertex->point().transform(trsf);
-//  }
+  if (place != NULL) for (auto &vertex: vertices(s)) {
+    vertex->point() = vertex->point().transform(trsf);
+  }
   
   // Triangulate the shape and compute the normals
   std::map<cgal_vertex_descriptor_t, Kernel::Vector_3> vertex_normals;
