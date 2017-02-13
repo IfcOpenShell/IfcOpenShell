@@ -39,6 +39,7 @@ SHAPE(IfcExtrudedAreaSolid);
 SHAPE(IfcConnectedFaceSet);
 
 FACE(IfcFace);
+FACE(IfcRectangleProfileDef);
 
 WIRE(IfcPolyLoop);
 
