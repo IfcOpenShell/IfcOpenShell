@@ -48,11 +48,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   std::list<cgal_face_t> face_list;
   face_list.push_back(face);
   
-  cgal_face_t top_face;
-  for (auto const &vertex: face.outer) {
-    top_face.outer.push_back(vertex+dir);
-  } face_list.push_back(top_face);
-  
   for (std::vector<Kernel::Point_3>::const_iterator current_vertex = face.outer.begin();
        current_vertex != face.outer.end();
        ++current_vertex) {
@@ -61,12 +56,19 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     if (next_vertex == face.outer.end()) {
       next_vertex = face.outer.begin();
     } cgal_face_t side_face;
-    side_face.outer.push_back(*current_vertex);
     side_face.outer.push_back(*next_vertex);
-    side_face.outer.push_back(*next_vertex+dir);
+    side_face.outer.push_back(*current_vertex);
     side_face.outer.push_back(*current_vertex+dir);
+    side_face.outer.push_back(*next_vertex+dir);
     face_list.push_back(side_face);
   }
+  
+  cgal_face_t top_face;
+  for (std::vector<Kernel::Point_3>::const_reverse_iterator vertex = face.outer.rbegin();
+       vertex != face.outer.rend();
+       ++vertex) {
+    top_face.outer.push_back(*vertex+dir);
+  } face_list.push_back(top_face);
   
   cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
