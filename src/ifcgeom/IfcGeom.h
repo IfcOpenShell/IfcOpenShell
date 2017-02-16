@@ -44,6 +44,7 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include <gp_Pln.hxx>
 #include <TColgp_SequenceOfPnt.hxx>
 #include <TopTools_ListOfShape.hxx>
+#include <BOPAlgo_Operation.hxx>
 
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcUtil.h"
@@ -180,6 +181,14 @@ public:
 
 	bool split_solid_by_surface(const TopoDS_Shape&, const Handle_Geom_Surface&, TopoDS_Shape&, TopoDS_Shape&);
 	bool split_solid_by_shell(const TopoDS_Shape&, const TopoDS_Shape& s, TopoDS_Shape&, TopoDS_Shape&);
+
+#if OCC_VERSION_HEX < 0x60900
+	bool boolean_operation(const TopoDS_Shape&, const TopTools_ListOfShape&, BOPAlgo_Operation, TopoDS_Shape&);
+	bool boolean_operation(const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&);
+#else
+	bool boolean_operation(const TopoDS_Shape&, const TopTools_ListOfShape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
+	bool boolean_operation(const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
+#endif
 
 	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const Handle_Geom_Surface&);
 	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const TopoDS_Face&);

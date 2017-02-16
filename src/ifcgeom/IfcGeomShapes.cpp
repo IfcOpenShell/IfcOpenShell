@@ -538,43 +538,22 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	return true;
 	*/
 
+	BOPAlgo_Operation occ_op;
 	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
+		occ_op = BOPAlgo_CUT;
+	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
+		occ_op = BOPAlgo_COMMON;
+	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
+		occ_op = BOPAlgo_FUSE;
+	} else {
+		return false;
+	}
 
-		bool valid_cut = false;
+	bool valid_result = boolean_operation(s1, s2, occ_op, shape);
 
-#if OCC_VERSION_HEX < 0x60900
-		BRepAlgoAPI_Cut brep_cut(s1, s2);
-#else
-		BRepAlgoAPI_Cut brep_cut;
-		TopTools_ListOfShape s1s;
-		s1s.Append(s1);
-		TopTools_ListOfShape s2s;
-		s2s.Append(s2);
-		brep_cut.SetFuzzyValue(getValue(GV_PRECISION));
-		brep_cut.SetArguments(s1s);
-		brep_cut.SetTools(s2s);
-		brep_cut.Build();
-#endif
-
-		if ( brep_cut.IsDone() ) {
-			TopoDS_Shape result = brep_cut;
-
-			ShapeFix_Shape fix(result);
-			try {
-				fix.Perform();
-				result = fix.Shape();
-			} catch (...) {
-				Logger::Message(Logger::LOG_WARNING, "Shape healing failed on boolean result", l->entity);
-			}
-		
-			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
-			if ( is_valid ) {
-				shape = result;
-				valid_cut = true;
-			} 
-		}
-
-		if ( valid_cut ) {
+	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
+		// In case of a subtraction, a check on volume is performed.
+		if (valid_result) {
 			const double volume_after_subtraction = shape_volume(shape);
 			if ( ALMOST_THE_SAME(first_operand_volume,volume_after_subtraction) )
 				Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",l->entity);
@@ -582,43 +561,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",l->entity);
 			shape = s1;
 		}
-
+		// NB: After issuing error the first operand is returned!
 		return true;
-
-	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
-
-		BRepAlgoAPI_Fuse brep_fuse(s1,s2);
-		if ( brep_fuse.IsDone() ) {
-			TopoDS_Shape result = brep_fuse;
-
-			ShapeFix_Shape fix(result);
-			fix.Perform();
-			result = fix.Shape();
-		
-			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
-			if ( is_valid ) {
-				shape = result;
-				return true;
-			} 
-		}	
-
-	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
-
-		BRepAlgoAPI_Common brep_common(s1,s2);
-		if ( brep_common.IsDone() ) {
-			TopoDS_Shape result = brep_common;
-
-			ShapeFix_Shape fix(result);
-			fix.Perform();
-			result = fix.Shape();
-		
-			bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
-			if ( is_valid ) {
-				shape = result;
-				return true;
-			} 
-		}
-
+	} else {
+		return valid_result;
 	}
 	return false;
 }

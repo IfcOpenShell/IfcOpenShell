@@ -86,6 +86,7 @@
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepAlgoAPI_Common.hxx>
+#include <BRepAlgoAPI_BooleanOperation.hxx>
 
 #include <BRepAlgo_NormalProjection.hxx>
 
@@ -95,6 +96,7 @@
 
 #include <ShapeAnalysis_Curve.hxx>
 #include <ShapeAnalysis_Surface.hxx>
+#include <ShapeAnalysis_ShapeTolerance.hxx>
 
 #include <BRepFilletAPI_MakeFillet2d.hxx>
 
@@ -2413,3 +2415,109 @@ TopoDS_Shape IfcGeom::Kernel::apply_transformation(const TopoDS_Shape& s, const 
 	}
 }
 
+#if OCC_VERSION_HEX < 0x60900
+bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result) {
+	result = a;
+	TopTools_ListIteratorOfListOfShape it(b);
+	for (; it.More(); it.Next()) {
+		TopoDS_Shape r;
+		if (!boolean_operation(result, it.Value(), op, r)) {
+			return false;
+		}
+		result = r;
+	}
+	return true;
+}
+bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result) {
+	bool succesful = true;
+	BRepAlgoAPI_BooleanOperation* builder;
+	if (op == BOPAlgo_CUT) {
+		builder = new BRepAlgoAPI_Cut(a, b);
+	} else if (op == BOPAlgo_COMMON) {
+		builder = new BRepAlgoAPI_Common(a, b);
+	} else if (op == BOPAlgo_FUSE) {
+		builder = new BRepAlgoAPI_Fuse(a, b);
+	} else {
+		return false;
+	}
+	if (builder->IsDone()) {
+		TopoDS_Shape r = *builder;
+		succesful = BRepCheck_Analyzer(r).IsValid() != 0;
+		if (succesful) {
+			result = r;
+
+			ShapeFix_Shape fix(result);
+			try {
+				fix.Perform();
+				result = fix.Shape();
+			} catch (...) {
+				Logger::Message(Logger::LOG_WARNING, "Shape healing failed on boolean result");
+			}
+
+		} else {
+			// Increase tolerance max 3 times until succesful
+			TopoDS_Shape a2 = a;
+			TopoDS_Shape b2 = b;
+			ShapeAnalysis_ShapeTolerance tolerance;
+			const double t1 = tolerance.Tolerance(a, 1) * 10.;
+			const double t2 = tolerance.Tolerance(b, 1) * 10.;
+			if (((std::max)(t1, t2) + 1e-15) > getValue(GV_PRECISION) * 1000.) {
+				return false;
+			}
+			apply_tolerance(a2, t1);
+			apply_tolerance(b2, t2);
+			succesful = boolean_operation(a2, b2, op, result);
+		}
+	}
+	delete builder;
+	return succesful;
+}
+#else
+bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+	bool success = false;
+	BRepAlgoAPI_BooleanOperation* builder;
+	if (op == BOPAlgo_CUT) {
+		builder = new BRepAlgoAPI_Cut();
+	} else if (op == BOPAlgo_COMMON) {
+		builder = new BRepAlgoAPI_Common();
+	} else if (op == BOPAlgo_FUSE) {
+		builder = new BRepAlgoAPI_Fuse();
+	} else {
+		return false;
+	}
+	if (fuzziness < 0.) {
+		fuzziness = getValue(GV_PRECISION);
+	}
+	TopTools_ListOfShape s1s;
+	s1s.Append(a);
+	builder->SetFuzzyValue(fuzziness);
+	builder->SetArguments(s1s);
+	builder->SetTools(b);
+	builder->Build();
+	if (builder->IsDone()) {
+		TopoDS_Shape r = *builder;
+		success = BRepCheck_Analyzer(r).IsValid() != 0;
+		if (success) {
+			result = r;
+			ShapeFix_Shape fix(result);
+			try {
+				fix.Perform();
+				result = fix.Shape();
+			} catch (...) {
+				Logger::Message(Logger::LOG_WARNING, "Shape healing failed on boolean result");
+			}
+		}
+	}
+	delete builder;
+	if (!success) {
+		return boolean_operation(a, b, op, result, fuzziness * 10.);
+	}
+	return success;
+}
+
+bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+	TopTools_ListOfShape bs;
+	bs.Append(b);
+	return boolean_operation(a, bs, op, result, fuzziness);
+}
+#endif
