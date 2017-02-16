@@ -122,7 +122,7 @@ void write_log();
 struct geom_filter
 {
     geom_filter() : type(UNUSED) {}
-    enum filter_type { UNUSED, ENTITY_TYPE, ENTITY_ARG, LAYER_NAME };
+    enum filter_type { UNUSED, ENTITY_TYPE, LAYER_NAME, ENTITY_ARG };
     filter_type type;
     std::string arg;
     std::set<std::string> values;
@@ -151,9 +151,8 @@ int main(int argc, char** argv)
     exclusion_filter exclude_filter;
     supported_args.push_back(NAME_ARG);
     supported_args.push_back(GUID_ARG);
-    /// @todo
-    //supported_args.push_back(DESC_ARG);
-    //supported_args.push_back(TAG_ARG);
+    supported_args.push_back(DESC_ARG);
+    supported_args.push_back(TAG_ARG);
 
     po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -207,7 +206,7 @@ int main(int argc, char** argv)
             "2) 'layers': the entities that are assigned to presentation layers of which names "
             "match the given values should be included.\n"
             "3) 'arg <ArgumentName>': the following list of values for that specific argument should be included. "
-            "Currently supported arguments are GlobalId and Name.\n\n"
+            "Currently supported arguments are GlobalId, Name, Description, and Tag.\n\n"
             "The values for 'layers' and 'arg' are handled case-sensitively (wildcards supported)."
             "--include and --exclude cannot be placed right before input file argument and "
             "only single of each argument supported for now. See also --exclude and --traverse.")
@@ -389,6 +388,7 @@ int main(int argc, char** argv)
 
 
     // Set up filters. Entity filter is used always by default.
+    std::vector<IfcGeom::filter_t> filters;
     /// @todo Clean up this filter initialization code
     IfcGeom::entity_filter entity_filter;
     entity_filter.traverse = traverse;
@@ -418,25 +418,8 @@ int main(int argc, char** argv)
         std::cout << "[Error] " << e.what() << std::endl;
         return 1;
     }
-
-    IfcGeom::arg_filter<IfcSchema::IfcRoot, 2, std::string> name_filter;
-    name_filter.traverse = traverse;
-    if (include_filter.arg == NAME_ARG) {
-        name_filter.include = true;
-        name_filter.populate(include_filter.values);
-    } else if (exclude_filter.arg == NAME_ARG) {
-        name_filter.include = false;
-        name_filter.populate(exclude_filter.values);
-    }
-
-    IfcGeom::arg_filter<IfcSchema::IfcRoot, 0, std::string> guid_filter;
-    guid_filter.traverse = traverse;
-    if (include_filter.arg == GUID_ARG) {
-        guid_filter.include = true;
-        guid_filter.populate(include_filter.values);
-    } else if (exclude_filter.arg == GUID_ARG) {
-        guid_filter.include = false;
-        guid_filter.populate(include_filter.values);
+    if (!entity_filter.values.empty()) {
+        filters.push_back(boost::ref(entity_filter));
     }
 
     IfcGeom::layer_filter layer_filter;
@@ -448,6 +431,71 @@ int main(int argc, char** argv)
         layer_filter.include = false;
         layer_filter.populate(exclude_filter.values);
     }
+    if (!layer_filter.values.empty()) {
+        filters.push_back(boost::ref(layer_filter)); 
+    }
+
+    // IfcRoot.GlobalId
+    IfcGeom::arg_filter<IfcSchema::IfcRoot, 0, std::string> guid_filter;
+    guid_filter.traverse = traverse;
+    if (include_filter.arg == GUID_ARG) {
+        guid_filter.include = true;
+        guid_filter.populate(include_filter.values);
+    } else if (exclude_filter.arg == GUID_ARG) {
+        guid_filter.include = false;
+        guid_filter.populate(include_filter.values);
+    }
+    if (!guid_filter.values.empty()) {
+        filters.push_back(boost::ref(guid_filter));
+    }
+
+    // Note: skipping IfcRoot OwnerHistory, argument index 1
+
+    // IfcRoot.Name
+    IfcGeom::arg_filter<IfcSchema::IfcRoot, 2, std::string> name_filter;
+    name_filter.traverse = traverse;
+    if (include_filter.arg == NAME_ARG) {
+        name_filter.include = true;
+        name_filter.populate(include_filter.values);
+    } else if (exclude_filter.arg == NAME_ARG) {
+        name_filter.include = false;
+        name_filter.populate(exclude_filter.values);
+    }
+    if (!name_filter.values.empty()) {
+        filters.push_back(boost::ref(name_filter));
+    }
+
+    // IfcRoot.Description
+    IfcGeom::arg_filter<IfcSchema::IfcRoot, 3, std::string> desc_filter;
+    desc_filter.traverse = traverse;
+    if (include_filter.arg == DESC_ARG) {
+        desc_filter.include = true;
+        desc_filter.populate(include_filter.values);
+    } else if (exclude_filter.arg == DESC_ARG) {
+        desc_filter.include = false;
+        desc_filter.populate(exclude_filter.values);
+    }
+    if (!desc_filter.values.empty()) {
+        filters.push_back(boost::ref(desc_filter));
+    }
+
+    /// @todo IfcProxy.Tag
+    //IfcGeom::arg_filter<IfcSchema::IfcProxy, 8, std::string> tag_filter;
+    // IfcElement.Tag
+    IfcGeom::arg_filter<IfcSchema::IfcElement, 7, std::string> tag_filter;
+    tag_filter.traverse = traverse;
+    if (include_filter.arg == TAG_ARG) {
+        tag_filter.include = true;
+        tag_filter.populate(include_filter.values);
+    } else if (exclude_filter.arg == TAG_ARG) {
+        tag_filter.include = false;
+        tag_filter.populate(exclude_filter.values);
+    }
+    if (!tag_filter.values.empty()) {
+        filters.push_back(boost::ref(tag_filter));
+    }
+
+    ///@ todo Logger::Message(Logger::LOG_NOTICE, "Filtering by X, Y and Z.")
 
 	if (output_extension == ".xml") {
 		int exit_code = 1;
@@ -537,21 +585,6 @@ int main(int argc, char** argv)
         settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 	}
 
-    IfcGeom::Iterator<real_t> context_iterator(settings, input_filename);
-
-    if (!guid_filter.values.empty()) {
-        context_iterator.filters().push_back(boost::ref(guid_filter));
-    }
-    if (!name_filter.values.empty()) {
-        context_iterator.filters().push_back(boost::ref(name_filter));
-    }
-    if (!entity_filter.values.empty()) {
-        context_iterator.filters().push_back(boost::ref(entity_filter));
-    }
-    if (!layer_filter.values.empty()) {
-        context_iterator.filters().push_back(boost::ref(layer_filter));
-    }
-
 	if (!serializer->ready()) {
 		write_log();
 		return 1;
@@ -559,7 +592,8 @@ int main(int argc, char** argv)
 
 	time_t start,end;
 	time(&start);
-	
+
+    IfcGeom::Iterator<real_t> context_iterator(settings, input_filename, filters);
 	if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we failed to parse
         /// the file and for a case where we found no entities that satisfy our filtering criteria.

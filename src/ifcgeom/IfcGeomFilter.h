@@ -24,7 +24,11 @@
 #define IFCGEOMFILTER_H
 
 #include "IfcGeom.h"
+
+#include <boost/function.hpp>
 #include <boost/regex.hpp>
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 
 namespace IfcGeom
 {
@@ -100,13 +104,13 @@ namespace IfcGeom
 
     /// @todo Maybe not use template class for this after all. Attribute name would be better
     /// than index, but IfcBaseClass doesn't have getArgument(name) (IfcLateBoundEntity would have though).
-    template<class ClassType, unsigned short ArgIndex, typename ArgType>
+    template<class IfcType, unsigned short ArgIndex, typename ArgType>
     struct arg_filter : public wildcard_filter
     {
         arg_filter()
         {
 #ifndef NDEBUG
-            ClassType dummy(0);
+            IfcType dummy(0);
             assert(ArgIndex < dummy.getArgumentCount());
 #endif
         }
@@ -114,7 +118,7 @@ namespace IfcGeom
             : wildcard_filter(include, traverse, patterns)
         {
     #ifndef NDEBUG
-            ClassType dummy(0);
+            IfcType dummy(0);
             assert(ArgIndex < dummy.getArgumentCount());
     #endif
             populate(patterns);
@@ -122,8 +126,8 @@ namespace IfcGeom
 
         ArgType value(IfcSchema::IfcProduct* prod) const
         {
-            Argument *arg = prod->entity->getArgument(ArgIndex);
-            return !arg->isNull() ? *arg : ArgType();
+            Argument *arg = prod->is(IfcType::Class()) ? prod->entity->getArgument(ArgIndex) : 0;
+            return arg && !arg->isNull() ? *arg : ArgType();
         }
 
         bool operator()(IfcSchema::IfcProduct* prod) const
