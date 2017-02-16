@@ -126,7 +126,7 @@ except KeyError:
         os.makedirs(DEPS_DIR)
 
 try:
-    BUILD_CFG=os.environ["BUID_CFG"]
+    BUILD_CFG=os.environ["BUILD_CFG"]
 except KeyError:
     BUILD_CFG="RelWithDebInfo"
     os.environ["BUILD_CFG"]=BUILD_CFG
