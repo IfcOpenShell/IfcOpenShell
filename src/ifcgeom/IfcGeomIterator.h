@@ -145,7 +145,18 @@ namespace IfcGeom {
 			}
 		}
 
+        /// @todo public/private sections all over the place: move all public to the beginning of the class
 	public:
+        Iterator(const IteratorSettings& settings, const std::string& filename, std::vector<filter_t>& filters)
+            : settings(settings)
+            , ifc_file(new IfcParse::IfcFile)
+            , owns_ifc_file(true)
+            , filters_(filters)
+        {
+            ifc_file->Init(filename);
+            _initialize();
+        }
+
 		bool initialize() {
 			try {
 				initUnits();
@@ -307,8 +318,8 @@ namespace IfcGeom {
 
 		IfcParse::IfcFile* getFile() const { return ifc_file; }
 
-        const std::vector<filter_t> &filters() const { return filters_; }
-        std::vector<filter_t> &filters() { return filters_; }
+        const std::vector<filter_t>& filters() const { return filters_; }
+        std::vector<filter_t>& filters() { return filters_; }
 
         const gp_XYZ& bounds_min() const { return bounds_min_; }
         const gp_XYZ& bounds_max() const { return bounds_max_; }
