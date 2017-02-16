@@ -53,6 +53,9 @@
 const std::string DEFAULT_EXTENSION = "obj";
 const std::string TEMP_FILE_EXTENSION = ".tmp";
 
+const std::string NAME_ARG = "Name", GUID_ARG = "GlobalId", DESC_ARG = "Description", TAG_ARG = "Tag";
+std::vector<std::string> supported_args;
+
 namespace po = boost::program_options;
 
 void print_version()
@@ -119,8 +122,9 @@ void write_log();
 struct geom_filter
 {
     geom_filter() : type(UNUSED) {}
-    enum filter_type { UNUSED, ENTITY_TYPE, ENTITY_NAME, ENTITY_GUID, LAYER_NAME };
+    enum filter_type { UNUSED, ENTITY_TYPE, ENTITY_ARG, LAYER_NAME };
     filter_type type;
+    std::string arg;
     std::set<std::string> values;
 };
 // Specialized classes for knowing which type of filter we are validating within validate().
@@ -145,6 +149,11 @@ int main(int argc, char** argv)
     double deflection_tolerance;
     inclusion_filter include_filter;
     exclusion_filter exclude_filter;
+    supported_args.push_back(NAME_ARG);
+    supported_args.push_back(GUID_ARG);
+    /// @todo
+    //supported_args.push_back(DESC_ARG);
+    //supported_args.push_back(TAG_ARG);
 
     po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -192,15 +201,19 @@ int main(int argc, char** argv)
 			"Specifies whether to enable the slicing of products according "
 			"to their associated IfcMaterialLayerSet.")
         ("include", po::value<inclusion_filter>(&include_filter)->multitoken(),
-            "Specifies that the entities or names provided are to be included. "
-            "If --include=entities specified, the following list of types should be included in the geometrical output. "
-            "SVG output defaults to IfcSpace to be included. The entity names are handled case-insensitively. "
-            "If --include=names specified, the following list of names or wildcard patterns should be included in the "
-            "geometrical output. The name patterns are handled case-sensitively. Cannot be placed right before input file argument. "
-            "Only single option supported for now.")
+            "Specifies that the entities that match a specific filtering criteria are to be included in the geometrical output:\n"
+            "1) 'entities': the following list of types should be included . SVG output defaults "
+            "to IfcSpace to be included. The entity names are handled case-insensitively.\n"
+            "2) 'layers': the entities that are assigned to presentation layers of which names "
+            "match the given values should be included.\n"
+            "3) 'arg <ArgumentName>': the following list of values for that specific argument should be included. "
+            "Currently supported arguments are GlobalId and Name.\n\n"
+            "The values for 'layers' and 'arg' are handled case-sensitively (wildcards supported)."
+            "--include and --exclude cannot be placed right before input file argument and "
+            "only single of each argument supported for now. See also --exclude and --traverse.")
         ("exclude", po::value<exclusion_filter>(&exclude_filter)->multitoken(),
-            "Specifies that the 'entities', 'names', 'guids', or 'layers' provided are to be excluded. "
-            "The default value is '--exclude=entities IfcOpeningElement IfcSpace'. See --include for syntax and more details.")
+            "Specifies that the entities that match a specific filtering criteria are to be excluded in the geometrical output."
+            "See --include for syntax and more details. The default value is '--exclude=entities IfcOpeningElement IfcSpace'.")
         ("no-normals",
             "Disables computation of normals. Saves time and file size and is useful "
             "in instances where you're going to recompute normals for the exported "
@@ -211,7 +224,7 @@ int main(int argc, char** argv)
             "Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
             "Not guaranteed to work properly if used with --weld-vertices.")
         ("traverse",
-            "Applies --include or --exclude also to the decomposition and/or containment (IsDecomposedBy, "
+            "Applies all --include or --exclude filters also to the decomposition and/or containment (IsDecomposedBy, "
             "HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. --include=names \"Level 1\" "
             "--traverse includes entity with name \"Level 1\" and all of its children.");
 
@@ -376,7 +389,7 @@ int main(int argc, char** argv)
 
 
     // Set up filters. Entity filter is used always by default.
-
+    /// @todo Clean up this filter initialization code
     IfcGeom::entity_filter entity_filter;
     entity_filter.traverse = traverse;
     try {
@@ -408,20 +421,20 @@ int main(int argc, char** argv)
 
     IfcGeom::arg_filter<IfcSchema::IfcRoot, 2, std::string> name_filter;
     name_filter.traverse = traverse;
-    if (include_filter.type == geom_filter::ENTITY_NAME) {
+    if (include_filter.arg == NAME_ARG) {
         name_filter.include = true;
         name_filter.populate(include_filter.values);
-    } else if (exclude_filter.type == geom_filter::ENTITY_NAME) {
+    } else if (exclude_filter.arg == NAME_ARG) {
         name_filter.include = false;
         name_filter.populate(exclude_filter.values);
     }
 
     IfcGeom::arg_filter<IfcSchema::IfcRoot, 0, std::string> guid_filter;
     guid_filter.traverse = traverse;
-    if (include_filter.type == geom_filter::ENTITY_GUID) {
+    if (include_filter.arg == GUID_ARG) {
         guid_filter.include = true;
         guid_filter.populate(include_filter.values);
-    } else if (exclude_filter.type == geom_filter::ENTITY_GUID) {
+    } else if (exclude_filter.arg == GUID_ARG) {
         guid_filter.include = false;
         guid_filter.populate(include_filter.values);
     }
@@ -657,29 +670,34 @@ void write_log() {
 	}
 }
 
-/// @todo Duplicate code for inclusion_filter and exclusion_filter validation.
-void validate(boost::any& v, const std::vector<std::string>& values, inclusion_filter*, int)
+void parse_filter(geom_filter &filter, const std::vector<std::string>& values)
 {
-    /// @todo For now only single --include or --exclude supported. Support having multiple.
-    po::validators::check_first_occurrence(v);
-    inclusion_filter filter;
-
     if (values.size() == 0) {
         throw po::validation_error(po::validation_error::at_least_one_value_required);
     }
     std::string type = *values.begin();
     if (type == "entities") {
         filter.type = geom_filter::ENTITY_TYPE;
-    } else if (type == "names") {
-        filter.type = geom_filter::ENTITY_NAME;
-    } else if (type == "guids") {
-        filter.type = geom_filter::ENTITY_GUID;
     } else if (type == "layers") {
         filter.type = geom_filter::LAYER_NAME;
+    } else if (type == "arg") {
+        filter.type = geom_filter::ENTITY_ARG;
+        filter.arg = *(values.begin() + 1);
+        if (std::find(supported_args.begin(), supported_args.end(), filter.arg) == supported_args.end()) {
+            throw po::validation_error(po::validation_error::invalid_option_value);
+        }
     } else {
         throw po::validation_error(po::validation_error::invalid_option_value);
     }
-    filter.values.insert(values.begin() + 1, values.end());
+    filter.values.insert(values.begin() + (filter.type == geom_filter::ENTITY_ARG ? 2 : 1), values.end());
+}
+
+void validate(boost::any& v, const std::vector<std::string>& values, inclusion_filter*, int)
+{
+    /// @todo For now only single --include or --exclude supported. Support having multiple.
+    po::validators::check_first_occurrence(v);
+    inclusion_filter filter;
+    parse_filter(filter, values);
     v = filter;
 }
 
@@ -687,22 +705,6 @@ void validate(boost::any& v, const std::vector<std::string>& values, exclusion_f
 {
     po::validators::check_first_occurrence(v);
     exclusion_filter filter;
-
-    if (values.size() == 0) {
-        throw po::validation_error(po::validation_error::at_least_one_value_required);
-    }
-    std::string type = *values.begin();
-    if (type == "entities") {
-        filter.type = geom_filter::ENTITY_TYPE;
-    } else if (type == "names") {
-        filter.type = geom_filter::ENTITY_NAME;
-    } else if (type == "guids") {
-        filter.type = geom_filter::ENTITY_GUID;
-    } else if (type == "layers") {
-        filter.type = geom_filter::LAYER_NAME;
-    } else {
-        throw po::validation_error(po::validation_error::invalid_option_value);
-    }
-    filter.values.insert(values.begin() + 1, values.end());
+    parse_filter(filter, values);
     v = filter;
 }
