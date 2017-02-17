@@ -436,7 +436,7 @@ int main(int argc, char** argv)
     }
 
     // IfcRoot.GlobalId
-    IfcGeom::arg_filter<IfcSchema::IfcRoot, 0, std::string> guid_filter;
+    IfcGeom::string_arg_filter guid_filter(IfcSchema::Type::IfcRoot, 0);
     guid_filter.traverse = traverse;
     if (include_filter.arg == GUID_ARG) {
         guid_filter.include = true;
@@ -452,7 +452,7 @@ int main(int argc, char** argv)
     // Note: skipping IfcRoot OwnerHistory, argument index 1
 
     // IfcRoot.Name
-    IfcGeom::arg_filter<IfcSchema::IfcRoot, 2, std::string> name_filter;
+    IfcGeom::string_arg_filter name_filter(IfcSchema::Type::IfcRoot, 2);
     name_filter.traverse = traverse;
     if (include_filter.arg == NAME_ARG) {
         name_filter.include = true;
@@ -466,7 +466,7 @@ int main(int argc, char** argv)
     }
 
     // IfcRoot.Description
-    IfcGeom::arg_filter<IfcSchema::IfcRoot, 3, std::string> desc_filter;
+    IfcGeom::string_arg_filter desc_filter(IfcSchema::Type::IfcRoot, 3);
     desc_filter.traverse = traverse;
     if (include_filter.arg == DESC_ARG) {
         desc_filter.include = true;
@@ -479,10 +479,11 @@ int main(int argc, char** argv)
         filters.push_back(boost::ref(desc_filter));
     }
 
-    /// @todo IfcProxy.Tag
-    //IfcGeom::arg_filter<IfcSchema::IfcProxy, 8, std::string> tag_filter;
-    // IfcElement.Tag
-    IfcGeom::arg_filter<IfcSchema::IfcElement, 7, std::string> tag_filter;
+    // IfcProxy.Tag & IfcElement.Tag
+    IfcGeom::string_arg_filter::arg_map_t tag_args;
+    tag_args[IfcSchema::Type::IfcProxy] = 8;
+    tag_args[IfcSchema::Type::IfcElement] = 7;
+    IfcGeom::string_arg_filter tag_filter(tag_args);
     tag_filter.traverse = traverse;
     if (include_filter.arg == TAG_ARG) {
         tag_filter.include = true;

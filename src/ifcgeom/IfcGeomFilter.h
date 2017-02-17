@@ -102,32 +102,27 @@ namespace IfcGeom
         }
     };
 
-    /// @todo Maybe not use template class for this after all. Attribute name would be better
-    /// than index, but IfcBaseClass doesn't have getArgument(name) (IfcLateBoundEntity would have though).
-    template<class IfcType, unsigned short ArgIndex, typename ArgType>
-    struct arg_filter : public wildcard_filter
+    struct string_arg_filter : public wildcard_filter
     {
-        arg_filter()
-        {
-#ifndef NDEBUG
-            IfcType dummy(0);
-            assert(ArgIndex < dummy.getArgumentCount());
-#endif
-        }
-        arg_filter(bool include, bool traverse, const std::set<std::string>& patterns)
-            : wildcard_filter(include, traverse, patterns)
-        {
-    #ifndef NDEBUG
-            IfcType dummy(0);
-            assert(ArgIndex < dummy.getArgumentCount());
-    #endif
-            populate(patterns);
-        }
+        // Using this for now in order to overcome the fact that different classes have the argument at different indices.
+        typedef std::map<IfcSchema::Type::Enum, unsigned short> arg_map_t;
+        arg_map_t args;
 
-        ArgType value(IfcSchema::IfcProduct* prod) const
+        /// @todo Take only attribute name when IfcBaseClass and IfcLateBoundEntity are merged.
+        string_arg_filter(arg_map_t args) : args(args) {}
+        string_arg_filter(IfcSchema::Type::Enum type, unsigned short index) { args[type] = index; }
+
+        std::string value(IfcSchema::IfcProduct* prod) const
         {
-            Argument *arg = prod->is(IfcType::Class()) ? prod->entity->getArgument(ArgIndex) : 0;
-            return arg && !arg->isNull() ? *arg : ArgType();
+            for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
+                if (prod->is(it->first)) {
+                    Argument *arg = (it->second <= prod->entity->getArgumentCount() ? prod->entity->getArgument(it->second) : 0);
+                    if (arg && !arg->isNull()) {
+                        return *arg;
+                    }
+                }
+            }
+            return "";
         }
 
         bool operator()(IfcSchema::IfcProduct* prod) const
