@@ -144,7 +144,7 @@ IF %VS_VER%==2008 set VCPROJ_FILE_EXT=vcproj
 
 :: Add utils to PATH
 set ORIGINAL_PATH=%PATH%
-set PATH=%PATH%;%~dp0utils
+set PATH=%~dp0utils;%PATH%
 
 :: Fetch and build the dependencies to a dedicated directory depending on the used VS version and target architecture.
 :: NOTE For IfcOpenShell we can build all of our deps both x86 and x64 using different VS versions in the same directories
