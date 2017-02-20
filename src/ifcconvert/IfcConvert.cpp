@@ -53,9 +53,6 @@
 const std::string DEFAULT_EXTENSION = "obj";
 const std::string TEMP_FILE_EXTENSION = ".tmp";
 
-const std::string NAME_ARG = "Name", GUID_ARG = "GlobalId", DESC_ARG = "Description", TAG_ARG = "Tag";
-std::vector<std::string> supported_args;
-
 namespace po = boost::program_options;
 
 void print_version()
@@ -119,6 +116,17 @@ bool rename_file(const std::string& old_filename, const std::string& new_filenam
 static std::stringstream log_stream;
 void write_log();
 
+const std::string NAME_ARG = "Name", GUID_ARG = "GlobalId", DESC_ARG = "Description", TAG_ARG = "Tag";
+std::vector<std::string> supported_args;
+IfcGeom::entity_filter entity_filter; // Entity filter is used always by default.
+IfcGeom::layer_filter layer_filter;
+IfcGeom::string_arg_filter guid_filter(IfcSchema::Type::IfcRoot, 0); // IfcRoot.GlobalId
+// Note: skipping IfcRoot OwnerHistory, argument index 1
+IfcGeom::string_arg_filter name_filter(IfcSchema::Type::IfcRoot, 2); // IfcRoot.Name
+IfcGeom::string_arg_filter desc_filter(IfcSchema::Type::IfcRoot, 3); // IfcRoot.Description
+IfcGeom::string_arg_filter::arg_map_t tag_args;  // IfcProxy.Tag & IfcElement.Tag
+std::vector<IfcGeom::filter_t> filters;
+
 struct geom_filter
 {
     geom_filter() : type(UNUSED) {}
@@ -131,6 +139,8 @@ struct geom_filter
 // Could not figure out easily how else to know it if using single type for both.
 struct inclusion_filter : public IfcGeom::filter, public geom_filter { inclusion_filter() : filter(true, false) {} };
 struct exclusion_filter : public IfcGeom::filter, public geom_filter { exclusion_filter() : filter(false, false) {} };
+
+size_t setup_filters(const inclusion_filter&, const exclusion_filter&, const std::string&, bool);
 
 int main(int argc, char** argv)
 {
@@ -280,13 +290,12 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     } catch (const po::error_with_option_name& e) {
         std::cerr << "[Error] Invalid usage of '" << e.get_option_name() << "': " << e.what() << "\n\n";
-        print_usage();
         return EXIT_FAILURE;
     } catch (const std::exception& e) {
         std::cerr << "[Error] " << e.what() << "\n\n";
         print_usage();
         return EXIT_FAILURE;
-    } catch (...) { // other errors such as invalid command line syntax
+    } catch (...) {
         print_usage();
         return EXIT_FAILURE;
 
@@ -295,15 +304,15 @@ int main(int argc, char** argv)
     print_version();
 
     if (vmap.count("version")) {
-        return 0;
+        return EXIT_SUCCESS;
     } else if (vmap.count("help")) {
         print_usage(false);
         print_options(generic_options.add(geom_options).add(serializer_options));
-        return 0;
+        return EXIT_SUCCESS;
     } else if (!vmap.count("input-file")) {
         std::cerr << "[Error] Input file not specified" << std::endl;
         print_usage();
-        return 1;
+        return EXIT_FAILURE;
     }
 	const bool verbose = vmap.count("verbose") != 0;
 	const bool weld_vertices = vmap.count("weld-vertices") != 0;
@@ -350,14 +359,14 @@ int main(int argc, char** argv)
 		} else {
 			std::cerr << "[Error] Invalid use of --bounds" << std::endl;
             print_options(serializer_options);
-			return 1;
+			return EXIT_FAILURE;
 		}
 	}
 
 	const std::string input_filename = vmap["input-file"].as<std::string>();
     if (!file_exists(input_filename)) {
         std::cerr << "[Error] Input file '" << input_filename << "' does not exist" << std::endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
 	// If no output filename is specified a Wavefront OBJ file will be output
@@ -369,7 +378,7 @@ int main(int argc, char** argv)
 	if (output_filename.size() < 5) {
         std::cerr << "[Error] Invalid or unsupported output file '" << output_filename << "' given" << std::endl;
         print_usage();
-		return 1;
+		return EXIT_FAILURE;
 	}
 
     if (file_exists(output_filename) && !vmap.count("yes")) {
@@ -377,7 +386,7 @@ int main(int argc, char** argv)
         std::cout << "A file '" << output_filename << "' already exists. Overwrite the existing file?" << std::endl;
         std::cin >> answer;
         if (!boost::iequals(answer, "yes") && !boost::iequals(answer, "y")) {
-            return 0;
+            return EXIT_SUCCESS;
         }
     }
 
@@ -387,113 +396,8 @@ int main(int argc, char** argv)
 	boost::to_lower(output_extension);
 
 
-    // Set up filters. Entity filter is used always by default.
-    std::vector<IfcGeom::filter_t> filters;
-    /// @todo Clean up this filter initialization code
-    IfcGeom::entity_filter entity_filter;
-    entity_filter.traverse = traverse;
-    try {
-        if (include_filter.type == geom_filter::ENTITY_TYPE) {
-            entity_filter.include = true;
-            entity_filter.populate(include_filter.values);
-        } else if (exclude_filter.type == geom_filter::ENTITY_TYPE) {
-            entity_filter.include = false;
-            entity_filter.populate(exclude_filter.values);
-        }
-        // If no entity names are specified these are the defaults to skip from output
-        if (entity_filter.values.empty()) {
-            std::set<std::string> entities;
-            entities.insert("IfcSpace");
-            if (output_extension == ".svg") {
-                entity_filter.include = true;
-            } else {
-                entities.insert("IfcOpeningElement");
-            }
-            entity_filter.populate(entities);
-
-            Logger::Message(Logger::LOG_NOTICE, entity_filter.include ? "Including" : "Excluding" +
-                std::string(" by default entities ") + boost::algorithm::join(entities, ", "));
-        }
-    } catch (const IfcParse::IfcException& e) {
-        std::cout << "[Error] " << e.what() << std::endl;
-        return 1;
-    }
-    if (!entity_filter.values.empty()) {
-        filters.push_back(boost::ref(entity_filter));
-    }
-
-    IfcGeom::layer_filter layer_filter;
-    layer_filter.traverse = traverse;
-    if (include_filter.type == geom_filter::LAYER_NAME) {
-        layer_filter.include = true;
-        layer_filter.populate(include_filter.values);
-    } else if (exclude_filter.type == geom_filter::LAYER_NAME) {
-        layer_filter.include = false;
-        layer_filter.populate(exclude_filter.values);
-    }
-    if (!layer_filter.values.empty()) {
-        filters.push_back(boost::ref(layer_filter)); 
-    }
-
-    // IfcRoot.GlobalId
-    IfcGeom::string_arg_filter guid_filter(IfcSchema::Type::IfcRoot, 0);
-    guid_filter.traverse = traverse;
-    if (include_filter.arg == GUID_ARG) {
-        guid_filter.include = true;
-        guid_filter.populate(include_filter.values);
-    } else if (exclude_filter.arg == GUID_ARG) {
-        guid_filter.include = false;
-        guid_filter.populate(include_filter.values);
-    }
-    if (!guid_filter.values.empty()) {
-        filters.push_back(boost::ref(guid_filter));
-    }
-
-    // Note: skipping IfcRoot OwnerHistory, argument index 1
-
-    // IfcRoot.Name
-    IfcGeom::string_arg_filter name_filter(IfcSchema::Type::IfcRoot, 2);
-    name_filter.traverse = traverse;
-    if (include_filter.arg == NAME_ARG) {
-        name_filter.include = true;
-        name_filter.populate(include_filter.values);
-    } else if (exclude_filter.arg == NAME_ARG) {
-        name_filter.include = false;
-        name_filter.populate(exclude_filter.values);
-    }
-    if (!name_filter.values.empty()) {
-        filters.push_back(boost::ref(name_filter));
-    }
-
-    // IfcRoot.Description
-    IfcGeom::string_arg_filter desc_filter(IfcSchema::Type::IfcRoot, 3);
-    desc_filter.traverse = traverse;
-    if (include_filter.arg == DESC_ARG) {
-        desc_filter.include = true;
-        desc_filter.populate(include_filter.values);
-    } else if (exclude_filter.arg == DESC_ARG) {
-        desc_filter.include = false;
-        desc_filter.populate(exclude_filter.values);
-    }
-    if (!desc_filter.values.empty()) {
-        filters.push_back(boost::ref(desc_filter));
-    }
-
-    // IfcProxy.Tag & IfcElement.Tag
-    IfcGeom::string_arg_filter::arg_map_t tag_args;
-    tag_args[IfcSchema::Type::IfcProxy] = 8;
-    tag_args[IfcSchema::Type::IfcElement] = 7;
-    IfcGeom::string_arg_filter tag_filter(tag_args);
-    tag_filter.traverse = traverse;
-    if (include_filter.arg == TAG_ARG) {
-        tag_filter.include = true;
-        tag_filter.populate(include_filter.values);
-    } else if (exclude_filter.arg == TAG_ARG) {
-        tag_filter.include = false;
-        tag_filter.populate(exclude_filter.values);
-    }
-    if (!tag_filter.values.empty()) {
-        filters.push_back(boost::ref(tag_filter));
+    if (!setup_filters(include_filter, exclude_filter, output_extension, traverse)) {
+        return EXIT_FAILURE;
     }
 
     ///@ todo Logger::Message(Logger::LOG_NOTICE, "Filtering by X, Y and Z.")
@@ -568,7 +472,7 @@ int main(int argc, char** argv)
 		Logger::Message(Logger::LOG_ERROR, "Unknown output filename extension '" + output_extension + "'");
 		write_log();
 		print_usage();
-		return 1;
+		return EXIT_FAILURE;
 	}
 
     const bool is_tesselated = serializer->isTesselated(); // isTesselated() doesn't change at run-time
@@ -588,7 +492,7 @@ int main(int argc, char** argv)
 
 	if (!serializer->ready()) {
 		write_log();
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	time_t start,end;
@@ -600,7 +504,7 @@ int main(int argc, char** argv)
         /// the file and for a case where we found no entities that satisfy our filtering criteria.
         Logger::Message(Logger::LOG_ERROR, "Unable to parse input file '" + input_filename + "' or no geometrical entities found");
 		write_log();
-		return 1;
+		return EXIT_FAILURE;
 	}
 
     serializer->setFile(context_iterator.getFile());
@@ -742,4 +646,110 @@ void validate(boost::any& v, const std::vector<std::string>& values, exclusion_f
     exclusion_filter filter;
     parse_filter(filter, values);
     v = filter;
+}
+
+/// @todo Clean up this filter initialization code
+/// @return The number of set up filters, if less than 1, an error occurred.
+size_t setup_filters(
+    const inclusion_filter& include_filter,
+    const exclusion_filter& exclude_filter,
+    const std::string &output_extension,
+    bool traverse)
+{
+    entity_filter.traverse = traverse;
+    try {
+        if (include_filter.type == geom_filter::ENTITY_TYPE) {
+            entity_filter.include = true;
+            entity_filter.populate(include_filter.values);
+        } else if (exclude_filter.type == geom_filter::ENTITY_TYPE) {
+            entity_filter.include = false;
+            entity_filter.populate(exclude_filter.values);
+        }
+        // If no entity names are specified these are the defaults to skip from output
+        if (entity_filter.values.empty()) {
+            std::set<std::string> entities;
+            entities.insert("IfcSpace");
+            if (output_extension == ".svg") {
+                entity_filter.include = true;
+            } else {
+                entities.insert("IfcOpeningElement");
+            }
+            entity_filter.populate(entities);
+
+            Logger::Message(Logger::LOG_NOTICE, entity_filter.include ? "Including" : "Excluding" +
+                std::string(" by default entities ") + boost::algorithm::join(entities, ", "));
+        }
+    } catch (const IfcParse::IfcException& e) {
+        std::cout << "[Error] " << e.what() << std::endl;
+        return filters.size();
+    }
+    if (!entity_filter.values.empty()) {
+        filters.push_back(boost::ref(entity_filter));
+    }
+
+    layer_filter.traverse = traverse;
+    if (include_filter.type == geom_filter::LAYER_NAME) {
+        layer_filter.include = true;
+        layer_filter.populate(include_filter.values);
+    } else if (exclude_filter.type == geom_filter::LAYER_NAME) {
+        layer_filter.include = false;
+        layer_filter.populate(exclude_filter.values);
+    }
+    if (!layer_filter.values.empty()) {
+        filters.push_back(boost::ref(layer_filter)); 
+    }
+
+    guid_filter.traverse = traverse;
+    if (include_filter.arg == GUID_ARG) {
+        guid_filter.include = true;
+        guid_filter.populate(include_filter.values);
+    } else if (exclude_filter.arg == GUID_ARG) {
+        guid_filter.include = false;
+        guid_filter.populate(include_filter.values);
+    }
+    if (!guid_filter.values.empty()) {
+        filters.push_back(boost::ref(guid_filter));
+    }
+
+    name_filter.traverse = traverse;
+    if (include_filter.arg == NAME_ARG) {
+        name_filter.include = true;
+        name_filter.populate(include_filter.values);
+    } else if (exclude_filter.arg == NAME_ARG) {
+        name_filter.include = false;
+        name_filter.populate(exclude_filter.values);
+    }
+    if (!name_filter.values.empty()) {
+        filters.push_back(boost::ref(name_filter));
+    }
+
+    desc_filter.traverse = traverse;
+    if (include_filter.arg == DESC_ARG) {
+        desc_filter.include = true;
+        desc_filter.populate(include_filter.values);
+    } else if (exclude_filter.arg == DESC_ARG) {
+        desc_filter.include = false;
+        desc_filter.populate(exclude_filter.values);
+    }
+    if (!desc_filter.values.empty()) {
+        filters.push_back(boost::ref(desc_filter));
+    }
+
+    tag_args[IfcSchema::Type::IfcProxy] = 8;
+    tag_args[IfcSchema::Type::IfcElement] = 7;
+    IfcGeom::string_arg_filter tag_filter(tag_args);
+    tag_filter.traverse = traverse;
+    if (include_filter.arg == TAG_ARG) {
+        tag_filter.include = true;
+        tag_filter.populate(include_filter.values);
+    } else if (exclude_filter.arg == TAG_ARG) {
+        tag_filter.include = false;
+        tag_filter.populate(exclude_filter.values);
+    }
+    if (!tag_filter.values.empty()) {
+        filters.push_back(boost::ref(tag_filter));
+    }
+    return true;
+
+    return filters.size();
 }
