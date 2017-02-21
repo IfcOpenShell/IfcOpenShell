@@ -113,6 +113,14 @@ namespace IfcGeom
         /// @todo Take only attribute name when IfcBaseClass and IfcLateBoundEntity are merged.
         string_arg_filter(arg_map_t args) : args(args) { assert_arguments(); }
         string_arg_filter(IfcSchema::Type::Enum type, unsigned short index) { args[type] = index;  assert_arguments(); }
+        string_arg_filter(
+            IfcSchema::Type::Enum type1, unsigned short index1,
+            IfcSchema::Type::Enum type2, unsigned short index2)
+        {
+            args[type1] = index1;
+            args[type2] = index2;
+            assert_arguments();
+        }
 
         /// @todo this won't be needed when we have the generic argument name access
         void assert_arguments()
@@ -131,7 +139,7 @@ namespace IfcGeom
         {
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
                 if (prod->is(it->first)) {
-                    Argument *arg = (it->second <= prod->entity->getArgumentCount() ? prod->entity->getArgument(it->second) : 0);
+                    Argument *arg = (it->second < prod->entity->getArgumentCount() ? prod->entity->getArgument(it->second) : 0);
                     if (arg && !arg->isNull()) {
                         return *arg;
                     }
