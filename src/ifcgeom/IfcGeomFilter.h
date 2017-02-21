@@ -33,8 +33,13 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
+#include <functional>
+
 namespace IfcGeom
 {
+    /// The filter function (free or member function) or function object (use boost::ref() to reference to it)
+    /// should return true if the geometry for the product is wanted to be included in the output.
+    /// http://www.boost.org/doc/libs/1_62_0/doc/html/function/tutorial.html
     typedef boost::function<bool(IfcSchema::IfcProduct*)> filter_t;
 
     struct filter
@@ -92,7 +97,7 @@ namespace IfcGeom
         static boost::regex wildcard_string_to_regex(std::string str)
         {
             // Escape all non-"*?" regex special chars
-            std::string special_chars = "\\^.$|()[]+/";
+            static const std::string special_chars = "\\^.$|()[]+/";
             foreach(char c, special_chars) {
                 std::string char_str(1, c);
                 boost::replace_all(str, char_str, "\\" + char_str);
@@ -138,9 +143,9 @@ namespace IfcGeom
         std::string value(IfcSchema::IfcProduct* prod) const
         {
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
-                if (prod->is(it->first)) {
-                    Argument *arg = (it->second < prod->entity->getArgumentCount() ? prod->entity->getArgument(it->second) : 0);
-                    if (arg && !arg->isNull()) {
+                if (prod->is(it->first) && it->second < prod->entity->getArgumentCount()) {
+                    Argument *arg = prod->entity->getArgument(it->second);
+                    if (!arg->isNull()) {
                         return *arg;
                     }
                 }
@@ -148,11 +153,15 @@ namespace IfcGeom
             return "";
         }
 
+        bool match(IfcSchema::IfcProduct* prod) const { return wildcard_filter::match(value(prod)); }
+
         bool operator()(IfcSchema::IfcProduct* prod) const
         {
-            bool is_match = match(value(prod));
-            if (is_match != include && traverse) {
-                is_match = traverse_match(prod, boost::ref(*this));
+            bool is_match = match(prod);
+            if (!is_match && traverse) {
+                // @note bind1st() and mem_fun() deprecated in C++11, use bind() and mem_fn() when migrating to C++11.
+                filter_t pred = std::bind1st(std::mem_fun(&string_arg_filter::match), this);
+                is_match = traverse_match(prod, pred);
             }
             return is_match == include;
         }

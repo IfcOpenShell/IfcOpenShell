@@ -206,7 +206,7 @@ int main(int argc, char** argv)
 			"to their associated IfcMaterialLayerSet.")
         ("include", po::value<inclusion_filter>(&include_filter)->multitoken(),
             "Specifies that the entities that match a specific filtering criteria are to be included in the geometrical output:\n"
-            "1) 'entities': the following list of types should be included . SVG output defaults "
+            "1) 'entities': the following list of types should be included. SVG output defaults "
             "to IfcSpace to be included. The entity names are handled case-insensitively.\n"
             "2) 'layers': the entities that are assigned to presentation layers of which names "
             "match the given values should be included.\n"
