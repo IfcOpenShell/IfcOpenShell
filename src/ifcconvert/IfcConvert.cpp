@@ -62,17 +62,17 @@ void print_version()
 
 void print_usage(bool suggest_help = true)
 {
-    std::cout << "Usage: IfcConvert [options] <input.ifc> [<output>]" << "\n"
+    std::cout << "Usage: IfcConvert [options] <input.ifc> [<output>]\n"
         << "\n"
-        << "Converts the geometry in an IFC file into one of the following formats:" << "\n"
-        << "  .obj   WaveFront OBJ  (a .mtl file is also created)" << "\n"
+        << "Converts the geometry in an IFC file into one of the following formats:\n"
+        << "  .obj   WaveFront OBJ  (a .mtl file is also created)\n"
 #ifdef WITH_OPENCOLLADA
-        << "  .dae   Collada        Digital Assets Exchange" << "\n"
+        << "  .dae   Collada        Digital Assets Exchange\n"
 #endif
-        << "  .stp   STEP           Standard for the Exchange of Product Data" << "\n"
-        << "  .igs   IGES           Initial Graphics Exchange Specification" << "\n"
-        << "  .xml   XML            Property definitions and decomposition tree" << "\n"
-        << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)" << "\n"
+        << "  .stp   STEP           Standard for the Exchange of Product Data\n"
+        << "  .igs   IGES           Initial Graphics Exchange Specification\n"
+        << "  .xml   XML            Property definitions and decomposition tree\n"
+        << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
         << "\n"
         << "If no output filename given, <input>." + DEFAULT_EXTENSION + " will be used as the output file.\n";
     if (suggest_help) {
@@ -81,6 +81,7 @@ void print_usage(bool suggest_help = true)
     std::cout << std::endl;
 }
 
+/// @todo Add help for single option
 void print_options(const po::options_description& options)
 {
     std::cout << "\n" << options;
@@ -115,16 +116,15 @@ bool rename_file(const std::string& old_filename, const std::string& new_filenam
 static std::stringstream log_stream;
 void write_log();
 
-const std::string NAME_ARG = "Name", GUID_ARG = "GlobalId", DESC_ARG = "Description", TAG_ARG = "Tag";
-std::vector<std::string> supported_args;
 IfcGeom::entity_filter entity_filter; // Entity filter is used always by default.
 IfcGeom::layer_filter layer_filter;
+const std::string NAME_ARG = "Name", GUID_ARG = "GlobalId", DESC_ARG = "Description", TAG_ARG = "Tag";
+boost::array<std::string, 4> supported_args = { { NAME_ARG, GUID_ARG, DESC_ARG, TAG_ARG } };
 IfcGeom::string_arg_filter guid_filter(IfcSchema::Type::IfcRoot, 0); // IfcRoot.GlobalId
 // Note: skipping IfcRoot OwnerHistory, argument index 1
 IfcGeom::string_arg_filter name_filter(IfcSchema::Type::IfcRoot, 2); // IfcRoot.Name
 IfcGeom::string_arg_filter desc_filter(IfcSchema::Type::IfcRoot, 3); // IfcRoot.Description
-IfcGeom::string_arg_filter::arg_map_t tag_args;  // IfcProxy.Tag & IfcElement.Tag
-std::vector<IfcGeom::filter_t> filters;
+IfcGeom::string_arg_filter tag_filter(IfcSchema::Type::IfcProxy, 8, IfcSchema::Type::IfcElement, 7); // IfcProxy.Tag & IfcElement.Tag
 
 struct geom_filter
 {
@@ -136,10 +136,10 @@ struct geom_filter
 };
 // Specialized classes for knowing which type of filter we are validating within validate().
 // Could not figure out easily how else to know it if using single type for both.
-struct inclusion_filter : public IfcGeom::filter, public geom_filter { inclusion_filter() : filter(true, false) {} };
-struct exclusion_filter : public IfcGeom::filter, public geom_filter { exclusion_filter() : filter(false, false) {} };
+struct inclusion_filter : public geom_filter {};
+struct exclusion_filter : public geom_filter {};
 
-size_t setup_filters(const inclusion_filter&, const exclusion_filter&, const std::string&, bool);
+std::vector<IfcGeom::filter_t> setup_filters(const geom_filter&, const geom_filter&, const std::string&, bool);
 
 int main(int argc, char** argv)
 {
@@ -158,10 +158,6 @@ int main(int argc, char** argv)
     double deflection_tolerance;
     inclusion_filter include_filter;
     exclusion_filter exclude_filter;
-    supported_args.push_back(NAME_ARG);
-    supported_args.push_back(GUID_ARG);
-    supported_args.push_back(DESC_ARG);
-    supported_args.push_back(TAG_ARG);
 
     po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -284,7 +280,7 @@ int main(int argc, char** argv)
         po::store(po::command_line_parser(argc, argv).
             options(cmdline_options).positional(positional_options).run(), vmap);
     } catch (const po::unknown_option& e) {
-        std::cerr << "[Error] Unknown option '" << e.get_option_name() << "'" << "\n\n";
+        std::cerr << "[Error] Unknown option '" << e.get_option_name() << "'\n\n";
         print_usage();
         return EXIT_FAILURE;
     } catch (const po::error_with_option_name& e) {
@@ -395,7 +391,9 @@ int main(int argc, char** argv)
 	boost::to_lower(output_extension);
 
 
-    if (!setup_filters(include_filter, exclude_filter, output_extension, traverse)) {
+    std::vector<IfcGeom::filter_t> used_filters = setup_filters(include_filter, exclude_filter, output_extension, traverse);
+    if (used_filters.empty()) {
+        std::cerr << "[Error] Failed to set up geometry filters\n";
         return EXIT_FAILURE;
     }
 
@@ -497,7 +495,7 @@ int main(int argc, char** argv)
 	time_t start,end;
 	time(&start);
 
-    IfcGeom::Iterator<real_t> context_iterator(settings, input_filename, filters);
+    IfcGeom::Iterator<real_t> context_iterator(settings, input_filename, used_filters);
 	if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we failed to parse
         /// the file and for a case where we found no entities that satisfy our filtering criteria.
@@ -604,7 +602,7 @@ int main(int argc, char** argv)
 void write_log() {
 	std::string log = log_stream.str();
 	if (!log.empty()) {
-		std::cout << "\n" << "Log:\n" << log << std::endl;
+		std::cout << "\nLog:\n" << log << std::endl;
 	}
 }
 
@@ -647,14 +645,15 @@ void validate(boost::any& v, const std::vector<std::string>& values, exclusion_f
     v = filter;
 }
 
-/// @todo Clean up this filter initialization code
-/// @return The number of set up filters, if less than 1, an error occurred.
-size_t setup_filters(
-    const inclusion_filter& include_filter,
-    const exclusion_filter& exclude_filter,
-    const std::string &output_extension,
+/// @todo Clean up this filter initialization code further.
+/// @return The used filters, if none an error occurred.
+std::vector<IfcGeom::filter_t> setup_filters(
+    const geom_filter& include_filter,
+    const geom_filter& exclude_filter,
+    const std::string& output_extension,
     bool traverse)
 {
+    std::vector<IfcGeom::filter_t> filters;
     entity_filter.traverse = traverse;
     try {
         if (include_filter.type == geom_filter::ENTITY_TYPE) {
@@ -679,8 +678,8 @@ size_t setup_filters(
                 std::string(" by default entities ") + boost::algorithm::join(entities, ", "));
         }
     } catch (const IfcParse::IfcException& e) {
-        std::cout << "[Error] " << e.what() << std::endl;
-        return filters.size();
+        std::cerr << "[Error] " << e.what() << std::endl;
+        return filters;
     }
     if (!entity_filter.values.empty()) {
         filters.push_back(boost::ref(entity_filter));
@@ -704,7 +703,7 @@ size_t setup_filters(
         guid_filter.populate(include_filter.values);
     } else if (exclude_filter.arg == GUID_ARG) {
         guid_filter.include = false;
-        guid_filter.populate(include_filter.values);
+        guid_filter.populate(exclude_filter.values);
     }
     if (!guid_filter.values.empty()) {
         filters.push_back(boost::ref(guid_filter));
@@ -734,9 +733,6 @@ size_t setup_filters(
         filters.push_back(boost::ref(desc_filter));
     }
 
-    tag_args[IfcSchema::Type::IfcProxy] = 8;
-    tag_args[IfcSchema::Type::IfcElement] = 7;
-    IfcGeom::string_arg_filter tag_filter(tag_args);
     tag_filter.traverse = traverse;
     if (include_filter.arg == TAG_ARG) {
         tag_filter.include = true;
@@ -748,7 +744,6 @@ size_t setup_filters(
     if (!tag_filter.values.empty()) {
         filters.push_back(boost::ref(tag_filter));
     }
-    return true;
 
-    return filters.size();
+    return filters;
 }
