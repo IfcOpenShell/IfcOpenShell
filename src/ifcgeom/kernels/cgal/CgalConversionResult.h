@@ -35,7 +35,8 @@ namespace IfcGeom {
 		
 		virtual double Value(int i, int j) const {
 			// TODO: Check
-      return CGAL::to_double(trsf_.cartesian(i, j));
+//      std::cout << "Getting CgalPlacement with i = " << i << " and j = " << j << std::endl;
+      return CGAL::to_double(trsf_.cartesian(i-1, j-1));
 		}
 		virtual void Multiply(const ConversionResultPlacement* other) {
 			// TODO: Check
@@ -51,7 +52,7 @@ namespace IfcGeom {
     private:
         cgal_placement_t trsf_;
     };
-    
+  
     class CgalShape : public ConversionResultShape {
     public:
         CgalShape(const cgal_shape_t& shape)

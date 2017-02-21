@@ -139,11 +139,21 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement3D* l, cgal_
   if ( l->hasAxis() ) IfcGeom::CgalKernel::convert(l->Axis(),axis);
   if ( hasRef ) IfcGeom::CgalKernel::convert(l->RefDirection(),refDirection);
   
+//  std::cout << "Ref direction: " << refDirection << std::endl;
+//  std::cout << "Axis: " << axis << std::endl;
+//  std::cout << "Origin: " << o << std::endl;
+  
   // TODO: From Thomas' email. Should be checked.
   Kernel::Vector_3 y = CGAL::cross_product(axis, refDirection);
   trsf = Kernel::Aff_transformation_3(refDirection.cartesian(0), y.cartesian(0), axis.cartesian(0), o.cartesian(0),
                                       refDirection.cartesian(1), y.cartesian(1), axis.cartesian(1), o.cartesian(1),
                                       refDirection.cartesian(2), y.cartesian(2), axis.cartesian(2), o.cartesian(2));
+  
+//  for (int i = 0; i < 3; ++i) {
+//    for (int j = 0; j < 4; ++j) {
+//      std::cout << trsf.cartesian(i, j) << " ";
+//    } std::cout << std::endl;
+//  }
   
 //  CACHE(IfcAxis2Placement3D,l,trsf)
   return true;
@@ -156,13 +166,37 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcObjectPlacement* l, cgal_p
     Logger::Message(Logger::LOG_ERROR, "Unsupported IfcObjectPlacement:", l->entity);
     return false;
   }
+  
+//  std::cout << "initial trsf (identity?)" << std::endl;
+//  for (int i = 0; i < 3; ++i) {
+//    for (int j = 0; j < 4; ++j) {
+//      std::cout << trsf.cartesian(i, j) << " ";
+//    } std::cout << std::endl;
+//  }
+  
   IfcSchema::IfcLocalPlacement* current = (IfcSchema::IfcLocalPlacement*)l;
   for (;;) {
     cgal_placement_t trsf2;
+    
     IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
     if ( relplacement->is(IfcSchema::Type::IfcAxis2Placement3D) ) {
       IfcGeom::CgalKernel::convert((IfcSchema::IfcAxis2Placement3D*)relplacement,trsf2);
+      
+//      std::cout << "trsf2" << std::endl;
+//      for (int i = 0; i < 3; ++i) {
+//        for (int j = 0; j < 4; ++j) {
+//          std::cout << trsf2.cartesian(i, j) << " ";
+//        } std::cout << std::endl;
+//      }
+      
       trsf = trsf * trsf2; // TODO: I think it's fine, but maybe should it be the other way around?
+      
+//      std::cout << "trsf (after multiplication)" << std::endl;
+//      for (int i = 0; i < 3; ++i) {
+//        for (int j = 0; j < 4; ++j) {
+//          std::cout << trsf.cartesian(i, j) << " ";
+//        } std::cout << std::endl;
+//      }
     }
     if ( current->hasPlacementRelTo() ) {
       IfcSchema::IfcObjectPlacement* relto = current->PlacementRelTo();

@@ -96,6 +96,13 @@ IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_representat
 	try {
 		 convert(product->ObjectPlacement(), trsf);
 	} catch (...) {}
+  
+    std::cout << "trsf" << std::endl;
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 4; ++j) {
+        std::cout << trsf.cartesian(i, j) << " ";
+      } std::cout << std::endl;
+    }
 
 	// Does the IfcElement have any IfcOpenings?
 	// Note that openings for IfcOpeningElements are not processed

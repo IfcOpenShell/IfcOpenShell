@@ -702,6 +702,13 @@ namespace IfcGeom {
 
 			try {
 				next_shape_model = create_shape_model_for_next_entity();
+        
+//        std::cout << "trsf" << std::endl;
+//        for (int i = 0; i < 3; ++i) {
+//          for (int j = 0; j < 4; ++j) {
+//            std::cout << next_shape_model->transformation().matrix().data() << " ";
+//          } std::cout << std::endl;
+//        }
 			} catch (...) {}
 
 			if (next_shape_model) {
