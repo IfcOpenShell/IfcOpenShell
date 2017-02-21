@@ -57,13 +57,12 @@ namespace po = boost::program_options;
 
 void print_version()
 {
-    /// @todo Why cerr used for info prints? Change to cout.
-    std::cerr << "IfcOpenShell " << IfcSchema::Identifier << " IfcConvert " << IFCOPENSHELL_VERSION << std::endl;
+    std::cout << "IfcOpenShell " << IfcSchema::Identifier << " IfcConvert " << IFCOPENSHELL_VERSION << std::endl;
 }
 
 void print_usage(bool suggest_help = true)
 {
-    std::cerr << "Usage: IfcConvert [options] <input.ifc> [<output>]" << "\n"
+    std::cout << "Usage: IfcConvert [options] <input.ifc> [<output>]" << "\n"
         << "\n"
         << "Converts the geometry in an IFC file into one of the following formats:" << "\n"
         << "  .obj   WaveFront OBJ  (a .mtl file is also created)" << "\n"
@@ -77,15 +76,15 @@ void print_usage(bool suggest_help = true)
         << "\n"
         << "If no output filename given, <input>." + DEFAULT_EXTENSION + " will be used as the output file.\n";
     if (suggest_help) {
-        std::cerr << "\nRun 'IfcConvert --help' for more information.";
+        std::cout << "\nRun 'IfcConvert --help' for more information.";
     }
-    std::cerr << std::endl;
+    std::cout << std::endl;
 }
 
 void print_options(const po::options_description& options)
 {
-    std::cerr << "\n" << options;
-    std::cerr << std::endl;
+    std::cout << "\n" << options;
+    std::cout << std::endl;
 }
 
 std::string change_extension(const std::string& fn, const std::string& ext) {
@@ -605,7 +604,7 @@ int main(int argc, char** argv)
 void write_log() {
 	std::string log = log_stream.str();
 	if (!log.empty()) {
-		std::cerr << "\n" << "Log:\n" << log << std::endl;
+		std::cout << "\n" << "Log:\n" << log << std::endl;
 	}
 }
 
