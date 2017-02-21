@@ -4,6 +4,8 @@
 void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement * place, IfcGeom::Representation::Triangulation<double>* t, int surface_style_id) const {
   cgal_shape_t s = shape_;
   const cgal_placement_t& trsf = dynamic_cast<const CgalPlacement*>(place)->trsf();
+//  std::cout << "Model: " << s.size_of_facets() << " facets and " << s.size_of_vertices() << " vertices" << std::endl;
+//  std::cout << "Valid: " << s.is_valid() << std::endl;
   
   // Apply transformation
   if (place != NULL) for (auto &vertex: vertices(s)) {
@@ -15,16 +17,14 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
   boost::associative_property_map<std::map<cgal_vertex_descriptor_t, Kernel::Vector_3>> vertex_normals_map(vertex_normals);
   std::map<cgal_face_descriptor_t, Kernel::Vector_3> face_normals;
   boost::associative_property_map<std::map<cgal_face_descriptor_t, Kernel::Vector_3>> face_normals_map(face_normals);
-  try {
-    CGAL::Polygon_mesh_processing::triangulate_faces(s);
-    CGAL::Polygon_mesh_processing::compute_normals(s, vertex_normals_map, face_normals_map);
-  } catch (...) {
-
-    // TODO: Catch outside
-    // Logger::Message(Logger::LOG_ERROR,"Failed to triangulate shape:",ifc_file->entityById(_id)->entity);
+  if (CGAL::Polygon_mesh_processing::triangulate_faces(s)) {
+//    std::cout << "Triangulated model: " << s.size_of_facets() << " facets and " << s.size_of_vertices() << " vertices" << std::endl;
+  } else {
     Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
     return;
   }
+
+  CGAL::Polygon_mesh_processing::compute_normals(s, vertex_normals_map, face_normals_map);
 
   // Iterates over the faces of the shape
   int num_faces = 0, num_vertices = 0;
@@ -43,4 +43,6 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
     t->material_ids().push_back(surface_style_id);
     ++num_faces;
   }
+  
+//  std::cout << num_faces << " faces" << std::endl;
 }

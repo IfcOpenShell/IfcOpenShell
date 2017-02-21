@@ -43,6 +43,8 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/boost/graph/graph_traits_Polyhedron_3.h>
+#include <CGAL/Polygon_mesh_processing/stitch_borders.h>
+#include <CGAL/Polygon_mesh_processing/orientation.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 
@@ -72,27 +74,23 @@ public:
   }
   
   void operator()(CGAL::Polyhedron_3<Kernel>::HalfedgeDS &hds) {
-    std::map<Kernel::Point_3, std::size_t> points_map;
+    std::list<Kernel::Point_3> points;
     std::list<std::list<std::size_t>> facet_vertices;
     CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel>::HalfedgeDS> builder(hds, true);
     
     for (auto &face: *face_list) {
       facet_vertices.push_back(std::list<std::size_t>());
       for (auto &point: face.outer) {
-        if (points_map.count(point) == 0) {
-          facet_vertices.back().push_back(points_map.size());
-          points_map[point] = points_map.size();
-        } else {
-          facet_vertices.back().push_back(points_map[point]);
-        }
+        facet_vertices.back().push_back(points.size());
+        points.push_back(point);
       }
     }
     
-    builder.begin_surface(points_map.size(), facet_vertices.size());
+    builder.begin_surface(points.size(), facet_vertices.size());
     
-    for (auto &point: points_map) {
-//      std::cout << "Adding point " << point.first << std::endl;
-      builder.add_vertex(point.first);
+    for (auto &point: points) {
+//      std::cout << "Adding point " << point << std::endl;
+      builder.add_vertex(point);
     }
     
     for (auto &facet: facet_vertices) {

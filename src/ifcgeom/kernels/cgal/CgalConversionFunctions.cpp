@@ -70,9 +70,18 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     top_face.outer.push_back(*vertex+dir);
   } face_list.push_back(top_face);
   
+  // Naive creation
   cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
+  
+  // Stitch edges
+//  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
+  if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+    CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+  }
+//  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   
   shape = polyhedron;
   return true;
@@ -84,6 +93,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianPoint* l, cgal_po
     point = Kernel::Point_3(xyz.size()     ? (xyz[0]*getValue(GV_LENGTH_UNIT)) : 0.0f,
                             xyz.size() > 1 ? (xyz[1]*getValue(GV_LENGTH_UNIT)) : 0.0f,
                             xyz.size() > 2 ? (xyz[2]*getValue(GV_LENGTH_UNIT)) : 0.0f);
+//    std::cout << "Converted Point(" << point << ")" << std::endl;
     return true;
   } else {
     throw std::runtime_error("Point without 3 coordinates");

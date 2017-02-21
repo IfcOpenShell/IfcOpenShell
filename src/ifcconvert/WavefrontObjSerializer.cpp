@@ -108,6 +108,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
 
     const bool has_uvs = !mesh.uvs().empty();
 	const bool has_normals = !mesh.normals().empty();
+//  std::cout << mesh.faces().size() << " vertices in face mesh" << std::endl;
 	for ( std::vector<int>::const_iterator it = mesh.faces().begin(); it != mesh.faces().end(); ) {
 		
 		const int material_id = *(material_it++);

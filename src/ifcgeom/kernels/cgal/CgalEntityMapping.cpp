@@ -129,12 +129,26 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_
       continue;
     }
     
+//    std::cout << "Face in ConnectedFaceSet: " << std::endl;
+//    for (auto &point: face.outer) {
+//      std::cout << "\tPoint(" << point << ")" << std::endl;
+//    }
+    
     face_list.push_back(face);
   }
   
+  // Naive creation
   cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
+  
+  // Stitch edges
+//  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
+  if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+    CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+  }
+//  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   
   shape = polyhedron;
   return true;
@@ -189,6 +203,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face
   }
   
   face = mf;
+  
+//  std::cout << "Face: " << std::endl;
+//  for (auto &point: face.outer) {
+//    std::cout << "\tPoint(" << point << ")" << std::endl;
+//  }
+  
   return true;
 }
 
@@ -225,6 +245,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& 
   }
 
   result = polygon;
+  
+//  std::cout << "PolyLoop: " << std::endl;
+//  for (auto &point: polygon) {
+//    std::cout << "\tPoint(" << point << ")" << std::endl;
+//  }
+  
   return true;
 }
 
