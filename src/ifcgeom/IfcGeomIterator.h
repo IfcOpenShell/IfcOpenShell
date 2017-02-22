@@ -704,9 +704,10 @@ namespace IfcGeom {
 				next_shape_model = create_shape_model_for_next_entity();
         
 //        std::cout << "trsf" << std::endl;
+//        IfcGeom::CgalPlacement *trsf = next_shape_model->transformation().data();
 //        for (int i = 0; i < 3; ++i) {
 //          for (int j = 0; j < 4; ++j) {
-//            std::cout << next_shape_model->transformation().matrix().data() << " ";
+//            std::cout <<  << " ";
 //          } std::cout << std::endl;
 //        }
 			} catch (...) {}

@@ -97,12 +97,12 @@ IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_representat
 		 convert(product->ObjectPlacement(), trsf);
 	} catch (...) {}
   
-    std::cout << "trsf" << std::endl;
-    for (int i = 0; i < 3; ++i) {
-      for (int j = 0; j < 4; ++j) {
-        std::cout << trsf.cartesian(i, j) << " ";
-      } std::cout << std::endl;
-    }
+//  std::cout << "trsf" << std::endl;
+//  for (int i = 0; i < 3; ++i) {
+//    for (int j = 0; j < 4; ++j) {
+//      std::cout << trsf.cartesian(i, j) << " ";
+//    } std::cout << std::endl;
+//  }
 
 	// Does the IfcElement have any IfcOpenings?
 	// Note that openings for IfcOpeningElements are not processed
@@ -114,9 +114,24 @@ IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_representat
 	if (!settings.get(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && openings && openings->size()) {
 		Logger::Message(Logger::LOG_ERROR, "Not implemented opening subtractions");
 	}
-	
-	shape = new IfcGeom::Representation::Native(element_settings, representation->entity->id(), shapes);
-	
+  
+  if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
+    // TODO: OpenCascade code uses opened_shapes. Check why.
+    for ( IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+      it->prepend(new CgalPlacement(trsf));
+    }
+    trsf = Kernel::Aff_transformation_3();
+		shape = new IfcGeom::Representation::Native(element_settings, representation->entity->id(), shapes);
+  } else if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
+		for ( IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+      it->prepend(new CgalPlacement(trsf));
+    }
+		trsf = Kernel::Aff_transformation_3();
+		shape = new IfcGeom::Representation::Native(element_settings, representation->entity->id(), shapes);
+  } else {
+		shape = new IfcGeom::Representation::Native(element_settings, representation->entity->id(), shapes);
+  }
+
 	std::string context_string = "";
 	if (representation->hasRepresentationIdentifier()) {
 		context_string = representation->RepresentationIdentifier();

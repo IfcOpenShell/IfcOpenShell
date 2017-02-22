@@ -67,7 +67,7 @@ bool IfcGeom::CgalKernel::convert_shape(const IfcBaseClass* l, cgal_shape_t& r) 
 	}
 
 	if ( processed && success ) { 
-		const double precision = getValue(GV_PRECISION);
+//		const double precision = getValue(GV_PRECISION);
 		// apply_tolerance(r, precision);
 #ifndef NO_CACHE
 		cache.Shape[id] = r;
