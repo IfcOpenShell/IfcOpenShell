@@ -293,6 +293,7 @@ int main(int argc, char** argv)
     } catch (...) {
         print_usage();
         return EXIT_FAILURE;
+    }
 
     po::notify(vmap);
 
@@ -390,6 +391,8 @@ int main(int argc, char** argv)
 	std::string output_extension = output_filename.substr(output_filename.size()-4);
 	boost::to_lower(output_extension);
 
+    Logger::SetOutput(&std::cout, &log_stream);
+    Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
     std::vector<IfcGeom::filter_t> used_filters = setup_filters(include_filter, exclude_filter, output_extension, traverse);
     if (used_filters.empty()) {
@@ -419,7 +422,7 @@ int main(int argc, char** argv)
 		return exit_code;
 	}
 
-	    SerializerSettings settings;
+	SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
 	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
 	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords);
@@ -439,6 +442,7 @@ int main(int argc, char** argv)
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
     settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
+    settings.set_deflection_tolerance(deflection_tolerance);
     settings.precision = precision;
 
 	GeometrySerializer* serializer;
