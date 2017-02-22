@@ -52,10 +52,19 @@ namespace IfcGeom
         /// children of a storey named "Level 20", or children of entities that have no representation, e.g. IfcCurtainWall.
         bool traverse;
 
+        bool match(IfcSchema::IfcProduct* prod, const filter_t& pred) const
+        {
+            bool is_match = pred(prod);
+            if (!is_match && traverse) {
+                is_match = traverse_match(prod, pred);
+            }
+            return is_match == include;
+        }
+
         static bool traverse_match(IfcSchema::IfcProduct* prod, const filter_t& pred)
         {
             IfcSchema::IfcProduct* parent, *current = prod;
-            while ((parent = static_cast<IfcSchema::IfcProduct*>(IfcGeom::Kernel::get_decomposing_entity(current))) != 0) {
+            while ((parent = dynamic_cast<IfcSchema::IfcProduct*>(IfcGeom::Kernel::get_decomposing_entity(current))) != 0) {
                 if (pred(parent)) {
                     return true;
                 }
@@ -84,7 +93,9 @@ namespace IfcGeom
             }
         }
 
-        bool match(const std::string &str) const
+        bool match(const std::string &str) const { return match_values(values, str); }
+
+        static bool match_values(const std::set<boost::regex>& values, const std::string &str)
         {
             foreach(const boost::regex& r, values) {
                 if (boost::regex_match(str, r)) {
@@ -157,13 +168,8 @@ namespace IfcGeom
 
         bool operator()(IfcSchema::IfcProduct* prod) const
         {
-            bool is_match = match(prod);
-            if (!is_match && traverse) {
-                // @note bind1st() and mem_fun() deprecated in C++11, use bind() and mem_fn() when migrating to C++11.
-                filter_t pred = std::bind1st(std::mem_fun(&string_arg_filter::match), this);
-                is_match = traverse_match(prod, pred);
-            }
-            return is_match == include;
+            // @note bind1st() and mem_fun() deprecated in C++11, use bind() and mem_fn() when migrating to C++11.
+            return filter::match(prod, std::bind1st(std::mem_fun(&string_arg_filter::match), this));
         }
     };
 
@@ -185,11 +191,7 @@ namespace IfcGeom
 
         bool operator()(IfcSchema::IfcProduct* prod) const
         {
-            bool is_match = match(prod);
-            if (is_match != include && traverse) {
-                is_match = traverse_match(prod, boost::ref(*this));
-            }
-            return is_match == include;
+            return filter::match(prod, std::bind1st(std::mem_fun(&layer_filter::match), this));
         }
 
         struct wildcards_match
@@ -197,12 +199,7 @@ namespace IfcGeom
             wildcards_match(const std::set<boost::regex>& patterns) : patterns(patterns) {}
             bool operator()(const layer_map_t::value_type& layer_map_value) const
             {
-                foreach(const boost::regex& r, patterns) {
-                    if (boost::regex_match(layer_map_value.first, r)) {
-                        return true;
-                    }
-                }
-                return false;
+                return wildcard_filter::match_values(patterns, layer_map_value.first);
             }
 
             std::set<boost::regex> patterns;
@@ -231,7 +228,7 @@ namespace IfcGeom
                     throw IfcParse::IfcException("'" +  type + "' does not name a valid IFC entity");
                 }
                 values.insert(ty);
-                // TODO: Add child classes so that containment in set can be in O(log n)
+                /// @todo Add child classes so that containment in set can be in O(log n)
             }
         }
 
@@ -248,11 +245,7 @@ namespace IfcGeom
 
         bool operator()(IfcSchema::IfcProduct* prod) const
         {
-            bool is_match = match(prod);
-            if (is_match != include && traverse) {
-                is_match = traverse_match(prod, boost::ref(*this));
-            }
-            return is_match == include;
+            return filter::match(prod, std::bind1st(std::mem_fun(&entity_filter::match), this));
         }
     };
 }
