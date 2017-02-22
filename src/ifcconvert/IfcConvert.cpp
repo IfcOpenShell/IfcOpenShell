@@ -596,7 +596,7 @@ int main(int argc, char** argv)
 	}
 	Logger::Status(msg.str());
 
-    return successful ? 0 : 1;
+    return successful ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 void write_log() {
