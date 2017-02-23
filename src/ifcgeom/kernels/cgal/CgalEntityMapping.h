@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -29,7 +29,22 @@
 #include "../../../ifcparse/IfcParse.h"
 
 SHAPES(IfcRepresentation);
+// IfcFacetedBrep included
+// IfcAdvancedBrep included
+// IfcFacetedBrepWithVoids included
+// IfcAdvancedBrepWithVoids included
+SHAPES(IfcManifoldSolidBrep);
 
 SHAPE(IfcExtrudedAreaSolid);
+SHAPE(IfcConnectedFaceSet);
+
+FACE(IfcFace);
+FACE(IfcRectangleProfileDef);
+
+WIRE(IfcPolyLoop);
 
 CLASS(IfcCartesianPoint,cgal_point_t);
+CLASS(IfcDirection,cgal_direction_t);
+CLASS(IfcAxis2Placement2D,cgal_placement_t);
+CLASS(IfcAxis2Placement3D,cgal_placement_t);
+CLASS(IfcObjectPlacement,cgal_placement_t);

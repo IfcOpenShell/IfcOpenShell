@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -37,12 +37,76 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 #include "../../../ifcgeom/IfcGeom.h"
 
-typedef void* cgal_shape_t;
-typedef void* cgal_face_t;
-typedef void* cgal_wire_t;
-typedef void* cgal_curve_t;
-typedef void* cgal_placement_t;
-typedef void* cgal_point_t;
+#undef Handle
+
+#include <boost/property_map/property_map.hpp>
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Polyhedron_3.h>
+#include <CGAL/boost/graph/graph_traits_Polyhedron_3.h>
+#include <CGAL/Polygon_mesh_processing/stitch_borders.h>
+#include <CGAL/Polygon_mesh_processing/orientation.h>
+#include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
+#include <CGAL/Polygon_mesh_processing/compute_normal.h>
+
+typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
+
+typedef Kernel::Aff_transformation_3 cgal_placement_t;
+typedef Kernel::Point_3 cgal_point_t;
+typedef Kernel::Vector_3 cgal_direction_t;
+typedef std::vector<Kernel::Point_3> cgal_curve_t;
+typedef std::vector<Kernel::Point_3> cgal_wire_t;
+
+struct cgal_face_t {
+  cgal_wire_t outer;
+  std::vector<cgal_wire_t> inner;
+};
+
+typedef CGAL::Polyhedron_3<Kernel> cgal_shape_t;
+typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel>>::vertex_descriptor cgal_vertex_descriptor_t;
+typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel>>::face_descriptor cgal_face_descriptor_t;
+
+struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel>::HalfedgeDS> {
+private:
+  std::list<cgal_face_t> *face_list;
+public:
+  PolyhedronBuilder(std::list<cgal_face_t> *face_list) {
+    this->face_list = face_list;
+  }
+  
+  void operator()(CGAL::Polyhedron_3<Kernel>::HalfedgeDS &hds) {
+    std::list<Kernel::Point_3> points;
+    std::list<std::list<std::size_t>> facet_vertices;
+    CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel>::HalfedgeDS> builder(hds, true);
+    
+    for (auto &face: *face_list) {
+      facet_vertices.push_back(std::list<std::size_t>());
+      for (auto &point: face.outer) {
+        facet_vertices.back().push_back(points.size());
+        points.push_back(point);
+      }
+    }
+    
+    builder.begin_surface(points.size(), facet_vertices.size());
+    
+    for (auto &point: points) {
+//      std::cout << "Adding point " << point << std::endl;
+      builder.add_vertex(point);
+    }
+    
+    for (auto &facet: facet_vertices) {
+      builder.begin_facet();
+//      std::cout << "Adding facet ";
+      for (auto &vertex: facet) {
+//        std::cout << vertex << " ";
+        builder.add_vertex_to_facet(vertex);
+      }
+//      std::cout << std::endl;
+      builder.end_facet();
+    }
+    
+    builder.end_surface();
+  }
+};
 
 namespace IfcGeom {
 

@@ -341,16 +341,16 @@ void XmlSerializer::finalize() {
 	ptree root, header, units, decomposition, properties, types, layers;
 	
 	// Write the SPF header as XML nodes.
-	foreach(const std::string& s, file->header().file_description().description()) {
+  for (const std::string& s: file->header().file_description().description()) {
 		header.add_child("file_description.description", ptree(s));
 	}
-	foreach(const std::string& s, file->header().file_name().author()) {
+  for (const std::string& s: file->header().file_name().author()) {
 		header.add_child("file_name.author", ptree(s));
 	}
-	foreach(const std::string& s, file->header().file_name().organization()) {
+  for (const std::string& s: file->header().file_name().organization()) {
 		header.add_child("file_name.organization", ptree(s));
 	}
-	foreach(const std::string& s, file->header().file_schema().schema_identifiers()) {
+  for (const std::string& s: file->header().file_schema().schema_identifiers()) {
 		header.add_child("file_schema.schema_identifiers", ptree(s));
 	}
 	header.put("file_description.implementation_level", file->header().file_description().implementation_level());

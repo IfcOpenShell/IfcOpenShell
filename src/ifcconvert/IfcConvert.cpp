@@ -202,7 +202,8 @@ int main(int argc, char** argv) {
 			"Applies --include or --exclude also to the decomposition and/or containment (IsDecomposedBy, "
 			"HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. "
 			"--include --traverse --names \"Level 1\" includes entity with name \"Level 1\" and all of its children.")
-		("kernel", "Geometry kernel to use ('opencascade' or 'cgal'). Defaults to 'cgal'.");
+//		("kernel", "Geometry kernel to use ('opencascade' or 'cgal'). Defaults to 'cgal'.")
+    ("opencascade", "Use opencascade kernel rather than cgal.");
 
     std::string bounds;
     boost::program_options::options_description serializer_options("Serialization options");
@@ -286,10 +287,11 @@ int main(int argc, char** argv) {
     const bool traverse = vmap.count("traverse") != 0;
     const bool deflection_tolerance_specified = vmap.count("deflection-tolerance") != 0 ;
 
-	if (vmap.count("kernel") == 0) {
-		std::cerr << "Using default CGAL based kernel" << std::endl;
-		kernel = "cgal";
-	}
+	if (vmap.count("opencascade") == 1) {
+		kernel = "opencascade";
+  } else {
+    kernel = "cgal";
+  }
 
 	int bounding_width = -1, bounding_height = -1;
 	if (vmap.count("bounds") == 1) {

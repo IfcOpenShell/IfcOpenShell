@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -34,16 +34,17 @@ namespace IfcGeom {
 		operator const cgal_placement_t& () { return trsf_; }
 		
 		virtual double Value(int i, int j) const {
-			// Get cell from placement as 4x3 matrix as implemented in OCCT. We'll have to check exact semantics.
-			throw std::runtime_error("Not implemented");
+			// TODO: Check
+//      std::cout << "Getting CgalPlacement with i = " << i << " and j = " << j << std::endl;
+      return CGAL::to_double(trsf_.cartesian(i-1, j-1));
 		}
 		virtual void Multiply(const ConversionResultPlacement* other) {
-			// Multiply matrix as implemented in OCCT. We'll have to check exact semantics.
-			throw std::runtime_error("Not implemented");
+			// TODO: Check
+      trsf_ = ((CgalPlacement *)other)->trsf_ * trsf_;
 		}
 		virtual void PreMultiply(const ConversionResultPlacement* other) {
-			// PreMultiply matrix as implemented in OCCT. We'll have to check exact semantics.
-			throw std::runtime_error("Not implemented");
+			// TODO: Check
+      trsf_ = trsf_ * ((CgalPlacement *)other)->trsf_;
 		}
 		virtual ConversionResultPlacement* clone() const {
 			return new CgalPlacement(trsf_);
@@ -51,7 +52,7 @@ namespace IfcGeom {
     private:
         cgal_placement_t trsf_;
     };
-    
+  
     class CgalShape : public ConversionResultShape {
     public:
         CgalShape(const cgal_shape_t& shape)

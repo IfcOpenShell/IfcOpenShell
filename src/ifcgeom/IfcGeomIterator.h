@@ -329,7 +329,7 @@ namespace IfcGeom {
         void include_entity_names(const std::vector<std::string>& names)
         {
             names_to_include_or_exclude.clear();
-            foreach(const std::string &name, names)
+            for (const std::string &name: names)
                 names_to_include_or_exclude.insert(wildcard_string_to_regex(name));
             include_names_in_processing_ = true;
         }
@@ -338,7 +338,7 @@ namespace IfcGeom {
         void exclude_entity_names(const std::vector<std::string>& names)
         {
             names_to_include_or_exclude.clear();
-            foreach(const std::string &name, names)
+            for (const std::string &name: names)
                 names_to_include_or_exclude.insert(wildcard_string_to_regex(name));
             include_names_in_processing_ = false;
         }
@@ -347,7 +347,7 @@ namespace IfcGeom {
         {
             // Escape all non-"*?" regex special chars
             std::string special_chars = "\\^.$|()[]+/";
-            foreach(char c, special_chars) {
+            for (char c: special_chars) {
                 std::string char_str(1, c);
                 boost::replace_all(str, char_str, "\\" + char_str);
             }
@@ -540,7 +540,7 @@ namespace IfcGeom {
                         IfcSchema::IfcProduct* prod = *jt;
                         bool type_found = false;
                         // The set is iterated over to able to filter on subtypes.
-                        foreach(IfcSchema::Type::Enum type, entities_to_include_or_exclude) {
+                        for (IfcSchema::Type::Enum type: entities_to_include_or_exclude) {
                             if (prod->is(type)) {
                                 type_found = true;
                                 break;
@@ -548,7 +548,7 @@ namespace IfcGeom {
                         }
 
                         if (!type_found && traverse) {
-                            foreach(IfcSchema::Type::Enum type, entities_to_include_or_exclude) {
+                            for (IfcSchema::Type::Enum type: entities_to_include_or_exclude) {
                                 IfcSchema::IfcProduct* parent, * current = prod;
                                 while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel->get_decomposing_entity(current))) != 0) {
                                     if (parent->is(type)) {
@@ -564,7 +564,7 @@ namespace IfcGeom {
                         }
 
                         bool name_found = false;
-                        foreach(const boost::regex& r, names_to_include_or_exclude) {
+                        for (const boost::regex& r: names_to_include_or_exclude) {
                             if (prod->hasName() && boost::regex_match(prod->Name(), r)) {
                                 name_found = true;
                                 break;
@@ -572,7 +572,7 @@ namespace IfcGeom {
                         }
 
                         if (!name_found && traverse) {
-                            foreach(const boost::regex& r, names_to_include_or_exclude) {
+                            for (const boost::regex& r: names_to_include_or_exclude) {
                                 IfcSchema::IfcProduct* parent, *current = prod;
                                 while ((parent = static_cast<IfcSchema::IfcProduct*>(kernel->get_decomposing_entity(current))) != 0) {
                                     if (parent->hasName() && boost::regex_match(parent->Name(), r)) {
@@ -702,6 +702,14 @@ namespace IfcGeom {
 
 			try {
 				next_shape_model = create_shape_model_for_next_entity();
+        
+//        std::cout << "trsf" << std::endl;
+//        IfcGeom::CgalPlacement *trsf = next_shape_model->transformation().data();
+//        for (int i = 0; i < 3; ++i) {
+//          for (int j = 0; j < 4; ++j) {
+//            std::cout <<  << " ";
+//          } std::cout << std::endl;
+//        }
 			} catch (...) {}
 
 			if (next_shape_model) {
