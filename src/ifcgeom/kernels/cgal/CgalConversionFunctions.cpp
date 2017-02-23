@@ -44,6 +44,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
 
   cgal_direction_t dir;
   convert(l->ExtrudedDirection(),dir);
+//  std::cout << "Direction: " << dir << std::endl;
   
   std::list<cgal_face_t> face_list;
   face_list.push_back(face);
@@ -58,8 +59,8 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     } cgal_face_t side_face;
     side_face.outer.push_back(*next_vertex);
     side_face.outer.push_back(*current_vertex);
-    side_face.outer.push_back(*current_vertex+dir);
-    side_face.outer.push_back(*next_vertex+dir);
+    side_face.outer.push_back(*current_vertex+height*dir);
+    side_face.outer.push_back(*next_vertex+height*dir);
     face_list.push_back(side_face);
   }
   
@@ -67,7 +68,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   for (std::vector<Kernel::Point_3>::const_reverse_iterator vertex = face.outer.rbegin();
        vertex != face.outer.rend();
        ++vertex) {
-    top_face.outer.push_back(*vertex+dir);
+    top_face.outer.push_back(*vertex+height*dir);
   } face_list.push_back(top_face);
   
   // Naive creation
