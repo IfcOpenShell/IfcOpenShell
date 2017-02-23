@@ -147,7 +147,7 @@ namespace IfcGeom {
 
         /// @todo public/private sections all over the place: move all public to the beginning of the class
 	public:
-        Iterator(const IteratorSettings& settings, const std::string& filename, std::vector<filter_t>& filters)
+        Iterator(const IteratorSettings& settings, const std::string& filename, std::vector<IfcGeom::filter_t>& filters)
             : settings(settings)
             , ifc_file(new IfcParse::IfcFile)
             , owns_ifc_file(true)
@@ -318,8 +318,8 @@ namespace IfcGeom {
 
 		IfcParse::IfcFile* getFile() const { return ifc_file; }
 
-        const std::vector<filter_t>& filters() const { return filters_; }
-        std::vector<filter_t>& filters() { return filters_; }
+        const std::vector<IfcGeom::filter_t>& filters() const { return filters_; }
+        std::vector<IfcGeom::filter_t>& filters() { return filters_; }
 
         const gp_XYZ& bounds_min() const { return bounds_min_; }
         const gp_XYZ& bounds_max() const { return bounds_max_; }
@@ -589,12 +589,13 @@ namespace IfcGeom {
 			gp_Trsf trsf;
 			int parent_id = -1;
 			std::string instance_type, product_name, product_guid;
-			
+            IfcSchema::IfcProduct* ifc_product = 0;
+
 			try {
 				const IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
 				instance_type = IfcSchema::Type::ToString(ifc_entity->type());
 				if ( ifc_entity->is(IfcSchema::Type::IfcProduct) ) {
-					IfcSchema::IfcProduct* ifc_product = (IfcSchema::IfcProduct*)ifc_entity;
+					ifc_product = (IfcSchema::IfcProduct*)ifc_entity;
 					
 					product_guid = ifc_product->GlobalId();
 					product_name = ifc_product->hasName() ? ifc_product->Name() : "";
@@ -614,7 +615,7 @@ namespace IfcGeom {
 			} catch(...) {}
 
 			ElementSettings element_settings(settings, unit_magnitude, instance_type);
-			Element<P>* ifc_object = new Element<P>(element_settings, id, parent_id, product_name, instance_type, product_guid, "", trsf);
+			Element<P>* ifc_object = new Element<P>(element_settings, id, parent_id, product_name, instance_type, product_guid, "", trsf, ifc_product);
 			
 			return ifc_object;
 		}
