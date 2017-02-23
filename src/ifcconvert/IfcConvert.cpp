@@ -39,7 +39,6 @@
 #include <Standard_Version.hxx>
 
 #include <boost/program_options.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include <fstream>
 #include <sstream>
@@ -400,7 +399,12 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    ///@ todo Logger::Message(Logger::LOG_NOTICE, "Filtering by X, Y and Z.")
+    if (!entity_filter.values.empty()) { entity_filter.update_description(); Logger::Message(Logger::LOG_NOTICE, entity_filter.description); }
+    if (!layer_filter.values.empty()) { layer_filter.update_description(); Logger::Message(Logger::LOG_NOTICE, layer_filter.description); }
+    if (!guid_filter.values.empty()) { guid_filter.update_description(); Logger::Message(Logger::LOG_NOTICE, guid_filter.description); }
+    if (!name_filter.values.empty()) { name_filter.update_description(); Logger::Message(Logger::LOG_NOTICE, name_filter.description); }
+    if (!desc_filter.values.empty()) { desc_filter.update_description(); Logger::Message(Logger::LOG_NOTICE, desc_filter.description); }
+    if (!tag_filter.values.empty()) { tag_filter.update_description(); Logger::Message(Logger::LOG_NOTICE, tag_filter.description); }
 
 	if (output_extension == ".xml") {
 		int exit_code = 1;
@@ -677,9 +681,6 @@ std::vector<IfcGeom::filter_t> setup_filters(
                 entities.insert("IfcOpeningElement");
             }
             entity_filter.populate(entities);
-
-            Logger::Message(Logger::LOG_NOTICE, entity_filter.include ? "Including" : "Excluding" +
-                std::string(" by default entities ") + boost::algorithm::join(entities, ", "));
         }
     } catch (const IfcParse::IfcException& e) {
         std::cerr << "[Error] " << e.what() << std::endl;

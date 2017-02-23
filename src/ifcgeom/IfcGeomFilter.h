@@ -24,9 +24,7 @@
 #define IFCGEOMFILTER_H
 
 #include "IfcGeom.h"
-#ifndef NDEBUG
 #include "../ifcparse/IfcWritableEntity.h"
-#endif
 
 #include <boost/function.hpp>
 #include <boost/regex.hpp>
@@ -51,6 +49,8 @@ namespace IfcGeom
         /// If traversal requested, traverse to the parents to see if they satisfy the criteria. E.g. we might be looking for
         /// children of a storey named "Level 20", or children of entities that have no representation, e.g. IfcCurtainWall.
         bool traverse;
+        /// Optional description for the filtering criteria of this filter.
+        std::string description;
 
         bool match(IfcSchema::IfcProduct* prod, const filter_t& pred) const
         {
@@ -171,6 +171,29 @@ namespace IfcGeom
             // @note bind1st() and mem_fun() deprecated in C++11, use bind() and mem_fn() when migrating to C++11.
             return filter::match(prod, std::bind1st(std::mem_fun(&string_arg_filter::match), this));
         }
+
+        void update_description()
+        {
+            std::stringstream ss;
+
+            ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude");
+            std::vector<std::string> patterns;
+            foreach(const boost::regex& r, values) {
+                patterns.push_back(" \"" + r.str() + "\"");
+            }
+
+            for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
+                IfcWrite::IfcWritableEntity dummy(it->first);
+                IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
+                try {
+                    ss << " " << IfcSchema::Type::ToString(it->first) << "." << base->getArgumentName(it->second);
+                } catch(...) {}
+                delete base;
+            }
+
+            ss << " values " << boost::algorithm::join(patterns, " ");
+            description = ss.str();
+        }
     };
 
     struct layer_filter : public wildcard_filter
@@ -204,6 +227,18 @@ namespace IfcGeom
 
             std::set<boost::regex> patterns;
         };
+
+        void update_description()
+        {
+            std::stringstream ss;
+            ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude") << " layers";
+            std::vector<std::string> str_values;
+            foreach(const boost::regex& r, values) {
+                str_values.push_back(" \"" + r.str() + "\"");
+            }
+            ss << " " << boost::algorithm::join(str_values, " ");
+            description = ss.str();
+        }
     };
 
     struct entity_filter : public filter
@@ -246,6 +281,16 @@ namespace IfcGeom
         bool operator()(IfcSchema::IfcProduct* prod) const
         {
             return filter::match(prod, std::bind1st(std::mem_fun(&entity_filter::match), this));
+        }
+
+        void update_description()
+        {
+            std::stringstream ss;
+            ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude") << " entities";
+            foreach(IfcSchema::Type::Enum type, values) {
+                ss << " " << IfcSchema::Type::ToString(type);
+            }
+            description = ss.str();
         }
     };
 }
