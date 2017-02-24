@@ -399,12 +399,12 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    if (!entity_filter.values.empty()) { entity_filter.update_description(); Logger::Message(Logger::LOG_NOTICE, entity_filter.description); }
-    if (!layer_filter.values.empty()) { layer_filter.update_description(); Logger::Message(Logger::LOG_NOTICE, layer_filter.description); }
-    if (!guid_filter.values.empty()) { guid_filter.update_description(); Logger::Message(Logger::LOG_NOTICE, guid_filter.description); }
-    if (!name_filter.values.empty()) { name_filter.update_description(); Logger::Message(Logger::LOG_NOTICE, name_filter.description); }
-    if (!desc_filter.values.empty()) { desc_filter.update_description(); Logger::Message(Logger::LOG_NOTICE, desc_filter.description); }
-    if (!tag_filter.values.empty()) { tag_filter.update_description(); Logger::Message(Logger::LOG_NOTICE, tag_filter.description); }
+    if (!entity_filter.values.empty()) { entity_filter.update_description(); Logger::Notice(entity_filter.description); }
+    if (!layer_filter.values.empty()) { layer_filter.update_description(); Logger::Notice(layer_filter.description); }
+    if (!guid_filter.values.empty()) { guid_filter.update_description(); Logger::Notice(guid_filter.description); }
+    if (!name_filter.values.empty()) { name_filter.update_description(); Logger::Notice(name_filter.description); }
+    if (!desc_filter.values.empty()) { desc_filter.update_description(); Logger::Notice(desc_filter.description); }
+    if (!tag_filter.values.empty()) { tag_filter.update_description(); Logger::Notice(tag_filter.description); }
 
 	if (output_extension == ".xml") {
 		int exit_code = 1;
@@ -412,7 +412,7 @@ int main(int argc, char** argv)
 			XmlSerializer s(output_temp_filename);
 			IfcParse::IfcFile f;
 			if (!f.Init(input_filename)) {
-				Logger::Message(Logger::LOG_ERROR, "Unable to parse input file '" + input_filename + "'");
+				Logger::Error("Unable to parse input file '" + input_filename + "'");
 			} else {
 				s.setFile(&f);
                 Logger::Status("Writing XML output...");
@@ -454,7 +454,7 @@ int main(int argc, char** argv)
         // Do not use temp file for MTL as it's such a small file.
         const std::string mtl_filename = change_extension(output_filename, "mtl");
 		if (!use_world_coords) {
-			Logger::Message(Logger::LOG_NOTICE, "Using world coords when writing WaveFront OBJ files");
+			Logger::Notice("Using world coords when writing WaveFront OBJ files");
 			settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
 		}
 		serializer = new WaveFrontOBJSerializer(output_temp_filename, mtl_filename, settings);
@@ -474,7 +474,7 @@ int main(int argc, char** argv)
             static_cast<SvgSerializer*>(serializer)->setBoundingRectangle(bounding_width, bounding_height);
 		}
 	} else {
-		Logger::Message(Logger::LOG_ERROR, "Unknown output filename extension '" + output_extension + "'");
+		Logger::Error("Unknown output filename extension '" + output_extension + "'");
 		write_log();
 		print_usage();
 		return EXIT_FAILURE;
@@ -483,13 +483,13 @@ int main(int argc, char** argv)
     const bool is_tesselated = serializer->isTesselated(); // isTesselated() doesn't change at run-time
 	if (!is_tesselated) {
 		if (weld_vertices) {
-            Logger::Message(Logger::LOG_NOTICE, "Weld vertices setting ignored when writing non-tesselated output");
+            Logger::Notice("Weld vertices setting ignored when writing non-tesselated output");
 		}
         if (generate_uvs) {
-            Logger::Message(Logger::LOG_NOTICE, "Generate UVs setting ignored when writing non-tesselated output");
+            Logger::Notice("Generate UVs setting ignored when writing non-tesselated output");
         }
         if (center_model || model_offset) {
-            Logger::Message(Logger::LOG_NOTICE, "Centering/offsetting model setting ignored when writing non-tesselated output");
+            Logger::Notice("Centering/offsetting model setting ignored when writing non-tesselated output");
         }
 
         settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
@@ -507,7 +507,7 @@ int main(int argc, char** argv)
 	if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we failed to parse
         /// the file and for a case where we found no entities that satisfy our filtering criteria.
-        Logger::Message(Logger::LOG_ERROR, "Unable to parse input file '" + input_filename + "' or no geometrical entities found");
+        Logger::Error("Unable to parse input file '" + input_filename + "' or no geometrical entities found");
 		write_log();
 		return EXIT_FAILURE;
 	}
@@ -541,7 +541,7 @@ int main(int argc, char** argv)
 
         std::stringstream msg;
         msg << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
-        Logger::Message(Logger::LOG_NOTICE, msg.str());
+        Logger::Notice(msg.str());
     }
 
 	Logger::Status("Creating geometry...");
@@ -580,7 +580,7 @@ int main(int argc, char** argv)
     // Do not remove the temp file as user can salvage the conversion result from it.
     bool successful = rename_file(output_temp_filename, output_filename);
     if (!successful) {
-        Logger::Message(Logger::LOG_ERROR, "Unable to write output file '" + output_filename + "'");
+        Logger::Error("Unable to write output file '" + output_filename + "'");
     }
 
 	write_log();
