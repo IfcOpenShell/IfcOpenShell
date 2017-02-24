@@ -13,14 +13,14 @@ Prerequisites
 -------------
 * Git
 * CMake (2.6 or newer)
-* Windows: [Visual Studio] 2008 or newer with C++ toolset (or [Visual C++ Build Tools]) or [MSYS2] + MinGW
+* Windows: [Visual Studio] 2008 or newer (2017 not yet officially supported) with C++ toolset (or [Visual C++ Build Tools]) or [MSYS2] + MinGW
 * *nix: GCC 4.7 or newer, or Clang (any version)
 
 Dependencies
 -------------
 * [Boost](http://www.boost.org/)
-* Open Cascade - *optional*, but required for building IfcGeom
-  ([official](http://www.opencascade.org/getocc/download/loadocc/) or [community edition](https://github.com/tpaviot/oce))  
+* [Open Cascade](http://opencascade.org) - *optional*, but required for building IfcGeom
+  ([official](http://www.opencascade.org/getocc/download/loadocc/), "OCCT", or [community edition](https://github.com/tpaviot/oce), "OCE")  
   For converting IFC representation items into BRep solids and tesselated meshes
 * [ICU](http://site.icu-project.org/) - *optional*  
   For handling code pages and Unicode in the parser
@@ -58,6 +58,7 @@ Only) to deploy the headers and binaries into a single location if wanted/needed
 
 Alternatively, one can use the utility batch file(s) to build and install the project easily from the command-line
 (installing a project will build it also, if required):
+
     > install-ifcopenshell.bat
 
 #### Using MSYS2 + MinGW
@@ -84,12 +85,11 @@ meant to be used for a typical IfcOpenShell workspace setup.
 
     $ sudo apt-get install git cmake gcc g++ libboost-all-dev libicu-dev
 
-**2a)** Either use an Open CASCADE package from your operating system's software repository (see http://opencascade.org
-for additional information)
+**2a)** Either use an OCE package from your operating system's software repository
 
     $ sudo apt-get install liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
 
-**2b)** or (if not available, or the latest code is wanted) compile Open CASCADE yourself (note that the build takes a long time):
+**2b)** or (if not available, or the latest code is wanted) compile OCE yourself (note that the build takes a long time):
 
     $ sudo apt-get install libftgl-dev libtbb2 libtbb-dev libgl1-mesa-dev libfreetype6-dev
     $ git clone https://github.com/tpaviot/oce.git
@@ -98,6 +98,8 @@ for additional information)
     $ cmake ..
     $ make -j
     $ sudo make install
+
+**2c)** or obtain and compile OCCT from http://www.opencascade.org/getocc/download/loadocc/
 
 **3)** For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA is needed:
 
