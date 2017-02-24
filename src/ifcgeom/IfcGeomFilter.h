@@ -120,6 +120,7 @@ namespace IfcGeom
         }
     };
 
+    /// @note supports only string arguments for now
     struct string_arg_filter : public wildcard_filter
     {
         // Using this for now in order to overcome the fact that different classes have the argument at different indices.
@@ -145,7 +146,8 @@ namespace IfcGeom
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
                 IfcWrite::IfcWritableEntity dummy(it->first);
                 IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
-                assert(it->second < base->getArgumentCount() && "Invalid argument index");
+                assert(it->second < base->getArgumentType(it->second) == IfcUtil::Argument_STRING && "Argument type not string");
+                assert(it->second < base->getArgumentCount() && "Argument index out of bounds");
                 delete base;
             }
 #endif
@@ -154,7 +156,8 @@ namespace IfcGeom
         std::string value(IfcSchema::IfcProduct* prod) const
         {
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
-                if (prod->is(it->first) && it->second < prod->entity->getArgumentCount()) {
+                if (prod->is(it->first) && it->second < prod->entity->getArgumentCount() &&
+                    prod->getArgumentType(it->second) == IfcUtil::Argument_STRING) {
                     Argument *arg = prod->entity->getArgument(it->second);
                     if (!arg->isNull()) {
                         return *arg;
