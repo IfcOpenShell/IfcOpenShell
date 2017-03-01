@@ -460,7 +460,7 @@ OLD_BUILD_CFG = BUILD_CFG
 if BUILD_CFG != "Debug":
     # CGAL only supports Debug and Release for CMAKE_BUILD_TYPE
     BUILD_CFG = "Release"
-build_dependency(name="cgal", mode="cmake", build_tool_args=["-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION), "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION), "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION), "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION), "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "-DCMAKE_INSTALL_PREFIX=%s/install/cgal/" % (DEPS_DIR,)], download_url="https://github.com/CGAL/cgal.git", download_name="cgal", download_tool=download_tool_git)
+build_dependency(name="cgal", mode="cmake", build_tool_args=["-DBUILD_SHARED_LIBS=Off", "-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION), "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION), "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION), "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION), "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "-DCMAKE_INSTALL_PREFIX=%s/install/cgal/" % (DEPS_DIR,)], download_url="https://github.com/CGAL/cgal.git", download_name="cgal", download_tool=download_tool_git)
 BUILD_CFG = OLD_BUILD_CFG
 
 build_dependency(name="icu-%s" % (ICU_VERSION,), mode="icu", build_tool_args=["--enable-static", "--disable-shared"], download_url="http://download.icu-project.org/files/icu4c/%s/" % (ICU_VERSION,), download_name="icu4c-%s-src.tgz" % (ICU_VERSION_UNDERSCORE,))
@@ -482,6 +482,14 @@ run_cmake("", cmake_args=[
     "-DBOOST_ROOT="              "%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION),
     "-DOCC_INCLUDE_DIR="         "%s/install/oce-%s/include/oce" % (DEPS_DIR, OCE_VERSION),
     "-DOCC_LIBRARY_DIR="         "%s/install/oce-%s/lib" % (DEPS_DIR, OCE_VERSION),
+
+    "-DCGAL_INCLUDE_DIR="        "%s/install/cgal/include" % (DEPS_DIR,),
+    "-DCGAL_LIBRARY_DIR="        "%s/install/cgal/lib" % (DEPS_DIR,),
+    "-DGMP_INCLUDE_DIR="         "%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION),
+    "-DGMP_LIBRARY_DIR="         "%s/install/gmp-%s/lib" % (DEPS_DIR, GMP_VERSION),
+    "-DMPFR_INCLUDE_DIR="        "%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION),
+    "-DMPFR_LIBRARY_DIR="        "%s/install/mpfr-%s/lib" % (DEPS_DIR, MPFR_VERSION),
+
     "-DOPENCOLLADA_INCLUDE_DIR=" "%s/install/OpenCOLLADA/include/opencollada" % (DEPS_DIR,),
     "-DOPENCOLLADA_LIBRARY_DIR=" "%s/install/OpenCOLLADA/lib/opencollada" % (DEPS_DIR,),
     "-DICU_INCLUDE_DIR="         "%s/install/icu-%s/include" % (DEPS_DIR, ICU_VERSION),
