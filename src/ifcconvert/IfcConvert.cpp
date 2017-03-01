@@ -128,18 +128,23 @@ IfcGeom::string_arg_filter tag_filter(IfcSchema::Type::IfcProxy, 8, IfcSchema::T
 
 struct geom_filter
 {
-    geom_filter() : type(UNUSED) {}
+    geom_filter(bool include, bool traverse) : type(UNUSED), include(include), traverse(traverse) {}
+    geom_filter() : type(UNUSED), include(false), traverse(false) {}
     enum filter_type { UNUSED, ENTITY_TYPE, LAYER_NAME, ENTITY_ARG };
     filter_type type;
+    bool include;
+    bool traverse;
     std::string arg;
     std::set<std::string> values;
 };
 // Specialized classes for knowing which type of filter we are validating within validate().
 // Could not figure out easily how else to know it if using single type for both.
-struct inclusion_filter : public geom_filter {};
-struct exclusion_filter : public geom_filter {};
+struct inclusion_filter : public geom_filter { inclusion_filter() : geom_filter(true, false) {} };
+struct inclusion_traverse_filter : public geom_filter { inclusion_traverse_filter() : geom_filter(true, true) {} };
+struct exclusion_filter : public geom_filter { exclusion_filter() : geom_filter(false, false) {} };
+struct exclusion_traverse_filter : public geom_filter { exclusion_traverse_filter() : geom_filter(false, true) {} };
 
-std::vector<IfcGeom::filter_t> setup_filters(const geom_filter&, const geom_filter&, const std::string&, bool);
+std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
 
 int main(int argc, char** argv)
 {
@@ -157,7 +162,9 @@ int main(int argc, char** argv)
 
     double deflection_tolerance;
     inclusion_filter include_filter;
+    inclusion_traverse_filter include_traverse_filter;
     exclusion_filter exclude_filter;
+    exclusion_traverse_filter exclude_traverse_filter;
 
     po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -215,9 +222,16 @@ int main(int argc, char** argv)
             "The values for 'layers' and 'arg' are handled case-sensitively (wildcards supported)."
             "--include and --exclude cannot be placed right before input file argument and "
             "only single of each argument supported for now. See also --exclude and --traverse.")
+        ("include+", po::value<inclusion_traverse_filter>(&include_traverse_filter)->multitoken(),
+            "Same as --include but applies filtering also to the decomposition and/or containment (IsDecomposedBy, "
+            "HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. --include+=names \"Level 1\" "
+            "includes entity with name \"Level 1\" and all of its children. See --include for more information. ")
         ("exclude", po::value<exclusion_filter>(&exclude_filter)->multitoken(),
             "Specifies that the entities that match a specific filtering criteria are to be excluded in the geometrical output."
             "See --include for syntax and more details. The default value is '--exclude=entities IfcOpeningElement IfcSpace'.")
+        ("exclude+", po::value<exclusion_traverse_filter>(&exclude_traverse_filter)->multitoken(),
+            "Same as --exclude but applies filtering also to the decomposition and/or containment "
+            "of the filtered entity. See --include+ for more details.")
         ("no-normals",
             "Disables computation of normals. Saves time and file size and is useful "
             "in instances where you're going to recompute normals for the exported "
@@ -226,11 +240,7 @@ int main(int argc, char** argv)
             "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
         ("generate-uvs",
             "Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
-            "Not guaranteed to work properly if used with --weld-vertices.")
-        ("traverse",
-            "Applies all --include or --exclude filters also to the decomposition and/or containment (IsDecomposedBy, "
-            "HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. --include=names \"Level 1\" "
-            "--traverse includes entity with name \"Level 1\" and all of its children.");
+            "Not guaranteed to work properly if used with --weld-vertices.");
 
     std::string bounds, offset_str;
 #ifdef HAVE_ICU
@@ -329,8 +339,6 @@ int main(int argc, char** argv)
     const bool center_model = vmap.count("center-model") != 0 ;
     const bool model_offset = vmap.count("model-offset") != 0 ;
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
-    /// @todo For now traversal is a global option for all filters but we could easily make it filter-specific.
-    const bool traverse = vmap.count("traverse") != 0;
 
 #ifdef HAVE_ICU
     if (!unicode_mode.empty()) {
@@ -394,8 +402,15 @@ int main(int argc, char** argv)
     Logger::SetOutput(&std::cout, &log_stream);
     Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
-    std::vector<IfcGeom::filter_t> used_filters = setup_filters(include_filter, exclude_filter, output_extension, traverse);
-    if (used_filters.empty()) {
+    /// @todo Clean up this filter code further.
+    std::vector<geom_filter> used_filters;
+    if (include_filter.type != geom_filter::UNUSED) { used_filters.push_back(include_filter); }
+    if (include_traverse_filter.type != geom_filter::UNUSED) { used_filters.push_back(include_traverse_filter); }
+    if (exclude_filter.type != geom_filter::UNUSED) { used_filters.push_back(exclude_filter); }
+    if (exclude_traverse_filter.type != geom_filter::UNUSED) { used_filters.push_back(exclude_traverse_filter); }
+
+    std::vector<IfcGeom::filter_t> filter_funcs = setup_filters(used_filters, output_extension);
+    if (filter_funcs.empty()) {
         std::cerr << "[Error] Failed to set up geometry filters\n";
         return EXIT_FAILURE;
     }
@@ -504,7 +519,7 @@ int main(int argc, char** argv)
 	time_t start,end;
 	time(&start);
 
-    IfcGeom::Iterator<real_t> context_iterator(settings, input_filename, used_filters);
+    IfcGeom::Iterator<real_t> context_iterator(settings, input_filename, filter_funcs);
 	if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we failed to parse
         /// the file and for a case where we found no entities that satisfy our filtering criteria.
@@ -646,6 +661,14 @@ void validate(boost::any& v, const std::vector<std::string>& values, inclusion_f
     v = filter;
 }
 
+void validate(boost::any& v, const std::vector<std::string>& values, inclusion_traverse_filter*, int)
+{
+    po::validators::check_first_occurrence(v);
+    inclusion_traverse_filter filter;
+    parse_filter(filter, values);
+    v = filter;
+}
+
 void validate(boost::any& v, const std::vector<std::string>& values, exclusion_filter*, int)
 {
     po::validators::check_first_occurrence(v);
@@ -654,26 +677,58 @@ void validate(boost::any& v, const std::vector<std::string>& values, exclusion_f
     v = filter;
 }
 
-/// @todo Clean up this filter initialization code further.
-/// @return The used filters, if none an error occurred.
-std::vector<IfcGeom::filter_t> setup_filters(
-    const geom_filter& include_filter,
-    const geom_filter& exclude_filter,
-    const std::string& output_extension,
-    bool traverse)
+void validate(boost::any& v, const std::vector<std::string>& values, exclusion_traverse_filter*, int)
 {
-    std::vector<IfcGeom::filter_t> filters;
-    entity_filter.traverse = traverse;
-    try {
-        if (include_filter.type == geom_filter::ENTITY_TYPE) {
-            entity_filter.include = true;
-            entity_filter.populate(include_filter.values);
-        } else if (exclude_filter.type == geom_filter::ENTITY_TYPE) {
-            entity_filter.include = false;
-            entity_filter.populate(exclude_filter.values);
+    po::validators::check_first_occurrence(v);
+    exclusion_traverse_filter filter;
+    parse_filter(filter, values);
+    v = filter;
+}
+
+
+/// @todo Clean up this filter initialization code further.
+/// @return References to the used filter functors, if none an error occurred.
+std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>& filters, const std::string& output_extension)
+{
+    std::vector<IfcGeom::filter_t> filter_funcs;
+    foreach(const geom_filter& f, filters) {
+        if (f.type == geom_filter::ENTITY_TYPE) {
+            entity_filter.include = f.include;
+            entity_filter.traverse = f.traverse;
+            try {
+                entity_filter.populate(f.values);
+            } catch (const IfcParse::IfcException& e) {
+                std::cerr << "[Error] " << e.what() << std::endl;
+                return std::vector<IfcGeom::filter_t>();
+            }
+        } else if (f.type == geom_filter::LAYER_NAME) {
+            layer_filter.include = f.include;
+            layer_filter.traverse = f.traverse;
+            layer_filter.populate(f.values);
+        } else if (f.type == geom_filter::ENTITY_ARG) {
+            if (f.arg == GUID_ARG) {
+                guid_filter.include = f.include;
+                guid_filter.traverse = f.traverse;
+                guid_filter.populate(f.values);
+            } else if (f.arg == NAME_ARG) {
+                name_filter.include = f.include;
+                name_filter.traverse = f.traverse;
+                name_filter.populate(f.values);
+            } else if (f.arg == DESC_ARG) {
+                desc_filter.include = f.include;
+                desc_filter.traverse = f.traverse;
+                desc_filter.populate(f.values);
+            } else if (f.arg == TAG_ARG) {
+                tag_filter.include = f.include;
+                tag_filter.traverse = f.traverse;
+                tag_filter.populate(f.values);
+            }
         }
-        // If no entity names are specified these are the defaults to skip from output
-        if (entity_filter.values.empty()) {
+    }
+
+    // If no entity names are specified these are the defaults to skip from output
+    if (entity_filter.values.empty()) {
+        try {
             std::set<std::string> entities;
             entities.insert("IfcSpace");
             if (output_extension == ".svg") {
@@ -682,74 +737,18 @@ std::vector<IfcGeom::filter_t> setup_filters(
                 entities.insert("IfcOpeningElement");
             }
             entity_filter.populate(entities);
+        } catch (const IfcParse::IfcException& e) {
+            std::cerr << "[Error] " << e.what() << std::endl;
+            return std::vector<IfcGeom::filter_t>();
         }
-    } catch (const IfcParse::IfcException& e) {
-        std::cerr << "[Error] " << e.what() << std::endl;
-        return filters;
-    }
-    if (!entity_filter.values.empty()) {
-        filters.push_back(boost::ref(entity_filter));
     }
 
-    layer_filter.traverse = traverse;
-    if (include_filter.type == geom_filter::LAYER_NAME) {
-        layer_filter.include = true;
-        layer_filter.populate(include_filter.values);
-    } else if (exclude_filter.type == geom_filter::LAYER_NAME) {
-        layer_filter.include = false;
-        layer_filter.populate(exclude_filter.values);
-    }
-    if (!layer_filter.values.empty()) {
-        filters.push_back(boost::ref(layer_filter)); 
-    }
+    if (!layer_filter.values.empty()) { filter_funcs.push_back(boost::ref(layer_filter));  }
+    if (!entity_filter.values.empty()) { filter_funcs.push_back(boost::ref(entity_filter)); }
+    if (!guid_filter.values.empty()) { filter_funcs.push_back(boost::ref(guid_filter)); }
+    if (!name_filter.values.empty()) { filter_funcs.push_back(boost::ref(name_filter)); }
+    if (!desc_filter.values.empty()) { filter_funcs.push_back(boost::ref(desc_filter)); }
+    if (!tag_filter.values.empty()) { filter_funcs.push_back(boost::ref(tag_filter)); }
 
-    guid_filter.traverse = traverse;
-    if (include_filter.arg == GUID_ARG) {
-        guid_filter.include = true;
-        guid_filter.populate(include_filter.values);
-    } else if (exclude_filter.arg == GUID_ARG) {
-        guid_filter.include = false;
-        guid_filter.populate(exclude_filter.values);
-    }
-    if (!guid_filter.values.empty()) {
-        filters.push_back(boost::ref(guid_filter));
-    }
-
-    name_filter.traverse = traverse;
-    if (include_filter.arg == NAME_ARG) {
-        name_filter.include = true;
-        name_filter.populate(include_filter.values);
-    } else if (exclude_filter.arg == NAME_ARG) {
-        name_filter.include = false;
-        name_filter.populate(exclude_filter.values);
-    }
-    if (!name_filter.values.empty()) {
-        filters.push_back(boost::ref(name_filter));
-    }
-
-    desc_filter.traverse = traverse;
-    if (include_filter.arg == DESC_ARG) {
-        desc_filter.include = true;
-        desc_filter.populate(include_filter.values);
-    } else if (exclude_filter.arg == DESC_ARG) {
-        desc_filter.include = false;
-        desc_filter.populate(exclude_filter.values);
-    }
-    if (!desc_filter.values.empty()) {
-        filters.push_back(boost::ref(desc_filter));
-    }
-
-    tag_filter.traverse = traverse;
-    if (include_filter.arg == TAG_ARG) {
-        tag_filter.include = true;
-        tag_filter.populate(include_filter.values);
-    } else if (exclude_filter.arg == TAG_ARG) {
-        tag_filter.include = false;
-        tag_filter.populate(exclude_filter.values);
-    }
-    if (!tag_filter.values.empty()) {
-        filters.push_back(boost::ref(tag_filter));
-    }
-
-    return filters;
+    return filter_funcs;
 }
