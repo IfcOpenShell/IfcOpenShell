@@ -23,71 +23,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRepresentation* l, Convers
 	return part_succes;
 }
 
-bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal_shape_t &shape) {
-  const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
-  if (height < getValue(GV_PRECISION)) {
-    Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l->entity);
-    return false;
-  }
-  
-  cgal_face_t face;
-  if ( !convert_face(l->SweptArea(),face) ) return false;
-
-  cgal_placement_t trsf;
-  bool has_position = true;
-#ifdef USE_IFC4
-  has_position = l->hasPosition();
-#endif
-  if (has_position) {
-    IfcGeom::CgalKernel::convert(l->Position(), trsf);
-  }
-
-  cgal_direction_t dir;
-  convert(l->ExtrudedDirection(),dir);
-//  std::cout << "Direction: " << dir << std::endl;
-  
-  std::list<cgal_face_t> face_list;
-  face_list.push_back(face);
-  
-  for (std::vector<Kernel::Point_3>::const_iterator current_vertex = face.outer.begin();
-       current_vertex != face.outer.end();
-       ++current_vertex) {
-    std::vector<Kernel::Point_3>::const_iterator next_vertex = current_vertex;
-    ++next_vertex;
-    if (next_vertex == face.outer.end()) {
-      next_vertex = face.outer.begin();
-    } cgal_face_t side_face;
-    side_face.outer.push_back(*next_vertex);
-    side_face.outer.push_back(*current_vertex);
-    side_face.outer.push_back(*current_vertex+height*dir);
-    side_face.outer.push_back(*next_vertex+height*dir);
-    face_list.push_back(side_face);
-  }
-  
-  cgal_face_t top_face;
-  for (std::vector<Kernel::Point_3>::const_reverse_iterator vertex = face.outer.rbegin();
-       vertex != face.outer.rend();
-       ++vertex) {
-    top_face.outer.push_back(*vertex+height*dir);
-  } face_list.push_back(top_face);
-  
-  // Naive creation
-  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
-  PolyhedronBuilder builder(&face_list);
-  polyhedron.delegate(builder);
-  
-  // Stitch edges
-//  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
-  CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
-  if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
-    CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
-  }
-//  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
-  
-  shape = polyhedron;
-  return true;
-}
-
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianPoint* l, cgal_point_t& point) {
   std::vector<double> xyz = l->Coordinates();
   if (xyz.size() == 3) {
@@ -207,32 +142,5 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcObjectPlacement* l, cgal_p
     } else break;
   }
 //  CACHE(IfcObjectPlacement,l,trsf)
-  return true;
-}
-
-bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangleProfileDef* l, cgal_face_t& face) {
-  const double x = l->XDim() / 2.0f * getValue(GV_LENGTH_UNIT);
-  const double y = l->YDim() / 2.0f * getValue(GV_LENGTH_UNIT);
-
-  if ( x < ALMOST_ZERO || y < ALMOST_ZERO ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
-    return false;
-  }
-  
-  cgal_placement_t trsf2d;
-  bool has_position = true;
-#ifdef USE_IFC4
-  has_position = l->hasPosition();
-#endif
-  if (has_position) {
-    IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
-  }
-  
-  face = cgal_face_t();
-  face.outer.push_back(Kernel::Point_3(-x, -y, 0.0));
-  face.outer.push_back(Kernel::Point_3( x, -y, 0.0));
-  face.outer.push_back(Kernel::Point_3( x,  y, 0.0));
-  face.outer.push_back(Kernel::Point_3(-x,  y, 0.0));
-  
   return true;
 }
