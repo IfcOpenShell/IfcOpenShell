@@ -147,13 +147,12 @@ namespace IfcGeom {
 
         /// @todo public/private sections all over the place: move all public to the beginning of the class
 	public:
-        Iterator(const IteratorSettings& settings, const std::string& filename, std::vector<IfcGeom::filter_t>& filters)
+        Iterator(const IteratorSettings& settings, IfcParse::IfcFile* file, std::vector<IfcGeom::filter_t>& filters)
             : settings(settings)
-            , ifc_file(new IfcParse::IfcFile)
-            , owns_ifc_file(true)
+            , ifc_file(file)
+            , owns_ifc_file(false)
             , filters_(filters)
         {
-            ifc_file->Init(filename);
             _initialize();
         }
 

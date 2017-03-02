@@ -402,6 +402,27 @@ int main(int argc, char** argv)
     Logger::SetOutput(&std::cout, &log_stream);
     Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
+    IfcParse::IfcFile ifc_file;
+    if (!ifc_file.Init(input_filename)) {
+        Logger::Error("Unable to parse input file '" + input_filename + "'");
+        return EXIT_FAILURE;
+    }
+
+    if (output_extension == ".xml") {
+        int exit_code = EXIT_FAILURE;
+        try {
+            XmlSerializer s(output_temp_filename);
+            s.setFile(&ifc_file);
+            Logger::Status("Writing XML output...");
+            s.finalize();
+            Logger::Status("Done!");
+            rename_file(output_temp_filename, output_filename);
+            exit_code = EXIT_SUCCESS;
+        } catch (...) {}
+        write_log();
+        return exit_code;
+    }
+
     /// @todo Clean up this filter code further.
     std::vector<geom_filter> used_filters;
     if (include_filter.type != geom_filter::UNUSED) { used_filters.push_back(include_filter); }
@@ -421,26 +442,6 @@ int main(int argc, char** argv)
     if (!name_filter.values.empty()) { name_filter.update_description(); Logger::Notice(name_filter.description); }
     if (!desc_filter.values.empty()) { desc_filter.update_description(); Logger::Notice(desc_filter.description); }
     if (!tag_filter.values.empty()) { tag_filter.update_description(); Logger::Notice(tag_filter.description); }
-
-	if (output_extension == ".xml") {
-		int exit_code = 1;
-		try {
-			XmlSerializer s(output_temp_filename);
-			IfcParse::IfcFile f;
-			if (!f.Init(input_filename)) {
-				Logger::Error("Unable to parse input file '" + input_filename + "'");
-			} else {
-				s.setFile(&f);
-                Logger::Status("Writing XML output...");
-				s.finalize();
-                Logger::Status("Done!");
-                rename_file(output_temp_filename, output_filename);
-				exit_code = 0;
-			}
-		} catch (...) {}
-		write_log();
-		return exit_code;
-	}
 
 	SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
@@ -519,14 +520,14 @@ int main(int argc, char** argv)
 	time_t start,end;
 	time(&start);
 
-    IfcGeom::Iterator<real_t> context_iterator(settings, input_filename, filter_funcs);
-	if (!context_iterator.initialize()) {
-        /// @todo It would be nice to know and print separate error prints for a case where we failed to parse
-        /// the file and for a case where we found no entities that satisfy our filtering criteria.
-        Logger::Error("Unable to parse input file '" + input_filename + "' or no geometrical entities found");
-		write_log();
-		return EXIT_FAILURE;
-	}
+    IfcGeom::Iterator<real_t> context_iterator(settings, &ifc_file, filter_funcs);
+    if (!context_iterator.initialize()) {
+        /// @todo It would be nice to know and print separate error prints for a case where we found no entities
+        /// and for a case we found no entities that satisfy our filtering criteria.
+        Logger::Error("No geometrical entities found");
+        write_log();
+        return EXIT_FAILURE;
+    }
 
     serializer->setFile(context_iterator.getFile());
 
