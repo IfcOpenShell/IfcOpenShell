@@ -559,6 +559,9 @@ double TokenFunc::asFloat(const Token& t) {
 }
 
 const std::string &TokenFunc::asStringRef(const Token& t) {
+    if (t.type == Token_NONE) {
+        throw IfcParse::IfcException("Null token encountered, premature end of file?");
+    }
 	std::string &str = t.lexer->GetTempString();
 	t.lexer->TokenString(t.startPos, str);
 	if ((isString(t) || isEnumeration(t) || isBinary(t)) && !str.empty()) {
