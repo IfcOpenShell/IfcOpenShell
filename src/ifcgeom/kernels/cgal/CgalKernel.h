@@ -130,6 +130,8 @@ namespace IfcGeom {
 		bool convert_wire(const IfcUtil::IfcBaseClass* L, cgal_wire_t& result);
 		bool convert_curve(const IfcUtil::IfcBaseClass* L, cgal_curve_t& result);
 		bool convert_face(const IfcUtil::IfcBaseClass* L, cgal_face_t& result);
+    
+    bool convert_wire_to_face(const cgal_wire_t& wire, cgal_face_t& face);
 
 		// bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, ConversionResults& cut_shapes);
 

@@ -18,7 +18,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& 
     return false;
   }
   
-  // TODO: Remove repeated points (and points that are too close to one another?)
+  // TODO: Remove repeated points and points that are too close to one another
   //  remove_duplicate_points_from_loop(polygon, true);
   
   std::size_t count = polygon.size();
@@ -39,5 +39,23 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& 
   //    std::cout << "\tPoint(" << point << ")" << std::endl;
   //  }
   
+  return true;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyline* l, cgal_wire_t& result) {
+  IfcSchema::IfcCartesianPoint::list::ptr points = l->Points();
+  
+  // Parse and store the points in a sequence
+  cgal_wire_t polygon = std::vector<Kernel::Point_3>();
+  for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
+    cgal_point_t pnt;
+    IfcGeom::CgalKernel::convert(*it, pnt);
+    polygon.push_back(pnt);
+  }
+  
+  // TODO: Remove points that are too close to one another
+  //  remove_duplicate_points_from_loop(polygon, false);
+  
+  result = polygon;
   return true;
 }

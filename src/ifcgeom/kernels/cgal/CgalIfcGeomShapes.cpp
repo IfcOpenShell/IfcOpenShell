@@ -32,6 +32,58 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, Conv
   return false;
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionResults& shapes) {
+  cgal_placement_t gtrsf;
+  IfcSchema::IfcCartesianTransformationOperator* transform = l->MappingTarget();
+  if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
+    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
+//    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3DnonUniform*)transform,gtrsf);
+  } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
+    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
+    return false;
+  } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3D) ) {
+    cgal_placement_t trsf;
+    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
+//    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,trsf);
+    gtrsf = trsf;
+  } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2D) ) {
+    cgal_placement_t trsf_2d;
+    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
+//    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator2D*)transform,trsf_2d);
+    gtrsf = (cgal_placement_t) trsf_2d;
+  }
+  IfcSchema::IfcRepresentationMap* map = l->MappingSource();
+  IfcSchema::IfcAxis2Placement* placement = map->MappingOrigin();
+  cgal_placement_t trsf;
+  if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
+    IfcGeom::CgalKernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
+  } else {
+    cgal_placement_t trsf_2d;
+    IfcGeom::CgalKernel::convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf_2d);
+    trsf = trsf_2d;
+  }
+  // TODO: Check
+  gtrsf = trsf * gtrsf;
+  
+  const IfcGeom::SurfaceStyle* mapped_item_style = get_style(l);
+  
+  const size_t previous_size = shapes.size();
+  bool b = convert_shapes(map->MappedRepresentation(), shapes);
+  
+  for (size_t i = previous_size; i < shapes.size(); ++ i ) {
+    IfcGeom::CgalPlacement place(gtrsf);
+    shapes[i].prepend(&place);
+    
+    // Apply styles assigned to the mapped item only if on
+    // a more granular level no styles have been applied
+    if (!shapes[i].hasStyle()) {
+      shapes[i].setStyle(mapped_item_style);
+    }
+  }
+  
+  return b;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal_shape_t &shape) {
   const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
   if (height < getValue(GV_PRECISION)) {

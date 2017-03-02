@@ -144,3 +144,8 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcObjectPlacement* l, cgal_p
 //  CACHE(IfcObjectPlacement,l,trsf)
   return true;
 }
+
+bool IfcGeom::CgalKernel::convert_wire_to_face(const cgal_wire_t& wire, cgal_face_t& face) {
+  face.outer = wire;
+  return true;
+}
