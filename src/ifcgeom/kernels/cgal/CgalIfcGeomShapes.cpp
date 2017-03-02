@@ -138,3 +138,81 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_
   shape = polyhedron;
   return true;
 }
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCsgSolid* l, cgal_shape_t& shape) {
+  return convert_shape(l->TreeRootExpression(), shape);
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBlock* l, cgal_shape_t& shape) {
+  const double dx = l->XLength() * getValue(GV_LENGTH_UNIT);
+  const double dy = l->YLength() * getValue(GV_LENGTH_UNIT);
+  const double dz = l->ZLength() * getValue(GV_LENGTH_UNIT);
+  
+  std::list<cgal_face_t> face_list;
+  
+  // x = 0
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(Kernel::Point_3(0, 0, 0));
+  face_list.back().outer.push_back(Kernel::Point_3(0, dy, 0));
+  face_list.back().outer.push_back(Kernel::Point_3(0, dy, dz));
+  face_list.back().outer.push_back(Kernel::Point_3(0, 0, dz));
+  
+  // x = dx
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, 0));
+  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, dz));
+  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, dz));
+  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, 0));
+  
+  // y = 0
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(Kernel::Point_3(0, 0, 0));
+  face_list.back().outer.push_back(Kernel::Point_3(0, 0, dz));
+  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, dz));
+  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, 0));
+  
+  // y = dy
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(Kernel::Point_3(0, dy, 0));
+  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, 0));
+  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, dz));
+  face_list.back().outer.push_back(Kernel::Point_3(0, dy, dz));
+  
+  // z = 0
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(Kernel::Point_3(0, 0, 0));
+  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, 0));
+  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, 0));
+  face_list.back().outer.push_back(Kernel::Point_3(0, dy, 0));
+  
+  // z = dz
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(Kernel::Point_3(0, 0, dz));
+  face_list.back().outer.push_back(Kernel::Point_3(0, dy, dz));
+  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, dz));
+  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, dz));
+  
+  // Naive creation
+  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  PolyhedronBuilder builder(&face_list);
+  polyhedron.delegate(builder);
+  
+  // Stitch edges
+  //  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
+  if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+    CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+  }
+  //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  
+  cgal_placement_t trsf;
+  IfcGeom::CgalKernel::convert(l->Position(),trsf);
+
+  // IfcCsgPrimitive3D.Position has unit scale factor
+  for (auto &vertex: vertices(polyhedron)) {
+    vertex->point() = vertex->point().transform(trsf);
+  }
+
+  shape = polyhedron;
+  return true;
+}

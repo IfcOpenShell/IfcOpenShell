@@ -37,6 +37,8 @@ SHAPES(IfcManifoldSolidBrep);
 
 SHAPE(IfcExtrudedAreaSolid);
 SHAPE(IfcConnectedFaceSet);
+SHAPE(IfcCsgSolid);
+SHAPE(IfcBlock);
 
 FACE(IfcFace);
 FACE(IfcRectangleProfileDef);
