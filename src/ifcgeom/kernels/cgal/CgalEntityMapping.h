@@ -42,6 +42,7 @@ SHAPE(IfcCsgSolid);
 SHAPE(IfcBlock);
 SHAPE(IfcBooleanResult);
 SHAPE(IfcSphere);
+SHAPE(IfcRectangularPyramid);
 
 FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcFace);
