@@ -339,18 +339,18 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
     return false;
   }
   
-  std::ofstream f1;
-  f1.open("/Users/ken/Desktop/s1.off");
-  f1 << s1 << std::endl;
-  f1.close();
-  std::ofstream f2;
-  f2.open("/Users/ken/Desktop/s2.off");
-  f2 << s2 << std::endl;
-  f2.close();
+//  std::ofstream f1;
+//  f1.open("/Users/ken/Desktop/s1.off");
+//  f1 << s1 << std::endl;
+//  f1.close();
+//  std::ofstream f2;
+//  f2.open("/Users/ken/Desktop/s2.off");
+//  f2 << s2 << std::endl;
+//  f2.close();
   
   if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
     
-    std::cout << "Difference" << std::endl;
+//    std::cout << "Difference" << std::endl;
     CGAL::Nef_polyhedron_3<Kernel> nef_result = nef1-nef2;
     if (!nef_result.is_simple()) {
       std::cout << "Not simple: " << nef_result.number_of_volumes() << " volumes" << std::endl;
@@ -358,16 +358,16 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
     }
     cgal_shape_t result;
     nef_result.convert_to_polyhedron(result);
-    std::ofstream fresult;
-    fresult.open("/Users/ken/Desktop/result.off");
-    fresult << result << std::endl;
-    fresult.close();
+//    std::ofstream fresult;
+//    fresult.open("/Users/ken/Desktop/result.off");
+//    fresult << result << std::endl;
+//    fresult.close();
     shape = result;
     return true;
     
   } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
 
-    std::cout << "Union" << std::endl;
+//    std::cout << "Union" << std::endl;
     CGAL::Nef_polyhedron_3<Kernel> nef_result = nef1+nef2;
     if (!nef_result.is_simple()) {
       std::cout << "Not simple: " << nef_result.number_of_volumes() << " volumes" << std::endl;
@@ -375,16 +375,16 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
     }
     cgal_shape_t result;
     nef_result.convert_to_polyhedron(result);
-    std::ofstream fresult;
-    fresult.open("/Users/ken/Desktop/result.off");
-    fresult << result << std::endl;
-    fresult.close();
+//    std::ofstream fresult;
+//    fresult.open("/Users/ken/Desktop/result.off");
+//    fresult << result << std::endl;
+//    fresult.close();
     shape = result;
     return true;
     
   } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
 
-    std::cout << "Intersection" << std::endl;
+//    std::cout << "Intersection" << std::endl;
     CGAL::Nef_polyhedron_3<Kernel> nef_result = nef1*nef2;
     if (!nef_result.is_simple()) {
       std::cout << "Not simple: " << nef_result.number_of_volumes() << " volumes" << std::endl;
@@ -392,10 +392,10 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
     }
     cgal_shape_t result;
     nef_result.convert_to_polyhedron(result);
-    std::ofstream fresult;
-    fresult.open("/Users/ken/Desktop/result.off");
-    fresult << result << std::endl;
-    fresult.close();
+//    std::ofstream fresult;
+//    fresult.open("/Users/ken/Desktop/result.off");
+//    fresult << result << std::endl;
+//    fresult.close();
     shape = result;
     return true;
     
@@ -527,11 +527,62 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcSphere* l, cgal_shape_t& s
   face_list.back().outer.push_back(icosahedron_vertices[1]);
   
   // TODO: Refine icosahedron to create icosphere
+  const unsigned int refinements = 3;
+  for (unsigned int current_refinement = 0; current_refinement < refinements; ++current_refinement) {
+    std::list<cgal_face_t> refined_face_list;
+    for (auto &face: face_list) {
+      Kernel::Point_3 vertex0 = face.outer[0];
+      Kernel::Point_3 vertex1 = face.outer[1];
+      Kernel::Point_3 vertex2 = face.outer[2];
+      
+      Kernel::Point_3 midpoint01 = CGAL::midpoint(vertex0, vertex1);
+      Kernel::Point_3 midpoint12 = CGAL::midpoint(vertex1, vertex2);
+      Kernel::Point_3 midpoint20 = CGAL::midpoint(vertex2, vertex0);
+      
+      double midpoint01_distance_to_origin = sqrt(CGAL::to_double(CGAL::squared_distance(midpoint01, Kernel::Point_3(0, 0, 0))));
+      midpoint01 = Kernel::Point_3(midpoint01.x()/midpoint01_distance_to_origin,
+                                   midpoint01.y()/midpoint01_distance_to_origin,
+                                   midpoint01.z()/midpoint01_distance_to_origin);
+      double midpoint12_distance_to_origin = sqrt(CGAL::to_double(CGAL::squared_distance(midpoint12, Kernel::Point_3(0, 0, 0))));
+      midpoint12 = Kernel::Point_3(midpoint12.x()/midpoint12_distance_to_origin,
+                                   midpoint12.y()/midpoint12_distance_to_origin,
+                                   midpoint12.z()/midpoint12_distance_to_origin);
+      double midpoint20_distance_to_origin = sqrt(CGAL::to_double(CGAL::squared_distance(midpoint20, Kernel::Point_3(0, 0, 0))));
+      midpoint20 = Kernel::Point_3(midpoint20.x()/midpoint20_distance_to_origin,
+                                   midpoint20.y()/midpoint20_distance_to_origin,
+                                   midpoint20.z()/midpoint20_distance_to_origin);
+      
+      refined_face_list.push_back(cgal_face_t());
+      refined_face_list.back().outer.push_back(vertex0);
+      refined_face_list.back().outer.push_back(midpoint01);
+      refined_face_list.back().outer.push_back(midpoint20);
+      
+      refined_face_list.push_back(cgal_face_t());
+      refined_face_list.back().outer.push_back(vertex1);
+      refined_face_list.back().outer.push_back(midpoint12);
+      refined_face_list.back().outer.push_back(midpoint01);
+      
+      refined_face_list.push_back(cgal_face_t());
+      refined_face_list.back().outer.push_back(vertex2);
+      refined_face_list.back().outer.push_back(midpoint20);
+      refined_face_list.back().outer.push_back(midpoint12);
+      
+      refined_face_list.push_back(cgal_face_t());
+      refined_face_list.back().outer.push_back(midpoint01);
+      refined_face_list.back().outer.push_back(midpoint12);
+      refined_face_list.back().outer.push_back(midpoint20);
+    } face_list = refined_face_list;
+  }
   
   // Naive creation
   cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
+  
+//  std::ofstream fresult;
+//  fresult.open("/Users/ken/Desktop/sphere.off");
+//  fresult << polyhedron << std::endl;
+//  fresult.close();
   
   // Stitch edges
   //  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
