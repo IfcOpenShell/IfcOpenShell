@@ -142,7 +142,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
   if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
     CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
-  }
+  } CGAL_postcondition(polyhedron.is_closed());
   //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   
   shape = polyhedron;
@@ -254,7 +254,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBlock* l, cgal_shape_t& sh
   CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
   if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
     CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
-  }
+  } CGAL_postcondition(polyhedron.is_closed());
   //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   
   cgal_placement_t trsf;
@@ -278,7 +278,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
   bool is_halfspace = operand2->is(IfcSchema::Type::IfcHalfSpaceSolid);
   
   if ( shape_type(operand1) == ST_SHAPELIST ) {
-    std::cout << "ST_SHAPELIST" << std::endl;
+    Logger::Message(Logger::LOG_ERROR, "s1: ST_SHAPELIST Unsupported", operand1->entity);
 //    if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
       return false;
 //    }
@@ -299,7 +299,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
   
   bool shape2_processed = false;
   if ( shape_type(operand2) == ST_SHAPELIST ) {
-    std::cout << "ST_SHAPELIST" << std::endl;
+    Logger::Message(Logger::LOG_ERROR, "s2: ST_SHAPELIST Unsupported", operand1->entity);
 //    shape2_processed = convert_shapes(operand2, items2) && flatten_shape_list(items2, s2, true);
   } else if ( shape_type(operand2) == ST_SHAPE ) {
     shape2_processed = convert_shape(operand2,s2);
@@ -325,8 +325,19 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
   
   const IfcSchema::IfcBooleanOperator::IfcBooleanOperator op = l->Operator();
   
+  CGAL_precondition(s1.is_valid() && s1.is_closed());
   CGAL::Nef_polyhedron_3<Kernel> nef1(s1);
+  if (!nef1.is_simple()) {
+    Logger::Message(Logger::LOG_ERROR, "s1: Not simple Nef?", operand1->entity);
+    return false;
+  }
+  
+  CGAL_precondition(s2.is_valid() && s2.is_closed());
   CGAL::Nef_polyhedron_3<Kernel> nef2(s2);
+  if (!nef2.is_simple()) {
+    Logger::Message(Logger::LOG_ERROR, "s2: Not simple Nef?", operand2->entity);
+    return false;
+  }
   
   if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
     
@@ -491,7 +502,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcSphere* l, cgal_shape_t& s
   CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
   if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
     CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
-  }
+  } CGAL_postcondition(polyhedron.is_closed());
   //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   
   cgal_placement_t trsf;
@@ -551,7 +562,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangularPyramid* l, cga
   CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
   if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
     CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
-  }
+  } CGAL_postcondition(polyhedron.is_closed());
   //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   
   cgal_placement_t trsf;
@@ -609,7 +620,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCylinder* l, 
   CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
   if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
     CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
-  }
+  } CGAL_postcondition(polyhedron.is_closed());
   //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   
   cgal_placement_t trsf;
@@ -659,7 +670,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCone* l, cgal
   CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
   if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
     CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
-  }
+  } CGAL_postcondition(polyhedron.is_closed());
   //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   
   cgal_placement_t trsf;
