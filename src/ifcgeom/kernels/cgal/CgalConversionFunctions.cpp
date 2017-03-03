@@ -53,7 +53,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement2D* l, cgal_
   //  IN_CACHE(IfcAxis2Placement3D,l,gp_Trsf,trsf)
   cgal_point_t o;
   cgal_direction_t axis = Kernel::Vector_3(0,0,1);
-  cgal_direction_t refDirection = Kernel::Vector_3(1,0,0);  // TODO: Put identity for now. Check?
+  cgal_direction_t refDirection = Kernel::Vector_3(1,0,0);
   IfcGeom::CgalKernel::convert(l->Location(),o);
   bool hasRef = l->hasRefDirection();
   if ( hasRef ) IfcGeom::CgalKernel::convert(l->RefDirection(),refDirection);
@@ -62,7 +62,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement2D* l, cgal_
   Kernel::Vector_3 y = CGAL::cross_product(Kernel::Vector_3(0.0, 0.0, 1.0), refDirection);
   trsf = Kernel::Aff_transformation_3(refDirection.cartesian(0), y.cartesian(0), 0.0, o.cartesian(0),
                                       refDirection.cartesian(1), y.cartesian(1), 0.0, o.cartesian(1),
-                                      0.0, y.cartesian(2), 1.0, 0.0);
+                                      0.0, 0.0, 1.0, 0.0);
   
   //  CACHE(IfcAxis2Placement3D,l,trsf)
   return true;
@@ -72,7 +72,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement3D* l, cgal_
 //  IN_CACHE(IfcAxis2Placement3D,l,gp_Trsf,trsf)
   cgal_point_t o;
   cgal_direction_t axis = Kernel::Vector_3(0,0,1);
-  cgal_direction_t refDirection = Kernel::Vector_3(1,0,0);  // TODO: Put identity for now. Check?
+  cgal_direction_t refDirection = Kernel::Vector_3(1,0,0);
   IfcGeom::CgalKernel::convert(l->Location(),o);
   bool hasRef = l->hasRefDirection();
   if ( l->hasAxis() ) IfcGeom::CgalKernel::convert(l->Axis(),axis);
