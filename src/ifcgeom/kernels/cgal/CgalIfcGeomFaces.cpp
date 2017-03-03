@@ -1,5 +1,15 @@
 #include "CgalKernel.h"
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcArbitraryClosedProfileDef* l, cgal_face_t& face) {
+  cgal_wire_t wire;
+  if ( ! convert_wire(l->OuterCurve(),wire) ) return false;
+  
+  cgal_face_t f;
+  bool success = convert_wire_to_face(wire, f);
+  if (success) face = f;
+  return success;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangleProfileDef* l, cgal_face_t& face) {
   const double x = l->XDim() / 2.0f * getValue(GV_LENGTH_UNIT);
   const double y = l->YDim() / 2.0f * getValue(GV_LENGTH_UNIT);

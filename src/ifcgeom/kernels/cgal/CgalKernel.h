@@ -47,6 +47,7 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #include <CGAL/Polygon_mesh_processing/orientation.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
+#include <CGAL/Nef_polyhedron_3.h>
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 
@@ -130,6 +131,8 @@ namespace IfcGeom {
 		bool convert_wire(const IfcUtil::IfcBaseClass* L, cgal_wire_t& result);
 		bool convert_curve(const IfcUtil::IfcBaseClass* L, cgal_curve_t& result);
 		bool convert_face(const IfcUtil::IfcBaseClass* L, cgal_face_t& result);
+    
+    bool convert_wire_to_face(const cgal_wire_t& wire, cgal_face_t& face);
 
 		// bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, ConversionResults& cut_shapes);
 

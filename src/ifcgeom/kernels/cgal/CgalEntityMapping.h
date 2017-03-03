@@ -34,14 +34,24 @@ SHAPES(IfcRepresentation);
 // IfcFacetedBrepWithVoids included
 // IfcAdvancedBrepWithVoids included
 SHAPES(IfcManifoldSolidBrep);
+SHAPES(IfcMappedItem);
 
 SHAPE(IfcExtrudedAreaSolid);
 SHAPE(IfcConnectedFaceSet);
+SHAPE(IfcCsgSolid);
+SHAPE(IfcBlock);
+SHAPE(IfcBooleanResult);
+SHAPE(IfcSphere);
+SHAPE(IfcRectangularPyramid);
+SHAPE(IfcRightCircularCylinder);
+SHAPE(IfcRightCircularCone);
 
+FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcFace);
 FACE(IfcRectangleProfileDef);
 
 WIRE(IfcPolyLoop);
+WIRE(IfcPolyline);
 
 CLASS(IfcCartesianPoint,cgal_point_t);
 CLASS(IfcDirection,cgal_direction_t);
