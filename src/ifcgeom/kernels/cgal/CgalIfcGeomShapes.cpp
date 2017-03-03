@@ -550,6 +550,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcSphere* l, cgal_shape_t& s
                                       vertex->point().z()*r).transform(trsf);
   }
   
+//  std::ofstream fresult;
+//  fresult.open("/Users/ken/Desktop/sphere.off");
+//  fresult << polyhedron << std::endl;
+//  fresult.close();
+  
+  shape = polyhedron;
   return true;
 }
 
