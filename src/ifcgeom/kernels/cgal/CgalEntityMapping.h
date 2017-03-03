@@ -44,6 +44,7 @@ SHAPE(IfcBooleanResult);
 SHAPE(IfcSphere);
 SHAPE(IfcRectangularPyramid);
 SHAPE(IfcRightCircularCylinder);
+SHAPE(IfcRightCircularCone);
 
 FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcFace);
