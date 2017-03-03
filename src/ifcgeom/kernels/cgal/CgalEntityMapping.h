@@ -40,6 +40,8 @@ SHAPE(IfcExtrudedAreaSolid);
 SHAPE(IfcConnectedFaceSet);
 SHAPE(IfcCsgSolid);
 SHAPE(IfcBlock);
+SHAPE(IfcBooleanResult);
+SHAPE(IfcSphere);
 
 FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcFace);

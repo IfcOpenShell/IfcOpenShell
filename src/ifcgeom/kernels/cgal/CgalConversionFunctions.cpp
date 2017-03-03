@@ -25,14 +25,17 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRepresentation* l, Convers
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianPoint* l, cgal_point_t& point) {
   std::vector<double> xyz = l->Coordinates();
-  if (xyz.size() == 3) {
+  if (xyz.size() < 4) {
     point = Kernel::Point_3(xyz.size()     ? (xyz[0]*getValue(GV_LENGTH_UNIT)) : 0.0f,
                             xyz.size() > 1 ? (xyz[1]*getValue(GV_LENGTH_UNIT)) : 0.0f,
                             xyz.size() > 2 ? (xyz[2]*getValue(GV_LENGTH_UNIT)) : 0.0f);
 //    std::cout << "Converted Point(" << point << ")" << std::endl;
     return true;
   } else {
-    throw std::runtime_error("Point without 3 coordinates");
+    std::cout << "Point(";
+    for (auto &coordinate: xyz) std::cout << coordinate << " ";
+    std::cout << ")";
+    throw std::runtime_error("Could not parse point");
   }
 }
 

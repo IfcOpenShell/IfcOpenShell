@@ -47,6 +47,7 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #include <CGAL/Polygon_mesh_processing/orientation.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
+#include <CGAL/Nef_polyhedron_3.h>
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 

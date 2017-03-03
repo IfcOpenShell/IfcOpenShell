@@ -268,3 +268,241 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBlock* l, cgal_shape_t& sh
   shape = polyhedron;
   return true;
 }
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_shape_t& shape) {
+  
+  cgal_shape_t s1, s2;
+  ConversionResults items1, items2;
+  cgal_wire_t boundary_wire;
+  IfcSchema::IfcBooleanOperand* operand1 = l->FirstOperand();
+  IfcSchema::IfcBooleanOperand* operand2 = l->SecondOperand();
+  bool is_halfspace = operand2->is(IfcSchema::Type::IfcHalfSpaceSolid);
+  
+  if ( shape_type(operand1) == ST_SHAPELIST ) {
+    std::cout << "ST_SHAPELIST" << std::endl;
+//    if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
+      return false;
+//    }
+  } else if ( shape_type(operand1) == ST_SHAPE ) {
+    if ( ! convert_shape(operand1, s1) ) {
+      return false;
+    }
+//    TopoDS_Solid temp_solid;
+//    s1 = ensure_fit_for_subtraction(s1, temp_solid);
+  } else {
+    Logger::Message(Logger::LOG_ERROR, "s1: Invalid representation item for boolean operation", operand1->entity);
+    return false;
+  }
+
+//  const double first_operand_volume = shape_volume(s1);
+//  if ( first_operand_volume <= ALMOST_ZERO )
+//    Logger::Message(Logger::LOG_WARNING,"Empty solid for:",l->FirstOperand()->entity);
+  
+  bool shape2_processed = false;
+  if ( shape_type(operand2) == ST_SHAPELIST ) {
+    std::cout << "ST_SHAPELIST" << std::endl;
+//    shape2_processed = convert_shapes(operand2, items2) && flatten_shape_list(items2, s2, true);
+  } else if ( shape_type(operand2) == ST_SHAPE ) {
+    shape2_processed = convert_shape(operand2,s2);
+    if (shape2_processed && !is_halfspace) {
+//      TopoDS_Solid temp_solid;
+//      s2 = ensure_fit_for_subtraction(s2, temp_solid);
+    }
+  } else {
+    Logger::Message(Logger::LOG_ERROR, "s2: Invalid representation item for boolean operation", operand2->entity);
+  }
+
+  if (!shape2_processed) {
+//    shape = s1;
+    Logger::Message(Logger::LOG_ERROR,"Failed to convert SecondOperand of:",l->entity);
+//    return true;
+  }
+
+//  if (!is_halfspace) {
+//    const double second_operand_volume = shape_volume(s2);
+//    if ( second_operand_volume <= ALMOST_ZERO )
+//      Logger::Message(Logger::LOG_WARNING,"Empty solid for:",operand2->entity);
+//  }
+  
+  const IfcSchema::IfcBooleanOperator::IfcBooleanOperator op = l->Operator();
+  
+  CGAL::Nef_polyhedron_3<Kernel> nef1(s1);
+  CGAL::Nef_polyhedron_3<Kernel> nef2(s2);
+  
+  if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
+    
+    CGAL::Nef_polyhedron_3<Kernel> nef_result = nef1-nef2;
+    cgal_shape_t result;
+    nef_result.convert_to_polyhedron(result);
+    shape = result;
+    return true;
+    
+  } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
+
+    CGAL::Nef_polyhedron_3<Kernel> nef_result = nef1+nef2;
+    cgal_shape_t result;
+    nef_result.convert_to_polyhedron(result);
+    shape = result;
+    return true;
+    
+  } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
+
+    CGAL::Nef_polyhedron_3<Kernel> nef_result = nef1*nef2;
+    cgal_shape_t result;
+    nef_result.convert_to_polyhedron(result);
+    shape = result;
+    return true;
+    
+  }
+  
+  return false;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcSphere* l, cgal_shape_t& shape) {
+  const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
+  
+  // Make icosahedron
+  float golden_ratio = (1.0+sqrtf(5.0))/2.0;
+  float normalising_factor = sqrtf(golden_ratio*golden_ratio+1.0);
+  std::vector<Kernel::Point_3> icosahedron_vertices;
+  icosahedron_vertices.push_back(Kernel::Point_3(-1.0/normalising_factor,  golden_ratio/normalising_factor, 0.0));
+  icosahedron_vertices.push_back(Kernel::Point_3( 1.0/normalising_factor,  golden_ratio/normalising_factor, 0.0));
+  icosahedron_vertices.push_back(Kernel::Point_3(-1.0/normalising_factor, -golden_ratio/normalising_factor, 0.0));
+  icosahedron_vertices.push_back(Kernel::Point_3( 1.0/normalising_factor, -golden_ratio/normalising_factor, 0.0));
+  icosahedron_vertices.push_back(Kernel::Point_3(0.0, -1.0/normalising_factor,  golden_ratio/normalising_factor));
+  icosahedron_vertices.push_back(Kernel::Point_3(0.0,  1.0/normalising_factor,  golden_ratio/normalising_factor));
+  icosahedron_vertices.push_back(Kernel::Point_3(0.0, -1.0/normalising_factor, -golden_ratio/normalising_factor));
+  icosahedron_vertices.push_back(Kernel::Point_3(0.0,  1.0/normalising_factor, -golden_ratio/normalising_factor));
+  icosahedron_vertices.push_back(Kernel::Point_3( golden_ratio/normalising_factor, 0.0, -1.0/normalising_factor));
+  icosahedron_vertices.push_back(Kernel::Point_3( golden_ratio/normalising_factor, 0.0,  1.0/normalising_factor));
+  icosahedron_vertices.push_back(Kernel::Point_3(-golden_ratio/normalising_factor, 0.0, -1.0/normalising_factor));
+  icosahedron_vertices.push_back(Kernel::Point_3(-golden_ratio/normalising_factor, 0.0,  1.0/normalising_factor));
+  
+  std::list<cgal_face_t> face_list;
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[0]);
+  face_list.back().outer.push_back(icosahedron_vertices[11]);
+  face_list.back().outer.push_back(icosahedron_vertices[5]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[0]);
+  face_list.back().outer.push_back(icosahedron_vertices[5]);
+  face_list.back().outer.push_back(icosahedron_vertices[1]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[0]);
+  face_list.back().outer.push_back(icosahedron_vertices[1]);
+  face_list.back().outer.push_back(icosahedron_vertices[7]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[0]);
+  face_list.back().outer.push_back(icosahedron_vertices[7]);
+  face_list.back().outer.push_back(icosahedron_vertices[10]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[0]);
+  face_list.back().outer.push_back(icosahedron_vertices[10]);
+  face_list.back().outer.push_back(icosahedron_vertices[11]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[1]);
+  face_list.back().outer.push_back(icosahedron_vertices[5]);
+  face_list.back().outer.push_back(icosahedron_vertices[9]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[5]);
+  face_list.back().outer.push_back(icosahedron_vertices[11]);
+  face_list.back().outer.push_back(icosahedron_vertices[4]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[11]);
+  face_list.back().outer.push_back(icosahedron_vertices[10]);
+  face_list.back().outer.push_back(icosahedron_vertices[2]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[10]);
+  face_list.back().outer.push_back(icosahedron_vertices[7]);
+  face_list.back().outer.push_back(icosahedron_vertices[6]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[7]);
+  face_list.back().outer.push_back(icosahedron_vertices[1]);
+  face_list.back().outer.push_back(icosahedron_vertices[8]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[3]);
+  face_list.back().outer.push_back(icosahedron_vertices[9]);
+  face_list.back().outer.push_back(icosahedron_vertices[4]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[3]);
+  face_list.back().outer.push_back(icosahedron_vertices[4]);
+  face_list.back().outer.push_back(icosahedron_vertices[2]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[3]);
+  face_list.back().outer.push_back(icosahedron_vertices[2]);
+  face_list.back().outer.push_back(icosahedron_vertices[6]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[3]);
+  face_list.back().outer.push_back(icosahedron_vertices[6]);
+  face_list.back().outer.push_back(icosahedron_vertices[8]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[3]);
+  face_list.back().outer.push_back(icosahedron_vertices[8]);
+  face_list.back().outer.push_back(icosahedron_vertices[9]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[4]);
+  face_list.back().outer.push_back(icosahedron_vertices[9]);
+  face_list.back().outer.push_back(icosahedron_vertices[5]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[2]);
+  face_list.back().outer.push_back(icosahedron_vertices[4]);
+  face_list.back().outer.push_back(icosahedron_vertices[11]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[6]);
+  face_list.back().outer.push_back(icosahedron_vertices[2]);
+  face_list.back().outer.push_back(icosahedron_vertices[10]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[8]);
+  face_list.back().outer.push_back(icosahedron_vertices[6]);
+  face_list.back().outer.push_back(icosahedron_vertices[7]);
+  
+  face_list.push_back(cgal_face_t());
+  face_list.back().outer.push_back(icosahedron_vertices[9]);
+  face_list.back().outer.push_back(icosahedron_vertices[8]);
+  face_list.back().outer.push_back(icosahedron_vertices[1]);
+  
+  // TODO: Refine icosahedron to create icosphere
+  
+  // Naive creation
+  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  PolyhedronBuilder builder(&face_list);
+  polyhedron.delegate(builder);
+  
+  // Stitch edges
+  //  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
+  if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+    CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+  }
+  //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  
+  cgal_placement_t trsf;
+  IfcGeom::CgalKernel::convert(l->Position(),trsf);
+  
+  for (auto &vertex: vertices(polyhedron)) {
+    vertex->point() = Kernel::Point_3(vertex->point().x()*r,
+                                      vertex->point().y()*r,
+                                      vertex->point().z()*r).transform(trsf);
+  }
+  
+  return true;
+}
