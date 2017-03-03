@@ -564,3 +564,61 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangularPyramid* l, cga
   shape = polyhedron;
   return true;
 }
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCylinder* l, cgal_shape_t& shape) {
+  const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
+  const double h = l->Height() * getValue(GV_LENGTH_UNIT);
+  
+  std::list<cgal_face_t> face_list;
+  
+  const int segments = 10;
+  
+  // Base
+  face_list.push_back(cgal_face_t());
+  for (int current_segment = 0; current_segment < segments; ++current_segment) {
+    double current_angle = current_segment*3.141592653589793/((double)segments);
+    face_list.back().outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
+  }
+  
+  // Side faces
+  for (int current_segment = 0; current_segment < segments; ++current_segment) {
+    double current_angle = current_segment*3.141592653589793/((double)segments);
+    int next_segment = (current_segment+1)%segments;
+    double next_angle = next_segment*3.141592653589793/((double)segments);
+    face_list.push_back(cgal_face_t());
+    face_list.back().outer.push_back(Kernel::Point_3(r*cos(next_angle), r*sin(next_angle), 0));
+    face_list.back().outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
+    face_list.back().outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), h));
+    face_list.back().outer.push_back(Kernel::Point_3(r*cos(next_angle), r*sin(next_angle), h));
+  }
+  
+  // Top
+  face_list.push_back(cgal_face_t());
+  for (int current_segment = segments-1; current_segment >= 0; --current_segment) {
+    double current_angle = current_segment*3.141592653589793/((double)segments);
+    face_list.back().outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), h));
+  }
+  
+  // Naive creation
+  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  PolyhedronBuilder builder(&face_list);
+  polyhedron.delegate(builder);
+  
+  // Stitch edges
+  //  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
+  if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+    CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+  }
+  //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  
+  cgal_placement_t trsf;
+  IfcGeom::CgalKernel::convert(l->Position(),trsf);
+  
+  for (auto &vertex: vertices(polyhedron)) {
+    vertex->point() = vertex->point().transform(trsf);
+  }
+  
+  shape = polyhedron;
+  return true;
+}
