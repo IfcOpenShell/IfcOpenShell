@@ -526,8 +526,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcSphere* l, cgal_shape_t& s
   face_list.back().outer.push_back(icosahedron_vertices[8]);
   face_list.back().outer.push_back(icosahedron_vertices[1]);
   
-  // TODO: Refine icosahedron to create icosphere
-  const unsigned int refinements = 3;
+  const unsigned int refinements = 2;
   for (unsigned int current_refinement = 0; current_refinement < refinements; ++current_refinement) {
     std::list<cgal_face_t> refined_face_list;
     for (auto &face: face_list) {
@@ -675,7 +674,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCylinder* l, 
   
   std::list<cgal_face_t> face_list;
   
-  const int segments = 25;
+  const int segments = 12;
   
   // Base
   face_list.push_back(cgal_face_t());
@@ -733,7 +732,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCone* l, cgal
   
   std::list<cgal_face_t> face_list;
   
-  const int segments = 25;
+  const int segments = 12;
   
   // Base
   face_list.push_back(cgal_face_t());

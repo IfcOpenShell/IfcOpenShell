@@ -12,6 +12,11 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
     vertex->point() = vertex->point().transform(trsf);
   }
   
+//  std::ofstream fbefore;
+//  fbefore.open("/Users/ken/Desktop/before.off");
+//  fbefore << s << std::endl;
+//  fbefore.close();
+  
   // Triangulate the shape and compute the normals
   std::map<cgal_vertex_descriptor_t, Kernel::Vector_3> vertex_normals;
   boost::associative_property_map<std::map<cgal_vertex_descriptor_t, Kernel::Vector_3>> vertex_normals_map(vertex_normals);
@@ -23,26 +28,37 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
     Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
     return;
   }
+  
+//  std::ofstream fafter;
+//  fafter.open("/Users/ken/Desktop/after.off");
+//  fafter << s << std::endl;
+//  fafter.close();
 
   CGAL::Polygon_mesh_processing::compute_normals(s, vertex_normals_map, face_normals_map);
-
-  // Iterates over the faces of the shape
-  int num_faces = 0, num_vertices = 0;
+  std::map<CGAL::Polyhedron_3<Kernel>::Vertex_const_handle, int> vertices_map;
+  std::size_t initial_size = t->verts().size()/3;
+  for (auto &vertex: vertices(s)) {
+    if (vertices_map.count(vertex) == 0) {
+      vertices_map[vertex] = (int)(vertices_map.size()+initial_size);
+      t->addVertex(surface_style_id,
+                   CGAL::to_double(vertex->point().cartesian(0)),
+                   CGAL::to_double(vertex->point().cartesian(1)),
+                   CGAL::to_double(vertex->point().cartesian(2)));
+//      std::cout << "Size: " << t->verts().size() << std::endl;
+      for (int i = 0; i < 3; ++i) t->normals().push_back(CGAL::to_double(vertex_normals_map[vertex].cartesian(i)));
+    }
+  }
+  
   for (auto &face: faces(s)) {
+    if (!face->is_triangle()) {
+      std::cout << "Warning: non-triangular face!" << std::endl;
+      continue;
+    }
     CGAL::Polyhedron_3<Kernel>::Halfedge_around_facet_const_circulator current_halfedge = face->facet_begin();
     do {
-      t->addVertex(surface_style_id,
-                   CGAL::to_double(current_halfedge->vertex()->point().cartesian(0)),
-                   CGAL::to_double(current_halfedge->vertex()->point().cartesian(1)),
-                   CGAL::to_double(current_halfedge->vertex()->point().cartesian(2)));
-      for (int i = 0; i < 3; ++i) t->normals().push_back(CGAL::to_double(face_normals_map[face].cartesian(i)));
-      t->faces().push_back(num_vertices);
-      ++num_vertices;
+      t->faces().push_back(vertices_map[current_halfedge->vertex()]);
       ++current_halfedge;
     } while (current_halfedge != face->facet_begin());
     t->material_ids().push_back(surface_style_id);
-    ++num_faces;
   }
-  
-//  std::cout << num_faces << " faces" << std::endl;
 }
