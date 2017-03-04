@@ -144,7 +144,7 @@ class Implementation(codegen.Base):
                 'body'        : templates.get_inverse % {'type': i.entity, 'index':get_attribute_index(i.entity, i.attribute)}
             } for i in (type.inverse.elements if type.inverse else [])]
 
-            superclass = "%s((IfcAbstractEntity*)0)" % type.supertypes[0] if len(type.supertypes) == 1 else 'IfcUtil::IfcBaseEntity()'
+            superclass = "%s((IfcEntityInstanceData*)0)" % type.supertypes[0] if len(type.supertypes) == 1 else 'IfcUtil::IfcBaseEntity()'
 
             write(
                 templates.entity_implementation,
@@ -209,15 +209,15 @@ class Implementation(codegen.Base):
                 return tmpl % locals()
                 
             simple_type_impl.append(templates.simpletype_impl_comment % {'name': class_name})
-            simple_type_impl.extend(map(compose, map(lambda x: (class_name, attr_type, superclass, "(IfcAbstractEntity*)0")+x, (
-                ('getArgumentType', templates.const_function,       'IfcUtil::ArgumentType', ('unsigned int i',),       templates.simpletype_impl_argument_type       ),
-                ('getArgument',     templates.const_function,       'Argument*',             ('unsigned int i',),       templates.simpletype_impl_argument            ),
-                ('is',              templates.const_function,       'bool',                  ('Type::Enum v',),                   simpletype_impl_is                  ),
-                ('type',            templates.const_function,       'Type::Enum',            (),                        templates.simpletype_impl_type                ),
-                ('Class',           templates.function,             'Type::Enum',            (),                        templates.simpletype_impl_class               ),
-                ('',                          constructor,          '',                      ('IfcAbstractEntity* e',), templates.simpletype_impl_explicit_constructor),
-                ('',                          constructor,          '',                      ("%s v" % type_str,),                simpletype_impl_constructor         ),
-                ('',                templates.cast_function,        type_str,                (),                                  simpletype_impl_cast                )
+            simple_type_impl.extend(map(compose, map(lambda x: (class_name, attr_type, superclass, "(IfcEntityInstanceData*)0")+x, (
+                ('getArgumentType', templates.const_function,       'IfcUtil::ArgumentType', ('unsigned int i',),           templates.simpletype_impl_argument_type       ),
+                ('getArgument',     templates.const_function,       'Argument*',             ('unsigned int i',),           templates.simpletype_impl_argument            ),
+                ('is',              templates.const_function,       'bool',                  ('Type::Enum v',),             simpletype_impl_is                            ),
+                ('type',            templates.const_function,       'Type::Enum',            (),                            templates.simpletype_impl_type                ),
+                ('Class',           templates.function,             'Type::Enum',            (),                            templates.simpletype_impl_class               ),
+                ('',                          constructor,          '',                      ('IfcEntityInstanceData* e',), templates.simpletype_impl_explicit_constructor),
+                ('',                          constructor,          '',                      ("%s v" % type_str,),          simpletype_impl_constructor                   ),
+                ('',                templates.cast_function,        type_str,                (),                            simpletype_impl_cast                          )
             ))))
             simple_type_impl.append('')
 

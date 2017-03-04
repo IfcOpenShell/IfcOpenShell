@@ -54,6 +54,8 @@ namespace IfcWrite {
 				: data(data), enumeration_value(enumeration_value) {}
 		};		
 		class Derived {};
+		class empty_aggregate_t {};
+		class empty_aggregate_of_aggregate_t {};
 	private:
 		boost::variant<
 			// A null argument, it will always serialize to $
@@ -84,6 +86,7 @@ namespace IfcWrite {
 			// IFCREAL(12.3)
 			IfcUtil::IfcBaseClass*,
 
+			empty_aggregate_t,
 			// AGGREGATES:
 			// An aggregate of integers, e.g. (1,2,3)
 			std::vector<int>,
@@ -98,6 +101,7 @@ namespace IfcWrite {
 			// e.g. (IFCREAL(1.2),IFCINTEGER(3.))
 			IfcEntityList::ptr,
 
+			empty_aggregate_of_aggregate_t,
 			// AGGREGATES OF AGGREGATES:
 			// An aggregate of an aggregate of ints. E.g. ((1, 2), (3))
 			std::vector< std::vector<int> >,
@@ -140,19 +144,6 @@ namespace IfcWrite {
 		std::string toString(bool upper=false) const;
 		unsigned int size() const;
 		IfcUtil::ArgumentType type() const;
-	};
-
-	// Accumulates all schema instances created from constructors
-	// This way they can be added in a single batch to the IfcFile
-	class IFC_PARSE_API EntityBuffer {
-	private:
-		IfcEntityList::ptr buffer;
-		static EntityBuffer* i;
-		static EntityBuffer* instance();
-	public:
-		static IfcEntityList::ptr Get();
-		static void Clear();
-		static void Add(IfcUtil::IfcBaseClass* e);
 	};
 
 }

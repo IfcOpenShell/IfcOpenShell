@@ -56,7 +56,6 @@
 
 namespace IfcParse {
 
-	class Entity;
 	class IfcFile;
 	class IfcSpfLexer;
 
@@ -75,7 +74,7 @@ namespace IfcParse {
 
 	struct Token {
 		IfcSpfLexer* lexer; //TODO: remove it from here
-		unsigned startPos, endPos;
+		unsigned startPos;
 		TokenType type;
 		union {
 			bool value_bool;      //types: BOOL
@@ -84,9 +83,9 @@ namespace IfcParse {
 			double value_double;  //types: FLOAT
 		};
 
-		Token() : lexer(0), startPos(0), endPos(0), type(Token_NONE) {}
-		Token(IfcSpfLexer* _lexer, unsigned _startPos, unsigned _endPos, TokenType _type)
-			: lexer(_lexer), startPos(_startPos), endPos(_endPos), type(_type) {}
+		Token() : lexer(0), startPos(0), type(Token_NONE) {}
+		Token(IfcSpfLexer* _lexer, unsigned _startPos, unsigned /*_endPos*/, TokenType _type)
+			: lexer(_lexer), startPos(_startPos), type(_type) {}
 	};
 
 	/// Provides functions to convert Tokens to binary data
@@ -192,6 +191,8 @@ namespace IfcParse {
 		void set(unsigned int i, Argument*);
 
 		std::string toString(bool upper=false) const;
+
+		std::vector<Argument*>& arguments() { return list; }
 	};
 
 
@@ -253,34 +254,8 @@ namespace IfcParse {
 		Argument* operator [] (unsigned int i) const;
 		std::string toString(bool upper=false) const;
 	};
-
-	/// Entity defined in an IFC file, e.g.
-	/// #1=IfcDirection((1.,0.,0.));
-	/// ============================
-	class IFC_PARSE_API Entity : public IfcAbstractEntity {
-	private:
-		mutable ArgumentList* args;
-		mutable IfcSchema::Type::Enum _type;
-	public:
-		/// The EXPRESS ENTITY_INSTANCE_NAME
-		unsigned int _id;
-		/// The offset at which the entity is read
-		unsigned int offset;		
-		Entity(unsigned int i, IfcFile* t);
-		Entity(unsigned int i, IfcFile* t, unsigned int o);
-		virtual ~Entity();
-		IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index);
-		void Load(std::vector<unsigned int>& ids, bool seek=false) const;
-		Argument* getArgument (unsigned int i);
-		unsigned int getArgumentCount() const;
-		std::string toString(bool upper=false) const;
-		std::string datatype() const;
-		IfcSchema::Type::Enum type() const;
-		bool is(IfcSchema::Type::Enum v) const;
-		unsigned int id();
-		IfcWrite::IfcWritableEntity* isWritable();
-	};
-
+	
+	IfcEntityInstanceData* read(unsigned int i, IfcFile* t, boost::optional<unsigned> offset = boost::none);
 }
 
 IFC_PARSE_API std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f);

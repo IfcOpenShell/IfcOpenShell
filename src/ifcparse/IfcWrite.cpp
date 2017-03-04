@@ -37,6 +37,7 @@
 
 using namespace IfcWrite;
 
+/*
 IfcWritableEntity::IfcWritableEntity(IfcSchema::Type::Enum t) {
 	_type = t;
 	_id = 0;
@@ -59,7 +60,7 @@ int IfcWritableEntity::setId(int i) {
 		}
 	}
 }
-IfcWritableEntity::IfcWritableEntity(IfcAbstractEntity* e) 
+IfcWritableEntity::IfcWritableEntity(IfcEntityInstanceData* e) 
 {
 	file = e->file;
 	_type = e->type();
@@ -298,7 +299,7 @@ void IfcWritableEntity::setArgument(int i,const std::vector< std::vector<int> >&
 void IfcWritableEntity::setArgument(int i,const std::vector< boost::dynamic_bitset<> >& v){
 	_setArgument(i, v);
 }
-
+*/
 class SizeVisitor : public boost::static_visitor<int> {
 public:
 	int operator()(const boost::none_t& /*i*/) const { return -1; }
@@ -308,6 +309,8 @@ public:
 	int operator()(const double& /*i*/) const { return -1; }
 	int operator()(const std::string& /*i*/) const { return -1; }
 	int operator()(const boost::dynamic_bitset<>& /*i*/) const { return -1; }
+	int operator()(const IfcWriteArgument::empty_aggregate_t&) const { return 0; }
+	int operator()(const IfcWriteArgument::empty_aggregate_of_aggregate_t&) const { return 0; }
 	int operator()(const std::vector<int>& i) const { return (int)i.size(); }
 	int operator()(const std::vector<double>& i) const { return (int)i.size(); }
 	int operator()(const std::vector< std::vector<int> >& i) const { return (int)i.size(); }
@@ -405,7 +408,7 @@ public:
 		data << "." << i.enumeration_value << ".";
 	}
 	void operator()(const IfcUtil::IfcBaseClass* const& i) { 
-		IfcAbstractEntity* e = i->entity;
+		IfcEntityInstanceData* e = i->entity;
 		if ( IfcSchema::Type::IsSimple(e->type()) ) {
 			data << e->toString(upper);
 		} else {
@@ -435,6 +438,8 @@ public:
 		}
 		data << ")";
 	}
+	void operator()(const IfcWriteArgument::empty_aggregate_t&) const { data << "()"; }
+	void operator()(const IfcWriteArgument::empty_aggregate_of_aggregate_t&) const { data << "()"; }
 	operator std::string() { return data.str(); }
 };
 
@@ -535,7 +540,7 @@ unsigned int IfcWriteArgument::size() const {
 IfcUtil::ArgumentType IfcWriteArgument::type() const {
 	return static_cast<IfcUtil::ArgumentType>(container.which());
 }
-
+/*
 EntityBuffer* EntityBuffer::i = 0;
 EntityBuffer* EntityBuffer::instance() {
 	if ( ! i ) {
@@ -553,3 +558,4 @@ void EntityBuffer::Clear() {
 void EntityBuffer::Add(IfcUtil::IfcBaseClass* e) {
 	instance()->buffer->push(e);
 }
+*/

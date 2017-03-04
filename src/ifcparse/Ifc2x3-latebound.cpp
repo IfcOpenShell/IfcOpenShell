@@ -17,14 +17,12 @@
  *                                                                              *
  ********************************************************************************/
 
-/********************************************************************************************
- *                                                                                          *
- * This file has been generated from                                                        *
- * http://www.buildingsmart-tech.org/downloads/ifc/ifc2x3tc/IFC2X3_TC1_EXPRESS_longform.zip *
- * Do not make modifications but instead modify the Python script that has been             *
- * used to generate this.                                                                   *
- *                                                                                          *
- ********************************************************************************************/
+/********************************************************************************
+ *                                                                              *
+ * This file has been generated from IFC2X3_TC1.exp. Do not make modifications  *
+ * but instead modify the python script that has been used to generate this.    *
+ *                                                                              *
+ ********************************************************************************/
 
 #ifndef USE_IFC4
 
@@ -34,7 +32,6 @@
 #include "../ifcparse/Ifc2x3-latebound.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcWrite.h"
-#include "../ifcparse/IfcWritableEntity.h"
 #include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/IfcEntityDescriptor.h"
 
@@ -4296,12 +4293,14 @@ std::set<std::string> Type::GetInverseAttributeNames(Enum t) {
     return return_value;
 }
 
-void Type::PopulateDerivedFields(IfcWrite::IfcWritableEntity* e) {
+void Type::PopulateDerivedFields(IfcEntityInstanceData* e) {
     if (derived_map.empty()) ::InitDerivedMap();
     std::map<Type::Enum, std::set<int> >::const_iterator i = derived_map.find(e->type());
     if (i != derived_map.end()) {
         for (std::set<int>::const_iterator it = i->second.begin(); it != i->second.end(); ++it) {
-            e->setArgumentDerived(*it);
+            IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+            attr->set(IfcWrite::IfcWriteArgument::Derived());
+            e->setArgument(*it, attr);
         }
     }
 }

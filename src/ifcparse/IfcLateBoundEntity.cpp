@@ -15,7 +15,7 @@
  * You should have received a copy of the Lesser GNU General Public License     *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
- ********************************************************************************/
+ ********************************************************************************
 
 #include <sstream>
 
@@ -54,7 +54,7 @@ IfcParse::IfcLateBoundEntity::IfcLateBoundEntity(const std::string& s) {
 	}
 	IfcSchema::Type::PopulateDerivedFields(writable_entity());
 }
-IfcParse::IfcLateBoundEntity::IfcLateBoundEntity(IfcAbstractEntity* e) {
+IfcParse::IfcLateBoundEntity::IfcLateBoundEntity(IfcEntityInstanceData* e) {
 	entity = e;
 }
 unsigned int IfcParse::IfcLateBoundEntity::id() const {
@@ -259,3 +259,5 @@ std::vector<std::string> IfcParse::IfcLateBoundEntity::getInverseAttributeNames(
 	std::copy(values.begin(), values.end(), std::back_inserter(return_value));
 	return return_value;
 }
+
+*/

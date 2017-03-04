@@ -186,7 +186,7 @@ namespace IfcGeom
             }
 
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
-                IfcWrite::IfcWritableEntity dummy(it->first);
+                IfcEntityInstanceData dummy(it->first);
                 IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
                 try {
                     ss << " " << IfcSchema::Type::ToString(it->first) << "." << base->getArgumentName(it->second);

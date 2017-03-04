@@ -15,7 +15,7 @@
  * You should have received a copy of the Lesser GNU General Public License     *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
- ********************************************************************************/
+ ********************************************************************************
 
 #ifndef IFCLATEBOUNDENTITY_H
 #define IFCLATEBOUNDENTITY_H
@@ -40,7 +40,7 @@ namespace IfcParse {
 		void invalid_argument(unsigned int i, const std::string& t);
 	public:
 		IfcLateBoundEntity(const std::string& s);
-		IfcLateBoundEntity(IfcAbstractEntity* e);
+		IfcLateBoundEntity(IfcEntityInstanceData* e);
 		
 		bool is(IfcSchema::Type::Enum v) const;
 		IfcSchema::Type::Enum type() const;	
@@ -85,3 +85,5 @@ namespace IfcParse {
 }
 
 #endif
+
+*/
