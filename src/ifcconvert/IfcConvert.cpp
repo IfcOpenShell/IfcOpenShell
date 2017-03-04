@@ -221,10 +221,10 @@ int main(int argc, char** argv)
             "Currently supported arguments are GlobalId, Name, Description, and Tag.\n\n"
             "The values for 'layers' and 'arg' are handled case-sensitively (wildcards supported)."
             "--include and --exclude cannot be placed right before input file argument and "
-            "only single of each argument supported for now. See also --exclude and --traverse.")
+            "only single of each argument supported for now. See also --exclude.")
         ("include+", po::value<inclusion_traverse_filter>(&include_traverse_filter)->multitoken(),
             "Same as --include but applies filtering also to the decomposition and/or containment (IsDecomposedBy, "
-            "HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. --include+=names \"Level 1\" "
+            "HasOpenings, FillsVoid, ContainedInStructure) of the filtered entity, e.g. --include+=arg Name \"Level 1\" "
             "includes entity with name \"Level 1\" and all of its children. See --include for more information. ")
         ("exclude", po::value<exclusion_filter>(&exclude_filter)->multitoken(),
             "Specifies that the entities that match a specific filtering criteria are to be excluded in the geometrical output."
