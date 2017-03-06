@@ -59,3 +59,29 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyline* l, cgal_wire_t& 
   result = polygon;
   return true;
 }
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcEdgeLoop* l, cgal_wire_t& result) {
+  IfcSchema::IfcOrientedEdge::list::ptr li = l->EdgeList();
+  cgal_wire_t mw;
+  for (IfcSchema::IfcOrientedEdge::list::it it = li->begin(); it != li->end(); ++it) {
+    cgal_wire_t w;
+    if (convert_wire(*it, w)) {
+      // TODO: What to do here?
+//      mw.Add(TopoDS::Edge(TopoDS_Iterator(w).Value()));
+      return false;
+    }
+  }
+  result = mw;
+  return true;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcOrientedEdge* l, cgal_wire_t& result) {
+  if (convert_wire(l->EdgeElement(), result)) {
+    if (!l->Orientation()) {
+      std::reverse(result.begin(),result.end());
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
