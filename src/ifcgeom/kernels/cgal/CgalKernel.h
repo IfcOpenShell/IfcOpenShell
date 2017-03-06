@@ -133,6 +133,8 @@ namespace IfcGeom {
 		bool convert_face(const IfcUtil::IfcBaseClass* L, cgal_face_t& result);
     
     bool convert_wire_to_face(const cgal_wire_t& wire, cgal_face_t& face);
+    
+    void remove_duplicate_points_from_loop(cgal_wire_t& polygon, bool closed, double tol = -1.);
 
 		// bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, ConversionResults& cut_shapes);
 

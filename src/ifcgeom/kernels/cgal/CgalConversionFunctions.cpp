@@ -152,3 +152,44 @@ bool IfcGeom::CgalKernel::convert_wire_to_face(const cgal_wire_t& wire, cgal_fac
   face.outer = wire;
   return true;
 }
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOperator3D* l, cgal_placement_t& trsf) {
+//  IN_CACHE(IfcCartesianTransformationOperator3D,l,gp_Trsf,trsf)
+  cgal_point_t origin;
+  IfcGeom::CgalKernel::convert(l->LocalOrigin(),origin);
+  cgal_direction_t axis1 (1.,0.,0.);
+  cgal_direction_t axis2 (0.,1.,0.);
+  cgal_direction_t axis3 (0.,0.,1.);
+  if ( l->hasAxis1() ) IfcGeom::CgalKernel::convert(l->Axis1(),axis1);
+  if ( l->hasAxis2() ) IfcGeom::CgalKernel::convert(l->Axis2(),axis2);
+  if ( l->hasAxis3() ) IfcGeom::CgalKernel::convert(l->Axis3(),axis3);
+  double scale = 1.0;
+  if (l->hasScale()) {
+    scale = l->Scale();
+  }
+  
+  trsf = Kernel::Aff_transformation_3(scale*axis1.cartesian(0), axis2.cartesian(0), axis3.cartesian(0), origin.cartesian(0),
+                                      axis1.cartesian(1), scale*axis2.cartesian(1), axis3.cartesian(1), origin.cartesian(1),
+                                      axis1.cartesian(2), axis2.cartesian(2), scale*axis3.cartesian(2), origin.cartesian(2));
+  
+//  CACHE(IfcCartesianTransformationOperator3D,l,trsf)
+  return true;
+}
+
+void IfcGeom::CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon, bool closed, double tol) {
+  if (tol <= 0.) tol = getValue(GV_PRECISION);
+  tol *= tol;
+  
+  for (int i = 0; i < polygon.size(); ++i) {
+    for (int j = i+1; j < polygon.size(); ++j) {
+      if (CGAL::squared_distance(polygon[i], polygon[j]) < tol) {
+        polygon.erase(polygon.begin()+j);
+        --j;
+      }
+    } if (closed) {
+      if (CGAL::squared_distance(polygon.front(), polygon.back()) < tol) {
+        polygon.erase(polygon.begin()+polygon.size()-1);
+      }
+    }
+  }
+}

@@ -43,8 +43,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
     return false;
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3D) ) {
     cgal_placement_t trsf;
-    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
-//    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,trsf);
+    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,trsf);
     gtrsf = trsf;
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2D) ) {
     cgal_placement_t trsf_2d;
@@ -108,6 +107,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   
   cgal_face_t face;
   if ( !convert_face(l->SweptArea(),face) ) return false;
+//  std::cout << "Face vertices: " << face.outer.size() << std::endl;
   
   cgal_placement_t trsf;
   bool has_position = true;
@@ -124,6 +124,17 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   
   std::list<cgal_face_t> face_list;
   face_list.push_back(face);
+  
+//  if (true) {
+//    cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+//    PolyhedronBuilder builder(&face_list);
+//    polyhedron.delegate(builder);
+//    
+//    std::ofstream fresult;
+//    fresult.open("/Users/ken/Desktop/profile.off");
+//    fresult << polyhedron << std::endl;
+//    fresult.close();
+//  }
   
   for (std::vector<Kernel::Point_3>::const_iterator current_vertex = face.outer.begin();
        current_vertex != face.outer.end();
@@ -155,6 +166,14 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   // Stitch edges
   //  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
+  if (!polyhedron.is_valid()) {
+    std::cout << "Invalid polyhedron!" << std::endl;
+    std::ofstream fresult;
+    fresult.open("/Users/ken/Desktop/invalid.off");
+    fresult << polyhedron << std::endl;
+    fresult.close();
+  }
+  
   if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
     CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
   } CGAL_postcondition(polyhedron.is_valid() && polyhedron.is_closed());
