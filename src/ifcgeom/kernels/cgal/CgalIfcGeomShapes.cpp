@@ -84,6 +84,21 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
   return b;
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, ConversionResults& shapes) {
+  bool part_success = false;
+  IfcSchema::IfcConnectedFaceSet::list::ptr facesets = l->FbsmFaces();
+  const SurfaceStyle* collective_style = get_style(l);
+  for( IfcSchema::IfcConnectedFaceSet::list::it it = facesets->begin(); it != facesets->end(); ++ it ) {
+    cgal_shape_t s;
+    const SurfaceStyle* shell_style = get_style(*it);
+    if (convert_shape(*it,s)) {
+      shapes.push_back(ConversionResult(new CgalShape(s), shell_style ? shell_style : collective_style));
+      part_success |= true;
+    }
+  }
+  return part_success;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal_shape_t &shape) {
   const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
   if (height < getValue(GV_PRECISION)) {

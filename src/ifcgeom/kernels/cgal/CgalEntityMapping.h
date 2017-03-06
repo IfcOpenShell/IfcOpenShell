@@ -35,6 +35,7 @@ SHAPES(IfcRepresentation);
 // IfcAdvancedBrepWithVoids included
 SHAPES(IfcManifoldSolidBrep);
 SHAPES(IfcMappedItem);
+SHAPES(IfcFaceBasedSurfaceModel);
 
 SHAPE(IfcExtrudedAreaSolid);
 SHAPE(IfcConnectedFaceSet);
