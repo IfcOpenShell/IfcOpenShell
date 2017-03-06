@@ -156,6 +156,39 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCircleProfileDef* l, cgal_
   return true;
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcEllipseProfileDef* l, cgal_face_t& face) {
+  double rx = l->SemiAxis1() * getValue(GV_LENGTH_UNIT);
+  double ry = l->SemiAxis2() * getValue(GV_LENGTH_UNIT);
+  
+  if ( rx < ALMOST_ZERO || ry < ALMOST_ZERO ) {
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    return false;
+  }
+  
+  cgal_placement_t trsf2d;
+  bool has_position = true;
+#ifdef USE_IFC4
+  has_position = l->hasPosition();
+#endif
+  
+  const int segments = 12;
+  
+  face = cgal_face_t();
+  for (int current_segment = 0; current_segment < segments; ++current_segment) {
+    double current_angle = current_segment*2.0*3.141592653589793/((double)segments);
+    face.outer.push_back(Kernel::Point_3(rx*cos(current_angle), ry*sin(current_angle), 0));
+  }
+  
+  if (has_position) {
+    IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
+    for (auto &vertex: face.outer) {
+      vertex = vertex.transform(trsf2d);
+    }
+  }
+  
+  return true;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face) {
   IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
   
