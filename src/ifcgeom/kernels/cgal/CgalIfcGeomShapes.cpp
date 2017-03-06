@@ -790,3 +790,65 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCone* l, cgal
   shape = polyhedron;
   return true;
 }
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cgal_shape_t& shape) {
+  IfcSchema::IfcCartesianPointList3D* point_list = l->Coordinates();
+  const std::vector< std::vector<double> > coordinates = point_list->CoordList();
+  std::vector<cgal_point_t> points;
+  points.reserve(coordinates.size());
+  for (std::vector< std::vector<double> >::const_iterator it = coordinates.begin(); it != coordinates.end(); ++it) {
+    const std::vector<double>& coords = *it;
+    if (coords.size() != 3) {
+      Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on Coordinates", l->entity);
+      return false;
+    }
+    points.push_back(Kernel::Point_3(coords[0] * getValue(GV_LENGTH_UNIT),
+                                     coords[1] * getValue(GV_LENGTH_UNIT),
+                                     coords[2] * getValue(GV_LENGTH_UNIT)));
+  }
+  
+  std::vector< std::vector<int> > indices = l->CoordIndex();
+  
+  std::list<cgal_face_t> face_list;
+  
+  for(std::vector< std::vector<int> >::const_iterator it = indices.begin(); it != indices.end(); ++ it) {
+    const std::vector<int>& tri = *it;
+    if (tri.size() != 3) {
+      Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on CoordIndex", l->entity);
+      return false;
+    }
+    
+    const int min_index = *std::min_element(tri.begin(), tri.end());
+    const int max_index = *std::max_element(tri.begin(), tri.end());
+    
+    if (min_index < 1 || max_index > (int) points.size()) {
+      Logger::Message(Logger::LOG_ERROR, "Contents of CoordIndex out of bounds", l->entity);
+      return false;
+    }
+    
+    const Kernel::Point_3& a = points[tri[0] - 1]; // account for zero- vs
+    const Kernel::Point_3& b = points[tri[1] - 1]; // one-based indices in
+    const Kernel::Point_3& c = points[tri[2] - 1]; // c++ and express
+    
+    face_list.push_back(cgal_face_t());
+    face_list.back().outer.push_back(a);
+    face_list.back().outer.push_back(b);
+    face_list.back().outer.push_back(c);
+  }
+  
+  // Naive creation
+  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  PolyhedronBuilder builder(&face_list);
+  polyhedron.delegate(builder);
+  
+  // Stitch edges
+  //  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
+  if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+    CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+  } CGAL_postcondition(polyhedron.is_valid() && polyhedron.is_closed());
+  //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  
+  shape = polyhedron;
+  return true;
+}
