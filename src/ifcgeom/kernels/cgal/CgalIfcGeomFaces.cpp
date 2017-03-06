@@ -60,26 +60,29 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRoundedRectangleProfileDef
   
   const int segments = 3;
   
-  face = cgal_face_t();
-  
-  for (int current_segment = 0; current_segment <= segments; ++current_segment) {
-    double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-    face.outer.push_back(Kernel::Point_3(x-r+r*cos(current_angle), y-r+r*sin(current_angle), 0));
+  if (r == 0.0) {
+    face = cgal_face_t();
+    face.outer.push_back(Kernel::Point_3(-x, -y, 0.0));
+    face.outer.push_back(Kernel::Point_3( x, -y, 0.0));
+    face.outer.push_back(Kernel::Point_3( x,  y, 0.0));
+    face.outer.push_back(Kernel::Point_3(-x,  y, 0.0));
   }
   
-  for (int current_segment = 0; current_segment <= segments; ++current_segment) {
-    double current_angle = (0.5*3.141592653589793+current_segment*0.5*3.141592653589793)/((double)segments);
-    face.outer.push_back(Kernel::Point_3(-x+r+r*cos(current_angle), y-r+r*sin(current_angle), 0));
-  }
-  
-  for (int current_segment = 0; current_segment <= segments; ++current_segment) {
-    double current_angle = (1.0*3.141592653589793+current_segment*0.5*3.141592653589793)/((double)segments);
-    face.outer.push_back(Kernel::Point_3(-x+r+r*cos(current_angle), -y+r+r*sin(current_angle), 0));
-  }
-  
-  for (int current_segment = 0; current_segment <= segments; ++current_segment) {
-    double current_angle = (1.5*3.141592653589793+current_segment*0.5*3.141592653589793)/((double)segments);
-    face.outer.push_back(Kernel::Point_3(x-r+r*cos(current_angle), -y+r+r*sin(current_angle), 0));
+  else {
+    face = cgal_face_t();
+    for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
+      face.outer.push_back(Kernel::Point_3(x-r+r*cos(current_angle), y-r+r*sin(current_angle), 0));
+    } for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = (0.5*3.141592653589793+current_segment*0.5*3.141592653589793)/((double)segments);
+      face.outer.push_back(Kernel::Point_3(-x+r+r*cos(current_angle), y-r+r*sin(current_angle), 0));
+    } for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = (1.0*3.141592653589793+current_segment*0.5*3.141592653589793)/((double)segments);
+      face.outer.push_back(Kernel::Point_3(-x+r+r*cos(current_angle), -y+r+r*sin(current_angle), 0));
+    } for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = (1.5*3.141592653589793+current_segment*0.5*3.141592653589793)/((double)segments);
+      face.outer.push_back(Kernel::Point_3(x-r+r*cos(current_angle), -y+r+r*sin(current_angle), 0));
+    }
   }
   
   if (has_position) {
