@@ -92,6 +92,39 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRoundedRectangleProfileDef
   return true;
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTrapeziumProfileDef* l, cgal_face_t& face) {
+  const double x1 = l->BottomXDim() / 2.0f * getValue(GV_LENGTH_UNIT);
+  const double w = l->TopXDim() * getValue(GV_LENGTH_UNIT);
+  const double dx = l->TopXOffset() * getValue(GV_LENGTH_UNIT);
+  const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
+  
+  if ( x1 < ALMOST_ZERO || w < ALMOST_ZERO || y < ALMOST_ZERO ) {
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    return false;
+  }
+  
+  cgal_placement_t trsf2d;
+  bool has_position = true;
+#ifdef USE_IFC4
+  has_position = l->hasPosition();
+#endif
+  
+  face = cgal_face_t();
+  face.outer.push_back(Kernel::Point_3(-x1, -y, 0.0));
+  face.outer.push_back(Kernel::Point_3(x1, -y, 0.0));
+  face.outer.push_back(Kernel::Point_3(dx+w-x1, y, 0.0));
+  face.outer.push_back(Kernel::Point_3(dx-x1, y, 0.0));
+  
+  if (has_position) {
+    IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
+    for (auto &vertex: face.outer) {
+      vertex = vertex.transform(trsf2d);
+    }
+  }
+  
+  return true;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCircleProfileDef* l, cgal_face_t& face) {
   const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
   if ( r == 0.0f ) {
