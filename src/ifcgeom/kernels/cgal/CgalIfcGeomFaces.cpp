@@ -41,6 +41,57 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangleProfileDef* l, cg
   return true;
 }
 
+// TODO: Untested
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRoundedRectangleProfileDef* l, cgal_face_t& face) {
+  const double x = l->XDim() / 2.0f * getValue(GV_LENGTH_UNIT);
+  const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
+  const double r = l->RoundingRadius() * getValue(GV_LENGTH_UNIT);
+  
+  if ( x < ALMOST_ZERO || y < ALMOST_ZERO || r < ALMOST_ZERO ) {
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    return false;
+  }
+  
+  cgal_placement_t trsf2d;
+  bool has_position = true;
+#ifdef USE_IFC4
+  has_position = l->hasPosition();
+#endif
+  
+  const int segments = 3;
+  
+  face = cgal_face_t();
+  
+  for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+    double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
+    face.outer.push_back(Kernel::Point_3(x-r+r*cos(current_angle), y-r+r*sin(current_angle), 0));
+  }
+  
+  for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+    double current_angle = (0.5*3.141592653589793+current_segment*0.5*3.141592653589793)/((double)segments);
+    face.outer.push_back(Kernel::Point_3(-x+r+r*cos(current_angle), y-r+r*sin(current_angle), 0));
+  }
+  
+  for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+    double current_angle = (1.0*3.141592653589793+current_segment*0.5*3.141592653589793)/((double)segments);
+    face.outer.push_back(Kernel::Point_3(-x+r+r*cos(current_angle), -y+r+r*sin(current_angle), 0));
+  }
+  
+  for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+    double current_angle = (1.5*3.141592653589793+current_segment*0.5*3.141592653589793)/((double)segments);
+    face.outer.push_back(Kernel::Point_3(x-r+r*cos(current_angle), -y+r+r*sin(current_angle), 0));
+  }
+  
+  if (has_position) {
+    IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
+    for (auto &vertex: face.outer) {
+      vertex = vertex.transform(trsf2d);
+    }
+  }
+  
+  return true;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCircleProfileDef* l, cgal_face_t& face) {
   const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
   if ( r == 0.0f ) {

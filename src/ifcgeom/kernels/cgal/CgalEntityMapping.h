@@ -50,6 +50,7 @@ FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcCircleProfileDef);
 FACE(IfcFace);
 FACE(IfcRectangleProfileDef);
+FACE(IfcRoundedRectangleProfileDef);
 
 WIRE(IfcPolyLoop);
 WIRE(IfcPolyline);
