@@ -24,9 +24,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangleProfileDef* l, cg
 #ifdef USE_IFC4
   has_position = l->hasPosition();
 #endif
-  if (has_position) {
-    IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
-  }
   
   face = cgal_face_t();
   face.outer.push_back(Kernel::Point_3(-x, -y, 0.0));
@@ -34,6 +31,44 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangleProfileDef* l, cg
   face.outer.push_back(Kernel::Point_3( x,  y, 0.0));
   face.outer.push_back(Kernel::Point_3(-x,  y, 0.0));
   
+  if (has_position) {
+    IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
+    for (auto &vertex: face.outer) {
+      vertex = vertex.transform(trsf2d);
+    }
+  }
+  
+  return true;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCircleProfileDef* l, cgal_face_t& face) {
+  const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
+  if ( r == 0.0f ) {
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    return false;
+  }
+  
+  cgal_placement_t trsf2d;
+  bool has_position = true;
+#ifdef USE_IFC4
+  has_position = l->hasPosition();
+#endif
+  
+  const int segments = 12;
+  
+  face = cgal_face_t();
+  for (int current_segment = 0; current_segment < segments; ++current_segment) {
+    double current_angle = current_segment*2.0*3.141592653589793/((double)segments);
+    face.outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
+  }
+  
+  if (has_position) {
+    IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
+    for (auto &vertex: face.outer) {
+      vertex = vertex.transform(trsf2d);
+    }
+  }
+
   return true;
 }
 
