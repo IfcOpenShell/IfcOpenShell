@@ -167,10 +167,17 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOpe
   if (l->hasScale()) {
     scale = l->Scale();
   }
-  
+
+  // TODO: Untested
   trsf = Kernel::Aff_transformation_3(scale*axis1.cartesian(0), axis2.cartesian(0), axis3.cartesian(0), origin.cartesian(0),
                                       axis1.cartesian(1), scale*axis2.cartesian(1), axis3.cartesian(1), origin.cartesian(1),
                                       axis1.cartesian(2), axis2.cartesian(2), scale*axis3.cartesian(2), origin.cartesian(2));
+  
+//  for (int i = 0; i < 3; ++i) {
+//    for (int j = 0; j < 4; ++j) {
+//      std::cout << trsf.cartesian(i, j) << " ";
+//    } std::cout << std::endl;
+//  }
   
 //  CACHE(IfcCartesianTransformationOperator3D,l,trsf)
   return true;
