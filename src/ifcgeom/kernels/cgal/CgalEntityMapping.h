@@ -52,8 +52,8 @@ FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcCircleHollowProfileDef);
 FACE(IfcCircleProfileDef);
 FACE(IfcFace);
-FACE(IfcRectangleProfileDef);
 FACE(IfcRoundedRectangleProfileDef);
+FACE(IfcRectangleProfileDef);
 FACE(IfcTrapeziumProfileDef);
 FACE(IfcEllipseProfileDef);
 
