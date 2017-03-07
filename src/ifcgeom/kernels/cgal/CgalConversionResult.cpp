@@ -7,8 +7,11 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
 //  std::cout << "Model: " << s.size_of_facets() << " facets and " << s.size_of_vertices() << " vertices" << std::endl;
 //  std::cout << "Valid: " << s.is_valid() << std::endl;
   
+  CGAL::Polyhedron_3<Kernel> polyhedron;
+  s.convert_to_polyhedron(polyhedron);
+  
   // Apply transformation
-  if (place != NULL) for (auto &vertex: vertices(s)) {
+  if (place != NULL) for (auto &vertex: vertices(polyhedron)) {
     vertex->point() = vertex->point().transform(trsf);
   }
   
@@ -22,7 +25,7 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
   boost::associative_property_map<std::map<cgal_vertex_descriptor_t, Kernel::Vector_3>> vertex_normals_map(vertex_normals);
   std::map<cgal_face_descriptor_t, Kernel::Vector_3> face_normals;
   boost::associative_property_map<std::map<cgal_face_descriptor_t, Kernel::Vector_3>> face_normals_map(face_normals);
-  if (CGAL::Polygon_mesh_processing::triangulate_faces(s)) {
+  if (CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron)) {
 //    std::cout << "Triangulated model: " << s.size_of_facets() << " facets and " << s.size_of_vertices() << " vertices" << std::endl;
   } else {
     Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
@@ -34,10 +37,10 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
 //  fafter << s << std::endl;
 //  fafter.close();
 
-  CGAL::Polygon_mesh_processing::compute_normals(s, vertex_normals_map, face_normals_map);
+  CGAL::Polygon_mesh_processing::compute_normals(polyhedron, vertex_normals_map, face_normals_map);
   std::map<CGAL::Polyhedron_3<Kernel>::Vertex_const_handle, int> vertices_map;
   std::size_t initial_size = t->verts().size()/3;
-  for (auto &vertex: vertices(s)) {
+  for (auto &vertex: vertices(polyhedron)) {
     if (vertices_map.count(vertex) == 0) {
       vertices_map[vertex] = (int)(vertices_map.size()+initial_size);
       t->addVertex(surface_style_id,
@@ -49,7 +52,7 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
     }
   }
   
-  for (auto &face: faces(s)) {
+  for (auto &face: faces(polyhedron)) {
     if (!face->is_triangle()) {
       std::cout << "Warning: non-triangular face!" << std::endl;
       continue;

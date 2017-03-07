@@ -66,7 +66,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcEdgeLoop* l, cgal_wire_t& 
   for (IfcSchema::IfcOrientedEdge::list::it it = li->begin(); it != li->end(); ++it) {
     cgal_wire_t w;
     if (convert_wire(*it, w)) {
-      // TODO: What to do here?
+      // TODO: What to do here? Add some points only?
 //      mw.Add(TopoDS::Edge(TopoDS_Iterator(w).Value()));
       return false;
     }

@@ -62,7 +62,7 @@ struct cgal_face_t {
   std::vector<cgal_wire_t> inner;
 };
 
-typedef CGAL::Polyhedron_3<Kernel> cgal_shape_t;
+typedef CGAL::Nef_polyhedron_3<Kernel> cgal_shape_t;
 typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel>>::vertex_descriptor cgal_vertex_descriptor_t;
 typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel>>::face_descriptor cgal_face_descriptor_t;
 

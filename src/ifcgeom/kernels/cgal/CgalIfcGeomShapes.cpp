@@ -159,7 +159,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   } face_list.push_back(top_face);
   
   // Naive creation
-  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  CGAL::Polyhedron_3<Kernel> polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
   
@@ -179,7 +179,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   } CGAL_postcondition(polyhedron.is_valid() && polyhedron.is_closed());
   //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   
-  shape = polyhedron;
+  shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   return true;
 }
 
@@ -209,7 +209,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_
   }
   
   // Naive creation
-  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  CGAL::Polyhedron_3<Kernel> polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
   
@@ -221,7 +221,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_
   }
   //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   
-  shape = polyhedron;
+  shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   return true;
 }
 
@@ -279,7 +279,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBlock* l, cgal_shape_t& sh
   face_list.back().outer.push_back(Kernel::Point_3(dx, 0, dz));
   
   // Naive creation
-  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  CGAL::Polyhedron_3<Kernel> polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
   
@@ -298,7 +298,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBlock* l, cgal_shape_t& sh
     vertex->point() = vertex->point().transform(trsf);
   }
 
-  shape = polyhedron;
+  shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   return true;
 }
 
@@ -359,16 +359,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
   
   const IfcSchema::IfcBooleanOperator::IfcBooleanOperator op = l->Operator();
   
-  CGAL_precondition(s1.is_valid() && s1.is_closed());
-  CGAL::Nef_polyhedron_3<Kernel> nef1(s1);
-  if (!nef1.is_simple()) {
+  if (!s1.is_simple()) {
     Logger::Message(Logger::LOG_ERROR, "s1: Not simple Nef?", operand1->entity);
     return false;
   }
   
-  CGAL_precondition(s2.is_valid() && s2.is_closed());
-  CGAL::Nef_polyhedron_3<Kernel> nef2(s2);
-  if (!nef2.is_simple()) {
+  if (!s2.is_simple()) {
     Logger::Message(Logger::LOG_ERROR, "s2: Not simple Nef?", operand2->entity);
     return false;
   }
@@ -385,52 +381,52 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
   if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
     
 //    std::cout << "Difference" << std::endl;
-    CGAL::Nef_polyhedron_3<Kernel> nef_result = nef1-nef2;
+    CGAL::Nef_polyhedron_3<Kernel> nef_result = s1-s2;
     if (!nef_result.is_simple()) {
       std::cout << "Not simple: " << nef_result.number_of_volumes() << " volumes" << std::endl;
       return false;
     }
-    cgal_shape_t result;
-    nef_result.convert_to_polyhedron(result);
+//    cgal_shape_t result;
+//    nef_result.convert_to_polyhedron(result);
 //    std::ofstream fresult;
 //    fresult.open("/Users/ken/Desktop/result.off");
 //    fresult << result << std::endl;
 //    fresult.close();
-    shape = result;
+    shape = nef_result;
     return true;
     
   } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
 
 //    std::cout << "Union" << std::endl;
-    CGAL::Nef_polyhedron_3<Kernel> nef_result = nef1+nef2;
+    CGAL::Nef_polyhedron_3<Kernel> nef_result = s1+s2;
     if (!nef_result.is_simple()) {
       std::cout << "Not simple: " << nef_result.number_of_volumes() << " volumes" << std::endl;
       return false;
     }
-    cgal_shape_t result;
-    nef_result.convert_to_polyhedron(result);
+//    cgal_shape_t result;
+//    nef_result.convert_to_polyhedron(result);
 //    std::ofstream fresult;
 //    fresult.open("/Users/ken/Desktop/result.off");
 //    fresult << result << std::endl;
 //    fresult.close();
-    shape = result;
+    shape = nef_result;
     return true;
     
   } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
 
 //    std::cout << "Intersection" << std::endl;
-    CGAL::Nef_polyhedron_3<Kernel> nef_result = nef1*nef2;
+    CGAL::Nef_polyhedron_3<Kernel> nef_result = s1*s2;
     if (!nef_result.is_simple()) {
       std::cout << "Not simple: " << nef_result.number_of_volumes() << " volumes" << std::endl;
       return false;
     }
-    cgal_shape_t result;
-    nef_result.convert_to_polyhedron(result);
+//    cgal_shape_t result;
+//    nef_result.convert_to_polyhedron(result);
 //    std::ofstream fresult;
 //    fresult.open("/Users/ken/Desktop/result.off");
 //    fresult << result << std::endl;
 //    fresult.close();
-    shape = result;
+    shape = nef_result;
     return true;
     
   }
@@ -608,7 +604,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcSphere* l, cgal_shape_t& s
   }
   
   // Naive creation
-  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  CGAL::Polyhedron_3<Kernel> polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
   
@@ -639,7 +635,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcSphere* l, cgal_shape_t& s
 //  fresult << polyhedron << std::endl;
 //  fresult.close();
   
-  shape = polyhedron;
+  shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   return true;
 }
 
@@ -679,7 +675,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangularPyramid* l, cga
   face_list.back().outer.push_back(Kernel::Point_3(0.5*dx, 0.5*dy, dz));
   
   // Naive creation
-  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  CGAL::Polyhedron_3<Kernel> polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
   
@@ -698,7 +694,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangularPyramid* l, cga
     vertex->point() = vertex->point().transform(trsf);
   }
   
-  shape = polyhedron;
+  shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   return true;
 }
 
@@ -737,7 +733,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCylinder* l, 
   }
   
   // Naive creation
-  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  CGAL::Polyhedron_3<Kernel> polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
   
@@ -756,7 +752,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCylinder* l, 
     vertex->point() = vertex->point().transform(trsf);
   }
   
-  shape = polyhedron;
+  shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   return true;
 }
 
@@ -787,7 +783,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCone* l, cgal
   }
   
   // Naive creation
-  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  CGAL::Polyhedron_3<Kernel> polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
   
@@ -806,7 +802,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCone* l, cgal
     vertex->point() = vertex->point().transform(trsf);
   }
   
-  shape = polyhedron;
+  shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   return true;
 }
 
@@ -856,7 +852,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cg
   }
   
   // Naive creation
-  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  CGAL::Polyhedron_3<Kernel> polyhedron = CGAL::Polyhedron_3<Kernel>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
   
@@ -868,6 +864,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cg
   } CGAL_postcondition(polyhedron.is_valid() && polyhedron.is_closed());
   //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   
-  shape = polyhedron;
+  shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   return true;
 }
