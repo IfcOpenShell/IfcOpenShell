@@ -49,6 +49,7 @@ SHAPE(IfcRightCircularCone);
 SHAPE(IfcTriangulatedFaceSet);
 
 FACE(IfcArbitraryClosedProfileDef);
+FACE(IfcCircleHollowProfileDef);
 FACE(IfcCircleProfileDef);
 FACE(IfcFace);
 FACE(IfcRectangleProfileDef);
