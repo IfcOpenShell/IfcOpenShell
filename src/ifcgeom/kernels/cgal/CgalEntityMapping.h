@@ -35,6 +35,7 @@ SHAPES(IfcRepresentation);
 // IfcAdvancedBrepWithVoids included
 SHAPES(IfcManifoldSolidBrep);
 SHAPES(IfcMappedItem);
+SHAPES(IfcFaceBasedSurfaceModel);
 
 SHAPE(IfcExtrudedAreaSolid);
 SHAPE(IfcConnectedFaceSet);
@@ -45,11 +46,20 @@ SHAPE(IfcSphere);
 SHAPE(IfcRectangularPyramid);
 SHAPE(IfcRightCircularCylinder);
 SHAPE(IfcRightCircularCone);
+SHAPE(IfcTriangulatedFaceSet);
 
 FACE(IfcArbitraryClosedProfileDef);
+FACE(IfcCircleHollowProfileDef);
+FACE(IfcCircleProfileDef);
 FACE(IfcFace);
+FACE(IfcRoundedRectangleProfileDef);
+FACE(IfcRectangleHollowProfileDef);
 FACE(IfcRectangleProfileDef);
+FACE(IfcTrapeziumProfileDef);
+FACE(IfcEllipseProfileDef);
 
+WIRE(IfcEdgeLoop);
+WIRE(IfcOrientedEdge);
 WIRE(IfcPolyLoop);
 WIRE(IfcPolyline);
 
@@ -58,3 +68,4 @@ CLASS(IfcDirection,cgal_direction_t);
 CLASS(IfcAxis2Placement2D,cgal_placement_t);
 CLASS(IfcAxis2Placement3D,cgal_placement_t);
 CLASS(IfcObjectPlacement,cgal_placement_t);
+CLASS(IfcCartesianTransformationOperator3D,cgal_placement_t);

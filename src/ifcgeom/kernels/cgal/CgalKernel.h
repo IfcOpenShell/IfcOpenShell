@@ -62,7 +62,7 @@ struct cgal_face_t {
   std::vector<cgal_wire_t> inner;
 };
 
-typedef CGAL::Polyhedron_3<Kernel> cgal_shape_t;
+typedef CGAL::Nef_polyhedron_3<Kernel> cgal_shape_t;
 typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel>>::vertex_descriptor cgal_vertex_descriptor_t;
 typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel>>::face_descriptor cgal_face_descriptor_t;
 
@@ -133,6 +133,8 @@ namespace IfcGeom {
 		bool convert_face(const IfcUtil::IfcBaseClass* L, cgal_face_t& result);
     
     bool convert_wire_to_face(const cgal_wire_t& wire, cgal_face_t& face);
+    
+    void remove_duplicate_points_from_loop(cgal_wire_t& polygon, bool closed, double tol = -1.);
 
 		// bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, ConversionResults& cut_shapes);
 
