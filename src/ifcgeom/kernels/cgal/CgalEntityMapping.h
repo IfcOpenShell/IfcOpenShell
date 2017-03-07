@@ -53,6 +53,7 @@ FACE(IfcCircleHollowProfileDef);
 FACE(IfcCircleProfileDef);
 FACE(IfcFace);
 FACE(IfcRoundedRectangleProfileDef);
+FACE(IfcRectangleHollowProfileDef);
 FACE(IfcRectangleProfileDef);
 FACE(IfcTrapeziumProfileDef);
 FACE(IfcEllipseProfileDef);

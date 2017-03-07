@@ -41,10 +41,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangleProfileDef* l, cg
   return true;
 }
 
-// TODO: Untested
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRoundedRectangleProfileDef* l, cgal_face_t& face) {
-  std::cout << "IfcRoundedRectangleProfileDef" << std::endl;
-  
   const double x = l->XDim() / 2.0f * getValue(GV_LENGTH_UNIT);
   const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
   const double r = l->RoundingRadius() * getValue(GV_LENGTH_UNIT);
@@ -94,6 +91,100 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRoundedRectangleProfileDef
     IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
     for (auto &vertex: face.outer) {
       vertex = vertex.transform(trsf2d);
+    }
+  }
+  
+  return true;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, cgal_face_t& face) {
+  const double x = l->XDim() / 2.0f * getValue(GV_LENGTH_UNIT);
+  const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
+  const double d = l->WallThickness() * getValue(GV_LENGTH_UNIT);
+  
+  const bool fr1 = l->hasOuterFilletRadius();
+  const bool fr2 = l->hasInnerFilletRadius();
+  
+  const double r1 = fr1 ? l->OuterFilletRadius() * getValue(GV_LENGTH_UNIT) : 0.;
+  const double r2 = fr2 ? l->InnerFilletRadius() * getValue(GV_LENGTH_UNIT) : 0.;
+  
+  if ( x < ALMOST_ZERO || y < ALMOST_ZERO ) {
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    return false;
+  }
+  
+  cgal_placement_t trsf2d;
+  bool has_position = true;
+#ifdef USE_IFC4
+  has_position = l->hasPosition();
+#endif
+  
+  const int segments = 3;
+  
+  if (!fr1 || r1 == 0.0) {
+    face = cgal_face_t();
+    face.outer.push_back(Kernel::Point_3(-x, -y, 0.0));
+    face.outer.push_back(Kernel::Point_3( x, -y, 0.0));
+    face.outer.push_back(Kernel::Point_3( x,  y, 0.0));
+    face.outer.push_back(Kernel::Point_3(-x,  y, 0.0));
+  }
+  
+  else {
+    face = cgal_face_t();
+    for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
+      face.outer.push_back(Kernel::Point_3(x-r1+r1*cos(current_angle), y-r1+r1*sin(current_angle), 0));
+    }
+    for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = 0.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
+      face.outer.push_back(Kernel::Point_3(-x+r1+r1*cos(current_angle), y-r1+r1*sin(current_angle), 0));
+    }
+    for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
+      face.outer.push_back(Kernel::Point_3(-x+r1+r1*cos(current_angle), -y+r1+r1*sin(current_angle), 0));
+    }
+    for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = 1.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
+      face.outer.push_back(Kernel::Point_3(x-r1+r1*cos(current_angle), -y+r1+r1*sin(current_angle), 0));
+    }
+  }
+  
+  if (!fr2 || r2 == 0.0) {
+    face.inner.push_back(cgal_wire_t());
+    face.inner.back().push_back(Kernel::Point_3(-x+d, -y+d, 0.0));
+    face.inner.back().push_back(Kernel::Point_3( x-d, -y+d, 0.0));
+    face.inner.back().push_back(Kernel::Point_3( x-d,  y-d, 0.0));
+    face.inner.back().push_back(Kernel::Point_3(-x+d,  y-d, 0.0));
+  }
+  
+  else {
+    face.inner.push_back(cgal_wire_t());
+    for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
+      face.inner.back().push_back(Kernel::Point_3(x-d-r1+r1*cos(current_angle), y-d-r1+r1*sin(current_angle), 0));
+    }
+    for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = 0.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
+      face.inner.back().push_back(Kernel::Point_3(-x+d+r1+r1*cos(current_angle), y-d-r1+r1*sin(current_angle), 0));
+    }
+    for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
+      face.inner.back().push_back(Kernel::Point_3(-x+d+r1+r1*cos(current_angle), -y+d+r1+r1*sin(current_angle), 0));
+    }
+    for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = 1.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
+      face.inner.back().push_back(Kernel::Point_3(x-d-r1+r1*cos(current_angle), -y+d+r1+r1*sin(current_angle), 0));
+    }
+  }
+  
+  if (has_position) {
+    IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
+    for (auto &vertex: face.outer) {
+      vertex = vertex.transform(trsf2d);
+    } for (auto &inner: face.inner) {
+      for (auto &vertex: inner) {
+        vertex = vertex.transform(trsf2d);
+      }
     }
   }
   
@@ -197,6 +288,10 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCircleHollowProfileDef* l,
     IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
     for (auto &vertex: face.outer) {
       vertex = vertex.transform(trsf2d);
+    } for (auto &inner: face.inner) {
+      for (auto &vertex: inner) {
+        vertex = vertex.transform(trsf2d);
+      }
     }
   }
   
