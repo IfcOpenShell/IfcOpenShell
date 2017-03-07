@@ -47,6 +47,7 @@ SHAPE(IfcRectangularPyramid);
 SHAPE(IfcRightCircularCylinder);
 SHAPE(IfcRightCircularCone);
 SHAPE(IfcTriangulatedFaceSet);
+SHAPE(IfcHalfSpaceSolid);
 
 FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcCircleHollowProfileDef);
@@ -65,6 +66,7 @@ WIRE(IfcPolyline);
 
 CLASS(IfcCartesianPoint,cgal_point_t);
 CLASS(IfcDirection,cgal_direction_t);
+CLASS(IfcPlane,cgal_plane_t);
 CLASS(IfcAxis2Placement2D,cgal_placement_t);
 CLASS(IfcAxis2Placement3D,cgal_placement_t);
 CLASS(IfcObjectPlacement,cgal_placement_t);

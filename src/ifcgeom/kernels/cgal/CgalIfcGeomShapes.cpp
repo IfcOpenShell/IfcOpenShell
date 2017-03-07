@@ -925,3 +925,21 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cg
   shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   return true;
 }
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, cgal_shape_t& shape) {
+  IfcSchema::IfcSurface* surface = l->BaseSurface();
+  if ( ! surface->is(IfcSchema::Type::IfcPlane) ) {
+    Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", surface->entity);
+    return false;
+  }
+  cgal_plane_t pln;
+  IfcGeom::CgalKernel::convert((IfcSchema::IfcPlane*)surface,pln);
+  
+  // TODO: This might be the other way around?
+  if (!l->AgreementFlag()) pln = pln.opposite();
+//  const gp_Pnt pnt = pln.Location().Translated( l->AgreementFlag() ? -pln.Axis().Direction() : pln.Axis().Direction());
+//  shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln),pnt).Solid();
+  
+  shape = CGAL::Nef_polyhedron_3<Kernel>(pln);
+  return true;
+}
