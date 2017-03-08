@@ -63,6 +63,7 @@ WIRE(IfcEdgeLoop);
 WIRE(IfcOrientedEdge);
 WIRE(IfcPolyLoop);
 WIRE(IfcPolyline);
+WIRE(IfcCompositeCurve);
 
 CLASS(IfcCartesianPoint,cgal_point_t);
 CLASS(IfcDirection,cgal_direction_t);
