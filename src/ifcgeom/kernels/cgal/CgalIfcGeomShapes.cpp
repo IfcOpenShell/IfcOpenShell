@@ -36,8 +36,9 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
   cgal_placement_t gtrsf;
   IfcSchema::IfcCartesianTransformationOperator* transform = l->MappingTarget();
   if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
+    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3DnonUniform*)transform,gtrsf);
     Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
-//    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3DnonUniform*)transform,gtrsf);
+    return false;
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
     Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
     return false;
@@ -45,6 +46,8 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
     cgal_placement_t trsf;
     IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,trsf);
     gtrsf = trsf;
+//    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
+//    return false;
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2D) ) {
     cgal_placement_t trsf_2d;
     Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
@@ -61,8 +64,16 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
     IfcGeom::CgalKernel::convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf_2d);
     trsf = trsf_2d;
   }
+  
   // TODO: Check
   gtrsf = trsf * gtrsf;
+  
+//  std::cout << std::endl;
+//  for (int i = 0; i < 3; ++i) {
+//    for (int j = 0; j < 4; ++j) {
+//      std::cout << gtrsf.cartesian(i, j) << " ";
+//    } std::cout << std::endl;
+//  }
   
   const IfcGeom::SurfaceStyle* mapped_item_style = get_style(l);
   
