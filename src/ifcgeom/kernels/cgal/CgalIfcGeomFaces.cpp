@@ -468,3 +468,112 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCShapeProfileDef* l, cgal_
   
   return true;
 }
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcLShapeProfileDef* l, cgal_face_t& face) {
+  const bool hasSlope = l->hasLegSlope();
+  const bool doEdgeFillet = l->hasEdgeRadius();
+  const bool doFillet = l->hasFilletRadius();
+  
+  const double y = l->Depth() / 2.0f * getValue(GV_LENGTH_UNIT);
+  const double x = (l->hasWidth() ? l->Width() : l->Depth()) / 2.0f * getValue(GV_LENGTH_UNIT);
+  const double d = l->Thickness() * getValue(GV_LENGTH_UNIT);
+  const double slope = hasSlope ? (l->LegSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
+  
+  double f1 = 0.0f;
+  double f2 = 0.0f;
+  if (doFillet) {
+    f1 = l->FilletRadius() * getValue(GV_LENGTH_UNIT);
+  }
+  if ( doEdgeFillet) {
+    f2 = l->EdgeRadius() * getValue(GV_LENGTH_UNIT);
+  }
+  
+  if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d < ALMOST_ZERO ) {
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    return false;
+  }
+  
+  double xx = -x+d;
+  double xy = -y+d;
+  double dy1 = 0.;
+  double dy2 = 0.;
+  double dx1 = 0.;
+  double dx2 = 0.;
+  if (hasSlope) {
+    dy1 = tan(slope) * x;
+    dy2 = tan(slope) * (x - d);
+    dx1 = tan(slope) * y;
+    dx2 = tan(slope) * (y - d);
+    
+    const double x1s = x; const double y1s = -y + d - dy1;
+    const double x1e = -x + d; const double y1e = -y + d + dy2;
+    const double x2s = -x + d - dx1; const double y2s = y;
+    const double x2e = -x + d + dx2; const double y2e = -y + d;
+    
+    const double a1 = y1e - y1s;
+    const double b1 = x1s - x1e;
+    const double c1 = a1*x1s + b1*y1s;
+    
+    const double a2 = y2e - y2s;
+    const double b2 = x2s - x2e;
+    const double c2 = a2*x2s + b2*y2s;
+    
+    const double det = a1*b2 - a2*b1;
+    
+    if (ALMOST_THE_SAME(det, 0.)) {
+      Logger::Message(Logger::LOG_NOTICE, "Legs do not intersect for:",l->entity);
+      return false;
+    }
+    
+    xx = (b2*c1 - b1*c2) / det;
+    xy = (a1*c2 - a2*c1) / det;
+  }
+  
+  cgal_placement_t trsf2d;
+  bool has_position = true;
+#ifdef USE_IFC4
+  has_position = l->hasPosition();
+#endif
+  
+  const int segments = 3;
+  
+  face = cgal_face_t();
+  face.outer.push_back(Kernel::Point_3(-x, -y, 0.0));
+  face.outer.push_back(Kernel::Point_3(x, -y, 0.0));
+  if (f2 == 0.0) {
+    face.outer.push_back(Kernel::Point_3(x, -y+d-dy1, 0.0));
+  } else {
+    for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
+      face.outer.push_back(Kernel::Point_3(x-f2+f2*cos(current_angle), -y+d-dy1-f2+f2*sin(current_angle), 0));
+    }
+  } if (f1 == 0.0) {
+    face.outer.push_back(Kernel::Point_3(xx, xy, 0.0));
+  } else {
+    for (int current_segment = segments; current_segment >= 0; --current_segment) {
+      double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
+      face.outer.push_back(Kernel::Point_3(xx+f1+f1*cos(current_angle), xy+f1+f1*sin(current_angle), 0));
+    }
+  } if (f2 == 0.0) {
+    face.outer.push_back(Kernel::Point_3(-x+d-dx1, y, 0.0));
+  } else {
+    for (int current_segment = 0; current_segment <= segments; ++current_segment) {
+      double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
+      face.outer.push_back(Kernel::Point_3(-x+d-dx1-f2+f2*cos(current_angle), y-f2+f2*sin(current_angle), 0));
+    }
+  } face.outer.push_back(Kernel::Point_3(-x, y, 0.0));
+  
+  if (has_position) {
+    IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
+    for (auto &vertex: face.outer) {
+      vertex = vertex.transform(trsf2d);
+    }
+  }
+  
+  return true;
+
+//  double coords[12] = {-x,-y, x,-y, x,-y+d-dy1, xx, xy, -x+d-dx1,y, -x,y};
+//  int fillets[3] = {2,3,4};
+//  double radii[3] = {f2,f1,f2};
+//  return profile_helper(6,coords,doFillet ? 3 : 0,fillets,radii,trsf2d,face);
+}

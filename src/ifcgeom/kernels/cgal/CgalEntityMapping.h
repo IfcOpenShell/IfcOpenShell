@@ -59,6 +59,7 @@ FACE(IfcRectangleProfileDef);
 FACE(IfcTrapeziumProfileDef);
 FACE(IfcEllipseProfileDef);
 FACE(IfcCShapeProfileDef);
+FACE(IfcLShapeProfileDef);
 
 WIRE(IfcEdgeLoop);
 WIRE(IfcOrientedEdge);
