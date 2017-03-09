@@ -47,6 +47,7 @@ SHAPE(IfcRectangularPyramid);
 SHAPE(IfcRightCircularCylinder);
 SHAPE(IfcRightCircularCone);
 SHAPE(IfcTriangulatedFaceSet);
+SHAPE(IfcHalfSpaceSolid);
 
 FACE(IfcArbitraryClosedProfileDef);
 FACE(IfcCircleHollowProfileDef);
@@ -57,15 +58,21 @@ FACE(IfcRectangleHollowProfileDef);
 FACE(IfcRectangleProfileDef);
 FACE(IfcTrapeziumProfileDef);
 FACE(IfcEllipseProfileDef);
+FACE(IfcCShapeProfileDef);
+FACE(IfcIShapeProfileDef);
+FACE(IfcLShapeProfileDef);
 
 WIRE(IfcEdgeLoop);
 WIRE(IfcOrientedEdge);
 WIRE(IfcPolyLoop);
 WIRE(IfcPolyline);
+WIRE(IfcCompositeCurve);
 
 CLASS(IfcCartesianPoint,cgal_point_t);
 CLASS(IfcDirection,cgal_direction_t);
+CLASS(IfcPlane,cgal_plane_t);
 CLASS(IfcAxis2Placement2D,cgal_placement_t);
 CLASS(IfcAxis2Placement3D,cgal_placement_t);
 CLASS(IfcObjectPlacement,cgal_placement_t);
 CLASS(IfcCartesianTransformationOperator3D,cgal_placement_t);
+CLASS(IfcCartesianTransformationOperator3DnonUniform,cgal_placement_t);

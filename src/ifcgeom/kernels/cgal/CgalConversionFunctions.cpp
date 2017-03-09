@@ -49,6 +49,18 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcDirection* l, cgal_directi
   return true;
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPlane* pln, cgal_plane_t& plane) {
+//  IN_CACHE(IfcPlane,pln,gp_Pln,plane)
+  IfcSchema::IfcAxis2Placement3D* l = pln->Position();
+  cgal_point_t o;
+  cgal_direction_t axis = Kernel::Vector_3(0,0,1);
+  IfcGeom::CgalKernel::convert(l->Location(),o);
+  if ( l->hasAxis() ) IfcGeom::CgalKernel::convert(l->Axis(),axis);
+  plane = Kernel::Plane_3(o, axis);
+//  CACHE(IfcPlane,pln,plane)
+  return true;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement2D* l, cgal_placement_t& trsf) {
   //  IN_CACHE(IfcAxis2Placement3D,l,gp_Trsf,trsf)
   cgal_point_t o;
@@ -173,6 +185,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOpe
                                       axis1.cartesian(1), scale*axis2.cartesian(1), axis3.cartesian(1), origin.cartesian(1),
                                       axis1.cartesian(2), axis2.cartesian(2), scale*axis3.cartesian(2), origin.cartesian(2));
   
+//  std::cout << std::endl;
 //  for (int i = 0; i < 3; ++i) {
 //    for (int j = 0; j < 4; ++j) {
 //      std::cout << trsf.cartesian(i, j) << " ";
@@ -180,6 +193,35 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOpe
 //  }
   
 //  CACHE(IfcCartesianTransformationOperator3D,l,trsf)
+  return true;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOperator3DnonUniform* l, cgal_placement_t& gtrsf) {
+//  IN_CACHE(IfcCartesianTransformationOperator3DnonUniform,l,gp_GTrsf,gtrsf)
+  cgal_point_t origin;
+  IfcGeom::CgalKernel::convert(l->LocalOrigin(),origin);
+  cgal_direction_t axis1 (1.,0.,0.);
+  cgal_direction_t axis2 (0.,1.,0.);
+  cgal_direction_t axis3 (0.,0.,1.);
+  if ( l->hasAxis1() ) IfcGeom::CgalKernel::convert(l->Axis1(),axis1);
+  if ( l->hasAxis2() ) IfcGeom::CgalKernel::convert(l->Axis2(),axis2);
+  if ( l->hasAxis3() ) IfcGeom::CgalKernel::convert(l->Axis3(),axis3);
+  const double scale1 = l->hasScale() ? l->Scale() : 1.0f;
+  const double scale2 = l->hasScale2() ? l->Scale2() : scale1;
+  const double scale3 = l->hasScale3() ? l->Scale3() : scale1;
+  
+  // TODO: Untested
+  gtrsf = Kernel::Aff_transformation_3(scale1*axis1.cartesian(0), axis2.cartesian(0), axis3.cartesian(0), origin.cartesian(0),
+                                       axis1.cartesian(1), scale2*axis2.cartesian(1), axis3.cartesian(1), origin.cartesian(1),
+                                       axis1.cartesian(2), axis2.cartesian(2), scale3*axis3.cartesian(2), origin.cartesian(2));
+  
+//  for (int i = 0; i < 3; ++i) {
+//    for (int j = 0; j < 4; ++j) {
+//      std::cout << gtrsf.cartesian(i, j) << " ";
+//    } std::cout << std::endl;
+//  }
+  
+//  CACHE(IfcCartesianTransformationOperator3DnonUniform,l,gtrsf)
   return true;
 }
 

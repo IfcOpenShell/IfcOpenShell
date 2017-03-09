@@ -36,8 +36,9 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
   cgal_placement_t gtrsf;
   IfcSchema::IfcCartesianTransformationOperator* transform = l->MappingTarget();
   if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
+    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3DnonUniform*)transform,gtrsf);
     Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
-//    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3DnonUniform*)transform,gtrsf);
+    return false;
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
     Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
     return false;
@@ -45,6 +46,8 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
     cgal_placement_t trsf;
     IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,trsf);
     gtrsf = trsf;
+//    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
+//    return false;
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2D) ) {
     cgal_placement_t trsf_2d;
     Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
@@ -61,8 +64,16 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
     IfcGeom::CgalKernel::convert((IfcSchema::IfcAxis2Placement2D*)placement,trsf_2d);
     trsf = trsf_2d;
   }
+  
   // TODO: Check
   gtrsf = trsf * gtrsf;
+  
+//  std::cout << std::endl;
+//  for (int i = 0; i < 3; ++i) {
+//    for (int j = 0; j < 4; ++j) {
+//      std::cout << gtrsf.cartesian(i, j) << " ";
+//    } std::cout << std::endl;
+//  }
   
   const IfcGeom::SurfaceStyle* mapped_item_style = get_style(l);
   
@@ -127,7 +138,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   face_list.push_back(bottom_face);
   
 //  if (true) {
-//    cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+//    CGAL::Polyhedron_3<Kernel> polyhedron;
 //    PolyhedronBuilder builder(&face_list);
 //    polyhedron.delegate(builder);
 //    
@@ -166,12 +177,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   
   // Stitch edges
   //  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  CGAL::Polyhedron_3<Kernel> old_polyhedron(polyhedron);
   CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
   if (!polyhedron.is_valid()) {
     std::cout << "Invalid polyhedron!" << std::endl;
     std::ofstream fresult;
     fresult.open("/Users/ken/Desktop/invalid.off");
-    fresult << polyhedron << std::endl;
+    fresult << old_polyhedron << std::endl;
     fresult.close();
   }
   
@@ -923,5 +935,23 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cg
   //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   
   shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
+  return true;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, cgal_shape_t& shape) {
+  IfcSchema::IfcSurface* surface = l->BaseSurface();
+  if ( ! surface->is(IfcSchema::Type::IfcPlane) ) {
+    Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", surface->entity);
+    return false;
+  }
+  cgal_plane_t pln;
+  IfcGeom::CgalKernel::convert((IfcSchema::IfcPlane*)surface,pln);
+  
+  // TODO: This might be the other way around?
+  if (!l->AgreementFlag()) pln = pln.opposite();
+//  const gp_Pnt pnt = pln.Location().Translated( l->AgreementFlag() ? -pln.Axis().Direction() : pln.Axis().Direction());
+//  shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln),pnt).Solid();
+  
+  shape = CGAL::Nef_polyhedron_3<Kernel>(pln);
   return true;
 }
