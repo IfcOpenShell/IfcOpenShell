@@ -571,9 +571,87 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcLShapeProfileDef* l, cgal_
   }
   
   return true;
+}
 
-//  double coords[12] = {-x,-y, x,-y, x,-y+d-dy1, xx, xy, -x+d-dx1,y, -x,y};
-//  int fillets[3] = {2,3,4};
-//  double radii[3] = {f2,f1,f2};
-//  return profile_helper(6,coords,doFillet ? 3 : 0,fillets,radii,trsf2d,face);
+// TODO: Untested
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcIShapeProfileDef* l, cgal_face_t& face) {
+  const double x1 = l->OverallWidth() / 2.0f * getValue(GV_LENGTH_UNIT);
+  const double y = l->OverallDepth() / 2.0f * getValue(GV_LENGTH_UNIT);
+  const double d1 = l->WebThickness() / 2.0f  * getValue(GV_LENGTH_UNIT);
+  const double dy1 = l->FlangeThickness() * getValue(GV_LENGTH_UNIT);
+  
+  bool doFillet1 = l->hasFilletRadius();
+  double f1 = 0.;
+  if ( doFillet1 ) {
+    f1 = l->FilletRadius() * getValue(GV_LENGTH_UNIT);
+  }
+  
+  bool doFillet2 = doFillet1;
+  double x2 = x1, dy2 = dy1, f2 = f1;
+  
+  if (l->is(IfcSchema::Type::IfcAsymmetricIShapeProfileDef)) {
+    IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) l;
+    x2 = assym->TopFlangeWidth() / 2. * getValue(GV_LENGTH_UNIT);
+    doFillet2 = assym->hasTopFlangeFilletRadius();
+    if (doFillet2) {
+      f2 = assym->TopFlangeFilletRadius() * getValue(GV_LENGTH_UNIT);
+    }
+    if (assym->hasTopFlangeThickness()) {
+      dy2 = assym->TopFlangeThickness() * getValue(GV_LENGTH_UNIT);
+    }
+  }
+  
+  if ( x1 < ALMOST_ZERO || x2 < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || dy1 < ALMOST_ZERO || dy2 < ALMOST_ZERO ) {
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    return false;
+  }
+  
+  cgal_placement_t trsf2d;
+  bool has_position = true;
+#ifdef USE_IFC4
+  has_position = l->hasPosition();
+#endif
+  
+  const int segments = 3;
+  
+  face = cgal_face_t();
+  face.outer.push_back(Kernel::Point_3(-x1, -y, 0.0));
+  face.outer.push_back(Kernel::Point_3(x1, -y, 0.0));
+  face.outer.push_back(Kernel::Point_3(x1, -y+dy1, 0.0));
+  if (f1 == 0.0) {
+    face.outer.push_back(Kernel::Point_3(d1, -y+dy1, 0.0));
+    face.outer.push_back(Kernel::Point_3(d1, y-dy2, 0.0));
+  } else {
+    for (int current_segment = segments; current_segment >= 0; --current_segment) {
+      double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
+      face.outer.push_back(Kernel::Point_3(d1+f1+f1*cos(current_angle), -y+dy1+f1+f1*sin(current_angle), 0));
+    } for (int current_segment = segments; current_segment >= 0; --current_segment) {
+      double current_angle = 0.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
+      face.outer.push_back(Kernel::Point_3(d1+f1+f1*cos(current_angle), y-dy2-f1+f1*sin(current_angle), 0));
+    }
+  } face.outer.push_back(Kernel::Point_3(x2, y-dy2, 0.0));
+  face.outer.push_back(Kernel::Point_3(x2, y, 0.0));
+  face.outer.push_back(Kernel::Point_3(-x2, y, 0.0));
+  face.outer.push_back(Kernel::Point_3(-x2, y-dy2, 0.0));
+  if (f2 == 0.0) {
+    face.outer.push_back(Kernel::Point_3(-d1, y-dy2, 0.0));
+    face.outer.push_back(Kernel::Point_3(-d1, -y+dy1, 0.0));
+  } else {
+    for (int current_segment = segments; current_segment >= 0; --current_segment) {
+      double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
+      face.outer.push_back(Kernel::Point_3(-d1-f2+f2*cos(current_angle), y-dy2-f2+f2*sin(current_angle), 0));
+    } for (int current_segment = segments; current_segment >= 0; --current_segment) {
+      double current_angle = 1.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
+      face.outer.push_back(Kernel::Point_3(-d1-f2+f2*cos(current_angle), -y+dy1+f2+f2*sin(current_angle), 0));
+    }
+  } face.outer.push_back(Kernel::Point_3(-x1, -y+dy1, 0.0));
+  
+  if (has_position) {
+    IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
+    for (auto &vertex: face.outer) {
+      vertex = vertex.transform(trsf2d);
+    }
+  }
+  
+  return true;
 }
