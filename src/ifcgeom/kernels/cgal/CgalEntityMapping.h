@@ -46,7 +46,9 @@ SHAPE(IfcSphere);
 SHAPE(IfcRectangularPyramid);
 SHAPE(IfcRightCircularCylinder);
 SHAPE(IfcRightCircularCone);
+#ifdef USE_IFC4
 SHAPE(IfcTriangulatedFaceSet);
+#endif
 SHAPE(IfcHalfSpaceSolid);
 
 FACE(IfcArbitraryClosedProfileDef);

@@ -191,6 +191,10 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
   } CGAL_postcondition(polyhedron.is_valid() && polyhedron.is_closed());
   //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+
+  for (auto &vertex : vertices(polyhedron)) {
+	  vertex->point() = vertex->point().transform(trsf);
+  }
   
   shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   
@@ -241,6 +245,10 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
       fresult << hole_polyhedron << std::endl;
       fresult.close();
     }
+
+	for (auto &vertex : vertices(hole_polyhedron)) {
+		vertex->point() = vertex->point().transform(trsf);
+	}
     
     if (!CGAL::Polygon_mesh_processing::is_outward_oriented(hole_polyhedron)) {
       CGAL::Polygon_mesh_processing::reverse_face_orientations(hole_polyhedron);
@@ -876,6 +884,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCone* l, cgal
   return true;
 }
 
+#ifdef USE_IFC4
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cgal_shape_t& shape) {
   IfcSchema::IfcCartesianPointList3D* point_list = l->Coordinates();
   const std::vector< std::vector<double> > coordinates = point_list->CoordList();
@@ -937,6 +946,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cg
   shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   return true;
 }
+#endif
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, cgal_shape_t& shape) {
   IfcSchema::IfcSurface* surface = l->BaseSurface();
