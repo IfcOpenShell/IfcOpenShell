@@ -217,7 +217,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOpe
   
 //  for (int i = 0; i < 3; ++i) {
 //    for (int j = 0; j < 4; ++j) {
-//      std::cout << trsf.cartesian(i, j) << " ";
+//      std::cout << gtrsf.cartesian(i, j) << " ";
 //    } std::cout << std::endl;
 //  }
   
