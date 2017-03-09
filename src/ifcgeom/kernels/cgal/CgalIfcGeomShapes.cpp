@@ -876,6 +876,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCone* l, cgal
   return true;
 }
 
+#ifdef USE_IFC4
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cgal_shape_t& shape) {
   IfcSchema::IfcCartesianPointList3D* point_list = l->Coordinates();
   const std::vector< std::vector<double> > coordinates = point_list->CoordList();
@@ -937,6 +938,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cg
   shape = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   return true;
 }
+#endif
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, cgal_shape_t& shape) {
   IfcSchema::IfcSurface* surface = l->BaseSurface();
