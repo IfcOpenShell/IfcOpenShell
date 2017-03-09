@@ -11,7 +11,10 @@
 void IfcGeom::OpenCascadeShape::Triangulate(const IfcGeom::IteratorSettings& settings, const IfcGeom::ConversionResultPlacement* place, IfcGeom::Representation::Triangulation<double>* t, int surface_style_id) const {
 
 	const TopoDS_Shape& s = shape_;
-	const gp_GTrsf& trsf = dynamic_cast<const OpenCascadePlacement*>(place)->trsf();
+	gp_GTrsf trsf;
+	if (place) {
+		trsf = dynamic_cast<const OpenCascadePlacement*>(place)->trsf();
+	}
 
 	// Triangulate the shape
 	try {
