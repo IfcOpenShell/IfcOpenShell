@@ -21,11 +21,22 @@ from __future__ import print_function
 
 import os
 import sys
-import platform
 
-python_distribution = os.path.join(platform.system().lower(),
-    platform.architecture()[0],
-    'python%s.%s' % platform.python_version_tuple()[:2])
+if hasattr(os, 'uname'):
+    platform_system = os.uname()[0].lower()
+else:
+    platform_system = 'windows'
+    
+if sys.maxsize == (1 << 31) - 1:
+    platform_architecture = '32bit'
+else:
+    platform_architecture = '64bit'
+    
+python_version_tuple = tuple(sys.version.split(' ')[0].split('.'))
+
+python_distribution = os.path.join(platform_system,
+    platform_architecture,
+    'python%s.%s' % python_version_tuple[:2])
 sys.path.append(os.path.abspath(os.path.join(
     os.path.dirname(__file__),
     'lib', python_distribution)))
@@ -33,7 +44,8 @@ sys.path.append(os.path.abspath(os.path.join(
 try:
     from . import ifcopenshell_wrapper
 except Exception as e:
-    if int(platform.python_version_tuple()[0]) == 2:
+    if int(python_version_tuple[0]) == 2:
+        # Only for py2, as py3 has exception chaining
         import traceback
         traceback.print_exc()
         print('-' * 64)
