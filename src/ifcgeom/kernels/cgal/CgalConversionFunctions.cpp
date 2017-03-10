@@ -54,9 +54,15 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPlane* pln, cgal_plane_t& 
   IfcSchema::IfcAxis2Placement3D* l = pln->Position();
   cgal_point_t o;
   cgal_direction_t axis = Kernel::Vector_3(0,0,1);
+  cgal_direction_t refDirection;
   IfcGeom::CgalKernel::convert(l->Location(),o);
+  bool hasRef = l->hasRefDirection();
   if ( l->hasAxis() ) IfcGeom::CgalKernel::convert(l->Axis(),axis);
-  plane = Kernel::Plane_3(o, axis);
+  if ( hasRef ) IfcGeom::CgalKernel::convert(l->RefDirection(),refDirection);
+  cgal_plane_t ax3;
+  if ( hasRef ) ax3 = Kernel::Plane_3(o,o+axis,o+refDirection);
+  else ax3 = Kernel::Plane_3(o,axis);
+  plane = ax3;
 //  CACHE(IfcPlane,pln,plane)
   return true;
 }

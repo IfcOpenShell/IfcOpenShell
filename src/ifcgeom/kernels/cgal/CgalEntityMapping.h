@@ -63,6 +63,9 @@ FACE(IfcEllipseProfileDef);
 FACE(IfcCShapeProfileDef);
 FACE(IfcIShapeProfileDef);
 FACE(IfcLShapeProfileDef);
+FACE(IfcTShapeProfileDef);
+FACE(IfcUShapeProfileDef);
+FACE(IfcZShapeProfileDef);
 
 WIRE(IfcEdgeLoop);
 WIRE(IfcOrientedEdge);
