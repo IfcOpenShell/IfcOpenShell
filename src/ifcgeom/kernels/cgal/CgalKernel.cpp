@@ -111,25 +111,24 @@ IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_representat
 	const std::string product_type = IfcSchema::Type::ToString(product->type());
 	ElementSettings element_settings(settings, getValue(GV_LENGTH_UNIT), product_type);
 
-	if (!settings.get(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && openings && openings->size()) {
-		Logger::Message(Logger::LOG_ERROR, "Not implemented opening subtractions");
-	}
-  
-  if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-    // TODO: OpenCascade code uses opened_shapes. Check why.
+  if (!settings.get(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && openings && openings->size()) {
+    IfcGeom::ConversionResults opened_shapes;
+    convert_openings(product,openings,shapes,trsf,opened_shapes);
+    if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
+      for ( IfcGeom::ConversionResults::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
+        it->prepend(new CgalPlacement(trsf));
+      }
+      trsf = cgal_placement_t();
+    }
+    shape = new IfcGeom::Representation::Native(element_settings, representation->entity->id(), opened_shapes);
+  } else if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
     for ( IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
       it->prepend(new CgalPlacement(trsf));
     }
-    trsf = Kernel::Aff_transformation_3();
-		shape = new IfcGeom::Representation::Native(element_settings, representation->entity->id(), shapes);
-  } else if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-		for ( IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
-      it->prepend(new CgalPlacement(trsf));
-    }
-		trsf = Kernel::Aff_transformation_3();
-		shape = new IfcGeom::Representation::Native(element_settings, representation->entity->id(), shapes);
+    trsf = cgal_placement_t();
+    shape = new IfcGeom::Representation::Native(element_settings, representation->entity->id(), shapes);
   } else {
-		shape = new IfcGeom::Representation::Native(element_settings, representation->entity->id(), shapes);
+    shape = new IfcGeom::Representation::Native(element_settings, representation->entity->id(), shapes);
   }
 
 	std::string context_string = "";
@@ -190,4 +189,76 @@ IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_processed_r
 		new CgalPlacement(trsf),
 		brep->geometry_pointer()
 	);
+}
+
+bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings,
+                                                  const IfcGeom::ConversionResults& entity_shapes, const cgal_placement_t& entity_trsf, IfcGeom::ConversionResults& cut_shapes) {
+  
+  std::list<cgal_shape_t> opening_shapelist;
+  
+  for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
+    IfcSchema::IfcRelVoidsElement* v = *it;
+    IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
+    if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
+      if (!fes->hasRepresentation()) continue;
+      
+      // Convert the IfcRepresentation of the IfcOpeningElement
+      cgal_placement_t opening_trsf;
+      if (fes->hasObjectPlacement()) {
+        try {
+          convert(fes->ObjectPlacement(),opening_trsf);
+        } catch (...) {}
+      }
+      
+      // Move the opening into the coordinate system of the IfcProduct
+      opening_trsf = opening_trsf * entity_trsf.inverse();
+      
+      IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
+      IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
+      
+      IfcGeom::ConversionResults opening_shapes;
+						
+      for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
+        convert_shapes(*it2,opening_shapes);
+      }
+      
+      for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
+        cgal_shape_t opening_shape(((CgalShape*)opening_shapes[i].Shape())->shape());
+        if (opening_shapes[i].Placement()) {
+          cgal_placement_t gtrsf = *(CgalPlacement*)opening_shapes[i].Placement();
+          gtrsf = gtrsf * opening_trsf;
+          opening_shape.transform(gtrsf);
+        } opening_shapelist.push_back(opening_shape);
+      }
+      
+    }
+  }
+  
+  // Iterate over the shapes of the IfcProduct
+  for ( IfcGeom::ConversionResults::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
+    const cgal_shape_t& entity_shape_unlocated(((CgalShape*)it3->Shape())->shape());
+    cgal_shape_t entity_shape(entity_shape_unlocated);
+    if (it3->Placement()) {
+      const cgal_placement_t& entity_shape_gtrsf = *(CgalPlacement*)it3->Placement();
+      entity_shape.transform(entity_shape_gtrsf);
+    }
+    
+    cgal_shape_t brep_cut_result(entity_shape);
+    
+    for (auto &opening: opening_shapelist) {
+      brep_cut_result -= opening;
+    }
+    
+    if (brep_cut_result.is_valid()) {
+      cut_shapes.push_back(IfcGeom::ConversionResult(new CgalShape(brep_cut_result), &it3->Style()));
+    } else {
+      // Apparently processing the boolean operation failed or resulted in an invalid result
+      // in which case the original shape without the subtractions is returned instead
+      // we try convert the openings in the original way, one by one.
+      Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed:", entity->entity);
+      return false;
+    }
+    
+  }
+  return true;
 }
