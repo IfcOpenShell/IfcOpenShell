@@ -37,8 +37,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
   IfcSchema::IfcCartesianTransformationOperator* transform = l->MappingTarget();
   if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
     IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3DnonUniform*)transform,gtrsf);
-    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
-    return false;
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
     Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
     return false;
@@ -46,8 +44,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
     cgal_placement_t trsf;
     IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,trsf);
     gtrsf = trsf;
-//    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
-//    return false;
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2D) ) {
     cgal_placement_t trsf_2d;
     Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
