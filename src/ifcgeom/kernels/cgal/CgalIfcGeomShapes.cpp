@@ -37,8 +37,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
   IfcSchema::IfcCartesianTransformationOperator* transform = l->MappingTarget();
   if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
     IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3DnonUniform*)transform,gtrsf);
-    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
-    return false;
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
     Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
     return false;
@@ -46,8 +44,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
     cgal_placement_t trsf;
     IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,trsf);
     gtrsf = trsf;
-//    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
-//    return false;
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2D) ) {
     cgal_placement_t trsf_2d;
     Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
@@ -239,11 +235,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     //  std::cout << "Before: " << hole_polyhedron.size_of_vertices() << " vertices and " << hole_polyhedron.size_of_facets() << " facets" << std::endl;
     CGAL::Polygon_mesh_processing::stitch_borders(hole_polyhedron);
     if (!hole_polyhedron.is_valid()) {
-      std::cout << "Invalid hole polyhedron!" << std::endl;
-      std::ofstream fresult;
-      fresult.open("/Users/ken/Desktop/invalid.off");
-      fresult << hole_polyhedron << std::endl;
-      fresult.close();
+//      std::cout << "Invalid hole polyhedron!" << std::endl;
+//      std::ofstream fresult;
+//      fresult.open("/Users/ken/Desktop/invalid.off");
+//      fresult << hole_polyhedron << std::endl;
+//      fresult.close();
+      return false;
     }
 
 	for (auto &vertex : vertices(hole_polyhedron)) {
@@ -257,6 +254,19 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     
     shape -= CGAL::Nef_polyhedron_3<Kernel>(hole_polyhedron);
   }
+  
+//  std::cout << "trsf" << std::endl;
+//  for (int i = 0; i < 3; ++i) {
+//    for (int j = 0; j < 4; ++j) {
+//      std::cout << trsf.cartesian(i, j) << " ";
+//    } std::cout << std::endl;
+//  }
+  
+//  shape.convert_to_polyhedron(polyhedron);
+//  std::ofstream fresult;
+//  fresult.open("/Users/ken/Desktop/extrusion.off");
+//  fresult << polyhedron << std::endl;
+//  fresult.close();
   
   return true;
 }
