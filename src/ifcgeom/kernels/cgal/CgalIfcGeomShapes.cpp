@@ -235,11 +235,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     //  std::cout << "Before: " << hole_polyhedron.size_of_vertices() << " vertices and " << hole_polyhedron.size_of_facets() << " facets" << std::endl;
     CGAL::Polygon_mesh_processing::stitch_borders(hole_polyhedron);
     if (!hole_polyhedron.is_valid()) {
-      std::cout << "Invalid hole polyhedron!" << std::endl;
-      std::ofstream fresult;
-      fresult.open("/Users/ken/Desktop/invalid.off");
-      fresult << hole_polyhedron << std::endl;
-      fresult.close();
+//      std::cout << "Invalid hole polyhedron!" << std::endl;
+//      std::ofstream fresult;
+//      fresult.open("/Users/ken/Desktop/invalid.off");
+//      fresult << hole_polyhedron << std::endl;
+//      fresult.close();
+      return false;
     }
 
 	for (auto &vertex : vertices(hole_polyhedron)) {
@@ -253,6 +254,19 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     
     shape -= CGAL::Nef_polyhedron_3<Kernel>(hole_polyhedron);
   }
+  
+//  std::cout << "trsf" << std::endl;
+//  for (int i = 0; i < 3; ++i) {
+//    for (int j = 0; j < 4; ++j) {
+//      std::cout << trsf.cartesian(i, j) << " ";
+//    } std::cout << std::endl;
+//  }
+  
+//  shape.convert_to_polyhedron(polyhedron);
+//  std::ofstream fresult;
+//  fresult.open("/Users/ken/Desktop/extrusion.off");
+//  fresult << polyhedron << std::endl;
+//  fresult.close();
   
   return true;
 }

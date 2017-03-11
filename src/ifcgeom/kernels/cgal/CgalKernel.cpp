@@ -210,10 +210,24 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
         } catch (...) {}
       }
       
+//      std::cout << "entity_trsf" << std::endl;
+//      for (int i = 0; i < 3; ++i) {
+//        for (int j = 0; j < 4; ++j) {
+//          std::cout << entity_trsf.cartesian(i, j) << " ";
+//        } std::cout << std::endl;
+//      }
+//      
+//      std::cout << "opening_trsf before" << std::endl;
+//      for (int i = 0; i < 3; ++i) {
+//        for (int j = 0; j < 4; ++j) {
+//          std::cout << opening_trsf.cartesian(i, j) << " ";
+//        } std::cout << std::endl;
+//      }
+      
       // Move the opening into the coordinate system of the IfcProduct
       opening_trsf = opening_trsf * entity_trsf.inverse();
       
-//      std::cout << "opening_trsf" << std::endl;
+//      std::cout << "opening_trsf after" << std::endl;
 //      for (int i = 0; i < 3; ++i) {
 //        for (int j = 0; j < 4; ++j) {
 //          std::cout << opening_trsf.cartesian(i, j) << " ";
@@ -230,12 +244,19 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
       }
       
       for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
+        cgal_placement_t gtrsf;
+        if (opening_shapes[i].Placement()) gtrsf = *(CgalPlacement*)opening_shapes[i].Placement();
+        gtrsf = gtrsf * opening_trsf;
         cgal_shape_t opening_shape(((CgalShape*)opening_shapes[i].Shape())->shape());
-        if (opening_shapes[i].Placement()) {
-          cgal_placement_t gtrsf = *(CgalPlacement*)opening_shapes[i].Placement();
-          gtrsf = gtrsf * opening_trsf;
-          opening_shape.transform(gtrsf);
-        } opening_shapelist.push_back(opening_shape);
+        opening_shape.transform(gtrsf);
+        opening_shapelist.push_back(opening_shape);
+
+//        std::cout << "gtrsf" << std::endl;
+//        for (int i = 0; i < 3; ++i) {
+//          for (int j = 0; j < 4; ++j) {
+//            std::cout << gtrsf.cartesian(i, j) << " ";
+//          } std::cout << std::endl;
+//        }
       }
       
     }
