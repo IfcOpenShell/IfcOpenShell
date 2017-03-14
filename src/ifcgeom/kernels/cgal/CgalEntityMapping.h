@@ -72,9 +72,15 @@ WIRE(IfcOrientedEdge);
 WIRE(IfcPolyLoop);
 WIRE(IfcPolyline);
 WIRE(IfcCompositeCurve);
+WIRE(IfcTrimmedCurve);
+
+CURVE(IfcCircle);
+CURVE(IfcEllipse);
+CURVE(IfcLine);
 
 CLASS(IfcCartesianPoint,cgal_point_t);
 CLASS(IfcDirection,cgal_direction_t);
+CLASS(IfcVector,cgal_vector_t);
 CLASS(IfcPlane,cgal_plane_t);
 CLASS(IfcAxis2Placement2D,cgal_placement_t);
 CLASS(IfcAxis2Placement3D,cgal_placement_t);

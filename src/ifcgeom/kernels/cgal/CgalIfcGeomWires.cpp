@@ -175,3 +175,161 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCompositeCurve* l, cgal_wi
   wire = w;
   return true;
 }
+
+// TODO: Project points to closest point in curve?
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTrimmedCurve* l, cgal_wire_t& wire) {
+  IfcSchema::IfcCurve* basis_curve = l->BasisCurve();
+  bool isConic = basis_curve->is(IfcSchema::Type::IfcConic);
+  double parameterFactor = isConic ? getValue(GV_PLANEANGLE_UNIT) : getValue(GV_LENGTH_UNIT);
+  cgal_curve_t curve;
+  if ( !convert_curve(basis_curve,curve) ) return false;
+  bool trim_cartesian = l->MasterRepresentation() == IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN;
+  IfcEntityList::ptr trims1 = l->Trim1();
+  IfcEntityList::ptr trims2 = l->Trim2();
+  unsigned sense_agreement = l->SenseAgreement() ? 0 : 1;
+  double flts[2];
+  cgal_point_t pnts[2];
+  bool has_flts[2] = {false,false};
+  bool has_pnts[2] = {false,false};
+  cgal_wire_t w;
+  for ( IfcEntityList::it it = trims1->begin(); it != trims1->end(); it ++ ) {
+    IfcUtil::IfcBaseClass* i = *it;
+    if ( i->is(IfcSchema::Type::IfcCartesianPoint) ) {
+      IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[sense_agreement] );
+      has_pnts[sense_agreement] = true;
+    } else if ( i->is(IfcSchema::Type::IfcParameterValue) ) {
+      const double value = *((IfcSchema::IfcParameterValue*)i);
+      flts[sense_agreement] = value * parameterFactor;
+      has_flts[sense_agreement] = true;
+    }
+  }
+  for ( IfcEntityList::it it = trims2->begin(); it != trims2->end(); it ++ ) {
+    IfcUtil::IfcBaseClass* i = *it;
+    if ( i->is(IfcSchema::Type::IfcCartesianPoint) ) {
+      IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianPoint*)i, pnts[1-sense_agreement] );
+      has_pnts[1-sense_agreement] = true;
+    } else if ( i->is(IfcSchema::Type::IfcParameterValue) ) {
+      const double value = *((IfcSchema::IfcParameterValue*)i);
+      flts[1-sense_agreement] = value * parameterFactor;
+      has_flts[1-sense_agreement] = true;
+    }
+  }
+  trim_cartesian &= has_pnts[0] && has_pnts[1];
+  bool trim_cartesian_failed = !trim_cartesian;
+  if ( trim_cartesian ) {
+    if ( CGAL::squared_distance(pnts[0], pnts[1]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE) ) {
+      Logger::Message(Logger::LOG_WARNING,"Skipping segment with length below tolerance level:",l->entity);
+      return false;
+    }
+    if (l->SenseAgreement()) {
+      bool found = false;
+      int loops_to_go = 2;
+      std::vector<Kernel::Point_3>::const_iterator point = curve.begin();
+      do {
+        if (!found) {
+          if (CGAL::squared_distance(*point, pnts[0]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE)) {
+            found = true;
+            w.push_back(*point);
+          }
+        } else {
+          w.push_back(*point);
+          if (CGAL::squared_distance(*point, pnts[1]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE)) {
+            break;
+          }
+        } ++point;
+        if (point == curve.end()) {
+          point = curve.begin();
+          --loops_to_go;
+        }
+      } while (point != curve.begin() && loops_to_go > 0);
+    } else {
+      bool found = false;
+      int loops_to_go = 2;
+      std::vector<Kernel::Point_3>::const_reverse_iterator point = curve.rbegin();
+      do {
+        if (!found) {
+          if (CGAL::squared_distance(*point, pnts[0]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE)) {
+            found = true;
+            w.push_back(*point);
+          }
+        } else {
+          w.push_back(*point);
+          if (CGAL::squared_distance(*point, pnts[1]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE)) {
+            break;
+          }
+        } ++point;
+        if (point == curve.rend() && loops_to_go > 0) point = curve.rbegin();
+      } while (point != curve.rbegin());
+    }
+  }
+  if ( (!trim_cartesian || trim_cartesian_failed) && (has_flts[0] && has_flts[1]) ) {
+    // The Geom_Line is constructed from a gp_Pnt and gp_Dir, whereas the IfcLine
+    // is defined by an IfcCartesianPoint and an IfcVector with Magnitude. Because
+    // the vector is normalised when passed to Geom_Line constructor the magnitude
+    // needs to be factored in with the IfcParameterValue here.
+    if ( basis_curve->is(IfcSchema::Type::IfcLine) ) {
+      IfcSchema::IfcLine* line = static_cast<IfcSchema::IfcLine*>(basis_curve);
+      const double magnitude = line->Dir()->Magnitude();
+      flts[0] *= magnitude; flts[1] *= magnitude;
+    }
+    if ( basis_curve->is(IfcSchema::Type::IfcEllipse) ) {
+      IfcSchema::IfcEllipse* ellipse = static_cast<IfcSchema::IfcEllipse*>(basis_curve);
+      double x = ellipse->SemiAxis1() * getValue(GV_LENGTH_UNIT);
+      double y = ellipse->SemiAxis2() * getValue(GV_LENGTH_UNIT);
+      const bool rotated = y > x;
+      if (rotated) {
+        flts[0] -= M_PI / 2.;
+        flts[1] -= M_PI / 2.;
+      }
+    }
+    if ( isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.),0.) ) {
+      for (auto &point: curve) w.push_back(point);
+    } else {
+      if (l->SenseAgreement()) {
+        bool found = false;
+        int loops_to_go = 2;
+        std::vector<Kernel::Point_3>::const_iterator point = curve.begin();
+        do {
+          if (!found) {
+            if (CGAL::squared_distance(*point, pnts[0]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE)) {
+              found = true;
+              w.push_back(*point);
+            }
+          } else {
+            w.push_back(*point);
+            if (CGAL::squared_distance(*point, pnts[1]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE)) {
+              break;
+            }
+          } ++point;
+          if (point == curve.end()) {
+            point = curve.begin();
+            --loops_to_go;
+          }
+        } while (point != curve.begin() && loops_to_go > 0);
+      } else {
+        bool found = false;
+        int loops_to_go = 2;
+        std::vector<Kernel::Point_3>::const_reverse_iterator point = curve.rbegin();
+        do {
+          if (!found) {
+            if (CGAL::squared_distance(*point, pnts[0]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE)) {
+              found = true;
+              w.push_back(*point);
+            }
+          } else {
+            w.push_back(*point);
+            if (CGAL::squared_distance(*point, pnts[1]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE)) {
+              break;
+            }
+          } ++point;
+          if (point == curve.rend() && loops_to_go > 0) point = curve.rbegin();
+        } while (point != curve.rbegin());
+      }
+    }
+  } else if ( trim_cartesian_failed && (has_pnts[0] && has_pnts[1]) ) {
+    w.push_back(pnts[0]);
+    w.push_back(pnts[1]);
+  }
+  wire = w;
+  return true;
+}
