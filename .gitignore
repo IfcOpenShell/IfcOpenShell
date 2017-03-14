@@ -9,4 +9,9 @@
 __pycache__
 # Visual Studio Code files
 .vscode
+# Mac metadata
 .DS_Store
+# Conversion results
+/test/input/*.obj
+/test/input/*.mtl
+/test/input/*.tmp
