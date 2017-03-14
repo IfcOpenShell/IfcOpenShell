@@ -176,7 +176,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCompositeCurve* l, cgal_wi
   return true;
 }
 
-// TODO: Project points to closest point in curve?
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTrimmedCurve* l, cgal_wire_t& wire) {
   IfcSchema::IfcCurve* basis_curve = l->BasisCurve();
   bool isConic = basis_curve->is(IfcSchema::Type::IfcConic);
@@ -217,6 +216,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTrimmedCurve* l, cgal_wire
   trim_cartesian &= has_pnts[0] && has_pnts[1];
   bool trim_cartesian_failed = !trim_cartesian;
   if ( trim_cartesian ) {
+    // TODO: Project points to closest point in curve?
     if ( CGAL::squared_distance(pnts[0], pnts[1]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE) ) {
       Logger::Message(Logger::LOG_WARNING,"Skipping segment with length below tolerance level:",l->entity);
       return false;
@@ -272,58 +272,24 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTrimmedCurve* l, cgal_wire
       const double magnitude = line->Dir()->Magnitude();
       flts[0] *= magnitude; flts[1] *= magnitude;
     }
-    if ( basis_curve->is(IfcSchema::Type::IfcEllipse) ) {
-      IfcSchema::IfcEllipse* ellipse = static_cast<IfcSchema::IfcEllipse*>(basis_curve);
-      double x = ellipse->SemiAxis1() * getValue(GV_LENGTH_UNIT);
-      double y = ellipse->SemiAxis2() * getValue(GV_LENGTH_UNIT);
-      const bool rotated = y > x;
-      if (rotated) {
-        flts[0] -= M_PI / 2.;
-        flts[1] -= M_PI / 2.;
-      }
-    }
     if ( isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.),0.) ) {
       for (auto &point: curve) w.push_back(point);
     } else {
-      if (l->SenseAgreement()) {
-        bool found = false;
-        int loops_to_go = 2;
-        std::vector<Kernel::Point_3>::const_iterator point = curve.begin();
-        do {
-          if (!found) {
-            if (CGAL::squared_distance(*point, pnts[0]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE)) {
-              found = true;
-              w.push_back(*point);
-            }
-          } else {
-            w.push_back(*point);
-            if (CGAL::squared_distance(*point, pnts[1]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE)) {
-              break;
-            }
-          } ++point;
-          if (point == curve.end()) {
-            point = curve.begin();
-            --loops_to_go;
-          }
-        } while (point != curve.begin() && loops_to_go > 0);
-      } else {
-        bool found = false;
-        int loops_to_go = 2;
-        std::vector<Kernel::Point_3>::const_reverse_iterator point = curve.rbegin();
-        do {
-          if (!found) {
-            if (CGAL::squared_distance(*point, pnts[0]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE)) {
-              found = true;
-              w.push_back(*point);
-            }
-          } else {
-            w.push_back(*point);
-            if (CGAL::squared_distance(*point, pnts[1]) < getValue(GV_WIRE_CREATION_TOLERANCE)*getValue(GV_WIRE_CREATION_TOLERANCE)) {
-              break;
-            }
-          } ++point;
-          if (point == curve.rend() && loops_to_go > 0) point = curve.rbegin();
-        } while (point != curve.rbegin());
+      const int segments_of_full_curve = 12;
+      double segment_angle = 2.0*3.141592653589793/segments_of_full_curve;
+      if ( basis_curve->is(IfcSchema::Type::IfcEllipse) ) {
+        IfcSchema::IfcEllipse* ellipse = static_cast<IfcSchema::IfcEllipse*>(basis_curve);
+        double x = ellipse->SemiAxis1() * getValue(GV_LENGTH_UNIT);
+        double y = ellipse->SemiAxis2() * getValue(GV_LENGTH_UNIT);
+        for (double current_angle = flts[0]; current_angle < flts[1]; current_angle += segment_angle) {
+          w.push_back(Kernel::Point_3(x*cos(current_angle), y*sin(current_angle), 0));
+        } w.push_back(Kernel::Point_3(x*cos(flts[1]), y*sin(flts[1]), 0));
+      } if ( basis_curve->is(IfcSchema::Type::IfcCircle) ) {
+        IfcSchema::IfcCircle* circle = static_cast<IfcSchema::IfcCircle*>(basis_curve);
+        double r = circle->Radius() * getValue(GV_LENGTH_UNIT);
+        for (double current_angle = flts[0]; current_angle < flts[1]; current_angle += segment_angle) {
+          w.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
+        } w.push_back(Kernel::Point_3(r*cos(flts[1]), r*sin(flts[1]), 0));
       }
     }
   } else if ( trim_cartesian_failed && (has_pnts[0] && has_pnts[1]) ) {
