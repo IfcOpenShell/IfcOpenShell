@@ -85,5 +85,7 @@ CLASS(IfcPlane,cgal_plane_t);
 CLASS(IfcAxis2Placement2D,cgal_placement_t);
 CLASS(IfcAxis2Placement3D,cgal_placement_t);
 CLASS(IfcObjectPlacement,cgal_placement_t);
-CLASS(IfcCartesianTransformationOperator3D,cgal_placement_t);
+CLASS(IfcCartesianTransformationOperator2DnonUniform,cgal_placement_t);
 CLASS(IfcCartesianTransformationOperator3DnonUniform,cgal_placement_t);
+CLASS(IfcCartesianTransformationOperator2D,cgal_placement_t);
+CLASS(IfcCartesianTransformationOperator3D,cgal_placement_t);

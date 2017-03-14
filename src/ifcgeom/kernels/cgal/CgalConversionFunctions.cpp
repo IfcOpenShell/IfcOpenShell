@@ -180,6 +180,54 @@ bool IfcGeom::CgalKernel::convert_wire_to_face(const cgal_wire_t& wire, cgal_fac
   return true;
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOperator2D* l, cgal_placement_t& trsf) {
+//  IN_CACHE(IfcCartesianTransformationOperator2D,l,cgal_placement_t,trsf)
+  
+  cgal_point_t origin;
+  cgal_direction_t axis1 (1.,0.,0.);
+  cgal_direction_t axis2 (0.,1.,0.);
+  
+  IfcGeom::CgalKernel::convert(l->LocalOrigin(),origin);
+  if ( l->hasAxis1() ) IfcGeom::CgalKernel::convert(l->Axis1(),axis1);
+  if ( l->hasAxis2() ) IfcGeom::CgalKernel::convert(l->Axis2(),axis2);
+  double scale = 1.0;
+  if (l->hasScale()) {
+    scale = l->Scale();
+  }
+  
+  // TODO: Untested
+  trsf = Kernel::Aff_transformation_3(scale*axis1.cartesian(0), axis2.cartesian(0), 0.0, origin.cartesian(0),
+                                      axis1.cartesian(1), scale*axis2.cartesian(1), 0.0, origin.cartesian(1),
+                                      0.0, 0.0, 1.0, 0.0);
+  
+//  CACHE(IfcCartesianTransformationOperator2D,l,trsf)
+  return true;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOperator2DnonUniform* l, cgal_placement_t& gtrsf) {
+//  IN_CACHE(IfcCartesianTransformationOperator2DnonUniform,l,cgal_placement_t,gtrsf)
+  
+  cgal_placement_t trsf;
+  cgal_point_t origin;
+  cgal_direction_t axis1 (1.,0.,0.);
+  cgal_direction_t axis2 (0.,1.,0.);
+  
+  IfcGeom::CgalKernel::convert(l->LocalOrigin(),origin);
+  if ( l->hasAxis1() ) IfcGeom::CgalKernel::convert(l->Axis1(),axis1);
+  if ( l->hasAxis2() ) IfcGeom::CgalKernel::convert(l->Axis2(),axis2);
+  
+  const double scale1 = l->hasScale() ? l->Scale() : 1.0f;
+  const double scale2 = l->hasScale2() ? l->Scale2() : scale1;
+  
+  // TODO: Untested
+  trsf = Kernel::Aff_transformation_3(scale1*axis1.cartesian(0), axis2.cartesian(0), 0.0, origin.cartesian(0),
+                                      axis1.cartesian(1), scale2*axis2.cartesian(1), 0.0, origin.cartesian(1),
+                                      0.0, 0.0, 1.0, 0.0);
+  
+//  CACHE(IfcCartesianTransformationOperator2DnonUniform,l,gtrsf)
+  return true;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOperator3D* l, cgal_placement_t& trsf) {
 //  IN_CACHE(IfcCartesianTransformationOperator3D,l,gp_Trsf,trsf)
   cgal_point_t origin;
