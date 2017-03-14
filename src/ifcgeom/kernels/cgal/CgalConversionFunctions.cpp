@@ -49,6 +49,15 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcDirection* l, cgal_directi
   return true;
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcVector* l, cgal_vector_t& v) {
+//  IN_CACHE(IfcVector,l,cgal_vector_t,v)
+  cgal_direction_t d;
+  IfcGeom::CgalKernel::convert(l->Orientation(),d);
+  v = l->Magnitude() * getValue(GV_LENGTH_UNIT) * d;
+//  CACHE(IfcVector,l,v)
+  return true;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPlane* pln, cgal_plane_t& plane) {
 //  IN_CACHE(IfcPlane,pln,gp_Pln,plane)
   IfcSchema::IfcAxis2Placement3D* l = pln->Position();
