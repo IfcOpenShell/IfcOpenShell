@@ -72,6 +72,7 @@ WIRE(IfcOrientedEdge);
 WIRE(IfcPolyLoop);
 WIRE(IfcPolyline);
 WIRE(IfcCompositeCurve);
+WIRE(IfcTrimmedCurve);
 
 CURVE(IfcCircle);
 CURVE(IfcEllipse);
