@@ -341,11 +341,20 @@ CGAL::Nef_polyhedron_3<Kernel> IfcGeom::CgalKernel::create_nef_polyhedron(std::l
   //  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
   if (!polyhedron.is_valid()) {
-    std::cout << "Invalid polyhedron!" << std::endl;
+    std::cout << "Polyhedron not valid!" << std::endl;
     std::ofstream fresult;
     fresult.open("/Users/ken/Desktop/invalid.off");
-    fresult << old_polyhedron << std::endl;
+    fresult << polyhedron << std::endl;
     fresult.close();
+    return CGAL::Nef_polyhedron_3<Kernel>();
+  } if (!polyhedron.is_closed()) {
+    std::cout << "Polyhedron not closed" << std::endl;
+    std::ofstream fresult;
+    fresult.open("/Users/ken/Desktop/open.off");
+    fresult << polyhedron << std::endl;
+    fresult.close();
+    // TODO: Nef constructor doesn't support open meshes
+    return CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
   }
   if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
     CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
