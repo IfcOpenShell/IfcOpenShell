@@ -25,18 +25,11 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRepresentation* l, Convers
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianPoint* l, cgal_point_t& point) {
   std::vector<double> xyz = l->Coordinates();
-  if (xyz.size() < 4) {
-    point = Kernel::Point_3(xyz.size()     ? (xyz[0]*getValue(GV_LENGTH_UNIT)) : 0.0f,
-                            xyz.size() > 1 ? (xyz[1]*getValue(GV_LENGTH_UNIT)) : 0.0f,
-                            xyz.size() > 2 ? (xyz[2]*getValue(GV_LENGTH_UNIT)) : 0.0f);
-//    std::cout << "Converted Point(" << point << ")" << std::endl;
-    return true;
-  } else {
-    std::cout << "Point(";
-    for (auto &coordinate: xyz) std::cout << coordinate << " ";
-    std::cout << ")";
-    throw std::runtime_error("Could not parse point");
-  }
+  point = Kernel::Point_3(xyz.size()     ? (xyz[0]*getValue(GV_LENGTH_UNIT)) : 0.0f,
+                          xyz.size() > 1 ? (xyz[1]*getValue(GV_LENGTH_UNIT)) : 0.0f,
+                          xyz.size() > 2 ? (xyz[2]*getValue(GV_LENGTH_UNIT)) : 0.0f);
+//  std::cout << "Converted Point(" << point << ")" << std::endl;
+  return true;
 }
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcDirection* l, cgal_direction_t& dir) {
@@ -63,15 +56,46 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPlane* pln, cgal_plane_t& 
   IfcSchema::IfcAxis2Placement3D* l = pln->Position();
   cgal_point_t o;
   cgal_direction_t axis = Kernel::Vector_3(0,0,1);
-  cgal_direction_t refDirection;
+  cgal_direction_t refDirection = Kernel::Vector_3(1,0,0);
   IfcGeom::CgalKernel::convert(l->Location(),o);
   bool hasRef = l->hasRefDirection();
   if ( l->hasAxis() ) IfcGeom::CgalKernel::convert(l->Axis(),axis);
   if ( hasRef ) IfcGeom::CgalKernel::convert(l->RefDirection(),refDirection);
+  Kernel::Vector_3 y = CGAL::cross_product(axis, refDirection);
+  Kernel::Vector_3 x = CGAL::cross_product(y, axis);
+  
   cgal_plane_t ax3;
-  if ( hasRef ) ax3 = Kernel::Plane_3(o,o+axis,o+refDirection);
+  if ( hasRef ) ax3 = Kernel::Plane_3(o,o+x,o+y);
   else ax3 = Kernel::Plane_3(o,axis);
   plane = ax3;
+  
+//  std::cout << "IfcPlane C = " << o << std::endl;
+//  std::cout << "IfcPlane z (axis, exact) = " << axis << std::endl;
+//  std::cout << "IfcPlane x (refDirection, approximate) = " << refDirection << std::endl;
+//  std::cout << "IfcPlane y (computed, exact) = " << y << std::endl;
+//  std::cout << "IfcPlane x (computed, exact) = " << x << std::endl;
+//  
+//  std::cout << "Plane_3 o = " << o << std::endl;
+//  std::cout << "Plane_3 o+x = " << o+x << std::endl;
+//  std::cout << "Plane_3 o+y = " << o+y << std::endl;
+  
+  // ax + by + cz + d = 0
+//  std::cout << "Plane: a = " << plane.a() << ", b = " << plane.b() << ", c = " << plane.c() << ", d = " << plane.d() << std::endl;
+  
+//  std::ofstream fresult;
+//  fresult.open("/Users/ken/Desktop/plane.obj");
+//  // x = -5, y = -5, z = (5a +5b -d)/c
+//  fresult << "v -5 -5 " << (5.0*CGAL::to_double(plane.a())+5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
+//  // x = -5, y = +5, z = (5a -5b -d)/c
+//  fresult << "v -5 5 " << (5.0*CGAL::to_double(plane.a())-5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
+//  // x = 5, y = -5, z = (-5a +5b -d)/c
+//  fresult << "v 5 -5 " << (-5.0*CGAL::to_double(plane.a())+5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
+//  // x = 5, y = +5, z = (-5a -5b -d)/c
+//  fresult << "v 5 5 " << (-5.0*CGAL::to_double(plane.a())-5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
+//  fresult << "f 1 2 3" << std::endl;
+//  fresult << "f 4 3 2" << std::endl;
+//  fresult.close();
+  
 //  CACHE(IfcPlane,pln,plane)
   return true;
 }
@@ -79,14 +103,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPlane* pln, cgal_plane_t& 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement2D* l, cgal_placement_t& trsf) {
   //  IN_CACHE(IfcAxis2Placement3D,l,gp_Trsf,trsf)
   cgal_point_t o;
-  cgal_direction_t axis = Kernel::Vector_3(0,0,1);
   cgal_direction_t refDirection = Kernel::Vector_3(1,0,0);
   IfcGeom::CgalKernel::convert(l->Location(),o);
   bool hasRef = l->hasRefDirection();
   if ( hasRef ) IfcGeom::CgalKernel::convert(l->RefDirection(),refDirection);
+  cgal_direction_t y = Kernel::Vector_3(-refDirection.y(), refDirection.x(), 0.0);
   
-  // TODO: From Thomas' email. Should be checked.
-  Kernel::Vector_3 y = CGAL::cross_product(Kernel::Vector_3(0.0, 0.0, 1.0), refDirection);
+  // TODO: Should be checked.
   trsf = Kernel::Aff_transformation_3(refDirection.cartesian(0), y.cartesian(0), 0.0, o.cartesian(0),
                                       refDirection.cartesian(1), y.cartesian(1), 0.0, o.cartesian(1),
                                       0.0, 0.0, 1.0, 0.0);
@@ -104,16 +127,17 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement3D* l, cgal_
   bool hasRef = l->hasRefDirection();
   if ( l->hasAxis() ) IfcGeom::CgalKernel::convert(l->Axis(),axis);
   if ( hasRef ) IfcGeom::CgalKernel::convert(l->RefDirection(),refDirection);
+  Kernel::Vector_3 y = CGAL::cross_product(axis, refDirection);
+  Kernel::Vector_3 x = CGAL::cross_product(y, axis);
   
 //  std::cout << "Ref direction: " << refDirection << std::endl;
 //  std::cout << "Axis: " << axis << std::endl;
 //  std::cout << "Origin: " << o << std::endl;
   
-  // TODO: From Thomas' email. Should be checked.
-  Kernel::Vector_3 y = CGAL::cross_product(axis, refDirection);
-  trsf = Kernel::Aff_transformation_3(refDirection.cartesian(0), y.cartesian(0), axis.cartesian(0), o.cartesian(0),
-                                      refDirection.cartesian(1), y.cartesian(1), axis.cartesian(1), o.cartesian(1),
-                                      refDirection.cartesian(2), y.cartesian(2), axis.cartesian(2), o.cartesian(2));
+  // TODO: Should be checked.
+  trsf = Kernel::Aff_transformation_3(x.cartesian(0), y.cartesian(0), axis.cartesian(0), o.cartesian(0),
+                                      x.cartesian(1), y.cartesian(1), axis.cartesian(1), o.cartesian(1),
+                                      x.cartesian(2), y.cartesian(2), axis.cartesian(2), o.cartesian(2));
   
 //  for (int i = 0; i < 3; ++i) {
 //    for (int j = 0; j < 4; ++j) {

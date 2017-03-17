@@ -967,7 +967,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, cgal_sh
   cgal_plane_t pln;
   IfcGeom::CgalKernel::convert((IfcSchema::IfcPlane*)surface,pln);
   
-  // TODO: This might be the other way around?
+  // TODO: This might be the other way around
   if (!l->AgreementFlag()) pln = pln.opposite();
 //  const gp_Pnt pnt = pln.Location().Translated( l->AgreementFlag() ? -pln.Axis().Direction() : pln.Axis().Direction());
 //  shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln),pnt).Solid();
