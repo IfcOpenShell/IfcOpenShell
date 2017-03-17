@@ -138,7 +138,9 @@ namespace IfcGeom {
     
     void remove_duplicate_points_from_loop(cgal_wire_t& polygon, bool closed, double tol = -1.);
 
-		 bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const cgal_placement_t& entity_trsf, ConversionResults& cut_shapes);
+    bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const cgal_placement_t& entity_trsf, ConversionResults& cut_shapes);
+    
+    CGAL::Nef_polyhedron_3<Kernel> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
 
 		void purge_cache() {
 			// Rather hack-ish, but a stopgap solution to keep memory under control
