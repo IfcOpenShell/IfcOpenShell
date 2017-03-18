@@ -25,18 +25,11 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRepresentation* l, Convers
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianPoint* l, cgal_point_t& point) {
   std::vector<double> xyz = l->Coordinates();
-  if (xyz.size() < 4) {
-    point = Kernel::Point_3(xyz.size()     ? (xyz[0]*getValue(GV_LENGTH_UNIT)) : 0.0f,
-                            xyz.size() > 1 ? (xyz[1]*getValue(GV_LENGTH_UNIT)) : 0.0f,
-                            xyz.size() > 2 ? (xyz[2]*getValue(GV_LENGTH_UNIT)) : 0.0f);
-//    std::cout << "Converted Point(" << point << ")" << std::endl;
-    return true;
-  } else {
-    std::cout << "Point(";
-    for (auto &coordinate: xyz) std::cout << coordinate << " ";
-    std::cout << ")";
-    throw std::runtime_error("Could not parse point");
-  }
+  point = Kernel::Point_3(xyz.size()     ? (xyz[0]*getValue(GV_LENGTH_UNIT)) : 0.0f,
+                          xyz.size() > 1 ? (xyz[1]*getValue(GV_LENGTH_UNIT)) : 0.0f,
+                          xyz.size() > 2 ? (xyz[2]*getValue(GV_LENGTH_UNIT)) : 0.0f);
+//  std::cout << "Converted Point(" << point << ")" << std::endl;
+  return true;
 }
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcDirection* l, cgal_direction_t& dir) {
@@ -63,15 +56,46 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPlane* pln, cgal_plane_t& 
   IfcSchema::IfcAxis2Placement3D* l = pln->Position();
   cgal_point_t o;
   cgal_direction_t axis = Kernel::Vector_3(0,0,1);
-  cgal_direction_t refDirection;
+  cgal_direction_t refDirection = Kernel::Vector_3(1,0,0);
   IfcGeom::CgalKernel::convert(l->Location(),o);
   bool hasRef = l->hasRefDirection();
   if ( l->hasAxis() ) IfcGeom::CgalKernel::convert(l->Axis(),axis);
   if ( hasRef ) IfcGeom::CgalKernel::convert(l->RefDirection(),refDirection);
+  Kernel::Vector_3 y = CGAL::cross_product(axis, refDirection);
+  Kernel::Vector_3 x = CGAL::cross_product(y, axis);
+  
   cgal_plane_t ax3;
-  if ( hasRef ) ax3 = Kernel::Plane_3(o,o+axis,o+refDirection);
+  if ( hasRef ) ax3 = Kernel::Plane_3(o,o+x,o+y);
   else ax3 = Kernel::Plane_3(o,axis);
   plane = ax3;
+  
+//  std::cout << "IfcPlane C = " << o << std::endl;
+//  std::cout << "IfcPlane z (axis, exact) = " << axis << std::endl;
+//  std::cout << "IfcPlane x (refDirection, approximate) = " << refDirection << std::endl;
+//  std::cout << "IfcPlane y (computed, exact) = " << y << std::endl;
+//  std::cout << "IfcPlane x (computed, exact) = " << x << std::endl;
+//  
+//  std::cout << "Plane_3 o = " << o << std::endl;
+//  std::cout << "Plane_3 o+x = " << o+x << std::endl;
+//  std::cout << "Plane_3 o+y = " << o+y << std::endl;
+  
+  // ax + by + cz + d = 0
+//  std::cout << "Plane: a = " << plane.a() << ", b = " << plane.b() << ", c = " << plane.c() << ", d = " << plane.d() << std::endl;
+  
+//  std::ofstream fresult;
+//  fresult.open("/Users/ken/Desktop/plane.obj");
+//  // x = -5, y = -5, z = (5a +5b -d)/c
+//  fresult << "v -5 -5 " << (5.0*CGAL::to_double(plane.a())+5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
+//  // x = -5, y = +5, z = (5a -5b -d)/c
+//  fresult << "v -5 5 " << (5.0*CGAL::to_double(plane.a())-5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
+//  // x = 5, y = -5, z = (-5a +5b -d)/c
+//  fresult << "v 5 -5 " << (-5.0*CGAL::to_double(plane.a())+5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
+//  // x = 5, y = +5, z = (-5a -5b -d)/c
+//  fresult << "v 5 5 " << (-5.0*CGAL::to_double(plane.a())-5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
+//  fresult << "f 1 2 3" << std::endl;
+//  fresult << "f 4 3 2" << std::endl;
+//  fresult.close();
+  
 //  CACHE(IfcPlane,pln,plane)
   return true;
 }
@@ -79,14 +103,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPlane* pln, cgal_plane_t& 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement2D* l, cgal_placement_t& trsf) {
   //  IN_CACHE(IfcAxis2Placement3D,l,gp_Trsf,trsf)
   cgal_point_t o;
-  cgal_direction_t axis = Kernel::Vector_3(0,0,1);
   cgal_direction_t refDirection = Kernel::Vector_3(1,0,0);
   IfcGeom::CgalKernel::convert(l->Location(),o);
   bool hasRef = l->hasRefDirection();
   if ( hasRef ) IfcGeom::CgalKernel::convert(l->RefDirection(),refDirection);
+  cgal_direction_t y = Kernel::Vector_3(-refDirection.y(), refDirection.x(), 0.0);
   
-  // TODO: From Thomas' email. Should be checked.
-  Kernel::Vector_3 y = CGAL::cross_product(Kernel::Vector_3(0.0, 0.0, 1.0), refDirection);
+  // TODO: Should be checked.
   trsf = Kernel::Aff_transformation_3(refDirection.cartesian(0), y.cartesian(0), 0.0, o.cartesian(0),
                                       refDirection.cartesian(1), y.cartesian(1), 0.0, o.cartesian(1),
                                       0.0, 0.0, 1.0, 0.0);
@@ -104,16 +127,17 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement3D* l, cgal_
   bool hasRef = l->hasRefDirection();
   if ( l->hasAxis() ) IfcGeom::CgalKernel::convert(l->Axis(),axis);
   if ( hasRef ) IfcGeom::CgalKernel::convert(l->RefDirection(),refDirection);
+  Kernel::Vector_3 y = CGAL::cross_product(axis, refDirection);
+  Kernel::Vector_3 x = CGAL::cross_product(y, axis);
   
 //  std::cout << "Ref direction: " << refDirection << std::endl;
 //  std::cout << "Axis: " << axis << std::endl;
 //  std::cout << "Origin: " << o << std::endl;
   
-  // TODO: From Thomas' email. Should be checked.
-  Kernel::Vector_3 y = CGAL::cross_product(axis, refDirection);
-  trsf = Kernel::Aff_transformation_3(refDirection.cartesian(0), y.cartesian(0), axis.cartesian(0), o.cartesian(0),
-                                      refDirection.cartesian(1), y.cartesian(1), axis.cartesian(1), o.cartesian(1),
-                                      refDirection.cartesian(2), y.cartesian(2), axis.cartesian(2), o.cartesian(2));
+  // TODO: Should be checked.
+  trsf = Kernel::Aff_transformation_3(x.cartesian(0), y.cartesian(0), axis.cartesian(0), o.cartesian(0),
+                                      x.cartesian(1), y.cartesian(1), axis.cartesian(1), o.cartesian(1),
+                                      x.cartesian(2), y.cartesian(2), axis.cartesian(2), o.cartesian(2));
   
 //  for (int i = 0; i < 3; ++i) {
 //    for (int j = 0; j < 4; ++j) {
@@ -177,6 +201,54 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcObjectPlacement* l, cgal_p
 
 bool IfcGeom::CgalKernel::convert_wire_to_face(const cgal_wire_t& wire, cgal_face_t& face) {
   face.outer = wire;
+  return true;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOperator2D* l, cgal_placement_t& trsf) {
+//  IN_CACHE(IfcCartesianTransformationOperator2D,l,cgal_placement_t,trsf)
+  
+  cgal_point_t origin;
+  cgal_direction_t axis1 (1.,0.,0.);
+  cgal_direction_t axis2 (0.,1.,0.);
+  
+  IfcGeom::CgalKernel::convert(l->LocalOrigin(),origin);
+  if ( l->hasAxis1() ) IfcGeom::CgalKernel::convert(l->Axis1(),axis1);
+  if ( l->hasAxis2() ) IfcGeom::CgalKernel::convert(l->Axis2(),axis2);
+  double scale = 1.0;
+  if (l->hasScale()) {
+    scale = l->Scale();
+  }
+  
+  // TODO: Untested
+  trsf = Kernel::Aff_transformation_3(scale*axis1.cartesian(0), axis2.cartesian(0), 0.0, origin.cartesian(0),
+                                      axis1.cartesian(1), scale*axis2.cartesian(1), 0.0, origin.cartesian(1),
+                                      0.0, 0.0, 1.0, 0.0);
+  
+//  CACHE(IfcCartesianTransformationOperator2D,l,trsf)
+  return true;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOperator2DnonUniform* l, cgal_placement_t& gtrsf) {
+//  IN_CACHE(IfcCartesianTransformationOperator2DnonUniform,l,cgal_placement_t,gtrsf)
+  
+  cgal_placement_t trsf;
+  cgal_point_t origin;
+  cgal_direction_t axis1 (1.,0.,0.);
+  cgal_direction_t axis2 (0.,1.,0.);
+  
+  IfcGeom::CgalKernel::convert(l->LocalOrigin(),origin);
+  if ( l->hasAxis1() ) IfcGeom::CgalKernel::convert(l->Axis1(),axis1);
+  if ( l->hasAxis2() ) IfcGeom::CgalKernel::convert(l->Axis2(),axis2);
+  
+  const double scale1 = l->hasScale() ? l->Scale() : 1.0f;
+  const double scale2 = l->hasScale2() ? l->Scale2() : scale1;
+  
+  // TODO: Untested
+  trsf = Kernel::Aff_transformation_3(scale1*axis1.cartesian(0), axis2.cartesian(0), 0.0, origin.cartesian(0),
+                                      axis1.cartesian(1), scale2*axis2.cartesian(1), 0.0, origin.cartesian(1),
+                                      0.0, 0.0, 1.0, 0.0);
+  
+//  CACHE(IfcCartesianTransformationOperator2DnonUniform,l,gtrsf)
   return true;
 }
 
@@ -256,4 +328,38 @@ void IfcGeom::CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon
       }
     }
   }
+}
+
+CGAL::Nef_polyhedron_3<Kernel> IfcGeom::CgalKernel::create_nef_polyhedron(std::list<cgal_face_t> &face_list) {
+  
+  // Naive creation
+  CGAL::Polyhedron_3<Kernel> polyhedron = CGAL::Polyhedron_3<Kernel>();
+  PolyhedronBuilder builder(&face_list);
+  polyhedron.delegate(builder);
+  
+  // Stitch edges
+  //  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
+  if (!polyhedron.is_valid()) {
+    std::cout << "create_nef_polyhedron: Polyhedron not valid!" << std::endl;
+//    std::ofstream fresult;
+//    fresult.open("/Users/ken/Desktop/invalid.off");
+//    fresult << polyhedron << std::endl;
+//    fresult.close();
+    return CGAL::Nef_polyhedron_3<Kernel>();
+  } if (!polyhedron.is_closed()) {
+    std::cout << "create_nef_polyhedron: Polyhedron not closed" << std::endl;
+//    std::ofstream fresult;
+//    fresult.open("/Users/ken/Desktop/open.off");
+//    fresult << polyhedron << std::endl;
+//    fresult.close();
+    // TODO: Nef constructor doesn't support open meshes
+    return CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
+  }
+  if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+    CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+  }
+  //  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  
+  return CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
 }
