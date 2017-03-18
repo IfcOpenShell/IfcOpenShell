@@ -342,14 +342,16 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
     Logger::Message(Logger::LOG_ERROR, "s1: Not simple Nef?", operand1->entity);
     return false;
   } else {
-    std::ofstream f1;
-    CGAL::Polyhedron_3<Kernel> p1;
-    s1.convert_to_Polyhedron(p1);
-    f1.open("/Users/ken/Desktop/s1.off");
-    f1 << p1 << std::endl;
-    f1.close();
+//    std::ofstream f1;
+//    CGAL::Polyhedron_3<Kernel> p1;
+//    s1.convert_to_Polyhedron(p1);
+//    f1.open("/Users/ken/Desktop/s1.off");
+//    f1 << p1 << std::endl;
+//    f1.close();
   }
   
+  bool is_plane = false;
+  cgal_plane_t plane;
   if (!s2.is_simple()) {
     Logger::Message(Logger::LOG_ERROR, "s2: Not simple Nef?", operand2->entity);
     return false;
@@ -358,80 +360,86 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
     IfcSchema::IfcHalfSpaceSolid *hss = static_cast<IfcSchema::IfcHalfSpaceSolid *>(operand2);
     IfcSchema::IfcSurface* surface = hss->BaseSurface();
     if (surface->is(IfcSchema::Type::IfcPlane) ) {
-      cgal_plane_t plane;
+      is_plane = true;
       IfcGeom::CgalKernel::convert((IfcSchema::IfcPlane *)surface, plane);
-      std::ofstream fresult;
-      fresult.open("/Users/ken/Desktop/s2.off");
-      fresult << "OFF" << std::endl << "4 2 4" << std::endl;
-      // x = -5, y = -5, z = (5a +5b -d)/c
-      fresult << "-5 -5 " << (5.0*CGAL::to_double(plane.a())+5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
-      // x = -5, y = +5, z = (5a -5b -d)/c
-      fresult << "-5 5 " << (5.0*CGAL::to_double(plane.a())-5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
-      // x = 5, y = -5, z = (-5a +5b -d)/c
-      fresult << "5 -5 " << (-5.0*CGAL::to_double(plane.a())+5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
-      // x = 5, y = +5, z = (-5a -5b -d)/c
-      fresult << "5 5 " << (-5.0*CGAL::to_double(plane.a())-5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
-      fresult << "3 0 1 2" << std::endl;
-      fresult << "3 3 2 1" << std::endl;
-      fresult.close();
+      if (hss->AgreementFlag()) plane = plane.opposite();
+//      std::ofstream fresult;
+//      fresult.open("/Users/ken/Desktop/s2.off");
+//      fresult << "OFF" << std::endl << "4 2 4" << std::endl;
+//      // x = -5, y = -5, z = (5a +5b -d)/c
+//      fresult << "-5 -5 " << (5.0*CGAL::to_double(plane.a())+5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
+//      // x = -5, y = +5, z = (5a -5b -d)/c
+//      fresult << "-5 5 " << (5.0*CGAL::to_double(plane.a())-5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
+//      // x = 5, y = -5, z = (-5a +5b -d)/c
+//      fresult << "5 -5 " << (-5.0*CGAL::to_double(plane.a())+5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
+//      // x = 5, y = +5, z = (-5a -5b -d)/c
+//      fresult << "5 5 " << (-5.0*CGAL::to_double(plane.a())-5.0*CGAL::to_double(plane.b())-CGAL::to_double(plane.d()))/CGAL::to_double(plane.c()) << std::endl;
+//      fresult << "3 0 1 2" << std::endl;
+//      fresult << "3 3 2 1" << std::endl;
+//      fresult.close();
     }
   } else {
-    std::ofstream f2;
-    CGAL::Polyhedron_3<Kernel> p2;
-    s2.convert_to_Polyhedron(p2);
-    f2.open("/Users/ken/Desktop/s2.off");
-    f2 << p2 << std::endl;
-    f2.close();
+//    std::ofstream f2;
+//    CGAL::Polyhedron_3<Kernel> p2;
+//    s2.convert_to_Polyhedron(p2);
+//    f2.open("/Users/ken/Desktop/s2.off");
+//    f2 << p2 << std::endl;
+//    f2.close();
   }
   
   if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
     
-    std::cout << "Difference" << std::endl;
-    CGAL::Nef_polyhedron_3<Kernel> nef_result = s1-s2;
+//    std::cout << "Difference" << std::endl;
+    CGAL::Nef_polyhedron_3<Kernel> nef_result = s1;
+    if (is_halfspace) {
+      if (is_plane) nef_result = nef_result.intersection(plane, CGAL::Nef_polyhedron_3<Kernel>::Intersection_mode::CLOSED_HALFSPACE);
+    } else {
+      nef_result -= s2;
+    }
     if (!nef_result.is_simple()) {
       std::cout << "Not simple: " << nef_result.number_of_volumes() << " volumes" << std::endl;
       return false;
     } else {
-      CGAL::Polyhedron_3<Kernel> result;
-      nef_result.convert_to_polyhedron(result);
-      std::ofstream fresult;
-      fresult.open("/Users/ken/Desktop/result.off");
-      fresult << result << std::endl;
-      fresult.close();
+//      CGAL::Polyhedron_3<Kernel> result;
+//      nef_result.convert_to_polyhedron(result);
+//      std::ofstream fresult;
+//      fresult.open("/Users/ken/Desktop/result.off");
+//      fresult << result << std::endl;
+//      fresult.close();
     } shape = nef_result;
     return true;
     
   } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
 
-    std::cout << "Union" << std::endl;
+//    std::cout << "Union" << std::endl;
     CGAL::Nef_polyhedron_3<Kernel> nef_result = s1+s2;
     if (!nef_result.is_simple()) {
       std::cout << "Not simple: " << nef_result.number_of_volumes() << " volumes" << std::endl;
       return false;
     } else {
-      CGAL::Polyhedron_3<Kernel> result;
-      nef_result.convert_to_polyhedron(result);
-      std::ofstream fresult;
-      fresult.open("/Users/ken/Desktop/result.off");
-      fresult << result << std::endl;
-      fresult.close();
+//      CGAL::Polyhedron_3<Kernel> result;
+//      nef_result.convert_to_polyhedron(result);
+//      std::ofstream fresult;
+//      fresult.open("/Users/ken/Desktop/result.off");
+//      fresult << result << std::endl;
+//      fresult.close();
     } shape = nef_result;
     return true;
     
   } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
 
-    std::cout << "Intersection" << std::endl;
+//    std::cout << "Intersection" << std::endl;
     CGAL::Nef_polyhedron_3<Kernel> nef_result = s1*s2;
     if (!nef_result.is_simple()) {
       std::cout << "Not simple: " << nef_result.number_of_volumes() << " volumes" << std::endl;
       return false;
     } else {
-      CGAL::Polyhedron_3<Kernel> result;
-      nef_result.convert_to_polyhedron(result);
-      std::ofstream fresult;
-      fresult.open("/Users/ken/Desktop/result.off");
-      fresult << result << std::endl;
-      fresult.close();
+//      CGAL::Polyhedron_3<Kernel> result;
+//      nef_result.convert_to_polyhedron(result);
+//      std::ofstream fresult;
+//      fresult.open("/Users/ken/Desktop/result.off");
+//      fresult << result << std::endl;
+//      fresult.close();
     } shape = nef_result;
     return true;
   } return false;
@@ -793,11 +801,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, cgal_sh
   cgal_plane_t pln;
   IfcGeom::CgalKernel::convert((IfcSchema::IfcPlane*)surface,pln);
   
-  // TODO: This might be the other way around
-  if (!l->AgreementFlag()) pln = pln.opposite();
+  // TODO: Don't fully understand the logic here. Might be incorrect.
+  if (l->AgreementFlag()) pln = pln.opposite();
 //  const gp_Pnt pnt = pln.Location().Translated( l->AgreementFlag() ? -pln.Axis().Direction() : pln.Axis().Direction());
 //  shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln),pnt).Solid();
   
-  shape = CGAL::Nef_polyhedron_3<Kernel>(pln);
+  shape = CGAL::Nef_polyhedron_3<Kernel>();
+  // TODO: We return an empty Nef polyhedron for now and handle halfspace differences in IfcBooleanResult. The other option would be to switch to an extended kernel.
+//  shape = CGAL::Nef_polyhedron_3<Kernel>(pln);
   return true;
 }
