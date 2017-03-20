@@ -1,6 +1,46 @@
 #include "CgalKernel.h"
 #include "CgalConversionResult.h"
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcGeometricSet* l, ConversionResults& shapes) {
+  IfcEntityList::ptr elements = l->Elements();
+  if ( !elements->size() ) return false;
+  bool part_succes = false;
+  const IfcGeom::SurfaceStyle* parent_style = get_style(l);
+  for ( IfcEntityList::it it = elements->begin(); it != elements->end(); ++ it ) {
+    IfcSchema::IfcGeometricSetSelect* element = *it;
+    cgal_shape_t s;
+    if (convert_shape(element, s)) {
+      part_succes = true;
+      const IfcGeom::SurfaceStyle* style = 0;
+      if (element->is(IfcSchema::Type::IfcPoint)) {
+        style = get_style((IfcSchema::IfcPoint*) element);
+      } else if (element->is(IfcSchema::Type::IfcCurve)) {
+        style = get_style((IfcSchema::IfcCurve*) element);
+      } else if (element->is(IfcSchema::Type::IfcSurface)) {
+        style = get_style((IfcSchema::IfcSurface*) element);
+      }
+      shapes.push_back(ConversionResult(new CgalShape(s), style ? style : parent_style));
+    }
+  }
+  return part_succes;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, ConversionResults& shapes) {
+  IfcEntityList::ptr shells = l->SbsmBoundary();
+  const SurfaceStyle* collective_style = get_style(l);
+  for( IfcEntityList::it it = shells->begin(); it != shells->end(); ++ it ) {
+    cgal_shape_t s;
+    const SurfaceStyle* shell_style = 0;
+    if ((*it)->is(IfcSchema::Type::IfcRepresentationItem)) {
+      shell_style = get_style((IfcSchema::IfcRepresentationItem*)*it);
+    }
+    if (convert_shape(*it,s)) {
+      shapes.push_back(ConversionResult(new CgalShape(s), shell_style ? shell_style : collective_style));
+    }
+  }
+  return true;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, ConversionResults& shape) {
   cgal_shape_t s;
   const SurfaceStyle* collective_style = get_style(l);
@@ -18,12 +58,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, Conv
 #endif
     
     for (IfcSchema::IfcClosedShell::list::it it = voids->begin(); it != voids->end(); ++it) {
-      //      TopoDS_Shape s2;
-      //      /// @todo No extensive shapefixing since shells should be disjoint.
-      //      /// @todo Awaiting generalized boolean ops module with appropriate checking
-      //      if (convert_shape(l->Outer(), s2)) {
-      //        s = BRepAlgoAPI_Cut(s, s2).Shape();
-      //      }
+      cgal_shape_t s2;
+      /// @todo No extensive shapefixing since shells should be disjoint.
+      /// @todo Awaiting generalized boolean ops module with appropriate checking
+      if (convert_shape(l->Outer(), s2)) {
+        s -= s2;
+      }
     }
     
     shape.push_back(ConversionResult(new CgalShape(s), indiv_style ? indiv_style : collective_style));
