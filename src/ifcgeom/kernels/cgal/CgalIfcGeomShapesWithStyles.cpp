@@ -79,8 +79,9 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, Conv
     
     for (IfcSchema::IfcClosedShell::list::it it = voids->begin(); it != voids->end(); ++it) {
       cgal_shape_t s2;
-      /// @todo No extensive shapefixing since shells should be disjoint.
-      /// @todo Awaiting generalized boolean ops module with appropriate checking
+      // TODO: This looks weird. Aren't we removing the outer shell again and again?
+      // Maybe it should be
+      // if (convert_shape(*it, s2)) {
       if (convert_shape(l->Outer(), s2)) {
         s -= s2;
       }
