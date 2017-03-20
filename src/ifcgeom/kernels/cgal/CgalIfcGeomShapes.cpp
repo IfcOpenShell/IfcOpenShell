@@ -78,17 +78,11 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionR
   if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
     IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3DnonUniform*)transform,gtrsf);
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
-    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
-    return false;
+    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator2DnonUniform*)transform,gtrsf);
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3D) ) {
-    cgal_placement_t trsf;
-    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,trsf);
-    gtrsf = trsf;
+    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,gtrsf);
   } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2D) ) {
-    cgal_placement_t trsf_2d;
-    Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
-//    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator2D*)transform,trsf_2d);
-    gtrsf = (cgal_placement_t) trsf_2d;
+    IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator2D*)transform,gtrsf);
   }
   IfcSchema::IfcRepresentationMap* map = l->MappingSource();
   IfcSchema::IfcAxis2Placement* placement = map->MappingOrigin();
