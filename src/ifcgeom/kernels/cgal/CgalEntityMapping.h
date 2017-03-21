@@ -28,14 +28,16 @@
 #include "../../../ifcparse/IfcUtil.h"
 #include "../../../ifcparse/IfcParse.h"
 
+SHAPES(IfcShellBasedSurfaceModel);
+SHAPES(IfcFaceBasedSurfaceModel);
 SHAPES(IfcRepresentation);
+SHAPES(IfcMappedItem);
 // IfcFacetedBrep included
 // IfcAdvancedBrep included
 // IfcFacetedBrepWithVoids included
 // IfcAdvancedBrepWithVoids included
 SHAPES(IfcManifoldSolidBrep);
-SHAPES(IfcMappedItem);
-SHAPES(IfcFaceBasedSurfaceModel);
+SHAPES(IfcGeometricSet);
 
 SHAPE(IfcExtrudedAreaSolid);
 SHAPE(IfcConnectedFaceSet);

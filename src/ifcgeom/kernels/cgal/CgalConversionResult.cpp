@@ -4,11 +4,39 @@
 void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement * place, IfcGeom::Representation::Triangulation<double>* t, int surface_style_id) const {
   cgal_shape_t s = shape_;
   const cgal_placement_t& trsf = dynamic_cast<const CgalPlacement*>(place)->trsf();
-//  std::cout << "Model: " << s.size_of_facets() << " facets and " << s.size_of_vertices() << " vertices" << std::endl;
-//  std::cout << "Valid: " << s.is_valid() << std::endl;
+  
+  std::cout << "Nef Model: " << s.number_of_facets() << " facets and " << s.number_of_vertices() << " vertices" << std::endl;
+  std::cout << "Simple: " << s.is_simple() << std::endl;
   
   CGAL::Polyhedron_3<Kernel> polyhedron;
-  s.convert_to_polyhedron(polyhedron);
+  if (s.is_simple()) s.convert_to_polyhedron(polyhedron);
+  else {
+    std::list<cgal_face_t> face_list;
+    face_list.push_back(cgal_face_t());
+    std::set<CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_handle> visited_halffacets;
+    for (CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_iterator current_halffacet = s.halffacets_begin();
+         current_halffacet != s.halffacets_end();
+         ++current_halffacet) {
+      if (visited_halffacets.count(current_halffacet->twin())) continue;
+      for (CGAL::Nef_polyhedron_3<Kernel>::Halffacet_cycle_const_iterator current_halffacet_cycle = current_halffacet->facet_cycles_begin();
+           current_halffacet_cycle != current_halffacet->facet_cycles_end();
+           ++current_halffacet_cycle) {
+        if (current_halffacet_cycle.is_shalfloop()) continue;
+        CGAL::Nef_polyhedron_3<Kernel>::SHalfedge_const_handle first_shalfedge = current_halffacet_cycle;
+        CGAL::Nef_polyhedron_3<Kernel>::SHalfedge_const_handle current_shalfedge = first_shalfedge;
+        if (!face_list.back().outer.empty()) face_list.push_back(cgal_face_t());
+        do {
+          face_list.back().outer.push_back(current_shalfedge->source()->center_vertex()->point());
+          current_shalfedge = current_shalfedge->next();
+        } while (current_shalfedge != first_shalfedge);
+      }
+    } if (face_list.back().outer.empty()) face_list.pop_back();
+    PolyhedronBuilder builder(&face_list);
+    polyhedron.delegate(builder);
+  }
+  
+  std::cout << "Polyhedron Model: " << polyhedron.size_of_facets() << " facets and " << polyhedron.size_of_vertices() << " vertices" << std::endl;
+  std::cout << "Valid: " << polyhedron.is_valid() << std::endl;
   
   // Apply transformation
   if (place != NULL) for (auto &vertex: vertices(polyhedron)) {
