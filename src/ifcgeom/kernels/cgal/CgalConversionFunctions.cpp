@@ -41,13 +41,23 @@ CGAL::Nef_polyhedron_3<Kernel> IfcGeom::CgalKernel::create_nef_polyhedron(std::l
 //    fresult.close();
     return CGAL::Nef_polyhedron_3<Kernel>();
   } if (!polyhedron.is_closed()) {
-    std::cout << "create_nef_polyhedron: Polyhedron not closed" << std::endl;
 //    std::ofstream fresult;
 //    fresult.open("/Users/ken/Desktop/open.off");
 //    fresult << polyhedron << std::endl;
 //    fresult.close();
-    // TODO: Nef constructor doesn't support open meshes
-    return CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
+    CGAL::Nef_polyhedron_3<Kernel> mesh;
+    unsigned int current_face = 0;
+    for (auto &face: faces(polyhedron)) {
+      ++current_face;
+//      if (current_face%10 == 0) std::cout << current_face << "/" << polyhedron.size_of_facets() << std::endl;
+      std::list<Kernel::Point_3> points_in_face;
+      CGAL::Polyhedron_3<Kernel>::Halfedge_around_facet_const_circulator current_halfedge = face->facet_begin();
+      do {
+        points_in_face.push_back(current_halfedge->vertex()->point());
+        ++current_halfedge;
+      } while (current_halfedge != face->facet_begin());
+      mesh += CGAL::Nef_polyhedron_3<Kernel>(points_in_face.begin(), points_in_face.end());
+    } return mesh;
   }
   if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
     CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
