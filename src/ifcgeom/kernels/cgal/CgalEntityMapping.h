@@ -39,55 +39,84 @@ SHAPES(IfcMappedItem);
 SHAPES(IfcManifoldSolidBrep);
 SHAPES(IfcGeometricSet);
 
+#ifdef USE_IFC4
+//SHAPE(IfcCylindricalSurface);
+//SHAPE(IfcAdvancedBrep);
+//SHAPE(IfcBSplineSurfaceWithKnots);
+SHAPE(IfcTriangulatedFaceSet);
+//SHAPE(IfcExtrudedAreaSolidTapered);
+#endif
+//SHAPE(IfcPlane);
 SHAPE(IfcExtrudedAreaSolid);
+//SHAPE(IfcRevolvedAreaSolid);
 SHAPE(IfcConnectedFaceSet);
-SHAPE(IfcCsgSolid);
-SHAPE(IfcBlock);
 SHAPE(IfcBooleanResult);
-SHAPE(IfcSphere);
+//SHAPE(IfcPolygonalBoundedHalfSpace);
+SHAPE(IfcHalfSpaceSolid);
+//SHAPE(IfcSurfaceOfLinearExtrusion);
+//SHAPE(IfcSurfaceOfRevolution);
+SHAPE(IfcBlock);
 SHAPE(IfcRectangularPyramid);
 SHAPE(IfcRightCircularCylinder);
 SHAPE(IfcRightCircularCone);
-#ifdef USE_IFC4
-SHAPE(IfcTriangulatedFaceSet);
-#endif
-SHAPE(IfcHalfSpaceSolid);
+SHAPE(IfcSphere);
+SHAPE(IfcCsgSolid);
+//SHAPE(IfcCurveBoundedPlane);
+//SHAPE(IfcRectangularTrimmedSurface);
+//SHAPE(IfcSurfaceCurveSweptAreaSolid);
+//SHAPE(IfcSweptDiskSolid);
 
+FACE(IfcArbitraryProfileDefWithVoids);
 FACE(IfcArbitraryClosedProfileDef);
-FACE(IfcCircleHollowProfileDef);
-FACE(IfcCircleProfileDef);
-FACE(IfcFace);
 FACE(IfcRoundedRectangleProfileDef);
 FACE(IfcRectangleHollowProfileDef);
 FACE(IfcRectangleProfileDef);
-FACE(IfcTrapeziumProfileDef);
-FACE(IfcEllipseProfileDef);
+FACE(IfcTrapeziumProfileDef)
 FACE(IfcCShapeProfileDef);
+// IfcAsymmetricIShapeProfileDef included
 FACE(IfcIShapeProfileDef);
 FACE(IfcLShapeProfileDef);
 FACE(IfcTShapeProfileDef);
 FACE(IfcUShapeProfileDef);
 FACE(IfcZShapeProfileDef);
+FACE(IfcCircleHollowProfileDef);
+FACE(IfcCircleProfileDef);
+FACE(IfcEllipseProfileDef);
+//FACE(IfcCenterLineProfileDef);
+//FACE(IfcCompositeProfileDef);
+FACE(IfcDerivedProfileDef);
+// IfcFaceSurface included
+// IfcAdvancedFace included in case of IFC4
+FACE(IfcFace);
 
-WIRE(IfcEdgeLoop);
+//WIRE(IfcEdgeCurve);
+//WIRE(IfcSubedge);
 WIRE(IfcOrientedEdge);
-WIRE(IfcPolyLoop);
+WIRE(IfcEdge);
+WIRE(IfcEdgeLoop);
 WIRE(IfcPolyline);
+WIRE(IfcPolyLoop);
 WIRE(IfcCompositeCurve);
 WIRE(IfcTrimmedCurve);
+//WIRE(IfcArbitraryOpenProfileDef);
 
 CURVE(IfcCircle);
 CURVE(IfcEllipse);
 CURVE(IfcLine);
+#ifdef USE_IFC4
+// IfcRationalBSplineCurveWithKnots included
+//CURVE(IfcBSplineCurveWithKnots);
+#endif
 
 CLASS(IfcCartesianPoint,cgal_point_t);
 CLASS(IfcDirection,cgal_direction_t);
-CLASS(IfcVector,cgal_vector_t);
-CLASS(IfcPlane,cgal_plane_t);
 CLASS(IfcAxis2Placement2D,cgal_placement_t);
 CLASS(IfcAxis2Placement3D,cgal_placement_t);
-CLASS(IfcObjectPlacement,cgal_placement_t);
+CLASS(IfcAxis1Placement,cgal_placement_t);
 CLASS(IfcCartesianTransformationOperator2DnonUniform,cgal_placement_t);
 CLASS(IfcCartesianTransformationOperator3DnonUniform,cgal_placement_t);
 CLASS(IfcCartesianTransformationOperator2D,cgal_placement_t);
 CLASS(IfcCartesianTransformationOperator3D,cgal_placement_t);
+CLASS(IfcObjectPlacement,cgal_placement_t);
+CLASS(IfcVector,cgal_vector_t);
+CLASS(IfcPlane,cgal_plane_t);

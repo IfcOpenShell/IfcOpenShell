@@ -63,6 +63,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l,
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, ConversionResults& shape) {
   cgal_shape_t s;
+  CGAL::Nef_polyhedron_3<Kernel> nef_s(s);
   const SurfaceStyle* collective_style = get_style(l);
   if (convert_shape(l->Outer(),s) ) {
     const SurfaceStyle* indiv_style = get_style(l->Outer());
@@ -79,14 +80,16 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, Conv
     
     for (IfcSchema::IfcClosedShell::list::it it = voids->begin(); it != voids->end(); ++it) {
       cgal_shape_t s2;
+      CGAL::Nef_polyhedron_3<Kernel> nef_s2(s2);
       // TODO: This looks weird. Aren't we removing the outer shell again and again?
       // Maybe it should be
       // if (convert_shape(*it, s2)) {
       if (convert_shape(l->Outer(), s2)) {
-        s -= s2;
+        nef_s -= nef_s2;
       }
     }
     
+    nef_s.convert_to_polyhedron(s);
     shape.push_back(ConversionResult(new CgalShape(s), indiv_style ? indiv_style : collective_style));
     return true;
   }

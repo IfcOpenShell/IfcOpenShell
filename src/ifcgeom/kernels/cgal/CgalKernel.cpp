@@ -250,7 +250,7 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
         }
         gtrsf = gtrsf * opening_trsf;
         cgal_shape_t opening_shape(((CgalShape*)opening_shapes[i].Shape())->shape());
-        opening_shape.transform(gtrsf);
+        for (auto &vertex: vertices(opening_shape)) vertex->point() = vertex->point().transform(gtrsf);
         opening_shapelist.push_back(opening_shape);
 
 //        std::cout << "gtrsf" << std::endl;
@@ -270,10 +270,11 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
     cgal_shape_t entity_shape(entity_shape_unlocated);
     if (it3->Placement()) {
       const cgal_placement_t& entity_shape_gtrsf = *(CgalPlacement*)it3->Placement();
-      entity_shape.transform(entity_shape_gtrsf);
+      for (auto &vertex: vertices(entity_shape)) vertex->point() = vertex->point().transform(entity_shape_gtrsf);
     }
     
     cgal_shape_t brep_cut_result(entity_shape);
+    CGAL::Nef_polyhedron_3<Kernel> nef_brep_cut_result(brep_cut_result);
     
     for (auto &opening: opening_shapelist) {
       
@@ -289,7 +290,8 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
 //      fresult << polyhedron << std::endl;
 //      fresult.close();
       
-      brep_cut_result -= opening;
+      CGAL::Nef_polyhedron_3<Kernel> nef_opening(opening);
+      nef_brep_cut_result -= nef_opening;
       
 //      brep_cut_result.convert_to_polyhedron(polyhedron);
 //      fresult.open("/Users/ken/Desktop/after.off");
@@ -298,6 +300,7 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
     }
     
     if (brep_cut_result.is_valid()) {
+      nef_brep_cut_result.convert_to_Polyhedron(brep_cut_result);
       cut_shapes.push_back(IfcGeom::ConversionResult(new CgalShape(brep_cut_result), &it3->Style()));
     } else {
       // Apparently processing the boolean operation failed or resulted in an invalid result
