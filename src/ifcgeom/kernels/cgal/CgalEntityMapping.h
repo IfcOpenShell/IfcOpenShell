@@ -84,7 +84,7 @@ FACE(IfcCircleProfileDef);
 FACE(IfcEllipseProfileDef);
 //FACE(IfcCenterLineProfileDef);
 //FACE(IfcCompositeProfileDef);
-//FACE(IfcDerivedProfileDef);
+FACE(IfcDerivedProfileDef);
 // IfcFaceSurface included
 // IfcAdvancedFace included in case of IFC4
 FACE(IfcFace);

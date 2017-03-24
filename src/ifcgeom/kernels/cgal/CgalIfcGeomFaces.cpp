@@ -971,3 +971,18 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcZShapeProfileDef* l, cgal_
   
   return true;
 }
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcDerivedProfileDef* l, cgal_face_t& face) {
+  cgal_face_t f;
+  cgal_placement_t trsf2d;
+  if (convert_face(l->ParentProfile(), f) && IfcGeom::CgalKernel::convert(l->Operator(), trsf2d)) {
+    cgal_placement_t trsf = trsf2d;
+    for (auto &vertex: f.outer) vertex = vertex.transform(trsf);
+    for (auto &ring: f.inner) {
+      for (auto &vertex: ring) vertex = vertex.transform(trsf);
+    } face = f;
+    return true;
+  } else {
+    return false;
+  }
+}
