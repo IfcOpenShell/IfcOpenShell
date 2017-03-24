@@ -519,7 +519,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcSphere* l, cgal_shape_t& s
   IfcGeom::CgalKernel::convert(l->Position(),trsf);
   
   shape = create_polyhedron(face_list);
-  for (auto &vertex: vertices(shape)) vertex->point() = vertex->point().transform(trsf);
+  for (auto &vertex: vertices(shape)) {
+    vertex->point() = Kernel::Point_3(r*vertex->point().x(),
+                                      r*vertex->point().y(),
+                                      r*vertex->point().z());
+    vertex->point() = vertex->point().transform(trsf);
+  }
   return true;
 }
 
