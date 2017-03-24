@@ -50,6 +50,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     top_face.outer.push_back(*vertex+height*dir);
   } face_list.push_back(top_face);
   
+  if (bottom_face.inner.empty()) {
+    shape = create_polyhedron(face_list);
+    for (auto &vertex: vertices(shape)) vertex->point() = vertex->point().transform(trsf);
+    return true;
+  }
+  
   CGAL::Nef_polyhedron_3<Kernel> nef_shape = create_nef_polyhedron(face_list);
   
   // Inner
@@ -701,8 +707,8 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, cgal_sh
 //  const gp_Pnt pnt = pln.Location().Translated( l->AgreementFlag() ? -pln.Axis().Direction() : pln.Axis().Direction());
 //  shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln),pnt).Solid();
   
+  // TODO: For now we do nothing and process halfspaces in IfcBooleanResult, which likely doesn't capture all cases.
+  // Find a better solution later (with an abstract shape class?)
   shape = CGAL::Polyhedron_3<Kernel>();
-  // TODO: We need to do something for now. Find a better solution later (abstract shape class?)
-//  shape = CGAL::Nef_polyhedron_3<Kernel>(pln);
   return true;
 }

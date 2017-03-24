@@ -126,6 +126,22 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement3D* l, cgal_
   return true;
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis1Placement* l, cgal_placement_t& ax) {
+//  IN_CACHE(IfcAxis1Placement,l,gp_Ax1,ax)
+  cgal_point_t o;
+  cgal_direction_t axis = Kernel::Vector_3(0,0,1);
+  IfcGeom::CgalKernel::convert(l->Location(),o);
+  if ( l->hasAxis() ) IfcGeom::CgalKernel::convert(l->Axis(), axis);
+  
+  // TODO: Should be checked.
+  ax = Kernel::Aff_transformation_3(1.0, 0.0, axis.cartesian(0), o.cartesian(0),
+                                    0.0, 1.0, axis.cartesian(1), o.cartesian(1),
+                                    0.0, 0.0, axis.cartesian(2), o.cartesian(2));
+  
+//  CACHE(IfcAxis1Placement,l,ax)
+  return true;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcObjectPlacement* l, cgal_placement_t& trsf) {
   //  IN_CACHE(IfcObjectPlacement,l,cgal_placement_t,trsf)
   if ( ! l->is(IfcSchema::Type::IfcLocalPlacement) ) {

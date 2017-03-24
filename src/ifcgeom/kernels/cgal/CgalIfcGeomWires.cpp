@@ -86,6 +86,34 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcOrientedEdge* l, cgal_wire
   }
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcEdge* l, cgal_wire_t& result) {
+  if (!l->EdgeStart()->is(IfcSchema::Type::IfcVertexPoint) || !l->EdgeEnd()->is(IfcSchema::Type::IfcVertexPoint)) {
+    Logger::Message(Logger::LOG_ERROR, "Only IfcVertexPoints are supported for EdgeStart and -End", l->entity);
+    return false;
+  }
+  
+  IfcSchema::IfcPoint* pnt1 = ((IfcSchema::IfcVertexPoint*) l->EdgeStart())->VertexGeometry();
+  IfcSchema::IfcPoint* pnt2 = ((IfcSchema::IfcVertexPoint*) l->EdgeEnd())->VertexGeometry();
+  if (!pnt1->is(IfcSchema::Type::IfcCartesianPoint) || !pnt2->is(IfcSchema::Type::IfcCartesianPoint)) {
+    Logger::Message(Logger::LOG_ERROR, "Only IfcCartesianPoints are supported for VertexGeometry", l->entity);
+    return false;
+  }
+  
+  cgal_point_t p1, p2;
+  if (!convert(((IfcSchema::IfcCartesianPoint*)pnt1), p1) ||
+      !convert(((IfcSchema::IfcCartesianPoint*)pnt2), p2))
+  {
+    return false;
+  }
+  
+  cgal_wire_t mw;
+  mw.push_back(p1);
+  mw.push_back(p2);
+  
+  result = mw;
+  return true;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCompositeCurve* l, cgal_wire_t& wire) {
   if ( getValue(GV_PLANEANGLE_UNIT)<0 ) {
     Logger::Message(Logger::LOG_WARNING,"Creating a composite curve without unit information:",l->entity);

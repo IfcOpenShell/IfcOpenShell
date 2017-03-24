@@ -26,7 +26,7 @@ void IfcGeom::CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon
 CGAL::Polyhedron_3<Kernel> IfcGeom::CgalKernel::create_polyhedron(std::list<cgal_face_t> &face_list) {
   
   // Naive creation
-  CGAL::Polyhedron_3<Kernel> polyhedron = CGAL::Polyhedron_3<Kernel>();
+  CGAL::Polyhedron_3<Kernel> polyhedron;
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
   

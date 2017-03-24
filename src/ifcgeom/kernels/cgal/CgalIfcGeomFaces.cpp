@@ -10,6 +10,21 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcArbitraryClosedProfileDef*
   return success;
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* l, cgal_face_t& face) {
+  cgal_wire_t profile;
+  if ( ! convert_wire(l->OuterCurve(),profile) ) return false;
+  cgal_face_t mf;
+  mf.outer = profile;
+  IfcSchema::IfcCurve::list::ptr voids = l->InnerCurves();
+  for( IfcSchema::IfcCurve::list::it it = voids->begin(); it != voids->end(); ++ it ) {
+    cgal_wire_t hole;
+    if ( convert_wire(*it,hole) ) {
+      mf.inner.push_back(hole);
+    }
+  } face = mf;
+  return true;
+}
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangleProfileDef* l, cgal_face_t& face) {
   const double x = l->XDim() / 2.0f * getValue(GV_LENGTH_UNIT);
   const double y = l->YDim() / 2.0f * getValue(GV_LENGTH_UNIT);
