@@ -127,7 +127,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement3D* l, cgal_
 }
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcObjectPlacement* l, cgal_placement_t& trsf) {
-  // TODO: These macros don't work for the CGAL types. Need to check why.
   //  IN_CACHE(IfcObjectPlacement,l,cgal_placement_t,trsf)
   if ( ! l->is(IfcSchema::Type::IfcLocalPlacement) ) {
     Logger::Message(Logger::LOG_ERROR, "Unsupported IfcObjectPlacement:", l->entity);
