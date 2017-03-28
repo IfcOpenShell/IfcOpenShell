@@ -139,7 +139,7 @@ cd "%DEPS_DIR%"
 :: Note all of the depedencies have approriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
 :Boost
-set BOOST_VERSION=1.59.0
+set BOOST_VERSION=1.63.0
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
 set DEPENDENCY_NAME=Boost %BOOST_VERSION%
 set DEPENDENCY_DIR="%DEPS_DIR%\boost"
@@ -159,13 +159,13 @@ call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\boost"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :: Build Boost build script
-IF EXIST "%DEPS_DIR%\boost_%BOOST_VER%". (
+if not exist "%DEPS_DIR%\boost\project-config.jam". (
     cd "%DEPS_DIR%"
     ren boost_%BOOST_VER% boost
     IF NOT EXIST "%DEPS_DIR%\boost\boost.css" GOTO :Error
     cd "%DEPS_DIR%\boost"
     call cecho.cmd 0 13 "Building Boost build script."
-    call bootstrap vc%VC_VER%
+    call bootstrap msvc
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 )
 
@@ -174,38 +174,40 @@ set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options -
 cd "%DEPS_DIR%\boost"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
 IF EXIST "%DEPS_DIR%\boost\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
-call .\b2 toolset=msvc-%VC_VER%.0 runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
+call .\b2 toolset=msvc runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :ICU
 set DEPENDENCY_NAME=ICU
 set DEPENDENCY_DIR=N/A
-set ICU_ZIP=icu-55.1-vs%VS_VER%.7z
+set ICU_VER=58.2
+set ICU_ZIP=icu-%ICU_VER%-vs%VS_VER%.7z
 cd "%DEPS_DIR%"
 call :DownloadFile http://www.npcglib.org/~stathis/downloads/%ICU_ZIP% "%DEPS_DIR%" %ICU_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %ICU_ZIP% "%DEPS_DIR%" "%INSTALL_DIR%\icu"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: Rename lib and bin directories to predictable form
-IF EXIST "%DEPS_DIR%\icu-55.1-vs%VS_VER%". (
-    pushd "%DEPS_DIR%\icu-55.1-vs%VS_VER%"
+IF EXIST "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%". (
+    pushd "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%"
     IF EXIST bin. ren bin bin%ARCH_BITS%"
     IF EXIST lib. ren lib lib%ARCH_BITS%"
     popd
 )
 
-IF EXIST "%DEPS_DIR%\icu-55.1-vs%VS_VER%\". (
-    robocopy "%DEPS_DIR%\icu-55.1-vs%VS_VER%\include" "%INSTALL_DIR%\icu\include" /E /IS /njh /njs
+IF EXIST "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\". (
+    robocopy "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\include" "%INSTALL_DIR%\icu\include" /E /IS /njh /njs
     IF NOT EXIST "%INSTALL_DIR%\icu\lib". mkdir "%INSTALL_DIR%\icu\lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicutest%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutest%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicutu%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutu%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicuuc%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuuc%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicudt%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icudt%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicuin%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuin%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicuio%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuio%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicule%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icule%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\siculx%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\iculx%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicutest%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutest%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicutu%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutu%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicuuc%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuuc%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicudt%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icudt%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicuin%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuin%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicuio%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuio%POSTFIX_D%.lib"
+    REM NOTE not available in 58.2 at least, nor needed by us.
+    REM copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicule%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icule%POSTFIX_D%.lib"
+    REM copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\siculx%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\iculx%POSTFIX_D%.lib"
 )
 
 :OpenCOLLADA
@@ -473,7 +475,7 @@ if not exist "%~2". (
 popd
 exit /b %RET%
 
-:: GitCloneAndCheckoutRevision - Clones a Git repository and checks out a specific revision
+:: GitCloneAndCheckoutRevision - Clones a Git repository and checks out a specific revision or tag
 :: Params: %1 gitUrl, %2 destDir, %3 revision
 :: F.ex. call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" 064a60b65c2c31b94f013820856bc84fb1937cc6
 :GitCloneAndCheckoutRevision
@@ -489,6 +491,7 @@ if not exist "%~2". (
     set RET=0
 )
 pushd "%2"
+call git fetch
 call cecho.cmd 0 13 "Checking out %DEPENDENCY_NAME% revision %3."
 call git checkout %3
 set RET=%ERRORLEVEL%

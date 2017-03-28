@@ -13,7 +13,7 @@ Prerequisites
 -------------
 * Git
 * CMake (2.6 or newer)
-* Windows: [Visual Studio] 2008 or newer (2017 not yet officially supported) with C++ toolset (or [Visual C++ Build Tools]) or [MSYS2] + MinGW
+* Windows: [Visual Studio] 2008 or newer with C++ toolset (or [Visual C++ Build Tools]) or [MSYS2] + MinGW
 * *nix: GCC 4.7 or newer, or Clang (any version)
 
 Dependencies
