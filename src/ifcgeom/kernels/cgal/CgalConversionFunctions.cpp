@@ -5,21 +5,13 @@ bool IfcGeom::CgalKernel::convert_wire_to_face(const cgal_wire_t& wire, cgal_fac
   return true;
 }
 
-void IfcGeom::CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon, bool closed, double tol) {
-  if (tol <= 0.) tol = getValue(GV_PRECISION);
-  tol *= tol;
-  
+void IfcGeom::CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon) {
+  std::set<cgal_point_t> points;
   for (int i = 0; i < polygon.size(); ++i) {
-    for (int j = i+1; j < polygon.size(); ++j) {
-      if (CGAL::squared_distance(polygon[i], polygon[j]) < tol) {
-        polygon.erase(polygon.begin()+j);
-        --j;
-      }
-    } if (closed) {
-      if (CGAL::squared_distance(polygon.front(), polygon.back()) < tol) {
-        polygon.erase(polygon.begin()+polygon.size()-1);
-      }
-    }
+    if (points.count(polygon[i])) {
+      polygon.erase(polygon.begin()+i);
+      --i;
+    } else points.insert(polygon[i]);
   }
 }
 
@@ -51,8 +43,28 @@ CGAL::Polyhedron_3<Kernel> IfcGeom::CgalKernel::create_polyhedron(std::list<cgal
   return polyhedron;
 }
 
+CGAL::Polyhedron_3<Kernel> IfcGeom::CgalKernel::create_polyhedron(CGAL::Nef_polyhedron_3<Kernel> &nef_polyhedron) {
+  if (nef_polyhedron.is_simple()) {
+    CGAL::Polyhedron_3<Kernel> polyhedron;
+    nef_polyhedron.convert_to_polyhedron(polyhedron);
+    return polyhedron;
+  } else {
+    std::cout << "Nef polyhedron not simple: cannot create polyhedron!" << std::endl;
+    return CGAL::Polyhedron_3<Kernel>();
+  }
+}
 
 CGAL::Nef_polyhedron_3<Kernel> IfcGeom::CgalKernel::create_nef_polyhedron(std::list<cgal_face_t> &face_list) {
   CGAL::Polyhedron_3<Kernel> polyhedron = create_polyhedron(face_list);
   return CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
+}
+
+CGAL::Nef_polyhedron_3<Kernel> IfcGeom::CgalKernel::create_nef_polyhedron(CGAL::Polyhedron_3<Kernel> &polyhedron) {
+  if (polyhedron.is_valid()) {
+    CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
+    return CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
+  } else {
+    std::cout << "Polyhedron not valid: cannot create Nef polyhedron!" << std::endl;
+    return CGAL::Nef_polyhedron_3<Kernel>();
+  }
 }

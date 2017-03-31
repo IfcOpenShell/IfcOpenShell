@@ -19,7 +19,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& 
   }
   
   // Remove points that are too close to one another
-  remove_duplicate_points_from_loop(polygon, true);
+  remove_duplicate_points_from_loop(polygon);
   
   std::size_t count = polygon.size();
   if (original_count - count != 0) {
@@ -54,7 +54,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyline* l, cgal_wire_t& 
   }
   
   // Remove points that are too close to one another
-  remove_duplicate_points_from_loop(polygon, false);
+  remove_duplicate_points_from_loop(polygon);
   
   result = polygon;
   return true;
@@ -198,7 +198,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCompositeCurve* l, cgal_wi
     }
   }
   
-  remove_duplicate_points_from_loop(w, false);
+  remove_duplicate_points_from_loop(w);
   
   wire = w;
   return true;
