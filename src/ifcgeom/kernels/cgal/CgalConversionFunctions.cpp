@@ -6,20 +6,12 @@ bool IfcGeom::CgalKernel::convert_wire_to_face(const cgal_wire_t& wire, cgal_fac
 }
 
 void IfcGeom::CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon) {
-  if (tol <= 0.) tol = getValue(GV_PRECISION);
-  tol *= tol;
-  
+  std::set<cgal_point_t> points;
   for (int i = 0; i < polygon.size(); ++i) {
-    for (int j = i+1; j < polygon.size(); ++j) {
-      if (CGAL::squared_distance(polygon[i], polygon[j]) < tol) {
-        polygon.erase(polygon.begin()+j);
-        --j;
-      }
-    } if (closed) {
-      if (CGAL::squared_distance(polygon.front(), polygon.back()) < tol) {
-        polygon.erase(polygon.begin()+polygon.size()-1);
-      }
-    }
+    if (points.count(polygon[i])) {
+      polygon.erase(polygon.begin()+i);
+      --i;
+    } else points.insert(polygon[i]);
   }
 }
 
