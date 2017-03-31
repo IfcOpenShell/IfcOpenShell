@@ -136,7 +136,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* 
   // Outer
   std::list<cgal_face_t> face_list;
   face_list.push_back(face1);
-  face_list.push_back(face2);
   
   std::vector<Kernel::Point_3>::const_iterator current_face1_vertex = face1.outer.begin();
   std::vector<Kernel::Point_3>::const_iterator current_face2_vertex = face2.outer.begin();
@@ -158,11 +157,26 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* 
     ++current_face2_vertex;
   }
   
+  cgal_face_t top_face;
+  for (std::vector<Kernel::Point_3>::const_reverse_iterator vertex = face2.outer.rbegin();
+       vertex != face2.outer.rend();
+       ++vertex) {
+    top_face.outer.push_back(*vertex);
+  } face_list.push_back(top_face);
+  
   if (face1.inner.empty() || face2.inner.empty()) {
     shape = create_polyhedron(face_list);
     if (has_position) for (auto &vertex: vertices(shape)) vertex->point() = vertex->point().transform(trsf);
     return true;
   }
+  
+//  std::ofstream f1;
+//  CGAL::Polyhedron_3<Kernel> outer_polyhedron;
+//  PolyhedronBuilder builder(&face_list);
+//  outer_polyhedron.delegate(builder);
+//  f1.open("/Users/ken/Desktop/outer.off");
+//  f1 << outer_polyhedron << std::endl;
+//  f1.close();
   
   CGAL::Nef_polyhedron_3<Kernel> nef_shape = create_nef_polyhedron(face_list);
   
@@ -182,7 +196,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* 
     cgal_face_t hole_face2;
     hole_face2.outer = *inner_face2;
     remove_duplicate_points_from_loop(hole_face2.outer);
-    face_list.push_back(hole_face2);
     
     current_face1_vertex = hole_face1.outer.begin();
     current_face2_vertex = hole_face2.outer.begin();
@@ -203,6 +216,21 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* 
       ++current_face1_vertex;
       ++current_face2_vertex;
     }
+    
+    cgal_face_t top_hole_face;
+    for (std::vector<Kernel::Point_3>::const_reverse_iterator vertex = hole_face2.outer.rbegin();
+         vertex != hole_face2.outer.rend();
+         ++vertex) {
+      top_hole_face.outer.push_back(*vertex);
+    } face_list.push_back(top_hole_face);
+    
+//    std::ofstream f2;
+//    CGAL::Polyhedron_3<Kernel> inner_polyhedron;
+//    PolyhedronBuilder builder(&face_list);
+//    inner_polyhedron.delegate(builder);
+//    f2.open("/Users/ken/Desktop/inner.off");
+//    f2 << inner_polyhedron << std::endl;
+//    f2.close();
     
     nef_shape -= create_nef_polyhedron(face_list);
     
