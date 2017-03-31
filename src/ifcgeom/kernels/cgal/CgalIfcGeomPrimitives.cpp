@@ -86,6 +86,14 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement2D* l, cgal_
   if ( hasRef ) IfcGeom::CgalKernel::convert(l->RefDirection(),refDirection);
   cgal_direction_t y = Kernel::Vector_3(-refDirection.y(), refDirection.x(), 0.0);
   
+  const double tolerance = 0.01;
+  if (refDirection.squared_length() < 1.0-tolerance || refDirection.squared_length() > 1.0+tolerance ||
+      y.squared_length() < 1.0-tolerance || y.squared_length() > 1.0+tolerance) {
+    std::cout << "Ref direction (x): " << refDirection << " squared length: " << refDirection.squared_length() << std::endl;
+    std::cout << "y: " << y << " squared length: " << y.squared_length() << std::endl;
+    std::cout << "Origin: " << o << std::endl;
+  }
+  
   // TODO: Should be checked.
   trsf = Kernel::Aff_transformation_3(refDirection.cartesian(0), y.cartesian(0), 0.0, o.cartesian(0),
                                       refDirection.cartesian(1), y.cartesian(1), 0.0, o.cartesian(1),
@@ -107,9 +115,16 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis2Placement3D* l, cgal_
   Kernel::Vector_3 y = CGAL::cross_product(axis, refDirection);
   Kernel::Vector_3 x = CGAL::cross_product(y, axis);
   
-  //  std::cout << "Ref direction: " << refDirection << std::endl;
-  //  std::cout << "Axis: " << axis << std::endl;
-  //  std::cout << "Origin: " << o << std::endl;
+  const double tolerance = 0.01;
+  if (x.squared_length() < 1.0-tolerance || x.squared_length() > 1.0+tolerance ||
+      y.squared_length() < 1.0-tolerance || y.squared_length() > 1.0+tolerance ||
+      axis.squared_length() < 1.0-tolerance || axis.squared_length() > 1.0+tolerance) {
+    std::cout << "Ref direction: " << refDirection << " squared length: " << refDirection.squared_length() << std::endl;
+    std::cout << "Axis (z): " << axis << " squared length: " << axis.squared_length() << std::endl;
+    std::cout << "y: " << y << " squared length: " << y.squared_length() << std::endl;
+    std::cout << "x: " << x << " squared length: " << x.squared_length() << std::endl;
+    std::cout << "Origin: " << o << std::endl;
+  }
   
   // TODO: Should be checked.
   trsf = Kernel::Aff_transformation_3(x.cartesian(0), y.cartesian(0), axis.cartesian(0), o.cartesian(0),
@@ -132,6 +147,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcAxis1Placement* l, cgal_pl
   cgal_direction_t axis = Kernel::Vector_3(0,0,1);
   IfcGeom::CgalKernel::convert(l->Location(),o);
   if ( l->hasAxis() ) IfcGeom::CgalKernel::convert(l->Axis(), axis);
+  
+  const double tolerance = 0.01;
+  if (axis.squared_length() < 1.0-tolerance || axis.squared_length() > 1.0+tolerance) {
+    std::cout << "Axis (z): " << axis << " squared length: " << axis.squared_length() << std::endl;
+    std::cout << "Origin: " << o << std::endl;
+  }
   
   // TODO: Should be checked.
   ax = Kernel::Aff_transformation_3(1.0, 0.0, axis.cartesian(0), o.cartesian(0),
