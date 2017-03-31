@@ -5,7 +5,7 @@ bool IfcGeom::CgalKernel::convert_wire_to_face(const cgal_wire_t& wire, cgal_fac
   return true;
 }
 
-void IfcGeom::CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon, bool closed, double tol) {
+void IfcGeom::CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon) {
   if (tol <= 0.) tol = getValue(GV_PRECISION);
   tol *= tol;
   
