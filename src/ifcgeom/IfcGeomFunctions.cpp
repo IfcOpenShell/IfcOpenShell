@@ -122,6 +122,7 @@
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopTools_ListIteratorOfListOfShape.hxx>
+#include <TopTools_HSequenceOfShape.hxx>
 
 #include <BOPAlgo_PaveFiller.hxx>
 #include <BOPAlgo_BOP.hxx>
@@ -716,8 +717,18 @@ gp_Pnt IfcGeom::Kernel::point_above_plane(const gp_Pln& pln, bool agree) {
 }
 
 void IfcGeom::Kernel::apply_tolerance(TopoDS_Shape& s, double t) {
+	ShapeAnalysis_ShapeTolerance toler;
+	if (toler.Tolerance(s, 0) > t) {
+		Handle_TopTools_HSequenceOfShape shapes = toler.OverTolerance(s, t);
+		for (int i = 1; i <= shapes->Length(); ++i) {
+			const TopoDS_Shape& sub = shapes->Value(i);
+			std::stringstream ss;
+			TopAbs::Print(sub.ShapeType(), ss);
+			Logger::Warning("Tolerance of " + boost::lexical_cast<std::string>(toler.Tolerance(sub, 0)) + " on " + ss.str());
+		}
+	}
 	ShapeFix_ShapeTolerance tol;
-	tol.SetTolerance(s, t);
+	tol.LimitTolerance(s, t);
 }
 
 void IfcGeom::Kernel::setValue(GeomValue var, double value) {
