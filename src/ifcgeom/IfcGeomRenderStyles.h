@@ -27,6 +27,9 @@
 #include "../ifcparse/Ifc2x3.h"
 #endif
 
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/replace.hpp>
+
 namespace IfcGeom {
 	class IFC_GEOM_API SurfaceStyle {
 	public:
@@ -63,8 +66,8 @@ namespace IfcGeom {
         {
 			std::stringstream sstr; 
 			std::string sanitized = name;
-			std::transform(sanitized.begin(), sanitized.end(), sanitized.begin(), ::tolower);
-			std::replace(sanitized.begin(), sanitized.end(), ' ', '-');
+            boost::to_lower(sanitized);
+            boost::replace_all(sanitized, " ", "-");
 			sstr << "surface-style-" << id << "-" << sanitized;
 			this->name = sstr.str(); 
 		}

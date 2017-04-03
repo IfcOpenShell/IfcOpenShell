@@ -101,8 +101,8 @@ namespace IfcGeom {
 			oss << "product-" << IfcParse::IfcGlobalId(guid).formatted();
 			if (!_context.empty()) {
 				std::string ctx = _context;
-				std::transform(ctx.begin(), ctx.end(), ctx.begin(), ::tolower);
-				std::replace(ctx.begin(), ctx.end(), ' ', '-');
+                boost::to_lower(ctx);
+                boost::replace_all(ctx, " ", "-");
 				oss << "-" << ctx;
 			}
 			_unique_id = oss.str();
