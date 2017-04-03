@@ -308,6 +308,8 @@ public:
 	int operator()(const double& /*i*/) const { return -1; }
 	int operator()(const std::string& /*i*/) const { return -1; }
 	int operator()(const boost::dynamic_bitset<>& /*i*/) const { return -1; }
+	int operator()(const IfcWriteArgument::empty_aggregate_t&) const { return 0; }
+	int operator()(const IfcWriteArgument::empty_aggregate_of_aggregate_t&) const { return 0; }
 	int operator()(const std::vector<int>& i) const { return (int)i.size(); }
 	int operator()(const std::vector<double>& i) const { return (int)i.size(); }
 	int operator()(const std::vector< std::vector<int> >& i) const { return (int)i.size(); }
@@ -435,6 +437,8 @@ public:
 		}
 		data << ")";
 	}
+	void operator()(const IfcWriteArgument::empty_aggregate_t&) const { data << "()"; }
+	void operator()(const IfcWriteArgument::empty_aggregate_of_aggregate_t&) const { data << "()"; }
 	operator std::string() { return data.str(); }
 };
 

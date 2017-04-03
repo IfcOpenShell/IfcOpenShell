@@ -54,6 +54,8 @@ namespace IfcWrite {
 				: data(data), enumeration_value(enumeration_value) {}
 		};		
 		class Derived {};
+		class empty_aggregate_t {};
+		class empty_aggregate_of_aggregate_t {};
 	private:
 		boost::variant<
 			// A null argument, it will always serialize to $
@@ -85,6 +87,7 @@ namespace IfcWrite {
 			IfcUtil::IfcBaseClass*,
 
 			// AGGREGATES:
+			empty_aggregate_t,
 			// An aggregate of integers, e.g. (1,2,3)
 			std::vector<int>,
 			// An aggregate of floats, e.g. (12.3,4.) 
@@ -99,6 +102,7 @@ namespace IfcWrite {
 			IfcEntityList::ptr,
 
 			// AGGREGATES OF AGGREGATES:
+			empty_aggregate_of_aggregate_t,
 			// An aggregate of an aggregate of ints. E.g. ((1, 2), (3))
 			std::vector< std::vector<int> >,
 			// An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
