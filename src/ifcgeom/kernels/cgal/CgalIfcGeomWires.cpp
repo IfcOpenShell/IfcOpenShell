@@ -1,3 +1,7 @@
+// For MSVC to have M_PI
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 #include "CgalKernel.h"
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& result) {

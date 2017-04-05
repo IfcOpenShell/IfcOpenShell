@@ -192,7 +192,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcObjectPlacement* l, cgal_p
       //        } std::cout << std::endl;
       //      }
       
-      trsf = trsf * trsf2; // TODO: I think it's fine, but maybe should it be the other way around?
+      trsf = trsf2 * trsf;
       
       //      std::cout << "trsf (after multiplication)" << std::endl;
       //      for (int i = 0; i < 3; ++i) {

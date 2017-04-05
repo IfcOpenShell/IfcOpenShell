@@ -225,7 +225,7 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
 //      }
       
       // Move the opening into the coordinate system of the IfcProduct
-      opening_trsf = opening_trsf * entity_trsf.inverse();
+      opening_trsf = entity_trsf.inverse() * opening_trsf;
       
 //      std::cout << "opening_trsf after" << std::endl;
 //      for (int i = 0; i < 3; ++i) {
@@ -248,7 +248,7 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
         if (opening_shapes[i].Placement()) {
           gtrsf = *(CgalPlacement*)opening_shapes[i].Placement();
         }
-        gtrsf = gtrsf * opening_trsf;
+        gtrsf = opening_trsf * gtrsf;
         cgal_shape_t opening_shape(((CgalShape*)opening_shapes[i].Shape())->shape());
         for (auto &vertex: vertices(opening_shape)) vertex->point() = vertex->point().transform(gtrsf);
         opening_shapelist.push_back(opening_shape);
