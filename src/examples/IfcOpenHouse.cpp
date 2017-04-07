@@ -269,6 +269,7 @@ int main() {
 	for (IfcSchema::IfcRepresentation::list::it it = ground_reps->begin(); it != ground_reps->end(); ++it) {
 		(*it)->setContextOfItems(file.getRepresentationContext("Model"));
 	}
+	file.addEntity(ground_representation);
 	file.setSurfaceColour(ground_representation, 0.15, 0.25, 0.05);
 
 	// According to the Ifc2x3 schema an IfcWallStandardCase needs to have an IfcMaterialLayerSet
