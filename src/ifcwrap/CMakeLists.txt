@@ -33,18 +33,20 @@ IF(NOT "$ENV{PYTHON_LIBRARY}" STREQUAL "")
 	MESSAGE(STATUS "Looking for Python library file in: ${PYTHON_LIBRARY}")
 ENDIF()
 
+# NOTE PYTHONLIBS_FOUND and PYTHONINTERP_FOUND cannot seem to be trusted so
+# we need further checks to see whether the packages were actually found or not.
 FIND_PACKAGE(PythonLibs)
-IF(NOT PYTHONLIBS_FOUND)
-	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find Python. Disable BUILD_IFCPYTHON or fix Python paths to proceed.")
+IF(NOT PYTHONLIBS_FOUND OR "$PYTHON_INCLUDE_DIRS}" STREQUAL "")
+	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find Python lib or header. Disable BUILD_IFCPYTHON or fix Python paths to proceed.")
 ENDIF()
 
 INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
-
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS "")
 # NOTE Workaround for most likely missing debug Python libraries on Windows (requires Python built from the source).
 # Python 3.5 intaller and onwards will have an option to install the debug libraries too.
+# NOTE PYTHON_DEBUG_LIBRARIES appears to be a deprecated variable
 IF (WIN32 AND NOT PYTHON_DEBUG_LIBRARIES)
 	MESSAGE(STATUS "PYTHON_DEBUG_LIBRARIES not found, defining SWIG_PYTHON_INTERPRETER_NO_DEBUG workaround for IfcWrap.")
 	ADD_DEFINITIONS(-DSWIG_PYTHON_INTERPRETER_NO_DEBUG)
@@ -67,7 +69,7 @@ endif()
 # Try to find the Python interpreter to get the site-packages
 # directory in which the wrapper can be installed.
 FIND_PACKAGE(PythonInterp)
-IF(PYTHONINTERP_FOUND)
+IF(PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "")
     EXECUTE_PROCESS(
         COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils.sysconfig import get_python_lib; sys.stdout.write(get_python_lib(1))"
         OUTPUT_VARIABLE python_package_dir
