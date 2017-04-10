@@ -100,8 +100,14 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     nef_shape.transform(trsf);
   }
   
-  nef_shape.convert_to_polyhedron(shape);
-  return true;
+  try {
+    nef_shape.convert_to_polyhedron(shape);
+    return true;
+  } catch (...) {
+    std::cout << "IfcExtrudedAreaSolid: cannot convert Nef to polyhedron!" << std::endl;
+    return false;
+  }
+  
 }
 
 #ifdef USE_IFC4
@@ -244,8 +250,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* 
     nef_shape.transform(trsf);
   }
   
-  nef_shape.convert_to_polyhedron(shape);
-  return true;
+  try {
+    nef_shape.convert_to_polyhedron(shape);
+    return true;
+  } catch (...) {
+    std::cout << "IfcExtrudedAreaSolidTapered: cannot convert Nef to polyhedron!" << std::endl;
+    return false;
+  }
 }
 #endif
 
@@ -458,8 +469,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
 //      fresult.open("/Users/ken/Desktop/result.off");
 //      fresult << result << std::endl;
 //      fresult.close();
-    } nef_result.convert_to_polyhedron(shape);
-    return true;
+    } try {
+      nef_result.convert_to_polyhedron(shape);
+      return true;
+    } catch (...) {
+      std::cout << "IfcBooleanResult: cannot convert Nef to polyhedron!" << std::endl;
+      return false;
+    }
     
   } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
 
@@ -475,8 +491,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
 //      fresult.open("/Users/ken/Desktop/result.off");
 //      fresult << result << std::endl;
 //      fresult.close();
-    } nef_result.convert_to_polyhedron(shape);
-    return true;
+    } try {
+      nef_result.convert_to_polyhedron(shape);
+      return true;
+    } catch (...) {
+      std::cout << "IfcBooleanResult: cannot convert Nef to polyhedron!" << std::endl;
+      return false;
+    }
     
   } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
 
@@ -492,8 +513,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
 //      fresult.open("/Users/ken/Desktop/result.off");
 //      fresult << result << std::endl;
 //      fresult.close();
-    } nef_result.convert_to_polyhedron(shape);
-    return true;
+    } try {
+      nef_result.convert_to_polyhedron(shape);
+      return true;
+    } catch (...) {
+      std::cout << "IfcBooleanResult: cannot convert Nef to polyhedron!" << std::endl;
+      return false;
+    }
   } return false;
 }
 
