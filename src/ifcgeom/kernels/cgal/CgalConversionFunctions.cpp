@@ -45,9 +45,14 @@ CGAL::Polyhedron_3<Kernel> IfcGeom::CgalKernel::create_polyhedron(std::list<cgal
 
 CGAL::Polyhedron_3<Kernel> IfcGeom::CgalKernel::create_polyhedron(CGAL::Nef_polyhedron_3<Kernel> &nef_polyhedron) {
   if (nef_polyhedron.is_simple()) {
-    CGAL::Polyhedron_3<Kernel> polyhedron;
-    nef_polyhedron.convert_to_polyhedron(polyhedron);
-    return polyhedron;
+    try {
+      CGAL::Polyhedron_3<Kernel> polyhedron;
+      nef_polyhedron.convert_to_polyhedron(polyhedron);
+      return polyhedron;
+    } catch (...) {
+      std::cout << "Conversion from Nef to polyhedron failed!" << std::endl;
+      return CGAL::Polyhedron_3<Kernel>();
+    }
   } else {
     std::cout << "Nef polyhedron not simple: cannot create polyhedron!" << std::endl;
     return CGAL::Polyhedron_3<Kernel>();
