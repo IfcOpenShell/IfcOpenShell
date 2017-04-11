@@ -34,6 +34,8 @@
 #include <string>
 #include <cmath>
 
+using namespace IfcSchema;
+
 static void collada_id(std::string &s)
 {
     IfcUtil::sanitate_material_name(s);
@@ -66,12 +68,12 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
     const std::vector<real_t>& uvs)
 {
 	openMesh(mesh_id);
-
+	
 	// The normals vector can be empty for example when the WELD_VERTICES setting is used.
 	// IfcOpenShell does not provide them with multiple face normals collapsed into a single vertex.
 	const bool has_normals = !normals.empty();
     const bool has_uvs = !uvs.empty();
-
+	
 	addFloatSource(mesh_id, COLLADASW::LibraryGeometries::POSITIONS_SOURCE_ID_SUFFIX, positions);
 	if (has_normals) {
 		addFloatSource(mesh_id, COLLADASW::LibraryGeometries::NORMALS_SOURCE_ID_SUFFIX, normals);
@@ -298,14 +300,16 @@ void ColladaSerializer::ColladaExporter::startDocument(const std::string& unit_n
 	asset.setUpAxisType(COLLADASW::Asset::Z_UP);
 	asset.add();
 }
-
+// ********************************
+// NOTE : o->context.parent_id ?????????????????  == -1 si pas de parent
+// On a un type de product ifcBuildingStorey
 void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationElement<real_t>* o)
 {
+	
     const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
     const std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS) ?
-           o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ? o->name() : o->unique_id());
+           o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ? o->name() : (o->type() + o->unique_id()));
     const std::string representation_id = "representation-" + boost::lexical_cast<std::string>(o->geometry().id());
-
 	std::vector<std::string> material_references;
     foreach(const IfcGeom::Material& material, mesh.materials()) {
 		if (!materials.contains(material)) {
@@ -323,6 +327,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
     );
 }
 
+
 void ColladaSerializer::ColladaExporter::endDocument() {
 	// In fact due the XML based nature of Collada and its dependency on library nodes,
 	// only at this point all objects are written to the stream.
@@ -338,6 +343,7 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	geometries.close();
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		const std::string object_name = it->unique_id;
+		
         /// @todo redundant information using ID as both ID and Name, maybe omit Name or allow specifying what would be used as the name
 		scene.add(object_name, object_name, it->representation_id, it->material_references, it->matrix);
 	}

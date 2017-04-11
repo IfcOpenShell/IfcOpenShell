@@ -519,7 +519,7 @@ int main(int argc, char** argv)
 
 	time_t start,end;
 	time(&start);
-
+	
     IfcGeom::Iterator<real_t> context_iterator(settings, &ifc_file, filter_funcs);
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
@@ -577,9 +577,32 @@ int main(int argc, char** argv)
 	
 	do {
         IfcGeom::Element<real_t> *geom_object = context_iterator.get();
-		if (is_tesselated) {
+		
+		// Note : Ici on envoie au Serializer les obj à traier. 
+		// Un tri a déjà été fait, on envoie pas tous les objets. Les IfcBuildingStorey ne sont déjà plus là ... 
+		
+		// if the target is a .dae file, get the parent of the object
+		if (output_extension == ".dae" && geom_object->parent_id() != -1)
+		{
+			const IfcGeom::Element<real_t> *parent_object = context_iterator.getObject(geom_object->parent_id());
+
+			int cptSecure = 0;
+			while (parent_object->type() != "IfcBuildingStorey" && cptSecure < 1000 && parent_object->parent_id() != 1)
+			{
+				cptSecure++;
+				parent_object = context_iterator.getObject(parent_object->parent_id());
+			}
+			//Debug
+			if (geom_object->parent_id() == -1) std::cout << "Parent = -1 : " << geom_object->name();
+			std::cout << '\n' << "obj " << geom_object->unique_id() << " parent = " << parent_object->name() << " of type " << parent_object->type() << '\n';
+		}
+
+		if (is_tesselated) 
+		{
 			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
-		} else {
+		} 
+		else 
+		{
 			serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
 		}
         const int progress = context_iterator.progress() / 2;

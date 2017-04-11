@@ -177,6 +177,7 @@ private:
 	ColladaExporter exporter;
 	std::string unit_name;
 	float unit_magnitude;
+	IfcParse::IfcFile* file;
 public:
     ColladaSerializer(const std::string& dae_filename, const SerializerSettings& settings)
         : GeometrySerializer(settings)
@@ -197,7 +198,7 @@ public:
 		unit_name = name;
 		unit_magnitude = magnitude;
 	}
-	void setFile(IfcParse::IfcFile*) {}
+	void setFile(IfcParse::IfcFile* f) { file = f; }
 };
 
 #endif
