@@ -224,7 +224,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::write() {
 	if (scene_opened) {
 		closeVisualScene();
 		closeLibrary();
-
+		
 		COLLADASW::Scene scene (mSW, COLLADASW::URI ("#" + scene_id));
 		scene.add();		
 	}
@@ -319,8 +319,8 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 	}
 
 	deferreds.push_back(
-        DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
-            mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs())
+		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
+			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), "")
     );
 }
 
@@ -343,7 +343,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 
 	deferreds.push_back(
 		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
-			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs())
+			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), parent->name())
 	);
 }
 

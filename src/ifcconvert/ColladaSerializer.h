@@ -132,10 +132,11 @@ private:
 			std::vector<IfcGeom::Material> materials;
 			std::vector<std::string> material_references;
             std::vector<real_t> uvs;
+			std::string parent;
             DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const std::vector<real_t>& matrix,
                 const std::vector<real_t>& vertices, const std::vector<real_t>& normals, const std::vector<int>& faces,
                 const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
-                const std::vector<std::string>& material_references, const std::vector<real_t>& uvs)
+                const std::vector<std::string>& material_references, const std::vector<real_t>& uvs, const std::string& parent)
 				: unique_id(unique_id)
 				, representation_id(representation_id)
 				, type(type)
@@ -148,6 +149,7 @@ private:
 				, materials(materials)
 				, material_references(material_references)
                 , uvs(uvs)
+				, parent(parent)
 			{}
 		};
 		COLLADABU::NativeString filename;
