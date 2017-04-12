@@ -578,23 +578,33 @@ int main(int argc, char** argv)
 	do {
         IfcGeom::Element<real_t> *geom_object = context_iterator.get();
 		
-		// Note : Ici on envoie au Serializer les obj à traier. 
-		// Un tri a déjà été fait, on envoie pas tous les objets. Les IfcBuildingStorey ne sont déjà plus là ... 
-		
 		// if the target is a .dae file, get the parent of the object
 		if (output_extension == ".dae" && geom_object->parent_id() != -1)
 		{
-			const IfcGeom::Element<real_t> *parent_object = context_iterator.getObject(geom_object->parent_id());
-
-			int cptSecure = 0;
-			while (parent_object->type() != "IfcBuildingStorey" && cptSecure < 1000 && parent_object->parent_id() != 1)
+			const IfcGeom::Element<real_t> *parent_object = NULL;
+			bool hasParent = true;
+			try { parent_object = context_iterator.getObject(geom_object->parent_id()); }
+			catch (std::exception e)
 			{
-				cptSecure++;
-				parent_object = context_iterator.getObject(parent_object->parent_id());
+				std::cout << e.what() << '\n';
+				hasParent = false;
+			}
+
+			while (parent_object != NULL && parent_object->type() != "IfcBuildingStorey" && hasParent)
+			{
+				try { parent_object = context_iterator.getObject(parent_object->parent_id()); }
+				catch (std::exception e) 
+				{ 
+					std::cout << e.what() << '\n';
+					hasParent = false;
+				}
+
+				hasParent = hasParent && parent_object->parent_id() != 1;
 			}
 			//Debug
-			if (geom_object->parent_id() == -1) std::cout << "Parent = -1 : " << geom_object->name();
-			std::cout << '\n' << "obj " << geom_object->unique_id() << " parent = " << parent_object->name() << " of type " << parent_object->type() << '\n';
+			//if (parent_object != NULL) std::cout << '\n' << "obj " << geom_object->unique_id() << " parent = " << parent_object->name() << " of type " << parent_object->type() << '\n';
+			//else std::cout << "No parent found : " << geom_object->unique_id() << " of type : " << geom_object->type();
+			
 		}
 
 		if (is_tesselated) 
