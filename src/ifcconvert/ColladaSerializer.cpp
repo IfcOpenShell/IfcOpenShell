@@ -382,6 +382,11 @@ void ColladaSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
     exporter.write(o);
 }
 
+void ColladaSerializer::write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent)
+{
+	exporter.write(o, parent);
+}
+
 
 void ColladaSerializer::finalize() {
 	exporter.endDocument();
