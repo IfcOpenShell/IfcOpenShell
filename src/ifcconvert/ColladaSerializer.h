@@ -172,6 +172,7 @@ private:
 		virtual ~ColladaExporter() {}
 		void startDocument(const std::string& unit_name, float unit_magnitude);
         void write(const IfcGeom::TriangulationElement<real_t>* o);
+		void write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent);
 		void endDocument();
 	};
 	ColladaExporter exporter;
@@ -190,6 +191,7 @@ public:
 	bool ready();
 	void writeHeader();
     void write(const IfcGeom::TriangulationElement<real_t>* o);
+	void write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent);
     void write(const IfcGeom::BRepElement<real_t>* /*o*/) {}
 	void finalize();
 	bool isTesselated() const { return true; }

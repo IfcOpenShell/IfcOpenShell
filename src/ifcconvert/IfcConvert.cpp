@@ -605,16 +605,20 @@ int main(int argc, char** argv)
 			//if (parent_object != NULL) std::cout << '\n' << "obj " << geom_object->unique_id() << " parent = " << parent_object->name() << " of type " << parent_object->type() << '\n';
 			//else std::cout << "No parent found : " << geom_object->unique_id() << " of type : " << geom_object->type();
 			
+			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object), parent_object);
 		}
-
-		if (is_tesselated) 
+		else
 		{
-			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
-		} 
-		else 
-		{
-			serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
+			if (is_tesselated)
+			{
+				serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
+			}
+			else
+			{
+				serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
+			}
 		}
+		
         const int progress = context_iterator.progress() / 2;
         if (old_progress != progress) Logger::ProgressBar(progress);
         old_progress = progress;

@@ -300,12 +300,9 @@ void ColladaSerializer::ColladaExporter::startDocument(const std::string& unit_n
 	asset.setUpAxisType(COLLADASW::Asset::Z_UP);
 	asset.add();
 }
-// ********************************
-// NOTE : o->context.parent_id ?????????????????  == -1 si pas de parent
-// On a un type de product ifcBuildingStorey
+
 void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationElement<real_t>* o)
-{
-	
+{	
     const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
     const std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS) ?
            o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ? o->name() : (o->type() + o->unique_id()));
@@ -327,6 +324,28 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
     );
 }
 
+void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent)
+{
+	const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
+	const std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS) ?
+		o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ? o->name() : (o->type() + o->unique_id()));
+	const std::string representation_id = "representation-" + boost::lexical_cast<std::string>(o->geometry().id());
+	std::vector<std::string> material_references;
+	foreach(const IfcGeom::Material& material, mesh.materials()) {
+		if (!materials.contains(material)) {
+			materials.add(material);
+		}
+		std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
+			? material.original_name() : material.name());
+		collada_id(material_name);
+		material_references.push_back(material_name);
+	}
+
+	deferreds.push_back(
+		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
+			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs())
+	);
+}
 
 void ColladaSerializer::ColladaExporter::endDocument() {
 	// In fact due the XML based nature of Collada and its dependency on library nodes,
@@ -362,6 +381,7 @@ void ColladaSerializer::writeHeader() {
 void ColladaSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
     exporter.write(o);
 }
+
 
 void ColladaSerializer::finalize() {
 	exporter.endDocument();
