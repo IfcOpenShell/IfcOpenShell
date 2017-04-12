@@ -121,6 +121,10 @@ private:
             ColladaEffects effects;
 		};
 		class DeferredObject {
+		friend bool operator < (const DeferredObject & def_obj1, const DeferredObject & def_obj2)
+		{
+			return (def_obj1.parent < def_obj2.parent ? true : false);
+		}
 		public:
 			std::string unique_id, representation_id, type;
 			std::vector<real_t> matrix;

@@ -352,6 +352,7 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	// only at this point all objects are written to the stream.
 	materials.write();
 	std::set<std::string> geometries_written;
+	std::sort(deferreds.begin(), deferreds.end());
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		if (geometries_written.find(it->representation_id) != geometries_written.end()) {
 			continue;
