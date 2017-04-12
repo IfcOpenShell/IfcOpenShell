@@ -604,8 +604,9 @@ int main(int argc, char** argv)
 			//Debug
 			//if (parent_object != NULL) std::cout << '\n' << "obj " << geom_object->unique_id() << " parent = " << parent_object->name() << " of type " << parent_object->type() << '\n';
 			//else std::cout << "No parent found : " << geom_object->unique_id() << " of type : " << geom_object->type();
-			
-			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object), parent_object);
+
+			if (parent_object != NULL) serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object), parent_object);
+			else serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
 		}
 		else
 		{
