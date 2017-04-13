@@ -52,7 +52,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   
   if (bottom_face.inner.empty()) {
     shape = create_polyhedron(face_list);
-    for (auto &vertex: vertices(shape)) vertex->point() = vertex->point().transform(trsf);
+    if (has_position) for (auto &vertex: vertices(shape)) vertex->point() = vertex->point().transform(trsf);
     return true;
   }
   
@@ -66,6 +66,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     
     cgal_face_t hole_bottom_face;
     hole_bottom_face.outer = inner;
+    remove_duplicate_points_from_loop(hole_bottom_face.outer);
     face_list.push_back(hole_bottom_face);
     
     for (std::vector<Kernel::Point_3>::const_iterator current_vertex = inner.begin();
@@ -93,10 +94,171 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     nef_shape -= create_nef_polyhedron(face_list);
   }
   
-  nef_shape.transform(trsf);
-  nef_shape.convert_to_polyhedron(shape);
-  return true;
+  if (has_position) {
+    // IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+    // and therefore has a unit scale factor
+    nef_shape.transform(trsf);
+  }
+  
+  try {
+    nef_shape.convert_to_polyhedron(shape);
+    return true;
+  } catch (...) {
+    std::cout << "IfcExtrudedAreaSolid: cannot convert Nef to polyhedron!" << std::endl;
+    return false;
+  }
+  
 }
+
+#ifdef USE_IFC4
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, cgal_shape_t& shape) {
+  const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
+  if (height < getValue(GV_PRECISION)) {
+    Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l->entity);
+    return false;
+  }
+  
+  cgal_face_t face1, face2;
+  if (!convert_face(l->SweptArea(), face1)) return false;
+  if (!convert_face(l->EndSweptArea(), face2)) return false;
+  
+  cgal_placement_t trsf;
+  bool has_position = true;
+#ifdef USE_IFC4
+  has_position = l->hasPosition();
+#endif
+  if (has_position) {
+    IfcGeom::CgalKernel::convert(l->Position(), trsf);
+  }
+  
+  cgal_direction_t dir;
+  convert(l->ExtrudedDirection(), dir);
+  
+  for (auto &vertex: face2.outer) vertex = vertex + height*dir;
+  for (auto &ring: face2.inner) {
+    for (auto &vertex: ring) vertex = vertex + height*dir;
+  }
+  
+  // Outer
+  std::list<cgal_face_t> face_list;
+  face_list.push_back(face1);
+  
+  std::vector<Kernel::Point_3>::const_iterator current_face1_vertex = face1.outer.begin();
+  std::vector<Kernel::Point_3>::const_iterator current_face2_vertex = face2.outer.begin();
+  while (current_face1_vertex != face1.outer.end() &&
+         current_face2_vertex != face2.outer.end()) {
+    std::vector<Kernel::Point_3>::const_iterator next_face1_vertex = current_face1_vertex;
+    std::vector<Kernel::Point_3>::const_iterator next_face2_vertex = current_face2_vertex;
+    ++next_face1_vertex;
+    ++next_face2_vertex;
+    if (next_face1_vertex == face1.outer.end()) next_face1_vertex = face1.outer.begin();
+    if (next_face2_vertex == face2.outer.end()) next_face2_vertex = face2.outer.begin();
+    cgal_face_t side_face;
+    side_face.outer.push_back(*next_face1_vertex);
+    side_face.outer.push_back(*current_face1_vertex);
+    side_face.outer.push_back(*current_face2_vertex);
+    side_face.outer.push_back(*next_face2_vertex);
+    face_list.push_back(side_face);
+    ++current_face1_vertex;
+    ++current_face2_vertex;
+  }
+  
+  cgal_face_t top_face;
+  for (std::vector<Kernel::Point_3>::const_reverse_iterator vertex = face2.outer.rbegin();
+       vertex != face2.outer.rend();
+       ++vertex) {
+    top_face.outer.push_back(*vertex);
+  } face_list.push_back(top_face);
+  
+  if (face1.inner.empty() || face2.inner.empty()) {
+    shape = create_polyhedron(face_list);
+    if (has_position) for (auto &vertex: vertices(shape)) vertex->point() = vertex->point().transform(trsf);
+    return true;
+  }
+  
+//  std::ofstream f1;
+//  CGAL::Polyhedron_3<Kernel> outer_polyhedron;
+//  PolyhedronBuilder builder(&face_list);
+//  outer_polyhedron.delegate(builder);
+//  f1.open("/Users/ken/Desktop/outer.off");
+//  f1 << outer_polyhedron << std::endl;
+//  f1.close();
+  
+  CGAL::Nef_polyhedron_3<Kernel> nef_shape = create_nef_polyhedron(face_list);
+  
+  // Inner
+  // TODO: Would be faster to triangulate top/bottom face template rather than use Nef polyhedra for subtraction
+  std::vector<cgal_wire_t>::iterator inner_face1 = face1.inner.begin();
+  std::vector<cgal_wire_t>::iterator inner_face2 = face2.inner.begin();
+  while (inner_face1 != face1.inner.end() &&
+         inner_face2 != face2.inner.end()) {
+    face_list.clear();
+    
+    cgal_face_t hole_face1;
+    hole_face1.outer = *inner_face1;
+    remove_duplicate_points_from_loop(hole_face1.outer);
+    face_list.push_back(hole_face1);
+    
+    cgal_face_t hole_face2;
+    hole_face2.outer = *inner_face2;
+    remove_duplicate_points_from_loop(hole_face2.outer);
+    
+    current_face1_vertex = hole_face1.outer.begin();
+    current_face2_vertex = hole_face2.outer.begin();
+    while (current_face1_vertex != hole_face1.outer.end() &&
+           current_face2_vertex != hole_face2.outer.end()) {
+      std::vector<Kernel::Point_3>::const_iterator next_face1_vertex = current_face1_vertex;
+      std::vector<Kernel::Point_3>::const_iterator next_face2_vertex = current_face2_vertex;
+      ++next_face1_vertex;
+      ++next_face2_vertex;
+      if (next_face1_vertex == hole_face1.outer.end()) next_face1_vertex = hole_face1.outer.begin();
+      if (next_face2_vertex == hole_face2.outer.end()) next_face2_vertex = hole_face2.outer.begin();
+      cgal_face_t side_face;
+      side_face.outer.push_back(*next_face1_vertex);
+      side_face.outer.push_back(*current_face1_vertex);
+      side_face.outer.push_back(*current_face2_vertex);
+      side_face.outer.push_back(*next_face2_vertex);
+      face_list.push_back(side_face);
+      ++current_face1_vertex;
+      ++current_face2_vertex;
+    }
+    
+    cgal_face_t top_hole_face;
+    for (std::vector<Kernel::Point_3>::const_reverse_iterator vertex = hole_face2.outer.rbegin();
+         vertex != hole_face2.outer.rend();
+         ++vertex) {
+      top_hole_face.outer.push_back(*vertex);
+    } face_list.push_back(top_hole_face);
+    
+//    std::ofstream f2;
+//    CGAL::Polyhedron_3<Kernel> inner_polyhedron;
+//    PolyhedronBuilder builder(&face_list);
+//    inner_polyhedron.delegate(builder);
+//    f2.open("/Users/ken/Desktop/inner.off");
+//    f2 << inner_polyhedron << std::endl;
+//    f2.close();
+    
+    nef_shape -= create_nef_polyhedron(face_list);
+    
+    ++inner_face1;
+    ++inner_face2;
+  }
+  
+  if (has_position) {
+    // IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+    // and therefore has a unit scale factor
+    nef_shape.transform(trsf);
+  }
+  
+  try {
+    nef_shape.convert_to_polyhedron(shape);
+    return true;
+  } catch (...) {
+    std::cout << "IfcExtrudedAreaSolidTapered: cannot convert Nef to polyhedron!" << std::endl;
+    return false;
+  }
+}
+#endif
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_shape_t& shape) {
   IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
@@ -307,8 +469,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
 //      fresult.open("/Users/ken/Desktop/result.off");
 //      fresult << result << std::endl;
 //      fresult.close();
-    } nef_result.convert_to_polyhedron(shape);
-    return true;
+    } try {
+      nef_result.convert_to_polyhedron(shape);
+      return true;
+    } catch (...) {
+      std::cout << "IfcBooleanResult: cannot convert Nef to polyhedron!" << std::endl;
+      return false;
+    }
     
   } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
 
@@ -324,8 +491,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
 //      fresult.open("/Users/ken/Desktop/result.off");
 //      fresult << result << std::endl;
 //      fresult.close();
-    } nef_result.convert_to_polyhedron(shape);
-    return true;
+    } try {
+      nef_result.convert_to_polyhedron(shape);
+      return true;
+    } catch (...) {
+      std::cout << "IfcBooleanResult: cannot convert Nef to polyhedron!" << std::endl;
+      return false;
+    }
     
   } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
 
@@ -341,8 +513,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
 //      fresult.open("/Users/ken/Desktop/result.off");
 //      fresult << result << std::endl;
 //      fresult.close();
-    } nef_result.convert_to_polyhedron(shape);
-    return true;
+    } try {
+      nef_result.convert_to_polyhedron(shape);
+      return true;
+    } catch (...) {
+      std::cout << "IfcBooleanResult: cannot convert Nef to polyhedron!" << std::endl;
+      return false;
+    }
   } return false;
 }
 

@@ -300,8 +300,16 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
     }
     
     if (brep_cut_result.is_valid()) {
-      nef_brep_cut_result.convert_to_Polyhedron(brep_cut_result);
-      cut_shapes.push_back(IfcGeom::ConversionResult(new CgalShape(brep_cut_result), &it3->Style()));
+      try {
+        nef_brep_cut_result.convert_to_polyhedron(brep_cut_result);
+        cut_shapes.push_back(IfcGeom::ConversionResult(new CgalShape(brep_cut_result), &it3->Style()));
+      } catch (...) {
+        // Apparently processing the boolean operation failed or resulted in an invalid result
+        // in which case the original shape without the subtractions is returned instead
+        // we try convert the openings in the original way, one by one.
+        Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed:", entity->entity);
+        return false;
+      }
     } else {
       // Apparently processing the boolean operation failed or resulted in an invalid result
       // in which case the original shape without the subtractions is returned instead

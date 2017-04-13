@@ -44,7 +44,7 @@ SHAPES(IfcGeometricSet);
 //SHAPE(IfcAdvancedBrep);
 //SHAPE(IfcBSplineSurfaceWithKnots);
 SHAPE(IfcTriangulatedFaceSet);
-//SHAPE(IfcExtrudedAreaSolidTapered);
+SHAPE(IfcExtrudedAreaSolidTapered);
 #endif
 //SHAPE(IfcPlane);
 SHAPE(IfcExtrudedAreaSolid);

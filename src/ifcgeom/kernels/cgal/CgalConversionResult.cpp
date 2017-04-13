@@ -10,29 +10,52 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
     vertex->point() = vertex->point().transform(trsf);
   }
   
+  if (!s.is_valid() || !s.is_closed()) {
+    Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (before triangulation)");
+    std::ofstream ferror;
+    ferror.open("/Users/ken/Desktop/error.off");
+    ferror << s << std::endl;
+    ferror.close();
+    return;
+  }
+  
 //  std::ofstream fbefore;
 //  fbefore.open("/Users/ken/Desktop/before.off");
 //  fbefore << s << std::endl;
 //  fbefore.close();
   
   // Triangulate the shape and compute the normals
-  std::map<cgal_vertex_descriptor_t, Kernel::Vector_3> vertex_normals;
-  boost::associative_property_map<std::map<cgal_vertex_descriptor_t, Kernel::Vector_3>> vertex_normals_map(vertex_normals);
+//  std::map<cgal_vertex_descriptor_t, Kernel::Vector_3> vertex_normals;
+//  boost::associative_property_map<std::map<cgal_vertex_descriptor_t, Kernel::Vector_3>> vertex_normals_map(vertex_normals);
   std::map<cgal_face_descriptor_t, Kernel::Vector_3> face_normals;
   boost::associative_property_map<std::map<cgal_face_descriptor_t, Kernel::Vector_3>> face_normals_map(face_normals);
-  if (CGAL::Polygon_mesh_processing::triangulate_faces(s)) {
-//    std::cout << "Triangulated model: " << s.size_of_facets() << " facets and " << s.size_of_vertices() << " vertices" << std::endl;
-  } else {
-    Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
+  cgal_shape_t s_copy(s);
+  if (!CGAL::Polygon_mesh_processing::triangulate_faces(s) ) {
+    Logger::Message(Logger::LOG_ERROR, "Triangulation failed");
+    std::ofstream ferror;
+    ferror.open("/Users/ken/Desktop/error.off");
+    ferror << s << std::endl;
+    ferror.close();
     return;
   }
+  //    std::cout << "Triangulated model: " << s.size_of_facets() << " facets and " << s.size_of_vertices() << " vertices" << std::endl;
   
 //  std::ofstream fafter;
 //  fafter.open("/Users/ken/Desktop/after.off");
 //  fafter << s << std::endl;
 //  fafter.close();
-
-  CGAL::Polygon_mesh_processing::compute_normals(s, vertex_normals_map, face_normals_map);
+  
+  if (!s.is_valid() || !s.is_closed()) {
+    Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (after triangulation)");
+    std::ofstream ferror;
+    ferror.open("/Users/ken/Desktop/error.off");
+    ferror << s_copy << std::endl;
+    ferror.close();
+    return;
+  }
+  
+//  CGAL::Polygon_mesh_processing::compute_normals(s, vertex_normals_map, face_normals_map);
+  CGAL::Polygon_mesh_processing::compute_face_normals(s, face_normals_map);
   
   for (auto &face: faces(s)) {
     if (!face->is_triangle()) {
