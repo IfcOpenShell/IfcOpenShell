@@ -30,6 +30,7 @@
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
 #endif
 #include <COLLADASWStreamWriter.h>
+#include <COLLADASWNode.h>
 #include <COLLADASWLibraryGeometries.h>
 #include <COLLADASWLibraryVisualScenes.h>
 #include <COLLADASWLibraryEffects.h>
@@ -78,6 +79,7 @@ private:
 
 			const std::string scene_id;
 			bool scene_opened;
+			COLLADASW::Node *current_node;
 		public:
 			ColladaScene(const std::string& scene_id, COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryVisualScenes(&stream)
@@ -87,6 +89,8 @@ private:
 			{}
 			void add(const std::string& node_id, const std::string& node_name, const std::string& geom_name,
                 const std::vector<std::string>& material_ids, const std::vector<real_t>& matrix);
+			void addParent(const std::string& node_name);
+			void closeParent();
 			void write();
             ColladaSerializer *serializer;
 		};

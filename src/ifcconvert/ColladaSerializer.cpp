@@ -220,6 +220,24 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	node.end();
 }
 
+void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const std::string& node_name){
+
+	if (!scene_opened) {
+		openVisualScene(scene_id);
+		scene_opened = true;
+	}
+	
+	current_node = new COLLADASW::Node(mSW);
+	current_node->setNodeId(node_name);
+	current_node->setNodeName(node_name);
+	current_node->setType(COLLADASW::Node::NODE);
+	current_node->start();
+}
+
+void ColladaSerializer::ColladaExporter::ColladaScene::closeParent(){
+	current_node->end();
+}
+
 void ColladaSerializer::ColladaExporter::ColladaScene::write() {
 	if (scene_opened) {
 		closeVisualScene();
@@ -361,12 +379,25 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 		geometries.write(it->representation_id, it->type, it->vertices, it->normals, it->faces, it->edges, it->material_ids, it->materials, it->uvs);
 	}
 	geometries.close();
+	std::string parent_name;
+	bool is_parent_empty = true;
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		const std::string object_name = it->unique_id;
 		
+		if (parent_name != it->parent){
+			if (!is_parent_empty){
+				scene.closeParent();
+			}
+			parent_name = it->parent;
+			scene.addParent(parent_name);
+			is_parent_empty = false;
+		}
+
         /// @todo redundant information using ID as both ID and Name, maybe omit Name or allow specifying what would be used as the name
 		scene.add(object_name, object_name, it->representation_id, it->material_references, it->matrix);
 	}
+
+	scene.closeParent();
 	scene.write();
 	stream.endDocument();
 }
