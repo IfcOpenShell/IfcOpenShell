@@ -220,16 +220,33 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	node.end();
 }
 
-void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const std::string& node_name){
+void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::Element<real_t>& parent){
 
 	if (!scene_opened) {
 		openVisualScene(scene_id);
 		scene_opened = true;
 	}
 	
+	const std::vector<real_t> matrix = parent.transformation().matrix().data();
+	
+	double matrix_array[4][4] = {
+		{ (double)matrix[0], (double)matrix[3], (double)matrix[6], (double)matrix[9] },
+		{ (double)matrix[1], (double)matrix[4], (double)matrix[7], (double)matrix[10] },
+		{ (double)matrix[2], (double)matrix[5], (double)matrix[8], (double)matrix[11] },
+		{ 0, 0, 0, 1 }
+	};
+
+	matrix_array[0][3] += serializer->settings().offset[0];
+	matrix_array[1][3] += serializer->settings().offset[1];
+	matrix_array[2][3] += serializer->settings().offset[2];
+
+	
+	const std::string id = "representation-" + boost::lexical_cast<std::string>(parent.id());
+
 	current_node = new COLLADASW::Node(mSW);
-	current_node->setNodeId(node_name);
-	current_node->setNodeName(node_name);
+	current_node->setNodeId(id);
+	current_node->setNodeName(parent.name());
+	current_node->addMatrix(matrix_array);
 	current_node->setType(COLLADASW::Node::NODE);
 	current_node->start();
 }
@@ -338,7 +355,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 
 	deferreds.push_back(
 		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
-			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), "")
+			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs())
     );
 }
 
@@ -361,7 +378,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 
 	deferreds.push_back(
 		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
-			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), parent->name())
+			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), *parent)
 	);
 }
 
@@ -379,17 +396,17 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 		geometries.write(it->representation_id, it->type, it->vertices, it->normals, it->faces, it->edges, it->material_ids, it->materials, it->uvs);
 	}
 	geometries.close();
-	std::string parent_name;
+	int parent_id;
 	bool is_parent_empty = true;
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		const std::string object_name = it->unique_id;
 		
-		if (parent_name != it->parent){
+		if (parent_id != it->parent->id()){
 			if (!is_parent_empty){
 				scene.closeParent();
 			}
-			parent_name = it->parent;
-			scene.addParent(parent_name);
+			parent_id = it->parent->id();
+			scene.addParent(*it->parent);
 			is_parent_empty = false;
 		}
 
