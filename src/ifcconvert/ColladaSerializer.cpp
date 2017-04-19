@@ -220,22 +220,38 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	node.end();
 }
 
-void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const std::string& node_name){
+void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::Element<real_t>& parent){
 
 	if (!scene_opened) {
 		openVisualScene(scene_id);
 		scene_opened = true;
 	}
+	const std::vector<real_t> matrix = parent.transformation().matrix().data();
 	
+	double matrix_array[4][4] = {
+		{ (double)matrix[0], (double)matrix[3], (double)matrix[6], (double)matrix[9] },
+		{ (double)matrix[1], (double)matrix[4], (double)matrix[7], (double)matrix[10] },
+		{ (double)matrix[2], (double)matrix[5], (double)matrix[8], (double)matrix[11] },
+		{ 0, 0, 0, 1 }
+	};
+
+	matrix_array[0][3] += serializer->settings().offset[0];
+	matrix_array[1][3] += serializer->settings().offset[1];
+	matrix_array[2][3] += serializer->settings().offset[2];
+	
+	
+	const std::string id = "representation-" + boost::lexical_cast<std::string>(parent.id());
+
 	current_node = new COLLADASW::Node(mSW);
-	current_node->setNodeId(node_name);
-	current_node->setNodeName(node_name);
+	current_node->setNodeId(id);
+	current_node->setNodeName(parent.name());
+	current_node->addMatrix(matrix_array);
 	current_node->setType(COLLADASW::Node::NODE);
 	current_node->start();
 }
 
 void ColladaSerializer::ColladaExporter::ColladaScene::closeParent(){
-	if (current_node != NULL) { current_node->end(); }
+	if (current_node != NULL) { std::cout << "current node is not null\n"; current_node->end(); }
 }
 
 void ColladaSerializer::ColladaExporter::ColladaScene::write() {
@@ -339,7 +355,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 
 	deferreds.push_back(
 		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
-			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), "")
+			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs())
     );
 }
 
@@ -361,20 +377,24 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 		material_references.push_back(material_name);
 	}
 
-	const std::string parent_name = (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) ?
-		parent->name() : "");
-	deferreds.push_back(
+	DeferredObject defered = (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) ?
 		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
-			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), parent_name)
-	);
+			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), *parent) : 
+		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
+				mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs()));
+	deferreds.push_back(defered);
+	
 }
 
 void ColladaSerializer::ColladaExporter::endDocument() {
 	// In fact due the XML based nature of Collada and its dependency on library nodes,
 	// only at this point all objects are written to the stream.
+	std::cout << "starting end document\n";
 	materials.write();
 	std::set<std::string> geometries_written;
+	std::cout << "sorting defered list...\n";
 	std::sort(deferreds.begin(), deferreds.end());
+	std::cout << "done\n";
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		if (geometries_written.find(it->representation_id) != geometries_written.end()) {
 			continue;
@@ -383,27 +403,39 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 		geometries.write(it->representation_id, it->type, it->vertices, it->normals, it->faces, it->edges, it->material_ids, it->materials, it->uvs);
 	}
 	geometries.close();
-	std::string parent_name = "";
-	bool is_parent_empty = true;
-	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
+	int parent_id = -1;
+	bool is_parent_empty = true; 
+	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) 
+	{
 		const std::string object_name = it->unique_id;
-
-		if (parent_name != it->parent)
+		//std::cout << "working on " << it->unique_id;
+		//std::cout << (it->parent == NULL ? " parent is null\n" : "parent is not null\n");
+		if (it->parent != NULL && parent_id != it->parent->id())
 		{
+			std::cout << "parent description : \n --- Type : " << it->parent->type() << " \n --- Name : " << it->parent->name() << "\n";
+			//std::cout << "parent is not null. Id : " << it->parent->id() << '\n';
+			//std::cout << "test if parent is empty ... \n";
 			if (!is_parent_empty)
 			{
+				//std::cout << "close parent1 ... \n";
 				scene.closeParent();
+				//std::cout << "done\n";
 			}
-			parent_name = it->parent;
-			scene.addParent(parent_name);
+			//std::cout << "get parent id .. \n";
+			parent_id = it->parent->id();
+			//std::cout << "add parent to scene .. \n";
+			scene.addParent(*it->parent);
+			//std::cout << "done \n";
 			is_parent_empty = false;
 		}
-
+		//std::cout << "add node to scene ... \n";
         /// @todo redundant information using ID as both ID and Name, maybe omit Name or allow specifying what would be used as the name
 		scene.add(object_name, object_name, it->representation_id, it->material_references, it->matrix);
+		//std::cout << "done \n";
 	}
-
-	scene.closeParent();
+	std::cout << "close parent2 : \n";
+	if (!is_parent_empty) scene.closeParent();
+	std::cout << "write : \n";
 	scene.write();
 	stream.endDocument();
 }

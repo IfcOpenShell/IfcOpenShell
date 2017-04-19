@@ -603,8 +603,8 @@ int main(int argc, char** argv)
 			while (parent_object != NULL && parent_object->type() != "IfcBuildingStorey" && hasParent)
 			{
 				try { parent_object = context_iterator.getObject(parent_object->parent_id()); }
-				catch (std::exception e) 
-				{ 
+				catch (std::exception e)
+				{
 					std::cout << e.what() << '\n';
 					hasParent = false;
 				}
