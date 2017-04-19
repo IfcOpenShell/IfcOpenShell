@@ -268,7 +268,7 @@ int main(int argc, char** argv)
             "Use material names instead of unique IDs for naming materials upon serialization. "
             "Applicable for OBJ and DAE output.")
 		("use-element-types",
-			"Use element types and names instead of unique IDs for naming elements upon serialization. "
+			"Use element types instead of unique IDs for naming elements upon serialization. "
 			"Applicable for DAE output.")
 		("use-element-hierarchy",
 			"Order the elements using their IfcBuildingStorey parent. "
@@ -596,7 +596,6 @@ int main(int argc, char** argv)
 			try { parent_object = context_iterator.getObject(geom_object->parent_id()); }
 			catch (std::exception e)
 			{
-				std::cout << e.what() << '\n';
 				hasParent = false;
 			}
 
@@ -605,15 +604,11 @@ int main(int argc, char** argv)
 				try { parent_object = context_iterator.getObject(parent_object->parent_id()); }
 				catch (std::exception e)
 				{
-					std::cout << e.what() << '\n';
 					hasParent = false;
 				}
 
 				hasParent = hasParent && parent_object->parent_id() != 1;
 			}
-			//Debug
-			//if (parent_object != NULL) std::cout << '\n' << "obj " << geom_object->unique_id() << " parent = " << parent_object->name() << " of type " << parent_object->type() << '\n';
-			//else std::cout << "No parent found : " << geom_object->unique_id() << " of type : " << geom_object->type();
 
 			if (parent_object != NULL) serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object), parent_object);
 			else serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));

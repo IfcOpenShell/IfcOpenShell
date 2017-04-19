@@ -251,7 +251,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 }
 
 void ColladaSerializer::ColladaExporter::ColladaScene::closeParent(){
-	if (current_node != NULL) { std::cout << "current node is not null\n"; current_node->end(); }
+	if (current_node != NULL) { current_node->end(); }
 }
 
 void ColladaSerializer::ColladaExporter::ColladaScene::write() {
@@ -340,7 +340,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
     const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
     const std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS) ?
            o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ? 
-			   o->name() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES) ? o->type() + "_" + o->name() : o->unique_id()));
+			   o->name() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES) ? o->type() : o->unique_id()));
     const std::string representation_id = "representation-" + boost::lexical_cast<std::string>(o->geometry().id());
 	std::vector<std::string> material_references;
     foreach(const IfcGeom::Material& material, mesh.materials()) {
@@ -364,7 +364,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 	const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
 	const std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS) ?
 		o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ?
-			o->name() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES) ? o->type() + "_" + o->name() : o->unique_id()));
+			o->name() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES) ? o->type() : o->unique_id()));
 	const std::string representation_id = "representation-" + boost::lexical_cast<std::string>(o->geometry().id());
 	std::vector<std::string> material_references;
 	foreach(const IfcGeom::Material& material, mesh.materials()) {
@@ -389,12 +389,9 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 void ColladaSerializer::ColladaExporter::endDocument() {
 	// In fact due the XML based nature of Collada and its dependency on library nodes,
 	// only at this point all objects are written to the stream.
-	std::cout << "starting end document\n";
 	materials.write();
 	std::set<std::string> geometries_written;
-	std::cout << "sorting defered list...\n";
 	std::sort(deferreds.begin(), deferreds.end());
-	std::cout << "done\n";
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		if (geometries_written.find(it->representation_id) != geometries_written.end()) {
 			continue;
@@ -408,34 +405,21 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) 
 	{
 		const std::string object_name = it->unique_id;
-		//std::cout << "working on " << it->unique_id;
-		//std::cout << (it->parent == NULL ? " parent is null\n" : "parent is not null\n");
+
 		if (it->parent != NULL && parent_id != it->parent->id())
 		{
-			std::cout << "parent description : \n --- Type : " << it->parent->type() << " \n --- Name : " << it->parent->name() << "\n";
-			//std::cout << "parent is not null. Id : " << it->parent->id() << '\n';
-			//std::cout << "test if parent is empty ... \n";
 			if (!is_parent_empty)
 			{
-				//std::cout << "close parent1 ... \n";
 				scene.closeParent();
-				//std::cout << "done\n";
 			}
-			//std::cout << "get parent id .. \n";
 			parent_id = it->parent->id();
-			//std::cout << "add parent to scene .. \n";
 			scene.addParent(*it->parent);
-			//std::cout << "done \n";
 			is_parent_empty = false;
 		}
-		//std::cout << "add node to scene ... \n";
         /// @todo redundant information using ID as both ID and Name, maybe omit Name or allow specifying what would be used as the name
 		scene.add(object_name, object_name, it->representation_id, it->material_references, it->matrix);
-		//std::cout << "done \n";
 	}
-	std::cout << "close parent2 : \n";
 	if (!is_parent_empty) scene.closeParent();
-	std::cout << "write : \n";
 	scene.write();
 	stream.endDocument();
 }
