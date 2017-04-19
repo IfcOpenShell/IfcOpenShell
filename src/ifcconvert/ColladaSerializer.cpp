@@ -235,7 +235,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const std::stri
 }
 
 void ColladaSerializer::ColladaExporter::ColladaScene::closeParent(){
-	current_node->end();
+	if (current_node != NULL) { current_node->end(); }
 }
 
 void ColladaSerializer::ColladaExporter::ColladaScene::write() {
@@ -323,7 +323,8 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 {	
     const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
     const std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS) ?
-           o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ? o->name() : (o->type() + o->unique_id()));
+           o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ? 
+			   o->name() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES) ? o->type() + "_" + o->name() : o->unique_id()));
     const std::string representation_id = "representation-" + boost::lexical_cast<std::string>(o->geometry().id());
 	std::vector<std::string> material_references;
     foreach(const IfcGeom::Material& material, mesh.materials()) {
@@ -346,7 +347,8 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 {
 	const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
 	const std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS) ?
-		o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ? o->name() : (o->type() + o->unique_id()));
+		o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ?
+			o->name() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES) ? o->type() + "_" + o->name() : o->unique_id()));
 	const std::string representation_id = "representation-" + boost::lexical_cast<std::string>(o->geometry().id());
 	std::vector<std::string> material_references;
 	foreach(const IfcGeom::Material& material, mesh.materials()) {
@@ -359,9 +361,11 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 		material_references.push_back(material_name);
 	}
 
+	const std::string parent_name = (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) ?
+		parent->name() : "");
 	deferreds.push_back(
 		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
-			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), parent->name())
+			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), parent_name)
 	);
 }
 
@@ -379,13 +383,15 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 		geometries.write(it->representation_id, it->type, it->vertices, it->normals, it->faces, it->edges, it->material_ids, it->materials, it->uvs);
 	}
 	geometries.close();
-	std::string parent_name;
+	std::string parent_name = "";
 	bool is_parent_empty = true;
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		const std::string object_name = it->unique_id;
-		
-		if (parent_name != it->parent){
-			if (!is_parent_empty){
+
+		if (parent_name != it->parent)
+		{
+			if (!is_parent_empty)
+			{
 				scene.closeParent();
 			}
 			parent_name = it->parent;

@@ -43,8 +43,14 @@ public:
         /// Use material names instead of unique IDs for naming materials.
         /// Applicable for OBJ and DAE output.
         USE_MATERIAL_NAMES = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 3),
+		/// Use element types and names instead of unique IDs for naming elements.
+		/// Applicable for DAE output.
+		USE_ELEMENT_TYPES = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 4),
+		/// Order the elements using their IfcBuildingStorey parent
+		/// Applicable for DAE output
+		USE_ELEMENT_HIERARCHY = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 5),
         /// Number of different setting flags.
-        NUM_SETTINGS = 3
+        NUM_SETTINGS = 5
     };
 
     SerializerSettings()
