@@ -299,9 +299,14 @@ call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 :: Use a single lib directory for for release and debug libraries as is done with OCE
 if not exist "%OCC_LIBRARY_DIR%". mkdir "%OCC_LIBRARY_DIR%"
-move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%VC_VER%\libi\*.*" "%OCC_LIBRARY_DIR%"
-move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%VC_VER%\libd\*.*" "%OCC_LIBRARY_DIR%"
-rmdir /s /q "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%VC_VER%"
+:: NOTE OCCT (at least occt-V7_0_0-9059ca1) directory creation code is hardcoded and doesn't seem handle future VC versions
+set OCCT_VC_VER=%VC_VER%
+IF %OCCT_VC_VER% GTR 14 (
+    set OCCT_VC_VER=14
+)
+move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%\libi\*.*" "%OCC_LIBRARY_DIR%"
+move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%\libd\*.*" "%OCC_LIBRARY_DIR%"
+rmdir /s /q "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%"
 :: Removed unneeded bits
 rmdir /s /q "%INSTALL_DIR%\opencascade\data"
 rmdir /s /q "%INSTALL_DIR%\opencascade\samples"
