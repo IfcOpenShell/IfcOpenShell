@@ -587,11 +587,12 @@ int main(int argc, char** argv)
 	
 	do {
         IfcGeom::Element<real_t> *geom_object = context_iterator.get();
-		
+
 		// if the target is a .dae file, get the parent of the object
-		if (output_extension == ".dae" && geom_object->parent_id() != -1)
+		if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) && output_extension == ".dae" && geom_object->parent_id() != -1)
 		{
 			const IfcGeom::Element<real_t> *parent_object = NULL;
+			
 			bool hasParent = true;
 			try { parent_object = context_iterator.getObject(geom_object->parent_id()); }
 			catch (std::exception e)
@@ -610,8 +611,9 @@ int main(int argc, char** argv)
 				hasParent = hasParent && parent_object->parent_id() != 1;
 			}
 
-			if (parent_object != NULL) serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object), parent_object);
-			else serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
+			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object), parent_object);
+			//delete parent_object;
+			//parent_object = NULL;
 		}
 		else
 		{

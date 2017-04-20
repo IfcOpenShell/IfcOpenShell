@@ -129,12 +129,20 @@ private:
 		{
 			const IfcGeom::Element<real_t>* parent1 = def_obj1.parent;
 			const IfcGeom::Element<real_t>* parent2 = def_obj2.parent;
-
+			std::cout << "comparing..\n";
+			
 			if (parent1 == NULL || parent2 == NULL)
 			{
-				return (def_obj1.unique_id < def_obj2.unique_id ? true : false);
+				bool res = (def_obj1.unique_id < def_obj2.unique_id ? true : false);
+				std::cout << "done\n";
+				return res;
 			}
-			else return parent1->name() < parent2->name() ? true : false;
+			else
+			{
+				bool res = parent1->name() < parent2->name() ? true : false;
+				std::cout << "done\n";
+				return res;
+			}
 		}
 		public:
 			std::string unique_id, representation_id, type;
@@ -164,8 +172,9 @@ private:
 				, materials(materials)
 				, material_references(material_references)
                 , uvs(uvs)
+				, parent(&_parent)
 			{
-				parent = &_parent;
+				
 			}
 
 			DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const std::vector<real_t>& matrix,
@@ -184,8 +193,9 @@ private:
 				, materials(materials)
 				, material_references(material_references)
 				, uvs(uvs)
+				, parent(NULL)
 			{
-				parent = NULL;
+				
 			}
 		};
 		COLLADABU::NativeString filename;
@@ -209,7 +219,7 @@ private:
 		std::vector<DeferredObject> deferreds;
 		virtual ~ColladaExporter() {}
 		void startDocument(const std::string& unit_name, float unit_magnitude);
-        void write(const IfcGeom::TriangulationElement<real_t>* o);
+		void write(const IfcGeom::TriangulationElement<real_t>* o) {};
 		void write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent);
 		void endDocument();
 	};
@@ -228,7 +238,7 @@ public:
     }
 	bool ready();
 	void writeHeader();
-    void write(const IfcGeom::TriangulationElement<real_t>* o);
+	void write(const IfcGeom::TriangulationElement<real_t>* o);
 	void write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent);
     void write(const IfcGeom::BRepElement<real_t>* /*o*/) {}
 	void finalize();
