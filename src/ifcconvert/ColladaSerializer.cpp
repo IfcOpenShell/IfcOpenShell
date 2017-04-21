@@ -369,7 +369,6 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	// In fact due the XML based nature of Collada and its dependency on library nodes,
 	// only at this point all objects are written to the stream.
 	materials.write();
-
 	
 	std::set<std::string> geometries_written;
 
@@ -391,16 +390,19 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it){
 		const std::string object_name = it->unique_id;
 
-		//if the setting USE_ELEMENT_HIERARCHY is in use, we check if the parent changed
-		if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) && it->parent != NULL && parent_id != it->parent->id()){
+		//if the setting USE_ELEMENT_HIERARCHY is in use, we check if the parent has changed
+		if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) && ((it->parent == NULL && parent_id != -1) || (it->parent != NULL && parent_id != it->parent->id()))){
 			
 			//close the parent tag, if one is already open.
 			if (!is_parent_empty){
 				scene.closeParent();
 			}
-			parent_id = it->parent->id();
-			scene.addParent(*it->parent);
-			is_parent_empty = false;
+
+			if (it->parent != NULL){
+				parent_id = it->parent->id();
+				scene.addParent(*it->parent);
+				is_parent_empty = false;
+			}
 		}
 		
         /// @todo redundant information using ID as both ID and Name, maybe omit Name or allow specifying what would be used as the name
