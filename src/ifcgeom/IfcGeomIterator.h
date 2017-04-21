@@ -574,22 +574,26 @@ namespace IfcGeom {
             else if (current_serialization) { ret = current_serialization; }
             else if (current_shape_model) { ret = current_shape_model; }
 
+			// If we want to organize the element by floors we need to get the floor of the element 
 			if (settings.get(IteratorSettings::SEARCH_FLOOR))
 			{
+				// if the element has a parent
 				if (ret->parent_id() != -1)
 				{
 					const IfcGeom::Element<P>* parent_object = NULL;
 
 					bool hasParent = true;
+
+					// get the parent 
 					try { parent_object = getObject(ret->parent_id()); }
 					catch (std::exception e)
 					{
 						hasParent = false;
 					}
 
+					// We need to find an IfcBuildingStorey in the parent
 					while (parent_object != NULL && parent_object->type() != "IfcBuildingStorey" && hasParent)
 					{
-
 						try { parent_object = getObject(parent_object->parent_id()); }
 						catch (std::exception e)
 						{
