@@ -290,8 +290,26 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
 //      fresult << polyhedron << std::endl;
 //      fresult.close();
       
-      CGAL::Nef_polyhedron_3<Kernel> nef_opening(opening);
-      nef_brep_cut_result -= nef_opening;
+      CGAL::Nef_polyhedron_3<Kernel> nef_opening;
+      try {
+        nef_opening = CGAL::Nef_polyhedron_3<Kernel>(opening);
+      } catch (...) {
+        Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed (Nef conversion):", entity->entity);
+        std::ofstream ferror;
+        ferror.open("/Users/ken/Desktop/error.off");
+        ferror << entity_shape << std::endl;
+        ferror.close();
+        return false;
+      } try {
+        nef_brep_cut_result -= nef_opening;
+      } catch (...) {
+        Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed (subtraction):", entity->entity);
+        std::ofstream ferror;
+        ferror.open("/Users/ken/Desktop/error.off");
+        ferror << entity_shape << std::endl;
+        ferror.close();
+        return false;
+      }
       
 //      brep_cut_result.convert_to_polyhedron(polyhedron);
 //      fresult.open("/Users/ken/Desktop/after.off");
@@ -307,14 +325,22 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
         // Apparently processing the boolean operation failed or resulted in an invalid result
         // in which case the original shape without the subtractions is returned instead
         // we try convert the openings in the original way, one by one.
-        Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed:", entity->entity);
+        Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed (conversion):", entity->entity);
+        std::ofstream ferror;
+        ferror.open("/Users/ken/Desktop/error.off");
+        ferror << entity_shape << std::endl;
+        ferror.close();
         return false;
       }
     } else {
       // Apparently processing the boolean operation failed or resulted in an invalid result
       // in which case the original shape without the subtractions is returned instead
       // we try convert the openings in the original way, one by one.
-      Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed:", entity->entity);
+      Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed (invalid):", entity->entity);
+      std::ofstream ferror;
+      ferror.open("/Users/ken/Desktop/error.off");
+      ferror << entity_shape << std::endl;
+      ferror.close();
       return false;
     }
     

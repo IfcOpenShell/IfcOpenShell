@@ -10,7 +10,7 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
     vertex->point() = vertex->point().transform(trsf);
   }
   
-  if (!s.is_valid() || !s.is_closed()) {
+  if (!s.is_valid()) {
     Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (before triangulation)");
     std::ofstream ferror;
     ferror.open("/Users/ken/Desktop/error.off");
@@ -30,7 +30,17 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
   std::map<cgal_face_descriptor_t, Kernel::Vector_3> face_normals;
   boost::associative_property_map<std::map<cgal_face_descriptor_t, Kernel::Vector_3>> face_normals_map(face_normals);
   cgal_shape_t s_copy(s);
-  if (!CGAL::Polygon_mesh_processing::triangulate_faces(s) ) {
+  bool success = false;
+  try {
+    success = CGAL::Polygon_mesh_processing::triangulate_faces(s);
+  } catch (...) {
+    Logger::Message(Logger::LOG_ERROR, "Triangulation crashed");
+    std::ofstream ferror;
+    ferror.open("/Users/ken/Desktop/error.off");
+    ferror << s << std::endl;
+    ferror.close();
+    return;
+  } if (!success) {
     Logger::Message(Logger::LOG_ERROR, "Triangulation failed");
     std::ofstream ferror;
     ferror.open("/Users/ken/Desktop/error.off");
@@ -45,7 +55,7 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
 //  fafter << s << std::endl;
 //  fafter.close();
   
-  if (!s.is_valid() || !s.is_closed()) {
+  if (!s.is_valid()) {
     Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (after triangulation)");
     std::ofstream ferror;
     ferror.open("/Users/ken/Desktop/error.off");

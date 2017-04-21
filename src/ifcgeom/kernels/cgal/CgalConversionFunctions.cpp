@@ -26,7 +26,7 @@ CGAL::Polyhedron_3<Kernel> IfcGeom::CgalKernel::create_polyhedron(std::list<cgal
   //  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
   CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
   if (!polyhedron.is_valid()) {
-    std::cout << "create_polyhedron: Polyhedron not valid!" << std::endl;
+    Logger::Message(Logger::LOG_ERROR, "create_polyhedron: Polyhedron not valid!");
     //    std::ofstream fresult;
     //    fresult.open("/Users/ken/Desktop/invalid.off");
     //    fresult << polyhedron << std::endl;
@@ -50,26 +50,66 @@ CGAL::Polyhedron_3<Kernel> IfcGeom::CgalKernel::create_polyhedron(CGAL::Nef_poly
       nef_polyhedron.convert_to_polyhedron(polyhedron);
       return polyhedron;
     } catch (...) {
-      std::cout << "Conversion from Nef to polyhedron failed!" << std::endl;
+      Logger::Message(Logger::LOG_ERROR, "Conversion from Nef to polyhedron failed!");
       return CGAL::Polyhedron_3<Kernel>();
     }
   } else {
-    std::cout << "Nef polyhedron not simple: cannot create polyhedron!" << std::endl;
+    Logger::Message(Logger::LOG_ERROR, "Nef polyhedron not simple: cannot create polyhedron!");
     return CGAL::Polyhedron_3<Kernel>();
   }
 }
 
 CGAL::Nef_polyhedron_3<Kernel> IfcGeom::CgalKernel::create_nef_polyhedron(std::list<cgal_face_t> &face_list) {
   CGAL::Polyhedron_3<Kernel> polyhedron = create_polyhedron(face_list);
-  return CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
+  CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
+  CGAL::Nef_polyhedron_3<Kernel> nef_polyhedron;
+  try {
+    nef_polyhedron = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
+  } catch (...) {
+    Logger::Message(Logger::LOG_ERROR, "Conversion to Nef polyhedron failed!");
+    return nef_polyhedron;
+  } return nef_polyhedron;
 }
 
 CGAL::Nef_polyhedron_3<Kernel> IfcGeom::CgalKernel::create_nef_polyhedron(CGAL::Polyhedron_3<Kernel> &polyhedron) {
   if (polyhedron.is_valid()) {
     CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
-    return CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
+    CGAL::Nef_polyhedron_3<Kernel> nef_polyhedron;
+    try {
+      nef_polyhedron = CGAL::Nef_polyhedron_3<Kernel>(polyhedron);
+    } catch (...) {
+      Logger::Message(Logger::LOG_ERROR, "Conversion to Nef polyhedron failed!");
+      return nef_polyhedron;
+    } return nef_polyhedron;
   } else {
-    std::cout << "Polyhedron not valid: cannot create Nef polyhedron!" << std::endl;
+    Logger::Message(Logger::LOG_ERROR, "Polyhedron not valid: cannot create Nef polyhedron!");
     return CGAL::Nef_polyhedron_3<Kernel>();
   }
+}
+
+CGAL::Polyhedron_3<Kernel> IfcGeom::CgalKernel::triangulate_faces(CGAL::Polyhedron_3<Kernel> &polyhedron) {
+  std::list<cgal_face_t> face_list;
+  
+  for (CGAL::Polyhedron_3<Kernel>::Facet_const_iterator current_facet = polyhedron.facets_begin();
+       current_facet != polyhedron.facets_end();
+       ++current_facet) {
+    
+    // Triangle
+    if (current_facet->is_triangle()) {
+      face_list.push_back(cgal_face_t());
+      CGAL::Polyhedron_3<Kernel>::Halfedge_around_facet_const_circulator current_halfedge = current_facet->facet_begin();
+      do {
+        face_list.back().outer.push_back(current_halfedge->vertex()->point());
+        ++current_halfedge;
+      } while (current_halfedge != current_facet->facet_begin());
+    }
+    
+    // Polygon
+    else {
+      std::list<Kernel::Point_3> points_in_polygon;
+      
+    }
+  }
+  
+  return create_polyhedron(face_list);
 }
