@@ -81,7 +81,7 @@ namespace IfcGeom {
 		std::string _unique_id;
 		Transformation<P> _transformation;
         IfcSchema::IfcProduct* product_;
-		const Element<P>* _storey;
+		Element<P>* _storey;
 	public:
 		int id() const { return _id; }
 		int parent_id() const { return _parent_id; }
@@ -93,7 +93,6 @@ namespace IfcGeom {
 		const Transformation<P>& transformation() const { return _transformation; }
         IfcSchema::IfcProduct* product() const { return product_; }
 		const Element<P>* storey() const { return _storey; }
-		void SetFloor(const Element<P>* floor) { _storey = floor; }
 
 		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type,
             const std::string& guid, const std::string& context, const gp_Trsf& trsf, IfcSchema::IfcProduct *product)
@@ -110,6 +109,31 @@ namespace IfcGeom {
 			}
 			_unique_id = oss.str();
 
+			_storey = NULL;
+			// If we want to retrieve the storey hierarchy
+			if (settings.get(IteratorSettings::SEARCH_FLOOR))
+			{
+				if (_parent_id != -1)
+				{
+					bool hasParent = true;
+					try { _storey = context_iterator.getObject(_parent_id); }
+					catch (std::exception e)
+					{
+						hasParent = false;
+					}
+
+					while (_storey != NULL && parent_object->type() != "IfcBuildingStorey" && hasParent)
+					{
+						try { parent_object = context_iterator.getObject(parent_object->parent_id()); }
+						catch (std::exception e)
+						{
+							hasParent = false;
+						}
+
+						hasParent = hasParent && parent_object->parent_id() != 1;
+					}
+				}
+			}
 		}
 		virtual ~Element() {}
 	};

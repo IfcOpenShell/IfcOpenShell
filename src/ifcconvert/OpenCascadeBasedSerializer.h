@@ -40,7 +40,6 @@ public:
 	bool ready();
 	virtual void writeShape(const TopoDS_Shape& shape) = 0;
 	void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
-	void write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent) {}
 	void write(const IfcGeom::BRepElement<real_t>* o);
 	bool isTesselated() const { return false; }
 	void setFile(IfcParse::IfcFile*) {}

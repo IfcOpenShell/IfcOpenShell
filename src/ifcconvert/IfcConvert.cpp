@@ -467,6 +467,7 @@ int main(int argc, char** argv)
 	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
+	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy);
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
@@ -588,43 +589,13 @@ int main(int argc, char** argv)
 	do {
         IfcGeom::Element<real_t> *geom_object = context_iterator.get();
 
-		// if the target is a .dae file, get the parent of the object
-		if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) && output_extension == ".dae" && geom_object->parent_id() != -1)
+		if (is_tesselated)
 		{
-			const IfcGeom::Element<real_t> *parent_object = NULL;
-			
-			bool hasParent = true;
-			try { parent_object = context_iterator.getObject(geom_object->parent_id()); }
-			catch (std::exception e)
-			{
-				hasParent = false;
-			}
-
-			while (parent_object != NULL && parent_object->type() != "IfcBuildingStorey" && hasParent)
-			{
-				try { parent_object = context_iterator.getObject(parent_object->parent_id()); }
-				catch (std::exception e)
-				{
-					hasParent = false;
-				}
-
-				hasParent = hasParent && parent_object->parent_id() != 1;
-			}
-
-			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object), parent_object);
-			//delete parent_object;
-			//parent_object = NULL;
+			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
 		}
 		else
 		{
-			if (is_tesselated)
-			{
-				serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
-			}
-			else
-			{
-				serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
-			}
+			serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
 		}
 		
         const int progress = context_iterator.progress() / 2;

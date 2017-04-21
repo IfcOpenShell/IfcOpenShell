@@ -129,18 +129,15 @@ private:
 		{
 			const IfcGeom::Element<real_t>* parent1 = def_obj1.parent;
 			const IfcGeom::Element<real_t>* parent2 = def_obj2.parent;
-			std::cout << "comparing..\n";
 			
 			if (parent1 == NULL || parent2 == NULL)
 			{
 				bool res = (def_obj1.unique_id < def_obj2.unique_id ? true : false);
-				std::cout << "done\n";
 				return res;
 			}
 			else
 			{
 				bool res = parent1->name() < parent2->name() ? true : false;
-				std::cout << "done\n";
 				return res;
 			}
 		}
@@ -219,8 +216,7 @@ private:
 		std::vector<DeferredObject> deferreds;
 		virtual ~ColladaExporter() {}
 		void startDocument(const std::string& unit_name, float unit_magnitude);
-		void write(const IfcGeom::TriangulationElement<real_t>* o) {};
-		void write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent);
+		void write(const IfcGeom::TriangulationElement<real_t>* o);
 		void endDocument();
 	};
 	ColladaExporter exporter;
@@ -239,7 +235,6 @@ public:
 	bool ready();
 	void writeHeader();
 	void write(const IfcGeom::TriangulationElement<real_t>* o);
-	void write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent);
     void write(const IfcGeom::BRepElement<real_t>* /*o*/) {}
 	void finalize();
 	bool isTesselated() const { return true; }

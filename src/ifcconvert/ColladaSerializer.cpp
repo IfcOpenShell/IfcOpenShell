@@ -335,7 +335,7 @@ void ColladaSerializer::ColladaExporter::startDocument(const std::string& unit_n
 	asset.add();
 }
 
-void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent)
+void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationElement<real_t>* o)
 {
 	const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
 	const std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS) ?
@@ -355,7 +355,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 
 	DeferredObject defered = (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) ?
 		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
-			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), *parent) : 
+			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), *(o->storey())) : 
 		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
 				mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs()));
 	deferreds.push_back(defered);
@@ -409,12 +409,7 @@ void ColladaSerializer::writeHeader() {
 }
 
 void ColladaSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
-    exporter.write(o, NULL);
-}
-
-void ColladaSerializer::write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent)
-{
-	exporter.write(o, parent);
+    exporter.write(o);
 }
 
 

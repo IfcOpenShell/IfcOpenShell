@@ -573,6 +573,36 @@ namespace IfcGeom {
             if (current_triangulation) { ret = current_triangulation; }
             else if (current_serialization) { ret = current_serialization; }
             else if (current_shape_model) { ret = current_shape_model; }
+
+			if (settings.get(IteratorSettings::SEARCH_FLOOR))
+			{
+				if (ret->parent_id() != -1)
+				{
+					const IfcGeom::Element<P>* parent_object = NULL;
+
+					bool hasParent = true;
+					try { parent_object = getObject(ret->parent_id()); }
+					catch (std::exception e)
+					{
+						hasParent = false;
+					}
+
+					while (parent_object != NULL && parent_object->type() != "IfcBuildingStorey" && hasParent)
+					{
+
+						try { parent_object = getObject(parent_object->parent_id()); }
+						catch (std::exception e)
+						{
+							hasParent = false;
+						}
+
+						hasParent = hasParent && parent_object->parent_id() != 1;
+					}
+
+					if (hasParent) { ret->SetFloor(parent_object); }
+				}
+			}
+
             return ret;
         }
 

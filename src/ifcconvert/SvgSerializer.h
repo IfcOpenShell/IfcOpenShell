@@ -60,7 +60,6 @@ public:
     void writeHeader();
     bool ready();
     void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
-	void write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent) {}
     void write(const IfcGeom::BRepElement<real_t>* o);
     void write(path_object& p, const TopoDS_Wire& wire);
     path_object& start_path(IfcSchema::IfcBuildingStorey* storey, const std::string& id);
