@@ -270,7 +270,11 @@ int main() {
 	IfcSchema::IfcProperty::list::ptr properties(new IfcSchema::IfcProperty::list);
 	properties->push(new IfcSchema::IfcPropertySingleValue("TotalArea", null, new IfcSchema::IfcAreaMeasure(site_area), 0));
 	IfcSchema::IfcPropertySet* pset = new IfcSchema::IfcPropertySet(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), S("Pset_SiteCommon"), null, properties);
+#ifdef USE_IFC4	
+	IfcSchema::IfcObjectDefinition::list::ptr related_objs(new IfcSchema::IfcObjectDefinition::list);
+#else
 	IfcSchema::IfcObject::list::ptr related_objs(new IfcSchema::IfcObject::list);
+#endif
 	related_objs->push(file.getSingle<IfcSchema::IfcSite>());
 	IfcSchema::IfcRelDefinesByProperties* site_prop = new IfcSchema::IfcRelDefinesByProperties(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, related_objs, pset);
 	file.addEntity(site_prop);
