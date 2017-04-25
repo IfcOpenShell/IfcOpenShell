@@ -221,11 +221,13 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 }
 
 void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::Element<real_t>& parent){
-
+	//we open the visual scene tag if it's not.
 	if (!scene_opened) {
 		openVisualScene(scene_id);
 		scene_opened = true;
 	}
+
+
 	const std::vector<real_t> matrix = parent.transformation().matrix().data();
 	
 	double matrix_array[4][4] = {
@@ -235,6 +237,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 		{ 0, 0, 0, 1 }
 	};
 
+	//adding the offset to the matrix
 	matrix_array[0][3] += serializer->settings().offset[0];
 	matrix_array[1][3] += serializer->settings().offset[1];
 	matrix_array[2][3] += serializer->settings().offset[2];
@@ -366,8 +369,13 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	// In fact due the XML based nature of Collada and its dependency on library nodes,
 	// only at this point all objects are written to the stream.
 	materials.write();
+	
 	std::set<std::string> geometries_written;
-	std::sort(deferreds.begin(), deferreds.end());
+
+	//if the setting USE_ELEMENT_HIERARCHY is in use, we sort the deferreds objects by their parents.
+	if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY)) {
+		std::sort(deferreds.begin(), deferreds.end());
+	}
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		if (geometries_written.find(it->representation_id) != geometries_written.end()) {
 			continue;
@@ -376,26 +384,34 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 		geometries.write(it->representation_id, it->type, it->vertices, it->normals, it->faces, it->edges, it->material_ids, it->materials, it->uvs);
 	}
 	geometries.close();
+
 	int parent_id = -1;
 	bool is_parent_empty = true; 
-	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) 
-	{
+	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it){
 		const std::string object_name = it->unique_id;
 
-		if (it->parent != NULL && parent_id != it->parent->id())
-		{
-			if (!is_parent_empty)
-			{
+		//if the setting USE_ELEMENT_HIERARCHY is in use, we check if the parent has changed
+		if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) && ((it->parent == NULL && parent_id != -1) || (it->parent != NULL && parent_id != it->parent->id()))){
+			
+			//close the parent tag, if one is already open.
+			if (!is_parent_empty){
 				scene.closeParent();
 			}
-			parent_id = it->parent->id();
-			scene.addParent(*it->parent);
-			is_parent_empty = false;
+
+			if (it->parent != NULL){
+				parent_id = it->parent->id();
+				scene.addParent(*it->parent);
+				is_parent_empty = false;
+			}
 		}
+		
         /// @todo redundant information using ID as both ID and Name, maybe omit Name or allow specifying what would be used as the name
 		scene.add(object_name, object_name, it->representation_id, it->material_references, it->matrix);
 	}
-	if (!is_parent_empty) scene.closeParent();
+	//close the last parent tag.
+	if (!is_parent_empty) { 
+		scene.closeParent();
+	};
 	scene.write();
 	stream.endDocument();
 }
