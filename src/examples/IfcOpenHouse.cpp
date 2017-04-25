@@ -264,7 +264,17 @@ int main() {
 	createGroundShape(shape);
 	IfcSchema::IfcProductDefinitionShape* ground_representation = IfcGeom::tesselate(shape, 100.);
 	file.getSingle<IfcSchema::IfcSite>()->setRepresentation(ground_representation);
-	
+
+	// Relate a property set to the IfcSite
+	const double site_area = IfcGeom::Kernel::face_area(TopoDS::Face(shape)) / 1000 / 1000;
+	IfcSchema::IfcProperty::list::ptr properties(new IfcSchema::IfcProperty::list);
+	properties->push(new IfcSchema::IfcPropertySingleValue("TotalArea", null, new IfcSchema::IfcAreaMeasure(site_area), 0));
+	IfcSchema::IfcPropertySet* pset = new IfcSchema::IfcPropertySet(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), S("Pset_SiteCommon"), null, properties);
+	IfcSchema::IfcObject::list::ptr related_objs(new IfcSchema::IfcObject::list);
+	related_objs->push(file.getSingle<IfcSchema::IfcSite>());
+	IfcSchema::IfcRelDefinesByProperties* site_prop = new IfcSchema::IfcRelDefinesByProperties(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, related_objs, pset);
+	file.addEntity(site_prop);
+
 	IfcSchema::IfcRepresentation::list::ptr ground_reps = file.getSingle<IfcSchema::IfcSite>()->Representation()->Representations();
 	for (IfcSchema::IfcRepresentation::list::it it = ground_reps->begin(); it != ground_reps->end(); ++it) {
 		(*it)->setContextOfItems(file.getRepresentationContext("Model"));
