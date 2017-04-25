@@ -369,11 +369,12 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	// In fact due the XML based nature of Collada and its dependency on library nodes,
 	// only at this point all objects are written to the stream.
 	materials.write();
+	bool use_hierarchy = serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY);
 	
 	std::set<std::string> geometries_written;
 
 	//if the setting USE_ELEMENT_HIERARCHY is in use, we sort the deferreds objects by their parents.
-	if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY)) {
+	if (use_hierarchy) {
 		std::sort(deferreds.begin(), deferreds.end());
 	}
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
@@ -386,22 +387,23 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	geometries.close();
 
 	int parent_id = -1;
-	bool is_parent_empty = true; 
+	bool is_parent_tag_opened = false; 
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it){
 		const std::string object_name = it->unique_id;
 
-		//if the setting USE_ELEMENT_HIERARCHY is in use, we check if the parent has changed
-		if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) && ((it->parent == NULL && parent_id != -1) || (it->parent != NULL && parent_id != it->parent->id()))){
-			
-			//close the parent tag, if one is already open.
-			if (!is_parent_empty){
+		// if the setting USE_ELEMENT_HIERARCHY is used
+		// And if "it" has not parent AND a parent node is opened, OR it has a parent AND another parent node is opened
+		if (use_hierarchy && ((it->parent == NULL && parent_id != -1) || (it->parent != NULL && parent_id != it->parent->id())))
+		{
+			//close the parent tag if one is already open.
+			if (is_parent_tag_opened){
 				scene.closeParent();
 			}
 
 			if (it->parent != NULL){
 				parent_id = it->parent->id();
 				scene.addParent(*it->parent);
-				is_parent_empty = false;
+				is_parent_tag_opened = true;
 			}
 		}
 		
@@ -409,7 +411,7 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 		scene.add(object_name, object_name, it->representation_id, it->material_references, it->matrix);
 	}
 	//close the last parent tag.
-	if (!is_parent_empty) { 
+	if (is_parent_tag_opened) { 
 		scene.closeParent();
 	};
 	scene.write();
