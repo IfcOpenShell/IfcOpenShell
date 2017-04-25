@@ -140,7 +140,7 @@ namespace IfcGeom {
 
     bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const cgal_placement_t& entity_trsf, ConversionResults& cut_shapes);
     
-    CGAL::Polyhedron_3<Kernel> triangulate_faces(CGAL::Polyhedron_3<Kernel> &polyhedron);
+//    CGAL::Polyhedron_3<Kernel> triangulate_faces(CGAL::Polyhedron_3<Kernel> &polyhedron);
     CGAL::Polyhedron_3<Kernel> create_polyhedron(std::list<cgal_face_t> &face_list);
     CGAL::Polyhedron_3<Kernel> create_polyhedron(CGAL::Nef_polyhedron_3<Kernel> &nef_polyhedron);
     CGAL::Nef_polyhedron_3<Kernel> create_nef_polyhedron(std::list<cgal_face_t> &face_list);

@@ -87,29 +87,29 @@ CGAL::Nef_polyhedron_3<Kernel> IfcGeom::CgalKernel::create_nef_polyhedron(CGAL::
   }
 }
 
-CGAL::Polyhedron_3<Kernel> IfcGeom::CgalKernel::triangulate_faces(CGAL::Polyhedron_3<Kernel> &polyhedron) {
-  std::list<cgal_face_t> face_list;
-  
-  for (CGAL::Polyhedron_3<Kernel>::Facet_const_iterator current_facet = polyhedron.facets_begin();
-       current_facet != polyhedron.facets_end();
-       ++current_facet) {
-    
-    // Triangle
-    if (current_facet->is_triangle()) {
-      face_list.push_back(cgal_face_t());
-      CGAL::Polyhedron_3<Kernel>::Halfedge_around_facet_const_circulator current_halfedge = current_facet->facet_begin();
-      do {
-        face_list.back().outer.push_back(current_halfedge->vertex()->point());
-        ++current_halfedge;
-      } while (current_halfedge != current_facet->facet_begin());
-    }
-    
-    // Polygon
-    else {
-      std::list<Kernel::Point_3> points_in_polygon;
-      
-    }
-  }
-  
-  return create_polyhedron(face_list);
-}
+//CGAL::Polyhedron_3<Kernel> IfcGeom::CgalKernel::triangulate_faces(CGAL::Polyhedron_3<Kernel> &polyhedron) {
+//  std::list<cgal_face_t> face_list;
+//  
+//  for (CGAL::Polyhedron_3<Kernel>::Facet_const_iterator current_facet = polyhedron.facets_begin();
+//       current_facet != polyhedron.facets_end();
+//       ++current_facet) {
+//    
+//    // Triangle
+//    if (current_facet->is_triangle()) {
+//      face_list.push_back(cgal_face_t());
+//      CGAL::Polyhedron_3<Kernel>::Halfedge_around_facet_const_circulator current_halfedge = current_facet->facet_begin();
+//      do {
+//        face_list.back().outer.push_back(current_halfedge->vertex()->point());
+//        ++current_halfedge;
+//      } while (current_halfedge != current_facet->facet_begin());
+//    }
+//    
+//    // Polygon
+//    else {
+//      std::list<Kernel::Point_3> points_in_polygon;
+//      
+//    }
+//  }
+//  
+//  return create_polyhedron(face_list);
+//}
