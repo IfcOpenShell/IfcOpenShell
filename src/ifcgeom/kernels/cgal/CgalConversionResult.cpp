@@ -10,10 +10,19 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
     vertex->point() = vertex->point().transform(trsf);
   }
   
+  std::string error_file_path;
+  for (unsigned int error_number = 1; error_number < 1000; ++error_number) {
+    error_file_path = std::string("/Users/ken/Desktop/error/error");
+    error_file_path += std::to_string(error_number);
+    error_file_path += ".off";
+    std::ifstream file_path_test(error_file_path);
+    if (!file_path_test.good()) break;
+  }
+  
   if (!s.is_valid()) {
     Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (before triangulation)");
     std::ofstream ferror;
-    ferror.open("/Users/ken/Desktop/error.off");
+    ferror.open(error_file_path);
     ferror << s << std::endl;
     ferror.close();
     return;
@@ -36,14 +45,14 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
   } catch (...) {
     Logger::Message(Logger::LOG_ERROR, "Triangulation crashed");
     std::ofstream ferror;
-    ferror.open("/Users/ken/Desktop/error.off");
+    ferror.open(error_file_path);
     ferror << s << std::endl;
     ferror.close();
     return;
   } if (!success) {
     Logger::Message(Logger::LOG_ERROR, "Triangulation failed");
     std::ofstream ferror;
-    ferror.open("/Users/ken/Desktop/error.off");
+    ferror.open(error_file_path);
     ferror << s << std::endl;
     ferror.close();
     return;
@@ -58,7 +67,7 @@ void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings,
   if (!s.is_valid()) {
     Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (after triangulation)");
     std::ofstream ferror;
-    ferror.open("/Users/ken/Desktop/error.off");
+    ferror.open(error_file_path);
     ferror << s_copy << std::endl;
     ferror.close();
     return;
