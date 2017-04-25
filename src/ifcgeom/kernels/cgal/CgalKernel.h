@@ -47,6 +47,7 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #include <CGAL/Polygon_mesh_processing/orientation.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
+#include <CGAL/Polygon_mesh_processing/self_intersections.h>
 #include <CGAL/Nef_polyhedron_3.h>
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
@@ -140,6 +141,7 @@ namespace IfcGeom {
 
     bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const cgal_placement_t& entity_trsf, ConversionResults& cut_shapes);
     
+//    CGAL::Polyhedron_3<Kernel> triangulate_faces(CGAL::Polyhedron_3<Kernel> &polyhedron);
     CGAL::Polyhedron_3<Kernel> create_polyhedron(std::list<cgal_face_t> &face_list);
     CGAL::Polyhedron_3<Kernel> create_polyhedron(CGAL::Nef_polyhedron_3<Kernel> &nef_polyhedron);
     CGAL::Nef_polyhedron_3<Kernel> create_nef_polyhedron(std::list<cgal_face_t> &face_list);

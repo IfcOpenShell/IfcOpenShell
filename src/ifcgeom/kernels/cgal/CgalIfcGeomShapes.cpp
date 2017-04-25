@@ -91,7 +91,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
       hole_top_face.outer.push_back(*vertex+height*dir);
     } face_list.push_back(hole_top_face);
     
-    nef_shape -= create_nef_polyhedron(face_list);
+    try {
+      nef_shape -= create_nef_polyhedron(face_list);
+    } catch (...) {
+      Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot subtract opening for:", l->entity);
+      return false;
+    }
   }
   
   if (has_position) {
@@ -104,7 +109,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     nef_shape.convert_to_polyhedron(shape);
     return true;
   } catch (...) {
-    std::cout << "IfcExtrudedAreaSolid: cannot convert Nef to polyhedron!" << std::endl;
+    Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot convert Nef to polyhedron for:", l->entity);
     return false;
   }
   
@@ -238,7 +243,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* 
 //    f2 << inner_polyhedron << std::endl;
 //    f2.close();
     
-    nef_shape -= create_nef_polyhedron(face_list);
+    try {
+      nef_shape -= create_nef_polyhedron(face_list);
+    } catch (...) {
+      std::cout << "IfcExtrudedAreaSolidTapered: cannot subtract opening for:" << std::endl;
+      return false;
+    }
     
     ++inner_face1;
     ++inner_face2;
@@ -453,14 +463,24 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
   if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
     
 //    std::cout << "Difference" << std::endl;
-    CGAL::Nef_polyhedron_3<Kernel> nef_result(s1);
-    if (is_halfspace) {
+    CGAL::Nef_polyhedron_3<Kernel> nef_result;
+    try {
+      nef_result = CGAL::Nef_polyhedron_3<Kernel>(s1);
+    } catch (...) {
+      Logger::Message(Logger::LOG_ERROR, "s1: cannot convert to Nef?", operand1->entity);
+      return false;
+    } if (is_halfspace) {
       if (is_plane) nef_result = nef_result.intersection(plane, CGAL::Nef_polyhedron_3<Kernel>::Intersection_mode::CLOSED_HALFSPACE);
     } else {
-      nef_result -= CGAL::Nef_polyhedron_3<Kernel>(s2);
+      CGAL::Nef_polyhedron_3<Kernel> nef_s2;
+      try {
+        nef_s2 = CGAL::Nef_polyhedron_3<Kernel>(s2);
+      } catch (...) {
+        Logger::Message(Logger::LOG_ERROR, "s2: cannot convert to Nef?", operand2->entity);
+      } nef_result -= nef_s2;
     }
     if (!nef_result.is_simple()) {
-      std::cout << "Not simple: " << nef_result.number_of_volumes() << " volumes" << std::endl;
+      Logger::Message(Logger::LOG_ERROR, "s2: not simple?", operand2->entity);
       return false;
     } else {
 //      CGAL::Polyhedron_3<Kernel> result;
