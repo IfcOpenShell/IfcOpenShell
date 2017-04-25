@@ -508,6 +508,14 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) && output_extension != ".dae")
+	{
+		Logger::Error("--user-element-hierarchy can be used only with .dae output.");
+		write_log();
+		print_usage();
+		return EXIT_FAILURE;
+	}
+
     const bool is_tesselated = serializer->isTesselated(); // isTesselated() doesn't change at run-time
 	if (!is_tesselated) {
 		if (weld_vertices) {
