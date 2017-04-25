@@ -238,60 +238,183 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
       for (auto &vertex: vertices(entity_shape)) vertex->point() = vertex->point().transform(entity_shape_gtrsf);
     }
     
-    cgal_shape_t brep_cut_result(entity_shape);
-    CGAL::Nef_polyhedron_3<Kernel> nef_brep_cut_result(brep_cut_result);
+    cgal_shape_t original_entity_shape(entity_shape);
+    if (!entity_shape.is_valid()) {
+      Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Invalid entity:", entity->entity);
+      std::ofstream fentity;
+      fentity.open("/Users/ken/Desktop/entity.off");
+      fentity << original_entity_shape << std::endl;
+      fentity.close();
+      return false;
+    } if (!entity_shape.is_closed()) {
+      // TODO: There can be substractions to remove parts of non-volumetric objects. Maybe iterate over all faces of an entity and put them in a Nef_polyhedron_3 through Boolean union? Highly inefficient but maybe desirable...
+      Logger::Message(Logger::LOG_ERROR, "Subtraction of openings not supported for non-closed entity:", entity->entity);
+      std::ofstream fentity;
+      fentity.open("/Users/ken/Desktop/entity.off");
+      fentity << original_entity_shape << std::endl;
+      fentity.close();
+      return false;
+    } bool success = false;
+    try {
+      success = CGAL::Polygon_mesh_processing::triangulate_faces(entity_shape);
+    } catch (...) {
+      Logger::Message(Logger::LOG_ERROR, "Triangulation of entity crashed:", entity->entity);
+      std::ofstream fentity;
+      fentity.open("/Users/ken/Desktop/entity.off");
+      fentity << original_entity_shape << std::endl;
+      fentity.close();
+      return false;
+    } if (!success) {
+      Logger::Message(Logger::LOG_ERROR, "Triangulation of entity failed:", entity->entity);
+      std::ofstream fentity;
+      fentity.open("/Users/ken/Desktop/entity.off");
+      fentity << original_entity_shape << std::endl;
+      fentity.close();
+      return false;
+    } if (CGAL::Polygon_mesh_processing::does_self_intersect(entity_shape)) {
+      Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Self-intersecting entity:", entity->entity);
+      std::ofstream fentity;
+      fentity.open("/Users/ken/Desktop/entity.off");
+      fentity << original_entity_shape << std::endl;
+      fentity.close();
+      return false;
+    } CGAL::Nef_polyhedron_3<Kernel> nef_brep_cut_result;
+    try {
+      nef_brep_cut_result = CGAL::Nef_polyhedron_3<Kernel>(entity_shape);
+    } catch (...) {
+      Logger::Message(Logger::LOG_ERROR, "Could not convert entity to Nef:", entity->entity);
+      std::ofstream fentity;
+      fentity.open("/Users/ken/Desktop/entity.off");
+      fentity << original_entity_shape << std::endl;
+      fentity.close();
+      return false;
+    } try {
+      cgal_shape_t brep_cut_result;
+      nef_brep_cut_result.convert_to_polyhedron(brep_cut_result);
+    } catch (...) {
+      Logger::Message(Logger::LOG_WARNING, "Final conversion will likely fail. Could not convert entity from Nef:", entity->entity);
+      std::ofstream fentity;
+      fentity.open("/Users/ken/Desktop/entity.off");
+      fentity << original_entity_shape << std::endl;
+      fentity.close();
+//      return false;
+    }
     
     for (auto &opening: opening_shapelist) {
       
-      CGAL::Nef_polyhedron_3<Kernel> nef_opening;
+      cgal_shape_t original_opening_shape(opening);
+      if (!opening.is_valid()) {
+        Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Invalid opening in entity:", entity->entity);
+        std::ofstream fentity;
+        fentity.open("/Users/ken/Desktop/entity.off");
+        fentity << original_entity_shape << std::endl;
+        fentity.close();
+        std::ofstream fopening;
+        fopening.open("/Users/ken/Desktop/opening.off");
+        fopening << original_opening_shape << std::endl;
+        fopening.close();
+        return false;
+      } if (!opening.is_closed()) {
+        Logger::Message(Logger::LOG_ERROR, "Subtraction of opening makes no sense. Not closed opening in entity:", entity->entity);
+        std::ofstream fentity;
+        fentity.open("/Users/ken/Desktop/entity.off");
+        fentity << original_entity_shape << std::endl;
+        fentity.close();
+        std::ofstream fopening;
+        fopening.open("/Users/ken/Desktop/opening.off");
+        fopening << original_opening_shape << std::endl;
+        fopening.close();
+        return false;
+      } success = false;
+      try {
+        success = CGAL::Polygon_mesh_processing::triangulate_faces(opening);
+      } catch (...) {
+        Logger::Message(Logger::LOG_ERROR, "Triangulation of opening of entity crashed:", entity->entity);
+        std::ofstream fentity;
+        fentity.open("/Users/ken/Desktop/entity.off");
+        fentity << original_entity_shape << std::endl;
+        fentity.close();
+        std::ofstream fopening;
+        fopening.open("/Users/ken/Desktop/opening.off");
+        fopening << original_opening_shape << std::endl;
+        fopening.close();
+        return false;
+      } if (!success) {
+        Logger::Message(Logger::LOG_ERROR, "Triangulation of opening of entity failed:", entity->entity);
+        std::ofstream fentity;
+        fentity.open("/Users/ken/Desktop/entity.off");
+        fentity << original_entity_shape << std::endl;
+        fentity.close();
+        std::ofstream fopening;
+        fopening.open("/Users/ken/Desktop/opening.off");
+        fopening << original_opening_shape << std::endl;
+        fopening.close();
+        return false;
+      } if (CGAL::Polygon_mesh_processing::does_self_intersect(entity_shape)) {
+        Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Self-intersecting opening of entity:", entity->entity);
+        std::ofstream fentity;
+        fentity.open("/Users/ken/Desktop/entity.off");
+        fentity << original_entity_shape << std::endl;
+        fentity.close();
+        std::ofstream fopening;
+        fopening.open("/Users/ken/Desktop/opening.off");
+        fopening << original_opening_shape << std::endl;
+        fopening.close();
+        return false;
+      } CGAL::Nef_polyhedron_3<Kernel> nef_opening;
       try {
         nef_opening = CGAL::Nef_polyhedron_3<Kernel>(opening);
       } catch (...) {
-        Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed (Nef conversion):", entity->entity);
-        std::ofstream ferror;
-        ferror.open("/Users/ken/Desktop/error.off");
-        ferror << entity_shape << std::endl;
-        ferror.close();
+        Logger::Message(Logger::LOG_ERROR, "Could not convert opening of entity to Nef:", entity->entity);
+        std::ofstream fentity;
+        fentity.open("/Users/ken/Desktop/entity.off");
+        fentity << original_entity_shape << std::endl;
+        fentity.close();
+        std::ofstream fopening;
+        fopening.open("/Users/ken/Desktop/opening.off");
+        fopening << original_opening_shape << std::endl;
+        fopening.close();
         return false;
+      } try {
+        cgal_shape_t opening_shape;
+        nef_opening.convert_to_polyhedron(opening_shape);
+      } catch (...) {
+        Logger::Message(Logger::LOG_WARNING, "Final conversion will likely fail. Could not convert opening of entity from Nef:", entity->entity);
+        std::ofstream fentity;
+        fentity.open("/Users/ken/Desktop/entity.off");
+        fentity << original_entity_shape << std::endl;
+        fentity.close();
+        std::ofstream fopening;
+        fopening.open("/Users/ken/Desktop/opening.off");
+        fopening << original_opening_shape << std::endl;
+        fopening.close();
+//        return false;
       } try {
         nef_brep_cut_result -= nef_opening;
       } catch (...) {
-        Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed (subtraction):", entity->entity);
-        std::ofstream ferror;
-        ferror.open("/Users/ken/Desktop/error.off");
-        ferror << entity_shape << std::endl;
-        ferror.close();
+        Logger::Message(Logger::LOG_ERROR, "Could not subtract Nef opening of entity:", entity->entity);
+        std::ofstream fentity;
+        fentity.open("/Users/ken/Desktop/entity.off");
+        fentity << original_entity_shape << std::endl;
+        fentity.close();
+        std::ofstream fopening;
+        fopening.open("/Users/ken/Desktop/opening.off");
+        fopening << original_opening_shape << std::endl;
+        fopening.close();
         return false;
       }
     }
     
-    if (brep_cut_result.is_valid()) {
-      try {
-        nef_brep_cut_result.convert_to_polyhedron(brep_cut_result);
-        cut_shapes.push_back(IfcGeom::ConversionResult(new CgalShape(brep_cut_result), &it3->Style()));
-      } catch (...) {
-        // Apparently processing the boolean operation failed or resulted in an invalid result
-        // in which case the original shape without the subtractions is returned instead
-        // we try convert the openings in the original way, one by one.
-        Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed (conversion):", entity->entity);
-        std::ofstream ferror;
-        ferror.open("/Users/ken/Desktop/error.off");
-        ferror << entity_shape << std::endl;
-        ferror.close();
-        return false;
-      }
-    } else {
-      // Apparently processing the boolean operation failed or resulted in an invalid result
-      // in which case the original shape without the subtractions is returned instead
-      // we try convert the openings in the original way, one by one.
-      Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed (invalid):", entity->entity);
-      std::ofstream ferror;
-      ferror.open("/Users/ken/Desktop/error.off");
-      ferror << entity_shape << std::endl;
-      ferror.close();
+    try {
+      nef_brep_cut_result.convert_to_polyhedron(entity_shape);
+    } catch (...) {
+      Logger::Message(Logger::LOG_ERROR, "Could not convert entity with openings from Nef:", entity->entity);
+      std::ofstream fentity;
+      fentity.open("/Users/ken/Desktop/entity.off");
+      fentity << original_entity_shape << std::endl;
+      fentity.close();
       return false;
-    }
+    } cut_shapes.push_back(IfcGeom::ConversionResult(new CgalShape(entity_shape), &it3->Style()));
     
-  }
-  return true;
+  } return true;
 }
