@@ -341,9 +341,20 @@ void ColladaSerializer::ColladaExporter::startDocument(const std::string& unit_n
 void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationElement<real_t>* o)
 {
 	const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
+	
+	std::string slabSuffix = "";
+	if (o->type() == "IfcSlab")
+	{
+		IfcSlab* slab = (IfcSlab*)o->product();
+		std::cout << "before if \n";
+		if (slab->PredefinedType() == IfcSlabTypeEnum::IfcSlabTypeEnum::IfcSlabType_ROOF) slabSuffix = " Roof";
+		else if (slab->PredefinedType() == IfcSlabTypeEnum::IfcSlabTypeEnum::IfcSlabType_FLOOR) slabSuffix = " Floor";
+		std::cout << "after if \n";
+	}
+	
 	const std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS) ?
 		o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ?
-			o->name() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES) ? o->type() : o->unique_id()));
+			o->name() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES) ? o->type() + slabSuffix : o->unique_id()));
 	const std::string representation_id = "representation-" + boost::lexical_cast<std::string>(o->geometry().id());
 	std::vector<std::string> material_references;
 	foreach(const IfcGeom::Material& material, mesh.materials()) {
