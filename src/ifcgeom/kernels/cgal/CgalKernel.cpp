@@ -96,13 +96,6 @@ IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_representat
 	try {
 		 convert(product->ObjectPlacement(), trsf);
 	} catch (...) {}
-  
-//  std::cout << "trsf" << std::endl;
-//  for (int i = 0; i < 3; ++i) {
-//    for (int j = 0; j < 4; ++j) {
-//      std::cout << trsf.cartesian(i, j) << " ";
-//    } std::cout << std::endl;
-//  }
 
 	// Does the IfcElement have any IfcOpenings?
 	// Note that openings for IfcOpeningElements are not processed
@@ -210,29 +203,8 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
         } catch (...) {}
       }
       
-//      std::cout << "entity_trsf" << std::endl;
-//      for (int i = 0; i < 3; ++i) {
-//        for (int j = 0; j < 4; ++j) {
-//          std::cout << entity_trsf.cartesian(i, j) << " ";
-//        } std::cout << std::endl;
-//      }
-//      
-//      std::cout << "opening_trsf before" << std::endl;
-//      for (int i = 0; i < 3; ++i) {
-//        for (int j = 0; j < 4; ++j) {
-//          std::cout << opening_trsf.cartesian(i, j) << " ";
-//        } std::cout << std::endl;
-//      }
-      
       // Move the opening into the coordinate system of the IfcProduct
       opening_trsf = entity_trsf.inverse() * opening_trsf;
-      
-//      std::cout << "opening_trsf after" << std::endl;
-//      for (int i = 0; i < 3; ++i) {
-//        for (int j = 0; j < 4; ++j) {
-//          std::cout << opening_trsf.cartesian(i, j) << " ";
-//        } std::cout << std::endl;
-//      }
       
       IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
       IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
@@ -252,13 +224,6 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
         cgal_shape_t opening_shape(((CgalShape*)opening_shapes[i].Shape())->shape());
         for (auto &vertex: vertices(opening_shape)) vertex->point() = vertex->point().transform(gtrsf);
         opening_shapelist.push_back(opening_shape);
-
-//        std::cout << "gtrsf" << std::endl;
-//        for (int i = 0; i < 3; ++i) {
-//          for (int j = 0; j < 4; ++j) {
-//            std::cout << gtrsf.cartesian(i, j) << " ";
-//          } std::cout << std::endl;
-//        }
       }
       
     }
@@ -277,18 +242,6 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
     CGAL::Nef_polyhedron_3<Kernel> nef_brep_cut_result(brep_cut_result);
     
     for (auto &opening: opening_shapelist) {
-      
-//      CGAL::Polyhedron_3<Kernel> polyhedron;
-//      brep_cut_result.convert_to_polyhedron(polyhedron);
-//      std::ofstream fresult;
-//      fresult.open("/Users/ken/Desktop/before.off");
-//      fresult << polyhedron << std::endl;
-//      fresult.close();
-//      
-//      opening.convert_to_polyhedron(polyhedron);
-//      fresult.open("/Users/ken/Desktop/opening.off");
-//      fresult << polyhedron << std::endl;
-//      fresult.close();
       
       CGAL::Nef_polyhedron_3<Kernel> nef_opening;
       try {
@@ -310,11 +263,6 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* entity, 
         ferror.close();
         return false;
       }
-      
-//      brep_cut_result.convert_to_polyhedron(polyhedron);
-//      fresult.open("/Users/ken/Desktop/after.off");
-//      fresult << polyhedron << std::endl;
-//      fresult.close();
     }
     
     if (brep_cut_result.is_valid()) {
