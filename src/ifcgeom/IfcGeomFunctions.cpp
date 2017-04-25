@@ -2554,7 +2554,10 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 	}
 	delete builder;
 	if (!success) {
-		return boolean_operation(a, b, op, result, fuzziness * 10.);
+        const double new_fuzziness = fuzziness * 10.;
+        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000.) {
+            return boolean_operation(a, b, op, result, new_fuzziness);
+        }
 	}
 	return success;
 }
