@@ -1524,7 +1524,6 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 		throw IfcParse::IfcException("Instance not part of this file");
 	}
 
-	std::set<IfcUtil::IfcBaseClass*> deletion_queue;
 	IfcEntityList::ptr references = entitiesByReference(id);
 
 	// Alter entity instances with INVERSE relations to the entity being 
@@ -1547,7 +1546,6 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 						IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
 						copy->set(boost::none);
 						related_instance->entity->setArgument(i, copy);
-						// deletion_queue.insert(related_instance);
 					} }
 					break;
 				case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
@@ -1558,10 +1556,6 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 						IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
 						copy->set(instance_list);
 						related_instance->entity->setArgument(i, copy);
-
-						/* if (instance_list->size() == 0) {
-							deletion_queue.insert(related_instance);
-						} */
 					} }
 					break;
 				case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
@@ -1580,10 +1574,6 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 						IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
 						copy->set(new_list);
 						related_instance->entity->setArgument(i, copy);
-
-						/* if (new_list->totalSize() == 0) {
-							deletion_queue.insert(related_instance);
-						} */
 					} }
 					break;
 				default: break;
@@ -1597,9 +1587,13 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 		IfcUtil::IfcBaseClass* entity_attribute = *it;
 		if (entity_attribute == entity) continue;
-		entitiesByReference(entity_attribute->entity->id())->remove(entity);
-		if (entitiesByReference(entity_attribute->entity->id())->filtered(weak_roots)->size() == 0) {
-			deletion_queue.insert(entity_attribute);
+		if (entity_attribute->entity->id() != 0) {
+			// Do not update inverses for simple types.
+			const IfcEntityList::ptr attribute_inverses = entitiesByReference(entity_attribute->entity->id());
+
+			if (attribute_inverses) {
+				attribute_inverses->remove(entity);
+			}
 		}
 	}
 
@@ -1612,11 +1606,6 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	
 	IfcEntityList::ptr instances_of_same_type = entitiesByType(entity->type());
 	instances_of_same_type->remove(entity);
-
-	while (!deletion_queue.empty()) {
-		removeEntity(*deletion_queue.begin());
-		deletion_queue.erase(deletion_queue.begin());
-	}
 
 	delete entity->entity;
 	delete entity;
