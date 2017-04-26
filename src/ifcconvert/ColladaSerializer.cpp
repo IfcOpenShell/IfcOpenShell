@@ -345,11 +345,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 	std::string slabSuffix = "";
 	if (o->type() == "IfcSlab")
 	{
-		IfcSlab* slab = (IfcSlab*)o->product();
-		std::cout << "before if \n";
-		if (slab->PredefinedType() == IfcSlabTypeEnum::IfcSlabTypeEnum::IfcSlabType_ROOF) slabSuffix = " Roof";
-		else if (slab->PredefinedType() == IfcSlabTypeEnum::IfcSlabTypeEnum::IfcSlabType_FLOOR) slabSuffix = " Floor";
-		std::cout << "after if \n";
+		slabSuffix = differentiateSlabTypes(o);
 	}
 	
 	const std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS) ?
@@ -373,7 +369,24 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
 				mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs()));
 	deferreds.push_back(defered);
-	
+}
+
+std::string ColladaSerializer::ColladaExporter::differentiateSlabTypes(const IfcGeom::TriangulationElement<real_t>* o) {
+	IfcSlab* slab = (IfcSlab*)o->product();
+	switch (slab->PredefinedType()){
+			case (IfcSlabTypeEnum::IfcSlabTypeEnum::IfcSlabType_ROOF):
+				return "_Roof";
+				break;
+			case (IfcSlabTypeEnum::IfcSlabTypeEnum::IfcSlabType_LANDING):
+				return "_Landing";
+				break;
+			case (IfcSlabTypeEnum::IfcSlabTypeEnum::IfcSlabType_BASESLAB):
+				return "_BasesLab";
+				break;
+			default:
+				return "_Unknown";
+				break;
+		}
 }
 
 void ColladaSerializer::ColladaExporter::endDocument() {

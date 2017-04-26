@@ -510,7 +510,7 @@ int main(int argc, char** argv)
 
 	if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) && output_extension != ".dae")
 	{
-		Logger::Error("--user-element-hierarchy can be used only with .dae output.");
+		Logger::Error("--use-element-hierarchy can be used only with .dae output.");
 		write_log();
 		print_usage();
 		return EXIT_FAILURE;

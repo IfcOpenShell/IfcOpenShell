@@ -198,6 +198,7 @@ private:
 		COLLADABU::NativeString filename;
 		COLLADASW::StreamWriter stream;
 		ColladaScene scene;
+		std::string differentiateSlabTypes(const IfcGeom::TriangulationElement<real_t>* o);
 	public:
         /// @param double_precision Whether to use "double precision" (up to 16 decimals) or not (6 or 7 decimals).
 		ColladaExporter(const std::string& scene_name, const std::string& fn, ColladaSerializer *_serializer,
