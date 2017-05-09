@@ -132,12 +132,12 @@ private:
 			
 			if (parent1 == NULL || parent2 == NULL)
 			{
-				bool res = (def_obj1.unique_id < def_obj2.unique_id ? true : false);
+				bool res = (parent1 == NULL) ? true : false;
 				return res;
 			}
 			else
 			{
-				bool res = parent1->name() < parent2->name() ? true : false;
+				bool res = parent1->name().compare(parent2->name()) > 0 ? true : false;
 				return res;
 			}
 		}
