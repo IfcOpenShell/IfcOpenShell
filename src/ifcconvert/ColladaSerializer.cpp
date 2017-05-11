@@ -363,8 +363,8 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 		material_references.push_back(material_name);
 	}
 
-	DeferredObject defered = (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) ?
-		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
+	DeferredObject defered = (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) && o->storey() != NULL ?
+		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(), 
 			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), *(o->storey())) : 
 		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
 				mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs()));
@@ -373,20 +373,30 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 
 std::string ColladaSerializer::ColladaExporter::differentiateSlabTypes(const IfcGeom::TriangulationElement<real_t>* o) {
 	IfcSlab* slab = (IfcSlab*)o->product();
-	switch (slab->PredefinedType()){
-			case (IfcSlabTypeEnum::IfcSlabType_ROOF):
-				return "_Roof";
-				break;
-			case (IfcSlabTypeEnum::IfcSlabType_LANDING):
-				return "_Landing";
-				break;
-			case (IfcSlabTypeEnum::IfcSlabType_BASESLAB):
-				return "_BasesLab";
-				break;
-			default:
-				return "_Unknown";
-				break;
-		}
+	switch (slab->PredefinedType())
+	{
+		case (IfcSlabTypeEnum::IfcSlabType_FLOOR):
+			return "_Floor";
+			break;
+		case (IfcSlabTypeEnum::IfcSlabType_ROOF):
+			return "_Roof";
+			break;
+		case (IfcSlabTypeEnum::IfcSlabType_LANDING):
+			return "_Landing";
+			break;
+		case (IfcSlabTypeEnum::IfcSlabType_BASESLAB):
+			return "_BaseSlab";
+			break;
+		case (IfcSlabTypeEnum::IfcSlabType_USERDEFINED):
+			return "_" + slab->ObjectType();
+			break;
+		case (IfcSlabTypeEnum::IfcSlabType_NOTDEFINED):
+			return "_NotDefined";
+			break;
+		default:
+			return "_Unknown";
+			break;
+	}
 }
 
 void ColladaSerializer::ColladaExporter::endDocument() {

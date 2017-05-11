@@ -604,6 +604,7 @@ namespace IfcGeom {
 					}
 
 					if (hasParent) { ret->SetFloor(parent_object); }
+					else { ret->SetFloor(NULL); } // Set it so null in order to know that we didn't found any IfcBuildingStorey type parent
 				}
 			}
 

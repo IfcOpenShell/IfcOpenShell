@@ -127,17 +127,34 @@ private:
 		class DeferredObject {
 		friend bool operator < (const DeferredObject & def_obj1, const DeferredObject & def_obj2)
 		{
+			// Retrieve the parents of the objects to compare
 			const IfcGeom::Element<real_t>* parent1 = def_obj1.parent;
 			const IfcGeom::Element<real_t>* parent2 = def_obj2.parent;
 			
+			// If a parent is null
 			if (parent1 == NULL || parent2 == NULL)
 			{
-				bool res = (def_obj1.unique_id < def_obj2.unique_id ? true : false);
+				bool res = (parent1 == NULL) ? true : false;
 				return res;
 			}
+			// If both parent are not null
 			else
 			{
-				bool res = parent1->name() < parent2->name() ? true : false;
+				// Retrieve the IfcBuildingStorey
+				Ifc2x3::IfcBuildingStorey* storey1 = (Ifc2x3::IfcBuildingStorey*)parent1->product();
+				Ifc2x3::IfcBuildingStorey* storey2 = (Ifc2x3::IfcBuildingStorey*)parent2->product();
+
+				bool res = true;
+
+				// Check if the storeys both have an elevation value
+				if (storey1->hasElevation() && storey2->hasElevation())
+				{
+					// Use the elevation in order to sort
+					res = storey1->Elevation() > storey2->Elevation() ? true : false;
+				}
+				// If the evelations are not set, use the names to sort
+				else { res = parent1->name().compare(parent2->name()) > 0 ? true : false; }
+				
 				return res;
 			}
 		}
