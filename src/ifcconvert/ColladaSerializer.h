@@ -44,6 +44,7 @@
 #include "../ifcgeom/IfcGeomIterator.h"
 
 #include "../ifcconvert/GeometrySerializer.h"
+#include "../ifcparse/Ifc2x3.h"
 
 class ColladaSerializer : public GeometrySerializer
 {
