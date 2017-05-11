@@ -141,8 +141,8 @@ private:
 			else
 			{
 				// Retrieve the IfcBuildingStorey
-				Ifc2x3::IfcBuildingStorey* storey1 = (Ifc2x3::IfcBuildingStorey*)parent1->product();
-				Ifc2x3::IfcBuildingStorey* storey2 = (Ifc2x3::IfcBuildingStorey*)parent2->product();
+				IfcSchema::IfcBuildingStorey* storey1 = (IfcSchema::IfcBuildingStorey*)parent1->product();
+				IfcSchema::IfcBuildingStorey* storey2 = (IfcSchema::IfcBuildingStorey*)parent2->product();
 
 				bool res = true;
 
