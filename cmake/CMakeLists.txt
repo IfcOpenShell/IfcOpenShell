@@ -128,6 +128,7 @@ MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 # make sure the lib variable ends with not just contains it.
 function(add_debug_variants NAME LIBRARIES POSTFIX)
     set(LIBRARIES_STR "${LIBRARIES}")
+    set(LIBRARIES "")
     # the result, "optimized <lib> debug <lib>", needs to be a list instead of a string
     foreach(lib ${LIBRARIES_STR})
         list(APPEND LIBRARIES optimized)
