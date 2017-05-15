@@ -110,6 +110,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 				IfcSchema::IfcLocalPlacement* placement = e->as<IfcSchema::IfcLocalPlacement>();
 				gp_Trsf trsf;
 				IfcGeom::Kernel kernel;
+				
 				if (kernel.convert(placement, trsf)) {
 					std::stringstream stream;
 					for (int i = 1; i < 5; ++i) {

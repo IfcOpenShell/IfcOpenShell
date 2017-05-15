@@ -81,8 +81,21 @@ namespace IfcGeom {
 		std::string _unique_id;
 		Transformation<P> _transformation;
         IfcSchema::IfcProduct* product_;
-		const Element<P>* _storey;
+		std::vector<const IfcGeom::Element<P>*> _parents;
 	public:
+
+		friend bool operator == (const Element<P> & element1, const Element<P> & element2)
+		{
+			//std::cout << " //// Compare == " << element1.name() << element1.id() << " | " << element1.type() << " and " << element2.name() << element2.id() << " | " << element2.type() << "\n";
+			return element1.id() == element2.id();
+		}
+
+		friend bool operator < (const Element<P> & element1, const Element<P> & element2)
+		{
+			//std::cout << " //// Compare < " << element1.name() << element1.id() << " | " << element1.type() << " and " << element2.name() << element2.id() << " | " << element2.type() << "\n";
+			return element1.id() < element2.id();
+		}
+
 		int id() const { return _id; }
 		int parent_id() const { return _parent_id; }
 		const std::string& name() const { return _name; }
@@ -92,16 +105,21 @@ namespace IfcGeom {
 		const std::string& unique_id() const { return _unique_id; }
 		const Transformation<P>& transformation() const { return _transformation; }
         IfcSchema::IfcProduct* product() const { return product_; }
-		const Element<P>* storey() const { return _storey; }
-		void SetFloor(const Element<P>* floor) { _storey = floor; }
+		const std::vector<const IfcGeom::Element<P>*> parents() const { return _parents; }
+		void SetParents(std::vector<const IfcGeom::Element<P>*> newparents) { _parents = newparents; }
 
 		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type,
             const std::string& guid, const std::string& context, const gp_Trsf& trsf, IfcSchema::IfcProduct *product)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
             , product_(product)
-		{
+		{ 
 			std::ostringstream oss;
-			oss << "product-" << IfcParse::IfcGlobalId(guid).formatted();
+			try { oss << "product-" << IfcParse::IfcGlobalId(guid).formatted(); }
+			catch (std::exception e)
+			{
+				oss << "product-cannotfindId";
+			}
+
 			if (!_context.empty()) {
 				std::string ctx = _context;
 				std::transform(ctx.begin(), ctx.end(), ctx.begin(), ::tolower);
@@ -109,7 +127,6 @@ namespace IfcGeom {
 				oss << "-" << ctx;
 			}
 			_unique_id = oss.str();
-
 		}
 		virtual ~Element() {}
 	};
