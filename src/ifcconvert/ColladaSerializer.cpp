@@ -594,6 +594,10 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 		{
 			unsigned parentsNumber = it->parents.size();
 			bool finished = false;
+
+			// If we have no parent in the stack and the object has no parent, nothing to do : skip the loop
+			if (parentsNumber == 0 && serializer->parentStackId.size() == 0) { finished = true; }
+
 			while (!finished)
 			{
 				// If we need to add a parent
