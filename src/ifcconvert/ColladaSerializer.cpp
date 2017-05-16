@@ -29,12 +29,19 @@
 #include <COLLADASWBaseInputElement.h>
 #include <COLLADASWAsset.h>
 
-#include <boost/lexical_cast.hpp>
-
 #include <string>
 #include <cmath>
 
+#include <boost/lexical_cast.hpp>
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/numeric/ublas/vector_proxy.hpp>
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/triangular.hpp>
+#include <boost/numeric/ublas/lu.hpp>
+#include <boost/numeric/ublas/io.hpp>
+
 using namespace IfcSchema;
+using namespace boost::numeric::ublas;
 
 static void collada_id(std::string &s)
 {
@@ -181,7 +188,7 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::close() {
 
 void ColladaSerializer::ColladaExporter::ColladaScene::add(
     const std::string& node_id, const std::string& node_name, const std::string& geom_name,
-    const std::vector<std::string>& material_ids, const std::vector<real_t>& matrix)
+    const std::vector<std::string>& material_ids, const std::vector<real_t>& posmatrix)
 {
 	if (!scene_opened) {
 		openVisualScene(scene_id);
@@ -195,13 +202,42 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 
 	// The matrix attribute of an entity is basically a 4x3 representation of its ObjectPlacement.
 	// Note that this placement is absolute, ie it is multiplied with all parent placements.
+	
 	double matrix_array[4][4] = {
-        { (double)matrix[0], (double)matrix[3], (double)matrix[6], (double)matrix[ 9] },
-        { (double)matrix[1], (double)matrix[4], (double)matrix[7], (double)matrix[10] },
-        { (double)matrix[2], (double)matrix[5], (double)matrix[8], (double)matrix[11] },
+        { (double)posmatrix[0], (double)posmatrix[3], (double)posmatrix[6], (double)posmatrix[ 9] },
+        { (double)posmatrix[1], (double)posmatrix[4], (double)posmatrix[7], (double)posmatrix[10] },
+        { (double)posmatrix[2], (double)posmatrix[5], (double)posmatrix[8], (double)posmatrix[11] },
         { 0, 0, 0, 1 }
 	};
+	
+	// If this is not the first parent, get the relative placement
+	if (parentNodes.size() > 0)
+	{
+		double relative[4][4] = {
+			{ 0, 0, 0, 0 },
+			{ 0, 0, 0, 0 },
+			{ 0, 0, 0, 0 },
+			{ 0, 0, 0, 0 }
+		};
 
+		// Multiplication
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
+				for (int k = 0; k < 4; ++k) {
+					relative[i][j] += matrixStack.top()(i, k) * matrix_array[k][j];
+				}
+			}
+		}
+
+		// Copy from relative to matrix_array
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				matrix_array[i][j] = relative[i][j];
+			}
+		}
+
+	}
+	
     matrix_array[0][3] += serializer->settings().offset[0];
     matrix_array[1][3] += serializer->settings().offset[1];
     matrix_array[2][3] += serializer->settings().offset[2];
@@ -228,33 +264,161 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 	}
 
 
-	const std::vector<real_t> matrix = parent.transformation().matrix().data();
+	const std::vector<real_t> parentMatrix = parent.transformation().matrix().data();
 	
 	double matrix_array[4][4] = {
-		{ (double)matrix[0], (double)matrix[3], (double)matrix[6], (double)matrix[9] },
-		{ (double)matrix[1], (double)matrix[4], (double)matrix[7], (double)matrix[10] },
-		{ (double)matrix[2], (double)matrix[5], (double)matrix[8], (double)matrix[11] },
+		{ (double)parentMatrix[0], (double)parentMatrix[3], (double)parentMatrix[6], (double)parentMatrix[9] },
+		{ (double)parentMatrix[1], (double)parentMatrix[4], (double)parentMatrix[7], (double)parentMatrix[10] },
+		{ (double)parentMatrix[2], (double)parentMatrix[5], (double)parentMatrix[8], (double)parentMatrix[11] },
 		{ 0, 0, 0, 1 }
 	};
+	
+	// =========
+	
+	// If this is not the first parent, get the relative placement
+	if (parentNodes.size() > 0)
+	{
+		double relative[4][4] = {
+			{ 0, 0, 0, 0 },
+			{ 0, 0, 0, 0 },
+			{ 0, 0, 0, 0 },
+			{ 0, 0, 0, 0 }
+		};
 
+		// Multiplication
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
+				for (int k = 0; k < 4; ++k) {
+					relative[i][j] += matrixStack.top()(i, k) * matrix_array[k][j];
+				}
+			}
+		}
+
+		// TODO : Handle the case where there was no inverse
+
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				matrix_array[i][j] = relative[i][j];
+			}
+		}		
+	}
+	
 	//adding the offset to the matrix
-	matrix_array[0][3] += serializer->settings().offset[0];
-	matrix_array[1][3] += serializer->settings().offset[1];
-	matrix_array[2][3] += serializer->settings().offset[2];
+	//matrix_array[0][3] += serializer->settings().offset[0];
+	//matrix_array[1][3] += serializer->settings().offset[1];
+	//matrix_array[2][3] += serializer->settings().offset[2];
 	
 	
 	const std::string id = "representation-" + boost::lexical_cast<std::string>(parent.id());
 
+	// Chose a name of the parent object
+	std::string name = "";
+	if (parent.name() == "") { name = parent.type(); }
+	else { name = parent.name(); }
+
+	COLLADASW::Node *current_node;
 	current_node = new COLLADASW::Node(mSW);
 	current_node->setNodeId(id);
-	current_node->setNodeName(parent.name());
-	current_node->addMatrix(matrix_array);
+	current_node->setNodeName(name);
 	current_node->setType(COLLADASW::Node::NODE);
 	current_node->start();
+	current_node->addMatrix(matrix_array);
+
+	// ==== Inverse the matrix and save it ====
+
+	double m[4][4] = {
+		{ (double)parentMatrix[0], (double)parentMatrix[3], (double)parentMatrix[6], (double)parentMatrix[9] },
+		{ (double)parentMatrix[1], (double)parentMatrix[4], (double)parentMatrix[7], (double)parentMatrix[10] },
+		{ (double)parentMatrix[2], (double)parentMatrix[5], (double)parentMatrix[8], (double)parentMatrix[11] },
+		{ 0, 0, 0, 1 }
+	};
+
+	double det =
+		m[0][3] * m[1][2] * m[2][1] * m[3][0] - m[0][2] * m[1][3] * m[2][1] * m[3][0] - m[0][3] * m[1][1] * m[2][2] * m[3][0] + m[0][1] * m[1][3] * m[2][2] * m[3][0] +
+		m[0][2] * m[1][1] * m[2][3] * m[3][0] - m[0][1] * m[1][2] * m[2][3] * m[3][0] - m[0][3] * m[1][2] * m[2][0] * m[3][1] + m[0][2] * m[1][3] * m[2][0] * m[3][1] +
+		m[0][3] * m[1][0] * m[2][2] * m[3][1] - m[0][0] * m[1][3] * m[2][2] * m[3][1] - m[0][2] * m[1][0] * m[2][3] * m[3][1] + m[0][0] * m[1][2] * m[2][3] * m[3][1] +
+		m[0][3] * m[1][1] * m[2][0] * m[3][2] - m[0][1] * m[1][3] * m[2][0] * m[3][2] - m[0][3] * m[1][0] * m[2][1] * m[3][2] + m[0][0] * m[1][3] * m[2][1] * m[3][2] +
+		m[0][1] * m[1][0] * m[2][3] * m[3][2] - m[0][0] * m[1][1] * m[2][3] * m[3][2] - m[0][2] * m[1][1] * m[2][0] * m[3][3] + m[0][1] * m[1][2] * m[2][0] * m[3][3] +
+		m[0][2] * m[1][0] * m[2][1] * m[3][3] - m[0][0] * m[1][2] * m[2][1] * m[3][3] - m[0][1] * m[1][0] * m[2][2] * m[3][3] + m[0][0] * m[1][1] * m[2][2] * m[3][3];
+
+
+	if (det != 0)
+	{
+		double inverse[4][4];
+		inverse[0][0] = m[1][2] * m[2][3] * m[3][1] - m[1][3] * m[2][2] * m[3][1] + m[1][3] * m[2][1] * m[3][2] - m[1][1] * m[2][3] * m[3][2] - m[1][2] * m[2][1] * m[3][3] + m[1][1] * m[2][2] * m[3][3];
+		inverse[0][1] = m[0][3] * m[2][2] * m[3][1] - m[0][2] * m[2][3] * m[3][1] - m[0][3] * m[2][1] * m[3][2] + m[0][1] * m[2][3] * m[3][2] + m[0][2] * m[2][1] * m[3][3] - m[0][1] * m[2][2] * m[3][3];
+		inverse[0][2] = m[0][2] * m[1][3] * m[3][1] - m[0][3] * m[1][2] * m[3][1] + m[0][3] * m[1][1] * m[3][2] - m[0][1] * m[1][3] * m[3][2] - m[0][2] * m[1][1] * m[3][3] + m[0][1] * m[1][2] * m[3][3];
+		inverse[0][3] = m[0][3] * m[1][2] * m[2][1] - m[0][2] * m[1][3] * m[2][1] - m[0][3] * m[1][1] * m[2][2] + m[0][1] * m[1][3] * m[2][2] + m[0][2] * m[1][1] * m[2][3] - m[0][1] * m[1][2] * m[2][3];
+
+		inverse[1][0] = m[1][3] * m[2][2] * m[3][0] - m[1][2] * m[2][3] * m[3][0] - m[1][3] * m[2][0] * m[3][2] + m[1][0] * m[2][3] * m[3][2] + m[1][2] * m[2][0] * m[3][3] - m[1][0] * m[2][2] * m[3][3];
+		inverse[1][1] = m[0][2] * m[2][3] * m[3][0] - m[0][3] * m[2][2] * m[3][0] + m[0][3] * m[2][0] * m[3][2] - m[0][0] * m[2][3] * m[3][2] - m[0][2] * m[2][0] * m[3][3] + m[0][0] * m[2][2] * m[3][3];
+		inverse[1][2] = m[0][3] * m[1][2] * m[3][0] - m[0][2] * m[1][3] * m[3][0] - m[0][3] * m[1][0] * m[3][2] + m[0][0] * m[1][3] * m[3][2] + m[0][2] * m[1][0] * m[3][3] - m[0][0] * m[1][2] * m[3][3];
+		inverse[1][3] = m[0][2] * m[1][3] * m[2][0] - m[0][3] * m[1][2] * m[2][0] + m[0][3] * m[1][0] * m[2][2] - m[0][0] * m[1][3] * m[2][2] - m[0][2] * m[1][0] * m[2][3] + m[0][0] * m[1][2] * m[2][3];
+
+		inverse[2][0] = m[1][1] * m[2][3] * m[3][0] - m[1][3] * m[2][1] * m[3][0] + m[1][3] * m[2][0] * m[3][1] - m[1][0] * m[2][3] * m[3][1] - m[1][1] * m[2][0] * m[3][3] + m[1][0] * m[2][1] * m[3][3];
+		inverse[2][1] = m[0][3] * m[2][1] * m[3][0] - m[0][1] * m[2][3] * m[3][0] - m[0][3] * m[2][0] * m[3][1] + m[0][0] * m[2][3] * m[3][1] + m[0][1] * m[2][0] * m[3][3] - m[0][0] * m[2][1] * m[3][3];
+		inverse[2][2] = m[0][1] * m[1][3] * m[3][0] - m[0][3] * m[1][1] * m[3][0] + m[0][3] * m[1][0] * m[3][1] - m[0][0] * m[1][3] * m[3][1] - m[0][1] * m[1][0] * m[3][3] + m[0][0] * m[1][1] * m[3][3];
+		inverse[2][3] = m[0][3] * m[1][1] * m[2][0] - m[0][1] * m[1][3] * m[2][0] - m[0][3] * m[1][0] * m[2][1] + m[0][0] * m[1][3] * m[2][1] + m[0][1] * m[1][0] * m[2][3] - m[0][0] * m[1][1] * m[2][3];
+
+		inverse[3][0] = m[1][2] * m[2][1] * m[3][0] - m[1][1] * m[2][2] * m[3][0] - m[1][2] * m[2][0] * m[3][1] + m[1][0] * m[2][2] * m[3][1] + m[1][1] * m[2][0] * m[3][2] - m[1][0] * m[2][1] * m[3][2];
+		inverse[3][1] = m[0][1] * m[2][2] * m[3][0] - m[0][2] * m[2][1] * m[3][0] + m[0][2] * m[2][0] * m[3][1] - m[0][0] * m[2][2] * m[3][1] - m[0][1] * m[2][0] * m[3][2] + m[0][0] * m[2][1] * m[3][2];
+		inverse[3][2] = m[0][2] * m[1][1] * m[3][0] - m[0][1] * m[1][2] * m[3][0] - m[0][2] * m[1][0] * m[3][1] + m[0][0] * m[1][2] * m[3][1] + m[0][1] * m[1][0] * m[3][2] - m[0][0] * m[1][1] * m[3][2];
+		inverse[3][3] = m[0][1] * m[1][2] * m[2][0] - m[0][2] * m[1][1] * m[2][0] + m[0][2] * m[1][0] * m[2][1] - m[0][0] * m[1][2] * m[2][1] - m[0][1] * m[1][0] * m[2][2] + m[0][0] * m[1][1] * m[2][2];
+
+
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
+				inverse[i][j] /= det;
+			}
+		}
+
+		// Create a save matrix to push to the stack
+		matrix<double> toSave(4, 4);
+
+		// Initialization
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
+				toSave(i, j) = 0;
+			}
+		}
+
+		// Copy the inverse matrix
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				toSave(i, j) = inverse[i][j];
+			}
+		}
+		
+		// Save the matrix
+		matrixStack.push(toSave);
+	}
+	else
+	{
+		std::cout << "couldn't inverse the position matrix \n";
+	}
+
+	// Add the node to the parent stack
+	parentNodes.push(current_node);
+	serializer->parentStackId.push(parent.id());
+
 }
 
-void ColladaSerializer::ColladaExporter::ColladaScene::closeParent(){
-	if (current_node != NULL) { current_node->end(); }
+void ColladaSerializer::ColladaExporter::ColladaScene::closeParent()
+{
+	// Get the top element
+	COLLADASW::Node *current_node = parentNodes.top();
+
+	// Close the node
+	current_node->end();
+
+	// Remove it from the stack
+	parentNodes.pop();
+	matrixStack.pop();
+	serializer->parentStackId.pop();
+
+	// Free the memory
+	delete current_node;
+	current_node = NULL;
 }
 
 void ColladaSerializer::ColladaExporter::ColladaScene::write() {
@@ -363,9 +527,9 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 		material_references.push_back(material_name);
 	}
 
-	DeferredObject defered = (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) && o->storey() != NULL ?
+	DeferredObject defered = (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) ?
 		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(), 
-			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), *(o->storey())) : 
+			mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs(), o->parents()) :
 		DeferredObject(name, representation_id, o->type(), o->transformation().matrix().data(), mesh.verts(), mesh.normals(),
 				mesh.faces(), mesh.edges(), mesh.material_ids(), mesh.materials(), material_references, mesh.uvs()));
 	deferreds.push_back(defered);
@@ -387,14 +551,12 @@ std::string ColladaSerializer::ColladaExporter::differentiateSlabTypes(const Ifc
 		case (IfcSlabTypeEnum::IfcSlabType_BASESLAB):
 			return "_BaseSlab";
 			break;
-		case (IfcSlabTypeEnum::IfcSlabType_USERDEFINED):
-			return "_" + slab->ObjectType();
-			break;
 		case (IfcSlabTypeEnum::IfcSlabType_NOTDEFINED):
 			return "_NotDefined";
 			break;
 		default:
-			return "_Unknown";
+			if (slab->hasObjectType()) { return "_" + slab->ObjectType(); }
+			else { return "_Unknown"; }
 			break;
 	}
 }
@@ -408,9 +570,11 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	std::set<std::string> geometries_written;
 
 	//if the setting USE_ELEMENT_HIERARCHY is in use, we sort the deferreds objects by their parents.
+	
 	if (use_hierarchy) {
 		std::sort(deferreds.begin(), deferreds.end());
 	}
+	
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it) {
 		if (geometries_written.find(it->representation_id) != geometries_written.end()) {
 			continue;
@@ -425,29 +589,55 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it){
 		const std::string object_name = it->unique_id;
 
-		// if the setting USE_ELEMENT_HIERARCHY is used
-		// And if "it" has not parent AND a parent node is opened, OR it has a parent AND another parent node is opened
-		if (use_hierarchy && ((it->parent == NULL && parent_id != -1) || (it->parent != NULL && parent_id != it->parent->id())))
+		if (use_hierarchy)
 		{
-			//close the parent tag if one is already open.
-			if (is_parent_tag_opened){
-				scene.closeParent();
-			}
+			unsigned parentsNumber = it->parents.size();
+			bool finished = false;
 
-			if (it->parent != NULL){
-				parent_id = it->parent->id();
-				scene.addParent(*it->parent);
-				is_parent_tag_opened = true;
+			// If we have no parent in the stack and the object has no parent, nothing to do : skip the loop
+			if (parentsNumber == 0 && serializer->parentStackId.size() == 0) { finished = true; }
+
+			while (!finished)
+			{
+				// If we need to add a parent
+				if (serializer->parentStackId.size() <= parentsNumber)
+				{
+					if (serializer->parentStackId.empty()) { scene.addParent(*(it->parents.at(0))); }
+					else
+					{
+						unsigned diff = parentsNumber - serializer->parentStackId.size();
+
+						// If we have the wrong parent in the list
+						if (serializer->parentStackId.top() != it->parents.at(parentsNumber - diff - 1)->id())
+						{
+							scene.closeParent();
+						}
+						// So far we have the right parents, we just need to add the missing ones
+						else
+						{
+							for (unsigned i = parentsNumber - diff; i < parentsNumber; i++) { scene.addParent(*(it->parents.at(i))); }
+
+							// if diff == 0, we can leave the loop. In fact we have the right number of parents, and the last one is ok
+							if (diff == 0) { finished = true; }
+						}
+					}
+				}
+				// IF serializer->parentStackId.size() > parentsNumber
+				else
+				{
+					// Close the finished nodes. After this we get the first case (serializer->parentStackId.size() <= parentsNumber)
+					while (serializer->parentStackId.size() > parentsNumber) { scene.closeParent(); }
+				}
 			}
 		}
 		
         /// @todo redundant information using ID as both ID and Name, maybe omit Name or allow specifying what would be used as the name
 		scene.add(object_name, object_name, it->representation_id, it->material_references, it->matrix);
 	}
-	//close the last parent tag.
-	if (is_parent_tag_opened) { 
-		scene.closeParent();
-	};
+
+	//close the remaining parent tags.
+	while (serializer->parentStackId.size() > 0) { scene.closeParent(); }
+
 	scene.write();
 	stream.endDocument();
 }
