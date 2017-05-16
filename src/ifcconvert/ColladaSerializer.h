@@ -86,7 +86,7 @@ private:
 			const std::string scene_id;
 			bool scene_opened;
 			std::stack<COLLADASW::Node*> parentNodes;
-			std::stack<boost::numeric::ublas::matrix<double>> matrixStack;
+			std::stack<boost::numeric::ublas::matrix<double> > matrixStack;
 		public:
 			ColladaScene(const std::string& scene_id, COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryVisualScenes(&stream)
