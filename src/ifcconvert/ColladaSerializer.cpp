@@ -589,7 +589,6 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it){
 		const std::string object_name = it->unique_id;
 
-		// TODO : handle the case where a representation object has no parent (Can this really happen ?)
 		if (use_hierarchy)
 		{
 			unsigned parentsNumber = it->parents.size();

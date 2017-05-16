@@ -136,19 +136,6 @@ private:
 		
 		friend bool operator < (const DeferredObject & def_obj1, const DeferredObject & def_obj2)
 		{
-			/*
-			std::cout << "*************** COMPARE ***************\n";
-			std::cout << "range 1 : " << def_obj1.unique_id << "\n";
-			for (unsigned i = 0; i < def_obj1.parents.size(); i++)
-			{
-				std::cout << "=== " << def_obj1.parents.at(i)->name() << " | " << def_obj1.parents.at(i)->id() << " ===\n";
-			}
-			std::cout << "range 2 : " << def_obj2.unique_id << "\n";
-			for (unsigned i = 0; i < def_obj2.parents.size(); i++)
-			{
-				std::cout << "=== " << def_obj2.parents.at(i)->name() << " | " << def_obj2.parents.at(i)->id() << " ===\n";
-			}
-			*/
 			unsigned size = (def_obj1.parents.size() < def_obj2.parents.size() ? def_obj1.parents.size() : def_obj2.parents.size());
 			int cpt = 0;
 
