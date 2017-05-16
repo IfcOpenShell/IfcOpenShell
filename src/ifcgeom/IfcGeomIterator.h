@@ -630,47 +630,33 @@ namespace IfcGeom {
 		}
 
 		const Element<P>* getObject(int id) {
-			//std::cout << "1";
 			gp_Trsf trsf;
 			int parent_id = -1;
 			std::string instance_type, product_name, product_guid;
             IfcSchema::IfcProduct* ifc_product = 0;
-			//std::cout << "2";
 			try {
 				const IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
 				instance_type = IfcSchema::Type::ToString(ifc_entity->type());
 				if ( ifc_entity->is(IfcSchema::Type::IfcProduct) ) {
 					ifc_product = (IfcSchema::IfcProduct*)ifc_entity;
-					//std::cout << "3";
 					product_guid = ifc_product->GlobalId();
 					product_name = ifc_product->hasName() ? ifc_product->Name() : "";
 					
 					parent_id = -1;
 					try {
-						//std::cout << "4";
 						IfcSchema::IfcObjectDefinition* parent_object = kernel.get_decomposing_entity(ifc_product);
 						if (parent_object) {
 							parent_id = parent_object->entity->id();
 						}
 					} catch (...) {}
-					//std::cout << "5";
 					try {
 						kernel.convert(ifc_product->ObjectPlacement(), trsf);
 					} catch (...) {}
 				}
-				//std::cout << "6";
 			} catch(...) {}
-			//std::cout << "7";
 			ElementSettings element_settings(settings, unit_magnitude, instance_type);
 
-			//std::cout << "8";
-			//std::cout << "id " << id << "\n";
-			//std::cout << "parent_id " << parent_id << "\n";
-			//std::cout << "product_name " << product_name << "\n";
-			//std::cout << "instance_type " << instance_type << "\n";
-			//std::cout << "product_guid " << product_guid << "\n";
 			Element<P>* ifc_object = new Element<P>(element_settings, id, parent_id, product_name, instance_type, product_guid, "", trsf, ifc_product);
-			//std::cout << "9\n";
 			return ifc_object;
 		}
 
