@@ -86,13 +86,25 @@ namespace IfcGeom {
 
 		friend bool operator == (const Element<P> & element1, const Element<P> & element2)
 		{
-			//std::cout << " //// Compare == " << element1.name() << element1.id() << " | " << element1.type() << " and " << element2.name() << element2.id() << " | " << element2.type() << "\n";
 			return element1.id() == element2.id();
 		}
 
+		// Use the id to compare, or the elevation is the elements are IfcBuildingStoreys and the elevation is set
 		friend bool operator < (const Element<P> & element1, const Element<P> & element2)
 		{
-			//std::cout << " //// Compare < " << element1.name() << element1.id() << " | " << element1.type() << " and " << element2.name() << element2.id() << " | " << element2.type() << "\n";
+			if (element1.type() == "IfcBuildingStorey" && element2.type() == "IfcBuildingStorey")
+			{
+				IfcSchema::IfcBuildingStorey* storey1 = NULL;
+				IfcSchema::IfcBuildingStorey* storey2 = NULL;
+
+				storey1 = (IfcSchema::IfcBuildingStorey*)element1.product();
+				storey2 = (IfcSchema::IfcBuildingStorey*)element2.product();
+
+				if (storey1 != NULL && storey2 != NULL && storey1->hasElevation() && storey2->hasElevation())
+				{
+					return storey1->Elevation() < storey2->Elevation();
+				}
+			}
 			return element1.id() < element2.id();
 		}
 

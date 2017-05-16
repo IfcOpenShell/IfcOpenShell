@@ -219,13 +219,12 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 			{ 0, 0, 0, 0 },
 			{ 0, 0, 0, 0 }
 		};
-		std::cout << "-------------------------------------------------------------------------------------------------------------------------------------\n";
-		std::cout << "REPRESENTATION : " << node_name << " placement, using " << parentNodes.top()->getNodeName() << " ...\n";
+
 		// Multiplication
 		for (int i = 0; i < 4; ++i) {
 			for (int j = 0; j < 4; ++j) {
 				for (int k = 0; k < 4; ++k) {
-					relative[i][j] += matrix_array[i][k] * matrixStack.top()(k, j);
+					relative[i][j] += matrixStack.top()(i, k) * matrix_array[k][j];
 				}
 			}
 		}
@@ -285,13 +284,12 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 			{ 0, 0, 0, 0 },
 			{ 0, 0, 0, 0 }
 		};
-		std::cout << "-------------------------------------------------------------------------------------------------------------------------------------\n";
-		std::cout << "PARENT         : " << parent.name() << "_" << parent.type() << " placement, using " << parentNodes.top()->getNodeName() << " ...\n";
+
 		// Multiplication
 		for (int i = 0; i < 4; ++i) {
 			for (int j = 0; j < 4; ++j) {
 				for (int k = 0; k < 4; ++k) {
-					relative[i][j] += matrix_array[i][k] * matrixStack.top()(k, j);
+					relative[i][j] += matrixStack.top()(i, k) * matrix_array[k][j];
 				}
 			}
 		}
@@ -313,10 +311,15 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 	
 	const std::string id = "representation-" + boost::lexical_cast<std::string>(parent.id());
 
+	// Chose a name of the parent object
+	std::string name = "";
+	if (parent.name() == "") { name = parent.type(); }
+	else { name = parent.name(); }
+
 	COLLADASW::Node *current_node;
 	current_node = new COLLADASW::Node(mSW);
 	current_node->setNodeId(id);
-	current_node->setNodeName(parent.type() + " " + parent.name());
+	current_node->setNodeName(name);
 	current_node->setType(COLLADASW::Node::NODE);
 	current_node->start();
 	current_node->addMatrix(matrix_array);
@@ -369,27 +372,25 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 			}
 		}
 
-		/*
-		std::cout << "matrix array : \n";
-		std::cout << m[0][0] << " | " << m[0][1] << " | " << m[0][2] << " | " << m[0][3] << " \n ";
-		std::cout << m[1][0] << " | " << m[1][1] << " | " << m[1][2] << " | " << m[1][3] << " \n ";
-		std::cout << m[2][0] << " | " << m[2][1] << " | " << m[2][2] << " | " << m[2][3] << " \n ";
-		std::cout << m[3][0] << " | " << m[3][1] << " | " << m[3][2] << " | " << m[3][3] << " \n ";
-		*/
-		matrix<double> save(4, 4);
+		// Create a save matrix to push to the stack
+		matrix<double> toSave(4, 4);
+
+		// Initialization
 		for (int i = 0; i < 4; ++i) {
 			for (int j = 0; j < 4; ++j) {
-				save(i, j) = 0;
+				toSave(i, j) = 0;
 			}
 		}
-		
+
+		// Copy the inverse matrix
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 4; j++) {
-				save(i, j) = inverse[i][j];
+				toSave(i, j) = inverse[i][j];
 			}
 		}
 		
-		matrixStack.push(save);
+		// Save the matrix
+		matrixStack.push(toSave);
 	}
 	else
 	{
@@ -513,7 +514,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 	
 	const std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS) ?
 		o->guid() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) ?
-			o->name() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES) ? o->type() + std::to_string(o->id()) + slabSuffix : o->unique_id()));
+			o->name() : (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES) ? o->type() + slabSuffix : o->unique_id()));
 	const std::string representation_id = "representation-" + boost::lexical_cast<std::string>(o->geometry().id());
 	std::vector<std::string> material_references;
 	foreach(const IfcGeom::Material& material, mesh.materials()) {
@@ -550,14 +551,12 @@ std::string ColladaSerializer::ColladaExporter::differentiateSlabTypes(const Ifc
 		case (IfcSlabTypeEnum::IfcSlabType_BASESLAB):
 			return "_BaseSlab";
 			break;
-		case (IfcSlabTypeEnum::IfcSlabType_USERDEFINED):
-			return "_" + slab->ObjectType();
-			break;
 		case (IfcSlabTypeEnum::IfcSlabType_NOTDEFINED):
 			return "_NotDefined";
 			break;
 		default:
-			return "_Unknown";
+			if (slab->hasObjectType()) { return "_" + slab->ObjectType(); }
+			else { return "_Unknown"; }
 			break;
 	}
 }
@@ -589,16 +588,6 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 	bool is_parent_tag_opened = false; 
 	for (std::vector<DeferredObject>::const_iterator it = deferreds.begin(); it != deferreds.end(); ++it){
 		const std::string object_name = it->unique_id;
-
-		/*
-		std::cout << "******************************\n";
-		std::cout << "== " << it->unique_id << " ==\n";
-		std::cout << " has " << it->parents.size() << " parents \n";
-		for (unsigned i = 0; i < it->parents.size(); i++)
-		{
-			std::cout << "=== " << it->parents.at(i)->name() << " | " << it->parents.at(i)->id() << " ===\n";
-		}
-		*/
 
 		// TODO : handle the case where a representation object has no parent (Can this really happen ?)
 		if (use_hierarchy)
