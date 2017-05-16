@@ -219,7 +219,8 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 			{ 0, 0, 0, 0 },
 			{ 0, 0, 0, 0 }
 		};
-		std::cout << "placement de " << node_name << " | utilisation de " << parentNodes.top()->getNodeName() << "\n";
+		std::cout << "-------------------------------------------------------------------------------------------------------------------------------------\n";
+		std::cout << "REPRESENTATION : " << node_name << " placement, using " << parentNodes.top()->getNodeName() << " ...\n";
 		// Multiplication
 		for (int i = 0; i < 4; ++i) {
 			for (int j = 0; j < 4; ++j) {
@@ -284,7 +285,8 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 			{ 0, 0, 0, 0 },
 			{ 0, 0, 0, 0 }
 		};
-		std::cout << "placement de " << parent.name() << "_" << parent.type() << " | utilisation de " << parentNodes.top()->getNodeName() << "\n";
+		std::cout << "-------------------------------------------------------------------------------------------------------------------------------------\n";
+		std::cout << "PARENT         : " << parent.name() << "_" << parent.type() << " placement, using " << parentNodes.top()->getNodeName() << " ...\n";
 		// Multiplication
 		for (int i = 0; i < 4; ++i) {
 			for (int j = 0; j < 4; ++j) {
@@ -315,9 +317,9 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 	current_node = new COLLADASW::Node(mSW);
 	current_node->setNodeId(id);
 	current_node->setNodeName(parent.type() + " " + parent.name());
-	current_node->addMatrix(matrix_array);
 	current_node->setType(COLLADASW::Node::NODE);
 	current_node->start();
+	current_node->addMatrix(matrix_array);
 
 	// ==== Inverse the matrix and save it ====
 
@@ -367,42 +369,20 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 			}
 		}
 
-		std::cout << " ===== TEST INVERSE " << parent.name() << "===== \n";
-		double test[4][4];
-
-		for (int i = 0; i < 4; ++i) {
-			for (int j = 0; j < 4; ++j) {
-				test[i][j] = 0;
-			}
-		}
-
-		for (int i = 0; i < 4; ++i) {
-			for (int j = 0; j < 4; ++j) {
-				for (int k = 0; k < 4; ++k) {
-					if (false)
-					{
-						std::cout << "test [" << i << "][" << j << "] += " << m[i][k] << " * " << inverse[k][j] << "\n";
-					}
-					test[i][j] += m[i][k] * inverse[k][j]; 
-				}
-			}
-		}
-
+		/*
 		std::cout << "matrix array : \n";
 		std::cout << m[0][0] << " | " << m[0][1] << " | " << m[0][2] << " | " << m[0][3] << " \n ";
 		std::cout << m[1][0] << " | " << m[1][1] << " | " << m[1][2] << " | " << m[1][3] << " \n ";
 		std::cout << m[2][0] << " | " << m[2][1] << " | " << m[2][2] << " | " << m[2][3] << " \n ";
 		std::cout << m[3][0] << " | " << m[3][1] << " | " << m[3][2] << " | " << m[3][3] << " \n ";
-
-		std::cout << "det = " << det << "\n";
-
-		std::cout << "test array : \n";
-		std::cout << test[0][0] << " | " << test[0][1] << " | " << test[0][2] << " | " << test[0][3] << " \n ";
-		std::cout << test[1][0] << " | " << test[1][1] << " | " << test[1][2] << " | " << test[1][3] << " \n ";
-		std::cout << test[2][0] << " | " << test[2][1] << " | " << test[2][2] << " | " << test[2][3] << " \n ";
-		std::cout << test[3][0] << " | " << test[3][1] << " | " << test[3][2] << " | " << test[3][3] << " \n ";
-		
+		*/
 		matrix<double> save(4, 4);
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
+				save(i, j) = 0;
+			}
+		}
+		
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 4; j++) {
 				save(i, j) = inverse[i][j];
