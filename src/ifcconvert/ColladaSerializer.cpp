@@ -313,8 +313,13 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 
 	// Chose a name of the parent object
 	std::string name = "";
-	if (parent.name() == "") { name = parent.type(); }
-	else { name = parent.name(); }
+	if (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES)) { name = parent.type() + " " + parent.name(); }
+	else 
+	{
+		if (parent.name() == "") { name = "unnamed"; }
+		else { name = parent.name(); }
+	}
+	
 
 	COLLADASW::Node *current_node;
 	current_node = new COLLADASW::Node(mSW);
