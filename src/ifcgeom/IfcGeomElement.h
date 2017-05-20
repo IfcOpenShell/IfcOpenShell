@@ -81,7 +81,33 @@ namespace IfcGeom {
 		std::string _unique_id;
 		Transformation<P> _transformation;
         IfcSchema::IfcProduct* product_;
+		std::vector<const IfcGeom::Element<P>*> _parents;
 	public:
+
+		friend bool operator == (const Element<P> & element1, const Element<P> & element2)
+		{
+			return element1.id() == element2.id();
+		}
+
+		// Use the id to compare, or the elevation is the elements are IfcBuildingStoreys and the elevation is set
+		friend bool operator < (const Element<P> & element1, const Element<P> & element2)
+		{
+			if (element1.type() == "IfcBuildingStorey" && element2.type() == "IfcBuildingStorey")
+			{
+				IfcSchema::IfcBuildingStorey* storey1 = NULL;
+				IfcSchema::IfcBuildingStorey* storey2 = NULL;
+
+				storey1 = (IfcSchema::IfcBuildingStorey*)element1.product();
+				storey2 = (IfcSchema::IfcBuildingStorey*)element2.product();
+
+				if (storey1 != NULL && storey2 != NULL && storey1->hasElevation() && storey2->hasElevation())
+				{
+					return storey1->Elevation() < storey2->Elevation();
+				}
+			}
+			return element1.id() < element2.id();
+		}
+
 		int id() const { return _id; }
 		int parent_id() const { return _parent_id; }
 		const std::string& name() const { return _name; }
@@ -91,14 +117,21 @@ namespace IfcGeom {
 		const std::string& unique_id() const { return _unique_id; }
 		const Transformation<P>& transformation() const { return _transformation; }
         IfcSchema::IfcProduct* product() const { return product_; }
+		const std::vector<const IfcGeom::Element<P>*> parents() const { return _parents; }
+		void SetParents(std::vector<const IfcGeom::Element<P>*> newparents) { _parents = newparents; }
 
 		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type,
             const std::string& guid, const std::string& context, const gp_Trsf& trsf, IfcSchema::IfcProduct *product)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
             , product_(product)
-		{
+		{ 
 			std::ostringstream oss;
-			oss << "product-" << IfcParse::IfcGlobalId(guid).formatted();
+			try { oss << "product-" << IfcParse::IfcGlobalId(guid).formatted(); }
+			catch (std::exception e)
+			{
+				oss << "product-cannotfindId";
+			}
+
 			if (!_context.empty()) {
 				std::string ctx = _context;
                 boost::to_lower(ctx);
