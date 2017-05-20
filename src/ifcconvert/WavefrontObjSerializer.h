@@ -51,7 +51,6 @@ public:
 	void writeHeader();
 	void writeMaterial(const IfcGeom::Material& style);
 	void write(const IfcGeom::TriangulationElement<real_t>* o);
-	void write(const IfcGeom::TriangulationElement<real_t>* o, const IfcGeom::Element<real_t>* parent) {}
 	void write(const IfcGeom::BRepElement<real_t>* /*o*/) {}
 	void finalize() {}
 	bool isTesselated() const { return true; }
