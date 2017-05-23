@@ -155,7 +155,8 @@ int main(int argc, char** argv)
 		("help,h", "display usage information")
 		("version", "display version information")
         ("verbose,v", "more verbose output")
-        ("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)");
+        ("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
+        ("no-progress", "Suppress possible progress bar type of prints that use carriage return.");
 
     po::options_description fileio_options;
 	fileio_options.add_options()
@@ -335,6 +336,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 	const bool verbose = vmap.count("verbose") != 0;
+	const bool no_progress = vmap.count("no-progress") != 0;
 	const bool weld_vertices = vmap.count("weld-vertices") != 0;
 	const bool use_world_coords = vmap.count("use-world-coords") != 0;
 	const bool convert_back_units = vmap.count("convert-back-units") != 0;
@@ -419,6 +421,9 @@ int main(int argc, char** argv)
     Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
     IfcParse::IfcFile ifc_file;
+    // Prevent IfcFile::Init() prints by setting output to null temporarily
+    if (no_progress) { Logger::SetOutput(NULL, &log_stream); }
+
     /// @todo Do not read/initialize the file just yet. We got many potential error and
     /// exit points below and reading/initializing at this point can stall up to tens of
     /// seconds if the file is very large.
@@ -426,6 +431,7 @@ int main(int argc, char** argv)
         Logger::Error("Unable to parse input file '" + input_filename + "'");
         return EXIT_FAILURE;
     }
+    if (no_progress) { Logger::SetOutput(&std::cout, &log_stream); }
 
     if (output_extension == ".xml") {
         int exit_code = EXIT_FAILURE;
@@ -626,10 +632,12 @@ int main(int argc, char** argv)
 		{
 			serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
 		}
-		
-        const int progress = context_iterator.progress() / 2;
-        if (old_progress != progress) Logger::ProgressBar(progress);
-        old_progress = progress;
+
+        if (!no_progress) {
+            const int progress = context_iterator.progress() / 2;
+            if (old_progress != progress) Logger::ProgressBar(progress);
+            old_progress = progress;
+        }
     } while (++num_created, context_iterator.next());
 
     Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(num_created) +
