@@ -1060,6 +1060,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 				Logger::Message(Logger::LOG_ERROR,ex.what());
 				continue;
 			}
+            /// @todo Printing to stdout in a library class feels weird. Maybe move the progress prints to the client code?
 			// Update the status after every 1000 instances parsed
 			if ( !((++x)%1000) ) {
 				std::stringstream ss; ss << "\r#" << currentId;
