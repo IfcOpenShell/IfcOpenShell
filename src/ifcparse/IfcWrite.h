@@ -59,7 +59,7 @@ namespace IfcWrite {
 	private:
 		boost::variant<
 			// A null argument, it will always serialize to $
-			boost::none_t,
+			boost::blank,
 			// A derived argument, it will always serialize to *
 			Derived,
 			// An integer argument, e.g. 123 
