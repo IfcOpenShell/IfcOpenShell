@@ -182,7 +182,7 @@ namespace IfcGeom
             ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude");
             std::vector<std::string> patterns;
             foreach(const boost::regex& r, values) {
-                patterns.push_back(" \"" + r.str() + "\"");
+                patterns.push_back("\"" + r.str() + "\"");
             }
 
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
@@ -239,7 +239,7 @@ namespace IfcGeom
             foreach(const boost::regex& r, values) {
                 str_values.push_back(" \"" + r.str() + "\"");
             }
-            ss << " " << boost::algorithm::join(str_values, " ");
+            ss << boost::algorithm::join(str_values, " ");
             description = ss.str();
         }
     };
