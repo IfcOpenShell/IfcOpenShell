@@ -22,7 +22,7 @@
 
 #include "ifc_geom_api.h"
 #include "../ifcparse/IfcException.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 
 namespace IfcGeom
 {

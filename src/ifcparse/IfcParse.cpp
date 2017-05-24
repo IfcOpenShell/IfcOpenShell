@@ -35,10 +35,9 @@
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcException.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcSpfStream.h"
 #include "../ifcparse/IfcWritableEntity.h"
-#include "../ifcparse/IfcLateBoundEntity.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcSIPrefix.h"
 

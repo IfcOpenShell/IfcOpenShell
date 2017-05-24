@@ -30,7 +30,7 @@
 #define IfcSchema Ifc4
 
 #include "../ifcparse/ifc_parse_api.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcEntityDescriptor.h"
 
 namespace Ifc4 {

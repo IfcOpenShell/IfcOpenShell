@@ -68,9 +68,9 @@
 	#include "../ifcgeom/IfcGeom.h"
 	#include "../ifcgeom/IfcGeomIterator.h"
 
+	#include "../ifcparse/IfcBaseClass.h"
 	#include "../ifcparse/IfcFile.h"
-	#include "../ifcparse/IfcLateBoundEntity.h"
-
+	
 	#ifdef USE_IFC4
 	#include "../ifcparse/Ifc4-latebound.h"
 	#else

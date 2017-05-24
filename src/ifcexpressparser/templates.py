@@ -28,7 +28,7 @@ header = """
 
 #include "../ifcparse/ifc_parse_api.h"
 
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/%(schema_name)senum.h"
 
@@ -85,7 +85,7 @@ lb_header = """
 #define IfcSchema %(schema_name)s
 
 #include "../ifcparse/ifc_parse_api.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcEntityDescriptor.h"
 
 namespace %(schema_name)s {
@@ -170,7 +170,7 @@ lb_implementation = """
 #include "../ifcparse/%(schema_name)s-latebound.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcWrite.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcEntityDescriptor.h"
 
 using namespace %(schema_name)s;

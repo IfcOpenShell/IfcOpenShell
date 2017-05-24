@@ -448,12 +448,8 @@ void StringBuilderVisitor::serialize(const std::vector<std::string>& i) {
 	data << "(";
 	for (std::vector<std::string>::const_iterator it = i.begin(); it != i.end(); ++it) {
 		if (it != i.begin()) data << ",";
-		if (upper) {
-			std::string s = IfcCharacterEncoder(*it);
-			data << s;
-		} else {
-			data << *it;
-		}
+		std::string s = IfcCharacterEncoder(*it);
+		data << s;
 	}
 	data << ")";
 }

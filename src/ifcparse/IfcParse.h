@@ -43,7 +43,7 @@
 #include "ifc_parse_api.h"
 
 #include "../ifcparse/IfcCharacterDecoder.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcLogger.h"
 
 #ifdef USE_IFC4

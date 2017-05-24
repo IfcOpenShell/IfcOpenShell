@@ -47,7 +47,7 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include <BOPAlgo_Operation.hxx>
 
 #include "../ifcparse/IfcParse.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 
 #include "../ifcgeom/IfcGeomElement.h" 
 #include "../ifcgeom/IfcGeomRepresentation.h" 

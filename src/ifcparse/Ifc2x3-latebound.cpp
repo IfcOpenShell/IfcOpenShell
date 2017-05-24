@@ -32,7 +32,7 @@
 #include "../ifcparse/Ifc2x3-latebound.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcWrite.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcEntityDescriptor.h"
 
 using namespace Ifc2x3;

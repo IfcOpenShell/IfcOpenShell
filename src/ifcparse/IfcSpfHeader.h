@@ -34,7 +34,7 @@ private:
 	HeaderEntity(const HeaderEntity&); //N/A
 	HeaderEntity& operator =(const HeaderEntity&); //N/A
 protected:
-	HeaderEntity(const char * const datatype, IfcFile* file);
+	HeaderEntity(const char * const datatype, IfcParse::IfcFile* file);
 
 	void setValue(unsigned int i, const std::string& s) {
 		IfcWrite::IfcWriteArgument* argument = new IfcWrite::IfcWriteArgument;
@@ -122,7 +122,7 @@ private:
 	};
 	void readTerminal(const std::string& term, Trail trail);
 public:
-	explicit IfcSpfHeader(IfcFile* file = 0)
+	explicit IfcSpfHeader(IfcParse::IfcFile* file = 0)
 		: file_(file), _file_description(0), _file_name(0), _file_schema(0) 
 	{
 		_file_description = new FileDescription(file_);
@@ -137,8 +137,8 @@ public:
 		delete _file_description;
 	}
 
-	IfcFile* file() { return file_; }
-	void file(IfcFile * file) { file_ = file; }
+	IfcParse::IfcFile* file() { return file_; }
+	void file(IfcParse::IfcFile * file) { file_ = file; }
 
 	void read();	
 	bool tryRead();

@@ -37,6 +37,6 @@
 
 #include "ifc_parse_api.h"
 
-#include "IfcUtil.h"
+#include "IfcBaseClass.h"
 
 #endif

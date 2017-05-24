@@ -27,7 +27,7 @@ class file(object):
     def __init__(self, f=None):
         self.wrapped_data = f or ifcopenshell_wrapper.file(True)
     def create_entity(self,type,*args,**kwargs):
-        e = entity_instance(ifcopenshell_wrapper.entity_instance(type))
+        e = entity_instance(type)
         attrs = list(enumerate(args)) + \
             [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
         for idx, arg in attrs: e[idx] = arg

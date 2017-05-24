@@ -28,7 +28,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcException.h"
 
 #ifdef USE_IFC4

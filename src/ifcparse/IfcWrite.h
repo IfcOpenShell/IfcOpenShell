@@ -34,7 +34,7 @@
 
 #include "ifc_parse_api.h"
 
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcParse.h"
 
 namespace IfcWrite {
