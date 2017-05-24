@@ -29,6 +29,7 @@
 
 #include "../ifcparse/ifc_parse_api.h"
 
+#include <string>
 #include <boost/optional.hpp>
 
 #define IfcSchema Ifc2x3

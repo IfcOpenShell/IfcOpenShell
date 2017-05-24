@@ -20,10 +20,20 @@
 #ifndef IFCENTITYINSTANCEDATA_H
 #define IFCENTITYINSTANCEDATA_H
 
+#include "../ifcparse/ArgumentType.h"
+
+#include <vector>
+
+class Argument;
+class IfcEntityList;
+namespace IfcParse {
+	class IfcFile;
+}
+
 class IFC_PARSE_API IfcEntityInstanceData {
 public:
 	// Public for backwards compatibility
-	IfcParse::IfcFile* file; protected:
+	IfcParse::IfcFile* file;
 protected:
 	unsigned id_;
 	IfcSchema::Type::Enum type_;
@@ -62,7 +72,7 @@ public:
 
 	~IfcEntityInstanceData();
 
-	IfcEntityList::ptr getInverse(IfcSchema::Type::Enum type, int attribute_index);
+	boost::shared_ptr<IfcEntityList> getInverse(IfcSchema::Type::Enum type, int attribute_index);
 
 	Argument* getArgument(unsigned int i) const;
 

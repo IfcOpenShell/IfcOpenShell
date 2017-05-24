@@ -28,8 +28,9 @@
 #include "../ifcparse/Ifc2x3enum.h"
 #endif
 
-#include "../ifcparse/Argument.h"
 #include "../ifcparse/IfcEntityInstanceData.h"
+
+class Argument;
 
 namespace IfcUtil {
 

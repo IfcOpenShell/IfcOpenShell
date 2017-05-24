@@ -86,7 +86,6 @@ namespace IfcWrite {
 			// IFCREAL(12.3)
 			IfcUtil::IfcBaseClass*,
 
-			empty_aggregate_t,
 			// AGGREGATES:
 			empty_aggregate_t,
 			// An aggregate of integers, e.g. (1,2,3)
@@ -102,7 +101,6 @@ namespace IfcWrite {
 			// e.g. (IFCREAL(1.2),IFCINTEGER(3.))
 			IfcEntityList::ptr,
 
-			empty_aggregate_of_aggregate_t,
 			// AGGREGATES OF AGGREGATES:
 			empty_aggregate_of_aggregate_t,
 			// An aggregate of an aggregate of ints. E.g. ((1, 2), (3))

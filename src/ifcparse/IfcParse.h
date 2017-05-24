@@ -45,6 +45,7 @@
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcLogger.h"
+#include "../ifcparse/Argument.h"
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4.h"

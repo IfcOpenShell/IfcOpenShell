@@ -17,8 +17,10 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "IfcBaseClass.h"
+#include "../ifcparse/IfcBaseClass.h"
+#include "../ifcparse/Argument.h"
 #include "../ifcparse/IfcException.h"
+#include "../ifcparse/IfcEntityList.h"
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4-latebound.h"

@@ -28,8 +28,11 @@ header = """
 
 #include "../ifcparse/ifc_parse_api.h"
 
+#include "../ifcparse/IfcEntityList.h"
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcException.h"
+#include "../ifcparse/Argument.h"
+
 #include "../ifcparse/%(schema_name)senum.h"
 
 #define IfcSchema %(schema_name)s
@@ -57,6 +60,7 @@ enum_header = """
 
 #include "../ifcparse/ifc_parse_api.h"
 
+#include <string>
 #include <boost/optional.hpp>
 
 #define IfcSchema %(schema_name)s

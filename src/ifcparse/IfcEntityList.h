@@ -20,11 +20,11 @@
 #ifndef IFCENTITYLIST_H
 #define IFCENTITYLIST_H
 
+#include "../ifcparse/IfcBaseClass.h"
+
 #include <boost/shared_ptr.hpp>
 
-namespace IfcUtil {
-	class IfcBaseClass;
-}
+#include <set>
 
 template <class T>
 class IfcTemplatedEntityList;

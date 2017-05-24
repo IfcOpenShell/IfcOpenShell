@@ -34,8 +34,11 @@
 
 #include "../ifcparse/ifc_parse_api.h"
 
+#include "../ifcparse/IfcEntityList.h"
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcException.h"
+#include "../ifcparse/Argument.h"
+
 #include "../ifcparse/Ifc4enum.h"
 
 #define IfcSchema Ifc4
