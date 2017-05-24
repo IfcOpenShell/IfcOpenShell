@@ -78,8 +78,10 @@ namespace IfcGeom
             GENERATE_UVS = 1 << 12,
             /// Specifies whether to slice representations according to associated IfcLayerSets.
             APPLY_LAYERSETS = 1 << 13,
+			/// Search for a parent of type IfcBuildingStorey for each representation
+			SEARCH_FLOOR = 1 << 14,
             /// Number of different setting flags.
-            NUM_SETTINGS = 13
+            NUM_SETTINGS = 14
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;

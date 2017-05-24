@@ -215,8 +215,6 @@ public:
 	gp_Pnt point_above_plane(const gp_Pln& pln, bool agree=true);
 	const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid);
 	bool profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Shape& face); 
-	double shape_volume(const TopoDS_Shape& s);
-	double face_area(const TopoDS_Face& f);
 	void apply_tolerance(TopoDS_Shape& s, double t);
 	void setValue(GeomValue var, double value);
 	double getValue(GeomValue var) const;
@@ -227,6 +225,9 @@ public:
 	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
 	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&);
 	bool flatten_wire(TopoDS_Wire&);
+
+	static double shape_volume(const TopoDS_Shape& s);
+	static double face_area(const TopoDS_Face& f);
 
 	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
 	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);

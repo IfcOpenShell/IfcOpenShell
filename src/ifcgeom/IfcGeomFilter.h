@@ -146,8 +146,8 @@ namespace IfcGeom
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
                 IfcWrite::IfcWritableEntity dummy(it->first);
                 IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
-                assert(it->second < base->getArgumentType(it->second) == IfcUtil::Argument_STRING && "Argument type not string");
                 assert(it->second < base->getArgumentCount() && "Argument index out of bounds");
+                assert(base->getArgumentType(it->second) == IfcUtil::Argument_STRING && "Argument type not string");
                 delete base;
             }
 #endif

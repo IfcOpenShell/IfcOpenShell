@@ -26,7 +26,7 @@ if not exist "%~dp0BuildDepsCache-%TARGET_ARCH%.txt". (
     echo %~dp0BuildDepsCache-%TARGET_ARCH%.txt does not exist
     goto :EOF
 )
-for /f "delims== tokens=1,2" %%G in ("%~dp0BuildDepsCache-%TARGET_ARCH%.txt") do set %%G=%%H
+for /f "usebackq delims== tokens=1,2" %%G in ("%~dp0BuildDepsCache-%TARGET_ARCH%.txt") do set %%G=%%H
 if not defined PYTHONHOME (
     echo PYTHONHOME not defined
     goto :EOF

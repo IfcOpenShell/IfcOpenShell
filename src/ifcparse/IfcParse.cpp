@@ -1543,7 +1543,7 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 					IfcUtil::IfcBaseClass* instance_attribute = *attr;
 					if (instance_attribute == entity) {
 						IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-						copy->set(boost::none);
+						copy->set(boost::blank());
 						related_instance->entity->setArgument(i, copy);
 					} }
 					break;

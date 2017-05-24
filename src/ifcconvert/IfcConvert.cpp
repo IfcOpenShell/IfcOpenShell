@@ -267,6 +267,12 @@ int main(int argc, char** argv)
         ("use-material-names",
             "Use material names instead of unique IDs for naming materials upon serialization. "
             "Applicable for OBJ and DAE output.")
+		("use-element-types",
+			"Use element types instead of unique IDs for naming elements upon serialization. "
+			"Applicable for DAE output.")
+		("use-element-hierarchy",
+			"Order the elements using their IfcBuildingStorey parent. "
+			"Applicable for DAE output.")
         ("center-model",
             "Centers the elements upon serialization by applying the center point of "
             "all placements as an offset. Applicable for OBJ and DAE output.")
@@ -335,6 +341,8 @@ int main(int argc, char** argv)
     const bool use_element_names = vmap.count("use-element-names") != 0;
     const bool use_element_guids = vmap.count("use-element-guids") != 0 ;
     const bool use_material_names = vmap.count("use-material-names") != 0;
+	const bool use_element_types = vmap.count("use-element-types") != 0;
+	const bool use_element_hierarchy = vmap.count("use-element-hierarchy") != 0;
     const bool no_normals = vmap.count("no-normals") != 0 ;
     const bool center_model = vmap.count("center-model") != 0 ;
     const bool model_offset = vmap.count("model-offset") != 0 ;
@@ -459,10 +467,13 @@ int main(int argc, char** argv)
 	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
+	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy);
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
     settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
+	settings.set(SerializerSettings::USE_ELEMENT_TYPES, use_element_types);
+	settings.set(SerializerSettings::USE_ELEMENT_HIERARCHY, use_element_hierarchy);
     settings.set_deflection_tolerance(deflection_tolerance);
     settings.precision = precision;
 
@@ -497,6 +508,14 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) && output_extension != ".dae")
+	{
+		Logger::Error("--use-element-hierarchy can be used only with .dae output.");
+		write_log();
+		print_usage();
+		return EXIT_FAILURE;
+	}
+
     const bool is_tesselated = serializer->isTesselated(); // isTesselated() doesn't change at run-time
 	if (!is_tesselated) {
 		if (weld_vertices) {
@@ -519,7 +538,7 @@ int main(int argc, char** argv)
 
 	time_t start,end;
 	time(&start);
-
+	
     IfcGeom::Iterator<real_t> context_iterator(settings, &ifc_file, filter_funcs);
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
@@ -577,11 +596,16 @@ int main(int argc, char** argv)
 	
 	do {
         IfcGeom::Element<real_t> *geom_object = context_iterator.get();
-		if (is_tesselated) {
+
+		if (is_tesselated)
+		{
 			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
-		} else {
+		}
+		else
+		{
 			serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
 		}
+		
         const int progress = context_iterator.progress() / 2;
         if (old_progress != progress) Logger::ProgressBar(progress);
         old_progress = progress;

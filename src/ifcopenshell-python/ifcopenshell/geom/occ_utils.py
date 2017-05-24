@@ -182,6 +182,8 @@ def get_bounding_box_center(bbox):
 
     
 def serialize_shape(shape):
+    import OCC.BRepTools
+    
     shapes = OCC.BRepTools.BRepTools_ShapeSet()
     shapes.Add(shape)
     return shapes.WriteToString()

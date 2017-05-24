@@ -16,15 +16,20 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.        #
 #                                                                             #
 ###############################################################################
+from __future__ import print_function
 
 import functools
 import numbers
-import logging
 import itertools
 
 from . import ifcopenshell_wrapper
 
-log = logging.getLogger(__name__)
+try:
+    import logging
+    log = logging.getLogger(__name__)
+except ImportError as e:
+    log = type('logger', (object,), {'exception': lambda s: print(s)})
+
 
 class entity_instance(object):
     def __init__(self, e):

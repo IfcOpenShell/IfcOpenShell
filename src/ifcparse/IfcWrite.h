@@ -59,7 +59,7 @@ namespace IfcWrite {
 	private:
 		boost::variant<
 			// A null argument, it will always serialize to $
-			boost::none_t,
+			boost::blank,
 			// A derived argument, it will always serialize to *
 			Derived,
 			// An integer argument, e.g. 123 
@@ -88,6 +88,7 @@ namespace IfcWrite {
 
 			empty_aggregate_t,
 			// AGGREGATES:
+			empty_aggregate_t,
 			// An aggregate of integers, e.g. (1,2,3)
 			std::vector<int>,
 			// An aggregate of floats, e.g. (12.3,4.) 
@@ -103,6 +104,7 @@ namespace IfcWrite {
 
 			empty_aggregate_of_aggregate_t,
 			// AGGREGATES OF AGGREGATES:
+			empty_aggregate_of_aggregate_t,
 			// An aggregate of an aggregate of ints. E.g. ((1, 2), (3))
 			std::vector< std::vector<int> >,
 			// An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))

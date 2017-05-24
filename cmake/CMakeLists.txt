@@ -128,6 +128,7 @@ MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 # make sure the lib variable ends with not just contains it.
 function(add_debug_variants NAME LIBRARIES POSTFIX)
     set(LIBRARIES_STR "${LIBRARIES}")
+    set(LIBRARIES "")
     # the result, "optimized <lib> debug <lib>", needs to be a list instead of a string
     foreach(lib ${LIBRARIES_STR})
         list(APPEND LIBRARIES optimized)
@@ -188,9 +189,12 @@ ELSE()
 ENDIF()
 
 # Use the found libTKernel as a template for all other OCC libraries
+# TODO Extract this into macro/function
 foreach(lib ${OPENCASCADE_LIBRARY_NAMES})
-    string(REPLACE TKernel "${lib}" lib_path "${libTKernel}")
-    list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
+    # Make sure we'll handle the Windows/MSVC debug postfix convetion too.
+    string(REPLACE TKerneld "${lib}" lib_path "${libTKernel}")
+    string(REPLACE TKernel "${lib}" lib_path "${lib_path}")
+	list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
 endforeach()
 
 if(MSVC)
@@ -250,7 +254,13 @@ IF(COLLADA_SUPPORT)
 		GET_FILENAME_COMPONENT(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_FRAMEWORK_LIB} PATH)
 	ENDIF()
 
-	FIND_LIBRARY(OpenCOLLADAFramework NAMES OpenCOLLADAFramework PATHS ${OPENCOLLADA_LIBRARY_DIR} NO_DEFAULT_PATH)
+	FIND_LIBRARY(OpenCOLLADAFramework NAMES OpenCOLLADAFramework OpenCOLLADAFrameworkd PATHS ${OPENCOLLADA_LIBRARY_DIR} NO_DEFAULT_PATH)
+    if (OpenCOLLADAFramework)
+        message(STATUS "OpenCOLLADA library files found")
+    else()
+        message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA libraries. "
+            "Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
+    endif()
 
 	SET(OPENCOLLADA_LIBRARY_DIR "${OPENCOLLADA_LIBRARY_DIR}" CACHE FILEPATH "OpenCOLLADA library files")
 
@@ -267,24 +277,31 @@ IF(COLLADA_SUPPORT)
 
 		# Use the found OpenCOLLADAFramework as a template for all other OpenCOLLADA libraries
 		foreach(lib ${OPENCOLLADA_LIBRARY_NAMES})
-			string(REPLACE OpenCOLLADAFramework "${lib}" lib_path "${OpenCOLLADAFramework}")
-			list(APPEND OPENCOLLADA_LIBRARIES "${lib_path}")
+            # Make sure we'll handle the Windows/MSVC debug postfix convetion too.
+            string(REPLACE OpenCOLLADAFrameworkd "${lib}" lib_path "${OpenCOLLADAFramework}")
+            string(REPLACE OpenCOLLADAFramework "${lib}" lib_path "${lib_path}")
+ 			list(APPEND OPENCOLLADA_LIBRARIES "${lib_path}")
 		endforeach()
 
 		if("${PCRE_LIBRARY_DIR}" STREQUAL "")
             if(WIN32)
-                find_library(pcre_library NAMES pcre PATHS ${OPENCOLLADA_LIBRARY_DIR} NO_DEFAULT_PATH)
+                find_library(pcre_library NAMES pcre pcred PATHS ${OPENCOLLADA_LIBRARY_DIR} NO_DEFAULT_PATH)
             else()
                 find_library(pcre_library NAMES pcre PATHS ${OPENCOLLADA_LIBRARY_DIR})
             endif()
 			GET_FILENAME_COMPONENT(PCRE_LIBRARY_DIR ${pcre_library} PATH)
 		else()
-			find_library(pcre_library NAMES pcre PATHS ${PCRE_LIBRARY_DIR} NO_DEFAULT_PATH)
+			find_library(pcre_library NAMES pcre pcred PATHS ${PCRE_LIBRARY_DIR} NO_DEFAULT_PATH)
 		endif()
 
 		if (pcre_library)
 			SET(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_LIBRARY_DIR} ${PCRE_LIBRARY_DIR})
-			list(APPEND OPENCOLLADA_LIBRARIES "${pcre_library}")
+            if (MSVC)
+                # Add release lib regardless whether release or debug found. Debug version will be appended below.
+                list(APPEND OPENCOLLADA_LIBRARIES "${PCRE_LIBRARY_DIR}/pcre.lib")
+            else()
+                list(APPEND OPENCOLLADA_LIBRARIES "${pcre_library}")
+            endif()
         else()
             message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find PCRE. "
                 "Disable COLLADA_SUPPORT or fix PCRE_LIBRARY_DIR path to proceed.")
@@ -294,7 +311,8 @@ IF(COLLADA_SUPPORT)
 			add_debug_variants(OPENCOLLADA_LIBRARIES "${OPENCOLLADA_LIBRARIES}" d)
 		ENDIF()
 	ELSE()
-		MESSAGE(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA. Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
+        message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA headers. "
+            "Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
 	ENDIF()
 ENDIF()
 
