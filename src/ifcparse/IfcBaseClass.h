@@ -60,13 +60,14 @@ namespace IfcUtil {
 				? static_cast<const T*>(this)
 				: static_cast<const T*>(0);
 		}
-
-		std::vector<std::string> getAttributeNames() const;
-		std::vector<std::string> getInverseAttributeNames() const;
-		unsigned id() const { return entity->id(); }
 	};
 
 	class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
+	public:
+		Argument* getArgumentByName(const std::string& name) const;
+		std::vector<std::string> getAttributeNames() const;
+		std::vector<std::string> getInverseAttributeNames() const;
+		unsigned id() const { return entity->id(); }
 	};
 
 	// TODO: Investigate whether these should be template classes instead
