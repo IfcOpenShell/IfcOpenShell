@@ -27,8 +27,6 @@ import ifcopenshell.guid
 
 f = ifcopenshell.open("input/acad2010_walls.ifc")
 
-raw_input()
-
 # Some operations on ifcopenshell.file
 assert f[1].is_a("IfcCartesianPoint")
 assert f[1].is_a("IfcRepresentationItem")

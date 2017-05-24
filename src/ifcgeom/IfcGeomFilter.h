@@ -24,7 +24,6 @@
 #define IFCGEOMFILTER_H
 
 #include "IfcGeom.h"
-#include "../ifcparse/IfcWritableEntity.h"
 
 #include <boost/function.hpp>
 #include <boost/regex.hpp>

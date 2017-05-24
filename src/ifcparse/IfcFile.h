@@ -42,7 +42,6 @@ public:
 private:
 	typedef std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
-	bool _create_latebound_entities;
 	bool parsing_complete_;
 
 	entity_by_id_t byid;
@@ -62,7 +61,7 @@ public:
 	IfcParse::IfcSpfLexer* tokens;
 	IfcParse::IfcSpfStream* stream;
 	
-	IfcFile(bool create_latebound_entities = false);
+	IfcFile();
 	~IfcFile();
 	
 	/// Returns the first entity in the file, this probably is the entity
@@ -127,8 +126,6 @@ public:
 	IfcSpfHeader& header() { return _header; }
 
 	std::string createTimestamp() const;
-
-	bool create_latebound_entities() const { return _create_latebound_entities; }
 
 	std::pair<IfcSchema::IfcNamedUnit*, double> getUnit(IfcSchema::IfcUnitEnum::IfcUnitEnum);
 

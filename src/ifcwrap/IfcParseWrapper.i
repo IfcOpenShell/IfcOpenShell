@@ -88,11 +88,13 @@ private:
 %extend IfcUtil::IfcBaseClass {
 
 	int get_attribute_category(const std::string& name) const {
-		const std::vector<std::string> names = $self->getAttributeNames();
+		if (IfcSchema::Type::IsSimple($self->type())) return -1;
+		IfcUtil::IfcBaseEntity* self_ = (IfcUtil::IfcBaseEntity*) self; 
+		const std::vector<std::string> names = self_->getAttributeNames();
 		if (std::find(names.begin(), names.end(), name) != names.end()) {
 			return 1;
 		} else {
-			const std::vector<std::string> names = $self->getInverseAttributeNames();
+			const std::vector<std::string> names = self_->getInverseAttributeNames();
 			if (std::find(names.begin(), names.end(), name) != names.end()) {
 				return 2;
 			} else {
@@ -122,7 +124,14 @@ private:
 		if ($self == other) {
 			return true;
 		}
-		return $self->id() == other->id() && $self->entity->file == other->entity->file;
+		if (IfcSchema::Type::IsSimple($self->type()) || IfcSchema::Type::IsSimple(other->type())) {
+			/// @todo
+			return false;
+		} else {
+			IfcUtil::IfcBaseEntity* self_ = (IfcUtil::IfcBaseEntity*) self;
+			IfcUtil::IfcBaseEntity* other_ = (IfcUtil::IfcBaseEntity*) other;
+			return self_->id() == other_->id() && self_->entity->file == other_->entity->file;
+		} 
 	}
 
 	std::string __repr__() const {
@@ -361,7 +370,7 @@ private:
 
 %inline %{
 	IfcParse::IfcFile* open(const std::string& s) {
-		IfcParse::IfcFile* f = new IfcParse::IfcFile(true);
+		IfcParse::IfcFile* f = new IfcParse::IfcFile();
 		f->Init(s);
 		return f;
 	}

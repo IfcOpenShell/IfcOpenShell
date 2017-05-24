@@ -37,7 +37,6 @@
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcSpfStream.h"
-#include "../ifcparse/IfcWritableEntity.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcSIPrefix.h"
 
@@ -894,30 +893,6 @@ IfcEntityInstanceData* IfcParse::read(unsigned int i, IfcFile* f, boost::optiona
 	return e;
 }
 
-//
-// Access the Nth argument from the ArgumentList
-//
-/*
-Argument* Entity::getArgument(unsigned int i) {
-	if ( ! args ) {
-		std::vector<unsigned int> ids;
-		Load(ids, true);
-	}
-	return (*args)[i];
-}
-
-unsigned int Entity::getArgumentCount() const {
-	if ( ! args ) {
-		std::vector<unsigned int> ids;
-		Load(ids, true);
-	}
-	return args->size();
-}
-*/
-
-//
-// Load the ArgumentList
-//
 void IfcParse::IfcFile::load(const IfcEntityInstanceData& data) {
 	if (tokens->stream->Tell() != data.offset_in_file()) {
 		tokens->stream->Seek(data.offset_in_file());
@@ -995,12 +970,11 @@ IfcEntityList::ptr IfcEntityInstanceData::getInverse(IfcSchema::Type::Enum type,
 	return file->getInverse(id_, type, attribute_index);
 }
 
-IfcFile::IfcFile(bool create_latebound_entities)
-	: _create_latebound_entities(create_latebound_entities)
+IfcFile::IfcFile()
+	: parsing_complete_(false)
 	, MaxId(0)
 	, tokens(0)
 	, stream(0)
-	, parsing_complete_(false)
 {
 	setDefaultHeaderValues();
 }
