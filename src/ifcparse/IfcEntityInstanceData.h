@@ -22,6 +22,8 @@
 
 #include "../ifcparse/ArgumentType.h"
 
+#include <boost/shared_ptr.hpp>
+
 #include <vector>
 
 class Argument;
