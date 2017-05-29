@@ -1024,7 +1024,7 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 
 	switch (attr_type) {
 	case IfcUtil::Argument_NULL:
-		copy->set(boost::none);
+		copy->set(boost::blank());
 		break;
 	case IfcUtil::Argument_DERIVED:
 		copy->set(IfcWrite::IfcWriteArgument::Derived());
