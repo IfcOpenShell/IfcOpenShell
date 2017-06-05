@@ -33,6 +33,8 @@ except ImportError as e:
 
 class entity_instance(object):
     def __init__(self, e):
+        if isinstance(e, str):
+            e = ifcopenshell_wrapper.new_IfcBaseClass(e)
         super(entity_instance, self).__setattr__('wrapped_data', e)
 
     def __getattr__(self, name):

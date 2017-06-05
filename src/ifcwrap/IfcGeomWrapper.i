@@ -241,7 +241,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 };
 
 %inline %{
-	boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcParse::IfcLateBoundEntity* instance, IfcParse::IfcLateBoundEntity* representation = 0) {
+	boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		IfcParse::IfcFile* file = instance->entity->file;
 		IfcSchema::IfcProject::list::ptr projects = file->entitiesByType<IfcSchema::IfcProject>();
 		if (projects->size() != 1) {
@@ -395,32 +395,22 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*>();
 	}
 
-	IfcParse::IfcLateBoundEntity* serialise(const std::string& s, bool advanced=true) {
+	IfcUtil::IfcBaseClass* serialise(const std::string& s, bool advanced=true) {
 		std::stringstream stream(s);
 		BRepTools_ShapeSet shapes;
 		shapes.Read(stream);
 		const TopoDS_Shape& shp = shapes.Shape(shapes.NbShapes());
 
-		const IfcUtil::IfcBaseClass* e = IfcGeom::serialise(shp, advanced);
-		if (e) {
-			return new IfcParse::IfcLateBoundEntity(e->entity);
-		} else {
-			return 0;
-		}
+		return IfcGeom::serialise(shp, advanced);
 	}
 
-	IfcParse::IfcLateBoundEntity* tesselate(const std::string& s, double d) {
+	IfcUtil::IfcBaseClass* tesselate(const std::string& s, double d) {
 		std::stringstream stream(s);
 		BRepTools_ShapeSet shapes;
 		shapes.Read(stream);
 		const TopoDS_Shape& shp = shapes.Shape(shapes.NbShapes());
 
-		const IfcUtil::IfcBaseClass* e = IfcGeom::tesselate(shp, d);
-		if (e) {
-			return new IfcParse::IfcLateBoundEntity(e->entity);
-		} else {
-			return 0;
-		}
+		return IfcGeom::tesselate(shp, d);
 	}
 %}
 

@@ -24,7 +24,6 @@
 #define IFCGEOMFILTER_H
 
 #include "IfcGeom.h"
-#include "../ifcparse/IfcWritableEntity.h"
 
 #include <boost/function.hpp>
 #include <boost/regex.hpp>
@@ -144,7 +143,7 @@ namespace IfcGeom
         {
 #ifndef NDEBUG
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
-                IfcWrite::IfcWritableEntity dummy(it->first);
+                IfcEntityInstanceData dummy(it->first);
                 IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
                 assert(it->second < base->getArgumentCount() && "Argument index out of bounds");
                 assert(base->getArgumentType(it->second) == IfcUtil::Argument_STRING && "Argument type not string");
@@ -186,7 +185,7 @@ namespace IfcGeom
             }
 
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
-                IfcWrite::IfcWritableEntity dummy(it->first);
+                IfcEntityInstanceData dummy(it->first);
                 IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
                 try {
                     ss << " " << IfcSchema::Type::ToString(it->first) << "." << base->getArgumentName(it->second);

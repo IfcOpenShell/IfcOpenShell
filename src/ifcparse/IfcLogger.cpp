@@ -37,7 +37,7 @@ void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
 		log2 = &log_stream;
 	}
 }
-void Logger::Message(Logger::Severity type, const std::string& message, IfcAbstractEntity* entity) {
+void Logger::Message(Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
 	if ( log2 && type >= verbosity ) {
 		(*log2) << "[" << severity_strings[type] << "] ";
 		if ( current_product ) {

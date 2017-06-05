@@ -44,7 +44,7 @@
 #include "../ifcparse/Ifc2x3.h"
 #endif
 
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcHierarchyHelper.h"
 #include "../ifcgeom/IfcGeom.h"
 

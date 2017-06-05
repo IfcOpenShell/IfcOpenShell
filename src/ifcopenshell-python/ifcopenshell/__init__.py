@@ -60,7 +60,7 @@ def open(fn=None):
 
 
 def create_entity(type,*args,**kwargs):
-    e = entity_instance(ifcopenshell_wrapper.entity_instance(type))
+    e = entity_instance(type)
     attrs = list(enumerate(args)) + \
         [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
     for idx, arg in attrs: e[idx] = arg

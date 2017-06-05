@@ -17,31 +17,17 @@
  *                                                                              *
  ********************************************************************************/
 
-// Two class declarations to silence SWIG warning about base classes being
-// undefined, the constructors are private so that SWIG does not wrap them
-class IfcAbstractEntity {
+// A class declaration to silence SWIG warning about base classes being
+// undefined, the constructor is private so that SWIG does not wrap them
+class IfcEntityInstanceData {
 private:
-	IfcAbstractEntity();
+	IfcEntityInstanceData();
 };
-namespace IfcUtil {
-	class IfcBaseEntity {
-	private:
-		IfcBaseEntity();
-	};
-}
 
-%ignore IfcParse::IfcLateBoundEntity::is;
-%ignore IfcParse::IfcLateBoundEntity::type;
-%ignore IfcParse::IfcLateBoundEntity::getArgument;
-%ignore IfcParse::IfcLateBoundEntity::IfcLateBoundEntity(IfcAbstractEntity*);
+#define invalid_argument(i, arg_name) { throw IfcParse::IfcException(IfcSchema::Type::GetAttributeName(self->entity->type(), (unsigned char)i) + " is not a valid type for '" + arg_name + "'"); }
 
 %ignore IfcParse::IfcFile::Init;
-%ignore IfcParse::IfcFile::entityById;
 %ignore IfcParse::IfcFile::entityByGuid;
-%ignore IfcParse::IfcFile::addEntity;
-%ignore IfcParse::IfcFile::removeEntity;
-%ignore IfcParse::IfcFile::traverse(IfcUtil::IfcBaseClass*, int);
-%ignore IfcParse::IfcFile::traverse(IfcUtil::IfcBaseClass*);
 %ignore operator<<;
 
 %ignore IfcParse::FileDescription::FileDescription;
@@ -54,6 +40,9 @@ namespace IfcUtil {
 %ignore IfcParse::IfcSpfHeader::stream;
 %ignore IfcParse::HeaderEntity::is;
 
+%ignore IfcUtil::IfcBaseClass::is;
+
+%rename("by_id") entityById;
 %rename("by_type") entitiesByType;
 %rename("__len__") getArgumentCount;
 %rename("get_argument_type") getArgumentType;
@@ -62,34 +51,24 @@ namespace IfcUtil {
 %rename("get_argument_optionality") getArgumentOptionality;
 %rename("get_attribute_names") getAttributeNames;
 %rename("get_inverse_attribute_names") getInverseAttributeNames;
-%rename("__repr__") toString;
-%rename("entity_instance") IfcLateBoundEntity;
+%rename("entity_instance") IfcBaseClass;
 %rename("file") IfcFile;
+%rename("add") addEntity;
+%rename("remove") removeEntity;
 
 %extend IfcParse::IfcFile {
-	IfcParse::IfcLateBoundEntity* by_id(unsigned id) {
-		return (IfcParse::IfcLateBoundEntity*) $self->entityById(id);
+	IfcUtil::IfcBaseClass* by_guid(const std::string& guid) {
+		return $self->entityByGuid(guid);
 	}
-	IfcParse::IfcLateBoundEntity* by_guid(const std::string& guid) {
-		return (IfcParse::IfcLateBoundEntity*) $self->entityByGuid(guid);
-	}
-	IfcParse::IfcLateBoundEntity* add(IfcParse::IfcLateBoundEntity* e) {
-		return (IfcParse::IfcLateBoundEntity*) $self->addEntity(e);
-	}
-	void remove(IfcParse::IfcLateBoundEntity* e) {
-		$self->removeEntity(e);
-	}
-	IfcEntityList::ptr traverse(IfcParse::IfcLateBoundEntity* e, int max_level=-1) {
-		return $self->traverse(e, max_level);
-	}
-	IfcEntityList::ptr get_inverse(IfcParse::IfcLateBoundEntity* e) {
-		return $self->getInverse(e->id(), IfcSchema::Type::UNDEFINED, -1);
+	IfcEntityList::ptr get_inverse(IfcUtil::IfcBaseClass* e) {
+		return $self->getInverse(e->entity->id(), IfcSchema::Type::UNDEFINED, -1);
 	}
 
 	void write(const std::string& fn) {
 		std::ofstream f(fn.c_str());
 		f << (*$self);
 	}
+
 	std::vector<unsigned> entity_names() const {
 		std::vector<unsigned> keys;
 		keys.reserve(std::distance($self->begin(), $self->end()));
@@ -98,6 +77,7 @@ namespace IfcUtil {
 		}
 		return keys;
 	}
+
 	%pythoncode %{
 		if _newclass:
 			# Hide the getters with read-only property implementations
@@ -105,19 +85,30 @@ namespace IfcUtil {
 	%}
 }
 
-%extend IfcParse::IfcLateBoundEntity {
+%extend IfcUtil::IfcBaseClass {
+
 	int get_attribute_category(const std::string& name) const {
-		const std::vector<std::string> names = $self->getAttributeNames();
+		if (IfcSchema::Type::IsSimple($self->type())) return -1;
+		IfcUtil::IfcBaseEntity* self_ = (IfcUtil::IfcBaseEntity*) self; 
+		const std::vector<std::string> names = self_->getAttributeNames();
 		if (std::find(names.begin(), names.end(), name) != names.end()) {
 			return 1;
 		} else {
-			const std::vector<std::string> names = $self->getInverseAttributeNames();
+			const std::vector<std::string> names = self_->getInverseAttributeNames();
 			if (std::find(names.begin(), names.end(), name) != names.end()) {
 				return 2;
 			} else {
 				return 0;
 			}
 		}
+	}
+	
+	bool is_a(const std::string& s) {
+		return self->is(IfcSchema::Type::FromString(boost::to_upper_copy(s)));
+	}
+
+	std::string is_a() const {
+		return IfcSchema::Type::ToString(self->entity->type());
 	}
 
 	std::pair<IfcUtil::ArgumentType,Argument*> get_argument(unsigned i) {
@@ -129,16 +120,182 @@ namespace IfcUtil {
 		return std::pair<IfcUtil::ArgumentType,Argument*>($self->getArgumentType(i), $self->getArgument(i));
 	}
 
-	bool __eq__(IfcParse::IfcLateBoundEntity* other) const {
+	bool __eq__(IfcUtil::IfcBaseClass* other) const {
 		if ($self == other) {
 			return true;
 		}
-		return $self->id() == other->id() && $self->entity->file == other->entity->file;
+		if (IfcSchema::Type::IsSimple($self->type()) || IfcSchema::Type::IsSimple(other->type())) {
+			/// @todo
+			return false;
+		} else {
+			IfcUtil::IfcBaseEntity* self_ = (IfcUtil::IfcBaseEntity*) self;
+			IfcUtil::IfcBaseEntity* other_ = (IfcUtil::IfcBaseEntity*) other;
+			return self_->id() == other_->id() && self_->entity->file == other_->entity->file;
+		} 
+	}
+
+	std::string __repr__() const {
+		return $self->entity->toString();
 	}
 
 	// Just something to have a somewhat sensible value to hash
 	size_t file_pointer() const {
 		return reinterpret_cast<size_t>($self->entity->file);
+	}
+
+	unsigned get_argument_index(const std::string& a) const {
+		return IfcSchema::Type::GetAttributeIndex(self->entity->type(), a);
+	}
+
+	IfcEntityList::ptr get_inverse(const std::string& a) {
+		std::pair<IfcSchema::Type::Enum, unsigned> inv = IfcSchema::Type::GetInverseAttribute(self->entity->type(), a);
+		return self->entity->getInverse(inv.first, inv.second);
+	}
+
+	void setArgumentAsNull(unsigned int i) {
+		bool is_optional = IfcSchema::Type::GetAttributeOptional(self->entity->type(), (unsigned char)i);
+		if (is_optional) {
+			self->entity->setArgument(i, new IfcWrite::IfcWriteArgument());
+		} else invalid_argument(i,"NULL");
+	}
+
+	void setArgumentAsInt(unsigned int i, int v) {
+		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		if (arg_type == IfcUtil::Argument_INT) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v);
+			self->entity->setArgument(i, arg);	
+		} else if ( (arg_type == IfcUtil::Argument_BOOL) && ( (v == 0) || (v == 1) ) ) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v == 1);
+			self->entity->setArgument(i, arg);	
+		} else invalid_argument(i,"INTEGER");
+	}
+
+	void setArgumentAsBool(unsigned int i, bool v) {
+		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		if (arg_type == IfcUtil::Argument_BOOL) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v);
+			self->entity->setArgument(i, arg);	
+		} else invalid_argument(i,"BOOLEAN");
+	}
+
+	void setArgumentAsDouble(unsigned int i, double v) {
+		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		if (arg_type == IfcUtil::Argument_DOUBLE) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v);
+			self->entity->setArgument(i, arg);	
+		} else invalid_argument(i,"REAL");
+	}
+
+	void setArgumentAsString(unsigned int i, const std::string& a) {
+		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		if (arg_type == IfcUtil::Argument_STRING) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(a);
+			self->entity->setArgument(i, arg);	
+		} else if (arg_type == IfcUtil::Argument_ENUMERATION) {
+			std::pair<const char*, int> enum_data = IfcSchema::Type::GetEnumerationIndex(IfcSchema::Type::GetAttributeEntity(self->entity->type(), (unsigned char)i), a);
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(IfcWrite::IfcWriteArgument::EnumerationReference(enum_data.second, enum_data.first));
+			self->entity->setArgument(i, arg);
+		} else if (arg_type == IfcUtil::Argument_BINARY) {
+			if (IfcUtil::valid_binary_string(a)) {
+				boost::dynamic_bitset<> bits(a);
+				IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+				arg->set(bits);
+				self->entity->setArgument(i, arg);
+			} else {
+				throw IfcParse::IfcException("String not a valid binary representation");
+			}
+		} else invalid_argument(i,"STRING");
+	}
+
+	void setArgumentAsAggregateOfInt(unsigned int i, const std::vector<int>& v) {
+		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v);
+			self->entity->setArgument(i, arg);
+		} else invalid_argument(i,"AGGREGATE OF INT");
+	}
+
+	void setArgumentAsAggregateOfDouble(unsigned int i, const std::vector<double>& v) {
+		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v);
+			self->entity->setArgument(i, arg);
+		} else invalid_argument(i,"AGGREGATE OF DOUBLE");
+	}
+
+	void setArgumentAsAggregateOfString(unsigned int i, const std::vector<std::string>& v) {
+		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_STRING) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v);
+			self->entity->setArgument(i, arg);
+		} else if (arg_type == IfcUtil::Argument_AGGREGATE_OF_BINARY) {
+			std::vector< boost::dynamic_bitset<> > bits;
+			bits.reserve(v.size());
+			for (std::vector<std::string>::const_iterator it = v.begin(); it != v.end(); ++it) {
+				if (IfcUtil::valid_binary_string(*it)) {
+					bits.push_back(boost::dynamic_bitset<>(*it));
+				} else {
+					throw IfcParse::IfcException("String not a valid binary representation");
+				}			
+			}
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(bits);
+			self->entity->setArgument(i, arg);
+		} else invalid_argument(i,"AGGREGATE OF STRING");
+	}
+
+	void setArgumentAsEntityInstance(unsigned int i, IfcUtil::IfcBaseClass* v) {
+		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		if (arg_type == IfcUtil::Argument_ENTITY_INSTANCE) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v);
+			self->entity->setArgument(i, arg);
+		} else invalid_argument(i,"ENTITY INSTANCE");
+	}
+
+	void setArgumentAsAggregateOfEntityInstance(unsigned int i, IfcEntityList::ptr v) {
+		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v);
+			self->entity->setArgument(i, arg);
+		} else invalid_argument(i,"AGGREGATE OF ENTITY INSTANCE");
+	}
+
+	void setArgumentAsAggregateOfAggregateOfInt(unsigned int i, const std::vector< std::vector<int> >& v) {
+		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v);
+			self->entity->setArgument(i, arg);
+		} else invalid_argument(i,"AGGREGATE OF AGGREGATE OF INT");
+	}
+
+	void setArgumentAsAggregateOfAggregateOfDouble(unsigned int i, const std::vector< std::vector<double> >& v) {
+		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v);
+			self->entity->setArgument(i, arg);
+		} else invalid_argument(i,"AGGREGATE OF AGGREGATE OF DOUBLE");
+	}
+
+	void setArgumentAsAggregateOfAggregateOfEntityInstance(unsigned int i, IfcEntityListList::ptr v) {
+		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
+			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+			arg->set(v);
+			self->entity->setArgument(i, arg);
+		} else invalid_argument(i,"AGGREGATE OF AGGREGATE OF ENTITY INSTANCE");
 	}
 }
 
@@ -206,14 +363,14 @@ namespace IfcUtil {
 %include "../ifcparse/ifc_parse_api.h"
 %include "../ifcparse/IfcSpfHeader.h"
 %include "../ifcparse/IfcFile.h"
-%include "../ifcparse/IfcLateBoundEntity.h"
+%include "../ifcparse/IfcBaseClass.h"
 
 // The IfcFile* returned by open() is to be freed by SWIG/Python
 %newobject open;
 
 %inline %{
 	IfcParse::IfcFile* open(const std::string& s) {
-		IfcParse::IfcFile* f = new IfcParse::IfcFile(true);
+		IfcParse::IfcFile* f = new IfcParse::IfcFile();
 		f->Init(s);
 		return f;
 	}
@@ -234,5 +391,13 @@ namespace IfcUtil {
 		} else {
 			return "";
 		}
+	}
+
+	IfcUtil::IfcBaseClass* new_IfcBaseClass(const std::string& s) {
+		IfcSchema::Type::Enum ty = IfcSchema::Type::FromString(boost::to_upper_copy(s));
+		IfcEntityInstanceData* data = new IfcEntityInstanceData(ty);
+		data->setArgument(IfcSchema::Type::GetAttributeCount(ty) - 1, new IfcWrite::IfcWriteArgument());
+		IfcSchema::Type::PopulateDerivedFields(data);
+		return IfcSchema::SchemaEntity(data);
 	}
 %}

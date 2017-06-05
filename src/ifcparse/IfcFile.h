@@ -37,34 +37,31 @@ public:
 	typedef std::map<IfcSchema::Type::Enum, IfcEntityList::ptr> entities_by_type_t;
 	typedef std::map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
 	typedef std::map<std::string, IfcSchema::IfcRoot*> entity_by_guid_t;
-	typedef std::map<unsigned int, IfcEntityList::ptr> entities_by_ref_t;
-	typedef std::map<unsigned int, unsigned int> offset_by_id_t;
+	typedef std::map<unsigned int, std::vector<unsigned int> > entities_by_ref_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
 private:
 	typedef std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
-	bool _create_latebound_entities;
+	bool parsing_complete_;
 
 	entity_by_id_t byid;
 	entities_by_type_t bytype;
 	entities_by_ref_t byref;
 	entity_by_guid_t byguid;
-	offset_by_id_t offsets;
-
 	entity_entity_map_t entity_file_map;
 
-	unsigned int lastId;
 	unsigned int MaxId;
 
 	IfcSpfHeader _header;
 
 	void setDefaultHeaderValues();
 	void traverse(IfcUtil::IfcBaseClass*, std::set<IfcUtil::IfcBaseClass*>& visited, IfcEntityList::ptr list, int level, int max_level);
+	void register_inverse(unsigned, Token);
 public:
 	IfcParse::IfcSpfLexer* tokens;
 	IfcParse::IfcSpfStream* stream;
 	
-	IfcFile(bool create_latebound_entities = false);
+	IfcFile();
 	~IfcFile();
 	
 	/// Returns the first entity in the file, this probably is the entity
@@ -130,9 +127,10 @@ public:
 
 	std::string createTimestamp() const;
 
-	bool create_latebound_entities() const { return _create_latebound_entities; }
-
 	std::pair<IfcSchema::IfcNamedUnit*, double> getUnit(IfcSchema::IfcUnitEnum::IfcUnitEnum);
+
+	void load(const IfcEntityInstanceData&);
+	void load(unsigned entity_instance_name, std::vector<Argument*>& attributes);
 };
 
 }

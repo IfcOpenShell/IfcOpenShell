@@ -38,7 +38,7 @@
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
 
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcParse.h"
 
 SHAPES(IfcShellBasedSurfaceModel);
