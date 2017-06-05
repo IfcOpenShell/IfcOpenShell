@@ -32,6 +32,10 @@
 #include <boost/optional.hpp>
 #include <boost/dynamic_bitset.hpp>
 
+#include <boost/utility/enable_if.hpp>
+#include <boost/type_traits/is_base_of.hpp>
+#include <boost/type_traits/remove_pointer.hpp>
+
 #include "ifc_parse_api.h"
 
 #include "../ifcparse/IfcBaseClass.h"
@@ -111,17 +115,31 @@ namespace IfcWrite {
 			IfcEntityListList::ptr
 		> container;
 	public:
-		template <typename T> const T& as() const {
+
+		template <typename T>
+		const T& as() const {
 			if (const T* val = boost::get<T>(&container)) {
 				return *val;
 			} else {
 				throw IfcParse::IfcException("Invalid cast");
 			}
 		}
-		template <typename T> void set(const T& t) {
+
+		template <typename T>
+		typename boost::disable_if<boost::is_base_of<IfcUtil::IfcBaseClass, typename boost::remove_pointer<T>::type>, void>::type
+		set(const T& t) {
 			container = t;
 		}
 
+		// Overload to detect null values
+		void set(const IfcEntityList::ptr& v);
+
+		// Overload to detect null values
+		void set(const IfcEntityListList::ptr& v);
+
+		// Overload to detect null values
+		void set(IfcUtil::IfcBaseClass*const & v);
+		
 		operator int() const;
 		operator bool() const;
 		operator double() const;
@@ -147,5 +165,6 @@ namespace IfcWrite {
 	};
 
 }
+
 
 #endif

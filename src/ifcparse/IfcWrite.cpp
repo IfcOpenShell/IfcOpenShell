@@ -272,3 +272,30 @@ unsigned int IfcWriteArgument::size() const {
 IfcUtil::ArgumentType IfcWriteArgument::type() const {
 	return static_cast<IfcUtil::ArgumentType>(container.which());
 }
+
+// Overload to detect null values
+void IfcWriteArgument::set(const IfcEntityList::ptr& v) {
+	if (v) {
+		container = v;
+	} else {
+		container = boost::blank();
+	}
+}
+
+// Overload to detect null values
+void IfcWriteArgument::set(const IfcEntityListList::ptr& v) {
+	if (v) {
+		container = v;
+	} else {
+		container = boost::blank();
+	}
+}
+
+// Overload to detect null values
+void IfcWriteArgument::set(IfcUtil::IfcBaseClass*const& v) {
+	if (v) {
+		container = v;
+	} else {
+		container = boost::blank();
+	}
+}
