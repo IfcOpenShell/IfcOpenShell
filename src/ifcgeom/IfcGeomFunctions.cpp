@@ -311,7 +311,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 			TopoDS_Shape opening_shape = apply_transformation(opening_shape_unlocated, opening_shape_gtrsf);
 					
 			double opening_volume;
-			if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
+			if (Logger::LOG_WARNING >= Logger::Verbosity()) {
 				opening_volume = shape_volume(opening_shape);
 				if ( opening_volume <= ALMOST_ZERO )
 					Logger::Message(Logger::LOG_WARNING,"Empty opening for:",entity->entity);
@@ -397,7 +397,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 					bool is_valid = analyser.IsValid() != 0;
 					if ( is_valid ) {
 						entity_shape = brep_cut_result;
-						if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
+						if (Logger::LOG_WARNING >= Logger::Verbosity()) {
 							const double volume_after_subtraction = shape_volume(entity_shape);
 							double original_shape_volume = shape_volume(entity_shape);
 							if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
@@ -718,13 +718,15 @@ gp_Pnt IfcGeom::Kernel::point_above_plane(const gp_Pln& pln, bool agree) {
 
 void IfcGeom::Kernel::apply_tolerance(TopoDS_Shape& s, double t) {
 	ShapeAnalysis_ShapeTolerance toler;
-	if (toler.Tolerance(s, 0) > t) {
-		Handle_TopTools_HSequenceOfShape shapes = toler.OverTolerance(s, t);
-		for (int i = 1; i <= shapes->Length(); ++i) {
-			const TopoDS_Shape& sub = shapes->Value(i);
-			std::stringstream ss;
-			TopAbs::Print(sub.ShapeType(), ss);
-			Logger::Warning("Tolerance of " + boost::lexical_cast<std::string>(toler.Tolerance(sub, 0)) + " on " + ss.str());
+	if (Logger::LOG_WARNING >= Logger::Verbosity()) {
+		if (toler.Tolerance(s, 0) > t + ALMOST_ZERO) {
+			Handle_TopTools_HSequenceOfShape shapes = toler.OverTolerance(s, t + ALMOST_ZERO);
+			for (int i = 1; i <= shapes->Length(); ++i) {
+				const TopoDS_Shape& sub = shapes->Value(i);
+				std::stringstream ss;
+				TopAbs::Print(sub.ShapeType(), ss);
+				Logger::Warning("Tolerance of " + boost::lexical_cast<std::string>(toler.Tolerance(sub, 0)) + " on " + ss.str());
+			}
 		}
 	}
 	ShapeFix_ShapeTolerance tol;
