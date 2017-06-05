@@ -511,7 +511,7 @@ namespace IfcGeom {
                 Logger::SetProduct(product);
 
 				BRepElement<P>* element;
-				if (ifcproduct_iterator == ifcproducts->begin() || !settings.get(IteratorSettings::USE_WORLD_COORDS)) {
+				if (ifcproduct_iterator == ifcproducts->begin() || settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 					element = kernel.create_brep_for_representation_and_product<P>(settings, representation, product);
 				} else {
 					element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
