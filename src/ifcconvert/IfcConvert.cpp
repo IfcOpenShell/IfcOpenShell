@@ -144,6 +144,8 @@ struct inclusion_traverse_filter : public geom_filter { inclusion_traverse_filte
 struct exclusion_filter : public geom_filter { exclusion_filter() : geom_filter(false, false) {} };
 struct exclusion_traverse_filter : public geom_filter { exclusion_traverse_filter() : geom_filter(false, true) {} };
 
+size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_traverse_filter&, exclusion_filter&, exclusion_traverse_filter&);
+void parse_filter(geom_filter &, const std::vector<std::string>&);
 std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
 
 int main(int argc, char** argv)
@@ -153,7 +155,8 @@ int main(int argc, char** argv)
 		("help,h", "display usage information")
 		("version", "display version information")
         ("verbose,v", "more verbose output")
-        ("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)");
+        ("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
+        ("no-progress", "Suppress possible progress bar type of prints that use carriage return.");
 
     po::options_description fileio_options;
 	fileio_options.add_options()
@@ -165,6 +168,7 @@ int main(int argc, char** argv)
     inclusion_traverse_filter include_traverse_filter;
     exclusion_filter exclude_filter;
     exclusion_traverse_filter exclude_traverse_filter;
+    std::string filter_filename;
 
     po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -240,7 +244,12 @@ int main(int argc, char** argv)
             "Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
         ("generate-uvs",
             "Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
-            "Not guaranteed to work properly if used with --weld-vertices.");
+            "Not guaranteed to work properly if used with --weld-vertices.")
+        ("filter-file", po::value<std::string>(&filter_filename),
+            "Specifies a filter file that describes the used filtering criteria. Supported formats "
+            "are '--include=arg GlobalId ...' and 'include arg GlobalId ...'. Spaces and tabs can be used as delimeters."
+            "Multiple filters of same type with different values can be inserted on their own lines. "
+            "See --include, --include+, --exclude, and --exclude+ for more details.");
 
     std::string bounds, offset_str;
 #ifdef HAVE_ICU
@@ -327,6 +336,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 	const bool verbose = vmap.count("verbose") != 0;
+	const bool no_progress = vmap.count("no-progress") != 0;
 	const bool weld_vertices = vmap.count("weld-vertices") != 0;
 	const bool use_world_coords = vmap.count("use-world-coords") != 0;
 	const bool convert_back_units = vmap.count("convert-back-units") != 0;
@@ -411,10 +421,17 @@ int main(int argc, char** argv)
     Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
     IfcParse::IfcFile ifc_file;
+    // Prevent IfcFile::Init() prints by setting output to null temporarily
+    if (no_progress) { Logger::SetOutput(NULL, &log_stream); }
+
+    /// @todo Do not read/initialize the file just yet. We got many potential error and
+    /// exit points below and reading/initializing at this point can stall up to tens of
+    /// seconds if the file is very large.
     if (!ifc_file.Init(input_filename)) {
         Logger::Error("Unable to parse input file '" + input_filename + "'");
         return EXIT_FAILURE;
     }
+    if (no_progress) { Logger::SetOutput(&std::cout, &log_stream); }
 
     if (output_extension == ".xml") {
         int exit_code = EXIT_FAILURE;
@@ -429,6 +446,16 @@ int main(int argc, char** argv)
         } catch (...) {}
         write_log();
         return exit_code;
+    }
+
+    if (!filter_filename.empty()) {
+        size_t num_filters = read_filters_from_file(filter_filename, include_filter, include_traverse_filter, exclude_filter, exclude_traverse_filter);
+        if (num_filters) {
+            Logger::Notice(boost::lexical_cast<std::string>(num_filters) + " filters read from '" + filter_filename + "'.");
+        } else {
+            std::cerr << "[Error] No filters read from '" + filter_filename + "'.\n";
+            return EXIT_FAILURE;
+        }
     }
 
     /// @todo Clean up this filter code further.
@@ -605,10 +632,12 @@ int main(int argc, char** argv)
 		{
 			serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
 		}
-		
-        const int progress = context_iterator.progress() / 2;
-        if (old_progress != progress) Logger::ProgressBar(progress);
-        old_progress = progress;
+
+        if (!no_progress) {
+            const int progress = context_iterator.progress() / 2;
+            if (old_progress != progress) Logger::ProgressBar(progress);
+            old_progress = progress;
+        }
     } while (++num_created, context_iterator.next());
 
     Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(num_created) +
@@ -655,6 +684,76 @@ void write_log() {
 	}
 }
 
+bool append_filter(const std::string& type, const std::vector<std::string>& values, geom_filter& filter)
+{
+    geom_filter temp;
+    parse_filter(temp, values);
+    // Merge values only if type and arg match.
+    if ((filter.type != geom_filter::UNUSED && filter.type != temp.type) || (!filter.arg.empty() && filter.arg != temp.arg)) {
+        std::cerr << "[Error] Multiple '" << type << "' filters specified with different criteria\n";
+        return false;
+    }
+    filter.type = temp.type;
+    filter.values.insert(temp.values.begin(), temp.values.end());
+    filter.arg = temp.arg;
+    return true;
+}
+
+size_t read_filters_from_file(
+    const std::string& filename,
+    inclusion_filter& include_filter,
+    inclusion_traverse_filter& include_traverse_filter,
+    exclusion_filter& exclude_filter,
+    exclusion_traverse_filter& exclude_traverse_filter)
+{
+    std::ifstream filter_file(filename.c_str());
+    if (!filter_file.is_open()) {
+        std::cerr << "[Error] Unable to open filter file '" + filename + "'\n";
+        return 0;
+    }
+
+    size_t line_number = 1, num_filters = 0;
+    for (std::string line; std::getline(filter_file, line); ++line_number) {
+        boost::trim(line);
+        if (line.empty()) {
+            continue;
+        }
+
+        std::vector<std::string> values;
+        boost::split(values, line, boost::is_any_of("\t "), boost::token_compress_on);
+        if (values.empty()) {
+            continue;
+        }
+
+        std::string type = values.front();
+        values.erase(values.begin());
+        // Support both "--include=arg GlobalId 1VQ5n5$RrEbPk8le4ZCI81" and "include arg GlobalId 1VQ5n5$RrEbPk8le4ZCI81"
+        // and tolerate extraneous whitespace.
+        boost::trim_left_if(type, boost::is_any_of("-"));
+        size_t equal_pos = type.find('=');
+        if (equal_pos != std::string::npos) {
+            std::string value = type.substr(equal_pos + 1);
+            type = type.substr(0, equal_pos);
+            values.insert(values.begin(), value);
+        }
+
+        try {
+            if (type == "include") { if (append_filter("include", values, include_filter)) { ++num_filters; } }
+            else if (type == "include+") { if (append_filter("include+", values, include_traverse_filter)) { ++num_filters; } }
+            else if (type == "exclude") { if (append_filter("exclude", values, exclude_filter)) { ++num_filters; } }
+            else if (type == "exclude+") { if (append_filter("exclude+", values, exclude_traverse_filter)) { ++num_filters; } }
+            else {
+                std::cerr << "[Error] Invalid filtering type at line " + boost::lexical_cast<std::string>(line_number) + "\n";
+                return 0;
+            }
+        } catch(...) {
+            std::cerr << "[Error] Unable to parse filter at line " + boost::lexical_cast<std::string>(line_number) + ".\n";
+            return 0;
+        }
+    }
+    return num_filters;
+}
+
 void parse_filter(geom_filter &filter, const std::vector<std::string>& values)
 {
     if (values.size() == 0) {
@@ -679,7 +778,7 @@ void parse_filter(geom_filter &filter, const std::vector<std::string>& values)
 
 void validate(boost::any& v, const std::vector<std::string>& values, inclusion_filter*, int)
 {
-    /// @todo For now only single --include or --exclude supported. Support having multiple.
+    /// @todo For now only single --include, --include+, --exclude, or --exclude+ supported. Support having multiple.
     po::validators::check_first_occurrence(v);
     inclusion_filter filter;
     parse_filter(filter, values);

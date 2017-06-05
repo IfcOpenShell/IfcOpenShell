@@ -1185,6 +1185,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 			data = new IfcEntityInstanceData(entity_type, this, current_id, token_stream[2].startPos);
 			instance = IfcSchema::SchemaEntity(data);
 
+            /// @todo Printing to stdout in a library class feels weird. Maybe move the progress prints to the client code?
 			// Update the status after every 1000 instances parsed
 			if (!((++progress) % 1000)) {
 				std::stringstream ss; ss << "\r#" << current_id;
